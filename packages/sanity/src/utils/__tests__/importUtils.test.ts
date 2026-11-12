@@ -1,6 +1,11 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import type { TranslationStatus } from '../../adapter/types';
 import { getReadyFilesForImport } from '../importUtils';
+
+// Unused by getReadyFilesForImport, and it pulls in the whole `sanity` package.
+vi.mock('../../translation/updatePreviewUrls', () => ({
+  updateTranslationPreviewUrls: vi.fn(),
+}));
 
 describe('getReadyFilesForImport', () => {
   test('dedupes ready files by branch, source document, and locale', async () => {

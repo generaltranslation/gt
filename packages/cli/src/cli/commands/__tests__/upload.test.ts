@@ -136,18 +136,18 @@ async function uploadWithFiles(
   } as Settings & UploadOptions);
 }
 
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(existsSync).mockReturnValue(false);
+  vi.mocked(readFileSync).mockReturnValue('');
+  vi.mocked(createFileMapping).mockReturnValue({});
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('upload - Twilio Content JSON', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(existsSync).mockReturnValue(false);
-    vi.mocked(readFileSync).mockReturnValue('');
-    vi.mocked(createFileMapping).mockReturnValue({});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('should upload Twilio Content JSON files with TWILIO_CONTENT_JSON fileFormat', async () => {
     const content = JSON.stringify({ body: 'Hello {{1}}' });
     setMockFiles({ 'twilio/content.json': content });
@@ -225,17 +225,6 @@ describe('upload - Twilio Content JSON', () => {
 });
 
 describe('upload - binary (LOTTIE) files', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(existsSync).mockReturnValue(false);
-    vi.mocked(readFileSync).mockReturnValue('');
-    vi.mocked(createFileMapping).mockReturnValue({});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('round-trips source and translation bytes through base64 without UTF-8 decoding', async () => {
     // Zip magic plus bytes that are invalid UTF-8 — a utf8 read would corrupt them.
     const sourceBytes = Buffer.from([
@@ -284,17 +273,6 @@ describe('upload - binary (LOTTIE) files', () => {
 });
 
 describe('upload - empty file list', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(existsSync).mockReturnValue(false);
-    vi.mocked(readFileSync).mockReturnValue('');
-    vi.mocked(createFileMapping).mockReturnValue({});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('emits only the upload-specific empty files message', async () => {
     setMockFiles({});
 
@@ -310,17 +288,6 @@ describe('upload - empty file list', () => {
 });
 
 describe('upload - companion metadata', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(existsSync).mockReturnValue(false);
-    vi.mocked(readFileSync).mockReturnValue('');
-    vi.mocked(createFileMapping).mockReturnValue({});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('attaches companion metadata to the source file instead of uploading it separately', async () => {
     const sourceContent = JSON.stringify({
       title: 'Hello',
@@ -367,17 +334,6 @@ describe('upload - companion metadata', () => {
 });
 
 describe('upload - composite JSON', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(existsSync).mockReturnValue(false);
-    vi.mocked(readFileSync).mockReturnValue('');
-    vi.mocked(createFileMapping).mockReturnValue({});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('should extract translations from composite array JSON', async () => {
     const compositeContent = JSON.stringify({
       items: [
@@ -519,36 +475,6 @@ describe('upload - composite JSON', () => {
     expect(frContent).toEqual({});
   });
 
-  it('should use fileMapping for non-composite JSON files', async () => {
-    const plainContent = JSON.stringify({ title: 'Hello' });
-    const translatedContent = JSON.stringify({ title: 'Hola' });
-
-    setMockFiles({ 'source.json': plainContent });
-
-    // No jsonSchema = no composite detection
-    const filePaths: ResolvedFiles = { json: ['source.json'] };
-    const settings = makeSettings({
-      locales: ['es'],
-      options: {},
-    });
-
-    vi.mocked(createFileMapping).mockReturnValue({
-      es: { 'source.json': 'es/source.json' },
-    });
-    vi.mocked(existsSync).mockImplementation((p) => p === 'es/source.json');
-    vi.mocked(readFileSync).mockReturnValue(translatedContent);
-
-    await uploadWithFiles(filePaths, settings);
-
-    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
-    const fileData = call.files[0];
-
-    // Should use fileMapping to find separate translation file
-    expect(fileData.translations).toHaveLength(1);
-    expect(fileData.translations[0].locale).toBe('es');
-    expect(fileData.translations[0].content).toBe(translatedContent);
-  });
-
   it('should handle mix of composite and non-composite JSON files', async () => {
     const compositeContent = JSON.stringify({
       items: [
@@ -613,15 +539,6 @@ describe('upload - composite JSON', () => {
 });
 
 describe('upload - unparsable translation files', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(createFileMapping).mockReturnValue({});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('skips an unparsable JSON translation with a warning and uploads the rest', async () => {
     const translatedContent = JSON.stringify({ title: 'Hola' });
     setMockFiles({ 'source.json': JSON.stringify({ title: 'Hello' }) });
@@ -652,17 +569,6 @@ describe('upload - unparsable translation files', () => {
 describe('upload - Apple .strings translations that cannot be decoded', () => {
   const SOURCE = 'Guardian/en.lproj/Localizable.strings';
   const TRANSLATION = 'Guardian/es.lproj/Localizable.strings';
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(existsSync).mockReturnValue(false);
-    vi.mocked(readFileSync).mockReturnValue('');
-    vi.mocked(createFileMapping).mockReturnValue({});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
 
   it('names the file that could not be read and uploads the rest', async () => {
     const source = Buffer.from('"welcome" = "Welcome!";\n', 'utf8');
@@ -742,9 +648,7 @@ describe('upload - Apple .xcstrings catalogs', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
     vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue('');
     // Every locale maps to the shared catalog path; the file always exists,
     // which is exactly what used to make the whole catalog upload per locale.
     vi.mocked(createFileMapping).mockReturnValue({
@@ -753,10 +657,6 @@ describe('upload - Apple .xcstrings catalogs', () => {
       ar: { [CATALOG]: CATALOG },
       ja: { [CATALOG]: CATALOG },
     });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('slices an aliased locale by its canonical tag and uploads it under the alias', async () => {

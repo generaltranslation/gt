@@ -1,4 +1,19 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  getI18nConfig as getBaseI18nConfig,
+  I18nConfig,
+  initializeI18nConfig as initializeBaseI18nConfig,
+  setI18nConfig as setBaseI18nConfig,
+} from 'gt-i18n/internal';
+import {
+  getI18nConfig as getPureI18nConfig,
+  initializeI18nConfig as initializePureI18nConfig,
+} from '../../pure';
+import {
+  getI18nConfig,
+  initializeI18nConfig,
+  ReactI18nConfig,
+} from '../i18nConfig';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
@@ -9,19 +24,10 @@ function resetGTGlobals() {
 }
 
 describe('react i18n config', () => {
-  beforeEach(() => {
-    resetGTGlobals();
-    vi.resetModules();
-  });
-
+  beforeEach(resetGTGlobals);
   afterEach(resetGTGlobals);
 
-  it('stores render strategy on the I18nConfig singleton', async () => {
-    const { getI18nConfig: getBaseI18nConfig } =
-      await import('gt-i18n/internal');
-    const { getI18nConfig, initializeI18nConfig } =
-      await import('../i18nConfig');
-
+  it('stores render strategy on the I18nConfig singleton', () => {
     const config = initializeI18nConfig({ defaultLocale: 'en' }, 'SPA');
 
     expect(getI18nConfig()).toBe(config);
@@ -29,21 +35,15 @@ describe('react i18n config', () => {
     expect(getI18nConfig().getRenderStrategy()).toBe('SPA');
   });
 
-  it('defaults public pure initialization to server-render', async () => {
-    const { getI18nConfig: getBaseI18nConfig } =
-      await import('gt-i18n/internal');
-    const { getI18nConfig, initializeI18nConfig } = await import('../../pure');
+  it('defaults public pure initialization to server-render', () => {
+    const config = initializePureI18nConfig({ defaultLocale: 'en' });
 
-    const config = initializeI18nConfig({ defaultLocale: 'en' });
-
-    expect(getI18nConfig()).toBe(config);
+    expect(getPureI18nConfig()).toBe(config);
     expect(getBaseI18nConfig()).toBe(config);
-    expect(getI18nConfig().getRenderStrategy()).toBe('server-render');
+    expect(getPureI18nConfig().getRenderStrategy()).toBe('server-render');
   });
 
-  it('falls back to the default storage names', async () => {
-    const { initializeI18nConfig } = await import('../i18nConfig');
-
+  it('falls back to the default storage names', () => {
     const config = initializeI18nConfig({ defaultLocale: 'en' });
 
     expect(config.getLocaleCookieName()).toBe('generaltranslation.locale');
@@ -53,9 +53,7 @@ describe('react i18n config', () => {
     );
   });
 
-  it('returns configured custom storage names', async () => {
-    const { initializeI18nConfig } = await import('../i18nConfig');
-
+  it('returns configured custom storage names', () => {
     const config = initializeI18nConfig({
       defaultLocale: 'en',
       localeCookieName: 'custom-locale',
@@ -68,8 +66,7 @@ describe('react i18n config', () => {
     expect(config.getEnableI18nCookieName()).toBe('custom-enable-i18n');
   });
 
-  it('rejects invalid runtime render strategy values', async () => {
-    const { initializeI18nConfig } = await import('../i18nConfig');
+  it('rejects invalid runtime render strategy values', () => {
     const initializeWithRuntimeRenderStrategy = initializeI18nConfig as (
       params: Parameters<typeof initializeI18nConfig>[0],
       renderStrategy: unknown
@@ -80,22 +77,15 @@ describe('react i18n config', () => {
     ).toThrow(/Invalid React render strategy/);
   });
 
-  it('rejects base I18nConfig setup without render strategy support', async () => {
-    const { initializeI18nConfig } = await import('gt-i18n/internal');
-    const { getI18nConfig } = await import('../i18nConfig');
-
-    initializeI18nConfig({ defaultLocale: 'en' });
+  it('rejects base I18nConfig setup without render strategy support', () => {
+    initializeBaseI18nConfig({ defaultLocale: 'en' });
 
     expect(() => getI18nConfig()).toThrow(
       /Cannot read ReactI18nConfig after base I18nConfig setup/
     );
   });
 
-  it('accepts branded ReactI18nConfig instances from another bundled copy', async () => {
-    const { I18nConfig, setI18nConfig: setBaseI18nConfig } =
-      await import('gt-i18n/internal');
-    const { getI18nConfig } = await import('../i18nConfig');
-
+  it('accepts branded ReactI18nConfig instances from another bundled copy', () => {
     const bundledConfig = new I18nConfig({ defaultLocale: 'en' });
     Object.defineProperty(
       bundledConfig,
@@ -122,35 +112,23 @@ describe('react i18n config', () => {
     expect(getI18nConfig().getLocaleCookieName()).toBe('custom-locale');
   });
 
-  it('id-tagging is disabled by default', async () => {
-    const { ReactI18nConfig } = await import('../i18nConfig');
-    expect(
-      new ReactI18nConfig({ defaultLocale: 'en' }).isIdTaggingEnabled()
-    ).toBe(false);
-  });
-
-  it('enables id-tagging only for a literal true _tagIds', async () => {
-    const { ReactI18nConfig } = await import('../i18nConfig');
+  // withGTConfig accepts arbitrary keys and the JSON config isn't validated for
+  // this field, so a truthy-but-non-true value (e.g. the string "false") must
+  // NOT implicitly turn on DOM injection.
+  it.each([
+    [undefined, false],
+    [true, true],
+    ['false', false],
+    ['true', false],
+    [1, false],
+    [{}, false],
+    [[], false],
+  ])('id-tagging for _tagIds=%j is %s', (tagIds, expected) => {
     expect(
       new ReactI18nConfig({
         defaultLocale: 'en',
-        _tagIds: true,
+        _tagIds: tagIds as boolean | undefined,
       }).isIdTaggingEnabled()
-    ).toBe(true);
-  });
-
-  it('does not enable id-tagging for truthy-but-malformed _tagIds', async () => {
-    // withGTConfig accepts arbitrary keys and the JSON config isn't validated for
-    // this field, so a truthy-but-non-true value (e.g. the string "false") must
-    // NOT implicitly turn on DOM injection.
-    const { ReactI18nConfig } = await import('../i18nConfig');
-    for (const bad of ['false', 'true', 1, {}, []]) {
-      expect(
-        new ReactI18nConfig({
-          defaultLocale: 'en',
-          _tagIds: bad as unknown as boolean,
-        }).isIdTaggingEnabled()
-      ).toBe(false);
-    }
+    ).toBe(expected);
   });
 });

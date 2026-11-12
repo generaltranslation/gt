@@ -19,40 +19,44 @@ describe('getLocale', () => {
     });
   });
 
-  it('returns the best matching locale from Accept-Language', () => {
-    const request = {
-      headers: { 'accept-language': 'fr-FR,fr;q=0.9,en;q=0.8' },
-    };
-    expect(getRequestLocale(request)).toBe('fr');
-  });
-
-  it('returns exact match when available', () => {
-    const request = { headers: { 'accept-language': 'en-US' } };
-    expect(getRequestLocale(request)).toBe('en-US');
-  });
-
-  it('respects quality values', () => {
-    const request = { headers: { 'accept-language': 'ja;q=0.5,es;q=0.9' } };
-    expect(getRequestLocale(request)).toBe('es');
-  });
-
-  it('returns default locale when no match found', () => {
-    const request = { headers: { 'accept-language': 'zh-CN,zh;q=0.9' } };
-    expect(getRequestLocale(request)).toBe('en-US');
-  });
-
-  it('returns default locale when header is missing', () => {
-    const request = {
-      headers: {} as Record<string, string | string[] | undefined>,
-    };
-    expect(getRequestLocale(request)).toBe('en-US');
-  });
-
-  it('handles array header values', () => {
-    const request = {
-      headers: { 'accept-language': ['es,en-US;q=0.9', 'fr'] },
-    };
-    expect(getRequestLocale(request)).toBe('es');
+  it.each<{
+    name: string;
+    header: string | string[] | undefined;
+    expected: string;
+  }>([
+    {
+      name: 'returns the best matching locale from Accept-Language',
+      header: 'fr-FR,fr;q=0.9,en;q=0.8',
+      expected: 'fr',
+    },
+    {
+      name: 'returns exact match when available',
+      header: 'en-US',
+      expected: 'en-US',
+    },
+    {
+      name: 'respects quality values',
+      header: 'ja;q=0.5,es;q=0.9',
+      expected: 'es',
+    },
+    {
+      name: 'returns default locale when no match found',
+      header: 'zh-CN,zh;q=0.9',
+      expected: 'en-US',
+    },
+    {
+      name: 'returns default locale when header is missing',
+      header: undefined,
+      expected: 'en-US',
+    },
+    {
+      name: 'handles array header values',
+      header: ['es,en-US;q=0.9', 'fr'],
+      expected: 'es',
+    },
+  ])('$name', ({ header, expected }) => {
+    const headers = header === undefined ? {} : { 'accept-language': header };
+    expect(getRequestLocale({ headers })).toBe(expected);
   });
 
   it('handles wildcard locale', () => {

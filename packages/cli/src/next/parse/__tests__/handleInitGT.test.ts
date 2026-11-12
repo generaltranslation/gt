@@ -1,832 +1,268 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'node:fs';
 import { handleInitGT } from '../handleInitGT.js';
 import { logger } from '../../../console/logger.js';
 
-// Mock dependencies
 vi.mock('node:fs', () => ({
-  default: {
-    promises: {
-      readFile: vi.fn(),
-      writeFile: vi.fn(),
-    },
-  },
+  default: { promises: { readFile: vi.fn(), writeFile: vi.fn() } },
 }));
+vi.mock('../../../console/logger.js', () => ({ logger: { error: vi.fn() } }));
 
-vi.mock('../../../console/logger.js', () => ({
-  logger: {
-    error: vi.fn(),
-  },
-}));
+const ESM_IMPORT = 'import { withGTConfig } from "gt-next/config"';
+const CJS_REQUIRE =
+  'const withGTConfig = require("gt-next/config").withGTConfig';
+const CONFIG = 'const nextConfig = {};\nexport default nextConfig;';
+
+type PackageJson = { type?: string };
+type TsconfigJson = { compilerOptions?: { module?: string } };
+
+/** Runs handleInitGT on `code` and returns what it wrote and reported. */
+async function initGT(
+  filepath: string,
+  code: string,
+  packageJson?: PackageJson,
+  tsconfigJson?: TsconfigJson
+) {
+  vi.mocked(fs.promises.readFile).mockResolvedValue(code);
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const filesUpdated: string[] = [];
+  await handleInitGT(
+    filepath,
+    errors,
+    warnings,
+    filesUpdated,
+    packageJson,
+    tsconfigJson
+  );
+  const writes = vi.mocked(fs.promises.writeFile).mock.calls;
+  return { errors, warnings, filesUpdated, writes, written: writes[0]?.[1] };
+}
 
 describe('handleInitGT', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
     vi.resetAllMocks();
   });
 
-  // Common test data factories
-  const createMockPackageJson = (
-    overrides: Partial<{ type?: string }> = {}
-  ) => ({
-    type: 'module',
-    ...overrides,
+  const tsconfig = (module: string) => ({ compilerOptions: { module } });
+
+  // [description, file, code, package.json, tsconfig.json, statement added]
+  it.each<[string, string, string, PackageJson?, TsconfigJson?, string?]>([
+    [
+      'a file with ES imports',
+      'next.config.mjs',
+      `import { something } from 'other-package';\n${CONFIG}`,
+    ],
+    [
+      'a file with require calls',
+      'next.config.js',
+      `const other = require('other-module');\nconst nextConfig = {};\nmodule.exports = nextConfig;`,
+      { type: 'commonjs' },
+      undefined,
+      CJS_REQUIRE,
+    ],
+    [
+      'a .js file without package.json',
+      'next.config.js',
+      CONFIG,
+      undefined,
+      undefined,
+      CJS_REQUIRE,
+    ],
+    [
+      'a .js file in a commonjs package',
+      'next.config.js',
+      CONFIG,
+      { type: 'commonjs' },
+      undefined,
+      CJS_REQUIRE,
+    ],
+    [
+      'a .js file in a module package',
+      'next.config.js',
+      CONFIG,
+      { type: 'module' },
+    ],
+    ['a .ts file without tsconfig', 'next.config.ts', CONFIG],
+    [
+      'a .ts file with module commonjs',
+      'next.config.ts',
+      CONFIG,
+      undefined,
+      tsconfig('commonjs'),
+      CJS_REQUIRE,
+    ],
+    [
+      'a .ts file with module node',
+      'next.config.ts',
+      CONFIG,
+      undefined,
+      tsconfig('node'),
+      CJS_REQUIRE,
+    ],
+    [
+      'a .ts file with module esnext',
+      'next.config.ts',
+      CONFIG,
+      undefined,
+      tsconfig('esnext'),
+    ],
+    [
+      'a .ts file with module es2022',
+      'next.config.ts',
+      CONFIG,
+      undefined,
+      tsconfig('es2022'),
+    ],
+    [
+      'a .ts file with module es6',
+      'next.config.ts',
+      CONFIG,
+      undefined,
+      tsconfig('es6'),
+    ],
+    [
+      'a .ts file with module node16',
+      'next.config.ts',
+      CONFIG,
+      undefined,
+      tsconfig('node16'),
+    ],
+    [
+      'a .ts file with module nodenext',
+      'next.config.ts',
+      CONFIG,
+      undefined,
+      tsconfig('nodenext'),
+    ],
+    ['a file with another extension', 'next.config.mjs', CONFIG],
+  ])(
+    'adds the matching import to %s',
+    async (
+      _name,
+      file,
+      code,
+      packageJson,
+      tsconfigJson,
+      statement = ESM_IMPORT
+    ) => {
+      const filepath = `/test/${file}`;
+
+      const result = await initGT(filepath, code, packageJson, tsconfigJson);
+
+      expect(result.writes).toEqual([
+        [filepath, expect.stringContaining(statement)],
+      ]);
+      expect(result.filesUpdated).toEqual([filepath]);
+      expect(result.errors).toEqual([]);
+    }
+  );
+
+  it('warns and uses an ES import when the file mixes import and require', async () => {
+    const result = await initGT(
+      '/test/next.config.js',
+      `import { something } from 'other-package';
+       const other = require('other-module');
+       ${CONFIG}`
+    );
+
+    expect(result.warnings).toContain(
+      'Mixed ES6 imports and CommonJS require detected in /test/next.config.js. Defaulting to ES6 imports.'
+    );
+    expect(result.written).toContain(ESM_IMPORT);
   });
 
-  const createMockTsConfigJson = (
-    overrides: Partial<{ compilerOptions?: { module?: string } }> = {}
-  ) => ({
-    compilerOptions: {
-      module: 'esnext',
-      ...overrides.compilerOptions,
-    },
-    ...overrides,
+  it.each([
+    ['imported', `import { withGTConfig } from 'gt-next/config';`],
+    [
+      'required by destructuring',
+      `const { withGTConfig } = require('gt-next/config');`,
+    ],
+    [
+      'required by member access',
+      `const withGTConfig = require('gt-next/config').withGTConfig;`,
+    ],
+  ])(
+    'leaves the file alone when withGTConfig is already %s',
+    async (_name, statement) => {
+      const result = await initGT(
+        '/test/next.config.js',
+        `${statement}\nconst nextConfig = {};\nexport default withGTConfig(nextConfig, {});`
+      );
+
+      expect(result.writes).toEqual([]);
+      expect(result.filesUpdated).toEqual([]);
+    }
+  );
+
+  it.each([
+    ['an identifier', CONFIG, 'export default withGTConfig(nextConfig, {})'],
+    [
+      'an object literal',
+      'export default { reactStrictMode: true };',
+      'export default withGTConfig({ reactStrictMode: true }, {})',
+    ],
+    [
+      'a function declaration',
+      'export default function nextConfig() { return {}; }',
+      'export default withGTConfig(function nextConfig() {return {};}, {})',
+    ],
+    [
+      'a class declaration',
+      'export default class NextConfig {}',
+      'export default withGTConfig(class NextConfig {}, {})',
+    ],
+  ])(
+    'wraps a default export of %s with withGTConfig',
+    async (_name, code, wrapped) => {
+      const result = await initGT('/test/next.config.mjs', code);
+
+      expect(result.written).toContain(wrapped);
+      expect(result.errors).toEqual([]);
+    }
+  );
+
+  it('warns and exports an empty function for a TypeScript declare function', async () => {
+    const result = await initGT(
+      '/test/next.config.ts',
+      'export default function nextConfig(): any;'
+    );
+
+    expect(result.warnings).toContain(
+      'Found TypeScript declare function in /test/next.config.ts. Converting to empty function.'
+    );
+    expect(result.written).toContain(
+      'export default withGTConfig(function nextConfig() {}, {})'
+    );
   });
 
-  const createTestArrays = () => ({
-    errors: [] as string[],
-    warnings: [] as string[],
-    filesUpdated: [] as string[],
+  it('warns about an export that is not an object or a function', async () => {
+    const result = await initGT(
+      '/test/next.config.js',
+      'const nextConfig = "string export";\nexport default nextConfig;'
+    );
+
+    expect(result.warnings).toContain(
+      'Unexpected export type in /test/next.config.js. Next.js config should export an object or a function returning an object.'
+    );
+    expect(result.written).toContain(
+      'export default withGTConfig(nextConfig, {})'
+    );
   });
 
-  describe('ES6 imports detection', () => {
-    it('should add ES6 import when file uses ES6 imports', async () => {
-      const filepath = '/test/next.config.mjs';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson({ type: 'module' });
-
-      const code = `
-import { something } from 'other-package';
-
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-      expect(filesUpdated).toContain(filepath);
-      expect(errors).toHaveLength(0);
-      // May have warnings, so don't assert warnings length
-    });
-
-    it('should add CommonJS require when file uses CommonJS require', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson({ type: 'commonjs' });
-
-      const code = `
-const someOtherModule = require('other-module');
-
-const nextConfig = {
-  // config here
-};
-
-module.exports = nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining(
-          'const withGTConfig = require("gt-next/config").withGTConfig'
-        )
-      );
-      expect(filesUpdated).toContain(filepath);
-      expect(errors).toHaveLength(0);
-      expect(warnings).toHaveLength(0);
-    });
-
-    it('should warn and default to ES6 imports when mixed imports detected', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-import { something } from 'other-package';
-const someOtherModule = require('other-module');
-
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(warnings).toContain(
-        'Mixed ES6 imports and CommonJS require detected in /test/next.config.js. Defaulting to ES6 imports.'
-      );
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-    });
-  });
-
-  describe('TypeScript configuration detection', () => {
-    it('should use CommonJS for TypeScript files with commonjs module setting', async () => {
-      const filepath = '/test/next.config.ts';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const tsconfigJson = createMockTsConfigJson({
-        compilerOptions: { module: 'commonjs' },
-      });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(
-        filepath,
-        errors,
-        warnings,
-        filesUpdated,
-        undefined,
-        tsconfigJson
-      );
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining(
-          'const withGTConfig = require("gt-next/config").withGTConfig'
-        )
-      );
-    });
-
-    it('should use ES6 imports for TypeScript files with esnext module setting', async () => {
-      const filepath = '/test/next.config.ts';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const tsconfigJson = createMockTsConfigJson({
-        compilerOptions: { module: 'esnext' },
-      });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(
-        filepath,
-        errors,
-        warnings,
-        filesUpdated,
-        undefined,
-        tsconfigJson
-      );
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-    });
-  });
-
-  describe('JavaScript file type detection', () => {
-    it('should use CommonJS for .js files when package.json type is not module', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson({ type: 'commonjs' });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-module.exports = nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining(
-          'const withGTConfig = require("gt-next/config").withGTConfig'
-        )
-      );
-    });
-
-    it('should use ES6 imports for .js files when package.json type is module', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson({ type: 'module' });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-    });
-  });
-
-  describe('existing imports detection', () => {
-    it('should not add import if withGTConfig is already imported', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-import { withGTConfig } from 'gt-next/config';
-
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).not.toHaveBeenCalled();
-      expect(filesUpdated).toHaveLength(0);
-    });
-
-    it('should not add import if withGTConfig is already required (destructuring)', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-const { withGTConfig } = require('gt-next/config');
-
-const nextConfig = {
-  // config here
-};
-
-module.exports = withGTConfig(nextConfig, {});
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).not.toHaveBeenCalled();
-      expect(filesUpdated).toHaveLength(0);
-    });
-
-    it('should not add import if withGTConfig is already required (member access)', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-const withGTConfig = require('gt-next/config').withGTConfig;
-
-const nextConfig = {
-  // config here
-};
-
-module.exports = withGTConfig(nextConfig, {});
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).not.toHaveBeenCalled();
-      expect(filesUpdated).toHaveLength(0);
-    });
-  });
-
-  describe('export transformation', () => {
-    it('should wrap function declaration export with withGTConfig', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-function nextConfig() {
-  return {
-    // config here
-  };
-}
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('export default withGTConfig(nextConfig, {})')
-      );
-    });
-
-    it('should wrap class declaration export with withGTConfig', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-class NextConfig {
-  constructor() {
-    // config here
-  }
-}
-
-export default NextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('export default withGTConfig(NextConfig, {})')
-      );
-    });
-
-    it('should wrap object export with withGTConfig', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('export default withGTConfig(nextConfig, {})')
-      );
-    });
-
-    it('should warn and convert TypeScript declare function to empty function', async () => {
-      const filepath = '/test/next.config.ts';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-export default function nextConfig(): any;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(warnings).toContain(
-        'Found TypeScript declare function in /test/next.config.ts. Converting to empty function.'
-      );
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining(
-          'export default withGTConfig(function nextConfig() {}, {})'
-        )
-      );
-    });
-
-    it('should warn for unexpected export types', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-const nextConfig = "string export";
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(warnings).toContain(
-        'Unexpected export type in /test/next.config.js. Next.js config should export an object or a function returning an object.'
-      );
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('export default withGTConfig(nextConfig, {})')
-      );
-    });
-  });
-
-  describe('error handling', () => {
-    it('should handle parsing errors', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const invalidCode = `
-const nextConfig = {
-  // invalid syntax
-  unclosed: {
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidCode);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error parsing file /test/next.config.js:')
-      );
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0]).toContain('Failed to parse /test/next.config.js:');
-      expect(filesUpdated).toHaveLength(0);
-    });
-  });
-
-  describe('configuration fallback when no imports detected', () => {
-    it('should use CommonJS for .js files when no package.json provided', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining(
-          'const withGTConfig = require("gt-next/config").withGTConfig'
-        )
-      );
-    });
-
-    it('should use ES6 imports for .js files when package.json type is module', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson({ type: 'module' });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-    });
-
-    it('should use CommonJS for .js files when package.json type is not module', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson({ type: 'commonjs' });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-module.exports = nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining(
-          'const withGTConfig = require("gt-next/config").withGTConfig'
-        )
-      );
-    });
-
-    it('should default to ES6 imports for .ts files when no tsconfig provided', async () => {
-      const filepath = '/test/next.config.ts';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-    });
-
-    it('should use CommonJS for .ts files with node module setting', async () => {
-      const filepath = '/test/next.config.ts';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const tsconfigJson = createMockTsConfigJson({
-        compilerOptions: { module: 'node' },
-      });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(
-        filepath,
-        errors,
-        warnings,
-        filesUpdated,
-        undefined,
-        tsconfigJson
-      );
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining(
-          'const withGTConfig = require("gt-next/config").withGTConfig'
-        )
-      );
-    });
-
-    it('should use ES6 imports for .ts files with es2022 module setting', async () => {
-      const filepath = '/test/next.config.ts';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const tsconfigJson = createMockTsConfigJson({
-        compilerOptions: { module: 'es2022' },
-      });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(
-        filepath,
-        errors,
-        warnings,
-        filesUpdated,
-        undefined,
-        tsconfigJson
-      );
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-    });
-
-    it('should use ES6 imports for .ts files with node16 module setting', async () => {
-      const filepath = '/test/next.config.ts';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const tsconfigJson = createMockTsConfigJson({
-        compilerOptions: { module: 'node16' },
-      });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(
-        filepath,
-        errors,
-        warnings,
-        filesUpdated,
-        undefined,
-        tsconfigJson
-      );
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-    });
-
-    it('should use ES6 imports for .ts files with es6 module setting', async () => {
-      const filepath = '/test/next.config.ts';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const tsconfigJson = createMockTsConfigJson({
-        compilerOptions: { module: 'es6' },
-      });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(
-        filepath,
-        errors,
-        warnings,
-        filesUpdated,
-        undefined,
-        tsconfigJson
-      );
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-    });
-
-    it('should use ES6 imports for .ts files with nodenext module setting', async () => {
-      const filepath = '/test/next.config.ts';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const tsconfigJson = createMockTsConfigJson({
-        compilerOptions: { module: 'nodenext' },
-      });
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(
-        filepath,
-        errors,
-        warnings,
-        filesUpdated,
-        undefined,
-        tsconfigJson
-      );
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-    });
-
-    it('should default to ES6 imports for other file extensions', async () => {
-      const filepath = '/test/next.config.mjs';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated);
-
-      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
-        filepath,
-        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
-      );
-    });
-  });
-
-  describe('file mutation tracking', () => {
-    it('should add filepath to filesUpdated array when file is modified', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(filesUpdated).toContain(filepath);
-      expect(filesUpdated).toHaveLength(1);
-    });
-
-    it('should not add filepath to filesUpdated array when no changes made', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-import { withGTConfig } from 'gt-next/config';
-
-const nextConfig = {
-  // config here
-};
-
-export default withGTConfig(nextConfig, {});
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(filesUpdated).toHaveLength(0);
-    });
+  it('reports a file that cannot be parsed', async () => {
+    const result = await initGT(
+      '/test/next.config.js',
+      'const nextConfig = {\n  unclosed: {'
+    );
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('Error parsing file /test/next.config.js:')
+    );
+    expect(result.errors).toEqual([
+      expect.stringContaining('Failed to parse /test/next.config.js:'),
+    ]);
+    expect(result.writes).toEqual([]);
+    expect(result.filesUpdated).toEqual([]);
   });
 });

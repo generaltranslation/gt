@@ -110,6 +110,21 @@ describe('downloadFileBatch', () => {
     };
   };
 
+  const servedFile = (
+    overrides: Partial<CoreDownloadFileBatchResult['files'][number]> = {}
+  ): CoreDownloadFileBatchResult['files'][number] => ({
+    id: 'translation-1',
+    branchId: 'branch-1',
+    fileId: 'file-1',
+    versionId: 'version-1',
+    locale: 'en',
+    fileFormat: 'JSON',
+    data: 'content1',
+    fileName: 'file1.json',
+    metadata: {},
+    ...overrides,
+  });
+
   const createBatchedFiles = (
     count: number = 2,
     overrides: Partial<BatchedFiles[0]> = {}
@@ -214,17 +229,7 @@ describe('downloadFileBatch', () => {
   it('sorts the keys of GTJSON output files', async () => {
     const mockResponseData = createMockResponseData({
       files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
-          locale: 'en',
-          fileFormat: 'GTJSON' as FileFormat,
-          data: '{"z":1,"a":{"c":3,"b":2}}',
-          fileName: 'file1.json',
-          metadata: {},
-        },
+        servedFile({ fileFormat: 'GTJSON', data: '{"z":1,"a":{"c":3,"b":2}}' }),
       ],
       count: 1,
     });
@@ -250,19 +255,7 @@ describe('downloadFileBatch', () => {
 
   it('writes other JSON output files as downloaded', async () => {
     const mockResponseData = createMockResponseData({
-      files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
-          locale: 'en',
-          fileFormat: 'JSON' as FileFormat,
-          data: '{"z":1,"a":{"c":3,"b":2}}',
-          fileName: 'file1.json',
-          metadata: {},
-        },
-      ],
+      files: [servedFile({ data: '{"z":1,"a":{"c":3,"b":2}}' })],
       count: 1,
     });
     const files = createBatchedFiles(1);
@@ -281,19 +274,7 @@ describe('downloadFileBatch', () => {
 
   it('should create directories if they do not exist', async () => {
     const mockResponseData = createMockResponseData({
-      files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
-          locale: 'en',
-          fileFormat: 'JSON' as FileFormat,
-          data: 'content1',
-          fileName: 'file1.json',
-          metadata: {},
-        },
-      ],
+      files: [servedFile()],
       count: 1,
     });
     const files = createBatchedFiles(1, {
@@ -361,17 +342,7 @@ describe('downloadFileBatch', () => {
 
     const mockResponseData = createMockResponseData({
       files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
-          locale: 'en',
-          fileFormat: 'JSON' as FileFormat,
-          data: 'content1',
-          fileName: 'file1.json',
-          metadata: {},
-        },
+        servedFile(),
         {
           id: 'translation-unknown',
           branchId: 'branch-unknown',
@@ -405,19 +376,7 @@ describe('downloadFileBatch', () => {
     const fileTracker = createMockFileTracker(files);
 
     const mockResponseData = createMockResponseData({
-      files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
-          locale: 'en',
-          fileFormat: 'JSON' as FileFormat,
-          data: 'content1',
-          fileName: 'file1.json',
-          metadata: {},
-        },
-      ],
+      files: [servedFile()],
       count: 1,
     });
 
@@ -431,58 +390,6 @@ describe('downloadFileBatch', () => {
     );
 
     expect(result.successful).toHaveLength(1);
-    expect(result.failed).toHaveLength(1);
-  });
-
-  it('should retry on failure and succeed on second attempt', async () => {
-    const files = createBatchedFiles(1);
-    const fileTracker = createMockFileTracker(files);
-
-    const mockResponseData = createMockResponseData({
-      files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
-          locale: 'en',
-          fileFormat: 'JSON' as FileFormat,
-          data: 'content1',
-          fileName: 'file1.json',
-          metadata: {},
-        },
-      ],
-      count: 1,
-    });
-
-    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
-    setupFileSystemMocks();
-
-    const result = await downloadFileBatch(
-      fileTracker,
-      files,
-      createMockSettings()
-    );
-
-    expect(result.successful).toHaveLength(1);
-  });
-
-  it('should use default retry parameters', async () => {
-    const files = createBatchedFiles(1);
-    const fileTracker = createMockFileTracker(files);
-    const mockResponseData = createMockResponseData({
-      files: [],
-      count: 0,
-    });
-
-    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
-
-    const result = await downloadFileBatch(
-      fileTracker,
-      files,
-      createMockSettings()
-    );
-
     expect(result.failed).toHaveLength(1);
   });
 
@@ -506,40 +413,6 @@ describe('downloadFileBatch', () => {
     expect(result.failed).toHaveLength(0);
   });
 
-  it('should handle single file', async () => {
-    const files = createBatchedFiles(1);
-    const fileTracker = createMockFileTracker(files);
-
-    const mockResponseData = createMockResponseData({
-      files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
-          locale: 'en',
-          fileFormat: 'JSON' as FileFormat,
-          data: 'content1',
-          fileName: 'file1.json',
-          metadata: {},
-        },
-      ],
-      count: 1,
-    });
-
-    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
-    setupFileSystemMocks();
-
-    const result = await downloadFileBatch(
-      fileTracker,
-      files,
-      createMockSettings()
-    );
-
-    expect(result.successful).toHaveLength(1);
-    expect(result.failed).toHaveLength(0);
-  });
-
   it('stores relative output paths in the lockfile', async () => {
     const outputPath = nodePath.resolve('public/gt/es.json');
     const files = createBatchedFiles(1, {
@@ -556,17 +429,12 @@ describe('downloadFileBatch', () => {
     vi.mocked(findOrCreateEntry).mockReturnValue(lockEntry);
     vi.mocked(api.downloadFileBatch).mockResolvedValue({
       files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
+        servedFile({
           locale: 'es',
-          fileFormat: 'GTJSON' as FileFormat,
+          fileFormat: 'GTJSON',
           data: '{"hello":"Hola"}',
           fileName: 'es.json',
-          metadata: {},
-        },
+        }),
       ],
       count: 1,
     });
@@ -600,17 +468,12 @@ describe('downloadFileBatch', () => {
     vi.mocked(findOrCreateEntry).mockReturnValue(lockEntry);
     vi.mocked(api.downloadFileBatch).mockResolvedValue({
       files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
+        servedFile({
           locale: 'es',
-          fileFormat: 'GTJSON' as FileFormat,
+          fileFormat: 'GTJSON',
           data: '{"hello":"Hola"}',
           fileName: 'es.json',
-          metadata: {},
-        },
+        }),
       ],
       count: 1,
     });
@@ -640,17 +503,12 @@ describe('downloadFileBatch', () => {
 
       vi.mocked(api.downloadFileBatch).mockResolvedValue({
         files: [
-          {
-            id: 'translation-1',
-            branchId: 'branch-1',
-            fileId: 'file-1',
-            versionId: 'version-1',
+          servedFile({
             locale: 'es',
-            fileFormat: 'GTJSON' as FileFormat,
+            fileFormat: 'GTJSON',
             data: '{"hello":"Hola"}',
             fileName: 'es.json',
-            metadata: {},
-          },
+          }),
         ],
         count: 1,
       });
@@ -675,19 +533,7 @@ describe('downloadFileBatch', () => {
 
   it('should handle directory creation errors', async () => {
     const mockResponseData = createMockResponseData({
-      files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
-          locale: 'en',
-          fileFormat: 'JSON' as FileFormat,
-          data: 'content1',
-          fileName: 'file1.json',
-          metadata: {},
-        },
-      ],
+      files: [servedFile()],
       count: 1,
     });
     const files = createBatchedFiles(1, {
@@ -742,17 +588,11 @@ describe('downloadFileBatch', () => {
 
     vi.mocked(api.downloadFileBatch).mockResolvedValue({
       files: [
-        {
-          id: 'translation-1',
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
+        servedFile({
           locale: 'es',
-          fileFormat: 'JSON' as FileFormat,
           data: translatedPayload,
           fileName: 'docs.json',
-          metadata: {},
-        },
+        }),
       ],
       count: 1,
     });

@@ -1,14 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'fs';
 import localizeStaticUrls, {
   transformUrlPath,
   type StaticUrlSettings,
 } from '../localizeStaticUrls';
+import { createFileMapping } from '../../formats/files/fileMapping.js';
 
-const createSettings = (settings: StaticUrlSettings): StaticUrlSettings =>
-  settings;
-
-// Mock fs module
 vi.mock('fs', () => ({
   promises: {
     readFile: vi.fn(),
@@ -17,1481 +14,193 @@ vi.mock('fs', () => ({
   existsSync: vi.fn(),
 }));
 
-// Mock other dependencies
 vi.mock('../../formats/files/fileMapping.js', () => ({
   createFileMapping: vi.fn(),
 }));
 
-import { createFileMapping } from '../../formats/files/fileMapping.js';
+type Options = NonNullable<StaticUrlSettings['options']>;
+
+const SOURCE = 'test.mdx';
+const TARGET = 'ja/test.mdx';
+
+const DOCS: Options = { docsUrlPattern: '/docs/[locale]' };
+const DOCS_HIDDEN: Options = { ...DOCS, experimentalHideDefaultLocale: true };
+const ROOT: Options = { docsUrlPattern: '/[locale]' };
+const ROOT_HIDDEN: Options = { ...ROOT, experimentalHideDefaultLocale: true };
+
+/**
+ * Localizes one page and returns what was written, or null when the page was
+ * left untouched. The page is the translated copy for `locale`; `locale: 'en'`
+ * runs the default-locale pass over the source page instead.
+ */
+async function localize(
+  content: string,
+  options: Options = {},
+  {
+    locale = 'ja',
+    existingFiles,
+    mapping = {},
+  }: {
+    locale?: string;
+    /** Restricts the files on disk (paths relative to the working directory). */
+    existingFiles?: string[];
+    mapping?: Record<string, string>;
+  } = {}
+): Promise<string | null> {
+  vi.mocked(fs.promises.readFile).mockResolvedValue(content);
+  if (existingFiles) {
+    const existing = new Set([TARGET, ...existingFiles]);
+    vi.mocked(fs.existsSync).mockImplementation((p) => existing.has(String(p)));
+  }
+  vi.mocked(createFileMapping).mockReturnValue(
+    locale === 'en' ? {} : { [locale]: { [SOURCE]: TARGET, ...mapping } }
+  );
+
+  await localizeStaticUrls(
+    {
+      files: {
+        placeholderPaths: { mdx: ['[locale]/test.mdx'] },
+        resolvedPaths: { mdx: [SOURCE] },
+        transformPaths: {},
+      },
+      defaultLocale: 'en',
+      locales: ['en', locale],
+      options,
+    },
+    [locale]
+  );
+
+  const page = locale === 'en' ? SOURCE : TARGET;
+  const write = vi
+    .mocked(fs.promises.writeFile)
+    .mock.calls.find(([file]) => file === page);
+  return write ? String(write[1]) : null;
+}
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(fs.existsSync).mockReturnValue(true);
+});
 
 describe('localizeStaticUrls', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Mock existsSync to return true by default
-    vi.mocked(fs.existsSync).mockReturnValue(true);
+  it.each([
+    ['no files are configured', null],
+    [
+      'only the gt placeholder path exists',
+      { placeholderPaths: { gt: 'some-path' }, resolvedPaths: {} },
+    ],
+  ])('does nothing when %s', async (_name, files) => {
+    await localizeStaticUrls({
+      files,
+      defaultLocale: 'en',
+      locales: ['en', 'ja'],
+    } as StaticUrlSettings);
+
+    expect(createFileMapping).not.toHaveBeenCalled();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  describe('main function', () => {
-    it('should return early if no files are provided', async () => {
-      const settings = {
-        files: null,
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-
-      expect(createFileMapping).not.toHaveBeenCalled();
+  it('rewrites the md/mdx files of every locale, including the default-locale sources', async () => {
+    const written: Record<string, string> = {};
+    vi.mocked(createFileMapping).mockReturnValue({
+      ja: {
+        'file1.md': 'ja/file1.md',
+        'file2.mdx': 'ja/file2.mdx',
+        'file3.txt': 'ja/file3.txt',
+      },
+    });
+    vi.mocked(fs.promises.readFile).mockResolvedValue(
+      `[Link](/docs/guide) and <a href="/docs/en/api">API</a>`
+    );
+    vi.mocked(fs.promises.writeFile).mockImplementation(async (p, content) => {
+      written[String(p)] = String(content);
     });
 
-    it('should return early if only gt placeholder path exists', async () => {
-      const settings = {
-        files: {
-          placeholderPaths: { gt: 'some-path' },
-          resolvedPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-      };
+    await localizeStaticUrls({
+      files: {
+        placeholderPaths: { docs: '/docs' },
+        resolvedPaths: { md: ['file1.md'], mdx: ['file2.mdx'] },
+      },
+      defaultLocale: 'en',
+      locales: ['en', 'ja'],
+      options: DOCS,
+    } as unknown as StaticUrlSettings);
 
-      await localizeStaticUrls(createSettings(settings));
-
-      expect(createFileMapping).not.toHaveBeenCalled();
-    });
-
-    it('should process md/mdx files for localization', async () => {
-      const mockFileMapping = {
-        en: {},
-        ja: {
-          'file1.md': '/path/to/ja/file1.md',
-          'file2.mdx': '/path/to/ja/file2.mdx',
-          'file3.txt': '/path/to/ja/file3.txt', // Should be filtered out
-        },
-      };
-
-      const mockFileContent = `[Link](/docs/en/guide) and <a href="/docs/en/api">API</a>`;
-
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-      vi.mocked(fs.promises.readFile).mockResolvedValue(mockFileContent);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: { mdx: ['file1', 'file2'] },
-          transformPaths: {},
-          transformFormats: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-
-      expect(createFileMapping).toHaveBeenCalledWith(
-        { mdx: ['file1', 'file2'] },
-        { docs: '/docs' },
-        {},
-        {},
-        ['en', 'ja'],
-        'en'
-      );
-      expect(fs.promises.readFile).toHaveBeenCalledTimes(2); // Only md/mdx files
-      expect(fs.promises.writeFile).toHaveBeenCalledTimes(2);
+    expect(createFileMapping).toHaveBeenCalledWith(
+      { md: ['file1.md'], mdx: ['file2.mdx'] },
+      { docs: '/docs' },
+      {},
+      {},
+      ['en', 'ja'],
+      'en'
+    );
+    // Sources gain the default locale; translations swap it for their own.
+    const source = `[Link](/docs/en/guide) and <a href="/docs/en/api">API</a>`;
+    const translated = `[Link](/docs/guide) and <a href="/docs/ja/api">API</a>`;
+    expect(written).toEqual({
+      'file1.md': source,
+      'file2.mdx': source,
+      'ja/file1.md': translated,
+      'ja/file2.mdx': translated,
     });
   });
 
-  describe('markdown link localization', () => {
-    describe('with hideDefaultLocale = false', () => {
-      it('should replace default locale with target locale in markdown links', async () => {
-        const fileContent = `[Guide](/docs/en/guide) and [API](/docs/en/api)`;
-        const expected = `[Guide](/docs/ja/guide) and [API](/docs/ja/api)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle markdown links without trailing paths', async () => {
-        const fileContent = `[Docs](/docs/en)`;
-        const expected = `[Docs](/docs/ja)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
+  it('only rewrites the requested target locales', async () => {
+    vi.mocked(createFileMapping).mockReturnValue({
+      ja: { 'page.mdx': 'ja/page.mdx' },
+      fr: { 'page.mdx': 'fr/page.mdx' },
     });
+    vi.mocked(fs.promises.readFile).mockResolvedValue(`[Guide](/docs/guide)`);
 
-    describe('with hideDefaultLocale = true', () => {
-      it('should add target locale to markdown links when hideDefaultLocale is true', async () => {
-        const fileContent = `[Guide](/docs/guide) and [API](/docs/api)`;
-        const expected = `[Guide](/docs/ja/guide) and [API](/docs/ja/api)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-            experimentalHideDefaultLocale: true,
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should not modify already localized markdown links', async () => {
-        const fileContent = `[Guide](/docs/japanese/guide)`;
-        const expected = `[Guide](/docs/ja/japanese/guide)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-
-    it('should not duplicate target locale when hideDefaultLocale=true and target already present', async () => {
-      const fileContent = `[Guide](/docs/ja/guide)`;
-      const expected = `[Guide](/docs/ja/guide)`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-        // Should not write when no changes
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
+    await localizeStaticUrls(
+      {
         files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
+          placeholderPaths: { mdx: ['[locale]/page.mdx'] },
+          resolvedPaths: { mdx: ['page.mdx'] },
         },
         defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: { docsUrlPattern: '/docs/[locale]' },
-      };
+        locales: ['en', 'ja', 'fr'],
+        options: DOCS_HIDDEN,
+      } as unknown as StaticUrlSettings,
+      ['fr']
+    );
 
-      await localizeStaticUrls(createSettings(settings), ['ja']);
-
-      // If no changes detected, writeFile may not be called
-      // Ensure the content remains unchanged
-      expect(vi.mocked(fs.promises.readFile)).toHaveBeenCalled();
-    });
-
-    it('should treat absolute URLs with baseDomain as idempotent when already localized', async () => {
-      const fileContent = `<a href="https://example.com/docs/ja/guide">Guide</a>`;
-      const expected = `<a href="https://example.com/docs/ja/guide">Guide</a>`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-          baseDomain: 'https://example.com',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings), ['ja']);
-      expect(vi.mocked(fs.promises.readFile)).toHaveBeenCalled();
-    });
-
-    it('should respect exclude patterns and remain idempotent', async () => {
-      const fileContent = `[Admin](/docs/ja/admin/settings)`;
-      const expected = `[Admin](/docs/ja/admin/settings)`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-          excludeStaticUrls: ['/docs/[locale]/admin/**'],
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings), ['ja']);
-      expect(vi.mocked(fs.promises.readFile)).toHaveBeenCalled();
-    });
+    expect(vi.mocked(fs.promises.writeFile).mock.calls).toEqual([
+      ['fr/page.mdx', `[Guide](/docs/fr/guide)`],
+    ]);
   });
 
-  describe('href attribute localization', () => {
-    describe('with hideDefaultLocale = false', () => {
-      it('should replace default locale with target locale in href attributes', async () => {
-        const fileContent = `<a href="/docs/en/guide">Guide</a> and <a href="/docs/en/api">API</a>`;
-        const expected = `<a href="/docs/ja/guide">Guide</a> and <a href="/docs/ja/api">API</a>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle href attributes without trailing paths', async () => {
-        const fileContent = `<a href="/docs/en">Docs</a>`;
-        const expected = `<a href="/docs/ja">Docs</a>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: false,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle complex href attributes with query parameters and fragments', async () => {
-        const fileContent = `<a href="/docs/en/guide?tab=api#section">Guide</a>`;
-        const expected = `<a href="/docs/ja/guide?tab=api#section">Guide</a>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-
-    describe('with hideDefaultLocale = true', () => {
-      it('should add target locale to href attributes when hideDefaultLocale is true', async () => {
-        const fileContent = `<a href="/docs/guide">Guide</a> and <a href="/docs/api">API</a>`;
-        const expected = `<a href="/docs/ja/guide">Guide</a> and <a href="/docs/ja/api">API</a>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle href attributes without trailing paths', async () => {
-        const fileContent = `<a href="/docs">Docs</a>`;
-        const expected = `<a href="/docs/ja">Docs</a>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should not modify already localized href attributes', async () => {
-        const fileContent = `<a href="/docs/japanese/guide">Guide</a>`;
-        const expected = `<a href="/docs/ja/japanese/guide">Guide</a>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-  });
-
-  describe('mixed content localization', () => {
-    it('should localize both markdown links and href attributes in the same content', async () => {
-      const fileContent = `
+  describe('link syntaxes', () => {
+    it.each([
+      [
+        'markdown links',
+        `[Guide](/docs/en/guide) and [Docs](/docs/en)`,
+        `[Guide](/docs/ja/guide) and [Docs](/docs/ja)`,
+      ],
+      [
+        'html anchors, keeping queries and fragments',
+        `<a href="/docs/en/guide?tab=api#section">Guide</a> and <a href="/docs/en">Docs</a>`,
+        `<a href="/docs/ja/guide?tab=api#section">Guide</a> and <a href="/docs/ja">Docs</a>`,
+      ],
+      [
+        'markdown links and anchors in the same page, keeping surrounding newlines',
+        `
 [Markdown Link](/docs/en/guide)
 
 <a href="/docs/en/api">HTML Link</a>
 
 More content with [another link](/docs/en/tutorial) and <a href="/docs/en/reference">reference</a>.
-`;
-      const expected = `
+`,
+        `
 [Markdown Link](/docs/ja/guide)
 
 <a href="/docs/ja/api">HTML Link</a>
 
 More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/reference">reference</a>.
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-  });
-
-  describe('multiple docsUrlPatterns', () => {
-    /** Localizes one translated page into ja and returns what was written. */
-    const localize = async (
-      fileContent: string,
-      docsUrlPattern: string | string[]
-    ): Promise<string | undefined> => {
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(createFileMapping).mockReturnValue({
-        ja: { 'test.mdx': '/path/test.mdx' },
-      });
-      await localizeStaticUrls(
-        createSettings({
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: { mdx: ['test.mdx'] },
-            transformPaths: {},
-            transformFormats: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: { docsUrlPattern, experimentalHideDefaultLocale: true },
-        })
-      );
-      const written = vi.mocked(fs.promises.writeFile).mock.calls[0];
-      return written?.[1] as string | undefined;
-    };
-
-    it('localizes links under every pattern', async () => {
-      const content = await localize(
-        `[Guide](/docs/guide) and <a href="/ai/docs/mcp/intro">MCP</a>`,
-        ['/docs/[locale]', '/ai/docs/[locale]']
-      );
-
-      expect(content).toBe(
-        `[Guide](/docs/ja/guide) and <a href="/ai/docs/ja/mcp/intro">MCP</a>`
-      );
-    });
-
-    it('leaves links that match no pattern alone', async () => {
-      const content = await localize(
-        `[Guide](/docs/guide) and [Blog](/blog/post)`,
-        ['/docs/[locale]', '/ai/docs/[locale]']
-      );
-
-      expect(content).toBe(`[Guide](/docs/ja/guide) and [Blog](/blog/post)`);
-    });
-
-    it('localizes each link with its longest matching pattern', async () => {
-      // /docs/x falls under both patterns; /docs/[locale] must win, and a link
-      // it leaves alone (already localized) must not fall through to /[locale]
-      const content = await localize(
-        `[A](/docs/guide) [B](/docs/ja/guide) [C](/pricing)`,
-        ['/[locale]', '/docs/[locale]']
-      );
-
-      expect(content).toBe(
-        `[A](/docs/ja/guide) [B](/docs/ja/guide) [C](/ja/pricing)`
-      );
-    });
-
-    it('picks the pattern from the path, ignoring queries and fragments', async () => {
-      // /docs?tab=api must select /docs/[locale], not fall back to /[locale]
-      const content = await localize(
-        `[A](/docs?tab=api) [B](/docs#intro) [C](/docs/guide?tab=api)`,
-        ['/[locale]', '/docs/[locale]']
-      );
-
-      expect(content).toBe(
-        `[A](/docs?tab=api) [B](/docs#intro) [C](/docs/ja/guide?tab=api)`
-      );
-    });
-
-    it('treats a single pattern the same as a one-item list', async () => {
-      const fileContent = `[Guide](/docs/guide) and [MCP](/ai/docs/mcp)`;
-
-      const single = await localize(fileContent, '/docs/[locale]');
-      vi.mocked(fs.promises.writeFile).mockClear();
-      const list = await localize(fileContent, ['/docs/[locale]']);
-
-      expect(single).toBe(`[Guide](/docs/ja/guide) and [MCP](/ai/docs/mcp)`);
-      expect(list).toBe(single);
-    });
-  });
-
-  describe('exclude parameter functionality', () => {
-    describe('with hideDefaultLocale = false', () => {
-      it('should exclude markdown links matching exact paths', async () => {
-        const fileContent = `[Guide](/docs/en/guide) and [Images](/docs/en/images) and [API](/docs/en/api)`;
-        const expected = `[Guide](/docs/ja/guide) and [Images](/docs/en/images) and [API](/docs/ja/api)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: false,
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: ['/docs/en/images'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should exclude href attributes matching exact paths', async () => {
-        const fileContent = `<a href="/docs/en/guide">Guide</a> and <a href="/docs/en/images">Images</a> and <a href="/docs/en/api">API</a>`;
-        const expected = `<a href="/docs/ja/guide">Guide</a> and <a href="/docs/en/images">Images</a> and <a href="/docs/ja/api">API</a>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: false,
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: ['/docs/en/images'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should exclude paths matching glob patterns', async () => {
-        const fileContent = `[Guide](/docs/en/guide) and [Images](/docs/en/images/logo.png) and [Snippets](/docs/en/snippets/code.js)`;
-        const expected = `[Guide](/docs/ja/guide) and [Images](/docs/en/images/logo.png) and [Snippets](/docs/en/snippets/code.js)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: false,
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: ['/docs/en/images/**', '/docs/en/snippets/**'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle [locale] placeholder in exclude patterns', async () => {
-        const fileContent = `[Guide](/docs/en/guide) and [Images](/docs/en/images/logo.png)`;
-        const expected = `[Guide](/docs/ja/guide) and [Images](/docs/en/images/logo.png)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: ['/docs/[locale]/images/**'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-
-    describe('with hideDefaultLocale = true', () => {
-      it('should exclude markdown links matching exact paths', async () => {
-        const fileContent = `[Guide](/docs/guide) and [Images](/docs/images) and [API](/docs/api)`;
-        const expected = `[Guide](/docs/ja/guide) and [Images](/docs/images) and [API](/docs/ja/api)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: ['/docs/images/**'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should exclude href attributes matching exact paths', async () => {
-        const fileContent = `<a href="/docs/guide">Guide</a> and <a href="/docs/images">Images</a> and <a href="/docs/api">API</a>`;
-        const expected = `<a href="/docs/ja/guide">Guide</a> and <a href="/docs/images">Images</a> and <a href="/docs/ja/api">API</a>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: ['/docs/images/**'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should exclude paths matching glob patterns', async () => {
-        const fileContent = `[Guide](/docs/guide) and [Images](/docs/images/logo.png) and [Snippets](/docs/snippets/code.js)`;
-        const expected = `[Guide](/docs/ja/guide) and [Images](/docs/images/logo.png) and [Snippets](/docs/snippets/code.js)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: ['/docs/images/**', '/docs/snippets/**'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle [locale] placeholder in exclude patterns with hideDefaultLocale', async () => {
-        const fileContent = `[Guide](/docs/guide) and [Images](/docs/images/logo.png)`;
-        const expected = `[Guide](/docs/ja/guide) and [Images](/docs/images/logo.png)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: ['/docs/images/**'],
-            experimentalHideDefaultLocale: true,
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-
-    describe('mixed content with excludes', () => {
-      it('should handle both markdown and href exclusions in same content', async () => {
-        const fileContent = `
-[Guide](/docs/en/guide) - should localize
-[Images](/docs/en/images/photo.jpg) - should exclude
-<a href="/docs/en/api">API</a> - should localize
-<a href="/docs/en/snippets/example.js">Snippet</a> - should exclude
-`;
-        const expected = `
-[Guide](/docs/ja/guide) - should localize
-[Images](/docs/en/images/photo.jpg) - should exclude
-<a href="/docs/ja/api">API</a> - should localize
-<a href="/docs/en/snippets/example.js">Snippet</a> - should exclude
-`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: ['/docs/en/images/**', '/docs/en/snippets/**'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-
-    describe('edge cases for excludes', () => {
-      it('should work when exclude array is empty', async () => {
-        const fileContent = `[Guide](/docs/en/guide)`;
-        const expected = `[Guide](/docs/ja/guide)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: [],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should work when exclude parameter is undefined', async () => {
-        const fileContent = `[Guide](/docs/en/guide)`;
-        const expected = `[Guide](/docs/ja/guide)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-            // excludeStaticUrls not provided
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle complex glob patterns', async () => {
-        const fileContent = `
-[Image1](/docs/en/images/photos/photo1.jpg)
-[Image2](/docs/en/images/icons/icon.svg)
-[Image3](/docs/en/assets/logo.png)
-[Guide](/docs/en/guide)
-`;
-        const expected = `
-[Image1](/docs/en/images/photos/photo1.jpg)
-[Image2](/docs/en/images/icons/icon.svg)
-[Image3](/docs/en/assets/logo.png)
-[Guide](/docs/ja/guide)
-`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-            excludeStaticUrls: ['/docs/[locale]/{images,assets}/**'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-  });
-
-  describe('basic /[locale] pattern functionality', () => {
-    describe('with hideDefaultLocale = false', () => {
-      it('should replace default locale with target locale using /[locale] pattern', async () => {
-        const fileContent = `[Guide](/en/guide) and [API](/en/api)`;
-        const expected = `[Guide](/ja/guide) and [API](/ja/api)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle href attributes with /[locale] pattern', async () => {
-        const fileContent = `<a href="/en/guide">Guide</a> and <a href="/en/api">API</a>`;
-        const expected = `<a href="/ja/guide">Guide</a> and <a href="/ja/api">API</a>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-
-    describe('with hideDefaultLocale = true', () => {
-      it('should add target locale using /[locale] pattern when hideDefaultLocale is true', async () => {
-        const fileContent = `[Guide](/guide) and [API](/api)`;
-        const expected = `[Guide](/ja/guide) and [API](/ja/api)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle href attributes with /[locale] pattern when hideDefaultLocale is true', async () => {
-        const fileContent = `<a href="/guide">Guide</a> and <a href="/api">API</a>`;
-        const expected = `<a href="/ja/guide">Guide</a> and <a href="/ja/api">API</a>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-
-    describe('exclude functionality with /[locale] pattern', () => {
-      it('should exclude paths with /[locale] pattern and [locale] placeholder excludes', async () => {
-        const fileContent = `[Guide](/en/guide) and [Images](/en/images/logo.png)`;
-        const expected = `[Guide](/ja/guide) and [Images](/en/images/logo.png)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/[locale]',
-            excludeStaticUrls: ['/[locale]/images/**'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should include paths with /[locale] pattern when hideDefaultLocale is true when locale path is specified', async () => {
-        const fileContent = `[Guide](/guide) and [Images](/images/logo.png)`;
-        const expected = `[Guide](/ja/guide) and [Images](/ja/images/logo.png)`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/[locale]',
-            excludeStaticUrls: ['/[locale]/images/**'],
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle content with no matching links', async () => {
-      const fileContent = `
-Some content without any matching links.
-[External link](https://example.com)
-<a href="https://external.com">External</a>
-`;
-      const expected = fileContent; // Should remain unchanged
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-
-    it('should handle special characters in pattern', async () => {
-      const fileContent = `[Guide](/api-docs/en/guide)`;
-      const expected = `[Guide](/api-docs/ja/guide)`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/api-docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/api-docs/[locale]',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-
-    it('should handle pattern without leading slash', async () => {
-      const fileContent = `[Guide](/docs/en/guide)`;
-      const expected = `[Guide](/docs/ja/guide)`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: 'docs/[locale]', // No leading slash
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-
-    it('should use default pattern when docsUrlPattern is not provided', async () => {
-      const fileContent = `[Guide](/en/guide)`;
-      const expected = `[Guide](/ja/guide)`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          // docsUrlPattern not provided - should default to '/[locale]'
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-
-    it('should work with different target locales', async () => {
-      const fileContent = `[Guide](/docs/en/guide)`;
-
-      const testLocales = [
-        { locale: 'fr', expected: `[Guide](/docs/fr/guide)` },
-        { locale: 'de', expected: `[Guide](/docs/de/guide)` },
-        { locale: 'zh-CN', expected: `[Guide](/docs/zh-CN/guide)` },
-      ];
-
-      for (const { locale, expected } of testLocales) {
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          [locale]: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', locale],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      }
-    });
-  });
-
-  describe('JSX component href attribute processing', () => {
-    describe('with hideDefaultLocale = false', () => {
-      it('should replace default locale in JSX component href attributes', async () => {
-        const fileContent = `<Card title="Start here" icon="rocket" href="/docs/en/quickstart" horizontal>
-  Follow our quickstart guide.
-</Card>`;
-        const expected = `<Card title="Start here" icon="rocket" href="/docs/ja/quickstart" horizontal>
-  Follow our quickstart guide.
-</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle multiple Card components with different href patterns', async () => {
-        const fileContent = `<Columns cols={2}>
+`,
+      ],
+      [
+        'nested JSX components',
+        `<Columns cols={2}>
   <Card title="Edit locally" icon="pen-to-square" href="/docs/en/development">
     Edit your docs locally.
   </Card>
@@ -1499,12 +208,8 @@ Some content without any matching links.
   <Card title="Customize your site" icon="palette" href="/docs/en/essentials/settings">
     Customize the design.
   </Card>
-
-  <Card title="API documentation" icon="terminal" href="/docs/en/api-reference/introduction">
-    Auto-generate API docs.
-  </Card>
-</Columns>`;
-        const expected = `<Columns cols={2}>
+</Columns>`,
+        `<Columns cols={2}>
   <Card title="Edit locally" icon="pen-to-square" href="/docs/ja/development">
     Edit your docs locally.
   </Card>
@@ -1512,76 +217,20 @@ Some content without any matching links.
   <Card title="Customize your site" icon="palette" href="/docs/ja/essentials/settings">
     Customize the design.
   </Card>
-
-  <Card title="API documentation" icon="terminal" href="/docs/ja/api-reference/introduction">
-    Auto-generate API docs.
-  </Card>
-</Columns>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle JSX components with single quotes in href', async () => {
-        const fileContent = `<Card title='Start here' href='/docs/en/quickstart'>
+</Columns>`,
+      ],
+      [
+        'single-quoted JSX attributes (normalized to double quotes)',
+        `<Card title='Start here' href='/docs/en/quickstart'>
   Follow our guide.
-</Card>`;
-        const expected = `<Card title="Start here" href="/docs/ja/quickstart">
+</Card>`,
+        `<Card title="Start here" href="/docs/ja/quickstart">
   Follow our guide.
-</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle JSX components mixed with markdown links and regular href attributes', async () => {
-        const fileContent = `---
+</Card>`,
+      ],
+      [
+        'pages with frontmatter and imports, which are left alone',
+        `---
 title: "Introduction"
 ---
 
@@ -1595,12 +244,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
 <Card title="Start here" icon="rocket" href="/docs/en/quickstart" horizontal>
   Follow our quickstart guide.
-</Card>
-
-<Card title="Advanced" href="/docs/en/advanced">
-  Advanced topics.
-</Card>`;
-        const expected = `---
+</Card>`,
+        `---
 title: "Introduction"
 ---
 
@@ -1614,152 +259,42 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
 <Card title="Start here" icon="rocket" href="/docs/ja/quickstart" horizontal>
   Follow our quickstart guide.
-</Card>
-
-<Card title="Advanced" href="/docs/ja/advanced">
-  Advanced topics.
-</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
+</Card>`,
+      ],
+      // The "Auth0 patch": URLs nested inside JSX expressions (component props,
+      // conditional expressions) never surface as mdast nodes.
+      [
+        'an href nested in JSX inside a component prop',
+        `<ParamField body="error" type={<span><a href="/docs/en/interfaces/Error">Error</a></span>}>An error</ParamField>`,
+        `<ParamField body="error" type={<span><a href="/docs/ja/interfaces/Error">Error</a></span>}>An error</ParamField>`,
+      ],
+      [
+        'an href inside a standalone JSX expression',
+        `{showBeta && <a href="/docs/en/beta">Beta</a>}`,
+        `{showBeta && <a href="/docs/ja/beta">Beta</a>}`,
+      ],
+      [
+        'a bare string expression on a url attribute',
+        `<Card href={"/docs/en/x"}>Card</Card>`,
+        `<Card href={"/docs/ja/x"}>Card</Card>`,
+      ],
+      [
+        'static urls only, leaving dynamically computed ones verbatim',
+        `<a href="/docs/en/real">Real</a> <a href={"/docs/" + locale + "/x"}>Dyn</a>`,
+        `<a href="/docs/ja/real">Real</a> <a href={"/docs/" + locale + "/x"}>Dyn</a>`,
+      ],
+      [
+        // src usually points at shared assets that would 404 with a locale.
+        'href but not asset attributes like src',
+        `<a href="/docs/en/guide">G</a> <img src="/docs/en/images/x.png" />`,
+        `<a href="/docs/ja/guide">G</a> <img src="/docs/en/images/x.png" />`,
+      ],
+    ])('localizes %s', async (_name, content, expected) => {
+      expect(await localize(content, DOCS)).toBe(expected);
     });
 
-    describe('with hideDefaultLocale = true', () => {
-      it('should add target locale to JSX component href attributes when hideDefaultLocale is true', async () => {
-        const fileContent = `<Card title="Start here" icon="rocket" href="/docs/quickstart" horizontal>
-  Follow our quickstart guide.
-</Card>`;
-        const expected = `<Card title="Start here" icon="rocket" href="/docs/ja/quickstart" horizontal>
-  Follow our quickstart guide.
-</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should replace default locale with target locale when href contains default locale', async () => {
-        const fileContent = `<Card title="Start here" icon="rocket" href="/docs/quickstart" horizontal>
-  Follow our quickstart guide.
-</Card>`;
-        const expected = `<Card title="Start here" icon="rocket" href="/docs/ja/quickstart" horizontal>
-  Follow our quickstart guide.
-</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should not modify already localized JSX component href attributes with hideDefaultLocale = true', async () => {
-        const fileContent = `<Card title="Start here" icon="rocket" href="/docs/quickstart" horizontal>
-  Follow our quickstart guide.
-</Card>`;
-        const expected = `<Card title="Start here" icon="rocket" href="/docs/ja/quickstart" horizontal>
-  Follow our quickstart guide.
-</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle multiple identical href attributes in raw JSX strings correctly', async () => {
-        // Test with raw JSX as it appears in MDX files
-        const fileContent = `Some content before.
+    it('localizes every occurrence of a repeated href', async () => {
+      const content = `Some content before.
 
 {/* JSX code block */}
 
@@ -1768,406 +303,113 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
   <button href="/docs/quickstart">Second Button</button>
   <span href="/docs/quickstart">Third Span</span>
 </div>`;
-        const expected = `Some content before.
 
-{/* JSX code block */}
+      expect(await localize(content, DOCS_HIDDEN)).toBe(
+        content.replaceAll('/docs/quickstart', '/docs/ja/quickstart')
+      );
+    });
 
-<div>
-  <a href="/docs/ja/quickstart">First Link</a>
-  <button href="/docs/ja/quickstart">Second Button</button>
-  <span href="/docs/ja/quickstart">Third Span</span>
-</div>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle multiple identical href attributes in JSX correctly', async () => {
-        const fileContent = `<Card href="/docs/quickstart">First Card</Card>
-<Button href="/docs/quickstart">Second Button</Button>
-<Link href="/docs/quickstart">Third Link</Link>`;
-        const expected = `<Card href="/docs/ja/quickstart">First Card</Card>
-<Button href="/docs/ja/quickstart">Second Button</Button>
-<Link href="/docs/ja/quickstart">Third Link</Link>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
+    it.each([
+      [
+        'a closing tag with no opening tag',
+        `</Card>\n\n[Guide](/docs/en/guide)`,
+      ],
+      [
+        'an unclosed JSX tag',
+        `<Card title="Test" href="/docs/en/guide">\n\n[Guide](/docs/en/guide)`,
+      ],
+      [
+        'mismatched JSX tags',
+        `<Card title="Test">\n  <Button href="/docs/en/guide">Guide</Button>\n</NotCard>`,
+      ],
+      [
+        'an invalid JSX attribute',
+        `<Card title=invalid-attribute href="/docs/en/guide">\n  Content here\n</Card>`,
+      ],
+    ])('leaves a page with %s untouched', async (_name, content) => {
+      expect(await localize(content, DOCS)).toBeNull();
     });
   });
 
-  describe('default locale file processing', () => {
-    describe('with hideDefaultLocale = false', () => {
-      it('should process default locale files and add default locale to URLs without it', async () => {
-        const fileContent = `[Guide](/docs/guide) and <Card href="/docs/quickstart">Start</Card>`;
-        const expected = `[Guide](/docs/en/guide) and <Card href="/docs/en/quickstart">Start</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          // Only check the content for the default locale file (en)
-          if (path === '/path/en/test.mdx') {
-            expect(content).toBe(expected);
-          }
-          return Promise.resolve();
-        });
-
-        // Simulate scenario where default locale is not in fileMapping (not being translated)
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/ja/test.mdx' },
-          // No 'en' key - default locale files processed separately
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {
-              mdx: ['/path/en/test.mdx'], // Source file exists for default locale
-            },
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should not modify URLs that already have default locale', async () => {
-        const fileContent = `[Guide](/docs/en/guide) and <Card href="/docs/en/quickstart">Start</Card>`;
-        const expected = fileContent; // Should remain unchanged
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          // Only check the content for the default locale file (en)
-          if (path === '/path/en/test.mdx') {
-            expect(content).toBe(expected);
-          }
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/ja/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {
-              mdx: ['/path/en/test.mdx'],
-            },
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-
-    describe('with hideDefaultLocale = true', () => {
-      it('should process default locale files and remove default locale from URLs', async () => {
-        const fileContent = `[Guide](/docs/en/guide) and <Card href="/docs/en/quickstart">Start</Card>`;
-        const expected = `[Guide](/docs/guide) and <Card href="/docs/quickstart">Start</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          // Only check the content for the default locale file (en)
-          if (path === '/path/en/test.mdx') {
-            expect(content).toBe(expected);
-          }
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/ja/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {
-              mdx: ['/path/en/test.mdx'],
-            },
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should not modify URLs that already lack default locale', async () => {
-        const fileContent = `[Guide](/docs/guide) and <Card href="/docs/quickstart">Start</Card>`;
-        const expected = fileContent; // Should remain unchanged
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          // Only check the content for the default locale file (en)
-          if (path === '/path/en/test.mdx') {
-            expect(content).toBe(expected);
-          }
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/ja/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {
-              mdx: ['/path/en/test.mdx'],
-            },
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-  });
-
-  describe('enhanced hideDefaultLocale scenarios', () => {
-    describe('non-default locale with hideDefaultLocale = true', () => {
-      it('should handle URLs without any locale by adding target locale with hideDefaultLocale = true', async () => {
-        const fileContent = `[Guide](/docs/guide) and <Card href="/docs/quickstart">Start</Card>`;
-        const expected = `[Guide](/docs/ja/guide) and <Card href="/docs/ja/quickstart">Start</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/ja/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should replace default locale with target locale when URL contains default locale', async () => {
-        const fileContent = `[Guide](/docs/guide) and <Card href="/docs/quickstart">Start</Card>`;
-        const expected = `[Guide](/docs/ja/guide) and <Card href="/docs/ja/quickstart">Start</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/ja/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalHideDefaultLocale: true,
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should handle exact matches by adding target locale', async () => {
-        const fileContent = `[Docs](/docs) and <Card href="/docs">Documentation</Card>`;
-        const expected = `[Docs](/docs/ja) and <Card href="/docs/ja">Documentation</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/ja/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-            experimentalHideDefaultLocale: true,
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-
-    describe('non-default locale with hideDefaultLocale = false', () => {
-      it('should handle URLs without any locale by adding target locale with hideDefaultLocale = false', async () => {
-        const fileContent = `[Guide](/docs/en/guide) and <Card href="/docs/en/quickstart">Start</Card>`;
-        const expected = `[Guide](/docs/ja/guide) and <Card href="/docs/ja/quickstart">Start</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/ja/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-
-      it('should replace existing default locale with target locale', async () => {
-        const fileContent = `[Guide](/docs/en/guide) and <Card href="/docs/en/quickstart">Start</Card>`;
-        const expected = `[Guide](/docs/ja/guide) and <Card href="/docs/ja/quickstart">Start</Card>`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'test.mdx': '/path/ja/test.mdx' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            docsUrlPattern: '/docs/[locale]',
-          },
-        };
-
-        await localizeStaticUrls(createSettings(settings));
-      });
-    });
-  });
-
-  describe('debugging real-world scenario', () => {
-    it('should handle /[locale] pattern with hideDefaultLocale=true like imports do', async () => {
-      const fileContent = `---
+  describe('locale placement', () => {
+    it.each<[string, Options, string, string | null, string?]>([
+      [
+        'inserts the locale when the default locale is hidden',
+        DOCS_HIDDEN,
+        `[Guide](/docs/guide), <a href="/docs">Docs</a>, <Card href="/docs/japanese/guide">x</Card>`,
+        `[Guide](/docs/ja/guide), <a href="/docs/ja">Docs</a>, <Card href="/docs/ja/japanese/guide">x</Card>`,
+      ],
+      [
+        'never duplicates a locale that is already present',
+        DOCS_HIDDEN,
+        `[Guide](/docs/ja/guide)`,
+        null,
+      ],
+      [
+        'leaves links without the default locale alone when it is shown',
+        DOCS,
+        `[Guide](/docs/ja/guide) and [Other](/docs/guide)`,
+        null,
+      ],
+      [
+        'supports a root pattern',
+        ROOT,
+        `[Guide](/en/guide) and <a href="/en/api">API</a>`,
+        `[Guide](/ja/guide) and <a href="/ja/api">API</a>`,
+      ],
+      [
+        'supports a root pattern with the default locale hidden',
+        ROOT_HIDDEN,
+        `[Guide](/guide) and <a href="/api">API</a>`,
+        `[Guide](/ja/guide) and <a href="/ja/api">API</a>`,
+      ],
+      [
+        'defaults to the root pattern',
+        {},
+        `[Guide](/en/guide)`,
+        `[Guide](/ja/guide)`,
+      ],
+      [
+        'accepts a pattern without a leading slash',
+        { docsUrlPattern: 'docs/[locale]' },
+        `[Guide](/docs/en/guide)`,
+        `[Guide](/docs/ja/guide)`,
+      ],
+      [
+        'accepts special characters in the pattern',
+        { docsUrlPattern: '/api-docs/[locale]' },
+        `[Guide](/api-docs/en/guide)`,
+        `[Guide](/api-docs/ja/guide)`,
+      ],
+      [
+        'uses region-qualified target locales verbatim',
+        DOCS,
+        `[Guide](/docs/en/guide)`,
+        `[Guide](/docs/zh-CN/guide)`,
+        'zh-CN',
+      ],
+      [
+        'skips pages that never mention the pattern',
+        DOCS,
+        `[External link](https://example.com) and [Guide](/guide)`,
+        null,
+      ],
+      [
+        'leaves external links alone',
+        ROOT_HIDDEN,
+        `[Guide](/guide) [External](https://example.com/guide) <a href="https://external.com">External</a>`,
+        `[Guide](/ja/guide) [External](https://example.com/guide) <a href="https://external.com">External</a>`,
+      ],
+      [
+        // Relative markdown links stay relative to the page; a relative href
+        // on a component is prefixed like a root-relative one.
+        'prefixes relative component hrefs but not relative markdown links',
+        ROOT_HIDDEN,
+        `---
 title: "Introducción"
-description: "Bienvenido al nuevo hogar de tu documentación"
 ---
+
+[Inicio](quickstart)
 
 <Card title="Comience aquí" icon="rocket" href="quickstart" horizontal>
   Siga nuestra guía de inicio rápido en tres pasos.
@@ -2175,12 +417,12 @@ description: "Bienvenido al nuevo hogar de tu documentación"
 
 <Card title="Edita localmente" icon="pen-to-square" href="/development">
   Edita tu documentación de forma local.
-</Card>`;
-
-      const expected = `---
+</Card>`,
+        `---
 title: "Introducción"
-description: "Bienvenido al nuevo hogar de tu documentación"
 ---
+
+[Inicio](quickstart)
 
 <Card title="Comience aquí" icon="rocket" href="es/quickstart" horizontal>
   Siga nuestra guía de inicio rápido en tres pasos.
@@ -2188,963 +430,329 @@ description: "Bienvenido al nuevo hogar de tu documentación"
 
 <Card title="Edita localmente" icon="pen-to-square" href="/es/development">
   Edita tu documentación de forma local.
-</Card>`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        es: { 'test.mdx': '/path/es/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['es'],
-        options: {
-          experimentalHideDefaultLocale: true,
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-  });
-
-  describe('invalid MDX error handling', () => {
-    it('should return original content unchanged when MDX starts with closing tag', async () => {
-      const invalidFileContent = `</Card>
-[Guide](/docs/en/guide)
-<Card href="/docs/en/quickstart">Start</Card>`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
+</Card>`,
+        'es',
+      ],
+    ])('%s', async (_name, options, content, expected, locale) => {
+      expect(await localize(content, options, { locale })).toBe(expected);
     });
 
-    it('should return original content unchanged when MDX has unclosed JSX tags', async () => {
-      const invalidFileContent = `<Card title="Test" href="/docs/en/guide">
-[Guide](/docs/en/guide)
-<!-- Missing closing tag for Card -->`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
+    it.each<[string, Options, string, string | null]>([
+      [
+        'adds the default locale to source pages when it is shown',
+        DOCS,
+        `[Guide](/docs/guide) and <Card href="/docs/quickstart">Start</Card>`,
+        `[Guide](/docs/en/guide) and <Card href="/docs/en/quickstart">Start</Card>`,
+      ],
+      [
+        'leaves source pages that already show the default locale alone',
+        DOCS,
+        `[Guide](/docs/en/guide) and <Card href="/docs/en/quickstart">Start</Card>`,
+        null,
+      ],
+      [
+        'removes the default locale from source pages when it is hidden',
+        {
+          ...ROOT_HIDDEN,
+          excludeStaticUrls: ['/images/**/*', '/logo/**/*'],
         },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-
-    it('should return original content unchanged when MDX has nested unclosed tags', async () => {
-      const invalidFileContent = `<Card>
-  <Button href="/docs/en/guide">
-    <Icon name="test"
-  </Button>
-</Card>
-
-[Guide](/docs/en/guide)`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-
-    it('should return original content unchanged when MDX has mismatched JSX tags', async () => {
-      const invalidFileContent = `<Card title="Test">
-  <Button href="/docs/en/guide">Guide</Button>
-</NotCard>
-
-[Another Link](/docs/en/api)`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-
-    it('should return original content unchanged when MDX has invalid JSX attributes', async () => {
-      const invalidFileContent = `<Card title=invalid-attribute href="/docs/en/guide">
-  Content here
-</Card>
-
-[Valid Link](/docs/en/api)`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        ja: { 'test.mdx': '/path/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['en', 'ja'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-  });
-
-  it('should handle default locale processing with experimentalHideDefaultLocale=true', async () => {
-    // Mock file system operations for default locale processing
-    const mockFileMapping = {};
-    vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-    const defaultLocaleContent = `# Default Locale Content
+        `# Default Locale Content
 
 [Link](/en/guide)
+
 <Card href="/en/api">API</Card>
-[Another](/en/docs)`;
 
-    vi.mocked(fs.promises.readFile).mockResolvedValue(defaultLocaleContent);
-
-    vi.mocked(fs.promises.writeFile).mockResolvedValue();
-
-    const settings = {
-      files: {
-        placeholderPaths: { docs: '/docs' },
-        resolvedPaths: {
-          mdx: ['default.mdx'],
-        },
-        transformPaths: {},
-      },
-      defaultLocale: 'en',
-      locales: ['en'],
-      options: {
-        docsUrlPattern: '/[locale]',
-        excludeStaticUrls: ['/images/**/*', '/logo/**/*'],
-        experimentalHideDefaultLocale: true,
-      },
-    };
-
-    await localizeStaticUrls(createSettings(settings));
-
-    const expectedContent = `# Default Locale Content
+[Another](/en/docs)`,
+        `# Default Locale Content
 
 [Link](/guide)
-<Card href="/api">API</Card>
-[Another](/docs)`;
 
-    // Verify that writeFile was called with the correct transformed content
-    expect(fs.promises.writeFile).toHaveBeenCalledWith(
-      'default.mdx',
-      expectedContent
+<Card href="/api">API</Card>
+
+[Another](/docs)`,
+      ],
+      [
+        'leaves source pages that already hide the default locale alone',
+        DOCS_HIDDEN,
+        `[Guide](/docs/guide) and <Card href="/docs/quickstart">Start</Card>`,
+        null,
+      ],
+    ])('%s', async (_name, options, content, expected) => {
+      expect(await localize(content, options, { locale: 'en' })).toBe(expected);
+    });
+  });
+
+  describe('multiple docsUrlPatterns', () => {
+    it.each<[string, string | string[], string, string]>([
+      [
+        'localizes links under every pattern',
+        ['/docs/[locale]', '/ai/docs/[locale]'],
+        `[Guide](/docs/guide) and <a href="/ai/docs/mcp/intro">MCP</a> and [Blog](/blog/post)`,
+        `[Guide](/docs/ja/guide) and <a href="/ai/docs/ja/mcp/intro">MCP</a> and [Blog](/blog/post)`,
+      ],
+      [
+        // /docs/x falls under both patterns; /docs/[locale] must win, and a
+        // link it leaves alone (already localized) must not fall through to
+        // /[locale]
+        'localizes each link with its longest matching pattern',
+        ['/[locale]', '/docs/[locale]'],
+        `[A](/docs/guide) [B](/docs/ja/guide) [C](/pricing)`,
+        `[A](/docs/ja/guide) [B](/docs/ja/guide) [C](/ja/pricing)`,
+      ],
+      [
+        // /docs?tab=api must select /docs/[locale], not fall back to /[locale]
+        'picks the pattern from the path, ignoring queries and fragments',
+        ['/[locale]', '/docs/[locale]'],
+        `[A](/docs?tab=api) [B](/docs#intro) [C](/docs/guide?tab=api)`,
+        `[A](/docs?tab=api) [B](/docs#intro) [C](/docs/ja/guide?tab=api)`,
+      ],
+      [
+        'treats a one-item list like a single pattern',
+        ['/docs/[locale]'],
+        `[Guide](/docs/guide) and [MCP](/ai/docs/mcp)`,
+        `[Guide](/docs/ja/guide) and [MCP](/ai/docs/mcp)`,
+      ],
+    ])('%s', async (_name, docsUrlPattern, content, expected) => {
+      expect(
+        await localize(content, {
+          docsUrlPattern,
+          experimentalHideDefaultLocale: true,
+        })
+      ).toBe(expected);
+    });
+  });
+
+  describe('excludeStaticUrls', () => {
+    it.each<[string, Options, string, string]>([
+      [
+        'skips markdown links and hrefs matching an exact path',
+        { ...DOCS, excludeStaticUrls: ['/docs/en/images'] },
+        `[Guide](/docs/en/guide) and [Images](/docs/en/images) and <a href="/docs/en/images">Images</a>`,
+        `[Guide](/docs/ja/guide) and [Images](/docs/en/images) and <a href="/docs/en/images">Images</a>`,
+      ],
+      [
+        'resolves [locale] in globs to the default locale',
+        { ...DOCS, excludeStaticUrls: ['/docs/[locale]/{images,assets}/**'] },
+        `[Image1](/docs/en/images/photos/photo1.jpg) [Image2](/docs/en/assets/logo.png) <a href="/docs/en/guide">Guide</a>`,
+        `[Image1](/docs/en/images/photos/photo1.jpg) [Image2](/docs/en/assets/logo.png) <a href="/docs/ja/guide">Guide</a>`,
+      ],
+      [
+        'matches unprefixed paths when the default locale is hidden',
+        {
+          ...DOCS_HIDDEN,
+          excludeStaticUrls: ['/docs/images/**', '/docs/snippets/**'],
+        },
+        `[Guide](/docs/guide) [Images](/docs/images) [Logo](/docs/images/logo.png) <a href="/docs/snippets/code.js">Snippet</a>`,
+        `[Guide](/docs/ja/guide) [Images](/docs/images) [Logo](/docs/images/logo.png) <a href="/docs/snippets/code.js">Snippet</a>`,
+      ],
+      [
+        // [locale] resolves to /en/images/**, which no hidden-locale URL has.
+        'does not match [locale] globs against hidden-locale paths',
+        { ...ROOT_HIDDEN, excludeStaticUrls: ['/[locale]/images/**'] },
+        `[Guide](/guide) and [Images](/images/logo.png)`,
+        `[Guide](/ja/guide) and [Images](/ja/images/logo.png)`,
+      ],
+    ])('%s', async (_name, options, content, expected) => {
+      expect(await localize(content, options)).toBe(expected);
+    });
+  });
+
+  describe('baseDomain', () => {
+    const baseDomain = 'https://example.com';
+
+    it.each<[string, Options, string, string | null]>([
+      [
+        'localizes absolute URLs on the base domain',
+        { ...DOCS, baseDomain },
+        `[Docs](https://example.com/docs/en/guide) [Images](https://example.com/images/photo.jpg) <Card href="https://example.com/docs/en/api">API</Card>`,
+        `[Docs](https://example.com/docs/fr/guide) [Images](https://example.com/images/photo.jpg) <Card href="https://example.com/docs/fr/api">API</Card>`,
+      ],
+      [
+        'inserts the locale when the default locale is hidden',
+        { ...ROOT_HIDDEN, baseDomain },
+        `[Guide](https://example.com/docs/guide) and <Card href="https://example.com/docs/api">API</Card>`,
+        `[Guide](https://example.com/fr/docs/guide) and <Card href="https://example.com/fr/docs/api">API</Card>`,
+      ],
+      [
+        'leaves already localized URLs alone',
+        { ...DOCS, baseDomain },
+        `<a href="https://example.com/docs/fr/guide">Guide</a>`,
+        null,
+      ],
+      [
+        // A failed transformation must not write a literal "null" into the URL.
+        'leaves URLs outside the pattern or without the default locale alone',
+        { ...DOCS, baseDomain },
+        `[External](https://example.com/other/page) and [Valid](https://example.com/docs/guide)`,
+        null,
+      ],
+    ])('%s', async (_name, options, content, expected) => {
+      expect(await localize(content, options, { locale: 'fr' })).toBe(expected);
+    });
+  });
+
+  describe('skipUntranslatedPages', () => {
+    const skip: Options = {
+      ...ROOT_HIDDEN,
+      experimentalLocalizeStaticUrls: { skipUntranslatedPages: true },
+    };
+
+    it.each<
+      [string, Options, string, string[], Record<string, string>, string | null]
+    >([
+      [
+        'keeps links to untranslated pages on the default locale when it is hidden',
+        skip,
+        '[Sandbox](/products/sandbox#write_file) <Card href="/products/sandbox">x</Card> [Guide](/guide)',
+        ['products/sandbox.mdx', 'guide.mdx', 'ja/guide.mdx'],
+        { 'guide.mdx': 'ja/guide.mdx' },
+        '[Sandbox](/products/sandbox#write_file) <Card href="/products/sandbox">x</Card> [Guide](/ja/guide)',
+      ],
+      [
+        'keeps links to untranslated pages on the default locale when it is shown',
+        { ...skip, experimentalHideDefaultLocale: false },
+        '[Sandbox](/en/products/sandbox) and [Guide](/en/guide)',
+        ['en/products/sandbox.mdx', 'en/guide.mdx', 'ja/guide.md'],
+        { 'en/guide.mdx': 'ja/guide.md' },
+        '[Sandbox](/en/products/sandbox) and [Guide](/ja/guide)',
+      ],
+      [
+        'still prefixes links to untranslated pages when the option is off',
+        { ...skip, experimentalLocalizeStaticUrls: true },
+        '[Sandbox](/products/sandbox)',
+        ['products/sandbox.mdx'],
+        {},
+        '[Sandbox](/ja/products/sandbox)',
+      ],
+      [
+        'keeps links to pages whose translation has not been written yet',
+        skip,
+        '[Guide](/guide)',
+        ['guide.mdx'],
+        { 'guide.mdx': 'ja/guide.mdx' },
+        null,
+      ],
+      [
+        'resolves folder links through index pages',
+        skip,
+        '[Products](/products/)',
+        ['products/index.mdx'],
+        {},
+        null,
+      ],
+      [
+        // Docusaurus stores translations outside a locale-prefixed copy of the URL.
+        'localizes links whose translation lives at a transformed output path',
+        skip,
+        '[Guide](/docs/guide)',
+        [
+          'docs/guide.mdx',
+          'i18n/ja/docusaurus-plugin-content-docs/current/guide.mdx',
+        ],
+        {
+          'docs/guide.mdx':
+            'i18n/ja/docusaurus-plugin-content-docs/current/guide.mdx',
+        },
+        '[Guide](/ja/docs/guide)',
+      ],
+      [
+        'localizes links to translations that exist outside the file mapping',
+        skip,
+        '[Guide](/guide)',
+        ['guide.mdx', 'ja/guide.mdx'],
+        {},
+        '[Guide](/ja/guide)',
+      ],
+      [
+        'still localizes links whose source is not a page file, such as generated OpenAPI pages',
+        skip,
+        '[Create key](/api-reference/create-key)',
+        [],
+        {},
+        '[Create key](/ja/api-reference/create-key)',
+      ],
+    ])(
+      '%s',
+      async (_name, options, content, existingFiles, mapping, expected) => {
+        expect(
+          await localize(content, options, { existingFiles, mapping })
+        ).toBe(expected);
+      }
     );
   });
-});
 
-describe('baseDomain', () => {
-  it('should handle baseDomain', async () => {
-    const fileContent = `[Guide](https://example.com/docs/guide) and <Card href="https://example.com/docs/quickstart">Start</Card>`;
-    const expected = `[Guide](https://example.com/fr/docs/guide) and <Card href="https://example.com/fr/docs/quickstart">Start</Card>`;
+  describe('configured attributes', () => {
+    const content = [
+      '<Banner href="/guide" href2="/guide" src="/images/a.png" />',
+      '',
+      '<Banner href2={"/guide"} />',
+      '',
+      '<Banner buttons={<a href2="/guide">Guide</a>} />',
+    ].join('\n');
 
-    vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue();
-
-    const mockFileMapping = {
-      fr: {
-        'default.mdx': '/path/fr/default.mdx',
-      },
-    };
-    vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-    const settings = {
-      files: {
-        placeholderPaths: { docs: '/docs' },
-        resolvedPaths: {
-          mdx: ['default.mdx'],
-        },
-        transformPaths: {},
-      },
-      defaultLocale: 'en',
-      locales: ['fr'],
-      options: {
-        docsUrlPattern: '/[locale]',
-        excludeStaticUrls: [],
-        baseDomain: 'https://example.com',
-      },
-    };
-
-    await localizeStaticUrls(createSettings(settings));
-
-    vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-    vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-      expect(content).toBe(expected);
-      return Promise.resolve();
-    });
-  });
-
-  describe('baseDomain edge cases', () => {
-    it('should not transform URLs that do not match pattern even with baseDomain', async () => {
-      const fileContent = `[Guide](https://example.com/images/logo.png) and [API](https://example.com/assets/icon.svg)`;
-      const expected = fileContent; // Should remain unchanged since /images and /assets don't match /docs pattern
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        fr: { 'test.mdx': '/path/fr/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['fr'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-          baseDomain: 'https://example.com',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
+    it('localizes only href by default', async () => {
+      expect(
+        await localize(content, {
+          ...ROOT_HIDDEN,
+          experimentalLocalizeStaticUrls: true,
+        })
+      ).toBe(content.replace('href="/guide"', 'href="/ja/guide"'));
     });
 
-    it('should handle baseDomain with hideDefaultLocale=true', async () => {
-      const fileContent = `[Guide](https://example.com/docs/guide) and <Card href="https://example.com/docs/api">API</Card>`;
-      const expected = `[Guide](https://example.com/fr/docs/guide) and <Card href="https://example.com/fr/docs/api">API</Card>`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(expected);
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        fr: { 'test.mdx': '/path/fr/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['fr'],
-        options: {
-          docsUrlPattern: '/[locale]',
-          baseDomain: 'https://example.com',
-          experimentalHideDefaultLocale: true,
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-
-    it('should not add literal null to baseDomain URLs when transformation fails', async () => {
-      const fileContent = `[External](https://example.com/other/page) and [Valid](https://example.com/docs/guide)`;
-      const expected = `[External](https://example.com/other/page) and [Valid](https://example.com/docs/guide)`; // Should remain unchanged when transformation fails
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(expected);
-        expect(content).not.toContain('null'); // Ensure no literal 'null' strings
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        fr: { 'test.mdx': '/path/fr/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['fr'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-          baseDomain: 'https://example.com',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
-    });
-
-    it('should handle multiple baseDomain URLs with mixed transformable/non-transformable paths', async () => {
-      const fileContent = `
-[Docs](https://example.com/docs/en/guide)
-[Images](https://example.com/images/photo.jpg)
-<Card href="https://example.com/docs/en/api">API</Card>
-<a href="https://example.com/assets/script.js">Script</a>
-`;
-      const expected = `
-[Docs](https://example.com/docs/fr/guide)
-[Images](https://example.com/images/photo.jpg)
-<Card href="https://example.com/docs/fr/api">API</Card>
-<a href="https://example.com/assets/script.js">Script</a>
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(expected);
-        expect(content).not.toContain('null');
-        return Promise.resolve();
-      });
-
-      const mockFileMapping = {
-        fr: { 'test.mdx': '/path/fr/test.mdx' },
-      };
-      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-      const settings = {
-        files: {
-          placeholderPaths: { docs: '/docs' },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['fr'],
-        options: {
-          docsUrlPattern: '/docs/[locale]',
-          baseDomain: 'https://example.com',
-        },
-      };
-
-      await localizeStaticUrls(createSettings(settings));
+    it('localizes attributes matching configured names or globs', async () => {
+      expect(
+        await localize(content, {
+          ...ROOT_HIDDEN,
+          experimentalLocalizeStaticUrls: { attributes: ['href*'] },
+        })
+      ).toBe(content.replaceAll('"/guide"', '"/ja/guide"'));
     });
   });
 });
 
 describe('transformUrlPath', () => {
-  describe('when targetLocale equals defaultLocale', () => {
-    describe('with hideDefaultLocale = false', () => {
-      it('should add default locale to URLs without locale', () => {
-        const result = transformUrlPath(
-          '/docs/guide',
-          '/docs/',
+  // [url, patternHead, targetLocale, hideDefaultLocale, expected]
+  it.each<[string, string, string, boolean, string | null]>([
+    // Default locale, shown: insert it
+    ['/docs/guide', '/docs/', 'en', false, '/docs/en/guide'],
+    ['/docs', '/docs/', 'en', false, '/docs/en'],
+    ['/docs/en/guide', '/docs/', 'en', false, null],
+    ['/other/guide', '/docs/', 'en', false, null],
+    // Default locale, hidden: remove it
+    ['/docs/en/guide', '/docs/', 'en', true, '/docs/guide'],
+    ['/docs/en', '/docs/', 'en', true, '/docs'],
+    ['/docs/guide', '/docs/', 'en', true, null],
+    // Target locale, default shown: replace the default locale
+    ['/docs/en/guide', '/docs/', 'ja', false, '/docs/ja/guide'],
+    ['/docs/en', '/docs/', 'ja', false, '/docs/ja'],
+    ['/docs/en/guide', '/docs/', 'zh-CN', false, '/docs/zh-CN/guide'],
+    ['/docs/en/guide?tab=api', '/docs/', 'ja', false, '/docs/ja/guide?tab=api'],
+    ['/docs/en/guide#section', '/docs/', 'ja', false, '/docs/ja/guide#section'],
+    ['/docs', '/docs/', 'ja', false, null],
+    ['/docs/', '/docs/', 'ja', false, null],
+    ['/docs/guide', '/docs', 'ja', false, null],
+    ['/other/guide', '/docs/', 'ja', false, null],
+    ['/guide', '/', 'ja', false, null],
+    ['/guide', '', 'ja', false, null],
+    // Target locale, default hidden: insert the target locale
+    ['/docs/guide', '/docs/', 'ja', true, '/docs/ja/guide'],
+    ['/docs', '/docs/', 'ja', true, '/docs/ja'],
+    ['/docs/ja/guide', '/docs/', 'ja', true, null],
+    // Segments that merely start with a locale code are not locales
+    ['/docs/english/guide', '/docs/', 'ja', true, '/docs/ja/english/guide'],
+    ['/docs/japanese', '/docs/', 'ja', true, '/docs/ja/japanese'],
+  ])(
+    '%s under %j for %s (hidden default: %s) -> %s',
+    (url, patternHead, targetLocale, hideDefaultLocale, expected) => {
+      expect(
+        transformUrlPath(
+          url,
+          patternHead,
+          targetLocale,
           'en',
-          'en',
-          false
-        );
-        expect(result).toBe('/docs/en/guide');
-      });
-
-      it('should add default locale to exact pattern match with hideDefaultLocale = false', () => {
-        const result = transformUrlPath('/docs', '/docs/', 'en', 'en', false);
-        expect(result).toBe('/docs/en');
-      });
-
-      it('should return null if URL already has default locale', () => {
-        const result = transformUrlPath(
-          '/docs/en/guide',
-          '/docs/',
-          'en',
-          'en',
-          false
-        );
-        expect(result).toBeNull();
-      });
-
-      it('should return null if URL does not match pattern', () => {
-        const result = transformUrlPath(
-          '/other/guide',
-          '/docs/',
-          'en',
-          'en',
-          false
-        );
-        expect(result).toBeNull();
-      });
-    });
-
-    describe('with hideDefaultLocale = true', () => {
-      it('should remove default locale from URLs that have it', () => {
-        const result = transformUrlPath(
-          '/docs/en/guide',
-          '/docs/',
-          'en',
-          'en',
-          true
-        );
-        expect(result).toBe('/docs/guide');
-      });
-
-      it('should remove default locale from URLs ending with it', () => {
-        const result = transformUrlPath('/docs/en', '/docs/', 'en', 'en', true);
-        expect(result).toBe('/docs');
-      });
-
-      it('should return null if URL does not have default locale', () => {
-        const result = transformUrlPath(
-          '/docs/guide',
-          '/docs/',
-          'en',
-          'en',
-          true
-        );
-        expect(result).toBeNull();
-      });
-    });
-  });
-
-  describe('when targetLocale differs from defaultLocale', () => {
-    describe('with hideDefaultLocale = false', () => {
-      it('should replace default locale with target locale with hideDefaultLocale = false', () => {
-        const result = transformUrlPath(
-          '/docs/en/guide',
-          '/docs/',
-          'ja',
-          'en',
-          false
-        );
-        expect(result).toBe('/docs/ja/guide');
-      });
-
-      it('should replace default locale at end of URL', () => {
-        const result = transformUrlPath(
-          '/docs/en',
-          '/docs/',
-          'ja',
-          'en',
-          false
-        );
-        expect(result).toBe('/docs/ja');
-      });
-
-      it('should add target locale to URLs without locale with hideDefaultLocale = false', () => {
-        const result = transformUrlPath(
-          '/docs/en/guide',
-          '/docs/',
-          'ja',
-          'en',
-          false
-        );
-        expect(result).toBe('/docs/ja/guide');
-      });
-
-      it('should add target locale to exact pattern match with hideDefaultLocale = false', () => {
-        const result = transformUrlPath('/docs', '/docs/', 'ja', 'en', false);
-        expect(result).toBeNull();
-      });
-
-      it('should return null if URL does not match pattern', () => {
-        const result = transformUrlPath(
-          '/other/guide',
-          '/docs/',
-          'ja',
-          'en',
-          false
-        );
-        expect(result).toBeNull();
-      });
-    });
-
-    describe('with hideDefaultLocale = true', () => {
-      it('should replace default locale with target locale', () => {
-        const result = transformUrlPath(
-          '/docs/english/guide',
-          '/docs/',
-          'ja',
-          'en',
-          true
-        );
-        expect(result).toBe('/docs/ja/english/guide');
-      });
-
-      it('should replace default locale at end of URL', () => {
-        const result = transformUrlPath(
-          '/docs/english',
-          '/docs/',
-          'ja',
-          'en',
-          true
-        );
-        expect(result).toBe('/docs/ja/english');
-      });
-
-      it('should add target locale to URLs without locale with hideDefaultLocale = true', () => {
-        const result = transformUrlPath(
-          '/docs/guide',
-          '/docs/',
-          'ja',
-          'en',
-          true
-        );
-        expect(result).toBe('/docs/ja/guide');
-      });
-
-      it('should add target locale to exact pattern match', () => {
-        const result = transformUrlPath('/docs', '/docs/', 'ja', 'en', true);
-        expect(result).toBe('/docs/ja');
-      });
-
-      it('should return null if URL already has target locale', () => {
-        const result = transformUrlPath(
-          '/docs/japanese/guide',
-          '/docs/',
-          'ja',
-          'en',
-          true
-        );
-        expect(result).toBe('/docs/ja/japanese/guide');
-      });
-
-      it('should return null if URL equals target locale pattern', () => {
-        const result = transformUrlPath(
-          '/docs/japanese',
-          '/docs/',
-          'ja',
-          'en',
-          true
-        );
-        expect(result).toBe('/docs/ja/japanese');
-      });
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle pattern without trailing slash', () => {
-      const result = transformUrlPath(
-        '/docs/guide',
-        '/docs',
-        'ja',
-        'en',
-        false
-      );
-      expect(result).toBeNull();
-    });
-
-    it('should handle root pattern with trailing slash', () => {
-      const result = transformUrlPath('/guide', '/', 'ja', 'en', false);
-      expect(result).toBeNull();
-    });
-
-    it('should handle root pattern without trailing slash', () => {
-      const result = transformUrlPath('/guide', '', 'ja', 'en', false);
-      expect(result).toBeNull();
-    });
-
-    it('should handle complex locales like zh-CN', () => {
-      const result = transformUrlPath(
-        '/docs/en/guide',
-        '/docs/',
-        'zh-CN',
-        'en',
-        false
-      );
-      expect(result).toBe('/docs/zh-CN/guide');
-    });
-
-    it('should handle URLs with query parameters', () => {
-      const result = transformUrlPath(
-        '/docs/en/guide?tab=api',
-        '/docs/',
-        'ja',
-        'en',
-        false
-      );
-      expect(result).toBe('/docs/ja/guide?tab=api');
-    });
-
-    it('should handle URLs with fragments', () => {
-      const result = transformUrlPath(
-        '/docs/en/guide#section',
-        '/docs/',
-        'ja',
-        'en',
-        false
-      );
-      expect(result).toBe('/docs/ja/guide#section');
-    });
-
-    it('should handle empty path after pattern head', () => {
-      const result = transformUrlPath('/docs/', '/docs/', 'ja', 'en', false);
-      expect(result).toBeNull();
-    });
-  });
-
-  // The "Auth0 patch": URLs nested inside JSX expressions (component props,
-  // conditional expressions) that never surface as mdast nodes.
-  describe('urls inside JSX expressions', () => {
-    const runOnContent = async (fileContent: string): Promise<string> => {
-      let written = '';
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-      vi.mocked(fs.promises.writeFile).mockImplementation((_path, content) => {
-        written = content as string;
-        return Promise.resolve();
-      });
-      vi.mocked(createFileMapping).mockReturnValue({
-        ja: { 'test.mdx': '/path/test.mdx' },
-      });
-      await localizeStaticUrls(
-        createSettings({
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: {},
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: { docsUrlPattern: '/docs/[locale]' },
-        })
-      );
-      return written;
-    };
-
-    it('localizes an href nested in arbitrary JSX inside a component prop', async () => {
-      const content = `<ParamField body="error" type={<span><a href="/docs/en/interfaces/Error">Error</a></span>}>An error</ParamField>`;
-      const written = await runOnContent(content);
-      expect(written).toContain('/docs/ja/interfaces/Error');
-      expect(written).not.toContain('/docs/en/interfaces/Error');
-    });
-
-    it('localizes an href inside a standalone JSX expression', async () => {
-      const content = `{showBeta && <a href="/docs/en/beta">Beta</a>}`;
-      const written = await runOnContent(content);
-      expect(written).toContain('/docs/ja/beta');
-      expect(written).not.toContain('/docs/en/beta');
-    });
-
-    it('localizes a bare string url expression on a url attribute: href={"/docs/en/x"}', async () => {
-      const content = `<Card href={"/docs/en/x"}>Card</Card>`;
-      const written = await runOnContent(content);
-      expect(written).toContain('/docs/ja/x');
-      expect(written).not.toContain('/docs/en/x');
-    });
-
-    it('leaves dynamically-computed urls untouched', async () => {
-      // A real link forces a write; the dynamic href in the same file must be
-      // preserved verbatim (static localization can't resolve computed URLs).
-      const content = `<a href="/docs/en/real">Real</a> <a href={"/docs/" + locale + "/x"}>Dyn</a>`;
-      const written = await runOnContent(content);
-      expect(written).toContain('/docs/ja/real');
-      expect(written).toContain('"/docs/" + locale + "/x"');
-    });
-
-    it('does not localize non-link asset attributes like src', async () => {
-      // href is localized; src (an asset attr, not in the allowlist) is left
-      // alone so shared, locale-agnostic assets don't get a broken locale prefix.
-      const content = `<a href="/docs/en/guide">G</a> <img src="/docs/en/images/x.png" />`;
-      const written = await runOnContent(content);
-      expect(written).toContain('/docs/ja/guide');
-      expect(written).toContain('/docs/en/images/x.png');
-    });
-  });
-});
-
-describe('localizeStaticUrls links to pages outside translation scope', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  // Paths are relative to the working directory, like file mapping entries.
-  const runWithFiles = async (
-    fileContent: string,
-    existingFiles: string[],
-    mapping: Record<string, string>,
-    options: Record<string, unknown>
-  ): Promise<string | undefined> => {
-    const existing = new Set(['ja/test.mdx', ...existingFiles]);
-    vi.mocked(fs.existsSync).mockImplementation((p) => existing.has(String(p)));
-    vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-    let written: string | undefined;
-    vi.mocked(fs.promises.writeFile).mockImplementation((_p, content) => {
-      written = String(content);
-      return Promise.resolve();
-    });
-    vi.mocked(createFileMapping).mockReturnValue({
-      ja: { 'test.mdx': 'ja/test.mdx', ...mapping },
-    });
-
-    await localizeStaticUrls(
-      createSettings({
-        files: {
-          placeholderPaths: { mdx: ['[locale]/test.mdx'] },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['ja'],
-        options: {
-          experimentalLocalizeStaticUrls: { skipUntranslatedPages: true },
-          ...options,
-        } as StaticUrlSettings['options'],
-      }),
-      ['ja']
-    );
-    return written;
-  };
-
-  it('keeps links to untranslated pages on the default locale when the default locale is hidden', async () => {
-    const written = await runWithFiles(
-      '[Sandbox](/products/sandbox#write_file) <Card href="/products/sandbox">x</Card> [Guide](/guide)',
-      ['products/sandbox.mdx', 'guide.mdx', 'ja/guide.mdx'],
-      { 'guide.mdx': 'ja/guide.mdx' },
-      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
-    );
-
-    expect(written).toContain('[Sandbox](/products/sandbox#write_file)');
-    expect(written).toContain('href="/products/sandbox"');
-    expect(written).toContain('[Guide](/ja/guide)');
-  });
-
-  it('still prefixes links to untranslated pages unless skipUntranslatedPages is set', async () => {
-    const written = await runWithFiles(
-      '[Sandbox](/products/sandbox)',
-      ['products/sandbox.mdx'],
-      {},
-      {
-        docsUrlPattern: '/[locale]',
-        experimentalHideDefaultLocale: true,
-        experimentalLocalizeStaticUrls: true,
-      }
-    );
-
-    expect(written).toContain('[Sandbox](/ja/products/sandbox)');
-  });
-
-  it('keeps links to untranslated pages on the default locale when the default locale is shown', async () => {
-    const written = await runWithFiles(
-      '[Sandbox](/en/products/sandbox) and [Guide](/en/guide)',
-      ['en/products/sandbox.mdx', 'en/guide.mdx', 'ja/guide.md'],
-      { 'en/guide.mdx': 'ja/guide.md' },
-      { docsUrlPattern: '/[locale]' }
-    );
-
-    expect(written).toContain('[Sandbox](/en/products/sandbox)');
-    expect(written).toContain('[Guide](/ja/guide)');
-  });
-
-  it('keeps links to pages whose translation has not been written yet', async () => {
-    const written = await runWithFiles(
-      '[Guide](/guide)',
-      ['guide.mdx'],
-      { 'guide.mdx': 'ja/guide.mdx' },
-      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
-    );
-
-    // The only candidate link is left alone, so nothing is written.
-    expect(written).toBeUndefined();
-  });
-
-  it('resolves folder links through index pages', async () => {
-    const written = await runWithFiles(
-      '[Products](/products/)',
-      ['products/index.mdx'],
-      {},
-      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
-    );
-
-    // The only candidate link is left alone, so nothing is written.
-    expect(written).toBeUndefined();
-  });
-
-  it('localizes links whose translation lives at a transformed output path', async () => {
-    // Docusaurus stores translations outside a locale-prefixed copy of the URL.
-    const output = 'i18n/ja/docusaurus-plugin-content-docs/current/guide.mdx';
-    const written = await runWithFiles(
-      '[Guide](/docs/guide)',
-      ['docs/guide.mdx', output],
-      { 'docs/guide.mdx': output },
-      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
-    );
-
-    expect(written).toContain('[Guide](/ja/docs/guide)');
-  });
-
-  it('localizes links to translations that exist outside the file mapping', async () => {
-    const written = await runWithFiles(
-      '[Guide](/guide)',
-      ['guide.mdx', 'ja/guide.mdx'],
-      {},
-      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
-    );
-
-    expect(written).toContain('[Guide](/ja/guide)');
-  });
-
-  it('still localizes links whose source is not a page file, such as generated OpenAPI pages', async () => {
-    const written = await runWithFiles(
-      '[Create key](/api-reference/create-key)',
-      [],
-      {},
-      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
-    );
-
-    expect(written).toContain('[Create key](/ja/api-reference/create-key)');
-  });
-});
-
-describe('localizeStaticUrls configured attributes', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-  });
-
-  const fileContent = [
-    '<Banner href="/guide" href2="/guide" src="/images/a.png" />',
-    '',
-    '<Banner href2={"/guide"} />',
-    '',
-    '<Banner buttons={<a href2="/guide">Guide</a>} />',
-  ].join('\n');
-
-  const run = async (
-    localizeOptions: NonNullable<
-      StaticUrlSettings['options']
-    >['experimentalLocalizeStaticUrls']
-  ): Promise<string | undefined> => {
-    vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-    let written: string | undefined;
-    vi.mocked(fs.promises.writeFile).mockImplementation((_p, content) => {
-      written = String(content);
-      return Promise.resolve();
-    });
-    vi.mocked(createFileMapping).mockReturnValue({
-      ja: { 'test.mdx': 'ja/test.mdx' },
-    });
-
-    await localizeStaticUrls(
-      createSettings({
-        files: {
-          placeholderPaths: { mdx: ['[locale]/test.mdx'] },
-          resolvedPaths: {},
-          transformPaths: {},
-        },
-        defaultLocale: 'en',
-        locales: ['ja'],
-        options: {
-          docsUrlPattern: '/[locale]',
-          experimentalHideDefaultLocale: true,
-          experimentalLocalizeStaticUrls: localizeOptions,
-        },
-      }),
-      ['ja']
-    );
-    return written;
-  };
-
-  it('localizes only href by default', async () => {
-    const written = await run(true);
-
-    expect(written).toContain('href="/ja/guide"');
-    expect(written).not.toContain('href2="/ja/guide"');
-    expect(written).not.toContain('href2={"/ja/guide"}');
-  });
-
-  it('localizes attributes matching configured names or globs', async () => {
-    const written = await run({ attributes: ['href*'] });
-
-    expect(written).toContain('href="/ja/guide" href2="/ja/guide"');
-    expect(written).toContain('href2={"/ja/guide"}');
-    expect(written).toContain('<a href2="/ja/guide">');
-    expect(written).toContain('src="/images/a.png"');
-  });
+          hideDefaultLocale
+        )
+      ).toBe(expected);
+    }
+  );
 });

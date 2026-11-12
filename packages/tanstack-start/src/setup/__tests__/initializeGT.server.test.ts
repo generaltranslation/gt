@@ -39,7 +39,7 @@ function resetConditionStoreSingleton() {
   }
 }
 
-describe.sequential('initializeGT server', () => {
+describe('initializeGT server', () => {
   beforeEach(() => {
     resetConditionStoreSingleton();
     mockInitializeReactGT.mockReset();

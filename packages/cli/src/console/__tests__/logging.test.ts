@@ -1,5 +1,5 @@
 import { PassThrough } from 'node:stream';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const clack = vi.hoisted(() => ({
   text: vi.fn(),
@@ -38,19 +38,22 @@ const clack = vi.hoisted(() => ({
 vi.mock('@clack/prompts', () => clack);
 
 describe('logging prompts', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
+  let logging: typeof import('../logging.js');
+
+  // The logger picks its format when the module loads, so pin it first.
+  beforeAll(async () => {
     vi.stubEnv('GT_LOG_FORMAT', 'default');
+    logging = await import('../logging.js');
+    vi.unstubAllEnvs();
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it('searches locales through Clack autocomplete, ranking exact codes first', async () => {
     clack.autocompleteMultiselect.mockResolvedValueOnce(['es', 'fr']);
-    const { promptLocaleList } = await import('../logging.js');
+    const { promptLocaleList } = logging;
 
     await expect(
       promptLocaleList({ message: 'Locales?', defaultValue: ['es'] })
@@ -75,8 +78,7 @@ describe('logging prompts', () => {
 
   it('keeps customMapping aliases and typed or selected locale tags selectable', async () => {
     clack.autocomplete.mockResolvedValueOnce('french');
-    const { promptLocale, getLocalePromptOptions } =
-      await import('../logging.js');
+    const { promptLocale, getLocalePromptOptions } = logging;
     const customMapping = { french: { code: 'fr' } };
 
     await expect(
@@ -114,16 +116,19 @@ describe('logging prompts', () => {
         output,
       })
     );
+    // Clack handles a keypress and renders within a few event-loop turns.
     const type = async (keys: string) => {
       input.write(keys);
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      for (let turn = 0; turn < 5; turn++) {
+        await new Promise((resolve) => setImmediate(resolve));
+      }
     };
     return { type, rendered: () => rendered };
   }
 
   it('keeps the real single-locale prompt open until a locale is selected', async () => {
     const { type, rendered } = await withRealClack('autocomplete');
-    const { promptLocale } = await import('../logging.js');
+    const { promptLocale } = logging;
     let submitted: unknown = 'pending';
     const answer = promptLocale({ message: 'Default?' }).then((value) => {
       submitted = value;
@@ -145,7 +150,7 @@ describe('logging prompts', () => {
   it('focuses the exact locale code after the search changes', async () => {
     // `af  Afrikaans` is focused first and also matches `f` and `fr`.
     const single = await withRealClack('autocomplete');
-    const { promptLocale, promptLocaleList } = await import('../logging.js');
+    const { promptLocale, promptLocaleList } = logging;
     const locale = promptLocale({ message: 'Default?' });
     await single.type('fr');
     await single.type('\r');
@@ -163,7 +168,7 @@ describe('logging prompts', () => {
     'prioritizes exact codes over overlapping custom defaults and aliases %j',
     async (customMapping) => {
       const { type } = await withRealClack('autocompleteMultiselect');
-      const { promptLocaleList } = await import('../logging.js');
+      const { promptLocaleList } = logging;
       const locales = promptLocaleList({
         message: 'Locales?',
         defaultValue: ['es', 'fr-MX'],
@@ -181,7 +186,7 @@ describe('logging prompts', () => {
     'allows intentionally deselecting the exact custom option %s',
     async (value) => {
       const { type } = await withRealClack('autocompleteMultiselect');
-      const { promptLocaleList } = await import('../logging.js');
+      const { promptLocaleList } = logging;
       const locales = promptLocaleList({
         message: 'Locales?',
         defaultValue: ['es', value],
@@ -196,7 +201,7 @@ describe('logging prompts', () => {
 
   it('preserves arrow navigation after an exact search', async () => {
     const { type } = await withRealClack('autocomplete');
-    const { promptLocale } = await import('../logging.js');
+    const { promptLocale } = logging;
     const locale = promptLocale({
       message: 'Default?',
       customMapping: { french: { code: 'fr' } },
@@ -209,7 +214,7 @@ describe('logging prompts', () => {
 
   it('submits existing multiselect choices with an unmatched search', async () => {
     const { type } = await withRealClack('autocompleteMultiselect');
-    const { promptLocaleList } = await import('../logging.js');
+    const { promptLocaleList } = logging;
     const locales = promptLocaleList({
       message: 'Locales?',
       defaultValue: ['es'],
@@ -221,7 +226,7 @@ describe('logging prompts', () => {
 
   it('preselects custom locale defaults in the real multiselect', async () => {
     const { type } = await withRealClack('autocompleteMultiselect');
-    const { promptLocaleList } = await import('../logging.js');
+    const { promptLocaleList } = logging;
     const locales = promptLocaleList({
       message: 'Locales?',
       defaultValue: ['es', 'zh-Hans-CN'],
@@ -232,7 +237,7 @@ describe('logging prompts', () => {
 
   it('accepts the suggested text default when Enter is pressed', async () => {
     const { type } = await withRealClack('text');
-    const { promptText } = await import('../logging.js');
+    const { promptText } = logging;
     const name = promptText({
       message: 'Project name?',
       defaultValue: 'my-app',
@@ -243,7 +248,7 @@ describe('logging prompts', () => {
   });
 
   it('labels Vue and React inline catalogs without conflating frameworks', async () => {
-    const { logCollectedFiles } = await import('../logging.js');
+    const { logCollectedFiles } = logging;
 
     logCollectedFiles(
       [{ fileName: '__INTERNAL_GT_TEMPLATE_NAME__' }],

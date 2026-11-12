@@ -1,343 +1,185 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   Logger,
   ConsoleLogHandler,
   fetchLogger,
   defaultLogger,
-  LogHandler,
-  LogEntry,
+  type LogEntry,
+  type LoggerConfig,
 } from '../logger';
 
+// A logger that records entries instead of writing to the console.
+function recordingLogger(config: Partial<LoggerConfig> = {}) {
+  const entries: LogEntry[] = [];
+  const handler = { handle: (entry: LogEntry) => void entries.push(entry) };
+  const logger = new Logger({
+    level: 'info',
+    enableConsole: false,
+    handlers: [handler],
+    ...config,
+  });
+  return { entries, handler, logger };
+}
+
 describe('Logger', () => {
-  let originalEnv: string | undefined;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Store original environment variable
-    originalEnv = process.env._GT_LOG_LEVEL;
-  });
-
   afterEach(() => {
-    // Restore original environment variable
-    if (originalEnv !== undefined) {
-      process.env._GT_LOG_LEVEL = originalEnv;
-    } else {
-      delete process.env._GT_LOG_LEVEL;
-    }
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
-  describe('Logger class', () => {
-    it('should create logger with default configuration (warn level)', () => {
-      // Ensure no environment variable is set
-      delete process.env._GT_LOG_LEVEL;
+  describe('configuration', () => {
+    it('defaults to the warn level with timestamps, context and console output', () => {
+      vi.stubEnv('_GT_LOG_LEVEL', undefined);
 
-      const logger = new Logger();
-      const config = logger.getConfig();
-
-      expect(config.level).toBe('warn');
-      expect(config.includeTimestamp).toBe(true);
-      expect(config.includeContext).toBe(true);
-      expect(config.enableConsole).toBe(true);
+      expect(new Logger().getConfig()).toMatchObject({
+        level: 'warn',
+        includeTimestamp: true,
+        includeContext: true,
+        enableConsole: true,
+      });
     });
 
-    it('should use environment variable for log level', () => {
-      process.env._GT_LOG_LEVEL = 'debug';
+    it.each([
+      ['debug', 'debug'],
+      ['info', 'info'],
+      ['ERROR', 'error'],
+      ['invalid-level', 'warn'],
+    ])('reads _GT_LOG_LEVEL=%s as level %s', (value, level) => {
+      vi.stubEnv('_GT_LOG_LEVEL', value);
 
-      const logger = new Logger();
-      const config = logger.getConfig();
-
-      expect(config.level).toBe('debug');
+      expect(new Logger().getConfig().level).toBe(level);
     });
 
-    it('should handle invalid environment variable gracefully', () => {
-      process.env._GT_LOG_LEVEL = 'invalid-level';
-
-      const logger = new Logger();
-      const config = logger.getConfig();
-
-      expect(config.level).toBe('warn'); // Should fallback to default
-    });
-
-    it('should handle case-insensitive environment variable', () => {
-      process.env._GT_LOG_LEVEL = 'ERROR';
-
-      const logger = new Logger();
-      const config = logger.getConfig();
-
-      expect(config.level).toBe('error');
-    });
-
-    it('should create logger with custom configuration', () => {
+    it('accepts custom configuration and later updates', () => {
       const logger = new Logger({
         level: 'debug',
         includeTimestamp: false,
         prefix: 'TEST',
       });
-      const config = logger.getConfig();
-
-      expect(config.level).toBe('debug');
-      expect(config.includeTimestamp).toBe(false);
-      expect(config.prefix).toBe('TEST');
-    });
-
-    it('should respect log level filtering', () => {
-      const entries: LogEntry[] = [];
-      const testHandler: LogHandler = {
-        handle: (entry: LogEntry) => entries.push(entry),
-      };
-      const logger = new Logger({
-        level: 'warn',
-        enableConsole: false,
-        handlers: [testHandler],
+      expect(logger.getConfig()).toMatchObject({
+        level: 'debug',
+        includeTimestamp: false,
+        prefix: 'TEST',
       });
+
+      logger.configure({ level: 'info', prefix: 'NEW' });
+      expect(logger.getConfig()).toMatchObject({
+        level: 'info',
+        includeTimestamp: false,
+        prefix: 'NEW',
+      });
+    });
+  });
+
+  describe('entries', () => {
+    it('drops entries below the configured level', () => {
+      const { entries, logger } = recordingLogger({ level: 'warn' });
 
       logger.debug('Debug message');
       logger.info('Info message');
       logger.warn('Warning message');
       logger.error('Error message');
 
-      expect(entries).toHaveLength(2);
-      expect(entries[0].level).toBe('warn');
-      expect(entries[1].level).toBe('error');
+      expect(entries.map((entry) => entry.level)).toEqual(['warn', 'error']);
     });
 
-    it('should filter debug and info messages with default warn level', () => {
-      delete process.env._GT_LOG_LEVEL;
-
-      const entries: LogEntry[] = [];
-      const testHandler: LogHandler = {
-        handle: (entry: LogEntry) => entries.push(entry),
-      };
-      const logger = new Logger({
-        enableConsole: false,
-        handlers: [testHandler],
-      });
-
-      logger.debug('Debug message');
-      logger.info('Info message');
-      logger.warn('Warning message');
-      logger.error('Error message');
-
-      expect(entries).toHaveLength(2);
-      expect(entries[0].level).toBe('warn');
-      expect(entries[1].level).toBe('error');
-    });
-
-    it('should include context and metadata in log entries', () => {
-      const entries: LogEntry[] = [];
-      const testHandler: LogHandler = {
-        handle: (entry: LogEntry) => entries.push(entry),
-      };
-      const logger = new Logger({
-        level: 'info', // Explicitly set to info to allow info messages
-        enableConsole: false,
-        handlers: [testHandler],
-      });
-
+    it('records the message, context and metadata', () => {
+      const { entries, logger } = recordingLogger();
       const metadata = { userId: '123', action: 'translate' };
+
       logger.info('Test message', 'test-context', metadata);
 
-      expect(entries).toHaveLength(1);
-      expect(entries[0].context).toBe('test-context');
-      expect(entries[0].metadata).toEqual(metadata);
-      expect(entries[0].message).toBe('Test message');
+      expect(entries).toEqual([
+        expect.objectContaining({
+          message: 'Test message',
+          context: 'test-context',
+          metadata,
+        }),
+      ]);
     });
 
-    it('should create child logger with context', () => {
-      const entries: LogEntry[] = [];
-      const testHandler: LogHandler = {
-        handle: (entry: LogEntry) => entries.push(entry),
-      };
+    it('joins nested child logger contexts', () => {
+      const { entries, logger } = recordingLogger();
+
+      logger.child('parent').info('Parent message');
+      logger.child('parent').child('child').warn('Nested message');
+
+      expect(entries.map((entry) => entry.context)).toEqual([
+        'parent',
+        'parent:child',
+      ]);
+    });
+
+    it('adds and removes handlers', () => {
+      const { entries, handler, logger } = recordingLogger({ handlers: [] });
+
+      logger.addHandler(handler);
+      logger.info('Test message');
+      logger.removeHandler(handler);
+      logger.info('Another message');
+
+      expect(entries.map((entry) => entry.message)).toEqual(['Test message']);
+    });
+
+    it('reports a throwing handler without breaking the caller', () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       const logger = new Logger({
-        level: 'info', // Explicitly set to info to allow info messages
-        enableConsole: false,
-        handlers: [testHandler],
-      });
-
-      const childLogger = logger.child('child-context');
-      childLogger.info('Child message');
-
-      expect(entries).toHaveLength(1);
-      expect(entries[0].context).toBe('child-context');
-    });
-
-    it('should handle nested child loggers', () => {
-      const entries: LogEntry[] = [];
-      const testHandler: LogHandler = {
-        handle: (entry: LogEntry) => entries.push(entry),
-      };
-      const logger = new Logger({
-        enableConsole: false,
-        handlers: [testHandler],
-      });
-
-      const childLogger = logger.child('parent');
-      const grandChildLogger = childLogger.child('child');
-      grandChildLogger.warn('Nested message');
-
-      expect(entries).toHaveLength(1);
-      expect(entries[0].context).toBe('parent:child');
-    });
-  });
-
-  describe('ConsoleLogHandler', () => {
-    it('should call appropriate console method based on log level', () => {
-      const consoleSpy = {
-        debug: vi.spyOn(console, 'debug').mockImplementation(() => {}),
-        info: vi.spyOn(console, 'info').mockImplementation(() => {}),
-        warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
-        error: vi.spyOn(console, 'error').mockImplementation(() => {}),
-      };
-
-      const config = {
-        level: 'debug' as const,
-        includeTimestamp: false,
-        includeContext: false,
-        enableConsole: true,
-      };
-
-      const handler = new ConsoleLogHandler(config);
-
-      handler.handle({
-        level: 'debug',
-        message: 'Debug message',
-        timestamp: new Date(),
-      });
-      handler.handle({
         level: 'info',
-        message: 'Info message',
-        timestamp: new Date(),
-      });
-      handler.handle({
-        level: 'warn',
-        message: 'Warning message',
-        timestamp: new Date(),
-      });
-      handler.handle({
-        level: 'error',
-        message: 'Error message',
-        timestamp: new Date(),
+        enableConsole: false,
+        handlers: [
+          {
+            handle: () => {
+              throw new Error('Handler error');
+            },
+          },
+        ],
       });
 
-      expect(consoleSpy.debug).toHaveBeenCalledWith(
-        expect.stringContaining('Debug message')
+      expect(() => logger.info('Test message')).not.toThrow();
+      expect(consoleError).toHaveBeenCalledWith(
+        'Error in log handler:',
+        expect.any(Error)
       );
-      expect(consoleSpy.info).toHaveBeenCalledWith(
-        expect.stringContaining('Info message')
-      );
-      expect(consoleSpy.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Warning message')
-      );
-      expect(consoleSpy.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error message')
-      );
-
-      // Restore console methods
-      Object.values(consoleSpy).forEach((spy) => spy.mockRestore());
     });
   });
 
-  describe('environment variable configuration', () => {
-    it('should respect _GT_LOG_LEVEL environment variable for all valid levels', () => {
-      const levels: Array<'debug' | 'info' | 'warn' | 'error'> = [
-        'debug',
-        'info',
-        'warn',
-        'error',
-      ];
+  describe('console output', () => {
+    it.each(['debug', 'info', 'warn', 'error'] as const)(
+      'writes %s entries to the matching console method',
+      (level) => {
+        const consoleMethod = vi
+          .spyOn(console, level)
+          .mockImplementation(() => {});
+        const handler = new ConsoleLogHandler({
+          level: 'debug',
+          includeTimestamp: false,
+          includeContext: false,
+          enableConsole: true,
+        });
 
-      levels.forEach((level) => {
-        process.env._GT_LOG_LEVEL = level;
-        const logger = new Logger();
-        expect(logger.getConfig().level).toBe(level);
-      });
-    });
-  });
+        handler.handle({ level, message: 'A message', timestamp: new Date() });
 
-  describe('context-specific loggers', () => {
-    it('should create translation logger with proper context', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        expect(consoleMethod).toHaveBeenCalledWith(
+          expect.stringContaining('A message')
+        );
+      }
+    );
 
-      // Temporarily enable logging for this test by configuring the parent logger
+    it('tags the fetch logger output with its context', () => {
+      const consoleWarn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
       const originalConfig = defaultLogger.getConfig();
       defaultLogger.configure({ ...originalConfig, level: 'warn' });
 
       fetchLogger.warn('Translation failed');
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[fetch]')
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Translation failed')
-      );
-
-      consoleSpy.mockRestore();
-      // Restore original config
       defaultLogger.configure(originalConfig);
-    });
-  });
 
-  describe('error handling', () => {
-    it('should handle handler errors gracefully', () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-      const faultyHandler: LogHandler = {
-        handle: () => {
-          throw new Error('Handler error');
-        },
-      };
-
-      const logger = new Logger({
-        level: 'info', // Explicitly set to info to allow info messages
-        enableConsole: false,
-        handlers: [faultyHandler],
-      });
-
-      // Should not throw
-      expect(() => {
-        logger.info('Test message');
-      }).not.toThrow();
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error in log handler:',
-        expect.any(Error)
+      expect(consoleWarn).toHaveBeenCalledWith(
+        expect.stringMatching(/\[fetch\].*Translation failed/)
       );
-
-      consoleErrorSpy.mockRestore();
-    });
-  });
-
-  describe('configuration updates', () => {
-    it('should update logger configuration', () => {
-      const logger = new Logger({ level: 'info' });
-
-      logger.configure({ level: 'debug', prefix: 'NEW' });
-      const config = logger.getConfig();
-
-      expect(config.level).toBe('debug');
-      expect(config.prefix).toBe('NEW');
-    });
-  });
-
-  describe('handler management', () => {
-    it('should add and remove handlers', () => {
-      const entries: LogEntry[] = [];
-      const testHandler: LogHandler = {
-        handle: (entry: LogEntry) => entries.push(entry),
-      };
-      const logger = new Logger({
-        level: 'info', // Explicitly set to info to allow info messages
-        enableConsole: false,
-      });
-
-      logger.addHandler(testHandler);
-      logger.info('Test message');
-      expect(entries).toHaveLength(1);
-
-      logger.removeHandler(testHandler);
-      logger.info('Another message');
-      expect(entries).toHaveLength(1); // Should not increase
     });
   });
 });

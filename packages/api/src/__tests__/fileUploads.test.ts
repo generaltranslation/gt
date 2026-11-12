@@ -69,6 +69,8 @@ describe('putFileUpload', () => {
     headers: { 'x-amz-checksum-sha256': 'checksum' },
     expiresAt: '2099-01-01T00:00:00.000Z',
   };
+  // A real clock would leave decades until expiry, which overflows setTimeout
+  // (Node then fires after 1ms), so every test pins the time left.
   const expiresInMs = (ms: number) =>
     vi.useFakeTimers({ now: Date.parse(upload.expiresAt) - ms });
   const neverResponds = vi.fn<typeof fetch>(
@@ -86,6 +88,7 @@ describe('putFileUpload', () => {
   });
 
   it('PUTs the bytes with the presigned headers and no API credentials', async () => {
+    expiresInMs(60_000);
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValue(new Response(null, { status: 200 }));
@@ -104,6 +107,7 @@ describe('putFileUpload', () => {
   });
 
   it('PUTs through the given fetch and retry policy', async () => {
+    expiresInMs(60_000);
     const globalFetch = vi.fn<typeof fetch>();
     vi.stubGlobal('fetch', globalFetch);
     const configuredFetch = vi
@@ -151,6 +155,7 @@ describe('putFileUpload', () => {
   });
 
   it('throws an ApiError with the HTTP status when storage rejects the PUT', async () => {
+    expiresInMs(60_000);
     vi.stubGlobal(
       'fetch',
       vi

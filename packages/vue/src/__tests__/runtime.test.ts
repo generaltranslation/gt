@@ -1,13 +1,11 @@
 import type { JsxChildren } from 'generaltranslation/types';
 import { hashSource } from 'generaltranslation/id';
-import * as Vue from 'vue';
+import { hashStringMessage } from 'gt-i18n/internal/string';
 import {
   Fragment,
   KeepAlive,
   Suspense,
   createCommentVNode,
-  createRenderer,
-  createSSRApp,
   createStaticVNode,
   createVNode,
   defineComponent,
@@ -17,9 +15,8 @@ import {
   vShow,
   withDirectives,
   type Slots,
+  type VNode,
 } from 'vue';
-import { compileTemplate } from 'vue/compiler-sfc';
-import { renderToString } from 'vue/server-renderer';
 import { describe, expect, it, vi } from 'vitest';
 import { getBranchNames } from '../components/utils';
 import {
@@ -42,6 +39,15 @@ import {
   useMessages,
 } from '../index';
 import type { TranslationCatalog } from '../index';
+import {
+  findElement,
+  jsxHash,
+  mount,
+  renderWithPlugin,
+  stripFragmentMarkers,
+  textContent,
+} from './testUtils';
+import { compileSfcTemplate } from './compileSfcTemplate';
 
 describe('gt-vue runtime', () => {
   it('preserves authored Fragments and structural-wrapper array shape', () => {
@@ -202,7 +208,7 @@ describe('gt-vue runtime', () => {
     expect(tInstance!.subTree.type).toBe(Fragment);
     const sourceChildren = tInstance!.subTree.children;
     expect(Array.isArray(sourceChildren)).toBe(true);
-    const sourceChildInstance = (sourceChildren as Vue.VNode[]).find(
+    const sourceChildInstance = (sourceChildren as VNode[]).find(
       (child) => child.component
     )?.component;
     expect(sourceChildInstance).toBeTruthy();
@@ -216,7 +222,7 @@ describe('gt-vue runtime', () => {
     const translatedChildren = tInstance!.subTree.children;
     expect(Array.isArray(translatedChildren)).toBe(true);
     expect(
-      (translatedChildren as Vue.VNode[]).find((child) => child.component)
+      (translatedChildren as VNode[]).find((child) => child.component)
         ?.component
     ).toBe(sourceChildInstance);
     expect(textContent(mounted.root)).toBe('Translated content');
@@ -230,8 +236,7 @@ describe('gt-vue runtime', () => {
     const restoredChildren = tInstance!.subTree.children;
     expect(Array.isArray(restoredChildren)).toBe(true);
     expect(
-      (restoredChildren as Vue.VNode[]).find((child) => child.component)
-        ?.component
+      (restoredChildren as VNode[]).find((child) => child.component)?.component
     ).toBe(sourceChildInstance);
     expect(textContent(mounted.root)).toBe('Source content');
     expect(setupCount).toBe(1);
@@ -381,6 +386,29 @@ describe('gt-vue runtime', () => {
     expect(html).toContain('Littéral {name} : 你好|PremierDeuxième|Vide');
     expect(nullResult!).toBeNull();
     expect(undefinedResult!).toBeUndefined();
+  });
+
+  it('falls back to source text when a STRING hash resolves to rich data', async () => {
+    const source = 'Hello';
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        [hashStringMessage(source)]: {
+          c: 'Wrong catalog shape',
+          i: 1,
+          t: 'p',
+        },
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        const gt = useGT();
+        const m = useMessages();
+        return () => h('p', `${gt(source)}|${m(source)}`);
+      },
+    });
+
+    expect(await renderWithPlugin(Root, plugin)).toContain('Hello|Hello');
   });
 
   it('renders translated rich children and preserves child-only variables', async () => {
@@ -2541,7 +2569,7 @@ describe('gt-vue runtime', () => {
     });
     const frenchReady = french.setLocale('fr');
     const chineseReady = chinese.setLocale('zh');
-    await vi.waitFor(() => expect(pending.size).toBe(2));
+    await vi.waitFor(() => expect(pending.size).toBe(2), { interval: 1 });
     pending.get('zh:zh')?.({
       [jsxHash(richSource)]: { t: 'span', i: 1, c: '世界' },
       [stringHash(source)]: '你好',
@@ -2592,7 +2620,7 @@ describe('gt-vue runtime', () => {
     const french = plugin.setLocale('fr');
     const chinese = plugin.setLocale('zh');
 
-    await vi.waitFor(() => expect(resolvers.size).toBe(2));
+    await vi.waitFor(() => expect(resolvers.size).toBe(2), { interval: 1 });
     resolvers.get('zh')?.({});
     await chinese;
     resolvers.get('fr')?.({});
@@ -2606,107 +2634,4 @@ describe('gt-vue runtime', () => {
 
 function stringHash(source: string, context?: string): string {
   return hashSource({ source, context, dataFormat: 'STRING' });
-}
-
-function jsxHash(source: JsxChildren, context?: string): string {
-  return hashSource({ source, context, dataFormat: 'JSX' });
-}
-
-/** Compiles a template through the same SFC compiler used by Vue tooling. */
-function compileSfcTemplate(template: string): ReturnType<typeof Vue.compile> {
-  const result = compileTemplate({
-    compilerOptions: { mode: 'function' },
-    filename: 'ScopedSlotFixture.vue',
-    id: 'scoped-slot-fixture',
-    source: template,
-  });
-  expect(result.errors).toEqual([]);
-  return new Function('Vue', result.code)(Vue) as ReturnType<
-    typeof Vue.compile
-  >;
-}
-
-function stripFragmentMarkers(html: string): string {
-  return html.replaceAll('<!--[-->', '').replaceAll('<!--]-->', '');
-}
-
-async function renderWithPlugin(
-  root: ReturnType<typeof defineComponent>,
-  plugin: ReturnType<typeof createGT>
-): Promise<string> {
-  const app = createSSRApp(root);
-  app.use(plugin);
-  return renderToString(app);
-}
-
-type HostNode = {
-  children: HostNode[];
-  parent?: HostNode;
-  props: Record<string, unknown>;
-  text?: string;
-  type: string;
-};
-
-const renderer = createRenderer<HostNode, HostNode>({
-  createComment: (text) => createHostNode('#comment', text),
-  createElement: (type) => createHostNode(type),
-  createText: (text) => createHostNode('#text', text),
-  insert(child, parent, anchor) {
-    if (child.parent) {
-      const previousIndex = child.parent.children.indexOf(child);
-      if (previousIndex >= 0) child.parent.children.splice(previousIndex, 1);
-    }
-    child.parent = parent;
-    const index = anchor ? parent.children.indexOf(anchor) : -1;
-    if (index < 0) parent.children.push(child);
-    else parent.children.splice(index, 0, child);
-  },
-  nextSibling(node) {
-    if (!node.parent) return null;
-    const index = node.parent.children.indexOf(node);
-    return node.parent.children[index + 1] ?? null;
-  },
-  parentNode: (node) => node.parent ?? null,
-  patchProp(element, key, _previous, value) {
-    element.props[key] = value;
-  },
-  remove(child) {
-    if (!child.parent) return;
-    const index = child.parent.children.indexOf(child);
-    if (index >= 0) child.parent.children.splice(index, 1);
-    child.parent = undefined;
-  },
-  setElementText(element, text) {
-    const child = createHostNode('#text', text);
-    child.parent = element;
-    element.children = [child];
-  },
-  setText(node, text) {
-    node.text = text;
-  },
-});
-
-function createHostNode(type: string, text?: string): HostNode {
-  return { children: [], props: {}, text, type };
-}
-
-function mount(
-  rootComponent: ReturnType<typeof defineComponent>,
-  plugin: ReturnType<typeof createGT>
-) {
-  const root = createHostNode('root');
-  const app = renderer.createApp(rootComponent);
-  app.use(plugin);
-  app.mount(root);
-  return { app, root };
-}
-
-function textContent(node: HostNode): string {
-  if (node.type === '#comment') return '';
-  return node.text ?? node.children.map(textContent).join('');
-}
-
-function findElement(node: HostNode, type: string): HostNode | undefined {
-  if (node.type === type) return node;
-  return node.children.map((child) => findElement(child, type)).find(Boolean);
 }

@@ -1,7 +1,11 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import { vitestThreadsPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    environment: 'node',
-  },
-});
+export default mergeConfig(
+  vitestThreadsPreset,
+  defineConfig({
+    test: {
+      environment: 'node',
+    },
+  })
+);

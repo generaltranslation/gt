@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TranslationPreferences } from '../../adapter/types';
 import {
   getPreferencesStorageKey,
@@ -15,6 +15,17 @@ const defaults: TranslationPreferences = {
 };
 
 const KEY = getPreferencesStorageKey('proj', 'production');
+
+/** The part of `window.localStorage` the preferences use, held in memory. */
+function stubLocalStorage() {
+  const items = new Map<string, string>();
+  const localStorage = {
+    getItem: (key: string) => items.get(key) ?? null,
+    setItem: (key: string, value: string) => void items.set(key, value),
+  };
+  vi.stubGlobal('window', { localStorage });
+  return localStorage;
+}
 
 describe('getPreferencesStorageKey', () => {
   it('separates Studios sharing an origin', () => {
@@ -35,7 +46,10 @@ describe('getPreferencesStorageKey', () => {
 
 describe('readPreferences', () => {
   beforeEach(() => {
-    window.localStorage.clear();
+    stubLocalStorage();
+  });
+
+  afterEach(() => {
     vi.unstubAllGlobals();
   });
 
@@ -87,12 +101,14 @@ describe('readPreferences', () => {
   });
 
   it('falls back when localStorage throws', () => {
-    vi.stubGlobal('localStorage', {
-      getItem: () => {
-        throw new Error('SecurityError');
-      },
-      setItem: () => {
-        throw new Error('SecurityError');
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: () => {
+          throw new Error('SecurityError');
+        },
+        setItem: () => {
+          throw new Error('SecurityError');
+        },
       },
     });
     expect(readPreferences(KEY, defaults)).toEqual(defaults);

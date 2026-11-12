@@ -31,6 +31,12 @@ type GlobalWithRegistry = {
   };
 };
 
+// The createMiddleware mock returns the server handler itself.
+const runMiddleware = gtMiddleware as unknown as (args: {
+  request: Request;
+  next: () => Promise<unknown>;
+}) => Promise<unknown>;
+
 function resetSingletons() {
   const globalObj = globalThis as GlobalWithRegistry;
   if (globalObj.__generaltranslation?.i18n) {
@@ -44,7 +50,7 @@ function resetSingletons() {
   }
 }
 
-describe.sequential('gtMiddleware', () => {
+describe('gtMiddleware', () => {
   beforeEach(() => {
     resetSingletons();
     const config = {
@@ -60,12 +66,7 @@ describe.sequential('gtMiddleware', () => {
     resetSingletons();
 
     expect(() =>
-      (
-        gtMiddleware as unknown as (args: {
-          request: Request;
-          next: () => Promise<unknown>;
-        }) => Promise<unknown>
-      )({
+      runMiddleware({
         request: new Request('https://example.com'),
         next: async () => undefined,
       })
@@ -80,12 +81,7 @@ describe.sequential('gtMiddleware', () => {
       },
     });
 
-    const result = await (
-      gtMiddleware as unknown as (args: {
-        request: Request;
-        next: () => Promise<unknown>;
-      }) => Promise<unknown>
-    )({
+    const result = await runMiddleware({
       request,
       next: async () => ({
         locale: getLocale(),

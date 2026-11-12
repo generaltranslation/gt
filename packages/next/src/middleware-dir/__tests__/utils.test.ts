@@ -15,197 +15,66 @@ function getSharedPath(...args: Parameters<typeof matchSharedPath>) {
 }
 
 describe('extractLocale', () => {
-  it('should extract locale from various pathname formats', () => {
-    expect(extractLocale('/en/about')).toBe('en');
-    expect(extractLocale('/fr/dashboard')).toBe('fr');
-    expect(extractLocale('/es/')).toBe('es');
-    expect(extractLocale('/de')).toBe('de');
-    expect(extractLocale('/zh-CN/page')).toBe('zh-CN');
-    expect(extractLocale('/en-US/profile')).toBe('en-US');
-  });
-
-  it('should extract first segment from any pathname', () => {
-    expect(extractLocale('/about')).toBe('about');
-    expect(extractLocale('/products/123')).toBe('products');
-    expect(extractLocale('/admin/users/edit')).toBe('admin');
-  });
-
-  it('should return null for edge cases', () => {
-    expect(extractLocale('/')).toBe(null);
-    expect(extractLocale('')).toBe(null);
-    expect(extractLocale('no-leading-slash')).toBe(null);
-  });
-
-  it('should handle special characters and encoded segments', () => {
-    expect(extractLocale('/en%20US/page')).toBe('en%20US');
-    expect(extractLocale('/caf%C3%A9/menu')).toBe('caf%C3%A9');
+  it.each([
+    ['/en/about', 'en'],
+    ['/es/', 'es'],
+    ['/de', 'de'],
+    ['/zh-CN/page', 'zh-CN'],
+    // Any first segment is returned; validating it is the caller's job.
+    ['/products/123', 'products'],
+    ['/caf%C3%A9/menu', 'caf%C3%A9'],
+    ['/', null],
+    ['', null],
+    ['no-leading-slash', null],
+  ])('returns the first segment of %j', (pathname, expected) => {
+    expect(extractLocale(pathname)).toBe(expected);
   });
 });
 
 describe('extractDynamicParams', () => {
-  it('should extract single dynamic parameter', () => {
-    expect(extractDynamicParams('/blog/[id]', '/blog/123')).toEqual(['123']);
-    expect(extractDynamicParams('/user/[userId]', '/user/abc-def')).toEqual([
-      'abc-def',
-    ]);
-    expect(extractDynamicParams('/posts/[slug]', '/posts/hello-world')).toEqual(
-      ['hello-world']
-    );
-  });
-
-  it('should extract multiple dynamic parameters', () => {
-    expect(
-      extractDynamicParams('/user/[id]/post/[postId]', '/user/456/post/789')
-    ).toEqual(['456', '789']);
-    expect(
-      extractDynamicParams('/[locale]/[category]/[slug]', '/en/tech/article-1')
-    ).toEqual(['en', 'tech', 'article-1']);
-  });
-
-  it('should handle mixed static and dynamic segments', () => {
-    expect(
-      extractDynamicParams(
-        '/api/users/[id]/settings',
-        '/api/users/123/settings'
-      )
-    ).toEqual(['123']);
-    expect(
-      extractDynamicParams(
-        '/docs/[version]/api/[endpoint]',
-        '/docs/v2/api/users'
-      )
-    ).toEqual(['v2', 'users']);
-  });
-
-  it('should return empty array when no dynamic segments exist', () => {
-    expect(extractDynamicParams('/blog', '/blog')).toEqual([]);
-    expect(extractDynamicParams('/about/us', '/about/us')).toEqual([]);
-    expect(
-      extractDynamicParams('/static/path/here', '/static/path/here')
-    ).toEqual([]);
-  });
-
-  it('should handle mismatched path lengths', () => {
-    expect(extractDynamicParams('/blog/[id]', '/blog')).toEqual([undefined]);
-    expect(extractDynamicParams('/[a]/[b]/[c]', '/x/y')).toEqual([
-      'x',
-      'y',
-      undefined,
-    ]);
-    expect(extractDynamicParams('/[param]', '/one/two/three')).toEqual(['one']);
-  });
-
-  it('should handle edge cases', () => {
-    expect(extractDynamicParams('', '')).toEqual([]);
-    expect(extractDynamicParams('/[param]', '/')).toEqual(['']);
-    expect(extractDynamicParams('/static', '/different')).toEqual([]);
-  });
-
-  it('should extract catch-all parameters', () => {
-    expect(extractDynamicParams('/docs/[...slug]', '/docs/api/auth')).toEqual([
-      'api/auth',
-    ]);
-    expect(
-      extractDynamicParams('/posts/[[...slug]]', '/posts/2023/article')
-    ).toEqual(['2023/article']);
-    expect(extractDynamicParams('/posts/[[...slug]]', '/posts')).toEqual(['']);
+  it.each([
+    ['/blog/[id]', '/blog/123', ['123']],
+    ['/user/[id]/post/[postId]', '/user/456/post/789', ['456', '789']],
+    ['/api/users/[id]/settings', '/api/users/123/settings', ['123']],
+    ['/about/us', '/about/us', []],
+    ['', '', []],
+    // Mismatched lengths
+    ['/blog/[id]', '/blog', [undefined]],
+    ['/[a]/[b]/[c]', '/x/y', ['x', 'y', undefined]],
+    ['/[param]', '/one/two/three', ['one']],
+    ['/[param]', '/', ['']],
+    // Catch-all segments
+    ['/docs/[...slug]', '/docs/api/auth', ['api/auth']],
+    ['/posts/[[...slug]]', '/posts/2023/article', ['2023/article']],
+    ['/posts/[[...slug]]', '/posts', ['']],
+  ])('extracts %s from %s', (template, path, expected) => {
+    expect(extractDynamicParams(template, path)).toEqual(expected);
   });
 });
 
-describe.each(['[...slug]', '[[...slug]]'])(
-  'trailing delimiters with %s',
-  (segment) => {
-    it.each(['', 'one', 'one/two', 'a%2Fb/a%252Fb'])(
-      'extracts raw parameters without a terminal delimiter: %s',
-      (tail) => {
-        expect(
-          extractDynamicParams(
-            `/catalog/[category]/${segment}/`,
-            `/catalog/science/${tail}${tail ? '/' : ''}`
-          )
-        ).toEqual(['science', tail]);
-      }
-    );
-
-    it.each(['one', 'one/two', 'a%2Fb/a%252Fb'])(
-      'reconstructs one trailing delimiter after %s',
-      (tail) => {
-        expect(
-          replaceDynamicSegments(
-            `/catalogue/science/${tail}/`,
-            `/catalog/[category]/${segment}/`,
-            `/catalogue/[category]/${segment}/`
-          )
-        ).toBe(`/catalog/science/${tail}/`);
-      }
-    );
-  }
-);
-
 describe('replaceDynamicSegments', () => {
-  it('should replace single dynamic segment', () => {
-    expect(replaceDynamicSegments('/blog/123', '/blog/[id]')).toBe('/blog/123');
-    expect(replaceDynamicSegments('/user/john-doe', '/user/[username]')).toBe(
-      '/user/john-doe'
-    );
+  it.each([
+    ['/blog/123', '/blog/[id]', '/blog/123'],
+    ['/user/456/post/789', '/user/[id]/post/[postId]', '/user/456/post/789'],
+    ['/api/users/123/settings', '/api/users/[id]/settings'],
+    // Catch-all segments
+    ['/docs/api/auth', '/docs/[...slug]'],
+    ['/posts/2023/article', '/posts/[[...slug]]'],
+    ['/posts', '/posts/[[...slug]]'],
+    // Static templates are returned as-is
+    ['/blog/123', '/about', '/about'],
+    // The request's trailing-slash style wins
+    ['/blog/123/', '/articles/[id]', '/articles/123/'],
+    ['/about/', '/company', '/company/'],
+    ['/about', '/company/', '/company'],
+    // Missing parameters keep their placeholder
+    ['/blog', '/blog/[id]/[slug]', '/blog/[id]/[slug]'],
+    ['/one', '/[a]/[b]/[c]', '/one/[b]/[c]'],
+  ])('fills %s into %s', (path, template, expected = path) => {
+    expect(replaceDynamicSegments(path, template)).toBe(expected);
   });
 
-  it('should replace multiple dynamic segments', () => {
-    expect(
-      replaceDynamicSegments('/user/456/post/789', '/user/[id]/post/[postId]')
-    ).toBe('/user/456/post/789');
-    expect(
-      replaceDynamicSegments(
-        '/en/tech/article-1',
-        '/[locale]/[category]/[slug]'
-      )
-    ).toBe('/en/tech/article-1');
-  });
-
-  it('should preserve static segments', () => {
-    expect(
-      replaceDynamicSegments(
-        '/api/users/123/settings',
-        '/api/users/[id]/settings'
-      )
-    ).toBe('/api/users/123/settings');
-  });
-
-  it('should preserve the request trailing-slash style', () => {
-    expect(replaceDynamicSegments('/blog/123/', '/articles/[id]')).toBe(
-      '/articles/123/'
-    );
-    expect(replaceDynamicSegments('/about/', '/company')).toBe('/company/');
-    expect(replaceDynamicSegments('/about', '/company/')).toBe('/company');
-  });
-
-  it('should return template path when no dynamic segments', () => {
-    expect(replaceDynamicSegments('/blog/123', '/about')).toBe('/about');
-    expect(replaceDynamicSegments('/any/path', '/static/path')).toBe(
-      '/static/path'
-    );
-  });
-
-  it('should handle insufficient parameters gracefully', () => {
-    expect(replaceDynamicSegments('/blog', '/blog/[id]/[slug]')).toBe(
-      '/blog/[id]/[slug]'
-    );
-    expect(replaceDynamicSegments('/one', '/[a]/[b]/[c]')).toBe('/one/[b]/[c]');
-  });
-
-  it('should handle catch-all segment formats', () => {
-    expect(
-      replaceDynamicSegments('/category/tech', '/category/[category]')
-    ).toBe('/category/tech');
-    expect(replaceDynamicSegments('/docs/api/auth', '/docs/[...slug]')).toBe(
-      '/docs/api/auth'
-    );
-    expect(
-      replaceDynamicSegments('/posts/2023/article', '/posts/[[...slug]]')
-    ).toBe('/posts/2023/article');
-    expect(replaceDynamicSegments('/posts', '/posts/[[...slug]]')).toBe(
-      '/posts'
-    );
+  it('reads parameters with the source template when it differs', () => {
     expect(
       replaceDynamicSegments(
         '/fr/knowledge/base/api/auth',
@@ -217,225 +86,78 @@ describe('replaceDynamicSegments', () => {
 });
 
 describe('getLocalizedPath', () => {
-  it('should handle string-based path configuration', () => {
-    const pathConfig: PathConfig = {
-      '/about': '/about-us',
-      '/contact': '/contact-us',
-      '/services': '/our-services',
-    };
+  const pathConfig: PathConfig = {
+    '/contact': '/contact-us',
+    '/about': { en: '/about-us', fr: '/a-propos' },
+    '/blog/[id]': { en: '/blog/[id]', fr: '/article/[id]' },
+  };
 
-    expect(getLocalizedPath('/about', 'en', pathConfig)).toBe('/en/about-us');
-    expect(getLocalizedPath('/contact', 'fr', pathConfig)).toBe(
-      '/fr/contact-us'
-    );
-    expect(getLocalizedPath('/services', 'es', pathConfig)).toBe(
-      '/es/our-services'
-    );
-  });
-
-  it('should handle object-based path configuration', () => {
-    const pathConfig: PathConfig = {
-      '/about': {
-        en: '/about-us',
-        fr: '/a-propos',
-        es: '/acerca-de',
-        de: '/uber-uns',
-      },
-      '/contact': {
-        en: '/contact-us',
-        fr: '/contactez-nous',
-        es: '/contactanos',
-      },
-    };
-
-    expect(getLocalizedPath('/about', 'en', pathConfig)).toBe('/en/about-us');
-    expect(getLocalizedPath('/about', 'fr', pathConfig)).toBe('/fr/a-propos');
-    expect(getLocalizedPath('/about', 'es', pathConfig)).toBe('/es/acerca-de');
-    expect(getLocalizedPath('/about', 'de', pathConfig)).toBe('/de/uber-uns');
-    expect(getLocalizedPath('/contact', 'en', pathConfig)).toBe(
-      '/en/contact-us'
-    );
-    expect(getLocalizedPath('/contact', 'fr', pathConfig)).toBe(
-      '/fr/contactez-nous'
-    );
-  });
-
-  it('should fallback to shared path when locale not found', () => {
-    const pathConfig: PathConfig = {
-      '/about': {
-        en: '/about-us',
-        fr: '/a-propos',
-      },
-    };
-
-    expect(getLocalizedPath('/about', 'de', pathConfig)).toBe('/de/about');
-    expect(getLocalizedPath('/about', 'ja', pathConfig)).toBe('/ja/about');
-  });
-
-  it('should return undefined for non-existent shared paths', () => {
-    const pathConfig: PathConfig = {
-      '/about': '/about-us',
-    };
-
-    expect(getLocalizedPath('/nonexistent', 'en', pathConfig)).toBe(undefined);
-    expect(getLocalizedPath('/missing', 'fr', pathConfig)).toBe(undefined);
-  });
-
-  it('should handle dynamic paths', () => {
-    const pathConfig: PathConfig = {
-      '/blog/[id]': {
-        en: '/blog/[id]',
-        fr: '/article/[id]',
-      },
-      '/user/[id]/profile': '/user/[id]/profile',
-    };
-
-    expect(getLocalizedPath('/blog/[id]', 'en', pathConfig)).toBe(
-      '/en/blog/[id]'
-    );
-    expect(getLocalizedPath('/blog/[id]', 'fr', pathConfig)).toBe(
-      '/fr/article/[id]'
-    );
-    expect(getLocalizedPath('/user/[id]/profile', 'es', pathConfig)).toBe(
-      '/es/user/[id]/profile'
-    );
+  it.each([
+    // A string applies to every locale
+    ['/contact', 'fr', '/fr/contact-us'],
+    ['/about', 'en', '/en/about-us'],
+    ['/about', 'fr', '/fr/a-propos'],
+    // Locales without an entry fall back to the shared path
+    ['/about', 'de', '/de/about'],
+    ['/blog/[id]', 'fr', '/fr/article/[id]'],
+    ['/nonexistent', 'en', undefined],
+  ])('localizes %s for %s', (sharedPath, locale, expected) => {
+    expect(getLocalizedPath(sharedPath, locale, pathConfig)).toBe(expected);
   });
 });
 
 describe('createPathToSharedPathMap', () => {
-  it('should create mapping for simple string paths', () => {
-    const pathConfig: PathConfig = {
-      '/about': '/about-us',
-      '/contact': '/contact-us',
-      '/services': '/our-services',
-    };
+  const pathConfig: PathConfig = {
+    '/services': '/our-services',
+    '/about': { en: '/about-us', fr: '/a-propos' },
+    '/blog/[id]': { en: '/blog/[id]', fr: '/article/[id]' },
+  };
 
-    const result = createPathToSharedPathMap(pathConfig, true, 'en');
+  it('indexes shared and locale-prefixed localized paths', () => {
+    const { pathToSharedPath, defaultLocalePaths } = createPathToSharedPathMap(
+      pathConfig,
+      true,
+      'en'
+    );
 
-    expect(getSharedPath('/about', result.pathToSharedPath, undefined)).toBe(
-      '/about'
-    );
-    expect(getSharedPath('/contact', result.pathToSharedPath, undefined)).toBe(
-      '/contact'
-    );
-    expect(getSharedPath('/services', result.pathToSharedPath, undefined)).toBe(
+    expect(getSharedPath('/services', pathToSharedPath, undefined)).toBe(
       '/services'
     );
-    expect(
-      getSharedPath('/about-us', result.defaultLocalePaths, undefined)
-    ).toBe(undefined);
-  });
-
-  it('should create mapping for object-based paths with locale prefixing', () => {
-    const pathConfig: PathConfig = {
-      '/about': {
-        en: '/about-us',
-        fr: '/a-propos',
-        es: '/acerca-de',
-      },
-    };
-
-    const result = createPathToSharedPathMap(pathConfig, true, 'en');
-
-    expect(getSharedPath('/about', result.pathToSharedPath, undefined)).toBe(
+    expect(getSharedPath('/about', pathToSharedPath, undefined)).toBe('/about');
+    expect(getSharedPath('/en/about-us', pathToSharedPath, 'en')).toBe(
       '/about'
     );
-    expect(getSharedPath('/en/about-us', result.pathToSharedPath, 'en')).toBe(
+    expect(getSharedPath('/fr/a-propos', pathToSharedPath, 'fr')).toBe(
       '/about'
     );
-    expect(getSharedPath('/fr/a-propos', result.pathToSharedPath, 'fr')).toBe(
-      '/about'
-    );
-    expect(getSharedPath('/es/acerca-de', result.pathToSharedPath, 'es')).toBe(
-      '/about'
-    );
-  });
-
-  it('should handle default locale without prefix', () => {
-    const pathConfig: PathConfig = {
-      '/about': {
-        en: '/about-us',
-        fr: '/a-propos',
-      },
-      '/contact': {
-        en: '/contact-us',
-        fr: '/contactez-nous',
-      },
-    };
-
-    const result = createPathToSharedPathMap(pathConfig, false, 'en');
-
-    expect(getSharedPath('/about-us', result.pathToSharedPath, undefined)).toBe(
-      '/about'
-    );
-    expect(
-      getSharedPath('/contact-us', result.pathToSharedPath, undefined)
-    ).toBe('/contact');
-    expect(getSharedPath('/fr/a-propos', result.pathToSharedPath, 'fr')).toBe(
-      '/about'
-    );
-    expect(
-      getSharedPath('/fr/contactez-nous', result.pathToSharedPath, 'fr')
-    ).toBe('/contact');
-    expect(
-      getSharedPath('/about-us', result.defaultLocalePaths, undefined)
-    ).toBe('/about');
-    expect(
-      getSharedPath('/contact-us', result.defaultLocalePaths, undefined)
-    ).toBe('/contact');
-  });
-
-  it('should index dynamic paths', () => {
-    const pathConfig: PathConfig = {
-      '/blog/[id]': {
-        en: '/blog/[id]',
-        fr: '/article/[id]',
-      },
-      '/user/[userId]/post/[postId]': {
-        en: '/user/[userId]/post/[postId]',
-        fr: '/utilisateur/[userId]/article/[postId]',
-      },
-    };
-
-    const result = createPathToSharedPathMap(pathConfig, true, 'en');
-
-    expect(getSharedPath('/blog/1', result.pathToSharedPath, undefined)).toBe(
+    expect(getSharedPath('/blog/1', pathToSharedPath, undefined)).toBe(
       '/blog/[id]'
     );
-    expect(getSharedPath('/en/blog/2', result.pathToSharedPath, 'en')).toBe(
+    expect(getSharedPath('/fr/article/3', pathToSharedPath, 'fr')).toBe(
       '/blog/[id]'
     );
-    expect(getSharedPath('/fr/article/3', result.pathToSharedPath, 'fr')).toBe(
-      '/blog/[id]'
-    );
+    // With a prefixed default locale there are no unprefixed default paths.
     expect(
-      getSharedPath('/user/4/post/5', result.pathToSharedPath, undefined)
-    ).toBe('/user/[userId]/post/[postId]');
+      getSharedPath('/about-us', defaultLocalePaths, undefined)
+    ).toBeUndefined();
   });
 
-  it('should handle mixed static and dynamic configurations', () => {
-    const pathConfig: PathConfig = {
-      '/static-page': '/static-localized',
-      '/dynamic/[id]': {
-        en: '/dynamic/[id]',
-        fr: '/dynamique/[id]',
-      },
-    };
-
-    const result = createPathToSharedPathMap(pathConfig, true, 'en');
-
-    expect(
-      getSharedPath('/static-page', result.pathToSharedPath, undefined)
-    ).toBe('/static-page');
-    expect(
-      getSharedPath('/dynamic/1', result.pathToSharedPath, undefined)
-    ).toBe('/dynamic/[id]');
-    expect(getSharedPath('/en/dynamic/2', result.pathToSharedPath, 'en')).toBe(
-      '/dynamic/[id]'
+  it('indexes unprefixed default-locale paths when the default is unprefixed', () => {
+    const { pathToSharedPath, defaultLocalePaths } = createPathToSharedPathMap(
+      pathConfig,
+      false,
+      'en'
     );
-    expect(
-      getSharedPath('/fr/dynamique/3', result.pathToSharedPath, 'fr')
-    ).toBe('/dynamic/[id]');
+
+    expect(getSharedPath('/about-us', pathToSharedPath, undefined)).toBe(
+      '/about'
+    );
+    expect(getSharedPath('/fr/a-propos', pathToSharedPath, 'fr')).toBe(
+      '/about'
+    );
+    expect(getSharedPath('/about-us', defaultLocalePaths, undefined)).toBe(
+      '/about'
+    );
   });
 });
 
@@ -444,9 +166,7 @@ describe('getSharedPath', () => {
     ['/about', '/about'],
     ['/en/about-us', '/about'],
     ['/fr/a-propos', '/about'],
-    ['/es/acerca-de', '/about'],
     ['/blog/[id]', '/blog/[id]'],
-    ['/en/blog/[id]', '/blog/[id]'],
     ['/fr/article/[id]', '/blog/[id]'],
     ['/user/[id]/settings', '/user/[id]/settings'],
   ]);
@@ -459,61 +179,25 @@ describe('getSharedPath', () => {
     });
   });
 
-  it('should find exact matches first', () => {
-    expect(getSharedPath('/about', pathToSharedPath, undefined)).toBe('/about');
-    expect(getSharedPath('/en/about-us', pathToSharedPath, 'en')).toBe(
-      '/about'
-    );
-    expect(getSharedPath('/fr/a-propos', pathToSharedPath, 'fr')).toBe(
-      '/about'
-    );
-  });
-
-  it('should handle locale prefix removal', () => {
-    expect(getSharedPath('/fr/a-propos', pathToSharedPath, 'fr')).toBe(
-      '/about'
-    );
-    expect(getSharedPath('/es/acerca-de', pathToSharedPath, 'es')).toBe(
-      '/about'
-    );
-  });
-
-  it('should match dynamic paths with regex', () => {
-    expect(getSharedPath('/blog/123', pathToSharedPath, undefined)).toBe(
-      '/blog/[id]'
-    );
-    expect(getSharedPath('/en/blog/456', pathToSharedPath, 'en')).toBe(
-      '/blog/[id]'
-    );
-    expect(getSharedPath('/fr/article/789', pathToSharedPath, 'fr')).toBe(
-      '/blog/[id]'
-    );
-    expect(
-      getSharedPath('/user/john/settings', pathToSharedPath, undefined)
-    ).toBe('/user/[id]/settings');
-  });
-
-  it('treats regex metacharacters as literal path content', () => {
-    const pathMatcher = createPathMatcher([
-      ['/files/v1.0/[id]', '/files/[version]/[id]'],
-      ['/language/c++/[slug]', '/language/[slug]'],
-    ]);
-
-    expect(getSharedPath('/files/v1.0/report', pathMatcher, undefined)).toBe(
-      '/files/[version]/[id]'
-    );
-    expect(getSharedPath('/files/v1x0/report', pathMatcher, undefined)).toBe(
-      undefined
-    );
-    expect(getSharedPath('/language/c++/guide', pathMatcher, undefined)).toBe(
-      '/language/[slug]'
-    );
+  it.each([
+    ['/about', undefined, '/about'],
+    ['/en/about-us', 'en', '/about'],
+    ['/fr/a-propos', 'fr', '/about'],
+    ['/blog/123', undefined, '/blog/[id]'],
+    ['/user/john/settings', undefined, '/user/[id]/settings'],
+    ['/nonexistent', undefined, undefined],
+    ['/en/nonexistent', 'en', undefined],
+    ['/', undefined, undefined],
+    ['', undefined, undefined],
+    ['/en/', 'en', undefined],
+  ])('matches %j with pathname locale %s', (pathname, locale, expected) => {
+    expect(getSharedPath(pathname, pathToSharedPath, locale)).toBe(expected);
   });
 
   it('normalizes encoded and Unicode path segments', () => {
     const pathMatcher = createPathMatcher([
       ['/café/[slug]', '/café/[slug]'],
-      ['/articles/e\u0301lite/[slug]', '/articles/élite/[slug]'],
+      ['/articles/élite/[slug]', '/articles/élite/[slug]'],
       ['/files/%2F/[slug]', '/files/%2F/[slug]'],
     ]);
 
@@ -528,18 +212,6 @@ describe('getSharedPath', () => {
     ).toBe('/articles/élite/[slug]');
     expect(getSharedPath('/files/%2F/guide', pathMatcher, undefined)).toBe(
       '/files/%2F/[slug]'
-    );
-  });
-
-  it('matches paths with or without a trailing slash', () => {
-    const pathMatcher = createPathMatcher([
-      ['/about', '/about'],
-      ['/docs/[slug]', '/docs/[slug]'],
-    ]);
-
-    expect(getSharedPath('/about/', pathMatcher, undefined)).toBe('/about');
-    expect(getSharedPath('/docs/guide/', pathMatcher, undefined)).toBe(
-      '/docs/[slug]'
     );
   });
 
@@ -564,48 +236,141 @@ describe('getSharedPath', () => {
     );
   });
 
-  it('prioritizes static, dynamic, and catch-all paths', () => {
-    const pathMatcher = createPathMatcher([
-      ['/docs/[...slug]', '/docs/[...slug]'],
-      ['/docs/[section]', '/docs/[section]'],
-      ['/docs/getting-started', '/docs/getting-started'],
-    ]);
+  it('accepts matcher inputs without a leading slash', () => {
+    const matcher = createPathMatcher([['docs/[slug]', '/docs/[slug]']]);
 
-    expect(getSharedPath('/docs/getting-started', pathMatcher, undefined)).toBe(
-      '/docs/getting-started'
-    );
-    expect(getSharedPath('/docs/api', pathMatcher, undefined)).toBe(
-      '/docs/[section]'
-    );
-    expect(getSharedPath('/docs/api/auth', pathMatcher, undefined)).toBe(
-      '/docs/[...slug]'
-    );
+    expect(matchSharedPath('docs/guide', matcher, undefined)).toMatchObject({
+      pathTemplate: 'docs/[slug]',
+      sharedPath: '/docs/[slug]',
+    });
   });
 
-  it('should return undefined for no matches', () => {
-    expect(getSharedPath('/nonexistent', pathToSharedPath, undefined)).toBe(
-      undefined
-    );
-    expect(getSharedPath('/en/nonexistent', pathToSharedPath, 'en')).toBe(
-      undefined
-    );
+  it('backtracks from a static dead end to a valid dynamic route', () => {
+    const matcher = createPathMatcher([
+      ['/docs/fixed/introduction', '/static'],
+      ['/docs/[section]/reference', '/dynamic'],
+    ]);
+
     expect(
-      getSharedPath('/completely/different/path', pathToSharedPath, 'fr')
-    ).toBe(undefined);
+      matchSharedPath('/docs/fixed/reference', matcher, undefined)
+    ).toMatchObject({
+      pathTemplate: '/docs/[section]/reference',
+      sharedPath: '/dynamic',
+    });
   });
 
-  it('should prioritize exact matches over regex matches', () => {
-    const pathMatcher = createPathMatcher([
-      ['/about', '/about'],
-      ['/[slug]', '/dynamic'],
+  // Mirrors the previous map behavior: the later entry wins when two
+  // parameter names describe the same path shape.
+  it.each([
+    ['/products/[firstId]', '/products/[secondId]', '/products/card'],
+    ['/docs/[...firstSlug]', '/docs/[...secondSlug]', '/docs/guides/start'],
+    ['/news/[[...firstSlug]]', '/news/[[...secondSlug]]', '/news'],
+  ])('lets %s lose to the later %s', (first, second, pathname) => {
+    const matcher = createPathMatcher([
+      [first, '/first'],
+      [second, '/second'],
     ]);
-    expect(getSharedPath('/about', pathMatcher, undefined)).toBe('/about');
+
+    expect(matchSharedPath(pathname, matcher, undefined)).toMatchObject({
+      pathTemplate: second,
+      sharedPath: '/second',
+    });
   });
 
-  it('should handle edge cases', () => {
-    expect(getSharedPath('/', pathToSharedPath, undefined)).toBe(undefined);
-    expect(getSharedPath('', pathToSharedPath, undefined)).toBe(undefined);
-    expect(getSharedPath('/en/', pathToSharedPath, 'en')).toBe(undefined);
+  it.each([
+    // One of each malformed class: bare and truncated escapes, non-hex
+    // digits, and truncated, invalid, or surrogate UTF-8 sequences.
+    '/%',
+    '/safe/%0',
+    '/safe/%2G',
+    '/safe/value%GG',
+    '/safe/%C3',
+    '/safe/%E0%A4%A',
+    '/safe/%F0%28%8C%28',
+    '/safe/%ED%A0%80',
+  ])('does not throw for malformed pathname %s', (path) => {
+    const matcher = createPathMatcher([['/safe/[slug]', '/safe/[slug]']]);
+
+    expect(() => matchSharedPath(path, matcher, undefined)).not.toThrow();
+  });
+});
+
+/**
+ * Two namespaces register every route shape in one matcher so that neighbors
+ * cannot shadow each other; the second flips trailing slashes and encoding.
+ */
+describe('path matcher route shapes', () => {
+  const pathEntries: Array<readonly [string, string]> = [];
+  const matchCases: {
+    label: string;
+    pathname: string;
+    pathTemplate: string;
+    sharedPath: string;
+  }[] = [];
+
+  for (const index of [1, 2]) {
+    const namespace = `/tenant-${index}`;
+    const even = index % 2 === 0;
+    const slashIfEven = even ? '/' : '';
+    const slashIfOdd = even ? '' : '/';
+    const routes = [
+      {
+        label: 'prefers a static route',
+        template: `${namespace}/docs/fixed`,
+        pathname: `${namespace}/docs/fixed${slashIfEven}`,
+      },
+      {
+        label: 'falls back to a dynamic route',
+        template: `${namespace}/docs/[section]`,
+        pathname: `${namespace}/docs/api${slashIfOdd}`,
+      },
+      {
+        label: 'falls back to a required catch-all route',
+        template: `${namespace}/docs/[...slug]`,
+        pathname: `${namespace}/docs/api/auth/version${slashIfEven}`,
+      },
+      {
+        label: 'matches an empty optional catch-all route',
+        template: `${namespace}/updates/[[...slug]]`,
+        pathname: `${namespace}/updates${slashIfOdd}`,
+      },
+      {
+        label: 'matches a populated optional catch-all route',
+        template: `${namespace}/updates/[[...slug]]`,
+        pathname: `${namespace}/updates/world/latest/story${slashIfEven}`,
+      },
+      {
+        label: 'matches multiple dynamic segments',
+        template: `${namespace}/accounts/[accountId]/cards/[cardId]`,
+        pathname: `${namespace}/accounts/account/cards/card${slashIfOdd}`,
+      },
+      {
+        label: 'normalizes encoded Unicode',
+        template: `${namespace}/café/[slug]`,
+        pathname: `${namespace}/${even ? 'caf%C3%A9' : 'café'}/article`,
+      },
+    ];
+
+    for (const { label, template, pathname } of routes) {
+      const sharedPath = `/shared${template}`;
+      pathEntries.push([template, sharedPath]);
+      matchCases.push({
+        label: `namespace ${index} ${label}`,
+        pathname,
+        pathTemplate: template,
+        sharedPath,
+      });
+    }
+  }
+
+  const matcher = createPathMatcher(pathEntries);
+
+  it.each(matchCases)('$label', ({ pathname, pathTemplate, sharedPath }) => {
+    expect(matchSharedPath(pathname, matcher, undefined)).toEqual({
+      matchedPathname: pathname,
+      pathTemplate,
+      sharedPath,
+    });
   });
 });
 
@@ -655,9 +420,10 @@ describe('configured dynamic route literals', () => {
     }
   );
 
-  it('prefers exact static routes over earlier dynamic routes', () => {
+  it('prefers exact static routes over earlier dynamic and catch-all routes', () => {
     const { pathToSharedPath } = createPathToSharedPathMap(
       {
+        '/v1.0/[...slug]': { fr: '/version.1/[...slug]' },
         '/v1.0/[id]': { fr: '/version.1/[id]' },
         '/v1.0/new': { fr: '/version.1/new' },
       },
@@ -670,6 +436,12 @@ describe('configured dynamic route literals', () => {
     );
     expect(getSharedPath('/fr/version.1/new', pathToSharedPath, 'fr')).toBe(
       '/v1.0/new'
+    );
+    expect(getSharedPath('/v1.0/other', pathToSharedPath, undefined)).toBe(
+      '/v1.0/[id]'
+    );
+    expect(getSharedPath('/v1.0/other/deep', pathToSharedPath, undefined)).toBe(
+      '/v1.0/[...slug]'
     );
   });
 

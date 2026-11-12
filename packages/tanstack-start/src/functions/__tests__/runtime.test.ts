@@ -81,7 +81,7 @@ function resetSingletons() {
   }
 }
 
-describe.sequential('isomorphic translation functions', () => {
+describe('isomorphic translation functions', () => {
   beforeEach(() => {
     resetSingletons();
     initializeI18nConfig(config);

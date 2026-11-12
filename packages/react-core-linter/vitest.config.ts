@@ -1,15 +1,20 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import { vitestPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
-    exclude: ['node_modules', 'dist'],
-  },
-  resolve: {
-    alias: {
-      '@': '/src',
+export default mergeConfig(
+  vitestPreset,
+  defineConfig({
+    test: {
+      // RuleTester registers its cases through the global describe/it/afterAll.
+      globals: true,
+      environment: 'node',
+      include: ['src/**/*.test.ts'],
+      exclude: ['node_modules', 'dist'],
+      // The suites are pure RuleTester tables (no mocks, no global state), so
+      // every file runs in one worker and shares one module registry: ESLint
+      // and the TypeScript parser are imported once instead of once per file.
+      isolate: false,
+      fileParallelism: false,
     },
-  },
-});
+  })
+);

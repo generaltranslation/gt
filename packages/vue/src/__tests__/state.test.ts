@@ -1,15 +1,9 @@
-import {
-  createRenderer,
-  defineComponent,
-  h,
-  nextTick,
-  ref,
-  type Component,
-} from 'vue';
+import { defineComponent, h, nextTick, ref } from 'vue';
 import { hashSource } from 'generaltranslation/id';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Num, Plural, createGT, useGT, useLocale } from '../index';
-import type { GTPlugin, TranslationCatalog } from '../index';
+import type { TranslationCatalog } from '../index';
+import { installCookieDocument, mount, textContent } from './testUtils';
 
 describe('gt-vue runtime state', () => {
   afterEach(() => {
@@ -62,7 +56,7 @@ describe('gt-vue runtime state', () => {
 
     const french = plugin.setLocale('fr');
     const chinese = plugin.setLocale('zh');
-    await vi.waitFor(() => expect(pending.size).toBe(2));
+    await vi.waitFor(() => expect(pending.size).toBe(2), { interval: 1 });
 
     pending.get('zh')?.reject(new Error('zh failed'));
     await expect(chinese).rejects.toThrow('zh failed');
@@ -157,7 +151,9 @@ describe('gt-vue runtime state', () => {
     cookieDocument.writes.length = 0;
 
     const switching = plugin.setLocale('fr');
-    await vi.waitFor(() => expect(loadTranslations).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(loadTranslations).toHaveBeenCalledOnce(), {
+      interval: 1,
+    });
 
     expect(plugin.getLocale()).toBe('en');
     expect(textContent(mounted.root)).toBe('en');
@@ -233,7 +229,7 @@ describe('gt-vue runtime state', () => {
 
     const french = plugin.setLocale('fr');
     const chinese = plugin.setLocale('zh');
-    await vi.waitFor(() => expect(pending.size).toBe(2));
+    await vi.waitFor(() => expect(pending.size).toBe(2), { interval: 1 });
 
     pending.get('zh')?.({});
     await chinese;
@@ -362,106 +358,3 @@ describe('gt-vue runtime state', () => {
     expect(loadTranslations).not.toHaveBeenCalled();
   });
 });
-
-type HostNode = {
-  children: HostNode[];
-  parent: HostNode | null;
-  props: Record<string, unknown>;
-  text: string;
-  type: string;
-};
-
-function mount(rootComponent: Component, plugin?: GTPlugin) {
-  const renderer = createRenderer<HostNode, HostNode>({
-    createComment: (text) => createHostNode('comment', text),
-    createElement: (type) => createHostNode(type),
-    createText: (text) => createHostNode('text', text),
-    insert(child, parent, anchor) {
-      child.parent = parent;
-      const index = anchor ? parent.children.indexOf(anchor) : -1;
-      if (index >= 0) parent.children.splice(index, 0, child);
-      else parent.children.push(child);
-    },
-    nextSibling(node) {
-      if (!node.parent) return null;
-      const index = node.parent.children.indexOf(node);
-      return node.parent.children[index + 1] ?? null;
-    },
-    parentNode: (node) => node.parent,
-    patchProp(element, key, _previous, next) {
-      element.props[key] = next;
-    },
-    remove(node) {
-      if (!node.parent) return;
-      const index = node.parent.children.indexOf(node);
-      if (index >= 0) node.parent.children.splice(index, 1);
-    },
-    setElementText(element, text) {
-      element.text = text;
-      element.children = [];
-    },
-    setText(node, text) {
-      node.text = text;
-    },
-  });
-  const app = renderer.createApp(rootComponent);
-  if (plugin) app.use(plugin);
-  const root = createHostNode('root');
-  app.mount(root);
-  return { app, root };
-}
-
-function createHostNode(type: string, text = ''): HostNode {
-  return { children: [], parent: null, props: {}, text, type };
-}
-
-function textContent(node: HostNode): string {
-  return node.text + node.children.map(textContent).join('');
-}
-
-class TestCookieDocument {
-  readonly writes: string[] = [];
-  private readonly values = new Map<string, string>();
-
-  constructor(cookieHeader = '') {
-    for (const cookie of cookieHeader.split(';')) {
-      const separator = cookie.indexOf('=');
-      if (separator < 0) continue;
-      this.values.set(
-        cookie.slice(0, separator).trim(),
-        cookie.slice(separator + 1).trim()
-      );
-    }
-  }
-
-  get cookie(): string {
-    return [...this.values]
-      .map(([name, value]) => `${name}=${value}`)
-      .join('; ');
-  }
-
-  set cookie(serializedCookie: string) {
-    this.writes.push(serializedCookie);
-    const [cookie = ''] = serializedCookie.split(';');
-    const separator = cookie.indexOf('=');
-    if (separator < 0) return;
-    this.values.set(
-      cookie.slice(0, separator).trim(),
-      cookie.slice(separator + 1).trim()
-    );
-  }
-
-  get(cookieName: string): string | undefined {
-    return this.values.get(cookieName);
-  }
-
-  delete(cookieName: string): void {
-    this.values.delete(cookieName);
-  }
-}
-
-function installCookieDocument(cookieHeader = ''): TestCookieDocument {
-  const cookieDocument = new TestCookieDocument(cookieHeader);
-  vi.stubGlobal('document', cookieDocument);
-  return cookieDocument;
-}

@@ -1,836 +1,538 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { parse } from '@babel/parser';
+import generateModule from '@babel/generator';
 import fs from 'node:fs';
-import { updateViteConfig } from '../updateViteConfig';
-
-// Mock fs.promises.readFile and writeFile
-vi.mock('node:fs', () => ({
-  default: {
-    promises: {
-      readFile: vi.fn(),
-      writeFile: vi.fn(),
-    },
-  },
-}));
-
-// Mock needsCJS - we can mock this one as requested
-vi.mock('../../../utils/parse/needsCJS.js', () => ({
-  needsCJS: vi.fn(),
-}));
-
-// Mock spinner and logging
-vi.mock('../../../../console/logging.js', () => ({
-  createSpinner: vi.fn(() => ({
-    start: vi.fn(),
-    stop: vi.fn(),
-  })),
-  logError: vi.fn(),
-  exitSync: vi.fn(),
-}));
-
-// Mock chalk to prevent any styling output
-vi.mock('chalk', () => ({
-  default: {
-    green: vi.fn((text) => text),
-    red: vi.fn((text) => text),
-    yellow: vi.fn((text) => text),
-    blue: vi.fn((text) => text),
-    cyan: vi.fn((text) => text),
-    magenta: vi.fn((text) => text),
-    white: vi.fn((text) => text),
-    gray: vi.fn((text) => text),
-    bold: vi.fn((text) => text),
-  },
-}));
-
-// Mock @clack/prompts to prevent console output from spinners
-vi.mock('@clack/prompts', () => ({
-  spinner: vi.fn(() => ({
-    start: vi.fn(),
-    stop: vi.fn(),
-    message: vi.fn(),
-  })),
-  log: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    success: vi.fn(),
-    step: vi.fn(),
-    message: vi.fn(),
-  },
-}));
-
-// Import mocked functions
-// @ts-expect-error - we want to mock this function
-import { needsCJS } from '../../../utils/parse/needsCJS.js';
+import { updateViteConfig } from '../updateViteConfig.js';
+import { addCompilerImport } from '../utils/addCompilerImport.js';
+import { addPluginInvocation } from '../utils/addPluginInvocation.js';
+import { checkCompilerImport } from '../utils/checkCompilerImport.js';
+import { checkPluginInvocation } from '../utils/checkPluginInvocation.js';
 import { exitSync } from '../../../../console/logging.js';
 
+vi.mock('node:fs', () => ({
+  default: { promises: { readFile: vi.fn(), writeFile: vi.fn() } },
+}));
+vi.mock('../../../../console/logging.js', () => ({ exitSync: vi.fn() }));
+vi.mock('../../../../console/logger.js', () => ({
+  logger: {
+    createSpinner: () => ({ start: vi.fn(), stop: vi.fn() }),
+    error: vi.fn(),
+  },
+}));
+
+const generate = generateModule.default || generateModule;
+
+const COMPILER = '@generaltranslation/compiler';
+const ESM_IMPORT = `import { vite as gtCompiler } from "${COMPILER}";`;
+const CJS_REQUIRE = `const gtCompiler = require("${COMPILER}").vite;`;
+
+const parseCode = (code: string) =>
+  parse(code, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
+/** Collapses whitespace so expectations do not depend on code layout. */
+const squash = (code: string) => code.replace(/\s+/g, ' ').trim();
+const print = (ast: ReturnType<typeof parseCode>) => squash(generate(ast).code);
+
 describe('updateViteConfig', () => {
-  const mockReadFile = vi.mocked(fs.promises.readFile);
-  const mockWriteFile = vi.mocked(fs.promises.writeFile);
-  const mockNeedsCJS = vi.mocked(needsCJS);
-  const mockExitSync = vi.mocked(exitSync);
+  const readFile = vi.mocked(fs.promises.readFile);
+  const writeFile = vi.mocked(fs.promises.writeFile);
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockNeedsCJS.mockReturnValue(false); // Default to ESM
+    vi.resetAllMocks();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  // Helper function to parse generated code and check for specific patterns
-  function parseAndCheck(
-    code: string,
-    checks: {
-      hasCompilerImport?: boolean;
-      hasPluginInvocation?: boolean;
-      alias?: string;
-      namespace?: string;
-    }
-  ) {
-    const ast = parse(code, {
-      sourceType: 'module',
-      plugins: ['typescript', 'jsx'],
+  async function update(code: string, viteConfigPath = '/app/vite.config.ts') {
+    readFile.mockResolvedValue(code);
+    const warnings: string[] = [];
+    const filesUpdated: string[] = [];
+    await updateViteConfig({
+      errors: [],
+      warnings,
+      filesUpdated,
+      viteConfigPath,
     });
-
-    const results = {
-      hasCompilerImport: false,
-      hasPluginInvocation: false,
-      alias: null as string | null,
-      namespace: null as string | null,
-    };
-
-    // Check for compiler import
-    for (const node of ast.program.body) {
-      if (
-        node.type === 'ImportDeclaration' &&
-        node.source.value === '@generaltranslation/compiler'
-      ) {
-        results.hasCompilerImport = true;
-        for (const spec of node.specifiers) {
-          if (
-            spec.type === 'ImportSpecifier' &&
-            spec.imported.type === 'Identifier' &&
-            spec.imported.name === 'vite'
-          ) {
-            results.alias = spec.local.name;
-          }
-        }
-      } else if (node.type === 'VariableDeclaration') {
-        const decl = node.declarations[0];
-        if (
-          decl &&
-          decl.init?.type === 'MemberExpression' &&
-          decl.init.object?.type === 'CallExpression' &&
-          decl.init.object.callee?.type === 'Identifier' &&
-          decl.init.object.callee.name === 'require' &&
-          decl.init.object.arguments?.[0]?.type === 'StringLiteral' &&
-          decl.init.object.arguments[0].value ===
-            '@generaltranslation/compiler' &&
-          decl.init.property?.type === 'Identifier' &&
-          decl.init.property.name === 'vite' &&
-          decl.id?.type === 'Identifier'
-        ) {
-          results.hasCompilerImport = true;
-          results.alias = decl.id.name;
-        }
-      }
-    }
-
-    // Check for plugin invocation (simplified)
-    const codeString = code;
-    if (
-      checks.alias &&
-      new RegExp(`${checks.alias}\\s*\\(\\s*\\)`).test(codeString)
-    ) {
-      results.hasPluginInvocation = true;
-    }
-    if (
-      checks.namespace &&
-      new RegExp(`${checks.namespace}\\.vite\\s*\\(\\s*\\)`).test(codeString)
-    ) {
-      results.hasPluginInvocation = true;
-    }
-
-    return results;
+    expect(writeFile).toHaveBeenCalledOnce();
+    expect(writeFile.mock.calls[0][0]).toBe(viteConfigPath);
+    expect(filesUpdated).toEqual([viteConfigPath]);
+    return { code: squash(String(writeFile.mock.calls[0][1])), warnings };
   }
 
-  describe('ESM scenarios', () => {
-    beforeEach(() => {
-      mockNeedsCJS.mockReturnValue(false);
-    });
+  it.each([
+    [
+      'adds the import and the plugin to an ESM config',
+      `import { defineConfig } from 'vite';
+       import react from '@vitejs/plugin-react';
+       export default defineConfig({ plugins: [react()] });`,
+      `${ESM_IMPORT}import { defineConfig } from 'vite'; import react from '@vitejs/plugin-react'; export default defineConfig({ plugins: [react(), gtCompiler()] });`,
+    ],
+    [
+      'adds the require and the plugin to a CJS config',
+      `const { defineConfig } = require('vite');
+       const react = require('@vitejs/plugin-react');
+       module.exports = defineConfig({ plugins: [react()] });`,
+      `${CJS_REQUIRE}const { defineConfig } = require('vite'); const react = require('@vitejs/plugin-react'); module.exports = defineConfig({ plugins: [react(), gtCompiler()] });`,
+    ],
+    [
+      'leaves a config that already uses the plugin unchanged',
+      `import { defineConfig } from 'vite';
+       import { vite as myCompiler } from '${COMPILER}';
+       export default defineConfig({ plugins: [myCompiler()] });`,
+      `import { defineConfig } from 'vite'; import { vite as myCompiler } from '${COMPILER}'; export default defineConfig({ plugins: [myCompiler()] });`,
+    ],
+    [
+      'reuses an aliased named import',
+      `import { vite as myCompiler } from '${COMPILER}';
+       export default defineConfig({ plugins: [react()] });`,
+      `import { vite as myCompiler } from '${COMPILER}'; export default defineConfig({ plugins: [react(), myCompiler()] });`,
+    ],
+    [
+      'reuses a namespace import',
+      `import * as gt from '${COMPILER}';
+       export default defineConfig({ plugins: [react()] });`,
+      `import * as gt from '${COMPILER}'; export default defineConfig({ plugins: [react(), gt.vite()] });`,
+    ],
+    [
+      'reuses a default import',
+      `import gtDefault from '${COMPILER}';
+       export default defineConfig({ plugins: [react()] });`,
+      `import gtDefault from '${COMPILER}'; export default defineConfig({ plugins: [react(), gtDefault.vite()] });`,
+    ],
+    [
+      'reuses a destructured require',
+      `const { vite: myCompiler } = require('${COMPILER}');
+       module.exports = defineConfig({ plugins: [react()] });`,
+      `const { vite: myCompiler } = require('${COMPILER}'); module.exports = defineConfig({ plugins: [react(), myCompiler()] });`,
+    ],
+    [
+      'reuses a namespace require',
+      `const gt = require('${COMPILER}');
+       module.exports = defineConfig({ plugins: [react()] });`,
+      `const gt = require('${COMPILER}'); module.exports = defineConfig({ plugins: [react(), gt.vite()] });`,
+    ],
+    [
+      'only touches the top-level plugins of the config',
+      `import { defineConfig } from 'vite';
+       export default defineConfig({
+         plugins: [react({ babel: { plugins: ['@babel/plugin-syntax-jsx'] } })],
+         esbuild: { jsxFactory: 'React.createElement' }
+       });`,
+      `${ESM_IMPORT}import { defineConfig } from 'vite'; export default defineConfig({ plugins: [react({ babel: { plugins: ['@babel/plugin-syntax-jsx'] } }), gtCompiler()], esbuild: { jsxFactory: 'React.createElement' } });`,
+    ],
+  ])('%s', async (_name, input, expected) => {
+    const result = await update(input, '/app/vite.config.js');
 
-    it('should add import and plugin to clean Vite config', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        import react from '@vitejs/plugin-react';
-        
-        export default defineConfig({
-          plugins: [react()]
-        });
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-        packageJson: { type: 'module' },
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      const results = parseAndCheck(updatedCode as string, {
-        alias: 'gtCompiler',
-      });
-      expect(results.hasCompilerImport).toBe(true);
-      expect(results.hasPluginInvocation).toBe(true);
-      expect(results.alias).toBe('gtCompiler');
-
-      expect(filesUpdated).toContain('/path/to/vite.config.ts');
-      expect(errors).toHaveLength(0);
-      expect(warnings).toHaveLength(0);
-    });
-
-    it('should not add import if already present with alias', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        import { vite as myCompiler } from '@generaltranslation/compiler';
-        
-        export default defineConfig({
-          plugins: [myCompiler()]
-        });
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      // Should preserve existing import and not add plugin (already present)
-      expect(updatedCode).toContain('vite as myCompiler');
-      expect(updatedCode).toContain('myCompiler()');
-      expect(filesUpdated).toContain('/path/to/vite.config.ts');
-    });
-
-    it('should add plugin invocation when import exists but plugin missing', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        import { vite as myCompiler } from '@generaltranslation/compiler';
-        
-        export default defineConfig({
-          plugins: [react()]
-        });
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      // Should preserve existing import and add plugin
-      expect(updatedCode).toContain('vite as myCompiler');
-      expect(updatedCode).toContain('react()');
-      expect(updatedCode).toContain('myCompiler()');
-    });
-
-    it('should handle namespace imports', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        import * as gt from '@generaltranslation/compiler';
-        
-        export default defineConfig({
-          plugins: [react()]
-        });
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      expect(updatedCode).toContain('* as gt');
-      expect(updatedCode).toContain('gt.vite()');
-    });
-
-    it('should handle default imports', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        import gtDefault from '@generaltranslation/compiler';
-        
-        export default defineConfig({
-          plugins: [react()]
-        });
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      expect(updatedCode).toContain('import gtDefault');
-      expect(updatedCode).toContain('gtDefault.vite()');
-    });
+    expect(result.code).toBe(expected);
+    expect(result.warnings).toEqual([]);
   });
 
-  describe('CJS scenarios', () => {
-    beforeEach(() => {
-      mockNeedsCJS.mockReturnValue(true);
-    });
+  it('uses an ESM import and warns when the config mixes import and require', async () => {
+    const result = await update(
+      `import { defineConfig } from 'vite';
+       const react = require('@vitejs/plugin-react');
+       export default defineConfig({ plugins: [react()] });`
+    );
 
-    it('should add require and plugin to CJS config', async () => {
-      const inputCode = `
-        const { defineConfig } = require('vite');
-        const react = require('@vitejs/plugin-react');
-        
-        module.exports = defineConfig({
-          plugins: [react()]
-        });
-      `;
+    expect(result.code).toBe(
+      `${ESM_IMPORT}import { defineConfig } from 'vite'; const react = require('@vitejs/plugin-react'); export default defineConfig({ plugins: [react(), gtCompiler()] });`
+    );
+    expect(result.warnings).toEqual([
+      expect.stringContaining('Mixed ES6 imports and CommonJS require'),
+    ]);
+  });
 
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
+  // The import is still added; the user has to add the plugin by hand
+  it.each([
+    [
+      'a config without plugins',
+      `import { defineConfig } from 'vite';
+       export default defineConfig({ server: { port: 3000 } });`,
+      `${ESM_IMPORT}import { defineConfig } from 'vite'; export default defineConfig({ server: { port: 3000 } });`,
+    ],
+    [
+      'a config function',
+      `import { defineConfig } from 'vite';
+       export default defineConfig(({ mode }) => ({ plugins: [react()] }));`,
+      `${ESM_IMPORT}import { defineConfig } from 'vite'; export default defineConfig(({ mode }) => ({ plugins: [react()] }));`,
+    ],
+    [
+      'a config passed as a variable',
+      `import { defineConfig } from 'vite';
+       const config: UserConfig = { plugins: [react()] };
+       export default defineConfig(config);`,
+      `${ESM_IMPORT}import { defineConfig } from 'vite'; const config: UserConfig = { plugins: [react()] }; export default defineConfig(config);`,
+    ],
+    ['an empty file', '', ESM_IMPORT],
+  ])(
+    'warns when it cannot add the plugin to %s',
+    async (_name, input, expected) => {
+      const result = await update(input);
 
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
+      expect(result.code).toBe(expected);
+      expect(result.warnings).toEqual([
+        expect.stringMatching(
+          /^Failed to add gt compiler plugin to \/app\/vite\.config\.ts\. Add the plugin manually:/
+        ),
+      ]);
+    }
+  );
 
-      await updateViteConfig({
-        errors,
-        warnings,
+  describe('failures', () => {
+    let filesUpdated: string[];
+    const run = () =>
+      updateViteConfig({
+        errors: [],
+        warnings: [],
         filesUpdated,
-        viteConfigPath: '/path/to/vite.config.js',
+        viteConfigPath: '/app/vite.config.ts',
       });
 
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
+    beforeEach(() => {
+      filesUpdated = [];
+      vi.mocked(exitSync).mockImplementation(() => {
+        throw new Error('Process exited');
+      });
+    });
 
-      expect(updatedCode).toContain(
-        'require("@generaltranslation/compiler").vite'
+    it('exits when the config cannot be read', async () => {
+      readFile.mockRejectedValue(new Error('File not found'));
+
+      await expect(run()).rejects.toThrow('Process exited');
+      expect(exitSync).toHaveBeenCalledWith(1);
+      expect(writeFile).not.toHaveBeenCalled();
+    });
+
+    it('exits when the config cannot be parsed', async () => {
+      readFile.mockResolvedValue(
+        'export default defineConfig({ plugins: [ }] });'
       );
-      expect(updatedCode).toContain('gtCompiler()');
-      expect(filesUpdated).toContain('/path/to/vite.config.js');
+
+      await expect(run()).rejects.toThrow('Process exited');
+      expect(exitSync).toHaveBeenCalledWith(1);
+      expect(writeFile).not.toHaveBeenCalled();
     });
 
-    it('should handle existing CJS require with destructuring', async () => {
-      const inputCode = `
-        const { defineConfig } = require('vite');
-        const { vite: myCompiler } = require('@generaltranslation/compiler');
-        
-        module.exports = defineConfig({
-          plugins: [react()]
-        });
-      `;
+    it('exits when the config cannot be written', async () => {
+      readFile.mockResolvedValue(
+        'export default defineConfig({ plugins: [] });'
+      );
+      writeFile.mockRejectedValue(new Error('Permission denied'));
 
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.js',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      expect(updatedCode).toContain('vite: myCompiler');
-      expect(updatedCode).toContain('myCompiler()');
+      await expect(run()).rejects.toThrow('Process exited');
+      expect(exitSync).toHaveBeenCalledWith(1);
+      expect(filesUpdated).toEqual([]);
     });
+  });
+});
 
-    it('should handle namespace require', async () => {
-      const inputCode = `
-        const { defineConfig } = require('vite');
-        const gt = require('@generaltranslation/compiler');
-        
-        module.exports = defineConfig({
-          plugins: [react()]
-        });
-      `;
+describe('addCompilerImport', () => {
+  const config = `// Vite configuration
+    import { defineConfig } from 'vite';
+    export default defineConfig({});`;
 
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
+  it.each([
+    ['an ESM import', false, ESM_IMPORT],
+    ['a CJS require', true, CJS_REQUIRE],
+  ])('prepends %s', (_name, cjsEnabled, statement) => {
+    const ast = parseCode(config);
+    addCompilerImport({ ast, cjsEnabled });
+    const empty = parseCode('');
+    addCompilerImport({ ast: empty, cjsEnabled });
 
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
+    expect(print(ast)).toBe(
+      `${statement} // Vite configuration import { defineConfig } from 'vite'; export default defineConfig({});`
+    );
+    expect(print(empty)).toBe(statement);
+  });
+});
 
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.js',
-      });
+describe('addPluginInvocation', () => {
+  function add(code: string, alias: string | null, namespaces: string[] = []) {
+    const ast = parseCode(code);
+    const added = addPluginInvocation({ ast, alias, namespaces });
+    return { added, code: print(ast) };
+  }
 
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      expect(updatedCode).toContain('const gt = require');
-      expect(updatedCode).toContain('gt.vite()');
+  it.each<[string, string, string | null, string[], string]>([
+    [
+      'the alias to a plugins array',
+      'export default defineConfig({ plugins: [react()] });',
+      'gtCompiler',
+      [],
+      'export default defineConfig({ plugins: [react(), gtCompiler()] });',
+    ],
+    [
+      'the alias to an empty plugins array',
+      'export default defineConfig({ plugins: [] });',
+      'myPlugin',
+      [],
+      'export default defineConfig({ plugins: [myPlugin()] });',
+    ],
+    [
+      'the alias even when namespaces are known',
+      'export default defineConfig({ plugins: [] });',
+      'gtCompiler',
+      ['gt'],
+      'export default defineConfig({ plugins: [gtCompiler()] });',
+    ],
+    [
+      'the first namespace when there is no alias',
+      'export default defineConfig({ plugins: [react()] });',
+      null,
+      ['firstNamespace', 'secondNamespace'],
+      'export default defineConfig({ plugins: [react(), firstNamespace.vite()] });',
+    ],
+    [
+      'a spread of plugins given as a variable',
+      'export default defineConfig({ plugins: basePlugins });',
+      'gtCompiler',
+      [],
+      'export default defineConfig({ plugins: [...basePlugins, gtCompiler()] });',
+    ],
+    [
+      'a spread of plugins given as a call',
+      'export default defineConfig({ plugins: getPlugins() });',
+      null,
+      ['gt'],
+      'export default defineConfig({ plugins: [...getPlugins(), gt.vite()] });',
+    ],
+    [
+      'a spread of plugins given as a conditional',
+      'export default defineConfig({ plugins: isDev ? devPlugins : prodPlugins });',
+      'gtCompiler',
+      [],
+      'export default defineConfig({ plugins: [...(isDev ? devPlugins : prodPlugins), gtCompiler()] });',
+    ],
+    [
+      'the plugin to a string-keyed plugins property',
+      'export default defineConfig({ "plugins": [react()] });',
+      'gtCompiler',
+      [],
+      'export default defineConfig({ "plugins": [react(), gtCompiler()] });',
+    ],
+    [
+      'the plugin to the top-level plugins only',
+      'export default defineConfig({ plugins: [react()], build: { rollupOptions: { plugins: [other()] } } });',
+      'gtCompiler',
+      [],
+      'export default defineConfig({ plugins: [react(), gtCompiler()], build: { rollupOptions: { plugins: [other()] } } });',
+    ],
+    [
+      'the plugin to a module.exports config',
+      'module.exports = defineConfig({ plugins: [react()] });',
+      'gtCompiler',
+      [],
+      'module.exports = defineConfig({ plugins: [react(), gtCompiler()] });',
+    ],
+  ])('adds %s', (_name, code, alias, namespaces, expected) => {
+    expect(add(code, alias, namespaces)).toEqual({
+      added: true,
+      code: expected,
     });
   });
 
-  describe('Warning scenarios', () => {
-    it('should add warning when plugin invocation fails', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        
-        // No plugins property - addPluginInvocation will fail
-        export default defineConfig({
-          server: { port: 3000 }
-        });
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      // Should have added import but failed to add plugin
-      const results = parseAndCheck(updatedCode as string, {
-        alias: 'gtCompiler',
-      });
-      expect(results.hasCompilerImport).toBe(true);
-
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toContain('Failed to add gt compiler plugin');
-      expect(warnings[0]).toContain('Add the plugin manually');
-      expect(filesUpdated).toContain('/path/to/vite.config.ts');
-    });
-
-    it('should handle complex config with no plugins property', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        
-        export default defineConfig({
-          resolve: {
-            alias: {
-              '@': path.resolve(__dirname, 'src')
-            }
-          },
-          build: {
-            outDir: 'dist'
-          }
-        });
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toContain('Failed to add gt compiler plugin');
-    });
+  it.each<[string, string, string | null, string[]]>([
+    [
+      'without an alias or namespace',
+      'export default defineConfig({ plugins: [react()] });',
+      null,
+      [],
+    ],
+    [
+      'with an empty alias',
+      'export default defineConfig({ plugins: [react()] });',
+      '',
+      [],
+    ],
+    [
+      'to a config without plugins',
+      'export default defineConfig({ server: { port: 3000 } });',
+      'gtCompiler',
+      [],
+    ],
+    [
+      'to a computed plugins key',
+      'export default defineConfig({ [key]: [react()] });',
+      'gtCompiler',
+      [],
+    ],
+    [
+      'to a config function',
+      'export default defineConfig(() => ({ plugins: [react()] }));',
+      'gtCompiler',
+      [],
+    ],
+    ['to an empty file', '', 'gtCompiler', []],
+  ])('adds nothing %s', (_name, code, alias, namespaces) => {
+    expect(add(code, alias, namespaces)).toEqual({ added: false, code });
   });
+});
 
-  describe('Complex real-world scenarios', () => {
-    it('should handle conditional Vite config', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        import react from '@vitejs/plugin-react';
-        
-        export default defineConfig(({ command, mode }) => ({
-          plugins: [
-            react(),
-            ...(mode === 'development' ? [devtools()] : [])
-          ],
-          build: {
-            minify: command === 'build'
-          }
-        }));
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      const results = parseAndCheck(updatedCode as string, {
-        alias: 'gtCompiler',
-      });
-      expect(results.hasCompilerImport).toBe(true);
-      expect(results.hasPluginInvocation).toBe(false);
-
-      expect(updatedCode).toContain('react()');
-      expect(updatedCode).not.toContain('gtCompiler()');
-      expect(filesUpdated).toContain('/path/to/vite.config.ts');
-    });
-
-    it('should handle TypeScript Vite config with type imports', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        import react from '@vitejs/plugin-react';
-        import type { UserConfig } from 'vite';
-        
-        const config: UserConfig = {
-          plugins: [react()],
-          server: { port: 3000 }
-        };
-        
-        export default defineConfig(config);
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-        packageJson: { type: 'module' },
-        tsconfigJson: { compilerOptions: { module: 'ESNext' } },
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      const results = parseAndCheck(updatedCode as string, {
-        alias: 'gtCompiler',
-      });
-      expect(results.hasCompilerImport).toBe(true);
-      expect(results.hasPluginInvocation).toBe(false);
-      expect(filesUpdated).toContain('/path/to/vite.config.ts');
-    });
-
-    it('should preserve existing plugin configuration', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        import react from '@vitejs/plugin-react';
-        
-        export default defineConfig({
-          plugins: [
-            react({
-              babel: {
-                plugins: ['@babel/plugin-syntax-jsx']
-              }
-            })
-          ],
-          esbuild: {
-            jsxFactory: 'React.createElement'
-          }
-        });
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      // Should preserve existing configuration
-      expect(updatedCode).toContain('@babel/plugin-syntax-jsx');
-      expect(updatedCode).toContain('React.createElement');
-      expect(updatedCode).toContain('gtCompiler()');
-
-      const results = parseAndCheck(updatedCode as string, {
-        alias: 'gtCompiler',
-      });
-      expect(results.hasCompilerImport).toBe(true);
-      expect(results.hasPluginInvocation).toBe(true);
-    });
+describe('checkCompilerImport', () => {
+  const found = (alias: string | null, namespaces: string[] = []) => ({
+    hasCompilerImport: true,
+    alias,
+    namespaces,
   });
+  const notFound = { hasCompilerImport: false, alias: null, namespaces: [] };
 
-  describe('Error handling', () => {
-    it('should handle file read errors gracefully', async () => {
-      mockReadFile.mockRejectedValue(new Error('File not found'));
+  it.each([
+    // import declarations
+    [`import { vite } from '${COMPILER}';`, found('vite')],
+    [`import { vite as gtCompiler } from '${COMPILER}';`, found('gtCompiler')],
+    [
+      `import { other, vite as gtCompiler, another } from '${COMPILER}';`,
+      found('gtCompiler'),
+    ],
+    [`import gt from '${COMPILER}';`, found(null, ['gt'])],
+    [`import * as gt from '${COMPILER}';`, found(null, ['gt'])],
+    [
+      `import gt, { vite as compiler } from '${COMPILER}';`,
+      found('compiler', ['gt']),
+    ],
+    [`import gt, { other } from '${COMPILER}';`, found(null, ['gt'])],
+    [`import { other, something } from '${COMPILER}';`, notFound],
+    [`import { vite } from '@different/package';`, notFound],
+    [`import { vite } from '${COMPILER}-different';`, notFound],
 
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
+    // require
+    [`const gt = require('${COMPILER}');`, found(null, ['gt'])],
+    [`var gt = require('${COMPILER}');`, found(null, ['gt'])],
+    [`const a = 1, gt = require('${COMPILER}'), b = 2;`, found(null, ['gt'])],
+    [`const { vite } = require('${COMPILER}');`, found('vite')],
+    [
+      `const { other, vite: compiler, another } = require('${COMPILER}');`,
+      found('compiler'),
+    ],
+    [`const a = 1, { vite } = require('${COMPILER}'), b = 2;`, found('vite')],
+    [
+      `const { ...everything } = require('${COMPILER}');`,
+      found(null, ['everything']),
+    ],
+    [
+      `const { other, ...rest } = require('${COMPILER}');`,
+      found(null, ['rest']),
+    ],
+    [
+      `const { vite: compiler, ...rest } = require('${COMPILER}');`,
+      found('compiler'),
+    ],
+    [`const gtCompiler = require('${COMPILER}').vite;`, found('gtCompiler')],
+    [`const { other, something } = require('${COMPILER}');`, notFound],
+    [`const something = require('${COMPILER}').otherProperty;`, notFound],
+    [`const { vite } = require('@different/package');`, notFound],
+    [`const gt = require('${COMPILER}-different');`, notFound],
 
-      // Mock exitSync to throw an error to stop execution
-      mockExitSync.mockImplementation(() => {
-        throw new Error('Process exited');
-      });
+    // patterns that are not recognized
+    [`const { a: { b: { vite } } } = require('${COMPILER}');`, notFound],
+    [`const [vite] = require('${COMPILER}');`, notFound],
+    [`const compiler = require('${COMPILER}')['vite'];`, notFound],
+    [`const name = '${COMPILER}'; const gt = require(name);`, notFound],
+    ['', notFound],
 
-      await expect(
-        updateViteConfig({
-          errors,
-          warnings,
-          filesUpdated,
-          viteConfigPath: '/path/to/nonexistent.ts',
-        })
-      ).rejects.toThrow('Process exited');
-
-      expect(mockExitSync).toHaveBeenCalledWith(1);
-      expect(mockWriteFile).not.toHaveBeenCalled();
-    });
-
-    it('should handle file write errors gracefully', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        export default defineConfig({ plugins: [] });
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockRejectedValue(new Error('Permission denied'));
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      // Mock exitSync to throw an error to stop execution
-      mockExitSync.mockImplementation(() => {
-        throw new Error('Process exited');
-      });
-
-      await expect(
-        updateViteConfig({
-          errors,
-          warnings,
-          filesUpdated,
-          viteConfigPath: '/path/to/vite.config.ts',
-        })
-      ).rejects.toThrow('Process exited');
-
-      expect(mockExitSync).toHaveBeenCalledWith(1);
-      expect(filesUpdated).toHaveLength(0);
-    });
-
-    it('should handle AST parsing errors gracefully', async () => {
-      const invalidCode = `
-        import { defineConfig } from 'vite';
-        export default defineConfig({
-          plugins: [
-            // Invalid syntax
-            }]
-        });
-      `;
-
-      mockReadFile.mockResolvedValue(invalidCode);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      // Mock exitSync to throw an error to stop execution
-      mockExitSync.mockImplementation(() => {
-        throw new Error('Process exited');
-      });
-
-      await expect(
-        updateViteConfig({
-          errors,
-          warnings,
-          filesUpdated,
-          viteConfigPath: '/path/to/vite.config.ts',
-        })
-      ).rejects.toThrow('Process exited');
-
-      expect(mockExitSync).toHaveBeenCalledWith(1);
-      expect(mockWriteFile).not.toHaveBeenCalled();
-    });
+    // several statements
+    [
+      `import { other } from '${COMPILER}';
+       const { vite } = require('${COMPILER}');`,
+      found('vite'),
+    ],
+    [
+      `import * as gtImport from '${COMPILER}';
+       import gtDefault from '${COMPILER}';
+       const gtRequire = require('${COMPILER}');
+       const { ...rest } = require('${COMPILER}');
+       const { vite: compiler } = require('${COMPILER}');`,
+      found('compiler', ['gtImport', 'gtDefault', 'gtRequire', 'rest']),
+    ],
+  ])('%s', (code, expected) => {
+    expect(checkCompilerImport(parseCode(code))).toEqual(expected);
   });
+});
 
-  describe('Edge cases', () => {
-    it('should handle empty file', async () => {
-      const inputCode = '';
+describe('checkPluginInvocation', () => {
+  it.each<[string, string | null, string[], boolean]>([
+    [
+      'export default defineConfig({ plugins: [react(), gtCompiler()] });',
+      'gtCompiler',
+      [],
+      true,
+    ],
+    [
+      'export default defineConfig({ plugins: [react(), gt.vite()] });',
+      null,
+      ['gt'],
+      true,
+    ],
+    [
+      'export default defineConfig({ plugins: [second.vite()] });',
+      null,
+      ['first', 'second'],
+      true,
+    ],
+    [
+      'export default defineConfig({ plugins: [gt.vite()] });',
+      'gtCompiler',
+      ['gt'],
+      true,
+    ],
+    [
+      'export default defineConfig({ plugins: [gtCompiler()] });',
+      'gtCompiler',
+      ['gt'],
+      true,
+    ],
+    // An invocation anywhere in the file counts
+    [
+      'function getPlugins() { return [gtCompiler()]; }',
+      'gtCompiler',
+      [],
+      true,
+    ],
+    ['const plugins = isDev ? [gt.vite()] : [];', null, ['gt'], true],
 
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      // Should add import but likely fail to add plugin (no plugins array)
-      const results = parseAndCheck(updatedCode as string, {
-        alias: 'gtCompiler',
-      });
-      expect(results.hasCompilerImport).toBe(true);
-      expect(warnings).toHaveLength(1);
-    });
-
-    it('should handle file with only comments', async () => {
-      const inputCode = `
-        // This is a Vite configuration file
-        /* 
-         * TODO: Add plugins
-         */
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      const results = parseAndCheck(updatedCode as string, {
-        alias: 'gtCompiler',
-      });
-      expect(results.hasCompilerImport).toBe(true);
-      expect(warnings).toHaveLength(1); // Should warn about failed plugin addition
-    });
-
-    it('should handle mixed ESM/CJS patterns', async () => {
-      const inputCode = `
-        import { defineConfig } from 'vite';
-        const react = require('@vitejs/plugin-react');
-        
-        export default defineConfig({
-          plugins: [react()]
-        });
-      `;
-
-      mockReadFile.mockResolvedValue(inputCode);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
-      });
-
-      expect(mockWriteFile).toHaveBeenCalledOnce();
-      const [, updatedCode] = mockWriteFile.mock.calls[0];
-
-      // Should add ESM import (default behavior)
-      const results = parseAndCheck(updatedCode as string, {
-        alias: 'gtCompiler',
-      });
-      expect(results.hasCompilerImport).toBe(true);
-      expect(results.hasPluginInvocation).toBe(true);
-      expect(updatedCode).toContain('import { vite as gtCompiler }');
-      expect(filesUpdated).toContain('/path/to/vite.config.ts');
-    });
-  });
+    [
+      'export default defineConfig({ plugins: [otherPlugin()] });',
+      'gtCompiler',
+      [],
+      false,
+    ],
+    [
+      'export default defineConfig({ plugins: [wrong.vite()] });',
+      null,
+      ['gt'],
+      false,
+    ],
+    [
+      'export default defineConfig({ plugins: [gt.webpack()] });',
+      null,
+      ['gt'],
+      false,
+    ],
+    [
+      'export default defineConfig({ plugins: [gt.vitePlugin()] });',
+      null,
+      ['gt'],
+      false,
+    ],
+    [
+      'export default defineConfig({ plugins: [gtCompilerPlugin()] });',
+      'gtCompiler',
+      [],
+      false,
+    ],
+    ['const plugin = gtCompiler;', 'gtCompiler', [], false],
+    ['const plugin = gt.vite;', null, ['gt'], false],
+    [
+      'export default defineConfig({ plugins: [gtCompiler()] });',
+      null,
+      [],
+      false,
+    ],
+    ['', 'gtCompiler', ['gt'], false],
+  ])(
+    '%s with alias %j and namespaces %j -> %s',
+    (code, alias, namespaces, expected) => {
+      expect(
+        checkPluginInvocation({ ast: parseCode(code), alias, namespaces })
+      ).toBe(expected);
+    }
+  );
 });

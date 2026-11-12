@@ -1,972 +1,302 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { parseJson } from '../parseJson';
 import { readFileSync } from 'fs';
 import path from 'path';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { parseJson } from '../parseJson';
 import { logger } from '../../../console/logger.js';
 import { exitSync } from '../../../console/logging.js';
+import type { AdditionalOptions } from '../../../types/index.js';
 
 vi.mock('../../../console/logger.js');
 vi.mock('../../../console/logging.js');
 
-const mockLogError = vi.spyOn(logger, 'error');
-const mockExit = vi.mocked(exitSync).mockImplementation(() => {
-  throw new Error('Process exit called');
+type Schema = NonNullable<AdditionalOptions['jsonSchema']>[string];
+
+/** Parses `json` under `schema` and returns the parsed source strings. */
+const parse = (json: unknown, schema: Schema) =>
+  JSON.parse(
+    parseJson(
+      JSON.stringify(json),
+      'test.json',
+      { jsonSchema: { '**/*.json': schema } },
+      'en'
+    )
+  );
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(exitSync).mockImplementation(() => {
+    throw new Error('Process exit called');
+  });
 });
 
 describe('parseJson', () => {
-  beforeEach(() => {
-    mockLogError.mockClear();
-    mockExit.mockClear();
+  describe('schema selection', () => {
+    const formatted = `{
+  "formatted": {
+    "nicely": "yes"
+  }
+}`;
+
+    it.each<[string, string, AdditionalOptions]>([
+      [
+        'no glob matches the file',
+        '/path/to/unmatched/file.txt',
+        { jsonSchema: { '**/*.json': { include: ['$..*'] } } },
+      ],
+      ['no jsonSchema is configured', 'test.json', {}],
+    ])('returns the content untouched when %s', (_name, file, options) => {
+      expect(parseJson(formatted, file, options, 'en')).toBe(formatted);
+    });
+
+    it('uses the schema whose glob matches the file', () => {
+      expect(
+        parseJson(
+          '{"test":"value","other":"ignored"}',
+          path.join(process.cwd(), 'config', 'specific.json'),
+          {
+            jsonSchema: {
+              '**/unrelated.json': { include: ['$..*'] },
+              '**/specific.json': { include: ['$.test'] },
+            },
+          },
+          'en'
+        )
+      ).toBe('{"/test":"value"}');
+    });
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-  it('should parse a JSON file', () => {
-    const json = readFileSync(
-      path.join(__dirname, '../__mocks__', 'test_file4.json'),
-      'utf8'
-    );
-    const result = parseJson(
-      json,
-      path.join(__dirname, '../__mocks__', 'test_file4.json'),
-      {
-        jsonSchema: {
-          '**/*.json': {
-            include: ['$..*'],
+  describe('include schema', () => {
+    it('flattens every included string to a JSON pointer', () => {
+      expect(
+        parse(
+          {
+            object: { key1: 'value1', key2: 'value2' },
+            array: ['value1', 'value2'],
           },
-        },
-      },
-      'en'
-    );
-    expect(result).toBeDefined();
-    expect(result).toBe(
-      '{"/object/key1":"value1","/object/key2":"value2","/object/key3":"value3","/array/0":"value1","/array/1":"value2","/array/2":"value3"}'
-    );
+          { include: ['$..*'] }
+        )
+      ).toEqual({
+        '/object/key1': 'value1',
+        '/object/key2': 'value2',
+        '/array/0': 'value1',
+        '/array/1': 'value2',
+      });
+    });
+
+    it('keeps only the included paths', () => {
+      expect(
+        parse(
+          {
+            level1: {
+              level2: { target: 'found', ignore: 'ignored' },
+              other: 'also ignored',
+            },
+            array: ['item1', 'item2'],
+            items: { item1: 'value1', item2: 'value2' },
+          },
+          { include: ['$.level1.level2.target', '$.array[*]', '$.items.*'] }
+        )
+      ).toEqual({
+        '/level1/level2/target': 'found',
+        '/array/0': 'item1',
+        '/array/1': 'item2',
+        '/items/item1': 'value1',
+        '/items/item2': 'value2',
+      });
+    });
+
+    it('skips values that are not strings', () => {
+      expect(
+        parse(
+          {
+            test: null,
+            mixed: [1, 'string', true, null, { nested: 'object' }],
+          },
+          { include: ['$.test', '$.mixed[*]'] }
+        )
+      ).toEqual({ '/mixed/1': 'string' });
+      expect(parse({}, { include: ['$..*'] })).toEqual({});
+    });
+
+    it('builds pointers for keys with unusual characters', () => {
+      expect(
+        parse(
+          {
+            'weird-key': 'value1',
+            '123': 'value2',
+            '': 'empty key',
+            $special: 'dollar sign',
+            '@attribute': 'at sign',
+            'space key': 'space value',
+          },
+          { include: ['$..*'] }
+        )
+      ).toEqual({
+        '/weird-key': 'value1',
+        '/123': 'value2',
+        '/': 'empty key',
+        '/$special': 'dollar sign',
+        '/@attribute': 'at sign',
+        '/space key': 'space value',
+      });
+    });
   });
-  it('should parse a JSON file with a composite schema', () => {
-    const json = readFileSync(
-      path.join(__dirname, '../__mocks__', 'test_file5.json'),
-      'utf8'
-    );
-    const result = parseJson(
-      json,
-      path.join(__dirname, '../__mocks__', 'test_file5.json'),
-      {
-        jsonSchema: {
-          '**/*.json': {
+
+  describe('composite schema', () => {
+    it('extracts the default-locale entry of objects and every default-locale item of arrays', () => {
+      const en = { key1: 'value1', key2: 'value2' };
+      const fr = { key1: 'valeur1', key2: 'valeur2' };
+
+      expect(
+        parse(
+          {
+            object: { en, fr },
+            array: [
+              { locale: 'en', ...en },
+              { locale: 'fr', ...fr },
+              { locale: 'en', key1: 'value3' },
+            ],
+          },
+          {
             composite: {
-              '$.object': {
+              '$.object': { type: 'object', include: ['$..*'] },
+              '$.array': { type: 'array', include: ['$.*'], key: '$.locale' },
+            },
+          }
+        )
+      ).toEqual({
+        '/object': { '/key1': 'value1', '/key2': 'value2' },
+        // The key itself is never sent for translation.
+        '/array': {
+          '/0': { '/key1': 'value1', '/key2': 'value2' },
+          '/2': { '/key1': 'value3' },
+        },
+      });
+    });
+
+    it('supports nested source paths, key paths and include paths', () => {
+      expect(
+        parse(
+          {
+            deep: {
+              structure: {
+                en: { content: 'English content', meta: { author: 'John' } },
+                fr: { content: 'Contenu français', meta: { author: 'Jean' } },
+              },
+            },
+            items: [
+              { meta: { locale: 'en' }, title: 'English Title' },
+              { meta: { locale: 'fr' }, title: 'Titre Français' },
+            ],
+          },
+          {
+            composite: {
+              '$.deep.structure': {
                 type: 'object',
-                include: ['$..*'],
+                include: ['$.content', '$.meta.author'],
               },
-              '$.array': {
+              '$.items': {
                 type: 'array',
-                include: ['$.*'],
-                key: '$.locale',
+                include: ['$.title'],
+                key: '$.meta.locale',
               },
             },
-          },
-        },
-      },
-      'en'
-    );
-    expect(result).toBeDefined();
-    expect(result).toBe(
-      '{"/object":{"/key1":"value1","/key2":"value2","/key3":"value3"},"/array":{"/0":{"/key1":"value1","/key2":"value2","/key3":"value3"}}}'
-    );
-  });
-
-  describe('Error Handling', () => {
-    it('should exit with error for invalid JSON file', () => {
-      const malformedJson = '{ "key": value }';
-
-      expect(() => {
-        parseJson(
-          malformedJson,
-          path.join(__dirname, '../__mocks__', 'invalid.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                include: ['$..*'],
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        `Invalid JSON file: ${path.join(__dirname, '../__mocks__', 'invalid.json')}`
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should throw error for malformed JSON', () => {
-      const malformedJson = '{ "key": value }';
-
-      expect(() => {
-        parseJson(
-          malformedJson,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                include: ['$..*'],
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow();
-    });
-
-    it('should throw error for empty JSON content', () => {
-      expect(() => {
-        parseJson(
-          '',
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                include: ['$..*'],
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow();
-    });
-
-    it('should exit when include and composite are both provided', () => {
-      const json = JSON.stringify({ test: 'value' });
-
-      expect(() => {
-        parseJson(
-          json,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                include: ['$..*'],
-                composite: {
-                  '$.test': {
-                    type: 'object',
-                    include: ['$..*'],
-                  },
-                },
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'include and composite cannot be used together in the same JSON schema'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should exit when array source object is not actually an array', () => {
-      const json = JSON.stringify({ test: 'not-an-array' });
-
-      expect(() => {
-        parseJson(
-          json,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                composite: {
-                  '$.test': {
-                    type: 'array',
-                    include: ['$..*'],
-                    key: '$.locale',
-                  },
-                },
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Source object value is not an array at path: /test'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should exit when object source object is not actually an object', () => {
-      const json = JSON.stringify({ test: 'not-an-object' });
-
-      expect(() => {
-        parseJson(
-          json,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                composite: {
-                  '$.test': {
-                    type: 'object',
-                    include: ['$..*'],
-                  },
-                },
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Source object value is not an object at path: /test'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should exit when array type is missing key property', () => {
-      const json = JSON.stringify({ test: [{ locale: 'en', value: 'test' }] });
-
-      expect(() => {
-        parseJson(
-          json,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                composite: {
-                  '$.test': {
-                    type: 'array',
-                    include: ['$..*'],
-                    // Missing key property
-                  },
-                },
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Source object options key is required for array at path: /test'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should exit when object type has key property (not allowed)', () => {
-      const json = JSON.stringify({ test: { en: 'value' } });
-
-      expect(() => {
-        parseJson(
-          json,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                composite: {
-                  '$.test': {
-                    type: 'object',
-                    include: ['$..*'],
-                    key: '$.locale',
-                  },
-                },
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Source object options key is not allowed for object at path: /test'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should exit when source item not found in array', () => {
-      const json = JSON.stringify({ test: [{ locale: 'fr', value: 'test' }] });
-
-      expect(() => {
-        parseJson(
-          json,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                composite: {
-                  '$.test': {
-                    type: 'array',
-                    include: ['$..*'],
-                    key: '$.locale',
-                  },
-                },
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Matching sourceItem not found at path: /test for locale: en. Check your JSON schema'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should exit when source item not found in object', () => {
-      const json = JSON.stringify({ test: { fr: 'value' } });
-
-      expect(() => {
-        parseJson(
-          json,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                composite: {
-                  '$.test': {
-                    type: 'object',
-                    include: ['$..*'],
-                  },
-                },
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Source item not found at path: /test. You must specify a source item where its key matches the default locale'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should exit when key is not unique in array item', () => {
-      const json = JSON.stringify({
-        test: [{ locale: 'en', nested: { locale: 'en' }, value: 'test' }],
-      });
-
-      expect(() => {
-        parseJson(
-          json,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                composite: {
-                  '$.test': {
-                    type: 'array',
-                    include: ['$..*'],
-                    key: '$..locale', // This should match both locale fields
-                  },
-                },
-              },
-            },
-          },
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Source item at path: /test has multiple matching keys with path: $..locale'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-  });
-
-  describe('Schema Pattern Matching', () => {
-    it('should return original content when no schema matches file path', () => {
-      const json = JSON.stringify({ test: 'value' });
-      const result = parseJson(
-        json,
-        '/different/path/file.txt',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$..*'],
-            },
-          },
-        },
-        'en'
-      );
-
-      expect(result).toBe(json);
-    });
-
-    it('should return original content when no jsonSchema option provided', () => {
-      const json = JSON.stringify({ test: 'value' });
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {},
-        'en'
-      );
-
-      expect(result).toBe(json);
-    });
-
-    it('should return original content when schema has no include or composite', () => {
-      const json = JSON.stringify({ test: 'value' });
-      expect(() => {
-        parseJson(
-          json,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {},
-            },
-          },
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'No include or composite property found in JSON schema'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should match specific file patterns', () => {
-      const json = JSON.stringify({ test: 'value' });
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'specific.json'),
-        {
-          jsonSchema: {
-            '**/specific.json': {
-              include: ['$.test'],
-            },
-          },
-        },
-        'en'
-      );
-
-      expect(result).toBe('{"/test":"value"}');
-    });
-  });
-
-  describe('Array Type Composite Schemas', () => {
-    it('should handle multiple array items with same locale', () => {
-      const json = JSON.stringify({
-        redirects: [
-          {
-            locale: 'en',
-            source: '/en/ai-review',
-            destination: '/en/agent/modes#agent',
-          },
-          {
-            locale: 'en',
-            source: '/en/background-agents',
-            destination: '/en/background-agent',
-          },
-          {
-            locale: 'fr',
-            source: '/fr/ai-review',
-            destination: '/fr/agent/modes#agent',
-          },
-        ],
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.redirects': {
-                  type: 'array',
-                  include: ['$.source', '$.destination'],
-                  key: '$.locale',
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/redirects']).toBeDefined();
-
-      // Should have multiple entries for 'en' locale
-      const redirectKeys = Object.keys(parsed['/redirects']);
-      const enRedirects = redirectKeys.filter((key) => key.startsWith('/'));
-      expect(enRedirects.length).toBeGreaterThan(1);
-
-      // Should capture both English redirect entries
-      expect(
-        enRedirects.some(
-          (key) => parsed['/redirects'][key]['/source'] === '/en/ai-review'
+          }
         )
-      ).toBe(true);
+      ).toEqual({
+        '/deep/structure': {
+          '/content': 'English content',
+          '/meta/author': 'John',
+        },
+        '/items': { '/0': { '/title': 'English Title' } },
+      });
+    });
+
+    it('matches locales by the configured localeProperty', () => {
       expect(
-        enRedirects.some(
-          (key) =>
-            parsed['/redirects'][key]['/source'] === '/en/background-agents'
+        parse(
+          {
+            translations: {
+              English: { title: 'English Title' },
+              Français: { title: 'Titre Français' },
+            },
+            items: [
+              { lang: 'English', title: 'English Title' },
+              { lang: 'Français', title: 'Titre Français' },
+              { lang: 'English', title: 'English Title 2' },
+            ],
+          },
+          {
+            composite: {
+              '$.translations': {
+                type: 'object',
+                include: ['$.title'],
+                localeProperty: 'name',
+              },
+              '$.items': {
+                type: 'array',
+                include: ['$.title'],
+                key: '$.lang',
+                localeProperty: 'name',
+              },
+            },
+          }
         )
-      ).toBe(true);
+      ).toEqual({
+        '/translations': { '/title': 'English Title' },
+        '/items': {
+          '/0': { '/title': 'English Title' },
+          '/2': { '/title': 'English Title 2' },
+        },
+      });
     });
 
-    it('should handle array composite schema with valid key', () => {
-      const json = JSON.stringify({
-        items: [
-          { locale: 'en', title: 'English Title', desc: 'English Description' },
+    it('uses a string default-locale entry directly', () => {
+      expect(
+        parse(
           {
-            locale: 'fr',
-            title: 'Titre Français',
-            desc: 'Description Française',
-          },
-        ],
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title', '$.desc'],
-                  key: '$.locale',
-                },
-              },
+            content: {
+              en: 'Contact name, phone number, email, 2',
+              fr: 'Nom du contact, numéro de téléphone, email, 2',
             },
           },
-        },
-        'en'
-      );
-
-      expect(result).toBeDefined();
-      const parsed = JSON.parse(result);
-      expect(parsed['/items']).toBeDefined();
-      expect(parsed['/items']['/0']).toBeDefined();
-      expect(parsed['/items']['/0']['/title']).toBe('English Title');
-      expect(parsed['/items']['/0']['/desc']).toBe('English Description');
+          { composite: { '$.content': { type: 'object', include: ['$.*'] } } }
+        )
+      ).toEqual({ '/content': 'Contact name, phone number, email, 2' });
     });
 
-    it('should handle array with nested key path', () => {
-      const json = JSON.stringify({
-        items: [
-          { meta: { locale: 'en' }, title: 'English Title' },
-          { meta: { locale: 'fr' }, title: 'Titre Français' },
-        ],
-      });
+    it('extracts nothing from transform-only composites', () => {
+      const transform = {
+        '$.source': { match: '^/{locale}/(.*)$', replace: '/{locale}/$1' },
+      };
 
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.meta.locale',
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/items']['/0']['/title']).toBe('English Title');
-    });
-
-    it('should not include transformations for array items', () => {
-      const json = JSON.stringify({
-        redirects: [
+      expect(
+        parse(
           {
-            // decoy
-            source: '/en/path-0',
-            destination: '/en/path-0#section-0',
+            redirects: [{ language: 'en', source: '/en/path-1' }],
+            aliases: { en: { source: '/en/path-1' } },
           },
           {
-            language: 'en',
-            source: '/en/path-1',
-            destination: '/en/path-1#section-1',
-          },
-          {
-            language: 'en',
-            source: '/en/path-2',
-            destination: '/en/path-2#section-2',
-          },
-          {
-            language: 'en',
-            source: '/en/path-3',
-            destination: '/en/path-3#section-3',
-          },
-        ],
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.redirects': {
-                  type: 'array',
-                  include: [],
-                  key: '$.language',
-                  transform: {
-                    '$.source': {
-                      match: '^/{locale}/(.*)$',
-                      replace: '/{locale}/$1',
-                    },
-                    '$.destination': {
-                      match: '^/{locale}/(.*)$',
-                      replace: '/{locale}/$1',
-                    },
-                  },
-                },
+            composite: {
+              '$.redirects': {
+                type: 'array',
+                include: [],
+                key: '$.language',
+                transform,
               },
+              '$.aliases': { type: 'object', include: [], transform },
             },
-          },
-        },
-        'en'
-      );
-
-      expect(result).toBeDefined();
-      const parsed = JSON.parse(result);
-      expect(parsed).toEqual({});
+          }
+        )
+      ).toEqual({});
     });
 
-    it('should not include transformations for object items', () => {
-      const json = JSON.stringify({
-        redirects: {
-          decoy: {
-            source: '/en/path-0',
-            destination: '/en/path-0#section-0',
-          },
-          en: {
-            source: '/en/path-1',
-            destination: '/en/path-1#section-1',
-          },
-        },
-      });
+    it('extracts a Mintlify navigation structure', () => {
+      const file = path.join(__dirname, '../__mocks__', 'test_file1.json');
 
       const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.redirects': {
-                  type: 'object',
-                  include: [],
-                  transform: {
-                    '$.source': {
-                      match: '^/{locale}/(.*)$',
-                      replace: '/{locale}/$1',
-                    },
-                    '$.destination': {
-                      match: '^/{locale}/(.*)$',
-                      replace: '/{locale}/$1',
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      expect(result).toBeDefined();
-      const parsed = JSON.parse(result);
-      expect(parsed).toEqual({});
-    });
-  });
-
-  describe('Object Type Composite Schemas', () => {
-    it('should handle object composite schema with locale keys', () => {
-      const json = JSON.stringify({
-        translations: {
-          en: { title: 'English Title', desc: 'English Description' },
-          fr: { title: 'Titre Français', desc: 'Description Française' },
-        },
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.translations': {
-                  type: 'object',
-                  include: ['$.title', '$.desc'],
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/translations']['/title']).toBe('English Title');
-      expect(parsed['/translations']['/desc']).toBe('English Description');
-    });
-
-    it('should handle multiple composite objects', () => {
-      const json = JSON.stringify({
-        nav: {
-          en: { home: 'Home', about: 'About' },
-          fr: { home: 'Accueil', about: 'À propos' },
-        },
-        content: {
-          en: { title: 'Title', body: 'Body' },
-          fr: { title: 'Titre', body: 'Corps' },
-        },
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.nav': {
-                  type: 'object',
-                  include: ['$.*'],
-                },
-                '$.content': {
-                  type: 'object',
-                  include: ['$.*'],
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/nav']['/home']).toBe('Home');
-      expect(parsed['/nav']['/about']).toBe('About');
-      expect(parsed['/content']['/title']).toBe('Title');
-      expect(parsed['/content']['/body']).toBe('Body');
-    });
-  });
-
-  describe('Include Schema Tests', () => {
-    it('should handle complex nested includes', () => {
-      const json = JSON.stringify({
-        level1: {
-          level2: {
-            target: 'found',
-            ignore: 'ignored',
-          },
-          other: 'also ignored',
-        },
-        array: ['item1', 'item2'],
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$.level1.level2.target', '$.array[*]'],
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/level1/level2/target']).toBe('found');
-      expect(parsed['/array/0']).toBe('item1');
-      expect(parsed['/array/1']).toBe('item2');
-      expect(parsed['/level1/level2/ignore']).toBeUndefined();
-    });
-
-    it('should handle wildcard includes', () => {
-      const json = JSON.stringify({
-        items: {
-          item1: 'value1',
-          item2: 'value2',
-          item3: 'value3',
-        },
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$.items.*'],
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/items/item1']).toBe('value1');
-      expect(parsed['/items/item2']).toBe('value2');
-      expect(parsed['/items/item3']).toBe('value3');
-    });
-  });
-
-  describe('Locale Properties', () => {
-    it('should handle different locale properties for object type', () => {
-      const json = JSON.stringify({
-        translations: {
-          English: { title: 'English Title' },
-          Français: { title: 'Titre Français' },
-        },
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.translations': {
-                  type: 'object',
-                  include: ['$.title'],
-                  localeProperty: 'name',
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/translations']['/title']).toBe('English Title');
-    });
-
-    it('should handle different locale properties for array type', () => {
-      const json = JSON.stringify({
-        items: [
-          { lang: 'English', title: 'English Title' },
-          { lang: 'Français', title: 'Titre Français' },
-        ],
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.lang',
-                  localeProperty: 'name',
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/items']['/0']['/title']).toBe('English Title');
-    });
-
-    it('should handle multiple different locale entries for array type with same key', () => {
-      const json = JSON.stringify({
-        items: [
-          { lang: 'English', title: 'English Title' },
-          { lang: 'Français', title: 'Titre Français' },
-          { lang: 'English', title: 'English Title 2' },
-          { lang: 'Français', title: 'Titre Français 2' },
-        ],
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.lang',
-                  localeProperty: 'name',
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/items']['/0']['/title']).toBe('English Title');
-      expect(parsed['/items']['/2']['/title']).toBe('English Title 2');
-    });
-
-    it('should use default localeProperty (code) when not specified', () => {
-      const json = JSON.stringify({
-        translations: {
-          en: { title: 'English Title' },
-          fr: { title: 'Titre Français' },
-        },
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.translations': {
-                  type: 'object',
-                  include: ['$.title'],
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/translations']['/title']).toBe('English Title');
-    });
-  });
-
-  describe('Real-world Scenarios', () => {
-    it('should handle navigation structure like test_file1.json', () => {
-      const json = readFileSync(
-        path.join(__dirname, '../__mocks__', 'test_file1.json'),
-        'utf8'
-      );
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test_file1.json'),
+        readFileSync(file, 'utf8'),
+        file,
         {
           jsonSchema: {
             '**/*.json': {
@@ -983,320 +313,102 @@ describe('parseJson', () => {
         'en'
       );
 
-      expect(result).toBeDefined();
-      const parsed = JSON.parse(result);
-      expect(parsed['/navigation/languages']).toBeDefined();
-
-      // Should extract anchor text (first matching item with 'en' locale)
-      const firstMatch = Object.keys(parsed['/navigation/languages'])[0];
-      expect(
-        parsed['/navigation/languages'][firstMatch]['/global/anchors/0/anchor']
-      ).toBe('Announcements');
-      expect(
-        parsed['/navigation/languages'][firstMatch]['/global/anchors/1/anchor']
-      ).toBe('Status');
-
-      // Should extract tab names
-      expect(parsed['/navigation/languages'][firstMatch]['/tabs/0/tab']).toBe(
-        'Introduction'
-      );
-      expect(parsed['/navigation/languages'][firstMatch]['/tabs/1/tab']).toBe(
-        'Features'
-      );
-    });
-
-    it('should handle deeply nested JSON paths', () => {
-      const json = JSON.stringify({
-        deep: {
-          nesting: {
-            structure: {
-              en: { content: 'English content', meta: { author: 'John' } },
-              fr: { content: 'Contenu français', meta: { author: 'Jean' } },
-            },
-          },
-        },
+      const languages = JSON.parse(result)['/navigation/languages'];
+      expect(Object.keys(languages)).toEqual(['/0']);
+      expect(languages['/0']).toMatchObject({
+        '/global/anchors/0/anchor': 'Announcements',
+        '/global/anchors/1/anchor': 'Status',
+        '/tabs/0/tab': 'Introduction',
+        '/tabs/1/tab': 'Features',
       });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.deep.nesting.structure': {
-                  type: 'object',
-                  include: ['$.content', '$.meta.author'],
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/deep/nesting/structure']['/content']).toBe(
-        'English content'
-      );
-      expect(parsed['/deep/nesting/structure']['/meta/author']).toBe('John');
-    });
-
-    it('should handle multiple file glob patterns', () => {
-      const json = JSON.stringify({ content: 'test content' });
-
-      // Test that more specific patterns take precedence
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'specific-config.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$.content'],
-            },
-            '**/specific-*.json': {
-              include: ['$..*'], // More inclusive for specific files
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/content']).toBe('test content');
     });
   });
 
-  describe('Edge Cases', () => {
-    it('should handle empty objects', () => {
-      const json = JSON.stringify({});
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$..*'],
-            },
-          },
-        },
-        'en'
-      );
-
-      expect(result).toBe('{}');
+  describe('fatal errors', () => {
+    const object = (extra = {}): Schema => ({
+      composite: { '$.test': { type: 'object', include: ['$..*'], ...extra } },
+    });
+    const array = (extra = {}): Schema => ({
+      composite: { '$.test': { type: 'array', include: ['$..*'], ...extra } },
     });
 
-    it('should handle null values in JSON', () => {
-      const json = JSON.stringify({ test: null, valid: 'value' });
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$..*'],
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/test']).toBeUndefined();
-      expect(parsed['/valid']).toBe('value');
+    it.each<[string, unknown, Schema, string]>([
+      [
+        'include and composite are both provided',
+        { test: 'value' },
+        { include: ['$..*'], ...object() },
+        'include and composite cannot be used together in the same JSON schema',
+      ],
+      [
+        'neither include nor composite is provided',
+        { test: 'value' },
+        {},
+        'No include or composite property found in JSON schema',
+      ],
+      [
+        'an array composite points at a non-array',
+        { test: 'not-an-array' },
+        array({ key: '$.locale' }),
+        'Source object value is not an array at path: /test',
+      ],
+      [
+        'an object composite points at a non-object',
+        { test: 'not-an-object' },
+        object(),
+        'Source object value is not an object at path: /test',
+      ],
+      [
+        'an array composite has no key',
+        { test: [{ locale: 'en', value: 'test' }] },
+        array(),
+        'Source object options key is required for array at path: /test',
+      ],
+      [
+        'an object composite has a key',
+        { test: { en: 'value' } },
+        object({ key: '$.locale' }),
+        'Source object options key is not allowed for object at path: /test',
+      ],
+      [
+        'no array item has the default locale',
+        { test: [{ locale: 'fr', value: 'test' }] },
+        array({ key: '$.locale' }),
+        'Matching sourceItem not found at path: /test for locale: en. Check your JSON schema',
+      ],
+      [
+        'no object entry has the default locale',
+        { test: { fr: 'value' } },
+        object(),
+        'Source item not found at path: /test. You must specify a source item where its key matches the default locale',
+      ],
+      [
+        'the key matches several fields of an array item',
+        { test: [{ locale: 'en', nested: { locale: 'en' }, value: 'test' }] },
+        array({ key: '$..locale' }),
+        'Source item at path: /test has multiple matching keys with path: $..locale',
+      ],
+    ])('exits when %s', (_name, json, schema, message) => {
+      expect(() => parse(json, schema)).toThrow('Process exit called');
+      expect(logger.error).toHaveBeenCalledWith(message);
+      expect(exitSync).toHaveBeenCalledWith(1);
     });
 
-    it('should handle arrays with mixed types', () => {
-      const json = JSON.stringify({
-        mixed: [1, 'string', true, null, { nested: 'object' }],
-      });
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$.mixed[*]'],
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/mixed/1']).toBe('string');
-    });
-
-    it('should handle very large JSON objects efficiently', () => {
-      const largeObject: Record<string, string> = {};
-      for (let i = 0; i < 1000; i++) {
-        largeObject[`key${i}`] = `value${i}`;
-      }
-      const json = JSON.stringify({ data: largeObject });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$.data.*'],
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/data/key0']).toBe('value0');
-      expect(parsed['/data/key999']).toBe('value999');
-    });
-
-    it('should handle special JSON characters properly', () => {
-      const json = JSON.stringify({
-        quotes: 'Text with "quotes" and \'apostrophes\'',
-        backslashes: 'Path\\to\\file',
-        unicode: 'Unicode: \u00E9\u00F1\u4E00',
-        newlines: 'Line 1\nLine 2\r\nLine 3',
-        tabs: 'Column 1\tColumn 2',
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$..*'],
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/quotes']).toBe('Text with "quotes" and \'apostrophes\'');
-      expect(parsed['/backslashes']).toBe('Path\\to\\file');
-      expect(parsed['/unicode']).toBe('Unicode: éñ一');
-      expect(parsed['/newlines']).toBe('Line 1\nLine 2\r\nLine 3');
-      expect(parsed['/tabs']).toBe('Column 1\tColumn 2');
-    });
-
-    it('should handle JSONPath edge cases', () => {
-      const json = JSON.stringify({
-        'weird-key': 'value1',
-        '123': 'value2',
-        '': 'empty key',
-        $special: 'dollar sign',
-        '@attribute': 'at sign',
-        'space key': 'space value',
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$..*'],
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/weird-key']).toBe('value1');
-      expect(parsed['/123']).toBe('value2');
-      expect(parsed['/']).toBe('empty key');
-      expect(parsed['/$special']).toBe('dollar sign');
-      expect(parsed['/@attribute']).toBe('at sign');
-      expect(parsed['/space key']).toBe('space value');
-    });
-
-    it('should exit when trying to process empty object in composite schemas', () => {
-      const json = JSON.stringify({
-        emptyArray: [],
-        emptyObject: {},
-      });
-
-      expect(() => {
-        parseJson(
-          json,
-          path.join(__dirname, '../__mocks__', 'test.json'),
-          {
-            jsonSchema: {
-              '**/*.json': {
-                composite: {
-                  '$.emptyObject': {
-                    type: 'object',
-                    include: ['$.*'],
-                  },
-                },
-              },
-            },
-          },
-          'en'
+    it.each(['{ "key": value }', ''])(
+      'exits when the content is not valid JSON: %j',
+      (content) => {
+        expect(() =>
+          parseJson(
+            content,
+            'invalid.json',
+            { jsonSchema: { '**/*.json': { include: ['$..*'] } } },
+            'en'
+          )
+        ).toThrow('Process exit called');
+        expect(logger.error).toHaveBeenCalledWith(
+          'Invalid JSON file: invalid.json'
         );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Source item not found at path: /emptyObject. You must specify a source item where its key matches the default locale'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should handle string sourceItem in object composite schema', () => {
-      const json = JSON.stringify({
-        content: {
-          en: 'Contact name, phone number, email, 2',
-          fr: 'Nom du contact, numéro de téléphone, email, 2',
-        },
-      });
-
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.content': {
-                  type: 'object',
-                  include: ['$.*'],
-                },
-              },
-            },
-          },
-        },
-        'en'
-      );
-
-      const parsed = JSON.parse(result);
-      expect(parsed['/content']).toBe('Contact name, phone number, email, 2');
-    });
-
-    it('should preserve original formatting for non-matching files', () => {
-      const originalJson = `{
-  "formatted": {
-    "nicely": "yes"
-  }
-}`;
-
-      const result = parseJson(
-        originalJson,
-        '/path/to/unmatched/file.txt', // doesn't match any schema
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$..*'],
-            },
-          },
-        },
-        'en'
-      );
-
-      expect(result).toBe(originalJson);
-    });
+        expect(exitSync).toHaveBeenCalledWith(1);
+      }
+    );
   });
 });
