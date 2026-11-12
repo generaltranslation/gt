@@ -17,6 +17,7 @@ export type RefMap = Map<string, RefMapEntry>;
 export type ResolvedRefs = {
   resolved: unknown;
   refMap: RefMap;
+  unreadableRefs: string[];
 };
 
 /**
@@ -31,14 +32,16 @@ export function resolveMintlifyRefs(
   filePath: string
 ): ResolvedRefs {
   const refMap: RefMap = new Map();
+  const unreadableRefs: string[] = [];
   const resolved = resolveNode(
     json,
     path.dirname(path.resolve(filePath)),
     '',
     new Set<string>(),
-    refMap
+    refMap,
+    unreadableRefs
   );
-  return { resolved, refMap };
+  return { resolved, refMap, unreadableRefs };
 }
 
 function resolveNode(
@@ -46,20 +49,28 @@ function resolveNode(
   baseDir: string,
   pointer: string,
   visiting: Set<string>,
-  refMap: RefMap
+  refMap: RefMap,
+  unreadableRefs: string[]
 ): unknown {
   if (node === null || typeof node !== 'object') return node;
 
   if (Array.isArray(node)) {
     return node.map((item, i) =>
-      resolveNode(item, baseDir, `${pointer}/${i}`, visiting, refMap)
+      resolveNode(
+        item,
+        baseDir,
+        `${pointer}/${i}`,
+        visiting,
+        refMap,
+        unreadableRefs
+      )
     );
   }
 
   const obj = node as Record<string, unknown>;
 
   if (typeof obj['$ref'] === 'string') {
-    return resolveRef(obj, baseDir, pointer, visiting, refMap);
+    return resolveRef(obj, baseDir, pointer, visiting, refMap, unreadableRefs);
   }
 
   const result: Record<string, unknown> = {};
@@ -69,7 +80,8 @@ function resolveNode(
       baseDir,
       `${pointer}/${key}`,
       visiting,
-      refMap
+      refMap,
+      unreadableRefs
     );
   }
   return result;
@@ -80,7 +92,8 @@ function resolveRef(
   baseDir: string,
   pointer: string,
   visiting: Set<string>,
-  refMap: RefMap
+  refMap: RefMap,
+  unreadableRefs: string[]
 ): unknown {
   const refPath = obj['$ref'] as string;
 
@@ -100,6 +113,7 @@ function resolveRef(
     logger.warn(
       chalk.yellow(`Circular $ref detected at ${pointer || '/'}: ${refPath}`)
     );
+    unreadableRefs.push(refPath);
     const { $ref: _, ...rest } = obj;
     return rest;
   }
@@ -110,6 +124,7 @@ function resolveRef(
         `$ref file not found at ${pointer || '/'}: ${refPath} (resolved to ${resolvedFilePath})`
       )
     );
+    unreadableRefs.push(refPath);
     const { $ref: _, ...rest } = obj;
     return rest;
   }
@@ -119,6 +134,7 @@ function resolveRef(
     fileContent = fs.readFileSync(resolvedFilePath, 'utf-8');
   } catch {
     logger.warn(chalk.yellow(`Failed to read $ref file: ${resolvedFilePath}`));
+    unreadableRefs.push(refPath);
     const { $ref: _, ...rest } = obj;
     return rest;
   }
@@ -130,6 +146,7 @@ function resolveRef(
     logger.warn(
       chalk.yellow(`$ref file is not valid JSON: ${resolvedFilePath}`)
     );
+    unreadableRefs.push(refPath);
     const { $ref: _, ...rest } = obj;
     return rest;
   }
@@ -155,7 +172,8 @@ function resolveRef(
     refFileDir,
     pointer,
     nextVisiting,
-    refMap
+    refMap,
+    unreadableRefs
   );
 
   // Apply Mintlify merge rules

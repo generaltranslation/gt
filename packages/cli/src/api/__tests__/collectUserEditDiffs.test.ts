@@ -704,16 +704,29 @@ describe('collectAndSendUserEditDiffs', () => {
       expect(getWarnings()).toEqual([]);
     });
 
-    it('keeps the stored translation when no values can be read for the locale', async () => {
-      await run(undefined, served('はじめに', '基本'));
+    it.each([
+      {
+        name: 'the locale $ref file is missing',
+        jaNav: undefined,
+        reason: 'these $ref files could not be read: ./config/ja/nav.json',
+      },
+      {
+        name: 'a nested $ref is missing beside values that can be read',
+        jaNav: { tabs: [{ tab: 'はじめに', $ref: './missing.json' }] },
+        reason: 'these $ref files could not be read: ./missing.json',
+      },
+      {
+        name: 'the locale has no translated values',
+        jaNav: { tabs: [] },
+        reason:
+          'no translated values for that locale could be read from the file',
+      },
+    ])('keeps the stored translation when $name', async ({ jaNav, reason }) => {
+      await run(jaNav, served('はじめに', '基本'));
 
       expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
       expect(getWarnings()).toEqual([
-        {
-          category: 'skipped_file',
-          fileName: 'docs.json',
-          reason: 'No translated values for ja could be read from the file',
-        },
+        { category: 'skipped_file', fileName: 'docs.json', reason },
       ]);
     });
   });

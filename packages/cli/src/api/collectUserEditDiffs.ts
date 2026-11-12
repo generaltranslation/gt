@@ -35,12 +35,16 @@ import {
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { isDeepStrictEqual } from 'node:util';
 
-const emptyExtractionWarning = (relativePath: string, locale: string) =>
+const unsavedJsonEditsWarning = (
+  relativePath: string,
+  locale: string,
+  reason: string
+) =>
   createDiagnosticMessage({
     source: 'gt',
     severity: 'Warning',
     whatHappened: `Local edits to ${relativePath} were not saved for ${locale}`,
-    why: 'no translated values for that locale could be read from the file',
+    why: reason,
     reassurance: 'The stored translation was left unchanged',
   });
 
@@ -48,13 +52,18 @@ const resolveLocalRefs = (
   content: string,
   outputPath: string,
   settings: Settings
-): string => {
-  if (!shouldResolveRefs(outputPath, settings.options)) return content;
+): { content: string; unreadableRefs: string[] } => {
+  if (!shouldResolveRefs(outputPath, settings.options)) {
+    return { content, unreadableRefs: [] };
+  }
   try {
-    const { resolved } = resolveMintlifyRefs(JSON.parse(content), outputPath);
-    return JSON.stringify(resolved, null, 2);
+    const { resolved, unreadableRefs } = resolveMintlifyRefs(
+      JSON.parse(content),
+      outputPath
+    );
+    return { content: JSON.stringify(resolved, null, 2), unreadableRefs };
   } catch {
-    return content;
+    return { content, unreadableRefs: [] };
   }
 };
 
@@ -323,8 +332,13 @@ export async function collectAndSendUserEditDiffs(
             settings.options?.jsonSchema &&
             c.locale !== settings.defaultLocale
           ) {
+            const resolvedLocal = resolveLocalRefs(
+              rawLocalContent,
+              c.outputPath,
+              settings
+            );
             const extractedContent = extractJson(
-              resolveLocalRefs(rawLocalContent, c.outputPath, settings),
+              resolvedLocal.content,
               c.fileName,
               settings.options,
               c.locale,
@@ -332,16 +346,20 @@ export async function collectAndSendUserEditDiffs(
             );
             if (extractedContent) {
               const extracted = parseJson(extractedContent);
-              // Submitting an extraction with no values would replace the
-              // stored translation with an empty one.
-              if (!hasLeafValue(extracted)) {
+              // The submitted content replaces the stored translation, so
+              // values missing from it would be erased.
+              const reason =
+                resolvedLocal.unreadableRefs.length > 0
+                  ? `these $ref files could not be read: ${resolvedLocal.unreadableRefs.join(', ')}`
+                  : !hasLeafValue(extracted)
+                    ? 'no translated values for that locale could be read from the file'
+                    : undefined;
+              if (reason) {
                 const relativePath = getRelative(c.outputPath);
-                logger.warn(emptyExtractionWarning(relativePath, c.locale));
-                recordWarning(
-                  'skipped_file',
-                  relativePath,
-                  `No translated values for ${c.locale} could be read from the file`
+                logger.warn(
+                  unsavedJsonEditsWarning(relativePath, c.locale, reason)
                 );
+                recordWarning('skipped_file', relativePath, reason);
                 continue;
               }
               if (isDeepStrictEqual(extracted, parseJson(serverContent))) {
