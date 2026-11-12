@@ -3,7 +3,8 @@
  * (MIT). See THIRD_PARTY_NOTICES.md.
  *
  * A field has ICU's meaning or it throws a RangeError: Intl has no quarter,
- * week or numeric weekday, among others. The README lists what differs.
+ * week or numeric weekday, among others. icu4c-conformance.test.ts lists
+ * what differs.
  */
 
 import {

@@ -11,4 +11,4 @@ Number and date skeletons mean what they mean in ICU4C, or they throw.
 - `a` beside an hour adds nothing to it: `::Ha` is a 24-hour clock, as in ICU, not a 12-hour one.
 - The weekdays `eee`, `eeee` and `eeeee` (and `c`) are short, long and narrow, as in ICU.
 
-The rounding and the fraction digits a message leaves out are still Intl's. The README lists every difference from ICU4C, and `icu4c-conformance.test.ts` checks about 2,200 cases against ICU4C 78.3's output.
+The rounding and the fraction digits a message leaves out are still Intl's. `icu4c-conformance.test.ts` checks about 2,200 cases against ICU4C 78.3's output, and holds every difference with its reason.

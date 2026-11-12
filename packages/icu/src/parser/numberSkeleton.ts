@@ -5,7 +5,7 @@
  * A token has ICU's meaning or it throws: a SyntaxError when it is not a
  * skeleton token, a RangeError when Intl cannot format what it asks for. The
  * precision and rounding a skeleton leaves out are Intl's defaults, not
- * ICU's; the README lists the differences.
+ * ICU's; icu4c-conformance.test.ts lists the differences.
  *
  * Tokenizing is adapted from @formatjs/icu-skeleton-parser (MIT). See
  * THIRD_PARTY_NOTICES.md.

@@ -10,8 +10,6 @@
  * - an error, for what ICU4C formats and Intl cannot (UNSUPPORTED below) and
  *   for what ICU4C rejects too;
  * - one of DIFFERENCES below, each with its reason.
- *
- * The README lists the same differences for readers of the package.
  */
 
 import { readFileSync } from 'node:fs';
