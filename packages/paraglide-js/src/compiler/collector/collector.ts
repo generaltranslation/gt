@@ -1,7 +1,6 @@
 import fsp from 'node:fs/promises';
 import { isBuiltin } from 'node:module';
 import path from 'node:path';
-import { parseSync } from 'oxc-parser';
 import { analyzeModule } from '../analysis/analyze.js';
 import {
   ModuleGraph,
@@ -28,6 +27,7 @@ import {
 } from '../project/auto-imports.js';
 import type { FileSelection } from '../project/files.js';
 import { projectPackages } from '../project/packages.js';
+import { parseCode } from '../utils/parse.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
 import { isInCatalog, unknownMessagesWarning } from './catalog-check.js';
 import { MetadataFiles } from './metadata-files.js';
@@ -78,7 +78,7 @@ type Catalog = Set<string> | undefined;
 const IN_PARAGLIDE_DIRECTORY = /(^|[/\\])paraglide[/\\]/;
 
 const parse: ParseFunction = (file, code, lang) =>
-  parseSync(file, code, {
+  parseCode(file, code, {
     lang,
     range: true,
     astType: 'ts',

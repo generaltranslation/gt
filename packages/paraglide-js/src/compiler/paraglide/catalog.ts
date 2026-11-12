@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { parseSync } from 'oxc-parser';
 import { moduleExportName, type ESTree } from '../analysis/ast.js';
 import { declaredNames } from '../analysis/module-syntax.js';
+import { parseCode } from '../utils/parse.js';
 import { escapeRegExp } from '../utils/regexp.js';
 
 type ModuleBody = ReadonlyArray<ESTree.Statement | ESTree.Directive>;
@@ -131,7 +131,7 @@ async function parseFile(file: string): Promise<ESTree.Program | undefined> {
   if (code === undefined) return undefined;
 
   const lang = file.endsWith('.d.ts') ? 'dts' : 'js';
-  const { program, errors } = parseSync(file, code, { lang });
+  const { program, errors } = parseCode(file, code, { lang });
 
   const hasError = errors.some((error) => error.severity === 'Error');
   if (hasError) return undefined;
