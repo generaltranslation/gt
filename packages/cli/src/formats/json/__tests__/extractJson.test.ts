@@ -776,7 +776,7 @@ describe('extractJson', () => {
         'en'
       );
 
-      configureCustomMapping();
+      configureCustomMapping(undefined);
 
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);

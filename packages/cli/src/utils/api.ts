@@ -8,7 +8,6 @@ import {
   standardizeLocale,
 } from '@generaltranslation/format';
 import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
-import type { UserTokenProvider } from 'generaltranslation/api';
 import { credentialScope } from 'generaltranslation/internal';
 import type { CustomMapping } from 'generaltranslation/types';
 import type { Settings } from '../types/index.js';
@@ -17,7 +16,9 @@ import type { Settings } from '../types/index.js';
 let sharedCustomMapping: CustomMapping | undefined;
 
 /** Sets the custom mapping that `resolveCanonicalLocale` applies. */
-export function configureCustomMapping(customMapping?: CustomMapping): void {
+export function configureCustomMapping(
+  customMapping: CustomMapping | undefined
+): void {
   sharedCustomMapping = snapshotLocaleConfig({ customMapping }).customMapping;
 }
 
@@ -40,8 +41,7 @@ export function createClients(
     ...(settings.apiKey
       ? { apiKey: settings.apiKey }
       : {
-          // generateSettings always sets the provider.
-          userTokenProvider: settings.userTokenProvider as UserTokenProvider,
+          userTokenProvider: settings.userTokenProvider,
         }),
     baseUrl: settings.baseUrl,
     localeConfig: { customMapping: settings.customMapping },

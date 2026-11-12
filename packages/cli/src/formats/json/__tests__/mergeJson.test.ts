@@ -1609,7 +1609,7 @@ describe('mergeJson', () => {
         ['fr-ca']
       );
 
-      configureCustomMapping();
+      configureCustomMapping(undefined);
 
       const parsed = JSON.parse(result[0]);
       const frenchNav = parsed.navigation.languages.find(hasLanguage('fr-CA'));

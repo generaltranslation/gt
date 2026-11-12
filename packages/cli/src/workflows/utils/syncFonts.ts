@@ -66,7 +66,7 @@ const fontSyncDeniedWarning = (reason: string) =>
     reassurance: 'Translation continues with fallback fonts',
   });
 
-const fontSyncUnavailableWarning = (reason: string, fix?: string) =>
+const fontSyncUnavailableWarning = (reason: string, fix: string | undefined) =>
   createDiagnosticMessage({
     source: 'gt',
     severity: 'Warning',

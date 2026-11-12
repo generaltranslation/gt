@@ -250,7 +250,7 @@ export type Settings = {
   baseUrl: string;
   dashboardUrl: string;
   apiKey?: string;
-  userTokenProvider?: UserTokenProvider;
+  userTokenProvider: UserTokenProvider;
   projectId?: string;
   defaultLocale: string;
   locales: string[];

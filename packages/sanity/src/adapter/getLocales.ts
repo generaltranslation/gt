@@ -10,7 +10,9 @@ import { allowsNonDefaultSourceLocales } from '../utils/translationSource';
  *   locale is translated into the configured source locale too, so it is
  *   offered as a target for that original only.
  */
-export const getLocales = (sourceLanguage?: string): TranslationLocale[] => {
+export const getLocales = (
+  sourceLanguage: string | undefined
+): TranslationLocale[] => {
   const sourceLocale = pluginConfig.getSourceLocale();
   const localeIds =
     allowsNonDefaultSourceLocales() &&

@@ -595,9 +595,9 @@ export async function startTranslation({
   try {
     // Only documents GT has: an upload for a new one would count as its
     // complete translation and leave missing strings untranslated.
-    const edits = saveLocalEdits
+    const edits: SentFiles = saveLocalEdits
       ? await saveToGt(batch, prepared, { onlyKnown: true })
-      : (new Map() as SentFiles);
+      : new Map();
     // A document whose edits GT did not save is not translated, so the
     // translation cannot replace them. Nor is one GT did not upload.
     const failed = new Map<string, string>();
