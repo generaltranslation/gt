@@ -91,6 +91,32 @@ messageToIcu({
 with the returned ones are the message's. `messageTreeToIcu()` prints the tree
 alone, which is what a translator sees: `{due, time, ::jmm}`.
 
+`checkTranslation()` checks a translation against its source: the same
+variables, the same styles, and no formatting context of its own. Given the
+translation's locale, it also checks that each plural has a branch for every
+category the locale has, since a value with no branch for its category falls
+back to `other` and reads wrong:
+
+```ts
+import {
+  checkTranslation,
+  icuToMessage,
+} from '@generaltranslation/icu/convert';
+
+const source = icuToMessage('{n, plural, one {# file} other {# files}}').tree;
+checkTranslation(
+  source,
+  icuToMessage('{n, plural, one {# файл} other {# файлов}}'),
+  { locale: 'ru' }
+);
+// 'The translation does not match its source: "n" is missing the plural
+//  branches few, many, which ru needs.'
+```
+
+It returns `undefined` when the translation matches. A category the locale
+does not have, like `one` in Japanese, may be left out or kept; a branch that
+is no category at all, like `lots`, is a problem.
+
 The formatters take every argument: the locales, the values, and the time
 zone of dates and times. This package applies no defaults to them and does
 not read the host's time zone; its caller passes them in.
