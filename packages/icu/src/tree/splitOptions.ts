@@ -1,7 +1,4 @@
-import {
-  createConflictingFormatsError,
-  createInvalidFormatOptionError,
-} from '../errors/treeErrors';
+import { createConflictingFormatsError } from '../errors/treeErrors';
 import {
   DATE_MESSAGE_OPTIONS,
   DATE_TIME_CONTEXT_OPTIONS,
@@ -29,9 +26,8 @@ export type DateTimeOptions = DateMessageOptions & DateTimeFormattingContext;
 export function splitOptions(
   name: string,
   kind: (NumberNode | DateTimeNode)[1],
-  options: Intl.NumberFormatOptions | DateTimeOptions = {},
-  invalid = (reason: string) =>
-    new Error(createInvalidFormatOptionError(name, kind, reason))
+  options: Intl.NumberFormatOptions | DateTimeOptions,
+  invalid: (reason: string) => Error
 ): [node: NumberNode | DateTimeNode, formatting: MessageFormattingContext] {
   const messageKeys: readonly string[] =
     kind === 'number'

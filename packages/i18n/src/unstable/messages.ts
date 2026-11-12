@@ -62,7 +62,7 @@ function toRenderable(
   return {
     tree,
     values: Object.assign(merged, values, overrides),
-    formats: formats ?? {},
+    formats,
     metadata: { context, maxChars, requiresReview, $_hash },
   };
 }

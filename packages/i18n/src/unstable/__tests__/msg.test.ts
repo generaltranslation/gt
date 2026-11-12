@@ -92,6 +92,7 @@ describe('gt-i18n/unstable msg', () => {
     expect(greeting).toEqual({
       tree: ['Hello, ', ['name'], '!'],
       values: { name: 'Ada' },
+      formats: {},
       $_hash: keyOf`Hello, ${{ name }}!`,
     });
     // React only passes plain objects from server to client components.
@@ -179,7 +180,8 @@ describe('gt-i18n/unstable msg', () => {
       { tree: ['Hi'], values: {} },
       { tree: [['x', 'bogus']], values: {}, $_hash: 'h' },
       { tree: ['Hi'], $_hash: 'h' },
-      { tree: ['Hi'], values: {}, $_hash: 'h', maxChars: 'ten' },
+      { tree: [['name']], values: {}, $_hash: 'h' },
+      { tree: ['Hi'], values: {}, formats: {}, $_hash: 'h', maxChars: 'ten' },
     ];
     for (const message of invalid) {
       expect(() => m(message as Msg)).toThrow('not a message from msg()');

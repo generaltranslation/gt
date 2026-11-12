@@ -74,7 +74,7 @@ export type NamedStyles = {
  */
 export function readMessage(
   ast: MessageFormatElement[],
-  styles: NamedStyles = {}
+  styles: NamedStyles
 ): Message {
   const bindings: FormatBindings = new Map();
   const tree = convert(ast, (element, kind) => {
@@ -217,7 +217,7 @@ function splitFormat(
     }
     options = dateTimeOptions(style);
   }
-  return splitOptions(element.value, kind, options, fail);
+  return splitOptions(element.value, kind, options ?? {}, fail);
 }
 
 /**

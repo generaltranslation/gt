@@ -1,5 +1,6 @@
 import {
   createInvalidBranchKeyError,
+  createInvalidFormatOptionError,
   createInvalidVariableNameError,
   createPluralCountOutsidePluralError,
   createReservedVariablePrefixError,
@@ -167,7 +168,13 @@ function buildHole(
     case 'date':
     case 'time': {
       const name = hole.name ?? addAnonymousValue(context, hole.value);
-      const [node, formatting] = splitOptions(name, hole.kind, hole.options);
+      const [node, formatting] = splitOptions(
+        name,
+        hole.kind,
+        hole.options ?? {},
+        (reason) =>
+          new Error(createInvalidFormatOptionError(name, hole.kind, reason))
+      );
       bindFormatting(context.formats, name, formatting);
       out.push(node);
       return;

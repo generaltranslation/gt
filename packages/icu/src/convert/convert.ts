@@ -32,7 +32,7 @@ export type IcuToMessageOptions = {
  */
 export function icuToMessage(
   icu: string,
-  { styles }: IcuToMessageOptions = {}
+  { styles = {} }: IcuToMessageOptions = {}
 ): Message {
   const { tree, formats } = readMessage(parse(icu), styles);
   return { tree: normalizeTree(tree), formats };

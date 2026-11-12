@@ -10,6 +10,9 @@ import {
 } from './formatMessageTree';
 import { resolveLocale } from './locale';
 
+/** An ICU string spells its own formatting context, so it takes none. */
+export type FormatMessageOptions = Pick<FormatMessageTreeOptions, 'timeZone'>;
+
 /**
  * Formats an ICU MessageFormat string: it is parsed to a message tree and
  * formatted like `formatMessageTree`, with the same values and result types.
@@ -20,7 +23,7 @@ export function formatMessage(
   message: string,
   locales: string | string[],
   values: Readonly<Record<string, MessagePlainValue>>,
-  options: FormatMessageTreeOptions
+  options: FormatMessageOptions
 ): string;
 /**
  * With rich values or tag formatters, the result is a string, a rich value,
@@ -30,15 +33,18 @@ export function formatMessage<R>(
   message: string,
   locales: string | string[],
   values: MessageTreeValues<R> & OnePartValues<R>,
-  options: FormatMessageTreeOptions
+  options: FormatMessageOptions
 ): FormattedMessage<R>;
 export function formatMessage<R>(
   message: string,
   locales: string | string[],
   values: MessageTreeValues<R>,
-  options: FormatMessageTreeOptions
+  options: FormatMessageOptions
 ): string | R | Array<string | R> {
   const locale = resolveLocale(locales);
   const tree = toParsedTree(parse(message, { locale }));
-  return formatParsedTree(tree, message, locales, values, options);
+  return formatParsedTree(tree, message, locales, values, {
+    formats: {},
+    timeZone: options.timeZone,
+  });
 }

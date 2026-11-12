@@ -83,10 +83,10 @@ export type FormattedMessage<R> = [R] extends [string]
 export type FormatMessageTreeOptions = {
   /**
    * Each formatted variable's formatting context, such as a currency or
-   * `timeZone`, as `buildMessageTree` returns it. It is merged over the
-   * placeholder's style.
+   * `timeZone`, as `buildMessageTree` returns it; `{}` when the message has
+   * none. It is merged over the placeholder's style.
    */
-  formats?: MessageTreeFormats;
+  formats: MessageTreeFormats;
   /**
    * The time zone of a date or time whose formats set none. It is always
    * passed in: this package does not read the host's.
@@ -108,8 +108,10 @@ type FormatContext<R> = FormatMessageTreeOptions & {
  * Formats a message tree without parsing, with native Intl. Plain values
  * format as text, so the result is a string:
  *
- *   formatMessageTree(['Hi ', ['name']], 'en', { name: 'Ada' }, { timeZone });
- *   // 'Hi Ada'
+ *   formatMessageTree(['Hi ', ['name']], 'en', { name: 'Ada' }, {
+ *     formats: {},
+ *     timeZone,
+ *   }); // 'Hi Ada'
  *
  * A rich value, or a tag formatter's result, is kept as a part:
  *
@@ -117,7 +119,7 @@ type FormatContext<R> = FormatMessageTreeOptions & {
  *     ['Read the ', ['b', 'tag', ['terms']]],
  *     'en',
  *     { b: (parts) => <b>{parts}</b> },
- *     { timeZone }
+ *     { formats: {}, timeZone }
  *   ); // ['Read the ', <b>terms</b>]
  *
  * Formatting context, like a currency or a time zone, is passed by variable:
@@ -329,7 +331,7 @@ function formatsOf<R>(
   context: FormatContext<R>,
   name: string
 ): MessageTreeFormats[string] | undefined {
-  return context.formats && ownOption(context.formats, name);
+  return ownOption(context.formats, name);
 }
 
 function ownBranch(
@@ -368,7 +370,7 @@ function requireVariable<R>(
 
 function applyScale<Value>(
   value: Value,
-  scale?: number
+  scale: number | undefined
 ): Value | number | bigint {
   // intl-messageformat treated scale/0 as an absent scale. Preserve that
   // observable behavior for existing messages even though multiplying by zero

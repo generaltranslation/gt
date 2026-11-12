@@ -18,11 +18,11 @@ export type Msg = MessageTreeHashMetadata & {
   tree: MessageTree;
   values: Record<string, unknown>;
   /**
-   * Formatting context of formatted arguments, keyed by name; absent when
+   * Formatting context of formatted arguments, keyed by name; `{}` when
    * none. Its type holds no message option, which would change the rendered
    * message without changing its tree or hash.
    */
-  formats?: MessageTreeFormats;
+  formats: MessageTreeFormats;
   $_hash: string;
 };
 
@@ -80,7 +80,7 @@ function fromTemplate(
     tree,
     // A plain object: React rejects null-prototype objects as props.
     values: { ...values },
-    ...(Object.keys(formats).length > 0 && { formats }),
+    formats,
     $_hash: hashMessageTree(tree, { ...metadata, $_hash }),
     ...metadata,
   };
@@ -92,12 +92,14 @@ function fromTemplate(
  */
 export function isMsg(value: unknown): value is Msg {
   if (typeof value !== 'object' || value === null) return false;
-  const { tree, values, $_hash, context, maxChars, requiresReview } =
+  const { tree, values, formats, $_hash, context, maxChars, requiresReview } =
     value as Record<string, unknown>;
   return (
     isMessageTree(tree) &&
     typeof values === 'object' &&
     values !== null &&
+    typeof formats === 'object' &&
+    formats !== null &&
     typeof $_hash === 'string' &&
     (context === undefined || typeof context === 'string') &&
     (requiresReview === undefined || typeof requiresReview === 'boolean') &&

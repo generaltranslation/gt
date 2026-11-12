@@ -231,10 +231,10 @@ export function formatMessageTree(
   tree: MessageTree,
   locales: string | string[] = libraryDefaultLocale,
   values: MessageTreeValues<unknown> = {},
-  options?: WithOptional<FormatMessageTreeOptions, 'timeZone'>
+  options?: Partial<FormatMessageTreeOptions>
 ): unknown {
   return _formatMessageTree<unknown>(tree, locales, values, {
-    ...options,
+    formats: options?.formats ?? {},
     timeZone: options?.timeZone ?? hostTimeZone(),
   });
 }

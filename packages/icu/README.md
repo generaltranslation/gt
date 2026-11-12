@@ -30,7 +30,7 @@ formatMessageTree(
   ],
   'en',
   { count: 2, name: 'Ada' },
-  { timeZone: 'America/New_York' }
+  { formats: {}, timeZone: 'America/New_York' }
 ); // '2 files from Ada'
 ```
 

@@ -205,18 +205,23 @@ describe('determineLocale approved spelling', () => {
     });
     const at = new Date('2020-05-06T14:03:02Z');
     const tree = [['at', 'time', 'short']];
-    expect(config.formatMessageTree(tree, 'en-US', { variables: { at } })).toBe(
-      '11:03 PM'
-    );
     expect(
       config.formatMessageTree(tree, 'en-US', {
         variables: { at },
+        formats: {},
+      })
+    ).toBe('11:03 PM');
+    expect(
+      config.formatMessageTree(tree, 'en-US', {
+        variables: { at },
+        formats: {},
         timeZone: 'UTC',
       })
     ).toBe('2:03 PM');
     expect(
       config.formatMessageTree(['Hi ', ['name']], undefined, {
         variables: { name: 'Ada' },
+        formats: {},
       })
     ).toBe('Hi Ada');
   });

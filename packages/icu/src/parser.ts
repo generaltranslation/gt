@@ -1,4 +1,5 @@
 export { formatMessage } from './formatter/formatMessage';
+export type { FormatMessageOptions } from './formatter/formatMessage';
 export { parse } from './parser/parse';
 export { printAST } from './parser/printer';
 export { SKELETON_TYPE, TYPE } from './types-dir/ast';
