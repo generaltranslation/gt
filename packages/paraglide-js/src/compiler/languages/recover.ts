@@ -1,3 +1,4 @@
+import type { OxcError, ParseResult } from 'oxc-parser';
 import type { ESTree } from '../analysis/ast.js';
 import type { SourceRange } from '../analysis/types.js';
 import { parseCode } from '../utils/parse.js';
@@ -35,17 +36,38 @@ export function parseSkippingUnparsable(
     skipCopiedText?: boolean;
   }
 ): { code: string; program: ESTree.Program | undefined } {
+  const parsed = parseCode(file, code, { lang });
+  if (!firstError(parsed)) return { code, program: parsed.program };
+
+  return skipUnparsable(
+    file,
+    code,
+    lang,
+    parsed,
+    mappings,
+    expressions,
+    skipCopiedText
+  );
+}
+
+/** `first` is the parse of `code`, which has an error. */
+function skipUnparsable(
+  file: string,
+  code: string,
+  lang: ParseLang,
+  first: ParseResult,
+  mappings: readonly Mapping[],
+  expressions: readonly SourceRange[],
+  skipCopiedText: boolean
+): { code: string; program: ESTree.Program | undefined } {
   const sourceAt = sourceOffsets(mappings, code.length);
   const characters = code.split('');
   const untriedExpressions = [...expressions];
+  let current = code;
+  let parsed = first;
 
   for (let skipped = 0; ; skipped++) {
-    const current = characters.join('');
-    const parsed = parseCode(file, current, { lang });
-
-    const error = parsed.errors.find(
-      (candidate) => candidate.severity === 'Error'
-    );
+    const error = firstError(parsed);
     if (!error) return { code: current, program: parsed.program };
 
     const isOutOfAttempts = skipped === MAX_SKIPPED_EXPRESSIONS;
@@ -63,7 +85,13 @@ export function parseSkippingUnparsable(
     if (unparsable.length === 0) return { code: current, program: undefined };
 
     unparsable.forEach((range) => replaceWithZero(characters, range));
+    current = characters.join('');
+    parsed = parseCode(file, current, { lang });
   }
+}
+
+function firstError({ errors }: ParseResult): OxcError | undefined {
+  return errors.find((candidate) => candidate.severity === 'Error');
 }
 
 function unparsableRanges(

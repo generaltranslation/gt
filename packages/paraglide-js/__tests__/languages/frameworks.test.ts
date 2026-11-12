@@ -1,5 +1,5 @@
 import { parseSync } from 'oxc-parser';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { astroLanguage } from '../../src/compiler/languages/astro.js';
 import {
   NO_PACKAGES,
@@ -10,12 +10,20 @@ import {
 import { sourceSnippet } from '../../src/compiler/output/source-code.js';
 import { svelteLanguage } from '../../src/compiler/languages/svelte.js';
 import { vueLanguage } from '../../src/compiler/languages/vue.js';
+import { parseCode } from '../../src/compiler/utils/parse.js';
 import {
   analyzeProject,
   describeUsages,
   REPO_PACKAGES,
   summarize,
 } from '../helpers/project.js';
+
+// The real parser, counted.
+vi.mock('../../src/compiler/utils/parse.js', async (importOriginal) => {
+  const parse =
+    await importOriginal<typeof import('../../src/compiler/utils/parse.js')>();
+  return { ...parse, parseCode: vi.fn(parse.parseCode) };
+});
 
 async function analyze(file: string, code: string) {
   return analyzeProject({ [file]: code }, { entry: file });
@@ -456,3 +464,36 @@ test('template usages report the lines of the file', async () => {
     after: '',
   });
 });
+
+test.each([
+  [
+    '/app/A.vue',
+    `<script setup>\nimport { m } from "./m.js";\n</script>\n<template><p :title="m.broken(">{{ m.ok() }}</p></template>`,
+    vueLanguage,
+  ],
+  [
+    '/app/A.svelte',
+    `<script>\nimport { m } from "./m.js";\n</script>\n<p title={m.broken(1 +)}>{m.ok()}</p>`,
+    svelteLanguage,
+  ],
+  [
+    '/app/A.astro',
+    `---\nimport { m } from "./m.js";\n---\n<p title={m.broken(}>{m.ok()}</p>`,
+    astroLanguage,
+  ],
+])(
+  '%s with an expression that does not parse is parsed again only without it',
+  async (file, code, language) => {
+    const parse: ParseFunction = (name, generated, lang) =>
+      parseSync(name, generated, { lang }) as never;
+    vi.mocked(parseCode).mockClear();
+
+    await parseSource(file, code, parse, [language], REPO_PACKAGES);
+
+    const { calls } = vi.mocked(parseCode).mock;
+    expect(calls.map(([, parsed]) => parsed.includes('broken('))).toEqual([
+      true,
+      false,
+    ]);
+  }
+);
