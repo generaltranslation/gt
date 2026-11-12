@@ -9,7 +9,7 @@ normalization still happens before serialization: Vue flattens fragments,
 drops comments, and coalesces adjacent text nodes, while React follows
 `React.Children`. Framework-specific tests pin those intentional differences.
 
-`icu-tree-wire-format.json` pins `hashSource` from `generaltranslation/id` with `dataFormat: 'ICU_TREE'`
+`message-tree-wire-format.json` pins `hashSource` from `generaltranslation/id` with `dataFormat: 'MESSAGE_TREE'`
 for tagged-template messages. Each case records the user-code `template`, its
 hash `options`, the canonical message `tree` (the compact `MessageTree` from
 `@generaltranslation/icu`: adjacent text merged, a message or branch without

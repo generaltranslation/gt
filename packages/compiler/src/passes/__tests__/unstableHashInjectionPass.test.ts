@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { hashSource } from 'generaltranslation/id';
 import { transformWithPlugin } from '../../__tests__/transformWithPlugin';
-import wireFormatCases from '../../../../../test-fixtures/icu-tree-wire-format.json';
+import wireFormatCases from '../../../../../test-fixtures/message-tree-wire-format.json';
 
 const UNSTABLE_HELPERS =
   't, msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
@@ -58,10 +58,10 @@ describe('unstableHashInjectionPass', () => {
   });
 
   it('rewrites the tag into the options form', async () => {
-    const save = hashSource({ source: 'Save', dataFormat: 'ICU_TREE' });
+    const save = hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' });
     const button = hashSource({
       source: 'Save',
-      dataFormat: 'ICU_TREE',
+      dataFormat: 'MESSAGE_TREE',
       context: 'button',
     });
     const output = await compile("t`Save`;\nt({ context: 'button' })`Save`;");
@@ -72,7 +72,7 @@ describe('unstableHashInjectionPass', () => {
   });
 
   it('rewrites a msg tag and leaves a msg literal call untouched', async () => {
-    const save = hashSource({ source: 'Save', dataFormat: 'ICU_TREE' });
+    const save = hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' });
     const output = await compile("msg`Save`;\nmsg('Save');");
     expect(output).toContain(`msg({ $_hash: "${save}" })\`Save\``);
     expect(output).toContain("msg('Save');");
@@ -279,7 +279,7 @@ describe('unstableHashInjectionPass', () => {
     'hashes a template with a dynamic %s like a literal one',
     async (_name, body, source) => {
       expect(injectedHashes(await compile(body))).toEqual([
-        hashSource({ source, dataFormat: 'ICU_TREE' }),
+        hashSource({ source, dataFormat: 'MESSAGE_TREE' }),
       ]);
     }
   );
@@ -287,7 +287,7 @@ describe('unstableHashInjectionPass', () => {
   it('skips only a template with a reserved variable name', async () => {
     const output = await compile('t`Hi ${{ _gt_user }}`;\nt`Save`;');
     expect(injectedHashes(output)).toEqual([
-      hashSource({ source: 'Save', dataFormat: 'ICU_TREE' }),
+      hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' }),
     ]);
   });
 

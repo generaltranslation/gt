@@ -11,7 +11,7 @@ The compiler uses a **4-pass Babel pipeline** on `.tsx/.jsx/.ts/.js` files:
 3. **Collection Pass** — Collects translation data, computes hashes, validates usage
 4. **Injection Pass** — Injects hashes and metadata into the AST
 
-With `compileTimeHash`, files importing an `/unstable` entry point also run the **Unstable Hash Injection Pass**, which hashes and rewrites each static tagged template in one visit (no collection counters). Its walker mirrors the CLI's `extractMessageTrees`; `test-fixtures/icu-tree-wire-format.json` keeps their hashes equal.
+With `compileTimeHash`, files importing an `/unstable` entry point also run the **Unstable Hash Injection Pass**, which hashes and rewrites each static tagged template in one visit (no collection counters). Its walker mirrors the CLI's `extractMessageTrees`; `test-fixtures/message-tree-wire-format.json` keeps their hashes equal.
 
 Entry point: `src/index.ts` (creates the unplugin).
 

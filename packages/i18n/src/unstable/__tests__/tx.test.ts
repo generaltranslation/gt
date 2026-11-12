@@ -23,11 +23,11 @@ vi.mock(
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
-const saveHash = hashSource({ source: 'Save', dataFormat: 'ICU_TREE' });
+const saveHash = hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' });
 const greetingTree = ['Hello, ', ['name'], '!'];
 const greetingHash = hashSource({
   source: greetingTree,
-  dataFormat: 'ICU_TREE',
+  dataFormat: 'MESSAGE_TREE',
 });
 
 function setup({ enableI18n = true } = {}) {
@@ -86,7 +86,7 @@ describe('gt-i18n/unstable tx', () => {
         source: greetingTree,
         metadata: expect.objectContaining({
           hash: greetingHash,
-          dataFormat: 'ICU_TREE',
+          dataFormat: 'MESSAGE_TREE',
         }),
       },
     });
@@ -96,7 +96,7 @@ describe('gt-i18n/unstable tx', () => {
     setup();
     const hash = hashSource({
       source: 'Save',
-      dataFormat: 'ICU_TREE',
+      dataFormat: 'MESSAGE_TREE',
       context: 'button',
     });
     translateMany.mockResolvedValue({
@@ -139,7 +139,7 @@ describe('gt-i18n/unstable tx', () => {
   it('translates dyn() text with the message in one request', async () => {
     setup();
     const tree = ['Good morning, ', ['name'], '!'];
-    const hash = hashSource({ source: tree, dataFormat: 'ICU_TREE' });
+    const hash = hashSource({ source: tree, dataFormat: 'MESSAGE_TREE' });
     translateMany.mockResolvedValue({
       [hash]: { success: true, translation: ['Bonjour, ', ['name'], ' !'] },
     });
@@ -159,7 +159,7 @@ describe('gt-i18n/unstable tx', () => {
     const tree = [
       ['count', 'plural', { one: [0, ' Apple'], other: [0, ' Apples'] }],
     ];
-    const hash = hashSource({ source: tree, dataFormat: 'ICU_TREE' });
+    const hash = hashSource({ source: tree, dataFormat: 'MESSAGE_TREE' });
     translateMany.mockResolvedValue({
       [hash]: {
         success: true,

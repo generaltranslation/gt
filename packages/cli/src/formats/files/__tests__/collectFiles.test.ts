@@ -74,11 +74,11 @@ describe('collectFiles', () => {
     });
   });
 
-  it('uploads ICU_TREE sources as GTJSON tree values', async () => {
+  it('uploads MESSAGE_TREE sources as GTJSON tree values', async () => {
     const tree = 'Save';
     vi.mocked(aggregateInlineTranslations).mockResolvedValue([
       {
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
         source: tree,
         metadata: { hash: 'tree-hash', context: 'button' },
       },
@@ -91,7 +91,7 @@ describe('collectFiles', () => {
       'tree-hash': {
         hash: 'tree-hash',
         context: 'button',
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
       },
     });
   });

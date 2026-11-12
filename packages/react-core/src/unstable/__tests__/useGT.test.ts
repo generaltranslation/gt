@@ -57,7 +57,7 @@ describe('react-core/unstable useGT', () => {
       locale: 'fr',
       message: hello,
       options: expect.objectContaining({
-        $format: 'ICU_TREE',
+        $format: 'MESSAGE_TREE',
         $locale: 'fr',
         $context: 'greeting',
       }),

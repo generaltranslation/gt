@@ -19,7 +19,7 @@ type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
 const saveTree = 'Save';
 const frenchTranslations = {
-  [hashSource({ source: saveTree, dataFormat: 'ICU_TREE' })]: 'Enregistrer',
+  [hashSource({ source: saveTree, dataFormat: 'MESSAGE_TREE' })]: 'Enregistrer',
 };
 
 describe('gt-next unstable tx', () => {

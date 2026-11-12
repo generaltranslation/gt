@@ -249,7 +249,10 @@ function toTranslationResult(
       locale: result.locale,
     };
   }
-  if (result.dataFormat === 'ICU_TREE' && isMessageTree(result.translation)) {
+  if (
+    result.dataFormat === 'MESSAGE_TREE' &&
+    isMessageTree(result.translation)
+  ) {
     return {
       success: true,
       translation: result.translation,
@@ -259,7 +262,7 @@ function toTranslationResult(
   }
   if (
     result.dataFormat !== 'JSX' &&
-    result.dataFormat !== 'ICU_TREE' &&
+    result.dataFormat !== 'MESSAGE_TREE' &&
     typeof result.translation === 'string'
   ) {
     return {

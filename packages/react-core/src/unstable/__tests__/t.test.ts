@@ -10,9 +10,12 @@ type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
 const saveTree = 'Save';
 const translations: Record<string, unknown> = {
-  [hashSource({ source: saveTree, dataFormat: 'ICU_TREE' })]: 'Enregistrer',
-  [hashSource({ source: saveTree, dataFormat: 'ICU_TREE', context: 'button' })]:
-    'Sauvegarder',
+  [hashSource({ source: saveTree, dataFormat: 'MESSAGE_TREE' })]: 'Enregistrer',
+  [hashSource({
+    source: saveTree,
+    dataFormat: 'MESSAGE_TREE',
+    context: 'button',
+  })]: 'Sauvegarder',
 };
 
 function setConditions(locale: string, enableI18n = true) {
@@ -36,7 +39,7 @@ describe('react-core/unstable t', () => {
             ? translations[
                 hashSource({
                   source: message,
-                  dataFormat: 'ICU_TREE',
+                  dataFormat: 'MESSAGE_TREE',
                   context: options.$context,
                 })
               ]

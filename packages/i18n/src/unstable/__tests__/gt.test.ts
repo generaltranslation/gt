@@ -38,7 +38,7 @@ function keyOf(metadata: MessageTreeHashMetadata = {}) {
   return (strings: TemplateStringsArray, ...holes: unknown[]) =>
     hashSource({
       source: buildMessage(strings, holes).tree,
-      dataFormat: 'ICU_TREE',
+      dataFormat: 'MESSAGE_TREE',
       ...metadata,
     });
 }

@@ -53,7 +53,7 @@ export function processMessage(
     });
     for (const tree of trees) {
       output.updates.push({
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
         source: tree,
         // Each variant gets its own hash, so it needs its own metadata object.
         metadata: { ...metadata },

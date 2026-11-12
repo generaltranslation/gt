@@ -54,7 +54,7 @@ export type ContentByFormat = {
   ICU: IcuMessage;
   I18NEXT: I18nextMessage;
   STRING: StringMessage;
-  ICU_TREE: MessageTree;
+  MESSAGE_TREE: MessageTree;
 };
 
 /**
