@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { _getLocaleDirection } from '../getLocaleDirection';
+import { libraryDefaultLocale } from '../../settings/settings';
 import { intlCache } from '../../cache/IntlCache';
 
 afterEach(() => {
@@ -43,12 +44,12 @@ function mockLocaleWithoutTextInfo() {
 describe.sequential('_getLocaleDirection (browser)', () => {
   it('should detect rtl script when Intl.Locale lacks textInfo support', () => {
     mockLocaleWithoutTextInfo();
-    expect(_getLocaleDirection('az-Arab')).toBe('rtl');
+    expect(_getLocaleDirection('az-Arab', libraryDefaultLocale)).toBe('rtl');
   });
 
   it('should detect ltr script when Intl.Locale lacks textInfo support', () => {
     mockLocaleWithoutTextInfo();
-    expect(_getLocaleDirection('az-Latn')).toBe('ltr');
+    expect(_getLocaleDirection('az-Latn', libraryDefaultLocale)).toBe('ltr');
   });
 
   it('should fall back to known rtl languages when Intl.Locale is not available', () => {
@@ -56,7 +57,7 @@ describe.sequential('_getLocaleDirection (browser)', () => {
       throw new Error('Intl.Locale not supported');
     });
 
-    expect(_getLocaleDirection('ar')).toBe('rtl');
+    expect(_getLocaleDirection('ar', libraryDefaultLocale)).toBe('rtl');
   });
 
   it('should fall back to ltr for unknown languages when Intl.Locale is not available', () => {
@@ -64,6 +65,6 @@ describe.sequential('_getLocaleDirection (browser)', () => {
       throw new Error('Intl.Locale not supported');
     });
 
-    expect(_getLocaleDirection('en')).toBe('ltr');
+    expect(_getLocaleDirection('en', libraryDefaultLocale)).toBe('ltr');
   });
 });

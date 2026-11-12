@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { _getLocaleName } from '../getLocaleName';
 import { CustomMapping } from '../customLocaleMapping';
+import { getLocaleName } from '../../core';
+import { libraryDefaultLocale } from '../../settings/settings';
 
 describe('_getLocaleName', () => {
   it('should return display names for common locales using English display locale', () => {
@@ -38,7 +40,7 @@ describe('_getLocaleName', () => {
   });
 
   it('should use default locale when none specified', () => {
-    const result = _getLocaleName('fr-FR');
+    const result = getLocaleName('fr-FR');
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
   });
@@ -141,7 +143,11 @@ describe('_getLocaleName', () => {
       },
     };
 
-    const result = _getLocaleName('en-TEST', undefined, customMapping);
+    const result = _getLocaleName(
+      'en-TEST',
+      libraryDefaultLocale,
+      customMapping
+    );
     expect(result).toBe('Test Language');
   });
 
@@ -152,7 +158,11 @@ describe('_getLocaleName', () => {
       },
     };
 
-    const result = _getLocaleName('es-TEST', undefined, customMapping);
+    const result = _getLocaleName(
+      'es-TEST',
+      libraryDefaultLocale,
+      customMapping
+    );
     expect(result).toBe('Spanish');
   });
 

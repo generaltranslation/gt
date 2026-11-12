@@ -25,6 +25,7 @@ import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _requiresTranslation } from './locales/requiresTranslation';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
+import { libraryDefaultLocale } from './settings/settings';
 import type { CustomMapping, FormatVariables } from './types';
 import type { StringFormat } from './types-dir/jsx/content';
 
@@ -347,7 +348,11 @@ export function getLocaleName(
   defaultLocale?: string,
   customMapping?: CustomMapping
 ): string {
-  return _getLocaleName(locale, defaultLocale, customMapping);
+  return _getLocaleName(
+    locale,
+    defaultLocale || libraryDefaultLocale,
+    customMapping
+  );
 }
 
 /**
@@ -405,7 +410,11 @@ export function getLocaleProperties(
   defaultLocale?: string,
   customMapping?: CustomMapping
 ): LocaleProperties {
-  return _getLocaleProperties(locale, defaultLocale, customMapping);
+  return _getLocaleProperties(
+    locale,
+    defaultLocale || libraryDefaultLocale,
+    customMapping
+  );
 }
 
 /**
@@ -460,7 +469,7 @@ export function determineLocale(
  * @returns {string} 'rtl' if the locale is right-to-left; otherwise 'ltr'.
  */
 export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
-  return _getLocaleDirection(locale);
+  return _getLocaleDirection(locale, libraryDefaultLocale);
 }
 
 /**

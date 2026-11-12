@@ -341,7 +341,7 @@ export class GTIntl {
     const targetLocale = this.getTargetLocale(options);
     return _getLocaleName(
       locale || targetLocale,
-      this.resolveCanonicalLocale(targetLocale),
+      this.resolveCanonicalLocale(targetLocale) || libraryDefaultLocale,
       this.customMapping
     );
   }
@@ -362,7 +362,7 @@ export class GTIntl {
     const targetLocale = this.getTargetLocale(options);
     return _getLocaleProperties(
       locale || targetLocale,
-      this.resolveCanonicalLocale(targetLocale),
+      this.resolveCanonicalLocale(targetLocale) || libraryDefaultLocale,
       this.customMapping
     );
   }
@@ -475,7 +475,8 @@ export class GTIntl {
   /** The text direction of `locale` (default: the target locale). */
   getLocaleDirection(locale?: string, options: LocaleOption = {}) {
     return _getLocaleDirection(
-      this.resolveCanonicalLocale(locale || this.getTargetLocale(options))
+      this.resolveCanonicalLocale(locale || this.getTargetLocale(options)),
+      libraryDefaultLocale
     );
   }
 

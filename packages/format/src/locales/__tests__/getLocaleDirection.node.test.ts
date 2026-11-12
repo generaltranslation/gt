@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { _getLocaleDirection } from '../getLocaleDirection';
+import { libraryDefaultLocale } from '../../settings/settings';
 import { intlCache } from '../../cache/IntlCache';
 
 afterEach(() => {
@@ -23,7 +24,7 @@ describe.sequential('_getLocaleDirection (node)', () => {
 
     vi.spyOn(intlCache, 'get').mockReturnValue(mockLocale);
 
-    expect(_getLocaleDirection('en-US')).toBe('rtl');
+    expect(_getLocaleDirection('en-US', libraryDefaultLocale)).toBe('rtl');
     expect(mockLocale.maximize).not.toHaveBeenCalled();
   });
 
@@ -36,7 +37,7 @@ describe.sequential('_getLocaleDirection (node)', () => {
 
     vi.spyOn(intlCache, 'get').mockReturnValue(mockLocale);
 
-    expect(_getLocaleDirection('ar-Arab')).toBe('ltr');
+    expect(_getLocaleDirection('ar-Arab', libraryDefaultLocale)).toBe('ltr');
     expect(mockLocale.maximize).not.toHaveBeenCalled();
   });
 });

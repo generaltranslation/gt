@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { _getLocaleDirection } from '../getLocaleDirection';
+import { libraryDefaultLocale } from '../../settings/settings';
 
 describe('_getLocaleDirection', () => {
   it('should return ltr for left-to-right languages', () => {
@@ -15,7 +16,7 @@ describe('_getLocaleDirection', () => {
     ];
 
     for (const locale of ltrLocales) {
-      const result = _getLocaleDirection(locale);
+      const result = _getLocaleDirection(locale, libraryDefaultLocale);
       expect(result).toBe('ltr');
     }
   });
@@ -33,59 +34,61 @@ describe('_getLocaleDirection', () => {
     ];
 
     for (const locale of rtlLocales) {
-      const result = _getLocaleDirection(locale);
+      const result = _getLocaleDirection(locale, libraryDefaultLocale);
       expect(result).toBe('rtl');
     }
   });
 
   it('should handle simple language codes', () => {
-    expect(_getLocaleDirection('en')).toBe('ltr');
-    expect(_getLocaleDirection('ar')).toBe('rtl');
-    expect(_getLocaleDirection('he')).toBe('rtl');
-    expect(_getLocaleDirection('ja')).toBe('ltr');
+    expect(_getLocaleDirection('en', libraryDefaultLocale)).toBe('ltr');
+    expect(_getLocaleDirection('ar', libraryDefaultLocale)).toBe('rtl');
+    expect(_getLocaleDirection('he', libraryDefaultLocale)).toBe('rtl');
+    expect(_getLocaleDirection('ja', libraryDefaultLocale)).toBe('ltr');
   });
 
   it('should handle locale codes with regions', () => {
-    expect(_getLocaleDirection('en-US')).toBe('ltr');
-    expect(_getLocaleDirection('ar-EG')).toBe('rtl');
-    expect(_getLocaleDirection('he-IL')).toBe('rtl');
-    expect(_getLocaleDirection('fr-CA')).toBe('ltr');
+    expect(_getLocaleDirection('en-US', libraryDefaultLocale)).toBe('ltr');
+    expect(_getLocaleDirection('ar-EG', libraryDefaultLocale)).toBe('rtl');
+    expect(_getLocaleDirection('he-IL', libraryDefaultLocale)).toBe('rtl');
+    expect(_getLocaleDirection('fr-CA', libraryDefaultLocale)).toBe('ltr');
   });
 
   it('should handle locale codes with scripts and regions', () => {
-    expect(_getLocaleDirection('zh-Hans-CN')).toBe('ltr');
-    expect(_getLocaleDirection('ar-Arab-SA')).toBe('rtl');
-    expect(_getLocaleDirection('en-Latn-US')).toBe('ltr');
+    expect(_getLocaleDirection('zh-Hans-CN', libraryDefaultLocale)).toBe('ltr');
+    expect(_getLocaleDirection('ar-Arab-SA', libraryDefaultLocale)).toBe('rtl');
+    expect(_getLocaleDirection('en-Latn-US', libraryDefaultLocale)).toBe('ltr');
   });
 
   it('should fallback to ltr for invalid locale codes', () => {
     const invalidLocales = ['invalid', 'xyz-123', '', 'not-a-locale', '123'];
 
     for (const locale of invalidLocales) {
-      const result = _getLocaleDirection(locale);
+      const result = _getLocaleDirection(locale, libraryDefaultLocale);
       expect(result).toBe('ltr');
     }
   });
 
   it('should handle edge cases and special locales', () => {
-    expect(_getLocaleDirection('root')).toBe('ltr');
-    expect(_getLocaleDirection('und')).toBe('ltr');
-    expect(_getLocaleDirection('mixed-script-locale')).toBe('ltr');
+    expect(_getLocaleDirection('root', libraryDefaultLocale)).toBe('ltr');
+    expect(_getLocaleDirection('und', libraryDefaultLocale)).toBe('ltr');
+    expect(
+      _getLocaleDirection('mixed-script-locale', libraryDefaultLocale)
+    ).toBe('ltr');
   });
 
   it('should return consistent results for the same locale', () => {
     const locale = 'en-US';
-    const result1 = _getLocaleDirection(locale);
-    const result2 = _getLocaleDirection(locale);
+    const result1 = _getLocaleDirection(locale, libraryDefaultLocale);
+    const result2 = _getLocaleDirection(locale, libraryDefaultLocale);
 
     expect(result1).toBe(result2);
     expect(result1).toBe('ltr');
   });
 
   it('should handle locale codes with different casings', () => {
-    expect(_getLocaleDirection('EN-us')).toBe('ltr');
-    expect(_getLocaleDirection('AR-sa')).toBe('rtl');
-    expect(_getLocaleDirection('HE-il')).toBe('rtl');
+    expect(_getLocaleDirection('EN-us', libraryDefaultLocale)).toBe('ltr');
+    expect(_getLocaleDirection('AR-sa', libraryDefaultLocale)).toBe('rtl');
+    expect(_getLocaleDirection('HE-il', libraryDefaultLocale)).toBe('rtl');
   });
 
   it('should return only ltr or rtl values', () => {
@@ -109,7 +112,7 @@ describe('_getLocaleDirection', () => {
     ];
 
     for (const locale of testLocales) {
-      const result = _getLocaleDirection(locale);
+      const result = _getLocaleDirection(locale, libraryDefaultLocale);
       expect(['ltr', 'rtl']).toContain(result);
     }
   });

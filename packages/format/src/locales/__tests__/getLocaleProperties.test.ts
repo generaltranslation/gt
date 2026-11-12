@@ -4,6 +4,7 @@ import {
   createCustomLocaleProperties,
 } from '../getLocaleProperties';
 import { CustomMapping } from '../customLocaleMapping';
+import { libraryDefaultLocale } from '../../settings/settings';
 
 describe('createCustomLocaleProperties', () => {
   it('should return undefined when no custom mapping is provided', () => {
@@ -65,7 +66,7 @@ describe('createCustomLocaleProperties', () => {
 
 describe('_getLocaleProperties', () => {
   it('should return basic properties for a simple locale', () => {
-    const result = _getLocaleProperties('en');
+    const result = _getLocaleProperties('en', libraryDefaultLocale);
 
     expect(result).toMatchObject({
       code: 'en',
@@ -79,7 +80,7 @@ describe('_getLocaleProperties', () => {
   });
 
   it('should handle locale with region code', () => {
-    const result = _getLocaleProperties('en-US');
+    const result = _getLocaleProperties('en-US', libraryDefaultLocale);
 
     expect(result).toMatchObject({
       code: 'en-US',
@@ -92,7 +93,7 @@ describe('_getLocaleProperties', () => {
   });
 
   it('should handle locale with script and region', () => {
-    const result = _getLocaleProperties('zh-Hans-CN');
+    const result = _getLocaleProperties('zh-Hans-CN', libraryDefaultLocale);
 
     expect(result).toMatchObject({
       code: 'zh-Hans-CN',
@@ -165,7 +166,10 @@ describe('_getLocaleProperties', () => {
   });
 
   it('should fallback gracefully for invalid locales', () => {
-    const result = _getLocaleProperties('invalid-locale-xyz');
+    const result = _getLocaleProperties(
+      'invalid-locale-xyz',
+      libraryDefaultLocale
+    );
 
     expect(result.code).toBe('invalid-locale-xyz');
     expect(result.name).toBe('invalid-locale-xyz');
@@ -175,7 +179,7 @@ describe('_getLocaleProperties', () => {
   });
 
   it('should handle malformed locale codes', () => {
-    const result = _getLocaleProperties('x');
+    const result = _getLocaleProperties('x', libraryDefaultLocale);
 
     expect(result.code).toBe('x');
     expect(result.languageCode).toBe('x');
@@ -203,7 +207,7 @@ describe('_getLocaleProperties', () => {
     const locales = ['en', 'en-US', 'fr-FR', 'zh-Hans-CN', 'invalid-locale'];
 
     for (const locale of locales) {
-      const result = _getLocaleProperties(locale);
+      const result = _getLocaleProperties(locale, libraryDefaultLocale);
 
       // Check all required properties exist
       expect(result).toHaveProperty('code');
@@ -236,7 +240,7 @@ describe('_getLocaleProperties', () => {
   });
 
   it('should handle empty string locale', () => {
-    const result = _getLocaleProperties('');
+    const result = _getLocaleProperties('', libraryDefaultLocale);
 
     expect(result.code).toBe('');
     expect(result.name).toBe('');
