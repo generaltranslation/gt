@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.28.1
+
+### Patch Changes
+
+- [#2707](https://github.com/generaltranslation/gt/pull/2707) [`691493b`](https://github.com/generaltranslation/gt/commit/691493b9f75b10bcafc2fe50e0361a68b76ebd45) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - fix(cli): stop `--save-local` from replacing a Mintlify `docs.json` translation with an empty one when its languages are split into `$ref` files
+
 ## 2.28.0
 
 ### Minor Changes
