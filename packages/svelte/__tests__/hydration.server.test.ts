@@ -1,7 +1,7 @@
 import { getI18nCache } from 'gt-i18n/internal';
 import { render } from 'svelte/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import { loadTranslations } from '../src/runtime/config';
 import Greeting from './fixtures/Greeting.svelte';
 import Harness from './fixtures/Harness.svelte';

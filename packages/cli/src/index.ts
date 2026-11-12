@@ -11,6 +11,8 @@ import { SvelteCLI } from './cli/svelte.js';
 import { logger } from './console/logger.js';
 import { registerVersionOption } from './cli/version.js';
 
+export * from './types/index.js';
+
 export function main(program: Command) {
   program.name('gt');
   registerVersionOption(program);

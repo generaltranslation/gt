@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { hashSource as sharedHashSource } from 'generaltranslation/id';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import hashSource from '../calculateHash';
 
 describe('calculateHash', () => {

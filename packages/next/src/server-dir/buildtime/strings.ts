@@ -7,7 +7,7 @@ import {
 import type {
   RegisteredMessage,
   SyncResolutionFunctionWithFallback,
-} from 'gt-i18n/types';
+} from 'gt-i18n';
 import { getRequestConditions } from '../../request/getRequestConditions';
 
 export async function getGT(

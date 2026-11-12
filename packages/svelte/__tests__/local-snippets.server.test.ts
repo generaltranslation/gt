@@ -1,6 +1,6 @@
 import { render } from 'svelte/server';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import Harness from './fixtures/Harness.svelte';
 import LocalSnippets from './fixtures/LocalSnippets.svelte';
 import { hashesOf, setupGT, withoutComments } from './helpers';

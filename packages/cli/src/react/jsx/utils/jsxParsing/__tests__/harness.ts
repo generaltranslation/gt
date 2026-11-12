@@ -26,7 +26,7 @@ import {
   INTERNAL_VAR_COMPONENT,
 } from '../../constants.js';
 import { ParsingConfigOptions } from '../../../../../types/parsing.js';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 import { Libraries, type GTLibrary } from '../../../../../types/libraries.js';
 
 const traverse = traverseModule.default || traverseModule;

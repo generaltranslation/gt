@@ -1,5 +1,8 @@
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import { InjectionType, TransformationPrefix } from 'generaltranslation/types';
+import {
+  isAcceptedPluralForm,
+  InjectionType,
+  TransformationPrefix,
+} from 'generaltranslation/internal';
 import {
   ReactNode,
   ReactElement,

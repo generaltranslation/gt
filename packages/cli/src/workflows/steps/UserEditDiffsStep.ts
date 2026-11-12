@@ -1,4 +1,4 @@
-import type { FileReference } from 'generaltranslation/types';
+import type { FileReference } from 'generaltranslation';
 import { logger } from '../../console/logger.js';
 import { Settings } from '../../types/index.js';
 import chalk from 'chalk';

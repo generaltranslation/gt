@@ -3,7 +3,7 @@ import { ResourceCache } from '../ResourceCache';
 import { TranslationsCache } from '../TranslationsCache';
 import { hashContent } from '../../../utils/hashContent';
 import { LookupOptions } from '../../../translation-functions/types/options';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 
 // Helper to build a key and hash for test messages
 function makeKey<T extends Content>(

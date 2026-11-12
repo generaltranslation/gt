@@ -1,8 +1,9 @@
-import { Dictionary, Hash, Locale } from 'gt-i18n/internal/types';
+import { Dictionary } from 'gt-i18n';
+import { Hash, Locale } from 'gt-i18n/internal';
 import { useGTContext } from '../context/context';
 import { I18nStore } from './I18nStore';
 import { getI18nStore } from './singleton-operations';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 
 export function useI18nStore(): I18nStore {
   const context = useGTContext();

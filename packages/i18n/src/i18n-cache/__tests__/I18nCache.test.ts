@@ -18,7 +18,7 @@ import {
 } from 'vitest';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { defaultCacheUrl } from 'generaltranslation/internal';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type { CustomMapping } from '@generaltranslation/format';
 import { I18nCache } from '../I18nCache';
 import type { TranslationsCacheMissEvent } from '../I18nCache';
 import type { I18nCacheConstructorParams } from '../types';

@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { hashSource } from 'generaltranslation/id';
 import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
 import { createConditionStoreSingleton } from 'gt-i18n/internal';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServerGTProvider } from '../provider/ServerGTProvider';
 import { msg, useGT, useMessages } from '../unstable';

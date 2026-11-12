@@ -8,8 +8,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "paths": {
-      "@generaltranslation/format": ["./dist/index.d.cts"],
-      "@generaltranslation/format/types": ["./dist/types.d.cts"]
+      "@generaltranslation/format": ["./dist/index.d.cts"]
     },
     "lib": ["ES2023", "DOM", "DOM.Iterable"]
   },

@@ -1,5 +1,5 @@
 import type { LookupOptions } from '../translation-functions/types/options';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import { hashContent } from './hashContent';
 
 export type TranslateListenerLookup<T extends Content = Content> =

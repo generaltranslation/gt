@@ -1,7 +1,7 @@
 import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
 import { LookupOptions } from '../translation-functions/types/options';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 
 /** The hash of content in any data format: its catalog key. */
 export function hashContent<T extends Content>(

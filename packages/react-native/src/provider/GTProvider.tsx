@@ -2,7 +2,7 @@ import type { InternalGTProviderProps } from '@generaltranslation/react-core/com
 import { Suspense, use, useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import type { LocaleCandidates, Locale } from 'gt-i18n/internal/types';
+import type { LocaleCandidates, Locale } from 'gt-i18n/internal';
 import type {
   NativeConditionStoreParams,
   NativeConditionStoreState,

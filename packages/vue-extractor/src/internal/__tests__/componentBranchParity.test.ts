@@ -1,4 +1,4 @@
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
 import { assertVueCompiles, extractFromVueSource } from './testVueCompiler.js';

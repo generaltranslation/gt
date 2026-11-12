@@ -1,10 +1,11 @@
-import type {
-  I18nCacheConstructorParams,
-  TranslationsLoader,
-} from 'gt-i18n/internal/types';
-import { getI18nConfig, I18nCache } from 'gt-i18n/internal';
+import {
+  getI18nConfig,
+  I18nCache,
+  type I18nCacheConstructorParams,
+  type TranslationsLoader,
+} from 'gt-i18n/internal';
 import type { HtmlTagOptions } from './types';
-import type { Content } from 'generaltranslation/types';
+import type { Content } from '@generaltranslation/format';
 
 type LocalStorageTranslationCache =
   import('./LocalStorageTranslationCache').LocalStorageTranslationCache;

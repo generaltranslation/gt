@@ -5,8 +5,8 @@ import type {
   GTFunctionType,
   GTTranslationOptions,
   RegisteredMessage,
-} from 'gt-i18n/types';
-import type { StringFormat } from '@generaltranslation/format/types';
+} from 'gt-i18n';
+import type { StringFormat } from '@generaltranslation/format';
 import { useDefaultLocale } from './i18n-config';
 import { useTrackedTranslationResolver } from './external-store/useTrackedTranslationResolver';
 

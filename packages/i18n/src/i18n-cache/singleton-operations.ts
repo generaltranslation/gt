@@ -1,7 +1,7 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from '../globals/createGlobalSingleton';
 import { I18nCache } from './I18nCache';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 
 const i18nCacheSingleton = createGlobalSingleton<I18nCache>({
   namespace: 'i18n',

@@ -212,9 +212,18 @@ describe('gt-react package exports', () => {
           const client = require('gt-react/unstable');
           const rsc = require('./dist/unstable.rsc.cjs');
           const core = require('@generaltranslation/react-core/unstable');
+          const i18n = require('gt-i18n/unstable');
 
+          // react-core's hooks plus gt-i18n's message helpers (not its own t).
           // gt-react-native/unstable is checked against the same surface.
-          assert.deepEqual(Object.keys(client).sort(), Object.keys(core).sort());
+          assert.deepEqual(
+            Object.keys(client).sort(),
+            [
+              ...Object.keys(core),
+              ...Object.keys(i18n).filter((name) => name !== 't'),
+            ].sort()
+          );
+          assert.equal(client.msg, i18n.msg);
           // t is client-rendered (SPA) only, so server components lack it.
           assert.deepEqual(
             Object.keys(client).filter((name) => name !== 't').sort(),

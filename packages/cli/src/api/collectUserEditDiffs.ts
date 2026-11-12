@@ -9,7 +9,7 @@ import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { getGitUnifiedDiff } from '../utils/gitDiff.js';
 import { requireProject, resolveCanonicalLocale } from '../utils/api.js';
-import { FileReference, isBinaryFileFormat } from 'generaltranslation/types';
+import { FileReference, isBinaryFileFormat } from 'generaltranslation';
 import type {
   FileFormat,
   OverwriteTranslationsData,

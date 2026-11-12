@@ -75,22 +75,19 @@ describe('@generaltranslation/react-core package exports', () => {
               ['esm', (name) => import(entry(name))],
             ]) {
               for (const [name, exportName] of [
-                ['pure', 'msg'],
+                ['pure', 't'],
                 ['components', 'T'],
                 ['hooks', 'useGT'],
                 ['components-rsc', 'Branch'],
                 ['unstable', 't'],
                 ['unstable', 'useGT'],
                 ['unstable', 'useMessages'],
-                ['unstable', 'msg'],
-                ['unstable', 'plural'],
-                ['unstable', 'derive'],
-                ['unstable', 'time'],
-                ['unstable', 'mFallback'],
               ]) {
                 const mod = await load(name);
                 assert.equal(typeof mod[exportName], 'function', format + ' ' + name);
               }
+              // gt-i18n owns the message helpers; react-core does not re-export them.
+              assert.equal('msg' in (await load('unstable')), false, format);
             }
           })().catch((error) => {
             console.error(error);

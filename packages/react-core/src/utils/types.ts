@@ -2,13 +2,13 @@ import type {
   Variable,
   GTProp,
   VariableType,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
+import type { GTConfig } from 'generaltranslation';
 import type {
-  GTConfig,
   VariableTransformationSuffix,
   TransformationPrefix,
   InjectionType,
-} from 'generaltranslation/types';
+} from 'generaltranslation/internal';
 import React from 'react';
 
 /**
@@ -38,7 +38,7 @@ export type TaggedChildren = TaggedChild[] | TaggedChild;
 
 /**
  * Translated content types
- * TODO: move these types to JsxElement etc from generaltranslation/types
+ * TODO: move these types to JsxElement etc from @generaltranslation/format
  * remember to omit the t property (tag name) from the translated element
  */
 export type TranslatedElement = {

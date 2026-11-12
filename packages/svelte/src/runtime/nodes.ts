@@ -3,7 +3,7 @@ import type {
   JsxChildren,
   JsxElement,
   Variable,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import {
   getPluralForm,
   isAcceptedPluralForm,

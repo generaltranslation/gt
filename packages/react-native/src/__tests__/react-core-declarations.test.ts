@@ -33,12 +33,14 @@ const packedPackages = [
 
 // A NodeNext ESM consumer reaches react-core both directly (import condition)
 // and through gt-react-native's CJS-scoped declarations (require condition).
-// Both must resolve to one declaration graph, or react-core classes such as
-// ReactI18nCache become two incompatible types.
+// Both must resolve, and the react-core types gt-react-native re-exports must
+// stay assignable to react-core's own.
 const consumer = `
-import { setReactI18nCache } from '@generaltranslation/react-core/pure';
-import { getReactI18nCache } from 'gt-react-native';
-setReactI18nCache(getReactI18nCache());
+import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
+import type { InitializeGTParams } from 'gt-react-native';
+export function init(config: InitializeGTParams): void {
+  internalInitializeGTSRA(config);
+}
 `;
 
 let fixture: string;
@@ -105,7 +107,7 @@ afterAll(() => {
 });
 
 it.each([true, false])(
-  'shares react-core declarations with a NodeNext ESM consumer (skipLibCheck %s)',
+  'resolves react-core declarations through gt-react-native for a NodeNext ESM consumer (skipLibCheck %s)',
   (skipLibCheck) => {
     const program = ts.createProgram([join(fixture, 'consumer.mts')], {
       module: ts.ModuleKind.NodeNext,

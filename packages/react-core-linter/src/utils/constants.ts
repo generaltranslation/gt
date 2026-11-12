@@ -1,5 +1,8 @@
 import { TSESTree } from '@typescript-eslint/utils';
 
+/** Exports derive() and declareVar(), but no components. */
+export const CORE_LIBRARY = 'generaltranslation';
+
 export const GT_LIBRARIES = [
   'gt-react',
   'gt-next',
@@ -10,6 +13,7 @@ export const GT_LIBRARIES = [
   '@generaltranslation/react-core/components-rsc',
   '@generaltranslation/react-core/hooks',
   '@generaltranslation/react-core/pure',
+  CORE_LIBRARY,
 ];
 
 export type GTLibrary = (typeof GT_LIBRARIES)[number];

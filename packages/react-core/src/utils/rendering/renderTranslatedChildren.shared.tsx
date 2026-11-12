@@ -16,7 +16,7 @@ import { getPluralBranch } from '../plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import { getGTTag } from './getGTTag';
 import type { RenderVariable } from '../types';
 

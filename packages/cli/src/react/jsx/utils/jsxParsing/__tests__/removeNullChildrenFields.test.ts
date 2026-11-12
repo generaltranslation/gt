@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { removeNullChildrenFields } from '../removeNullChildrenFields.js';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 
 describe('removeNullChildrenFields', () => {
   // Inputs include null/undefined fields that the JsxChildren type forbids

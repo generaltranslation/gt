@@ -1,7 +1,4 @@
-import type {
-  JsxChildren,
-  StringFormat,
-} from '@generaltranslation/format/types';
+import type { JsxChildren, StringFormat } from '@generaltranslation/format';
 
 /**
  * Minimal structural view of the Svelte 5 modern AST. Only the fields the

@@ -1,6 +1,5 @@
-import { GeneralTranslation } from 'generaltranslation';
-import type { CustomMapping } from '@generaltranslation/format/types';
-import type { GTConfig } from 'generaltranslation/types';
+import { GeneralTranslation, type GTConfig } from 'generaltranslation';
+import type { CustomMapping } from '@generaltranslation/format';
 import type {
   Block,
   CollectionConfig,

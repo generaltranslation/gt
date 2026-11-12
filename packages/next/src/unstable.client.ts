@@ -3,6 +3,7 @@
 import { initializeGTClient } from './setup/initGT.client';
 initializeGTClient();
 
+export { useGT, useMessages } from 'gt-react/unstable';
 export {
   date,
   derive,
@@ -15,12 +16,10 @@ export {
   select,
   selectordinal,
   time,
-  useGT,
-  useMessages,
   type Fragment,
   type GT,
   type GTOptions,
   type M,
   type Msg,
   type Placeholder,
-} from 'gt-react/unstable';
+} from 'gt-i18n/unstable';

@@ -3,10 +3,10 @@ import {
   GeneralTranslation,
   GTAccount,
   GTIntl,
-  GTRuntime,
   type ProjectHandle,
+  type TranslateManyEntry,
 } from '../index';
-import type { TranslateManyEntry } from '../types';
+import { GTRuntime } from '../runtime';
 
 const numberValue = 1234.56;
 

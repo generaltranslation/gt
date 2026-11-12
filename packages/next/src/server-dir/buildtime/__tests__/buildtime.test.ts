@@ -16,10 +16,7 @@ const {
   mockUse: vi.fn(),
 }));
 
-vi.mock('gt-react', () => ({
-  createRenderPipeline: vi.fn(() => ({ renderPreparedT: vi.fn() })),
-  T: mockRscT,
-}));
+vi.mock('gt-react', () => ({ T: mockRscT }));
 
 vi.mock('../renderPipeline', () => ({ renderPreparedT: vi.fn() }));
 

@@ -4,12 +4,12 @@ import {
   getI18nConfig,
   getTranslateListenerKey,
 } from 'gt-i18n/internal';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import type {
   TranslateLookup,
   TranslateSnapshot,
 } from '../../i18n-store/storeTypes';
-import type { RegisteredMessage } from 'gt-i18n/types';
+import type { RegisteredMessage } from 'gt-i18n';
 import type { StringFormat } from '@generaltranslation/format';
 import {
   useI18nStore,

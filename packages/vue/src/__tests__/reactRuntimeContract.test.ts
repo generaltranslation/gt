@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { hashContent } from 'gt-i18n/internal';
 import {
   Branch as ReactBranch,

@@ -1,4 +1,4 @@
-import type { WritableConditionStoreParams } from 'gt-i18n/internal/types';
+import type { WritableConditionStoreParams } from 'gt-i18n/internal';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { nativeStoreGet } from './nativeStore';
 

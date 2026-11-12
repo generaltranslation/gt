@@ -18,7 +18,7 @@ import {
   serializeXcstringsSlice,
   sliceTranslationCatalog,
 } from '../../formats/xcstrings/parseXcstrings.js';
-import type { FileReference } from 'generaltranslation/types';
+import type { FileReference } from 'generaltranslation';
 
 const api = vi.hoisted(() => ({
   queryFiles: vi.fn(),

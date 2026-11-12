@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, vi } from 'vitest';
 import type { NextResponse } from 'next/server';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type { CustomMapping } from '@generaltranslation/format';
 import { defaultLocaleRoutingEnabledCookieName } from '../../utils/cookies';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 

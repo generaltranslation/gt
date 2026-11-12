@@ -1,11 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 
 describe('gtx-cli subpath exports', () => {
-  it('re-exports types/index', async () => {
-    const mod = await import('../src/types/index');
-    expect(mod).toBeDefined();
-  });
-
   it('re-exports config/generateSettings', async () => {
     const mod = await import('../src/config/generateSettings');
     expect(mod.DEFAULT_SRC_PATTERNS).toBeDefined();
@@ -60,5 +56,12 @@ describe('gtx-cli subpath exports', () => {
   it('re-exports utils/installPackage', async () => {
     const mod = await import('../src/utils/installPackage');
     expect(typeof mod.installPackage).toBe('function');
+  });
+
+  it('exposes the root once (no ./index alias)', () => {
+    const { exports } = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+    );
+    expect(exports).not.toHaveProperty('./index');
   });
 });

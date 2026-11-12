@@ -1,6 +1,9 @@
-import { getDictionaryEntry, isDictionaryValue } from 'gt-i18n/internal';
-import type { Locale } from 'gt-i18n/internal/types';
-import type { Dictionary, DictionaryObject } from 'gt-i18n/types';
+import {
+  getDictionaryEntry,
+  isDictionaryValue,
+  type Locale,
+} from 'gt-i18n/internal';
+import type { Dictionary, DictionaryObject } from 'gt-i18n';
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,

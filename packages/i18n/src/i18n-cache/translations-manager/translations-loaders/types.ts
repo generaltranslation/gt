@@ -1,4 +1,4 @@
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import { Hash } from '../TranslationsCache';
 
 /**

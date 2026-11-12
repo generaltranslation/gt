@@ -2,6 +2,7 @@
 // No `t`, like the root entry: Next has no synchronous global locale store
 // (RSC's is async), so use useGT() or gt-next/unstable/server getGT().
 
+export { useGT, useMessages } from 'gt-react/unstable';
 export {
   date,
   derive,
@@ -14,12 +15,10 @@ export {
   select,
   selectordinal,
   time,
-  useGT,
-  useMessages,
   type Fragment,
   type GT,
   type GTOptions,
   type M,
   type Msg,
   type Placeholder,
-} from 'gt-react/unstable';
+} from 'gt-i18n/unstable';

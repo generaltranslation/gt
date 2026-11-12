@@ -1,6 +1,5 @@
-import { hashContent } from 'gt-i18n/internal';
-import type { Hash, Locale } from 'gt-i18n/internal/types';
-import type { Content } from '@generaltranslation/format/types';
+import { hashContent, type Hash, type Locale } from 'gt-i18n/internal';
+import type { Content } from '@generaltranslation/format';
 import type { TranslateLookup, TranslateSnapshot } from '../storeTypes';
 
 export function lookupTranslation<T extends Content>(

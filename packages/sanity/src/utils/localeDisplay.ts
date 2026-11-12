@@ -1,7 +1,7 @@
 import type {
   CustomMapping,
   LocaleProperties,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import { gt } from '../adapter/core';
 
 type CustomMappingEntry = CustomMapping[string];

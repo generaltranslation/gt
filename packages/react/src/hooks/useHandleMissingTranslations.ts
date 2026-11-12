@@ -4,8 +4,8 @@ import {
   OnMissingDictionaryEntry,
   OnMissingDictionaryObj,
   OnMissingTranslation,
+  I18nStore,
 } from '@generaltranslation/react-core/pure';
-import { I18nStore } from '@generaltranslation/react-core/components';
 import { useMemo } from 'react';
 
 /**
