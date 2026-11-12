@@ -31,7 +31,7 @@ function truncateTag(tag: string): string | undefined {
 function lookupLocale<R extends MatchLocale, A extends MatchLocale>(
   requested: readonly R[],
   available: readonly A[],
-  sameScript = false
+  sameScript: boolean
 ): LocaleMatch<R, A> | undefined {
   for (const requestedLocale of requested) {
     for (
@@ -65,7 +65,8 @@ export function _determineLocale<R extends MatchLocale, A extends MatchLocale>(
   available: readonly A[],
   localeMatcher: LocaleMatcher
 ): LocaleMatch<R, A> | undefined {
-  if (localeMatcher === 'lookup') return lookupLocale(requested, available);
+  if (localeMatcher === 'lookup')
+    return lookupLocale(requested, available, false);
   const languages = Array.from(
     new Set(requested.map(({ language }) => language))
   );
@@ -86,7 +87,7 @@ export function _determineLocale<R extends MatchLocale, A extends MatchLocale>(
         return { requested: requestedLocale, available: scriptMatch };
       }
     }
-    const truncated = lookupLocale(requestedLanguage, availableLanguage);
+    const truncated = lookupLocale(requestedLanguage, availableLanguage, false);
     if (truncated) return truncated;
   }
   return undefined;
