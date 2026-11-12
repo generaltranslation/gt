@@ -188,14 +188,17 @@ export const DATE_SKELETONS: Array<{
   { skeleton: 'G', options: { era: 'short' } },
   { skeleton: 'GGGG', options: { era: 'long' } },
   { skeleton: 'GGGGG', options: { era: 'narrow' } },
-  { skeleton: 'h', options: { hourCycle: 'h12', hour: 'numeric' } },
-  { skeleton: 'hh', options: { hourCycle: 'h12', hour: '2-digit' } },
+  // As in ICU4C, `h` and `K` ask for a 12-hour clock and `k` for a 24-hour
+  // one, and the locale decides how midnight is counted, where the pinned
+  // FormatJS parser fixes it: `K` is `12 AM` in English, not `0 AM`.
+  { skeleton: 'h', options: { hour12: true, hour: 'numeric' } },
+  { skeleton: 'hh', options: { hour12: true, hour: '2-digit' } },
   { skeleton: 'H', options: { hourCycle: 'h23', hour: 'numeric' } },
   { skeleton: 'HH', options: { hourCycle: 'h23', hour: '2-digit' } },
-  { skeleton: 'K', options: { hourCycle: 'h11', hour: 'numeric' } },
-  { skeleton: 'KK', options: { hourCycle: 'h11', hour: '2-digit' } },
-  { skeleton: 'k', options: { hourCycle: 'h24', hour: 'numeric' } },
-  { skeleton: 'kk', options: { hourCycle: 'h24', hour: '2-digit' } },
+  { skeleton: 'K', options: { hour12: true, hour: 'numeric' } },
+  { skeleton: 'KK', options: { hour12: true, hour: '2-digit' } },
+  { skeleton: 'k', options: { hour12: false, hour: 'numeric' } },
+  { skeleton: 'kk', options: { hour12: false, hour: '2-digit' } },
   { skeleton: 'm', options: { minute: 'numeric' } },
   { skeleton: 'mm', options: { minute: '2-digit' } },
   { skeleton: 's', options: { second: 'numeric' } },
@@ -209,15 +212,15 @@ export const DATE_SKELETONS: Array<{
   { skeleton: 'SSS', options: { fractionalSecondDigits: 3 } },
   {
     skeleton: 'hB',
-    options: { hourCycle: 'h12', hour: 'numeric', dayPeriod: 'short' },
+    options: { hour12: true, hour: 'numeric', dayPeriod: 'short' },
   },
   {
     skeleton: 'hBBBB',
-    options: { hourCycle: 'h12', hour: 'numeric', dayPeriod: 'long' },
+    options: { hour12: true, hour: 'numeric', dayPeriod: 'long' },
   },
   {
     skeleton: 'hBBBBB',
-    options: { hourCycle: 'h12', hour: 'numeric', dayPeriod: 'narrow' },
+    options: { hour12: true, hour: 'numeric', dayPeriod: 'narrow' },
   },
   { skeleton: 'O', options: { timeZoneName: 'shortOffset' } },
   { skeleton: 'OOOO', options: { timeZoneName: 'longOffset' } },
@@ -243,7 +246,7 @@ export const DATE_SKELETONS: Array<{
   {
     skeleton: 'hhmmss',
     options: {
-      hourCycle: 'h12',
+      hour12: true,
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
