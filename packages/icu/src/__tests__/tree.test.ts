@@ -307,6 +307,8 @@ describe('buildMessageTree', () => {
       'starting with a direction mark',
       { kind: 'argument', name: '\u200ename' },
     ],
+    // ICU reads a direction mark as white space, which ends a name.
+    ['with a direction mark inside', { kind: 'argument', name: 'a\u200eb' }],
   ])('rejects a variable name %s', (_case, hole) => {
     expect(() => tree(['', ''], hole)).toThrow(/not a valid ICU argument name/);
   });
@@ -337,11 +339,6 @@ describe('buildMessageTree', () => {
       name: 'n',
       branches: { '=9007199254740991': 'x', '=-9007199254740991': 'y' },
     });
-    expectPrintRoundTrip(result);
-  });
-
-  it('keeps a direction mark inside a name, which parses back', () => {
-    const result = tree(['', ''], { kind: 'argument', name: 'a\u200eb' });
     expectPrintRoundTrip(result);
   });
 

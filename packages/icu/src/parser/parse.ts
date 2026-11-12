@@ -23,7 +23,12 @@ import {
   resolveLocaleHourSkeleton,
 } from './skeleton';
 import { isAsciiLetter, isTagNameCharacter } from './tag';
-import { IDENTIFIER_BOUNDARY } from '../settings/syntax';
+import { IDENTIFIER_BOUNDARY, MAX_NESTING_DEPTH } from '../settings/syntax';
+import {
+  createInvalidArgumentTypeError,
+  PARSER_ERRORS,
+  type ParserErrorCode,
+} from '../errors/parserErrors';
 
 // FormatJS distinguishes ICU grammar whitespace (Pattern_White_Space) from
 // the broader Unicode whitespace set used to terminate identifiers. Keeping
@@ -34,6 +39,7 @@ type PositionIndex = [lines: Uint32Array, columns: Uint32Array];
 
 class IcuParser {
   private index = 0;
+  private depth = 0;
   private positions?: PositionIndex;
 
   constructor(
@@ -51,6 +57,9 @@ class IcuParser {
     expectingCloseTag: boolean
   ): MessageFormatElement[] {
     const elements: MessageFormatElement[] = [];
+    if (nested && ++this.depth > MAX_NESTING_DEPTH) {
+      this.fail('NESTING_TOO_DEEP');
+    }
 
     while (!this.atEnd()) {
       const character = this.current();
@@ -82,6 +91,7 @@ class IcuParser {
       }
     }
 
+    if (nested) this.depth -= 1;
     return elements;
   }
 
@@ -156,7 +166,7 @@ class IcuParser {
 
     if (this.consume('/>')) {
       return this.withLocation(
-        { type: TYPE.literal, value: `<${tagName}/>` },
+        { type: TYPE.literal, value: this.message.slice(start, this.index) },
         start,
         this.index
       );
@@ -244,7 +254,11 @@ class IcuParser {
           expectingCloseTag
         );
       default:
-        this.fail('INVALID_ARGUMENT_TYPE', argumentTypeStart);
+        this.fail(
+          'INVALID_ARGUMENT_TYPE',
+          argumentTypeStart,
+          createInvalidArgumentTypeError(argumentType)
+        );
     }
   }
 
@@ -279,8 +293,13 @@ class IcuParser {
           let tokens: ReturnType<typeof parseNumberSkeletonTokens>;
           try {
             tokens = parseNumberSkeletonTokens(skeleton);
-          } catch {
-            this.failAt('INVALID_NUMBER_SKELETON', styleStart, styleEnd);
+          } catch (error) {
+            this.failAt(
+              'INVALID_NUMBER_SKELETON',
+              styleStart,
+              styleEnd,
+              error instanceof Error ? error.message : undefined
+            );
           }
           style = {
             type: SKELETON_TYPE.number,
@@ -387,6 +406,10 @@ class IcuParser {
           'INVALID_PLURAL_ARGUMENT_OFFSET_VALUE'
         )
       );
+      // ICU takes a fraction here; a count of things has none.
+      if (this.current() === '.') {
+        this.fail('EXPECT_PLURAL_ARGUMENT_OFFSET_VALUE');
+      }
       this.skipSpace();
       selector = this.readIdentifier();
     }
@@ -397,13 +420,12 @@ class IcuParser {
 
     while (selector || (argumentType !== 'select' && this.current() === '=')) {
       if (!selector && this.consume('=')) {
-        // Exact plural selectors compare against the raw input value before
-        // numeric coercion. Preserve the source token so `=01`, `=+1`, and
-        // `=-0` remain observably distinct from their canonical spellings,
-        // matching FormatJS parsing and runtime behavior.
-        selector = `=${this.readIntegerToken(
-          'EXPECT_PLURAL_ARGUMENT_SELECTOR',
-          'INVALID_PLURAL_ARGUMENT_SELECTOR'
+        // ICU compares the number, so `=01` and `=+1` are `=1`.
+        selector = `=${Number(
+          this.readIntegerToken(
+            'EXPECT_PLURAL_ARGUMENT_SELECTOR',
+            'INVALID_PLURAL_ARGUMENT_SELECTOR'
+          )
         )}`;
       }
       if (selector in options) {
@@ -479,8 +501,8 @@ class IcuParser {
   }
 
   private readIntegerToken(
-    expectedErrorCode: string,
-    invalidErrorCode: string
+    expectedErrorCode: ParserErrorCode,
+    invalidErrorCode: ParserErrorCode
   ): string {
     const start = this.index;
     if (this.current() === '+' || this.current() === '-') this.index += 1;
@@ -552,15 +574,26 @@ class IcuParser {
     };
   }
 
-  private fail(code: string, offset = this.index): never {
-    return this.failAt(code, offset, Math.max(offset, this.index));
+  private fail(
+    code: ParserErrorCode,
+    offset = this.index,
+    message?: string
+  ): never {
+    return this.failAt(code, offset, Math.max(offset, this.index), message);
   }
 
-  private failAt(code: string, start: number, end: number): never {
-    const error = new SyntaxError(code) as SyntaxError & {
+  private failAt(
+    code: ParserErrorCode,
+    start: number,
+    end: number,
+    message: string = PARSER_ERRORS[code]
+  ): never {
+    const error = new SyntaxError(message) as SyntaxError & {
+      code: ParserErrorCode;
       location: Location;
       originalMessage: string;
     };
+    error.code = code;
     error.location = {
       start: this.position(start),
       end: this.position(end),

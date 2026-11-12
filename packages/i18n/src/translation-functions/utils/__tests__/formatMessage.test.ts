@@ -21,7 +21,7 @@ describe('formatMessage', () => {
   });
   it.each([
     ['2', 'exact'],
-    ['02', '2 items'],
+    ['02', 'exact'],
     ['2.5', '2.5 items'],
   ])(
     'formats numeric-string plural %j instead of returning raw ICU',
@@ -36,19 +36,13 @@ describe('formatMessage', () => {
     }
   );
 
-  it('preserves raw exact selector matching for string-only interpolation values', () => {
+  it('matches an exact selector by number for a string value', () => {
     expect(
       formatMessage(
-        '{count, plural, =1 {canonical} =01 {leading} other {# items}}',
-        { count: '01' },
+        '{count, plural, =01 {one} other {# items}}',
+        { count: '1' },
         'en-US'
       )
-    ).toBe('leading');
-  });
-
-  it('formats inherited variables instead of returning raw ICU', () => {
-    const variables = Object.create({ name: 'Ada' }) as Record<string, string>;
-
-    expect(formatMessage('Hello {name}', variables, 'en-US')).toBe('Hello Ada');
+    ).toBe('one');
   });
 });

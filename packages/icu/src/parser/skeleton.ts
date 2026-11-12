@@ -8,6 +8,7 @@
 
 import {
   createDayPeriodWithoutHourError,
+  createInvalidDateTimeFieldError,
   createUnsupportedDateTimeFieldError,
 } from '../errors/skeletonErrors';
 
@@ -15,15 +16,24 @@ import {
 const DATE_TIME_FIELD =
   /(?:[Eec]{1,6}|G{1,5}|[Qq]{1,5}|(?:[yYur]+|U{1,5})|[ML]{1,5}|d{1,2}|D{1,3}|F|[ab]{1,5}|B{1,5}|[hHkK]{1,2}|j{1,6}|J{1,2}|w{1,2}|W|m{1,2}|s{1,2}|S+|[zZOvVxX]{1,4}|[A-Za-z])(?=([^']*'[^']*')*[^']*$)/g;
 
-/** The hour cycle of each hour symbol. */
-export const HOUR_CYCLES: Record<string, Intl.LocaleHourCycleKey> = {
-  h: 'h12',
-  H: 'h23',
-  K: 'h11',
-  k: 'h24',
-};
+/**
+ * What each hour symbol asks of Intl. In a skeleton `h` and `K` are the
+ * 12-hour clock the locale prefers, which starts at 0 in Japanese, and `H`
+ * and `k` the 24-hour clock (UTS #35). `hour12` leaves the hour cycle to the
+ * locale; `H` names its cycle, which engines before 2023 got wrong for
+ * `hour12: false`.
+ */
+export const HOUR_CLOCKS = {
+  h: { hour12: true },
+  K: { hour12: true },
+  H: { hourCycle: 'h23' },
+  k: { hour12: false },
+} as const satisfies Record<string, Intl.DateTimeFormatOptions>;
 
 const WIDTHS = ['short', 'long', 'narrow'] as const;
+
+/** The fields of UTS #35 that Intl has no option for at any length. */
+const ICU_ONLY_FIELDS = 'YuUrQqlwWDFgbJCAZVXx';
 
 /**
  * The Intl options of a date skeleton. `localeHour` says how to read `j`,
@@ -90,7 +100,10 @@ export function parseDateTimeSkeletonOptions(
       case 'K':
       case 'k':
         hasHour = true;
-        result.hourCycle = HOUR_CYCLES[field[0]];
+        // The last hour symbol decides the clock.
+        delete result.hour12;
+        delete result.hourCycle;
+        Object.assign(result, HOUR_CLOCKS[field[0]]);
         result.hour = length === 2 ? '2-digit' : 'numeric';
         break;
       case 'm':
@@ -114,10 +127,13 @@ export function parseDateTimeSkeletonOptions(
           field[0] === 'O' ? 'Offset' : 'Generic'
         }`;
         break;
-      // Among these, `J` is the locale's hour without AM or PM, and `C` its
-      // hour with the day period it prefers.
+      // A field ICU has and Intl does not, or a letter that is no field.
+      // `J` is the locale's hour without AM or PM, and `C` its hour with the
+      // day period it prefers.
       default:
-        throw unsupported(field, 'date/time');
+        throw ICU_ONLY_FIELDS.includes(field[0])
+          ? unsupported(field, 'date/time')
+          : new SyntaxError(createInvalidDateTimeFieldError(field));
     }
   }
 

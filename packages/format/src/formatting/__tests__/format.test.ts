@@ -125,30 +125,14 @@ describe('_formatMessageICU', () => {
     ).toBe('123,456,789,012,345,678,901,234,567,890');
   });
 
-  it('preserves inherited and proxy-backed variables through the public boundary', () => {
-    const inherited = Object.create({ name: 'Ada', count: '2' });
-    expect(
-      publicFormatMessage('Hello {name}: {count, plural, other {# items}}', {
-        timeZone,
-        locales: 'en',
-        variables: inherited,
-      })
-    ).toBe('Hello Ada: 2 items');
-
-    const proxy = new Proxy(
-      {},
-      {
-        get: (_target, key) => (key === 'name' ? 'Grace' : undefined),
-        has: (_target, key) => key === 'name',
-      }
-    );
-    expect(
+  it('reads own variables only through the public boundary', () => {
+    expect(() =>
       publicFormatMessage('Hello {name}', {
         timeZone,
         locales: 'en',
-        variables: proxy,
+        variables: Object.create({ name: 'Ada' }),
       })
-    ).toBe('Hello Grace');
+    ).toThrow('The ICU message variable "name" was not provided.');
   });
 
   it.each([
@@ -251,7 +235,7 @@ describe('_formatMessageICU', () => {
     ).toThrow('variable "name" was not provided');
   });
 
-  it('preserves FormatJS SyntaxError metadata through the public boundary', () => {
+  it('keeps a syntax error’s code and place through the public boundary', () => {
     expect.assertions(3);
     try {
       publicFormatMessage('{name', {
@@ -261,10 +245,11 @@ describe('_formatMessageICU', () => {
       });
     } catch (error) {
       const syntaxError = error as SyntaxError & {
+        code?: string;
         location?: unknown;
         originalMessage?: string;
       };
-      expect(syntaxError.message).toBe('EXPECT_ARGUMENT_CLOSING_BRACE');
+      expect(syntaxError.code).toBe('EXPECT_ARGUMENT_CLOSING_BRACE');
       expect(syntaxError.location).toEqual({
         start: { offset: 0, line: 1, column: 1 },
         end: { offset: 5, line: 1, column: 6 },
@@ -275,7 +260,7 @@ describe('_formatMessageICU', () => {
 
   it.each([
     ['2', 'exact'],
-    ['02', '2 items'],
+    ['02', 'exact'],
     ['2.5', '2.5 items'],
   ])(
     'coerces numeric-string plural %j through the public package',
@@ -290,18 +275,19 @@ describe('_formatMessageICU', () => {
   );
 
   it.each([
-    [1, 'canonical'],
-    ['1', 'canonical'],
-    ['01', 'leading'],
-    ['+1', 'positive'],
+    [1, 'one'],
+    ['1', 'one'],
+    ['01', 'one'],
+    [2, 'other'],
   ])(
-    'preserves exact selector spelling through the public package for %j',
+    'matches an exact selector by number through the public package for %j',
     (count, expected) => {
       expect(
-        publicFormatMessage(
-          '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} other {other}}',
-          { timeZone, locales: 'en-US', variables: { count } }
-        )
+        publicFormatMessage('{count, plural, =01 {one} other {other}}', {
+          timeZone,
+          locales: 'en-US',
+          variables: { count },
+        })
       ).toBe(expected);
     }
   );

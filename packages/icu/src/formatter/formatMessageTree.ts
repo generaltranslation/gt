@@ -261,7 +261,7 @@ function formatNodes<R>(
         append(
           intlCache
             .get('DateTimeFormat', context.locales, {
-              ...options,
+              ...withLocaleHourPadding(options),
               timeZone: options.timeZone ?? context.timeZone,
             })
             .format(value as number | Date)
@@ -282,9 +282,10 @@ function formatNodes<R>(
       case 'selectordinal': {
         const [, kind, branches, offset = 0] = node;
         const rawValue = requireVariable(context.values, name);
-        let branch = ownBranch(branches, `=${String(rawValue)}`);
         const value =
           typeof rawValue === 'bigint' ? rawValue : Number(rawValue);
+        // ICU compares the number, so "01" matches `=1`.
+        let branch = ownBranch(branches, `=${value}`);
         const adjustedValue =
           typeof value === 'bigint' ? value - BigInt(offset) : value - offset;
         if (!branch && hasPluralCategoryOption(branches)) {
@@ -322,6 +323,22 @@ function formatNodes<R>(
   return result;
 }
 
+/**
+ * Beside an hour, Intl prints two digits for a minute or a second whichever
+ * is asked for, but '2-digit' also drops the locale's own padding of the
+ * hour: German `::jmm` would be 3:04, where ICU prints 03:04.
+ */
+function withLocaleHourPadding(
+  options: Intl.DateTimeFormatOptions
+): Intl.DateTimeFormatOptions {
+  if (options.hour === undefined) return options;
+  return {
+    ...options,
+    ...(options.minute && { minute: 'numeric' }),
+    ...(options.second && { second: 'numeric' }),
+  };
+}
+
 function formatsOf<R>(
   context: FormatContext<R>,
   name: string
@@ -353,21 +370,35 @@ function requireVariable<R>(
   values: MessageTreeValues<R>,
   name: string
 ): MessageValue<R> {
-  // intl-messageformat intentionally used `name in values`, so inherited and
-  // proxy-backed records are observable through the public formatting API.
-  // Selector option lookup remains own-property-only to avoid prototype
-  // collisions with values such as "constructor" and "toString".
-  if (!(name in values)) {
+  // Own values only, so a name like "toString" is not found on every object.
+  if (!Object.prototype.hasOwnProperty.call(values, name)) {
     throw new Error(`The ICU message variable "${name}" was not provided.`);
   }
   return values[name];
 }
 
+/**
+ * The value times ICU's `scale`, which ICU multiplies as a decimal. A power
+ * of ten moves the decimal point in a string, which Intl reads exactly; as a
+ * double, 3 times 0.1 is 0.30000000000000004.
+ */
 function applyScale<Value>(
   value: Value,
   scale: number | undefined
-): Value | number | bigint {
+): Value | number | bigint | string {
   if (scale === undefined) return value;
+  const exponent = Math.round(Math.log10(scale));
+  // Zero keeps its sign as a number, and needs no exact point.
+  const isNumber = typeof value === 'number' && Number.isFinite(value);
+  if (
+    Number(`1e${exponent}`) === scale &&
+    ((isNumber && value !== 0) || typeof value === 'bigint')
+  ) {
+    const [digits, ownExponent = 0] = (
+      isNumber ? value.toExponential() : String(value)
+    ).split('e');
+    return `${digits}e${Number(ownExponent) + exponent}`;
+  }
   if (typeof value === 'bigint') {
     if (!Number.isInteger(scale)) {
       throw new RangeError(

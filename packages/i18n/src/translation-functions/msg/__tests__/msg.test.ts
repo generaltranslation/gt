@@ -66,7 +66,7 @@ describe('msg function integration', () => {
 
   it.each([
     ['2', 'exact'],
-    ['02', '2 items'],
+    ['02', 'exact'],
     ['2.5', '2.5 items'],
   ])('formats numeric-string plural %j', (count, expected) => {
     const result = msg(

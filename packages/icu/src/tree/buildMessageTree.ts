@@ -213,7 +213,9 @@ function buildHole(
   }
 }
 
-// `=N` with N an integer the parser reads: it rejects unsafe integers.
+// `=N` as the parser writes it: a safe integer spelled one way, so `=1` and
+// not `=01`.
 function isExactKey(key: string): boolean {
-  return /^=-?\d+$/.test(key) && Number.isSafeInteger(Number(key.slice(1)));
+  const number = Number(key.slice(1));
+  return key === `=${number}` && Number.isSafeInteger(number);
 }

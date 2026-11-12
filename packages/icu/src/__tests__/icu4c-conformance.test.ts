@@ -187,7 +187,7 @@ const DIFFERENCES: Difference[] = [
     why: 'spellout, ordinal and duration are not Intl formats',
     messages: ['{n, spellout}', '{n, ordinal}', '{n, duration}'],
     check: (row) => {
-      expect(() => format(row)).toThrow('INVALID_ARGUMENT_TYPE');
+      expect(() => format(row)).toThrow('is not supported');
     },
   },
 ];

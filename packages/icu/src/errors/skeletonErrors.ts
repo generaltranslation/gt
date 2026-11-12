@@ -11,5 +11,8 @@ export const createUnsupportedDateTimeFieldError = (
   kind: string
 ) => `Unsupported ${kind} skeleton field: ${field}.`;
 
+export const createInvalidDateTimeFieldError = (letter: string) =>
+  `"${letter}" is not a date or time field.`;
+
 export const createDayPeriodWithoutHourError = () =>
   'The date/time skeleton field a, the AM/PM marker, needs an hour field.';

@@ -754,7 +754,8 @@ const CASES = [
     message: '<test-tag />',
     options: {},
     expected: {
-      hash: 'c7ee383dfe4d31f6f23226c423f315eee1ea83041adcc8ff3a9d13a8125a4dd4',
+      // Not FormatJS's: the tag stays the text it is, with its space.
+      hash: '85c3e6faa19e0feeace3e8094ffd7718bc9cea52b1cd481cec364f0cd637fbbf',
     },
   },
   {
@@ -957,15 +958,10 @@ function hash(value: unknown): string {
     .digest('hex');
 }
 
-function normalizeError(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
-  if (
-    message.startsWith('Number skeleton') ||
-    message.startsWith('Invalid number skeleton')
-  ) {
-    return 'INVALID_NUMBER_SKELETON';
-  }
-  return message.split(' at line ')[0];
+// FormatJS names an error by its kind, which is the `code` of ours.
+function normalizeError(error: unknown): unknown {
+  const { code, message } = error as { code?: string; message: string };
+  return code ?? message;
 }
 
 describe('FormatJS parser compatibility corpus', () => {

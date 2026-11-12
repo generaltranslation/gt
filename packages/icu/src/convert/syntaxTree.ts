@@ -1,6 +1,6 @@
 import { createUnsupportedTreeFormatError } from '../errors/convertErrors';
 import { toNumberSkeleton } from '../parser/numberSkeleton';
-import { HOUR_CYCLES, parseDateTimeSkeletonOptions } from '../parser/skeleton';
+import { HOUR_CLOCKS, parseDateTimeSkeletonOptions } from '../parser/skeleton';
 import { printAST } from '../parser/printer';
 import {
   DATE_TIME_STYLE_NAMES,
@@ -317,8 +317,8 @@ export function fromMessage({
 /**
  * A formatted placeholder as a syntax-tree element, and the context it does
  * not spell. A number spells its context as skeleton tokens, like
- * `::currency/EUR .00`. A date or time with an hour field spells its hour
- * cycle as the hour's symbol, like `H`. With no context it is the node alone.
+ * `::currency/EUR .00`. A date or time with an hour field spells its
+ * clock as the hour's symbol, like `H`. With no context it is the node alone.
  */
 function writeFormat(
   node: FormattedNode,
@@ -343,13 +343,18 @@ function writeFormat(
   }
   const style = node[2];
   const fields = typeof style === 'object' ? style : undefined;
+  // `hour12` wins over `hourCycle` in Intl, so it is the one to spell.
+  const hour12 = 'hour12' in context ? context.hour12 : undefined;
   const hourCycle = 'hourCycle' in context ? context.hourCycle : undefined;
   const hour =
     fields?.hour === undefined
       ? undefined
-      : Object.keys(HOUR_CYCLES).find(
-          (symbol) => HOUR_CYCLES[symbol] === hourCycle
-        );
+      : hour12 === true
+        ? 'h'
+        : hour12 === undefined && hourCycle === HOUR_CLOCKS.H.hourCycle
+          ? 'H'
+          : undefined;
+  const clock = hour && HOUR_CLOCKS[hour];
   const pattern = fields && printDateTimeSkeleton(fields, hour);
   return [
     {
@@ -360,13 +365,13 @@ function writeFormat(
           ? {
               type: SKELETON_TYPE.dateTime,
               pattern,
-              parsedOptions: hour ? { ...fields, hourCycle } : fields,
+              parsedOptions: { ...fields, ...clock },
             }
           : typeof style === 'string'
             ? style
             : null,
     },
-    hour ? without(context, { hourCycle }) : context,
+    clock ? without(context, clock) : context,
   ];
 }
 

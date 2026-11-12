@@ -209,7 +209,8 @@ export function parseNumberSkeletonOptions(
   const set = new Set<string>();
   for (const token of tokens) {
     const options = readToken(token);
-    const keys = Object.keys(options);
+    // `base-unit` says no unit, which sets the unit as much as a unit does.
+    const keys = token.stem === 'base-unit' ? UNIT : Object.keys(options);
     // ICU takes each setting once: `.00 .##` is an error, not the last one.
     if (keys.some((key) => set.has(key))) throw invalid(token);
     for (const setting of SETTINGS) {
