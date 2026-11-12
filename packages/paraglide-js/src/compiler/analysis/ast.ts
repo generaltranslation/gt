@@ -76,6 +76,21 @@ export function walk(root: Node, visitor: Visitor): void {
   visit(root);
 }
 
+/** Unlike `walk`, visits type annotations too. */
+export function forEachNode(root: Node, visit: (node: Node) => void): void {
+  visit(root);
+
+  for (const key of visitorKeys[root.type] ?? Object.keys(root)) {
+    const value = (root as unknown as Record<string, unknown>)[key];
+
+    if (Array.isArray(value)) {
+      for (const item of value) if (isNode(item)) forEachNode(item, visit);
+    } else if (isNode(value)) {
+      forEachNode(value, visit);
+    }
+  }
+}
+
 function childKeysOf(node: Node): readonly string[] {
   return (
     CHILD_KEYS.get(node.type) ??
