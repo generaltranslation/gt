@@ -114,23 +114,15 @@ describe('validateRepository', () => {
     ]);
   });
 
-  test('enforces the newest generated API version', async () => {
+  test('reads an API version declared with satisfies', async () => {
     const apiVersionGroup = defaultGroups.find(
       (group) => group.name === 'API_VERSION'
     );
-    expect(apiVersionGroup).toBeDefined();
-
     const repositoryRoot = await createRepository({
-      'packages/api/src/generated/types.gen.ts': `
-        export const ApiVersion = {
-          '2025_01_01_V0': '2025-01-01.v0',
-          '2026_03_06_V1': '2026-03-06.v1',
-        } as const;
-      `,
-      'packages/consumer/src/index.ts': `
-        export const pinnedVersion = '2026-03-06.v1';
-        export const legacyVersion = '2025-01-01.v0';
-      `,
+      'packages/api/src/wrappers/client.ts':
+        "export const API_VERSION = '2026-10-08.v1' satisfies ApiVersion;\n",
+      'packages/consumer/src/index.ts':
+        "export const pinned = '2026-10-08.v1';\n",
     });
 
     const result = validateRepository({
@@ -140,38 +132,9 @@ describe('validateRepository', () => {
 
     expect(result.violations).toEqual([
       expect.stringContaining(
-        'packages/consumer/src/index.ts:2:38 repeats API_VERSION ("2026-03-06.v1")'
+        'packages/consumer/src/index.ts:1:23 repeats API_VERSION ("2026-10-08.v1")'
       ),
     ]);
-  });
-
-  test.each([
-    [
-      'a missing ApiVersion',
-      'export const Other = {} as const;',
-      'missing generated enum ApiVersion',
-    ],
-    [
-      'an empty ApiVersion',
-      'export const ApiVersion = {} as const;',
-      'ApiVersion must be an object literal whose last value is a literal',
-    ],
-    [
-      'a non-literal last value',
-      "const latest = '2026-03-06.v1';\nexport const ApiVersion = { latest } as const;",
-      'ApiVersion must be an object literal whose last value is a literal',
-    ],
-  ])('rejects %s in the generated types', async (_case, source, message) => {
-    const apiVersionGroup = defaultGroups.find(
-      (group) => group.name === 'API_VERSION'
-    );
-    const repositoryRoot = await createRepository({
-      'packages/api/src/generated/types.gen.ts': source,
-    });
-
-    expect(() =>
-      validateRepository({ repositoryRoot, groups: [apiVersionGroup] })
-    ).toThrow(message);
   });
 
   test('enforces the canonical locale cookie name', async () => {

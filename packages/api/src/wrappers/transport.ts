@@ -16,6 +16,18 @@ export type TimeoutFetchOptions = {
   timeoutMs?: number | false;
 };
 
+/**
+ * The abort signal of the request the caller holds. A Request copy follows its
+ * source's signal only while the source stays reachable, so wrappers listen on
+ * this signal and pass it on in `init` instead of reading their copies'.
+ */
+export function callerSignal(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined
+): AbortSignal | undefined {
+  return init?.signal ?? (input instanceof Request ? input.signal : undefined);
+}
+
 export function createTimeoutFetch({
   fetch: fetchImplementation = globalThis.fetch,
   timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -26,10 +38,11 @@ export function createTimeoutFetch({
     }
 
     const request = new Request(input, init);
+    const signal = callerSignal(input, init);
     const controller = new AbortController();
-    const forwardAbort = () => controller.abort(request.signal.reason);
-    if (request.signal.aborted) forwardAbort();
-    else request.signal.addEventListener('abort', forwardAbort, { once: true });
+    const forwardAbort = () => controller.abort(signal?.reason);
+    if (signal?.aborted) forwardAbort();
+    else signal?.addEventListener('abort', forwardAbort, { once: true });
     // fetch rejects with the abort reason, so only our own timeout reads as one.
     const timeoutError = new Error(`Request timed out after ${timeoutMs}ms`);
     const timeoutId = setTimeout(
@@ -38,20 +51,30 @@ export function createTimeoutFetch({
     );
 
     try {
-      // Custom fetches may read only request.signal, but Node's fetch follows a copied Request's signal only weakly, so pass it in init too.
+      // Custom fetches may read only request.signal; the signal in init is the reliable one.
       const timedRequest = new Request(request, { signal: controller.signal });
       return await fetchImplementation(timedRequest, {
         signal: controller.signal,
       });
     } finally {
       clearTimeout(timeoutId);
-      request.signal.removeEventListener('abort', forwardAbort);
+      signal?.removeEventListener('abort', forwardAbort);
     }
   };
 }
 
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+/** Resolves after `ms`, or as soon as `signal` aborts. */
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const wake = () => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', wake);
+      resolve();
+    };
+    const timer = setTimeout(wake, ms);
+    signal.addEventListener('abort', wake, { once: true });
+  });
+}
 
 function parseDelayMs(value: string | null): number | undefined {
   if (!value) return undefined;
@@ -71,18 +94,21 @@ function parseRetryAfter(value: string | null): number | undefined {
     : Math.max(retryDate - Date.now(), 0);
 }
 
+/** How long a 429 response asks the client to wait before trying again. */
+export function rateLimitDelayMs(response: Response): number {
+  return (
+    parseRetryAfter(response.headers.get('Retry-After')) ??
+    parseDelayMs(response.headers.get('RateLimit-Reset')) ??
+    RATE_LIMIT_RETRY_DELAY_MS
+  );
+}
+
 function retryDelay(
   response: Response | undefined,
   attempt: number,
   retryPolicy: RetryPolicy
 ): number {
-  if (response?.status === 429) {
-    return (
-      parseRetryAfter(response.headers.get('Retry-After')) ??
-      parseDelayMs(response.headers.get('RateLimit-Reset')) ??
-      RATE_LIMIT_RETRY_DELAY_MS
-    );
-  }
+  if (response?.status === 429) return rateLimitDelayMs(response);
   return (
     INITIAL_DELAY_MS * (retryPolicy === 'linear' ? attempt + 1 : 2 ** attempt)
   );
@@ -94,15 +120,16 @@ export function createRetryingFetch({
 }: RetryingFetchOptions = {}): typeof fetch {
   return async (input, init) => {
     const request = new Request(input, init);
+    const signal = callerSignal(input, init) ?? request.signal;
     const maxRetries = retryPolicy === 'none' ? 0 : MAX_RETRIES;
     const isIdempotent = IDEMPOTENT_METHODS.has(request.method);
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       let response: Response | undefined;
       try {
-        response = await fetchImplementation(request.clone());
+        response = await fetchImplementation(request.clone(), { signal });
       } catch (error) {
-        if (request.signal.aborted || attempt === maxRetries || !isIdempotent) {
+        if (signal.aborted || attempt === maxRetries || !isIdempotent) {
           throw error;
         }
       }
@@ -116,14 +143,20 @@ export function createRetryingFetch({
       }
       if (response && attempt === maxRetries) return response;
       // Caller gave up (e.g. a poll deadline); don't sleep through the abort.
-      if (request.signal.aborted) {
+      if (signal.aborted) {
         if (response) return response;
-        throw request.signal.reason;
+        throw signal.reason;
       }
 
+      await sleep(retryDelay(response, attempt, retryPolicy), signal);
+      // As before the sleep: the caller sees the last response, not a
+      // cancellation, so it can tell a rate limit from its own timeout.
+      if (signal.aborted) {
+        if (response) return response;
+        throw signal.reason;
+      }
       // Drain the discarded 429/5xx body so undici can release the socket.
       void response?.body?.cancel();
-      await sleep(retryDelay(response, attempt, retryPolicy));
     }
 
     throw new Error('Max retries exceeded');
