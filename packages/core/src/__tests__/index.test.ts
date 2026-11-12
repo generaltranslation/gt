@@ -365,12 +365,25 @@ describe('GT LocaleConfig delegation', () => {
     ).toBe(format('UTC'));
   });
 
-  it('keeps its time zone when an update names one Intl does not know', () => {
-    const gt = new GT({ sourceLocale: 'en-US', timeZone: 'Asia/Tokyo' });
+  it('changes nothing when an update names a time zone Intl does not know', () => {
+    const customMapping = { brand: { code: 'fr' } };
+    const gt = new GT({
+      sourceLocale: 'en-US',
+      locales: ['en-US', 'brand'],
+      customMapping,
+      timeZone: 'Asia/Tokyo',
+    });
 
-    expect(() => gt.setConfig({ timeZone: 'Mars/Olympus' })).toThrow(
-      'Invalid time zone "Mars/Olympus"'
-    );
+    expect(() =>
+      gt.setConfig({
+        sourceLocale: 'de-DE',
+        customMapping: { brand: { code: 'de' } },
+        timeZone: 'Mars/Olympus',
+      })
+    ).toThrow('Invalid time zone "Mars/Olympus"');
+    expect(gt.sourceLocale).toBe('en-US');
+    expect(gt.customMapping).toBe(customMapping);
+    expect(gt.resolveCanonicalLocale('brand')).toBe('fr');
     expect(() => gt.setConfig({ targetLocale: 'fr-FR' })).not.toThrow();
     expect(gt.localeConfig.timeZone).toBe('Asia/Tokyo');
   });

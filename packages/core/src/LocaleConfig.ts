@@ -23,7 +23,7 @@ const knownTimeZones = new Set<string>();
  * A configured zone is kept for later formats, so a wrong name is reported
  * here, where it was set, and not at the first date that uses it.
  */
-function checkTimeZone(timeZone: string): string {
+export function checkTimeZone(timeZone: string): string {
   if (knownTimeZones.has(timeZone)) return timeZone;
   try {
     // Intl is the authority on which time zones the host supports.

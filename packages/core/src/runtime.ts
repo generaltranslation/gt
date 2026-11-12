@@ -11,7 +11,7 @@ import {
   resolveCanonicalLocale as _resolveCanonicalLocale,
   standardizeLocale as _standardizeLocale,
 } from '@generaltranslation/format';
-import { LocaleConfig } from './LocaleConfig';
+import { checkTimeZone, LocaleConfig } from './LocaleConfig';
 import type {
   CustomMapping,
   CustomRegionMapping,
@@ -170,6 +170,9 @@ export class GTRuntime {
     userTokenProvider,
   }: GTConstructorParams) {
     const effectiveCustomMapping = customMapping ?? this.customMapping;
+    // Checked before any field changes, so a rejected zone changes none.
+    const nextTimeZone =
+      timeZone === undefined ? this.timeZone : checkTimeZone(timeZone);
 
     // ----- Environment properties ----- //
     if (apiKey) this.apiKey = apiKey;
@@ -222,15 +225,12 @@ export class GTRuntime {
           .map(([key, value]) => [(value as { code: string }).code, key])
       );
     }
-    const nextTimeZone = timeZone ?? this.timeZone;
     this._localeConfig = new LocaleConfig({
       defaultLocale: this.sourceLocale,
       locales: this.locales ?? [],
       customMapping: this.customMapping,
       timeZone: nextTimeZone,
     });
-    // Kept only once the locale config accepts it: a rejected zone would
-    // fail every later update.
     this.timeZone = nextTimeZone;
   }
 
