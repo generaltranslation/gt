@@ -186,9 +186,11 @@ function splitFormat(
     const style = element.style;
     let options: ExtendedNumberFormatOptions | undefined;
     if (typeof style === 'string') {
-      // The app's own names first, as FormatJS reads them, then ICU's.
-      options = own(styles.number, style) ?? own(NAMED_NUMBER_STYLES, style);
-      if (!options) throw unknownStyle(style);
+      // As in FormatJS, the app's style of an ICU name is laid over ICU's.
+      const builtIn = own(NAMED_NUMBER_STYLES, style);
+      const custom = own(styles.number, style);
+      if (!builtIn && !custom) throw unknownStyle(style);
+      options = { ...builtIn, ...custom };
     } else {
       options = style?.parsedOptions;
     }
@@ -230,13 +232,13 @@ function namedDateTimeStyle(
   intlStyle: 'dateStyle' | 'timeStyle',
   name: string
 ): DateTimeOptions | undefined {
-  if (custom) {
-    const { [intlStyle]: style, ...rest } = custom;
-    return style === undefined ? rest : { ...rest, style };
-  }
-  return DATE_TIME_STYLES.has(name)
-    ? { style: name as DateTimeStyleName }
+  const builtIn = DATE_TIME_STYLES.has(name)
+    ? (name as DateTimeStyleName)
     : undefined;
+  if (!custom) return builtIn && { style: builtIn };
+  // As in FormatJS, the app's style of an ICU name is laid over ICU's.
+  const { [intlStyle]: style = builtIn, ...rest } = custom;
+  return style === undefined ? rest : { ...rest, style };
 }
 
 // A style name comes from the string, so an inherited key is not a style.

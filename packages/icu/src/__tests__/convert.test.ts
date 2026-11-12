@@ -1,3 +1,4 @@
+import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it } from 'vitest';
 import { icuToMessage, messageTreeToIcu } from '../convert';
 import {
@@ -248,15 +249,42 @@ describe('icuToMessage', () => {
         t: { hour12: false },
       },
     });
-    // The app's own name wins over ICU's, as in FormatJS.
-    expect(
-      icuToMessage('{n, number, percent}', {
-        styles: { number: { percent: { maximumFractionDigits: 1 } } },
-      })
-    ).toEqual({
-      tree: [['n', 'number']],
-      formats: { n: { maximumFractionDigits: 1 } },
+  });
+
+  it("lays an app style of an ICU name over ICU's, as FormatJS does", () => {
+    const icu =
+      '{n, number, percent} {c, number, currency} {d, date, full} {t, time, short}';
+    const styles = {
+      number: {
+        percent: { maximumFractionDigits: 1 },
+        currency: { currency: 'EUR' },
+      },
+      date: { full: { timeZone: 'UTC' } },
+      time: { short: { timeZone: 'UTC' } },
+    };
+    const { tree, formats } = icuToMessage(icu, { styles });
+    expect({ tree, formats }).toEqual({
+      tree: [
+        ['n', 'number', 'percent'],
+        ' ',
+        ['c', 'number', 'currency'],
+        ' ',
+        ['d', 'date', 'full'],
+        ' ',
+        ['t', 'time', 'short'],
+      ],
+      formats: {
+        n: { maximumFractionDigits: 1 },
+        c: { currency: 'EUR' },
+        d: { timeZone: 'UTC' },
+        t: { timeZone: 'UTC' },
+      },
     });
+    const date = new Date('2026-01-15T13:05:00Z');
+    const values = { n: 0.123, c: 5, d: date, t: date };
+    expect(formatMessageTree(tree, 'en-US', values, { formats })).toBe(
+      new IntlMessageFormat(icu, 'en-US', styles).format(values)
+    );
   });
 
   it.each([
