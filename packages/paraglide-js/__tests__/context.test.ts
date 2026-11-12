@@ -522,23 +522,37 @@ describe('the install command', () => {
     });
     const src = path.join(root, 'src');
 
-    expect(
-      await main(['install', 'svelte', 'angular', 'mdx', '--root', src])
-    ).toBe(0);
-    // `angular` is both Angular formats; TypeScript 7 has no JavaScript API.
+    expect(await main(['install', 'svelte', 'angular', '--root', src])).toBe(0);
+    // svelte2tsx needs TypeScript, which has no JavaScript API from version 7;
+    // `angular` is both Angular formats.
     const args = [
       'add',
       '-D',
       'svelte2tsx',
-      '@angular/compiler',
-      '@mdx-js/language-service',
       'typescript@^6',
+      '@angular/compiler',
     ];
     expect(runCommand).toHaveBeenCalledExactlyOnceWith(
       { command: 'pnpm', args },
       root
     );
     expect(log).toHaveBeenCalledWith(`Running pnpm ${args.join(' ')}\n`);
+  });
+
+  test('a TypeScript without a JavaScript API: exits with 1 and names the version to install', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const root = await writeOutsideProject({
+      'node_modules/typescript/package.json': `{ "name": "typescript", "main": "lib/version.cjs" }`,
+      'node_modules/typescript/lib/version.cjs':
+        'module.exports = { version: "7.0.2" };\n',
+    });
+
+    expect(await main(['install', 'vue', 'angular', '--root', root])).toBe(1);
+    expect(runCommand).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledWith(
+      "The project's typescript has no JavaScript API (TypeScript 7), which vue files need. " +
+        'Install typescript 6: pnpm add -D typescript@^6'
+    );
   });
 
   test('nothing to install: does not run the package manager', async () => {

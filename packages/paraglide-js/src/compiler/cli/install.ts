@@ -64,7 +64,7 @@ export async function install(argv: string[]): Promise<number> {
 
   const root = path.resolve(values.root ?? process.cwd());
 
-  return installPackages(findProjectRoot(root), requiredPackages(positionals));
+  return installTools(findProjectRoot(root), positionals);
 }
 
 /** Throws on an unknown option or a missing value. */
@@ -79,19 +79,32 @@ function parseInstallArguments(argv: string[]) {
   });
 }
 
-async function installPackages(
+async function installTools(
   projectRoot: string,
-  required: readonly string[]
+  names: readonly string[]
 ): Promise<number> {
-  const missing = await notInstalled(projectRoot, required);
+  const required = requiredPackages(names);
+  const loaded = await loadPackages(projectRoot, required);
+
+  const typescript = loaded.get('typescript');
+  if (typescript && !hasJavaScriptApi(typescript)) {
+    return reportTypescriptWithoutApi(projectRoot, names);
+  }
+
+  const missing = required.filter((name) => !loaded.get(name));
   if (missing.length === 0) {
     print(`Already installed: ${required.join(', ')}`);
     return 0;
   }
 
-  const specifiers = missing.map((name) =>
-    VERSION_RANGES[name] ? `${name}@${VERSION_RANGES[name]}` : name
-  );
+  return addPackages(projectRoot, missing);
+}
+
+async function addPackages(
+  projectRoot: string,
+  packages: readonly string[]
+): Promise<number> {
+  const specifiers = packages.map(withVersionRange);
   const command = await devDependencyCommand(projectRoot, specifiers);
   print(`Running ${commandLine(command)}`);
 
@@ -105,6 +118,24 @@ async function installPackages(
   }
 }
 
+async function reportTypescriptWithoutApi(
+  projectRoot: string,
+  names: readonly string[]
+): Promise<number> {
+  const needing = names.filter((name) =>
+    requiredPackages([name]).includes('typescript')
+  );
+  const command = await devDependencyCommand(projectRoot, [
+    withVersionRange('typescript'),
+  ]);
+
+  console.error(
+    `The project's typescript has no JavaScript API (TypeScript 7), which ${needing.join(' and ')} files need. ` +
+      `Install typescript 6: ${commandLine(command)}`
+  );
+  return 1;
+}
+
 /** The packages the languages load, in the order they are named. */
 function requiredPackages(names: readonly string[]): string[] {
   const languages = names.flatMap((name) =>
@@ -114,15 +145,30 @@ function requiredPackages(names: readonly string[]): string[] {
   return [...new Set(languages.flatMap(({ requires }) => requires ?? []))];
 }
 
-/** Those the project cannot load, the way languages load them. */
-async function notInstalled(
+/** Each package's module; undefined if the project cannot load it, the way languages load them. */
+async function loadPackages(
   projectRoot: string,
   packages: readonly string[]
-): Promise<string[]> {
+): Promise<Map<string, unknown>> {
   const project = projectPackages(projectRoot);
-  const loaded = await Promise.all(packages.map((name) => project.load(name)));
+  const modules = await Promise.all(packages.map((name) => project.load(name)));
 
-  return packages.filter((_, index) => loaded[index] === undefined);
+  return new Map(packages.map((name, index) => [name, modules[index]]));
+}
+
+function hasJavaScriptApi(typescript: unknown): boolean {
+  const module = typescript as {
+    ScriptSnapshot?: unknown;
+    default?: { ScriptSnapshot?: unknown };
+  };
+
+  return Boolean(module.ScriptSnapshot ?? module.default?.ScriptSnapshot);
+}
+
+function withVersionRange(name: string): string {
+  const range = VERSION_RANGES[name];
+
+  return range ? `${name}@${range}` : name;
 }
 
 function familyName({ name }: SourceLanguage): string {

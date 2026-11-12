@@ -253,7 +253,7 @@ describe('without the language tools, or with a file they reject', () => {
         [svelteLanguage],
         NO_PACKAGES
       )
-    ).toMatchObject({ missing: ['svelte2tsx', 'svelte'] });
+    ).toMatchObject({ missing: ['svelte2tsx', 'svelte', 'typescript'] });
   });
 
   test('a script with a syntax error is skipped with the error', async () => {
