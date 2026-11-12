@@ -6,8 +6,10 @@ import { evaluate, followCandidate, memberOf } from './evaluate.js';
 import { ImporterIndex, type GlobalExport } from './importers.js';
 import {
   declaredNames,
+  exportingStatements,
   hasEsmExports,
   loadedSpecifiers,
+  type ExportStatement,
 } from './module-syntax.js';
 import { Scope, type Binding, type ModuleHost } from './scope.js';
 import { symbolFromSpec } from './tracked-symbols.js';
@@ -108,6 +110,10 @@ export class ModuleGraph {
   private globalExports: GlobalExport[] = [];
 
   private readonly exportsBeingResolved = new Set<string>();
+  private readonly exportNames = new Map<
+    string,
+    ReadonlySet<string> | undefined
+  >();
   private readonly importers = new ImporterIndex({
     records: this.records,
     all: () => [...this.records.values()].flatMap(modulesOf),
@@ -258,20 +264,24 @@ export class ModuleGraph {
     record: ModuleRecord,
     name: string
   ): TrackedSymbol | undefined {
-    const scope = this.moduleScope(record.file)!;
+    const { program } = record;
+    const exporting = exportingStatements(program).get(name) ?? [];
 
-    for (const statement of record.program.body) {
+    for (const statement of exporting) {
+      const scope = this.scopeOf(record);
       const found = this.exportDeclaredBy(statement, name, record, scope);
       if (found) return found.symbol;
     }
 
-    if (!hasEsmExports(record.program))
-      return this.commonJsExport(record, scope, name);
+    if (!hasEsmExports(program))
+      return this.commonJsExport(record, this.scopeOf(record), name);
 
     // `export *` does not re-export "default".
     if (name === 'default') return undefined;
 
     for (const file of starExportedFiles(record)) {
+      if (!this.mayExport(file, name)) continue;
+
       const symbol = this.exportOf(file, name);
       if (symbol) return symbol;
     }
@@ -279,9 +289,46 @@ export class ModuleGraph {
     return undefined;
   }
 
+  /** False only when `file` is known not to export `name`. */
+  private mayExport(file: string, name: string): boolean {
+    const names = this.exportNamesOf(file);
+
+    return names === undefined || names.has(name);
+  }
+
+  /** Undefined when unknown: a target or a CommonJS module is among its `export *`. */
+  private exportNamesOf(file: string): ReadonlySet<string> | undefined {
+    if (!this.exportNames.has(file)) {
+      this.exportNames.set(file, this.listExportNames(file));
+    }
+
+    return this.exportNames.get(file);
+  }
+
+  private listExportNames(file: string): ReadonlySet<string> | undefined {
+    const names = new Set<string>();
+    // Grows while it is iterated.
+    const modules = new Set([file]);
+
+    for (const module of modules) {
+      if (this.targetOf(module)) return undefined;
+
+      const record = this.records.get(module);
+      if (!record) continue;
+      if (!hasEsmExports(record.program)) return undefined;
+
+      for (const name of exportingStatements(record.program).keys())
+        names.add(name);
+      for (const reexported of starExportedFiles(record))
+        modules.add(reexported);
+    }
+
+    return names;
+  }
+
   /** The export `name`, if `statement` is the one that declares it. */
   private exportDeclaredBy(
-    statement: ESTree.Statement | ESTree.Directive,
+    statement: ExportStatement,
     name: string,
     record: ModuleRecord,
     scope: Scope
@@ -295,8 +342,6 @@ export class ModuleGraph {
         return this.namespaceExport(statement, name, record);
       case 'ExportNamedDeclaration':
         return this.namedExport(statement, name, record, scope);
-      default:
-        return undefined;
     }
   }
 
@@ -486,6 +531,7 @@ export class ModuleGraph {
       (a, b) => b.length - a.length
     );
     this.targets.clear();
+    this.exportNames.clear();
   }
 
   private shouldFollow(file: string): boolean {
@@ -501,6 +547,7 @@ export class ModuleGraph {
       loading = this.readRecord(file).then((record) => {
         if (record) {
           this.records.set(file, record);
+          this.exportNames.clear();
           this.generation++;
         }
 
