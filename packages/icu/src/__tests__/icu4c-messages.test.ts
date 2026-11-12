@@ -6,13 +6,14 @@
  *
  * A case formats to ICU4C's text, or fails where ICU4C fails. Otherwise it
  * names one of REASONS as `differs`, and must then really differ, so a
- * difference that is fixed loses its mark. The README lists the same reasons.
+ * difference that is fixed loses its mark. It prints `ours` instead, or throws
+ * when it has none. The README lists the same reasons.
  *
  * icu4c-conformance.test.ts goes deeper into skeletons, in en-US only.
  */
 
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { icuToMessage } from '../convert';
 import { formatMessageTree } from '../index';
 import { formatMessage, parse } from '../parser';
@@ -64,6 +65,8 @@ const REASONS = {
   'intl-lone-field': 'A time zone or an era alone gets the date added by Intl.',
   'hour-width':
     'hh and HH pad the hour, as UTS #35 defines them. ICU4C pads as the locale’s own pattern does, however many letters are written.',
+  'hour-second':
+    'An hour and a second with no minute, like ::kkss, join as for ::HHss: 03 (second: 5). ICU4C puts the second first for kk.',
   'intl-year': 'yyyy does not pad a year before 1000 to four digits in Intl.',
   'intl-calendar':
     'Before 15 October 1582 ICU4C counts in the Julian calendar and V8 in the Gregorian.',
@@ -107,6 +110,8 @@ interface Case {
   icu: string;
   rejects?: true;
   differs?: keyof typeof REASONS;
+  /** What a case that `differs` prints here instead; without it, it throws. */
+  ours?: string;
   treeDiffers?: keyof typeof TREE_REASONS;
 }
 type Different = Case & Required<Pick<Case, 'differs'>>;
@@ -168,6 +173,16 @@ const matches = (outcome: Outcome, { icu, rejects }: Case) =>
     : 'text' in outcome && outcome.text === text(icu);
 
 describe('ICU4C messages', () => {
+  // {d} prints a date as JavaScript does, in the host's time zone.
+  const hostTimeZone = process.env.TZ;
+  beforeAll(() => {
+    process.env.TZ = 'UTC';
+  });
+  afterAll(() => {
+    if (hostTimeZone === undefined) delete process.env.TZ;
+    else process.env.TZ = hostTimeZone;
+  });
+
   it.each(CASES.filter((item) => !item.differs))(
     '$id is as in ICU4C: $message',
     (item) => {
@@ -181,8 +196,14 @@ describe('ICU4C messages', () => {
 
   it.each(DIFFERENT)('$id differs by $differs: $message', (item) => {
     expect(REASONS).toHaveProperty(item.differs);
-    expect(matches(asString(item), item)).toBe(false);
-    expect(matches(asTree(item), item)).toBe(false);
+    const expected =
+      item.ours === undefined
+        ? { error: expect.anything() }
+        : { text: item.ours };
+    for (const outcome of [asString(item), asTree(item)]) {
+      expect(outcome).toEqual(expected);
+      expect(matches(outcome, item)).toBe(false);
+    }
   });
 
   it('rejects a date field in a time as a message tree only', () => {

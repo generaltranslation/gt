@@ -15,6 +15,7 @@ import {
   createInvalidNumberSkeletonTokenError,
   createUnsupportedNumberSkeletonTokenError,
 } from '../errors/skeletonErrors';
+import { DECIMAL_NUMBER } from '../settings/syntax';
 import {
   SKELETON_TYPE,
   type ExtendedNumberFormatOptions,
@@ -179,7 +180,6 @@ const FRACTION_PRECISION = /^\.(0*)(#*|[*+])$/;
 // `@@@`, `@@#` and `@@*`; as the option of a fraction, also `@##r` and `@##s`.
 const SIGNIFICANT_PRECISION = /^(@+)(#*|[*+])([rs]?)$/;
 const INTEGER_WIDTH = /^([*+]|#*)(0*)$/;
-const DECIMAL_NUMBER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
 const CONCISE_EXPONENT = /^EE?(\+[!?])?(0+)$/;
 
 export function parseNumberSkeletonTokens(

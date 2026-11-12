@@ -12,7 +12,7 @@ Closer to ICU4C:
 - An exact plural selector matches by number: `=01` and `=+1` are `=1`. They were compared as text, so they never matched 1.
 - `h` in a skeleton is the 12-hour clock the locale prefers, so `::hm` at half past midnight is `午前0:30` in Japanese, not `午前12:30`. `K` reads as `h` and `k` as `H`, as ICU matches them: `::Km` is `12:30 AM` and `::km` is `00:30` in English.
 - An hour with one letter is padded as the locale pads it, whatever the minute is written as: `::jmm` and `::Hmm` are `03:04` in German, not `3:04`. This also holds for `time()` with `hour: 'numeric'` and `minute: '2-digit'`.
-- `scale` with a power of ten is exact: `::scale/0.1 precision-unlimited` formats 3 as `0.3`, not `0.30000000000000004`. It also scales an int64 by a fraction.
+- `scale` with a power of ten is exact: `::scale/0.1 precision-unlimited` formats 3 as `0.3`, not `0.30000000000000004`, and a numeric string the same way. It also scales an int64 by a fraction.
 - `<br />` keeps its space. It was printed as `<br/>`.
 - `currency/EUR base-unit` is an error, as two unit settings are in ICU.
 
@@ -20,7 +20,7 @@ Errors instead of wrong output:
 
 - A value is found only among the values given: `{toString}` with no value is an error, where it printed a function. Values inherited from a prototype are no longer read.
 - A message nests at most 64 levels of branches and tags, the limit a message tree already has. Deeper nesting overflowed the stack near 1,000 levels.
-- `plural()` and `select()` branch keys spell an exact number one way: `=1`, not `=01`.
+- `plural()` and `select()` branch keys spell an exact number one way: `=1`, not `=01`, and `validateMessageTree` rejects a tree that spells one otherwise.
 
 Clearer errors:
 

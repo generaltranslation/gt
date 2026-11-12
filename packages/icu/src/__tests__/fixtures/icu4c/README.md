@@ -36,6 +36,8 @@ of the format, in many locales and in UTC. Each line is a case:
 - `icu`: ICU4C's result, or its error when `rejects` is true.
 - `differs`: why the case does not format as in ICU4C, when it does not.
   `../../icu4c-messages.test.ts` has the reasons.
+- `ours`: what a case that `differs` prints here instead, in UTC. A case
+  that `differs` without it throws.
 
 `messages.cpp` formats the cases and `messages.mjs` writes ICU4C's results
 back into the file:

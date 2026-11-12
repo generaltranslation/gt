@@ -19,9 +19,9 @@
 {"id":"syn-apos-lone-3","locale":"en-US","message":"abc'","values":{},"icu":"abc'"}
 {"id":"syn-apos-lone-4","locale":"en-US","message":"'abc' {x}","values":{"x":"X"},"icu":"'abc' X"}
 {"id":"syn-apos-lone-5","locale":"en-US","message":"it's {x}'s","values":{"x":"Ada"},"icu":"it's Ada's"}
-{"id":"syn-apos-lone-6","locale":"en-US","message":"'<b>'","values":{},"icu":"'<b>'","differs":"tags"}
-{"id":"syn-apos-lone-7","locale":"en-US","message":"a '> b","values":{},"icu":"a '> b","differs":"tags"}
-{"id":"syn-apos-lone-8","locale":"en-US","message":"I '<'3 cats","values":{},"icu":"I '<'3 cats","differs":"tags"}
+{"id":"syn-apos-lone-6","locale":"en-US","message":"'<b>'","values":{},"ours":"<b>","icu":"'<b>'","differs":"tags"}
+{"id":"syn-apos-lone-7","locale":"en-US","message":"a '> b","values":{},"ours":"a > b","icu":"a '> b","differs":"tags"}
+{"id":"syn-apos-lone-8","locale":"en-US","message":"I '<'3 cats","values":{},"ours":"I <3 cats","icu":"I '<'3 cats","differs":"tags"}
 {"id":"syn-apos-brace-1","locale":"en-US","message":"'{name}'","values":{"name":"Ada"},"icu":"{name}"}
 {"id":"syn-apos-brace-2","locale":"en-US","message":"I see '{many}'","values":{},"icu":"I see {many}"}
 {"id":"syn-apos-brace-3","locale":"en-US","message":"I said '{''Wow!''}'","values":{},"icu":"I said {'Wow!'}"}
@@ -81,14 +81,14 @@
 {"id":"syn-num-1","locale":"en-US","message":"{0}","values":{"0":"zero"},"icu":"zero"}
 {"id":"syn-num-2","locale":"en-US","message":"{1} {0}","values":{"0":"a","1":"b"},"icu":"b a"}
 {"id":"syn-num-3","locale":"en-US","message":"{10}","values":{"10":"ten"},"icu":"ten"}
-{"id":"syn-num-4","locale":"en-US","message":"{00}","values":{"0":"y","00":"x"},"icu":"U_PATTERN_SYNTAX_ERROR","rejects":true,"differs":"numbered-arguments"}
-{"id":"syn-num-5","locale":"en-US","message":"{01}","values":{"1":"y","01":"x"},"icu":"U_PATTERN_SYNTAX_ERROR","rejects":true,"differs":"numbered-arguments"}
+{"id":"syn-num-4","locale":"en-US","message":"{00}","values":{"0":"y","00":"x"},"ours":"x","icu":"U_PATTERN_SYNTAX_ERROR","rejects":true,"differs":"numbered-arguments"}
+{"id":"syn-num-5","locale":"en-US","message":"{01}","values":{"1":"y","01":"x"},"ours":"x","icu":"U_PATTERN_SYNTAX_ERROR","rejects":true,"differs":"numbered-arguments"}
 {"id":"syn-num-6","locale":"en-US","message":"{-1}","values":{"-1":"x"},"icu":"U_PATTERN_SYNTAX_ERROR","rejects":true}
 {"id":"syn-num-7","locale":"en-US","message":"{0x}","values":{"0x":"ok"},"icu":"ok"}
 {"id":"syn-num-8","locale":"en-US","message":"{１}","values":{"１":"ok"},"icu":"ok"}
 {"id":"syn-numlim-1","locale":"en-US","message":"{32767}","values":{"32767":"max"},"icu":"max"}
-{"id":"syn-numlim-2","locale":"en-US","message":"{32768}","values":{"32768":"over"},"icu":"U_INDEX_OUTOFBOUNDS_ERROR","rejects":true,"differs":"numbered-arguments"}
-{"id":"syn-numlim-3","locale":"en-US","message":"{99999999999}","values":{"99999999999":"over"},"icu":"U_PATTERN_SYNTAX_ERROR","rejects":true,"differs":"numbered-arguments"}
+{"id":"syn-numlim-2","locale":"en-US","message":"{32768}","values":{"32768":"over"},"ours":"over","icu":"U_INDEX_OUTOFBOUNDS_ERROR","rejects":true,"differs":"numbered-arguments"}
+{"id":"syn-numlim-3","locale":"en-US","message":"{99999999999}","values":{"99999999999":"over"},"ours":"over","icu":"U_PATTERN_SYNTAX_ERROR","rejects":true,"differs":"numbered-arguments"}
 {"id":"syn-mixed-1","locale":"en-US","message":"{0} and {name}","values":{"0":"a","name":"b"},"icu":"a and b"}
 {"id":"syn-mixed-2","locale":"en-US","message":"{name} {1} {0}","values":{"0":"a","1":"b","name":"c"},"icu":"c b a"}
 {"id":"syn-mixed-3","locale":"en-US","message":"{n, plural, other{# {0}}}","values":{"0":"items","n":2},"icu":"2 items"}
@@ -186,9 +186,9 @@
 {"id":"syn-tag-lt-3","locale":"en-US","message":"x<3 <=> <>","values":{},"icu":"x<3 <=> <>"}
 {"id":"syn-tag-lt-4","locale":"en-US","message":"<1>x</1>","values":{},"icu":"<1>x</1>","differs":"tags"}
 {"id":"syn-tag-lt-5","locale":"en-US","message":"if a<b and b>c","values":{},"icu":"if a<b and b>c","differs":"tags"}
-{"id":"syn-tag-q-1","locale":"en-US","message":"'<b>'bold'</b>'","values":{},"icu":"'<b>'bold'</b>'","differs":"tags"}
-{"id":"syn-tag-q-2","locale":"en-US","message":"raw '<b>HTML</b>'","values":{},"icu":"raw '<b>HTML</b>'","differs":"tags"}
-{"id":"syn-tag-q-3","locale":"en-US","message":"'<notATag>","values":{},"icu":"'<notATag>","differs":"tags"}
+{"id":"syn-tag-q-1","locale":"en-US","message":"'<b>'bold'</b>'","values":{},"ours":"<b>bold</b>","icu":"'<b>'bold'</b>'","differs":"tags"}
+{"id":"syn-tag-q-2","locale":"en-US","message":"raw '<b>HTML</b>'","values":{},"ours":"raw <b>HTML</b>","icu":"raw '<b>HTML</b>'","differs":"tags"}
+{"id":"syn-tag-q-3","locale":"en-US","message":"'<notATag>","values":{},"ours":"<notATag>","icu":"'<notATag>","differs":"tags"}
 {"id":"syn-tag-q-4","locale":"en-US","message":"''<b>x</b>","values":{},"icu":"'<b>x</b>","differs":"tags"}
 {"id":"syn-val-miss-1","locale":"en-US","message":"Hi {name}","values":{},"icu":"Hi {name}","differs":"missing-value"}
 {"id":"syn-val-miss-2","locale":"en-US","message":"{0} {1}","values":{"0":"a"},"icu":"a {1}","differs":"missing-value"}
@@ -197,21 +197,21 @@
 {"id":"syn-val-extra-1","locale":"en-US","message":"Hi","values":{"x":1,"y":"z"},"icu":"Hi"}
 {"id":"syn-val-extra-2","locale":"en-US","message":"{a}","values":{"a":"A","b":"B"},"icu":"A"}
 {"id":"syn-val-extra-3","locale":"en-US","message":"{0}","values":{"0":"a","1":"b","2":"c"},"icu":"a"}
-{"id":"syn-val-num-1","locale":"en-US","message":"{x}","values":{"x":1234.5},"icu":"1,234.5","differs":"plain-value"}
-{"id":"syn-val-num-2","locale":"de-DE","message":"{x}","values":{"x":1234.5},"icu":"1.234,5","differs":"plain-value"}
-{"id":"syn-val-num-3","locale":"en-US","message":"{x}","values":{"x":{"$int":"12345678"}},"icu":"12,345,678","differs":"plain-value"}
-{"id":"syn-val-num-4","locale":"en-US","message":"{x}","values":{"x":1e+21},"icu":"1,000,000,000,000,000,000,000","differs":"plain-value"}
-{"id":"syn-val-num-5","locale":"en-US","message":"{x}","values":{"x":0.1234567},"icu":"0.123","differs":"plain-value"}
+{"id":"syn-val-num-1","locale":"en-US","message":"{x}","values":{"x":1234.5},"ours":"1234.5","icu":"1,234.5","differs":"plain-value"}
+{"id":"syn-val-num-2","locale":"de-DE","message":"{x}","values":{"x":1234.5},"ours":"1234.5","icu":"1.234,5","differs":"plain-value"}
+{"id":"syn-val-num-3","locale":"en-US","message":"{x}","values":{"x":{"$int":"12345678"}},"ours":"12345678","icu":"12,345,678","differs":"plain-value"}
+{"id":"syn-val-num-4","locale":"en-US","message":"{x}","values":{"x":1e+21},"ours":"1e+21","icu":"1,000,000,000,000,000,000,000","differs":"plain-value"}
+{"id":"syn-val-num-5","locale":"en-US","message":"{x}","values":{"x":0.1234567},"ours":"0.1234567","icu":"0.123","differs":"plain-value"}
 {"id":"syn-val-num-6","locale":"en-US","message":"{x}","values":{"x":0},"icu":"0"}
-{"id":"syn-val-num-7","locale":"ar-EG","message":"{x}","values":{"x":-7},"icu":"؜-٧","differs":"plain-value"}
-{"id":"syn-val-date-1","locale":"en-US","message":"{x}","values":{"x":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"5/6/20, 11:30 PM","differs":"plain-value"}
-{"id":"syn-val-date-2","locale":"fr-FR","message":"{x}","values":{"x":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"06/05/2020 23:30","differs":"plain-value"}
-{"id":"syn-val-date-3","locale":"en-US","message":"{n, plural, other{{d}}}","values":{"n":1,"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"5/6/20, 11:30 PM","differs":"plain-value"}
+{"id":"syn-val-num-7","locale":"ar-EG","message":"{x}","values":{"x":-7},"ours":"-7","icu":"؜-٧","differs":"plain-value"}
+{"id":"syn-val-date-1","locale":"en-US","message":"{x}","values":{"x":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"Wed May 06 2020 23:30:05 GMT+0000 (Coordinated Universal Time)","icu":"5/6/20, 11:30 PM","differs":"plain-value"}
+{"id":"syn-val-date-2","locale":"fr-FR","message":"{x}","values":{"x":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"Wed May 06 2020 23:30:05 GMT+0000 (Coordinated Universal Time)","icu":"06/05/2020 23:30","differs":"plain-value"}
+{"id":"syn-val-date-3","locale":"en-US","message":"{n, plural, other{{d}}}","values":{"n":1,"d":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"Wed May 06 2020 23:30:05 GMT+0000 (Coordinated Universal Time)","icu":"5/6/20, 11:30 PM","differs":"plain-value"}
 {"id":"syn-val-str-1","locale":"en-US","message":"{x}","values":{"x":"1234.5"},"icu":"1234.5"}
 {"id":"syn-val-str-2","locale":"en-US","message":"{x}","values":{"x":""},"icu":""}
 {"id":"syn-val-str-3","locale":"en-US","message":"{x}","values":{"x":"{y} '#'"},"icu":"{y} '#'"}
-{"id":"syn-val-str-4","locale":"en-US","message":"{x, number}","values":{"x":"abc"},"icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
-{"id":"syn-val-str-5","locale":"en-US","message":"{x, plural, other{#}}","values":{"x":"5"},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"syn-val-str-4","locale":"en-US","message":"{x, number}","values":{"x":"abc"},"ours":"NaN","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"syn-val-str-5","locale":"en-US","message":"{x, plural, other{#}}","values":{"x":"5"},"ours":"5","icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
 {"id":"syn-err-brace-1","locale":"en-US","message":"{","values":{},"icu":"U_UNMATCHED_BRACES","rejects":true}
 {"id":"syn-err-brace-2","locale":"en-US","message":"{x","values":{"x":"v"},"icu":"U_UNMATCHED_BRACES","rejects":true}
 {"id":"syn-err-brace-3","locale":"en-US","message":"{x, number","values":{"x":1},"icu":"U_UNMATCHED_BRACES","rejects":true}
@@ -340,7 +340,7 @@
 {"id":"pl-pnd-8","locale":"en-US","message":"{n, plural, other {#}}","values":{"n":{"$int":"9007199254740993"}},"icu":"9,007,199,254,740,993"}
 {"id":"pl-pnd-9","locale":"hi-u-nu-deva","message":"{n, plural, other {#}}","values":{"n":1234567},"icu":"१२,३४,५६७"}
 {"id":"pl-pndf-1","locale":"en-US","message":"{n, plural, other {#}}","values":{"n":1.23456},"icu":"1.235"}
-{"id":"pl-pndf-2","locale":"en-US","message":"{n, plural, other {#}}","values":{"n":1.0625},"icu":"1.062","differs":"intl-rounding"}
+{"id":"pl-pndf-2","locale":"en-US","message":"{n, plural, other {#}}","values":{"n":1.0625},"ours":"1.063","icu":"1.062","differs":"intl-rounding"}
 {"id":"pl-pndf-4","locale":"en-US","message":"{n, plural, one {one #} other {other #}}","values":{"n":1.0001},"icu":"one 1"}
 {"id":"pl-pndf-5","locale":"de","message":"{n, plural, other {#}}","values":{"n":1234.5},"icu":"1.234,5"}
 {"id":"pl-pndf-6","locale":"en-US","message":"{n, plural, other {#}}","values":{"n":2.5e-07},"icu":"0"}
@@ -352,15 +352,15 @@
 {"id":"pl-pnds-3","locale":"en-US","message":"# {n, plural, other {#}} #","values":{"n":3},"icu":"# 3 #"}
 {"id":"pl-pnds-4","locale":"en-US","message":"{n, plural, other {{n, number} #}}","values":{"n":3},"icu":"3 3"}
 {"id":"pl-pnds-5","locale":"en-US","message":"{n, choice, 0#zero|1## items}","values":{"n":3},"icu":"# items","differs":"choice"}
-{"id":"pl-num-1","locale":"en-US","message":"{n, plural, one {{n, number, integer} item} other {{n, number, integer} items}}","values":{"n":1.4},"icu":"1 item","differs":"plural-from-format"}
+{"id":"pl-num-1","locale":"en-US","message":"{n, plural, one {{n, number, integer} item} other {{n, number, integer} items}}","values":{"n":1.4},"ours":"1 items","icu":"1 item","differs":"plural-from-format"}
 {"id":"pl-num-2","locale":"en-US","message":"{n, plural, one {{n, number,0.0} item} other {{n, number,0.0} items}}","values":{"n":1},"icu":"1.0 items","differs":"pattern"}
 {"id":"pl-num-3","locale":"en-US","message":"{n, plural, one {{n, number, ::.0} item} other {{n, number, ::.0} items}}","values":{"n":1},"icu":"1.0 item"}
-{"id":"pl-num-4","locale":"en-US","message":"{n, plural, one {{n, number, percent} one} other {{n, number, percent} other}}","values":{"n":0.01},"icu":"1% one","differs":"plural-from-format"}
+{"id":"pl-num-4","locale":"en-US","message":"{n, plural, one {{n, number, percent} one} other {{n, number, percent} other}}","values":{"n":0.01},"ours":"1% other","icu":"1% one","differs":"plural-from-format"}
 {"id":"pl-num-5","locale":"en-US","message":"{n, plural, one {# {n, number, ::.00}} other {# {n, number, ::.00}}}","values":{"n":1},"icu":"1 1.00"}
 {"id":"pl-num-6","locale":"en-US","message":"{n, plural, one {one {n, number,0.0}} other {other {n}}}","values":{"n":1},"icu":"one 1.0","differs":"pattern"}
-{"id":"pl-num-7","locale":"en-US","message":"{n, plural, other {{n} items}}","values":{"n":1234},"icu":"1,234 items","differs":"plain-value"}
+{"id":"pl-num-7","locale":"en-US","message":"{n, plural, other {{n} items}}","values":{"n":1234},"ours":"1234 items","icu":"1,234 items","differs":"plain-value"}
 {"id":"pl-num-8","locale":"en-US","message":"{n, plural, offset:1 one {{n, number,0.0} one} other {{n, number,0.0} other}}","values":{"n":2},"icu":"2.0 other","differs":"pattern"}
-{"id":"pl-num-9","locale":"de","message":"{n, plural, one {{n, number, integer} Stück} other {{n, number, integer} Stücke}}","values":{"n":1.4},"icu":"1 Stück","differs":"plural-from-format"}
+{"id":"pl-num-9","locale":"de","message":"{n, plural, one {{n, number, integer} Stück} other {{n, number, integer} Stücke}}","values":{"n":1.4},"ours":"1 Stücke","icu":"1 Stück","differs":"plural-from-format"}
 {"id":"pl-num-10","locale":"en-US","message":"{n, plural, one {one # {n, number,0.0}} other {other # {n, number,0.0}}}","values":{"n":1},"icu":"one 1 1.0","differs":"pattern"}
 {"id":"pl-opf-1","locale":"en-US","message":"{n, plural, one {one #} other {other #}}","values":{"n":1.5},"icu":"other 1.5"}
 {"id":"pl-opf-3","locale":"ar","message":"{n, plural, zero {zero #} one {one #} two {two #} few {few #} many {many #} other {other #}}","values":{"n":0},"icu":"zero 0"}
@@ -379,12 +379,12 @@
 {"id":"pl-opc-1","locale":"fr","message":"{n, plural, many {many {n, number, ::compact-short}} other {other {n, number, ::compact-short}}}","values":{"n":1200000},"icu":"other 1,2 M"}
 {"id":"pl-opc-2","locale":"fr","message":"{n, plural, many {many {n, number, ::compact-long}} other {other {n, number, ::compact-long}}}","values":{"n":1000000},"icu":"many 1 million"}
 {"id":"pl-opc-3","locale":"es","message":"{n, plural, many {many {n, number, ::compact-short}} other {other {n, number, ::compact-short}}}","values":{"n":2100000},"icu":"other 2,1 M"}
-{"id":"pl-vs-1","locale":"en-US","message":"{n, plural, one {one #} other {other #}}","values":{"n":"1"},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
-{"id":"pl-vs-2","locale":"en-US","message":"{n, plural, =5 {five} other {other #}}","values":{"n":"5"},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
-{"id":"pl-vs-3","locale":"en-US","message":"{n, plural, one {one #} other {other #}}","values":{"n":"abc"},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
-{"id":"pl-vs-4","locale":"en-US","message":"{n, plural, one {one #} other {other #}}","values":{"n":"1.0"},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-vs-1","locale":"en-US","message":"{n, plural, one {one #} other {other #}}","values":{"n":"1"},"ours":"one 1","icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-vs-2","locale":"en-US","message":"{n, plural, =5 {five} other {other #}}","values":{"n":"5"},"ours":"five","icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-vs-3","locale":"en-US","message":"{n, plural, one {one #} other {other #}}","values":{"n":"abc"},"ours":"other NaN","icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-vs-4","locale":"en-US","message":"{n, plural, one {one #} other {other #}}","values":{"n":"1.0"},"ours":"one 1","icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
 {"id":"pl-vs-5","locale":"en-US","message":"{n, plural, =1.0 {exact} other {other #}}","values":{"n":"1.0"},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true}
-{"id":"pl-vs-6","locale":"en-US","message":"{n, plural, one {one #} other {other #}}","values":{"n":""},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-vs-6","locale":"en-US","message":"{n, plural, one {one #} other {other #}}","values":{"n":""},"ours":"other 0","icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
 {"id":"pl-vi-1","locale":"ar","message":"{n, plural, zero {zero #} one {one #} two {two #} few {few #} many {many #} other {other #}}","values":{"n":{"$int":"3"}},"icu":"few 3"}
 {"id":"pl-vi-3","locale":"en-US","message":"{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}","values":{"n":{"$int":"22"}},"icu":"22nd"}
 {"id":"pl-vi-4","locale":"en-US","message":"{n, plural, =9007199254740993 {exact} other {other}}","values":{"n":{"$int":"9007199254740993"}},"icu":"exact","differs":"whole-number"}
@@ -430,12 +430,12 @@
 {"id":"pl-selo-1","locale":"en-US","message":"{g, select, male {He} female {She}}","values":{"g":"male"},"icu":"U_DEFAULT_KEYWORD_MISSING","rejects":true}
 {"id":"pl-selo-2","locale":"en-US","message":"{g, select, male {He} female {She}}","values":{"g":"x"},"icu":"U_DEFAULT_KEYWORD_MISSING","rejects":true}
 {"id":"pl-selo-3","locale":"en-US","message":"{g, select, }","values":{"g":"x"},"icu":"U_DEFAULT_KEYWORD_MISSING","rejects":true}
-{"id":"pl-selv-1","locale":"en-US","message":"{s, select, 1 {one} other {other}}","values":{"s":1},"icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-selv-1","locale":"en-US","message":"{s, select, 1 {one} other {other}}","values":{"s":1},"ours":"one","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
 {"id":"pl-selv-2","locale":"en-US","message":"{s, select, 1 {one} other {other}}","values":{"s":"1"},"icu":"one"}
 {"id":"pl-selv-3","locale":"en-US","message":"{s, select, true {yes} other {no}}","values":{"s":"true"},"icu":"yes"}
-{"id":"pl-selv-4","locale":"en-US","message":"{s, select, 1 {one} other {other}}","values":{"s":{"$int":"1"}},"icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-selv-4","locale":"en-US","message":"{s, select, 1 {one} other {other}}","values":{"s":{"$int":"1"}},"ours":"one","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
 {"id":"pl-selv-5","locale":"en-US","message":"{s, select, 1.5 {x} other {other}}","values":{"s":1.5},"icu":"U_PATTERN_SYNTAX_ERROR","rejects":true}
-{"id":"pl-selv-6","locale":"en-US","message":"{s, select, 0 {zero} other {other}}","values":{"s":0},"icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-selv-6","locale":"en-US","message":"{s, select, 0 {zero} other {other}}","values":{"s":0},"ours":"zero","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
 {"id":"pl-selc-1","locale":"en-US","message":"{g, select, male {He} female {She} other {They}}","values":{"g":"Female"},"icu":"They"}
 {"id":"pl-selc-2","locale":"en-US","message":"{g, select, A {upper} a {lower} other {other}}","values":{"g":"a"},"icu":"lower"}
 {"id":"pl-selk-1","locale":"en-US","message":"{s, select, é {e-acute} 日本 {ja} other {other}}","values":{"s":"日本"},"icu":"ja"}
@@ -492,11 +492,11 @@
 {"id":"num-def-6","locale":"ar-EG","message":"{n, number}","values":{"n":-1234.5},"icu":"؜-١٬٢٣٤٫٥"}
 {"id":"num-def-7","locale":"ja-JP","message":"{n, number}","values":{"n":1234567.891},"icu":"1,234,567.891"}
 {"id":"num-def-8","locale":"de-CH","message":"{n, number}","values":{"n":-1234567.891},"icu":"-1'234'567.891"}
-{"id":"num-def-9","locale":"es-ES","message":"{n, number}","values":{"n":1234},"icu":"1.234","differs":"intl-grouping"}
+{"id":"num-def-9","locale":"es-ES","message":"{n, number}","values":{"n":1234},"ours":"1234","icu":"1.234","differs":"intl-grouping"}
 {"id":"num-def-10","locale":"es-ES","message":"{n, number}","values":{"n":12345},"icu":"12.345"}
 {"id":"num-def-11","locale":"fa-IR","message":"{n, number}","values":{"n":-1234.5},"icu":"‎−۱٬۲۳۴٫۵"}
-{"id":"num-def-12","locale":"en-US","message":"{n, number}","values":{"n":1.0625},"icu":"1.062","differs":"intl-rounding"}
-{"id":"num-def-13","locale":"en-US","message":"{n, number}","values":{"n":0.0005},"icu":"0","differs":"intl-rounding"}
+{"id":"num-def-12","locale":"en-US","message":"{n, number}","values":{"n":1.0625},"ours":"1.063","icu":"1.062","differs":"intl-rounding"}
+{"id":"num-def-13","locale":"en-US","message":"{n, number}","values":{"n":0.0005},"ours":"0.001","icu":"0","differs":"intl-rounding"}
 {"id":"num-def-15","locale":"en-US","message":"{n, number}","values":{"n":9007199254740992},"icu":"9,007,199,254,740,992"}
 {"id":"num-inf-1","locale":"en-US","message":"{n, number}","values":{"n":{"$number":"Infinity"}},"icu":"∞"}
 {"id":"num-inf-3","locale":"en-US","message":"{n, number, ::currency/EUR}","values":{"n":{"$number":"-Infinity"}},"icu":"-€∞"}
@@ -504,7 +504,7 @@
 {"id":"num-negz-1","locale":"en-US","message":"{n, number, integer}","values":{"n":-0.4},"icu":"-0"}
 {"id":"num-negz-2","locale":"en-US","message":"{n, number, ::sign-negative .}","values":{"n":-0.4},"icu":"0"}
 {"id":"num-negz-3","locale":"de-DE","message":"{n, number, ::.0}","values":{"n":-0.04},"icu":"-0,0"}
-{"id":"num-ovf-1","locale":"en-US","message":"{n, number, ::scale/10}","values":{"n":1e+308},"icu":"1,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000","differs":"intl-range"}
+{"id":"num-ovf-1","locale":"en-US","message":"{n, number, ::scale/10}","values":{"n":1e+308},"ours":"∞","icu":"1,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000","differs":"intl-range"}
 {"id":"num-int-1","locale":"en-US","message":"{n, number}","values":{"n":{"$int":"9223372036854775807"}},"icu":"9,223,372,036,854,775,807"}
 {"id":"num-int-2","locale":"de-DE","message":"{n, number}","values":{"n":{"$int":"-9223372036854775808"}},"icu":"-9.223.372.036.854.775.808"}
 {"id":"num-int-3","locale":"en-US","message":"{n, number}","values":{"n":{"$int":"9007199254740993"}},"icu":"9,007,199,254,740,993"}
@@ -512,14 +512,14 @@
 {"id":"num-int-5","locale":"en-US","message":"{n, number, ::compact-short}","values":{"n":{"$int":"1234567890123"}},"icu":"1.2T"}
 {"id":"num-int-6","locale":"en-US","message":"{n, number, ::scale/0.5}","values":{"n":{"$int":"7"}},"icu":"3.5","differs":"bigint"}
 {"id":"num-int-7","locale":"en-US","message":"{n, number, ::scale/100}","values":{"n":{"$int":"92233720368547758"}},"icu":"9,223,372,036,854,775,800"}
-{"id":"num-str-1","locale":"en-US","message":"{n, number}","values":{"n":"1234.5"},"icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
-{"id":"num-str-2","locale":"en-US","message":"{n, number}","values":{"n":"abc"},"icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
-{"id":"num-str-3","locale":"en-US","message":"{n, number}","values":{"n":""},"icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
-{"id":"num-str-5","locale":"en-US","message":"{n, number, ::percent}","values":{"n":"0.5"},"icu":"U_INVALID_STATE_ERROR","rejects":true,"differs":"value-type"}
-{"id":"num-date-1","locale":"en-US","message":"{n, number}","values":{"n":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
-{"id":"num-date-2","locale":"en-US","message":"{n, number, percent}","values":{"n":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
-{"id":"num-date-3","locale":"en-US","message":"{n, number, ::compact-short}","values":{"n":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"U_INVALID_STATE_ERROR","rejects":true,"differs":"value-type"}
-{"id":"num-integer-1","locale":"en-US","message":"{n, number, integer}","values":{"n":2.5},"icu":"2","differs":"intl-rounding"}
+{"id":"num-str-1","locale":"en-US","message":"{n, number}","values":{"n":"1234.5"},"ours":"1,234.5","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"num-str-2","locale":"en-US","message":"{n, number}","values":{"n":"abc"},"ours":"NaN","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"num-str-3","locale":"en-US","message":"{n, number}","values":{"n":""},"ours":"0","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"num-str-5","locale":"en-US","message":"{n, number, ::percent}","values":{"n":"0.5"},"ours":"0.5%","icu":"U_INVALID_STATE_ERROR","rejects":true,"differs":"value-type"}
+{"id":"num-date-1","locale":"en-US","message":"{n, number}","values":{"n":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"1,588,807,805,123","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"num-date-2","locale":"en-US","message":"{n, number, percent}","values":{"n":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"158,880,780,512,300%","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"num-date-3","locale":"en-US","message":"{n, number, ::compact-short}","values":{"n":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"1.6T","icu":"U_INVALID_STATE_ERROR","rejects":true,"differs":"value-type"}
+{"id":"num-integer-1","locale":"en-US","message":"{n, number, integer}","values":{"n":2.5},"ours":"3","icu":"2","differs":"intl-rounding"}
 {"id":"num-integer-2","locale":"en-US","message":"{n, number, integer}","values":{"n":3.5},"icu":"4"}
 {"id":"num-integer-3","locale":"de-DE","message":"{n, number, integer}","values":{"n":1234567.89},"icu":"1.234.568"}
 {"id":"num-integer-4","locale":"ar-EG","message":"{n, number, integer}","values":{"n":-1234.56},"icu":"؜-١٬٢٣٥"}
@@ -530,7 +530,7 @@
 {"id":"num-currency-5","locale":"en","message":"{n, number, currency}","values":{"n":1234.5},"icu":"¤1,234.50","differs":"currency"}
 {"id":"num-currency-6","locale":"ar-EG","message":"{n, number, currency}","values":{"n":1234.5},"icu":"‏١٬٢٣٤٫٥٠ ج.م.‏","differs":"currency"}
 {"id":"num-percent-1","locale":"en-US","message":"{n, number, percent}","values":{"n":0.256},"icu":"26%"}
-{"id":"num-percent-2","locale":"en-US","message":"{n, number, percent}","values":{"n":0.125},"icu":"12%","differs":"intl-rounding"}
+{"id":"num-percent-2","locale":"en-US","message":"{n, number, percent}","values":{"n":0.125},"ours":"13%","icu":"12%","differs":"intl-rounding"}
 {"id":"num-percent-3","locale":"de-DE","message":"{n, number, percent}","values":{"n":0.256},"icu":"26 %"}
 {"id":"num-percent-4","locale":"ar-EG","message":"{n, number, percent}","values":{"n":0.256},"icu":"٢٦٪؜"}
 {"id":"num-kw-1","locale":"en-US","message":"{n, number, CURRENCY}","values":{"n":1234.5},"icu":"$1,234.50","differs":"keyword-case"}
@@ -583,19 +583,19 @@
 {"id":"num-sk-sim-1","locale":"en-IN","message":"{n, number, ::notation-simple}","values":{"n":1234567},"icu":"12,34,567"}
 {"id":"num-sk-sim-2","locale":"en-US","message":"{n, number, ::notation-simple compact-short}","values":{"n":1234567},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
 {"id":"num-sk-sim-3","locale":"en-US","message":"{n, number, ::notation-simple/x}","values":{"n":1234567},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
-{"id":"num-sk-sci-1","locale":"de-DE","message":"{n, number, ::scientific}","values":{"n":1234567},"icu":"1,234567E6","differs":"intl-digits"}
+{"id":"num-sk-sci-1","locale":"de-DE","message":"{n, number, ::scientific}","values":{"n":1234567},"ours":"1,235E6","icu":"1,234567E6","differs":"intl-digits"}
 {"id":"num-sk-sci-3","locale":"en-US","message":"{n, number, ::scientific/*ee}","values":{"n":1234567},"icu":"1.234567E06","differs":"intl-cannot"}
 {"id":"num-sk-sci-4","locale":"en-US","message":"{n, number, ::scientific/sign-always}","values":{"n":1234567},"icu":"1.234567E+6","differs":"intl-cannot"}
 {"id":"num-sk-sci-5","locale":"en-US","message":"{n, number, ::engineering/*eee/sign-except-zero}","values":{"n":0.00012},"icu":"120E-006","differs":"intl-cannot"}
 {"id":"num-sk-sci-6","locale":"en-US","message":"{n, number, ::scientific/bogus}","values":{"n":1234567},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
-{"id":"num-sk-sce-1","locale":"fr-FR","message":"{n, number, ::E0}","values":{"n":1234567},"icu":"1,234567E6","differs":"intl-digits"}
+{"id":"num-sk-sce-1","locale":"fr-FR","message":"{n, number, ::E0}","values":{"n":1234567},"ours":"1,235E6","icu":"1,234567E6","differs":"intl-digits"}
 {"id":"num-sk-sce-2","locale":"en-US","message":"{n, number, ::E00}","values":{"n":1234567},"icu":"1.234567E06","differs":"intl-cannot"}
 {"id":"num-sk-sce-3","locale":"en-US","message":"{n, number, ::E+?00}","values":{"n":0.000123},"icu":"1.23E-04","differs":"intl-cannot"}
 {"id":"num-sk-sce-4","locale":"en-US","message":"{n, number, ::E}","values":{"n":1234567},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
 {"id":"num-sk-pct-1","locale":"en-US","message":"{n, number, ::percent}","values":{"n":25},"icu":"25%"}
 {"id":"num-sk-pct-2","locale":"de-DE","message":"{n, number, ::%}","values":{"n":0.256},"icu":"0,256 %"}
 {"id":"num-sk-pct-3","locale":"en-US","message":"{n, number, ::%x100}","values":{"n":0.3},"icu":"30%"}
-{"id":"num-sk-pct-4","locale":"en-US","message":"{n, number, ::%x100}","values":{"n":0.0625},"icu":"6.25%","differs":"intl-digits"}
+{"id":"num-sk-pct-4","locale":"en-US","message":"{n, number, ::%x100}","values":{"n":0.0625},"ours":"6%","icu":"6.25%","differs":"intl-digits"}
 {"id":"num-sk-pct-5","locale":"en-US","message":"{n, number, ::percent/x}","values":{"n":25},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
 {"id":"num-sk-pml-1","locale":"en-US","message":"{n, number, ::permille}","values":{"n":25},"icu":"25‰","differs":"intl-cannot"}
 {"id":"num-sk-pml-2","locale":"de-DE","message":"{n, number, ::permille scale/1000}","values":{"n":0.0256},"icu":"25,6 ‰","differs":"intl-cannot"}
@@ -603,7 +603,7 @@
 {"id":"num-sk-bu-1","locale":"en-US","message":"{n, number, ::base-unit}","values":{"n":25},"icu":"25"}
 {"id":"num-sk-bu-2","locale":"en-US","message":"{n, number, ::currency/EUR base-unit}","values":{"n":25},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
 {"id":"num-sk-bu-3","locale":"en-US","message":"{n, number, ::base-unit/x}","values":{"n":25},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
-{"id":"num-sk-cur-1","locale":"en-US","message":"{n, number, ::currency/JPY}","values":{"n":1234.5},"icu":"¥1,234","differs":"intl-rounding"}
+{"id":"num-sk-cur-1","locale":"en-US","message":"{n, number, ::currency/JPY}","values":{"n":1234.5},"ours":"¥1,235","icu":"¥1,234","differs":"intl-rounding"}
 {"id":"num-sk-cur-2","locale":"ar-EG","message":"{n, number, ::currency/USD}","values":{"n":-1234.5},"icu":"؜-‏١٬٢٣٤٫٥٠ US$"}
 {"id":"num-sk-cur-3","locale":"en-US","message":"{n, number, ::currency/XYZ}","values":{"n":5},"icu":"XYZ 5.00"}
 {"id":"num-sk-cur-4","locale":"en-US","message":"{n, number, ::currency/US}","values":{"n":5},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
@@ -623,30 +623,30 @@
 {"id":"num-sk-uw-5","locale":"en-US","message":"{n, number, ::unit/meter unit-width-iso-code}","values":{"n":5},"icu":"5 meters"}
 {"id":"num-sk-uw-6","locale":"zh-TW","message":"{n, number, ::currency/TWD unit-width-formal}","values":{"n":5},"icu":"NT$5.00","differs":"intl-cannot"}
 {"id":"num-sk-uw-7","locale":"tr-TR","message":"{n, number, ::currency/TRY unit-width-variant}","values":{"n":5},"icu":"TL 5,00","differs":"intl-cannot"}
-{"id":"num-sk-pi-1","locale":"en-US","message":"{n, number, ::precision-integer}","values":{"n":2.5},"icu":"2","differs":"intl-rounding"}
-{"id":"num-sk-pi-2","locale":"de-DE","message":"{n, number, ::precision-integer}","values":{"n":1234.5},"icu":"1.234","differs":"intl-rounding"}
+{"id":"num-sk-pi-1","locale":"en-US","message":"{n, number, ::precision-integer}","values":{"n":2.5},"ours":"3","icu":"2","differs":"intl-rounding"}
+{"id":"num-sk-pi-2","locale":"de-DE","message":"{n, number, ::precision-integer}","values":{"n":1234.5},"ours":"1.235","icu":"1.234","differs":"intl-rounding"}
 {"id":"num-sk-pi-3","locale":"en-US","message":"{n, number, ::precision-integer/@@@*}","values":{"n":1.5},"icu":"1.5"}
 {"id":"num-sk-un-1","locale":"en-US","message":"{n, number, ::precision-unlimited}","values":{"n":0.1234567890123},"icu":"0.1234567890123"}
 {"id":"num-sk-un-2","locale":"en-US","message":"{n, number, ::precision-unlimited}","values":{"n":1e-07},"icu":"0.0000001"}
 {"id":"num-sk-un-3","locale":"en-US","message":"{n, number, ::precision-unlimited/x}","values":{"n":1.5},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
 {"id":"num-sk-inc-1","locale":"en-US","message":"{n, number, ::precision-increment/0.05}","values":{"n":1.234},"icu":"1.25"}
-{"id":"num-sk-inc-2","locale":"en-US","message":"{n, number, ::precision-increment/0.05}","values":{"n":1.225},"icu":"1.20","differs":"intl-rounding"}
+{"id":"num-sk-inc-2","locale":"en-US","message":"{n, number, ::precision-increment/0.05}","values":{"n":1.225},"ours":"1.25","icu":"1.20","differs":"intl-rounding"}
 {"id":"num-sk-inc-3","locale":"de-DE","message":"{n, number, ::precision-increment/0.5}","values":{"n":-2.75},"icu":"-3,0"}
 {"id":"num-sk-inc-4","locale":"en-US","message":"{n, number, ::precision-increment/0.3}","values":{"n":1},"icu":"0.9","differs":"intl-cannot"}
 {"id":"num-sk-inc-5","locale":"en-US","message":"{n, number, ::precision-increment/abc}","values":{"n":1},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
 {"id":"num-sk-pc-1","locale":"de-CH","message":"{n, number, ::currency/CHF precision-currency-cash}","values":{"n":1.03},"icu":"CHF 1.05","differs":"intl-cannot"}
-{"id":"num-sk-pc-2","locale":"en-US","message":"{n, number, ::precision-currency-standard}","values":{"n":1.23456},"icu":"1.23","differs":"precision-currency"}
+{"id":"num-sk-pc-2","locale":"en-US","message":"{n, number, ::precision-currency-standard}","values":{"n":1.23456},"ours":"1.235","icu":"1.23","differs":"precision-currency"}
 {"id":"num-sk-pc-3","locale":"en-US","message":"{n, number, ::currency/USD precision-currency-standard/w}","values":{"n":5},"icu":"$5"}
 {"id":"num-sk-fr-1","locale":"en-US","message":"{n, number, ::.00*}","values":{"n":1.23456},"icu":"1.23456"}
-{"id":"num-sk-fr-2","locale":"en-US","message":"{n, number, ::.0#}","values":{"n":1.125},"icu":"1.12","differs":"intl-rounding"}
+{"id":"num-sk-fr-2","locale":"en-US","message":"{n, number, ::.0#}","values":{"n":1.125},"ours":"1.13","icu":"1.12","differs":"intl-rounding"}
 {"id":"num-sk-fr-3","locale":"ar-EG","message":"{n, number, ::.00}","values":{"n":1234567.891},"icu":"١٬٢٣٤٬٥٦٧٫٨٩"}
 {"id":"num-sk-fr-4","locale":"en-US","message":"{n, number, ::.#0}","values":{"n":1.5},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
 {"id":"num-sk-fs-1","locale":"en-US","message":"{n, number, ::.##/@@@*}","values":{"n":1.2},"icu":"1.2"}
-{"id":"num-sk-fs-2","locale":"en-US","message":"{n, number, ::.00/@##}","values":{"n":1234.5},"icu":"1,230.00","differs":"fraction-significant"}
+{"id":"num-sk-fs-2","locale":"en-US","message":"{n, number, ::.00/@##}","values":{"n":1234.5},"ours":"1,230","icu":"1,230.00","differs":"fraction-significant"}
 {"id":"num-sk-fs-3","locale":"en-US","message":"{n, number, ::.00/@##s}","values":{"n":1234.5},"icu":"1,230"}
 {"id":"num-sk-fs-5","locale":"en-US","message":"{n, number, ::.00/@@#}","values":{"n":1.2},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
 {"id":"num-sk-sig-2","locale":"en-US","message":"{n, number, ::@@@*}","values":{"n":1.5},"icu":"1.50"}
-{"id":"num-sk-sig-3","locale":"en-US","message":"{n, number, ::@@}","values":{"n":1.25},"icu":"1.2","differs":"intl-rounding"}
+{"id":"num-sk-sig-3","locale":"en-US","message":"{n, number, ::@@}","values":{"n":1.25},"ours":"1.3","icu":"1.2","differs":"intl-rounding"}
 {"id":"num-sk-sig-4","locale":"en-US","message":"{n, number, ::@@@@@@@@@@@@@@@@@@@@@@}","values":{"n":1.5},"icu":"1.500000000000000000000","differs":"intl-cannot"}
 {"id":"num-sk-sig-5","locale":"en-US","message":"{n, number, ::@#@}","values":{"n":1.5},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
 {"id":"num-sk-tz-2","locale":"en-US","message":"{n, number, ::@@@/w}","values":{"n":5},"icu":"5"}
@@ -663,7 +663,7 @@
 {"id":"num-sk-rm-6","locale":"en-US","message":"{n, number, ::.0 rounding-mode-half-floor}","values":{"n":1.25},"icu":"1.2"}
 {"id":"num-sk-rm-8","locale":"en-US","message":"{n, number, ::.0 rounding-mode-unnecessary}","values":{"n":1.25},"icu":"U_FORMAT_INEXACT_ERROR","rejects":true}
 {"id":"num-sk-rm-9","locale":"en-US","message":"{n, number, ::.0 rounding-mode-unnecessary}","values":{"n":1.5},"icu":"1.5","differs":"intl-cannot"}
-{"id":"num-sk-rm-10","locale":"fr-FR","message":"{n, number, ::rounding-mode-half-up}","values":{"n":0.0625},"icu":"0,0625","differs":"intl-digits"}
+{"id":"num-sk-rm-10","locale":"fr-FR","message":"{n, number, ::rounding-mode-half-up}","values":{"n":0.0625},"ours":"0,063","icu":"0,0625","differs":"intl-digits"}
 {"id":"num-sk-iw-2","locale":"en-US","message":"{n, number, ::integer-width/##0}","values":{"n":12345},"icu":"345","differs":"intl-cannot"}
 {"id":"num-sk-iw-3","locale":"en-US","message":"{n, number, ::integer-width/00}","values":{"n":5},"icu":"05","differs":"intl-cannot"}
 {"id":"num-sk-iw-4","locale":"en-US","message":"{n, number, ::integer-width/*}","values":{"n":0.5},"icu":".5","differs":"intl-cannot"}
@@ -678,7 +678,7 @@
 {"id":"num-sk-sc-2","locale":"en-US","message":"{n, number, ::scale/0.5}","values":{"n":3},"icu":"1.5"}
 {"id":"num-sk-sc-3","locale":"en-US","message":"{n, number, ::scale/0.1 precision-unlimited}","values":{"n":3},"icu":"0.3"}
 {"id":"num-sk-sc-4","locale":"en-US","message":"{n, number, ::scale/abc}","values":{"n":5},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
-{"id":"num-sk-sc-5","locale":"en-US","message":"{n, number, ::scale/1e400}","values":{"n":1},"icu":"10,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000","differs":"intl-range"}
+{"id":"num-sk-sc-5","locale":"en-US","message":"{n, number, ::scale/1e400}","values":{"n":1},"ours":"∞","icu":"10,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000","differs":"intl-range"}
 {"id":"num-sk-gr-1","locale":"de-DE","message":"{n, number, ::group-off}","values":{"n":1234567},"icu":"1234567"}
 {"id":"num-sk-gr-2","locale":"en-US","message":"{n, number, ::group-min2}","values":{"n":1234},"icu":"1234"}
 {"id":"num-sk-gr-3","locale":"en-IN","message":"{n, number, ::,?}","values":{"n":123456},"icu":"1,23,456"}
@@ -692,7 +692,7 @@
 {"id":"num-sk-ns-1","locale":"en-US","message":"{n, number, ::numbering-system/arab}","values":{"n":1234.5},"icu":"١٬٢٣٤٫٥"}
 {"id":"num-sk-ns-2","locale":"hi-IN","message":"{n, number, ::numbering-system/deva}","values":{"n":1234567.5},"icu":"१२,३४,५६७.५"}
 {"id":"num-sk-ns-3","locale":"ja-JP","message":"{n, number, ::numbering-system/hanidec}","values":{"n":1234.5},"icu":"一,二三四.五"}
-{"id":"num-sk-ns-4","locale":"en-US","message":"{n, number, ::numbering-system/bogus}","values":{"n":1234.5},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true,"differs":"numbering-system"}
+{"id":"num-sk-ns-4","locale":"en-US","message":"{n, number, ::numbering-system/bogus}","values":{"n":1234.5},"ours":"1,234.5","icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true,"differs":"numbering-system"}
 {"id":"num-sk-sg-1","locale":"de-DE","message":"{n, number, ::sign-accounting currency/EUR}","values":{"n":-5},"icu":"-5,00 €"}
 {"id":"num-sk-sg-2","locale":"ja-JP","message":"{n, number, ::() currency/USD}","values":{"n":-5},"icu":"($5.00)"}
 {"id":"num-sk-sg-3","locale":"en-US","message":"{n, number, ::+- .}","values":{"n":-0.4},"icu":"0"}
@@ -706,12 +706,12 @@
 {"id":"num-sk-mix-3","locale":"de-DE","message":"{n, number, ::%x100 .0 +!}","values":{"n":0.12345},"icu":"+12,3 %"}
 {"id":"num-sk-mix-4","locale":"ar-EG","message":"{n, number, ::scientific .00 latin}","values":{"n":1234567},"icu":"1.23E6"}
 {"id":"num-sk-mix-7","locale":"en-US","message":"{n, number, ::measure-unit/length-meter percent}","values":{"n":5},"icu":"U_NUMBER_SKELETON_SYNTAX_ERROR","rejects":true}
-{"id":"num-none-1","locale":"en-US","message":"{n}","values":{"n":1234.5},"icu":"1,234.5","differs":"plain-value"}
-{"id":"num-none-2","locale":"de-DE","message":"{n}","values":{"n":1234.5},"icu":"1.234,5","differs":"plain-value"}
-{"id":"num-none-3","locale":"ar-EG","message":"{n}","values":{"n":{"$int":"9007199254740993"}},"icu":"٩٬٠٠٧٬١٩٩٬٢٥٤٬٧٤٠٬٩٩٣","differs":"plain-value"}
-{"id":"num-sk-dp-1","locale":"en-US","message":"{n, number, ::sign-auto}","values":{"n":1.2345678},"icu":"1.234568","differs":"intl-digits"}
-{"id":"num-sk-dp-2","locale":"de-DE","message":"{n, number, ::latin}","values":{"n":0.0625},"icu":"0,0625","differs":"intl-digits"}
-{"id":"num-sk-dp-3","locale":"en-US","message":"{n, number, ::unit/meter}","values":{"n":1.23456},"icu":"1.23456 m","differs":"intl-digits"}
+{"id":"num-none-1","locale":"en-US","message":"{n}","values":{"n":1234.5},"ours":"1234.5","icu":"1,234.5","differs":"plain-value"}
+{"id":"num-none-2","locale":"de-DE","message":"{n}","values":{"n":1234.5},"ours":"1234.5","icu":"1.234,5","differs":"plain-value"}
+{"id":"num-none-3","locale":"ar-EG","message":"{n}","values":{"n":{"$int":"9007199254740993"}},"ours":"9007199254740993","icu":"٩٬٠٠٧٬١٩٩٬٢٥٤٬٧٤٠٬٩٩٣","differs":"plain-value"}
+{"id":"num-sk-dp-1","locale":"en-US","message":"{n, number, ::sign-auto}","values":{"n":1.2345678},"ours":"1.235","icu":"1.234568","differs":"intl-digits"}
+{"id":"num-sk-dp-2","locale":"de-DE","message":"{n, number, ::latin}","values":{"n":0.0625},"ours":"0,063","icu":"0,0625","differs":"intl-digits"}
+{"id":"num-sk-dp-3","locale":"en-US","message":"{n, number, ::unit/meter}","values":{"n":1.23456},"ours":"1.235 m","icu":"1.23456 m","differs":"intl-digits"}
 {"id":"num-spell-1","locale":"en-US","message":"{n, spellout}","values":{"n":1234},"icu":"one thousand two hundred thirty-four","differs":"rule-based"}
 {"id":"num-spell-2","locale":"de-DE","message":"{n, spellout}","values":{"n":134},"icu":"ein­hundert­vier­und­dreißig","differs":"rule-based"}
 {"id":"num-spell-3","locale":"fr-FR","message":"{n, spellout}","values":{"n":-21.5},"icu":"moins vingt-et-un virgule cinq","differs":"rule-based"}
@@ -824,26 +824,26 @@
 {"id":"dt-num-3","locale":"en-US","message":"{d, date, ::yMMMd}","values":{"d":-86400000},"icu":"Dec 31, 1969"}
 {"id":"dt-num-4","locale":"en-US","message":"{d, date}","values":{"d":{"$int":"1588807805123"}},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true}
 {"id":"dt-str-1","locale":"en-US","message":"{d, date}","values":{"d":"2020-05-06"},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true}
-{"id":"dt-str-2","locale":"en-US","message":"{d, date}","values":{"d":"1588807805123"},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
-{"id":"dt-str-3","locale":"en-US","message":"{d, time, short}","values":{"d":""},"icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"dt-str-2","locale":"en-US","message":"{d, date}","values":{"d":"1588807805123"},"ours":"May 6, 2020","icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"dt-str-3","locale":"en-US","message":"{d, time, short}","values":{"d":""},"ours":"12:00 AM","icu":"U_ILLEGAL_ARGUMENT_ERROR","rejects":true,"differs":"value-type"}
 {"id":"dt-nan-1","locale":"en-US","message":"{d, date}","values":{"d":{"$date":"invalid"}},"icu":"","differs":"invalid-date"}
 {"id":"dt-nan-2","locale":"en-US","message":"{d, date, ::yMMMd}","values":{"d":{"$date":"invalid"}},"icu":"","differs":"invalid-date"}
 {"id":"dt-nan-3","locale":"en-US","message":"{d, time, HH:mm}","values":{"d":{"$date":"invalid"}},"icu":"","differs":"pattern"}
-{"id":"dt-rng-1","locale":"en-US","message":"{d, date, ::GyMMMd}","values":{"d":{"$date":"-000044-03-15T12:00:00Z"}},"icu":"Mar 17, 45 BC","differs":"intl-calendar"}
-{"id":"dt-rng-2","locale":"en-US","message":"{d, date, ::GyMMMd}","values":{"d":{"$date":"1582-10-14T12:00:00Z"}},"icu":"Oct 4, 1582 AD","differs":"intl-calendar"}
+{"id":"dt-rng-1","locale":"en-US","message":"{d, date, ::GyMMMd}","values":{"d":{"$date":"-000044-03-15T12:00:00Z"}},"ours":"Mar 15, 45 BC","icu":"Mar 17, 45 BC","differs":"intl-calendar"}
+{"id":"dt-rng-2","locale":"en-US","message":"{d, date, ::GyMMMd}","values":{"d":{"$date":"1582-10-14T12:00:00Z"}},"ours":"Oct 14, 1582 AD","icu":"Oct 4, 1582 AD","differs":"intl-calendar"}
 {"id":"dt-rng-3","locale":"en-US","message":"{d, date, ::GyMMMd}","values":{"d":{"$date":"1582-10-15T12:00:00Z"}},"icu":"Oct 15, 1582 AD"}
-{"id":"dt-rng-4","locale":"en-US","message":"{d, date, ::GyMMMd}","values":{"d":{"$date":"0000-12-31T12:00:00Z"}},"icu":"Jan 2, 1 AD","differs":"intl-calendar"}
+{"id":"dt-rng-4","locale":"en-US","message":"{d, date, ::GyMMMd}","values":{"d":{"$date":"0000-12-31T12:00:00Z"}},"ours":"Dec 31, 1 BC","icu":"Jan 2, 1 AD","differs":"intl-calendar"}
 {"id":"dt-rng-5","locale":"en-US","message":"{d, date, ::GyMMMd}","values":{"d":{"$date":"+275760-09-13T00:00:00Z"}},"icu":"Sep 13, 275760 AD"}
-{"id":"dt-rng-6","locale":"en-US","message":"{d, date, full}","values":{"d":{"$date":"-000044-03-15T12:00:00Z"}},"icu":"Thursday, March 17, 45","differs":"intl-calendar"}
-{"id":"dt-none-1","locale":"en-US","message":"{d}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"5/6/20, 11:30 PM","differs":"plain-value"}
-{"id":"dt-none-2","locale":"de-DE","message":"{d}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"06.05.20, 23:30","differs":"plain-value"}
-{"id":"dt-none-3","locale":"ja-JP","message":"{d}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"2020/05/06 23:30","differs":"plain-value"}
-{"id":"dt-G-1","locale":"en-US","message":"{d, date, ::GGGGyMMMMd}","values":{"d":{"$date":"-000044-03-15T12:00:00Z"}},"icu":"March 17, 45 Before Christ","differs":"intl-calendar"}
-{"id":"dt-G-2","locale":"de-DE","message":"{d, date, ::GyMMMd}","values":{"d":{"$date":"-000044-03-15T12:00:00Z"}},"icu":"17. März 45 v. Chr.","differs":"intl-calendar"}
+{"id":"dt-rng-6","locale":"en-US","message":"{d, date, full}","values":{"d":{"$date":"-000044-03-15T12:00:00Z"}},"ours":"Thursday, March 15, 45","icu":"Thursday, March 17, 45","differs":"intl-calendar"}
+{"id":"dt-none-1","locale":"en-US","message":"{d}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"Wed May 06 2020 23:30:05 GMT+0000 (Coordinated Universal Time)","icu":"5/6/20, 11:30 PM","differs":"plain-value"}
+{"id":"dt-none-2","locale":"de-DE","message":"{d}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"Wed May 06 2020 23:30:05 GMT+0000 (Coordinated Universal Time)","icu":"06.05.20, 23:30","differs":"plain-value"}
+{"id":"dt-none-3","locale":"ja-JP","message":"{d}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"Wed May 06 2020 23:30:05 GMT+0000 (Coordinated Universal Time)","icu":"2020/05/06 23:30","differs":"plain-value"}
+{"id":"dt-G-1","locale":"en-US","message":"{d, date, ::GGGGyMMMMd}","values":{"d":{"$date":"-000044-03-15T12:00:00Z"}},"ours":"March 15, 45 Before Christ","icu":"March 17, 45 Before Christ","differs":"intl-calendar"}
+{"id":"dt-G-2","locale":"de-DE","message":"{d, date, ::GyMMMd}","values":{"d":{"$date":"-000044-03-15T12:00:00Z"}},"ours":"15. März 45 v. Chr.","icu":"17. März 45 v. Chr.","differs":"intl-calendar"}
 {"id":"dt-G-3","locale":"ja-JP-u-ca-japanese","message":"{d, date, ::GGGGGyMd}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"R2/5/6"}
 {"id":"dt-G-4","locale":"en-US","message":"{d, date, G GGGG GGGGG}","values":{"d":{"$date":"-000044-03-15T12:00:00Z"}},"icu":" BC Before Christ B","differs":"pattern"}
 {"id":"dt-y-1","locale":"en-US","message":"{d, date, ::yyyyy}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"02020","differs":"intl-cannot"}
-{"id":"dt-y-2","locale":"en-US","message":"{d, date, ::yyyy}","values":{"d":{"$date":"0012-03-04T00:00:00Z"}},"icu":"0012","differs":"intl-year"}
+{"id":"dt-y-2","locale":"en-US","message":"{d, date, ::yyyy}","values":{"d":{"$date":"0012-03-04T00:00:00Z"}},"ours":"12","icu":"0012","differs":"intl-year"}
 {"id":"dt-y-3","locale":"en-US","message":"{d, date, y|yy|yyy|yyyy|yyyyy}","values":{"d":{"$date":"0012-03-04T00:00:00Z"}},"icu":" 12|12|012|0012|00012","differs":"pattern"}
 {"id":"dt-Y-1","locale":"en-US","message":"{d, date, ::Y}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"2021","differs":"intl-cannot"}
 {"id":"dt-Y-2","locale":"de-DE","message":"{d, date, ::Yw}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"","differs":"intl-cannot"}
@@ -919,9 +919,9 @@
 {"id":"dt-B-3","locale":"zh-CN","message":"{d, time, ::Bhm}","values":{"d":{"$date":"2020-05-06T09:15:00Z"}},"icu":"上午9:15"}
 {"id":"dt-B-4","locale":"de-DE","message":"{d, time, ::hmB}","values":{"d":{"$date":"2020-05-06T09:15:00Z"}},"icu":"9:15 morgens"}
 {"id":"dt-B-5","locale":"en-US","message":"{d, time, h:mm BBBB}","values":{"d":{"$date":"2020-05-06T12:00:00Z"}},"icu":" 12:00 noon","differs":"pattern"}
-{"id":"dt-B-6","locale":"en-US","message":"{d, time, ::jB}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"11 PM","differs":"day-period"}
+{"id":"dt-B-6","locale":"en-US","message":"{d, time, ::jB}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"11 at night","icu":"11 PM","differs":"day-period"}
 {"id":"dt-h-1","locale":"en-US","message":"{d, time, ::hm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"3:04 AM"}
-{"id":"dt-h-2","locale":"en-US","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"3:04 AM","differs":"hour-width"}
+{"id":"dt-h-2","locale":"en-US","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"ours":"03:04 AM","icu":"3:04 AM","differs":"hour-width"}
 {"id":"dt-h-3","locale":"en-GB","message":"{d, time, ::hm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"3:04 am"}
 {"id":"dt-h-4","locale":"ja-JP","message":"{d, time, ::hm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"午前3:04"}
 {"id":"dt-h-5","locale":"en-US","message":"{d, time, hh:mm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":" 03:04","differs":"pattern"}
@@ -938,7 +938,7 @@
 {"id":"dt-j-2","locale":"de-DE","message":"{d, time, ::jm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"03:04"}
 {"id":"dt-j-3","locale":"ko-KR","message":"{d, time, ::jm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"오전 3:04"}
 {"id":"dt-j-4","locale":"zh-CN","message":"{d, time, ::jm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"03:04"}
-{"id":"dt-j-5","locale":"en-US","message":"{d, time, ::jjjjm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"3:04 AM","differs":"hour-width"}
+{"id":"dt-j-5","locale":"en-US","message":"{d, time, ::jjjjm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"ours":"03:04 AM","icu":"3:04 AM","differs":"hour-width"}
 {"id":"dt-j-6","locale":"en-US","message":"{d, time, ::jjjjjm}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"3:04 a","differs":"intl-cannot"}
 {"id":"dt-j-7","locale":"en-US","message":"{d, time, j}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":" ","differs":"pattern"}
 {"id":"dt-J-1","locale":"en-US","message":"{d, time, ::Jm}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"11:30","differs":"intl-cannot"}
@@ -955,6 +955,11 @@
 {"id":"dt-s-1","locale":"en-US","message":"{d, time, ::ss}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"5"}
 {"id":"dt-s-2","locale":"en-US","message":"{d, time, ::Hmss}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"03:04:05"}
 {"id":"dt-s-3","locale":"en-US","message":"{d, time, s|ss}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":" 5|05","differs":"pattern"}
+{"id":"dt-s-4","locale":"en-GB","message":"{d, time, ::HHss}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"03 (second: 5)"}
+{"id":"dt-s-5","locale":"de-DE","message":"{d, time, ::jjss}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"03 Uhr (Sekunde: 5)"}
+{"id":"dt-s-6","locale":"en-GB","message":"{d, time, ::Hss}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"03 (second: 5)"}
+{"id":"dt-s-7","locale":"ko-KR","message":"{d, time, ::HHmss}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"03:04:05"}
+{"id":"dt-s-8","locale":"en-GB","message":"{d, time, ::kkss}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"ours":"03 (second: 5)","icu":"5 (hour: 03)","differs":"hour-second"}
 {"id":"dt-S-1","locale":"en-US","message":"{d, time, ::HmsSSS}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"03:04:05.006"}
 {"id":"dt-S-2","locale":"en-US","message":"{d, time, ::HmsSSSSS}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":"03:04:05.00600","differs":"intl-cannot"}
 {"id":"dt-S-3","locale":"en-US","message":"{d, time, ss.SSSS}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":" 05.0060","differs":"pattern"}
@@ -962,14 +967,14 @@
 {"id":"dt-A-1","locale":"en-US","message":"{d, time, ::A}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"84605123","differs":"intl-cannot"}
 {"id":"dt-A-2","locale":"en-US","message":"{d, time, A}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":" 11045006","differs":"pattern"}
 {"id":"dt-A-3","locale":"en-US","message":"{d, time, AAAAAAAAA}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"icu":" 011045006","differs":"pattern"}
-{"id":"dt-z-1","locale":"en-US","message":"{d, time, ::z}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"UTC","differs":"intl-lone-field"}
+{"id":"dt-z-1","locale":"en-US","message":"{d, time, ::z}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"5/6/2020, UTC","icu":"UTC","differs":"intl-lone-field"}
 {"id":"dt-z-2","locale":"de-DE","message":"{d, time, ::Hmz}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"23:30 UTC"}
 {"id":"dt-z-3","locale":"ja-JP","message":"{d, time, zzzz}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":" 協定世界時","differs":"pattern"}
 {"id":"dt-z-4","locale":"fr-FR","message":"{d, time, ::Hmzzzz}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"23:30 temps universel coordonné"}
 {"id":"dt-Z-1","locale":"en-US","message":"{d, time, ::Z}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"+0000","differs":"intl-cannot"}
 {"id":"dt-Z-2","locale":"en-US","message":"{d, time, Z|ZZZZ|ZZZZZ}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":" +0000|GMT+00:00|Z","differs":"pattern"}
 {"id":"dt-Z-3","locale":"en-US","message":"{d, time, ::HmZZZZ}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"23:30 GMT+00:00","differs":"intl-cannot"}
-{"id":"dt-O-1","locale":"en-US","message":"{d, time, ::O}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"GMT+0","differs":"intl-lone-field"}
+{"id":"dt-O-1","locale":"en-US","message":"{d, time, ::O}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"ours":"5/6/2020, GMT+0","icu":"GMT+0","differs":"intl-lone-field"}
 {"id":"dt-O-2","locale":"de-DE","message":"{d, time, ::HmO}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"23:30 GMT+0"}
 {"id":"dt-O-3","locale":"fr-FR","message":"{d, time, OOOO}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":" UTC+00:00","differs":"pattern"}
 {"id":"dt-v-1","locale":"en-US","message":"{d, time, ::Hmvvvv}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"23:30 GMT+00:00"}
@@ -992,7 +997,7 @@
 {"id":"hr-en-US-0030-km","locale":"en-US","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-en-US-0030-jm","locale":"en-US","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12:30 AM"}
 {"id":"hr-en-US-1305-hm","locale":"en-US","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
-{"id":"hr-en-US-1305-hhmm","locale":"en-US","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM","differs":"hour-width"}
+{"id":"hr-en-US-1305-hhmm","locale":"en-US","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 PM","icu":"1:05 PM","differs":"hour-width"}
 {"id":"hr-en-US-1305-Hm","locale":"en-US","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-en-US-1305-HHmm","locale":"en-US","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-en-US-1305-Km","locale":"en-US","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
@@ -1006,7 +1011,7 @@
 {"id":"hr-en-GB-0030-km","locale":"en-GB","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-en-GB-0030-jm","locale":"en-GB","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-en-GB-1305-hm","locale":"en-GB","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 pm"}
-{"id":"hr-en-GB-1305-hhmm","locale":"en-GB","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 pm","differs":"hour-width"}
+{"id":"hr-en-GB-1305-hhmm","locale":"en-GB","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 pm","icu":"1:05 pm","differs":"hour-width"}
 {"id":"hr-en-GB-1305-Hm","locale":"en-GB","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-en-GB-1305-HHmm","locale":"en-GB","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-en-GB-1305-Km","locale":"en-GB","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 pm"}
@@ -1020,7 +1025,7 @@
 {"id":"hr-de-DE-0030-km","locale":"de-DE","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-de-DE-0030-jm","locale":"de-DE","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-de-DE-1305-hm","locale":"de-DE","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
-{"id":"hr-de-DE-1305-hhmm","locale":"de-DE","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM","differs":"hour-width"}
+{"id":"hr-de-DE-1305-hhmm","locale":"de-DE","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 PM","icu":"1:05 PM","differs":"hour-width"}
 {"id":"hr-de-DE-1305-Hm","locale":"de-DE","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-de-DE-1305-HHmm","locale":"de-DE","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-de-DE-1305-Km","locale":"de-DE","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
@@ -1034,21 +1039,21 @@
 {"id":"hr-fr-FR-0030-km","locale":"fr-FR","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-fr-FR-0030-jm","locale":"fr-FR","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-fr-FR-1305-hm","locale":"fr-FR","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
-{"id":"hr-fr-FR-1305-hhmm","locale":"fr-FR","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM","differs":"hour-width"}
+{"id":"hr-fr-FR-1305-hhmm","locale":"fr-FR","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 PM","icu":"1:05 PM","differs":"hour-width"}
 {"id":"hr-fr-FR-1305-Hm","locale":"fr-FR","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-fr-FR-1305-HHmm","locale":"fr-FR","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-fr-FR-1305-Km","locale":"fr-FR","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
 {"id":"hr-fr-FR-1305-km","locale":"fr-FR","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-fr-FR-1305-jm","locale":"fr-FR","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-ja-JP-0030-hm","locale":"ja-JP","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"午前0:30"}
-{"id":"hr-ja-JP-0030-hhmm","locale":"ja-JP","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"午前0:30","differs":"hour-width"}
+{"id":"hr-ja-JP-0030-hhmm","locale":"ja-JP","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"ours":"午前00:30","icu":"午前0:30","differs":"hour-width"}
 {"id":"hr-ja-JP-0030-Hm","locale":"ja-JP","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30"}
-{"id":"hr-ja-JP-0030-HHmm","locale":"ja-JP","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30","differs":"hour-width"}
+{"id":"hr-ja-JP-0030-HHmm","locale":"ja-JP","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"ours":"00:30","icu":"0:30","differs":"hour-width"}
 {"id":"hr-ja-JP-0030-Km","locale":"ja-JP","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"午前0:30"}
 {"id":"hr-ja-JP-0030-km","locale":"ja-JP","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30"}
 {"id":"hr-ja-JP-0030-jm","locale":"ja-JP","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30"}
 {"id":"hr-ja-JP-1305-hm","locale":"ja-JP","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"午後1:05"}
-{"id":"hr-ja-JP-1305-hhmm","locale":"ja-JP","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"午後1:05","differs":"hour-width"}
+{"id":"hr-ja-JP-1305-hhmm","locale":"ja-JP","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"午後01:05","icu":"午後1:05","differs":"hour-width"}
 {"id":"hr-ja-JP-1305-Hm","locale":"ja-JP","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-ja-JP-1305-HHmm","locale":"ja-JP","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-ja-JP-1305-Km","locale":"ja-JP","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"午後1:05"}
@@ -1062,7 +1067,7 @@
 {"id":"hr-ko-KR-0030-km","locale":"ko-KR","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-ko-KR-0030-jm","locale":"ko-KR","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"오전 12:30"}
 {"id":"hr-ko-KR-1305-hm","locale":"ko-KR","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"오후 1:05"}
-{"id":"hr-ko-KR-1305-hhmm","locale":"ko-KR","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"오후 1:05","differs":"hour-width"}
+{"id":"hr-ko-KR-1305-hhmm","locale":"ko-KR","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"오후 01:05","icu":"오후 1:05","differs":"hour-width"}
 {"id":"hr-ko-KR-1305-Hm","locale":"ko-KR","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-ko-KR-1305-HHmm","locale":"ko-KR","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-ko-KR-1305-Km","locale":"ko-KR","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"오후 1:05"}
@@ -1076,7 +1081,7 @@
 {"id":"hr-zh-CN-0030-km","locale":"zh-CN","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-zh-CN-0030-jm","locale":"zh-CN","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-zh-CN-1305-hm","locale":"zh-CN","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"下午1:05"}
-{"id":"hr-zh-CN-1305-hhmm","locale":"zh-CN","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"下午1:05","differs":"hour-width"}
+{"id":"hr-zh-CN-1305-hhmm","locale":"zh-CN","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"下午01:05","icu":"下午1:05","differs":"hour-width"}
 {"id":"hr-zh-CN-1305-Hm","locale":"zh-CN","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-zh-CN-1305-HHmm","locale":"zh-CN","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-zh-CN-1305-Km","locale":"zh-CN","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"下午1:05"}
@@ -1090,7 +1095,7 @@
 {"id":"hr-ar-EG-0030-km","locale":"ar-EG","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"٠٠:٣٠"}
 {"id":"hr-ar-EG-0030-jm","locale":"ar-EG","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"١٢:٣٠ ص"}
 {"id":"hr-ar-EG-1305-hm","locale":"ar-EG","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"١:٠٥ م"}
-{"id":"hr-ar-EG-1305-hhmm","locale":"ar-EG","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"١:٠٥ م","differs":"hour-width"}
+{"id":"hr-ar-EG-1305-hhmm","locale":"ar-EG","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"٠١:٠٥ م","icu":"١:٠٥ م","differs":"hour-width"}
 {"id":"hr-ar-EG-1305-Hm","locale":"ar-EG","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"١٣:٠٥"}
 {"id":"hr-ar-EG-1305-HHmm","locale":"ar-EG","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"١٣:٠٥"}
 {"id":"hr-ar-EG-1305-Km","locale":"ar-EG","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"١:٠٥ م"}
@@ -1104,7 +1109,7 @@
 {"id":"hr-hi-IN-0030-km","locale":"hi-IN","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-hi-IN-0030-jm","locale":"hi-IN","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12:30 am"}
 {"id":"hr-hi-IN-1305-hm","locale":"hi-IN","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 pm"}
-{"id":"hr-hi-IN-1305-hhmm","locale":"hi-IN","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 pm","differs":"hour-width"}
+{"id":"hr-hi-IN-1305-hhmm","locale":"hi-IN","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 pm","icu":"1:05 pm","differs":"hour-width"}
 {"id":"hr-hi-IN-1305-Hm","locale":"hi-IN","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-hi-IN-1305-HHmm","locale":"hi-IN","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-hi-IN-1305-Km","locale":"hi-IN","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 pm"}
@@ -1113,12 +1118,12 @@
 {"id":"hr-es-ES-0030-hm","locale":"es-ES","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12:30 a. m."}
 {"id":"hr-es-ES-0030-hhmm","locale":"es-ES","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12:30 a. m."}
 {"id":"hr-es-ES-0030-Hm","locale":"es-ES","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30"}
-{"id":"hr-es-ES-0030-HHmm","locale":"es-ES","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30","differs":"hour-width"}
+{"id":"hr-es-ES-0030-HHmm","locale":"es-ES","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"ours":"00:30","icu":"0:30","differs":"hour-width"}
 {"id":"hr-es-ES-0030-Km","locale":"es-ES","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12:30 a. m."}
 {"id":"hr-es-ES-0030-km","locale":"es-ES","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30"}
 {"id":"hr-es-ES-0030-jm","locale":"es-ES","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30"}
 {"id":"hr-es-ES-1305-hm","locale":"es-ES","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 p. m."}
-{"id":"hr-es-ES-1305-hhmm","locale":"es-ES","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 p. m.","differs":"hour-width"}
+{"id":"hr-es-ES-1305-hhmm","locale":"es-ES","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 p. m.","icu":"1:05 p. m.","differs":"hour-width"}
 {"id":"hr-es-ES-1305-Hm","locale":"es-ES","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-es-ES-1305-HHmm","locale":"es-ES","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-es-ES-1305-Km","locale":"es-ES","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 p. m."}
@@ -1132,7 +1137,7 @@
 {"id":"hr-pt-BR-0030-km","locale":"pt-BR","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-pt-BR-0030-jm","locale":"pt-BR","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-pt-BR-1305-hm","locale":"pt-BR","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
-{"id":"hr-pt-BR-1305-hhmm","locale":"pt-BR","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM","differs":"hour-width"}
+{"id":"hr-pt-BR-1305-hhmm","locale":"pt-BR","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 PM","icu":"1:05 PM","differs":"hour-width"}
 {"id":"hr-pt-BR-1305-Hm","locale":"pt-BR","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-pt-BR-1305-HHmm","locale":"pt-BR","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-pt-BR-1305-Km","locale":"pt-BR","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
@@ -1146,7 +1151,7 @@
 {"id":"hr-ru-RU-0030-km","locale":"ru-RU","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-ru-RU-0030-jm","locale":"ru-RU","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-ru-RU-1305-hm","locale":"ru-RU","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
-{"id":"hr-ru-RU-1305-hhmm","locale":"ru-RU","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM","differs":"hour-width"}
+{"id":"hr-ru-RU-1305-hhmm","locale":"ru-RU","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 PM","icu":"1:05 PM","differs":"hour-width"}
 {"id":"hr-ru-RU-1305-Hm","locale":"ru-RU","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-ru-RU-1305-HHmm","locale":"ru-RU","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-ru-RU-1305-Km","locale":"ru-RU","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
@@ -1155,12 +1160,12 @@
 {"id":"hr-he-IL-0030-hm","locale":"he-IL","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12:30 AM"}
 {"id":"hr-he-IL-0030-hhmm","locale":"he-IL","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12:30 AM"}
 {"id":"hr-he-IL-0030-Hm","locale":"he-IL","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30"}
-{"id":"hr-he-IL-0030-HHmm","locale":"he-IL","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30","differs":"hour-width"}
+{"id":"hr-he-IL-0030-HHmm","locale":"he-IL","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"ours":"00:30","icu":"0:30","differs":"hour-width"}
 {"id":"hr-he-IL-0030-Km","locale":"he-IL","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12:30 AM"}
 {"id":"hr-he-IL-0030-km","locale":"he-IL","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30"}
 {"id":"hr-he-IL-0030-jm","locale":"he-IL","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30"}
 {"id":"hr-he-IL-1305-hm","locale":"he-IL","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
-{"id":"hr-he-IL-1305-hhmm","locale":"he-IL","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM","differs":"hour-width"}
+{"id":"hr-he-IL-1305-hhmm","locale":"he-IL","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 PM","icu":"1:05 PM","differs":"hour-width"}
 {"id":"hr-he-IL-1305-Hm","locale":"he-IL","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-he-IL-1305-HHmm","locale":"he-IL","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-he-IL-1305-Km","locale":"he-IL","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
@@ -1174,7 +1179,7 @@
 {"id":"hr-th-TH-0030-km","locale":"th-TH","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-th-TH-0030-jm","locale":"th-TH","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-th-TH-1305-hm","locale":"th-TH","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
-{"id":"hr-th-TH-1305-hhmm","locale":"th-TH","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM","differs":"hour-width"}
+{"id":"hr-th-TH-1305-hhmm","locale":"th-TH","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 PM","icu":"1:05 PM","differs":"hour-width"}
 {"id":"hr-th-TH-1305-Hm","locale":"th-TH","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-th-TH-1305-HHmm","locale":"th-TH","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-th-TH-1305-Km","locale":"th-TH","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 PM"}
@@ -1183,12 +1188,12 @@
 {"id":"hr-fi-FI-0030-hm","locale":"fi-FI","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12.30 ap."}
 {"id":"hr-fi-FI-0030-hhmm","locale":"fi-FI","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12.30 ap."}
 {"id":"hr-fi-FI-0030-Hm","locale":"fi-FI","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0.30"}
-{"id":"hr-fi-FI-0030-HHmm","locale":"fi-FI","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0.30","differs":"hour-width"}
+{"id":"hr-fi-FI-0030-HHmm","locale":"fi-FI","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"ours":"00.30","icu":"0.30","differs":"hour-width"}
 {"id":"hr-fi-FI-0030-Km","locale":"fi-FI","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12.30 ap."}
 {"id":"hr-fi-FI-0030-km","locale":"fi-FI","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0.30"}
 {"id":"hr-fi-FI-0030-jm","locale":"fi-FI","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0.30"}
 {"id":"hr-fi-FI-1305-hm","locale":"fi-FI","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1.05 ip."}
-{"id":"hr-fi-FI-1305-hhmm","locale":"fi-FI","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1.05 ip.","differs":"hour-width"}
+{"id":"hr-fi-FI-1305-hhmm","locale":"fi-FI","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01.05 ip.","icu":"1.05 ip.","differs":"hour-width"}
 {"id":"hr-fi-FI-1305-Hm","locale":"fi-FI","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13.05"}
 {"id":"hr-fi-FI-1305-HHmm","locale":"fi-FI","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13.05"}
 {"id":"hr-fi-FI-1305-Km","locale":"fi-FI","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1.05 ip."}
@@ -1202,7 +1207,7 @@
 {"id":"hr-zh-TW-0030-km","locale":"zh-TW","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-zh-TW-0030-jm","locale":"zh-TW","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"上午12:30"}
 {"id":"hr-zh-TW-1305-hm","locale":"zh-TW","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"下午1:05"}
-{"id":"hr-zh-TW-1305-hhmm","locale":"zh-TW","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"下午1:05","differs":"hour-width"}
+{"id":"hr-zh-TW-1305-hhmm","locale":"zh-TW","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"下午01:05","icu":"下午1:05","differs":"hour-width"}
 {"id":"hr-zh-TW-1305-Hm","locale":"zh-TW","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-zh-TW-1305-HHmm","locale":"zh-TW","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-zh-TW-1305-Km","locale":"zh-TW","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"下午1:05"}
@@ -1216,7 +1221,7 @@
 {"id":"hr-bn-BD-0030-km","locale":"bn-BD","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"০০:৩০"}
 {"id":"hr-bn-BD-0030-jm","locale":"bn-BD","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"১২:৩০ AM"}
 {"id":"hr-bn-BD-1305-hm","locale":"bn-BD","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"১:০৫ PM"}
-{"id":"hr-bn-BD-1305-hhmm","locale":"bn-BD","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"১:০৫ PM","differs":"hour-width"}
+{"id":"hr-bn-BD-1305-hhmm","locale":"bn-BD","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"০১:০৫ PM","icu":"১:০৫ PM","differs":"hour-width"}
 {"id":"hr-bn-BD-1305-Hm","locale":"bn-BD","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"১৩:০৫"}
 {"id":"hr-bn-BD-1305-HHmm","locale":"bn-BD","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"১৩:০৫"}
 {"id":"hr-bn-BD-1305-Km","locale":"bn-BD","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"১:০৫ PM"}
@@ -1230,7 +1235,7 @@
 {"id":"hr-en-IN-0030-km","locale":"en-IN","message":"{d, time, ::km}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"00:30"}
 {"id":"hr-en-IN-0030-jm","locale":"en-IN","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"12:30 am"}
 {"id":"hr-en-IN-1305-hm","locale":"en-IN","message":"{d, time, ::hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 pm"}
-{"id":"hr-en-IN-1305-hhmm","locale":"en-IN","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 pm","differs":"hour-width"}
+{"id":"hr-en-IN-1305-hhmm","locale":"en-IN","message":"{d, time, ::hhmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"ours":"01:05 pm","icu":"1:05 pm","differs":"hour-width"}
 {"id":"hr-en-IN-1305-Hm","locale":"en-IN","message":"{d, time, ::Hm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-en-IN-1305-HHmm","locale":"en-IN","message":"{d, time, ::HHmm}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"13:05"}
 {"id":"hr-en-IN-1305-Km","locale":"en-IN","message":"{d, time, ::Km}","values":{"d":{"$date":"2020-05-06T13:05:00Z"}},"icu":"1:05 pm"}

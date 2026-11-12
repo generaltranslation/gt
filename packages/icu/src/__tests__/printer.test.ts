@@ -188,6 +188,7 @@ describe('printAST', () => {
     '{n, number, custom<a}',
     '{n, number, custom<a>}',
     "'}'<br/> done",
+    "'}'<br /> done",
     "'<x>'<br/>",
     "<a1/>''''",
   ])('preserves the AST through print and reparse for %j', (message) => {
@@ -216,6 +217,8 @@ describe('printAST', () => {
 
   it.each([
     ["'}'<br/> done", "'}'<br/> done"],
+    ["'}'<br /> done", "'}'<br /> done"],
+    ["'{'<br\t/>", "'{'<br\t/>"],
     ["'<x>'<br/>", "'<x>'<br/>"],
     ["<a1/>''''", "<a1/>'''"],
     ["'}'<a-é/> done", "'}'<a-é/> done"],

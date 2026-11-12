@@ -87,6 +87,11 @@ const NUMBER_RUNTIME_CASES = NUMBER_LOCALES.flatMap((locale) =>
   NUMBER_MESSAGES.flatMap((message) =>
     NUMBER_VALUES.map((value) => ({ locale, message, value }))
   )
+).filter(
+  // A scale moves the point of a numeric string, as ICU4C multiplies a
+  // decimal. FormatJS multiplies a double: see formatter.test.ts.
+  ({ message, value }) =>
+    !(message.includes('scale') && typeof value === 'string')
 );
 
 const DATE_VALUE = new Date('2020-05-06T14:03:02Z');

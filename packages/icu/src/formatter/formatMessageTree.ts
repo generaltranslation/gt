@@ -5,7 +5,11 @@
 
 import { intlCache } from '../cache/IntlCache';
 import { resolveLocale } from './locale';
-import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
+import {
+  DECIMAL_NUMBER,
+  FALLBACK_BRANCH_KEY,
+  isPluralCategoryKey,
+} from '../settings/syntax';
 import type { ExtendedNumberFormatOptions } from '../types-dir/ast';
 import type {
   MessageBranches,
@@ -325,12 +329,14 @@ function formatNodes<R>(
 /**
  * Beside an hour, Intl prints two digits for a minute or a second whichever
  * is asked for, but '2-digit' also drops the locale's own padding of the
- * hour: German `::jmm` would be 3:04, where ICU prints 03:04.
+ * hour: German `::jmm` would be 3:04, where ICU prints 03:04. A '2-digit'
+ * hour pads anyway, so it keeps the pattern, which is ICU's: `::HHss` is
+ * 03 (second: 5), not 5 (hour: 03).
  */
 function withLocaleHourPadding(
   options: Intl.DateTimeFormatOptions
 ): Intl.DateTimeFormatOptions {
-  if (options.hour === undefined) return options;
+  if (options.hour !== 'numeric') return options;
   return {
     ...options,
     ...(options.minute && { minute: 'numeric' }),
@@ -389,13 +395,15 @@ function applyScale<Value>(
   const exponent = Math.round(Math.log10(scale));
   // Zero keeps its sign as a number, and needs no exact point.
   const isNumber = typeof value === 'number' && Number.isFinite(value);
+  const isDecimalString =
+    typeof value === 'string' && DECIMAL_NUMBER.test(value.trim());
   if (
     Number(`1e${exponent}`) === scale &&
-    ((isNumber && value !== 0) || typeof value === 'bigint')
+    ((isNumber && value !== 0) || typeof value === 'bigint' || isDecimalString)
   ) {
     const [digits, ownExponent = 0] = (
-      isNumber ? value.toExponential() : String(value)
-    ).split('e');
+      isNumber ? value.toExponential() : String(value).trim()
+    ).split(/e/i);
     return `${digits}e${Number(ownExponent) + exponent}`;
   }
   if (typeof value === 'bigint') {

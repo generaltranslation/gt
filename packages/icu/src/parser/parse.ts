@@ -23,17 +23,16 @@ import {
   resolveLocaleHourSkeleton,
 } from './skeleton';
 import { isAsciiLetter, isTagNameCharacter } from './tag';
-import { IDENTIFIER_BOUNDARY, MAX_NESTING_DEPTH } from '../settings/syntax';
+import {
+  GRAMMAR_WHITE_SPACE,
+  IDENTIFIER_BOUNDARY,
+  MAX_NESTING_DEPTH,
+} from '../settings/syntax';
 import {
   createInvalidArgumentTypeError,
   PARSER_ERRORS,
   type ParserErrorCode,
 } from '../errors/parserErrors';
-
-// FormatJS distinguishes ICU grammar whitespace (Pattern_White_Space) from
-// the broader Unicode whitespace set used to terminate identifiers. Keeping
-// these separate matters for named styles such as `\u00A0percent`.
-const GRAMMAR_WHITE_SPACE = /[\t-\r \x85\u200E\u200F\u2028\u2029]/u;
 
 type PositionIndex = [lines: Uint32Array, columns: Uint32Array];
 

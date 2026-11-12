@@ -209,6 +209,24 @@ describe('formatMessage', () => {
     expect(formatMessage('{n, number}', 'en-US', { n: value })).toBe(expected);
   });
 
+  it.each([
+    [3, '0.3'],
+    ['3', '0.3'],
+    [' 3 ', '0.3'],
+    ['1.1E1', '1.1'],
+    ['0x10', '1.6'],
+    [
+      '123456789012345678901234567890',
+      '12,345,678,901,234,567,890,123,456,789',
+    ],
+  ])('scales %j as a decimal', (n, expected) => {
+    expect(
+      formatMessage('{n, number, ::scale/0.1 precision-unlimited}', 'en-US', {
+        n,
+      })
+    ).toBe(expected);
+  });
+
   it('formats number skeleton precision, grouping, currency, and scale', () => {
     expect(
       formatMessage('{n, number, ::currency/CAD .0 group-off}', 'en-US', {
@@ -277,6 +295,26 @@ describe('formatMessage', () => {
       })
     ).toBe('123,456,789,012,345,678,901,000,000,000');
   });
+
+  // `h` and `K` are the 12-hour clock the locale prefers, which counts
+  // midnight as 12 in English and 0 in Japanese; `k` is the 24-hour clock.
+  it.each([
+    ['::Ka', 'en-US', '12 AM'],
+    ['::ha', 'ja-JP', '午前0時'],
+    ['::k', 'en-US', '00'],
+  ])(
+    'formats midnight for %s in %s as ICU4C does',
+    (skeleton, locale, text) => {
+      expect(
+        formatMessage(
+          `{d, time, ${skeleton}}`,
+          locale,
+          { d: new Date('2020-05-06T00:00:00Z') },
+          { timeZone: 'UTC' }
+        )
+      ).toBe(text);
+    }
+  );
 
   it('rejects unsafe bigint plural selection instead of losing precision', () => {
     const count = 1000000000000000001n;

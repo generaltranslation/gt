@@ -12,7 +12,9 @@ const cases = readFileSync(file, 'utf8')
 const escape = (text) =>
   text.replace(/\\/g, '\\\\').replace(/\t/g, '\\t').replace(/\n/g, '\\n');
 const unescape = (text) =>
-  text.replace(/\\(.)/g, (_, c) => (c === 't' ? '\t' : c === 'n' ? '\n' : c));
+  text.replace(/\\(.)/g, (_, c) =>
+    c === 't' ? '\t' : c === 'n' ? '\n' : c === 'r' ? '\r' : c
+  );
 const value = (name, v) =>
   typeof v === 'number'
     ? `${name}:n:${v}`
