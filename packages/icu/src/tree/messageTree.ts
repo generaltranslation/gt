@@ -28,8 +28,13 @@ import type {
  * `@generaltranslation/icu/convert`. Other Intl options, like a currency or
  * a time zone, are formatting context, passed to `formatMessageTree` as
  * `formats`.
+ *
+ * `Format` is the type of the number, date and time nodes, at every level.
+ * Leave it out: a message tree holds `NumberNode` and `DateTimeNode`.
  */
-export type MessageTree = string | MessageNode[];
+export type MessageTree<Format = FormattedNode> =
+  | string
+  | MessageNode<Format>[];
 
 /**
  * A message in full: its tree, which is what is translated and hashed, and
@@ -42,21 +47,28 @@ export type Message = {
   formats: MessageFormats;
 };
 
-export type MessageNode =
+export type MessageNode<Format = FormattedNode> =
   | string
   | PoundNode
   | ArgumentNode
-  | NumberNode
-  | DateTimeNode
-  | SelectNode
-  | PluralNode
-  | TagNode;
+  | Format
+  | SelectNode<Format>
+  | PluralNode<Format>
+  | TagNode<Format>;
 
 /** The count of the nearest plural or selectordinal, ICU `#`. */
 export type PoundNode = 0;
 
-/** `{name}` */
-export type ArgumentNode = readonly [name: string];
+/**
+ * `{name}`. It has one entry: the second is in the type, as never set, so
+ * that `node[1]` tells every node apart.
+ */
+export type ArgumentNode = readonly [name: string] & {
+  readonly 1?: undefined;
+};
+
+/** A node that formats its value: a number, a date or a time. */
+export type FormattedNode = NumberNode | DateTimeNode;
 
 /**
  * `{n, number}`, `{n, number, percent}`, `{n, number, currency}`, whose
@@ -84,25 +96,28 @@ export type DateTimeNode =
       style?: DateTimeStyleName | TimeFieldOptions,
     ];
 
-export type SelectNode = readonly [
+export type SelectNode<Format = FormattedNode> = readonly [
   name: string,
   kind: 'select',
-  branches: MessageBranches,
+  branches: MessageBranches<Format>,
 ];
 
 /** `offset` is omitted when it is 0. */
-export type PluralNode = readonly [
+export type PluralNode<Format = FormattedNode> = readonly [
   name: string,
   kind: 'plural' | 'selectordinal',
-  branches: MessageBranches,
+  branches: MessageBranches<Format>,
   offset?: number,
 ];
 
 /** `<name>children</name>`, formatted by the function passed as `name`. */
-export type TagNode = readonly [
+export type TagNode<Format = FormattedNode> = readonly [
   name: string,
   kind: 'tag',
-  children: MessageTree,
+  children: MessageTree<Format>,
 ];
 
-export type MessageBranches = Record<string, MessageTree>;
+export type MessageBranches<Format = FormattedNode> = Record<
+  string,
+  MessageTree<Format>
+>;

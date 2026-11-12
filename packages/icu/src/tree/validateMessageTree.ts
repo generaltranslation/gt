@@ -8,7 +8,7 @@ import {
   NUMBER_STYLE_NAMES,
   TIME_FIELD_OPTIONS,
 } from '../settings/formatOptions';
-import type { DateTimeNode, MessageTree, NumberNode } from './messageTree';
+import type { FormattedNode, MessageTree } from './messageTree';
 
 export interface MessageTreeValidationOptions {
   /**
@@ -39,8 +39,9 @@ interface WalkState {
 
 /**
  * Returns the first structural problem in an untrusted message tree, such as
- * catalog JSON, or `undefined` when it is a valid tree. Entries past a
- * placeholder's known ones are allowed so newer trees still validate.
+ * catalog JSON, or `undefined` when it is a valid tree. A message has one
+ * valid tree, apart from the order of keys, so a valid tree has the key its
+ * message is looked up by.
  */
 export function validateMessageTree(
   value: unknown,
@@ -62,7 +63,6 @@ function treeError(
   depth: number,
   state: WalkState
 ): MessageTreeValidationError | undefined {
-  // Text without placeholders; an array of only text is valid too.
   if (typeof value === 'string') return undefined;
   if (!Array.isArray(value)) {
     return { path, message: 'expected text or an array of nodes' };
@@ -70,14 +70,29 @@ function treeError(
   if (depth > state.maxDepth) {
     return { path, message: `nesting deeper than ${state.maxDepth} levels` };
   }
+  let hasPlaceholder = false;
   for (let index = 0; index < value.length; index++) {
     if (++state.nodes > state.maxNodes) {
       return { path: [...path, index], message: budgetMessage(state) };
     }
-    const error = nodeError(value[index], [...path, index], depth, state);
-    if (error) return error;
+    const node: unknown = value[index];
+    if (typeof node === 'string') {
+      const message =
+        node === ''
+          ? 'expected text; leave out empty text'
+          : typeof value[index - 1] === 'string'
+            ? 'expected a placeholder; write adjacent text as one string'
+            : undefined;
+      if (message) return { path: [...path, index], message };
+    } else {
+      hasPlaceholder = true;
+      const error = nodeError(node, [...path, index], depth, state);
+      if (error) return error;
+    }
   }
-  return undefined;
+  return hasPlaceholder
+    ? undefined
+    : { path, message: 'expected a string for text without placeholders' };
 }
 
 function nodeError(
@@ -86,7 +101,7 @@ function nodeError(
   depth: number,
   state: WalkState
 ): MessageTreeValidationError | undefined {
-  if (typeof node === 'string' || node === 0) return undefined;
+  if (node === 0) return undefined;
   if (!Array.isArray(node)) {
     return { path, message: 'expected text, 0, or a placeholder array' };
   }
@@ -94,6 +109,20 @@ function nodeError(
     return { path: [...path, 0], message: 'expected a variable name' };
   }
   if (node.length === 1) return undefined;
+  const error = kindError(node, path, depth, state);
+  if (error) return error;
+  const entries = node[1] === 'plural' || node[1] === 'selectordinal' ? 4 : 3;
+  return node.length > entries
+    ? { path: [...path, entries], message: 'expected no more entries' }
+    : undefined;
+}
+
+function kindError(
+  node: unknown[],
+  path: Path,
+  depth: number,
+  state: WalkState
+): MessageTreeValidationError | undefined {
   switch (node[1]) {
     case 'number':
     case 'date':
@@ -115,6 +144,9 @@ function nodeError(
       ) {
         return { path: [...path, 3], message: 'expected a finite number' };
       }
+      if (offset === 0) {
+        return { path: [...path, 3], message: 'leave out an offset of 0' };
+      }
       return branchesError(node[2], [...path, 2], depth, state);
     }
     case 'tag':
@@ -124,7 +156,6 @@ function nodeError(
   }
 }
 
-type FormattedNode = NumberNode | DateTimeNode;
 type FormattedKind = FormattedNode[1];
 
 /**
@@ -141,7 +172,9 @@ export function formattedNode(
   const problem = styleProblem(kind, style);
   if (problem) throw fail(problem.message);
   // The check above is what makes the style one of its kind.
-  return (style == null ? [name, kind] : [name, kind, style]) as FormattedNode;
+  return (
+    style === undefined ? [name, kind] : [name, kind, style]
+  ) as FormattedNode;
 }
 
 /**
@@ -153,7 +186,7 @@ export function styleProblem(
   kind: FormattedKind,
   style: unknown
 ): { key?: string; message: string } | undefined {
-  if (style == null) return undefined;
+  if (style === undefined) return undefined;
   if (typeof style === 'string') {
     const names: readonly string[] =
       kind === 'number' ? NUMBER_STYLE_NAMES : DATE_TIME_STYLE_NAMES;

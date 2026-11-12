@@ -1,4 +1,4 @@
-import type { MessageNode, MessageTree } from './messageTree';
+import type { FormattedNode, MessageNode, MessageTree } from './messageTree';
 import {
   isBranchingNode,
   isFormattedNode,
@@ -37,7 +37,9 @@ export function appendText(out: MessageNode[], text: string): void {
  * A message tree from its nodes: without placeholders it is its text, the way it
  * was written, and `''` when empty. `messageTreeNodes` reads it back.
  */
-export function toMessageTree(nodes: MessageNode[]): MessageTree {
+export function toMessageTree<Format>(
+  nodes: MessageNode<Format>[]
+): MessageTree<Format> {
   if (nodes.length === 0) return '';
   return nodes.length === 1 && typeof nodes[0] === 'string' ? nodes[0] : nodes;
 }
@@ -52,11 +54,12 @@ export function canonicalStyle<T extends object>(fields: T): T | undefined {
 }
 
 /**
- * Rewrites a tree, such as one converted from an ICU string, to the form
+ * Rewrites a tree the types allow, such as one converted node for node from
+ * an ICU string, to the one valid tree of its message, the form
  * templateToMessage builds: adjacent text merged and empty text dropped, a
  * message, branch or tag's children without placeholders as one string,
- * branch keys and Intl options sorted, and no zero plural offset or null
- * style. An empty style stays, so printing rejects it rather than
+ * branch keys and Intl options sorted, and no zero plural offset or
+ * `undefined` style. An empty style stays, so printing rejects it rather than
  * formatting it differently.
  */
 export function normalizeMessageTree(tree: MessageTree): MessageTree {
@@ -66,33 +69,37 @@ export function normalizeMessageTree(tree: MessageTree): MessageTree {
       if (typeof node === 'string') appendText(out, node);
       else out.push(node);
     } else if (isBranchingNode(node)) {
-      const [name, kind, branches, offset] = node;
       const sorted = mapBranches(
-        branches,
+        node[2],
         normalizeMessageTree,
-        Object.keys(branches).sort(compareKeys)
+        Object.keys(node[2]).sort(compareKeys)
       );
       out.push(
-        (offset
-          ? [name, kind, sorted, offset]
-          : [name, kind, sorted]) as MessageNode
+        node[1] !== 'select' && node[3]
+          ? [node[0], node[1], sorted, node[3]]
+          : [node[0], node[1], sorted]
       );
     } else if (isTagNode(node)) {
       out.push([node[0], 'tag', normalizeMessageTree(node[2])]);
     } else if (isFormattedNode(node)) {
-      const [name, kind, options] = node;
-      const style =
-        options == null || typeof options === 'string'
-          ? (options ?? undefined)
-          : sortRecord(options);
-      out.push(
-        (style === undefined
-          ? [name, kind]
-          : [name, kind, style]) as MessageNode
-      );
+      out.push(sortStyle(node));
     } else {
       out.push(node);
     }
   }
   return toMessageTree(out);
+}
+
+// Each kind is its own case, so the node keeps the type of its style.
+function sortStyle(node: FormattedNode): FormattedNode {
+  if (node[2] === undefined) return [node[0], node[1]];
+  if (typeof node[2] === 'string') return node;
+  switch (node[1]) {
+    case 'number':
+      return [node[0], 'number', sortRecord(node[2])];
+    case 'date':
+      return [node[0], 'date', sortRecord(node[2])];
+    case 'time':
+      return [node[0], 'time', sortRecord(node[2])];
+  }
 }
