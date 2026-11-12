@@ -31,7 +31,15 @@ import { getRelative } from '../fs/findFilepath.js';
 import {
   resolveMintlifyRefs,
   shouldResolveRefs,
+  type UnreadableRef,
 } from '../utils/resolveMintlifyRefs.js';
+import {
+  findMatchingItemArray,
+  findMatchingItemObject,
+  generateSourceObjectPointers,
+  validateJsonSchema,
+} from '../formats/json/utils.js';
+import type { JSONObject, JSONValue } from '../types/data/json.js';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { isDeepStrictEqual } from 'node:util';
 
@@ -52,7 +60,7 @@ const resolveLocalRefs = (
   content: string,
   outputPath: string,
   settings: Settings
-): { content: string; unreadableRefs: string[] } => {
+): { content: string; unreadableRefs: UnreadableRef[] } => {
   if (!shouldResolveRefs(outputPath, settings.options)) {
     return { content, unreadableRefs: [] };
   }
@@ -65,6 +73,65 @@ const resolveLocalRefs = (
   } catch {
     return { content, unreadableRefs: [] };
   }
+};
+
+/**
+ * The unreadable refs that sit inside the locale's own entries of a composite
+ * file. Every unreadable ref counts when the file is not composite.
+ */
+const unreadableRefsForLocale = (
+  unreadableRefs: UnreadableRef[],
+  resolvedContent: string,
+  fileName: string,
+  locale: string,
+  settings: Settings
+): UnreadableRef[] => {
+  if (unreadableRefs.length === 0) return [];
+  const composite = validateJsonSchema(
+    settings.options ?? {},
+    fileName
+  )?.composite;
+  const json = parseJson(resolvedContent) as JSONValue | undefined;
+  if (!composite || json === undefined) return unreadableRefs;
+
+  const localeKey = settings.options?.experimentalCanonicalLocaleKeys
+    ? api.resolveCanonicalLocale(locale)
+    : locale;
+  const localePointers: string[] = [];
+  for (const [
+    pointer,
+    { sourceObjectValue, sourceObjectOptions },
+  ] of Object.entries(generateSourceObjectPointers(composite, json))) {
+    if (sourceObjectOptions.type === 'array') {
+      if (!Array.isArray(sourceObjectValue)) continue;
+      for (const itemPointer of Object.keys(
+        findMatchingItemArray(
+          localeKey,
+          sourceObjectOptions,
+          pointer,
+          sourceObjectValue
+        )
+      )) {
+        localePointers.push(`${pointer}${itemPointer}`);
+      }
+    } else if (sourceObjectValue && typeof sourceObjectValue === 'object') {
+      const { sourceItem, keyParentProperty } = findMatchingItemObject(
+        localeKey,
+        pointer,
+        sourceObjectOptions,
+        sourceObjectValue as JSONObject
+      );
+      if (sourceItem !== undefined) {
+        localePointers.push(`${pointer}/${keyParentProperty}`);
+      }
+    }
+  }
+  return unreadableRefs.filter((ref) =>
+    localePointers.some(
+      (pointer) =>
+        ref.pointer === pointer || ref.pointer.startsWith(`${pointer}/`)
+    )
+  );
 };
 
 const hasLeafValue = (value: unknown): boolean =>
@@ -348,9 +415,16 @@ export async function collectAndSendUserEditDiffs(
               const extracted = parseJson(extractedContent);
               // The submitted content replaces the stored translation, so
               // values missing from it would be erased.
+              const unreadableRefs = unreadableRefsForLocale(
+                resolvedLocal.unreadableRefs,
+                resolvedLocal.content,
+                c.fileName,
+                c.locale,
+                settings
+              );
               const reason =
-                resolvedLocal.unreadableRefs.length > 0
-                  ? `these $ref files could not be read: ${resolvedLocal.unreadableRefs.join(', ')}`
+                unreadableRefs.length > 0
+                  ? `these $ref files could not be read: ${unreadableRefs.map((ref) => ref.refPath).join(', ')}`
                   : !hasLeafValue(extracted)
                     ? 'no translated values for that locale could be read from the file'
                     : undefined;

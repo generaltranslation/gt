@@ -14,10 +14,12 @@ export type RefMapEntry = {
 
 export type RefMap = Map<string, RefMapEntry>;
 
+export type UnreadableRef = { refPath: string; pointer: string };
+
 export type ResolvedRefs = {
   resolved: unknown;
   refMap: RefMap;
-  unreadableRefs: string[];
+  unreadableRefs: UnreadableRef[];
 };
 
 /**
@@ -32,7 +34,7 @@ export function resolveMintlifyRefs(
   filePath: string
 ): ResolvedRefs {
   const refMap: RefMap = new Map();
-  const unreadableRefs: string[] = [];
+  const unreadableRefs: UnreadableRef[] = [];
   const resolved = resolveNode(
     json,
     path.dirname(path.resolve(filePath)),
@@ -50,7 +52,7 @@ function resolveNode(
   pointer: string,
   visiting: Set<string>,
   refMap: RefMap,
-  unreadableRefs: string[]
+  unreadableRefs: UnreadableRef[]
 ): unknown {
   if (node === null || typeof node !== 'object') return node;
 
@@ -93,7 +95,7 @@ function resolveRef(
   pointer: string,
   visiting: Set<string>,
   refMap: RefMap,
-  unreadableRefs: string[]
+  unreadableRefs: UnreadableRef[]
 ): unknown {
   const refPath = obj['$ref'] as string;
 
@@ -113,7 +115,7 @@ function resolveRef(
     logger.warn(
       chalk.yellow(`Circular $ref detected at ${pointer || '/'}: ${refPath}`)
     );
-    unreadableRefs.push(refPath);
+    unreadableRefs.push({ refPath, pointer });
     const { $ref: _, ...rest } = obj;
     return rest;
   }
@@ -124,7 +126,7 @@ function resolveRef(
         `$ref file not found at ${pointer || '/'}: ${refPath} (resolved to ${resolvedFilePath})`
       )
     );
-    unreadableRefs.push(refPath);
+    unreadableRefs.push({ refPath, pointer });
     const { $ref: _, ...rest } = obj;
     return rest;
   }
@@ -134,7 +136,7 @@ function resolveRef(
     fileContent = fs.readFileSync(resolvedFilePath, 'utf-8');
   } catch {
     logger.warn(chalk.yellow(`Failed to read $ref file: ${resolvedFilePath}`));
-    unreadableRefs.push(refPath);
+    unreadableRefs.push({ refPath, pointer });
     const { $ref: _, ...rest } = obj;
     return rest;
   }
@@ -146,7 +148,7 @@ function resolveRef(
     logger.warn(
       chalk.yellow(`$ref file is not valid JSON: ${resolvedFilePath}`)
     );
-    unreadableRefs.push(refPath);
+    unreadableRefs.push({ refPath, pointer });
     const { $ref: _, ...rest } = obj;
     return rest;
   }

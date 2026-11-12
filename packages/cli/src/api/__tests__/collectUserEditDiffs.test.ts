@@ -590,6 +590,8 @@ describe('collectAndSendUserEditDiffs', () => {
       tabs: [{ tab, pages: [{ group, pages: ['docs/start'] }] }],
     });
 
+    // The fr $ref file never exists: another locale's unreadable ref must
+    // not affect what happens to ja.
     const run = async (jaNav: object | undefined, serverData: string) => {
       const docsPath = path.join(tempDir, 'docs.json');
       fs.mkdirSync(path.join(tempDir, 'config', 'ja'), { recursive: true });
@@ -600,6 +602,7 @@ describe('collectAndSendUserEditDiffs', () => {
             languages: [
               { language: 'en', $ref: './config/nav.json' },
               { language: 'ja', $ref: './config/ja/nav.json' },
+              { language: 'fr', $ref: './config/fr/nav.json' },
             ],
           },
         })
