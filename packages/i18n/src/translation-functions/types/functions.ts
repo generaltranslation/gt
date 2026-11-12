@@ -1,4 +1,5 @@
 import { GTTranslationOptions, TranslationVariables } from './options';
+import type { InlineTranslations } from '../inline/inlineTranslations';
 
 export type DictionaryObjectTranslation =
   | string
@@ -25,6 +26,7 @@ export type SyncResolutionFunction = (
  * Synchronous resolution function type
  * @param {string} message - The message to translate.
  * @param {GTTranslationOptions} options - The options for the translation.
+ * @param {InlineTranslations<string>} inline - Translations embedded at the call site, checked before loaded translations.
  * @returns {string} The translated message.
  *
  * @important This is base type for user API
@@ -33,7 +35,8 @@ export type SyncResolutionFunction = (
  */
 export type SyncResolutionFunctionWithFallback = (
   message: string,
-  options?: GTTranslationOptions
+  options?: GTTranslationOptions,
+  inline?: InlineTranslations<string>
 ) => string;
 
 /**

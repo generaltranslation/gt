@@ -1,4 +1,4 @@
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig, lookupInlineTranslation } from 'gt-i18n/internal';
 import type { ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
@@ -18,6 +18,7 @@ async function RscT({
   _enableI18n,
   // TODO: don't expose to consumer, this should be thru an internal path
   _renderPreparedT = renderPreparedT,
+  inline,
   ...params
 }: ResolvedTProps): Promise<ReactNode> {
   const locale = _locale;
@@ -43,24 +44,14 @@ async function RscT({
     });
   }
 
-  let targetJsxChildren: JsxChildren | undefined;
-  const i18nCache = getReactI18nCache();
-  if (
-    process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled()
-  ) {
-    targetJsxChildren = await i18nCache.lookupTranslationWithFallback(
+  // Translations embedded at the call site win over loaded translations
+  const targetJsxChildren =
+    lookupInlineTranslation(inline, locale) ??
+    (await lookupTargetJsxChildren(
       locale,
       prepared.sourceJsxChildren,
       prepared.targetOptions
-    );
-  } else {
-    const lookupTranslation = await i18nCache.getLookupTranslation(locale);
-    targetJsxChildren = lookupTranslation(
-      prepared.sourceJsxChildren,
-      prepared.targetOptions
-    );
-  }
+    ));
 
   return _renderPreparedT({
     ...prepared,
@@ -71,6 +62,26 @@ async function RscT({
     shouldTranslate,
     hash: prepared.targetOptions.$_hash,
   });
+}
+
+async function lookupTargetJsxChildren(
+  locale: string,
+  sourceJsxChildren: JsxChildren,
+  targetOptions: ReturnType<typeof prepareT>['targetOptions']
+): Promise<JsxChildren | undefined> {
+  const i18nCache = getReactI18nCache();
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    getI18nConfig().isDevHotReloadEnabled()
+  ) {
+    return i18nCache.lookupTranslationWithFallback(
+      locale,
+      sourceJsxChildren,
+      targetOptions
+    );
+  }
+  const lookupTranslation = await i18nCache.getLookupTranslation(locale);
+  return lookupTranslation(sourceJsxChildren, targetOptions);
 }
 
 /** @internal _gtt - The GT transformation for the component. */

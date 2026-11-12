@@ -139,6 +139,25 @@ export class I18nConfig extends LocaleConfig {
   }
 
   /**
+   * The configured locale that translations for `locale` are stored under, or
+   * undefined when `locale` can use source content. Throws for invalid locales.
+   */
+  resolveTranslationLocale(locale: string): string | undefined {
+    const resolvedLocale = this.determineLocale(locale);
+    if (!this.isValidLocale(locale) || !resolvedLocale) {
+      throw new Error(
+        `Locale "${locale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping.`
+      );
+    }
+    if (this.requiresTranslation(resolvedLocale)) return resolvedLocale;
+
+    // Explicit translation lookups may request a dialect outside the supported
+    // app locales. Preserve that existing fallback independently of routing.
+    const aliasLocale = this.resolveAliasLocale(this.standardizeLocale(locale));
+    return this.requiresTranslation(aliasLocale) ? aliasLocale : undefined;
+  }
+
+  /**
    * Returns true when development hot reload runtime translation requests can run.
    */
   isDevHotReloadEnabled(): boolean {
