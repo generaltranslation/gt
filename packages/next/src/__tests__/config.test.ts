@@ -4,6 +4,7 @@ import path from 'path';
 import type { NextConfig } from 'next';
 import { BABEL_PLUGIN_SUPPORT } from '../plugin/constants';
 import { nextLocaleCookieName } from '../utils/cookies';
+import { resolveInlineTranslations } from '../plugin/resolveInlineTranslations';
 
 // ---- Mocks ---- //
 
@@ -24,6 +25,17 @@ const mockVersionInfo = vi.hoisted(() => ({
 }));
 
 vi.mock('../plugin/getStableNextVersionInfo', () => mockVersionInfo);
+
+vi.mock('../plugin/resolveInlineTranslations', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('../plugin/resolveInlineTranslations')
+    >();
+  return {
+    ...actual,
+    resolveInlineTranslations: vi.fn(actual.resolveInlineTranslations),
+  };
+});
 
 // ---- Helpers ---- //
 
@@ -344,6 +356,88 @@ describe('withGTConfig', () => {
           expect(pluginPath.endsWith(`/${fileName}`)).toBe(true);
         }
       );
+    });
+
+    describe('swc inlineTranslations', () => {
+      function getSwcOptions(result: NextConfig) {
+        const plugins = result.experimental!.swcPlugins as [
+          string,
+          Record<string, unknown>,
+        ][];
+        expect(plugins).toHaveLength(1);
+        return plugins[0][1];
+      }
+
+      function mockConfigFiles(
+        localeFiles: Record<string, Record<string, unknown>>
+      ) {
+        const gtConfig = {
+          files: {
+            gt: {
+              output: './translations/[locale].json',
+              inlineTranslations: { locales: ['fr', 'es', 'de'] },
+            },
+          },
+        };
+        const contents = (filepath: unknown): string | undefined => {
+          const file = String(filepath);
+          if (file === './gt.config.json') return JSON.stringify(gtConfig);
+          const locale = Object.keys(localeFiles).find((name) =>
+            file.endsWith(path.join('translations', `${name}.json`))
+          );
+          return locale && JSON.stringify(localeFiles[locale]);
+        };
+        vi.mocked(fs.existsSync).mockImplementation(
+          (filepath) => contents(filepath) !== undefined
+        );
+        vi.mocked(fs.readFileSync).mockImplementation(
+          (filepath) => contents(filepath) ?? '{}'
+        );
+      }
+
+      it('passes the shard options for files.gt in production', async () => {
+        process.env.NODE_ENV = 'production';
+        mockConfigFiles({});
+        const shards = {
+          locales: ['fr'],
+          dir: 'out/cache/gt/inline/h',
+          contentHash: 'h',
+        };
+        vi.mocked(resolveInlineTranslations).mockReturnValueOnce(shards);
+        const withGTConfig = await getWithGTConfig();
+        const result = withGTConfig(
+          { distDir: 'out' },
+          { experimentalCompilerOptions: { type: 'swc' } }
+        );
+        expect(resolveInlineTranslations).toHaveBeenCalledWith(
+          expect.objectContaining({
+            inlineTranslations: { locales: ['fr', 'es', 'de'] },
+          }),
+          { distDir: 'out' }
+        );
+        expect(getSwcOptions(result).inlineTranslations).toEqual(shards);
+      });
+
+      it('does not pass inline translations outside production builds', async () => {
+        mockConfigFiles({ fr: { a: 'Bonjour' } });
+        const withGTConfig = await getWithGTConfig();
+        const result = withGTConfig(
+          {},
+          { experimentalCompilerOptions: { type: 'swc' } }
+        );
+        expect(getSwcOptions(result)).not.toHaveProperty('inlineTranslations');
+      });
+
+      it('omits inline translations when no locale has a translations file', async () => {
+        process.env.NODE_ENV = 'production';
+        mockConfigFiles({});
+        const withGTConfig = await getWithGTConfig();
+        const result = withGTConfig(
+          {},
+          { experimentalCompilerOptions: { type: 'swc' } }
+        );
+        expect(getSwcOptions(result)).not.toHaveProperty('inlineTranslations');
+      });
     });
 
     it('has empty swcPlugins array in experimental', async () => {
@@ -1799,6 +1893,54 @@ describe('withGTConfig', () => {
           enableAutoJsxInjection: true,
           autoJsxImportSource: 'gt-next',
         })
+      );
+      compilerWebpackSpy.mockRestore();
+    });
+
+    it('passes a gt.config.json from a custom path to the webpack compiler', async () => {
+      const gtConfig = {
+        files: { gt: { inlineTranslations: { locales: ['fr'] } } },
+      };
+      vi.mocked(fs.existsSync).mockImplementation(
+        (filepath) => filepath === './config/gt.json'
+      );
+      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(gtConfig));
+      const compiler = require('@generaltranslation/compiler');
+      const compilerWebpackSpy = vi
+        .spyOn(compiler, 'webpack')
+        .mockReturnValue({});
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {},
+        {
+          config: './config/gt.json',
+          experimentalCompilerOptions: { type: 'babel' },
+        }
+      );
+
+      runWebpack(result, makeWebpackConfig());
+
+      expect(compilerWebpackSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ gtConfig })
+      );
+      compilerWebpackSpy.mockRestore();
+    });
+
+    it('lets the webpack compiler find gt.config.json when none was loaded', async () => {
+      const compiler = require('@generaltranslation/compiler');
+      const compilerWebpackSpy = vi
+        .spyOn(compiler, 'webpack')
+        .mockReturnValue({});
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {},
+        { experimentalCompilerOptions: { type: 'babel' } }
+      );
+
+      runWebpack(result, makeWebpackConfig());
+
+      expect(compilerWebpackSpy.mock.calls[0][0]).not.toHaveProperty(
+        'gtConfig'
       );
       compilerWebpackSpy.mockRestore();
     });

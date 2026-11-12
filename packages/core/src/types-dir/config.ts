@@ -50,7 +50,24 @@ export type GTCompilerOptions = {
 };
 
 /**
- * Experimental: embed translations for the given locales at build time.
+ * Experimental: embed translations for the given locales directly at each
+ * `gt()`, `t()`, and `<T>` call site, so bundlers tree-shake them with unused
+ * code. Translations are read from `files.gt.output`. Other locales keep
+ * loading at runtime. Only applied to production builds.
+ *
+ * `msg()` strings are resolved by `m()` away from their call site, so they are
+ * never embedded. For embedded locales, have your `loadTranslations` load the
+ * `msgOutput` file instead of the full translations file.
+ *
+ * Only call sites the compiler can resolve are embedded. These are not, and
+ * resolve from loaded translations like any other locale:
+ * - `derive()` content.
+ * - Translation functions passed around as values, for example the `gt` from
+ *   `useGT()` handed to a helper as a parameter. Call `useGT()` or `getGT()`
+ *   in the helper instead.
+ * - Files the compiler leaves untransformed, such as a file with a
+ *   non-extractable argument like `gt(someVar)` under `disableBuildChecks`.
+ *   Every call site in that file is skipped, including `<T>`.
  */
 export type GTInlineTranslationsOptions = {
   /** Locales to embed, usually the most visited ones. */

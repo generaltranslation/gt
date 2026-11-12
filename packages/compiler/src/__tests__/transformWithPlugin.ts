@@ -10,9 +10,11 @@ import type {
 import gtUnplugin from '../index';
 import type { GTUnpluginOptions } from '../index';
 
-function createTestContext(): UnpluginBuildContext & UnpluginContext {
+function createTestContext(
+  addWatchFile: (file: string) => void = () => {}
+): UnpluginBuildContext & UnpluginContext {
   return {
-    addWatchFile() {},
+    addWatchFile,
     emitFile() {},
     getWatchFiles() {
       return [];
@@ -33,7 +35,8 @@ function createTestContext(): UnpluginBuildContext & UnpluginContext {
  */
 export async function transformWithPlugin(
   options: GTUnpluginOptions | undefined,
-  code: string
+  code: string,
+  addWatchFile?: (file: string) => void
 ): Promise<string | null> {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-compiler-'));
   onTestFinished(() => fs.rmSync(cwd, { force: true, recursive: true }));
@@ -54,7 +57,7 @@ export async function transformWithPlugin(
   }
 
   const result: TransformResult = await transform.call(
-    createTestContext(),
+    createTestContext(addWatchFile),
     code,
     path.join(cwd, 'App.tsx')
   );

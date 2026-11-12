@@ -4,10 +4,10 @@ use crate::config::PluginSettings;
 use crate::logging::{LogLevel, Logger};
 use crate::visitor::errors::create_dynamic_function_warning;
 use crate::visitor::expr_utils::{
-  create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, has_prop, inject_new_args, validate_derive,
+  create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, get_string_prop_from_expr, has_prop, has_static_hash_options, inject_new_args, validate_derive,
 };
 use swc_core::{
-  common::SyntaxContext,
+  common::{Span, SyntaxContext},
   ecma::{ast::*, atoms::Atom},
 };
 
@@ -15,6 +15,9 @@ use crate::visitor::analysis::{
   is_branch_name, is_derive_name, is_translation_component_name,
   is_translation_function_name, is_variable_component_name,
 };
+use crate::inline_shards::ShardedTranslations;
+use crate::visitor::jsx_utils::extract_attribute_from_jsx_attr;
+use crate::visitor::inline_translations::build_inline_translations_fn;
 
 /// Main transformation visitor for the SWC plugin
 pub struct TransformVisitor {
@@ -60,6 +63,12 @@ impl TransformVisitor {
     }
   }
 
+  /// Experimental: set the translations to embed at call sites
+  pub fn with_inline_translations(mut self, inline_translations: Option<ShardedTranslations>) -> Self {
+    self.settings.inline_translations = inline_translations;
+    self
+  }
+
   /// Single helper method - handles scope enter/exit only
   pub fn with_scope<T, F>(&mut self, operation: F) -> T
   where
@@ -75,6 +84,14 @@ impl TransformVisitor {
   pub fn inject_hash_attributes(&mut self, mut element: JSXElement) -> JSXElement {
     // Check if hash attribute already exists
     let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
+    // A spread or `$_hash` prop can change the hash the runtime uses, so an
+    // embedded translation could belong to another entry
+    let hash_may_change = TransformVisitor::determine_has_attr(&element, "$_hash")
+      || element
+        .opening
+        .attrs
+        .iter()
+        .any(|attr| matches!(attr, JSXAttrOrSpread::SpreadElement(_)));
 
     if !has_hash_attr {
       // Get the hash from the aggregator
@@ -86,10 +103,32 @@ impl TransformVisitor {
         let hash_value = translation_jsx.hash.clone();
         let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
         element.opening.attrs.push(hash_attr);
+        if !hash_may_change {
+          self.inject_inline_attr(&mut element, &hash_value);
+        }
+      }
+    } else if let Some(hash_value) = extract_attribute_from_jsx_attr(&element, "_hash") {
+      // A static user-supplied _hash is what the runtime looks up. It takes no
+      // part in the counter, so it is read here instead.
+      if !hash_may_change {
+        self.inject_inline_attr(&mut element, &hash_value);
       }
     }
 
     element
+  }
+
+  /// Embed translations for the configured locales as an `inline` prop.
+  /// An empty hash means derive content (or <Static>), which is not supported.
+  /// An existing `inline` prop is kept.
+  fn inject_inline_attr(&self, element: &mut JSXElement, hash_value: &str) {
+    if hash_value.is_empty() || TransformVisitor::determine_has_attr(element, "inline") {
+      return;
+    }
+    if let Some(inline) = self.build_inline_translations(hash_value, element.opening.span) {
+      let attr = TransformVisitor::create_expr_attr(element, inline, "inline");
+      element.opening.attrs.push(attr);
+    }
   }
 
   /// Inject content array on translation function call
@@ -124,14 +163,25 @@ impl TransformVisitor {
       let counter_id = self.string_collector.increment_counter();
       let translation_hash = self.string_collector.get_translation_hash(counter_id);
 
-      if let Some(translation_hash) = translation_hash {
+      if let Some(translation_hash) = translation_hash.map(|translation_hash| translation_hash.hash.clone()) {
         // Inject hash attribute on the call expression
-        let modified_call_expr = self.inject_hash_attribute_on_call_expr(
+        let mut modified_call_expr = self.inject_hash_attribute_on_call_expr(
           call_expr,
           options,
-          translation_hash.hash.clone(),
+          translation_hash.clone(),
           None,
         );
+
+        // Embed translations for the configured locales. A user-supplied
+        // $_hash wins over the computed one, matching the runtime lookup.
+        // Options the plugin can't hash statically (a non-literal $_hash,
+        // $requiresReview, quoted metadata keys) are left without a callback.
+        if has_static_hash_options(options) {
+          let hash = options
+            .and_then(|options| get_string_prop_from_expr(options.expr.as_ref(), "$_hash"))
+            .unwrap_or(translation_hash);
+          self.append_inline_translations_arg(&mut modified_call_expr, &hash);
+        }
 
         return Some(modified_call_expr);
       }
@@ -429,8 +479,17 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
     string: &ExprOrSpread,
     options: Option<&ExprOrSpread>,
   ) -> (Option<String>, Option<String>) {
+    self.calculate_string_hash(&string.expr, options)
+  }
+
+  /// Hash a string message expression with its options
+  pub fn calculate_string_hash(
+    &self,
+    expr: &Expr,
+    options: Option<&ExprOrSpread>,
+  ) -> (Option<String>, Option<String>) {
     // Extract the string content
-    let string_content = extract_string_from_expr(&string.expr);
+    let string_content = extract_string_from_expr(expr);
     if string_content.is_none() {
       return (None, None);
     }
@@ -739,6 +798,52 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
         }
       }
       false
+    })
+  }
+
+  /// Append the inline translations callback as the third argument of a
+  /// string translation call: gt(message, options, (locale) => …).
+  /// Expects the options argument to be present.
+  pub fn append_inline_translations_arg(&self, call_expr: &mut CallExpr, hash: &str) {
+    if hash.is_empty() || call_expr.args.len() != 2 || call_expr.args[1].spread.is_some() {
+      return;
+    }
+    if let Some(inline) = self.build_inline_translations(hash, call_expr.span) {
+      call_expr.args.push(ExprOrSpread {
+        spread: None,
+        expr: Box::new(inline),
+      });
+    }
+  }
+
+  fn build_inline_translations(&self, hash: &str, span: Span) -> Option<Expr> {
+    let source = self.settings.inline_translations.as_ref()?;
+    build_inline_translations_fn(&source.table_for(hash), hash, span)
+  }
+
+  /// Check whether a JSX element has an attribute
+  pub fn determine_has_attr(element: &JSXElement, attribute_name: &str) -> bool {
+    element.opening.attrs.iter().any(|attr| {
+      matches!(attr, JSXAttrOrSpread::JSXAttr(JSXAttr { name: JSXAttrName::Ident(name), .. }) if name.sym.as_ref() == attribute_name)
+    })
+  }
+
+  /// Create a JSX attribute with an expression value: name={expr}
+  pub fn create_expr_attr(element: &JSXElement, expr: Expr, attribute_name: &str) -> JSXAttrOrSpread {
+    JSXAttrOrSpread::JSXAttr(JSXAttr {
+      span: element.opening.span,
+      name: JSXAttrName::Ident(
+        Ident::new(
+          attribute_name.into(),
+          element.opening.span,
+          SyntaxContext::empty(),
+        )
+        .into(),
+      ),
+      value: Some(JSXAttrValue::JSXExprContainer(JSXExprContainer {
+        span: element.opening.span,
+        expr: JSXExpr::Expr(Box::new(expr)),
+      })),
     })
   }
 

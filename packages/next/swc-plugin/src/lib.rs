@@ -8,6 +8,7 @@ extern crate swc_core_v49 as swc_core;
 #[cfg(feature = "swc-v79")]
 extern crate swc_core_v79 as swc_core;
 
+use crate::inline_shards::ShardedTranslations;
 use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,
@@ -376,6 +377,21 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     .get_context(&TransformPluginMetadataContextKind::Filename)
     .map(|f| f.to_string());
 
+  transform_program(program, config, filename)
+}
+
+/// Run both plugin passes (collection, then injection) on a program
+pub fn transform_program(program: Program, config: PluginConfig, filename: Option<String>) -> Program {
+  transform_program_in(program, config, filename, std::path::Path::new(crate::inline_shards::PLUGIN_CWD))
+}
+
+/// `transform_program` reading inline translation shards relative to `cwd`
+pub fn transform_program_in(
+  program: Program,
+  config: PluginConfig,
+  filename: Option<String>,
+  cwd: &std::path::Path,
+) -> Program {
   // Create StringCollector for the two-pass system
   let string_collector = crate::ast::StringCollector::new();
 
@@ -403,6 +419,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     );
   }
 
+  let inline_translations = config.inline_translations.map(|inline| ShardedTranslations::open(cwd, inline));
   let collected_data = visitor.string_collector;
   let mut visitor = TransformVisitor::new(
     config.log_level,
@@ -412,13 +429,18 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     config.autoderive_jsx,
     config.autoderive_strings,
     collected_data,
-  );
+  )
+  .with_inline_translations(inline_translations);
   program.fold_with(&mut visitor)
 }
 
 pub mod ast;
 pub mod config;
 pub mod hash;
+pub mod inline_shards;
 pub mod logging;
 pub mod visitor;
 pub mod whitespace;
+
+#[cfg(test)]
+mod inline_translations_tests;
