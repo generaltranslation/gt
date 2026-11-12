@@ -12,7 +12,7 @@ import {
   formatMessageTree,
   type FormatMessageTreeOptions,
   type MessageTree,
-  type MessageTreeValues,
+  type MessageValues,
 } from '@generaltranslation/icu';
 import { intlCache } from './cache/IntlCache';
 import {
@@ -310,7 +310,7 @@ export class LocaleConfig {
     tree: MessageTree,
     targetLocale: string | undefined,
     options: WithLocales<{
-      variables: MessageTreeValues<unknown>;
+      variables: MessageValues<unknown>;
       formats: FormatMessageTreeOptions['formats'];
       timeZone?: string;
     }>

@@ -1,7 +1,7 @@
 import {
   isMessageTree,
   type MessageTree,
-  type MessageTreeFormats,
+  type MessageFormats,
 } from '@generaltranslation/icu';
 import {
   hashSource,
@@ -64,7 +64,7 @@ export function hashMessageTree(
 export function renderMessage(
   tree: MessageTree,
   values: Record<string, unknown>,
-  formats: MessageTreeFormats,
+  formats: MessageFormats,
   locale: string,
   metadata: MessageTreeMetadata,
   lookupTranslation: LookupTreeTranslation
@@ -162,7 +162,7 @@ function formatTree(
   tree: MessageTree,
   locale: string,
   values: Record<string, unknown>,
-  formats: MessageTreeFormats
+  formats: MessageFormats
 ): string {
   const config = getI18nConfig();
   // The config resolves custom aliases, which must not reach Intl as

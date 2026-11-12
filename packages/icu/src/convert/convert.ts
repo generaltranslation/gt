@@ -1,7 +1,7 @@
 import { parse } from '../parser/parse';
 import { printAST } from '../parser/printer';
-import { normalizeTree } from '../tree/canonical';
-import type { MessageTreeFormats } from '../settings/formatOptions';
+import { normalizeMessageTree } from '../tree/canonical';
+import type { MessageFormats } from '../settings/formatOptions';
 import type { Message, MessageTree } from '../tree/messageTree';
 import {
   fromMessage,
@@ -21,7 +21,7 @@ export type IcuToMessageOptions = {
 
 /**
  * Converts an ICU MessageFormat string to a message. Its tree is canonical,
- * sorted like `buildMessageTree` output so it hashes the same way, and holds
+ * sorted like `templateToMessage` output so it hashes the same way, and holds
  * what a translator sees. The formatting context the string spells, like a
  * currency, digits or an hour cycle, is its `formats`, by variable:
  *
@@ -43,7 +43,7 @@ export function icuToMessage(
   { styles = {} }: IcuToMessageOptions = {}
 ): Message {
   const { tree, formats } = readMessage(parse(icu), styles);
-  return { tree: normalizeTree(tree), formats };
+  return { tree: normalizeMessageTree(tree), formats };
 }
 
 /**
@@ -64,7 +64,7 @@ export function messageTreeToIcu(tree: MessageTree): string {
 /** An ICU string, and the formatting context of its message that it does not spell. */
 export type IcuMessage = {
   icu: string;
-  formats: MessageTreeFormats;
+  formats: MessageFormats;
 };
 
 /**

@@ -5,7 +5,7 @@ import {
   formatMessageTree as formatTree,
   type FormatMessageTreeOptions,
   type MessageTree,
-  type MessageTreeValues,
+  type MessageValues,
 } from '../index';
 import {
   formatMessage as formatIcu,
@@ -18,7 +18,7 @@ export const hostTimeZone = new Intl.DateTimeFormat().resolvedOptions()
 export function formatMessageTree(
   tree: MessageTree,
   locales: string | string[] = 'en',
-  variables: MessageTreeValues<unknown> = {},
+  variables: MessageValues<unknown> = {},
   options?: Partial<FormatMessageTreeOptions>
 ): unknown {
   return formatTree<unknown>(tree, locales, variables, {
@@ -31,7 +31,7 @@ export function formatMessageTree(
 export function formatMessage(
   message: string,
   locales: string | string[] = 'en',
-  variables: MessageTreeValues<unknown> = {},
+  variables: MessageValues<unknown> = {},
   options?: Partial<FormatMessageOptions>
 ): unknown {
   return formatIcu<unknown>(message, locales, variables, {

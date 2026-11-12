@@ -5,12 +5,12 @@ import {
   isPlaceholderNode,
   isTagNode,
   mapBranches,
-  messageNodes,
+  messageTreeNodes,
 } from './walk';
 
 // Equal messages must have equal tree JSON, because keys are hashes of it.
-// These are the only definitions of that form: buildMessageTree builds it
-// directly, since it runs on every message, and normalizeTree rewrites any
+// These are the only definitions of that form: templateToMessage builds it
+// directly, since it runs on every message, and normalizeMessageTree rewrites any
 // other tree to it.
 
 /** Code-unit order, the same in every engine, so keys sort the same everywhere. */
@@ -34,10 +34,10 @@ export function appendText(out: MessageNode[], text: string): void {
 }
 
 /**
- * A message from its nodes: without placeholders it is its text, the way it
- * was written, and `''` when empty. `messageNodes` reads it back.
+ * A message tree from its nodes: without placeholders it is its text, the way it
+ * was written, and `''` when empty. `messageTreeNodes` reads it back.
  */
-export function toMessage<Format>(
+export function toMessageTree<Format>(
   nodes: MessageNode<Format>[]
 ): MessageTree<Format> {
   if (nodes.length === 0) return '';
@@ -56,22 +56,22 @@ export function canonicalStyle<T extends object>(fields: T): T | undefined {
 /**
  * Rewrites a tree the types allow, such as one converted node for node from
  * an ICU string, to the one valid tree of its message, the form
- * buildMessageTree builds: adjacent text merged and empty text dropped, a
+ * templateToMessage builds: adjacent text merged and empty text dropped, a
  * message, branch or tag's children without placeholders as one string,
  * branch keys and Intl options sorted, and no zero plural offset or
  * `undefined` style. An empty style stays, so printing rejects it rather than
  * formatting it differently.
  */
-export function normalizeTree(tree: MessageTree): MessageTree {
+export function normalizeMessageTree(tree: MessageTree): MessageTree {
   const out: MessageNode[] = [];
-  for (const node of messageNodes(tree)) {
+  for (const node of messageTreeNodes(tree)) {
     if (!isPlaceholderNode(node)) {
       if (typeof node === 'string') appendText(out, node);
       else out.push(node);
     } else if (isBranchingNode(node)) {
       const sorted = mapBranches(
         node[2],
-        normalizeTree,
+        normalizeMessageTree,
         Object.keys(node[2]).sort(compareKeys)
       );
       out.push(
@@ -80,14 +80,14 @@ export function normalizeTree(tree: MessageTree): MessageTree {
           : [node[0], node[1], sorted]
       );
     } else if (isTagNode(node)) {
-      out.push([node[0], 'tag', normalizeTree(node[2])]);
+      out.push([node[0], 'tag', normalizeMessageTree(node[2])]);
     } else if (isFormattedNode(node)) {
       out.push(sortStyle(node));
     } else {
       out.push(node);
     }
   }
-  return toMessage(out);
+  return toMessageTree(out);
 }
 
 // Each kind is its own case, so the node keeps the type of its style.

@@ -1,6 +1,6 @@
-import type { MessageTree, MessageTreeFormats } from '@generaltranslation/icu';
+import type { MessageTree, MessageFormats } from '@generaltranslation/icu';
 import {
-  buildMessageTree,
+  templateToMessage,
   type TemplateBranch,
   type TemplateHole,
 } from '@generaltranslation/icu/internal';
@@ -19,7 +19,7 @@ type BuiltMessage = {
   /** Formatting values for every argument in the tree, keyed by name. */
   values: Record<string, unknown>;
   /** Formatting context of each formatted argument, keyed by name. */
-  formats: MessageTreeFormats;
+  formats: MessageFormats;
 };
 
 /** Converts template strings and runtime placeholders into a message tree. */
@@ -29,7 +29,7 @@ export function buildMessage(
 ): BuiltMessage {
   // Null prototype so names like `__proto__` stay own entries.
   const values: Record<string, unknown> = Object.create(null);
-  const built = buildMessageTree(
+  const built = templateToMessage(
     strings,
     holes.map((hole) => toTreeHole(hole, values))
   );

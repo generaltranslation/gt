@@ -1,7 +1,7 @@
 import type { NodePath, Scope } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
-  buildMessageTree,
+  templateToMessage,
   DATE_TIME_CONTEXT_OPTIONS,
   NUMBER_CONTEXT_OPTIONS,
   type TemplateBranch,
@@ -52,7 +52,7 @@ export function injectUnstableTaggedTemplateHash(
       : {};
     const { strings, holes } = templateFragment(quasi, path.scope);
     hash = hashSource({
-      source: buildMessageTree(strings, holes).tree,
+      source: templateToMessage(strings, holes).tree,
       dataFormat: 'ICU_TREE',
       ...metadata,
     });

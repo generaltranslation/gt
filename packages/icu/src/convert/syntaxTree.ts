@@ -7,9 +7,9 @@ import {
   NAMED_NUMBER_STYLES,
   type DateTimeStyleName,
   type MessageFormattingContext,
-  type MessageTreeFormats,
+  type MessageFormats,
 } from '../settings/formatOptions';
-import { sortRecord, toMessage } from '../tree/canonical';
+import { sortRecord, toMessageTree } from '../tree/canonical';
 import type {
   FormattedNode,
   Message,
@@ -30,7 +30,7 @@ import { styleProblem } from '../tree/validateMessageTree';
 import {
   forEachPlaceholder,
   isFormattedNode,
-  messageNodes,
+  messageTreeNodes,
 } from '../tree/walk';
 import { printDateTimeSkeleton } from './skeleton';
 import {
@@ -64,7 +64,7 @@ export type NamedStyles = {
 /**
  * Converts the parser's syntax tree to a message: its tree, node for node in
  * the parsed order, and the formatting context its formatted placeholders
- * spell, by variable. `normalizeTree` gives the form keys are hashed from. Locations
+ * spell, by variable. `normalizeMessageTree` gives the form keys are hashed from. Locations
  * are dropped. One variable formatted with two contexts throws, as does a
  * style name that is neither ICU's nor in `styles`.
  */
@@ -88,7 +88,7 @@ export function readMessage(
  */
 export function toParsedTree(ast: MessageFormatElement[]): ParsedTree {
   // Plain text as one string takes the formatter's fast path.
-  return toMessage(convert(ast, parsedNode));
+  return toMessageTree(convert(ast, parsedNode));
 }
 
 function convert<Format>(
@@ -274,7 +274,7 @@ function fromNodes(
   tree: MessageTree,
   write: FormatWriter
 ): MessageFormatElement[] {
-  return messageNodes(tree).map((node) => fromNode(node, write));
+  return messageTreeNodes(tree).map((node) => fromNode(node, write));
 }
 
 /**
@@ -287,7 +287,7 @@ function fromNodes(
 export function fromMessage({
   tree,
   formats,
-}: Message): [ast: MessageFormatElement[], rest: MessageTreeFormats] {
+}: Message): [ast: MessageFormatElement[], rest: MessageFormats] {
   const elements = new Map<FormattedNode, FormatElement>();
   const rest: ContextByVariable = new Map();
   const mixed = new Set<string>();

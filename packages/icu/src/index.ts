@@ -4,7 +4,7 @@ export {
   type FormattedMessage,
   type MessagePlainValue,
   type MessageTagFormatter,
-  type MessageTreeValues,
+  type MessageValues,
 } from './formatter/formatMessageTree';
 export type {
   ArgumentNode,
@@ -23,7 +23,7 @@ export type {
   DateFieldOptions,
   DateMessageOptions,
   DateTimeFormattingContext,
-  MessageTreeFormats,
+  MessageFormats,
   NumberFormattingContext,
   NumberMessageOptions,
   TimeFieldOptions,

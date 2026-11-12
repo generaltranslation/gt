@@ -107,11 +107,9 @@ export type MessageFormattingContext =
 
 /**
  * Formatting context by variable name: a message's `formats`, as
- * `buildMessageTree` and `icuToMessage` return it.
+ * `templateToMessage` and `icuToMessage` return it.
  */
-export type MessageTreeFormats = Readonly<
-  Record<string, MessageFormattingContext>
->;
+export type MessageFormats = Readonly<Record<string, MessageFormattingContext>>;
 
 /** The named styles of `{d, date, …}` and `{t, time, …}`: Intl `dateStyle` and `timeStyle`. */
 export const DATE_TIME_STYLE_NAMES = [

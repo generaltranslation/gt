@@ -1,7 +1,7 @@
 import {
   isMessageTree,
   type MessageTree,
-  type MessageTreeFormats,
+  type MessageFormats,
 } from '@generaltranslation/icu';
 import type { MessageTreeHashMetadata } from 'generaltranslation/id';
 import { buildMessage } from './buildMessage';
@@ -22,7 +22,7 @@ export type Msg = MessageTreeHashMetadata & {
    * none. Its type holds no message option, which would change the rendered
    * message without changing its tree or hash.
    */
-  formats: MessageTreeFormats;
+  formats: MessageFormats;
   $_hash: string;
 };
 

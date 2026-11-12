@@ -1,7 +1,7 @@
 import type {
   DateFieldOptions,
   DateTimeStyleName,
-  MessageTreeFormats,
+  MessageFormats,
   NumberStyleName,
   TimeFieldOptions,
 } from '../settings/formatOptions';
@@ -45,7 +45,7 @@ export type MessageTree<Format = FormattedNode> =
 export type Message = {
   tree: MessageTree;
   /** The formatting context of each formatted variable that has one. */
-  formats: MessageTreeFormats;
+  formats: MessageFormats;
 };
 
 export type MessageNode<Format = FormattedNode> =
