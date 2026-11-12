@@ -28,6 +28,48 @@ import { extractYaml } from '../formats/yaml/extractYaml.js';
 import { logger } from '../console/logger.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import { getRelative } from '../fs/findFilepath.js';
+import {
+  resolveMintlifyRefs,
+  shouldResolveRefs,
+} from '../utils/resolveMintlifyRefs.js';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { isDeepStrictEqual } from 'node:util';
+
+const emptyExtractionWarning = (relativePath: string, locale: string) =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Warning',
+    whatHappened: `Local edits to ${relativePath} were not saved for ${locale}`,
+    why: 'no translated values for that locale could be read from the file',
+    reassurance: 'The stored translation was left unchanged',
+  });
+
+const resolveLocalRefs = (
+  content: string,
+  outputPath: string,
+  settings: Settings
+): string => {
+  if (!shouldResolveRefs(outputPath, settings.options)) return content;
+  try {
+    const { resolved } = resolveMintlifyRefs(JSON.parse(content), outputPath);
+    return JSON.stringify(resolved, null, 2);
+  } catch {
+    return content;
+  }
+};
+
+const hasLeafValue = (value: unknown): boolean =>
+  value !== null && typeof value === 'object'
+    ? Object.values(value).some(hasLeafValue)
+    : value !== undefined;
+
+const parseJson = (content: string): unknown => {
+  try {
+    return JSON.parse(content);
+  } catch {
+    return undefined;
+  }
+};
 
 type LatestDownloadedVersion = {
   versionId: string;
@@ -282,13 +324,29 @@ export async function collectAndSendUserEditDiffs(
             c.locale !== settings.defaultLocale
           ) {
             const extractedContent = extractJson(
-              rawLocalContent,
+              resolveLocalRefs(rawLocalContent, c.outputPath, settings),
               c.fileName,
               settings.options,
               c.locale,
               settings.defaultLocale
             );
             if (extractedContent) {
+              const extracted = parseJson(extractedContent);
+              // Submitting an extraction with no values would replace the
+              // stored translation with an empty one.
+              if (!hasLeafValue(extracted)) {
+                const relativePath = getRelative(c.outputPath);
+                logger.warn(emptyExtractionWarning(relativePath, c.locale));
+                recordWarning(
+                  'skipped_file',
+                  relativePath,
+                  `No translated values for ${c.locale} could be read from the file`
+                );
+                continue;
+              }
+              if (isDeepStrictEqual(extracted, parseJson(serverContent))) {
+                continue;
+              }
               localContent = extractedContent;
             }
           } else if (

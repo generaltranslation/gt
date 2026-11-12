@@ -573,4 +573,148 @@ describe('collectAndSendUserEditDiffs', () => {
       expect(diffs[0].localContent).toBe(slice(JSON.stringify(edited), 'fr'));
     });
   });
+
+  describe('Mintlify docs.json with languages split into $ref files', () => {
+    const served = (tab: string, group: string) =>
+      JSON.stringify(
+        {
+          '/navigation/languages': {
+            '/0': { '/tabs/0/pages/0/group': group, '/tabs/0/tab': tab },
+          },
+        },
+        null,
+        2
+      );
+
+    const nav = (tab: string, group: string) => ({
+      tabs: [{ tab, pages: [{ group, pages: ['docs/start'] }] }],
+    });
+
+    const run = async (jaNav: object | undefined, serverData: string) => {
+      const docsPath = path.join(tempDir, 'docs.json');
+      fs.mkdirSync(path.join(tempDir, 'config', 'ja'), { recursive: true });
+      fs.writeFileSync(
+        docsPath,
+        JSON.stringify({
+          navigation: {
+            languages: [
+              { language: 'en', $ref: './config/nav.json' },
+              { language: 'ja', $ref: './config/ja/nav.json' },
+            ],
+          },
+        })
+      );
+      fs.writeFileSync(
+        path.join(tempDir, 'config', 'nav.json'),
+        JSON.stringify(nav('Get Started', 'Basics'))
+      );
+      if (jaNav) {
+        fs.writeFileSync(
+          path.join(tempDir, 'config', 'ja', 'nav.json'),
+          JSON.stringify(jaNav)
+        );
+      }
+      writeLockFile({
+        version: 1,
+        entries: {
+          branch1: {
+            file1: {
+              version1: {
+                ja: {
+                  updatedAt: new Date().toISOString(),
+                  postProcessHash: hashStringSync('downloaded'),
+                },
+              },
+            },
+          },
+        },
+      });
+      const translation = {
+        branchId: 'branch1',
+        fileId: 'file1',
+        versionId: 'version1',
+        locale: 'ja',
+      };
+      vi.mocked(api.queryFileData).mockResolvedValue({
+        translatedFiles: [
+          { ...translation, completedAt: new Date().toISOString() },
+        ],
+      });
+      vi.mocked(api.downloadFileBatch).mockResolvedValue({
+        files: [{ ...translation, data: serverData, fileFormat: 'JSON' }],
+      });
+      vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
+
+      const settings = createMockSettings({
+        configDirectory: tempDir,
+        config: path.join(tempDir, 'gt.config.json'),
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        _branchId: 'branch1',
+        files: {
+          resolvedPaths: { json: [docsPath] },
+          placeholderPaths: { json: [docsPath] },
+          transformPaths: {},
+        },
+        options: {
+          jsonSchema: {
+            './docs.json': {
+              resolveRefs: true,
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  key: '$.language',
+                  splitEntries: true,
+                  include: ['$..group', '$..tab'],
+                },
+              },
+            },
+          },
+        },
+      });
+      await collectAndSendUserEditDiffs(
+        [
+          {
+            fileName: 'docs.json',
+            fileFormat: 'JSON',
+            branchId: 'branch1',
+            fileId: 'file1',
+            versionId: 'version1',
+          },
+        ],
+        settings
+      );
+    };
+
+    it('submits the values read through the locale $ref when the nav was edited', async () => {
+      await run(nav('はじめに', '基礎'), served('はじめに', '基本'));
+
+      expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+      const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+      expect(diffs).toHaveLength(1);
+      expect(JSON.parse(diffs[0].localContent)).toEqual(
+        JSON.parse(served('はじめに', '基礎'))
+      );
+    });
+
+    it('submits nothing when the nav behind the $ref matches the stored translation', async () => {
+      await run(nav('はじめに', '基本'), served('はじめに', '基本'));
+
+      expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+      expect(getWarnings()).toEqual([]);
+    });
+
+    it('keeps the stored translation when no values can be read for the locale', async () => {
+      await run(undefined, served('はじめに', '基本'));
+
+      expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+      expect(getWarnings()).toEqual([
+        {
+          category: 'skipped_file',
+          fileName: 'docs.json',
+          reason: 'No translated values for ja could be read from the file',
+        },
+      ]);
+    });
+  });
 });
