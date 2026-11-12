@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
 import { compileCatalog } from '@inlang/paraglide-js';
 import {
+  matchingIds,
   patternMatcher,
   readCatalog,
 } from '../../src/compiler/paraglide/catalog.js';
@@ -167,4 +168,37 @@ test('dynamic patterns', () => {
   expect(patternMatcher('*')('foo-bar')).toBe(true);
   expect(patternMatcher('a.b*')('axb')).toBe(false);
   expect(patternMatcher('greeting')('greeting')).toBe(true);
+});
+
+/** Ids that count how often they are listed. */
+class ListedIds extends Set<string> {
+  lists = 0;
+
+  override [Symbol.iterator]() {
+    this.lists++;
+    return super[Symbol.iterator]();
+  }
+}
+
+describe('matchingIds', () => {
+  test.each([
+    ['error_*', ['error_404', 'error_500']],
+    ['greeting', ['greeting']],
+    ['missing_*', []],
+  ])('matches %s against a set of ids once', (pattern, expected) => {
+    const ids = new ListedIds(IDS);
+
+    expect(matchingIds(pattern, ids)).toEqual(expected);
+    expect(matchingIds(pattern, ids)).toEqual(expected);
+    expect(ids.lists).toBe(1);
+  });
+
+  test('keeps the matches of different sets of ids apart', () => {
+    const ids = [new Set(['error_404', 'greeting']), new Set(['error_500'])];
+
+    expect(ids.map((set) => matchingIds('error_*', set))).toEqual([
+      ['error_404'],
+      ['error_500'],
+    ]);
+  });
 });
