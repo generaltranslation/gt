@@ -1,5 +1,17 @@
 # gt-svelte
 
+## 0.1.0-samsara.5
+
+### Patch Changes
+
+- Updated dependencies [7ef8d91]
+- Updated dependencies [7ef8d91]
+- Updated dependencies [3c013b5]
+  - @generaltranslation/format@1.0.0-samsara.4
+  - generaltranslation@10.0.0-samsara.4
+  - gt-i18n@2.0.0-samsara.4
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.5
+
 ## 0.1.0-samsara.4
 
 ### Patch Changes

@@ -1,5 +1,77 @@
 # @generaltranslation/icu
 
+## 0.2.0-samsara.3
+
+### Minor Changes
+
+- 7ef8d91: ICU dates and times format as ICU does. The named styles, as in `{d, date, medium}` and `{t, time, short}`, use Intl's `dateStyle` and `timeStyle`, and a date or time without a style is the medium style: `{d, date}` is `May 6, 2020` in `en-US`, not `5/6/2020`. Skeletons read `S` as fractional seconds, `B` as the day period and `O` or `v` as the time zone name, and `::unit/` keeps a compound unit such as `kilometer-per-hour`.
+- 7ef8d91: Names now follow one rule: a message is a tree and its `formats`, and a message tree is the tree alone.
+  - `/internal`: `buildMessageTree` is `templateToMessage`, beside `icuToMessage`, since both return a message; its result type `BuiltMessageTree` is `TemplateMessage`.
+  - `MessageTreeValues` is `MessageValues`: values are not part of the tree.
+
+- 3c013b5: `@generaltranslation/icu` and `@generaltranslation/format` share one cache of Intl formatters, and take what they format with as arguments.
+  - `formatMessage` and `formatMessageTree` cache the locale they resolve and the Intl formatters they build, instead of creating them on every call, and return a plain-text message tree as is. Messages that format a number, a plural or a date render about 20 times faster.
+  - `@generaltranslation/icu` and `@generaltranslation/format` apply no defaults to their own parameters and read neither the host's time zone nor the clock. The `locales`, a message's `variables`, the `timeZone` of dates and times, and the `baseDate` of `formatRelativeTimeFromDate` are required, as are `LocaleConfig`'s `defaultLocale`, `locales` and `timeZone`.
+  - `generaltranslation` is the only package that resolves what a caller leaves out: its formatting functions and `LocaleConfig` keep their optional arguments, and it reads the host's time zone, once for the process. gt-i18n formats through it and no longer fills in a default itself.
+  - The cache holds at most 256 instances of each constructor. It had no limit.
+  - gt-i18n cuts an ICU message with `$maxChars` using the terminator of its locale, as it does a plain string. It used the English one.
+
+- c7ae5e3: Whole messages are checked against ICU4C, and every difference has a stated reason.
+
+  `icu4c-messages.test.ts` formats about 1,250 messages over every part of the format, in more than 50 locales, and checks each against ICU4C 78.3's output. A message that does not print what ICU4C prints names its reason there.
+
+  Closer to ICU4C:
+  - A left-to-right or right-to-left mark next to a name, a type or a branch key is white space, as in ICU. With a right-to-left mark before and after it, `{name}` asked for a value whose name ended in the mark.
+  - An exact plural selector matches by number: `=01` and `=+1` are `=1`. They were compared as text, so they never matched 1.
+  - `h` in a skeleton is the 12-hour clock the locale prefers, so `::hm` at half past midnight is `午前0:30` in Japanese, not `午前12:30`. `K` reads as `h` and `k` as `H`, as ICU matches them: `::Km` is `12:30 AM` and `::km` is `00:30` in English.
+  - An hour with one letter is padded as the locale pads it, whatever the minute is written as: `::jmm` and `::Hmm` are `03:04` in German, not `3:04`. This also holds for `time()` with `hour: 'numeric'` and `minute: '2-digit'`.
+  - `scale` with a power of ten is exact: `::scale/0.1 precision-unlimited` formats 3 as `0.3`, not `0.30000000000000004`, and a numeric string the same way. It also scales an int64 by a fraction.
+  - `<br />` keeps its space. It was printed as `<br/>`.
+  - `currency/EUR base-unit` is an error, as two unit settings are in ICU.
+
+  Errors instead of wrong output:
+  - A value is found only among the values given: `{toString}` with no value is an error, where it printed a function. Values inherited from a prototype are no longer read.
+  - A message nests at most 64 levels of branches and tags, the limit a message tree already has. Deeper nesting overflowed the stack near 1,000 levels.
+  - `plural()` and `select()` branch keys spell an exact number one way: `=1`, not `=01`, and `validateMessageTree` rejects a tree that spells one otherwise.
+
+  Clearer errors:
+  - A syntax error's message says what is wrong and what to write, like `choice is deprecated in ICU: write a plural or a select.` The kind of error, like `INVALID_ARGUMENT_TYPE`, was the message and is now the error's `code`.
+
+- 7ef8d91: Message trees convert to ICU and back without loss.
+  - Each `number`, `date` and `time` option is either a message option, kept in the tree (`style`, `unit`, date and time fields), or formatting context (`currency`, digits, `timeZone` and the rest). A date's or a time's named style is `style`, as for a number: `{ style: 'medium' }`, not Intl's `dateStyle` or `timeStyle`. `templateToMessage` returns the context as `formats`, and `formatMessageTree(tree, locales, values, { formats, timeZone })` applies it. `formats` is required, `{}` when a message has none; `formatMessage`, for an ICU string, takes no `formats`.
+  - A message, branch or tag without placeholders is one string: `MessageTree` is `string | MessageNode[]`.
+  - `icuToMessageTree(icu)` is now `icuToMessage(icu)` and returns a `Message`, `{ tree, formats }`. Any ICU string the parser reads converts: the formatting context it spells, like `::currency/EUR .00`, an hour cycle or `scale/100`, goes to `formats` by variable, so the same sentence in two currencies is one tree. `styles` passes the app's own style names, in the shape of react-intl's `formats` prop. It takes no source, and `findConflictingFormat` is removed.
+  - The new `checkTranslation(source, translation, { locale })` compares a translation's variables and styles with its source. The translation is the `Message` that `icuToMessage` reads, and formatting context it sets, like a currency or an hour cycle, is reported: a translation cannot set any.
+  - The `MessageVariables` type is removed: `MessageValues<R>` types the values of `formatMessage` and `formatMessageTree`.
+
+- 884e499: `messageToIcu(message)` prints a message as an ICU string, the other way from `icuToMessage`.
+  - It writes the tree and the formatting context a skeleton can spell: a currency, digits, a notation, grouping, a sign, a numbering system or an hour cycle. `{ tree: ['Total: ', ['total', 'number', 'currency']], formats: { total: { currency: 'EUR', maximumFractionDigits: 0 } } }` prints as `Total: {total, number, ::currency/EUR precision-integer}`.
+  - It returns `{ icu, formats }`. `formats` is the context ICU has no syntax for, like a time zone or a calendar. `icuToMessage(icu)` reads the same tree back, and its `formats` with the returned ones are the message's.
+  - `messageTreeToIcu(tree)` still prints the tree alone, which is what a translator sees. It now prints a percent unit as `::percent`, where it printed `::unit/percent`; both read back as the same tree.
+
+- a186111: `checkTranslation` checks a translation's plural branches against its locale.
+
+  Given a `locale`, each `plural` and `selectordinal` needs a branch for every category the locale has. A value with no branch for its category falls back to `other` and reads wrong: a Russian translation with only `one` and `other` prints `2 файлов`, not `2 файла`. It was accepted; it is now reported as `"n" is missing the plural branches few, many, which ru needs`.
+  - A branch that is no CLDR category, like `lots`, is reported too.
+  - A category the locale does not have, like `one` in Japanese, may still be left out or kept: it is never chosen.
+  - Exact branches like `=0` are not part of this check.
+  - Without a `locale`, or with one `Intl` has no plural rules for, no branch is checked. `Intl` would otherwise answer for the host's language, which also applied to the categories a translation may leave out.
+
+- 2eadfe1: Number and date skeletons mean what they mean in ICU4C, or they throw.
+  - Number skeleton tokens that FormatJS reads differently from ICU now have ICU's meaning. `percent` no longer multiplies by 100, so `{n, number, ::percent}` formats 0.256 as `0.256%`, not `26%`; `%x100` is the one that multiplies. `unit-width-short` is the currency symbol and `unit-width-iso-code` is the code. `group-min2`, `group-on-aligned`, `numbering-system/…`, `latin`, `sign-negative`, `sign-accounting-negative`, `precision-increment/…`, `precision-unlimited`, `.00*`, `@@@*` and a trailing `/w` are read instead of ignored. `E0` sets no integer digits, and `scale/0` multiplies by 0.
+  - A token or field ICU formats and Intl cannot throws a `RangeError` that names it, where it was ignored or formatted as something else: `permille`, `unit-width-hidden`, `precision-currency-cash`, `decimal-always`, digits or a sign for the exponent (`E00`), the date fields `A`, `C`, `J`, `g`, `EEEEEE`, `yyyyy` and `SSSS`, and `a` without an hour.
+  - A token that is not ICU's throws a `SyntaxError`, as does a setting given twice (`.00 .##`). They were ignored.
+  - A style that is not one of ICU's names, like `{n, number, #,##0.00}`, throws when formatted. ICU reads it as a pattern, which is not supported; it was formatted with the default style.
+  - `a` beside an hour adds nothing to it: `::Ha` is a 24-hour clock, as in ICU, not a 12-hour one.
+  - The weekdays `eee`, `eeee` and `eeeee` (and `c`) are short, long and narrow, as in ICU.
+
+  The rounding and the fraction digits a message leaves out are still Intl's. `icu4c-conformance.test.ts` checks about 2,200 cases against ICU4C 78.3's output, and holds every difference with its reason.
+
+- b7fdac5: A message has one valid tree, so it has one key.
+  - `validateMessageTree` and `isMessageTree` reject the other forms of a message: plain text in an array (`['Save']` for `'Save'`), text split in pieces or empty text in an array, a plural offset of 0, a `null` style, and entries past the ones a node's kind has. `templateToMessage` and `icuToMessageTree` never wrote these. The order of keys is still free.
+  - `messageTreeToIcu` prints a valid tree as it is; it no longer rewrites other forms first.
+  - The message tree types tell every node apart by its second element, so `switch (node[1])` narrows a node without a cast.
+
 ## 0.2.0-samsara.2
 
 ### Patch Changes

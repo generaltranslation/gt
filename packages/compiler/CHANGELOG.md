@@ -1,5 +1,27 @@
 # @generaltranslation/compiler
 
+## 1.4.0-samsara.3
+
+### Minor Changes
+
+- 7ef8d91: Extraction and `$_hash` injection for `/unstable` tagged templates support `time()` and accept any expression for a formatting-context option such as `currency` or `timeZone`. Message options (`style`, `unit`, date and time fields) must still be literals. A message without placeholders, including `msg('Save')`, is one string tree, so its hash changes once.
+
+### Patch Changes
+
+- Updated dependencies [7ef8d91]
+- Updated dependencies [7ef8d91]
+- Updated dependencies [7ef8d91]
+- Updated dependencies [3c013b5]
+- Updated dependencies [c7ae5e3]
+- Updated dependencies [7ef8d91]
+- Updated dependencies [884e499]
+- Updated dependencies [a186111]
+- Updated dependencies [2eadfe1]
+- Updated dependencies [b7fdac5]
+  - @generaltranslation/icu@0.2.0-samsara.3
+  - @generaltranslation/format@1.0.0-samsara.4
+  - generaltranslation@10.0.0-samsara.4
+
 ## 1.4.0-samsara.2
 
 ### Patch Changes
