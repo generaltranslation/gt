@@ -175,7 +175,15 @@ describe('collectContext', () => {
   test('Markdown without the Vue tools: only a page with a script is reported', async () => {
     const root = await writeOutsideProject({
       'src/main.ts': 'export {};\n',
-      'README.md': '# App\n\nRun `pnpm dev`.\n',
+      'README.md': [
+        '# App',
+        'Add a `<script>` tag to the page:',
+        '```html',
+        '<script src="app.js"></script>',
+        '```',
+        '<!-- <script src="old.js"></script> -->',
+        '',
+      ].join('\n'),
       'docs/index.md': `<script setup>\nimport { m } from "../src/paraglide/messages.js";\n</script>\n\n# {{ m.greeting() }}\n`,
     });
     const { warnings } = await collect(root);
