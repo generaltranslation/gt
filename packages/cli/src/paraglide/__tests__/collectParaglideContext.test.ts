@@ -2,9 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createMockSettings } from '../../api/__mocks__/settings.js';
 import { logger } from '../../console/logger.js';
-import type { Settings } from '../../types/index.js';
 import { collectParaglideContext } from '../collectParaglideContext.js';
 
 const spinner = vi.hoisted(() => ({ start: vi.fn(), stop: vi.fn() }));
@@ -32,18 +30,6 @@ export async function collectContext() {
   throw new Error('no Paraglide outdir');
 }
 `;
-
-function settings(includeSourceCodeContext: boolean): Settings {
-  const base = createMockSettings();
-
-  return {
-    ...base,
-    files: {
-      ...base.files,
-      parsingFlags: { json: { includeSourceCodeContext } },
-    },
-  };
-}
 
 function installParaglidePackage(projectRoot: string, compiler: string): void {
   const packageDirectory = path.join(
@@ -83,10 +69,10 @@ describe('collectParaglideContext', () => {
     fs.rmSync(projectRoot, { recursive: true, force: true });
   });
 
-  it('collects the context of the project when the flag is set and the package is installed', async () => {
+  it('collects the context of the project when the package is installed', async () => {
     installParaglidePackage(projectRoot, RECORDING_COMPILER);
 
-    await collectParaglideContext(settings(true), projectRoot);
+    await collectParaglideContext(projectRoot);
 
     const collected = JSON.parse(
       fs.readFileSync(path.join(projectRoot, 'collected.json'), 'utf8')
@@ -101,18 +87,8 @@ describe('collectParaglideContext', () => {
     );
   });
 
-  it('does nothing when the flag is not set', async () => {
-    installParaglidePackage(projectRoot, RECORDING_COMPILER);
-
-    await collectParaglideContext(settings(false), projectRoot);
-    await collectParaglideContext(createMockSettings(), projectRoot);
-
-    expect(fs.existsSync(path.join(projectRoot, 'collected.json'))).toBe(false);
-    expect(spinner.start).not.toHaveBeenCalled();
-  });
-
   it('does nothing when the package is not installed', async () => {
-    await collectParaglideContext(settings(true), projectRoot);
+    await collectParaglideContext(projectRoot);
 
     expect(spinner.start).not.toHaveBeenCalled();
     expect(logger.warn).not.toHaveBeenCalled();
@@ -121,7 +97,7 @@ describe('collectParaglideContext', () => {
   it('warns instead of throwing when the collection fails', async () => {
     installParaglidePackage(projectRoot, FAILING_COMPILER);
 
-    await collectParaglideContext(settings(true), projectRoot);
+    await collectParaglideContext(projectRoot);
 
     expect(spinner.stop).toHaveBeenCalledWith(
       'Source code context for Paraglide messages was skipped'
