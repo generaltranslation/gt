@@ -40,6 +40,7 @@ import {
   validateJsonSchema,
 } from '../formats/json/utils.js';
 import type { JSONObject, JSONValue } from '../types/data/json.js';
+import { getJSONPathMatches } from '../formats/json/jsonPath.js';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { isDeepStrictEqual } from 'node:util';
 
@@ -76,8 +77,10 @@ const resolveLocalRefs = (
 };
 
 /**
- * The unreadable refs that sit inside the locale's own entries of a composite
- * file. Every unreadable ref counts when the file is not composite.
+ * The unreadable refs that could hold values of the locale in a composite
+ * file: every one inside a per-locale section, except those inside an entry
+ * known to belong to another locale. Every unreadable ref counts when the file
+ * is not composite.
  */
 const unreadableRefsForLocale = (
   unreadableRefs: UnreadableRef[],
@@ -97,40 +100,51 @@ const unreadableRefsForLocale = (
   const localeKey = settings.options?.experimentalCanonicalLocaleKeys
     ? api.resolveCanonicalLocale(locale)
     : locale;
-  const localePointers: string[] = [];
+  const sectionPointers: string[] = [];
+  const otherLocalePointers: string[] = [];
   for (const [
     pointer,
     { sourceObjectValue, sourceObjectOptions },
   ] of Object.entries(generateSourceObjectPointers(composite, json))) {
+    sectionPointers.push(pointer);
     if (sourceObjectOptions.type === 'array') {
       if (!Array.isArray(sourceObjectValue)) continue;
-      for (const itemPointer of Object.keys(
-        findMatchingItemArray(
-          localeKey,
-          sourceObjectOptions,
-          pointer,
-          sourceObjectValue
-        )
-      )) {
-        localePointers.push(`${pointer}${itemPointer}`);
-      }
+      const ownItems = findMatchingItemArray(
+        localeKey,
+        sourceObjectOptions,
+        pointer,
+        sourceObjectValue
+      );
+      sourceObjectValue.forEach((item, index) => {
+        // An entry whose locale key sat in the unreadable file has no key
+        // left, so it may be the locale's own.
+        const hasLocaleKey =
+          !!sourceObjectOptions.key &&
+          (getJSONPathMatches(item, sourceObjectOptions.key)?.length ?? 0) > 0;
+        if (hasLocaleKey && !(`/${index}` in ownItems)) {
+          otherLocalePointers.push(`${pointer}/${index}`);
+        }
+      });
     } else if (sourceObjectValue && typeof sourceObjectValue === 'object') {
-      const { sourceItem, keyParentProperty } = findMatchingItemObject(
+      const { keyParentProperty } = findMatchingItemObject(
         localeKey,
         pointer,
         sourceObjectOptions,
         sourceObjectValue as JSONObject
       );
-      if (sourceItem !== undefined) {
-        localePointers.push(`${pointer}/${keyParentProperty}`);
+      for (const key of Object.keys(sourceObjectValue)) {
+        if (key !== keyParentProperty) {
+          otherLocalePointers.push(`${pointer}/${key}`);
+        }
       }
     }
   }
-  return unreadableRefs.filter((ref) =>
-    localePointers.some(
-      (pointer) =>
-        ref.pointer === pointer || ref.pointer.startsWith(`${pointer}/`)
-    )
+  const isWithin = (ref: UnreadableRef, pointer: string) =>
+    ref.pointer === pointer || ref.pointer.startsWith(`${pointer}/`);
+  return unreadableRefs.filter(
+    (ref) =>
+      sectionPointers.some((pointer) => isWithin(ref, pointer)) &&
+      !otherLocalePointers.some((pointer) => isWithin(ref, pointer))
   );
 };
 

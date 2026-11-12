@@ -592,7 +592,11 @@ describe('collectAndSendUserEditDiffs', () => {
 
     // The fr $ref file never exists: another locale's unreadable ref must
     // not affect what happens to ja.
-    const run = async (jaNav: object | undefined, serverData: string) => {
+    const run = async (
+      jaNav: object | undefined,
+      serverData: string,
+      extraLanguages: object[] = []
+    ) => {
       const docsPath = path.join(tempDir, 'docs.json');
       fs.mkdirSync(path.join(tempDir, 'config', 'ja'), { recursive: true });
       fs.writeFileSync(
@@ -603,6 +607,7 @@ describe('collectAndSendUserEditDiffs', () => {
               { language: 'en', $ref: './config/nav.json' },
               { language: 'ja', $ref: './config/ja/nav.json' },
               { language: 'fr', $ref: './config/fr/nav.json' },
+              ...extraLanguages,
             ],
           },
         })
@@ -719,13 +724,20 @@ describe('collectAndSendUserEditDiffs', () => {
         reason: 'these $ref files could not be read: ./missing.json',
       },
       {
+        name: 'an entry keeps its locale key inside a missing $ref',
+        jaNav: nav('はじめに', '基礎'),
+        extraLanguages: [{ $ref: './config/ja/api.json' }],
+        reason: 'these $ref files could not be read: ./config/ja/api.json',
+      },
+      {
         name: 'the locale has no translated values',
         jaNav: { tabs: [] },
         reason:
           'no translated values for that locale could be read from the file',
       },
-    ])('keeps the stored translation when $name', async ({ jaNav, reason }) => {
-      await run(jaNav, served('はじめに', '基本'));
+    ])('keeps the stored translation when $name', async (row) => {
+      const { jaNav, reason } = row;
+      await run(jaNav, served('はじめに', '基本'), row.extraLanguages);
 
       expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
       expect(getWarnings()).toEqual([
