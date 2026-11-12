@@ -212,7 +212,6 @@ export class GTRuntime {
 
     // ----- Other properties ----- //
     if (baseUrl) this.baseUrl = baseUrl;
-    if (timeZone) this.timeZone = timeZone;
     if (customMapping) {
       this.customMapping = customMapping;
       this.reverseCustomMapping = Object.fromEntries(
@@ -223,12 +222,16 @@ export class GTRuntime {
           .map(([key, value]) => [(value as { code: string }).code, key])
       );
     }
+    const nextTimeZone = timeZone ?? this.timeZone;
     this._localeConfig = new LocaleConfig({
       defaultLocale: this.sourceLocale,
       locales: this.locales ?? [],
       customMapping: this.customMapping,
-      timeZone: this.timeZone,
+      timeZone: nextTimeZone,
     });
+    // Kept only once the locale config accepts it: a rejected zone would
+    // fail every later update.
+    this.timeZone = nextTimeZone;
   }
 
   // -------------- Private Methods -------------- //

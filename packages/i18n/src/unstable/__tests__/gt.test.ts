@@ -432,7 +432,7 @@ describe('gt-i18n/unstable rendering', () => {
   it('uses the host time zone when the config sets none', async () => {
     const hostZone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
     await setup({ locale: 'en' });
-    expect(getI18nConfig().getTimeZone()).toBe(hostZone);
+    expect(getI18nConfig().timeZone).toBe(hostZone);
   });
 
   it('rejects an invalid config time zone', () => {

@@ -288,12 +288,14 @@ describe.sequential('GT Translation Methods', () => {
 });
 
 describe('LocaleConfig', () => {
-  it.each([
-    ['LocaleConfig', () => new LocaleConfig({ timeZone: 'Mars/Olympus' })],
-    ['GT', () => new GT({ timeZone: 'Mars/Olympus' })],
-  ])('%s rejects a time zone Intl does not know', (_name, create) => {
-    expect(create).toThrow('Invalid time zone "Mars/Olympus"');
-  });
+  it.each(['Mars/Olympus', ''])(
+    'rejects the time zone %j, which Intl does not know',
+    (timeZone) => {
+      const message = `Invalid time zone ${JSON.stringify(timeZone)}`;
+      expect(() => new LocaleConfig({ timeZone })).toThrow(message);
+      expect(() => new GT({ timeZone })).toThrow(message);
+    }
+  );
 
   it('formats with a custom alias by resolving to the canonical locale', () => {
     const localeConfig = new LocaleConfig({
@@ -361,6 +363,16 @@ describe('GT LocaleConfig delegation', () => {
     expect(
       gt.formatDateTime(date, { timeStyle: 'short', timeZone: 'UTC' })
     ).toBe(format('UTC'));
+  });
+
+  it('keeps its time zone when an update names one Intl does not know', () => {
+    const gt = new GT({ sourceLocale: 'en-US', timeZone: 'Asia/Tokyo' });
+
+    expect(() => gt.setConfig({ timeZone: 'Mars/Olympus' })).toThrow(
+      'Invalid time zone "Mars/Olympus"'
+    );
+    expect(() => gt.setConfig({ targetLocale: 'fr-FR' })).not.toThrow();
+    expect(gt.localeConfig.timeZone).toBe('Asia/Tokyo');
   });
 
   it('formats with a custom target locale alias through LocaleConfig', () => {
