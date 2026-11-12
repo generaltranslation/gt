@@ -1,11 +1,13 @@
 import { createUnsupportedTreeFormatError } from '../errors/convertErrors';
-import { parseDateTimeSkeletonOptions } from '../parser/skeleton';
+import { toNumberSkeleton } from '../parser/numberSkeleton';
+import { HOUR_CYCLES, parseDateTimeSkeletonOptions } from '../parser/skeleton';
 import { printAST } from '../parser/printer';
 import {
   DATE_TIME_STYLE_NAMES,
   NAMED_NUMBER_STYLES,
   type DateTimeStyleName,
   type MessageFormattingContext,
+  type MessageFormats,
 } from '../settings/formatOptions';
 import { sortRecord } from '../tree/canonical';
 import type {
@@ -23,7 +25,11 @@ import {
   type ContextByVariable,
 } from '../tree/splitOptions';
 import { styleProblem } from '../tree/validateMessageTree';
-import { messageTreeNodes } from '../tree/walk';
+import {
+  forEachPlaceholder,
+  isFormattedNode,
+  messageTreeNodes,
+} from '../tree/walk';
 import { printDateTimeSkeleton } from './skeleton';
 import {
   SKELETON_TYPE,
@@ -225,15 +231,136 @@ function toBranches<Format>(
   );
 }
 
+type FormatWriter = (node: FormattedNode) => FormatElement;
+
+/** A formatted placeholder as the tree alone says it, without context. */
+const plainFormat: FormatWriter = (node) => writeFormat(node, {})[0];
+
 /**
  * Converts a message tree back to the parser's syntax tree. A tree holds only
  * what ICU spells, so nothing is lost; a style a tree cannot hold throws.
  */
 export function fromMessageTree(tree: MessageTree): MessageFormatElement[] {
-  return messageTreeNodes(tree).map(fromNode);
+  return fromNodes(tree, plainFormat);
 }
 
-function fromNode(node: MessageNode): MessageFormatElement {
+function fromNodes(
+  tree: MessageTree,
+  write: FormatWriter
+): MessageFormatElement[] {
+  return messageTreeNodes(tree).map((node) => fromNode(node, write));
+}
+
+/**
+ * Converts a message to the parser's syntax tree, with the formatting
+ * context ICU can spell written into its formatted placeholders, and returns
+ * the context that is left, by variable. `formats` is by variable, so a
+ * variable whose placeholders would spell different parts of its context,
+ * like a number and a percent with a currency display, writes none of it.
+ */
+export function fromMessage({
+  tree,
+  formats,
+}: Message): [ast: MessageFormatElement[], rest: MessageFormats] {
+  const elements = new Map<FormattedNode, FormatElement>();
+  const rest: ContextByVariable = new Map();
+  const mixed = new Set<string>();
+  forEachPlaceholder(tree, (node) => {
+    if (!isFormattedNode(node)) return;
+    const name = node[0];
+    const context = own(formats, name);
+    if (!context) return;
+    const [element, left] = writeFormat(node, context);
+    elements.set(node, element);
+    const other = rest.get(name);
+    if (other && JSON.stringify(other) !== JSON.stringify(left)) {
+      mixed.add(name);
+    }
+    rest.set(name, left);
+  });
+  for (const name of mixed) rest.set(name, formats[name]);
+  return [
+    fromNodes(
+      tree,
+      (node) => (!mixed.has(node[0]) && elements.get(node)) || plainFormat(node)
+    ),
+    toFormats(rest),
+  ];
+}
+
+/**
+ * A formatted placeholder as a syntax-tree element, and the context it does
+ * not spell. A number spells its context as skeleton tokens, like
+ * `::currency/EUR .00`. A date or time with an hour field spells its hour
+ * cycle as the hour's symbol, like `H`. With no context it is the node alone.
+ */
+function writeFormat(
+  node: FormattedNode,
+  context: MessageFormattingContext
+): [element: FormatElement, left: MessageFormattingContext] {
+  const value = node[0];
+  if (node[1] === 'number') {
+    const style = node[2];
+    const skeleton = toNumberSkeleton({
+      ...(typeof style === 'string' ? NAMED_NUMBER_STYLES[style] : style),
+      ...context,
+    });
+    const left = without(context, skeleton.parsedOptions);
+    // A style name alone says a style without context best.
+    const named =
+      typeof style !== 'object' &&
+      Object.keys(left).length === Object.keys(context).length;
+    return [
+      { type: TYPE.number, value, style: named ? (style ?? null) : skeleton },
+      left,
+    ];
+  }
+  const style = node[2];
+  const fields = typeof style === 'object' ? style : undefined;
+  const hourCycle = 'hourCycle' in context ? context.hourCycle : undefined;
+  const hour =
+    fields?.hour === undefined
+      ? undefined
+      : Object.keys(HOUR_CYCLES).find(
+          (symbol) => HOUR_CYCLES[symbol] === hourCycle
+        );
+  const pattern = fields && printDateTimeSkeleton(fields, hour);
+  return [
+    {
+      type: node[1] === 'date' ? TYPE.date : TYPE.time,
+      value,
+      style:
+        fields && pattern
+          ? {
+              type: SKELETON_TYPE.dateTime,
+              pattern,
+              parsedOptions: hour ? { ...fields, hourCycle } : fields,
+            }
+          : typeof style === 'string'
+            ? style
+            : null,
+    },
+    hour ? without(context, { hourCycle }) : context,
+  ];
+}
+
+// A context's options are all optional, so a copy with fewer is one too.
+function without<Context extends MessageFormattingContext>(
+  context: Context,
+  spelled: object
+): Context {
+  const written = new Map<string, unknown>(Object.entries(spelled));
+  return Object.fromEntries(
+    Object.entries(context).filter(
+      ([key, option]) => written.get(key) !== option
+    )
+  ) as Context;
+}
+
+function fromNode(
+  node: MessageNode,
+  write: FormatWriter
+): MessageFormatElement {
   if (typeof node === 'string') return { type: TYPE.literal, value: node };
   if (node === 0) return { type: TYPE.pound };
   const value = node[0];
@@ -252,42 +379,13 @@ function fromNode(node: MessageNode): MessageFormatElement {
           )
         );
       }
-      if (node[1] === 'number') {
-        const style = node[2];
-        const unit = typeof style === 'object' ? style : undefined;
-        return {
-          type: TYPE.number,
-          value,
-          style: unit
-            ? {
-                type: SKELETON_TYPE.number,
-                tokens: [{ stem: 'unit', options: [unit.unit] }],
-                parsedOptions: unit,
-              }
-            : typeof style === 'string'
-              ? style
-              : null,
-        };
-      }
-      const style = node[2];
-      const fields = typeof style === 'object' ? style : undefined;
-      const pattern = fields && printDateTimeSkeleton(fields);
-      return {
-        type: node[1] === 'date' ? TYPE.date : TYPE.time,
-        value,
-        style:
-          fields && pattern
-            ? { type: SKELETON_TYPE.dateTime, pattern, parsedOptions: fields }
-            : typeof style === 'string'
-              ? style
-              : null,
-      };
+      return write(node);
     }
     case 'select':
       return {
         type: TYPE.select,
         value,
-        options: fromBranches(node[2]),
+        options: fromBranches(node[2], write),
       };
     case 'plural':
     case 'selectordinal': {
@@ -295,7 +393,7 @@ function fromNode(node: MessageNode): MessageFormatElement {
       return {
         type: TYPE.plural,
         value,
-        options: fromBranches(branches),
+        options: fromBranches(branches, write),
         offset,
         pluralType: kind === 'plural' ? 'cardinal' : 'ordinal',
       };
@@ -304,13 +402,14 @@ function fromNode(node: MessageNode): MessageFormatElement {
       return {
         type: TYPE.tag,
         value,
-        children: fromMessageTree(node[2]),
+        children: fromNodes(node[2], write),
       };
   }
 }
 
 function fromBranches(
-  branches: MessageBranches
+  branches: MessageBranches,
+  write: FormatWriter
 ): Record<string, PluralOrSelectOption> {
   const options: Record<string, PluralOrSelectOption> = Object.create(null);
   // A leading `offset` branch would read back as a plural's `offset:`.
@@ -318,7 +417,7 @@ function fromBranches(
     (a, b) => Number(a === 'offset') - Number(b === 'offset')
   );
   for (const key of keys) {
-    options[key] = { value: fromMessageTree(branches[key]) };
+    options[key] = { value: fromNodes(branches[key], write) };
   }
   return Object.setPrototypeOf(options, Object.prototype);
 }

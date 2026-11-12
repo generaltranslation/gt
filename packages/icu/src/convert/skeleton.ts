@@ -39,10 +39,12 @@ export const DATE_TIME_FIELD_SYMBOLS = {
 /**
  * Prints date or time fields as an ICU skeleton:
  * `{ year: 'numeric', month: 'short', day: 'numeric' }` becomes `yMMMd`.
- * The fields must be valid, as `validateMessageTree` checks.
+ * The fields must be valid, as `validateMessageTree` checks. `hour` is the
+ * symbol of the hour: `j`, the locale's, or that of an hour cycle, like `H`.
  */
 export function printDateTimeSkeleton(
-  fields: Exclude<NonNullable<DateTimeNode[2]>, string>
+  fields: Exclude<NonNullable<DateTimeNode[2]>, string>,
+  hour = 'j'
 ): string {
   const values: Partial<Record<string, string | number>> = fields;
   return Object.entries(DATE_TIME_FIELD_SYMBOLS)
@@ -52,5 +54,6 @@ export function printDateTimeSkeleton(
         ? ''
         : (symbols as Record<string, string>)[value];
     })
-    .join('');
+    .join('')
+    .replace(/j/g, hour);
 }

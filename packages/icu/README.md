@@ -9,8 +9,9 @@ no locale-data polyfills are shipped.
 - `@generaltranslation/icu`: message trees, without the parser.
   `formatMessageTree()`, `validateMessageTree()` and `isMessageTree()`.
 - `@generaltranslation/icu/convert`: `icuToMessage()` reads an ICU string as
-  a message, `messageTreeToIcu()` prints a message tree as an ICU string, and
-  `checkTranslation()` checks a translation against its source.
+  a message, `messageToIcu()` prints a message as an ICU string,
+  `messageTreeToIcu()` prints its tree alone, and `checkTranslation()` checks
+  a translation against its source.
 - `@generaltranslation/icu/parser`: the ICU string parser. `parse()`,
   `formatMessage()`, `printAST()` and the syntax-tree types.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
@@ -71,6 +72,24 @@ The same sentence in another currency is the same tree, so it is translated
 once. `formats` is by variable, so a string that gives one variable two
 formatting contexts is rejected. Pass an app's own style names in `styles`, in
 the shape react-intl takes as its `formats` prop.
+
+`messageToIcu()` goes the other way. It writes the formatting context a
+skeleton can spell into the string, and returns the rest, which ICU has no
+syntax for:
+
+```ts
+import { messageToIcu } from '@generaltranslation/icu/convert';
+
+messageToIcu({
+  tree: [['due', 'time', { hour: 'numeric', minute: '2-digit' }]],
+  formats: { due: { hourCycle: 'h23', timeZone: 'Asia/Tokyo' } },
+});
+// { icu: '{due, time, ::Hmm}', formats: { due: { timeZone: 'Asia/Tokyo' } } }
+```
+
+`icuToMessage()` reads that string back as the same tree, and its `formats`
+with the returned ones are the message's. `messageTreeToIcu()` prints the tree
+alone, which is what a translator sees: `{due, time, ::jmm}`.
 
 The formatters take every argument: the locales, the values, and the time
 zone of dates and times. This package applies no defaults to them and does

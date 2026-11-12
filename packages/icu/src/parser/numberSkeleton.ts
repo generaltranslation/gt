@@ -15,9 +15,11 @@ import {
   createInvalidNumberSkeletonTokenError,
   createUnsupportedNumberSkeletonTokenError,
 } from '../errors/skeletonErrors';
-import type {
-  ExtendedNumberFormatOptions,
-  NumberSkeletonToken,
+import {
+  SKELETON_TYPE,
+  type ExtendedNumberFormatOptions,
+  type NumberSkeleton,
+  type NumberSkeletonToken,
 } from '../types-dir/ast';
 
 type Options = ExtendedNumberFormatOptions;
@@ -26,7 +28,8 @@ const NUMBER_SKELETON_WHITE_SPACE = /[\t-\r \x85\u200E\u200F\u2028\u2029]+/u;
 
 /**
  * Stems that take no option: the stem, its concise form, and the Intl
- * options it spells.
+ * options it spells. The table is read both ways: a skeleton into options,
+ * and options into a skeleton.
  */
 const STEMS: readonly (readonly [
   stem: string,
@@ -49,12 +52,13 @@ const STEMS: readonly (readonly [
   ['group-auto', undefined, {}],
   ['group-on-aligned', ',!', { useGrouping: 'always' }],
   ['latin', undefined, { numberingSystem: 'latn' }],
-  ['sign-auto', undefined, { signDisplay: 'auto' }],
   ['sign-always', '+!', { signDisplay: 'always' }],
   ['sign-never', '+_', { signDisplay: 'never' }],
   ['sign-except-zero', '+?', { signDisplay: 'exceptZero' }],
   ['sign-negative', '+-', { signDisplay: 'negative' }],
   ['sign-accounting', '()', { currencySign: 'accounting' }],
+  // The default, so the writer takes any other stem that says as much first.
+  ['sign-auto', undefined, { signDisplay: 'auto' }],
   [
     'sign-accounting-always',
     '()!',
@@ -112,14 +116,18 @@ const STEM_OPTIONS = new Map<string, Options>(
   )
 );
 
+const UNIT = ['style', 'unit', 'currency'];
+const NOTATION = ['notation', 'compactDisplay'];
+const SIGN = ['signDisplay', 'currencySign'];
+
 /**
  * The Intl options of each ICU setting. A skeleton has one token for a
  * setting, so `.00 @@@` and `sign-always sign-accounting` are errors.
  */
 const SETTINGS: readonly (readonly string[])[] = [
-  ['style', 'unit', 'currency'],
+  UNIT,
   ['currencyDisplay', 'unitDisplay'],
-  ['notation', 'compactDisplay'],
+  NOTATION,
   [
     'minimumFractionDigits',
     'maximumFractionDigits',
@@ -134,7 +142,7 @@ const SETTINGS: readonly (readonly string[])[] = [
   ['scale'],
   ['useGrouping'],
   ['numberingSystem'],
-  ['signDisplay', 'currencySign'],
+  SIGN,
 ];
 
 /** Stems ICU defines that Intl cannot format, and why. */
@@ -444,4 +452,164 @@ function readIntegerWidth(token: NumberSkeletonToken): number {
     throw unsupported(token, 'Intl shows at least one integer digit');
   }
   return minimum.length;
+}
+
+/**
+ * Writes Intl options as a number skeleton: its tokens, and as
+ * `parsedOptions` the options those tokens spell, which is how they read
+ * back. An option no token spells exactly is left out, like `compactDisplay`
+ * without its notation or a currency code that is not three letters, so the
+ * skeleton never says more than the options do. A style without a token
+ * writes nothing, since the tokens would be read as a plain number's.
+ */
+export function toNumberSkeleton(options: Options): NumberSkeleton {
+  const tokens: NumberSkeletonToken[] = [];
+  const add = (stem: string | undefined, ...tokenOptions: string[]) => {
+    if (stem) tokens.push({ stem, options: tokenOptions });
+  };
+  const values = new Map<string, unknown>(Object.entries(options));
+  const { style, unit, currency, numberingSystem, scale } = options;
+
+  const fixedUnit = stemOf(values, UNIT);
+  if (fixedUnit) add(fixedUnit);
+  else if (style === 'currency' && isCurrencyCode(currency)) {
+    add('currency', currency);
+  } else if (style === 'unit' && isTokenText(unit)) add('unit', unit);
+
+  if (tokens.length || style === undefined) {
+    const width =
+      style === 'currency'
+        ? 'currencyDisplay'
+        : style === 'unit'
+          ? 'unitDisplay'
+          : undefined;
+    add(
+      width &&
+        STEMS.find(
+          ([, , spelled]) =>
+            spelled[width] !== undefined && spelled[width] === options[width]
+        )?.[0]
+    );
+    add(stemOf(values, NOTATION));
+    add(...precisionToken(options));
+    add(stemOf(values, ['roundingMode']));
+    if (options.minimumIntegerDigits) {
+      add('integer-width', `*${'0'.repeat(options.minimumIntegerDigits)}`);
+    }
+    // `%x100` is `percent scale/100`, and ICU takes one scale.
+    if (Number.isFinite(scale) && fixedUnit !== '%x100') {
+      add('scale', String(scale));
+    }
+    add(stemOf(values, ['useGrouping']));
+    const latin = stemOf(values, ['numberingSystem']);
+    if (latin) add(latin);
+    else if (isTokenText(numberingSystem)) {
+      add('numbering-system', numberingSystem);
+    }
+    add(stemOf(values, SIGN));
+  }
+  return {
+    type: SKELETON_TYPE.number,
+    tokens,
+    parsedOptions: parseNumberSkeletonOptions(tokens),
+  };
+}
+
+// The first stem that spells the most of a setting, and nothing the options lack.
+function stemOf(
+  values: ReadonlyMap<string, unknown>,
+  setting: readonly string[]
+): string | undefined {
+  let best: (typeof STEMS)[number] | undefined;
+  for (const stem of STEMS) {
+    const spelled = Object.entries(stem[2]);
+    if (
+      spelled.length > (best ? Object.keys(best[2]).length : 0) &&
+      spelled.every(
+        ([key, value]) => setting.includes(key) && values.get(key) === value
+      )
+    ) {
+      best = stem;
+    }
+  }
+  return best?.[0];
+}
+
+const isCurrencyCode = (value: unknown): value is string =>
+  typeof value === 'string' && /^[A-Z]{3}$/.test(value);
+
+// Text a token can hold: no space, which ends a token, and no `/`.
+const isTokenText = (value: unknown): value is string =>
+  typeof value === 'string' && /^[A-Za-z0-9-]+$/.test(value);
+
+/**
+ * The one precision token of the options, as `readPrecision` reads it back,
+ * or none when no token spells exactly them: a minimum of fraction digits
+ * without a maximum, or a maximum of significant digits without a minimum.
+ */
+function precisionToken(options: Options): [stem?: string, ...string[]] {
+  const {
+    minimumFractionDigits: minimumFraction,
+    maximumFractionDigits: maximumFraction,
+    minimumSignificantDigits: minimumSignificant,
+    maximumSignificantDigits: maximumSignificant,
+    roundingPriority: priority = 'auto',
+    roundingIncrement: increment,
+    trailingZeroDisplay,
+  } = options;
+  if (trailingZeroDisplay === 'auto') return [];
+  const strip = trailingZeroDisplay ? ['w'] : [];
+  const hasSignificant =
+    minimumSignificant !== undefined || maximumSignificant !== undefined;
+
+  if (increment !== undefined) {
+    if (hasSignificant || priority !== 'auto') return [];
+    if (maximumFraction === undefined || minimumFraction !== maximumFraction) {
+      return [];
+    }
+    const value = (increment / 10 ** maximumFraction).toFixed(maximumFraction);
+    return ['precision-increment', value, ...strip];
+  }
+
+  let significant: string | undefined;
+  if (hasSignificant) {
+    if (!minimumSignificant) return [];
+    if ((maximumSignificant ?? minimumSignificant) < minimumSignificant) {
+      return [];
+    }
+    significant =
+      '@'.repeat(minimumSignificant) +
+      (maximumSignificant === undefined
+        ? '*'
+        : '#'.repeat(maximumSignificant - minimumSignificant));
+  }
+
+  if (maximumFraction === undefined) {
+    if (minimumFraction !== undefined) return [];
+    if (significant) {
+      return priority === 'auto' ? [significant, ...strip] : [];
+    }
+    // Alone, hiding a fraction of zeros has a token only for a currency.
+    return strip.length && options.style === 'currency' && priority === 'auto'
+      ? ['precision-currency-standard', ...strip]
+      : [];
+  }
+  if (minimumFraction === 0 || (minimumFraction ?? 0) > maximumFraction) {
+    return [];
+  }
+  const fraction =
+    maximumFraction === UNLIMITED_FRACTION_DIGITS
+      ? `.${'0'.repeat(minimumFraction ?? 0)}*`
+      : `.${'0'.repeat(minimumFraction ?? 0)}${'#'.repeat(maximumFraction - (minimumFraction ?? 0))}`;
+  if (!significant) {
+    if (priority !== 'auto') return [];
+    return [fraction === '.' ? 'precision-integer' : fraction, ...strip];
+  }
+  // With a fraction, significant digits have both ends and a priority.
+  if (maximumSignificant === undefined || priority === 'auto') return [];
+  return [
+    fraction,
+    significant + (priority === 'morePrecision' ? 'r' : 's'),
+    ...strip,
+  ];
 }
