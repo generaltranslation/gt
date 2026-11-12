@@ -1,3 +1,4 @@
+import type { OxcError, ParseResult } from 'oxc-parser';
 import type { ESTree } from '../analysis/ast.js';
 import type { SourceRange } from '../analysis/types.js';
 import { parseCode } from '../utils/parse.js';
@@ -35,6 +36,27 @@ export function parseSkippingUnparsable(
     skipCopiedText?: boolean;
   }
 ): { code: string; program: ESTree.Program | undefined } {
+  const parsed = parseCode(file, code, { lang });
+  if (!firstError(parsed)) return { code, program: parsed.program };
+
+  return skipUnparsable(
+    file,
+    code,
+    lang,
+    mappings,
+    expressions,
+    skipCopiedText
+  );
+}
+
+function skipUnparsable(
+  file: string,
+  code: string,
+  lang: ParseLang,
+  mappings: readonly Mapping[],
+  expressions: readonly SourceRange[],
+  skipCopiedText: boolean
+): { code: string; program: ESTree.Program | undefined } {
   const sourceAt = sourceOffsets(mappings, code.length);
   const characters = code.split('');
   const untriedExpressions = [...expressions];
@@ -43,9 +65,7 @@ export function parseSkippingUnparsable(
     const current = characters.join('');
     const parsed = parseCode(file, current, { lang });
 
-    const error = parsed.errors.find(
-      (candidate) => candidate.severity === 'Error'
-    );
+    const error = firstError(parsed);
     if (!error) return { code: current, program: parsed.program };
 
     const isOutOfAttempts = skipped === MAX_SKIPPED_EXPRESSIONS;
@@ -64,6 +84,10 @@ export function parseSkippingUnparsable(
 
     unparsable.forEach((range) => replaceWithZero(characters, range));
   }
+}
+
+function firstError({ errors }: ParseResult): OxcError | undefined {
+  return errors.find((candidate) => candidate.severity === 'Error');
 }
 
 function unparsableRanges(
