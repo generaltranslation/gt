@@ -240,10 +240,10 @@ export function mistakes(): unknown[] {
     // @ts-expect-error not an option of number()
     number({ price }, { maximumFractionDigit: 1 }),
 
-    // @ts-expect-error date() has no time style
+    // @ts-expect-error not an option of date()
     date({ due }, { timeStyle: 'short' }),
 
-    // @ts-expect-error Intl's name for the style of a date
+    // @ts-expect-error Intl's name for a date's style is not an option
     date({ due }, { dateStyle: 'medium' }),
 
     // @ts-expect-error a style combined with fields
@@ -258,7 +258,7 @@ export function mistakes(): unknown[] {
     // @ts-expect-error time() has no date style
     time({ due }, { dateStyle: 'medium' }),
 
-    // @ts-expect-error Intl's name for the style of a time
+    // @ts-expect-error Intl's name for a time's style is not an option
     time({ due }, { timeStyle: 'short' }),
 
     // @ts-expect-error time() has no date fields

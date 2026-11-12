@@ -422,37 +422,26 @@ type CheckNumberOptions<F> = {
 };
 
 // Intl throws a TypeError for a style combined with fields.
-type CheckDateTimeOptions<F, Helper extends string, FieldKey, WrongKind> = {
-  [K in keyof F]: K extends keyof WrongKind
-    ? WrongKind[K]
-    : K extends 'style'
-      ? [Extract<keyof F, FieldKey>] extends [never]
-        ? MessageOption<F, K>
-        : `style cannot be combined with fields like ${Extract<keyof F, FieldKey> & string}: use one or the other`
-      : K extends FieldKey
-        ? MessageOption<F, K>
-        : K extends keyof DateTimeFormattingContext
-          ? F[K]
-          : NotAnOption<Helper>;
+type CheckDateTimeOptions<F, Helper extends string, FieldKey> = {
+  [K in keyof F]: K extends 'style'
+    ? [Extract<keyof F, FieldKey>] extends [never]
+      ? MessageOption<F, K>
+      : `style cannot be combined with fields like ${Extract<keyof F, FieldKey> & string}: use one or the other`
+    : K extends FieldKey
+      ? MessageOption<F, K>
+      : K extends keyof DateTimeFormattingContext
+        ? F[K]
+        : NotAnOption<Helper>;
 };
-// Each helper has one named style, so it is `style`; Intl's names get a hint.
 type CheckDateOptions<F> = CheckDateTimeOptions<
   F,
   'date',
-  keyof DateFieldOptions,
-  {
-    dateStyle: "write style, not dateStyle: { style: 'medium' }";
-    timeStyle: 'date() has no time style: use time() for a time';
-  }
+  keyof DateFieldOptions
 >;
 type CheckTimeOptions<F> = CheckDateTimeOptions<
   F,
   'time',
-  keyof TimeFieldOptions,
-  { timeStyle: "write style, not timeStyle: { style: 'short' }" } & Record<
-    'dateStyle' | Exclude<keyof DateFieldOptions, keyof TimeFieldOptions>,
-    'time() formats a time only: use date() for a date'
-  >
+  keyof TimeFieldOptions
 >;
 
 /**
