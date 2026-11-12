@@ -4,7 +4,11 @@ import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { awaitJobs } from '../wrappers/awaitJobs';
-import { createBatches, processBatches } from '../wrappers/batch';
+import {
+  createBatches,
+  DEFAULT_BATCH_SIZE,
+  processBatches,
+} from '../wrappers/batch';
 import { API_VERSION, createApiClient } from '../wrappers/client';
 import { ApiError, isTransientApiError } from '../wrappers/errors';
 import { paginate } from '../wrappers/paginate';
@@ -821,7 +825,7 @@ describe('isTransientApiError', () => {
 describe('batch helpers', () => {
   it('uses chunk-100 by default and preserves item order', async () => {
     const items = Array.from({ length: 205 }, (_, index) => index);
-    const batches = createBatches(items);
+    const batches = createBatches(items, DEFAULT_BATCH_SIZE);
     const result = await processBatches(items, async (batch) => batch);
 
     expect(batches.map(({ length }) => length)).toEqual([100, 100, 5]);

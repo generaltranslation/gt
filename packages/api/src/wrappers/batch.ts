@@ -7,7 +7,7 @@ export type BatchOptions = {
 
 export function createBatches<T>(
   items: readonly T[],
-  batchSize = DEFAULT_BATCH_SIZE
+  batchSize: number
 ): T[][] {
   const batches: T[][] = [];
   for (let index = 0; index < items.length; index += batchSize) {

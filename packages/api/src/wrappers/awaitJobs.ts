@@ -1,7 +1,7 @@
 import type { Client } from '../generated/client';
 import { queryJobs } from '../generated/sdk.gen';
 import type { QueryJobsResponse } from '../generated/types.gen';
-import { createBatches, processBatches } from './batch';
+import { createBatches, DEFAULT_BATCH_SIZE, processBatches } from './batch';
 import { API_VERSION } from './client';
 import { ApiError, isTransientApiError } from './errors';
 // Per-poll cap so a hung connection fails fast instead of eating the whole deadline.
@@ -40,7 +40,7 @@ async function queryJobsBatch(
   client: Client,
   projectId: string,
   jobIds: string[],
-  signal?: AbortSignal
+  signal: AbortSignal | undefined
 ): Promise<JobResult[]> {
   const result = await queryJobs({
     body: { jobs: jobIds.map((id) => ({ id })) },
@@ -104,7 +104,7 @@ export async function awaitJobs(
     const signal = AbortSignal.timeout(
       Math.min(deadline - Date.now(), MAX_POLL_TIMEOUT_MS)
     );
-    const batches = createBatches([...pendingJobIds]);
+    const batches = createBatches([...pendingJobIds], DEFAULT_BATCH_SIZE);
     // A batch that settles after the deadline keeps its jobs' last known
     // statuses, whether it succeeded or failed.
     const loads = await Promise.all(
