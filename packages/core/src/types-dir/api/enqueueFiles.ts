@@ -23,20 +23,3 @@ export type Updates = ({
 } & {
   [Format in DataFormat]: { dataFormat: Format; source: ContentFor<Format> };
 }[DataFormat])[];
-
-export type EnqueueFilesResult = {
-  jobData: {
-    [jobId: string]: {
-      sourceFileId: string;
-      fileId: string;
-      versionId: string;
-      branchId: string;
-      targetLocale: string;
-      projectId: string;
-      force: boolean;
-      modelProvider?: string;
-    };
-  };
-  locales: string[];
-  message: string;
-};

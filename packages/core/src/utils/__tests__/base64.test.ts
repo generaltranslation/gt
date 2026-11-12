@@ -52,4 +52,8 @@ describe('base64 utils', () => {
       'already-base64'
     );
   });
+
+  it('decodes content without a file format as text', () => {
+    expect(decodeFileContent(encode('hello'))).toBe('hello');
+  });
 });

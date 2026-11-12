@@ -1,5 +1,4 @@
-import type { FileFormat } from '@generaltranslation/api';
-import type { DataFormat } from '@generaltranslation/format/types';
+import type { FileDataFormat, FileFormat } from '@generaltranslation/api';
 import { Updates } from './enqueueFiles';
 import type { JsonObject } from './json';
 
@@ -10,14 +9,17 @@ export type { FileFormat };
  * base64-encoded, so the usual UTF-8 encode/decode steps are skipped and the
  * bytes reach the API unaltered.
  *
- * LOTTIE qualifies because it is a zip bundle. Apple's `.strings` and
+ * LOTTIE qualifies because it is a zip bundle, and PNG, JPEG and MP4 are media. Apple's `.strings` and
  * `.stringsdict` do not: they are text in whichever encoding Xcode wrote, and
  * the client decodes that to UTF-8 before upload and restores it on write, so
  * only the client ever handles their bytes.
  */
-export const BINARY_FILE_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>(
-  ['LOTTIE']
-);
+const BINARY_FILE_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>([
+  'LOTTIE',
+  'PNG',
+  'JPEG',
+  'MP4',
+]);
 
 /**
  * Whether a file format's content is carried as base64 end-to-end rather than
@@ -60,7 +62,7 @@ export type FileToUpload = Omit<FileReference, 'branchId'> & {
  * @property {string} locale - The locale of the file (e.g. 'en', 'de', 'es', etc.)
  * @property {string} fileName - The name of the file.
  * @property {FileFormat} fileFormat - The format of the file (JSON, MDX, MD, etc.).
- * @property {DataFormat} [dataFormat] - Optional format of the data within the file.
+ * @property {FileDataFormat} [dataFormat] - Optional format of the data within the file.
  */
 export type FileReference = {
   fileId: string;
@@ -70,21 +72,5 @@ export type FileReference = {
   fileFormat: FileFormat;
   // Optional output format requested for generated translations.
   transformFormat?: FileFormat;
-  dataFormat?: DataFormat;
-};
-
-/**
- * File reference object structure for referencing files.
- * @see {@link FileReference}
- * @property {string} [branchId] - The ID of the branch of the file
- */
-export type FileReferenceIds = Omit<
-  FileReference,
-  'branchId' | 'fileName' | 'fileFormat' | 'dataFormat'
-> & {
-  branchId?: string;
-  fileName?: string;
-  fileFormat?: FileFormat;
-  transformFormat?: FileFormat;
-  dataFormat?: DataFormat;
+  dataFormat?: FileDataFormat;
 };

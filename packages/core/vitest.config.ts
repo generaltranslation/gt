@@ -9,10 +9,6 @@ export default mergeConfig(
   vitestThreadsPreset,
   defineConfig({
     test: {
-      // Keep the GT logger quiet in test output.
-      env: {
-        _GT_LOG_LEVEL: 'off',
-      },
       projects: [
         {
           extends: true,
