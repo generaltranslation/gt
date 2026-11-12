@@ -1,8 +1,14 @@
 import { parse } from '../parser/parse';
 import { printAST } from '../parser/printer';
 import { normalizeTree } from '../tree/canonical';
+import type { MessageTreeFormats } from '../settings/formatOptions';
 import type { Message, MessageTree } from '../tree/messageTree';
-import { fromMessageTree, readMessage, type NamedStyles } from './syntaxTree';
+import {
+  fromMessage,
+  fromMessageTree,
+  readMessage,
+  type NamedStyles,
+} from './syntaxTree';
 
 export type IcuToMessageOptions = {
   /**
@@ -53,4 +59,37 @@ export function icuToMessage(
  */
 export function messageTreeToIcu(tree: MessageTree): string {
   return printAST(fromMessageTree(tree));
+}
+
+/** An ICU string, and the formatting context of its message that it does not spell. */
+export type IcuMessage = {
+  icu: string;
+  formats: MessageTreeFormats;
+};
+
+/**
+ * Prints a message as an ICU MessageFormat string that says as much of it as
+ * ICU can: the tree, and the formatting context a skeleton spells, like a
+ * currency, digits, a notation or an hour cycle. The context ICU has no
+ * syntax for, like a time zone, is returned as `formats`:
+ *
+ *   messageToIcu({
+ *     tree: ['Total: ', ['total', 'number', 'currency']],
+ *     formats: { total: { currency: 'EUR', maximumFractionDigits: 0 } },
+ *   });
+ *   // { icu: 'Total: {total, number, ::currency/EUR precision-integer}', formats: {} }
+ *
+ *   messageToIcu({
+ *     tree: [['due', 'time', { hour: 'numeric', minute: '2-digit' }]],
+ *     formats: { due: { hourCycle: 'h23', timeZone: 'Asia/Tokyo' } },
+ *   });
+ *   // { icu: '{due, time, ::Hmm}', formats: { due: { timeZone: 'Asia/Tokyo' } } }
+ *
+ * `icuToMessage(icu)` reads the same tree back, and its `formats` with the
+ * ones returned here are the message's. To print what a translator sees,
+ * which is the tree alone, use `messageTreeToIcu`.
+ */
+export function messageToIcu(message: Message): IcuMessage {
+  const [ast, formats] = fromMessage(message);
+  return { icu: printAST(ast), formats };
 }

@@ -15,7 +15,8 @@ import {
 const DATE_TIME_FIELD =
   /(?:[Eec]{1,6}|G{1,5}|[Qq]{1,5}|(?:[yYur]+|U{1,5})|[ML]{1,5}|d{1,2}|D{1,3}|F|[ab]{1,5}|B{1,5}|[hHkK]{1,2}|j{1,6}|J{1,2}|w{1,2}|W|m{1,2}|s{1,2}|S+|[zZOvVxX]{1,4}|[A-Za-z])(?=([^']*'[^']*')*[^']*$)/g;
 
-const HOUR_CYCLES: Record<string, Intl.LocaleHourCycleKey> = {
+/** The hour cycle of each hour symbol. */
+export const HOUR_CYCLES: Record<string, Intl.LocaleHourCycleKey> = {
   h: 'h12',
   H: 'h23',
   K: 'h11',

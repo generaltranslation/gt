@@ -1,9 +1,17 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { checkTranslation, icuToMessage, messageTreeToIcu } from '../convert';
+import {
+  checkTranslation,
+  icuToMessage,
+  messageToIcu,
+  messageTreeToIcu,
+} from '../convert';
 import {
   validateMessageTree,
   type DateTimeNode,
+  type Message,
   type MessageTree,
+  type MessageTreeFormats,
   type NumberNode,
   type SelectNode,
 } from '../index';
@@ -548,6 +556,197 @@ const LOSSLESS_TREES: MessageTree[] = [
     ],
   ],
 ];
+
+describe('messageToIcu', () => {
+  it.each<[string, Message, string, MessageTreeFormats]>([
+    [
+      'a currency and its digits',
+      {
+        tree: ['Total: ', ['total', 'number', 'currency']],
+        formats: { total: { currency: 'EUR', maximumFractionDigits: 0 } },
+      },
+      'Total: {total, number, ::currency/EUR precision-integer}',
+      {},
+    ],
+    [
+      'an hour cycle, and not a time zone',
+      {
+        tree: [['due', 'time', { hour: 'numeric', minute: '2-digit' }]],
+        formats: { due: { hourCycle: 'h23', timeZone: 'Asia/Tokyo' } },
+      },
+      '{due, time, ::Hmm}',
+      { due: { timeZone: 'Asia/Tokyo' } },
+    ],
+    [
+      'a notation, grouping and a sign',
+      {
+        tree: [['n', 'number']],
+        formats: {
+          n: {
+            notation: 'compact',
+            compactDisplay: 'short',
+            useGrouping: false,
+            signDisplay: 'always',
+          },
+        },
+      },
+      '{n, number, ::compact-short group-off sign-always}',
+      {},
+    ],
+    [
+      'the digits of a percent',
+      {
+        tree: [['n', 'number', 'percent']],
+        formats: { n: { maximumFractionDigits: 1 } },
+      },
+      '{n, number, ::%x100 .#}',
+      {},
+    ],
+    [
+      'the width of a unit',
+      {
+        tree: [['d', 'number', { style: 'unit', unit: 'kilometer' }]],
+        formats: { d: { unitDisplay: 'long' } },
+      },
+      '{d, number, ::unit/kilometer unit-width-full-name}',
+      {},
+    ],
+    [
+      'the same context in every branch',
+      {
+        tree: [
+          [
+            'n',
+            'plural',
+            {
+              one: [['total', 'number', 'currency'], ' for ', 0, ' item'],
+              other: [['total', 'number', 'currency'], ' for ', 0, ' items'],
+            },
+          ],
+        ],
+        formats: { total: { currency: 'USD' } },
+      },
+      '{n,plural,one{{total, number, ::currency/USD} for # item} other{{total, number, ::currency/USD} for # items}}',
+      {},
+    ],
+  ])('writes %s', (_what, message, icu, formats) => {
+    expect(messageToIcu(message)).toEqual({ icu, formats });
+  });
+
+  // A token is written only when it reads back as exactly its options.
+  it.each<[string, Message, string]>([
+    [
+      'a minimum of fraction digits without a maximum',
+      { tree: [['n', 'number']], formats: { n: { minimumFractionDigits: 2 } } },
+      '{n, number}',
+    ],
+    [
+      'a compact notation without its display',
+      { tree: [['n', 'number']], formats: { n: { notation: 'compact' } } },
+      '{n, number}',
+    ],
+    [
+      'the digits of a currency without its code',
+      {
+        tree: [['n', 'number', 'currency']],
+        formats: { n: { maximumFractionDigits: 0 } },
+      },
+      '{n, number, currency}',
+    ],
+    [
+      'the hour cycle of a named style',
+      { tree: [['t', 'time', 'short']], formats: { t: { hourCycle: 'h23' } } },
+      '{t, time, short}',
+    ],
+    [
+      'a time zone, a calendar and a numbering system of a date',
+      {
+        tree: [['d', 'date', 'long']],
+        formats: {
+          d: { timeZone: 'UTC', calendar: 'gregory', numberingSystem: 'latn' },
+        },
+      },
+      '{d, date, long}',
+    ],
+    [
+      // `formats` is by variable, so reading the string back would give `n`
+      // two contexts.
+      'context that only one placeholder of a variable can spell',
+      {
+        tree: [['n', 'number'], ' is ', ['n', 'number', 'currency']],
+        formats: { n: { currency: 'EUR' } },
+      },
+      '{n, number} is {n, number, currency}',
+    ],
+  ])('leaves %s in formats', (_what, message, icu) => {
+    expect(messageToIcu(message)).toEqual({ icu, formats: message.formats });
+  });
+
+  const fixture = readFileSync(
+    new URL('./fixtures/icu4c/icu4c-78.3.tsv', import.meta.url),
+    'utf8'
+  );
+  const READABLE = [
+    ...new Set(fixture.split('\n').map((row) => row.split('\t')[0])),
+  ].filter((icu) => {
+    try {
+      return icuToMessage(icu);
+    } catch {
+      return false;
+    }
+  });
+
+  // Nothing is lost or added on the way to an ICU string and back.
+  it.each(READABLE)('writes the message of %s back', (icu) => {
+    const message = icuToMessage(icu);
+    const written = messageToIcu(message);
+    const read = icuToMessage(written.icu);
+    expect(read.tree).toEqual(message.tree);
+    const names = Object.keys(message.formats);
+    expect(Object.keys({ ...read.formats, ...written.formats })).toEqual(
+      expect.arrayContaining(names)
+    );
+    for (const name of names) {
+      // The string says nothing the message does not.
+      expect(message.formats[name]).toMatchObject(read.formats[name] ?? {});
+      expect({ ...read.formats[name], ...written.formats[name] }).toEqual(
+        message.formats[name]
+      );
+    }
+    // Printing is stable: what was read prints the same again.
+    expect(messageToIcu(read).icu).toBe(written.icu);
+  });
+
+  it('reads back what it writes for the options of a tagged template', () => {
+    const message: Message = {
+      tree: [
+        ['total', 'number', 'currency'],
+        ' at ',
+        ['t', 'time', { hour: '2-digit', minute: '2-digit' }],
+      ],
+      formats: {
+        total: {
+          currency: 'JPY',
+          currencyDisplay: 'code',
+          currencySign: 'accounting',
+          localeMatcher: 'lookup',
+          minimumIntegerDigits: 2,
+          roundingMode: 'floor',
+        },
+        t: { hour12: false, timeZone: 'Asia/Tokyo' },
+      },
+    };
+    const written = messageToIcu(message);
+    expect(written).toEqual({
+      icu: '{total, number, ::currency/JPY unit-width-iso-code rounding-mode-floor integer-width/*00 sign-accounting} at {t, time, ::jjmm}',
+      formats: {
+        total: { localeMatcher: 'lookup' },
+        t: { hour12: false, timeZone: 'Asia/Tokyo' },
+      },
+    });
+    expect(icuToMessage(written.icu).tree).toEqual(message.tree);
+  });
+});
 
 describe('the tree and ICU text', () => {
   // Valid canonical trees print to ICU and read back as the same tree.
