@@ -19,6 +19,7 @@ const mockVersionInfo = vi.hoisted(() => ({
   turboConfigStable: true,
   localeRefreshSupported: true,
   swcPluginCompatible: true,
+  swcPluginWasmFileName: 'gt_swc_plugin.wasm',
   babelPluginCompatible: true,
 }));
 
@@ -70,6 +71,7 @@ beforeEach(() => {
   mockVersionInfo.localeRefreshSupported = true;
   mockVersionInfo.swcPluginCompatible = true;
   mockVersionInfo.babelPluginCompatible = true;
+  mockVersionInfo.swcPluginWasmFileName = 'gt_swc_plugin.wasm';
   vi.mocked(fs.existsSync).mockReturnValue(false);
   vi.mocked(fs.readFileSync).mockReturnValue('{}');
 });
@@ -303,6 +305,45 @@ describe('withGTConfig', () => {
       for (const key of gtKeys) {
         expect(typeof result.env![key]).toBe('string');
       }
+    });
+
+    describe('SWC plugin wasm selection', () => {
+      function getSwcPluginPath(result: NextConfig) {
+        const plugins = result.experimental!.swcPlugins as [string, unknown][];
+        expect(plugins).toHaveLength(1);
+        return plugins[0][0];
+      }
+
+      it.each(['gt_swc_plugin.wasm', 'gt_swc_plugin_legacy.wasm'])(
+        'passes %s to webpack builds as an absolute path',
+        async (fileName) => {
+          mockVersionInfo.swcPluginWasmFileName = fileName;
+          const withGTConfig = await getWithGTConfig();
+          const result = withGTConfig(
+            {},
+            { experimentalCompilerOptions: { type: 'swc' } }
+          );
+          const pluginPath = getSwcPluginPath(result);
+          expect(path.isAbsolute(pluginPath)).toBe(true);
+          expect(path.basename(pluginPath)).toBe(fileName);
+        }
+      );
+
+      it.each(['gt_swc_plugin.wasm', 'gt_swc_plugin_legacy.wasm'])(
+        'passes %s to Turbopack builds as a relative path',
+        async (fileName) => {
+          process.env.TURBOPACK = '1';
+          mockVersionInfo.swcPluginWasmFileName = fileName;
+          const withGTConfig = await getWithGTConfig();
+          const result = withGTConfig(
+            {},
+            { experimentalCompilerOptions: { type: 'swc' } }
+          );
+          const pluginPath = getSwcPluginPath(result);
+          expect(pluginPath.startsWith('./')).toBe(true);
+          expect(pluginPath.endsWith(`/${fileName}`)).toBe(true);
+        }
+      );
     });
 
     it('has empty swcPlugins array in experimental', async () => {

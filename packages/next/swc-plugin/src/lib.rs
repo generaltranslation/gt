@@ -1,3 +1,13 @@
+#[cfg(all(feature = "swc-v49", feature = "swc-v79"))]
+compile_error!("Enable exactly one swc_core feature: build swc-v49 with --no-default-features.");
+#[cfg(not(any(feature = "swc-v49", feature = "swc-v79")))]
+compile_error!("Enable one swc_core feature: swc-v49 or swc-v79.");
+
+#[cfg(all(feature = "swc-v49", not(feature = "swc-v79")))]
+extern crate swc_core_v49 as swc_core;
+#[cfg(feature = "swc-v79")]
+extern crate swc_core_v79 as swc_core;
+
 use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,
