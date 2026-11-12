@@ -50,16 +50,24 @@ function installParaglidePackage(projectRoot: string, compiler: string): void {
     projectRoot,
     'node_modules/@generaltranslation/paraglide-js'
   );
-  fs.mkdirSync(packageDirectory, { recursive: true });
+  fs.mkdirSync(path.join(packageDirectory, 'dist/src'), { recursive: true });
   fs.writeFileSync(
     path.join(packageDirectory, 'package.json'),
     JSON.stringify({
       name: '@generaltranslation/paraglide-js',
       type: 'module',
-      exports: { './compiler': { default: './compiler.js' } },
+      exports: {
+        './compiler': {
+          types: './dist/src/compiler.d.ts',
+          default: './dist/src/compiler.js',
+        },
+      },
     })
   );
-  fs.writeFileSync(path.join(packageDirectory, 'compiler.js'), compiler);
+  fs.writeFileSync(
+    path.join(packageDirectory, 'dist/src/compiler.js'),
+    compiler
+  );
 }
 
 describe('collectParaglideContext', () => {

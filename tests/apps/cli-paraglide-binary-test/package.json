@@ -1,0 +1,9 @@
+{
+  "name": "cli-paraglide-binary-test",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@generaltranslation/paraglide-js": "workspace:*"
+  }
+}
