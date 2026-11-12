@@ -1,6 +1,10 @@
 import type { I18nCache } from '../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
-import { DictionaryManager } from '../DictionaryManager';
+import type { DictionaryManager } from '../DictionaryManager';
+import {
+  getDictionaryManager,
+  initializeDictionaryManager,
+} from '../singleton-operations';
 import type { Dictionary, DictionaryLoader } from '../types';
 
 /**
@@ -21,11 +25,12 @@ export function createDictionaryHarness<Cache extends I18nCache>(
   } = {}
 ): DictionaryManager & Cache {
   setI18nCache(cache);
-  const manager = new DictionaryManager({
+  initializeDictionaryManager({
     dictionary: dictionary as Dictionary | undefined,
     loadDictionary: loadDictionary as DictionaryLoader | undefined,
     cacheExpiryTime: cacheExpiryTime as number | null | undefined,
   });
+  const manager = getDictionaryManager();
   return new Proxy(manager, {
     get(target, property) {
       const owner: object = property in target ? target : cache;

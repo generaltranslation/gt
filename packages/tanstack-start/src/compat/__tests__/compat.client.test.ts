@@ -32,6 +32,11 @@ vi.mock('@generaltranslation/react-core/pure', () => ({
   getReadonlyConditionStore: () => mockClientConditionStore,
 }));
 
+vi.mock('gt-i18n/internal', () => ({
+  // The browser translations cache never expires unless configured.
+  getI18nCache: () => ({ getCacheExpiryTime: () => null }),
+}));
+
 vi.mock('gt-i18n/internal/compat', () => ({
   getTranslationsInternal: mockGetTranslationsInternal,
   initializeDictionaryManager: mockInitializeDictionaryManager,

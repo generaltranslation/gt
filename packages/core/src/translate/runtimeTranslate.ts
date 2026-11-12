@@ -2,24 +2,17 @@ import {
   createApiClient,
   ErrorCode,
   translateContent,
+  type ModelProvider,
+  type UserTokenProvider,
   type TranslateContentData,
   type TranslateContentResponse,
 } from '@generaltranslation/api';
 import type { Content } from '@generaltranslation/format';
 import type { TranslateManyResult } from '../types-dir/api/translateMany';
 import type { TranslationResult } from '../types-dir/api/translate';
-import type {
-  EntryMetadata,
-  TranslateManyEntry,
-  TranslateOptions,
-} from '../types-dir/api/entry';
-import type { GTRuntime } from '../runtime';
-import { apiVersionHeaders, resolveServiceLocale } from '../client/apiClient';
-import { defaultDefaultLocale } from '../settings/settings';
-import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
-import { noTargetLocaleProvidedError } from '../logging/errors';
+import type { EntryMetadata, TranslateManyEntry } from '../types-dir/api/entry';
+import { apiVersionHeaders } from '../client/apiClient';
 import { hashSource } from '../id/hashSource';
-import { validateModelProvider } from './modelProvider';
 import { unwrapApiResult } from './utils/unwrapApiResult';
 
 type RuntimeTranslationResult = TranslateContentResponse['results'][number];
@@ -72,38 +65,37 @@ function toTranslationResult(
 
 /**
  * @internal
+ * One runtime translation call, as `GTRuntime` resolved it from the call's
+ * options and its own configuration. The locales are service locales.
+ */
+export type RuntimeTranslateCall = {
+  apiKey: string | undefined;
+  userTokenProvider: UserTokenProvider | undefined;
+  projectId: string;
+  baseUrl: string;
+  targetLocale: string;
+  sourceLocale: string;
+  modelProvider: ModelProvider | undefined;
+  timeoutMs: number;
+};
+
+/**
+ * @internal
  * Translates entries for a `GTRuntime`, in as many requests as the API's
  * request size limit needs.
  */
 export function translateEntries(
-  runtime: GTRuntime,
-  functionName: 'translate' | 'translateMany',
-  requests: TranslateManyEntry[],
-  options: string | TranslateOptions,
-  timeoutMs?: number
+  call: RuntimeTranslateCall,
+  requests: TranslateManyEntry[]
 ): Promise<TranslateManyResult>;
 export function translateEntries(
-  runtime: GTRuntime,
-  functionName: 'translate' | 'translateMany',
-  requests: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
-  options: string | TranslateOptions,
-  timeoutMs?: number
+  call: RuntimeTranslateCall,
+  requests: TranslateManyEntry[] | Record<string, TranslateManyEntry>
 ): Promise<TranslateManyResult | Record<string, TranslationResult>>;
 export async function translateEntries(
-  runtime: GTRuntime,
-  functionName: 'translate' | 'translateMany',
-  requests: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
-  options: string | TranslateOptions,
-  timeoutMs?: number
+  call: RuntimeTranslateCall,
+  requests: TranslateManyEntry[] | Record<string, TranslateManyEntry>
 ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-  const globalMetadata =
-    typeof options === 'string' ? { targetLocale: options } : options;
-  if (!globalMetadata?.targetLocale) {
-    throw new Error(noTargetLocaleProvidedError(functionName));
-  }
-  validateModelProvider(globalMetadata.modelProvider);
-  const { customMapping, defaultLocale } = runtime.localeConfig;
-
   const isArray = Array.isArray(requests);
 
   // normalize and map from requests to requests record
@@ -139,23 +131,17 @@ export async function translateEntries(
   }
 
   const client = createApiClient({
-    apiKey: runtime.apiKey,
-    userTokenProvider: runtime.userTokenProvider,
-    baseUrl: runtime.baseUrl || defaultRuntimeApiUrl,
+    apiKey: call.apiKey,
+    userTokenProvider: call.userTokenProvider,
+    baseUrl: call.baseUrl,
     // Translation requests are not retried.
     retryPolicy: 'none',
-    timeoutMs,
+    timeoutMs: call.timeoutMs,
   });
   const envelope = {
-    targetLocale: resolveServiceLocale(
-      globalMetadata.targetLocale,
-      customMapping
-    ),
-    sourceLocale: resolveServiceLocale(
-      globalMetadata.sourceLocale || defaultLocale || defaultDefaultLocale,
-      customMapping
-    ),
-    metadata: { modelProvider: globalMetadata.modelProvider },
+    targetLocale: call.targetLocale,
+    sourceLocale: call.sourceLocale,
+    metadata: { modelProvider: call.modelProvider },
   } satisfies Omit<TranslateContentData['body'], 'requests'>;
   // The API returns one result per request, in request order.
   const responses = await Promise.all(
@@ -169,7 +155,7 @@ export async function translateEntries(
             },
             client,
             headers: apiVersionHeaders(),
-            path: { projectId: runtime.projectId },
+            path: { projectId: call.projectId },
           })
         );
         return results.map(

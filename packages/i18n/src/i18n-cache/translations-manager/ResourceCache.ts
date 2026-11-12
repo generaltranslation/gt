@@ -1,4 +1,3 @@
-import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
 import { dedupePending } from './utils/dedupePending';
 
 export type ResourceCacheEntry<Value> = {
@@ -17,10 +16,10 @@ export class ResourceCache<Key extends string, Value> {
     ttl,
   }: {
     load: (key: Key) => Promise<Value>;
-    ttl?: number | null;
+    ttl: number | null;
   }) {
     this.loadResource = load;
-    this.ttl = ttl === null ? -1 : (ttl ?? DEFAULT_CACHE_EXPIRY_TIME);
+    this.ttl = ttl === null ? -1 : ttl;
   }
 
   public get(key: Key): Value | undefined {

@@ -1,5 +1,3 @@
-import logger from '../logs/logger';
-import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { handleCacheError } from '../i18n-cache/utils/handleCacheError';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { getI18nCache } from '../i18n-cache/singleton-operations';
@@ -38,23 +36,13 @@ export class DictionaryManager {
   private dictionaries: ResourceCache<Locale, DictionaryCache>;
   private environment = getRuntimeEnvironment();
 
-  constructor(params: DictionaryManagerParams = {}) {
-    // loadDictionary requires dictionary so the default locale always has a
-    // source dictionary
-    if (params.loadDictionary && !params.dictionary) {
-      logger.error(
-        'DictionaryManager: ' +
-          createDiagnosticMessage({
-            whatHappened: 'loadDictionary needs a source dictionary',
-            fix: 'Provide dictionary so the default locale has source content',
-          })
-      );
-      throw new Error('Validation errors occurred');
-    }
-
-    const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
+  constructor({
+    dictionary,
+    loadDictionary,
+    cacheExpiryTime,
+  }: Required<DictionaryManagerParams>) {
     this.dictionaries = new ResourceCache<Locale, DictionaryCache>({
-      ttl: params.cacheExpiryTime,
+      ttl: cacheExpiryTime,
       load: async (locale) =>
         this.createDictionaryCache(locale, await loadDictionary(locale)),
     });
@@ -64,7 +52,7 @@ export class DictionaryManager {
     const defaultLocale = getI18nConfig().getDefaultLocale();
     this.dictionaries.set(
       defaultLocale,
-      this.createDictionaryCache(defaultLocale, params.dictionary ?? {}),
+      this.createDictionaryCache(defaultLocale, dictionary),
       { expiresAt: -1 }
     );
   }

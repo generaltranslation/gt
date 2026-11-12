@@ -4,6 +4,7 @@ import {
 } from 'gt-react/compat';
 import { readGTRouterState } from '../router/createGTRouterWrap';
 import { integrateRouter } from '../router/setupRouterGTIntegration.server';
+import { resolveIntegrationOptions } from '../router/resolveIntegrationOptions';
 import type { SetupRouterGTIntegrationOptions } from '../router/types';
 import { ensureDictionaryManager } from './dictionaryManager.server';
 import { loadDictionaries } from './dictionaries';
@@ -23,7 +24,7 @@ function GTProvider(props: GTProviderProps) {
 export function setupRouterGTIntegration(
   options: SetupRouterGTIntegrationOptions
 ): void {
-  integrateRouter(options, {
+  integrateRouter(resolveIntegrationOptions(options), {
     Provider: GTProvider,
     loadState: async (conditionStore) => {
       ensureDictionaryManager();

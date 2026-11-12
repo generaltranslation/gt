@@ -12,6 +12,7 @@ import {
 import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { ResourceCache } from './translations-manager/ResourceCache';
+import { DEFAULT_CACHE_EXPIRY_TIME } from './translations-manager/utils/constants';
 import { TranslationsCache } from './translations-manager/TranslationsCache';
 import type {
   Hash,
@@ -104,7 +105,10 @@ class I18nCache<TranslationValue extends Content = Content> {
       apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
       modelProvider: params.modelProvider,
-      cacheExpiryTime: params.cacheExpiryTime,
+      cacheExpiryTime:
+        params.cacheExpiryTime === undefined
+          ? DEFAULT_CACHE_EXPIRY_TIME
+          : params.cacheExpiryTime,
       batchConfig: params.batchConfig,
       runtimeTranslation: params.runtimeTranslation,
       _versionId: params._versionId,
@@ -135,12 +139,11 @@ class I18nCache<TranslationValue extends Content = Content> {
     );
 
     // Setup locale-keyed caches
-    const ttl = this.config.cacheExpiryTime;
     this.translations = new ResourceCache<
       Locale,
       TranslationsCache<TranslationValue>
     >({
-      ttl,
+      ttl: this.config.cacheExpiryTime,
       load: async (locale) =>
         this.createTranslationsCache(locale, await loadTranslations(locale)),
     });
@@ -170,8 +173,8 @@ class I18nCache<TranslationValue extends Content = Content> {
     return this.config._versionId;
   }
 
-  /** The configured translation TTL: `null` never expires, `undefined` uses the default. */
-  getCacheExpiryTime(): number | null | undefined {
+  /** The translation TTL in milliseconds: `null` never expires. */
+  getCacheExpiryTime(): number | null {
     return this.config.cacheExpiryTime;
   }
 

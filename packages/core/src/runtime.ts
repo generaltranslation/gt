@@ -12,9 +12,20 @@ import type {
   TranslateManyEntry,
   TranslateOptions,
 } from './types-dir/api/entry';
+import { DEFAULT_TIMEOUT_MS } from '@generaltranslation/api';
+import { resolveServiceLocale } from './client/apiClient';
 import type { GTProjectConfig } from './client/clientConfig';
-import { noScopeIdProvidedError } from './logging/errors';
-import { translateEntries } from './translate/runtimeTranslate';
+import {
+  noScopeIdProvidedError,
+  noTargetLocaleProvidedError,
+} from './logging/errors';
+import { defaultDefaultLocale } from './settings/settings';
+import { defaultRuntimeApiUrl } from './settings/settingsUrls';
+import { validateModelProvider } from './translate/modelProvider';
+import {
+  translateEntries,
+  type RuntimeTranslateCall,
+} from './translate/runtimeTranslate';
 
 export type { GTCredentials, GTProjectConfig } from './client/clientConfig';
 
@@ -84,11 +95,8 @@ export class GTRuntime {
     timeout?: number
   ): Promise<TranslationResult> {
     const [result] = await translateEntries(
-      this,
-      'translate',
-      [source],
-      options,
-      timeout
+      this.resolveTranslateCall('translate', options, timeout),
+      [source]
     );
     return result;
   }
@@ -126,6 +134,40 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-    return translateEntries(this, 'translateMany', sources, options, timeout);
+    return translateEntries(
+      this.resolveTranslateCall('translateMany', options, timeout),
+      sources
+    );
+  }
+
+  /** Resolves a call's options against this runtime's configuration. */
+  private resolveTranslateCall(
+    functionName: 'translate' | 'translateMany',
+    options: string | TranslateOptions,
+    timeout: number | undefined
+  ): RuntimeTranslateCall {
+    const callOptions =
+      typeof options === 'string' ? { targetLocale: options } : options;
+    if (!callOptions?.targetLocale) {
+      throw new Error(noTargetLocaleProvidedError(functionName));
+    }
+    validateModelProvider(callOptions.modelProvider);
+    const { customMapping, defaultLocale } = this.localeConfig;
+    return {
+      apiKey: this.apiKey,
+      userTokenProvider: this.userTokenProvider,
+      projectId: this.projectId,
+      baseUrl: this.baseUrl || defaultRuntimeApiUrl,
+      targetLocale: resolveServiceLocale(
+        callOptions.targetLocale,
+        customMapping
+      ),
+      sourceLocale: resolveServiceLocale(
+        callOptions.sourceLocale || defaultLocale || defaultDefaultLocale,
+        customMapping
+      ),
+      modelProvider: callOptions.modelProvider,
+      timeoutMs: timeout ?? DEFAULT_TIMEOUT_MS,
+    };
   }
 }

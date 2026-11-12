@@ -1,5 +1,5 @@
 /**
- * Contract tests for the DictionaryManager public boundary: constructor
+ * Contract tests for the DictionaryManager public boundary: initialization
  * validation, error semantics, locale-cache expiry and async lookups. Moved
  * from the I18nCache contract suites when dictionaries left I18nCache.
  * Runtime translation is observed only through GTRuntime.prototype.
@@ -17,7 +17,7 @@ import { I18nCache } from '../../i18n-cache/I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { hashContent } from '../../utils/hashContent';
 import type { LookupOptions } from '../../translation-functions/types/options';
-import { DictionaryManager } from '../DictionaryManager';
+import { initializeDictionaryManager } from '../singleton-operations';
 import { createDictionaryHarness } from './dictionaryHarness';
 
 const message = 'Hello {name}!';
@@ -82,11 +82,10 @@ describe('DictionaryManager config contract', () => {
   });
 
   it('throws and logs an error when loadDictionary is provided without a source dictionary', () => {
-    expect(
-      () =>
-        new DictionaryManager({
-          loadDictionary: async () => ({}),
-        })
+    expect(() =>
+      initializeDictionaryManager({
+        loadDictionary: async () => ({}),
+      })
     ).toThrow('Validation errors occurred');
 
     const errors = callsContaining(errorSpy, 'DictionaryManager:');
@@ -97,12 +96,11 @@ describe('DictionaryManager config contract', () => {
   });
 
   it('accepts loadDictionary when a source dictionary is provided', () => {
-    expect(
-      () =>
-        new DictionaryManager({
-          dictionary: { greeting: 'Hello' },
-          loadDictionary: async () => ({}),
-        })
+    expect(() =>
+      initializeDictionaryManager({
+        dictionary: { greeting: 'Hello' },
+        loadDictionary: async () => ({}),
+      })
     ).not.toThrow();
     expect(callsContaining(errorSpy, 'DictionaryManager:').length).toBe(0);
   });

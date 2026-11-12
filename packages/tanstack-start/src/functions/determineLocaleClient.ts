@@ -1,6 +1,5 @@
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { getCookieValue } from 'gt-i18n/internal/cookies';
-import type { LocaleResolverConfig } from 'gt-i18n/internal';
 
 /**
  * Read the locale cookie during client initialization, then the browser's
@@ -8,10 +7,7 @@ import type { LocaleResolverConfig } from 'gt-i18n/internal';
  * With localeRouting, the pathname locale wins: SPA roots and visits with a
  * stale cookie have no server state to correct it.
  */
-export function determineLocaleClient(
-  { defaultLocale, locales, customMapping }: LocaleResolverConfig,
-  pathLocale?: string
-): string {
+export function determineLocaleClient(pathLocale: string | undefined): string {
   const i18nConfig = getI18nConfig();
   const localeCookieName = i18nConfig.getLocaleCookieName();
   const candidates: string[] = [];
@@ -28,9 +24,5 @@ export function determineLocaleClient(
     );
   }
 
-  return i18nConfig.resolveSupportedLocale(candidates, {
-    defaultLocale,
-    locales,
-    customMapping,
-  });
+  return i18nConfig.resolveSupportedLocale(candidates);
 }

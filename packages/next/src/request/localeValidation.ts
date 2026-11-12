@@ -3,7 +3,7 @@ import { createInvalidRequestLocaleWarning } from '../errors/request';
 
 function determineSupportedLocale(locale: unknown): string | undefined {
   if (typeof locale !== 'string' || locale.length === 0) return undefined;
-  return getI18nConfig().determineSupportedLocale(locale);
+  return getI18nConfig().determineLocale(locale);
 }
 
 function warnInvalidLocale(locale: string, defaultLocale: string) {

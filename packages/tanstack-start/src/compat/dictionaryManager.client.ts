@@ -1,8 +1,8 @@
+import { getI18nCache } from 'gt-i18n/internal';
 import {
   initializeDictionaryManager,
   isDictionaryManagerInitialized,
 } from 'gt-i18n/internal/compat';
-import { config as pluginConfig } from 'gt-tanstack-start/internal/_config';
 import {
   dictionary,
   loadDictionary,
@@ -18,7 +18,8 @@ export function ensureDictionaryManager(): void {
   initializeDictionaryManager({
     dictionary,
     loadDictionary,
-    // Like the browser translation cache, loaded dictionaries do not expire.
-    cacheExpiryTime: pluginConfig?.cacheExpiryTime ?? null,
+    // Dictionaries expire with the translations cache set up at
+    // initialization, which never expires in the browser unless configured.
+    cacheExpiryTime: getI18nCache().getCacheExpiryTime(),
   });
 }

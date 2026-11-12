@@ -6,15 +6,25 @@ export const DEFAULT_TIMEOUT_MS = 60_000;
 
 export type RetryPolicy = 'exponential' | 'linear' | 'none';
 
-export type RetryingFetchOptions = {
-  fetch?: typeof fetch;
-  retryPolicy?: RetryPolicy;
+/** How a request is sent, with every default filled in. */
+export type TransportOptions = {
+  fetch: typeof fetch;
+  retryPolicy: RetryPolicy;
+  /** `false` when a custom fetch implementation owns request timeouts. */
+  timeoutMs: number | false;
 };
 
-export type TimeoutFetchOptions = {
-  fetch?: typeof fetch;
-  timeoutMs?: number | false;
-};
+/**
+ * Fills in the transport defaults. Each public function that sends requests
+ * calls it once; the fetch factories below take resolved options only.
+ */
+export function resolveTransportOptions({
+  fetch = globalThis.fetch,
+  retryPolicy = 'exponential',
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+}: Partial<TransportOptions>): TransportOptions {
+  return { fetch, retryPolicy, timeoutMs };
+}
 
 /**
  * The abort signal of the request the caller holds. A Request copy follows its
@@ -29,9 +39,9 @@ export function callerSignal(
 }
 
 export function createTimeoutFetch({
-  fetch: fetchImplementation = globalThis.fetch,
-  timeoutMs = DEFAULT_TIMEOUT_MS,
-}: TimeoutFetchOptions = {}): typeof fetch {
+  fetch: fetchImplementation,
+  timeoutMs,
+}: Pick<TransportOptions, 'fetch' | 'timeoutMs'>): typeof fetch {
   return async (input, init) => {
     if (timeoutMs === false) {
       return fetchImplementation(input, init);
@@ -115,9 +125,9 @@ function retryDelay(
 }
 
 export function createRetryingFetch({
-  fetch: fetchImplementation = globalThis.fetch,
-  retryPolicy = 'exponential',
-}: RetryingFetchOptions = {}): typeof fetch {
+  fetch: fetchImplementation,
+  retryPolicy,
+}: Pick<TransportOptions, 'fetch' | 'retryPolicy'>): typeof fetch {
   return async (input, init) => {
     const request = new Request(input, init);
     const signal = callerSignal(input, init) ?? request.signal;

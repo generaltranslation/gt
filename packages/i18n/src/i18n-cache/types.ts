@@ -1,5 +1,4 @@
 import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
-import type { CustomMapping } from '@generaltranslation/format';
 import type { GTConfig } from 'generaltranslation';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
@@ -47,23 +46,11 @@ export type I18nCacheConfig = {
   apiKey?: string;
   runtimeUrl?: string | null;
   modelProvider?: string;
-  /**
-   * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
-   * disables expiry, and a number sets an explicit TTL.
-   */
-  cacheExpiryTime?: number | null;
+  /** Locale cache TTL in milliseconds; null disables expiry. */
+  cacheExpiryTime: number | null;
   batchConfig?: TranslationBatchConfig;
   runtimeTranslation?: RuntimeTranslationConfig;
   _versionId?: string;
-};
-
-/**
- * Shared configuration used by condition stores to resolve locales.
- */
-export type LocaleResolverConfig = {
-  defaultLocale?: string;
-  locales?: string[];
-  customMapping?: CustomMapping;
 };
 
 /**

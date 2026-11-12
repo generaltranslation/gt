@@ -5,6 +5,10 @@ import {
   isLocaleRoutingEnabled,
 } from '../setup/initializeGT.server';
 import { createGTRouterWrap, readGTRouterState } from './createGTRouterWrap';
+import {
+  resolveIntegrationOptions,
+  type RouterIntegrationOptions,
+} from './resolveIntegrationOptions';
 import { getRouterLocaleRewrite } from './localeRewrite';
 import type {
   GTDehydratedRouterData,
@@ -25,7 +29,7 @@ const integratedRouters = new WeakSet<GTIntegrableRouter>();
 export function setupRouterGTIntegration(
   options: SetupRouterGTIntegrationOptions
 ): void {
-  integrateRouter(options, {
+  integrateRouter(resolveIntegrationOptions(options), {
     Provider: GTProvider,
     loadState: readGTRouterState,
   });
@@ -36,7 +40,7 @@ export function setupRouterGTIntegration(
  * `/compat` entry can add dictionaries to both.
  */
 export function integrateRouter<State extends GTRouterState>(
-  { router, localeRewrite }: SetupRouterGTIntegrationOptions,
+  { router, localeRewrite }: RouterIntegrationOptions,
   {
     Provider,
     loadState,
@@ -73,7 +77,7 @@ export function integrateRouter<State extends GTRouterState>(
     },
     Wrap: gt.Wrap,
   };
-  if (localeRewrite !== false && isLocaleRoutingEnabled()) {
+  if (localeRewrite && isLocaleRoutingEnabled()) {
     // Resolved per call from the current request's conditions, not captured
     // at setup.
     options.rewrite = getRouterLocaleRewrite(router, () =>

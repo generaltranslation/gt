@@ -4,13 +4,17 @@
 // ----- IMPORTS ----- //
 
 import {
+  createApiClient,
   listOrgs,
   listProjects,
   paginate,
   type ListOrgsResponse,
   type ListProjectsResponse,
 } from '@generaltranslation/api';
-import { createGtApiClient } from './client/apiClient';
+import {
+  resolveApiClientSettings,
+  type ApiClientSettings,
+} from './client/apiClient';
 import { OrgHandle } from './client/orgHandle';
 import { ProjectHandle } from './client/projectHandle';
 import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
@@ -105,6 +109,7 @@ export type { MoveMapping } from './translate/moveFiles';
  */
 class GTAccount {
   private readonly params: Readonly<GTAccountConfig>;
+  private readonly clientSettings: ApiClientSettings;
 
   /** @throws {Error} If `apiKey` is a project key (`gtx-api-`), which needs `projectId`. */
   constructor(params: GTAccountConfig) {
@@ -115,6 +120,7 @@ class GTAccount {
       ...params,
       localeConfig: snapshotLocaleConfig(params.localeConfig ?? {}),
     });
+    this.clientSettings = resolveApiClientSettings(params);
     Object.freeze(this);
   }
 
@@ -139,7 +145,11 @@ class GTAccount {
   org(orgId: string): OrgHandle {
     if (typeof orgId !== 'string' || !orgId.trim())
       throw new Error(noScopeIdProvidedError('org'));
-    const org = new OrgHandle(this.params, orgId);
+    const org = new OrgHandle(
+      this.clientSettings,
+      this.params.localeConfig?.customMapping,
+      orgId
+    );
     Object.freeze(org);
     return org;
   }
@@ -150,7 +160,9 @@ class GTAccount {
    */
   async listOrgs(): Promise<ListOrgsResponse['items']> {
     return collect(
-      paginate(listOrgs, { client: createGtApiClient(this.params) })
+      paginate(listOrgs, {
+        client: createApiClient(this.clientSettings),
+      })
     );
   }
 
@@ -160,7 +172,9 @@ class GTAccount {
    */
   async listProjects(): Promise<ListProjectsResponse['items']> {
     return collect(
-      paginate(listProjects, { client: createGtApiClient(this.params) })
+      paginate(listProjects, {
+        client: createApiClient(this.clientSettings),
+      })
     );
   }
 }

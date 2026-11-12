@@ -1,5 +1,7 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import logger from '../logs/logger';
 import { createGlobalSingleton } from '../globals/createGlobalSingleton';
+import { DEFAULT_CACHE_EXPIRY_TIME } from '../i18n-cache/translations-manager/utils/constants';
 import {
   DictionaryManager,
   type DictionaryManagerParams,
@@ -46,11 +48,35 @@ export function isDictionaryManagerInitialized(): boolean {
 }
 
 /**
- * Create the singleton DictionaryManager. Requires I18nConfig to be
- * initialized, since the source dictionary is keyed by the default locale.
+ * Validate the params, fill in their defaults and create the singleton
+ * DictionaryManager. Requires I18nConfig to be initialized, since the source
+ * dictionary is keyed by the default locale.
+ *
+ * @throws {Error} If `loadDictionary` is set without `dictionary`.
  */
 export function initializeDictionaryManager(
   params: DictionaryManagerParams = {}
 ): void {
-  setDictionaryManager(new DictionaryManager(params));
+  // loadDictionary requires dictionary so the default locale always has a
+  // source dictionary
+  if (params.loadDictionary && !params.dictionary) {
+    logger.error(
+      'DictionaryManager: ' +
+        createDiagnosticMessage({
+          whatHappened: 'loadDictionary needs a source dictionary',
+          fix: 'Provide dictionary so the default locale has source content',
+        })
+    );
+    throw new Error('Validation errors occurred');
+  }
+  setDictionaryManager(
+    new DictionaryManager({
+      dictionary: params.dictionary ?? {},
+      loadDictionary: params.loadDictionary ?? (() => Promise.resolve({})),
+      cacheExpiryTime:
+        params.cacheExpiryTime === undefined
+          ? DEFAULT_CACHE_EXPIRY_TIME
+          : params.cacheExpiryTime,
+    })
+  );
 }

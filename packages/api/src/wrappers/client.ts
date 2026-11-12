@@ -6,8 +6,9 @@ import {
   callerSignal,
   createRetryingFetch,
   createTimeoutFetch,
+  resolveTransportOptions,
 } from './transport';
-import type { RetryPolicy } from './transport';
+import type { TransportOptions } from './transport';
 
 export const API_VERSION = '2026-10-08.v1' satisfies ApiVersion;
 
@@ -16,15 +17,11 @@ export type UserTokenProvider = {
   refreshAccessToken: () => Promise<string | undefined>;
 };
 
-export type ApiClientConfig = {
+export type ApiClientConfig = Partial<TransportOptions> & {
   apiKey?: string;
   /** Default gt-api-version header; per-call headers override it. */
   apiVersion?: ApiVersion;
   baseUrl: string;
-  fetch?: typeof fetch;
-  retryPolicy?: RetryPolicy;
-  /** Set to false when a custom fetch implementation owns request timeouts. */
-  timeoutMs?: number | false;
   userTokenProvider?: UserTokenProvider;
 };
 
@@ -60,13 +57,11 @@ export function createApiClient(config: ApiClientConfig): Client {
   });
   if (config.apiKey) headers.set('Authorization', `Bearer ${config.apiKey}`);
 
+  const { fetch, retryPolicy, timeoutMs } = resolveTransportOptions(config);
   const transportFetch = createRetryingFetch({
     // Timeout applies per attempt, inside the retry loop.
-    fetch: createTimeoutFetch({
-      fetch: config.fetch,
-      timeoutMs: config.timeoutMs,
-    }),
-    retryPolicy: config.retryPolicy,
+    fetch: createTimeoutFetch({ fetch, timeoutMs }),
+    retryPolicy,
   });
 
   const client = createGeneratedClient({

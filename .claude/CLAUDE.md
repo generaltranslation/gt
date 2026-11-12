@@ -94,6 +94,13 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 - gt-react and gt-next keep the literal `import.meta.env.GT_*` and `process.env.GT_*` member expressions, because Vite's and Next.js's `define` replace only that form.
 - A static `process.env.NODE_ENV` comparison that lets bundlers drop development code (for example `packages/react-core/src/compat/missing-dictionary.ts`) is the exception: it stays where the code is gated.
 
+### Resolving defaults
+
+- Resolve a default once, where the option is accepted, and pass the resolved value down as a required argument: a public class resolves in its constructor (`resolveApiClientSettings()` in `packages/core/src/client/apiClient.ts`), a public function before it builds anything (`resolveTransportOptions()` in `packages/api/src/wrappers/transport.ts`, `initializeDictionaryManager()` in gt-i18n), and plugin options when they become settings (the compiler's `initializeState()`).
+- A public method resolves a per-call override, such as `timeout`, against its instance; a private method of the same class may do that for it (`GTRuntime.resolveTranslateCall()`, `ProjectHandle.request()`).
+- Free functions, other modules and lower packages take required, resolved values. Data that is optional in the domain stays `T | undefined`, passed as a required argument.
+- For locales, time zones and the clock, the edge is `generaltranslation`: see "Where arguments are resolved" under Important Patterns.
+
 ### Single source of truth
 
 - Give each type, value list, default and option doc one owner, and derive the rest from it:

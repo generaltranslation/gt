@@ -1,6 +1,6 @@
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import type { GTConfig } from 'generaltranslation';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale, GTIntl } from 'generaltranslation/internal';
 import { formatLocaleLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
@@ -265,7 +265,9 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       allowNonDefaultSourceLocales,
       previewUrl ?? null
     );
-    configureGt({ defaultLocale: resolvedSourceLocale, customMapping });
+    configureGt(
+      new GTIntl({ defaultLocale: resolvedSourceLocale, customMapping })
+    );
 
     // Document types localized in place via internationalized arrays must NOT
     // get @sanity/document-internationalization (language badges + per-locale

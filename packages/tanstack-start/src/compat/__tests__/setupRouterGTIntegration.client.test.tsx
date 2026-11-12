@@ -46,6 +46,8 @@ vi.mock('@generaltranslation/react-core/pure', () => ({
   getTranslationsSnapshot: async (locale: string) => ({ hello: locale }),
 }));
 vi.mock('gt-i18n/internal', () => ({
+  // The browser translations cache never expires unless configured.
+  getI18nCache: () => ({ getCacheExpiryTime: () => null }),
   getI18nConfig: () => ({ getDefaultLocale: () => 'en' }),
 }));
 vi.mock('gt-i18n/internal/compat', () => ({

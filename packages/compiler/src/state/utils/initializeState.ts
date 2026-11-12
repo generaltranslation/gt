@@ -6,7 +6,10 @@ import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
 import { ErrorTracker } from '../ErrorTracker';
-import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
+import {
+  GT_IMPORT_SOURCES,
+  GT_OTHER_FUNCTIONS,
+} from '../../utils/constants/gt/constants';
 
 const DEFAULT_SETTINGS: PluginSettings = {
   logLevel: 'warn',
@@ -22,6 +25,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   enableConcatenationArg: true,
   enableMacroImportInjection: true,
   enableAutoJsxInjection: false,
+  autoJsxImportSource: GT_IMPORT_SOURCES.GT_REACT,
   autoderive: { jsx: false, strings: false },
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
@@ -60,6 +64,9 @@ export function initializeState(
     autoderive,
     devHotReload,
     ...restOptions,
+    // An explicit undefined in the options must not erase the default.
+    autoJsxImportSource:
+      options.autoJsxImportSource ?? DEFAULT_SETTINGS.autoJsxImportSource,
     filename,
   };
 

@@ -1,4 +1,5 @@
 import {
+  createApiClient,
   createOrgApiKey,
   createProject,
   ErrorCode,
@@ -12,11 +13,11 @@ import {
 } from '@generaltranslation/api';
 import {
   apiVersionHeaders,
-  createGtApiClient,
   resolveServiceLocale,
   writeInBatches,
+  type ApiClientSettings,
 } from './apiClient';
-import type { GTAccountConfig } from './clientConfig';
+import type { CustomMapping } from '@generaltranslation/format';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
 
 // The server accepts at most 10 fonts per request.
@@ -28,7 +29,8 @@ const UPSERT_ASSETS_BATCH_SIZE = 10;
 export class OrgHandle {
   /** @internal */
   constructor(
-    private readonly params: Readonly<GTAccountConfig>,
+    private readonly clientSettings: ApiClientSettings,
+    private readonly customMapping: CustomMapping | undefined,
     private readonly orgId: string
   ) {}
 
@@ -46,7 +48,10 @@ export class OrgHandle {
     options: { timeout?: number } = {}
   ): Promise<UpsertAssetsResponse> {
     const request = {
-      client: createGtApiClient(this.params, options.timeout),
+      client: createApiClient({
+        ...this.clientSettings,
+        timeoutMs: options.timeout ?? this.clientSettings.timeoutMs,
+      }),
       headers: apiVersionHeaders(),
       path: { orgId: this.orgId },
     };
@@ -79,10 +84,10 @@ export class OrgHandle {
           ...body,
           defaultLocale: resolveServiceLocale(
             body.defaultLocale,
-            this.params.localeConfig?.customMapping
+            this.customMapping
           ),
         },
-        client: createGtApiClient(this.params),
+        client: createApiClient(this.clientSettings),
       })
     );
     return { ...project, defaultLocale: body.defaultLocale };
@@ -101,7 +106,7 @@ export class OrgHandle {
       await createOrgApiKey({
         path: { orgId: this.orgId },
         body,
-        client: createGtApiClient(this.params),
+        client: createApiClient(this.clientSettings),
       })
     );
   }

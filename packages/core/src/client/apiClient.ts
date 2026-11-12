@@ -1,7 +1,7 @@
 import {
   API_VERSION,
   ApiError,
-  createApiClient,
+  DEFAULT_TIMEOUT_MS,
   ErrorCode,
   processBatches,
   type ApiVersion,
@@ -13,23 +13,30 @@ import {
   type CustomMapping,
 } from '@generaltranslation/format';
 import { defaultBaseUrl } from '../settings/settingsUrls';
-import type { GTAccountConfig, GTProjectConfig } from './clientConfig';
+import type {
+  GTAccountConfig,
+  GTCredentials,
+  GTProjectConfig,
+} from './clientConfig';
 
-/** @internal The API client for a `GeneralTranslation` configuration; a timeout gets its own client. */
-export function createGtApiClient(
-  {
-    projectId: _projectId,
-    localeConfig: _localeConfig,
-    baseUrl,
-    ...credentials
-  }: GTProjectConfig | GTAccountConfig,
-  timeoutMs?: number
-): ReturnType<typeof createApiClient> {
-  return createApiClient({
+/** @internal What the management API clients of one `GeneralTranslation` share. */
+export type ApiClientSettings = GTCredentials & {
+  baseUrl: string;
+  timeoutMs: number;
+};
+
+/** @internal Resolves the management base URL and timeout, once, in the constructor of a class that builds API clients. */
+export function resolveApiClientSettings({
+  projectId: _projectId,
+  localeConfig: _localeConfig,
+  baseUrl,
+  ...credentials
+}: GTProjectConfig | GTAccountConfig): ApiClientSettings {
+  return {
     ...credentials,
     baseUrl: baseUrl || defaultBaseUrl,
-    ...(timeoutMs !== undefined && { timeoutMs }),
-  });
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+  };
 }
 
 /**
