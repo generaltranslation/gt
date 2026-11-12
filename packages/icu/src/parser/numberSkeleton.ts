@@ -496,7 +496,10 @@ export function toNumberSkeleton(options: Options): NumberSkeleton {
     if (options.minimumIntegerDigits) {
       add('integer-width', `*${'0'.repeat(options.minimumIntegerDigits)}`);
     }
-    if (Number.isFinite(scale)) add('scale', String(scale));
+    // `%x100` is `percent scale/100`, and ICU takes one scale.
+    if (Number.isFinite(scale) && fixedUnit !== '%x100') {
+      add('scale', String(scale));
+    }
     add(stemOf(values, ['useGrouping']));
     const latin = stemOf(values, ['numberingSystem']);
     if (latin) add(latin);

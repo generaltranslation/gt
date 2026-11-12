@@ -631,6 +631,15 @@ describe('messageToIcu', () => {
       {},
     ],
     [
+      'the digits of a percent, and not its scale',
+      {
+        tree: [['n', 'number', 'percent']],
+        formats: { n: { maximumFractionDigits: 1, scale: 2 } },
+      },
+      '{n, number, ::%x100 .#}',
+      { n: { scale: 2 } },
+    ],
+    [
       'the width of a unit',
       {
         tree: [['d', 'number', { style: 'unit', unit: 'kilometer' }]],
@@ -705,6 +714,12 @@ describe('messageToIcu', () => {
         formats: { n: { currency: 'EUR' } },
       },
       '{n, number} is {n, number, currency}',
+    ],
+    [
+      // `%x100` is `percent scale/100`, and ICU takes one scale.
+      'the scale of a percent',
+      { tree: [['n', 'number', 'percent']], formats: { n: { scale: 2 } } },
+      '{n, number, percent}',
     ],
   ])('leaves %s in formats', (_what, message, icu) => {
     expect(messageToIcu(message)).toEqual({ icu, formats: message.formats });
