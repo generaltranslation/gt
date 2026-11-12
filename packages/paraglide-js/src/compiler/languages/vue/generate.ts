@@ -105,7 +105,7 @@ export async function generateVue(
   };
 }
 
-/** Without its plugin a pug template is left out; the scripts are still read. */
+/** A pug template is left out without its plugin. */
 function unreadPugTemplate(
   tools: Tools,
   virtualCode: VirtualCode
@@ -117,7 +117,7 @@ function unreadPugTemplate(
     : undefined;
 }
 
-/** Whether Vue files can be read: false without the tools, or with unusable ones. */
+/** False without the tools, or with unusable ones. */
 export function hasVueTools(context: LanguageContext): Promise<boolean> {
   return loadTools(context).then(
     (tools) => tools !== undefined,

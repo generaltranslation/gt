@@ -64,15 +64,14 @@ export type GeneratedSource = {
    * with `code`.
    */
   scripts?: readonly GeneratedScript[];
-  /** A part of the file that was left out, while the rest is analyzed. */
+  /** A part that was left out; the rest is analyzed. */
   skipped?: SkippedPart;
 };
 
-/** A part of a file whose tool is not installed, e.g. a Vue component's pug template. */
+/** A part of a file whose tool is not installed. */
 export type SkippedPart = {
-  /** In the plural, as the warning counts files: "pug templates". */
+  /** Plural: "pug templates". */
   name: string;
-  /** The packages the part needs in the project. */
   requires: readonly string[];
 };
 
@@ -130,11 +129,11 @@ export type ParseFailure = {
   missing?: readonly string[];
   /** Why an installed tool is unusable. */
   reason?: string;
-  /** What was left out when the rest of the file was analyzed: "pug templates". */
+  /** Set when only a part was left out: "pug templates". */
   part?: string;
 };
 
-/** A file's module; `skipped` when a part of the file is not in it. */
+/** `skipped`: a part of the file that is not in the module. */
 export type ParsedSource = { module: ParsedModule; skipped?: ParseFailure };
 
 type LanguageMatch = { language: SourceLanguage; extension: string };

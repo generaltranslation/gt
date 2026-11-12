@@ -19,8 +19,7 @@ export const markdownLanguage: SourceLanguage = {
   requires: VUE_REQUIRES,
   installedWith: VUE_INSTALLED_WITH,
   async generate(source, file, context) {
-    // Most projects have Markdown that is no Vue page, like a README: without
-    // the tools, only a file with a script is reported as skipped.
+    // Without the tools, Markdown without a script (a README) is not reported.
     const isPlainText = !SCRIPT_BLOCK.test(source);
     if (isPlainText && !(await hasVueTools(context))) return NO_CODE;
 

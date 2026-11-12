@@ -4,9 +4,8 @@ import { pathToFileURL } from 'node:url';
 import type { LanguageContext } from '../languages/language.js';
 import { resolvePackage } from '../utils/resolve-package.js';
 
-/** The project's packages: loaded for its languages, and looked up to tell a missing tool from a broken one. */
 export type ProjectPackages = LanguageContext & {
-  /** Whether the project has the package, also when importing it fails. */
+  /** Also true when importing it fails. */
   isInstalled(specifier: string): Promise<boolean>;
 };
 

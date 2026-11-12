@@ -7,18 +7,17 @@ import { relativePath } from '../utils/paths.js';
 export type MissingToolsSettings = {
   projectRoot: string;
   languages: readonly SourceLanguage[];
-  /** The project's packages, to tell a tool that is not installed from one that fails to load. */
   packages: ProjectPackages;
 };
 
 /** Why a language's files, or a part of them, were skipped. */
 export type UnavailableTools = {
   language: string;
-  /** The packages the language, or the part, needs in the project. */
+  /** The packages the language needs in the project. */
   requires: readonly string[];
   /** Why an installed tool is unusable. */
   reason?: string;
-  /** What was skipped when the rest of the files was analyzed: "pug templates". */
+  /** Set when only a part was skipped: "pug templates". */
   part?: string;
 };
 
@@ -47,10 +46,10 @@ export class MissingTools {
   }
 
   /**
-   * One warning per language, e.g. "14 .vue file(s) were not analyzed
+   * One warning per language and part, e.g. "14 .vue file(s) were not analyzed
    * (e.g. src/App.vue): they need @vue/language-core, which is not installed.
-   * Install it: pnpm add -D @vue/language-core", and one per skipped part of
-   * a language's files. Each is given once per project, also across collectors.
+   * Install it: pnpm add -D @vue/language-core". Each is given once per
+   * project, also across collectors.
    */
   async warnings(): Promise<string[]> {
     const warnings: string[] = [];
@@ -81,10 +80,7 @@ export class MissingTools {
     return `${what}: ${unusable.join(' and ')} could not be loaded.`;
   }
 
-  /**
-   * "14 .vue file(s) were not analyzed (e.g. src/App.vue)", or
-   * "pug templates in 2 .vue file(s) were not analyzed (e.g. src/App.vue)"
-   */
+  /** "[pug templates in ]14 .vue file(s) were not analyzed (e.g. src/App.vue)" */
   private describeSkipped({ files, part }: Skipped): string {
     const extensions = new Set([...files].map((file) => path.extname(file)));
     const [firstFile] = [...files].sort();
@@ -105,10 +101,7 @@ export class MissingTools {
     return missing;
   }
 
-  /**
-   * The installed packages that fail to load. All of them when each loads:
-   * then a language found one unusable, e.g. without an export it calls.
-   */
+  /** Those that fail to import; all, when each imports but the language rejects one. */
   private async notLoaded(packages: readonly string[]): Promise<string[]> {
     const failed: string[] = [];
 

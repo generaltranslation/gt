@@ -121,7 +121,6 @@ describe('Markdown (VitePress)', () => {
     expect(
       await withoutTools('<script setup>\nconst a = 1;\n</script>\n\n# Title\n')
     ).toMatchObject({ missing: ['@vue/language-core', 'typescript'] });
-    // Plain Markdown, like a README, has nothing to analyze.
     expect(await withoutTools('# Title\n')).toHaveProperty('module');
   });
 

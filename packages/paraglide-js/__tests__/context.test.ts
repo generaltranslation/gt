@@ -31,10 +31,7 @@ afterAll(() =>
   )
 );
 
-/**
- * A project outside this repository, so that none of its tools resolve: only
- * `packages`, which are linked into the project's node_modules.
- */
+/** A project outside this repository: only `packages` resolve from it. */
 async function writeOutsideProject(
   files: Record<string, string>,
   packages: readonly string[] = []
@@ -205,7 +202,6 @@ describe('collectContext', () => {
           `</template>`,
           ``,
         ].join('\n'),
-        // The Vue tooling's TypeScript imports from "vue", which an app has installed.
         'node_modules/vue/package.json': `{ "name": "vue", "main": "index.js" }`,
         'node_modules/vue/index.js': '',
       },
