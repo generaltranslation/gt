@@ -7,6 +7,11 @@ import { escapeRegExp } from '../utils/regexp.js';
 
 type ModuleBody = ReadonlyArray<ESTree.Statement | ESTree.Directive>;
 
+const matchesByIds = new WeakMap<
+  ReadonlySet<string>,
+  Map<string, readonly string[]>
+>();
+
 /** `declare module "…" { … }` blocks, by module name. */
 type DeclaredModules = ReadonlyMap<string, ModuleBody>;
 
@@ -37,6 +42,28 @@ export async function readCatalog(
   catalog.delete('default');
 
   return catalog;
+}
+
+/** Matches a pattern against a set of ids once: many usages share one. */
+export function matchingIds(
+  pattern: string,
+  ids: ReadonlySet<string>
+): readonly string[] {
+  let matchesOfIds = matchesByIds.get(ids);
+
+  if (!matchesOfIds) {
+    matchesOfIds = new Map();
+    matchesByIds.set(ids, matchesOfIds);
+  }
+
+  let matches = matchesOfIds.get(pattern);
+
+  if (!matches) {
+    matches = [...ids].filter(patternMatcher(pattern));
+    matchesOfIds.set(pattern, matches);
+  }
+
+  return matches;
 }
 
 /** Whether ids match `pattern`, a message id or a dynamic pattern where `*` is any text. */

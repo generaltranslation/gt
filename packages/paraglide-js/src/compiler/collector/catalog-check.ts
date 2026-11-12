@@ -1,5 +1,5 @@
 import type { ParaglideUsage } from '../analysis/types.js';
-import { patternMatcher } from '../paraglide/catalog.js';
+import { matchingIds } from '../paraglide/catalog.js';
 import type { Diagnostic } from '../utils/diagnostics.js';
 
 /** The warning about messages not in the catalog lists at most this many usages. */
@@ -12,7 +12,7 @@ export function isInCatalog(
 ): boolean {
   if (!usage.dynamic) return catalog.has(usage.name);
 
-  return [...catalog].some(patternMatcher(usage.name));
+  return matchingIds(usage.name, catalog).length > 0;
 }
 
 /**
