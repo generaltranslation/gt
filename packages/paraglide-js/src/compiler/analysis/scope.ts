@@ -1,18 +1,9 @@
 import {
-  analyze,
-  type Definition,
-  type Reference,
-  type Scope as ManagedScope,
-  type ScopeManager,
-  type Variable,
-} from '@typescript-eslint/scope-manager';
-import {
   isFunction,
   patternBindings,
   staticPropertyName,
   staticString,
   unwrapExpression,
-  walk,
   type ESTree,
   type FunctionNode,
   type Node,
@@ -32,6 +23,12 @@ import {
 } from './evaluate.js';
 import { importedName } from './module-syntax.js';
 import type { TrackedSymbol } from './types.js';
+import {
+  indexProgram,
+  type Definition,
+  type ProgramIndex,
+  type Variable,
+} from './program-index.js';
 import type { PropsReads } from '../languages/language.js';
 
 /** What a scope needs from the module graph, for the module it belongs to. */
@@ -98,17 +95,13 @@ const DESTRUCTURING_PARTS = new Set([
   'RestElement',
 ]);
 
-// scope-manager is typed for typescript-estree's nodes; it is given oxc's, which have the same shape.
-const toNode = (node: object) => node as Node;
-
 /**
- * A module's names. `@typescript-eslint/scope-manager` says which declaration
- * each identifier refers to; this adds what a declaration may hold.
+ * A module's names. `indexProgram` says which declaration each identifier
+ * refers to; this adds what a declaration may hold.
  */
 export class Scope {
-  private readonly topLevel: ManagedScope;
-  private readonly references: Map<Node, Reference>;
-  private readonly parents: Map<Node, Node>;
+  private readonly index: ProgramIndex;
+  private readonly parents: ReadonlyMap<Node, Node>;
   private readonly bindings = new WeakMap<Variable, Binding>();
 
   constructor(
@@ -118,17 +111,8 @@ export class Scope {
     /** Replace module-level names, e.g. Vue's generated `__VLS_ctx`. */
     private readonly overrides: ReadonlyMap<string, Binding> = new Map()
   ) {
-    const manager = analyze(program as never, {
-      sourceType: 'module',
-      lib: [],
-      jsxPragma: null,
-    });
-    const global = manager.globalScope!;
-
-    this.topLevel =
-      global.childScopes.find((scope) => scope.type === 'module') ?? global;
-    this.references = referencesByIdentifier(manager);
-    this.parents = parentsByNode(program);
+    this.index = indexProgram(program);
+    this.parents = this.index.parents;
   }
 
   /** What a module-level name holds. */
@@ -154,7 +138,7 @@ export class Scope {
     const override = this.overrides.get(moduleLevelName);
     if (override) return override;
 
-    const variable = this.topLevel.set.get(moduleLevelName);
+    const variable = this.index.moduleLevel.get(moduleLevelName);
 
     return variable
       ? this.bindingOfVariable(variable)
@@ -163,20 +147,19 @@ export class Scope {
 
   bindingAt(identifier: Node): Binding | undefined {
     const name = nameOf(identifier);
-    const reference = this.references.get(identifier);
+    const reference = this.index.references.get(identifier);
 
     if (!reference)
       return name === undefined ? undefined : this.bindingOf(name, identifier);
 
-    const variable = reference.resolved;
+    const { variable } = reference;
     if (!variable) {
       return name === undefined
         ? undefined
         : this.implicitNames(name, identifier);
     }
 
-    const isModuleLevel = variable.scope === this.topLevel;
-    const override = isModuleLevel
+    const override = variable.isModuleLevel
       ? this.overrides.get(variable.name)
       : undefined;
 
@@ -185,16 +168,16 @@ export class Scope {
 
   /** False for declarations, keys, labels and plain writes. */
   isRead(identifier: Node): boolean {
-    return this.references.get(identifier)?.isRead() ?? false;
+    return this.index.references.get(identifier)?.isRead ?? false;
   }
 
   isGlobal(identifier: Node): boolean {
-    const reference = this.references.get(identifier);
-    if (reference) return reference.resolved === null;
+    const reference = this.index.references.get(identifier);
+    if (reference) return reference.variable === undefined;
 
     const name = nameOf(identifier);
 
-    return name !== undefined && !this.topLevel.set.has(name);
+    return name !== undefined && !this.index.moduleLevel.has(name);
   }
 
   /** The class whose method or field initializer `node` is in. */
@@ -265,17 +248,14 @@ export class Scope {
   }
 
   private createBinding(variable: Variable): Binding {
-    // `type Message = …` and `function Message()` are one variable; the value counts.
-    const definition = variable.defs.find(
-      (candidate) => candidate.type !== 'Type'
-    );
-    if (!definition || !variable.isValueVariable) return SHADOW;
+    const [definition] = variable.definitions;
+    if (!definition) return SHADOW;
 
     switch (definition.type) {
       case 'ImportBinding':
-        return this.importBinding(toNode(definition.node));
+        return this.importBinding(definition.node);
       case 'FunctionName':
-        return { type: 'shadow', declaration: toNode(definition.node) };
+        return { type: 'shadow', declaration: definition.node };
       case 'Parameter':
         return this.parameterBinding(definition);
       case 'Variable':
@@ -317,8 +297,8 @@ export class Scope {
   }
 
   private parameterBinding(definition: Definition): Binding {
-    const fn = toNode(definition.node) as FunctionNode;
-    const identifier = toNode(definition.name);
+    const fn = definition.node as FunctionNode;
+    const identifier = definition.name;
 
     const index = fn.params.findIndex((parameter) =>
       patternBindings(parameter as Pattern).some(
@@ -351,7 +331,7 @@ export class Scope {
   /** Svelte 4's `export let message` is the prop `message`. */
   private isPropVariable(definition: Definition): boolean {
     const propVariables = this.host.props?.reads.variables;
-    const declaredAt = toNode(definition.name).start;
+    const declaredAt = definition.name.start;
 
     return propVariables?.includes(declaredAt) ?? false;
   }
@@ -379,15 +359,15 @@ export class Scope {
     let isConst = false;
     let declaration: Node | undefined;
 
-    for (const definition of variable.defs) {
+    for (const definition of variable.definitions) {
       if (definition.type !== 'Variable') continue;
 
-      const declarator = toNode(definition.node) as ESTree.VariableDeclarator;
-      const statement = toNode(definition.parent) as ESTree.VariableDeclaration;
+      const declarator = definition.node as ESTree.VariableDeclarator;
+      const statement = definition.parent as ESTree.VariableDeclaration;
       isConst = statement.kind === 'const';
 
       const { init } = declarator;
-      const path = pathOf(declarator.id, toNode(definition.name));
+      const path = pathOf(declarator.id, definition.name);
       if (!init || !path) continue;
 
       if (isConst) {
@@ -448,10 +428,8 @@ export class Scope {
   private assignments(variable: Variable): Write[] {
     const writes: Write[] = [];
 
-    for (const reference of variable.references) {
-      if (!reference.isWrite() || reference.init) continue;
-
-      const write = this.assignmentTo(toNode(reference.identifier));
+    for (const identifier of variable.assignments) {
+      const write = this.assignmentTo(identifier);
       if (write) writes.push(write);
     }
 
@@ -537,33 +515,6 @@ export class Scope {
 
     return last;
   }
-}
-
-function referencesByIdentifier(manager: ScopeManager): Map<Node, Reference> {
-  const references = new Map<Node, Reference>();
-
-  for (const scope of manager.scopes) {
-    for (const reference of scope.references) {
-      references.set(toNode(reference.identifier), reference);
-    }
-  }
-
-  return references;
-}
-
-function parentsByNode(program: ESTree.Program): Map<Node, Node> {
-  const parents = new Map<Node, Node>();
-
-  walk(program, {
-    enter(node, ancestors) {
-      const parent = ancestors.at(-1);
-      if (parent) parents.set(node, parent);
-
-      return true;
-    },
-  });
-
-  return parents;
 }
 
 function nameOf(identifier: Node): string | undefined {
