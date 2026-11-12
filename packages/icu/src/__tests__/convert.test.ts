@@ -1,6 +1,6 @@
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it } from 'vitest';
-import { icuToMessage, messageTreeToIcu } from '../convert';
+import { checkTranslation, icuToMessage, messageTreeToIcu } from '../convert';
 import {
   validateMessageTree,
   type DateTimeNode,
@@ -592,4 +592,201 @@ describe('the tree and ICU text', () => {
       }
     }
   });
+});
+
+describe('checkTranslation', () => {
+  const price: MessageTree = ['Total: ', ['price', 'number', 'currency']];
+
+  it('accepts new text, word order and branch content', () => {
+    const source: MessageTree = [
+      ['n', 'plural', { one: [0, ' file by ', ['who']], other: [0, ' files'] }],
+      ' ',
+      ['d', 'date', { day: 'numeric', month: 'short' }],
+    ];
+    expect(
+      checkTranslation(
+        source,
+        icuToMessage(
+          '{d, date, ::dMMM} : {n, plural, one {# fichier de {who}} other {# fichiers de {who}}}'
+        )
+      )
+    ).toBeUndefined();
+  });
+
+  it.each([
+    [
+      'a variable the source does not have',
+      'Total : {cost, number, currency}',
+      '"cost" does not exist in the source; "price" is missing from the translation',
+    ],
+    [
+      'a changed kind',
+      'Total : {price}',
+      '"price" changed kind or plural offset',
+    ],
+  ])('rejects %s', (_name, translation, problem) => {
+    expect(checkTranslation(price, icuToMessage(translation))).toMatch(
+      `The translation does not match its source: ${problem}`
+    );
+  });
+
+  it('rejects a changed plural offset or plural kind', () => {
+    const source: MessageTree = [['n', 'plural', { other: [0] }]];
+    expect(
+      checkTranslation(source, icuToMessage('{n, plural, offset:1 other {#}}'))
+    ).toContain('"n" changed kind or plural offset');
+    expect(
+      checkTranslation(source, icuToMessage('{n, selectordinal, other {#}}'))
+    ).toContain('"n" changed kind or plural offset');
+  });
+
+  it('rejects a style the source does not use for the variable', () => {
+    expect(
+      checkTranslation(price, icuToMessage('Total : {price, number}'))
+    ).toBe(
+      'The translation does not match its source: "price" uses {price, number}, which the source does not; "price" is missing {price, number, currency}.'
+    );
+    const source: MessageTree = [['d', 'date', 'short']];
+    expect(
+      checkTranslation(source, icuToMessage('{d, date, medium}'))
+    ).toContain('"d" uses {d, date, medium}, which the source does not');
+  });
+
+  it('accepts each style of a variable in any order, and requires all of them', () => {
+    const source: MessageTree = [
+      ['p', 'number', 'percent'],
+      ' (',
+      ['p', 'number'],
+      ')',
+    ];
+    expect(
+      checkTranslation(
+        source,
+        icuToMessage('({p, number}) {p, number, percent} {p, number}')
+      )
+    ).toBeUndefined();
+    expect(checkTranslation(source, icuToMessage('{p, number, percent}'))).toBe(
+      'The translation does not match its source: "p" is missing {p, number}.'
+    );
+  });
+
+  // How a value is rendered is the source's, so a translation sets none of it.
+  it.each([
+    [
+      'a currency',
+      'Total : {price, number, ::currency/USD}',
+      '"price" sets currency, which a translation cannot set',
+    ],
+    [
+      'digits',
+      'Total : {price, number, ::currency/EUR .00}',
+      '"price" sets currency, maximumFractionDigits, minimumFractionDigits, which a translation cannot set',
+    ],
+  ])('reports %s set by the translation', (_name, translation, problem) => {
+    expect(checkTranslation(price, icuToMessage(translation))).toBe(
+      `The translation does not match its source: ${problem}.`
+    );
+  });
+
+  it('reports an hour cycle set by the translation', () => {
+    const source = icuToMessage('At {t, time, ::jmm}').tree;
+    expect(checkTranslation(source, icuToMessage('À {t, time, ::jmm}'))).toBe(
+      undefined
+    );
+    expect(checkTranslation(source, icuToMessage('À {t, time, ::Hmm}'))).toBe(
+      'The translation does not match its source: "t" sets hourCycle, which a translation cannot set.'
+    );
+  });
+
+  it('treats fields in any key order as one style', () => {
+    const source: MessageTree = [
+      ['d', 'date', { day: 'numeric', month: 'short' }],
+    ];
+    expect(
+      checkTranslation(source, {
+        tree: [['d', 'date', { month: 'short', day: 'numeric' }]],
+        formats: {},
+      })
+    ).toBeUndefined();
+  });
+
+  it('accepts leaving out the plural categories the locale does not have', () => {
+    // Japanese has only `other`, so `one`, its `name` and its style go.
+    const source: MessageTree = [
+      [
+        'n',
+        'plural',
+        {
+          one: ['Only ', ['name'], ' on ', ['d', 'date', 'long']],
+          other: [0, ' files on ', ['d', 'date', 'short']],
+        },
+      ],
+    ];
+    const translation = icuToMessage(
+      '{n, plural, other {{d, date, short}に#件}}'
+    );
+    expect(
+      checkTranslation(source, translation, { locale: 'ja' })
+    ).toBeUndefined();
+    expect(checkTranslation(source, translation)).toBe(
+      'The translation does not match its source: "name" is missing from the translation; "d" is missing {d, date, long}.'
+    );
+    // Ordinals use the locale's ordinal categories, and a variable may sit
+    // deeper in the left-out branch.
+    const nested: MessageTree = [
+      [
+        'n',
+        'selectordinal',
+        {
+          one: [['role', 'select', { admin: ['by ', ['name']], other: '' }]],
+          other: [0, 'th'],
+        },
+      ],
+    ];
+    expect(
+      checkTranslation(nested, icuToMessage('{n, selectordinal, other {#.}}'), {
+        locale: 'ja',
+      })
+    ).toBeUndefined();
+  });
+
+  it.each<[string, MessageTree, string, string | undefined]>([
+    [
+      'is in a category the locale has (French has one)',
+      [['n', 'plural', { one: ['by ', ['name']], other: [0] }]],
+      '{n, plural, other {#}}',
+      'fr',
+    ],
+    [
+      'is in a left-out category, without a locale',
+      [['n', 'plural', { one: ['by ', ['name']], other: [0] }]],
+      '{n, plural, other {#}}',
+      undefined,
+    ],
+    [
+      'is used outside the left-out category',
+      [['name'], ': ', ['n', 'plural', { one: ['by ', ['name']], other: [0] }]],
+      '{n, plural, other {#}}',
+      'ja',
+    ],
+    [
+      'is in an exact branch, which every locale has',
+      [['n', 'plural', { '=0': ['None by ', ['name']], other: [0] }]],
+      '{n, plural, other {#}}',
+      'ja',
+    ],
+    [
+      'is in a select branch, which every locale has',
+      [['role', 'select', { admin: ['Admin ', ['name']], other: 'User' }]],
+      '{role, select, other {User}}',
+      'ja',
+    ],
+  ])(
+    'rejects a missing variable that %s',
+    (_name, source, translation, locale) => {
+      expect(
+        checkTranslation(source, icuToMessage(translation), { locale })
+      ).toContain('"name" is missing from the translation');
+    }
+  );
 });

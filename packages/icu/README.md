@@ -9,7 +9,8 @@ no locale-data polyfills are shipped.
 - `@generaltranslation/icu`: message trees, without the parser.
   `formatMessageTree()`, `validateMessageTree()` and `isMessageTree()`.
 - `@generaltranslation/icu/convert`: `icuToMessage()` reads an ICU string as
-  a message, and `messageTreeToIcu()` prints a message tree as an ICU string.
+  a message, `messageTreeToIcu()` prints a message tree as an ICU string, and
+  `checkTranslation()` checks a translation against its source.
 - `@generaltranslation/icu/parser`: the ICU string parser. `parse()`,
   `formatMessage()`, `printAST()` and the syntax-tree types.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
