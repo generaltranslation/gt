@@ -60,10 +60,15 @@ export async function createInlineUpdates(
     try {
       ast = parse(code, {
         sourceType: 'module',
-        plugins: ['jsx', 'typescript'],
+        plugins: ['jsx', 'typescript', 'decorators-legacy'],
       });
     } catch (error) {
       logger.error(`Error parsing file ${file}: ${error}`);
+      // Record the failure so callers (e.g. `gt validate`) report an
+      // unsuccessful result instead of silently skipping the file.
+      // Previously this only logged, so a file that failed to parse was
+      // treated as having no translatable content and validation exited 0.
+      errors.push(`Error parsing file ${file}: ${error}`);
       continue;
     }
 
