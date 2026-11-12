@@ -1,8 +1,10 @@
 /**
- * Number and date skeletons with the exact native Intl options the pinned
- * FormatJS parser produces for each, adapted from intl-messageformat 10.7.16
- * and @formatjs/icu-messageformat-parser 2.11.4 (see
- * formatter-compatibility.test.ts and ../../THIRD_PARTY_NOTICES.md).
+ * Number and date skeletons with the native Intl options each spells, adapted
+ * from intl-messageformat 10.7.16 and @formatjs/icu-messageformat-parser
+ * 2.11.4 (see formatter-compatibility.test.ts and
+ * ../../THIRD_PARTY_NOTICES.md). Where the pinned FormatJS parser and ICU4C
+ * read a skeleton differently, the options are ICU4C's, which
+ * icu4c-conformance.test.ts checks against ICU4C's own output.
  */
 
 export type NumberCase = {
@@ -12,9 +14,10 @@ export type NumberCase = {
 };
 
 export const NUMBER_SKELETONS: NumberCase[] = [
-  { skeleton: 'percent', options: { style: 'percent' } },
-  { skeleton: '%', options: { style: 'percent' } },
-  { skeleton: '%x100', options: { style: 'percent' }, scale: 100 },
+  // ICU's percent does not multiply by 100; `%x100` does.
+  { skeleton: 'percent', options: { style: 'unit', unit: 'percent' } },
+  { skeleton: '%', options: { style: 'unit', unit: 'percent' } },
+  { skeleton: '%x100', options: { style: 'percent' } },
   {
     skeleton: 'currency/USD',
     options: { style: 'currency', currency: 'USD' },
@@ -29,7 +32,7 @@ export const NUMBER_SKELETONS: NumberCase[] = [
   },
   {
     skeleton: 'currency/USD unit-width-short',
-    options: { style: 'currency', currency: 'USD', currencyDisplay: 'code' },
+    options: { style: 'currency', currency: 'USD', currencyDisplay: 'symbol' },
   },
   {
     skeleton: 'currency/USD unit-width-full-name',
@@ -37,13 +40,13 @@ export const NUMBER_SKELETONS: NumberCase[] = [
   },
   {
     skeleton: 'currency/USD unit-width-iso-code',
-    options: { style: 'currency', currency: 'USD', currencyDisplay: 'symbol' },
+    options: { style: 'currency', currency: 'USD', currencyDisplay: 'code' },
   },
   { skeleton: 'group-off', options: { useGrouping: false } },
   { skeleton: 'group-auto', options: {} },
-  { skeleton: 'group-min2', options: {} },
-  { skeleton: 'group-on-aligned', options: {} },
-  { skeleton: ',!', options: {} },
+  { skeleton: 'group-min2', options: { useGrouping: 'min2' } },
+  { skeleton: 'group-on-aligned', options: { useGrouping: 'always' } },
+  { skeleton: ',!', options: { useGrouping: 'always' } },
   { skeleton: 'precision-integer', options: { maximumFractionDigits: 0 } },
   {
     skeleton: 'measure-unit/length-meter unit-width-full-name',
@@ -73,8 +76,7 @@ export const NUMBER_SKELETONS: NumberCase[] = [
   { skeleton: 'scientific', options: { notation: 'scientific' } },
   { skeleton: 'engineering', options: { notation: 'engineering' } },
   { skeleton: 'notation-simple', options: { notation: 'standard' } },
-  // intl-messageformat treats a zero scale as absent.
-  { skeleton: 'scale/0', options: {}, scale: 1 },
+  { skeleton: 'scale/0', options: {}, scale: 0 },
   { skeleton: 'scale/0.01', options: {}, scale: 0.01 },
   { skeleton: 'scale/100', options: {}, scale: 100 },
   { skeleton: 'integer-width/*000', options: { minimumIntegerDigits: 3 } },
@@ -96,7 +98,28 @@ export const NUMBER_SKELETONS: NumberCase[] = [
     skeleton: '.00##',
     options: { minimumFractionDigits: 2, maximumFractionDigits: 4 },
   },
-  { skeleton: '.000*', options: { minimumFractionDigits: 3 } },
+  {
+    skeleton: '.000*',
+    options: { minimumFractionDigits: 3, maximumFractionDigits: 100 },
+  },
+  {
+    skeleton: '.##/@@@*',
+    options: {
+      maximumFractionDigits: 2,
+      minimumSignificantDigits: 1,
+      maximumSignificantDigits: 3,
+      roundingPriority: 'morePrecision',
+    },
+  },
+  {
+    skeleton: 'precision-increment/0.05',
+    options: {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      roundingIncrement: 5,
+    },
+  },
+  { skeleton: '@@@*', options: { minimumSignificantDigits: 3 } },
   {
     skeleton: '@@',
     options: { minimumSignificantDigits: 2, maximumSignificantDigits: 2 },
@@ -112,6 +135,8 @@ export const NUMBER_SKELETONS: NumberCase[] = [
     options: { signDisplay: 'exceptZero' },
   },
   { skeleton: 'sign-never', options: { signDisplay: 'never' } },
+  { skeleton: 'sign-negative', options: { signDisplay: 'negative' } },
+  { skeleton: 'numbering-system/arab', options: { numberingSystem: 'arab' } },
   {
     skeleton: 'sign-accounting currency/USD',
     options: {
@@ -138,18 +163,9 @@ export const NUMBER_SKELETONS: NumberCase[] = [
       signDisplay: 'exceptZero',
     },
   },
-  {
-    skeleton: 'E0',
-    options: { notation: 'scientific', minimumIntegerDigits: 1 },
-  },
-  {
-    skeleton: 'EE+!00',
-    options: {
-      notation: 'engineering',
-      signDisplay: 'always',
-      minimumIntegerDigits: 2,
-    },
-  },
+  // The zeros are the digits of the exponent, not of the integer.
+  { skeleton: 'E0', options: { notation: 'scientific' } },
+  { skeleton: 'EE0', options: { notation: 'engineering' } },
 ];
 
 export const DATE_SKELETONS: Array<{
@@ -186,16 +202,11 @@ export const DATE_SKELETONS: Array<{
   { skeleton: 'ss', options: { second: '2-digit' } },
   { skeleton: 'z', options: { timeZoneName: 'short' } },
   { skeleton: 'zzzz', options: { timeZoneName: 'long' } },
-  // The pinned FormatJS parser accepts these fields but omits them from the
-  // native options object.
-  { skeleton: 'C', options: {} },
-  { skeleton: 'A', options: {} },
   // Read as ICU4C reads them, where the pinned FormatJS parser drops `S` and
   // rejects the others.
   { skeleton: 'S', options: { fractionalSecondDigits: 1 } },
   { skeleton: 'SS', options: { fractionalSecondDigits: 2 } },
   { skeleton: 'SSS', options: { fractionalSecondDigits: 3 } },
-  { skeleton: 'SSSS', options: { fractionalSecondDigits: 3 } },
   {
     skeleton: 'hB',
     options: { hourCycle: 'h12', hour: 'numeric', dayPeriod: 'short' },

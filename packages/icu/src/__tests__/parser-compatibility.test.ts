@@ -2,6 +2,12 @@
  * Golden cases are adapted from the FormatJS parser integration corpus at:
  * https://github.com/formatjs/formatjs/tree/75edf1cd6a7045475bb134daf62c686602c92547/packages/icu-messageformat-parser/integration-tests/test_cases
  * The upstream fixtures are MIT licensed. See ../../THIRD_PARTY_NOTICES.md.
+ *
+ * The syntax tree is FormatJS's. The options of a skeleton are not always:
+ * where ICU4C reads a skeleton differently, the case is parsed without them
+ * (`shouldParseSkeletons: false`) and its hash is FormatJS's for that, and a
+ * skeleton Intl cannot format is an error. icu4c-conformance.test.ts checks
+ * the options against ICU4C's output.
  */
 
 import { createHash } from 'node:crypto';
@@ -65,9 +71,7 @@ const CASES = [
       shouldParseSkeletons: true,
       requiresOtherClause: true,
     },
-    expected: {
-      hash: 'c3435eafb6a4e39acecc41edca2cd90b74cd270212d7f166261e05ce3b470f79',
-    },
+    expected: { error: 'Unsupported date/time skeleton field: J.' },
   },
   {
     name: 'date_arg_skeleton_with_capital_JJ',
@@ -77,20 +81,18 @@ const CASES = [
       shouldParseSkeletons: true,
       requiresOtherClause: true,
     },
-    expected: {
-      hash: '5ec32aed395608c7a61d7b8e0644a1e057a391b7a29b64c3fffb4793f0d1bf6a',
-    },
+    expected: { error: 'Unsupported date/time skeleton field: JJ.' },
   },
   {
     name: 'date_arg_skeleton_with_j',
     message: '{0, date, ::j}',
     options: {
       locale: 'und-u-hc-h12',
-      shouldParseSkeletons: true,
+      shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: 'b3a82e2e2e6f2ffb5bee1efa09ba21279fbbb5f0e3caa1e2039f22870ed553e2',
+      hash: '1b7557b433f27f715d00d3b77dd401446f2f19948b49cceb277b5fedceec48e4',
     },
   },
   {
@@ -98,11 +100,11 @@ const CASES = [
     message: '{0, date, ::jj}',
     options: {
       locale: 'und-u-hc-h12',
-      shouldParseSkeletons: true,
+      shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: 'f32e25c6d324ef15387aa2d72b6919d141cdda5c6e09c447a014d2c6ecd6dde8',
+      hash: '7f009aebb20b00725d3198388da1514d97100e558774f2020059200bc811a6fc',
     },
   },
   {
@@ -110,11 +112,11 @@ const CASES = [
     message: '{0, date, ::jjj}',
     options: {
       locale: 'und-u-hc-h12',
-      shouldParseSkeletons: true,
+      shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: '337b435bb392aa063c4d82244d7badd1a2b54b0efcb2a2697c48d993b213e8aa',
+      hash: '9db7d9b84bf161bd13ca0bec677968eb16e6a8481c77479e3887c43ee99e76be',
     },
   },
   {
@@ -122,11 +124,11 @@ const CASES = [
     message: '{0, date, ::jjjj}',
     options: {
       locale: 'und-u-hc-h12',
-      shouldParseSkeletons: true,
+      shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: '25e6d784fc7bfded90d3b5eb5f610bdca2052f87967c70f0a9a533b5fabf942c',
+      hash: 'a91770cfcd8f6a9752e9143802bca68ee07e57e4ee7efc7ec61060a97dff61b1',
     },
   },
   {
@@ -134,11 +136,11 @@ const CASES = [
     message: '{0, date, ::jjjjj}',
     options: {
       locale: 'und-u-hc-h12',
-      shouldParseSkeletons: true,
+      shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: 'f7ca82a9224b1bb20232963911f30608e9141b0a041d6c07f7115b9665a716ce',
+      hash: 'bc856cb8493464467c2ee019125d6697f71a742b9955f03e0321ad0b2f0d0cce',
     },
   },
   {
@@ -146,11 +148,11 @@ const CASES = [
     message: '{0, date, ::jjjjjj}',
     options: {
       locale: 'und-u-hc-h12',
-      shouldParseSkeletons: true,
+      shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: '195cb1589e1389c2aae400811294bb6d3354fe38ca910b69b3f0b11b8a5a82d1',
+      hash: '52599f8960e428c95982b7ac9d2eea943d1d28a35af64680729cb82abb79fe97',
     },
   },
   {
@@ -433,26 +435,26 @@ const CASES = [
   {
     name: 'number_skeleton_10',
     message: '{0, number, ::currency/GBP .00##/@@@ unit-width-full-name}',
-    options: { shouldParseSkeletons: true },
+    options: { shouldParseSkeletons: false },
     expected: {
-      hash: 'e8d4f13e3e18da8e1b714f0a6358a1a4c6df0becc8bd7bd9d492031820dad468',
+      hash: 'f29fedaac9ffaef6f25a73b73d81b388b9e25fb5ad42f306f58a78e9cbb5431f',
     },
   },
   {
     name: 'number_skeleton_11',
     message:
       '{0, number, ::measure-unit/length-meter .00##/@@@ unit-width-full-name}',
-    options: { shouldParseSkeletons: true },
+    options: { shouldParseSkeletons: false },
     expected: {
-      hash: '6c430b1fb731941617c221a6fc2cd42988045e0f04f3be313f219b7f04ab72c9',
+      hash: '66915cbd743aef80ae382414c89f8ecdb7ee7308f72b2fe58925cb48b46bde2e',
     },
   },
   {
     name: 'number_skeleton_12',
     message: '{0, number, ::scientific/+ee/sign-always}',
-    options: { shouldParseSkeletons: true },
+    options: { shouldParseSkeletons: false },
     expected: {
-      hash: '0dc833e1315c09c06595f1a9b17e9b7d34aed8abcc33024720c5d1832c40e55f',
+      hash: '94effa3033c71cf76d4cb1607823917c369309707227b6aa4d54543bf3b31689',
     },
   },
   {
@@ -466,57 +468,57 @@ const CASES = [
   {
     name: 'number_skeleton_3',
     message: '{0, number, ::currency/CAD unit-width-narrow}',
-    options: { shouldParseSkeletons: true },
+    options: { shouldParseSkeletons: false },
     expected: {
-      hash: '210f70edb720b38c0b92d380a834c914ec069ee324f5877214bd53a8a0380aa6',
+      hash: '876cb3c915dc3b5dd7dc407bb6c7720923629ffabd2b950514d37fed3f8085b3',
     },
   },
   {
     name: 'number_skeleton_4',
     message: '{0, number, ::percent .##}',
-    options: { shouldParseSkeletons: true },
+    options: { shouldParseSkeletons: false },
     expected: {
-      hash: 'c57418d9edbacd53d77600b1b66fd5b35195d9b4858281a2b9ad8e8e603d8313',
+      hash: 'cc68ba519bedbd73d51cc675b03c7a7ac038a73dc2c092a00092441b1c043865',
     },
   },
   {
     name: 'number_skeleton_5',
     message: '{0, number, ::percent .000*}',
-    options: { shouldParseSkeletons: true },
+    options: { shouldParseSkeletons: false },
     expected: {
-      hash: '7e8d7c5a134191a20c6ec8c32c8f5d7144400221303f60a18da4328759b851b5',
+      hash: 'd1d4dbe43c44b19946e06efa07941f83d16d51716e2d2813be20be604586ead8',
     },
   },
   {
     name: 'number_skeleton_6',
     message: '{0, number, ::percent .0###}',
-    options: { shouldParseSkeletons: true },
+    options: { shouldParseSkeletons: false },
     expected: {
-      hash: 'f602595455719fb90acacbc4209d5683ef6eb764223848166e186ef1adc75278',
+      hash: '42787a6ab67ccb53d29f9ef81aa3ae07f3cd0172a3e7033190a4cd7774074833',
     },
   },
   {
     name: 'number_skeleton_7',
     message: '{0, number, ::percent .00/@##}',
-    options: { shouldParseSkeletons: true },
+    options: { shouldParseSkeletons: false },
     expected: {
-      hash: '54e6aefd90c724af47c585c154ff0d05c8ccdd73b8a1486052df742dab496a27',
+      hash: 'eef87a0a7fd6fe188d7cfa68c9fa4794b79d8bd98fdbb90bd9db4968231dcc7c',
     },
   },
   {
     name: 'number_skeleton_8',
     message: '{0, number, ::percent .00/@@@}',
-    options: { shouldParseSkeletons: true },
+    options: { shouldParseSkeletons: false },
     expected: {
-      hash: '89348bf0114d46f0339967aee01189d7ed6a2f3bf89936f39b1d4880c78d51ad',
+      hash: 'ac1ef92c8703da201234535bfbfb554723c09043fd14dc2f335c99bf0b5d97e3',
     },
   },
   {
     name: 'number_skeleton_9',
     message: '{0, number, ::percent .00/@@@@*}',
-    options: { shouldParseSkeletons: true },
+    options: { shouldParseSkeletons: false },
     expected: {
-      hash: 'e3e26ba532c61fcd57e50f461fac107f72187b42ca780453b30d8f3f453f6656',
+      hash: 'd8c1f69e4748048301b33885b621b24b4014bd126335d94667e481c4e596eb5b',
     },
   },
   {

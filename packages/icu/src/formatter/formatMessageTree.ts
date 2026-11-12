@@ -222,7 +222,10 @@ function formatNodes<R>(
         const style = node[2];
         // An ICU string's skeleton may also hold a scale.
         const { scale, ...intlOptions }: ExtendedNumberFormatOptions = {
-          ...(typeof style === 'string' ? NAMED_NUMBER_STYLES[style] : style),
+          ...(typeof style === 'string'
+            ? (ownOption(NAMED_NUMBER_STYLES, style) ??
+              unknownStyle(name, style))
+            : style),
           ...formatsOf(context, name),
         };
         if (intlOptions.style === 'currency' && !intlOptions.currency) {
@@ -249,7 +252,7 @@ function formatNodes<R>(
           typeof named === 'string'
             ? DATE_TIME_STYLES.has(named)
               ? { [isDate ? 'dateStyle' : 'timeStyle']: named }
-              : undefined
+              : unknownStyle(name, named)
             : named;
         const options: Intl.DateTimeFormatOptions = {
           ...styleOptions,
@@ -364,10 +367,7 @@ function applyScale<Value>(
   value: Value,
   scale: number | undefined
 ): Value | number | bigint {
-  // intl-messageformat treated scale/0 as an absent scale. Preserve that
-  // observable behavior for existing messages even though multiplying by zero
-  // would follow the ICU skeleton definition more literally.
-  if (!scale) return value;
+  if (scale === undefined) return value;
   if (typeof value === 'bigint') {
     if (!Number.isInteger(scale)) {
       throw new RangeError(
@@ -413,6 +413,14 @@ function ownOption<T>(options: Record<string, T>, key: string): T | undefined {
   return Object.prototype.hasOwnProperty.call(options, key)
     ? options[key]
     : undefined;
+}
+
+// ICU reads any other style as a pattern, like `#,##0.00` or `yyyy-MM-dd`,
+// which Intl cannot format.
+function unknownStyle(name: string, style: string): never {
+  throw new RangeError(
+    `The ICU variable "${name}" has the style "${style}", which is not an ICU style name. ICU patterns are not supported; write a skeleton, like ::.00 or ::yMMMd.`
+  );
 }
 
 function invalidSelection(

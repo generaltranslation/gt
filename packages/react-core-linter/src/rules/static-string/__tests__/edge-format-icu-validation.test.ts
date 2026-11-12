@@ -103,7 +103,7 @@ describe('icu-validation: nested ICU plural with # is valid', () => {
 // 4. ICU with number format skeleton
 // ===================================================================
 
-describe('icu-validation: ICU number format with skeleton is valid', () => {
+describe('icu-validation: ICU number format with skeleton', () => {
   ruleTester.run('number-format-skeleton', staticString, {
     valid: [
       {
@@ -119,16 +119,20 @@ describe('icu-validation: ICU number format with skeleton is valid', () => {
       {
         code: `
           import { useGT } from 'gt-react';
-          function C() { const gt = useGT(); return gt("{n, number, ::integer-width/*}"); }
+          function C() { const gt = useGT(); return gt("{n, number, foo{bar}baz}"); }
         `,
         options: [{ libs: ['gt-react'] }],
       },
+    ],
+    // ICU rejects a token that is not its own, and Intl cannot format some.
+    invalid: [
       {
         code: `
           import { useGT } from 'gt-react';
           function C() { const gt = useGT(); return gt("{n, number, ::integer-width/x*00}"); }
         `,
         options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'invalidICUFormat' }],
       },
       {
         code: `
@@ -136,16 +140,17 @@ describe('icu-validation: ICU number format with skeleton is valid', () => {
           function C() { const gt = useGT(); return gt("{n, number, ::currency}"); }
         `,
         options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'invalidICUFormat' }],
       },
       {
         code: `
           import { useGT } from 'gt-react';
-          function C() { const gt = useGT(); return gt("{n, number, foo{bar}baz}"); }
+          function C() { const gt = useGT(); return gt("{n, number, ::permille}"); }
         `,
         options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'invalidICUFormat' }],
       },
     ],
-    invalid: [],
   });
 });
 

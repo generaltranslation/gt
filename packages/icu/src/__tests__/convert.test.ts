@@ -98,7 +98,7 @@ describe('icuToMessage', () => {
   });
 
   // The hour cycle is formatting context, so every hour symbol is the hour.
-  it.each(['j', 'J', 'h', 'H', 'K', 'k', 'ha'])(
+  it.each(['j', 'h', 'H', 'K', 'k', 'ha'])(
     'reads the hour symbol in ::%smm as the hour',
     (hour) => {
       expect(icuToMessage(`{d, time, ::${hour}mm}`).tree).toEqual([
@@ -107,8 +107,8 @@ describe('icuToMessage', () => {
     }
   );
 
-  it('reads a skeleton of only formatting context as no style, never {}', () => {
-    expect(icuToMessage('{t, time, ::a}{d, date, ::a}').tree).toEqual([
+  it('reads a skeleton without fields as no style, never {}', () => {
+    expect(icuToMessage("{t, time, ::'x'}{d, date, ::'x'}").tree).toEqual([
       ['t', 'time'],
       ['d', 'date'],
     ]);
@@ -176,16 +176,23 @@ describe('icuToMessage', () => {
       [['n', 'number']],
       { n: { maximumFractionDigits: 0 } },
     ],
+    // ICU's percent does not multiply by 100; `%x100` does, as Intl's style.
     [
       '{n, number, ::percent .0}',
+      [['n', 'number', { style: 'unit', unit: 'percent' }]],
+      { n: { maximumFractionDigits: 1, minimumFractionDigits: 1 } },
+    ],
+    [
+      '{n, number, ::%x100 .0}',
       [['n', 'number', 'percent']],
       { n: { maximumFractionDigits: 1, minimumFractionDigits: 1 } },
     ],
     [
       '{n, number, ::measure-unit/length-meter unit-width-full-name}',
       [['n', 'number', { style: 'unit', unit: 'meter' }]],
-      { n: { currencyDisplay: 'name', unitDisplay: 'long' } },
+      { n: { unitDisplay: 'long' } },
     ],
+    ['{n, number, ::scale/0}', [['n', 'number']], { n: { scale: 0 } }],
     ['{n, number, ::scale/100}', [['n', 'number']], { n: { scale: 100 } }],
     [
       '{t, time, ::Hmm}',
@@ -214,15 +221,7 @@ describe('icuToMessage', () => {
   // A message formats as its string does: nothing the string says is lost.
   it.each([
     ...NUMBER_SKELETONS.map(({ skeleton }) => `{n, number, ::${skeleton}}`),
-    // A skeleton that spells no field, like `::A`, is an unstyled date in a
-    // message, which formats as ICU's medium style; `SSSS` is rejected.
-    ...DATE_SKELETONS.filter(
-      ({ skeleton, options }) =>
-        !skeleton.includes('SSSS') &&
-        Object.keys(options).some((key) =>
-          (DATE_FIELD_OPTIONS as readonly string[]).includes(key)
-        )
-    ).map(({ skeleton }) => `{d, date, ::${skeleton}}`),
+    ...DATE_SKELETONS.map(({ skeleton }) => `{d, date, ::${skeleton}}`),
     '{n, number, integer}',
     '{n, number, percent}',
     '{d, date, full} {d, time, short}',
@@ -303,15 +302,16 @@ describe('icuToMessage', () => {
     expect(() => icuToMessage('{t, time, ::yMd}').tree).toThrow(
       '{t, time, ::yMd} cannot be part of a message tree: a time has no "year" option.'
     );
-    expect(() => icuToMessage('{t, time, ::ssSSSS}').tree).toThrow(
-      '{t, time, ::ssSSSS} cannot be part of a message tree: fractional seconds have at most three digits, SSS.'
-    );
   });
 
-  it('formats more than three fractional digits in an ICU string as three', () => {
-    const t = new Date(2020, 4, 6, 23, 30, 5, 123);
-    expect(formatMessage('{t, time, ::ssSSSS}', 'en-US', { t })).toBe(
-      formatMessage('{t, time, ::ssSSS}', 'en-US', { t })
+  it('throws a RangeError for a skeleton Intl cannot format', () => {
+    expect(() => icuToMessage('{t, time, ::ssSSSS}')).toThrow(
+      new RangeError('Unsupported date/time skeleton field: SSSS.')
+    );
+    expect(() => icuToMessage('{n, number, ::permille}')).toThrow(
+      new RangeError(
+        'The number skeleton token "permille" cannot be formatted: Intl has no per-mille unit.'
+      )
     );
   });
 

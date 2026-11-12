@@ -1,0 +1,2169 @@
+{n, number, ::compact-short}	1234.5	1.2K
+{n, number, ::compact-short}	0.256	0.26
+{n, number, ::compact-short}	-5	-5
+{n, number, ::compact-short}	0	0
+{n, number, ::compact-short}	2.5	2.5
+{n, number, ::compact-short}	15000	15K
+{n, number, ::compact-short}	0.0625	0.062
+{n, number, ::compact-short}	1234	1.2K
+{n, number, ::K}	1234.5	1.2K
+{n, number, ::K}	0.256	0.26
+{n, number, ::K}	-5	-5
+{n, number, ::K}	0	0
+{n, number, ::K}	2.5	2.5
+{n, number, ::K}	15000	15K
+{n, number, ::K}	0.0625	0.062
+{n, number, ::K}	1234	1.2K
+{n, number, ::compact-long}	1234.5	1.2 thousand
+{n, number, ::compact-long}	0.256	0.26
+{n, number, ::compact-long}	-5	-5
+{n, number, ::compact-long}	0	0
+{n, number, ::compact-long}	2.5	2.5
+{n, number, ::compact-long}	15000	15 thousand
+{n, number, ::compact-long}	0.0625	0.062
+{n, number, ::compact-long}	1234	1.2 thousand
+{n, number, ::KK}	1234.5	1.2 thousand
+{n, number, ::KK}	0.256	0.26
+{n, number, ::KK}	-5	-5
+{n, number, ::KK}	0	0
+{n, number, ::KK}	2.5	2.5
+{n, number, ::KK}	15000	15 thousand
+{n, number, ::KK}	0.0625	0.062
+{n, number, ::KK}	1234	1.2 thousand
+{n, number, ::notation-simple}	1234.5	1,234.5
+{n, number, ::notation-simple}	0.256	0.256
+{n, number, ::notation-simple}	-5	-5
+{n, number, ::notation-simple}	0	0
+{n, number, ::notation-simple}	2.5	2.5
+{n, number, ::notation-simple}	15000	15,000
+{n, number, ::notation-simple}	0.0625	0.0625
+{n, number, ::notation-simple}	1234	1,234
+{n, number, ::scientific}	1234.5	1.2345E3
+{n, number, ::scientific}	0.256	2.56E-1
+{n, number, ::scientific}	-5	-5E0
+{n, number, ::scientific}	0	0E0
+{n, number, ::scientific}	2.5	2.5E0
+{n, number, ::scientific}	15000	1.5E4
+{n, number, ::scientific}	0.0625	6.25E-2
+{n, number, ::scientific}	1234	1.234E3
+{n, number, ::scientific/sign-always}	1234.5	1.2345E+3
+{n, number, ::scientific/sign-always}	0.256	2.56E-1
+{n, number, ::scientific/sign-always}	-5	-5E+0
+{n, number, ::scientific/sign-always}	0	0E+0
+{n, number, ::scientific/sign-always}	2.5	2.5E+0
+{n, number, ::scientific/sign-always}	15000	1.5E+4
+{n, number, ::scientific/sign-always}	0.0625	6.25E-2
+{n, number, ::scientific/sign-always}	1234	1.234E+3
+{n, number, ::scientific/*ee}	1234.5	1.2345E03
+{n, number, ::scientific/*ee}	0.256	2.56E-01
+{n, number, ::scientific/*ee}	-5	-5E00
+{n, number, ::scientific/*ee}	0	0E00
+{n, number, ::scientific/*ee}	2.5	2.5E00
+{n, number, ::scientific/*ee}	15000	1.5E04
+{n, number, ::scientific/*ee}	0.0625	6.25E-02
+{n, number, ::scientific/*ee}	1234	1.234E03
+{n, number, ::scientific/*ee/sign-always}	1234.5	1.2345E+03
+{n, number, ::scientific/*ee/sign-always}	0.256	2.56E-01
+{n, number, ::scientific/*ee/sign-always}	-5	-5E+00
+{n, number, ::scientific/*ee/sign-always}	0	0E+00
+{n, number, ::scientific/*ee/sign-always}	2.5	2.5E+00
+{n, number, ::scientific/*ee/sign-always}	15000	1.5E+04
+{n, number, ::scientific/*ee/sign-always}	0.0625	6.25E-02
+{n, number, ::scientific/*ee/sign-always}	1234	1.234E+03
+{n, number, ::engineering}	1234.5	1.2345E3
+{n, number, ::engineering}	0.256	256E-3
+{n, number, ::engineering}	-5	-5E0
+{n, number, ::engineering}	0	0E0
+{n, number, ::engineering}	2.5	2.5E0
+{n, number, ::engineering}	15000	15E3
+{n, number, ::engineering}	0.0625	62.5E-3
+{n, number, ::engineering}	1234	1.234E3
+{n, number, ::E0}	1234.5	1.2345E3
+{n, number, ::E0}	0.256	2.56E-1
+{n, number, ::E0}	-5	-5E0
+{n, number, ::E0}	0	0E0
+{n, number, ::E0}	2.5	2.5E0
+{n, number, ::E0}	15000	1.5E4
+{n, number, ::E0}	0.0625	6.25E-2
+{n, number, ::E0}	1234	1.234E3
+{n, number, ::E00}	1234.5	1.2345E03
+{n, number, ::E00}	0.256	2.56E-01
+{n, number, ::E00}	-5	-5E00
+{n, number, ::E00}	0	0E00
+{n, number, ::E00}	2.5	2.5E00
+{n, number, ::E00}	15000	1.5E04
+{n, number, ::E00}	0.0625	6.25E-02
+{n, number, ::E00}	1234	1.234E03
+{n, number, ::EE+!0}	1234.5	1.2345E+3
+{n, number, ::EE+!0}	0.256	256E-3
+{n, number, ::EE+!0}	-5	-5E+0
+{n, number, ::EE+!0}	0	0E+0
+{n, number, ::EE+!0}	2.5	2.5E+0
+{n, number, ::EE+!0}	15000	15E+3
+{n, number, ::EE+!0}	0.0625	62.5E-3
+{n, number, ::EE+!0}	1234	1.234E+3
+{n, number, ::E+?00}	1234.5	1.2345E03
+{n, number, ::E+?00}	0.256	2.56E-01
+{n, number, ::E+?00}	-5	-5E00
+{n, number, ::E+?00}	0	0E00
+{n, number, ::E+?00}	2.5	2.5E00
+{n, number, ::E+?00}	15000	1.5E04
+{n, number, ::E+?00}	0.0625	6.25E-02
+{n, number, ::E+?00}	1234	1.234E03
+{n, number, ::percent}	1234.5	1,234.5%
+{n, number, ::percent}	0.256	0.256%
+{n, number, ::percent}	-5	-5%
+{n, number, ::percent}	0	0%
+{n, number, ::percent}	2.5	2.5%
+{n, number, ::percent}	15000	15,000%
+{n, number, ::percent}	0.0625	0.0625%
+{n, number, ::percent}	1234	1,234%
+{n, number, ::%}	1234.5	1,234.5%
+{n, number, ::%}	0.256	0.256%
+{n, number, ::%}	-5	-5%
+{n, number, ::%}	0	0%
+{n, number, ::%}	2.5	2.5%
+{n, number, ::%}	15000	15,000%
+{n, number, ::%}	0.0625	0.0625%
+{n, number, ::%}	1234	1,234%
+{n, number, ::percent scale/100}	1234.5	123,450%
+{n, number, ::percent scale/100}	0.256	25.6%
+{n, number, ::percent scale/100}	-5	-500%
+{n, number, ::percent scale/100}	0	0%
+{n, number, ::percent scale/100}	2.5	250%
+{n, number, ::percent scale/100}	15000	1,500,000%
+{n, number, ::percent scale/100}	0.0625	6.25%
+{n, number, ::percent scale/100}	1234	123,400%
+{n, number, ::%x100}	1234.5	123,450%
+{n, number, ::%x100}	0.256	25.6%
+{n, number, ::%x100}	-5	-500%
+{n, number, ::%x100}	0	0%
+{n, number, ::%x100}	2.5	250%
+{n, number, ::%x100}	15000	1,500,000%
+{n, number, ::%x100}	0.0625	6.25%
+{n, number, ::%x100}	1234	123,400%
+{n, number, ::permille}	1234.5	1,234.5‰
+{n, number, ::permille}	0.256	0.256‰
+{n, number, ::permille}	-5	-5‰
+{n, number, ::permille}	0	0‰
+{n, number, ::permille}	2.5	2.5‰
+{n, number, ::permille}	15000	15,000‰
+{n, number, ::permille}	0.0625	0.0625‰
+{n, number, ::permille}	1234	1,234‰
+{n, number, ::base-unit}	1234.5	1,234.5
+{n, number, ::base-unit}	0.256	0.256
+{n, number, ::base-unit}	-5	-5
+{n, number, ::base-unit}	0	0
+{n, number, ::base-unit}	2.5	2.5
+{n, number, ::base-unit}	15000	15,000
+{n, number, ::base-unit}	0.0625	0.0625
+{n, number, ::base-unit}	1234	1,234
+{n, number, ::currency/CAD}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD}	0.256	CA$0.26
+{n, number, ::currency/CAD}	-5	-CA$5.00
+{n, number, ::currency/CAD}	0	CA$0.00
+{n, number, ::currency/CAD}	2.5	CA$2.50
+{n, number, ::currency/CAD}	15000	CA$15,000.00
+{n, number, ::currency/CAD}	0.0625	CA$0.06
+{n, number, ::currency/CAD}	1234	CA$1,234.00
+{n, number, ::measure-unit/length-meter}	1234.5	1,234.5 m
+{n, number, ::measure-unit/length-meter}	0.256	0.256 m
+{n, number, ::measure-unit/length-meter}	-5	-5 m
+{n, number, ::measure-unit/length-meter}	0	0 m
+{n, number, ::measure-unit/length-meter}	2.5	2.5 m
+{n, number, ::measure-unit/length-meter}	15000	15,000 m
+{n, number, ::measure-unit/length-meter}	0.0625	0.0625 m
+{n, number, ::measure-unit/length-meter}	1234	1,234 m
+{n, number, ::unit/meter}	1234.5	1,234.5 m
+{n, number, ::unit/meter}	0.256	0.256 m
+{n, number, ::unit/meter}	-5	-5 m
+{n, number, ::unit/meter}	0	0 m
+{n, number, ::unit/meter}	2.5	2.5 m
+{n, number, ::unit/meter}	15000	15,000 m
+{n, number, ::unit/meter}	0.0625	0.0625 m
+{n, number, ::unit/meter}	1234	1,234 m
+{n, number, ::unit/furlong-per-second}	1234.5	1,234.5 fur/s
+{n, number, ::unit/furlong-per-second}	0.256	0.256 fur/s
+{n, number, ::unit/furlong-per-second}	-5	-5 fur/s
+{n, number, ::unit/furlong-per-second}	0	0 fur/s
+{n, number, ::unit/furlong-per-second}	2.5	2.5 fur/s
+{n, number, ::unit/furlong-per-second}	15000	15,000 fur/s
+{n, number, ::unit/furlong-per-second}	0.0625	0.0625 fur/s
+{n, number, ::unit/furlong-per-second}	1234	1,234 fur/s
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-second}	1234.5	1,234.5 m/s
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-second}	0.256	0.256 m/s
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-second}	-5	-5 m/s
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-second}	0	0 m/s
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-second}	2.5	2.5 m/s
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-second}	15000	15,000 m/s
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-second}	0.0625	0.0625 m/s
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-second}	1234	1,234 m/s
+{n, number, ::currency/CAD unit-width-narrow}	1234.5	$1,234.50
+{n, number, ::currency/CAD unit-width-narrow}	0.256	$0.26
+{n, number, ::currency/CAD unit-width-narrow}	-5	-$5.00
+{n, number, ::currency/CAD unit-width-narrow}	0	$0.00
+{n, number, ::currency/CAD unit-width-narrow}	2.5	$2.50
+{n, number, ::currency/CAD unit-width-narrow}	15000	$15,000.00
+{n, number, ::currency/CAD unit-width-narrow}	0.0625	$0.06
+{n, number, ::currency/CAD unit-width-narrow}	1234	$1,234.00
+{n, number, ::currency/CAD unit-width-short}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD unit-width-short}	0.256	CA$0.26
+{n, number, ::currency/CAD unit-width-short}	-5	-CA$5.00
+{n, number, ::currency/CAD unit-width-short}	0	CA$0.00
+{n, number, ::currency/CAD unit-width-short}	2.5	CA$2.50
+{n, number, ::currency/CAD unit-width-short}	15000	CA$15,000.00
+{n, number, ::currency/CAD unit-width-short}	0.0625	CA$0.06
+{n, number, ::currency/CAD unit-width-short}	1234	CA$1,234.00
+{n, number, ::currency/CAD unit-width-full-name}	1234.5	1,234.50 Canadian dollars
+{n, number, ::currency/CAD unit-width-full-name}	0.256	0.26 Canadian dollars
+{n, number, ::currency/CAD unit-width-full-name}	-5	-5.00 Canadian dollars
+{n, number, ::currency/CAD unit-width-full-name}	0	0.00 Canadian dollars
+{n, number, ::currency/CAD unit-width-full-name}	2.5	2.50 Canadian dollars
+{n, number, ::currency/CAD unit-width-full-name}	15000	15,000.00 Canadian dollars
+{n, number, ::currency/CAD unit-width-full-name}	0.0625	0.06 Canadian dollars
+{n, number, ::currency/CAD unit-width-full-name}	1234	1,234.00 Canadian dollars
+{n, number, ::currency/CAD unit-width-iso-code}	1234.5	CAD 1,234.50
+{n, number, ::currency/CAD unit-width-iso-code}	0.256	CAD 0.26
+{n, number, ::currency/CAD unit-width-iso-code}	-5	-CAD 5.00
+{n, number, ::currency/CAD unit-width-iso-code}	0	CAD 0.00
+{n, number, ::currency/CAD unit-width-iso-code}	2.5	CAD 2.50
+{n, number, ::currency/CAD unit-width-iso-code}	15000	CAD 15,000.00
+{n, number, ::currency/CAD unit-width-iso-code}	0.0625	CAD 0.06
+{n, number, ::currency/CAD unit-width-iso-code}	1234	CAD 1,234.00
+{n, number, ::currency/CAD unit-width-hidden}	1234.5	1,234.50
+{n, number, ::currency/CAD unit-width-hidden}	0.256	0.26
+{n, number, ::currency/CAD unit-width-hidden}	-5	-5.00
+{n, number, ::currency/CAD unit-width-hidden}	0	0.00
+{n, number, ::currency/CAD unit-width-hidden}	2.5	2.50
+{n, number, ::currency/CAD unit-width-hidden}	15000	15,000.00
+{n, number, ::currency/CAD unit-width-hidden}	0.0625	0.06
+{n, number, ::currency/CAD unit-width-hidden}	1234	1,234.00
+{n, number, ::unit/meter unit-width-narrow}	1234.5	1,234.5m
+{n, number, ::unit/meter unit-width-narrow}	0.256	0.256m
+{n, number, ::unit/meter unit-width-narrow}	-5	-5m
+{n, number, ::unit/meter unit-width-narrow}	0	0m
+{n, number, ::unit/meter unit-width-narrow}	2.5	2.5m
+{n, number, ::unit/meter unit-width-narrow}	15000	15,000m
+{n, number, ::unit/meter unit-width-narrow}	0.0625	0.0625m
+{n, number, ::unit/meter unit-width-narrow}	1234	1,234m
+{n, number, ::unit/meter unit-width-short}	1234.5	1,234.5 m
+{n, number, ::unit/meter unit-width-short}	0.256	0.256 m
+{n, number, ::unit/meter unit-width-short}	-5	-5 m
+{n, number, ::unit/meter unit-width-short}	0	0 m
+{n, number, ::unit/meter unit-width-short}	2.5	2.5 m
+{n, number, ::unit/meter unit-width-short}	15000	15,000 m
+{n, number, ::unit/meter unit-width-short}	0.0625	0.0625 m
+{n, number, ::unit/meter unit-width-short}	1234	1,234 m
+{n, number, ::unit/meter unit-width-full-name}	1234.5	1,234.5 meters
+{n, number, ::unit/meter unit-width-full-name}	0.256	0.256 meters
+{n, number, ::unit/meter unit-width-full-name}	-5	-5 meters
+{n, number, ::unit/meter unit-width-full-name}	0	0 meters
+{n, number, ::unit/meter unit-width-full-name}	2.5	2.5 meters
+{n, number, ::unit/meter unit-width-full-name}	15000	15,000 meters
+{n, number, ::unit/meter unit-width-full-name}	0.0625	0.0625 meters
+{n, number, ::unit/meter unit-width-full-name}	1234	1,234 meters
+{n, number, ::precision-integer}	1234.5	1,234
+{n, number, ::precision-integer}	0.256	0
+{n, number, ::precision-integer}	-5	-5
+{n, number, ::precision-integer}	0	0
+{n, number, ::precision-integer}	2.5	2
+{n, number, ::precision-integer}	15000	15,000
+{n, number, ::precision-integer}	0.0625	0
+{n, number, ::precision-integer}	1234	1,234
+{n, number, ::.}	1234.5	1,234
+{n, number, ::.}	0.256	0
+{n, number, ::.}	-5	-5
+{n, number, ::.}	0	0
+{n, number, ::.}	2.5	2
+{n, number, ::.}	15000	15,000
+{n, number, ::.}	0.0625	0
+{n, number, ::.}	1234	1,234
+{n, number, ::precision-unlimited}	1234.5	1,234.5
+{n, number, ::precision-unlimited}	0.256	0.256
+{n, number, ::precision-unlimited}	-5	-5
+{n, number, ::precision-unlimited}	0	0
+{n, number, ::precision-unlimited}	2.5	2.5
+{n, number, ::precision-unlimited}	15000	15,000
+{n, number, ::precision-unlimited}	0.0625	0.0625
+{n, number, ::precision-unlimited}	1234	1,234
+{n, number, ::precision-increment/0.05}	1234.5	1,234.50
+{n, number, ::precision-increment/0.05}	0.256	0.25
+{n, number, ::precision-increment/0.05}	-5	-5.00
+{n, number, ::precision-increment/0.05}	0	0.00
+{n, number, ::precision-increment/0.05}	2.5	2.50
+{n, number, ::precision-increment/0.05}	15000	15,000.00
+{n, number, ::precision-increment/0.05}	0.0625	0.05
+{n, number, ::precision-increment/0.05}	1234	1,234.00
+{n, number, ::currency/CAD precision-currency-standard}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD precision-currency-standard}	0.256	CA$0.26
+{n, number, ::currency/CAD precision-currency-standard}	-5	-CA$5.00
+{n, number, ::currency/CAD precision-currency-standard}	0	CA$0.00
+{n, number, ::currency/CAD precision-currency-standard}	2.5	CA$2.50
+{n, number, ::currency/CAD precision-currency-standard}	15000	CA$15,000.00
+{n, number, ::currency/CAD precision-currency-standard}	0.0625	CA$0.06
+{n, number, ::currency/CAD precision-currency-standard}	1234	CA$1,234.00
+{n, number, ::currency/CAD precision-currency-cash}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD precision-currency-cash}	0.256	CA$0.25
+{n, number, ::currency/CAD precision-currency-cash}	-5	-CA$5.00
+{n, number, ::currency/CAD precision-currency-cash}	0	CA$0.00
+{n, number, ::currency/CAD precision-currency-cash}	2.5	CA$2.50
+{n, number, ::currency/CAD precision-currency-cash}	15000	CA$15,000.00
+{n, number, ::currency/CAD precision-currency-cash}	0.0625	CA$0.05
+{n, number, ::currency/CAD precision-currency-cash}	1234	CA$1,234.00
+{n, number, ::.00}	1234.5	1,234.50
+{n, number, ::.00}	0.256	0.26
+{n, number, ::.00}	-5	-5.00
+{n, number, ::.00}	0	0.00
+{n, number, ::.00}	2.5	2.50
+{n, number, ::.00}	15000	15,000.00
+{n, number, ::.00}	0.0625	0.06
+{n, number, ::.00}	1234	1,234.00
+{n, number, ::.00*}	1234.5	1,234.50
+{n, number, ::.00*}	0.256	0.256
+{n, number, ::.00*}	-5	-5.00
+{n, number, ::.00*}	0	0.00
+{n, number, ::.00*}	2.5	2.50
+{n, number, ::.00*}	15000	15,000.00
+{n, number, ::.00*}	0.0625	0.0625
+{n, number, ::.00*}	1234	1,234.00
+{n, number, ::.##}	1234.5	1,234.5
+{n, number, ::.##}	0.256	0.26
+{n, number, ::.##}	-5	-5
+{n, number, ::.##}	0	0
+{n, number, ::.##}	2.5	2.5
+{n, number, ::.##}	15000	15,000
+{n, number, ::.##}	0.0625	0.06
+{n, number, ::.##}	1234	1,234
+{n, number, ::.0#}	1234.5	1,234.5
+{n, number, ::.0#}	0.256	0.26
+{n, number, ::.0#}	-5	-5.0
+{n, number, ::.0#}	0	0.0
+{n, number, ::.0#}	2.5	2.5
+{n, number, ::.0#}	15000	15,000.0
+{n, number, ::.0#}	0.0625	0.06
+{n, number, ::.0#}	1234	1,234.0
+{n, number, ::.##/@@@*}	1234.5	1,234.5
+{n, number, ::.##/@@@*}	0.256	0.256
+{n, number, ::.##/@@@*}	-5	-5
+{n, number, ::.##/@@@*}	0	0
+{n, number, ::.##/@@@*}	2.5	2.5
+{n, number, ::.##/@@@*}	15000	15,000
+{n, number, ::.##/@@@*}	0.0625	0.0625
+{n, number, ::.##/@@@*}	1234	1,234
+{n, number, ::.##/@##r}	1234.5	1,234.5
+{n, number, ::.##/@##r}	0.256	0.256
+{n, number, ::.##/@##r}	-5	-5
+{n, number, ::.##/@##r}	0	0
+{n, number, ::.##/@##r}	2.5	2.5
+{n, number, ::.##/@##r}	15000	15,000
+{n, number, ::.##/@##r}	0.0625	0.0625
+{n, number, ::.##/@##r}	1234	1,234
+{n, number, ::.##/@@@r}	1234.5	1,234.5
+{n, number, ::.##/@@@r}	0.256	0.256
+{n, number, ::.##/@@@r}	-5	-5.00
+{n, number, ::.##/@@@r}	0	0.00
+{n, number, ::.##/@@@r}	2.5	2.50
+{n, number, ::.##/@@@r}	15000	15,000
+{n, number, ::.##/@@@r}	0.0625	0.0625
+{n, number, ::.##/@@@r}	1234	1,234
+{n, number, ::.00/@##}	1234.5	1,230.00
+{n, number, ::.00/@##}	0.256	0.26
+{n, number, ::.00/@##}	-5	-5.00
+{n, number, ::.00/@##}	0	0.00
+{n, number, ::.00/@##}	2.5	2.50
+{n, number, ::.00/@##}	15000	15,000.00
+{n, number, ::.00/@##}	0.0625	0.06
+{n, number, ::.00/@##}	1234	1,230.00
+{n, number, ::.00/@##s}	1234.5	1,230
+{n, number, ::.00/@##s}	0.256	0.26
+{n, number, ::.00/@##s}	-5	-5.00
+{n, number, ::.00/@##s}	0	0.00
+{n, number, ::.00/@##s}	2.5	2.50
+{n, number, ::.00/@##s}	15000	15,000
+{n, number, ::.00/@##s}	0.0625	0.06
+{n, number, ::.00/@##s}	1234	1,230
+{n, number, ::.00/@@@s}	1234.5	1,230
+{n, number, ::.00/@@@s}	0.256	0.26
+{n, number, ::.00/@@@s}	-5	-5.00
+{n, number, ::.00/@@@s}	0	0.00
+{n, number, ::.00/@@@s}	2.5	2.50
+{n, number, ::.00/@@@s}	15000	15,000
+{n, number, ::.00/@@@s}	0.0625	0.06
+{n, number, ::.00/@@@s}	1234	1,230
+{n, number, ::@@@}	1234.5	1,230
+{n, number, ::@@@}	0.256	0.256
+{n, number, ::@@@}	-5	-5.00
+{n, number, ::@@@}	0	0.00
+{n, number, ::@@@}	2.5	2.50
+{n, number, ::@@@}	15000	15,000
+{n, number, ::@@@}	0.0625	0.0625
+{n, number, ::@@@}	1234	1,230
+{n, number, ::@@@*}	1234.5	1,234.5
+{n, number, ::@@@*}	0.256	0.256
+{n, number, ::@@@*}	-5	-5.00
+{n, number, ::@@@*}	0	0.00
+{n, number, ::@@@*}	2.5	2.50
+{n, number, ::@@@*}	15000	15,000
+{n, number, ::@@@*}	0.0625	0.0625
+{n, number, ::@@@*}	1234	1,234
+{n, number, ::@##}	1234.5	1,230
+{n, number, ::@##}	0.256	0.256
+{n, number, ::@##}	-5	-5
+{n, number, ::@##}	0	0
+{n, number, ::@##}	2.5	2.5
+{n, number, ::@##}	15000	15,000
+{n, number, ::@##}	0.0625	0.0625
+{n, number, ::@##}	1234	1,230
+{n, number, ::@@#}	1234.5	1,230
+{n, number, ::@@#}	0.256	0.256
+{n, number, ::@@#}	-5	-5.0
+{n, number, ::@@#}	0	0.0
+{n, number, ::@@#}	2.5	2.5
+{n, number, ::@@#}	15000	15,000
+{n, number, ::@@#}	0.0625	0.0625
+{n, number, ::@@#}	1234	1,230
+{n, number, ::.00/w}	1234.5	1,234.50
+{n, number, ::.00/w}	0.256	0.26
+{n, number, ::.00/w}	-5	-5
+{n, number, ::.00/w}	0	0
+{n, number, ::.00/w}	2.5	2.50
+{n, number, ::.00/w}	15000	15,000
+{n, number, ::.00/w}	0.0625	0.06
+{n, number, ::.00/w}	1234	1,234
+{n, number, ::currency/CAD precision-currency-standard/w}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD precision-currency-standard/w}	0.256	CA$0.26
+{n, number, ::currency/CAD precision-currency-standard/w}	-5	-CA$5
+{n, number, ::currency/CAD precision-currency-standard/w}	0	CA$0
+{n, number, ::currency/CAD precision-currency-standard/w}	2.5	CA$2.50
+{n, number, ::currency/CAD precision-currency-standard/w}	15000	CA$15,000
+{n, number, ::currency/CAD precision-currency-standard/w}	0.0625	CA$0.06
+{n, number, ::currency/CAD precision-currency-standard/w}	1234	CA$1,234
+{n, number, ::.0 rounding-mode-ceiling}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-ceiling}	0.256	0.3
+{n, number, ::.0 rounding-mode-ceiling}	-5	-5.0
+{n, number, ::.0 rounding-mode-ceiling}	0	0.0
+{n, number, ::.0 rounding-mode-ceiling}	2.5	2.5
+{n, number, ::.0 rounding-mode-ceiling}	15000	15,000.0
+{n, number, ::.0 rounding-mode-ceiling}	0.0625	0.1
+{n, number, ::.0 rounding-mode-ceiling}	1234	1,234.0
+{n, number, ::.0 rounding-mode-floor}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-floor}	0.256	0.2
+{n, number, ::.0 rounding-mode-floor}	-5	-5.0
+{n, number, ::.0 rounding-mode-floor}	0	0.0
+{n, number, ::.0 rounding-mode-floor}	2.5	2.5
+{n, number, ::.0 rounding-mode-floor}	15000	15,000.0
+{n, number, ::.0 rounding-mode-floor}	0.0625	0.0
+{n, number, ::.0 rounding-mode-floor}	1234	1,234.0
+{n, number, ::.0 rounding-mode-down}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-down}	0.256	0.2
+{n, number, ::.0 rounding-mode-down}	-5	-5.0
+{n, number, ::.0 rounding-mode-down}	0	0.0
+{n, number, ::.0 rounding-mode-down}	2.5	2.5
+{n, number, ::.0 rounding-mode-down}	15000	15,000.0
+{n, number, ::.0 rounding-mode-down}	0.0625	0.0
+{n, number, ::.0 rounding-mode-down}	1234	1,234.0
+{n, number, ::.0 rounding-mode-up}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-up}	0.256	0.3
+{n, number, ::.0 rounding-mode-up}	-5	-5.0
+{n, number, ::.0 rounding-mode-up}	0	0.0
+{n, number, ::.0 rounding-mode-up}	2.5	2.5
+{n, number, ::.0 rounding-mode-up}	15000	15,000.0
+{n, number, ::.0 rounding-mode-up}	0.0625	0.1
+{n, number, ::.0 rounding-mode-up}	1234	1,234.0
+{n, number, ::.0 rounding-mode-half-even}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-half-even}	0.256	0.3
+{n, number, ::.0 rounding-mode-half-even}	-5	-5.0
+{n, number, ::.0 rounding-mode-half-even}	0	0.0
+{n, number, ::.0 rounding-mode-half-even}	2.5	2.5
+{n, number, ::.0 rounding-mode-half-even}	15000	15,000.0
+{n, number, ::.0 rounding-mode-half-even}	0.0625	0.1
+{n, number, ::.0 rounding-mode-half-even}	1234	1,234.0
+{n, number, ::.0 rounding-mode-half-down}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-half-down}	0.256	0.3
+{n, number, ::.0 rounding-mode-half-down}	-5	-5.0
+{n, number, ::.0 rounding-mode-half-down}	0	0.0
+{n, number, ::.0 rounding-mode-half-down}	2.5	2.5
+{n, number, ::.0 rounding-mode-half-down}	15000	15,000.0
+{n, number, ::.0 rounding-mode-half-down}	0.0625	0.1
+{n, number, ::.0 rounding-mode-half-down}	1234	1,234.0
+{n, number, ::.0 rounding-mode-half-up}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-half-up}	0.256	0.3
+{n, number, ::.0 rounding-mode-half-up}	-5	-5.0
+{n, number, ::.0 rounding-mode-half-up}	0	0.0
+{n, number, ::.0 rounding-mode-half-up}	2.5	2.5
+{n, number, ::.0 rounding-mode-half-up}	15000	15,000.0
+{n, number, ::.0 rounding-mode-half-up}	0.0625	0.1
+{n, number, ::.0 rounding-mode-half-up}	1234	1,234.0
+{n, number, ::integer-width/*000}	1234.5	1,234.5
+{n, number, ::integer-width/*000}	0.256	000.256
+{n, number, ::integer-width/*000}	-5	-005
+{n, number, ::integer-width/*000}	0	000
+{n, number, ::integer-width/*000}	2.5	002.5
+{n, number, ::integer-width/*000}	15000	15,000
+{n, number, ::integer-width/*000}	0.0625	000.0625
+{n, number, ::integer-width/*000}	1234	1,234
+{n, number, ::000}	1234.5	1,234.5
+{n, number, ::000}	0.256	000.256
+{n, number, ::000}	-5	-005
+{n, number, ::000}	0	000
+{n, number, ::000}	2.5	002.5
+{n, number, ::000}	15000	15,000
+{n, number, ::000}	0.0625	000.0625
+{n, number, ::000}	1234	1,234
+{n, number, ::integer-width/##0}	1234.5	234.5
+{n, number, ::integer-width/##0}	0.256	0.256
+{n, number, ::integer-width/##0}	-5	-5
+{n, number, ::integer-width/##0}	0	0
+{n, number, ::integer-width/##0}	2.5	2.5
+{n, number, ::integer-width/##0}	15000	0
+{n, number, ::integer-width/##0}	0.0625	0.0625
+{n, number, ::integer-width/##0}	1234	234
+{n, number, ::integer-width/00}	1234.5	34.5
+{n, number, ::integer-width/00}	0.256	00.256
+{n, number, ::integer-width/00}	-5	-05
+{n, number, ::integer-width/00}	0	00
+{n, number, ::integer-width/00}	2.5	02.5
+{n, number, ::integer-width/00}	15000	00
+{n, number, ::integer-width/00}	0.0625	00.0625
+{n, number, ::integer-width/00}	1234	34
+{n, number, ::integer-width/*}	1234.5	1,234.5
+{n, number, ::integer-width/*}	0.256	.256
+{n, number, ::integer-width/*}	-5	-5
+{n, number, ::integer-width/*}	0	0
+{n, number, ::integer-width/*}	2.5	2.5
+{n, number, ::integer-width/*}	15000	15,000
+{n, number, ::integer-width/*}	0.0625	.0625
+{n, number, ::integer-width/*}	1234	1,234
+{n, number, ::integer-width-trunc}	1234.5	.5
+{n, number, ::integer-width-trunc}	0.256	.256
+{n, number, ::integer-width-trunc}	-5	-0
+{n, number, ::integer-width-trunc}	0	0
+{n, number, ::integer-width-trunc}	2.5	.5
+{n, number, ::integer-width-trunc}	15000	0
+{n, number, ::integer-width-trunc}	0.0625	.0625
+{n, number, ::integer-width-trunc}	1234	0
+{n, number, ::scale/100}	1234.5	123,450
+{n, number, ::scale/100}	0.256	25.6
+{n, number, ::scale/100}	-5	-500
+{n, number, ::scale/100}	0	0
+{n, number, ::scale/100}	2.5	250
+{n, number, ::scale/100}	15000	1,500,000
+{n, number, ::scale/100}	0.0625	6.25
+{n, number, ::scale/100}	1234	123,400
+{n, number, ::scale/1E2}	1234.5	123,450
+{n, number, ::scale/1E2}	0.256	25.6
+{n, number, ::scale/1E2}	-5	-500
+{n, number, ::scale/1E2}	0	0
+{n, number, ::scale/1E2}	2.5	250
+{n, number, ::scale/1E2}	15000	1,500,000
+{n, number, ::scale/1E2}	0.0625	6.25
+{n, number, ::scale/1E2}	1234	123,400
+{n, number, ::scale/0.5}	1234.5	617.25
+{n, number, ::scale/0.5}	0.256	0.128
+{n, number, ::scale/0.5}	-5	-2.5
+{n, number, ::scale/0.5}	0	0
+{n, number, ::scale/0.5}	2.5	1.25
+{n, number, ::scale/0.5}	15000	7,500
+{n, number, ::scale/0.5}	0.0625	0.03125
+{n, number, ::scale/0.5}	1234	617
+{n, number, ::group-off}	1234.5	1234.5
+{n, number, ::group-off}	0.256	0.256
+{n, number, ::group-off}	-5	-5
+{n, number, ::group-off}	0	0
+{n, number, ::group-off}	2.5	2.5
+{n, number, ::group-off}	15000	15000
+{n, number, ::group-off}	0.0625	0.0625
+{n, number, ::group-off}	1234	1234
+{n, number, ::,_}	1234.5	1234.5
+{n, number, ::,_}	0.256	0.256
+{n, number, ::,_}	-5	-5
+{n, number, ::,_}	0	0
+{n, number, ::,_}	2.5	2.5
+{n, number, ::,_}	15000	15000
+{n, number, ::,_}	0.0625	0.0625
+{n, number, ::,_}	1234	1234
+{n, number, ::group-min2}	1234.5	1234.5
+{n, number, ::group-min2}	0.256	0.256
+{n, number, ::group-min2}	-5	-5
+{n, number, ::group-min2}	0	0
+{n, number, ::group-min2}	2.5	2.5
+{n, number, ::group-min2}	15000	15,000
+{n, number, ::group-min2}	0.0625	0.0625
+{n, number, ::group-min2}	1234	1234
+{n, number, ::,?}	1234.5	1234.5
+{n, number, ::,?}	0.256	0.256
+{n, number, ::,?}	-5	-5
+{n, number, ::,?}	0	0
+{n, number, ::,?}	2.5	2.5
+{n, number, ::,?}	15000	15,000
+{n, number, ::,?}	0.0625	0.0625
+{n, number, ::,?}	1234	1234
+{n, number, ::group-auto}	1234.5	1,234.5
+{n, number, ::group-auto}	0.256	0.256
+{n, number, ::group-auto}	-5	-5
+{n, number, ::group-auto}	0	0
+{n, number, ::group-auto}	2.5	2.5
+{n, number, ::group-auto}	15000	15,000
+{n, number, ::group-auto}	0.0625	0.0625
+{n, number, ::group-auto}	1234	1,234
+{n, number, ::group-on-aligned}	1234.5	1,234.5
+{n, number, ::group-on-aligned}	0.256	0.256
+{n, number, ::group-on-aligned}	-5	-5
+{n, number, ::group-on-aligned}	0	0
+{n, number, ::group-on-aligned}	2.5	2.5
+{n, number, ::group-on-aligned}	15000	15,000
+{n, number, ::group-on-aligned}	0.0625	0.0625
+{n, number, ::group-on-aligned}	1234	1,234
+{n, number, ::,!}	1234.5	1,234.5
+{n, number, ::,!}	0.256	0.256
+{n, number, ::,!}	-5	-5
+{n, number, ::,!}	0	0
+{n, number, ::,!}	2.5	2.5
+{n, number, ::,!}	15000	15,000
+{n, number, ::,!}	0.0625	0.0625
+{n, number, ::,!}	1234	1,234
+{n, number, ::group-thousands}	1234.5	1,234.5
+{n, number, ::group-thousands}	0.256	0.256
+{n, number, ::group-thousands}	-5	-5
+{n, number, ::group-thousands}	0	0
+{n, number, ::group-thousands}	2.5	2.5
+{n, number, ::group-thousands}	15000	15,000
+{n, number, ::group-thousands}	0.0625	0.0625
+{n, number, ::group-thousands}	1234	1,234
+{n, number, ::latin}	1234.5	1,234.5
+{n, number, ::latin}	0.256	0.256
+{n, number, ::latin}	-5	-5
+{n, number, ::latin}	0	0
+{n, number, ::latin}	2.5	2.5
+{n, number, ::latin}	15000	15,000
+{n, number, ::latin}	0.0625	0.0625
+{n, number, ::latin}	1234	1,234
+{n, number, ::numbering-system/arab}	1234.5	١٬٢٣٤٫٥
+{n, number, ::numbering-system/arab}	0.256	٠٫٢٥٦
+{n, number, ::numbering-system/arab}	-5	؜-٥
+{n, number, ::numbering-system/arab}	0	٠
+{n, number, ::numbering-system/arab}	2.5	٢٫٥
+{n, number, ::numbering-system/arab}	15000	١٥٬٠٠٠
+{n, number, ::numbering-system/arab}	0.0625	٠٫٠٦٢٥
+{n, number, ::numbering-system/arab}	1234	١٬٢٣٤
+{n, number, ::sign-auto}	1234.5	1,234.5
+{n, number, ::sign-auto}	0.256	0.256
+{n, number, ::sign-auto}	-5	-5
+{n, number, ::sign-auto}	0	0
+{n, number, ::sign-auto}	2.5	2.5
+{n, number, ::sign-auto}	15000	15,000
+{n, number, ::sign-auto}	0.0625	0.0625
+{n, number, ::sign-auto}	1234	1,234
+{n, number, ::sign-always}	1234.5	+1,234.5
+{n, number, ::sign-always}	0.256	+0.256
+{n, number, ::sign-always}	-5	-5
+{n, number, ::sign-always}	0	+0
+{n, number, ::sign-always}	2.5	+2.5
+{n, number, ::sign-always}	15000	+15,000
+{n, number, ::sign-always}	0.0625	+0.0625
+{n, number, ::sign-always}	1234	+1,234
+{n, number, ::+!}	1234.5	+1,234.5
+{n, number, ::+!}	0.256	+0.256
+{n, number, ::+!}	-5	-5
+{n, number, ::+!}	0	+0
+{n, number, ::+!}	2.5	+2.5
+{n, number, ::+!}	15000	+15,000
+{n, number, ::+!}	0.0625	+0.0625
+{n, number, ::+!}	1234	+1,234
+{n, number, ::sign-never}	1234.5	1,234.5
+{n, number, ::sign-never}	0.256	0.256
+{n, number, ::sign-never}	-5	5
+{n, number, ::sign-never}	0	0
+{n, number, ::sign-never}	2.5	2.5
+{n, number, ::sign-never}	15000	15,000
+{n, number, ::sign-never}	0.0625	0.0625
+{n, number, ::sign-never}	1234	1,234
+{n, number, ::+_}	1234.5	1,234.5
+{n, number, ::+_}	0.256	0.256
+{n, number, ::+_}	-5	5
+{n, number, ::+_}	0	0
+{n, number, ::+_}	2.5	2.5
+{n, number, ::+_}	15000	15,000
+{n, number, ::+_}	0.0625	0.0625
+{n, number, ::+_}	1234	1,234
+{n, number, ::currency/CAD sign-accounting}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD sign-accounting}	0.256	CA$0.26
+{n, number, ::currency/CAD sign-accounting}	-5	(CA$5.00)
+{n, number, ::currency/CAD sign-accounting}	0	CA$0.00
+{n, number, ::currency/CAD sign-accounting}	2.5	CA$2.50
+{n, number, ::currency/CAD sign-accounting}	15000	CA$15,000.00
+{n, number, ::currency/CAD sign-accounting}	0.0625	CA$0.06
+{n, number, ::currency/CAD sign-accounting}	1234	CA$1,234.00
+{n, number, ::currency/CAD ()}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD ()}	0.256	CA$0.26
+{n, number, ::currency/CAD ()}	-5	(CA$5.00)
+{n, number, ::currency/CAD ()}	0	CA$0.00
+{n, number, ::currency/CAD ()}	2.5	CA$2.50
+{n, number, ::currency/CAD ()}	15000	CA$15,000.00
+{n, number, ::currency/CAD ()}	0.0625	CA$0.06
+{n, number, ::currency/CAD ()}	1234	CA$1,234.00
+{n, number, ::currency/CAD sign-accounting-always}	1234.5	+CA$1,234.50
+{n, number, ::currency/CAD sign-accounting-always}	0.256	+CA$0.26
+{n, number, ::currency/CAD sign-accounting-always}	-5	(CA$5.00)
+{n, number, ::currency/CAD sign-accounting-always}	0	+CA$0.00
+{n, number, ::currency/CAD sign-accounting-always}	2.5	+CA$2.50
+{n, number, ::currency/CAD sign-accounting-always}	15000	+CA$15,000.00
+{n, number, ::currency/CAD sign-accounting-always}	0.0625	+CA$0.06
+{n, number, ::currency/CAD sign-accounting-always}	1234	+CA$1,234.00
+{n, number, ::currency/CAD ()!}	1234.5	+CA$1,234.50
+{n, number, ::currency/CAD ()!}	0.256	+CA$0.26
+{n, number, ::currency/CAD ()!}	-5	(CA$5.00)
+{n, number, ::currency/CAD ()!}	0	+CA$0.00
+{n, number, ::currency/CAD ()!}	2.5	+CA$2.50
+{n, number, ::currency/CAD ()!}	15000	+CA$15,000.00
+{n, number, ::currency/CAD ()!}	0.0625	+CA$0.06
+{n, number, ::currency/CAD ()!}	1234	+CA$1,234.00
+{n, number, ::sign-except-zero}	1234.5	+1,234.5
+{n, number, ::sign-except-zero}	0.256	+0.256
+{n, number, ::sign-except-zero}	-5	-5
+{n, number, ::sign-except-zero}	0	0
+{n, number, ::sign-except-zero}	2.5	+2.5
+{n, number, ::sign-except-zero}	15000	+15,000
+{n, number, ::sign-except-zero}	0.0625	+0.0625
+{n, number, ::sign-except-zero}	1234	+1,234
+{n, number, ::+?}	1234.5	+1,234.5
+{n, number, ::+?}	0.256	+0.256
+{n, number, ::+?}	-5	-5
+{n, number, ::+?}	0	0
+{n, number, ::+?}	2.5	+2.5
+{n, number, ::+?}	15000	+15,000
+{n, number, ::+?}	0.0625	+0.0625
+{n, number, ::+?}	1234	+1,234
+{n, number, ::currency/CAD sign-accounting-except-zero}	1234.5	+CA$1,234.50
+{n, number, ::currency/CAD sign-accounting-except-zero}	0.256	+CA$0.26
+{n, number, ::currency/CAD sign-accounting-except-zero}	-5	(CA$5.00)
+{n, number, ::currency/CAD sign-accounting-except-zero}	0	CA$0.00
+{n, number, ::currency/CAD sign-accounting-except-zero}	2.5	+CA$2.50
+{n, number, ::currency/CAD sign-accounting-except-zero}	15000	+CA$15,000.00
+{n, number, ::currency/CAD sign-accounting-except-zero}	0.0625	+CA$0.06
+{n, number, ::currency/CAD sign-accounting-except-zero}	1234	+CA$1,234.00
+{n, number, ::currency/CAD ()?}	1234.5	+CA$1,234.50
+{n, number, ::currency/CAD ()?}	0.256	+CA$0.26
+{n, number, ::currency/CAD ()?}	-5	(CA$5.00)
+{n, number, ::currency/CAD ()?}	0	CA$0.00
+{n, number, ::currency/CAD ()?}	2.5	+CA$2.50
+{n, number, ::currency/CAD ()?}	15000	+CA$15,000.00
+{n, number, ::currency/CAD ()?}	0.0625	+CA$0.06
+{n, number, ::currency/CAD ()?}	1234	+CA$1,234.00
+{n, number, ::sign-negative}	1234.5	1,234.5
+{n, number, ::sign-negative}	0.256	0.256
+{n, number, ::sign-negative}	-5	-5
+{n, number, ::sign-negative}	0	0
+{n, number, ::sign-negative}	2.5	2.5
+{n, number, ::sign-negative}	15000	15,000
+{n, number, ::sign-negative}	0.0625	0.0625
+{n, number, ::sign-negative}	1234	1,234
+{n, number, ::+-}	1234.5	1,234.5
+{n, number, ::+-}	0.256	0.256
+{n, number, ::+-}	-5	-5
+{n, number, ::+-}	0	0
+{n, number, ::+-}	2.5	2.5
+{n, number, ::+-}	15000	15,000
+{n, number, ::+-}	0.0625	0.0625
+{n, number, ::+-}	1234	1,234
+{n, number, ::currency/CAD sign-accounting-negative}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD sign-accounting-negative}	0.256	CA$0.26
+{n, number, ::currency/CAD sign-accounting-negative}	-5	(CA$5.00)
+{n, number, ::currency/CAD sign-accounting-negative}	0	CA$0.00
+{n, number, ::currency/CAD sign-accounting-negative}	2.5	CA$2.50
+{n, number, ::currency/CAD sign-accounting-negative}	15000	CA$15,000.00
+{n, number, ::currency/CAD sign-accounting-negative}	0.0625	CA$0.06
+{n, number, ::currency/CAD sign-accounting-negative}	1234	CA$1,234.00
+{n, number, ::currency/CAD ()-}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD ()-}	0.256	CA$0.26
+{n, number, ::currency/CAD ()-}	-5	(CA$5.00)
+{n, number, ::currency/CAD ()-}	0	CA$0.00
+{n, number, ::currency/CAD ()-}	2.5	CA$2.50
+{n, number, ::currency/CAD ()-}	15000	CA$15,000.00
+{n, number, ::currency/CAD ()-}	0.0625	CA$0.06
+{n, number, ::currency/CAD ()-}	1234	CA$1,234.00
+{n, number, ::decimal-auto}	1234.5	1,234.5
+{n, number, ::decimal-auto}	0.256	0.256
+{n, number, ::decimal-auto}	-5	-5
+{n, number, ::decimal-auto}	0	0
+{n, number, ::decimal-auto}	2.5	2.5
+{n, number, ::decimal-auto}	15000	15,000
+{n, number, ::decimal-auto}	0.0625	0.0625
+{n, number, ::decimal-auto}	1234	1,234
+{n, number, ::decimal-always}	1234.5	1,234.5
+{n, number, ::decimal-always}	0.256	0.256
+{n, number, ::decimal-always}	-5	-5.
+{n, number, ::decimal-always}	0	0.
+{n, number, ::decimal-always}	2.5	2.5
+{n, number, ::decimal-always}	15000	15,000.
+{n, number, ::decimal-always}	0.0625	0.0625
+{n, number, ::decimal-always}	1234	1,234.
+{n, number}	1234.5	1,234.5
+{n, number}	0.256	0.256
+{n, number}	-5	-5
+{n, number}	0	0
+{n, number}	2.5	2.5
+{n, number}	15000	15,000
+{n, number}	0.0625	0.062
+{n, number}	1234	1,234
+{n, number, integer}	1234.5	1,234
+{n, number, integer}	0.256	0
+{n, number, integer}	-5	-5
+{n, number, integer}	0	0
+{n, number, integer}	2.5	2
+{n, number, integer}	15000	15,000
+{n, number, integer}	0.0625	0
+{n, number, integer}	1234	1,234
+{n, number, percent}	1234.5	123,450%
+{n, number, percent}	0.256	26%
+{n, number, percent}	-5	-500%
+{n, number, percent}	0	0%
+{n, number, percent}	2.5	250%
+{n, number, percent}	15000	1,500,000%
+{n, number, percent}	0.0625	6%
+{n, number, percent}	1234	123,400%
+{n, number, currency}	1234.5	$1,234.50
+{n, number, currency}	0.256	$0.26
+{n, number, currency}	-5	-$5.00
+{n, number, currency}	0	$0.00
+{n, number, currency}	2.5	$2.50
+{n, number, currency}	15000	$15,000.00
+{n, number, currency}	0.0625	$0.06
+{n, number, currency}	1234	$1,234.00
+{d, date, ::G}	0	AD
+{d, date, ::GGGG}	0	Anno Domini
+{d, date, ::y}	0	2020
+{d, date, ::yy}	0	20
+{d, date, ::yyyy}	0	2020
+{d, date, ::Y}	0	2020
+{d, date, ::u}	0	2020
+{d, date, ::Q}	0	2
+{d, date, ::QQQ}	0	Q2
+{d, date, ::QQQQ}	0	2nd quarter
+{d, date, ::q}	0	2
+{d, date, ::M}	0	5
+{d, date, ::MM}	0	05
+{d, date, ::MMM}	0	May
+{d, date, ::MMMM}	0	May
+{d, date, ::MMMMM}	0	M
+{d, date, ::L}	0	5
+{d, date, ::LLL}	0	May
+{d, date, ::LLLL}	0	May
+{d, date, ::w}	0	19
+{d, date, ::W}	0	2
+{d, date, ::d}	0	6
+{d, date, ::dd}	0	06
+{d, date, ::D}	0	127
+{d, date, ::F}	0	1
+{d, date, ::g}	0	2458976
+{d, date, ::E}	0	Wed
+{d, date, ::EEEE}	0	Wednesday
+{d, date, ::EEEEE}	0	W
+{d, date, ::EEEEEE}	0	We
+{d, date, ::e}	0	4
+{d, date, ::c}	0	4
+{d, date, ::cccc}	0	Wednesday
+{d, date, ::a}	0	PM
+{d, date, ::b}	0	PM
+{d, date, ::B}	0	at night
+{d, date, ::h}	0	11 PM
+{d, date, ::hh}	0	11 PM
+{d, date, ::H}	0	23
+{d, date, ::HH}	0	23
+{d, date, ::K}	0	11 PM
+{d, date, ::k}	0	23
+{d, date, ::j}	0	11 PM
+{d, date, ::jj}	0	11 PM
+{d, date, ::J}	0	11
+{d, date, ::C}	0	11 PM
+{d, date, ::m}	0	30
+{d, date, ::mm}	0	30
+{d, date, ::s}	0	5
+{d, date, ::ss}	0	5
+{d, date, ::S}	0	1
+{d, date, ::SS}	0	12
+{d, date, ::SSS}	0	123
+{d, date, ::A}	0	84605123
+{d, date, ::z}	0	UTC
+{d, date, ::zzzz}	0	Coordinated Universal Time
+{d, date, ::Z}	0	+0000
+{d, date, ::ZZZZ}	0	GMT+00:00
+{d, date, ::O}	0	GMT+0
+{d, date, ::OOOO}	0	GMT+00:00
+{d, date, ::v}	0	GMT+0
+{d, date, ::vvvv}	0	GMT+00:00
+{d, date, ::V}	0	utc
+{d, date, ::VV}	0	UTC
+{d, date, ::X}	0	Z
+{d, date, ::x}	0	+00
+{d, date, ::yM}	0	5/2020
+{d, date, ::yMd}	0	5/6/2020
+{d, date, ::yMMM}	0	May 2020
+{d, date, ::yMMMd}	0	May 6, 2020
+{d, date, ::yMMMMd}	0	May 6, 2020
+{d, date, ::yMMMEd}	0	Wed, May 6, 2020
+{d, date, ::yMMMMEEEEd}	0	Wednesday, May 6, 2020
+{d, date, ::MMMd}	0	May 6
+{d, date, ::MEd}	0	Wed, 5/6
+{d, date, ::MMMMd}	0	May 6
+{d, date, ::Md}	0	5/6
+{d, date, ::Hm}	0	23:30
+{d, date, ::hm}	0	11:30 PM
+{d, date, ::jm}	0	11:30 PM
+{d, date, ::Hms}	0	23:30:05
+{d, date, ::hms}	0	11:30:05 PM
+{d, date, ::jms}	0	11:30:05 PM
+{d, date, ::hmsSSS}	0	11:30:05.123 PM
+{d, date, ::yMMMdjm}	0	May 6, 2020, 11:30 PM
+{d, date, ::yMdjms}	0	5/6/2020, 11:30:05 PM
+{d, date, ::hmz}	0	11:30 PM UTC
+{d, date, ::Hmv}	0	23:30 GMT+0
+{d, date, ::jmz}	0	11:30 PM UTC
+{d, date, ::jmzzzz}	0	11:30 PM Coordinated Universal Time
+{d, date, ::EHm}	0	Wed 23:30
+{d, date, ::Ehm}	0	Wed 11:30 PM
+{d, date, ::GyMMMd}	0	May 6, 2020 AD
+{d, date, ::yQQQ}	0	Q2 2020
+{d, date, ::yw}	0	
+{d, date, ::MMMMW}	0	
+{d, date, ::hmB}	0	11:30 at night
+{d, date, ::jmb}	0	11:30 PM
+{d, date, short}	0	5/6/20
+{d, time, short}	0	11:30 PM
+{d, date, medium}	0	May 6, 2020
+{d, time, medium}	0	11:30:05 PM
+{d, date, long}	0	May 6, 2020
+{d, time, long}	0	11:30:05 PM UTC
+{d, date, full}	0	Wednesday, May 6, 2020
+{d, time, full}	0	11:30:05 PM Coordinated Universal Time
+{d, date}	0	May 6, 2020
+{d, time}	0	11:30:05 PM
+{n, number, ::unit/percent}	1234.5	1,234.5%
+{n, number, ::unit/percent}	0.256	0.256%
+{n, number, ::unit/percent}	-5	-5%
+{n, number, ::unit/percent}	0	0%
+{n, number, ::unit/percent}	2.5	2.5%
+{n, number, ::unit/percent}	15000	15,000%
+{n, number, ::unit/percent}	0.0625	0.0625%
+{n, number, ::unit/percent}	1234	1,234%
+{n, number, ::%x100 .00}	1234.5	123,450.00%
+{n, number, ::%x100 .00}	0.256	25.60%
+{n, number, ::%x100 .00}	-5	-500.00%
+{n, number, ::%x100 .00}	0	0.00%
+{n, number, ::%x100 .00}	2.5	250.00%
+{n, number, ::%x100 .00}	15000	1,500,000.00%
+{n, number, ::%x100 .00}	0.0625	6.25%
+{n, number, ::%x100 .00}	1234	123,400.00%
+{n, number, ::percent .00}	1234.5	1,234.50%
+{n, number, ::percent .00}	0.256	0.26%
+{n, number, ::percent .00}	-5	-5.00%
+{n, number, ::percent .00}	0	0.00%
+{n, number, ::percent .00}	2.5	2.50%
+{n, number, ::percent .00}	15000	15,000.00%
+{n, number, ::percent .00}	0.0625	0.06%
+{n, number, ::percent .00}	1234	1,234.00%
+{n, number, ::currency/CAD unit-width-formal}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD unit-width-formal}	0.256	CA$0.26
+{n, number, ::currency/CAD unit-width-formal}	-5	-CA$5.00
+{n, number, ::currency/CAD unit-width-formal}	0	CA$0.00
+{n, number, ::currency/CAD unit-width-formal}	2.5	CA$2.50
+{n, number, ::currency/CAD unit-width-formal}	15000	CA$15,000.00
+{n, number, ::currency/CAD unit-width-formal}	0.0625	CA$0.06
+{n, number, ::currency/CAD unit-width-formal}	1234	CA$1,234.00
+{n, number, ::currency/CAD unit-width-variant}	1234.5	CA$1,234.50
+{n, number, ::currency/CAD unit-width-variant}	0.256	CA$0.26
+{n, number, ::currency/CAD unit-width-variant}	-5	-CA$5.00
+{n, number, ::currency/CAD unit-width-variant}	0	CA$0.00
+{n, number, ::currency/CAD unit-width-variant}	2.5	CA$2.50
+{n, number, ::currency/CAD unit-width-variant}	15000	CA$15,000.00
+{n, number, ::currency/CAD unit-width-variant}	0.0625	CA$0.06
+{n, number, ::currency/CAD unit-width-variant}	1234	CA$1,234.00
+{n, number, ::unit/meter unit-width-iso-code}	1234.5	1,234.5 meters
+{n, number, ::unit/meter unit-width-iso-code}	0.256	0.256 meters
+{n, number, ::unit/meter unit-width-iso-code}	-5	-5 meters
+{n, number, ::unit/meter unit-width-iso-code}	0	0 meters
+{n, number, ::unit/meter unit-width-iso-code}	2.5	2.5 meters
+{n, number, ::unit/meter unit-width-iso-code}	15000	15,000 meters
+{n, number, ::unit/meter unit-width-iso-code}	0.0625	0.0625 meters
+{n, number, ::unit/meter unit-width-iso-code}	1234	1,234 meters
+{n, number, ::unit/meter unit-width-hidden}	1234.5	1,234.5 meters
+{n, number, ::unit/meter unit-width-hidden}	0.256	0.256 meters
+{n, number, ::unit/meter unit-width-hidden}	-5	-5 meters
+{n, number, ::unit/meter unit-width-hidden}	0	0 meters
+{n, number, ::unit/meter unit-width-hidden}	2.5	2.5 meters
+{n, number, ::unit/meter unit-width-hidden}	15000	15,000 meters
+{n, number, ::unit/meter unit-width-hidden}	0.0625	0.0625 meters
+{n, number, ::unit/meter unit-width-hidden}	1234	1,234 meters
+{n, number, ::rounding-mode-half-odd}	1234.5	1,234.5
+{n, number, ::rounding-mode-half-odd}	0.256	0.256
+{n, number, ::rounding-mode-half-odd}	-5	-5
+{n, number, ::rounding-mode-half-odd}	0	0
+{n, number, ::rounding-mode-half-odd}	2.5	2.5
+{n, number, ::rounding-mode-half-odd}	15000	15,000
+{n, number, ::rounding-mode-half-odd}	0.0625	0.0625
+{n, number, ::rounding-mode-half-odd}	1234	1,234
+{n, number, ::.0 rounding-mode-half-odd}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-half-odd}	0.256	0.3
+{n, number, ::.0 rounding-mode-half-odd}	-5	-5.0
+{n, number, ::.0 rounding-mode-half-odd}	0	0.0
+{n, number, ::.0 rounding-mode-half-odd}	2.5	2.5
+{n, number, ::.0 rounding-mode-half-odd}	15000	15,000.0
+{n, number, ::.0 rounding-mode-half-odd}	0.0625	0.1
+{n, number, ::.0 rounding-mode-half-odd}	1234	1,234.0
+{n, number, ::.0 rounding-mode-half-ceiling}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-half-ceiling}	0.256	0.3
+{n, number, ::.0 rounding-mode-half-ceiling}	-5	-5.0
+{n, number, ::.0 rounding-mode-half-ceiling}	0	0.0
+{n, number, ::.0 rounding-mode-half-ceiling}	2.5	2.5
+{n, number, ::.0 rounding-mode-half-ceiling}	15000	15,000.0
+{n, number, ::.0 rounding-mode-half-ceiling}	0.0625	0.1
+{n, number, ::.0 rounding-mode-half-ceiling}	1234	1,234.0
+{n, number, ::.0 rounding-mode-half-floor}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-half-floor}	0.256	0.3
+{n, number, ::.0 rounding-mode-half-floor}	-5	-5.0
+{n, number, ::.0 rounding-mode-half-floor}	0	0.0
+{n, number, ::.0 rounding-mode-half-floor}	2.5	2.5
+{n, number, ::.0 rounding-mode-half-floor}	15000	15,000.0
+{n, number, ::.0 rounding-mode-half-floor}	0.0625	0.1
+{n, number, ::.0 rounding-mode-half-floor}	1234	1,234.0
+{n, number, ::.0 rounding-mode-unnecessary}	1234.5	1,234.5
+{n, number, ::.0 rounding-mode-unnecessary}	0.256	FORMAT ERROR U_FORMAT_INEXACT_ERROR
+{n, number, ::.0 rounding-mode-unnecessary}	-5	-5.0
+{n, number, ::.0 rounding-mode-unnecessary}	0	0.0
+{n, number, ::.0 rounding-mode-unnecessary}	2.5	2.5
+{n, number, ::.0 rounding-mode-unnecessary}	15000	15,000.0
+{n, number, ::.0 rounding-mode-unnecessary}	0.0625	FORMAT ERROR U_FORMAT_INEXACT_ERROR
+{n, number, ::.0 rounding-mode-unnecessary}	1234	1,234.0
+{n, number, ::precision-increment/0.3}	1234.5	1,234.5
+{n, number, ::precision-increment/0.3}	0.256	0.3
+{n, number, ::precision-increment/0.3}	-5	-5.1
+{n, number, ::precision-increment/0.3}	0	0.0
+{n, number, ::precision-increment/0.3}	2.5	2.4
+{n, number, ::precision-increment/0.3}	15000	15,000.0
+{n, number, ::precision-increment/0.3}	0.0625	0.0
+{n, number, ::precision-increment/0.3}	1234	1,233.9
+{n, number, ::precision-increment/5}	1234.5	1,235
+{n, number, ::precision-increment/5}	0.256	0
+{n, number, ::precision-increment/5}	-5	-5
+{n, number, ::precision-increment/5}	0	0
+{n, number, ::precision-increment/5}	2.5	0
+{n, number, ::precision-increment/5}	15000	15,000
+{n, number, ::precision-increment/5}	0.0625	0
+{n, number, ::precision-increment/5}	1234	1,235
+{n, number, ::precision-increment/0.25}	1234.5	1,234.50
+{n, number, ::precision-increment/0.25}	0.256	0.25
+{n, number, ::precision-increment/0.25}	-5	-5.00
+{n, number, ::precision-increment/0.25}	0	0.00
+{n, number, ::precision-increment/0.25}	2.5	2.50
+{n, number, ::precision-increment/0.25}	15000	15,000.00
+{n, number, ::precision-increment/0.25}	0.0625	0.00
+{n, number, ::precision-increment/0.25}	1234	1,234.00
+{n, number, ::precision-increment/0.050}	1234.5	1,234.500
+{n, number, ::precision-increment/0.050}	0.256	0.250
+{n, number, ::precision-increment/0.050}	-5	-5.000
+{n, number, ::precision-increment/0.050}	0	0.000
+{n, number, ::precision-increment/0.050}	2.5	2.500
+{n, number, ::precision-increment/0.050}	15000	15,000.000
+{n, number, ::precision-increment/0.050}	0.0625	0.050
+{n, number, ::precision-increment/0.050}	1234	1,234.000
+{n, number, ::precision-increment/0.5}	1234.5	1,234.5
+{n, number, ::precision-increment/0.5}	0.256	0.5
+{n, number, ::precision-increment/0.5}	-5	-5.0
+{n, number, ::precision-increment/0.5}	0	0.0
+{n, number, ::precision-increment/0.5}	2.5	2.5
+{n, number, ::precision-increment/0.5}	15000	15,000.0
+{n, number, ::precision-increment/0.5}	0.0625	0.0
+{n, number, ::precision-increment/0.5}	1234	1,234.0
+{n, number, ::precision-increment/1}	1234.5	1,234
+{n, number, ::precision-increment/1}	0.256	0
+{n, number, ::precision-increment/1}	-5	-5
+{n, number, ::precision-increment/1}	0	0
+{n, number, ::precision-increment/1}	2.5	2
+{n, number, ::precision-increment/1}	15000	15,000
+{n, number, ::precision-increment/1}	0.0625	0
+{n, number, ::precision-increment/1}	1234	1,234
+{n, number, ::precision-increment/50}	1234.5	1,250
+{n, number, ::precision-increment/50}	0.256	0
+{n, number, ::precision-increment/50}	-5	-0
+{n, number, ::precision-increment/50}	0	0
+{n, number, ::precision-increment/50}	2.5	0
+{n, number, ::precision-increment/50}	15000	15,000
+{n, number, ::precision-increment/50}	0.0625	0
+{n, number, ::precision-increment/50}	1234	1,250
+{n, number, ::precision-increment/0.05/w}	1234.5	1,234.50
+{n, number, ::precision-increment/0.05/w}	0.256	0.25
+{n, number, ::precision-increment/0.05/w}	-5	-5
+{n, number, ::precision-increment/0.05/w}	0	0
+{n, number, ::precision-increment/0.05/w}	2.5	2.50
+{n, number, ::precision-increment/0.05/w}	15000	15,000
+{n, number, ::precision-increment/0.05/w}	0.0625	0.05
+{n, number, ::precision-increment/0.05/w}	1234	1,234
+{n, number, ::precision-integer/w}	1234.5	1,234
+{n, number, ::precision-integer/w}	0.256	0
+{n, number, ::precision-integer/w}	-5	-5
+{n, number, ::precision-integer/w}	0	0
+{n, number, ::precision-integer/w}	2.5	2
+{n, number, ::precision-integer/w}	15000	15,000
+{n, number, ::precision-integer/w}	0.0625	0
+{n, number, ::precision-integer/w}	1234	1,234
+{n, number, ::precision-unlimited/w}	1234.5	1,234.5
+{n, number, ::precision-unlimited/w}	0.256	0.256
+{n, number, ::precision-unlimited/w}	-5	-5
+{n, number, ::precision-unlimited/w}	0	0
+{n, number, ::precision-unlimited/w}	2.5	2.5
+{n, number, ::precision-unlimited/w}	15000	15,000
+{n, number, ::precision-unlimited/w}	0.0625	0.0625
+{n, number, ::precision-unlimited/w}	1234	1,234
+{n, number, ::.00+}	1234.5	1,234.50
+{n, number, ::.00+}	0.256	0.256
+{n, number, ::.00+}	-5	-5.00
+{n, number, ::.00+}	0	0.00
+{n, number, ::.00+}	2.5	2.50
+{n, number, ::.00+}	15000	15,000.00
+{n, number, ::.00+}	0.0625	0.0625
+{n, number, ::.00+}	1234	1,234.00
+{n, number, ::.+}	1234.5	1,234.5
+{n, number, ::.+}	0.256	0.256
+{n, number, ::.+}	-5	-5
+{n, number, ::.+}	0	0
+{n, number, ::.+}	2.5	2.5
+{n, number, ::.+}	15000	15,000
+{n, number, ::.+}	0.0625	0.0625
+{n, number, ::.+}	1234	1,234
+{n, number, ::.*}	1234.5	1,234.5
+{n, number, ::.*}	0.256	0.256
+{n, number, ::.*}	-5	-5
+{n, number, ::.*}	0	0
+{n, number, ::.*}	2.5	2.5
+{n, number, ::.*}	15000	15,000
+{n, number, ::.*}	0.0625	0.0625
+{n, number, ::.*}	1234	1,234
+{n, number, ::.0*}	1234.5	1,234.5
+{n, number, ::.0*}	0.256	0.256
+{n, number, ::.0*}	-5	-5.0
+{n, number, ::.0*}	0	0.0
+{n, number, ::.0*}	2.5	2.5
+{n, number, ::.0*}	15000	15,000.0
+{n, number, ::.0*}	0.0625	0.0625
+{n, number, ::.0*}	1234	1,234.0
+{n, number, ::@@@+}	1234.5	1,234.5
+{n, number, ::@@@+}	0.256	0.256
+{n, number, ::@@@+}	-5	-5.00
+{n, number, ::@@@+}	0	0.00
+{n, number, ::@@@+}	2.5	2.50
+{n, number, ::@@@+}	15000	15,000
+{n, number, ::@@@+}	0.0625	0.0625
+{n, number, ::@@@+}	1234	1,234
+{n, number, ::@@#/w}	1234.5	1,230
+{n, number, ::@@#/w}	0.256	0.256
+{n, number, ::@@#/w}	-5	-5
+{n, number, ::@@#/w}	0	0
+{n, number, ::@@#/w}	2.5	2.5
+{n, number, ::@@#/w}	15000	15,000
+{n, number, ::@@#/w}	0.0625	0.0625
+{n, number, ::@@#/w}	1234	1,230
+{n, number, ::scientific/*e}	1234.5	1.2345E3
+{n, number, ::scientific/*e}	0.256	2.56E-1
+{n, number, ::scientific/*e}	-5	-5E0
+{n, number, ::scientific/*e}	0	0E0
+{n, number, ::scientific/*e}	2.5	2.5E0
+{n, number, ::scientific/*e}	15000	1.5E4
+{n, number, ::scientific/*e}	0.0625	6.25E-2
+{n, number, ::scientific/*e}	1234	1.234E3
+{n, number, ::scientific/sign-auto}	1234.5	1.2345E3
+{n, number, ::scientific/sign-auto}	0.256	2.56E-1
+{n, number, ::scientific/sign-auto}	-5	-5E0
+{n, number, ::scientific/sign-auto}	0	0E0
+{n, number, ::scientific/sign-auto}	2.5	2.5E0
+{n, number, ::scientific/sign-auto}	15000	1.5E4
+{n, number, ::scientific/sign-auto}	0.0625	6.25E-2
+{n, number, ::scientific/sign-auto}	1234	1.234E3
+{n, number, ::engineering/sign-auto}	1234.5	1.2345E3
+{n, number, ::engineering/sign-auto}	0.256	256E-3
+{n, number, ::engineering/sign-auto}	-5	-5E0
+{n, number, ::engineering/sign-auto}	0	0E0
+{n, number, ::engineering/sign-auto}	2.5	2.5E0
+{n, number, ::engineering/sign-auto}	15000	15E3
+{n, number, ::engineering/sign-auto}	0.0625	62.5E-3
+{n, number, ::engineering/sign-auto}	1234	1.234E3
+{n, number, ::scientific/+ee}	1234.5	1.2345E03
+{n, number, ::scientific/+ee}	0.256	2.56E-01
+{n, number, ::scientific/+ee}	-5	-5E00
+{n, number, ::scientific/+ee}	0	0E00
+{n, number, ::scientific/+ee}	2.5	2.5E00
+{n, number, ::scientific/+ee}	15000	1.5E04
+{n, number, ::scientific/+ee}	0.0625	6.25E-02
+{n, number, ::scientific/+ee}	1234	1.234E03
+{n, number, ::EE0}	1234.5	1.2345E3
+{n, number, ::EE0}	0.256	256E-3
+{n, number, ::EE0}	-5	-5E0
+{n, number, ::EE0}	0	0E0
+{n, number, ::EE0}	2.5	2.5E0
+{n, number, ::EE0}	15000	15E3
+{n, number, ::EE0}	0.0625	62.5E-3
+{n, number, ::EE0}	1234	1.234E3
+{n, number, ::EE00}	1234.5	1.2345E03
+{n, number, ::EE00}	0.256	256E-03
+{n, number, ::EE00}	-5	-5E00
+{n, number, ::EE00}	0	0E00
+{n, number, ::EE00}	2.5	2.5E00
+{n, number, ::EE00}	15000	15E03
+{n, number, ::EE00}	0.0625	62.5E-03
+{n, number, ::EE00}	1234	1.234E03
+{n, number, ::E+!0}	1234.5	1.2345E+3
+{n, number, ::E+!0}	0.256	2.56E-1
+{n, number, ::E+!0}	-5	-5E+0
+{n, number, ::E+!0}	0	0E+0
+{n, number, ::E+!0}	2.5	2.5E+0
+{n, number, ::E+!0}	15000	1.5E+4
+{n, number, ::E+!0}	0.0625	6.25E-2
+{n, number, ::E+!0}	1234	1.234E+3
+{n, number, ::compact-short .00}	1234.5	1.23K
+{n, number, ::compact-short .00}	0.256	0.26
+{n, number, ::compact-short .00}	-5	-5.00
+{n, number, ::compact-short .00}	0	0.00
+{n, number, ::compact-short .00}	2.5	2.50
+{n, number, ::compact-short .00}	15000	15.00K
+{n, number, ::compact-short .00}	0.0625	0.06
+{n, number, ::compact-short .00}	1234	1.23K
+{n, number, ::scale/abc}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/abc}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/abc}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/abc}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/abc}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/abc}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/abc}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/abc}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/0}	1234.5	0
+{n, number, ::scale/0}	0.256	0
+{n, number, ::scale/0}	-5	-0
+{n, number, ::scale/0}	0	0
+{n, number, ::scale/0}	2.5	0
+{n, number, ::scale/0}	15000	0
+{n, number, ::scale/0}	0.0625	0
+{n, number, ::scale/0}	1234	0
+{n, number, ::foo}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::foo}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::foo}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::foo}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::foo}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::foo}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::foo}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::foo}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00 .##}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00 .##}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00 .##}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00 .##}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00 .##}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00 .##}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00 .##}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00 .##}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::compact-short scientific}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::compact-short scientific}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::compact-short scientific}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::compact-short scientific}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::compact-short scientific}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::compact-short scientific}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::compact-short scientific}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::compact-short scientific}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::integer-width/*0}	1234.5	1,234.5
+{n, number, ::integer-width/*0}	0.256	0.256
+{n, number, ::integer-width/*0}	-5	-5
+{n, number, ::integer-width/*0}	0	0
+{n, number, ::integer-width/*0}	2.5	2.5
+{n, number, ::integer-width/*0}	15000	15,000
+{n, number, ::integer-width/*0}	0.0625	0.0625
+{n, number, ::integer-width/*0}	1234	1,234
+{n, number, ::integer-width/+000}	1234.5	1,234.5
+{n, number, ::integer-width/+000}	0.256	000.256
+{n, number, ::integer-width/+000}	-5	-005
+{n, number, ::integer-width/+000}	0	000
+{n, number, ::integer-width/+000}	2.5	002.5
+{n, number, ::integer-width/+000}	15000	15,000
+{n, number, ::integer-width/+000}	0.0625	000.0625
+{n, number, ::integer-width/+000}	1234	1,234
+{n, number, ::0}	1234.5	1,234.5
+{n, number, ::0}	0.256	0.256
+{n, number, ::0}	-5	-5
+{n, number, ::0}	0	0
+{n, number, ::0}	2.5	2.5
+{n, number, ::0}	15000	15,000
+{n, number, ::0}	0.0625	0.0625
+{n, number, ::0}	1234	1,234
+{n, number, ::00}	1234.5	1,234.5
+{n, number, ::00}	0.256	00.256
+{n, number, ::00}	-5	-05
+{n, number, ::00}	0	00
+{n, number, ::00}	2.5	02.5
+{n, number, ::00}	15000	15,000
+{n, number, ::00}	0.0625	00.0625
+{n, number, ::00}	1234	1,234
+{n, number, ::numbering-system/latn}	1234.5	1,234.5
+{n, number, ::numbering-system/latn}	0.256	0.256
+{n, number, ::numbering-system/latn}	-5	-5
+{n, number, ::numbering-system/latn}	0	0
+{n, number, ::numbering-system/latn}	2.5	2.5
+{n, number, ::numbering-system/latn}	15000	15,000
+{n, number, ::numbering-system/latn}	0.0625	0.0625
+{n, number, ::numbering-system/latn}	1234	1,234
+{n, number, ::numbering-system/bogus}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::numbering-system/bogus}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::numbering-system/bogus}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::numbering-system/bogus}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::numbering-system/bogus}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::numbering-system/bogus}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::numbering-system/bogus}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::numbering-system/bogus}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::measure-unit/meter}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::measure-unit/meter}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::measure-unit/meter}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::measure-unit/meter}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::measure-unit/meter}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::measure-unit/meter}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::measure-unit/meter}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::measure-unit/meter}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/length-meter}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/length-meter}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/length-meter}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/length-meter}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/length-meter}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/length-meter}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/length-meter}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/length-meter}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/kilometer-per-hour}	1234.5	1,234.5 km/h
+{n, number, ::unit/kilometer-per-hour}	0.256	0.256 km/h
+{n, number, ::unit/kilometer-per-hour}	-5	-5 km/h
+{n, number, ::unit/kilometer-per-hour}	0	0 km/h
+{n, number, ::unit/kilometer-per-hour}	2.5	2.5 km/h
+{n, number, ::unit/kilometer-per-hour}	15000	15,000 km/h
+{n, number, ::unit/kilometer-per-hour}	0.0625	0.0625 km/h
+{n, number, ::unit/kilometer-per-hour}	1234	1,234 km/h
+{n, number, ::.##/@@@+}	1234.5	1,234.5
+{n, number, ::.##/@@@+}	0.256	0.256
+{n, number, ::.##/@@@+}	-5	-5
+{n, number, ::.##/@@@+}	0	0
+{n, number, ::.##/@@@+}	2.5	2.5
+{n, number, ::.##/@@@+}	15000	15,000
+{n, number, ::.##/@@@+}	0.0625	0.0625
+{n, number, ::.##/@@@+}	1234	1,234
+{n, number, ::.##/@@@}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@@}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@@}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@@}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@@}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@@}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@@}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@@}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@#}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@#}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@#}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@#}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@#}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@#}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@#}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@#}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.##/@@#r}	1234.5	1,234.5
+{n, number, ::.##/@@#r}	0.256	0.256
+{n, number, ::.##/@@#r}	-5	-5.0
+{n, number, ::.##/@@#r}	0	0.0
+{n, number, ::.##/@@#r}	2.5	2.5
+{n, number, ::.##/@@#r}	15000	15,000
+{n, number, ::.##/@@#r}	0.0625	0.0625
+{n, number, ::.##/@@#r}	1234	1,234
+{n, number, ::.00/@}	1234.5	1,000.00
+{n, number, ::.00/@}	0.256	0.30
+{n, number, ::.00/@}	-5	-5.00
+{n, number, ::.00/@}	0	0.00
+{n, number, ::.00/@}	2.5	2.00
+{n, number, ::.00/@}	15000	20,000.00
+{n, number, ::.00/@}	0.0625	0.06
+{n, number, ::.00/@}	1234	1,000.00
+{n, number, ::.00/@@@*r}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00/@@@*r}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00/@@@*r}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00/@@@*r}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00/@@@*r}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00/@@@*r}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00/@@@*r}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00/@@@*r}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.#/w}	1234.5	1,234.5
+{n, number, ::.#/w}	0.256	0.3
+{n, number, ::.#/w}	-5	-5
+{n, number, ::.#/w}	0	0
+{n, number, ::.#/w}	2.5	2.5
+{n, number, ::.#/w}	15000	15,000
+{n, number, ::.#/w}	0.0625	0.1
+{n, number, ::.#/w}	1234	1,234
+{n, number, ::./w}	1234.5	1,234
+{n, number, ::./w}	0.256	0
+{n, number, ::./w}	-5	-5
+{n, number, ::./w}	0	0
+{n, number, ::./w}	2.5	2
+{n, number, ::./w}	15000	15,000
+{n, number, ::./w}	0.0625	0
+{n, number, ::./w}	1234	1,234
+{n, number, ::currency/CAD .}	1234.5	CA$1,234
+{n, number, ::currency/CAD .}	0.256	CA$0
+{n, number, ::currency/CAD .}	-5	-CA$5
+{n, number, ::currency/CAD .}	0	CA$0
+{n, number, ::currency/CAD .}	2.5	CA$2
+{n, number, ::currency/CAD .}	15000	CA$15,000
+{n, number, ::currency/CAD .}	0.0625	CA$0
+{n, number, ::currency/CAD .}	1234	CA$1,234
+{n, number, ::currency/CAD precision-integer}	1234.5	CA$1,234
+{n, number, ::currency/CAD precision-integer}	0.256	CA$0
+{n, number, ::currency/CAD precision-integer}	-5	-CA$5
+{n, number, ::currency/CAD precision-integer}	0	CA$0
+{n, number, ::currency/CAD precision-integer}	2.5	CA$2
+{n, number, ::currency/CAD precision-integer}	15000	CA$15,000
+{n, number, ::currency/CAD precision-integer}	0.0625	CA$0
+{n, number, ::currency/CAD precision-integer}	1234	CA$1,234
+{n, number, ::currency/cad}	1234.5	CA$1,234.50
+{n, number, ::currency/cad}	0.256	CA$0.26
+{n, number, ::currency/cad}	-5	-CA$5.00
+{n, number, ::currency/cad}	0	CA$0.00
+{n, number, ::currency/cad}	2.5	CA$2.50
+{n, number, ::currency/cad}	15000	CA$15,000.00
+{n, number, ::currency/cad}	0.0625	CA$0.06
+{n, number, ::currency/cad}	1234	CA$1,234.00
+{n, number, ::currency/CADX}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency/CADX}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency/CADX}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency/CADX}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency/CADX}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency/CADX}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency/CADX}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency/CADX}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::percent percent}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::percent percent}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::percent percent}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::percent percent}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::percent percent}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::percent percent}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::percent percent}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::percent percent}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit-width-short}	1234.5	1,234.5
+{n, number, ::unit-width-short}	0.256	0.256
+{n, number, ::unit-width-short}	-5	-5
+{n, number, ::unit-width-short}	0	0
+{n, number, ::unit-width-short}	2.5	2.5
+{n, number, ::unit-width-short}	15000	15,000
+{n, number, ::unit-width-short}	0.0625	0.0625
+{n, number, ::unit-width-short}	1234	1,234
+{n, number, ::.00/@##/w}	1234.5	1,230
+{n, number, ::.00/@##/w}	0.256	0.26
+{n, number, ::.00/@##/w}	-5	-5
+{n, number, ::.00/@##/w}	0	0
+{n, number, ::.00/@##/w}	2.5	2.50
+{n, number, ::.00/@##/w}	15000	15,000
+{n, number, ::.00/@##/w}	0.0625	0.06
+{n, number, ::.00/@##/w}	1234	1,230
+{n, number, ::precision-currency-standard}	1234.5	1,234.50
+{n, number, ::precision-currency-standard}	0.256	0.26
+{n, number, ::precision-currency-standard}	-5	-5.00
+{n, number, ::precision-currency-standard}	0	0.00
+{n, number, ::precision-currency-standard}	2.5	2.50
+{n, number, ::precision-currency-standard}	15000	15,000.00
+{n, number, ::precision-currency-standard}	0.0625	0.06
+{n, number, ::precision-currency-standard}	1234	1,234.00
+{n, number, ::precision-currency-cash/w}	1234.5	1,234.50
+{n, number, ::precision-currency-cash/w}	0.256	0.26
+{n, number, ::precision-currency-cash/w}	-5	-5
+{n, number, ::precision-currency-cash/w}	0	0
+{n, number, ::precision-currency-cash/w}	2.5	2.50
+{n, number, ::precision-currency-cash/w}	15000	15,000
+{n, number, ::precision-currency-cash/w}	0.0625	0.06
+{n, number, ::precision-currency-cash/w}	1234	1,234
+{n, number, ::@*}	1234.5	1,234.5
+{n, number, ::@*}	0.256	0.256
+{n, number, ::@*}	-5	-5
+{n, number, ::@*}	0	0
+{n, number, ::@*}	2.5	2.5
+{n, number, ::@*}	15000	15,000
+{n, number, ::@*}	0.0625	0.0625
+{n, number, ::@*}	1234	1,234
+{n, number, ::@}	1234.5	1,000
+{n, number, ::@}	0.256	0.3
+{n, number, ::@}	-5	-5
+{n, number, ::@}	0	0
+{n, number, ::@}	2.5	2
+{n, number, ::@}	15000	20,000
+{n, number, ::@}	0.0625	0.06
+{n, number, ::@}	1234	1,000
+{n, number, ::@@@#}	1234.5	1,234
+{n, number, ::@@@#}	0.256	0.256
+{n, number, ::@@@#}	-5	-5.00
+{n, number, ::@@@#}	0	0.00
+{n, number, ::@@@#}	2.5	2.50
+{n, number, ::@@@#}	15000	15,000
+{n, number, ::@@@#}	0.0625	0.0625
+{n, number, ::@@@#}	1234	1,234
+{n, number, ::.0#/@@@*}	1234.5	1,234.5
+{n, number, ::.0#/@@@*}	0.256	0.256
+{n, number, ::.0#/@@@*}	-5	-5.0
+{n, number, ::.0#/@@@*}	0	0.0
+{n, number, ::.0#/@@@*}	2.5	2.5
+{n, number, ::.0#/@@@*}	15000	15,000.0
+{n, number, ::.0#/@@@*}	0.0625	0.0625
+{n, number, ::.0#/@@@*}	1234	1,234.0
+{n, number, ::K .0}	1234.5	1.2K
+{n, number, ::K .0}	0.256	0.3
+{n, number, ::K .0}	-5	-5.0
+{n, number, ::K .0}	0	0.0
+{n, number, ::K .0}	2.5	2.5
+{n, number, ::K .0}	15000	15.0K
+{n, number, ::K .0}	0.0625	0.1
+{n, number, ::K .0}	1234	1.2K
+{n, number, ::rounding-mode-bogus}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::rounding-mode-bogus}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::rounding-mode-bogus}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::rounding-mode-bogus}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::rounding-mode-bogus}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::rounding-mode-bogus}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::rounding-mode-bogus}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::rounding-mode-bogus}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::sign-bogus}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::sign-bogus}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::sign-bogus}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::sign-bogus}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::sign-bogus}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::sign-bogus}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::sign-bogus}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::sign-bogus}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+0}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+0}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+0}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+0}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+0}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+0}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+0}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+0}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+_0}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+_0}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+_0}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+_0}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+_0}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+_0}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+_0}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::E+_0}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::EEE0}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::EEE0}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::EEE0}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::EEE0}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::EEE0}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::EEE0}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::EEE0}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::EEE0}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scientific/*}	1234.5	FORMAT ERROR U_NUMBER_ARG_OUTOFBOUNDS_ERROR
+{n, number, ::scientific/*}	0.256	FORMAT ERROR U_NUMBER_ARG_OUTOFBOUNDS_ERROR
+{n, number, ::scientific/*}	-5	FORMAT ERROR U_NUMBER_ARG_OUTOFBOUNDS_ERROR
+{n, number, ::scientific/*}	0	FORMAT ERROR U_NUMBER_ARG_OUTOFBOUNDS_ERROR
+{n, number, ::scientific/*}	2.5	FORMAT ERROR U_NUMBER_ARG_OUTOFBOUNDS_ERROR
+{n, number, ::scientific/*}	15000	FORMAT ERROR U_NUMBER_ARG_OUTOFBOUNDS_ERROR
+{n, number, ::scientific/*}	0.0625	FORMAT ERROR U_NUMBER_ARG_OUTOFBOUNDS_ERROR
+{n, number, ::scientific/*}	1234	FORMAT ERROR U_NUMBER_ARG_OUTOFBOUNDS_ERROR
+{n, number, ::scientific/sign-always/*ee}	1234.5	1.2345E+03
+{n, number, ::scientific/sign-always/*ee}	0.256	2.56E-01
+{n, number, ::scientific/sign-always/*ee}	-5	-5E+00
+{n, number, ::scientific/sign-always/*ee}	0	0E+00
+{n, number, ::scientific/sign-always/*ee}	2.5	2.5E+00
+{n, number, ::scientific/sign-always/*ee}	15000	1.5E+04
+{n, number, ::scientific/sign-always/*ee}	0.0625	6.25E-02
+{n, number, ::scientific/sign-always/*ee}	1234	1.234E+03
+{n, number, ::scientific/sign-never}	1234.5	1.2345E3
+{n, number, ::scientific/sign-never}	0.256	2.56E1
+{n, number, ::scientific/sign-never}	-5	-5E0
+{n, number, ::scientific/sign-never}	0	0E0
+{n, number, ::scientific/sign-never}	2.5	2.5E0
+{n, number, ::scientific/sign-never}	15000	1.5E4
+{n, number, ::scientific/sign-never}	0.0625	6.25E2
+{n, number, ::scientific/sign-never}	1234	1.234E3
+{n, number, ::scientific/sign-except-zero}	1234.5	1.2345E3
+{n, number, ::scientific/sign-except-zero}	0.256	2.56E-1
+{n, number, ::scientific/sign-except-zero}	-5	-5E0
+{n, number, ::scientific/sign-except-zero}	0	0E0
+{n, number, ::scientific/sign-except-zero}	2.5	2.5E0
+{n, number, ::scientific/sign-except-zero}	15000	1.5E4
+{n, number, ::scientific/sign-except-zero}	0.0625	6.25E-2
+{n, number, ::scientific/sign-except-zero}	1234	1.234E3
+{n, number, ::unit/foo}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/foo}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/foo}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/foo}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/foo}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/foo}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/foo}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/foo}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-hour}	1234.5	1,234.5 m/h
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-hour}	0.256	0.256 m/h
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-hour}	-5	-5 m/h
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-hour}	0	0 m/h
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-hour}	2.5	2.5 m/h
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-hour}	15000	15,000 m/h
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-hour}	0.0625	0.0625 m/h
+{n, number, ::measure-unit/length-meter per-measure-unit/duration-hour}	1234	1,234 m/h
+{n, number, ::unit/meter per-measure-unit/duration-second}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/meter per-measure-unit/duration-second}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/meter per-measure-unit/duration-second}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/meter per-measure-unit/duration-second}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/meter per-measure-unit/duration-second}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/meter per-measure-unit/duration-second}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/meter per-measure-unit/duration-second}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::unit/meter per-measure-unit/duration-second}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::currency/CAD compact-long}	1234.5	CA$1.2K
+{n, number, ::currency/CAD compact-long}	0.256	CA$0.26
+{n, number, ::currency/CAD compact-long}	-5	-CA$5
+{n, number, ::currency/CAD compact-long}	0	CA$0
+{n, number, ::currency/CAD compact-long}	2.5	CA$2.5
+{n, number, ::currency/CAD compact-long}	15000	CA$15K
+{n, number, ::currency/CAD compact-long}	0.0625	CA$0.062
+{n, number, ::currency/CAD compact-long}	1234	CA$1.2K
+{n, number, ::compact-long currency/CAD unit-width-full-name}	1234.5	1.2 thousand Canadian dollars
+{n, number, ::compact-long currency/CAD unit-width-full-name}	0.256	0.26 Canadian dollars
+{n, number, ::compact-long currency/CAD unit-width-full-name}	-5	-5 Canadian dollars
+{n, number, ::compact-long currency/CAD unit-width-full-name}	0	0 Canadian dollars
+{n, number, ::compact-long currency/CAD unit-width-full-name}	2.5	2.5 Canadian dollars
+{n, number, ::compact-long currency/CAD unit-width-full-name}	15000	15 thousand Canadian dollars
+{n, number, ::compact-long currency/CAD unit-width-full-name}	0.0625	0.062 Canadian dollars
+{n, number, ::compact-long currency/CAD unit-width-full-name}	1234	1.2 thousand Canadian dollars
+{n, number, ::unit/percent scale/100}	1234.5	123,450%
+{n, number, ::unit/percent scale/100}	0.256	25.6%
+{n, number, ::unit/percent scale/100}	-5	-500%
+{n, number, ::unit/percent scale/100}	0	0%
+{n, number, ::unit/percent scale/100}	2.5	250%
+{n, number, ::unit/percent scale/100}	15000	1,500,000%
+{n, number, ::unit/percent scale/100}	0.0625	6.25%
+{n, number, ::unit/percent scale/100}	1234	123,400%
+{n, number, ::permille scale/1000}	1234.5	1,234,500‰
+{n, number, ::permille scale/1000}	0.256	256‰
+{n, number, ::permille scale/1000}	-5	-5,000‰
+{n, number, ::permille scale/1000}	0	0‰
+{n, number, ::permille scale/1000}	2.5	2,500‰
+{n, number, ::permille scale/1000}	15000	15,000,000‰
+{n, number, ::permille scale/1000}	0.0625	62.5‰
+{n, number, ::permille scale/1000}	1234	1,234,000‰
+{n, number, ::unit/permille}	1234.5	1,234.5‰
+{n, number, ::unit/permille}	0.256	0.256‰
+{n, number, ::unit/permille}	-5	-5‰
+{n, number, ::unit/permille}	0	0‰
+{n, number, ::unit/permille}	2.5	2.5‰
+{n, number, ::unit/permille}	15000	15,000‰
+{n, number, ::unit/permille}	0.0625	0.0625‰
+{n, number, ::unit/permille}	1234	1,234‰
+{n, number, ::concise}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::concise}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::concise}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::concise}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::concise}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::concise}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::concise}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::concise}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::()}	1234.5	1,234.5
+{n, number, ::()}	0.256	0.256
+{n, number, ::()}	-5	-5
+{n, number, ::()}	0	0
+{n, number, ::()}	2.5	2.5
+{n, number, ::()}	15000	15,000
+{n, number, ::()}	0.0625	0.0625
+{n, number, ::()}	1234	1,234
+{n, number, ::()!}	1234.5	+1,234.5
+{n, number, ::()!}	0.256	+0.256
+{n, number, ::()!}	-5	-5
+{n, number, ::()!}	0	+0
+{n, number, ::()!}	2.5	+2.5
+{n, number, ::()!}	15000	+15,000
+{n, number, ::()!}	0.0625	+0.0625
+{n, number, ::()!}	1234	+1,234
+{n, number, ::()?}	1234.5	+1,234.5
+{n, number, ::()?}	0.256	+0.256
+{n, number, ::()?}	-5	-5
+{n, number, ::()?}	0	0
+{n, number, ::()?}	2.5	+2.5
+{n, number, ::()?}	15000	+15,000
+{n, number, ::()?}	0.0625	+0.0625
+{n, number, ::()?}	1234	+1,234
+{n, number, ::()-}	1234.5	1,234.5
+{n, number, ::()-}	0.256	0.256
+{n, number, ::()-}	-5	-5
+{n, number, ::()-}	0	0
+{n, number, ::()-}	2.5	2.5
+{n, number, ::()-}	15000	15,000
+{n, number, ::()-}	0.0625	0.0625
+{n, number, ::()-}	1234	1,234
+{d, date, ::Ha}	0	23
+{d, date, ::Hma}	0	23:30
+{d, date, ::ja}	0	11 PM
+{d, date, ::jma}	0	11:30 PM
+{d, date, ::hma}	0	11:30 PM
+{d, date, ::ha}	0	11 PM
+{d, date, ::hmaaaa}	0	11:30 PM
+{d, date, ::hmaaaaa}	0	11:30 p
+{d, date, ::aaaa}	0	PM
+{d, date, ::eee}	0	Wed
+{d, date, ::ccc}	0	Wed
+{d, date, ::eeee}	0	Wednesday
+{d, date, ::eeeee}	0	W
+{d, date, ::eeeeee}	0	We
+{d, date, ::ccccc}	0	W
+{d, date, ::cccccc}	0	We
+{d, date, ::EE}	0	Wed
+{d, date, ::EEE}	0	Wed
+{d, date, ::Jm}	0	11:30
+{d, date, ::JJ}	0	11
+{d, date, ::jjj}	0	11 PM
+{d, date, ::jjjj}	0	11 PM
+{d, date, ::jjjjj}	0	11 p
+{d, date, ::jjjjjj}	0	11 p
+{d, date, ::U}	0	2020
+{d, date, ::r}	0	2020
+{d, date, ::yyy}	0	2020
+{d, date, ::yyyyy}	0	02020
+{d, date, ::LLLLL}	0	M
+{d, date, ::SSSS}	0	1230
+{d, date, ::SSSSSS}	0	123000
+{d, date, ::zz}	0	UTC
+{d, date, ::zzz}	0	UTC
+{d, date, ::vv}	0	
+{d, date, ::OO}	0	
+{d, date, ::kk}	0	23
+{d, date, ::KK}	0	11 PM
+{d, date, ::Km}	0	11:30 PM
+{d, date, ::hB}	0	11 at night
+{d, date, ::jB}	0	11 PM
+{d, date, ::jmB}	0	11:30 PM
+{d, date, ::HB}	0	23
+{d, date, ::yMMMdB}	0	May 6, 2020, at night
+{d, date, ::GGGGG}	0	A
+{d, date, ::GGG}	0	AD
+{d, date, ::yyyyMMdd}	0	05/06/2020
+{d, date, ::MMMEd}	0	Wed, May 6
+{d, date, ::d MMM}	0	May 6
+{d, date, ::yMMMd 'x'}	0	May 6, 2020
+{d, date, ::hms z}	0	11:30:05 PM UTC
+{d, date, ::Bh}	0	11 at night
+{d, date, ::BBBB}	0	at night
+{d, date, ::BBBBBh}	0	11 at night
+{d, date, ::Cm}	0	11:30 PM
+{d, date, ::CC}	0	11 PM
+{d, date, ::jmC}	0	11:30 PM
+{d, date, ::xxx}	0	+00:00
+{d, date, ::XXX}	0	Z
+{d, date, ::VVV}	0	Unknown Location
+{d, date, ::VVVV}	0	GMT+00:00
+{d, date, ::ZZZZZ}	0	Z
+{d, date, ::Qy}	0	Q2 2020
+{d, date, ::yQQQQ}	0	2nd quarter 2020
+{d, date, ::ww}	0	19
+{d, date, ::dMy}	0	5/6/2020
+{d, date, ::ms}	0	30:05
+{d, date, ::hs}	0	11 PM (second: 5)
+{d, date, ::Mm}	0	5, 30
+{d, date, ::bh}	0	11 PM
+{n, number, ::.00/@@@*}	1234.5	1,234.50
+{n, number, ::.00/@@@*}	0.256	0.256
+{n, number, ::.00/@@@*}	-5	-5.00
+{n, number, ::.00/@@@*}	0	0.00
+{n, number, ::.00/@@@*}	2.5	2.50
+{n, number, ::.00/@@@*}	15000	15,000.00
+{n, number, ::.00/@@@*}	0.0625	0.0625
+{n, number, ::.00/@@@*}	1234	1,234.00
+{n, number, ::.##/@#}	1234.5	1,200
+{n, number, ::.##/@#}	0.256	0.26
+{n, number, ::.##/@#}	-5	-5
+{n, number, ::.##/@#}	0	0
+{n, number, ::.##/@#}	2.5	2.5
+{n, number, ::.##/@#}	15000	15,000
+{n, number, ::.##/@#}	0.0625	0.06
+{n, number, ::.##/@#}	1234	1,200
+{n, number, ::compact-short .##/@@@*}	1234.5	1.23K
+{n, number, ::compact-short .##/@@@*}	0.256	0.256
+{n, number, ::compact-short .##/@@@*}	-5	-5
+{n, number, ::compact-short .##/@@@*}	0	0
+{n, number, ::compact-short .##/@@@*}	2.5	2.5
+{n, number, ::compact-short .##/@@@*}	15000	15K
+{n, number, ::compact-short .##/@@@*}	0.0625	0.0625
+{n, number, ::compact-short .##/@@@*}	1234	1.23K
+{n, number, ::currency/EUR}	1234.5	€1,234.50
+{n, number, ::currency/EUR}	0.256	€0.26
+{n, number, ::currency/EUR}	-5	-€5.00
+{n, number, ::currency/EUR}	0	€0.00
+{n, number, ::currency/EUR}	2.5	€2.50
+{n, number, ::currency/EUR}	15000	€15,000.00
+{n, number, ::currency/EUR}	0.0625	€0.06
+{n, number, ::currency/EUR}	1234	€1,234.00
+{n, number, ::currency/JPY}	1234.5	¥1,234
+{n, number, ::currency/JPY}	0.256	¥0
+{n, number, ::currency/JPY}	-5	-¥5
+{n, number, ::currency/JPY}	0	¥0
+{n, number, ::currency/JPY}	2.5	¥2
+{n, number, ::currency/JPY}	15000	¥15,000
+{n, number, ::currency/JPY}	0.0625	¥0
+{n, number, ::currency/JPY}	1234	¥1,234
+{n, number, ::currency/EUR compact-short}	1234.5	€1.2K
+{n, number, ::currency/EUR compact-short}	0.256	€0.26
+{n, number, ::currency/EUR compact-short}	-5	-€5
+{n, number, ::currency/EUR compact-short}	0	€0
+{n, number, ::currency/EUR compact-short}	2.5	€2.5
+{n, number, ::currency/EUR compact-short}	15000	€15K
+{n, number, ::currency/EUR compact-short}	0.0625	€0.062
+{n, number, ::currency/EUR compact-short}	1234	€1.2K
+{n, number, ::currency/EUR .}	1234.5	€1,234
+{n, number, ::currency/EUR .}	0.256	€0
+{n, number, ::currency/EUR .}	-5	-€5
+{n, number, ::currency/EUR .}	0	€0
+{n, number, ::currency/EUR .}	2.5	€2
+{n, number, ::currency/EUR .}	15000	€15,000
+{n, number, ::currency/EUR .}	0.0625	€0
+{n, number, ::currency/EUR .}	1234	€1,234
+{n, number, ::currency/EUR unit-width-full-name .00}	1234.5	1,234.50 euros
+{n, number, ::currency/EUR unit-width-full-name .00}	0.256	0.26 euros
+{n, number, ::currency/EUR unit-width-full-name .00}	-5	-5.00 euros
+{n, number, ::currency/EUR unit-width-full-name .00}	0	0.00 euros
+{n, number, ::currency/EUR unit-width-full-name .00}	2.5	2.50 euros
+{n, number, ::currency/EUR unit-width-full-name .00}	15000	15,000.00 euros
+{n, number, ::currency/EUR unit-width-full-name .00}	0.0625	0.06 euros
+{n, number, ::currency/EUR unit-width-full-name .00}	1234	1,234.00 euros
+{n, number, ::unit/kilometer-per-hour unit-width-full-name}	1234.5	1,234.5 kilometers per hour
+{n, number, ::unit/kilometer-per-hour unit-width-full-name}	0.256	0.256 kilometers per hour
+{n, number, ::unit/kilometer-per-hour unit-width-full-name}	-5	-5 kilometers per hour
+{n, number, ::unit/kilometer-per-hour unit-width-full-name}	0	0 kilometers per hour
+{n, number, ::unit/kilometer-per-hour unit-width-full-name}	2.5	2.5 kilometers per hour
+{n, number, ::unit/kilometer-per-hour unit-width-full-name}	15000	15,000 kilometers per hour
+{n, number, ::unit/kilometer-per-hour unit-width-full-name}	0.0625	0.0625 kilometers per hour
+{n, number, ::unit/kilometer-per-hour unit-width-full-name}	1234	1,234 kilometers per hour
+{n, number, ::percent unit-width-full-name}	1234.5	1,234.5 percent
+{n, number, ::percent unit-width-full-name}	0.256	0.256 percent
+{n, number, ::percent unit-width-full-name}	-5	-5 percent
+{n, number, ::percent unit-width-full-name}	0	0 percent
+{n, number, ::percent unit-width-full-name}	2.5	2.5 percent
+{n, number, ::percent unit-width-full-name}	15000	15,000 percent
+{n, number, ::percent unit-width-full-name}	0.0625	0.0625 percent
+{n, number, ::percent unit-width-full-name}	1234	1,234 percent
+{n, number, ::unit/percent unit-width-narrow}	1234.5	1,234.5%
+{n, number, ::unit/percent unit-width-narrow}	0.256	0.256%
+{n, number, ::unit/percent unit-width-narrow}	-5	-5%
+{n, number, ::unit/percent unit-width-narrow}	0	0%
+{n, number, ::unit/percent unit-width-narrow}	2.5	2.5%
+{n, number, ::unit/percent unit-width-narrow}	15000	15,000%
+{n, number, ::unit/percent unit-width-narrow}	0.0625	0.0625%
+{n, number, ::unit/percent unit-width-narrow}	1234	1,234%
+{n, number, ::@@}	1234.5	1,200
+{n, number, ::@@}	0.256	0.26
+{n, number, ::@@}	-5	-5.0
+{n, number, ::@@}	0	0.0
+{n, number, ::@@}	2.5	2.5
+{n, number, ::@@}	15000	15,000
+{n, number, ::@@}	0.0625	0.062
+{n, number, ::@@}	1234	1,200
+{n, number, ::@@##}	1234.5	1,234
+{n, number, ::@@##}	0.256	0.256
+{n, number, ::@@##}	-5	-5.0
+{n, number, ::@@##}	0	0.0
+{n, number, ::@@##}	2.5	2.5
+{n, number, ::@@##}	15000	15,000
+{n, number, ::@@##}	0.0625	0.0625
+{n, number, ::@@##}	1234	1,234
+{n, number, ::.00##}	1234.5	1,234.50
+{n, number, ::.00##}	0.256	0.256
+{n, number, ::.00##}	-5	-5.00
+{n, number, ::.00##}	0	0.00
+{n, number, ::.00##}	2.5	2.50
+{n, number, ::.00##}	15000	15,000.00
+{n, number, ::.00##}	0.0625	0.0625
+{n, number, ::.00##}	1234	1,234.00
+{n, number, ::.0}	1234.5	1,234.5
+{n, number, ::.0}	0.256	0.3
+{n, number, ::.0}	-5	-5.0
+{n, number, ::.0}	0	0.0
+{n, number, ::.0}	2.5	2.5
+{n, number, ::.0}	15000	15,000.0
+{n, number, ::.0}	0.0625	0.1
+{n, number, ::.0}	1234	1,234.0
+{n, number, ::000 .00}	1234.5	1,234.50
+{n, number, ::000 .00}	0.256	000.26
+{n, number, ::000 .00}	-5	-005.00
+{n, number, ::000 .00}	0	000.00
+{n, number, ::000 .00}	2.5	002.50
+{n, number, ::000 .00}	15000	15,000.00
+{n, number, ::000 .00}	0.0625	000.06
+{n, number, ::000 .00}	1234	1,234.00
+{n, number, ::integer-width/*00 .0}	1234.5	1,234.5
+{n, number, ::integer-width/*00 .0}	0.256	00.3
+{n, number, ::integer-width/*00 .0}	-5	-05.0
+{n, number, ::integer-width/*00 .0}	0	00.0
+{n, number, ::integer-width/*00 .0}	2.5	02.5
+{n, number, ::integer-width/*00 .0}	15000	15,000.0
+{n, number, ::integer-width/*00 .0}	0.0625	00.1
+{n, number, ::integer-width/*00 .0}	1234	1,234.0
+{n, number, ::scale/100 .0}	1234.5	123,450.0
+{n, number, ::scale/100 .0}	0.256	25.6
+{n, number, ::scale/100 .0}	-5	-500.0
+{n, number, ::scale/100 .0}	0	0.0
+{n, number, ::scale/100 .0}	2.5	250.0
+{n, number, ::scale/100 .0}	15000	1,500,000.0
+{n, number, ::scale/100 .0}	0.0625	6.2
+{n, number, ::scale/100 .0}	1234	123,400.0
+{n, number, ::scale/0.01 percent}	1234.5	12.345%
+{n, number, ::scale/0.01 percent}	0.256	0.00256%
+{n, number, ::scale/0.01 percent}	-5	-0.05%
+{n, number, ::scale/0.01 percent}	0	0%
+{n, number, ::scale/0.01 percent}	2.5	0.025%
+{n, number, ::scale/0.01 percent}	15000	150%
+{n, number, ::scale/0.01 percent}	0.0625	0.000625%
+{n, number, ::scale/0.01 percent}	1234	12.34%
+{n, number, ::compact-long .0}	1234.5	1.2 thousand
+{n, number, ::compact-long .0}	0.256	0.3
+{n, number, ::compact-long .0}	-5	-5.0
+{n, number, ::compact-long .0}	0	0.0
+{n, number, ::compact-long .0}	2.5	2.5
+{n, number, ::compact-long .0}	15000	15.0 thousand
+{n, number, ::compact-long .0}	0.0625	0.1
+{n, number, ::compact-long .0}	1234	1.2 thousand
+{n, number, ::sign-always .00}	1234.5	+1,234.50
+{n, number, ::sign-always .00}	0.256	+0.26
+{n, number, ::sign-always .00}	-5	-5.00
+{n, number, ::sign-always .00}	0	+0.00
+{n, number, ::sign-always .00}	2.5	+2.50
+{n, number, ::sign-always .00}	15000	+15,000.00
+{n, number, ::sign-always .00}	0.0625	+0.06
+{n, number, ::sign-always .00}	1234	+1,234.00
+{n, number, ::sign-accounting currency/USD}	1234.5	$1,234.50
+{n, number, ::sign-accounting currency/USD}	0.256	$0.26
+{n, number, ::sign-accounting currency/USD}	-5	($5.00)
+{n, number, ::sign-accounting currency/USD}	0	$0.00
+{n, number, ::sign-accounting currency/USD}	2.5	$2.50
+{n, number, ::sign-accounting currency/USD}	15000	$15,000.00
+{n, number, ::sign-accounting currency/USD}	0.0625	$0.06
+{n, number, ::sign-accounting currency/USD}	1234	$1,234.00
+{n, number, ::group-off .00}	1234.5	1234.50
+{n, number, ::group-off .00}	0.256	0.26
+{n, number, ::group-off .00}	-5	-5.00
+{n, number, ::group-off .00}	0	0.00
+{n, number, ::group-off .00}	2.5	2.50
+{n, number, ::group-off .00}	15000	15000.00
+{n, number, ::group-off .00}	0.0625	0.06
+{n, number, ::group-off .00}	1234	1234.00
+{n, number, ::,_ currency/USD}	1234.5	$1234.50
+{n, number, ::,_ currency/USD}	0.256	$0.26
+{n, number, ::,_ currency/USD}	-5	-$5.00
+{n, number, ::,_ currency/USD}	0	$0.00
+{n, number, ::,_ currency/USD}	2.5	$2.50
+{n, number, ::,_ currency/USD}	15000	$15000.00
+{n, number, ::,_ currency/USD}	0.0625	$0.06
+{n, number, ::,_ currency/USD}	1234	$1234.00
+{n, number, ::scientific .00}	1234.5	1.23E3
+{n, number, ::scientific .00}	0.256	2.56E-1
+{n, number, ::scientific .00}	-5	-5.00E0
+{n, number, ::scientific .00}	0	0.00E0
+{n, number, ::scientific .00}	2.5	2.50E0
+{n, number, ::scientific .00}	15000	1.50E4
+{n, number, ::scientific .00}	0.0625	6.25E-2
+{n, number, ::scientific .00}	1234	1.23E3
+{n, number, ::engineering @@@}	1234.5	1.23E3
+{n, number, ::engineering @@@}	0.256	256E-3
+{n, number, ::engineering @@@}	-5	-5.00E0
+{n, number, ::engineering @@@}	0	0.00E0
+{n, number, ::engineering @@@}	2.5	2.50E0
+{n, number, ::engineering @@@}	15000	15.0E3
+{n, number, ::engineering @@@}	0.0625	62.5E-3
+{n, number, ::engineering @@@}	1234	1.23E3
+{n, number, ::E0 .0}	1234.5	1.2E3
+{n, number, ::E0 .0}	0.256	2.6E-1
+{n, number, ::E0 .0}	-5	-5.0E0
+{n, number, ::E0 .0}	0	0.0E0
+{n, number, ::E0 .0}	2.5	2.5E0
+{n, number, ::E0 .0}	15000	1.5E4
+{n, number, ::E0 .0}	0.0625	6.2E-2
+{n, number, ::E0 .0}	1234	1.2E3
+{n, number, ::precision-increment/0.05 currency/USD}	1234.5	$1,234.50
+{n, number, ::precision-increment/0.05 currency/USD}	0.256	$0.25
+{n, number, ::precision-increment/0.05 currency/USD}	-5	-$5.00
+{n, number, ::precision-increment/0.05 currency/USD}	0	$0.00
+{n, number, ::precision-increment/0.05 currency/USD}	2.5	$2.50
+{n, number, ::precision-increment/0.05 currency/USD}	15000	$15,000.00
+{n, number, ::precision-increment/0.05 currency/USD}	0.0625	$0.05
+{n, number, ::precision-increment/0.05 currency/USD}	1234	$1,234.00
+{n, number, ::rounding-mode-ceiling .}	1234.5	1,235
+{n, number, ::rounding-mode-ceiling .}	0.256	1
+{n, number, ::rounding-mode-ceiling .}	-5	-5
+{n, number, ::rounding-mode-ceiling .}	0	0
+{n, number, ::rounding-mode-ceiling .}	2.5	3
+{n, number, ::rounding-mode-ceiling .}	15000	15,000
+{n, number, ::rounding-mode-ceiling .}	0.0625	1
+{n, number, ::rounding-mode-ceiling .}	1234	1,234
+{n, number, ::rounding-mode-floor .00}	1234.5	1,234.50
+{n, number, ::rounding-mode-floor .00}	0.256	0.25
+{n, number, ::rounding-mode-floor .00}	-5	-5.00
+{n, number, ::rounding-mode-floor .00}	0	0.00
+{n, number, ::rounding-mode-floor .00}	2.5	2.50
+{n, number, ::rounding-mode-floor .00}	15000	15,000.00
+{n, number, ::rounding-mode-floor .00}	0.0625	0.06
+{n, number, ::rounding-mode-floor .00}	1234	1,234.00
+{n, number, ::.00 rounding-mode-half-even}	1234.5	1,234.50
+{n, number, ::.00 rounding-mode-half-even}	0.256	0.26
+{n, number, ::.00 rounding-mode-half-even}	-5	-5.00
+{n, number, ::.00 rounding-mode-half-even}	0	0.00
+{n, number, ::.00 rounding-mode-half-even}	2.5	2.50
+{n, number, ::.00 rounding-mode-half-even}	15000	15,000.00
+{n, number, ::.00 rounding-mode-half-even}	0.0625	0.06
+{n, number, ::.00 rounding-mode-half-even}	1234	1,234.00
+{n, number, ::compact-short rounding-mode-floor}	1234.5	1.2K
+{n, number, ::compact-short rounding-mode-floor}	0.256	0.25
+{n, number, ::compact-short rounding-mode-floor}	-5	-5
+{n, number, ::compact-short rounding-mode-floor}	0	0
+{n, number, ::compact-short rounding-mode-floor}	2.5	2.5
+{n, number, ::compact-short rounding-mode-floor}	15000	15K
+{n, number, ::compact-short rounding-mode-floor}	0.0625	0.062
+{n, number, ::compact-short rounding-mode-floor}	1234	1.2K
+{n, number, ::numbering-system/latn .0}	1234.5	1,234.5
+{n, number, ::numbering-system/latn .0}	0.256	0.3
+{n, number, ::numbering-system/latn .0}	-5	-5.0
+{n, number, ::numbering-system/latn .0}	0	0.0
+{n, number, ::numbering-system/latn .0}	2.5	2.5
+{n, number, ::numbering-system/latn .0}	15000	15,000.0
+{n, number, ::numbering-system/latn .0}	0.0625	0.1
+{n, number, ::numbering-system/latn .0}	1234	1,234.0
+{n, number, ::latin .00}	1234.5	1,234.50
+{n, number, ::latin .00}	0.256	0.26
+{n, number, ::latin .00}	-5	-5.00
+{n, number, ::latin .00}	0	0.00
+{n, number, ::latin .00}	2.5	2.50
+{n, number, ::latin .00}	15000	15,000.00
+{n, number, ::latin .00}	0.0625	0.06
+{n, number, ::latin .00}	1234	1,234.00
+{n, number, #,##0.00}	1234.5	 1,234.50
+{n, number, #,##0.00}	0.256	 0.26
+{n, number, #,##0.00}	-5	- 5.00
+{n, number, #,##0.00}	0	 0.00
+{n, number, #,##0.00}	2.5	 2.50
+{n, number, #,##0.00}	15000	 15,000.00
+{n, number, #,##0.00}	0.0625	 0.06
+{n, number, #,##0.00}	1234	 1,234.00
+{n, number, foo}	1234.5	 foo1234
+{n, number, foo}	0.256	 foo0
+{n, number, foo}	-5	- foo5
+{n, number, foo}	0	 foo0
+{n, number, foo}	2.5	 foo2
+{n, number, foo}	15000	 foo15000
+{n, number, foo}	0.0625	 foo0
+{n, number, foo}	1234	 foo1234
+{n}	1234.5	1,234.5
+{n}	0.256	0.256
+{n}	-5	-5
+{n}	0	0
+{n}	2.5	2.5
+{n}	15000	15,000
+{n}	0.0625	0.062
+{n}	1234	1,234
+{n, spellout}	1234.5	one thousand two hundred thirty-four point five
+{n, spellout}	0.256	zero point two five six
+{n, spellout}	-5	minus five
+{n, spellout}	0	zero
+{n, spellout}	2.5	two point five
+{n, spellout}	15000	fifteen thousand
+{n, spellout}	0.0625	zero point zero six two five
+{n, spellout}	1234	one thousand two hundred thirty-four
+{n, ordinal}	1234.5	1,234th
+{n, ordinal}	0.256	0th
+{n, ordinal}	-5	−5th
+{n, ordinal}	0	0th
+{n, ordinal}	2.5	2nd
+{n, ordinal}	15000	15,000th
+{n, ordinal}	0.0625	0th
+{n, ordinal}	1234	1,234th
+{n, duration}	1234.5	20:34
+{n, duration}	0.256	0 sec.
+{n, duration}	-5	-5 sec.
+{n, duration}	0	0 sec.
+{n, duration}	2.5	2 sec.
+{n, duration}	15000	4:10:00
+{n, duration}	0.0625	0 sec.
+{n, duration}	1234	20:34
+{d, date, yyyy-MM-dd}	0	 2020-05-06
+{d}	0	5/6/20, 11:30 PM
+{d, time, ::Hmmss}	0	23:30:05
+{d, time, ::hmm}	0	11:30 PM
+{d, time, ::jmm}	0	11:30 PM
+{d, date, ::yMMMdjmm}	0	May 6, 2020, 11:30 PM
+{d, date, ::EEEEyMMMMd}	0	Wednesday, May 6, 2020
+{d, time, ::Hmsz}	0	23:30:05 UTC
+{d, time, ::jmmv}	0	11:30 PM GMT+0
+{d, time, ::hmmB}	0	11:30 at night
+{d, time, ::Kmm}	0	11:30 PM
+{d, time, ::kmm}	0	23:30
+{d, date, ::Gy}	0	2020 AD
+{d, date, ::GGGGyMMMMd}	0	May 6, 2020 Anno Domini
+{d, time, ::jmmzzzz}	0	11:30 PM Coordinated Universal Time
+{d, time, ::HmmOOOO}	0	23:30 GMT+00:00
+{d, date, ::yMM}	0	05/2020
+{d, date, ::yyMd}	0	5/6/20
+{d, time, ::mss}	0	30:05
+{d, time, ::Hmss.SSS}	0	23:30:05.123
+{d, time, ::HmsSSS}	0	23:30:05.123
+{d, time, ::HmsS}	0	23:30:05.1
+{d, time, ::ja}	0	11 PM
+{d, time, ::Hma}	0	23:30
+{d, time, ::hmma}	0	11:30 PM
+{n, plural, =0 {none} one {# item} other {# items}}	0	none
+{n, plural, =0 {none} one {# item} other {# items}}	1	1 item
+{n, plural, =0 {none} one {# item} other {# items}}	2	2 items
+{n, plural, =0 {none} one {# item} other {# items}}	1234.5	1,234.5 items
+{n, plural, offset:1 =0 {nobody} =1 {you} one {you and # other} other {you and # others}}	0	nobody
+{n, plural, offset:1 =0 {nobody} =1 {you} one {you and # other} other {you and # others}}	1	you
+{n, plural, offset:1 =0 {nobody} =1 {you} one {you and # other} other {you and # others}}	2	you and 1 other
+{n, plural, offset:1 =0 {nobody} =1 {you} one {you and # other} other {you and # others}}	3	you and 2 others
+{n, plural, offset:1 =0 {nobody} =1 {you} one {you and # other} other {you and # others}}	1235	you and 1,234 others
+{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}	1	1st
+{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}	2	2nd
+{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}	3	3rd
+{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}	4	4th
+{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}	11	11th
+{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}	21	21st
+{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}	22	22nd
+{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}	101	101st
+{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}	1003	1,003rd
+{s, select, admin {Admin} other {Member}}	admin	Admin
+{s, select, admin {Admin} other {Member}}	guest	Member
+{s, select, admin {{n, plural, one {# admin} other {# admins}}} other {nobody}}	admin	0 admins
+It''s {s}	x	It's x
+It's {s}	x	It's x
+'{'s'}' is {s}	x	{s} is x
+I said 'hello' to {s}	x	I said 'hello' to x
+{n, plural, other {'#' is #}}	5	# is 5
+{n, plural, other {{n, number, ::.00} of '{'#'}'}}	5	5.00 of {5}
+# is literal outside a plural: {s}	x	# is literal outside a plural: x
+{n, plural, one {a {s, select, x {#x} other {#o}}} other {b {s, select, x {#x} other {#o}}}}	1	a #o
+{n, plural, one {a {s, select, x {#x} other {#o}}} other {b {s, select, x {#x} other {#o}}}}	7	b #o
+{n, plural, =1 {exactly one} one {one} other {other}}	1	exactly one
+{n, plural, =1 {exactly one} one {one} other {other}}	1.0	exactly one
+{n, plural, =1 {exactly one} one {one} other {other}}	2	other
+{n, plural, zero {zero} other {other}}	0	other
+Hello, {s}!	Ada	Hello, Ada!
+{n, number, ::currency/EUR .00} for {s}	12.5	€12.50 for 12.5
+<b>{s}</b>	x	<b>x</b>
+a '<b>' b {s}	x	a '<b>' b x
+{s} | {n, number, ::.00}	3	3 | 3.00
