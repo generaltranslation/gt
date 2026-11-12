@@ -1,4 +1,8 @@
 import * as t from '@babel/types';
+import {
+  DATE_TIME_CONTEXT_OPTIONS,
+  NUMBER_CONTEXT_OPTIONS,
+} from '@generaltranslation/icu/internal';
 import { warnIgnoredProtoPropertySync } from '../../../../../console/index.js';
 import { NonStaticMessageError, formatLocation } from './diagnostics.js';
 import type { TreeContext } from './types.js';
@@ -79,7 +83,7 @@ export function skipProtoSetter(
   return true;
 }
 
-export function getStaticText(node: t.Node, label: string): string {
+function readStaticText(node: t.Node): string | undefined {
   if (t.isStringLiteral(node)) return node.value;
   if (
     t.isTemplateLiteral(node) &&
@@ -88,7 +92,14 @@ export function getStaticText(node: t.Node, label: string): string {
   ) {
     return node.quasis[0].value.cooked;
   }
-  throw new NonStaticMessageError(`${label} is not a string literal`, node);
+}
+
+export function getStaticText(node: t.Node, label: string): string {
+  const text = readStaticText(node);
+  if (text === undefined) {
+    throw new NonStaticMessageError(`${label} is not a string literal`, node);
+  }
+  return text;
 }
 
 export function getNumber(node: t.Node): number | undefined {
@@ -102,30 +113,41 @@ export function getNumber(node: t.Node): number | undefined {
   }
 }
 
-/** Flat Intl options object with literal values. */
+/**
+ * A flat Intl options object with literal values. Formatting context is not
+ * part of the tree, so it is left out and may be any expression.
+ */
 export function getIntlOptions(
   node: t.Node,
+  kind: 'number' | 'date' | 'time',
   context: TreeContext
 ): Record<string, string | number | boolean> {
   if (!t.isObjectExpression(node)) {
     throw new NonStaticMessageError(
-      'the Intl options are not an object literal',
+      'the options are not an object literal',
       node
     );
   }
+  const contextKeys: readonly string[] =
+    kind === 'number' ? NUMBER_CONTEXT_OPTIONS : DATE_TIME_CONTEXT_OPTIONS;
   const entries: [string, string | number | boolean][] = [];
   for (const property of node.properties) {
     if (skipProtoSetter(property, context)) continue;
     const key = getPropertyKey(property);
+    if (contextKeys.includes(key)) continue;
     const value = (property as t.ObjectProperty).value;
-    const number = getNumber(value);
-    entries.push([
-      key,
-      number ??
-        (t.isBooleanLiteral(value)
-          ? value.value
-          : getStaticText(value, `the Intl option "${key}"`)),
-    ]);
+    const literal =
+      getNumber(value) ??
+      (t.isBooleanLiteral(value) ? value.value : readStaticText(value));
+    if (literal === undefined) {
+      throw new NonStaticMessageError(
+        `the option "${key}" is not a literal`,
+        value,
+        undefined,
+        'Write it as a literal: only options that do not change the message, such as currency and timeZone, can be expressions'
+      );
+    }
+    entries.push([key, literal]);
   }
   // fromEntries keeps a computed ['__proto__'] key as an own property.
   return Object.fromEntries(entries);

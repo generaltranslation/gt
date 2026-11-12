@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isMessageTree, validateMessageTree } from '../index';
-import { icuToMessageTree } from '../convert';
+import { icuToMessage } from '../convert';
 
 const select = (branches: unknown) => ['x', 'select', branches];
 
@@ -16,11 +16,12 @@ describe('validateMessageTree', () => {
     "It's {n, plural, offset:1 =0 {none} one {# item} other {# items}}",
     '{rank, selectordinal, one {#st} two {#nd} other {#th}}',
     '{role, select, admin {<b>{name}</b> is an admin} other {Hi}}',
-    '{amount, number, ::currency/USD .00} {pct, number, percent}',
-    '{when, date, short} {when, time, ::Hms} {when, date, ::yyyyMMMdd}',
+    '{amount, number, currency} {pct, number, percent} {d, number, ::unit/meter}',
+    '{when, date, short} {when, time, ::jms} {when, date, ::yyyyMMMdd}',
+    '{when, time, full} {when, time, ::jmmssSSSBz}',
     'Click <link>here <i>now</i></link> <br/>',
   ])('accepts converted parse() output for %j', (message) => {
-    expect(validateMessageTree(icuToMessageTree(message))).toBeUndefined();
+    expect(validateMessageTree(icuToMessage(message).tree)).toBeUndefined();
   });
 
   it('accepts pound, absent and null styles, and entries past the known ones', () => {
@@ -30,7 +31,6 @@ describe('validateMessageTree', () => {
         ['n', 'number'],
         ['n', 'number', null],
         ['n', 'number', 'percent'],
-        ['n', 'number', { style: 'percent', scale: 100 }],
         ['s', 'select', { other: '' }, 'future'],
       ])
     ).toBeUndefined();
@@ -56,10 +56,50 @@ describe('validateMessageTree', () => {
     ['a null kind', [['x', null]], [0, 1]],
     ['a numeric style', [['n', 'number', 1]], [0, 2]],
     ['an array style', [['d', 'date', []]], [0, 2]],
+    ['an empty number style', [['n', 'number', {}]], [0, 2]],
+    ['an empty date style', [['d', 'date', {}]], [0, 2]],
+    ['an empty time style', [['t', 'time', {}]], [0, 2]],
+    ['an unknown number style name', [['n', 'number', 'integer']], [0, 2]],
+    ['an unknown date style name', [['d', 'date', 'tiny']], [0, 2]],
     [
-      'a non-numeric number scale',
-      [['n', 'number', { scale: 'not-a-number' }]],
-      [0, 2, 'scale'],
+      'a number option object other than a unit',
+      [['n', 'number', { style: 'percent' }]],
+      [0, 2, 'style'],
+    ],
+    [
+      'a unit ICU cannot print',
+      [['n', 'number', { style: 'unit', unit: 'kilo meter' }]],
+      [0, 2, 'unit'],
+    ],
+    [
+      'a number formatting context option',
+      [['n', 'number', { currency: 'USD', style: 'currency' }]],
+      [0, 2, 'currency'],
+    ],
+    [
+      'a date formatting context option',
+      [['d', 'date', { timeZone: 'UTC', year: 'numeric' }]],
+      [0, 2, 'timeZone'],
+    ],
+    [
+      'a style as an option',
+      [['d', 'date', { style: 'short' }]],
+      [0, 2, 'style'],
+    ],
+    [
+      'a date field on a time',
+      [['t', 'time', { year: 'numeric' }]],
+      [0, 2, 'year'],
+    ],
+    [
+      'a field value Intl does not have',
+      [['d', 'date', { month: 'tiny' }]],
+      [0, 2, 'month'],
+    ],
+    [
+      'string fractional second digits',
+      [['t', 'time', { fractionalSecondDigits: '3' }]],
+      [0, 2, 'fractionalSecondDigits'],
     ],
     ['missing branches', [['s', 'select']], [0, 2]],
     ['array branches', [select([])], [0, 2]],
@@ -88,8 +128,25 @@ describe('validateMessageTree', () => {
   it('ignores inherited branches and options', () => {
     const branches = Object.create({ other: 5 });
     expect(isMessageTree([select(branches)])).toBe(true);
-    const style = Object.create({ scale: 'x' });
+    const style = Object.assign(Object.create({ currency: 'USD' }), {
+      style: 'unit',
+      unit: 'meter',
+    });
     expect(isMessageTree([['n', 'number', style]])).toBe(true);
+  });
+
+  it('explains a style a tree cannot hold', () => {
+    expect(
+      validateMessageTree([['d', 'date', { timeZone: 'UTC' }]])?.message
+    ).toBe(
+      '"timeZone" is formatting context, which a message tree does not hold'
+    );
+    expect(
+      validateMessageTree([['t', 'time', { style: 'short' }]])?.message
+    ).toBe('"style" is written as a style name, like "medium"');
+    expect(
+      validateMessageTree([['t', 'time', { day: 'numeric' }]])?.message
+    ).toBe('a time has no "day" option');
   });
 
   it('treats __proto__ branch keys as ordinary branches', () => {

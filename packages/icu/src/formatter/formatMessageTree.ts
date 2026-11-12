@@ -6,10 +6,7 @@
 import { intlCache } from '../cache/IntlCache';
 import { resolveLocale } from './locale';
 import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
-import type {
-  ExtendedNumberFormatOptions,
-  MessageVariables,
-} from '../types-dir/ast';
+import type { ExtendedNumberFormatOptions } from '../types-dir/ast';
 import type {
   DateTimeNode,
   MessageBranches,
@@ -20,41 +17,19 @@ import type {
   TagNode,
 } from '../tree/messageTree';
 import { branchNodes } from '../tree/walk';
+import {
+  DATE_TIME_STYLE_NAMES,
+  NAMED_NUMBER_STYLES,
+  type DateTimeStyleName,
+  type MessageFormats,
+} from '../settings/formatOptions';
 
-const NUMBER_STYLES: Record<string, Intl.NumberFormatOptions> = {
-  integer: { maximumFractionDigits: 0 },
-  currency: { style: 'currency' },
-  percent: { style: 'percent' },
-};
+const DATE_TIME_STYLES = new Set<string>(DATE_TIME_STYLE_NAMES);
 
-const DATE_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
-  short: { month: 'numeric', day: 'numeric', year: '2-digit' },
-  medium: { month: 'short', day: 'numeric', year: 'numeric' },
-  long: { month: 'long', day: 'numeric', year: 'numeric' },
-  full: {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  },
-};
-
-const LONG_TIME_STYLE: Intl.DateTimeFormatOptions = {
-  hour: 'numeric',
-  minute: 'numeric',
-  second: 'numeric',
-  timeZoneName: 'short',
-};
-
-const TIME_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
-  short: { hour: 'numeric', minute: 'numeric' },
-  medium: { hour: 'numeric', minute: 'numeric', second: 'numeric' },
-  long: LONG_TIME_STYLE,
-  full: LONG_TIME_STYLE,
-};
+// ICU formats `{d, date}` and `{t, time}` without a style in the medium style.
+const DEFAULT_DATE_TIME_STYLE: DateTimeStyleName = 'medium';
 
 type PluralValue = number | bigint;
-type TagFormatter = (parts: unknown[]) => unknown;
 
 /**
  * A value that formats as text, as in a template literal: `true` is
@@ -83,7 +58,7 @@ export type MessageTagFormatter<R> = (
  * Values for `formatMessageTree`: plain values, rich values `R` (such as
  * React elements), and tag formatters that return them.
  */
-export type MessageTreeValues<R> = Readonly<
+export type MessageValues<R> = Readonly<
   Record<string, MessagePlainValue | R | MessageTagFormatter<R>>
 >;
 
@@ -104,27 +79,39 @@ export type FormattedMessage<R> = [R] extends [string]
   ? string
   : string | R | Array<string | R>;
 
-/** What a message is formatted with, besides its locales and values. */
+/** Formatting context for `formatMessageTree`, kept out of the tree. */
 export type FormatMessageTreeOptions = {
   /**
-   * The time zone of a date or time whose options set none. It is always
+   * Each formatted variable's formatting context, such as a currency or
+   * `timeZone`, as `templateToMessage` returns it; `{}` when the message has
+   * none. It is merged over the placeholder's style.
+   */
+  formats: MessageFormats;
+  /**
+   * The time zone of a date or time whose formats set none. It is always
    * passed in: this package does not read the host's.
    */
   timeZone: string;
 };
 
-type FormatContext = FormatMessageTreeOptions & {
+/** One part of a formatted message: text, or a rich value. */
+type Part<R> = string | R;
+type MessageValue<R> = MessageValues<R>[string];
+
+type FormatContext<R> = FormatMessageTreeOptions & {
   message: string;
   locales: string | string[];
-  variables: MessageVariables;
+  values: MessageValues<R>;
 };
 
 /**
  * Formats a message tree without parsing, with native Intl. Plain values
  * format as text, so the result is a string:
  *
- *   formatMessageTree(['Hi ', ['name']], 'en', { name: 'Ada' }, { timeZone });
- *   // 'Hi Ada'
+ *   formatMessageTree(['Hi ', ['name']], 'en', { name: 'Ada' }, {
+ *     formats: {},
+ *     timeZone,
+ *   }); // 'Hi Ada'
  *
  * A rich value, or a tag formatter's result, is kept as a part:
  *
@@ -132,8 +119,15 @@ type FormatContext = FormatMessageTreeOptions & {
  *     ['Read the ', ['b', 'tag', ['terms']]],
  *     'en',
  *     { b: (parts) => <b>{parts}</b> },
- *     { timeZone }
+ *     { formats: {}, timeZone }
  *   ); // ['Read the ', <b>terms</b>]
+ *
+ * Formatting context, like a currency or a time zone, is passed by variable:
+ *
+ *   formatMessageTree([['total', 'number', 'currency']], 'en', { total: 5 }, {
+ *     formats: { total: { currency: 'EUR' } },
+ *     timeZone,
+ *   }); // '€5.00'
  *
  * Locales are validated the same way as `formatMessage` from
  * `@generaltranslation/icu/parser`.
@@ -141,7 +135,7 @@ type FormatContext = FormatMessageTreeOptions & {
 export function formatMessageTree(
   tree: MessageTree,
   locales: string | string[],
-  variables: Readonly<Record<string, MessagePlainValue>>,
+  values: Readonly<Record<string, MessagePlainValue>>,
   options: FormatMessageTreeOptions
 ): string;
 /**
@@ -154,33 +148,34 @@ export function formatMessageTree(
 export function formatMessageTree<R>(
   tree: MessageTree,
   locales: string | string[],
-  variables: MessageTreeValues<R> & OnePartValues<R>,
+  values: MessageValues<R> & OnePartValues<R>,
   options: FormatMessageTreeOptions
 ): FormattedMessage<R>;
-export function formatMessageTree(
+export function formatMessageTree<R>(
   tree: MessageTree,
   locales: string | string[],
-  variables: MessageVariables,
+  values: MessageValues<R>,
   options: FormatMessageTreeOptions
-): unknown {
+): Part<R> | Part<R>[] {
   resolveLocale(locales);
-  return formatParsedTree(tree, '', locales, variables, options);
+  return formatParsedTree(tree, '', locales, values, options);
 }
 
 /** Formats a tree whose locales were already validated; `message` is reported on errors. */
-export function formatParsedTree(
+export function formatParsedTree<R>(
   tree: MessageTree,
   message: string,
   locales: string | string[],
-  variables: MessageVariables,
-  { timeZone }: FormatMessageTreeOptions
-): unknown {
+  values: MessageValues<R>,
+  { formats, timeZone }: FormatMessageTreeOptions
+): Part<R> | Part<R>[] {
   // Most messages are plain text, which needs no formatter state.
   if (tree.length === 1 && typeof tree[0] === 'string') return tree[0];
   const parts = formatNodes(tree, {
     message,
     locales,
-    variables,
+    values,
+    formats,
     timeZone,
   });
   if (parts.length === 1) return parts[0];
@@ -190,13 +185,13 @@ export function formatParsedTree(
 // `switch (node[1])` does not narrow a tuple union, so cases cast to these.
 type BranchNode = SelectNode | PluralNode;
 
-function formatNodes(
+function formatNodes<R>(
   nodes: MessageTree,
-  context: FormatContext,
+  context: FormatContext<R>,
   currentPluralValue?: PluralValue
-): unknown[] {
-  const result: unknown[] = [];
-  const append = (value: unknown): void => {
+): Part<R>[] {
+  const result: Part<R>[] = [];
+  const append = (value: Part<R>): void => {
     const previous = result[result.length - 1];
     if (typeof previous === 'string' && typeof value === 'string') {
       result[result.length - 1] = previous + value;
@@ -223,18 +218,26 @@ function formatNodes(
     const name = node[0];
     switch (node[1]) {
       case undefined: {
-        const value = requireVariable(context.variables, name);
+        const value = requireVariable(context.values, name);
         append(plainValueText(value));
         break;
       }
       case 'number': {
-        const value = requireVariable(context.variables, name);
-        const style = (node as NumberNode)[2];
-        const options: ExtendedNumberFormatOptions =
-          typeof style === 'string'
-            ? (NUMBER_STYLES[style] ?? {})
-            : (style ?? {});
-        const { scale, ...intlOptions } = options;
+        const value = requireVariable(context.values, name);
+        // An ICU string's skeleton may also hold a scale.
+        const style = (node as NumberNode)[2] as
+          | string
+          | ExtendedNumberFormatOptions
+          | undefined;
+        const { scale, ...intlOptions }: ExtendedNumberFormatOptions = {
+          ...(typeof style === 'string' ? NAMED_NUMBER_STYLES[style] : style),
+          ...formatsOf(context, name),
+        };
+        if (intlOptions.style === 'currency' && !intlOptions.currency) {
+          throw new TypeError(
+            `The ICU variable "${name}" is formatted as currency, but no currency was given.`
+          );
+        }
         const scaledValue = applyScale(value, scale);
         append(
           intlCache
@@ -245,14 +248,20 @@ function formatNodes(
       }
       case 'date':
       case 'time': {
-        const value = requireVariable(context.variables, name);
+        const value = requireVariable(context.values, name);
         const isDate = node[1] === 'date';
         const style = (node as DateTimeNode)[2];
-        // Own options only: Intl would also read inherited ones.
+        // Named styles are ICU's: Intl's dateStyle and timeStyle.
+        const named = style ?? DEFAULT_DATE_TIME_STYLE;
+        const styleOptions: Intl.DateTimeFormatOptions | undefined =
+          typeof named === 'string'
+            ? DATE_TIME_STYLES.has(named)
+              ? { [isDate ? 'dateStyle' : 'timeStyle']: named }
+              : undefined
+            : named;
         const options: Intl.DateTimeFormatOptions = {
-          ...(typeof style === 'string'
-            ? (isDate ? DATE_STYLES : TIME_STYLES)[style]
-            : (style ?? (isDate ? undefined : TIME_STYLES.medium))),
+          ...styleOptions,
+          ...formatsOf(context, name),
         };
         append(
           intlCache
@@ -266,7 +275,7 @@ function formatNodes(
       }
       case 'select': {
         const branches = (node as BranchNode)[2];
-        const value = String(requireVariable(context.variables, name));
+        const value = String(requireVariable(context.values, name));
         const branch =
           ownBranch(branches, value) ??
           ownBranch(branches, FALLBACK_BRANCH_KEY);
@@ -277,7 +286,7 @@ function formatNodes(
       case 'plural':
       case 'selectordinal': {
         const [, kind, branches, offset = 0] = node as PluralNode;
-        const rawValue = requireVariable(context.variables, name);
+        const rawValue = requireVariable(context.values, name);
         let branch = ownBranch(branches, `=${String(rawValue)}`);
         const value =
           typeof rawValue === 'bigint' ? rawValue : Number(rawValue);
@@ -296,7 +305,7 @@ function formatNodes(
         break;
       }
       case 'tag': {
-        const formatter = requireVariable(context.variables, name);
+        const formatter = requireVariable(context.values, name);
         if (typeof formatter !== 'function') {
           throw new TypeError(
             `The ICU tag variable "${name}" must be a function.`
@@ -307,7 +316,7 @@ function formatNodes(
           context,
           currentPluralValue
         );
-        const formatted = (formatter as TagFormatter)(children);
+        const formatted = (formatter as MessageTagFormatter<R>)(children);
         if (Array.isArray(formatted)) formatted.forEach(append);
         else append(formatted);
         break;
@@ -318,6 +327,13 @@ function formatNodes(
   return result;
 }
 
+function formatsOf<R>(
+  context: FormatContext<R>,
+  name: string
+): MessageFormats[string] | undefined {
+  return ownOption(context.formats, name);
+}
+
 function ownBranch(
   branches: MessageBranches,
   key: string
@@ -326,7 +342,7 @@ function ownBranch(
   return branch === undefined ? undefined : branchNodes(branch);
 }
 
-function plainValueText(value: unknown): unknown {
+function plainValueText<R>(value: MessageValue<R>): Part<R> {
   if (value == null) return '';
   return typeof value === 'string' ||
     typeof value === 'number' ||
@@ -334,21 +350,28 @@ function plainValueText(value: unknown): unknown {
     typeof value === 'boolean' ||
     value instanceof Date
     ? String(value)
-    : value;
+    : // A value that is not plain is a rich one, kept as a part.
+      (value as R);
 }
 
-function requireVariable(variables: MessageVariables, name: string): unknown {
+function requireVariable<R>(
+  values: MessageValues<R>,
+  name: string
+): MessageValue<R> {
   // intl-messageformat intentionally used `name in values`, so inherited and
   // proxy-backed records are observable through the public formatting API.
   // Selector option lookup remains own-property-only to avoid prototype
   // collisions with values such as "constructor" and "toString".
-  if (!(name in variables)) {
+  if (!(name in values)) {
     throw new Error(`The ICU message variable "${name}" was not provided.`);
   }
-  return variables[name];
+  return values[name];
 }
 
-function applyScale(value: unknown, scale?: number): unknown {
+function applyScale<Value>(
+  value: Value,
+  scale: number | undefined
+): Value | number | bigint {
   // intl-messageformat treated scale/0 as an absent scale. Preserve that
   // observable behavior for existing messages even though multiplying by zero
   // would follow the ICU skeleton definition more literally.
@@ -364,8 +387,8 @@ function applyScale(value: unknown, scale?: number): unknown {
   return Number(value) * scale;
 }
 
-function getPluralRules(
-  context: FormatContext,
+function getPluralRules<R>(
+  context: FormatContext<R>,
   type: Intl.PluralRuleType
 ): Intl.PluralRules {
   if (typeof Intl.PluralRules !== 'function') {

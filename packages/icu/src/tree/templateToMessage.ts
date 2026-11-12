@@ -1,30 +1,38 @@
 import {
   createInvalidBranchKeyError,
+  createInvalidFormatOptionError,
   createInvalidVariableNameError,
   createPluralCountOutsidePluralError,
   createReservedVariablePrefixError,
 } from '../errors/treeErrors';
 import { FALLBACK_BRANCH_KEY, isArgumentName } from '../settings/syntax';
-import { appendText, canonicalStyle, compareKeys, toBranch } from './canonical';
+import { appendText, compareKeys, toBranch } from './canonical';
 import type {
   DateTimeNode,
+  Message,
   MessageBranches,
   MessageNode,
-  MessageTree,
   NumberNode,
   PluralNode,
   SelectNode,
 } from './messageTree';
+import {
+  addContext,
+  toFormats,
+  splitOptions,
+  type DateTimeOptions,
+  type ContextByVariable,
+} from './splitOptions';
 
 // ===== Hole IR ===== //
 
 /** Static text with interleaved holes, like a tagged template's arguments. */
-export type MessageTreeFragment = {
+export type TemplateFragment = {
   strings: readonly string[];
-  holes: readonly MessageTreeHole[];
+  holes: readonly TemplateHole[];
 };
 
-export type MessageTreeBranch = string | MessageTreeFragment;
+export type TemplateBranch = string | TemplateFragment;
 
 /**
  * The variable a helper formats: its `name`, or for a value passed without
@@ -34,40 +42,40 @@ export type MessageTreeBranch = string | MessageTreeFragment;
 type HoleVariable = { name?: string; value?: unknown };
 
 /** Kinds whose value picks one of several branches. */
-export type MessageTreeChoiceKind = (PluralNode | SelectNode)[1];
+export type BranchingKind = (PluralNode | SelectNode)[1];
 
 /**
  * Plain-data description of one template hole. Values never become part of
- * the tree, so the built tree depends only on the message's structure.
+ * the tree, so the built tree depends only on the message's structure. A
+ * format's `options` are Intl's, except that a date's or a time's named style
+ * is `style`; the builder keeps the message options in the tree and returns
+ * the formatting context in `formats`.
  */
-export type MessageTreeHole =
+export type TemplateHole =
   | { kind: 'argument'; name: string }
   /** A value without a name; it becomes the next `_gt_N` argument. */
   | { kind: 'anonymous'; value?: unknown }
   | ({ kind: NumberNode[1]; options?: Intl.NumberFormatOptions } & HoleVariable)
+  | ({ kind: DateTimeNode[1]; options?: DateTimeOptions } & HoleVariable)
   | ({
-      kind: Extract<DateTimeNode[1], 'date'>;
-      options?: Intl.DateTimeFormatOptions;
+      kind: BranchingKind;
+      branches: Readonly<Record<string, TemplateBranch | undefined>>;
     } & HoleVariable)
-  | ({
-      kind: MessageTreeChoiceKind;
-      branches: Readonly<Record<string, MessageTreeBranch | undefined>>;
-    } & HoleVariable)
-  | ({ kind: 'fragment' } & MessageTreeFragment)
+  | ({ kind: 'fragment' } & TemplateFragment)
   /** The count of the nearest plural or selectordinal, like ICU `#`. */
   | { kind: 'pound' };
 
 // ===== Builder ===== //
 
-type BuildContext = {
+type BuildState = {
   values: [name: string, value: unknown][];
+  contexts: ContextByVariable;
 };
 
 // Anonymous values are named `_gt_N`; user names must not collide.
 export const RESERVED_NAME_PREFIX = '_gt_';
 
-export type BuiltMessageTree = {
-  tree: MessageTree;
+export type TemplateMessage = Message & {
   /**
    * Values of anonymous holes, in tree order.
    */
@@ -75,20 +83,26 @@ export type BuiltMessageTree = {
 };
 
 /**
- * Builds a canonical message tree from template strings and holes: adjacent
- * text is merged, a branch without placeholders is one string, and
+ * A message from template strings and holes. Its tree is the canonical one:
+ * adjacent text is merged, a branch without placeholders is one string, and
  * plural/select keys and Intl options are sorted, so equal messages produce
  * equal tree JSON. Anonymous holes become `_gt_N`
  * arguments, numbered in tree order from 1. Their values are returned
- * separately because values are never part of the tree.
+ * separately because values are never part of the tree, and so is each
+ * variable's formatting context: one variable formatted with two contexts
+ * throws.
  */
-export function buildMessageTree(
+export function templateToMessage(
   strings: readonly string[],
-  holes: readonly MessageTreeHole[]
-): BuiltMessageTree {
-  const context: BuildContext = { values: [] };
-  const tree = build(strings, holes, context, false);
-  return { tree, values: context.values };
+  holes: readonly TemplateHole[]
+): TemplateMessage {
+  const state: BuildState = { values: [], contexts: new Map() };
+  const tree = build(strings, holes, state, false);
+  return {
+    tree,
+    values: state.values,
+    formats: toFormats(state.contexts),
+  };
 }
 
 function validateName(name: string): void {
@@ -104,31 +118,31 @@ function validateName(name: string): void {
 }
 
 // Every anonymous value adds one entry, so the count numbers the next one.
-function addAnonymousValue(context: BuildContext, value: unknown): string {
-  const name = `${RESERVED_NAME_PREFIX}${context.values.length + 1}`;
-  context.values.push([name, value]);
+function addAnonymousValue(state: BuildState, value: unknown): string {
+  const name = `${RESERVED_NAME_PREFIX}${state.values.length + 1}`;
+  state.values.push([name, value]);
   return name;
 }
 
 function build(
   strings: readonly string[],
-  holes: readonly MessageTreeHole[],
-  context: BuildContext,
+  holes: readonly TemplateHole[],
+  state: BuildState,
   inPlural: boolean
 ): MessageNode[] {
   const out: MessageNode[] = [];
   // Template text is always literal, ICU syntax such as `#` and `{` included.
   strings.forEach((text, i) => {
     appendText(out, text);
-    if (i < holes.length) buildHole(out, holes[i], context, inPlural);
+    if (i < holes.length) buildHole(out, holes[i], state, inPlural);
   });
   return out;
 }
 
 function buildHole(
   out: MessageNode[],
-  hole: MessageTreeHole,
-  context: BuildContext,
+  hole: TemplateHole,
+  state: BuildState,
   inPlural: boolean
 ): void {
   if ('name' in hole && hole.name !== undefined) validateName(hole.name);
@@ -137,10 +151,10 @@ function buildHole(
       out.push([hole.name]);
       return;
     case 'anonymous':
-      out.push([addAnonymousValue(context, hole.value)]);
+      out.push([addAnonymousValue(state, hole.value)]);
       return;
     case 'fragment':
-      for (const node of build(hole.strings, hole.holes, context, inPlural)) {
+      for (const node of build(hole.strings, hole.holes, state, inPlural)) {
         if (typeof node === 'string') appendText(out, node);
         else out.push(node);
       }
@@ -151,17 +165,25 @@ function buildHole(
       out.push(0);
       return;
     case 'number':
-    case 'date': {
-      const name = hole.name ?? addAnonymousValue(context, hole.value);
-      const style = canonicalStyle(hole.options, hole.kind);
-      out.push(style ? [name, hole.kind, style] : [name, hole.kind]);
+    case 'date':
+    case 'time': {
+      const name = hole.name ?? addAnonymousValue(state, hole.value);
+      const [node, context] = splitOptions(
+        name,
+        hole.kind,
+        hole.options ?? {},
+        (reason) =>
+          new Error(createInvalidFormatOptionError(name, hole.kind, reason))
+      );
+      addContext(state.contexts, name, context);
+      out.push(node);
       return;
     }
     case 'plural':
     case 'selectordinal':
     case 'select': {
       // Named before its branches, so numbering follows tree order.
-      const name = hole.name ?? addAnonymousValue(context, hole.value);
+      const name = hole.name ?? addAnonymousValue(state, hole.value);
       const isSelect = hole.kind === 'select';
       const branchInPlural = !isSelect;
       const keys = Object.keys(hole.branches).filter(
@@ -181,8 +203,8 @@ function buildHole(
           branch == null
             ? []
             : typeof branch === 'string'
-              ? build([branch], [], context, branchInPlural)
-              : build(branch.strings, branch.holes, context, branchInPlural)
+              ? build([branch], [], state, branchInPlural)
+              : build(branch.strings, branch.holes, state, branchInPlural)
         );
       }
       Object.setPrototypeOf(branches, Object.prototype);

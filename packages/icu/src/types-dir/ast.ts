@@ -127,5 +127,3 @@ export interface ParserOptions {
   captureLocation?: boolean;
   locale?: Intl.Locale;
 }
-
-export type MessageVariables = Record<string, unknown>;

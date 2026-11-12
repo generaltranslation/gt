@@ -1,10 +1,10 @@
 import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import type {
-  MessageTreeBranch,
-  MessageTreeChoiceKind,
-  MessageTreeFragment,
-  MessageTreeHole,
+  TemplateBranch,
+  BranchingKind,
+  TemplateFragment,
+  TemplateHole,
 } from '@generaltranslation/icu/internal';
 import {
   GT_LIBRARIES,
@@ -34,7 +34,7 @@ const USE_UNSTABLE_HELPERS_FIX =
 export function templateVariants(
   quasi: NodePath<t.TemplateLiteral>,
   context: TreeContext
-): MessageTreeFragment[] {
+): TemplateFragment[] {
   const strings = quasi.node.quasis.map((element) => {
     if (element.value.cooked == null) {
       throw new NonStaticMessageError(
@@ -69,7 +69,7 @@ function unwrapTypeScriptPath(path: NodePath): NodePath {
 function holeVariants(
   hole: NodePath<t.Expression | t.TSType>,
   context: TreeContext
-): MessageTreeHole[] {
+): TemplateHole[] {
   const expression = unwrapTypeScriptPath(hole);
   if (expression.isObjectExpression()) {
     return [{ kind: 'argument', name: getVariableName(expression.node) }];
@@ -91,7 +91,8 @@ function holeVariants(
       case 'select':
         return branchHoleVariants(helper, expression, context);
       case 'number':
-      case 'date': {
+      case 'date':
+      case 'time': {
         if (args.length < 1 || args.length > 2) {
           throw new NonStaticMessageError(
             `${helper}() takes a variable and optional Intl options`,
@@ -99,14 +100,14 @@ function holeVariants(
           );
         }
         const variable = getHoleVariable(args[0], context);
-        // Static literals are passed to Intl unchanged, as at runtime.
-        const options = args[1] && getIntlOptions(args[1].node, context);
+        const options =
+          args[1] && getIntlOptions(args[1].node, helper, context);
         return [
           {
             kind: helper,
             ...variable,
             ...(options && { options }),
-          } as MessageTreeHole,
+          } as TemplateHole,
         ];
       }
       case DERIVE_FUNCTION:
@@ -159,10 +160,10 @@ function getHoleVariable(
 }
 
 function branchHoleVariants(
-  kind: MessageTreeChoiceKind,
+  kind: BranchingKind,
   call: NodePath<t.CallExpression>,
   context: TreeContext
-): MessageTreeHole[] {
+): TemplateHole[] {
   const args = call.get('arguments');
   const [variable, branchesArg] = args;
   if (args.length !== 2 || !branchesArg.isObjectExpression()) {
@@ -173,7 +174,7 @@ function branchHoleVariants(
   }
   const holeVariable = getHoleVariable(variable, context);
   const keys: string[] = [];
-  const branchLists: MessageTreeBranch[][] = [];
+  const branchLists: TemplateBranch[][] = [];
   for (const property of branchesArg.get('properties')) {
     if (skipProtoSetter(property.node, context)) continue;
     keys.push(getPropertyKey(property.node));
@@ -191,7 +192,7 @@ function branchHoleVariants(
 function branchVariants(
   path: NodePath,
   context: TreeContext
-): MessageTreeBranch[] {
+): TemplateBranch[] {
   const valuePath = unwrapTypeScriptPath(path);
   const value = valuePath.node;
   if (t.isStringLiteral(value) || t.isTemplateLiteral(value)) {
@@ -222,7 +223,7 @@ function branchVariants(
 function fragmentVariants(
   path: NodePath,
   context: TreeContext
-): MessageTreeFragment[] | undefined {
+): TemplateFragment[] | undefined {
   if (path.isTaggedTemplateExpression()) {
     if (getHelperName(path.get('tag')) !== 'part') return;
     return templateVariants(path.get('quasi'), context);

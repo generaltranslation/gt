@@ -1,10 +1,12 @@
 import type { NodePath, Scope } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
-  buildMessageTree,
-  type MessageTreeBranch,
-  type MessageTreeFragment,
-  type MessageTreeHole,
+  templateToMessage,
+  DATE_TIME_CONTEXT_OPTIONS,
+  NUMBER_CONTEXT_OPTIONS,
+  type TemplateBranch,
+  type TemplateFragment,
+  type TemplateHole,
 } from '@generaltranslation/icu/internal';
 import {
   hashSource,
@@ -50,7 +52,7 @@ export function injectUnstableTaggedTemplateHash(
       : {};
     const { strings, holes } = templateFragment(quasi, path.scope);
     hash = hashSource({
-      source: buildMessageTree(strings, holes).tree,
+      source: templateToMessage(strings, holes).tree,
       dataFormat: 'ICU_TREE',
       ...metadata,
     });
@@ -153,14 +155,14 @@ function parseMessageOptions(
 function templateFragment(
   quasi: t.TemplateLiteral,
   scope: Scope
-): MessageTreeFragment {
+): TemplateFragment {
   return {
     strings: quasi.quasis.map(({ value }) => value.cooked ?? nonStatic()),
     holes: quasi.expressions.map((expression) => getHole(expression, scope)),
   };
 }
 
-function getHole(hole: t.Expression | t.TSType, scope: Scope): MessageTreeHole {
+function getHole(hole: t.Expression | t.TSType, scope: Scope): TemplateHole {
   const expression = unwrapTypeScript(hole);
   if (t.isObjectExpression(expression)) {
     return { kind: 'argument', name: getVariableName(expression) };
@@ -186,7 +188,7 @@ function getHole(hole: t.Expression | t.TSType, scope: Scope): MessageTreeHole {
       const [variable, branchesArg] = args;
       if (args.length !== 2 || !t.isObjectExpression(branchesArg)) nonStatic();
       const holeVariable = getHoleVariable(variable, scope);
-      const branches: Record<string, MessageTreeBranch> = {};
+      const branches: Record<string, TemplateBranch> = {};
       for (const property of branchesArg.properties) {
         branches[getPropertyKey(property)] = getBranch(
           (property as t.ObjectProperty).value,
@@ -196,15 +198,16 @@ function getHole(hole: t.Expression | t.TSType, scope: Scope): MessageTreeHole {
       return { kind: helper, ...holeVariable, branches };
     }
     case 'number':
-    case 'date': {
+    case 'date':
+    case 'time': {
       if (args.length < 1 || args.length > 2) nonStatic();
       const holeVariable = getHoleVariable(args[0], scope);
-      const options = args[1] && getIntlOptions(args[1]);
+      const options = args[1] && getIntlOptions(args[1], helper);
       return {
         kind: helper,
         ...holeVariable,
         ...(options && { options }),
-      } as MessageTreeHole;
+      } as TemplateHole;
     }
     default:
       // derive(), other helpers and other calls: the runtime computes the
@@ -347,7 +350,7 @@ function everyAssignedValue(
   return proven;
 }
 
-function getBranch(value: t.Node, scope: Scope): MessageTreeBranch {
+function getBranch(value: t.Node, scope: Scope): TemplateBranch {
   if (t.isStringLiteral(value) || t.isTemplateLiteral(value)) {
     return getStaticText(value);
   }
@@ -358,10 +361,7 @@ function getBranch(value: t.Node, scope: Scope): MessageTreeBranch {
  * An inline part`...`; undefined otherwise. Fragments referenced through an
  * identifier are left to the runtime: the object can be mutated before use.
  */
-function getFragment(
-  node: t.Node,
-  scope: Scope
-): MessageTreeFragment | undefined {
+function getFragment(node: t.Node, scope: Scope): TemplateFragment | undefined {
   if (
     !t.isTaggedTemplateExpression(node) ||
     !t.isIdentifier(node.tag) ||
@@ -437,14 +437,21 @@ function getNumber(node: t.Node): number | undefined {
   }
 }
 
-/** Flat Intl options object with literal values. */
+/**
+ * Flat Intl options object with literal values. Formatting context is not
+ * part of the tree, so it is left out and may be any expression.
+ */
 function getIntlOptions(
-  node: t.Node
+  node: t.Node,
+  kind: 'number' | 'date' | 'time'
 ): Record<string, string | number | boolean> {
   if (!t.isObjectExpression(node)) nonStatic();
+  const contextKeys: readonly string[] =
+    kind === 'number' ? NUMBER_CONTEXT_OPTIONS : DATE_TIME_CONTEXT_OPTIONS;
   const options: Record<string, string | number | boolean> = {};
   for (const property of node.properties) {
     const key = getPropertyKey(property);
+    if (contextKeys.includes(key)) continue;
     const value = (property as t.ObjectProperty).value;
     const number = getNumber(value);
     if (number != null) options[key] = number;

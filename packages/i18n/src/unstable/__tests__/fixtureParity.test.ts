@@ -11,6 +11,7 @@ import {
   plural,
   select,
   selectordinal,
+  time,
 } from '../placeholders';
 import type { MessageTreeMetadata } from '../renderMessage';
 
@@ -45,6 +46,7 @@ vi.mock('../renderMessage', async (importOriginal) => {
     renderMessage: (
       tree: MessageTree,
       _values: Record<string, unknown>,
+      _formats: unknown,
       _locale: string,
       metadata: MessageTreeMetadata
     ) => {
@@ -67,6 +69,11 @@ const role = 'admin' as 'admin' | 'member';
 const place = 2;
 const price = 9.5;
 const due = new Date(0);
+const currency: string = 'EUR';
+const distance = 12.5;
+const timeZone: string = 'Asia/Tokyo';
+const start = new Date(0);
+const lap = new Date(0);
 const user = 'Ada';
 const who = 'Grace';
 const first = 'Ada';
@@ -94,7 +101,20 @@ const cases: Record<string, (gt: GT) => string> = {
     gt`You finished ${selectordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`,
   'number-intl-options': (gt) =>
     gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`,
-  date: (gt) => gt`Due ${date({ due }, { dateStyle: 'medium' })}`,
+  'number-currency-dynamic': (gt) =>
+    gt`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`,
+  'number-unit': (gt) =>
+    gt`${number({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`,
+  date: (gt) => gt`Due ${date({ due }, { style: 'medium' })}`,
+  'date-style-dynamic-time-zone': (gt) =>
+    gt`Due ${date({ due }, { style: 'medium', timeZone })}`,
+  'time-style': (gt) => gt`Starts at ${time({ start }, { style: 'short' })}`,
+  'date-fields-hour': (gt) =>
+    gt`Due ${date({ due }, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`,
+  'time-fractional-seconds': (gt) =>
+    gt`Lap time: ${time({ lap }, { minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}`,
+  'time-day-period': (gt) =>
+    gt`See you ${time({ start }, { hour: 'numeric', dayPeriod: 'long' })}`,
   derive: (gt) => gt`Welcome ${derive('back')}, ${{ user }}!`,
   anonymous: (gt) => gt`Hi ${name}!`,
   'anonymous-numbering': (gt) => gt`${first} meets ${second} today`,

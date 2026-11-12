@@ -4,11 +4,12 @@ export {
   type FormattedMessage,
   type MessagePlainValue,
   type MessageTagFormatter,
-  type MessageTreeValues,
+  type MessageValues,
 } from './formatter/formatMessageTree';
 export type {
   ArgumentNode,
   DateTimeNode,
+  Message,
   MessageBranches,
   MessageNode,
   MessageTree,
@@ -18,12 +19,19 @@ export type {
   SelectNode,
   TagNode,
 } from './tree/messageTree';
+export type {
+  DateFieldOptions,
+  DateMessageOptions,
+  DateTimeFormattingContext,
+  MessageFormats,
+  NumberFormattingContext,
+  NumberMessageOptions,
+  TimeFieldOptions,
+  TimeMessageOptions,
+} from './settings/formatOptions';
 export { isMessageTree, validateMessageTree } from './tree/validateMessageTree';
 export type {
   MessageTreeValidationError,
   MessageTreeValidationOptions,
 } from './tree/validateMessageTree';
-export type {
-  ExtendedNumberFormatOptions,
-  MessageVariables,
-} from './types-dir/ast';
+export type { ExtendedNumberFormatOptions } from './types-dir/ast';

@@ -1,2 +1,3 @@
-export { icuToMessageTree, messageTreeToIcu } from './convert/convert';
-export type { IcuToMessageTreeOptions } from './convert/convert';
+export { icuToMessage, messageTreeToIcu } from './convert/convert';
+export type { IcuToMessageOptions } from './convert/convert';
+export type { NamedStyles } from './convert/syntaxTree';

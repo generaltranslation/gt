@@ -1,6 +1,11 @@
 import type {
+  DateMessageOptions,
+  DateTimeFormattingContext,
+  TimeMessageOptions,
+} from '@generaltranslation/icu';
+import type {
   FALLBACK_BRANCH_KEY,
-  MessageTreeChoiceKind,
+  BranchingKind,
 } from '@generaltranslation/icu/internal';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 
@@ -38,14 +43,14 @@ type NumberPlaceholder = {
   readonly value: Primitive;
   readonly options?: Intl.NumberFormatOptions;
 };
-type DatePlaceholder = {
-  readonly [PLACEHOLDER]: 'date';
+type DateTimePlaceholder = {
+  readonly [PLACEHOLDER]: 'date' | 'time';
   readonly name: string | undefined;
   readonly value: Primitive;
-  readonly options?: Intl.DateTimeFormatOptions;
+  readonly options?: DateOptions;
 };
 type ChoicePlaceholder<UsesDyn extends boolean = boolean> = {
-  readonly [PLACEHOLDER]: MessageTreeChoiceKind;
+  readonly [PLACEHOLDER]: BranchingKind;
   readonly name: string | undefined;
   readonly value: Primitive;
   readonly branches: Readonly<Record<string, Branch | undefined>>;
@@ -72,7 +77,7 @@ export type Fragment<
 export type Placeholder =
   | DerivePlaceholder
   | NumberPlaceholder
-  | DatePlaceholder
+  | DateTimePlaceholder
   | ChoicePlaceholder
   | Fragment;
 
@@ -347,7 +352,11 @@ export function select<
   return choice('select', value, branches as Record<string, Branch>);
 }
 
-/** Intl options instead of ICU skeleton strings: nothing to parse. */
+/**
+ * Intl options instead of ICU skeleton strings: nothing to parse. `style` and
+ * `unit` are part of the message, so they are literals; the other options,
+ * such as `currency`, are set here and may be any value.
+ */
 export function number<const O extends Record<string, number | bigint>>(
   value: number | bigint | OneKey<O>,
   options?: Intl.NumberFormatOptions
@@ -356,12 +365,39 @@ export function number<const O extends Record<string, number | bigint>>(
   return { [PLACEHOLDER]: 'number', name, value: v, options };
 }
 
+// A time's options are among a date's.
+type DateOptions = DateMessageOptions & DateTimeFormattingContext;
+
+/**
+ * A named `style`, like `'medium'`, or date and time fields are part of the
+ * message, so they are literals; the other options, such as `timeZone`, may
+ * be any value.
+ */
 export function date<const O extends Record<string, Date | number>>(
   value: Date | number | OneKey<O>,
-  options?: Intl.DateTimeFormatOptions
+  options?: DateOptions
+): Placeholder {
+  return dateTime('date', value, options);
+}
+
+/**
+ * A named `style`, like `'short'`, or time fields are part of the message, so
+ * they are literals; the other options, such as `timeZone`, may be any value.
+ */
+export function time<const O extends Record<string, Date | number>>(
+  value: Date | number | OneKey<O>,
+  options?: TimeMessageOptions & DateTimeFormattingContext
+): Placeholder {
+  return dateTime('time', value, options);
+}
+
+function dateTime(
+  kind: DateTimePlaceholder[typeof PLACEHOLDER],
+  value: unknown,
+  options: DateOptions | undefined
 ): Placeholder {
   const [name, v] = entry(value);
-  return { [PLACEHOLDER]: 'date', name, value: v, options };
+  return { [PLACEHOLDER]: kind, name, value: v, options };
 }
 
 /** Branch text that contains placeholders, written like a gt message. */

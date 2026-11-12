@@ -45,7 +45,10 @@ function setup({
   fr?: Record<string, unknown>;
   cacheExpiryTime?: number;
 } = {}) {
-  initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+  initializeI18nConfig({
+    defaultLocale: 'en',
+    locales: ['en', 'fr'],
+  });
   setI18nCache(
     new I18nCache({
       cacheExpiryTime,
@@ -315,7 +318,7 @@ describe('gt-i18n/unstable rendering', () => {
     const count = 2;
     const role = 'admin' as 'admin' | 'member';
     expect(
-      gt`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', member: 'members' })}, ${number(0.5, { style: 'percent' })} done by ${date(new Date(Date.UTC(2024, 0, 2)), { timeZone: 'UTC', dateStyle: 'medium' })}`
+      gt`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', member: 'members' })}, ${number(0.5, { style: 'percent' })} done by ${date(new Date(Date.UTC(2024, 0, 2)), { timeZone: 'UTC', style: 'medium' })}`
     ).toBe('2 files for admins, 50% done by Jan 2, 2024');
   });
 
@@ -377,27 +380,22 @@ describe('gt-i18n/unstable rendering', () => {
   it('formats number and date options in the rendered locale', async () => {
     const price = 9.5;
     const due = new Date(Date.UTC(2024, 0, 15));
-    const dateOptions: Intl.DateTimeFormatOptions = {
-      dateStyle: 'medium',
-      timeZone: 'UTC',
-    };
+    const currency = 'USD';
     const gt = await setup({
       fr: {
-        [keyOf()`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`]:
-          [
-            'Total : ',
-            ['price', 'number', { currency: 'USD', style: 'currency' }],
-          ],
+        // The translation holds only the style; the currency is call-site context.
+        [keyOf()`Total: ${number({ price }, { style: 'currency', currency: 'EUR' })}`]:
+          ['Total : ', ['price', 'number', 'currency']],
       },
     });
     expect(
-      gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`
+      gt`Total: ${number({ price }, { style: 'currency', currency })}`
     ).toBe(
-      `Total : ${new Intl.NumberFormat('fr', { style: 'currency', currency: 'USD' }).format(price)}`
+      `Total : ${new Intl.NumberFormat('fr', { style: 'currency', currency }).format(price)}`
     );
     // A miss formats the source in the source locale.
-    expect(gt`Due ${date({ due }, dateOptions)}`).toBe(
-      `Due ${new Intl.DateTimeFormat('en', dateOptions).format(due)}`
+    expect(gt`Due ${date({ due }, { style: 'medium', timeZone: 'UTC' })}`).toBe(
+      `Due ${new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(due)}`
     );
   });
 

@@ -1,4 +1,4 @@
-import type { MessageTree } from '@generaltranslation/icu';
+import type { MessageTree, MessageFormats } from '@generaltranslation/icu';
 import { forEachPlaceholder } from '@generaltranslation/icu/internal';
 import {
   formatCutoff,
@@ -32,6 +32,7 @@ export type M = <T extends string | Msg | null | undefined>(
 type RenderableMessage = {
   tree: MessageTree;
   values: Record<string, unknown>;
+  formats: MessageFormats;
   metadata: MessageTreeMetadata;
 };
 
@@ -41,10 +42,16 @@ function toRenderable(
 ): RenderableMessage {
   // A string is literal text: no ICU parsing, so `{` and `#` are text.
   if (typeof message === 'string') {
-    return { tree: message ? [message] : [], values: {}, metadata: {} };
+    return {
+      tree: message ? [message] : [],
+      values: {},
+      formats: {},
+      metadata: {},
+    };
   }
   if (!isMsg(message)) throw new Error(invalidMsgError);
-  const { tree, values, context, maxChars, requiresReview, $_hash } = message;
+  const { tree, values, formats, context, maxChars, requiresReview, $_hash } =
+    message;
   // Null prototype so names like `__proto__` stay own entries.
   const merged: Record<string, unknown> = Object.create(null);
   // React Flight drops undefined-valued keys, so a source variable without a
@@ -55,6 +62,7 @@ function toRenderable(
   return {
     tree,
     values: Object.assign(merged, values, overrides),
+    formats,
     metadata: { context, maxChars, requiresReview, $_hash },
   };
 }
@@ -69,6 +77,7 @@ const invalidMsgError = createGtI18nDiagnostic({
 function formatSource(
   tree: MessageTree,
   values: Record<string, unknown>,
+  formats: MessageFormats,
   maxChars: number | undefined
 ): string {
   // Code paths without i18n may never initialize the config.
@@ -76,8 +85,9 @@ function formatSource(
     ? getI18nConfig().formatMessageTree(tree, undefined, {
         locales: libraryDefaultLocale,
         variables: values,
+        formats,
       })
-    : formatMessageTree(tree, libraryDefaultLocale, values);
+    : formatMessageTree(tree, libraryDefaultLocale, values, { formats });
   const output = Array.isArray(formatted)
     ? formatted.join('')
     : String(formatted);
@@ -91,8 +101,13 @@ export function createMessages(params: CreateGTParams): M {
   const renderTree = createRenderTree(params);
   return ((message: string | Msg | null | undefined, values?) => {
     if (message == null) return message;
-    const { tree, values: merged, metadata } = toRenderable(message, values);
-    return renderTree(tree, merged, metadata);
+    const {
+      tree,
+      values: merged,
+      formats,
+      metadata,
+    } = toRenderable(message, values);
+    return renderTree(tree, merged, formats, metadata);
   }) as M;
 }
 
@@ -117,6 +132,11 @@ export const mFallback: M = ((
   values?: Record<string, unknown>
 ) => {
   if (message == null) return message;
-  const { tree, values: merged, metadata } = toRenderable(message, values);
-  return formatSource(tree, merged, metadata.maxChars);
+  const {
+    tree,
+    values: merged,
+    formats,
+    metadata,
+  } = toRenderable(message, values);
+  return formatSource(tree, merged, formats, metadata.maxChars);
 }) as M;

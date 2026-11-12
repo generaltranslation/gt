@@ -9,8 +9,8 @@ import {
 } from './walk';
 
 // Equal messages must have equal tree JSON, because keys are hashes of it.
-// These are the only definitions of that form: buildMessageTree builds it
-// directly, since it runs on every message, and normalizeTree rewrites any
+// These are the only definitions of that form: templateToMessage builds it
+// directly, since it runs on every message, and normalizeMessageTree rewrites any
 // other tree to it.
 
 /** Code-unit order, the same in every engine, so keys sort the same everywhere. */
@@ -40,29 +40,22 @@ export function toBranch(nodes: MessageNode[]): string | MessageTree {
 }
 
 /**
- * A format's canonical style: Intl options sorted, and empty options, like
- * `::group-min2` parses to, as no style, since they format alike. A time is
- * the exception: without a style it is a medium time, while `{}` formats as
- * Intl's default date.
+ * A formatted placeholder's canonical style from its fields: sorted, and no
+ * style when there are none, so builders never write `{}`, which a tree does
+ * not hold.
  */
-export function canonicalStyle<S extends string | object>(
-  style: S | null | undefined,
-  kind: string
-): S | undefined {
-  if (style == null) return undefined;
-  if (typeof style === 'string') return style;
-  return Object.keys(style).length || kind === 'time'
-    ? (sortRecord(style) as S)
-    : undefined;
+export function canonicalStyle<T extends object>(fields: T): T | undefined {
+  return Object.keys(fields).length ? sortRecord(fields) : undefined;
 }
 
 /**
  * Rewrites a tree, such as one converted from an ICU string, to the form
- * buildMessageTree builds: adjacent text merged and empty text dropped, a
+ * templateToMessage builds: adjacent text merged and empty text dropped, a
  * branch without placeholders as one string, branch keys and Intl options
- * sorted, and no zero plural offset or empty style.
+ * sorted, and no zero plural offset or null style. An empty style stays, so
+ * printing rejects it rather than formatting it differently.
  */
-export function normalizeTree(tree: MessageTree): MessageTree {
+export function normalizeMessageTree(tree: MessageTree): MessageTree {
   const out: MessageNode[] = [];
   for (const node of tree) {
     if (!isPlaceholderNode(node)) {
@@ -72,7 +65,7 @@ export function normalizeTree(tree: MessageTree): MessageTree {
       const [name, kind, branches, offset] = node;
       const sorted = mapBranches(
         branches,
-        (branch) => toBranch(normalizeTree(branchNodes(branch))),
+        (branch) => toBranch(normalizeMessageTree(branchNodes(branch))),
         Object.keys(branches).sort(compareKeys)
       );
       out.push(
@@ -81,10 +74,13 @@ export function normalizeTree(tree: MessageTree): MessageTree {
           : [name, kind, sorted]) as MessageNode
       );
     } else if (isTagNode(node)) {
-      out.push([node[0], 'tag', normalizeTree(node[2])]);
+      out.push([node[0], 'tag', normalizeMessageTree(node[2])]);
     } else if (isFormattedNode(node)) {
-      const [name, kind] = node;
-      const style = canonicalStyle(node[2], kind);
+      const [name, kind, options] = node;
+      const style =
+        options == null || typeof options === 'string'
+          ? (options ?? undefined)
+          : sortRecord(options);
       out.push(
         (style === undefined
           ? [name, kind]

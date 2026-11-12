@@ -1,15 +1,21 @@
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it, vi } from 'vitest';
 import type { MessageTree } from '../index';
-import { icuToMessageTree } from '../convert';
+import { icuToMessage } from '../convert';
 import { formatMessage, formatMessageTree } from './format';
 
 describe('formatMessageTree', () => {
   it('matches formatMessage for a localized currency', () => {
-    const message = '{n, number, ::currency/EUR}';
     expect(
-      formatMessageTree(icuToMessageTree(message), 'de', { n: 1234.5 })
-    ).toEqual(formatMessage(message, 'de', { n: 1234.5 }));
+      formatMessageTree(
+        icuToMessage('{n, number, currency}').tree,
+        'de',
+        { n: 1234.5 },
+        { formats: { n: { currency: 'EUR' } } }
+      )
+    ).toEqual(
+      formatMessage('{n, number, ::currency/EUR}', 'de', { n: 1234.5 })
+    );
   });
 
   it('defaults to the library locale and empty variables', () => {
@@ -25,25 +31,28 @@ describe('formatMessageTree', () => {
       ', ',
       ['role', 'select', { admin: 'admins', other: 'everyone' }],
       ', ',
-      ['p', 'number', { style: 'percent' }],
-      ', ',
       ['p', 'number', 'percent'],
       ', ',
-      ['d', 'date', { dateStyle: 'medium', timeZone: 'UTC' }],
+      ['d', 'date', 'medium'],
       ', ',
       ['b', 'tag', ['bold ', ['name']]],
     ];
     expect(
-      formatMessageTree(tree, 'en', {
-        n: 2,
-        place: 1,
-        role: 'admin',
-        p: 0.5,
-        d: Date.UTC(2025, 0, 15),
-        name: 'Ada',
-        b: (parts: unknown[]) => `<b>${parts.join('')}</b>`,
-      })
-    ).toBe('2 items, 1st, admins, 50%, 50%, Jan 15, 2025, <b>bold Ada</b>');
+      formatMessageTree(
+        tree,
+        'en',
+        {
+          n: 2,
+          place: 1,
+          role: 'admin',
+          p: 0.5,
+          d: Date.UTC(2025, 0, 15),
+          name: 'Ada',
+          b: (parts: unknown[]) => `<b>${parts.join('')}</b>`,
+        },
+        { timeZone: 'UTC' }
+      )
+    ).toBe('2 items, 1st, admins, 50%, Jan 15, 2025, <b>bold Ada</b>');
   });
 
   it('subtracts a plural offset before choosing a category and printing #', () => {
@@ -131,6 +140,112 @@ describe('formatMessageTree', () => {
   });
 });
 
+describe('formatting context', () => {
+  const d = new Date(Date.UTC(2025, 0, 15, 23, 30));
+  const tree: MessageTree = [
+    ['d', 'date', 'medium'],
+    ' ',
+    ['t', 'time', 'short'],
+    ' ',
+    ['p', 'number', 'percent'],
+  ];
+  const intl = (options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('en-US', options).format(d);
+
+  it("merges each variable's formats over its style", () => {
+    expect(
+      formatMessageTree(
+        tree,
+        'en-US',
+        { d, t: d, p: 0.125 },
+        {
+          formats: {
+            d: { timeZone: 'Asia/Tokyo', calendar: 'japanese' },
+            t: { timeZone: 'UTC', hourCycle: 'h23' },
+            p: { maximumFractionDigits: 1 },
+          },
+        }
+      )
+    ).toBe(
+      `${intl({ dateStyle: 'medium', timeZone: 'Asia/Tokyo', calendar: 'japanese' })} ${intl({ timeStyle: 'short', timeZone: 'UTC', hourCycle: 'h23' })} 12.5%`
+    );
+  });
+
+  it("uses the default time zone where a variable's formats set none", () => {
+    expect(
+      formatMessageTree(
+        tree,
+        'en-US',
+        { d, t: d, p: 1 },
+        {
+          formats: { t: { timeZone: 'UTC' } },
+          timeZone: 'Asia/Tokyo',
+        }
+      )
+    ).toBe(
+      `${intl({ dateStyle: 'medium', timeZone: 'Asia/Tokyo' })} ${intl({ timeStyle: 'short', timeZone: 'UTC' })} 100%`
+    );
+  });
+
+  // As in ICU, an argument without a style is in the medium style.
+  it('formats a date or time without a style as the medium style', () => {
+    for (const locale of ['en-US', 'de', 'ja']) {
+      expect(
+        formatMessageTree(
+          [['d', 'date'], ' ', ['d', 'time']],
+          locale,
+          { d },
+          { timeZone: 'UTC' }
+        )
+      ).toBe(
+        `${new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(d)} ${new Intl.DateTimeFormat(locale, { timeStyle: 'medium', timeZone: 'UTC' }).format(d)}`
+      );
+    }
+  });
+
+  it('formats named date and time styles as Intl dateStyle and timeStyle', () => {
+    for (const style of ['full', 'long', 'medium', 'short'] as const) {
+      expect(
+        formatMessageTree(
+          [['d', 'date', style], ' ', ['d', 'time', style]],
+          'en-US',
+          { d },
+          { timeZone: 'UTC' }
+        )
+      ).toBe(
+        `${intl({ dateStyle: style, timeZone: 'UTC' })} ${intl({ timeStyle: style, timeZone: 'UTC' })}`
+      );
+    }
+  });
+
+  it('requires a currency for the currency style', () => {
+    expect(() =>
+      formatMessageTree([['t', 'number', 'currency']], 'en', { t: 5 })
+    ).toThrow(
+      'The ICU variable "t" is formatted as currency, but no currency was given.'
+    );
+    expect(
+      formatMessageTree(
+        [['t', 'number', 'currency']],
+        'en',
+        { t: 5 },
+        { formats: { t: { currency: 'EUR' } } }
+      )
+    ).toBe('€5.00');
+  });
+
+  it("reads only a variable's own formats", () => {
+    expect(
+      formatMessageTree(
+        [['toString', 'number']],
+        'en',
+        { toString: 1234 },
+        { formats: Object.create({ toString: { useGrouping: false } }) }
+      )
+    ).toBe('1,234');
+  });
+});
+
 describe('empty branches', () => {
   // An empty branch adds no part, so a lone rich value is returned as is and
   // a tag callback receives no children, matching intl-messageformat.
@@ -145,7 +260,7 @@ describe('empty branches', () => {
     expect(formatMessage(message, 'en', values)).toBe(
       new IntlMessageFormat(message, 'en').format(values)
     );
-    expect(formatMessageTree(icuToMessageTree(message), 'en', values)).toBe(
+    expect(formatMessageTree(icuToMessage(message).tree, 'en', values)).toBe(
       rich
     );
   });
@@ -176,8 +291,8 @@ describe('values', () => {
   it('formats a Date in a date node, and as String(date) elsewhere', () => {
     const due = new Date(Date.UTC(2026, 0, 15));
     expect(
-      formatMessageTree([['d', 'date', { timeZone: 'UTC' }]], 'en', { d: due })
-    ).toBe('1/15/2026');
+      formatMessageTree([['d', 'date']], 'en', { d: due }, { timeZone: 'UTC' })
+    ).toBe('Jan 15, 2026');
     expect(formatMessageTree(['Due ', ['d']], 'en', { d: due })).toBe(
       `Due ${due}`
     );

@@ -1,4 +1,14 @@
-import type { MessageTree } from './messageTree';
+import { DATE_TIME_FIELD_SYMBOLS } from '../convert/skeleton';
+import {
+  DATE_FIELD_OPTIONS,
+  DATE_TIME_CONTEXT_OPTIONS,
+  DATE_TIME_STYLE_NAMES,
+  NUMBER_CONTEXT_OPTIONS,
+  NUMBER_MESSAGE_OPTIONS,
+  NUMBER_STYLE_NAMES,
+  TIME_FIELD_OPTIONS,
+} from '../settings/formatOptions';
+import type { DateTimeNode, MessageTree, NumberNode } from './messageTree';
 
 export interface MessageTreeValidationOptions {
   /** Deepest allowed nesting of branches and tag children. Defaults to 64. */
@@ -82,8 +92,13 @@ function nodeError(
   switch (node[1]) {
     case 'number':
     case 'date':
-    case 'time':
-      return styleError(node[2], [...path, 2], node[1] === 'number');
+    case 'time': {
+      const problem = styleProblem(node[1], node[2]);
+      if (!problem) return undefined;
+      const stylePath = [...path, 2];
+      if (problem.key !== undefined) stylePath.push(problem.key);
+      return { path: stylePath, message: problem.message };
+    }
     case 'select':
       return branchesError(node[2], [...path, 2], depth, state);
     case 'plural':
@@ -104,27 +119,93 @@ function nodeError(
   }
 }
 
-function styleError(
+type FormattedNode = NumberNode | DateTimeNode;
+type FormattedKind = FormattedNode[1];
+
+/**
+ * A number, date or time node from a style that is not checked yet, such as
+ * one read from ICU text or from call options. `fail` makes the error from
+ * why the style is not one a tree holds.
+ */
+export function formattedNode(
+  name: string,
+  kind: FormattedKind,
   style: unknown,
-  path: Path,
-  isNumber: boolean
-): MessageTreeValidationError | undefined {
-  if (style == null || typeof style === 'string') return undefined;
-  if (!isRecord(style)) {
-    return { path, message: 'expected a style name or Intl options' };
+  fail: (reason: string) => Error
+): FormattedNode {
+  const problem = styleProblem(kind, style);
+  if (problem) throw fail(problem.message);
+  // The check above is what makes the style one of its kind.
+  return (style == null ? [name, kind] : [name, kind, style]) as FormattedNode;
+}
+
+/**
+ * Why `style` is not a style a tree holds for a `kind` placeholder, and the
+ * option at fault, or undefined. A tree holds only what ICU spells, so
+ * formatting context such as a currency or `timeZone` is rejected.
+ */
+export function styleProblem(
+  kind: FormattedKind,
+  style: unknown
+): { key?: string; message: string } | undefined {
+  if (style == null) return undefined;
+  if (typeof style === 'string') {
+    const names: readonly string[] =
+      kind === 'number' ? NUMBER_STYLE_NAMES : DATE_TIME_STYLE_NAMES;
+    return names.includes(style)
+      ? undefined
+      : { message: `expected a style name: ${names.join(', ')}` };
   }
-  // Intl rejects its own options when formatting; `scale` is applied before
-  // Intl sees the value, so a non-number would render "NaN".
-  const scale = own(style, 'scale');
-  if (
-    isNumber &&
-    scale !== undefined &&
-    (typeof scale !== 'number' || !Number.isFinite(scale))
-  ) {
-    return { path: [...path, 'scale'], message: 'expected a finite number' };
+  if (!isRecord(style)) {
+    return { message: 'expected a style name or Intl options' };
+  }
+  // `{}` would print and read back as no style, which formats differently.
+  if (!Object.keys(style).length) {
+    return { message: 'expected options; leave out an empty style' };
+  }
+  const contextOptions: readonly string[] =
+    kind === 'number' ? NUMBER_CONTEXT_OPTIONS : DATE_TIME_CONTEXT_OPTIONS;
+  const fields: readonly string[] =
+    kind === 'number'
+      ? NUMBER_MESSAGE_OPTIONS
+      : kind === 'date'
+        ? DATE_FIELD_OPTIONS
+        : TIME_FIELD_OPTIONS;
+  for (const key of Object.keys(style)) {
+    if (fields.includes(key)) continue;
+    const message = contextOptions.includes(key)
+      ? `"${key}" is formatting context, which a message tree does not hold`
+      : key === 'style'
+        ? `"${key}" is written as a style name, like "medium"`
+        : `a ${kind} has no "${key}" option`;
+    return { key, message };
+  }
+  if (kind === 'number') {
+    if (own(style, 'style') !== 'unit') {
+      return { key: 'style', message: 'expected "unit"' };
+    }
+    const unit = own(style, 'unit');
+    return typeof unit === 'string' && UNIT_IDENTIFIER.test(unit)
+      ? undefined
+      : { key: 'unit', message: 'expected a unit such as "kilometer"' };
+  }
+  for (const key of Object.keys(style)) {
+    const symbols: Record<string, string> =
+      DATE_TIME_FIELD_SYMBOLS[key as keyof typeof DATE_TIME_FIELD_SYMBOLS];
+    const value = own(style, key);
+    const type = key === 'fractionalSecondDigits' ? 'number' : 'string';
+    if (typeof value !== type || !own(symbols, String(value))) {
+      return {
+        key,
+        message: `expected one of: ${Object.keys(symbols).join(', ')}`,
+      };
+    }
   }
   return undefined;
 }
+
+// Intl's unit identifiers, like `kilometer-per-hour`; printed in `::unit/…`.
+const UNIT_IDENTIFIER = /^[a-z]+(?:-[a-z]+)*$/;
 
 function branchesError(
   branches: unknown,

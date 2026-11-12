@@ -11,3 +11,13 @@ export const createReservedVariablePrefixError = (
   name: string,
   reservedPrefix: string
 ) => `Message variable "${name}" uses the reserved "${reservedPrefix}" prefix.`;
+
+export const createInvalidFormatOptionError = (
+  name: string,
+  kind: string,
+  reason: string
+) =>
+  `The ${kind} options of message variable "${name}" are invalid: ${reason}.`;
+
+export const createConflictingFormatsError = (name: string) =>
+  `Message variable "${name}" is formatted with different formatting context in one message; give each its own variable name.`;

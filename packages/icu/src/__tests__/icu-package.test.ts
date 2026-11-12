@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import ts from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
@@ -72,6 +73,29 @@ describe('@generaltranslation/icu package artifacts', () => {
     expect(parser).toContain(parserMarker);
   });
 
+  // Runs the TypeScript compiler, which can take over 5 s on a busy CI runner.
+  it('typechecks its declarations with an older lib and skipLibCheck off', () => {
+    const dist = join(packageRoot, 'dist');
+    const declarations = readdirSync(dist)
+      .filter((file) => /\.d\.[cm]ts$/.test(file))
+      .map((file) => join(dist, file));
+    const program = ts.createProgram(declarations, {
+      lib: ['lib.es2020.d.ts'],
+      skipLibCheck: false,
+      strict: true,
+      noEmit: true,
+      types: [],
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    });
+    const errors = ts
+      .getPreEmitDiagnostics(program)
+      .map((diagnostic) =>
+        ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
+      );
+    expect(errors).toEqual([]);
+  }, 30_000);
+
   it('loads the root and parser entrypoints from both formats', () => {
     const smoke = `
       const assert = require('node:assert/strict');
@@ -82,9 +106,9 @@ describe('@generaltranslation/icu package artifacts', () => {
       const convert = LOAD('@generaltranslation/icu/convert');
       const internal = LOAD('@generaltranslation/icu/internal');
       assert.equal(parser.toMessageTree, undefined);
-      assert.equal(root.buildMessageTree, undefined);
-      assert.equal(root.formatMessageTree(convert.icuToMessageTree('Hi {name}'), 'en', { name: 'Ada' }, { timeZone: 'UTC' }), 'Hi Ada');
-      assert.equal(convert.messageTreeToIcu(internal.buildMessageTree(['Hi ', ''], [{ kind: 'argument', name: 'name' }]).tree), 'Hi {name}');
+      assert.equal(root.templateToMessage, undefined);
+      assert.equal(root.formatMessageTree(convert.icuToMessage('Hi {name}').tree, 'en', { name: 'Ada' }, { timeZone: 'UTC' }), 'Hi Ada');
+      assert.equal(convert.messageTreeToIcu(internal.templateToMessage(['Hi ', ''], [{ kind: 'argument', name: 'name' }]).tree), 'Hi {name}');
     `;
     for (const esm of [true, false]) {
       const script = esm

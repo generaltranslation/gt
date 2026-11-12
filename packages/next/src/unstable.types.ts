@@ -13,6 +13,7 @@ export {
   plural,
   select,
   selectordinal,
+  time,
   useGT,
   useMessages,
   type Fragment,

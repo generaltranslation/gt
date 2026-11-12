@@ -92,6 +92,7 @@ describe('gt-i18n/unstable msg', () => {
     expect(greeting).toEqual({
       tree: ['Hello, ', ['name'], '!'],
       values: { name: 'Ada' },
+      formats: {},
       $_hash: keyOf`Hello, ${{ name }}!`,
     });
     // React only passes plain objects from server to client components.
@@ -139,7 +140,7 @@ describe('gt-i18n/unstable msg', () => {
     const m = await setup();
     const due = new Date(Date.UTC(2024, 0, 15));
     const nickname = undefined;
-    const message = msg`Due ${date({ due }, { dateStyle: 'medium', timeZone: 'UTC' })}, ${number({ id: 12n })}, ${{ ratio: NaN }}, ${plural(Infinity, { other: part`${n} left` })}, hi ${{ nickname }}`;
+    const message = msg`Due ${date({ due }, { style: 'medium', timeZone: 'UTC' })}, ${number({ id: 12n })}, ${{ ratio: NaN }}, ${plural(Infinity, { other: part`${n} left` })}, hi ${{ nickname }}`;
     const expected = 'Due Jan 15, 2024, 12, NaN, ∞ left, hi ';
     expect((message as Msg).values).toEqual({
       due,
@@ -148,6 +149,9 @@ describe('gt-i18n/unstable msg', () => {
       _gt_1: Infinity,
       nickname: undefined,
     });
+    // The time zone is formatting context: kept beside the tree, not in it.
+    expect((message as Msg).formats).toEqual({ due: { timeZone: 'UTC' } });
+    expect((message as Msg).tree).toContainEqual(['due', 'date', 'medium']);
     expect(m(message)).toBe(expected);
     expect(mFallback(message)).toBe(expected);
   });
@@ -176,7 +180,8 @@ describe('gt-i18n/unstable msg', () => {
       { tree: ['Hi'], values: {} },
       { tree: [['x', 'bogus']], values: {}, $_hash: 'h' },
       { tree: ['Hi'], $_hash: 'h' },
-      { tree: ['Hi'], values: {}, $_hash: 'h', maxChars: 'ten' },
+      { tree: [['name']], values: {}, $_hash: 'h' },
+      { tree: ['Hi'], values: {}, formats: {}, $_hash: 'h', maxChars: 'ten' },
     ];
     for (const message of invalid) {
       expect(() => m(message as Msg)).toThrow('not a message from msg()');

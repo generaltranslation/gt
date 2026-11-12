@@ -101,13 +101,11 @@ const OBJECT_PROTOTYPE_SKELETON_STEMS = [
 const DATE_VALUE = new Date('2020-05-06T14:03:02Z');
 const DATE_RUNTIME_CASES = NUMBER_LOCALES.flatMap((locale) =>
   [
-    '{value, date}',
-    '{value, date, short}',
-    '{value, time, medium}',
+    // Named styles, a date or time without a style, and `S` diverge on
+    // purpose: they format as ICU4C does.
     '{value, date, ::yyyyMMMdd}',
     '{value, time, ::HHmmss}',
     '{value, time, ::C}',
-    '{value, time, ::S}',
     '{value, time, ::A}',
   ].map((message) => ({ locale, message, value: DATE_VALUE }))
 );
@@ -233,7 +231,6 @@ const PARSER_MESSAGES = [
   '{value, date, ::yyyyMMMdd}',
   '{value, time, ::HHmmss}',
   '{value, time, ::C}',
-  '{value, time, ::S}',
   '{value, time, ::A}',
   '{value, time, ::jh}',
   '{value, time, ::hj}',

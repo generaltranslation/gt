@@ -1,4 +1,4 @@
-import type { MessageTree } from '@generaltranslation/icu';
+import type { MessageTree, MessageFormats } from '@generaltranslation/icu';
 import type { MessageTreeHashMetadata } from 'generaltranslation/id';
 import { getWritableConditionStore } from '../condition-store/singleton-operations';
 import { getI18nCache } from '../i18n-cache/singleton-operations';
@@ -41,6 +41,7 @@ export type CreateGTParams = {
 export type RenderTree = (
   tree: MessageTree,
   values: Record<string, unknown>,
+  formats: MessageFormats,
   options: MessageTreeMetadata
 ) => string;
 
@@ -55,12 +56,12 @@ export function createRenderTree({
     getI18nCache().lookupTranslation(options.$locale, message, options)
   ),
 }: CreateGTParams): RenderTree {
-  return (tree, values, options) => {
+  return (tree, values, formats, options) => {
     const enabled = getEnableI18n?.() ?? true;
     const locale = enabled ? getLocale() : getI18nConfig().getDefaultLocale();
     // Disabled skips every lookup, including custom ones with default-locale entries.
     const lookup = enabled ? lookupTranslation : () => undefined;
-    return renderMessage(tree, values, locale, options, lookup);
+    return renderMessage(tree, values, formats, locale, options, lookup);
   };
 }
 
@@ -75,8 +76,8 @@ export function createGT(params: CreateGTParams): GT {
     strings: TemplateStringsArray,
     holes: unknown[]
   ): string => {
-    const { tree, values } = buildMessage(strings, holes);
-    return renderTree(tree, values, options);
+    const { tree, values, formats } = buildMessage(strings, holes);
+    return renderTree(tree, values, formats, options);
   };
   const gt = (first: TemplateStringsArray | GTOptions, ...holes: unknown[]) =>
     isTemplateStringsArray(first)

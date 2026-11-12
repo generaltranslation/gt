@@ -1,5 +1,7 @@
-export const createConflictingSourceFormatsError = (name: string) =>
-  `Message variable "${name}" has two formats ICU spells the same way in the source, so a translation cannot restore them.`;
-
 export const createTranslationMismatchError = (problems: readonly string[]) =>
-  `The translation does not use the same variables as its source: ${problems.join('; ')}.`;
+  `The translation does not match its source: ${problems.join('; ')}.`;
+
+export const createUnsupportedTreeFormatError = (
+  placeholder: string,
+  reason: string
+) => `${placeholder} cannot be part of a message tree: ${reason}.`;

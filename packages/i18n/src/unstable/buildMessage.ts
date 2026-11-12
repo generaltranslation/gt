@@ -1,8 +1,8 @@
-import type { MessageTree } from '@generaltranslation/icu';
+import type { MessageTree, MessageFormats } from '@generaltranslation/icu';
 import {
-  buildMessageTree,
-  type MessageTreeBranch,
-  type MessageTreeHole,
+  templateToMessage,
+  type TemplateBranch,
+  type TemplateHole,
 } from '@generaltranslation/icu/internal';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import {
@@ -18,6 +18,8 @@ type BuiltMessage = {
   tree: MessageTree;
   /** Formatting values for every argument in the tree, keyed by name. */
   values: Record<string, unknown>;
+  /** Formatting context of each formatted argument, keyed by name. */
+  formats: MessageFormats;
 };
 
 /** Converts template strings and runtime placeholders into a message tree. */
@@ -27,18 +29,18 @@ export function buildMessage(
 ): BuiltMessage {
   // Null prototype so names like `__proto__` stay own entries.
   const values: Record<string, unknown> = Object.create(null);
-  const built = buildMessageTree(
+  const built = templateToMessage(
     strings,
     holes.map((hole) => toTreeHole(hole, values))
   );
   for (const [name, value] of built.values) bindValue(values, name, value);
-  return { tree: built.tree, values };
+  return { tree: built.tree, values, formats: built.formats };
 }
 
 function toTreeHole(
   hole: unknown,
   values: Record<string, unknown>
-): MessageTreeHole {
+): TemplateHole {
   if (hole === n) return { kind: 'pound' };
   if (isAnonymousValue(hole)) {
     return {
@@ -64,7 +66,13 @@ function toTreeHole(
       // Derived text is static, so it reads as if written in the template.
       return { kind: 'fragment', strings: [hole.value], holes: [] };
     case 'number':
+      return {
+        kind: 'number',
+        ...toHoleVariable(hole, values),
+        options: hole.options,
+      };
     case 'date':
+    case 'time':
       return {
         kind: hole[PLACEHOLDER],
         ...toHoleVariable(hole, values),
@@ -72,7 +80,7 @@ function toTreeHole(
       };
     default: {
       const variable = toHoleVariable(hole, values);
-      const branches: Record<string, MessageTreeBranch | undefined> =
+      const branches: Record<string, TemplateBranch | undefined> =
         Object.create(null);
       for (const [key, branch] of Object.entries(hole.branches)) {
         branches[key] = toTreeBranch(branch, values);
@@ -95,7 +103,7 @@ function toHoleVariable(
 function toTreeBranch(
   branch: Branch | undefined,
   values: Record<string, unknown>
-): MessageTreeBranch | undefined {
+): TemplateBranch | undefined {
   if (branch == null || typeof branch === 'string') return branch;
   return {
     strings: branch.strings,

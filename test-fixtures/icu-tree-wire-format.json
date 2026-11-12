@@ -119,22 +119,57 @@
     "name": "number-intl-options",
     "template": "gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`",
     "options": {},
+    "tree": ["Total: ", ["price", "number", "currency"]],
+    "hash": "77efc9faa9e35bfc"
+  },
+  {
+    "name": "number-currency-dynamic",
+    "template": "gt`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`",
+    "options": {},
+    "tree": ["Total: ", ["price", "number", "currency"]],
+    "hash": "77efc9faa9e35bfc"
+  },
+  {
+    "name": "number-unit",
+    "template": "gt`${number({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`",
+    "options": {},
     "tree": [
-      "Total: ",
       [
-        "price",
+        "distance",
         "number",
         {
-          "currency": "USD",
-          "style": "currency"
+          "style": "unit",
+          "unit": "kilometer"
         }
-      ]
+      ],
+      " away"
     ],
-    "hash": "a0c4c9a9150468b9"
+    "hash": "efc7f08b37431049"
   },
   {
     "name": "date",
-    "template": "gt`Due ${date({ due }, { dateStyle: 'medium' })}`",
+    "template": "gt`Due ${date({ due }, { style: 'medium' })}`",
+    "options": {},
+    "tree": ["Due ", ["due", "date", "medium"]],
+    "hash": "7d1e546676f9c40b"
+  },
+  {
+    "name": "date-style-dynamic-time-zone",
+    "template": "gt`Due ${date({ due }, { style: 'medium', timeZone })}`",
+    "options": {},
+    "tree": ["Due ", ["due", "date", "medium"]],
+    "hash": "7d1e546676f9c40b"
+  },
+  {
+    "name": "time-style",
+    "template": "gt`Starts at ${time({ start }, { style: 'short' })}`",
+    "options": {},
+    "tree": ["Starts at ", ["start", "time", "short"]],
+    "hash": "baa7f74d4cb57efb"
+  },
+  {
+    "name": "date-fields-hour",
+    "template": "gt`Due ${date({ due }, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`",
     "options": {},
     "tree": [
       "Due ",
@@ -142,11 +177,50 @@
         "due",
         "date",
         {
-          "dateStyle": "medium"
+          "day": "numeric",
+          "hour": "numeric",
+          "minute": "2-digit",
+          "month": "short",
+          "year": "numeric"
         }
       ]
     ],
-    "hash": "d8645ad0d8b7ce65"
+    "hash": "0e27bbf3bab0c178"
+  },
+  {
+    "name": "time-fractional-seconds",
+    "template": "gt`Lap time: ${time({ lap }, { minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}`",
+    "options": {},
+    "tree": [
+      "Lap time: ",
+      [
+        "lap",
+        "time",
+        {
+          "fractionalSecondDigits": 3,
+          "minute": "2-digit",
+          "second": "2-digit"
+        }
+      ]
+    ],
+    "hash": "c18bba89fd8eb580"
+  },
+  {
+    "name": "time-day-period",
+    "template": "gt`See you ${time({ start }, { hour: 'numeric', dayPeriod: 'long' })}`",
+    "options": {},
+    "tree": [
+      "See you ",
+      [
+        "start",
+        "time",
+        {
+          "dayPeriod": "long",
+          "hour": "numeric"
+        }
+      ]
+    ],
+    "hash": "9f200248c38561c9"
   },
   {
     "name": "derive",
@@ -192,19 +266,13 @@
         }
       ],
       ", ",
-      [
-        "_gt_3",
-        "number",
-        {
-          "style": "percent"
-        }
-      ],
+      ["_gt_3", "number", "percent"],
       " by ",
       ["_gt_4", "date"],
       " from ",
       ["_gt_5"]
     ],
-    "hash": "c8f595a61deec681"
+    "hash": "395a376105fdb85f"
   },
   {
     "name": "literal-icu-syntax",

@@ -5,55 +5,59 @@ import {
   type SelectNode,
 } from '../index';
 import { formatMessageTree } from './format';
-import { buildMessageTree, type MessageTreeHole } from '../internal';
-import { icuToMessageTree, messageTreeToIcu } from '../convert';
-import { normalizeTree } from '../tree/canonical';
+import { templateToMessage, type TemplateHole } from '../internal';
+import { icuToMessage, messageTreeToIcu } from '../convert';
+import { normalizeMessageTree } from '../tree/canonical';
 
 function tree(
   strings: readonly string[],
-  ...holes: Parameters<typeof buildMessageTree>[1]
+  ...holes: Parameters<typeof templateToMessage>[1]
 ): MessageTree {
-  const result = buildMessageTree(strings, holes).tree;
+  const result = templateToMessage(strings, holes).tree;
   // Every built tree must pass the catalog validator, and is built canonical,
   // so it hashes like the same message converted from ICU.
   expect(validateMessageTree(result)).toBeUndefined();
-  expect(normalizeTree(result)).toEqual(result);
+  expect(normalizeMessageTree(result)).toEqual(result);
   return result;
 }
 
-const parseTree = (message: string) => icuToMessageTree(message);
+const parseTree = (message: string) => icuToMessage(message).tree;
 
 // Trees without Intl-option styles survive printing and reparsing.
 function expectPrintRoundTrip(result: MessageTree): void {
   expect(parseTree(messageTreeToIcu(result))).toEqual(result);
 }
 
-const POUND: MessageTreeHole = { kind: 'pound' };
+const POUND: TemplateHole = { kind: 'pound' };
 
-describe('normalizeTree', () => {
-  it('rewrites a tree to the form buildMessageTree builds', () => {
+describe('normalizeMessageTree', () => {
+  it('rewrites a tree to the form templateToMessage builds', () => {
     const tree: MessageTree = [
       'a',
       '',
       'b',
       ['n', 'plural', { other: [0, 'x', 'y'], one: ['one'], '=0': [] }, 0],
-      ['p', 'number', { style: 'currency', currency: 'USD' }],
+      ['d', 'date', { year: 'numeric', month: 'short' }],
       ['d', 'date', null as unknown as undefined],
       ['b', 'tag', ['c', 'd']],
     ];
-    expect(JSON.stringify(normalizeTree(tree))).toBe(
+    expect(JSON.stringify(normalizeMessageTree(tree))).toBe(
       JSON.stringify([
         'ab',
         ['n', 'plural', { '=0': '', one: 'one', other: [0, 'xy'] }],
-        ['p', 'number', { currency: 'USD', style: 'currency' }],
+        ['d', 'date', { month: 'short', year: 'numeric' }],
         ['d', 'date'],
         ['b', 'tag', ['cd']],
       ])
     );
+    // An empty style is invalid, so it stays for validation and printing to reject.
+    expect(normalizeMessageTree([['t', 'time', {}]])).toEqual([
+      ['t', 'time', {}],
+    ]);
   });
 });
 
-describe('buildMessageTree', () => {
+describe('templateToMessage', () => {
   it('builds arguments between text', () => {
     const result = tree(['Hello ', '!'], { kind: 'argument', name: 'name' });
     expect(result).toEqual(['Hello ', ['name'], '!']);
@@ -186,7 +190,7 @@ describe('buildMessageTree', () => {
   });
 
   it('numbers anonymous values in tree order', () => {
-    const holes: MessageTreeHole[] = [
+    const holes: TemplateHole[] = [
       { kind: 'anonymous', value: 0 },
       { kind: 'anonymous', value: 'x' },
       {
@@ -204,7 +208,7 @@ describe('buildMessageTree', () => {
         },
       },
     ];
-    const { tree: result, values } = buildMessageTree(
+    const { tree: result, values } = templateToMessage(
       ['', ' ', ' / ', ''],
       holes
     );
@@ -224,7 +228,11 @@ describe('buildMessageTree', () => {
   });
 
   it('names helper values passed without a name as anonymous, before their branches', () => {
-    const { tree: result, values } = buildMessageTree(
+    const {
+      tree: result,
+      values,
+      formats,
+    } = templateToMessage(
       ['', ' ', ' ', ''],
       [
         {
@@ -237,14 +245,18 @@ describe('buildMessageTree', () => {
             },
           },
         },
-        { kind: 'number', value: 9.5, options: { style: 'percent' } },
+        {
+          kind: 'number',
+          value: 9.5,
+          options: { style: 'percent', maximumFractionDigits: 1 },
+        },
         { kind: 'date', value: 0 },
       ]
     );
     expect(result).toEqual([
       ['_gt_1', 'plural', { other: [0, ' from ', ['_gt_2']] }],
       ' ',
-      ['_gt_3', 'number', { style: 'percent' }],
+      ['_gt_3', 'number', 'percent'],
       ' ',
       ['_gt_4', 'date'],
     ]);
@@ -254,12 +266,13 @@ describe('buildMessageTree', () => {
       ['_gt_3', 9.5],
       ['_gt_4', 0],
     ]);
+    expect(formats).toEqual({ _gt_3: { maximumFractionDigits: 1 } });
     expect(
-      formatMessageTree(result, 'en', Object.fromEntries(values))
+      formatMessageTree(result, 'en', Object.fromEntries(values), { formats })
     ).toContain('2 from Ada 950%');
   });
 
-  it.each<[string, MessageTreeHole]>([
+  it.each<[string, TemplateHole]>([
     ['with a space', { kind: 'argument', name: 'first name' }],
     ['that is empty', { kind: 'number', name: '' }],
     [
@@ -270,7 +283,7 @@ describe('buildMessageTree', () => {
     expect(() => tree(['', ''], hole)).toThrow(/not a valid ICU argument name/);
   });
 
-  it.each<[string, MessageTreeHole]>([
+  it.each<[string, TemplateHole]>([
     [
       'with ICU syntax',
       { kind: 'select', name: 's', branches: { 'non-binary': 'x' } },
@@ -305,17 +318,17 @@ describe('buildMessageTree', () => {
   });
 
   it('rejects the plural count outside a plural branch', () => {
-    const select: MessageTreeHole = {
+    const select: TemplateHole = {
       kind: 'select',
       name: 's',
       branches: { other: { strings: ['', ''], holes: [POUND] } },
     };
-    expect(() => buildMessageTree(['', ' items'], [POUND])).toThrow(
+    expect(() => templateToMessage(['', ' items'], [POUND])).toThrow(
       /plural count is used outside/
     );
     // Like ICU, a nested select resets the count context.
     expect(() =>
-      buildMessageTree(
+      templateToMessage(
         ['', ''],
         [
           {
@@ -346,28 +359,228 @@ describe('buildMessageTree', () => {
     ).toThrow(/reserved/);
   });
 
-  it('builds number and date styles from Intl options', () => {
+  it.each<[string, TemplateHole, MessageTree, Record<string, object>]>([
+    ['a plain number', { kind: 'number', name: 'n' }, [['n', 'number']], {}],
+    [
+      'a decimal number with digits',
+      {
+        kind: 'number',
+        name: 'n',
+        options: { style: 'decimal', maximumFractionDigits: 2 },
+      },
+      [['n', 'number']],
+      { n: { maximumFractionDigits: 2 } },
+    ],
+    [
+      'a percent',
+      {
+        kind: 'number',
+        name: 'p',
+        options: { style: 'percent', maximumFractionDigits: 1 },
+      },
+      [['p', 'number', 'percent']],
+      { p: { maximumFractionDigits: 1 } },
+    ],
+    [
+      'a currency',
+      {
+        kind: 'number',
+        name: 't',
+        options: {
+          style: 'currency',
+          currency: 'EUR',
+          currencyDisplay: 'code',
+        },
+      },
+      [['t', 'number', 'currency']],
+      { t: { currency: 'EUR', currencyDisplay: 'code' } },
+    ],
+    [
+      'a unit',
+      {
+        kind: 'number',
+        name: 'km',
+        options: { style: 'unit', unit: 'kilometer', unitDisplay: 'long' },
+      },
+      [['km', 'number', { style: 'unit', unit: 'kilometer' }]],
+      { km: { unitDisplay: 'long' } },
+    ],
+    [
+      'a date style',
+      {
+        kind: 'date',
+        name: 'd',
+        options: { style: 'medium', timeZone: 'Asia/Tokyo' },
+      },
+      [['d', 'date', 'medium']],
+      { d: { timeZone: 'Asia/Tokyo' } },
+    ],
+    [
+      'a time style',
+      { kind: 'time', name: 't', options: { style: 'short' } },
+      [['t', 'time', 'short']],
+      {},
+    ],
+    [
+      'date fields',
+      {
+        kind: 'date',
+        name: 'd',
+        options: {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hourCycle: 'h23',
+          calendar: undefined,
+        },
+      },
+      [
+        [
+          'd',
+          'date',
+          {
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          },
+        ],
+      ],
+      { d: { hourCycle: 'h23' } },
+    ],
+    [
+      'time fields',
+      {
+        kind: 'time',
+        name: 't',
+        options: {
+          hour: 'numeric',
+          dayPeriod: 'short',
+          fractionalSecondDigits: 3,
+        },
+      },
+      [
+        [
+          't',
+          'time',
+          { dayPeriod: 'short', fractionalSecondDigits: 3, hour: 'numeric' },
+        ],
+      ],
+      {},
+    ],
+  ])(
+    'keeps the message options of %s in the tree and returns its context',
+    (_name, hole, expected, formats) => {
+      expect(tree(['', ''], hole)).toEqual(expected);
+      expect(templateToMessage(['', ''], [hole]).formats).toEqual(formats);
+    }
+  );
+
+  it('writes no style, never {}, when only formatting context is set', () => {
     const result = tree(
-      ['', ' ', ' ', ''],
-      { kind: 'number', name: 'n' },
-      { kind: 'number', name: 'p', options: { style: 'percent' } },
-      { kind: 'date', name: 'd', options: { dateStyle: 'long' } }
+      ['', ' ', ''],
+      { kind: 'time', name: 't', options: { timeZone: 'UTC', hour12: true } },
+      { kind: 'number', name: 'n', options: { maximumFractionDigits: 1 } }
     );
-    expect(result).toEqual([
-      ['n', 'number'],
-      ' ',
-      ['p', 'number', { style: 'percent' }],
-      ' ',
-      ['d', 'date', { dateStyle: 'long' }],
-    ]);
-    expect(formatMessageTree(result.slice(2, 3), 'en', { p: 0.5 })).toBe('50%');
+    expect(result).toEqual([['t', 'time'], ' ', ['n', 'number']]);
   });
 
-  it('sorts Intl option keys so equal messages have equal tree JSON', () => {
+  it('builds the same tree whatever the formatting context', () => {
     const build = (options: Intl.NumberFormatOptions) =>
       JSON.stringify(tree(['', ''], { kind: 'number', name: 'p', options }));
     expect(build({ style: 'currency', currency: 'USD' })).toBe(
-      build({ currency: 'USD', style: 'currency' })
+      build({ currency: 'JPY', style: 'currency', notation: 'compact' })
     );
+  });
+
+  it('sorts fields so equal messages have equal tree JSON', () => {
+    const build = (options: Intl.DateTimeFormatOptions) =>
+      JSON.stringify(tree(['', ''], { kind: 'date', name: 'd', options }));
+    expect(build({ year: 'numeric', month: 'long' })).toBe(
+      build({ month: 'long', year: 'numeric' })
+    );
+  });
+
+  it('binds one formatting context per variable', () => {
+    const currency = (currency?: string): TemplateHole => ({
+      kind: 'number',
+      name: 'p',
+      options: { style: 'currency', currency, currencyDisplay: 'code' },
+    });
+    expect(
+      templateToMessage(['', ' ', ''], [currency('USD'), currency('USD')])
+        .formats
+    ).toEqual({ p: { currency: 'USD', currencyDisplay: 'code' } });
+    expect(() =>
+      templateToMessage(['', ' ', ''], [currency('USD'), currency('EUR')])
+    ).toThrow(
+      'Message variable "p" is formatted with different formatting context in one message'
+    );
+    // No context is a context too.
+    expect(() =>
+      templateToMessage(
+        ['', ' ', ''],
+        [currency('USD'), { kind: 'number', name: 'p' }]
+      )
+    ).toThrow(/different formatting context/);
+  });
+
+  it.each<[string, TemplateHole, string]>([
+    [
+      'a date field on a time',
+      { kind: 'time', name: 't', options: { year: 'numeric' } },
+      'a time has no "year" option',
+    ],
+    [
+      'a style name with fields',
+      {
+        kind: 'date',
+        name: 'd',
+        options: { style: 'short', year: 'numeric' },
+      },
+      'a style name cannot be combined with fields',
+    ],
+    [
+      'an unknown option',
+      {
+        kind: 'number',
+        name: 'n',
+        options: { scale: 2 } as Intl.NumberFormatOptions,
+      },
+      'a number has no "scale" option',
+    ],
+    [
+      'a unit without the unit style',
+      { kind: 'number', name: 'n', options: { unit: 'meter' } },
+      `"unit" needs style: 'unit'`,
+    ],
+    [
+      'a unit with another style',
+      {
+        kind: 'number',
+        name: 'n',
+        options: { style: 'percent', unit: 'meter' },
+      },
+      `"unit" needs style: 'unit'`,
+    ],
+    [
+      'a unit style without a unit',
+      { kind: 'number', name: 'n', options: { style: 'unit' } },
+      'expected a unit such as "kilometer"',
+    ],
+    [
+      'a field value Intl does not have',
+      {
+        kind: 'date',
+        name: 'd',
+        options: { month: 'tiny' as 'long' },
+      },
+      'expected one of: numeric, 2-digit, short, long, narrow',
+    ],
+  ])('rejects %s', (_name, hole, reason) => {
+    expect(() => templateToMessage(['', ''], [hole])).toThrow(reason);
   });
 });

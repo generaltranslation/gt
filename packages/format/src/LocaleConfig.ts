@@ -12,7 +12,7 @@ import {
   formatMessageTree,
   type FormatMessageTreeOptions,
   type MessageTree,
-  type MessageTreeValues,
+  type MessageValues,
 } from '@generaltranslation/icu';
 import { intlCache } from './cache/IntlCache';
 import {
@@ -308,19 +308,19 @@ export class LocaleConfig {
    */
   formatMessageTree(
     tree: MessageTree,
-    targetLocale?: string,
-    options: WithLocales<
-      {
-        variables?: MessageTreeValues<unknown>;
-      } & Partial<FormatMessageTreeOptions>
-    > = {}
+    targetLocale: string | undefined,
+    options: WithLocales<{
+      variables: MessageValues<unknown>;
+      formats: FormatMessageTreeOptions['formats'];
+      timeZone?: string;
+    }>
   ): unknown {
-    const { locales, variables, ...context } = options;
+    const { locales, variables, formats, timeZone = this.timeZone } = options;
     return formatMessageTree<unknown>(
       tree,
       this.getFormattingLocales(targetLocale, locales),
-      variables ?? {},
-      { ...context, timeZone: context.timeZone ?? this.timeZone }
+      variables,
+      { formats, timeZone }
     );
   }
 

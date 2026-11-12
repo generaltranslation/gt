@@ -311,7 +311,7 @@ describe('parse', () => {
     }
   );
 
-  it.each(['C', 'S', 'A'])(
+  it.each(['C', 'A'])(
     'preserves FormatJS parsing of the %s date/time skeleton field',
     (field) => {
       expect(
@@ -567,7 +567,12 @@ describe('parse', () => {
   });
 
   it.each([
-    ['{d, date, ::v}', RangeError, 'Unsupported date/time skeleton field: v.'],
+    [
+      '{d, date, ::vv}',
+      RangeError,
+      'Unsupported date/time skeleton field: vv.',
+    ],
+    ['{d, date, ::b}', RangeError, 'Unsupported date/time skeleton field: b.'],
     [
       '{n, number, ::#}',
       SyntaxError,
