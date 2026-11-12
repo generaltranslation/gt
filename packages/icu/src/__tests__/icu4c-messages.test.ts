@@ -7,7 +7,7 @@
  * A case formats to ICU4C's text, or fails where ICU4C fails. Otherwise it
  * names one of REASONS as `differs`, and must then really differ, so a
  * difference that is fixed loses its mark. It prints `ours` instead, or throws
- * when it has none. The README lists the same reasons.
+ * when it has none.
  *
  * icu4c-conformance.test.ts goes deeper into skeletons, in en-US only.
  */

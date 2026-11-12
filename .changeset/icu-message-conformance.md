@@ -4,7 +4,7 @@
 
 Whole messages are checked against ICU4C, and every difference has a stated reason.
 
-`icu4c-messages.test.ts` formats about 1,250 messages over every part of the format, in more than 50 locales, and checks each against ICU4C 78.3's output. A message that does not print what ICU4C prints names its reason, and the README lists the reasons.
+`icu4c-messages.test.ts` formats about 1,250 messages over every part of the format, in more than 50 locales, and checks each against ICU4C 78.3's output. A message that does not print what ICU4C prints names its reason there.
 
 Closer to ICU4C:
 
