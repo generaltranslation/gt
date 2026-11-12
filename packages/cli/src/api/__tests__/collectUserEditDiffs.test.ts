@@ -595,13 +595,15 @@ describe('collectAndSendUserEditDiffs', () => {
     const run = async (
       jaNav: object | undefined,
       serverData: string,
-      extraLanguages: object[] = []
+      extraLanguages: object[] = [],
+      extraRoot: object = {}
     ) => {
       const docsPath = path.join(tempDir, 'docs.json');
       fs.mkdirSync(path.join(tempDir, 'config', 'ja'), { recursive: true });
       fs.writeFileSync(
         docsPath,
         JSON.stringify({
+          ...extraRoot,
           navigation: {
             languages: [
               { language: 'en', $ref: './config/nav.json' },
@@ -730,6 +732,12 @@ describe('collectAndSendUserEditDiffs', () => {
         reason: 'these $ref files could not be read: ./config/ja/api.json',
       },
       {
+        name: 'a $ref outside the language entries is missing',
+        jaNav: nav('はじめに', '基礎'),
+        extraRoot: { footer: { $ref: './config/footer.json' } },
+        reason: 'these $ref files could not be read: ./config/footer.json',
+      },
+      {
         name: 'the locale has no translated values',
         jaNav: { tabs: [] },
         reason:
@@ -737,7 +745,12 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ])('keeps the stored translation when $name', async (row) => {
       const { jaNav, reason } = row;
-      await run(jaNav, served('はじめに', '基本'), row.extraLanguages);
+      await run(
+        jaNav,
+        served('はじめに', '基本'),
+        row.extraLanguages,
+        row.extraRoot
+      );
 
       expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
       expect(getWarnings()).toEqual([

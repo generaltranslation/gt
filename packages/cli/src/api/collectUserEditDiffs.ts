@@ -77,10 +77,9 @@ const resolveLocalRefs = (
 };
 
 /**
- * The unreadable refs that could hold values of the locale in a composite
- * file: every one inside a per-locale section, except those inside an entry
- * known to belong to another locale. Every unreadable ref counts when the file
- * is not composite.
+ * The unreadable refs that could hold values of the locale: all of them,
+ * except those inside an entry of a composite file known to belong to another
+ * locale.
  */
 const unreadableRefsForLocale = (
   unreadableRefs: UnreadableRef[],
@@ -100,13 +99,11 @@ const unreadableRefsForLocale = (
   const localeKey = settings.options?.experimentalCanonicalLocaleKeys
     ? api.resolveCanonicalLocale(locale)
     : locale;
-  const sectionPointers: string[] = [];
   const otherLocalePointers: string[] = [];
   for (const [
     pointer,
     { sourceObjectValue, sourceObjectOptions },
   ] of Object.entries(generateSourceObjectPointers(composite, json))) {
-    sectionPointers.push(pointer);
     if (sourceObjectOptions.type === 'array') {
       if (!Array.isArray(sourceObjectValue)) continue;
       const ownItems = findMatchingItemArray(
@@ -139,12 +136,12 @@ const unreadableRefsForLocale = (
       }
     }
   }
-  const isWithin = (ref: UnreadableRef, pointer: string) =>
-    ref.pointer === pointer || ref.pointer.startsWith(`${pointer}/`);
   return unreadableRefs.filter(
     (ref) =>
-      sectionPointers.some((pointer) => isWithin(ref, pointer)) &&
-      !otherLocalePointers.some((pointer) => isWithin(ref, pointer))
+      !otherLocalePointers.some(
+        (pointer) =>
+          ref.pointer === pointer || ref.pointer.startsWith(`${pointer}/`)
+      )
   );
 };
 
