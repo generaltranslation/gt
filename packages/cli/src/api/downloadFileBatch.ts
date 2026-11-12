@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { isBinaryFileFormat } from 'generaltranslation';
+import { isBinaryFileFormat, type ProjectHandle } from 'generaltranslation';
 import {
   isTransientApiError,
   type QueryFilesContentResponse,
@@ -193,6 +193,52 @@ export type BatchedFiles = {
   inputPath: string;
 }[];
 
+type FileContentResult = QueryFilesContentResponse['results'][number];
+
+/** A ready file: its content inline, or for media too large to inline, a signed URL. */
+type DownloadedFile = FileContentResult & {
+  fileFormat: NonNullable<FileContentResult['fileFormat']>;
+} & ({ data: string } | { data: null; downloadUrl: string });
+
+/**
+ * Saves a streamed download through a sibling file, so a download that is cut
+ * off never leaves a truncated file where the last one was.
+ */
+async function saveDownload(
+  download: ReadableStream<Uint8Array>,
+  outputPath: string
+) {
+  const partialPath = `${outputPath}.part`;
+  try {
+    await fs.promises.writeFile(partialPath, download);
+    await fs.promises.rename(partialPath, outputPath);
+  } catch (error) {
+    // A write that fails before reading leaves the download open.
+    await download.cancel().catch(() => {});
+    await fs.promises.rm(partialPath, { force: true });
+    throw error;
+  }
+}
+
+/** Passes `download` through, calling `onError` when reading it fails. */
+function onReadError(
+  download: ReadableStream<Uint8Array>,
+  onError: () => void
+): ReadableStream<Uint8Array> {
+  const reader = download.getReader();
+  return new ReadableStream({
+    async pull(controller) {
+      const chunk = await reader.read().catch((error: unknown) => {
+        onError();
+        throw error;
+      });
+      if (chunk.done) controller.close();
+      else controller.enqueue(chunk.value);
+    },
+    cancel: (reason) => reader.cancel(reason),
+  });
+}
+
 export type DownloadFileBatchResult = {
   successful: BatchedFiles;
   failed: BatchedFiles;
@@ -246,9 +292,10 @@ export async function downloadFileBatch(
     ])
   );
 
+  let project: ProjectHandle;
   let results: QueryFilesContentResponse['results'];
   try {
-    const project = requireProject(options);
+    project = requireProject(options);
     ({ results } = await project.queryFilesContent(files));
   } catch (error) {
     logger.error(
@@ -265,13 +312,15 @@ export async function downloadFileBatch(
     result.retryable = files.filter(
       (_, index) => results[index]?.status === 'pending'
     );
-    const downloadedFiles = results.flatMap((file) =>
-      file.status === 'ready' &&
-      typeof file.data === 'string' &&
-      file.fileFormat
-        ? [{ ...file, data: file.data, fileFormat: file.fileFormat }]
-        : []
-    );
+    const downloadedFiles = results.flatMap((file): DownloadedFile[] => {
+      if (file.status !== 'ready' || !file.fileFormat) return [];
+      const { data, downloadUrl, fileFormat } = file;
+      if (typeof data === 'string') return [{ ...file, data, fileFormat }];
+      // Media too large to return inline comes as a signed URL instead.
+      return downloadUrl
+        ? [{ ...file, data: null, downloadUrl, fileFormat }]
+        : [];
+    });
 
     // Process each file in the response
     for (const file of downloadedFiles) {
@@ -280,6 +329,11 @@ export async function downloadFileBatch(
       if (!requestedFile) {
         continue;
       }
+      // Set when the storage request or its stream fails, not the local save.
+      let downloadBrokeOff = false;
+      const brokeOff = () => {
+        downloadBrokeOff = true;
+      };
       try {
         const outputPath = outputPathMap.get(fileKey);
         const fileProperties = fileTracker.completed.get(fileKey);
@@ -319,23 +373,35 @@ export async function downloadFileBatch(
         // Binary formats (e.g. LOTTIE zip bundles) carry base64 content that must
         // not go through the text merge/sort path — decode straight to bytes and
         // write. Skip only when an unchanged local translation already exists.
-        if (isBinaryFileFormat(file.fileFormat)) {
+        if (file.data === null || isBinaryFileFormat(file.fileFormat)) {
           if (!forceDownload && fileExists && downloadedTranslation) {
             result.skipped.push(requestedFile);
             continue;
           }
-          await fs.promises.writeFile(
-            outputPath,
-            Buffer.from(file.data, 'base64')
-          );
-          recordDownloaded(outputPath, {
-            branchId,
-            fileId,
-            versionId,
-            locale,
-            fileFormat: file.fileFormat,
-            inputPath,
-          });
+          if (file.data === null) {
+            const download = await project
+              .fetchFileDownload(file.downloadUrl)
+              .catch((error: unknown) => {
+                brokeOff();
+                throw error;
+              });
+            await saveDownload(onReadError(download, brokeOff), outputPath);
+            // No metadata: hashing the output would read all of it into memory.
+            recordDownloaded(outputPath);
+          } else {
+            await fs.promises.writeFile(
+              outputPath,
+              Buffer.from(file.data, 'base64')
+            );
+            recordDownloaded(outputPath, {
+              branchId,
+              fileId,
+              versionId,
+              locale,
+              fileFormat: file.fileFormat,
+              inputPath,
+            });
+          }
           result.successful.push(requestedFile);
           if (fileId && versionId && locale) {
             const entry = findOrCreateEntry(
@@ -513,6 +579,14 @@ export async function downloadFileBatch(
           didUpdateDownloadedLock = true;
         }
       } catch (error) {
+        // A download that was rejected or cut off gets a new URL when the file is requested again.
+        if (downloadBrokeOff) {
+          logger.warn(
+            `Download of ${fileKey} did not complete and will be requested again: ${error}`
+          );
+          result.retryable.push(requestedFile);
+          continue;
+        }
         logger.error(`Error saving file ${fileKey}: ` + error);
         recordWarning(
           'failed_download',
