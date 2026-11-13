@@ -15,6 +15,7 @@ import type { TrackedSymbol } from '../analysis/types.js';
 import { defaultLanguages } from '../languages/index.js';
 import { defaultTargets } from '../paraglide/targets.js';
 import { projectPackages } from '../project/packages.js';
+import { SharedNames } from '../utils/name-list.js';
 import { limitConcurrentReads } from '../utils/read-file.js';
 import { spilledReader } from '../utils/spill-file.js';
 import type {
@@ -79,7 +80,11 @@ async function handle(request: WorkerRequest): Promise<unknown> {
   }
 }
 
-function indexedGraph({ index, channel: given }: IndexRequest): ModuleGraph {
+function indexedGraph({
+  index,
+  names,
+  channel: given,
+}: IndexRequest): ModuleGraph {
   channel = given;
   const { summaries, outdirs, globals, generated, budget } = v8.deserialize(
     Buffer.from(index)
@@ -92,6 +97,7 @@ function indexedGraph({ index, channel: given }: IndexRequest): ModuleGraph {
     globals,
     index: {
       summaries,
+      names: new SharedNames(Buffer.from(names)),
       budget,
       load: (file) => loadIndexedFile(file, generatedModule(file)),
     },

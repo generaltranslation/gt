@@ -12,10 +12,19 @@ import {
   hasEsmExports,
   starExportSpecifiers,
 } from './module-syntax.js';
-import { hasName, namesIn, type NameList } from '../utils/name-list.js';
+import {
+  shareNameLists,
+  SharedNames,
+  type AnyNameList,
+  type NameList,
+  type SharedNameList,
+} from '../utils/name-list.js';
 
-/** What the analysis knows of a module without its syntax tree. */
-export type ModuleSummary = {
+/**
+ * What the analysis knows of a module without its syntax tree. Its name lists
+ * are strings, or places in a buffer threads share: see `withSharedNames`.
+ */
+export type ModuleSummary<Names extends AnyNameList = NameList> = {
   file: string;
   /** The file's module, then its scripts. */
   parts: ReadonlyArray<{
@@ -23,13 +32,13 @@ export type ModuleSummary = {
     resolved: ReadonlyArray<readonly [string, string | undefined]>;
     links: SpecifierLinks;
     /** Exports that never hold a tracked value: see `summarizeModule`. */
-    untrackedExports: NameList;
+    untrackedExports: Names;
     /**
      * The names it exports, `export *` aside, and the specifiers of its
      * `export *`. Unset when unknown: without ESM exports, the module may be
      * CommonJS.
      */
-    exports?: { names: NameList; stars: readonly string[] };
+    exports?: { names: Names; stars: readonly string[] };
     /** The auto-imported names it may use: see `summarizeModule`. */
     globalNames: readonly string[];
   }>;
@@ -123,18 +132,20 @@ export class LoadedRecords implements RecordStore {
 
 export type IndexedRecordsOptions = {
   /** In loading order. */
-  summaries: readonly ModuleSummary[];
+  summaries: readonly ModuleSummary<AnyNameList>[];
   /** A module of `summaries`, parsed; undefined if it cannot be. */
   load(file: string): ParsedModule | undefined;
   /** Characters of code the loaded modules hold before the least recently read are unloaded. */
   budget: number;
+  /** Where the summaries' shared name lists are: see `withSharedNames`. */
+  names?: SharedNames;
 };
 
 type IndexedModule = {
   resolved: ReadonlyArray<Map<string, string | undefined>>;
   links: readonly Links[];
-  untrackedExports: NameList | undefined;
-  exports: { names: NameList; starExported: readonly string[] } | undefined;
+  untrackedExports: AnyNameList | undefined;
+  exports: { names: AnyNameList; starExported: readonly string[] } | undefined;
 };
 
 /**
@@ -153,9 +164,11 @@ export class IndexedRecords implements RecordStore {
   /** Least recently read first. */
   private readonly records = new Map<string, ModuleRecord>();
   private readonly mentions = new Map<string, ModuleRef[]>();
+  private readonly names: SharedNames;
   private size = 0;
 
   constructor(private readonly options: IndexedRecordsOptions) {
+    this.names = options.names ?? new SharedNames(Buffer.alloc(0));
     for (const { file, parts } of options.summaries) {
       const resolved = parts.map((part) => new Map(part.resolved));
 
@@ -206,7 +219,7 @@ export class IndexedRecords implements RecordStore {
   isUntrackedExport(file: string, name: string): boolean {
     const untracked = this.modules.get(file)?.untrackedExports;
 
-    return untracked !== undefined && hasName(untracked, name);
+    return untracked !== undefined && this.names.has(untracked, name);
   }
 
   /** Read from the index: listing a module's exports parses none. */
@@ -218,7 +231,7 @@ export class IndexedRecords implements RecordStore {
     if (!exports) return 'unknown';
 
     return {
-      names: namesIn(exports.names),
+      names: this.names.names(exports.names),
       starExported: exports.starExported,
     };
   }
@@ -250,8 +263,39 @@ export class IndexedRecords implements RecordStore {
   }
 }
 
+/**
+ * `summaries` with their name lists in one buffer that threads share: each
+ * reads them there (`IndexedRecordsOptions.names`) instead of holding a copy.
+ * A large project's modules export millions of names.
+ */
+export function withSharedNames(summaries: readonly ModuleSummary[]): {
+  summaries: ModuleSummary<SharedNameList>[];
+  names: SharedArrayBuffer;
+} {
+  const lists = summaries.flatMap(({ parts }) =>
+    parts.flatMap(({ untrackedExports, exports }) =>
+      exports ? [untrackedExports, exports.names] : [untrackedExports]
+    )
+  );
+  const { bytes, places } = shareNameLists(lists);
+
+  let next = 0;
+  const shared = summaries.map(({ file, parts }) => ({
+    file,
+    parts: parts.map(({ untrackedExports: _, exports, ...part }) => ({
+      ...part,
+      untrackedExports: places[next++]!,
+      ...(exports && {
+        exports: { names: places[next++]!, stars: exports.stars },
+      }),
+    })),
+  }));
+
+  return { summaries: shared, names: bytes };
+}
+
 function indexedExports(
-  exports: ModuleSummary['parts'][number]['exports'],
+  exports: ModuleSummary<AnyNameList>['parts'][number]['exports'],
   resolved: ReadonlyMap<string, string | undefined> | undefined
 ): IndexedModule['exports'] {
   return (

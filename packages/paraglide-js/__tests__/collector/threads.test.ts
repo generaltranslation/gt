@@ -730,7 +730,14 @@ describe("sharing a function's sites in a thread", () => {
     const { port1, port2 } = new MessageChannel();
     helpers = port1;
     const flag = new Int32Array(new SharedArrayBuffer(4));
-    await send({ id: 0, type: 'index', index, channel: { port: port2, flag } });
+    await send({
+      id: 0,
+      type: 'index',
+      index,
+      // No summaries: no name lists.
+      names: new SharedArrayBuffer(0),
+      channel: { port: port2, flag },
+    });
   });
 
   afterEach(() => {
