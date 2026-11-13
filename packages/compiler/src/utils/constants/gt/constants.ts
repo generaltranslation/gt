@@ -118,21 +118,6 @@ export const BRANCH_CONTROL_PROPS = new Set(['branch']);
 export const PLURAL_CONTROL_PROPS = new Set(['n', 'locales']);
 
 /**
- * Set of valid plural forms for Plural components
- */
-export const PLURAL_FORMS = new Set([
-  'singular',
-  'plural',
-  'dual',
-  'zero',
-  'one',
-  'two',
-  'few',
-  'many',
-  'other',
-]);
-
-/**
  * Fields that must be string literals for useGT_callback / getGT_callback
  */
 export enum USEGT_CALLBACK_OPTIONS {

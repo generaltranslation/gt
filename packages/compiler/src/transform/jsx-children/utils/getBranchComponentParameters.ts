@@ -1,9 +1,9 @@
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import {
   BRANCH_CONTROL_PROPS,
   GT_COMPONENT_TYPES,
-  PLURAL_FORMS,
 } from '../../../utils/constants/gt/constants';
 
 /**
@@ -59,7 +59,7 @@ export function getBranchComponentParameters(
         return null;
       } else if (
         canonicalName === GT_COMPONENT_TYPES.Plural &&
-        !PLURAL_FORMS.has(propertyName)
+        !isAcceptedPluralForm(propertyName)
       ) {
         return null;
       }
