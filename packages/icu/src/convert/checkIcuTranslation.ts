@@ -127,10 +127,10 @@ function readBranches(
 }
 
 /**
- * A style as written. A skeleton is spelled from what the parser reads of
- * it, its tokens or its date and time fields, one space apart, so spacing is
- * no change, quoted text is no field, and `MM'd'MM` is not `MMMM`. Any style
- * text but ICU's style names is a pattern.
+ * A style as written, and its key. A skeleton's key is spelled from what the
+ * parser reads of it, its tokens or its date and time fields, one space
+ * apart, so spacing is no change, quoted text is no field, and `MM'd'MM` is
+ * not `MMMM`. Any style text but ICU's style names is a pattern.
  */
 function readStyle(
   name: string,
@@ -139,14 +139,30 @@ function readStyle(
   styleNames: readonly string[]
 ): FormattedPlaceholder {
   if (typeof style === 'string') {
-    return { name, kind, style, isPattern: !styleNames.includes(style) };
+    const isPattern = !styleNames.includes(style);
+    return { name, kind, style, styleKey: style, isPattern };
   }
-  if (!style) return { name, kind, style: undefined, isPattern: false };
-  const skeleton =
-    style.type === SKELETON_TYPE.number
-      ? style.tokens
-          .map(({ stem, options }) => [stem, ...options].join('/'))
-          .join(' ')
-      : dateTimeSkeletonFields(style.pattern).join(' ');
-  return { name, kind, style: `::${skeleton}`, isPattern: false };
+  if (!style) {
+    return {
+      name,
+      kind,
+      style: undefined,
+      styleKey: undefined,
+      isPattern: false,
+    };
+  }
+  if (style.type === SKELETON_TYPE.number) {
+    // The parser keeps a number skeleton's tokens, not its text.
+    const written = `::${style.tokens
+      .map(({ stem, options }) => [stem, ...options].join('/'))
+      .join(' ')}`;
+    return { name, kind, style: written, styleKey: written, isPattern: false };
+  }
+  return {
+    name,
+    kind,
+    style: `::${style.pattern}`,
+    styleKey: `::${dateTimeSkeletonFields(style.pattern).join(' ')}`,
+    isPattern: false,
+  };
 }

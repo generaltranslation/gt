@@ -76,8 +76,10 @@ function readPlaceholder(node: PlaceholderNode): CheckedPlaceholder {
       return { name, kind: 'argument' };
     case 'number':
     case 'date':
-    case 'time':
-      return { name, kind: node[1], style: printStyle(node), isPattern: false };
+    case 'time': {
+      const style = printStyle(node);
+      return { name, kind: node[1], style, styleKey: style, isPattern: false };
+    }
     case 'tag':
       return { name, kind: 'tag', children: readPlaceholders(node[2]) };
     case 'select':

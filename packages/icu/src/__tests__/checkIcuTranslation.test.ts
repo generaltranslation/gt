@@ -389,8 +389,8 @@ describe('checkIcuTranslation', () => {
   it('reads quoted text in a date skeleton as no field', () => {
     expect(checkIcuTranslation('{d, date, ::yM}', "{d, date, ::y'M'}")).toBe(
       mismatch(
-        '"d" uses {d, date, ::y}, which the source does not',
-        '"d" is missing {d, date, ::y M}'
+        `"d" uses {d, date, ::y'M'}, which the source does not`,
+        '"d" is missing {d, date, ::yM}'
       )
     );
   });
@@ -401,7 +401,12 @@ describe('checkIcuTranslation', () => {
   ])('keeps the fields of %s apart from those of %s', (source, translation) => {
     expect(
       checkIcuTranslation(`{d, date, ${source}}`, `{d, date, ${translation}}`)
-    ).toBeDefined();
+    ).toBe(
+      mismatch(
+        `"d" uses {d, date, ${translation}}, which the source does not`,
+        `"d" is missing {d, date, ${source}}`
+      )
+    );
   });
 
   it('reports a problem once when two uses of a variable have it', () => {

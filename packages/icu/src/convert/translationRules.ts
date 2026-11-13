@@ -23,13 +23,16 @@ export type CheckedPlaceholder =
 
 /**
  * A `number`, `date` or `time` placeholder. `style` is as written, like
- * `percent` or `::yMMMd`, and `undefined` when there is none. A pattern, like
- * `yyyy-MM-dd`, is the translator's to localize.
+ * `percent` or `::yMMMd`, and `undefined` when there is none; a problem
+ * shows it. `styleKey` is what it says, spelled one way, so two spellings of
+ * one skeleton compare equal. A pattern, like `yyyy-MM-dd`, is the
+ * translator's to localize.
  */
 export type FormattedPlaceholder = {
   name: string;
   kind: 'number' | 'date' | 'time';
   style: string | undefined;
+  styleKey: string | undefined;
   isPattern: boolean;
 };
 
@@ -57,7 +60,7 @@ type PluralPlaceholder = Extract<
 type MessageFacts = {
   /** A use of each variable. */
   variables: Map<string, CheckedPlaceholder>;
-  /** Each style of a formatted variable, with a use of it. */
+  /** Each style of a formatted variable, by `styleKey`, with a use of it. */
   styles: Map<string, Map<string | undefined, FormattedPlaceholder>>;
   /** The branch keys of each select, plural and selectordinal variable. */
   branches: Map<
@@ -133,9 +136,11 @@ function readFacts(
       case 'number':
       case 'date':
       case 'time': {
-        const styles = facts.styles.get(key);
-        if (styles) styles.set(placeholder.style, placeholder);
-        else facts.styles.set(key, new Map([[placeholder.style, placeholder]]));
+        const styles =
+          facts.styles.get(key) ??
+          new Map<string | undefined, FormattedPlaceholder>();
+        styles.set(placeholder.styleKey, placeholder);
+        facts.styles.set(key, styles);
         return;
       }
       case 'select':
