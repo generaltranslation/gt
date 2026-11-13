@@ -93,6 +93,29 @@ describe('_isValidLocale', () => {
     };
     expect(_isValidLocale(locale, customMapping)).toBe(expected);
   });
+
+  it('reuses validation results without growing past its cap', () => {
+    const get = vi.spyOn(intlCache, 'get');
+    try {
+      const localeLookups = () =>
+        get.mock.calls.filter(
+          ([constructor, locale]) =>
+            constructor === 'Locale' && locale === 'pt-PT'
+        ).length;
+      expect(_isValidLocale('pt-PT')).toBe(true);
+      expect(_isValidLocale('pt-PT')).toBe(true);
+      expect(localeLookups()).toBeLessThanOrEqual(1);
+
+      const lookupsBeforeFlood = localeLookups();
+      for (let index = 0; index < 1000; index++) {
+        expect(_isValidLocale(`zz-${index}`)).toBe(false);
+      }
+      expect(_isValidLocale('pt-PT')).toBe(true);
+      expect(localeLookups()).toBe(lookupsBeforeFlood + 1);
+    } finally {
+      get.mockRestore();
+    }
+  });
 });
 
 describe('_standardizeLocale', () => {

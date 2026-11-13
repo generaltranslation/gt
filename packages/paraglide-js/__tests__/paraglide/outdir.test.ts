@@ -152,10 +152,24 @@ describe('other installs of @inlang/paraglide-js', () => {
     await fs.rm(directory, { recursive: true, force: true });
   });
 
+  /** The parts of Paraglide 2 and its `@inlang/sdk` that these tests use. */
+  type Paraglide2 = {
+    compileProject(args: {
+      project: unknown;
+      compilerOptions: object;
+    }): Promise<Output>;
+  };
+  type InlangSdk = {
+    newProject(args: { settings: object }): Promise<Blob>;
+    loadProjectInMemory(args: {
+      blob: Blob;
+    }): Promise<{ close(): Promise<void> }>;
+  };
+
   /** A directory whose `@inlang/paraglide-js` is the package installed as `alias`. */
   async function withParaglide(
     alias: string
-  ): Promise<{ root: string; module: any; sdk: any }> {
+  ): Promise<{ root: string; module: Paraglide2; sdk: InlangSdk }> {
     const root = fresh();
     const installed = await fs.realpath(
       path.join(import.meta.dirname, '../../node_modules', alias)

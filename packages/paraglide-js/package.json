@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/paraglide-js",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Paraglide JS integration for General Translation. Collects the source-code context of Paraglide message usages, as a CLI or a library, without changing Paraglide.",
   "type": "module",
   "main": "./dist/src/index.js",
@@ -50,6 +50,7 @@
     "@jridgewell/trace-mapping": "^0.3.31",
     "@oxc-project/types": "^0.157.0",
     "@typescript-eslint/scope-manager": "^8.72.1",
+    "generaltranslation": "workspace:*",
     "globby": "^16.2.0",
     "mdast-util-from-markdown": "^2.0.2",
     "mdast-util-frontmatter": "^2.0.1",

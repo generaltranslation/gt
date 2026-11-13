@@ -324,41 +324,37 @@ describe('I18nCache', () => {
   });
 
   describe('locale identity', () => {
-    it.each([
-      {
-        name: 'approved locale spelling',
-        config: { locales: ['en', 'fr-fr'] },
-        approved: 'fr-fr',
-        canonical: 'fr-FR',
-      },
-      {
-        name: 'a lowercase alias of the canonical locale',
-        config: {
-          defaultLocale: 'fr',
-          locales: ['fr', 'en-gb'],
-          customMapping: { 'en-gb': { code: 'en-GB' } },
-        },
-        approved: 'en-gb',
-        canonical: 'en-GB',
-      },
-    ])(
-      'uses $name for the translation loader and cache key',
-      async ({ config, approved, canonical }) => {
-        const loadTranslations = vi.fn(async (locale: string) => {
-          if (locale !== approved) throw new Error(`No file for ${locale}`);
-          return { [expectedHash]: translatedString };
-        });
-        const cache = createCache({ ...config, loadTranslations });
-
-        expect(await cache.loadTranslations(canonical)).toEqual({
-          [expectedHash]: translatedString,
-        });
-        expect(await cache.loadTranslations(approved)).toEqual({
-          [expectedHash]: translatedString,
-        });
-        expect(loadTranslations).toHaveBeenCalledExactlyOnceWith(approved);
+    it('uses the requested locale string as the cache key without resolving it', async () => {
+      const loadTranslations = vi
+        .fn()
+        .mockResolvedValue({ [expectedHash]: translatedString });
+      const cache = createCache({
+        loadTranslations,
+        locales: ['en', 'fr-fr', 'brand-french'],
+        customMapping: { 'brand-french': { code: 'fr', name: 'Brand French' } },
+      });
+      const canonicalize = vi.spyOn(Intl, 'getCanonicalLocales');
+      try {
+        await cache.loadTranslations('fr-FR');
+        await cache.loadTranslations('fr-fr');
+        await cache.loadTranslations('brand-french');
+        const resolver = await cache.getLookupTranslation('fr-fr');
+        expect(resolver(message, { ...lookupOptions, $locale: 'fr-fr' })).toBe(
+          translatedString
+        );
+        expect(cache.lookupTranslation('fr-FR', message, lookupOptions)).toBe(
+          translatedString
+        );
+        expect(canonicalize).not.toHaveBeenCalled();
+      } finally {
+        canonicalize.mockRestore();
       }
-    );
+      expect(loadTranslations.mock.calls).toEqual([
+        ['fr-FR'],
+        ['fr-fr'],
+        ['brand-french'],
+      ]);
+    });
 
     it.each([
       {
@@ -369,12 +365,6 @@ describe('I18nCache', () => {
       {
         name: 'custom alias locale',
         locale: 'brand-british',
-        translationLocale: 'brand-british',
-        customMapping: brandBritish,
-      },
-      {
-        name: 'canonical locale with custom alias',
-        locale: 'en-GB',
         translationLocale: 'brand-british',
         customMapping: brandBritish,
       },
@@ -403,25 +393,6 @@ describe('I18nCache', () => {
         );
       }
     );
-
-    it('shares configured cache entries across alias and canonical requests', async () => {
-      const loadTranslations = vi
-        .fn()
-        .mockResolvedValue({ [expectedHash]: translatedString });
-      const cache = createCache({
-        loadTranslations,
-        locales: ['en', 'brand-french', 'es'],
-        customMapping: { 'brand-french': { code: 'fr', name: 'Brand French' } },
-      });
-
-      await cache.loadTranslations('brand-french');
-      await cache.loadTranslations('fr');
-
-      expect(loadTranslations).toHaveBeenCalledExactlyOnceWith('brand-french');
-      expect(
-        cache.lookupTranslation('brand-french', message, lookupOptions)
-      ).toBe(translatedString);
-    });
 
     it('lookupTranslation() selects the cache by positional locale, not options.$locale', async () => {
       // options.$locale does not redirect lookupTranslation(); the positional
@@ -718,10 +689,10 @@ describe('I18nCache', () => {
       );
     });
 
-    it('defaults the timeout to 12 seconds and resolves the requested locale', async () => {
+    it('defaults the timeout to 12 seconds', async () => {
       const cache = new I18nCache({ loadTranslations: async () => ({}) });
 
-      await settle(cache.lookupTranslationWithFallback('fr-FR', 'Hello!', icu));
+      await settle(cache.lookupTranslationWithFallback('fr', 'Hello!', icu));
 
       expect(translateMany).toHaveBeenCalledExactlyOnceWith(
         expect.any(Object),
@@ -1089,14 +1060,7 @@ describe('I18nCache', () => {
       });
     });
 
-    describe.each([
-      { name: 'a dialect locale', dictionaryLocale: 'en-GB' },
-      {
-        name: 'a canonical locale with a custom alias',
-        dictionaryLocale: 'brand-british',
-        customMapping: brandBritish,
-      },
-    ])('for $name', ({ dictionaryLocale, customMapping }) => {
+    describe('for a dialect locale', () => {
       const british: Dictionary = {
         greeting: 'Hello mate',
         header: ['Welcome mate', { $context: 'homepage' }],
@@ -1125,14 +1089,11 @@ describe('I18nCache', () => {
         const { cache, loadDictionary } = createDictionaryCache(british, {
           defaultLocale: 'en-US',
           locales: ['en-US', 'en'],
-          customMapping,
         });
 
         await expect(read(cache)).resolves.toEqual(expected);
 
-        expect(loadDictionary).toHaveBeenCalledExactlyOnceWith(
-          dictionaryLocale
-        );
+        expect(loadDictionary).toHaveBeenCalledExactlyOnceWith('en-GB');
         expect(cache.lookupDictionary('en-GB', 'greeting')).toEqual({
           entry: 'Hello mate',
           options: {},
@@ -1405,50 +1366,18 @@ describe('I18nCache', () => {
   // getRuntimeEnvironment() treats every NODE_ENV except 'development' as
   // production, so vitest's default 'test' env exercises the production path.
   describe('error handling', () => {
-    it('production: invalid locale is logged and each read returns its fallback', async () => {
+    it('development: an unknown locale reads as a miss without logging or throwing', () => {
+      vi.stubEnv('NODE_ENV', 'development');
       const cache = createCache();
 
       expect(
         cache.lookupTranslation(invalidLocale, message, lookupOptions)
       ).toBeUndefined();
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('not valid')
-      );
-
-      await expect(cache.loadTranslations(invalidLocale)).resolves.toEqual({});
-      await expect(cache.loadDictionary(invalidLocale)).resolves.toEqual({});
       expect(cache.lookupDictionary(invalidLocale, 'greeting')).toBeUndefined();
       expect(
         cache.lookupDictionaryObj(invalidLocale, 'greeting')
       ).toBeUndefined();
-
-      // getLookupTranslation degrades to an identity resolver
-      const resolver = await cache.getLookupTranslation(invalidLocale);
-      expect(resolver(message, lookupOptions)).toBe(message);
-    });
-
-    it('development: invalid locale throws from sync reads and rejects from async reads', async () => {
-      vi.stubEnv('NODE_ENV', 'development');
-      const cache = createCache();
-
-      expect(() =>
-        cache.lookupTranslation(invalidLocale, message, lookupOptions)
-      ).toThrow('not valid');
-      expect(() => cache.lookupDictionary(invalidLocale, 'greeting')).toThrow(
-        'not valid'
-      );
-      expect(() =>
-        cache.lookupDictionaryObj(invalidLocale, 'greeting')
-      ).toThrow('not valid');
-      await expect(cache.loadTranslations(invalidLocale)).rejects.toThrow(
-        'not valid'
-      );
-      await expect(cache.loadDictionary(invalidLocale)).rejects.toThrow(
-        'not valid'
-      );
-      await expect(cache.getLookupTranslation(invalidLocale)).rejects.toThrow(
-        'not valid'
-      );
+      expect(errorSpy).not.toHaveBeenCalled();
     });
 
     it('production: a failing translations loader is logged and swallowed', async () => {

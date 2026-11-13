@@ -145,7 +145,7 @@ test('a metadata file that cannot be read is left alone, with a warning', async 
     args[0] === file ? Promise.reject(failure('EACCES')) : readFile(...args)
   );
   expect(await files.write()).toEqual([
-    { file, reason: 'it could not be read (EACCES)' },
+    { file, why: 'it could not be read (EACCES)' },
   ]);
   vi.restoreAllMocks();
 
@@ -268,7 +268,7 @@ test('a metadata file that is not a JSON object is left alone, with a warning', 
   });
 
   expect(await collect(root)).toEqual([
-    '[paraglide-context] messages/en.metadata.json was not updated: it is not a JSON object; fix or delete it',
+    'paraglide-context Warning: messages/en.metadata.json was not updated because it is not a JSON object. Fix or delete it.',
   ]);
   expect(
     await fs.readFile(path.join(root, 'messages/en.metadata.json'), 'utf8')
@@ -293,7 +293,7 @@ test('an outdir without an inlang project is reported', async () => {
   await fs.rm(path.join(root, 'project.inlang'), { recursive: true });
 
   expect(await collect(root)).toEqual([
-    '[paraglide-context] no inlang project found for src/paraglide; its messages get no metadata file. ' +
+    'paraglide-context Warning: The messages of src/paraglide get no metadata file because no inlang project was found for it. ' +
       'List its project in the `inlangProjects` option.',
   ]);
 });
@@ -347,8 +347,8 @@ test('a project in another message format is reported', async () => {
   });
 
   expect(await collect(root)).toEqual([
-    '[paraglide-context] project.inlang has no base-locale message files in the inlang message format ' +
-      '(`plugin.inlang.messageFormat`); its messages get no metadata file',
+    'paraglide-context Warning: The messages of project.inlang get no metadata file because it has no base-locale ' +
+      'message files in the inlang message format (`plugin.inlang.messageFormat`)',
   ]);
   expect(await readMetadata(root)).toEqual({});
 });
