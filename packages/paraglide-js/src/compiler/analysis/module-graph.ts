@@ -3,7 +3,13 @@ import { moduleExportName, type ESTree, type Node } from './ast.js';
 import { commonJsExports } from './commonjs.js';
 import { componentFieldBindings } from './component-fields.js';
 import { evaluate, followCandidate, memberOf } from './evaluate.js';
-import { ImporterIndex, type GlobalExport } from './importers.js';
+import {
+  ImporterIndex,
+  linksOf,
+  type GlobalExport,
+  type Links,
+  type ModuleRef,
+} from './importers.js';
 import {
   declaredNames,
   exportingStatements,
@@ -115,8 +121,12 @@ export class ModuleGraph {
     ReadonlySet<string> | undefined
   >();
   private readonly importers = new ImporterIndex({
-    records: this.records,
-    all: () => [...this.records.values()].flatMap(modulesOf),
+    record: (file) => this.records.get(file),
+    module: ({ file, part }) => {
+      const record = this.records.get(file);
+      return record && modulesOf(record)[part];
+    },
+    links: () => this.links(),
     scopeOf: (record) => this.scopeOf(record),
     generation: () => this.generation,
     globalExports: () => this.globalExports,
@@ -239,6 +249,20 @@ export class ModuleGraph {
       return this.localExport(record, name);
     } finally {
       this.exportsBeingResolved.delete(key);
+    }
+  }
+
+  /** Every module's links, in loading order: a file's scripts after its module. */
+  private *links(): Iterable<{ ref: ModuleRef; links: Links }> {
+    for (const record of this.records.values()) {
+      const modules = modulesOf(record);
+
+      for (let part = 0; part < modules.length; part++) {
+        yield {
+          ref: { file: record.file, part },
+          links: linksOf(modules[part]!),
+        };
+      }
     }
   }
 
