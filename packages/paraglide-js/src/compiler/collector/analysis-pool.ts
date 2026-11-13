@@ -24,6 +24,8 @@ export type AnalysisIndex = {
   summaries: readonly ModuleSummary[];
   outdirs: readonly string[];
   globals: readonly GlobalBinding[];
+  /** See `analysisBudget`. */
+  budget: number;
 };
 
 export type IndexRequest = {
@@ -60,17 +62,21 @@ const CHUNK = 16;
 /** A thread is worth starting for this much code, in bytes: it takes longer to start than to analyze less. */
 const CODE_PER_THREAD = 8_000_000;
 
-/** What a thread takes at most, about: the modules it keeps loaded, and its garbage. */
-const MEMORY_PER_THREAD = 2_500_000_000;
+/** What a thread takes besides its modules, about. */
+const THREAD_MEMORY = 1_500_000_000;
+
+/** What a thread takes per character of its budget, about: syntax trees, their index, and garbage. */
+const MEMORY_PER_BUDGET_CHARACTER = 60;
 
 const WORKER_URL = new URL('./analysis-worker.js', import.meta.url);
 
 /**
- * How many threads analyze `codeSize` bytes of files: none for a small
- * project, else one per core but the main thread's, as many as half the memory
- * holds. `PARAGLIDE_CONTEXT_THREADS` sets it, e.g. to 0 to analyze in the main thread.
+ * How many threads analyze `codeSize` bytes of files, each with `budget`:
+ * none for a small project, else one per core but the main thread's, as many
+ * as half the memory holds. `PARAGLIDE_CONTEXT_THREADS` sets it, e.g. to 0 to
+ * analyze in the main thread.
  */
-export function analysisThreads(codeSize: number): number {
+export function analysisThreads(codeSize: number, budget: number): number {
   const configured = process.env.PARAGLIDE_CONTEXT_THREADS;
   if (configured !== undefined && configured !== '') {
     const threads = Number(configured);
@@ -88,7 +94,11 @@ export function analysisThreads(codeSize: number): number {
 
   const threads = Math.min(
     os.availableParallelism() - 1,
-    Math.floor(availableMemory() / 2 / MEMORY_PER_THREAD),
+    Math.floor(
+      availableMemory() /
+        2 /
+        (THREAD_MEMORY + budget * MEMORY_PER_BUDGET_CHARACTER)
+    ),
     Math.floor(codeSize / CODE_PER_THREAD)
   );
 
