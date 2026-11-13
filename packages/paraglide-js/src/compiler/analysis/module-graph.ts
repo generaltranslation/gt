@@ -1,8 +1,11 @@
 import { builtinModules } from 'node:module';
 import { applyAliases, type ImportAlias } from '../bundler-configs/alias.js';
+import { defaultLanguages } from '../languages/index.js';
 import {
   detectedExtensions,
+  extensionOf,
   languageExtensions,
+  languageOf,
   NO_PACKAGES,
   type LanguageContext,
   type ParseFailure,
@@ -126,6 +129,8 @@ export class ModuleGraph {
   private readonly targetFiles = new Map<string, TargetFile>();
   /** The threads that run languages' tooling, while files are loaded. */
   private tooling: ToolingPool | undefined;
+  /** The languages whose files the analysis writes itself. */
+  private readonly nativeLanguages: ReadonlySet<SourceLanguage>;
 
   private constructor(
     options: ModuleGraphOptions,
@@ -140,6 +145,7 @@ export class ModuleGraph {
     this.customTargets = options.targets.filter(
       (target) => !isMessagesTarget(target)
     );
+    this.nativeLanguages = new Set(nativeLanguagesOf(options.languages));
   }
 
   static async create(options: ModuleGraphOptions): Promise<ModuleGraph> {
@@ -148,12 +154,20 @@ export class ModuleGraph {
     const hasPatterns =
       resolver?.aliases.some((alias) => alias.find instanceof RegExp) ?? false;
 
+    const nativeLanguages = nativeLanguagesOf(options.languages);
     const graph = new native.NativeGraph({
       targets: options.targets.map(nativeTarget),
       outdirs: [...(options.outdirs ?? [])],
       sourceExtensions: languageExtensions(options.languages),
+      nativeLanguages: nativeLanguages.map((language) => language.name),
       // With `read`, JavaScript reads every file, and asks `detect` itself.
-      detect: options.read ? [] : detectedExtensions(options.languages),
+      detect: options.read
+        ? []
+        : detectedExtensions(
+            options.languages.filter(
+              (language) => !nativeLanguages.includes(language)
+            )
+          ),
       // A file is read again when its lines are needed, unless the caller reads them.
       sourcesOnDisk: !options.read,
       resolver: resolver && {
@@ -189,7 +203,7 @@ export class ModuleGraph {
     if (this.options.read) return;
 
     const scripts = files.filter(
-      (file) => isScript(file) && !this.orders.has(file)
+      (file) => this.isReadNatively(file) && !this.orders.has(file)
     );
     if (scripts.length === 0) return;
 
@@ -328,7 +342,8 @@ export class ModuleGraph {
       if (this.orders.has(file)) continue;
       this.orders.set(file, this.orders.size);
 
-      const readsHere = this.options.read !== undefined || !isScript(file);
+      const readsHere =
+        this.options.read !== undefined || !this.isReadNatively(file);
       (readsHere ? others : scripts).push(file);
     }
 
@@ -343,6 +358,20 @@ export class ModuleGraph {
     }
 
     await this.link();
+  }
+
+  /**
+   * Whether the analysis reads `file` itself: a script, unless a language of
+   * JavaScript's claims it, or a file whose language it writes itself.
+   */
+  private isReadNatively(file: string): boolean {
+    if (isScript(file)) return true;
+
+    const language = this.options.languages.find(
+      (candidate) => extensionOf(file, candidate) !== undefined
+    );
+
+    return language !== undefined && this.nativeLanguages.has(language);
   }
 
   private ordersOf(files: readonly string[]): number[] {
@@ -380,6 +409,17 @@ export class ModuleGraph {
 
     const code = await read(file);
     if (code === undefined) return undefined;
+
+    const language = languageOf(file, code, languages);
+    if (language === undefined || this.nativeLanguages.has(language)) {
+      // The analysis writes the file, or it is a script or a file that is not analyzed.
+      if (language || isScript(file)) {
+        this.graph.queueSource(file, order, code);
+      } else {
+        this.graph.queueEmpty(file, order, code);
+      }
+      return undefined;
+    }
 
     const result =
       (await pool?.run(file, code)) ??
@@ -527,6 +567,35 @@ export class ModuleGraph {
       methods: [...(spec.methods ?? [])],
     };
   }
+}
+
+/**
+ * The built-in languages of `languages` whose files the analysis writes
+ * itself, rather than their tooling in JavaScript: each one that no language of
+ * the caller's comes before with one of its extensions.
+ */
+function nativeLanguagesOf(
+  languages: readonly SourceLanguage[]
+): SourceLanguage[] {
+  const written = new Set(native.nativeLanguages());
+
+  return languages.filter((language, index) => {
+    const isBuiltIn =
+      defaultLanguages.includes(language) && written.has(language.name);
+    if (!isBuiltIn) return false;
+
+    const isShadowed = languages
+      .slice(0, index)
+      .some(
+        (earlier) =>
+          !defaultLanguages.includes(earlier) &&
+          earlier.extensions.some((extension) =>
+            language.extensions.includes(extension)
+          )
+      );
+
+    return !isShadowed;
+  });
 }
 
 function nativeTarget(target: ParaglideTarget): NativeTarget {

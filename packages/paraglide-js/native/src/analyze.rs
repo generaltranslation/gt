@@ -663,7 +663,7 @@ mod tests {
       order: 0,
       input: Input::Read,
     };
-    load(&mut graph, vec![request], &[], None);
+    load(&mut graph, vec![request], &Default::default(), None);
     let modules = unlinked(&graph);
     let messages = root
       .join("paraglide/messages.js")

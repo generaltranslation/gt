@@ -13,9 +13,10 @@ use crate::{
     ComponentFields, ComponentInstances, FileId, Graph, GraphOptions, InstantiationSyntax,
     PropsReads, Target, TargetKind,
   },
+  languages::{Language, NativeLanguages},
   load::{
-    link, link_with, load, unlinked, DetectedExtension, GeneratedCode, GeneratedSource, Input,
-    LoadResult, Prefetch, Request, Unresolved,
+    link, link_with, load, unlinked, Claims, DetectedExtension, GeneratedCode, GeneratedSource,
+    Input, LoadResult, Prefetch, Request, Unresolved,
   },
   lower::Lang,
   mapping::Mapping,
@@ -65,6 +66,9 @@ pub struct NativeGraphOptions {
   pub resolver: Option<NativeResolverOptions>,
   /// The code JavaScript gives is the files' on disk, read again when needed rather than kept.
   pub sources_on_disk: Option<bool>,
+  /// The built-in languages whose files are written here, by name, in the order they claim files.
+  /// Those `nativeLanguages()` does not list are left to JavaScript's tooling.
+  pub native_languages: Option<Vec<String>>,
 }
 
 #[napi(object)]
@@ -214,7 +218,7 @@ struct State {
   targets: TargetFiles,
   resolver: Option<NativeResolver>,
   ignored_directories: FxHashSet<String>,
-  detected: Arc<[DetectedExtension]>,
+  claims: Arc<Claims>,
   /// What JavaScript read or generated, until the next load parses it.
   queue: Vec<Request>,
 }
@@ -368,7 +372,7 @@ impl Task for LoadTask {
       let result = load(
         &mut state.graph,
         requests,
-        &state.detected,
+        &state.claims,
         Some(&self.prefetch),
       );
 
@@ -947,6 +951,16 @@ fn write_metadata(state: &State, input: &[u8], radius: f64) -> Result<NativeMeta
 /// For tests: a metadata file as `writeMetadata` writes it from the JSON of
 /// `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
 /// object.
+/// The built-in languages whose files the analysis writes itself, by name.
+#[napi]
+pub fn native_languages() -> Vec<String> {
+  NativeLanguages::new(Language::ALL)
+    .languages()
+    .iter()
+    .map(|language| language.name().to_string())
+    .collect()
+}
+
 #[napi]
 pub fn render_metadata(input: String, radius: f64) -> Result<Option<String>> {
   start_workers();
@@ -995,14 +1009,23 @@ impl NativeGraph {
       })
     });
 
-    let detected: Arc<[DetectedExtension]> = options
-      .detect
-      .into_iter()
-      .map(|detect| DetectedExtension {
-        extension: detect.extension,
-        hints: detect.hints,
-      })
-      .collect();
+    let claims = Arc::new(Claims {
+      detected: options
+        .detect
+        .into_iter()
+        .map(|detect| DetectedExtension {
+          extension: detect.extension,
+          hints: detect.hints,
+        })
+        .collect(),
+      native: NativeLanguages::new(
+        options
+          .native_languages
+          .unwrap_or_default()
+          .iter()
+          .filter_map(|name| Language::named(name)),
+      ),
+    });
 
     Self {
       state: Arc::new(Mutex::new(State {
@@ -1011,10 +1034,10 @@ impl NativeGraph {
         targets: TargetFiles::default(),
         resolver,
         ignored_directories,
-        detected: detected.clone(),
+        claims: claims.clone(),
         queue: Vec::new(),
       })),
-      prefetch: Arc::new(Prefetch::new(detected)),
+      prefetch: Arc::new(Prefetch::new(claims)),
     }
   }
 
@@ -1059,6 +1082,13 @@ impl NativeGraph {
   #[napi]
   pub fn queue_empty(&self, file: String, order: u32, code: String) {
     self.queue(file, order, Input::Empty { code });
+  }
+
+  /// A file that JavaScript read, which is written here if a native language claims it, and is
+  /// otherwise a script, or a file in a format that is not analyzed.
+  #[napi]
+  pub fn queue_source(&self, file: String, order: u32, code: String) {
+    self.queue(file, order, Input::Source { code });
   }
 
   #[napi]

@@ -145,7 +145,7 @@ fn main() {
   };
 
   let started = Instant::now();
-  let result = load(&mut graph, requests, &[], None);
+  let result = load(&mut graph, requests, &Default::default(), None);
   println!(
     "load: {:?} ({} skipped) {}",
     started.elapsed(),

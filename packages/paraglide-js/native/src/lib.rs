@@ -1,5 +1,5 @@
-//! JavaScript drives this analysis and supplies what only it has: the code a framework's tooling
-//! writes for a component file.
+//! JavaScript drives this analysis and supplies what only it has, e.g. a project's configuration
+//! and the targets a caller defines.
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -14,6 +14,7 @@ pub mod fs;
 pub mod graph;
 pub mod importers;
 pub mod ir;
+pub mod languages;
 pub mod load;
 pub mod lower;
 pub mod mapping;

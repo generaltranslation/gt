@@ -179,7 +179,8 @@ export function detectedExtensions(
   });
 }
 
-function languageOf(
+/** The language that claims `file`: the first of `languages` whose extension it has and that `detect`s it. */
+export function languageOf(
   file: string,
   code: string,
   languages: readonly SourceLanguage[]
@@ -226,7 +227,7 @@ export function languageExtensions(
   return [...new Set(languages.flatMap((language) => language.extensions))];
 }
 
-function extensionOf(
+export function extensionOf(
   file: string,
   language: SourceLanguage
 ): string | undefined {

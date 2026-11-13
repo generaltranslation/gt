@@ -79,6 +79,17 @@ pub fn release_allocators() {
 /// Fails with the first syntax error's message, since the parser recovers from errors and a program
 /// with one may be incomplete.
 pub fn lower(code: &str, lang: Lang) -> Result<Ast, String> {
+  lower_located(code, lang).map_err(|error| error.message)
+}
+
+/// A syntax error, and the UTF-8 offset in the code where it is reported, if any.
+pub struct SyntaxError {
+  pub message: String,
+  pub offset: Option<usize>,
+}
+
+/// As `lower`, with where the syntax error is.
+pub fn lower_located(code: &str, lang: Lang) -> Result<Ast, SyntaxError> {
   ALLOCATOR.with(|allocator| {
     let mut allocator = allocator.borrow_mut();
     let result = lower_in(&allocator, code, lang);
@@ -93,7 +104,7 @@ pub fn lower(code: &str, lang: Lang) -> Result<Ast, String> {
   })
 }
 
-fn lower_in(allocator: &Allocator, code: &str, lang: Lang) -> Result<Ast, String> {
+fn lower_in(allocator: &Allocator, code: &str, lang: Lang) -> Result<Ast, SyntaxError> {
   let options = ParseOptions {
     preserve_parens: true,
     ..ParseOptions::default()
@@ -103,7 +114,10 @@ fn lower_in(allocator: &Allocator, code: &str, lang: Lang) -> Result<Ast, String
     .parse();
 
   if let Some(error) = parsed.diagnostics.errors().next() {
-    return Err(error.message.to_string());
+    return Err(SyntaxError {
+      message: error.message.to_string(),
+      offset: error.labels.first().map(|label| label.offset() as usize),
+    });
   }
 
   let program = parsed.program;

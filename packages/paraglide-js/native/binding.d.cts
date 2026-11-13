@@ -21,6 +21,11 @@ export declare class NativeGraph {
   queueScript(file: string, order: number, code: string): void
   /** A file in a format that is not analyzed. */
   queueEmpty(file: string, order: number, code: string): void
+  /**
+   * A file that JavaScript read, which is written here if a native language claims it, and is
+   * otherwise a script, or a file in a format that is not analyzed.
+   */
+  queueSource(file: string, order: number, code: string): void
   queueGenerated(file: string, order: number, code: string, generated: NativeGeneratedSource): void
   /**
    * Starts reading and parsing scripts that are about to be loaded, for `load` to take, and
@@ -151,6 +156,11 @@ export interface NativeGraphOptions {
   resolver?: NativeResolverOptions
   /** The code JavaScript gives is the files' on disk, read again when needed rather than kept. */
   sourcesOnDisk?: boolean
+  /**
+   * The built-in languages whose files are written here, by name, in the order they claim files.
+   * Those `nativeLanguages()` does not list are left to JavaScript's tooling.
+   */
+  nativeLanguages?: Array<string>
 }
 
 export interface NativeLoadResult {
@@ -245,4 +255,7 @@ export interface NativeTargetFile {
  * `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
  * object.
  */
+/** The built-in languages whose files the analysis writes itself, by name. */
+export declare function nativeLanguages(): Array<string>
+
 export declare function renderMetadata(input: string, radius: number): string | null

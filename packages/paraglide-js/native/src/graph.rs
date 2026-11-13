@@ -587,7 +587,7 @@ pub fn script_graph(file: &str, code: String) -> Graph {
     order: 0,
     input: Input::Script { code },
   };
-  load(&mut graph, vec![request], &[], None);
+  load(&mut graph, vec![request], &Default::default(), None);
 
   let modules = unlinked(&graph);
   let specifiers = modules

@@ -9,7 +9,8 @@ use crate::{
     ModuleId, PropsReads, SourceFile,
   },
   ir::Ast,
-  lower::{lower, Lang},
+  languages::{builder::expression_at, Generated, Language, NativeLanguages, Skipped},
+  lower::{lower, lower_located, Lang, SyntaxError},
   mapping::{remap, Mapping},
   resolve::NativeResolver,
   syntax::{loaded_specifiers, ModuleSyntax},
@@ -46,6 +47,10 @@ pub enum Input {
   Script {
     code: String,
   },
+  /// A file that JavaScript read, which a language written here may claim, e.g. a Vue component.
+  Source {
+    code: String,
+  },
   Generated {
     code: String,
     generated: Box<GeneratedSource>,
@@ -68,6 +73,15 @@ pub struct DetectedExtension {
   pub extension: String,
   /// What a file must contain to be the language's; with none, every file may be.
   pub hints: Vec<String>,
+}
+
+/// Which languages claim which files.
+#[derive(Default)]
+pub struct Claims {
+  /// The script extensions that a language of JavaScript's claims for some files.
+  pub detected: Vec<DetectedExtension>,
+  /// The languages whose files are written here.
+  pub native: NativeLanguages,
 }
 
 struct PreparedModule {
@@ -113,10 +127,83 @@ fn prepare_module(code: &str, lang: Lang) -> Result<PreparedModule, String> {
 }
 
 fn prepare_generated(code: &GeneratedCode) -> Result<PreparedModule, String> {
-  let mut module = prepare_module(&code.code, code.lang)?;
+  prepare_generated_located(code).map_err(|error| error.message)
+}
+
+fn prepare_generated_located(code: &GeneratedCode) -> Result<PreparedModule, SyntaxError> {
+  let ast = lower_located(&code.code, code.lang)?;
+  let specifiers = loaded_specifiers(&ast);
+  let syntax = ModuleSyntax::of(&ast);
+  let mut module = PreparedModule {
+    ast,
+    specifiers,
+    syntax,
+  };
   remap(&mut module.ast, &code.mappings, code.length);
 
   Ok(module)
+}
+
+/// As many template expressions of one file as are skipped before the file is.
+const MAX_SKIPPED_EXPRESSIONS: usize = 20;
+
+/// Writes a file of `language` and parses what is written. A template expression that does not
+/// parse (a file being edited) is written as its fallback, and the rest of the file is analyzed;
+/// a client script that does not parse is left out.
+fn prepare_native(file: &str, code: String, language: Language, keep: bool) -> Outcome {
+  let mut skipped = Skipped::default();
+
+  loop {
+    let Generated {
+      source: generated,
+      expressions,
+    } = match language.generate(file, &code, &skipped) {
+      Ok(generated) => generated,
+      Err(error) => return Outcome::Skipped(error),
+    };
+
+    let main = match prepare_generated_located(&generated.main) {
+      Ok(main) => main,
+      Err(error) => {
+        let unparsable = error
+          .offset
+          .filter(|_| skipped.len() < MAX_SKIPPED_EXPRESSIONS)
+          .and_then(|offset| expression_at(&expressions, &skipped, offset));
+
+        match unparsable {
+          Some(expression) => {
+            skipped.insert(expression);
+            continue;
+          }
+          None => {
+            return Outcome::Skipped(format!(
+              "{} code does not parse: {}",
+              language.name(),
+              error.message
+            ));
+          }
+        }
+      }
+    };
+
+    let mut modules = Vec::with_capacity(1 + generated.scripts.len());
+    modules.push(main);
+    modules.extend(
+      generated
+        .scripts
+        .iter()
+        .filter_map(|script| prepare_generated(script).ok()),
+    );
+
+    return Outcome::Prepared(Box::new(PreparedFile {
+      source: SourceFile::new(code, true, keep),
+      modules,
+      component_fields: generated.component_fields,
+      scope_objects: generated.scope_objects,
+      props: generated.props,
+      component_instances: generated.component_instances,
+    }));
+  }
 }
 
 fn prepare_script(file: &str, code: String, keep: bool) -> Outcome {
@@ -243,14 +330,22 @@ fn read_batch(requests: &mut [Request], outcomes: &[Option<Outcome>], gate: Opti
 }
 
 /// `keep`: the text of what JavaScript gave is kept, as it may not be on disk.
-fn prepare(request: &mut Request, detected: &[DetectedExtension], keep: bool) -> Outcome {
+fn prepare(request: &mut Request, claims: &Claims, keep: bool) -> Outcome {
   let file = request.file.as_str();
 
   match std::mem::replace(&mut request.input, Input::Unreadable) {
     Input::Read | Input::Unreadable => Outcome::Unreadable,
 
     Input::ReadScript { code } => {
-      let may_be_claimed = detected.iter().any(|language| {
+      if let Some(language) = claims.native.of(file, &code) {
+        return prepare_native(file, code, language, false);
+      }
+      // Read here for a language whose tooling is JavaScript's.
+      if !crate::languages::is_script(file) {
+        return Outcome::NeedsJs;
+      }
+
+      let may_be_claimed = claims.detected.iter().any(|language| {
         file.ends_with(language.extension.as_str())
           && language
             .hints
@@ -266,17 +361,13 @@ fn prepare(request: &mut Request, detected: &[DetectedExtension], keep: bool) ->
 
     Input::Script { code } => prepare_script(file, code, keep),
 
-    Input::Empty { code } => match prepare_module("", Lang::Js) {
-      Ok(module) => Outcome::Prepared(Box::new(PreparedFile {
-        source: SourceFile::new(code, false, keep),
-        modules: vec![module],
-        component_fields: Vec::new(),
-        scope_objects: Vec::new(),
-        props: None,
-        component_instances: None,
-      })),
-      Err(error) => Outcome::Skipped(error),
+    Input::Source { code } => match claims.native.of(file, &code) {
+      Some(language) => prepare_native(file, code, language, keep),
+      None if crate::languages::is_script(file) => prepare_script(file, code, keep),
+      None => prepare_empty(code, keep),
     },
+
+    Input::Empty { code } => prepare_empty(code, keep),
 
     Input::Generated { code, generated } => {
       let generated = *generated;
@@ -306,10 +397,25 @@ fn prepare(request: &mut Request, detected: &[DetectedExtension], keep: bool) ->
   }
 }
 
+/// A file in a format that is not analyzed: a module without code of its own.
+fn prepare_empty(code: String, keep: bool) -> Outcome {
+  match prepare_module("", Lang::Js) {
+    Ok(module) => Outcome::Prepared(Box::new(PreparedFile {
+      source: SourceFile::new(code, false, keep),
+      modules: vec![module],
+      component_fields: Vec::new(),
+      scope_objects: Vec::new(),
+      props: None,
+      component_instances: None,
+    })),
+    Err(error) => Outcome::Skipped(error),
+  }
+}
+
 fn read_and_prepare(
   requests: &mut [Request],
   outcomes: &mut [Option<Outcome>],
-  detected: &[DetectedExtension],
+  claims: &Claims,
   keep: bool,
 ) {
   let gate = read_gate();
@@ -322,7 +428,7 @@ fn read_and_prepare(
         read_batch(batch, outcomes, gate);
         for (request, outcome) in batch.iter_mut().zip(outcomes) {
           if outcome.is_none() {
-            *outcome = Some(prepare(request, detected, keep));
+            *outcome = Some(prepare(request, claims, keep));
           }
         }
       });
@@ -331,8 +437,8 @@ fn read_and_prepare(
 
 /// Scripts read and parsed ahead of `load`, while JavaScript is still listing the project's files.
 pub struct Prefetch {
-  /// The scripts a language may claim, as `load` is given them.
-  detected: Arc<[DetectedExtension]>,
+  /// Which languages claim which files, as `load` is given them.
+  claims: Arc<Claims>,
   state: Mutex<PrefetchState>,
   finished: Condvar,
 }
@@ -345,9 +451,9 @@ struct PrefetchState {
 }
 
 impl Prefetch {
-  pub fn new(detected: Arc<[DetectedExtension]>) -> Self {
+  pub fn new(claims: Arc<Claims>) -> Self {
     Prefetch {
-      detected,
+      claims,
       state: Mutex::default(),
       finished: Condvar::new(),
     }
@@ -380,7 +486,7 @@ impl Prefetch {
       let mut outcomes: Vec<Option<Outcome>> = requests.iter().map(|_| None).collect();
       // A panic leaves files to their load.
       let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        read_and_prepare(&mut requests, &mut outcomes, &prefetch.detected, false)
+        read_and_prepare(&mut requests, &mut outcomes, &prefetch.claims, false)
       }));
 
       let mut state = prefetch.lock();
@@ -426,7 +532,7 @@ impl Prefetch {
 pub fn load(
   graph: &mut Graph,
   mut requests: Vec<Request>,
-  detected: &[DetectedExtension],
+  claims: &Claims,
   prefetch: Option<&Prefetch>,
 ) -> LoadResult {
   let mut seen = FxHashSet::default();
@@ -441,7 +547,7 @@ pub fn load(
     None => requests.iter().map(|_| None).collect(),
   };
   let keep = !graph.options.sources_on_disk;
-  read_and_prepare(&mut requests, &mut outcomes, detected, keep);
+  read_and_prepare(&mut requests, &mut outcomes, claims, keep);
 
   let mut result = LoadResult::default();
   let mut added = false;
@@ -690,10 +796,13 @@ mod tests {
       root.join("missing.ts").to_string_lossy().into_owned(),
     ];
     let _ = std::fs::write(root.join("not-utf8.ts"), b"export const t = \"\xff\";\n");
-    let detected: Arc<[DetectedExtension]> = Arc::from(vec![DetectedExtension {
-      extension: ".ts".to_string(),
-      hints: vec!["@Component".to_string()],
-    }]);
+    let detected = Arc::new(Claims {
+      detected: vec![DetectedExtension {
+        extension: ".ts".to_string(),
+        hints: vec!["@Component".to_string()],
+      }],
+      native: NativeLanguages::default(),
+    });
 
     let mut plain = graph();
     let result = load(
@@ -770,7 +879,7 @@ mod tests {
     })
     .collect();
 
-    let prefetch = Arc::new(Prefetch::new(Arc::from(Vec::new())));
+    let prefetch = Arc::new(Prefetch::new(Arc::default()));
     prefetch.start(files.clone());
 
     let prepared: Vec<String> = prefetch.wait().prepared.keys().cloned().collect();
