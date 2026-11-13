@@ -11,6 +11,7 @@ import {
   type GlobalBinding,
   type ModuleGraphOptions,
   type ParsedModule,
+  type SharedSites,
 } from '../../src/compiler/analysis/module-graph.js';
 import type { ParaglideUsage } from '../../src/compiler/analysis/types.js';
 import type { GeneratedModule } from '../../src/compiler/collector/module-reader.js';
@@ -103,16 +104,21 @@ export async function analyzeProject(
   const usages = analyzeModule(graph, entry);
 
   // The collector indexes the modules and loads each when it is read: it must find the same.
-  const indexed = await analyzeIndexed(graphOptions, all, sources, entry, {
-    languages,
-    context,
-    onLoad: options.onLoad,
-  });
+  const { indexed, shared } = await analyzeIndexed(
+    graphOptions,
+    all,
+    sources,
+    entry,
+    { languages, context, onLoad: options.onLoad }
+  );
   // The values a node holds come in the order their modules were loaded, which the index sets.
   expect(
     inCanonicalOrder(indexed),
     'usages found through an indexed graph'
   ).toEqual(inCanonicalOrder(usages));
+  expect(shared, 'usages found with sites shared between graphs').toEqual(
+    indexed
+  );
 
   return usages;
 }
@@ -154,7 +160,7 @@ async function analyzeIndexed(
     languages: readonly SourceLanguage[];
     context: LanguageContext;
   }
-): Promise<ParaglideUsage[]> {
+): Promise<{ indexed: ParaglideUsage[]; shared: ParaglideUsage[] }> {
   const generatedModules = new Map<string, GeneratedModule>();
   const outdirGraph = new ModuleGraph(graphOptions);
   const indexer = new ModuleIndexer({
@@ -191,33 +197,64 @@ async function analyzeIndexed(
   });
   await indexer.indexPaths(sources);
 
-  const graph = new ModuleGraph({
-    targets: graphOptions.targets,
-    outdirs: outdirGraph.outdirs,
-    globals: graphOptions.globals,
-    index: {
-      summaries: indexer.modules,
-      budget: 0,
-      load: (file) => {
-        onLoad?.(file);
-        const parsed = parseSourceSync(
-          file,
-          files.get(file)!,
-          parseModuleCode,
-          generatedModules.get(file)
-        );
-        return 'module' in parsed ? parsed.module : undefined;
+  const indexedGraph = ({
+    shared,
+    isCounted,
+  }: { shared?: SharedSites; isCounted?: boolean } = {}) =>
+    new ModuleGraph({
+      targets: graphOptions.targets,
+      outdirs: outdirGraph.outdirs,
+      globals: graphOptions.globals,
+      index: {
+        summaries: indexer.modules,
+        budget: 0,
+        load: (file) => {
+          if (isCounted) onLoad?.(file);
+          const parsed = parseSourceSync(
+            file,
+            files.get(file)!,
+            parseModuleCode,
+            generatedModules.get(file)
+          );
+          return 'module' in parsed ? parsed.module : undefined;
+        },
       },
+      shared,
+    });
+
+  const analyzeAll = (graph: ModuleGraph) => {
+    for (const { file } of indexer.modules) {
+      if (file === entry) continue;
+
+      analyzeModule(graph, file);
+    }
+
+    return analyzeModule(graph, entry);
+  };
+
+  // As the threads share a function's sites: every other referrer is
+  // evaluated by another graph, which has read none of the same modules.
+  const other = indexedGraph();
+  const shared: SharedSites = {
+    minReferrers: 1,
+    share(job) {
+      const values = job.own();
+      for (let referrer = 0; referrer < job.referrers; referrer++) {
+        const elsewhere =
+          referrer % 2 === 0
+            ? other.evaluateSharedSites(job, referrer, referrer + 1)
+            : undefined;
+        values.push(...(elsewhere ?? job.range(referrer, referrer + 1)));
+      }
+
+      return values;
     },
-  });
+  };
 
-  for (const { file } of indexer.modules) {
-    if (file === entry) continue;
-
-    analyzeModule(graph, file);
-  }
-
-  return analyzeModule(graph, entry);
+  return {
+    indexed: analyzeAll(indexedGraph({ isCounted: true })),
+    shared: analyzeAll(indexedGraph({ shared })),
+  };
 }
 
 /** Aliases, relative and absolute paths, else a package; with the extensions a bundler tries. */

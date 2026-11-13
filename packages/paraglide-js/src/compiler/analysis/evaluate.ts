@@ -6,7 +6,7 @@ import {
   type ESTree,
   type Node,
 } from './ast.js';
-import type { Candidate } from './call-sites.js';
+import { argumentOf, type Candidate, type SiteHandle } from './call-sites.js';
 import { keyAlternatives } from './computed-keys.js';
 import { aliasScope, readsProps, type Binding, type Scope } from './scope.js';
 import type { TrackedNamespace, TrackedSymbol, TrackedValue } from './types.js';
@@ -89,6 +89,14 @@ export function resolveBinding(binding: Binding, read?: Node): TrackedSymbol[] {
 
   return guarded(binding.key ?? binding, () => {
     if (binding.type === 'values') {
+      // Other threads evaluate a range of sites as from the start, with only
+      // the binding in progress: only an evaluation that starts here is shared.
+      const shared =
+        read && binding.shared && inProgress.size === 1
+          ? binding.shared(read)
+          : undefined;
+      if (shared) return distinct(shared);
+
       const candidates =
         read && binding.at ? binding.at(read) : binding.candidates();
       return distinct(evaluateCandidates(candidates));
@@ -310,6 +318,57 @@ function propsOf(scope: Scope): TrackedSymbol[] {
 }
 
 /**
+ * What `sites` pass as parameter `index`, followed by `path`, in order. A
+ * parameter's values in one thread and those threads share are both these:
+ * see `evaluatePassed`.
+ */
+export function* passedCandidates(
+  sites: Iterable<SiteHandle>,
+  index: number,
+  path: readonly string[]
+): Generator<Candidate> {
+  for (const site of sites) {
+    const argument = argumentOf(site, index);
+    if (argument) yield followCandidate(argument, path);
+  }
+}
+
+/** The values `sites` pass, without repeats: what `resolveBinding` finds for a parameter, from those sites. */
+export function evaluatePassed(
+  sites: Iterable<SiteHandle>,
+  index: number,
+  path: readonly string[]
+): TrackedSymbol[] {
+  return withoutRepeats(
+    evaluateCandidates(passedCandidates(sites, index, path))
+  );
+}
+
+/**
+ * Runs `compute` as the thread helping with a range of `binding`'s sites
+ * does: with only `binding` in progress, as `resolveBinding` keys it, which
+ * ends a cycle back to it. A thread helps once it is idle; tests run it
+ * within the analysis that shared the range.
+ */
+export function inBinding(
+  binding: Binding,
+  compute: () => TrackedSymbol[]
+): TrackedSymbol[] {
+  const outer = [...inProgress];
+  const outerDepth = depth;
+  inProgress.clear();
+  depth = 0;
+
+  try {
+    return guarded(binding.key ?? binding, compute);
+  } finally {
+    inProgress.clear();
+    for (const key of outer) inProgress.add(key);
+    depth = outerDepth;
+  }
+}
+
+/**
  * The values of every candidate, as they are found: a parameter of a function
  * called from thousands of modules has that many, too many to hold at once.
  */
@@ -351,12 +410,31 @@ function guarded(
  * outdirs can define a message of the same name: those are two values.
  */
 function distinct(symbols: Iterable<TrackedSymbol>): TrackedSymbol[] {
+  const unique = withoutRepeats(symbols);
+  const values = unique.filter(
+    (symbol): symbol is TrackedValue => symbol.type === 'value'
+  );
+  const namespaces = unique.filter((symbol) => symbol.type === 'namespace');
+  const collapsed =
+    values.length > MAX_VALUES ? anyValuePerOrigin(values) : values;
+
+  return [...collapsed, ...namespaces.slice(0, MAX_VALUES)];
+}
+
+/**
+ * The first value of each name and origin, then each namespace once:
+ * `distinct` of these is `distinct` of `symbols`, so values joined from many
+ * sites need not all be held until then.
+ */
+export function withoutRepeats(
+  symbols: Iterable<TrackedSymbol>
+): TrackedSymbol[] {
   const valuesByName = new Map<string, TrackedValue>();
-  const namespaces: TrackedSymbol[] = [];
+  const namespaces = new Set<TrackedSymbol>();
 
   for (const symbol of symbols) {
     if (symbol.type === 'namespace') {
-      if (!namespaces.includes(symbol)) namespaces.push(symbol);
+      namespaces.add(symbol);
       continue;
     }
 
@@ -364,11 +442,7 @@ function distinct(symbols: Iterable<TrackedSymbol>): TrackedSymbol[] {
     if (!valuesByName.has(key)) valuesByName.set(key, symbol);
   }
 
-  const values = [...valuesByName.values()];
-  const collapsed =
-    values.length > MAX_VALUES ? anyValuePerOrigin(values) : values;
-
-  return [...collapsed, ...namespaces.slice(0, MAX_VALUES)];
+  return [...valuesByName.values(), ...namespaces];
 }
 
 /** The target and its file that a value comes from, e.g. an outdir's `messages.js`. */

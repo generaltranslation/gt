@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import {
+  inBinding,
+  resolveBinding,
+} from '../../src/compiler/analysis/evaluate.js';
+import type { Binding } from '../../src/compiler/analysis/scope.js';
+import {
   ENTRY,
   OUTDIR,
   analyzeEntry,
@@ -503,4 +508,21 @@ describe("a parameter's value that is only passed through or inspected", () => {
       await analyzeEntry(`${imports}export const f = () => m.title;`)
     ).toEqual(['message:title:reference']);
   });
+});
+
+test('another thread evaluates a shared range with the parameter in progress, as its copy of the module keys it', () => {
+  let isEvaluated = false;
+  // The parameter as another thread's graph parses its module: another object, the same key.
+  const copy: Binding = {
+    type: 'values',
+    parameter: true,
+    key: '/app/src/f.ts\u00000\u000016',
+    candidates: () => {
+      isEvaluated = true;
+      return [];
+    },
+  };
+
+  expect(inBinding({ ...copy }, () => resolveBinding(copy))).toEqual([]);
+  expect(isEvaluated).toBe(false);
 });
