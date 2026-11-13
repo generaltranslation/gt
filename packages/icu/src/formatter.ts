@@ -304,8 +304,41 @@ function invalidSelection(
   );
 }
 
+// Resolving a locale costs more than formatting most messages, and an app
+// formats in a handful of locales; the cap bounds locales that come from input.
+const MAX_RESOLVED_LOCALES = 64;
+const resolvedLocales = new Map<string, Intl.Locale>();
+
 function resolveLocale(locales: string | string[]): Intl.Locale | undefined {
   if (typeof Intl.Locale === 'undefined') return undefined;
+  const key = getLocalesKey(locales);
+  if (key === undefined) return resolveLocaleList(locales);
+  let locale = resolvedLocales.get(key);
+  if (!locale) {
+    locale = resolveLocaleList(locales);
+    if (resolvedLocales.size >= MAX_RESOLVED_LOCALES) resolvedLocales.clear();
+    resolvedLocales.set(key, locale);
+  }
+  return locale;
+}
+
+/** A string key distinct from every array key, or undefined when the input should not be cached. */
+function getLocalesKey(locales: string | string[]): string | undefined {
+  if (typeof locales === 'string') {
+    return locales.includes('\u0000') ? undefined : locales;
+  }
+  let key = '';
+  for (let index = 0; index < locales.length; index++) {
+    const locale = locales[index];
+    if (typeof locale !== 'string' || locale.includes('\u0000')) {
+      return undefined;
+    }
+    key += '\u0000' + locale;
+  }
+  return key || undefined;
+}
+
+function resolveLocaleList(locales: string | string[]): Intl.Locale {
   const supported = Intl.NumberFormat.supportedLocalesOf(locales)[0];
   const requested = typeof locales === 'string' ? locales : locales[0];
   // Preserve intl-messageformat's behavior for empty locale lists: allowing
