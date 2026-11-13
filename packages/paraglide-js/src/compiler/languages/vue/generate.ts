@@ -6,6 +6,7 @@ import {
   type GeneratedSource,
   type LanguageContext,
   type ParseLang,
+  type SkippedPart,
 } from '../language.js';
 import {
   mappingsFromVolar,
@@ -22,6 +23,8 @@ import {
 
 export const VUE_REQUIRES = ['@vue/language-core', 'typescript'] as const;
 export const VUE_INSTALLED_WITH = { '@vue/language-core': 'vue-tsc' };
+
+const PUG_PLUGIN = '@vue/language-plugin-pug';
 
 type VuePlugin = VueLanguageCore.VueLanguagePlugin;
 type Tools = {
@@ -98,7 +101,28 @@ export async function generateVue(
     // `const __VLS_0 = Label; const __VLS_1 = __VLS_asFunctionalComponent1(__VLS_0, …);
     // __VLS_1({ message: … })`
     componentInstances: { via: 'call', path: [] },
+    skipped: unreadPugTemplate(tools, virtualCode),
   };
+}
+
+/** A pug template is left out without its plugin. */
+function unreadPugTemplate(
+  tools: Tools,
+  virtualCode: VirtualCode
+): SkippedPart | undefined {
+  const isUnread = virtualCode.sfc.template?.lang === 'pug' && !tools.pug;
+
+  return isUnread
+    ? { name: 'pug templates', requires: [PUG_PLUGIN] }
+    : undefined;
+}
+
+/** False without the tools, or with unusable ones. */
+export function hasVueTools(context: LanguageContext): Promise<boolean> {
+  return loadTools(context).then(
+    (tools) => tools !== undefined,
+    () => false
+  );
 }
 
 async function loadTools(context: LanguageContext): Promise<Tools | undefined> {
@@ -107,7 +131,7 @@ async function loadTools(context: LanguageContext): Promise<Tools | undefined> {
       'typescript'
     ),
     context.load<typeof VueLanguageCore>('@vue/language-core'),
-    context.load<{ default?: VuePlugin }>('@vue/language-plugin-pug'),
+    context.load<{ default?: VuePlugin }>(PUG_PLUGIN),
   ]);
 
   const typescript = ts?.ScriptSnapshot ? ts : ts?.default;

@@ -114,17 +114,44 @@ describe('Markdown (VitePress)', () => {
     expect(usages).toEqual([]);
   });
 
-  test('skipped, naming the packages, without @vue/language-core', async () => {
-    const result = await parseSource(
-      file,
-      '# Title\n',
-      parse,
-      [markdownLanguage],
-      NO_PACKAGES
-    );
-    expect(result).toMatchObject({
-      missing: ['@vue/language-core', 'typescript'],
-    });
+  test('without @vue/language-core, a page with a script is skipped, naming the packages', async () => {
+    const withoutTools = (code: string) =>
+      parseSource(file, code, parse, [markdownLanguage], NO_PACKAGES);
+
+    expect(
+      await withoutTools('<script setup>\nconst a = 1;\n</script>\n\n# Title\n')
+    ).toMatchObject({ missing: ['@vue/language-core', 'typescript'] });
+    expect(await withoutTools('# Title\n')).toHaveProperty('module');
+  });
+
+  test('without @vue/language-core, a script in code, a comment or frontmatter is no script', async () => {
+    const withoutTools = (lines: string[]) =>
+      parseSource(
+        file,
+        lines.join('\n'),
+        parse,
+        [markdownLanguage],
+        NO_PACKAGES
+      );
+    const script = '<script src="app.js"></script>';
+
+    for (const lines of [
+      ['```html', script, '```'],
+      ['~~~', script, '~~~'],
+      [`    ${script}`],
+      ['Add a `<script>` tag.'],
+      [`<!-- ${script} -->`],
+      ['---', `title: "${script}"`, '---', '# Title'],
+    ]) {
+      expect(await withoutTools(lines)).toHaveProperty('module');
+    }
+
+    for (const lines of [
+      ['<div>', script, '</div>'],
+      [`Text with ${script} inline.`],
+    ]) {
+      expect(await withoutTools(lines)).toHaveProperty('missing');
+    }
   });
 
   test('an expression that does not parse is skipped, not the file', async () => {
