@@ -229,6 +229,51 @@ describe('values passed into functions', () => {
       expect(summarize(usages)).toEqual([call]);
     });
 
+    const callTwice = (other: string) =>
+      `if (a) ${other}(t); if (b) ${other}(t);`;
+    const renderTwice = (other: string) =>
+      `<script setup lang="ts">\nimport ${other} from "./${other}.vue";\ndefineProps(["msgs"]);\n</script>\n<template><p>{{ msgs.greeting() }}</p><${other} v-if="a" :msgs="msgs" /><${other} v-if="b" :msgs="msgs" /></template>\n`;
+
+    // Each module passes what it receives to the other twice. A cycle missed in
+    // a module parsed again would double the work with each step, up to the depth limit.
+    test.each([
+      [
+        'functions',
+        {
+          '/app/src/App.ts': `${imports}import { f } from "./f.js";\nf(m);\n`,
+          '/app/src/f.ts': `import { g } from "./g.js";\nexport function f(t) { ${callTwice('g')} return t.greeting(); }\n`,
+          '/app/src/g.ts': `import { f } from "./f.js";\nexport function g(t) { ${callTwice('f')} return t.greeting(); }\n`,
+        },
+        '/app/src/f.ts',
+      ],
+      [
+        'Vue components',
+        {
+          '/app/src/App.vue': `<script setup lang="ts">\n${imports}import A from "./A.vue";\n</script>\n<template><A :msgs="m" /></template>\n`,
+          '/app/src/A.vue': renderTwice('B'),
+          '/app/src/B.vue': renderTwice('A'),
+        },
+        '/app/src/A.vue',
+      ],
+    ])(
+      'recursion through two modules ends, though each is parsed again: %s',
+      async (_name, files, entry) => {
+        let loads = 0;
+
+        const usages = await analyzeProject(files, {
+          entry,
+          loadAll: true,
+          onLoad: () => {
+            // Fails fast instead of stalling.
+            if (++loads > 1000) throw new Error('more than 1000 loads');
+          },
+        });
+
+        expect(summarize(usages)).toEqual([call]);
+        expect(loads).toBeLessThanOrEqual(200);
+      }
+    );
+
     test('every value of an argument: a computed key with alternatives', async () => {
       const usages = await analyzeAll(
         {
