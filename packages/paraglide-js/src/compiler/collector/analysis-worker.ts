@@ -21,7 +21,7 @@ import {
   analysisBudget,
   loadIndexedFile,
   summarizeFile,
-  type GeneratedModule,
+  type GeneratedBytes,
 } from './module-reader.js';
 
 const { projectRoot, concurrentReads } = workerData as AnalysisWorkerData;
@@ -88,10 +88,10 @@ function indexedGraph({ index, bridge }: IndexRequest): ModuleGraph {
 function requestGenerated(
   { port, flag }: Bridge,
   file: string
-): GeneratedModule | undefined {
+): GeneratedBytes | undefined {
   Atomics.store(flag, 0, 0);
   port.postMessage(file);
   Atomics.wait(flag, 0, 0);
 
-  return receiveMessageOnPort(port)?.message as GeneratedModule | undefined;
+  return receiveMessageOnPort(port)?.message as GeneratedBytes | undefined;
 }

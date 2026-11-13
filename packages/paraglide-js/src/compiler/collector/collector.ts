@@ -33,7 +33,7 @@ import {
   analysisBudget,
   loadIndexedFile,
   summarizeFile,
-  type GeneratedModule,
+  type GeneratedBytes,
   type SummaryResult,
 } from './module-reader.js';
 import { OutdirProjects } from './outdir-projects.js';
@@ -90,7 +90,7 @@ export class ContextCollector {
   private readonly moduleGraph: ModuleGraph;
   private readonly indexer: ModuleIndexer;
   /** What languages generated for the indexed files, when this thread analyzes them: it parses a file again when it loads it. */
-  private readonly generated = new Map<string, GeneratedModule>();
+  private readonly generated = new Map<string, GeneratedBytes>();
   private pool: AnalysisPool | undefined;
   private globals: readonly GlobalBinding[] = [];
   private globalNames: ReadonlySet<string> = new Set();
