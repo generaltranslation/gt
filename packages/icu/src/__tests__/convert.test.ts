@@ -1136,7 +1136,7 @@ describe('checkTranslation', () => {
       );
     });
 
-    it('checks no branches without a locale, or with one Intl has no rules for', () => {
+    it('requires no categories without a locale, or with one Intl has no rules for', () => {
       expect(check('{n, plural, other {# файлов}}')).toBeUndefined();
       // Intl would answer for the host's language.
       expect(check('{n, plural, other {# x}}', 'zz')).toBeUndefined();

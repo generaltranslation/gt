@@ -21,3 +21,8 @@ export const createInvalidFormatOptionError = (
 
 export const createConflictingFormatsError = (name: string) =>
   `Message variable "${name}" is formatted with different formatting context in one message; give each its own variable name.`;
+
+export const createUnsupportedTreeFormatError = (
+  placeholder: string,
+  reason: string
+) => `${placeholder} cannot be part of a message tree: ${reason}.`;

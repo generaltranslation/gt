@@ -25,6 +25,16 @@ const core = (name, file) =>
 const format = (name, file) =>
   entry(name, `packages/format/dist/${file}.mjs`, '15 kB');
 
+const icuImport = (name, file, limit) =>
+  entry(
+    `@generaltranslation/icu/${file} ${name}`,
+    `packages/icu/dist/${file}.mjs`,
+    limit,
+    {
+      import: name,
+    }
+  );
+
 const i18n = (name, file) =>
   entry(name, `packages/i18n/dist/${file}.mjs`, '35 kB');
 
@@ -99,6 +109,13 @@ module.exports = [
   format('@generaltranslation/format', 'index'),
   format('@generaltranslation/format/types', 'types'),
   format('@generaltranslation/format/internal', 'internal'),
+
+  // One named export each, so a check that pulls in more than it needs fails.
+  // The tree check prints date fields from the chunk the parser shares, whose
+  // table of parser errors a bundler keeps: 0.7 kB of this.
+  icuImport('{ checkTranslation }', 'convert', '3 kB'),
+  // At most the parser, which it needs, plus 2 kB.
+  icuImport('{ checkIcuTranslation }', 'convert', '8.5 kB'),
 
   i18n('gt-i18n', 'index'),
   i18n('gt-i18n/types', 'types'),
