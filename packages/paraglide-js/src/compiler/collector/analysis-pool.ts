@@ -245,6 +245,10 @@ export class AnalysisPool {
             added.push(onAnalyzed(file, results[at]!))
           );
         }
+
+        // No file is left for it: its memory goes back while the last
+        // threads finish, e.g. one analyzing a widely imported file.
+        await worker.terminate();
       })
     );
 
