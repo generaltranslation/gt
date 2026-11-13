@@ -111,11 +111,21 @@ export function componentInstancesIn(
 
 /** Where a site is in its module, the same once the module is parsed again. */
 export function sitePosition(site: CallSite): string {
-  const [start, end] = parsedRange(
-    site.type === 'call' ? site.node : site.element
-  );
+  const [start, end] = siteRange(site);
 
-  return `${site.type}:${start}:${end}`;
+  return positionKey(site.type, start, end);
+}
+
+export function siteRange(site: CallSite): readonly [number, number] {
+  return parsedRange(site.type === 'call' ? site.node : site.element);
+}
+
+export function positionKey(
+  type: CallSite['type'],
+  start: number,
+  end: number
+): string {
+  return `${type}:${start}:${end}`;
 }
 
 /** A handle on a site of the module being read, which holds it already. */
