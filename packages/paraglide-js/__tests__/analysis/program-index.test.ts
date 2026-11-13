@@ -66,7 +66,7 @@ describe('indexProgram', () => {
       false
     );
     expect(index.references.get(parameter!)).toBeUndefined();
-    expect(index.parents.get(called!)?.type).toBe('CallExpression');
+    expect(index.parentOf(called!)?.type).toBe('CallExpression');
   });
 
   test("resolves a parameter's default to the name outside the function, without ranges", () => {
@@ -82,6 +82,37 @@ describe('indexProgram', () => {
     expect(
       indexProgram(parsed).references.get(inDefault!)?.variable?.isModuleLevel
     ).toBe(true);
+  });
+
+  test('finds the parent of a node of generated code moved to its source position', () => {
+    const code = 'a;\nb();';
+    const program = parse(code);
+    remapProgram(
+      program,
+      [
+        { generated: 0, source: 20, length: 2 },
+        { generated: 3, source: 0, length: 4 },
+      ],
+      code.length
+    );
+
+    const index = indexProgram(program);
+    const [b] = identifiers(program, 'b');
+
+    expect(index.parentOf(b!)?.type).toBe('CallExpression');
+    expect(index.parentOf(index.parentOf(b!)!)?.type).toBe(
+      'ExpressionStatement'
+    );
+  });
+
+  test('finds the parent of a node outside its parent, e.g. a decorator before `export`', () => {
+    const program = parse('@sealed export class A {}');
+    const [sealed] = identifiers(program, 'sealed');
+    const index = indexProgram(program);
+
+    const decorator = index.parentOf(sealed!);
+    expect(decorator?.type).toBe('Decorator');
+    expect(index.parentOf(decorator!)?.type).toBe('ClassDeclaration');
   });
 
   test('drops the ranges that repeat start and end', () => {

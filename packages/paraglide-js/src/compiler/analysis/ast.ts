@@ -103,7 +103,7 @@ function childKeysOf(node: Node): readonly string[] {
   );
 }
 
-function isNode(value: unknown): value is Node {
+export function isNode(value: unknown): value is Node {
   return (
     typeof value === 'object' &&
     value !== null &&
