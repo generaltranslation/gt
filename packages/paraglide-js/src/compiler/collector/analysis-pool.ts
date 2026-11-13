@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import v8 from 'node:v8';
-import { Worker } from 'node:worker_threads';
+import { MessageChannel, Worker, type MessagePort } from 'node:worker_threads';
 import type { GlobalBinding } from '../analysis/module-graph.js';
 import type { ModuleSummary } from '../analysis/module-store.js';
-import type { ParaglideUsage } from '../analysis/types.js';
+import type { ParaglideUsage, TrackedSymbol } from '../analysis/types.js';
 import { MAX_CONCURRENT_READS } from '../utils/read-file.js';
 import { SpilledBytes, type SharedSpill } from '../utils/spill-file.js';
 import { analysisBudget, type SummaryResult } from './module-reader.js';
@@ -30,7 +30,37 @@ export type IndexRequest = {
   type: 'index';
   /** A `SharedIndex`, serialized once for every thread. */
   index: SharedArrayBuffer;
+  /** Where the values of a `SharedJob` other threads evaluated come back. */
+  channel: SharedChannel;
 };
+
+/** A port the main thread posts on, and a flag it raises after: a thread waiting on the flag reads the port. */
+export type SharedChannel = { port: MessagePort; flag: Int32Array };
+
+/**
+ * A function's sites, which a thread evaluating them shares: see
+ * `SharedSites`. Each thread takes ranges of `chunkSize` referrers by adding
+ * 1 to the counter in `claims`, and the main thread posts the values of
+ * those it evaluates to the thread that shared them (`ChunkMessage`).
+ */
+export type SharedJob = {
+  /** By the thread that shared it. */
+  id: number;
+  file: string;
+  part: number;
+  read: number;
+  referrers: number;
+  chunks: number;
+  chunkSize: number;
+  claims: SharedArrayBuffer;
+};
+
+/** A range's values, null if it could not be sent between threads; or that no other thread holds a range any more. */
+export type ChunkMessage =
+  | { id: number; chunk: number; symbols: TrackedSymbol[] | null }
+  | { id: number; done: true };
+
+type ChunkResult = { chunk: number; symbols: TrackedSymbol[] | null };
 
 export type SharedIndex = AnalysisIndex & {
   /** What languages generated, by file: see `GeneratedBytes`. */
@@ -44,11 +74,17 @@ type WorkerTask =
       globalNames: readonly string[];
     }
   | IndexRequest
-  | { type: 'analyze'; files: readonly string[] };
+  | { type: 'analyze'; files: readonly string[] }
+  | { type: 'help'; job: SharedJob };
 
 export type WorkerRequest = WorkerTask & { id: number };
 
 type WorkerResponse = { id: number; result?: unknown; error?: string };
+
+/** What a thread posts without being asked: a job other threads can help with. */
+type WorkerNotice = { share: SharedJob };
+
+type Share = { job: SharedJob; requester: PoolWorker; helpers: number };
 
 /** Files are indexed in batches of this many at most. */
 const MAX_BATCH = 64;
@@ -160,6 +196,9 @@ export class AnalysisPool {
   }> = [];
   private isDispatchScheduled = false;
   private globalNames: readonly string[] = [];
+  /** Jobs threads shared while analyzing, and each thread's channel for their values. */
+  private shares: Share[] = [];
+  private readonly channels = new Map<PoolWorker, SharedChannel>();
   private readonly heapMb: number;
   private readonly largeHeapMb: number;
 
@@ -223,11 +262,17 @@ export class AnalysisPool {
     const buffer = new SharedArrayBuffer(serialized.length);
     serialized.copy(Buffer.from(buffer));
 
-    await Promise.all(
-      this.workers.map((worker) =>
-        worker.request({ type: 'index', index: buffer })
-      )
-    );
+    const giveIndex = (worker: PoolWorker) => {
+      const { port1, port2 } = new MessageChannel();
+      const flag = new Int32Array(new SharedArrayBuffer(4));
+      this.channels.set(worker, { port: port1, flag });
+
+      return worker.request(
+        { type: 'index', index: buffer, channel: { port: port2, flag } },
+        [port2]
+      );
+    };
+    await Promise.all(this.workers.map(giveIndex));
 
     const added: Promise<void>[] = [];
     const chunks = new ChunkQueue(
@@ -242,24 +287,31 @@ export class AnalysisPool {
           const results = (await this.request(
             slot,
             { type: 'analyze', files: chunk },
-            (worker) => worker.request({ type: 'index', index: buffer })
+            giveIndex
           )) as ParaglideUsage[][];
           chunk.forEach((file, at) =>
             added.push(onAnalyzed(file, results[at]!))
           );
         }
 
-        // No file is left for it: its memory goes back while the last
-        // threads finish, e.g. one analyzing a widely imported file.
+        // No file is left for it: it helps with the sites a thread shared,
+        // e.g. of a widely imported file, then its memory goes back.
+        for (let share = this.openShare(); share; share = this.openShare()) {
+          const isHelping = await this.help(slot, share);
+          if (!isHelping) break;
+        }
         await this.workers[slot]!.terminate();
       })
     );
 
     await Promise.all(added);
+    this.shares = [];
   }
 
   async close(): Promise<void> {
     await Promise.all(this.workers.map((worker) => worker.terminate()));
+    for (const { port } of this.channels.values()) port.close();
+    this.channels.clear();
     // Once no thread reads it.
     this.generated.close();
   }
@@ -289,6 +341,50 @@ export class AnalysisPool {
     }
   }
 
+  /** A shared job with a range no thread took yet. */
+  private openShare(): Share | undefined {
+    return this.shares.find(
+      ({ job }) => Atomics.load(new Int32Array(job.claims), 0) < job.chunks
+    );
+  }
+
+  /**
+   * Has the thread of `slot` evaluate ranges of `share` until none is left,
+   * and posts their values to the thread that shared it. False if the
+   * thread failed: the ranges it took are evaluated by that thread.
+   */
+  private async help(slot: number, share: Share): Promise<boolean> {
+    share.helpers++;
+
+    try {
+      const results = (await this.workers[slot]!.request({
+        type: 'help',
+        job: share.job,
+      })) as ChunkResult[];
+      for (const result of results) {
+        this.post(share.requester, { id: share.job.id, ...result });
+      }
+
+      return true;
+    } catch {
+      return false;
+    } finally {
+      share.helpers--;
+      if (share.helpers === 0) {
+        this.post(share.requester, { id: share.job.id, done: true });
+      }
+    }
+  }
+
+  private post(worker: PoolWorker, message: ChunkMessage): void {
+    const channel = this.channels.get(worker);
+    if (!channel) return;
+
+    channel.port.postMessage(message);
+    Atomics.store(channel.flag, 0, 1);
+    Atomics.notify(channel.flag, 0);
+  }
+
   private startWorkers(size: number): PoolWorker[] {
     return Array.from({ length: size }, () => this.startWorker(this.heapMb));
   }
@@ -299,7 +395,11 @@ export class AnalysisPool {
       resourceLimits: { maxOldGenerationSizeMb: heapMb },
     });
 
-    return new PoolWorker(worker, heapMb);
+    const pool = new PoolWorker(worker, heapMb, (job) =>
+      this.shares.push({ job, requester: pool, helpers: 0 })
+    );
+
+    return pool;
   }
 
   private scheduleDispatch(): void {
@@ -395,9 +495,16 @@ class PoolWorker {
   constructor(
     private readonly worker: Worker,
     /** Its heap limit: see `THREAD_HEAP_MB`. */
-    readonly heapMb: number
+    readonly heapMb: number,
+    onShare: (job: SharedJob) => void
   ) {
-    worker.on('message', ({ id, result, error }: WorkerResponse) => {
+    worker.on('message', (message: WorkerResponse | WorkerNotice) => {
+      if ('share' in message) {
+        onShare(message.share);
+        return;
+      }
+
+      const { id, result, error } = message;
       const request = this.pending.get(id);
       if (!request) return;
 
@@ -416,7 +523,7 @@ class PoolWorker {
     return this.pending.size > 0;
   }
 
-  request(task: WorkerTask): Promise<unknown> {
+  request(task: WorkerTask, transfer: MessagePort[] = []): Promise<unknown> {
     const id = this.nextId++;
     const request: WorkerRequest = { ...task, id };
 
@@ -427,7 +534,7 @@ class PoolWorker {
       }
 
       this.pending.set(id, { resolve, reject });
-      this.worker.postMessage(request);
+      this.worker.postMessage(request, transfer);
     });
   }
 

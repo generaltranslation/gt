@@ -6,7 +6,7 @@ import {
   type ESTree,
   type Node,
 } from './ast.js';
-import type { Candidate } from './call-sites.js';
+import { argumentOf, type Candidate, type SiteHandle } from './call-sites.js';
 import { keyAlternatives } from './computed-keys.js';
 import { aliasScope, readsProps, type Binding, type Scope } from './scope.js';
 import type { TrackedNamespace, TrackedSymbol, TrackedValue } from './types.js';
@@ -88,6 +88,14 @@ export function resolveBinding(binding: Binding, read?: Node): TrackedSymbol[] {
 
   return guarded(binding, () => {
     if (binding.type === 'values') {
+      // Other threads evaluate a range of sites as from the start, with only
+      // the binding in progress: only an evaluation that starts here is shared.
+      const shared =
+        read && binding.shared && inProgress.size === 1
+          ? binding.shared(read)
+          : undefined;
+      if (shared) return distinct(shared);
+
       const candidates =
         read && binding.at ? binding.at(read) : binding.candidates();
       return distinct(evaluateCandidates(candidates));
@@ -304,6 +312,35 @@ function propsOf(scope: Scope): TrackedSymbol[] {
   if (!props) return [];
 
   return guarded(props, () => distinct(evaluateCandidates(props.candidates())));
+}
+
+/**
+ * The values `sites` pass as parameter `index`, followed by `path`, in order:
+ * what `resolveBinding` finds for a parameter, from those sites.
+ */
+export function evaluatePassed(
+  sites: Iterable<SiteHandle>,
+  index: number,
+  path: readonly string[]
+): TrackedSymbol[] {
+  const symbols: TrackedSymbol[] = [];
+
+  for (const site of sites) {
+    const argument = argumentOf(site, index);
+    if (argument) {
+      symbols.push(...evaluateCandidate(followCandidate(argument, path)));
+    }
+  }
+
+  return symbols;
+}
+
+/** Runs `compute` as `resolveBinding` evaluates `binding`: with it in progress, which ends a cycle back to it. */
+export function inBinding(
+  binding: object,
+  compute: () => TrackedSymbol[]
+): TrackedSymbol[] {
+  return guarded(binding, compute);
 }
 
 /**
