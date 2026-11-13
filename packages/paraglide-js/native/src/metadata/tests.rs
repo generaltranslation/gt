@@ -45,7 +45,7 @@ fn rendered(
   let ids: Vec<&[u8]> = keys.iter().map(|key| key.id).collect();
   let source = SourceCode::collect(sources, PROJECT, &ids, radius);
   let rendered = render_file(keys, existing.as_bytes(), &source).ok()??;
-  String::from_utf8(rendered.into_bytes()).ok()
+  String::from_utf8(rendered).ok()
 }
 
 /// As `rendered`, without the indent.
@@ -320,7 +320,7 @@ fn error(kind: io::ErrorKind) -> io::Error {
 }
 
 impl Files for MemoryFiles {
-  fn read(&self, path: &Path) -> io::Result<Vec<u8>> {
+  fn read(&self, path: &Path) -> io::Result<Contents> {
     if self.unreadable.iter().any(|unreadable| unreadable == path) {
       return Err(error(io::ErrorKind::PermissionDenied));
     }
@@ -328,27 +328,21 @@ impl Files for MemoryFiles {
     files
       .get(path)
       .cloned()
+      .map(Contents::Owned)
       .ok_or(error(io::ErrorKind::NotFound))
   }
 
-  fn write(&self, path: &Path, chunks: &[Vec<u8>]) -> Result<(), SystemError> {
+  fn create(&self, path: &Path) -> Result<Box<dyn Output + '_>, SystemError> {
     self.writes.fetch_add(1, Ordering::Relaxed);
-    let mut content = chunks.concat();
-    let failure = self.partial_write.map(|length| {
-      content.truncate(length);
-      SystemError {
-        error: error(io::ErrorKind::StorageFull),
-        syscall: "write",
-        path: None,
-        dest: None,
-      }
-    });
-
     if let Ok(mut files) = self.files.lock() {
-      files.insert(path.to_path_buf(), content);
+      files.insert(path.to_path_buf(), Vec::new());
     }
 
-    failure.map_or(Ok(()), Err)
+    Ok(Box::new(MemoryOutput {
+      files: self,
+      path: path.to_path_buf(),
+      content: Vec::new(),
+    }))
   }
 
   fn rename(&self, from: &Path, to: &Path) -> io::Result<()> {
@@ -367,6 +361,49 @@ impl Files for MemoryFiles {
       .remove(path)
       .map(|_| ())
       .ok_or(error(io::ErrorKind::NotFound))
+  }
+}
+
+/// A file of `MemoryFiles` being written: it fails past `partial_write` bytes, leaving those.
+struct MemoryOutput<'f> {
+  files: &'f MemoryFiles,
+  path: PathBuf,
+  content: Vec<u8>,
+}
+
+impl MemoryOutput<'_> {
+  fn store(&self) {
+    if let Ok(mut files) = self.files.files.lock() {
+      files.insert(self.path.clone(), self.content.clone());
+    }
+  }
+}
+
+impl Output for MemoryOutput<'_> {
+  fn write(&mut self, bytes: &[u8]) -> Result<(), SystemError> {
+    self.content.extend_from_slice(bytes);
+
+    if let Some(length) = self
+      .files
+      .partial_write
+      .filter(|&length| self.content.len() > length)
+    {
+      self.content.truncate(length);
+      self.store();
+      return Err(SystemError {
+        error: error(io::ErrorKind::StorageFull),
+        syscall: "write",
+        path: None,
+        dest: None,
+      });
+    }
+
+    Ok(())
+  }
+
+  fn finish(self: Box<Self>) -> Result<(), SystemError> {
+    self.store();
+    Ok(())
   }
 }
 
@@ -426,6 +463,74 @@ fn an_unchanged_file_is_not_written_again() {
   // Another radius changes it.
   assert!(write_all(&sources, &projects, 2.0, &files).is_ok());
   assert_eq!(files.writes(), 2);
+}
+
+#[test]
+fn a_file_that_differs_anywhere_is_written_whole_from_its_parts() {
+  // More members than a batch renders at once, each used on a line: `moved` uses one elsewhere.
+  let names: Vec<String> = (0..501)
+    .map(|index| format!("message_{index:03}"))
+    .collect();
+  let render_with = |count: usize, moved: Option<usize>| {
+    let keys: Vec<MessageKey> = names[..count].iter().map(|name| flat(name)).collect();
+    let usages: Vec<SourceUsage> = names[..count]
+      .iter()
+      .enumerate()
+      .map(|(index, name)| usage(name, if moved == Some(index) { 4 } else { 1 }))
+      .collect();
+    let sources = [source("a.ts", usages)];
+    let ids: Vec<&[u8]> = keys.iter().map(|key| key.id).collect();
+    let source = SourceCode::collect(&sources, PROJECT, &ids, 0.0);
+
+    render_file(&keys, b"{}", &source)
+      .ok()
+      .flatten()
+      .unwrap_or_default()
+  };
+
+  let expected = render_with(500, None);
+  assert!(expected.len() > 50_000);
+  let cases = [
+    ("the same", expected.clone()),
+    ("the first message differs", render_with(500, Some(0))),
+    ("the last message differs", render_with(500, Some(499))),
+    ("one message more", render_with(501, None)),
+    ("one message less", render_with(499, None)),
+    (
+      "the same, then spaces",
+      [expected.as_slice(), b"  "].concat(),
+    ),
+  ];
+
+  let keys: Vec<MessageKey> = names[..500].iter().map(|name| flat(name)).collect();
+  let usages: Vec<SourceUsage> = names[..500].iter().map(|name| usage(name, 1)).collect();
+  let sources = [source("a.ts", usages)];
+  for (case, existing) in cases {
+    let files = MemoryFiles::with(&[("/m/en.metadata.json", &existing)]);
+    let projects = [Project {
+      inlang_project: PROJECT,
+      message_files: vec![MessageFile {
+        metadata: "/m/en.metadata.json".to_string(),
+        keys: keys
+          .iter()
+          .map(|key| MessageKey {
+            id: key.id,
+            path: key.path.clone(),
+          })
+          .collect(),
+      }],
+    }];
+
+    let written = write_all(&sources, &projects, 0.0, &files);
+    assert!(written.is_ok_and(|skipped| skipped.is_empty()), "{case}");
+    assert_eq!(files.writes(), u32::from(case != "the same"), "{case}");
+    assert_eq!(files.listing(), ["/m/en.metadata.json"], "{case}");
+    assert_eq!(
+      files.content("/m/en.metadata.json").map(String::into_bytes),
+      Some(expected.clone()),
+      "{case}"
+    );
+  }
 }
 
 #[test]
@@ -559,9 +664,7 @@ fn system_files_write_and_rename() {
   let _ = std::fs::create_dir_all(&root);
   let file = root.join("en.metadata.json");
 
-  let rendered = Rendered {
-    chunks: vec![b"{".to_vec(), b"}\n".to_vec()],
-  };
+  let rendered: [&[u8]; 2] = [b"{", b"}\n"];
   assert!(write_atomically(&SystemFiles, &file, &rendered).is_ok());
   assert_eq!(std::fs::read_to_string(&file).ok().as_deref(), Some("{}\n"));
 

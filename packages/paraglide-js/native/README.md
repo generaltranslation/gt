@@ -59,4 +59,8 @@ Parsing and the analysis run on rayon's threads, whose 16 MiB stacks hold the fu
 
 ## Memory
 
-A project's trees are about five times its source code: a node is 20 bytes, its length kept in the bits its flags leave free, and the end of a longer one beside the tree. Of what the analysis keeps, the binding of each variable is the most: a `const` or a parameter read whole, most of them, is kept in a few bytes. Once the usages are found, `release` gives the trees back on a thread of its own; the files' code and usages stay, for the metadata files.
+A project's trees are about five times its source code: a node is 20 bytes, its length kept in the bits its flags leave free, and the end of a longer one beside the tree. Of what the analysis keeps, the binding of each variable is the most: a `const` or a parameter read whole, most of them, is kept in a few bytes. Once the usages are found, `release` gives the trees back on a thread of its own.
+
+The code itself is not kept once it is parsed (`SourceText`), unless JavaScript gave it from a `read` of its own: a file with usages is read again for their lines, and again for its snippets, and a file that changed meanwhile is reported rather than misread. Each thread's parser memory is given back when loading ends. A metadata file is written as it is rendered, a batch of messages at a time, and compared with the existing one as it goes: it is written only from where it differs, and the existing one is mapped rather than read.
+
+The frameworks' tooling takes the most memory besides the trees: each tooling thread's heap is limited to 512 MB, a thread keeps to the languages whose tools it loaded, and there are no more threads than half the available memory holds.

@@ -18,7 +18,7 @@ use rustc_hash::FxHashMap;
 
 use self::{
   json::{KeyPaths, Value},
-  render::{render, MessageKey, Rendered},
+  render::{render, render_to_vec, MessageKey},
   snippets::{SourceCode, SourceFile},
 };
 
@@ -56,36 +56,65 @@ pub enum Failure {
 }
 
 pub trait Files: Sync {
-  fn read(&self, path: &Path) -> io::Result<Vec<u8>>;
-  fn write(&self, path: &Path, chunks: &[Vec<u8>]) -> Result<(), SystemError>;
+  fn read(&self, path: &Path) -> io::Result<Contents>;
+  /// A new file at `path`, written in parts.
+  fn create(&self, path: &Path) -> Result<Box<dyn Output + '_>, SystemError>;
   fn rename(&self, from: &Path, to: &Path) -> io::Result<()>;
   fn remove(&self, path: &Path) -> io::Result<()>;
 }
 
+pub trait Output {
+  fn write(&mut self, bytes: &[u8]) -> Result<(), SystemError>;
+  fn finish(self: Box<Self>) -> Result<(), SystemError>;
+}
+
+/// A file's bytes: mapped, so that the system can drop its pages again rather than hold a copy.
+pub enum Contents {
+  Owned(Vec<u8>),
+  Mapped(memmap2::Mmap),
+}
+
+impl std::ops::Deref for Contents {
+  type Target = [u8];
+
+  fn deref(&self) -> &[u8] {
+    match self {
+      Contents::Owned(bytes) => bytes,
+      Contents::Mapped(map) => map,
+    }
+  }
+}
+
 pub struct SystemFiles;
 
-impl Files for SystemFiles {
-  fn read(&self, path: &Path) -> io::Result<Vec<u8>> {
-    std::fs::read(path)
+fn failed(syscall: &'static str, error: io::Error, path: Option<&Path>) -> SystemError {
+  SystemError {
+    error,
+    syscall,
+    path: path.map(|path| path.to_string_lossy().into_owned()),
+    dest: None,
   }
+}
 
-  fn write(&self, path: &Path, chunks: &[Vec<u8>]) -> Result<(), SystemError> {
-    let failed = |syscall, error, path: Option<&Path>| SystemError {
-      error,
-      syscall,
-      path: path.map(|path| path.to_string_lossy().into_owned()),
-      dest: None,
-    };
-
-    let mut file =
-      std::fs::File::create(path).map_err(|error| failed("open", error, Some(path)))?;
-    for chunk in chunks {
-      file
-        .write_all(chunk)
-        .map_err(|error| failed("write", error, None))?;
+impl Files for SystemFiles {
+  fn read(&self, path: &Path) -> io::Result<Contents> {
+    let file = std::fs::File::open(path)?;
+    if file.metadata()?.len() == 0 {
+      return Ok(Contents::Owned(Vec::new()));
     }
 
-    Ok(())
+    // SAFETY: the map is only read; another process replaces a metadata file by renaming a new
+    // one onto it, which leaves this one's pages as they are.
+    match unsafe { memmap2::Mmap::map(&file) } {
+      Ok(map) => Ok(Contents::Mapped(map)),
+      Err(_) => std::fs::read(path).map(Contents::Owned),
+    }
+  }
+
+  fn create(&self, path: &Path) -> Result<Box<dyn Output + '_>, SystemError> {
+    let file = std::fs::File::create(path).map_err(|error| failed("open", error, Some(path)))?;
+
+    Ok(Box::new(io::BufWriter::with_capacity(1 << 20, file)))
   }
 
   fn rename(&self, from: &Path, to: &Path) -> io::Result<()> {
@@ -94,6 +123,18 @@ impl Files for SystemFiles {
 
   fn remove(&self, path: &Path) -> io::Result<()> {
     std::fs::remove_file(path)
+  }
+}
+
+impl Output for io::BufWriter<std::fs::File> {
+  fn write(&mut self, bytes: &[u8]) -> Result<(), SystemError> {
+    self
+      .write_all(bytes)
+      .map_err(|error| failed("write", error, None))
+  }
+
+  fn finish(mut self: Box<Self>) -> Result<(), SystemError> {
+    self.flush().map_err(|error| failed("write", error, None))
   }
 }
 
@@ -139,25 +180,27 @@ fn message_ids<'a>(project: &Project<'a>) -> Vec<&'a [u8]> {
     .collect()
 }
 
-/// The content of a metadata file; None if `existing` is not the JSON of an object.
-pub fn render_file(
-  keys: &[MessageKey],
-  existing: &[u8],
-  source: &SourceCode,
-) -> Result<Option<Rendered>, Failure> {
+/// The fields of `existing` along `keys`' paths; None if it is not the JSON of an object.
+fn existing_fields(keys: &[MessageKey], existing: &[u8]) -> Result<Option<json::Object>, Failure> {
   let mut paths = KeyPaths::default();
   for key in keys {
     paths.add(&key.path);
   }
 
-  let Some((existing, too_deep)) = json::parse_object_along(existing, &paths) else {
-    return Ok(None);
-  };
-  if too_deep {
-    return Err(Failure::TooDeep);
+  match json::parse_object_along(existing, &paths) {
+    None => Ok(None),
+    Some((_, true)) => Err(Failure::TooDeep),
+    Some((object, false)) => Ok(Some(object)),
   }
+}
 
-  Ok(Some(render(keys, &existing, source)))
+/// The content of a metadata file; None if `existing` is not the JSON of an object.
+pub fn render_file(
+  keys: &[MessageKey],
+  existing: &[u8],
+  source: &SourceCode,
+) -> Result<Option<Vec<u8>>, Failure> {
+  Ok(existing_fields(keys, existing)?.map(|fields| render_to_vec(keys, &fields, source)))
 }
 
 fn write_metadata(
@@ -169,7 +212,7 @@ fn write_metadata(
 
   let read = match files.read(path) {
     Ok(read) => read,
-    Err(error) if error.kind() == io::ErrorKind::NotFound => NO_METADATA.to_vec(),
+    Err(error) if error.kind() == io::ErrorKind::NotFound => Contents::Owned(NO_METADATA.to_vec()),
     // Overwriting it could lose fields written by hand.
     Err(error) => return Ok(Some(Skipped::Unreadable(error))),
   };
@@ -179,14 +222,15 @@ fn write_metadata(
     Cow::Owned(text) => Cow::Owned(text.into_bytes()),
   };
 
-  let Some(rendered) = render_file(&file.keys, &current, source)? else {
+  let Some(fields) = existing_fields(&file.keys, &current)? else {
     return Ok(Some(Skipped::NotAnObject));
   };
-  if rendered.equals(&current) {
-    return Ok(None);
-  }
 
-  write_atomically(files, path, &rendered).map_err(Failure::System)?;
+  let mut sink = Sink::new(files, path, &current);
+  let written =
+    render(&file.keys, &fields, source, &mut |part| sink.push(part)).and_then(|()| sink.finish());
+  written.map_err(|error| Failure::System(sink.abandon(error)))?;
+
   Ok(None)
 }
 
@@ -194,32 +238,116 @@ fn write_metadata(
 pub fn write_atomically(
   files: &dyn Files,
   path: &Path,
-  rendered: &Rendered,
+  parts: &[&[u8]],
 ) -> Result<(), SystemError> {
-  // A unique name: other processes may write the same file.
-  let temporary = format!(
-    "{}.{}.{}.tmp",
-    path.to_string_lossy(),
-    std::process::id(),
-    random_uuid()
-  );
-  let temporary = Path::new(&temporary);
+  let mut sink = Sink::new(files, path, b"");
+  let written = parts
+    .iter()
+    .try_for_each(|part| sink.push(part))
+    .and_then(|()| sink.finish());
 
-  let written = files.write(temporary, &rendered.chunks).and_then(|()| {
-    files.rename(temporary, path).map_err(|error| SystemError {
-      error,
-      syscall: "rename",
-      path: Some(temporary.to_string_lossy().into_owned()),
-      dest: Some(path.to_string_lossy().into_owned()),
-    })
-  });
+  written.map_err(|error| sink.abandon(error))
+}
 
-  if written.is_err() {
-    // The failed write is what is reported, not a failed cleanup.
-    let _ = files.remove(temporary);
+/// Takes a file's new content in parts and writes it only from where it differs from `current`:
+/// an unchanged file is not written.
+struct Sink<'s> {
+  files: &'s dyn Files,
+  path: &'s Path,
+  current: &'s [u8],
+  /// How much of `current` the parts so far are, while they match it.
+  same: usize,
+  temporary: Option<String>,
+  output: Option<Box<dyn Output + 's>>,
+}
+
+impl<'s> Sink<'s> {
+  fn new(files: &'s dyn Files, path: &'s Path, current: &'s [u8]) -> Self {
+    Self {
+      files,
+      path,
+      current,
+      same: 0,
+      temporary: None,
+      output: None,
+    }
   }
 
-  written
+  fn push(&mut self, part: &[u8]) -> Result<(), SystemError> {
+    if self.temporary.is_none() {
+      let end = self.same + part.len();
+      if self.current.get(self.same..end) == Some(part) {
+        self.same = end;
+        return Ok(());
+      }
+      self.start()?;
+    }
+
+    self.write(part)
+  }
+
+  fn write(&mut self, part: &[u8]) -> Result<(), SystemError> {
+    match &mut self.output {
+      Some(output) => output.write(part),
+      None => Ok(()),
+    }
+  }
+
+  /// A new file, with what matched so far.
+  fn start(&mut self) -> Result<(), SystemError> {
+    // A unique name: other processes may write the same file.
+    let temporary = format!(
+      "{}.{}.{}.tmp",
+      self.path.to_string_lossy(),
+      std::process::id(),
+      random_uuid()
+    );
+    let output = self.files.create(Path::new(&temporary))?;
+    self.temporary = Some(temporary);
+    self.output = Some(output);
+
+    let matched = &self.current[..self.same];
+    self.write(matched)
+  }
+
+  fn finish(&mut self) -> Result<(), SystemError> {
+    if self.temporary.is_none() {
+      if self.same == self.current.len() {
+        return Ok(());
+      }
+      self.start()?;
+    }
+
+    if let Some(output) = self.output.take() {
+      output.finish()?;
+    }
+    let Some(temporary) = &self.temporary else {
+      return Ok(());
+    };
+
+    self
+      .files
+      .rename(Path::new(temporary), self.path)
+      .map_err(|error| SystemError {
+        error,
+        syscall: "rename",
+        path: Some(temporary.clone()),
+        dest: Some(self.path.to_string_lossy().into_owned()),
+      })?;
+    self.temporary = None;
+
+    Ok(())
+  }
+
+  /// Removes what was written of the new file; the failure is what is reported, not a failed cleanup.
+  fn abandon(&mut self, error: SystemError) -> SystemError {
+    self.output = None;
+    if let Some(temporary) = self.temporary.take() {
+      let _ = self.files.remove(Path::new(&temporary));
+    }
+
+    error
+  }
 }
 
 /// A version 4 UUID, as `crypto.randomUUID` makes.
@@ -380,7 +508,7 @@ pub fn render_input(
   let ids: Vec<&[u8]> = keys.iter().map(|key| key.id).collect();
   let source = SourceCode::collect(&sources, inlang_project, &ids, radius);
 
-  Ok(render_file(&keys, existing, &source).map(|rendered| rendered.map(Rendered::into_bytes)))
+  Ok(render_file(&keys, existing, &source))
 }
 
 fn source_file(source: &json::Object) -> Result<SourceFile<'_>, BadInput> {

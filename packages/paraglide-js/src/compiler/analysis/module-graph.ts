@@ -39,6 +39,9 @@ import {
 import type { MetadataInput } from '../output/metadata.js';
 import type { ParaglideUsage } from './types.js';
 
+const CHANGED_DURING_ANALYSIS =
+  'it changed while it was analyzed; run again for its usages';
+
 /** Resolves an import like the project's bundler would: a file, or nothing. */
 type Resolve = (
   specifier: string,
@@ -85,7 +88,18 @@ export type ModuleGraphOptions = {
 };
 
 /** The usages of a file that has any. The analysis keeps them, and the file's code, for `writeMetadata`. */
-export type AnalyzedFile = { usages: ParaglideUsage[] };
+/** Its `usages` are read from the analysis each time they are asked for. */
+export type AnalyzedFile = { readonly usages: ParaglideUsage[] };
+
+/** The usages of one file's JSON, with their target's file named. */
+function parseUsages(json: string, paths: readonly string[]): ParaglideUsage[] {
+  const usages = JSON.parse(json) as ReportedUsage[];
+  for (const usage of usages) {
+    (usage as unknown as ParaglideUsage).targetFile = paths[usage.targetFile]!;
+  }
+
+  return usages as unknown as ParaglideUsage[];
+}
 
 /** A usage as the analysis reports it: its target's file is named by index. */
 type ReportedUsage = Omit<ParaglideUsage, 'targetFile'> & {
@@ -140,6 +154,8 @@ export class ModuleGraph {
       sourceExtensions: languageExtensions(options.languages),
       // With `read`, JavaScript reads every file, and asks `detect` itself.
       detect: options.read ? [] : detectedExtensions(options.languages),
+      // A file is read again when its lines are needed, unless the caller reads them.
+      sourcesOnDisk: !options.read,
       resolver: resolver && {
         aliases: hasPatterns
           ? []
@@ -263,16 +279,18 @@ export class ModuleGraph {
     const { paths } = analysis;
     const analyzed = new Map<string, AnalyzedFile>();
 
+    for (const file of analysis.changed) {
+      this.options.onSkipped?.(file, { error: CHANGED_DURING_ANALYSIS });
+    }
+
     analysis.files.forEach((file, index) => {
-      const usages = JSON.parse(analysis.usages[index]!) as ReportedUsage[];
-
-      // The same objects, with their target's file named.
-      for (const usage of usages) {
-        (usage as unknown as ParaglideUsage).targetFile =
-          paths[usage.targetFile]!;
-      }
-
-      analyzed.set(file, { usages: usages as unknown as ParaglideUsage[] });
+      const json = analysis.usages[index]!;
+      // Read when asked for, one file at a time: a project's usages as objects take far more memory.
+      analyzed.set(file, {
+        get usages() {
+          return parseUsages(json, paths);
+        },
+      });
     });
 
     return analyzed;

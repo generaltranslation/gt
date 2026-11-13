@@ -12,6 +12,7 @@ import {
 import {
   ToolingPool,
   configuredThreads,
+  threadsInMemory,
   toolingThreads,
   toolingWorkerData,
   type ToolingRequest,
@@ -38,7 +39,8 @@ function delays(seed: number) {
 
 /**
  * A thread on this one: it answers with the worker's own handler, after a
- * delay. `fails` makes it fail on a request, as a crashed thread does.
+ * delay. `fails` makes it fail on a request, as a crashed thread does, or one
+ * that ran out of memory.
  */
 class FakeThread implements ToolingThread {
   referenced = false;
@@ -51,14 +53,21 @@ class FakeThread implements ToolingThread {
       request: ToolingRequest
     ) => Promise<ToolingResponse>,
     private readonly delay: (request: ToolingRequest) => number,
-    private readonly fails: (request: ToolingRequest) => boolean = () => false
+    private readonly fails: (
+      request: ToolingRequest
+    ) => boolean | 'out of memory' = () => false
   ) {}
 
   postMessage(request: ToolingRequest): void {
     setTimeout(async () => {
       if (this.terminated) return;
-      if (this.fails(request)) {
-        this.emit('error', new Error('the thread failed'));
+      const failure = this.fails(request);
+      if (failure) {
+        const error = new Error('the thread failed');
+        if (failure === 'out of memory') {
+          Object.assign(error, { code: 'ERR_WORKER_OUT_OF_MEMORY' });
+        }
+        this.emit('error', error);
         this.emit('exit', 1);
         return;
       }
@@ -107,7 +116,10 @@ const WITH_TOOLS: ToolingWorkerData = {
 function fakePool(
   size: number,
   seed = 1,
-  fails?: (request: ToolingRequest, thread: number) => boolean,
+  fails?: (
+    request: ToolingRequest,
+    thread: number
+  ) => boolean | 'out of memory',
   data = WITH_TOOLS
 ) {
   const threads: FakeThread[] = [];
@@ -196,6 +208,34 @@ describe('ToolingPool', () => {
     await pool.close();
   });
 
+  test('a thread keeps to the languages whose tools it loaded, and each language with files gets a thread', async () => {
+    const { pool, threads } = fakePool(2, 7);
+    const files = Array.from({ length: 16 }, (_, index) =>
+      index % 2
+        ? { file: `/app/src/C${index}.vue`, code: vue(`v${index}`) }
+        : { file: `/app/src/C${index}.svelte`, code: svelte(`s${index}`) }
+    );
+
+    await Promise.all(files.map(({ file, code }) => pool.run(file, code)));
+
+    const kinds = threads.map((thread) =>
+      thread.handled.map((file) => file.slice(file.lastIndexOf('.')))
+    );
+    expect(kinds).toHaveLength(2);
+    for (const ran of kinds) {
+      expect(ran.length).toBeGreaterThan(0);
+      // One language, and another only once its own files ran out.
+      const switches = ran.filter(
+        (kind, index) => index > 0 && kind !== ran[index - 1]
+      ).length;
+      expect(switches).toBeLessThanOrEqual(1);
+    }
+    expect(new Set(kinds.map((ran) => ran[0]))).toEqual(
+      new Set(['.vue', '.svelte'])
+    );
+    await pool.close();
+  });
+
   test('starts no more threads than there are files', async () => {
     const { pool, threads } = fakePool(8);
     await pool.run('/app/src/A.vue', vue('a'));
@@ -219,6 +259,35 @@ describe('ToolingPool', () => {
       )
     );
     await pool.close();
+  });
+
+  test('a thread that runs out of memory is replaced; its file goes back to the caller', async () => {
+    const files = Array.from(
+      { length: 6 },
+      (_, index) => `/app/src/C${index}.vue`
+    );
+    // The first thread runs out of memory on its first file.
+    const { pool, threads } = fakePool(1, 3, (_, thread) =>
+      thread === 0 ? 'out of memory' : false
+    );
+
+    const results = await Promise.all(
+      files.map((file, index) => pool.run(file, vue(`v${index}`)))
+    );
+
+    expect(threads).toHaveLength(2);
+    expect(results.filter((result) => result === undefined)).toHaveLength(1);
+    expect(
+      results.filter((result) => result?.type === 'generated')
+    ).toHaveLength(5);
+
+    // Every file runs out of memory: two replacements per thread, then the files go back.
+    const failing = fakePool(1, 5, () => 'out of memory');
+    const answers = await Promise.all(
+      files.map((file, index) => failing.pool.run(file, vue(`v${index}`)))
+    );
+    expect(answers).toEqual(files.map(() => undefined));
+    expect(failing.threads).toHaveLength(3);
   });
 
   test('a thread that fails is not replaced: its file, and those no thread is left for, go back to the caller', async () => {
@@ -292,6 +361,14 @@ describe('what the threads run', () => {
     expect(
       toolingWorkerData(defaultLanguages, { load: async () => undefined })
     ).toBeUndefined();
+  });
+
+  test('as many threads as half the available memory holds', () => {
+    // A thread takes its heap's limit and about 128 MB more.
+    expect(threadsInMemory(0)).toBe(0);
+    expect(threadsInMemory(1200 * 2 ** 20)).toBe(0);
+    expect(threadsInMemory(2 * 2 ** 30)).toBe(1);
+    expect(threadsInMemory(8 * 2 ** 30)).toBe(6);
   });
 
   test('from the TypeScript sources there is no worker to start', () => {

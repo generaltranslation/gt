@@ -172,8 +172,14 @@ export class ContextCollector {
     const graph = this.moduleGraph;
     if (!graph) return;
 
-    for (const { file, reason } of await this.output.write(graph)) {
+    const { skipped, changed } = await this.output.write(graph);
+    for (const { file, reason } of skipped) {
       this.warn(`${this.relative(file)} was not updated: ${reason}`);
+    }
+    for (const file of changed) {
+      this.warn(
+        `${this.relative(file)} changed after it was analyzed; its snippets are left out until the next run`
+      );
     }
   }
 

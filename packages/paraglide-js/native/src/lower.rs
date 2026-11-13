@@ -68,6 +68,14 @@ thread_local! {
 /// Above this, the memory of one large file is given back instead of being kept.
 const MAX_KEPT_ALLOCATOR_BYTES: usize = 32 << 20;
 
+/// Gives back the parser memory each thread keeps between files: no file is parsed until the next
+/// load.
+pub fn release_allocators() {
+  rayon::broadcast(|_| {
+    ALLOCATOR.with(|allocator| *allocator.borrow_mut() = Allocator::default());
+  });
+}
+
 /// Fails with the first syntax error's message, since the parser recovers from errors and a program
 /// with one may be incomplete.
 pub fn lower(code: &str, lang: Lang) -> Result<Ast, String> {

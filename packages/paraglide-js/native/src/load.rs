@@ -119,21 +119,14 @@ fn prepare_generated(code: &GeneratedCode) -> Result<PreparedModule, String> {
   Ok(module)
 }
 
-fn plain_source(code: String) -> SourceFile {
-  SourceFile {
-    code,
-    generated: false,
-  }
-}
-
-fn prepare_script(file: &str, code: String) -> Outcome {
+fn prepare_script(file: &str, code: String, keep: bool) -> Outcome {
   let module = match prepare_module(&code, Lang::of_script(file)) {
     Ok(module) => module,
     Err(error) => return Outcome::Skipped(error),
   };
 
   Outcome::Prepared(Box::new(PreparedFile {
-    source: plain_source(code),
+    source: SourceFile::new(code, false, keep),
     modules: vec![module],
     component_fields: Vec::new(),
     scope_objects: Vec::new(),
@@ -249,7 +242,8 @@ fn read_batch(requests: &mut [Request], outcomes: &[Option<Outcome>], gate: Opti
   }
 }
 
-fn prepare(request: &mut Request, detected: &[DetectedExtension]) -> Outcome {
+/// `keep`: the text of what JavaScript gave is kept, as it may not be on disk.
+fn prepare(request: &mut Request, detected: &[DetectedExtension], keep: bool) -> Outcome {
   let file = request.file.as_str();
 
   match std::mem::replace(&mut request.input, Input::Unreadable) {
@@ -267,14 +261,14 @@ fn prepare(request: &mut Request, detected: &[DetectedExtension]) -> Outcome {
         return Outcome::NeedsJs;
       }
 
-      prepare_script(file, code)
+      prepare_script(file, code, false)
     }
 
-    Input::Script { code } => prepare_script(file, code),
+    Input::Script { code } => prepare_script(file, code, keep),
 
     Input::Empty { code } => match prepare_module("", Lang::Js) {
       Ok(module) => Outcome::Prepared(Box::new(PreparedFile {
-        source: plain_source(code),
+        source: SourceFile::new(code, false, keep),
         modules: vec![module],
         component_fields: Vec::new(),
         scope_objects: Vec::new(),
@@ -301,10 +295,7 @@ fn prepare(request: &mut Request, detected: &[DetectedExtension]) -> Outcome {
       }
 
       Outcome::Prepared(Box::new(PreparedFile {
-        source: SourceFile {
-          code,
-          generated: true,
-        },
+        source: SourceFile::new(code, true, keep),
         modules,
         component_fields: generated.component_fields,
         scope_objects: generated.scope_objects,
@@ -319,6 +310,7 @@ fn read_and_prepare(
   requests: &mut [Request],
   outcomes: &mut [Option<Outcome>],
   detected: &[DetectedExtension],
+  keep: bool,
 ) {
   let gate = read_gate();
 
@@ -330,7 +322,7 @@ fn read_and_prepare(
         read_batch(batch, outcomes, gate);
         for (request, outcome) in batch.iter_mut().zip(outcomes) {
           if outcome.is_none() {
-            *outcome = Some(prepare(request, detected));
+            *outcome = Some(prepare(request, detected, keep));
           }
         }
       });
@@ -388,7 +380,7 @@ impl Prefetch {
       let mut outcomes: Vec<Option<Outcome>> = requests.iter().map(|_| None).collect();
       // A panic leaves files to their load.
       let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        read_and_prepare(&mut requests, &mut outcomes, &prefetch.detected)
+        read_and_prepare(&mut requests, &mut outcomes, &prefetch.detected, false)
       }));
 
       let mut state = prefetch.lock();
@@ -448,7 +440,8 @@ pub fn load(
     Some(prefetch) => prefetch.take(&requests),
     None => requests.iter().map(|_| None).collect(),
   };
-  read_and_prepare(&mut requests, &mut outcomes, detected);
+  let keep = !graph.options.sources_on_disk;
+  read_and_prepare(&mut requests, &mut outcomes, detected, keep);
 
   let mut result = LoadResult::default();
   let mut added = false;
@@ -636,6 +629,7 @@ mod tests {
       targets: Vec::new(),
       outdirs: Vec::new(),
       source_extensions: Vec::new(),
+      sources_on_disk: true,
     })
   }
 
@@ -662,7 +656,7 @@ mod tests {
             "{} nodes, {} specifiers, {} bytes",
             module.ast.nodes.len(),
             module.specifiers.len(),
-            module.source.code.len()
+            module.source.length()
           ),
           None => "not loaded".to_string(),
         }

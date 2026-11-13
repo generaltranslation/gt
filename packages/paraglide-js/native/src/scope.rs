@@ -641,8 +641,8 @@ fn last_replacing_write<'a>(ast: &Ast, writes: &'a [Write], read: NodeId) -> Opt
 
     let always_runs_before_read = ast.parent(statement).is_some_and(|block| {
       is_block(ast.kind(block))
-        && ast.parsed_start(block) <= read_position
-        && read_position < ast.parsed_end(block)
+        && block < read
+        && read < ast.next(block)
         && enclosing_function(ast, statement) == read_function
     });
     if !always_runs_before_read {

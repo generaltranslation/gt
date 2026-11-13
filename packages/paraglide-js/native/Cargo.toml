@@ -44,6 +44,7 @@ mimalloc = { version = "0.1", default-features = false, features = [
 memchr = "2"
 ryu-js = "1"
 hashbrown = { version = "0.17", default-features = false }
+memmap2 = "0.9"
 
 [build-dependencies]
 napi-build = "2"

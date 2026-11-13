@@ -50,9 +50,58 @@ pub struct ComponentInstances {
 }
 
 pub struct SourceFile {
-  pub code: String,
+  pub text: SourceText,
   /// Written by a language's tooling: nodes that are not in the file are at -1.
   pub generated: bool,
+}
+
+/// A file's text, kept only when it cannot be read again: most of a project's code is needed once
+/// it is parsed only for the lines around usages.
+pub enum SourceText {
+  Kept(String),
+  OnDisk { length: usize, hash: u64 },
+}
+
+impl SourceFile {
+  pub fn new(code: String, generated: bool, keep: bool) -> Self {
+    let text = if keep {
+      SourceText::Kept(code)
+    } else {
+      SourceText::OnDisk {
+        length: code.len(),
+        hash: text_hash(&code),
+      }
+    };
+
+    Self { text, generated }
+  }
+
+  /// In UTF-8 bytes.
+  pub fn length(&self) -> usize {
+    match &self.text {
+      SourceText::Kept(code) => code.len(),
+      SourceText::OnDisk { length, .. } => *length,
+    }
+  }
+
+  /// The text `path` had when it was loaded; none if it changed since, or cannot be read.
+  pub fn text(&self, path: &str) -> Option<Cow<'_, str>> {
+    match &self.text {
+      SourceText::Kept(code) => Some(Cow::Borrowed(code)),
+      SourceText::OnDisk { length, hash } => {
+        let code = crate::load::read_text(path)?;
+        let is_same = code.len() == *length && text_hash(&code) == *hash;
+
+        is_same.then_some(Cow::Owned(code))
+      }
+    }
+  }
+}
+
+fn text_hash(text: &str) -> u64 {
+  use std::hash::BuildHasher;
+
+  rustc_hash::FxBuildHasher.hash_one(text)
 }
 
 /// A module: a file's, or one of the other modules in the same file, e.g. an Astro page's client scripts.
@@ -163,6 +212,8 @@ pub struct GraphOptions {
   pub outdirs: Vec<String>,
   /// The extensions of the formats that are followed besides scripts, e.g. ".vue".
   pub source_extensions: Vec<String>,
+  /// What JavaScript gives is what is on disk: its text is read again when needed, not kept.
+  pub sources_on_disk: bool,
 }
 
 pub struct Graph {
@@ -227,6 +278,7 @@ impl Graph {
       // The outdirs it knows, verified or not: none is added again.
       outdirs: Vec::new(),
       source_extensions: self.options.source_extensions.clone(),
+      sources_on_disk: self.options.sources_on_disk,
     };
     let mut emptied = Graph::new(options);
     emptied.outdirs = std::mem::take(&mut self.outdirs);
@@ -528,6 +580,7 @@ pub fn script_graph(file: &str, code: String) -> Graph {
     }],
     outdirs: vec!["/app/src/paraglide".into()],
     source_extensions: Vec::new(),
+    sources_on_disk: false,
   });
   let request = Request {
     file: file.to_string(),

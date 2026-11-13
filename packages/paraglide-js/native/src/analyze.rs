@@ -1,4 +1,4 @@
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 
 use rayon::prelude::*;
 use rustc_hash::FxHashMap;
@@ -47,21 +47,36 @@ pub struct Usage {
   pub target_file: FileId,
 }
 
-pub fn analyze_file(graph: &Graph, file: FileId, custom: Option<&dyn CustomTargets>) -> Vec<Usage> {
+/// None if the file changed on disk since it was loaded: its usages' lines are not known.
+pub fn analyze_file(
+  graph: &Graph,
+  file: FileId,
+  custom: Option<&dyn CustomTargets>,
+) -> Option<Vec<Usage>> {
   let Some(record) = graph.record(file) else {
-    return Vec::new();
+    return Some(Vec::new());
   };
 
   let mut usages = Vec::new();
   for id in graph.modules_of(record) {
     collect_module(graph, graph.module(id), custom, &mut usages);
   }
+  if usages.is_empty() {
+    return Some(usages);
+  }
 
   if record.source.generated {
-    one_per_source_range(usages)
-  } else {
-    usages
+    usages = one_per_source_range(usages);
   }
+
+  let text = record.source.text(graph.file(file))?;
+  let starts = line_starts(&text);
+  for usage in &mut usages {
+    (usage.line, usage.column) = line_column(&starts, usage.start);
+    (usage.end_line, _) = line_column(&starts, usage.end.saturating_sub(1));
+  }
+
+  Some(usages)
 }
 
 /// Language tools write some code twice (Vue's component props) or reference a name next to its
@@ -112,23 +127,12 @@ fn collect_module(
   usages: &mut Vec<Usage>,
 ) {
   let length = module.ast.nodes.len();
-  let line_starts = OnceLock::new();
   let mut marks = vec![0u8; length];
 
   if length < PARALLEL_NODES {
-    UsageCollector::new(graph, module, custom, &mut marks, 0, &line_starts).walk(
-      0,
-      length as NodeId,
-      usages,
-    );
+    UsageCollector::new(graph, module, custom, &mut marks, 0).walk(0, length as NodeId, usages);
   } else {
-    usages.extend(collect_split(
-      graph,
-      module,
-      custom,
-      &mut marks,
-      &line_starts,
-    ));
+    usages.extend(collect_split(graph, module, custom, &mut marks));
   }
 }
 
@@ -137,14 +141,13 @@ fn collect_split(
   module: &Module,
   custom: Option<&dyn CustomTargets>,
   marks: &mut [u8],
-  line_starts: &OnceLock<Vec<u32>>,
 ) -> Vec<Usage> {
   let ast = &module.ast;
   // Marks only reach descendants, so the runs are walked once every node above them was entered.
   let mut entered: Vec<(NodeId, Vec<Usage>)> = Vec::new();
   let mut runs: Vec<(NodeId, NodeId)> = Vec::new();
 
-  let mut collector = UsageCollector::new(graph, module, custom, marks, 0, line_starts);
+  let mut collector = UsageCollector::new(graph, module, custom, marks, 0);
   let mut to_split = vec![0];
 
   while let Some(node) = to_split.pop() {
@@ -203,11 +206,7 @@ fn collect_split(
     .into_par_iter()
     .map(|(start, end, marks)| {
       let mut usages = Vec::new();
-      UsageCollector::new(graph, module, custom, marks, start, line_starts).walk(
-        start,
-        end,
-        &mut usages,
-      );
+      UsageCollector::new(graph, module, custom, marks, start).walk(start, end, &mut usages);
       usages
     })
     .collect();
@@ -234,7 +233,6 @@ struct UsageCollector<'g, 'm> {
   /// parts of a usage, whose computed keys can still hold usages.
   marks: &'m mut [u8],
   base: NodeId,
-  line_starts: &'m OnceLock<Vec<u32>>,
 }
 
 impl<'g, 'm> UsageCollector<'g, 'm> {
@@ -244,7 +242,6 @@ impl<'g, 'm> UsageCollector<'g, 'm> {
     custom: Option<&'g dyn CustomTargets>,
     marks: &'m mut [u8],
     base: NodeId,
-    line_starts: &'m OnceLock<Vec<u32>>,
   ) -> Self {
     Self {
       cx: Cx::new(graph, custom),
@@ -252,7 +249,6 @@ impl<'g, 'm> UsageCollector<'g, 'm> {
       module: record.id,
       marks,
       base,
-      line_starts,
     }
   }
 
@@ -531,11 +527,6 @@ impl<'g, 'm> UsageCollector<'g, 'm> {
       self.record.ast.end(node).max(0) as u32,
     );
 
-    let code: &'g str = &self.record.source.code;
-    let starts = self.line_starts.get_or_init(|| line_starts(code));
-    let (line, column) = line_column(starts, start);
-    let (end_line, _) = line_column(starts, end.saturating_sub(1));
-
     usages.push(Usage {
       target: value.target,
       name: value.name.clone(),
@@ -543,9 +534,9 @@ impl<'g, 'm> UsageCollector<'g, 'm> {
       kind,
       start,
       end,
-      line,
-      column,
-      end_line,
+      line: 0,
+      column: 0,
+      end_line: 0,
       target_file: value.file,
     });
   }
@@ -619,11 +610,9 @@ mod tests {
     if parallel {
       collect_module(&graph, module, None, &mut found);
     } else {
-      let line_starts = OnceLock::new();
       let mut marks = vec![0u8; module.ast.nodes.len()];
       let end = module.ast.nodes.len() as NodeId;
-      UsageCollector::new(&graph, module, None, &mut marks, 0, &line_starts)
-        .walk(0, end, &mut found);
+      UsageCollector::new(&graph, module, None, &mut marks, 0).walk(0, end, &mut found);
     }
 
     found
@@ -645,6 +634,57 @@ mod tests {
     let sequential = usages(large_module(), false);
     assert!(sequential.len() > 7000, "{}", sequential.len());
     assert_eq!(usages(large_module(), true), sequential);
+  }
+
+  #[test]
+  fn usages_of_a_file_on_disk_get_their_lines_from_it_unless_it_changed() {
+    use crate::{
+      graph::{GraphOptions, Target, TargetKind},
+      load::{link_with, load, unlinked, Input, Request},
+    };
+
+    let root = std::env::temp_dir().join(format!("on-disk-{}", std::process::id()));
+    let _ = std::fs::create_dir_all(&root);
+    let file = root.join("a.ts").to_string_lossy().into_owned();
+    let code = "import { m } from './paraglide/messages.js';\n\nexport const t = m.greeting();\n";
+    let _ = std::fs::write(&file, code);
+
+    let mut graph = Graph::new(GraphOptions {
+      targets: vec![Target {
+        name: "message".into(),
+        kind: TargetKind::Messages,
+      }],
+      outdirs: vec![root.join("paraglide").to_string_lossy().into_owned()],
+      source_extensions: Vec::new(),
+      sources_on_disk: true,
+    });
+    let request = Request {
+      file: file.clone(),
+      order: 0,
+      input: Input::Read,
+    };
+    load(&mut graph, vec![request], &[], None);
+    let modules = unlinked(&graph);
+    let messages = root
+      .join("paraglide/messages.js")
+      .to_string_lossy()
+      .into_owned();
+    link_with(&mut graph, &modules, vec![Some(messages)]);
+    graph.prepare();
+    let id = graph.known_file(&file).unwrap_or_default();
+
+    let usages = analyze_file(&graph, id, None).unwrap_or_default();
+    let lines: Vec<(u32, u32, u32)> = usages
+      .iter()
+      .map(|usage| (usage.line, usage.column, usage.end_line))
+      .collect();
+    assert_eq!(lines, [(3, 18, 3)]);
+
+    // The same length, other text: its offsets no longer say where the usages are.
+    let _ = std::fs::write(&file, code.replace("greeting", "farewell"));
+    assert!(analyze_file(&graph, id, None).is_none());
+
+    let _ = std::fs::remove_dir_all(&root);
   }
 
   #[test]

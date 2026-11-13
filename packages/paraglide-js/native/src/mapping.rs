@@ -67,7 +67,7 @@ pub fn remap(ast: &mut Ast, mappings: &[Mapping], generated_length: usize) {
   }
 
   ast.long_ends = long_ends;
-  ast.parsed = Some(parsed);
+  ast.parsed = Some(parsed.into_iter().map(|(start, _)| start).collect());
 }
 
 fn last_mapped_source_end(start: usize, end: usize, source_end_at: &[i32]) -> Option<i32> {

@@ -47,36 +47,14 @@ fn order(object: &OutObject) -> Vec<usize> {
   js_order(members.len(), |member| members[member].0)
 }
 
-pub struct Rendered {
-  pub chunks: Vec<Vec<u8>>,
-}
-
-impl Rendered {
-  fn len(&self) -> usize {
-    self.chunks.iter().map(Vec::len).sum()
-  }
-
-  pub fn equals(&self, text: &[u8]) -> bool {
-    if self.len() != text.len() {
-      return false;
-    }
-
-    let mut rest = text;
-    self.chunks.iter().all(|chunk| {
-      let (head, tail) = rest.split_at(chunk.len());
-      rest = tail;
-      head == chunk.as_slice()
-    })
-  }
-
-  pub fn into_bytes(self) -> Vec<u8> {
-    self.chunks.concat()
-  }
-}
-
-/// A message file's metadata: for each of its `keys`, the fields of `existing`
-/// written by hand, and the snippets of `source`.
-pub fn render(keys: &[MessageKey], existing: &Object, source: &SourceCode) -> Rendered {
+/// Writes a message file's metadata in order, as parts, holding only one batch of the top level's
+/// members at a time.
+pub fn render<E>(
+  keys: &[MessageKey],
+  existing: &Object,
+  source: &SourceCode,
+  emit: &mut dyn FnMut(&[u8]) -> Result<(), E>,
+) -> Result<(), E> {
   let mut metadata = OutObject::default();
 
   for key in keys {
@@ -102,32 +80,44 @@ pub fn render(keys: &[MessageKey], existing: &Object, source: &SourceCode) -> Re
   }
 
   if metadata.is_empty() {
-    return Rendered {
-      chunks: vec![NO_METADATA.to_vec()],
-    };
+    return emit(NO_METADATA);
   }
 
   let order = order(&metadata);
-  let members: Vec<Vec<u8>> = order
-    .par_iter()
-    .enumerate()
-    .map(|(position, &member)| {
-      let mut out = Vec::new();
-      if position > 0 {
-        out.push(b',');
-      }
-      let (key, value) = &metadata.members()[member];
-      write_member(&mut out, key, value, source, 1);
-      out
-    })
-    .collect();
+  let batch = rayon::current_num_threads().max(1) * 4;
 
-  let mut chunks = Vec::with_capacity(members.len() + 2);
-  chunks.push(b"{".to_vec());
-  chunks.extend(members);
-  chunks.push(b"\n}\n".to_vec());
+  emit(b"{")?;
+  for (index, members) in order.chunks(batch).enumerate() {
+    let rendered: Vec<Vec<u8>> = members
+      .par_iter()
+      .enumerate()
+      .map(|(offset, &member)| {
+        let mut out = Vec::new();
+        if index + offset > 0 {
+          out.push(b',');
+        }
+        let (key, value) = &metadata.members()[member];
+        write_member(&mut out, key, value, source, 1);
+        out
+      })
+      .collect();
 
-  Rendered { chunks }
+    for part in &rendered {
+      emit(part)?;
+    }
+  }
+  emit(b"\n}\n")
+}
+
+/// The whole of `render`'s output.
+pub fn render_to_vec(keys: &[MessageKey], existing: &Object, source: &SourceCode) -> Vec<u8> {
+  let mut out = Vec::new();
+  let _ = render::<std::convert::Infallible>(keys, existing, source, &mut |part| {
+    out.extend_from_slice(part);
+    Ok(())
+  });
+
+  out
 }
 
 /// A message's fields in the existing file other than `sourceCode`, e.g. `context`

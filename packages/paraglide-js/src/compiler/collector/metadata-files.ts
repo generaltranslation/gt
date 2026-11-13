@@ -58,23 +58,31 @@ export class MetadataFiles {
     this.targetProjects.set(targetFile, directory);
   }
 
-  /** Writes the files whose content changed. Resolves with those it had to skip. */
-  async write(writer: MetadataWriter): Promise<SkippedFile[]> {
-    if (this.projects.size === 0) return [];
+  /**
+   * Writes the files whose content changed. Resolves with those it had to
+   * skip, and the analyzed files that changed since, whose snippets it left out.
+   */
+  async write(
+    writer: MetadataWriter
+  ): Promise<{ skipped: SkippedFile[]; changed: string[] }> {
+    if (this.projects.size === 0) return { skipped: [], changed: [] };
 
-    const { skipped, failure, tooDeep } = await writer.writeMetadata(
+    const { skipped, failure, tooDeep, changed } = await writer.writeMetadata(
       this.input(),
       this.radius
     );
     if (failure) throw systemError(failure);
     if (tooDeep) throw tooDeepError();
 
-    return skipped.map(({ file, error }) => ({
-      file,
-      reason: error
-        ? `it could not be read (${systemError(error).code})`
-        : 'it is not a JSON object; fix or delete it',
-    }));
+    return {
+      skipped: skipped.map(({ file, error }) => ({
+        file,
+        reason: error
+          ? `it could not be read (${systemError(error).code})`
+          : 'it is not a JSON object; fix or delete it',
+      })),
+      changed,
+    };
   }
 
   private input(): MetadataInput {

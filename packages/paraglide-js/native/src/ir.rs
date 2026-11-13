@@ -349,8 +349,8 @@ pub struct Variable {
 #[derive(Default)]
 pub struct Ast {
   pub nodes: Vec<Node>,
-  /// The position of each node in the parsed code, where it differs from the node's.
-  pub parsed: Option<Vec<(u32, u32)>>,
+  /// Where each node starts in the parsed code, where it differs from the node's.
+  pub parsed: Option<Vec<u32>>,
   /// Where each node too long for its bits ends, by node.
   pub long_ends: Vec<(NodeId, i32)>,
   pub atom_text: String,
@@ -564,16 +564,8 @@ impl Ast {
   #[inline]
   pub fn parsed_start(&self, id: NodeId) -> u32 {
     match &self.parsed {
-      Some(parsed) => parsed[id as usize].0,
+      Some(parsed) => parsed[id as usize],
       None => self.nodes[id as usize].start as u32,
-    }
-  }
-
-  #[inline]
-  pub fn parsed_end(&self, id: NodeId) -> u32 {
-    match &self.parsed {
-      Some(parsed) => parsed[id as usize].1,
-      None => self.end(id) as u32,
     }
   }
 
@@ -602,7 +594,7 @@ impl Ast {
       + self
         .parsed
         .as_ref()
-        .map_or(0, |parsed| parsed.capacity() * 8)
+        .map_or(0, |parsed| parsed.capacity() * 4)
       + self.long_ends.capacity() * 8
       + self.atom_text.capacity()
       + self.atom_spans.capacity() * 8

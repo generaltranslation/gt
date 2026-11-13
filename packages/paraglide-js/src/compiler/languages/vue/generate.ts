@@ -66,9 +66,17 @@ export async function generateVue(
   if (!virtualCode)
     throw new Error('@vue/language-core could not read the file');
 
-  const script = generatedScript(virtualCode);
-  const template = parsedTemplate(virtualCode);
-  const expressions = template ? templateExpressions(template) : [];
+  let script: ReturnType<typeof generatedScript>;
+  let expressions: ReturnType<typeof templateExpressions>;
+  try {
+    script = generatedScript(virtualCode);
+    const template = parsedTemplate(virtualCode);
+    expressions = template ? templateExpressions(template) : [];
+  } finally {
+    // The plugin keeps every file it read, for an editor, until it is disposed.
+    plugin.disposeVirtualCode?.(file, virtualCode);
+  }
+
   const normalized = normalizeVueCode(
     file,
     script.code,

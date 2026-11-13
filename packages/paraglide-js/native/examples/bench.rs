@@ -111,6 +111,7 @@ fn main() {
     targets: vec![target("message", TargetKind::Messages)],
     outdirs: vec![outdir],
     source_extensions: Vec::new(),
+    sources_on_disk: true,
   });
 
   let started = Instant::now();
@@ -178,7 +179,7 @@ fn main() {
   graph.prepare();
   let usages: usize = ids
     .par_iter()
-    .map(|&file| analyze_file(&graph, file, None).len())
+    .map(|&file| analyze_file(&graph, file, None).map_or(0, |usages| usages.len()))
     .sum();
   println!(
     "analyze: {:?} ({usages} usages) {}",
@@ -189,7 +190,7 @@ fn main() {
   let started = Instant::now();
   let again: usize = ids
     .par_iter()
-    .map(|&file| analyze_file(&graph, file, None).len())
+    .map(|&file| analyze_file(&graph, file, None).map_or(0, |usages| usages.len()))
     .sum();
   println!("analyze again: {:?} ({again} usages)", started.elapsed());
 
@@ -206,7 +207,7 @@ fn main() {
       graph.prepare();
       let _: usize = ids
         .par_iter()
-        .map(|&file| analyze_file(&graph, file, None).len())
+        .map(|&file| analyze_file(&graph, file, None).map_or(0, |usages| usages.len()))
         .sum();
       fastest = fastest.min(started.elapsed());
     }
@@ -222,7 +223,7 @@ fn main() {
   let code: usize = graph
     .modules
     .iter()
-    .map(|module| module.source.code.len())
+    .map(|module| module.source.length())
     .sum();
   println!(
     "sizes: Module {} bytes, Node {} bytes",

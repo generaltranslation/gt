@@ -42,6 +42,19 @@ const WORKER_URL = new URL('./tooling-worker.js', import.meta.url);
 const FILES_PER_THREAD = 4;
 
 /**
+ * How large a thread's old generation may grow: the tooling of one large
+ * component fits, and V8 collects garbage rather than letting the heap grow
+ * with it, as it does without a limit.
+ */
+export const THREAD_HEAP_MB = 512;
+
+/** What a thread takes besides its old generation: the young one, code, the tools' modules. */
+const THREAD_OVERHEAD_MB = 128;
+
+/** How many threads that ran out of memory are replaced before the pool shrinks instead. */
+const REPLACEMENTS_PER_THREAD = 2;
+
+/**
  * `PARAGLIDE_CONTEXT_THREADS` overrides the count, where `0` runs the tooling
  * on the main thread only.
  */
@@ -54,8 +67,16 @@ export function toolingThreads(files: number): number {
 
   return Math.min(
     os.availableParallelism() - 1,
-    Math.floor(files / FILES_PER_THREAD)
+    Math.floor(files / FILES_PER_THREAD),
+    threadsInMemory(process.availableMemory())
   );
+}
+
+/** As many threads as half of `available` bytes holds, the rest left to the analysis. */
+export function threadsInMemory(available: number): number {
+  const perThread = (THREAD_HEAP_MB + THREAD_OVERHEAD_MB) * 2 ** 20;
+
+  return Math.floor(available / 2 / perThread);
 }
 
 /**
@@ -91,7 +112,17 @@ export function toolingWorkerData(
 }
 
 export function startToolingThread(data: ToolingWorkerData): ToolingThread {
-  return new Worker(WORKER_URL, { workerData: data }) as ToolingThread;
+  return new Worker(WORKER_URL, {
+    workerData: data,
+    resourceLimits: { maxOldGenerationSizeMb: THREAD_HEAP_MB },
+  }) as ToolingThread;
+}
+
+function isOutOfMemory(error: Error | undefined): boolean {
+  return (
+    (error as NodeJS.ErrnoException | undefined)?.code ===
+    'ERR_WORKER_OUT_OF_MEMORY'
+  );
 }
 
 type Task = {
@@ -104,6 +135,8 @@ type Running = {
   thread: ToolingThread;
   task: Task | undefined;
   started: number;
+  /** The kinds of the files it ran: their languages' tools are loaded, and take its heap. */
+  kinds: Set<string>;
 };
 
 type Cost = { ms: number; characters: number };
@@ -122,12 +155,15 @@ export class ToolingPool {
   private readonly costs = new Map<string, Cost>();
   private nextId = 0;
   private closed = false;
+  private replacements: number;
 
   constructor(
-    /** Lowered by each thread that fails: it is not replaced. */
+    /** Lowered by each thread that fails, unless it ran out of memory and is replaced. */
     private size: number,
     private readonly start: () => ToolingThread
-  ) {}
+  ) {
+    this.replacements = size * REPLACEMENTS_PER_THREAD;
+  }
 
   /** Undefined if its thread failed, and the caller then runs the tooling. */
   run(file: string, code: string): Promise<ToolingResult | undefined> {
@@ -160,7 +196,8 @@ export class ToolingPool {
         this.threads.find(({ task }) => task === undefined) ?? this.spawn();
       if (!running) break;
 
-      const task = this.waiting.splice(this.longestWaiting(), 1)[0]!;
+      const task = this.waiting.splice(this.nextFor(running), 1)[0]!;
+      running.kinds.add(task.kind);
       running.task = task;
       running.started = performance.now();
       // A thread with work keeps the process alive; an idle one does not.
@@ -173,7 +210,47 @@ export class ToolingPool {
     }
   }
 
-  private longestWaiting(): number {
+  /**
+   * The waiting file `running` runs next: the longest of the kind with the
+   * most work per thread that loaded its tools, so that a thread keeps to few
+   * languages, whose tools fit its heap.
+   */
+  private nextFor(running: Running): number {
+    const expected = this.expectedCosts();
+    const work = new Map<string, number>();
+    this.waiting.forEach((task, index) => {
+      work.set(task.kind, (work.get(task.kind) ?? 0) + expected[index]!);
+    });
+
+    let kind = '';
+    let kindScore = Number.NEGATIVE_INFINITY;
+    for (const [candidate, total] of work) {
+      const isLoaded = running.kinds.has(candidate);
+      const threads = this.threads.filter((thread) =>
+        thread.kinds.has(candidate)
+      ).length;
+      const score = total / (isLoaded ? threads : threads + 1);
+
+      if (score > kindScore || (score === kindScore && isLoaded)) {
+        kind = candidate;
+        kindScore = score;
+      }
+    }
+
+    let longest = 0;
+    let longestCost = Number.NEGATIVE_INFINITY;
+    this.waiting.forEach((task, index) => {
+      if (task.kind === kind && expected[index]! > longestCost) {
+        longest = index;
+        longestCost = expected[index]!;
+      }
+    });
+
+    return longest;
+  }
+
+  /** What each waiting file will take, by what files of its kind took per character, or the slowest kind's. */
+  private expectedCosts(): number[] {
     const perCharacter = (cost: Cost) => cost.ms / Math.max(1, cost.characters);
     const slowest = Math.max(
       Number.NEGATIVE_INFINITY,
@@ -181,21 +258,11 @@ export class ToolingPool {
     );
     const unknown = Number.isFinite(slowest) ? slowest : 1;
 
-    let longest = 0;
-    let longestCost = Number.NEGATIVE_INFINITY;
-
-    this.waiting.forEach((task, index) => {
+    return this.waiting.map((task) => {
       const cost = this.costs.get(task.kind);
       const rate = cost ? perCharacter(cost) : unknown;
-      const expected = rate * Math.max(1, task.request.code.length);
-
-      if (expected > longestCost) {
-        longest = index;
-        longestCost = expected;
-      }
+      return rate * Math.max(1, task.request.code.length);
     });
-
-    return longest;
   }
 
   private spawn(): Running | undefined {
@@ -205,6 +272,7 @@ export class ToolingPool {
       thread: this.start(),
       task: undefined,
       started: 0,
+      kinds: new Set(),
     };
     const finish = (result: ToolingResult | undefined) => {
       const { task } = running;
@@ -221,17 +289,22 @@ export class ToolingPool {
       this.dispatch();
     });
 
-    const drop = () => {
+    // Its file is run by the caller, whose heap is larger.
+    const drop = (error?: Error) => {
       const index = this.threads.indexOf(running);
       if (index === -1) return;
 
       this.threads.splice(index, 1);
-      this.size--;
+      if (isOutOfMemory(error) && this.replacements > 0) {
+        this.replacements--;
+      } else {
+        this.size--;
+      }
       finish(undefined);
       this.dispatch();
     };
     running.thread.on('error', drop);
-    running.thread.on('exit', drop);
+    running.thread.on('exit', () => drop());
 
     this.threads.push(running);
     return running;

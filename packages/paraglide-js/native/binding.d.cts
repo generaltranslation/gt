@@ -91,6 +91,8 @@ export interface NativeAnalysis {
   usages: Array<string>
   /** The files that the usages' `targetFile` name by index. */
   paths: Array<string>
+  /** The files that changed on disk since they were loaded, whose usages are left out. */
+  changed: Array<string>
 }
 
 export interface NativeComponentFields {
@@ -147,6 +149,8 @@ export interface NativeGraphOptions {
   detect: Array<NativeDetect>
   /** Without one, JavaScript resolves the imports. */
   resolver?: NativeResolverOptions
+  /** The code JavaScript gives is the files' on disk, read again when needed rather than kept. */
+  sourcesOnDisk?: boolean
 }
 
 export interface NativeLoadResult {
@@ -164,6 +168,8 @@ export interface NativeMetadataResult {
   failure?: NativeSystemError
   /** A field written by hand nests deeper than `JSON.stringify` can write. */
   tooDeep: boolean
+  /** The analyzed files that changed on disk since, whose snippets are left out. */
+  changed: Array<string>
 }
 
 export interface NativePending {

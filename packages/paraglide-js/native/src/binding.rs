@@ -63,6 +63,8 @@ pub struct NativeGraphOptions {
   pub detect: Vec<NativeDetect>,
   /// Without one, JavaScript resolves the imports.
   pub resolver: Option<NativeResolverOptions>,
+  /// The code JavaScript gives is the files' on disk, read again when needed rather than kept.
+  pub sources_on_disk: Option<bool>,
 }
 
 #[napi(object)]
@@ -165,6 +167,8 @@ pub struct NativeAnalysis {
   pub usages: Vec<String>,
   /// The files that the usages' `targetFile` name by index.
   pub paths: Vec<String>,
+  /// The files that changed on disk since they were loaded, whose usages are left out.
+  pub changed: Vec<String>,
 }
 
 #[napi(object)]
@@ -534,6 +538,7 @@ fn to_analysis(
     counts: Vec::new(),
     usages: Vec::new(),
     paths: targets.paths.clone(),
+    changed: Vec::new(),
   };
   for written in written.into_iter().flatten() {
     analysis.files.push(written.file);
@@ -558,13 +563,21 @@ fn analyze_files(
   } = state;
   let ids = file_ids(graph, &files);
 
-  let mut analyzed: Vec<Vec<Usage>> = crate::on_pool(|| {
+  let found: Vec<Option<Vec<Usage>>> = crate::on_pool(|| {
     ids
       .into_par_iter()
-      .map(|file| file.map(|file| analyze_file(graph, file, custom)))
-      .map(Option::unwrap_or_default)
+      .map(|file| file.map_or(Some(Vec::new()), |file| analyze_file(graph, file, custom)))
       .collect()
   });
+
+  let mut changed = Vec::new();
+  let mut analyzed: Vec<Vec<Usage>> = Vec::with_capacity(found.len());
+  for (file, usages) in files.iter().zip(found) {
+    if usages.is_none() {
+      changed.push(file.clone());
+    }
+    analyzed.push(usages.unwrap_or_default());
+  }
 
   let mut numbers: FxHashMap<FileId, u32> = FxHashMap::default();
   for usage in analyzed.iter_mut().flatten() {
@@ -573,7 +586,8 @@ fn analyze_files(
       .or_insert_with(|| targets.number(graph.file(usage.target_file)));
   }
 
-  let analysis = to_analysis(graph, targets, &files, &analyzed);
+  let mut analysis = to_analysis(graph, targets, &files, &analyzed);
+  analysis.changed = changed;
 
   for (file, usages) in files.into_iter().zip(analyzed) {
     let record = graph.known_file(&file).and_then(|id| graph.record(id));
@@ -597,6 +611,7 @@ fn finish_loading(state: &State, prefetch: &Prefetch) {
   }
 
   prefetch.clear();
+  crate::lower::release_allocators();
 }
 
 fn file_ids(graph: &Graph, files: &[String]) -> Vec<Option<FileId>> {
@@ -758,6 +773,8 @@ pub struct NativeMetadataResult {
   pub failure: Option<NativeSystemError>,
   /// A field written by hand nests deeper than `JSON.stringify` can write.
   pub too_deep: bool,
+  /// The analyzed files that changed on disk since, whose snippets are left out.
+  pub changed: Vec<String>,
 }
 
 /// `ENOENT` for a file that is not found, as libuv names errors.
@@ -849,38 +866,55 @@ fn write_metadata(state: &State, input: &[u8], radius: f64) -> Result<NativeMeta
     .map(|path| target_projects.get(path.as_bytes()).copied())
     .collect();
 
-  let sources: Vec<SourceFile> = files
+  // Each file's text, read again unless it was kept; none if it changed since its analysis.
+  let texts: Vec<Option<(&Recorded, std::borrow::Cow<str>)>> = files
     .par_iter()
-    .filter_map(|&(file, name)| {
-      let recorded = state.recorded.get(std::str::from_utf8(file).ok()?)?;
-      let usages = recorded
-        .usages
-        .iter()
-        .map(|usage| metadata::snippets::SourceUsage {
-          name: usage.name.as_bytes(),
-          dynamic: usage.dynamic,
-          start: f64::from(usage.start),
-          end: f64::from(usage.end),
-          line: f64::from(usage.line),
-          end_line: f64::from(usage.end_line),
-          project: is_message[usage.target as usize]
-            .then(|| project_of_target[usage.target_file as usize])
-            .flatten(),
-        })
-        .collect();
-
-      Some(SourceFile {
-        name,
-        code: recorded.source.code.as_bytes(),
-        usages,
-      })
+    .map(|&(file, _)| {
+      let path = std::str::from_utf8(file).ok()?;
+      let recorded = state.recorded.get(path)?;
+      Some((recorded, recorded.source.text(path)?))
     })
     .collect();
+
+  let mut changed = Vec::new();
+  let mut sources: Vec<SourceFile> = Vec::with_capacity(files.len());
+  for (&(file, name), text) in files.iter().zip(&texts) {
+    let Some((recorded, text)) = text else {
+      let path = String::from_utf8_lossy(file);
+      if state.recorded.contains_key(&*path) {
+        changed.push(path.into_owned());
+      }
+      continue;
+    };
+
+    let usages = recorded
+      .usages
+      .iter()
+      .map(|usage| metadata::snippets::SourceUsage {
+        name: usage.name.as_bytes(),
+        dynamic: usage.dynamic,
+        start: f64::from(usage.start),
+        end: f64::from(usage.end),
+        line: f64::from(usage.line),
+        end_line: f64::from(usage.end_line),
+        project: is_message[usage.target as usize]
+          .then(|| project_of_target[usage.target_file as usize])
+          .flatten(),
+      })
+      .collect();
+
+    sources.push(SourceFile {
+      name,
+      code: text.as_bytes(),
+      usages,
+    });
+  }
 
   let mut result = NativeMetadataResult {
     skipped: Vec::new(),
     failure: None,
     too_deep: false,
+    changed,
   };
 
   match metadata::write_all(&sources, &projects, radius, &SystemFiles) {
@@ -934,6 +968,7 @@ impl NativeGraph {
       targets: options.targets.into_iter().map(to_target).collect(),
       outdirs: options.outdirs,
       source_extensions: options.source_extensions,
+      sources_on_disk: options.sources_on_disk.unwrap_or(false),
     });
 
     let ignored_directories = options
