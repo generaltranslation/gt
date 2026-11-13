@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { readTextFile } from '../../src/compiler/utils/read-file.js';
+import {
+  limitConcurrentReads,
+  MAX_CONCURRENT_READS,
+  readTextFile,
+} from '../../src/compiler/utils/read-file.js';
 
 /** Reads that were started and have not ended, by file. */
 const pending = new Map<string, (text: string | Error) => void>();
@@ -47,6 +51,20 @@ describe('readTextFile', () => {
     expect(texts).toEqual(files.map((file) => `text of ${file}`));
     expect(mostAtOnce).toBeGreaterThan(1);
     expect(mostAtOnce).toBeLessThanOrEqual(64);
+  });
+
+  test('reads at most the files a thread is given at once', async () => {
+    const files = Array.from({ length: 100 }, (_, index) => `/app/${index}`);
+
+    limitConcurrentReads(4);
+    try {
+      const texts = await endReads(Promise.all(files.map(readTextFile)));
+
+      expect(texts).toEqual(files.map((file) => `text of ${file}`));
+      expect(mostAtOnce).toBe(4);
+    } finally {
+      limitConcurrentReads(MAX_CONCURRENT_READS);
+    }
   });
 
   test('gives undefined for a file that cannot be read, and reads the ones after it', async () => {
