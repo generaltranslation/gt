@@ -21,7 +21,7 @@ import {
 import {
   parseDateTimeSkeletonOptions,
   resolveLocaleHourSkeleton,
-} from './skeleton';
+} from './dateTimeSkeleton';
 import { isAsciiLetter, isTagNameCharacter } from './tag';
 import {
   GRAMMAR_WHITE_SPACE,

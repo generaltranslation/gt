@@ -1,6 +1,10 @@
 import { createUnsupportedTreeFormatError } from '../errors/convertErrors';
 import { toNumberSkeleton } from '../parser/numberSkeleton';
-import { HOUR_CLOCKS, parseDateTimeSkeletonOptions } from '../parser/skeleton';
+import {
+  HOUR_CLOCKS,
+  parseDateTimeSkeletonOptions,
+  printDateTimeSkeleton,
+} from '../parser/dateTimeSkeleton';
 import { printAST } from '../parser/printer';
 import {
   DATE_TIME_STYLE_NAMES,
@@ -30,7 +34,6 @@ import {
   isFormattedNode,
   messageTreeNodes,
 } from '../tree/walk';
-import { printDateTimeSkeleton } from './skeleton';
 import {
   SKELETON_TYPE,
   TYPE,

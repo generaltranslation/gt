@@ -19,9 +19,9 @@ import {
 import { templateToMessage, type TemplateHole } from '../internal';
 import {
   DATE_FIELD_OPTIONS,
+  DATE_TIME_FIELD_SYMBOLS,
   TIME_FIELD_OPTIONS,
 } from '../settings/formatOptions';
-import { DATE_TIME_FIELD_SYMBOLS } from '../convert/skeleton';
 import { normalizeMessageTree } from '../tree/canonical';
 import { formatIcu, formatMessageTree } from './format';
 import { DATE_SKELETONS, NUMBER_SKELETONS } from './skeletonCases';

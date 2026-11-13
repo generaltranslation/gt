@@ -49,6 +49,41 @@ export const DATE_FIELD_OPTIONS = [
   ...TIME_FIELD_OPTIONS,
 ] as const;
 
+/**
+ * The ICU skeleton symbol of each date and time field value, in printing
+ * order. The hour is `j`, the locale's hour, since the hour cycle is
+ * formatting context.
+ */
+export const DATE_TIME_FIELD_SYMBOLS = {
+  era: { short: 'G', long: 'GGGG', narrow: 'GGGGG' },
+  year: { numeric: 'y', '2-digit': 'yy' },
+  month: {
+    numeric: 'M',
+    '2-digit': 'MM',
+    short: 'MMM',
+    long: 'MMMM',
+    narrow: 'MMMMM',
+  },
+  day: { numeric: 'd', '2-digit': 'dd' },
+  weekday: { short: 'E', long: 'EEEE', narrow: 'EEEEE' },
+  hour: { numeric: 'j', '2-digit': 'jj' },
+  dayPeriod: { short: 'B', long: 'BBBB', narrow: 'BBBBB' },
+  minute: { numeric: 'm', '2-digit': 'mm' },
+  second: { numeric: 's', '2-digit': 'ss' },
+  fractionalSecondDigits: { 1: 'S', 2: 'SS', 3: 'SSS' },
+  timeZoneName: {
+    short: 'z',
+    long: 'zzzz',
+    shortOffset: 'O',
+    longOffset: 'OOOO',
+    shortGeneric: 'v',
+    longGeneric: 'vvvv',
+  },
+} as const satisfies Record<
+  (typeof DATE_FIELD_OPTIONS)[number],
+  Record<string, string>
+>;
+
 // A date or a time has one named style, so it is `style`, as for a number.
 // Intl has `dateStyle` and `timeStyle` because one of its formatters takes both.
 /** Date options that are part of the message: a named `style` or fields. */

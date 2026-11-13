@@ -12,6 +12,8 @@ import {
   createInvalidDateTimeFieldError,
   createUnsupportedDateTimeFieldError,
 } from '../errors/skeletonErrors';
+import { DATE_TIME_FIELD_SYMBOLS } from '../settings/formatOptions';
+import type { DateTimeNode } from '../tree/messageTree';
 
 // The last alternative is any other letter, so that none is skipped.
 const DATE_TIME_FIELD =
@@ -207,6 +209,28 @@ function getLocaleHourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
     default:
       return 'H';
   }
+}
+
+/**
+ * Prints date or time fields as an ICU skeleton:
+ * `{ year: 'numeric', month: 'short', day: 'numeric' }` becomes `yMMMd`.
+ * The fields must be valid, as `validateMessageTree` checks. `hour` is the
+ * symbol of the hour: `j`, the locale's, or that of an hour cycle, like `H`.
+ */
+export function printDateTimeSkeleton(
+  fields: Exclude<NonNullable<DateTimeNode[2]>, string>,
+  hour = 'j'
+): string {
+  const values: Partial<Record<string, string | number>> = fields;
+  return Object.entries(DATE_TIME_FIELD_SYMBOLS)
+    .map(([key, symbols]) => {
+      const value = values[key];
+      return value === undefined
+        ? ''
+        : (symbols as Record<string, string>)[value];
+    })
+    .join('')
+    .replace(/j/g, hour);
 }
 
 function unsupported(field: string, kind: string): RangeError {
