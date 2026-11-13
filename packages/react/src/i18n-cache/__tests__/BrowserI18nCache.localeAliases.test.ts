@@ -32,9 +32,10 @@ describe('BrowserI18nCache locale persistence', () => {
   it.each([true, false])(
     'restores runtime translations after cache recreation (aliases=%s)',
     async (aliases) => {
+      const locale = aliases ? 'en-gb' : 'en-GB';
       initializeI18nConfig({
         defaultLocale: 'en-US',
-        locales: ['en-US', aliases ? 'en-gb' : 'en-GB'],
+        locales: ['en-US', locale],
         customMapping: aliases ? { 'en-gb': { code: 'en-GB' } } : {},
         projectId: 'test-project',
         devApiKey: 'test-key',
@@ -42,26 +43,19 @@ describe('BrowserI18nCache locale persistence', () => {
       const loadTranslations = vi.fn(async () => ({ existing: 'Built text' }));
       const cache = new RuntimeTranslationCache({ loadTranslations });
       expect(cache.isDevHotReloadJsx()).toBe(true);
-      await expect(cache.loadTranslations('en-GB')).resolves.toEqual({
+      await expect(cache.loadTranslations(locale)).resolves.toEqual({
         existing: 'Built text',
       });
 
-      // The internal resource cache emits its resolved supported locale.
-      cache.receiveRuntimeTranslation(
-        aliases ? 'en-gb' : 'en-GB',
-        'runtime',
-        'Runtime text'
-      );
+      cache.receiveRuntimeTranslation(locale, 'runtime', 'Runtime text');
       await vi.advanceTimersByTimeAsync(600);
 
       const reloadedCache = new RuntimeTranslationCache({ loadTranslations });
-      await expect(reloadedCache.loadTranslations('en-GB')).resolves.toEqual({
+      await expect(reloadedCache.loadTranslations(locale)).resolves.toEqual({
         existing: 'Built text',
         runtime: 'Runtime text',
       });
-      expect(loadTranslations).toHaveBeenLastCalledWith(
-        aliases ? 'en-gb' : 'en-GB'
-      );
+      expect(loadTranslations).toHaveBeenLastCalledWith(locale);
     }
   );
 });
