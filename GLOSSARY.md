@@ -1,6 +1,6 @@
 # General Translation
 
-The words the libraries in this repo use for what gets translated and how it is rendered. A name in code uses the term for the form it takes.
+The words the libraries in this repo use for what gets translated and how it is rendered. A new name in code uses the term for the form it takes. The string API keeps the names it has, such as `message` for an ICU string and `variables` for values.
 
 ## Language
 
@@ -12,7 +12,7 @@ The sentence of a message as data: its text, where each variable goes, its branc
 _Avoid_: ICU tree
 
 **Formats**:
-How each formatted variable of a message is rendered where the message is used, such as a currency, digits or a time zone. Also called its formatting context. It is neither translated nor hashed.
+How each formatted variable of a message is rendered where the message is used, such as a currency, digits or a time zone; also called its formatting context. It is neither translated nor hashed.
 _Avoid_: formatting options
 
 **Message options**:
