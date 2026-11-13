@@ -111,9 +111,9 @@ module.exports = [
   format('@generaltranslation/format/internal', 'internal'),
 
   // One named export each, so a check that pulls in more than it needs fails.
-  // The tree check prints date fields with the parser's chunk, whose tables
-  // of number stems and parser errors a bundler keeps: 1.3 kB of this.
-  icuImport('{ checkTranslation }', 'convert', '3.5 kB'),
+  // The tree check prints date fields from the chunk the parser shares, whose
+  // table of parser errors a bundler keeps: 0.7 kB of this.
+  icuImport('{ checkTranslation }', 'convert', '3 kB'),
   // At most the parser, which it needs, plus 2 kB.
   icuImport('{ checkIcuTranslation }', 'convert', '8.5 kB'),
 
