@@ -272,7 +272,7 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
 });
 
 // Stand-in threads, from the sources: these tests do not need `dist`.
-describe('starting the analysis threads', () => {
+describe('stand-in analysis threads', () => {
   let started: FakeWorker[] = [];
   /** The index of the thread that fails to start. */
   let failing = -1;
@@ -439,6 +439,35 @@ describe('starting the analysis threads', () => {
     await analysis;
     expect(analyzed).toEqual(files.map((file) => [file, { file }]));
     await pool.close();
+  });
+
+  test('when one exits, fail once the files the others analyzed are recorded', async () => {
+    const { AnalysisPool } = await sourcePool();
+    // Two chunks: one for each thread.
+    const files = Array.from({ length: 32 }, (_, at) => `/app/f${at}.ts`);
+    const pool = new AnalysisPool(2, '/app');
+    const recorded: string[] = [];
+
+    try {
+      const analysis = pool.analyze(index, files, async (file) => {
+        // As a file read, which ends after the thread exited.
+        await new Promise((resolve) => setImmediate(resolve));
+        recorded.push(file);
+      });
+      await settle();
+      // The analysis starts threads of its own: one answers, the other exits on its chunk.
+      const [answering, exiting] = started.slice(-2);
+      answering!.answer();
+      exiting!.emit('exit', 1);
+
+      await expect(analysis).rejects.toThrow(
+        'an analysis thread exited with code 1'
+      );
+    } finally {
+      await pool.close();
+    }
+
+    expect(recorded).toEqual(files.slice(0, 16));
   });
 });
 
