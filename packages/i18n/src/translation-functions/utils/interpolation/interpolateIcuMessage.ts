@@ -57,10 +57,12 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
       options.$locale,
       options.$format
     );
-    return applyCutoff(
-      interpolatedMessage,
-      options.$maxChars
-    ) as T extends string ? string : T;
+    // Apply cutoff formatting
+    const cutoffMessage =
+      options.$maxChars == null
+        ? interpolatedMessage
+        : formatCutoff(interpolatedMessage, { maxChars: options.$maxChars });
+    return cutoffMessage as T extends string ? string : T;
   } catch {
     logger.warn(createInterpolationFailureMessage(encodedMsg));
 
@@ -72,12 +74,11 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
       }) as T extends string ? string : T;
     }
 
-    return applyCutoff(encodedMsg, options.$maxChars) as T extends string
-      ? string
-      : T;
+    // Apply cutoff formatting
+    const cutoffMessage =
+      options.$maxChars == null
+        ? encodedMsg
+        : formatCutoff(encodedMsg, { maxChars: options.$maxChars });
+    return cutoffMessage as T extends string ? string : T;
   }
-}
-
-function applyCutoff(message: string, maxChars: number | undefined): string {
-  return maxChars == null ? message : formatCutoff(message, { maxChars });
 }
