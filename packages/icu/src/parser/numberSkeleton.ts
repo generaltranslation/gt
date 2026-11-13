@@ -230,6 +230,16 @@ export function parseNumberSkeletonOptions(
   ) {
     Object.assign(result, { style: 'unit', unit: 'percent', scale: 100 });
   }
+  // ICU rounds to a currency's digits, which are two for a number without one.
+  if (
+    result.style !== 'currency' &&
+    tokens.some(({ stem }) => stem === 'precision-currency-standard')
+  ) {
+    Object.assign(result, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
   // A unit width is a currency's or a unit's; ICU ignores it for other numbers.
   if (result.style !== 'currency') delete result.currencyDisplay;
   if (result.style !== 'unit') delete result.unitDisplay;
@@ -267,8 +277,13 @@ function readToken(token: NumberSkeletonToken): Options {
     case 'unit':
       // `unit/kilometer-per-hour`: the whole core unit.
       return { style: 'unit', unit: onlyOption(token) };
-    case 'numbering-system':
-      return { numberingSystem: onlyOption(token) };
+    case 'numbering-system': {
+      const numberingSystem = onlyOption(token);
+      if (!hasNumberingSystem(numberingSystem)) {
+        throw unsupported(token, 'Intl does not have this numbering system');
+      }
+      return { numberingSystem };
+    }
     case 'scale': {
       const scale = onlyOption(token);
       if (!DECIMAL_NUMBER.test(scale)) throw invalid(token);
@@ -304,6 +319,11 @@ function unsupported(token: NumberSkeletonToken, reason: string): RangeError {
   return new RangeError(
     createUnsupportedNumberSkeletonTokenError(tokenText(token), reason)
   );
+}
+
+// Intl formats a numbering system it does not have with the locale's.
+function hasNumberingSystem(name: string): boolean {
+  return Intl.supportedValuesOf?.('numberingSystem').includes(name) !== false;
 }
 
 function onlyOption(token: NumberSkeletonToken): string {
@@ -353,7 +373,15 @@ function readPrecision(token: NumberSkeletonToken): Options | undefined {
     };
     const significant = options.shift();
     if (significant !== undefined) {
-      Object.assign(precision, readFractionSignificant(token, significant));
+      const digits = readFractionSignificant(token, significant);
+      // Without a priority ICU pads to the fraction's minimum.
+      if (zeros.length && !/[rs]$/.test(significant)) {
+        throw unsupported(
+          token,
+          'Intl does not pad these digits to the minimum of the fraction; write their priority, like .00/@##s'
+        );
+      }
+      Object.assign(precision, digits);
     }
   } else if ((match = SIGNIFICANT_PRECISION.exec(stem)) && !match[3]) {
     const [, required, rest] = match;
@@ -505,7 +533,10 @@ export function toNumberSkeleton(options: Options): NumberSkeleton {
     add(stemOf(values, ['useGrouping']));
     const latin = stemOf(values, ['numberingSystem']);
     if (latin) add(latin);
-    else if (isTokenText(numberingSystem)) {
+    else if (
+      isTokenText(numberingSystem) &&
+      hasNumberingSystem(numberingSystem)
+    ) {
       add('numbering-system', numberingSystem);
     }
     add(stemOf(values, SIGN));

@@ -164,15 +164,40 @@ not read the host's time zone; its caller passes them in.
 
 ## ICU compatibility
 
-An ICU string means here what it means in ICU4C, or it throws: a `RangeError`
-that names the token or field when Intl cannot format it, and a `SyntaxError`
-when it is not valid, with the kind of error as its `code` and the place in
-the message as its `location`. What a message leaves out, like how to round a
-tie, is filled in by Intl, not by ICU.
+A message follows ICU and Intl, by five rules. An earlier rule wins over a
+later one:
+
+1. ICU decides what a message means: its syntax, and what each type, style
+   and skeleton asks for.
+2. Intl formats the values. This package has no locale data of its own and
+   does not emulate ICU.
+3. Where Intl has no option for what a message asks for, formatting throws
+   rather than print something else. A `RangeError` names the token or
+   field. A message that is not valid throws a `SyntaxError`, with the kind
+   of error as its `code` and the place in the message as its `location`.
+4. What a message leaves unsaid, like how to round a tie, is Intl's default,
+   not ICU's. So is how Intl prints what it has an option for, like a date
+   before 1582.
+5. Values are not coerced. A number, a plural and a selectordinal take a
+   number, a bigint or a numeric string, and a date and a time take a Date or
+   a number. Any other value throws a `TypeError`.
+
+A few things are read differently from ICU on purpose:
+
+- What ICU keeps only for old messages is an error: a pattern as a style,
+  like `{d, date, yyyy-MM-dd}`, `choice`, a type in capitals, a branch key
+  written twice, and a value that was not given.
+- `<b>…</b>` is a tag, as in FormatJS. ICU reads it as text.
+- A plain `{name}` and a select read a value as its text, as a template
+  literal does, so `{year}` is `2024` and not `2,024`. A Date has no such
+  text: it formats as the locale's short date and time, as in ICU.
+- `hh` and `HH` pad the hour, as Intl's `2-digit` hour does, which is what a
+  message tree holds for them. ICU pads as the locale's own pattern does.
 
 `src/__tests__/icu4c-messages.test.ts` and `icu4c-conformance.test.ts` format
 about 3,500 cases and check each result against what ICU4C 78.3 prints for it.
-They hold every difference, each with its reason.
+They hold every difference, each with its reason. A new difference needs a
+reason there, and one of the rules above to stand on.
 
 Parts of the compatibility behavior and regression suite are adapted from
 FormatJS. See `THIRD_PARTY_NOTICES.md` for attribution and license details.

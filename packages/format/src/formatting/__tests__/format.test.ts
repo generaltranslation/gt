@@ -306,8 +306,7 @@ describe('formatMessage with ICU strings', () => {
     }
   );
 
-  it('formats booleans and Dates as text, like a template literal', () => {
-    const value = new Date(0);
+  it('formats a boolean as text, and a Date as a short date and time', () => {
     expect(
       publicFormatMessage('before {value} after', {
         locales: 'en-US',
@@ -318,10 +317,10 @@ describe('formatMessage with ICU strings', () => {
     expect(
       publicFormatMessage('before {value} after', {
         locales: 'en-US',
-        timeZone,
-        variables: { value },
+        timeZone: 'Asia/Tokyo',
+        variables: { value: new Date(0) },
       })
-    ).toBe(`before ${value} after`);
+    ).toBe('before 1/1/70, 9:00 AM after');
   });
 });
 

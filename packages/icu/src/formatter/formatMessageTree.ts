@@ -19,6 +19,7 @@ import type {
 import type { ParsedNode, ParsedTree } from './formatIcu';
 import { messageTreeNodes } from '../tree/walk';
 import {
+  DATE_FIELD_OPTIONS,
   DATE_TIME_STYLE_NAMES,
   NAMED_NUMBER_STYLES,
   type DateTimeStyleName,
@@ -35,7 +36,8 @@ type PluralValue = number | bigint;
 /**
  * A value that formats as text, as in a template literal: `true` is
  * `'true'` and `12n` is `'12'`. `null` and `undefined` format as nothing. A
- * Date is formatted by a date or time node, and is `String(date)` elsewhere.
+ * Date is formatted by a date or time node, and as the locale's short date
+ * and time elsewhere, as in ICU.
  */
 export type MessagePlainValue =
   | string
@@ -217,11 +219,21 @@ function formatNodes<R>(
     switch (node[1]) {
       case undefined: {
         const value = requireVariable(context.values, name);
-        append(plainValueText(value));
+        append(
+          value instanceof Date
+            ? intlCache
+                .get('DateTimeFormat', context.locales, {
+                  dateStyle: 'short',
+                  timeStyle: 'short',
+                  timeZone: context.timeZone,
+                })
+                .format(value)
+            : plainValueText(value)
+        );
         break;
       }
       case 'number': {
-        const value = requireVariable(context.values, name);
+        const value = numberValue(name, requireVariable(context.values, name));
         const style = node[2];
         // An ICU string's skeleton may also hold a scale.
         const { scale, ...intlOptions }: ExtendedNumberFormatOptions = {
@@ -237,6 +249,17 @@ function formatNodes<R>(
           );
         }
         const scaledValue = applyScale(value, scale);
+        // Intl prints ∞ past the largest double, where ICU keeps every digit.
+        if (
+          scale !== undefined &&
+          typeof scaledValue !== 'bigint' &&
+          Number.isFinite(Number(value)) &&
+          !Number.isFinite(Number(scaledValue))
+        ) {
+          throw new RangeError(
+            `The ICU variable "${name}" is too large to format once it is scaled.`
+          );
+        }
         append(
           intlCache
             .get('NumberFormat', context.locales, intlOptions)
@@ -247,6 +270,11 @@ function formatNodes<R>(
       case 'date':
       case 'time': {
         const value = requireVariable(context.values, name);
+        if (typeof value !== 'number' && !(value instanceof Date)) {
+          throw new TypeError(
+            `The ICU variable "${name}" must be a Date or a number.`
+          );
+        }
         const isDate = node[1] === 'date';
         const style = node[2];
         // Named styles are ICU's: Intl's dateStyle and timeStyle.
@@ -261,13 +289,31 @@ function formatNodes<R>(
           ...styleOptions,
           ...formatsOf(context, name),
         };
+        const formatter = intlCache.get('DateTimeFormat', context.locales, {
+          ...withLocaleHourPadding(options),
+          timeZone: options.timeZone ?? context.timeZone,
+        });
+        // Intl adds a date to an era or a time zone name with no other field.
+        const fields = DATE_FIELD_OPTIONS.filter(
+          (field) => options[field] !== undefined
+        );
+        const alone =
+          !options.dateStyle &&
+          !options.timeStyle &&
+          fields.every((field) => field === 'era' || field === 'timeZoneName');
+        if (alone && fields.length > 1) {
+          throw new RangeError(
+            `The ICU variable "${name}" has an era and a time zone name with no other field, which Intl cannot format without a date.`
+          );
+        }
         append(
-          intlCache
-            .get('DateTimeFormat', context.locales, {
-              ...withLocaleHourPadding(options),
-              timeZone: options.timeZone ?? context.timeZone,
-            })
-            .format(value as number | Date)
+          alone && fields.length
+            ? formatter
+                .formatToParts(value)
+                .filter((part) => part.type === fields[0])
+                .map((part) => part.value)
+                .join('')
+            : formatter.format(value)
         );
         break;
       }
@@ -284,7 +330,10 @@ function formatNodes<R>(
       case 'plural':
       case 'selectordinal': {
         const [, kind, branches, offset = 0] = node;
-        const rawValue = requireVariable(context.values, name);
+        const rawValue = numberValue(
+          name,
+          requireVariable(context.values, name)
+        );
         const value =
           typeof rawValue === 'bigint' ? rawValue : Number(rawValue);
         // ICU compares the number, so "01" matches `=1`.
@@ -364,8 +413,7 @@ function plainValueText<R>(value: MessageValue<R>): Part<R> {
   return typeof value === 'string' ||
     typeof value === 'number' ||
     typeof value === 'bigint' ||
-    typeof value === 'boolean' ||
-    value instanceof Date
+    typeof value === 'boolean'
     ? String(value)
     : // A value that is not plain is a rich one, kept as a part.
       (value as R);
@@ -380,6 +428,26 @@ function requireVariable<R>(
     throw new Error(`The ICU message variable "${name}" was not provided.`);
   }
   return values[name];
+}
+
+/**
+ * A number as Intl reads one: a number, a bigint, or a decimal string, which
+ * keeps every digit. Any other value would print as `NaN` or as `0`.
+ */
+function numberValue<R>(
+  name: string,
+  value: MessageValue<R>
+): number | bigint | string {
+  if (
+    typeof value === 'number' ||
+    typeof value === 'bigint' ||
+    (typeof value === 'string' && DECIMAL_NUMBER.test(value.trim()))
+  ) {
+    return value;
+  }
+  throw new TypeError(
+    `The ICU variable "${name}" must be a number, a bigint or a numeric string.`
+  );
 }
 
 /**

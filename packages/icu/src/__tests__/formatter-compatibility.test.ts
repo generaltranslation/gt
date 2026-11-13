@@ -103,8 +103,15 @@ describe('pinned intl-messageformat compatibility matrix', () => {
 
   it('formats every date skeleton like native Intl', () => {
     expectEachCase(DATE_CASES, ({ locale, skeleton, options, value }) => {
+      const formatter = new Intl.DateTimeFormat(locale, options);
+      // An era or a time zone name alone is ICU's: without the date Intl adds.
+      const alone = /^(G+|[zOv]+)$/.test(skeleton)
+        ? formatter
+            .formatToParts(value)
+            .find(({ type }) => type === 'era' || type === 'timeZoneName')
+        : undefined;
       expect(formatIcu(`{value, date, ::${skeleton}}`, locale, { value })).toBe(
-        new Intl.DateTimeFormat(locale, options).format(value)
+        alone ? alone.value : formatter.format(value)
       );
     });
   });

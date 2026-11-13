@@ -82,6 +82,13 @@ const UNSUPPORTED = new Set([
     // Grouping by thousands in every locale, and `5.` for 5.
     'group-thousands',
     'decimal-always',
+    // A fraction padded to its minimum beside significant digits; with the
+    // priority, as `.00/@##s`, both format alike.
+    '.00/@##',
+    '.00/@##/w',
+    '.00/@',
+    '.0#/@@@*',
+    '.00/@@@*',
   ].map(number),
   ...[
     // Week-based and related years, quarters, weeks, and days of the year.
@@ -112,16 +119,6 @@ type Difference = {
 /** Where a message formats, but not as ICU4C formats it. */
 const DIFFERENCES: Difference[] = [
   {
-    why: 'Intl adds the date to a skeleton of only an era or a time zone name',
-    messages: 'G GGG GGGG GGGGG z zz zzz zzzz O OOOO v vvvv'
-      .split(' ')
-      .map(date),
-    check: (row) => {
-      expect(format(row)).toMatch(/^5\/6\/2020,? /);
-      expect(format(row).endsWith(row.icu)).toBe(true);
-    },
-  },
-  {
     // `jB` is how a message tree prints `{ hour, dayPeriod }`, so it is read
     // back as that. `hB` is the day period in ICU4C too.
     why: 'ICU4C shows AM or PM for the day period B beside the hour j',
@@ -129,15 +126,6 @@ const DIFFERENCES: Difference[] = [
     check: (row) => {
       expect(row.icu).toMatch(/PM$/);
       expect(format(row)).toMatch(/at night$/);
-    },
-  },
-  {
-    // `.00/@##s` and `.##/@@@r`, with the priority, format alike in both.
-    why: 'ICU4C pads a fraction combined with significant digits to its minimum; Intl does not',
-    messages: ['.00/@##', '.00/@', '.0#/@@@*', '.00/@@@*'].map(number),
-    check: (row) => {
-      const unpadded = row.icu.replace(/\.0+$|(\.\d*?[1-9])0+$/, '$1');
-      expect([row.icu, unpadded]).toContain(formatWithIcuDefaults(row));
     },
   },
   {
@@ -154,26 +142,10 @@ const DIFFERENCES: Difference[] = [
     },
   },
   {
-    why: 'ICU4C rounds to two digits for precision-currency-standard without a currency',
-    messages: [number('precision-currency-standard')],
+    why: 'ICU4C formats a number in {n} for the locale; it is printed as JavaScript prints it, like FormatJS',
+    messages: ['{n}'],
     check: (row) => {
-      expect(format(row)).toBe(format({ ...row, message: '{n, number}' }));
-    },
-  },
-  {
-    why: 'ICU4C rejects an unknown numbering system; Intl uses the locale’s',
-    messages: [number('numbering-system/bogus')],
-    check: (row) => {
-      expect(row.icu).toMatch(/^PARSE ERROR/);
-      expect(format(row)).toBe(format({ ...row, message: '{n, number}' }));
-    },
-  },
-  {
-    why: 'ICU4C formats a number or date in {n} for the locale; it is printed as JavaScript prints it, like FormatJS',
-    messages: ['{n}', '{d}'],
-    check: (row) => {
-      const { n, d } = valuesOf(row);
-      expect(format(row)).toBe(String(row.message === '{n}' ? n : d));
+      expect(format(row)).toBe(String(valuesOf(row).n));
     },
   },
   {

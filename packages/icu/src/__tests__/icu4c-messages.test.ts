@@ -13,7 +13,7 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { icuToMessage } from '../convert';
 import { formatMessageTree } from '../index';
 import { formatIcu, parse } from '../parser';
@@ -53,7 +53,9 @@ const REASONS = {
   bigint:
     'Intl picks a plural category for a double, and a scale that is no power of ten multiplies as one. An int64 they would round is an error.',
   'intl-range':
-    'A scaled number past the largest double prints as ∞. ICU4C multiplies as a decimal.',
+    'A scaled number past the largest double is an error: Intl prints ∞ for it. ICU4C multiplies as a decimal.',
+  'intl-lone-field':
+    'An era and a time zone name with no other field are an error: Intl adds the date to them. ICU4C prints the two.',
   'invalid-date':
     'Intl throws for an invalid date. ICU4C prints nothing for it.',
 
@@ -62,9 +64,6 @@ const REASONS = {
     'A tie rounds away from zero in Intl, and to the even digit in ICU. Write rounding-mode-half-even.',
   'intl-digits':
     'A skeleton keeps Intl’s fraction digits for its style, mostly three. ICU allows six. Write a precision.',
-  'intl-lone-field': 'A time zone or an era alone gets the date added by Intl.',
-  'hour-width':
-    'hh and HH pad the hour, as UTS #35 defines them. ICU4C pads as the locale’s own pattern does, however many letters are written.',
   'hour-second':
     'An hour and a second with no minute, like ::kkss, join as for ::HHss: 03 (second: 5). ICU4C puts the second first for kk.',
   'intl-year': 'yyyy does not pad a year before 1000 to four digits in Intl.',
@@ -76,19 +75,15 @@ const REASONS = {
   // ---- Read differently on purpose.
   tags: '<b>…</b> is a tag, as in FormatJS, so an apostrophe before < or > quotes. ICU4C reads all of it as text.',
   'plain-value':
-    '{name} prints its value as JavaScript does, as in FormatJS. ICU4C formats a number or a date there for the locale. Write {n, number}.',
+    '{name} prints a number as JavaScript does, as in FormatJS: {year} is 2024, not 2,024. ICU4C formats it for the locale. Write {n, number}.',
   'value-type':
-    'A value of another type is converted as Intl converts it: a numeric string is a number. ICU4C fails.',
+    'A numeric string is a number, as Intl reads one, and a select reads a number as its text. ICU4C fails.',
+  'hour-width':
+    'hh and HH pad the hour, as Intl’s 2-digit hour does, which is what a message tree holds for them. ICU4C pads as the locale’s own pattern does, however many letters are written.',
   currency:
     '{n, number, currency} takes its currency from the message’s formats: a locale does not say what an amount is in. ICU4C takes the locale’s.',
   'day-period':
     '::jB shows the day period, as a message tree prints an hour with one. ICU4C shows AM or PM.',
-  'fraction-significant':
-    '.00/@## is not padded to the fraction’s minimum by Intl. Write the priority: .00/@##s.',
-  'precision-currency':
-    'precision-currency-standard on a number that is not a currency changes nothing. ICU4C rounds to two digits.',
-  'numbering-system':
-    'An unknown numbering system falls back to the locale’s in Intl. ICU4C rejects it.',
 } as const;
 
 /** A time may not hold a date field in a message tree, like `{t, time, ::yMd}`. */
@@ -173,16 +168,6 @@ const matches = (outcome: Outcome, { icu, rejects }: Case) =>
     : 'text' in outcome && outcome.text === text(icu);
 
 describe('ICU4C messages', () => {
-  // {d} prints a date as JavaScript does, in the host's time zone.
-  const hostTimeZone = process.env.TZ;
-  beforeAll(() => {
-    process.env.TZ = 'UTC';
-  });
-  afterAll(() => {
-    if (hostTimeZone === undefined) delete process.env.TZ;
-    else process.env.TZ = hostTimeZone;
-  });
-
   it.each(CASES.filter((item) => !item.differs))(
     '$id is as in ICU4C: $message',
     (item) => {
