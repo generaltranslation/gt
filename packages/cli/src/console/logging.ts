@@ -181,6 +181,13 @@ function searchableLocaleOptions(
 }
 
 /**
+ * Clack sizes the locale lists from the terminal height but under-counts the
+ * lines around them, so a long list grows taller than the terminal and every
+ * redraw leaves stale rows behind. Show a fixed page of options instead.
+ */
+const LOCALE_PROMPT_MAX_ITEMS = 8;
+
+/**
  * Searchable locale options: supported locales ranked by the query, the
  * configured customMapping aliases, and any other valid locale typed or
  * already selected, so aliases and custom tags stay selectable.
@@ -239,6 +246,7 @@ export async function promptLocale({
     message,
     placeholder: 'Type to search locales',
     initialValue: defaultValue,
+    maxItems: LOCALE_PROMPT_MAX_ITEMS,
     options: searchableLocaleOptions((query) =>
       getLocalePromptOptions(query, [], customMapping)
     ),
@@ -264,6 +272,7 @@ export async function promptLocaleList({
     placeholder: 'Type to search, Tab or Space to select',
     initialValues: defaultValue,
     required,
+    maxItems: LOCALE_PROMPT_MAX_ITEMS,
     // Clack only preselects defaults present in the first options list, so
     // keep custom default tags listed even before they are selected.
     options: searchableLocaleOptions((query, selected) =>
