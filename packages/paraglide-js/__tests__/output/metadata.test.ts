@@ -3,6 +3,7 @@ import { renderMetadataFile } from '../../src/compiler/output/metadata.js';
 import {
   sourceCodeByMessage,
   sourceSnippet,
+  type SourceCodeByFile,
 } from '../../src/compiler/output/source-code.js';
 import type {
   FileUsages,
@@ -166,10 +167,17 @@ test('a dynamic name goes to every message it matches; `*` alone to none', () =>
   const sourceCode = {
     'src/a.ts': [{ before: '', target: 'one', after: 'two' }],
   };
-  expect(render(keys, files)).toEqual({
+  const metadata = render(keys, files);
+  expect(metadata).toEqual({
     error_404: { sourceCode },
     error_500: { sourceCode },
   });
+
+  // One snippet for every message it matches: a catalog can have many.
+  const used = metadata as Record<string, { sourceCode: SourceCodeByFile }>;
+  expect(used.error_404!.sourceCode['src/a.ts']![0]).toBe(
+    used.error_500!.sourceCode['src/a.ts']![0]
+  );
 });
 
 test('usages on the same lines give one snippet', () => {

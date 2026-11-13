@@ -72,7 +72,7 @@ async function metadataFiles(
   files.addProject(
     (await readInlangProject(path.join(root, 'project.inlang')))!
   );
-  files.add('/a.ts', usages('a.ts', 'first'));
+  files.add(usages('a.ts', 'first'));
 
   const written = () => fs.readdir(path.join(root, 'messages'));
 
@@ -88,7 +88,7 @@ const firstSourceCode = {
 
 test('writes the usages of every source file, and no temporary file', async () => {
   const { root, files, written } = await metadataFiles('metadata-unit');
-  files.add('/b.ts', usages('b.ts', 'other'));
+  files.add(usages('b.ts', 'other'));
 
   expect(await files.write()).toEqual([]);
   expect(await readSnippets(root)).toEqual(['a.ts: first', 'b.ts: other']);
