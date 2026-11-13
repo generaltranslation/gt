@@ -16,9 +16,6 @@ function computeVar<T extends ReactNode>({ children }: VarProps<T>): T {
 
 // ===== Component ===== //
 
-/**
- * External-store version of the `<Var>` component.
- */
 function Var<T extends ReactNode>({ children }: VarProps<T>): T {
   return computeVar({ children });
 }
