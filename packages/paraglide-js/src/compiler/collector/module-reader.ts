@@ -19,8 +19,14 @@ import { readTextFile } from '../utils/read-file.js';
 /** The module a language's tooling generated for a file, and the language's name. */
 export type GeneratedModule = { language: string; source: GeneratedSource };
 
+/**
+ * A `GeneratedModule`, serialized: kept outside the JavaScript heap until its
+ * file is loaded again. A large component's is several times its file's size.
+ */
+export type GeneratedBytes = Uint8Array;
+
 export type SummaryResult =
-  | { summary: ParsedSummary; generated?: GeneratedModule }
+  | { summary: ParsedSummary; generated?: GeneratedBytes }
   | { failure: ParseFailure }
   /** The file cannot be read. */
   | undefined;
@@ -43,7 +49,7 @@ export async function summarizeFile(
 
   return {
     summary: summarizeModule(parsed.module, globalNames),
-    generated,
+    generated: generated && v8.serialize(generated),
   };
 }
 
@@ -53,7 +59,7 @@ export async function summarizeFile(
  */
 export function loadIndexedFile(
   file: string,
-  generated: GeneratedModule | undefined
+  generated: GeneratedBytes | undefined
 ): ParsedModule | undefined {
   let code: string;
 
@@ -63,7 +69,12 @@ export function loadIndexedFile(
     return undefined;
   }
 
-  const parsed = parseSourceSync(file, code, parseModuleCode, generated);
+  const parsed = parseSourceSync(
+    file,
+    code,
+    parseModuleCode,
+    generated && (v8.deserialize(generated) as GeneratedModule)
+  );
 
   return 'module' in parsed ? parsed.module : undefined;
 }
