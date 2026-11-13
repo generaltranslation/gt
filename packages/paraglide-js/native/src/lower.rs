@@ -138,7 +138,6 @@ struct Lowerer<'a, 's> {
   scoping: &'s Scoping,
   utf16: &'s Utf16Offsets<'s>,
   nodes: Vec<Node>,
-  parent: NodeId,
   atoms: FxHashMap<&'a str, u32>,
   atom_text: String,
   atom_spans: Vec<(u32, u32)>,
@@ -167,7 +166,6 @@ impl<'a, 's> Lowerer<'a, 's> {
       utf16,
       // About one node per five or six bytes of code.
       nodes: Vec::with_capacity(code_length / 4 + 16),
-      parent: NONE,
       atoms: FxHashMap::default(),
       atom_text: String::new(),
       atom_spans: Vec::new(),
@@ -204,6 +202,11 @@ impl<'a, 's> Lowerer<'a, 's> {
     self.symbols_of_parents.sort_unstable();
     ast.symbols_of_parents = self.symbols_of_parents;
     ast.long_ends = self.long_ends.as_slice().to_vec();
+    ast.top_level = if ast.nodes.is_empty() {
+      Vec::new()
+    } else {
+      ast.children(0).collect()
+    };
     ast.set_variables(self.variables, self.definitions, self.assignments);
 
     ast
@@ -243,14 +246,7 @@ impl<'a, 's> Lowerer<'a, 's> {
   fn push(&mut self, kind: Kind, slot: Slot, start: u32, end: u32) -> NodeId {
     let id = self.nodes.len() as NodeId;
 
-    let mut node = Node::new(
-      kind,
-      slot,
-      self.utf16.of(start) as i32,
-      self.parent,
-      id + 1,
-      NONE,
-    );
+    let mut node = Node::new(kind, slot, self.utf16.of(start) as i32, id + 1, NONE);
     node.set_end(id, self.utf16.of(end) as i32, &mut self.long_ends);
     self.nodes.push(node);
 
@@ -263,10 +259,7 @@ impl<'a, 's> Lowerer<'a, 's> {
 
   /// A node whose children are the nodes lowered until `close`.
   fn open(&mut self, kind: Kind, slot: Slot, span: Span) -> NodeId {
-    let id = self.push(kind, slot, span.start, span.end);
-    self.parent = id;
-
-    id
+    self.push(kind, slot, span.start, span.end)
   }
 
   fn close(&mut self, id: NodeId) {
@@ -280,7 +273,6 @@ impl<'a, 's> Lowerer<'a, 's> {
     }
 
     node.next = next;
-    self.parent = node.parent;
   }
 
   /// Sets the variable of an identifier, before it has children.
@@ -1267,7 +1259,6 @@ impl<'a, 's> Lowerer<'a, 's> {
         );
 
         if !decorators.is_empty() {
-          self.parent = id;
           self.decorators(decorators);
           self.close(id);
         }
@@ -1976,6 +1967,69 @@ impl DefinitionSite {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  /// Each node's parent and ancestors from one walk in tree order, for comparison.
+  fn walked_parents(ast: &Ast) -> Vec<Option<NodeId>> {
+    let mut open: Vec<NodeId> = Vec::new();
+    (0..ast.nodes.len() as NodeId)
+      .map(|id| {
+        while open.last().is_some_and(|&last| ast.next(last) <= id) {
+          open.pop();
+        }
+        let parent = open.last().copied();
+        open.push(id);
+        parent
+      })
+      .collect()
+  }
+
+  fn assert_found_parents(ast: &Ast, file: &str) {
+    let parents = walked_parents(ast);
+    for id in 0..ast.nodes.len() as NodeId {
+      assert_eq!(ast.parent(id), parents[id as usize], "{file} node {id}");
+      let mut walked = Vec::new();
+      let mut current = parents[id as usize];
+      while let Some(ancestor) = current {
+        walked.push(ancestor);
+        current = parents[ancestor as usize];
+      }
+      assert_eq!(ast.ancestors(id).collect::<Vec<_>>(), walked, "{file} node {id}");
+    }
+  }
+
+  #[test]
+  fn parents_are_found_from_the_root() {
+    let code = "@d class A { m(@p x) { if (a) { return [b, { c: () => d?.e }]; } } }\nconst f = 1;\n";
+    let ast = lower(code, Lang::Ts).unwrap();
+    assert_found_parents(&ast, "a.ts");
+    assert_eq!(ast.parent(0), None);
+  }
+
+  /// Set `PARAGLIDE_PARENTS_DIR` to a project's sources to check every node of every script.
+  #[test]
+  #[ignore]
+  fn parents_are_found_in_a_project() {
+    let directory = std::env::var("PARAGLIDE_PARENTS_DIR").expect("PARAGLIDE_PARENTS_DIR");
+    let mut stack = vec![std::path::PathBuf::from(directory)];
+    let mut files = 0;
+
+    while let Some(path) = stack.pop() {
+      if path.is_dir() {
+        stack.extend(std::fs::read_dir(&path).unwrap().map(|entry| entry.unwrap().path()));
+        continue;
+      }
+      let file = path.to_string_lossy();
+      if !crate::languages::is_script(&file) {
+        continue;
+      }
+      let code = std::fs::read_to_string(&path).unwrap();
+      if let Ok(ast) = lower(&code, Lang::of_script(&file)) {
+        files += 1;
+        assert_found_parents(&ast, &file);
+      }
+    }
+    assert!(files > 0);
+  }
 
   #[test]
   fn a_decorated_parameter_keeps_its_variable_and_its_children() {

@@ -258,7 +258,6 @@ pub struct Node {
   bits: u16,
   /// In the source file, UTF-16; `UNMAPPED` for generated-only code.
   pub start: i32,
-  pub parent: NodeId,
   /// The node after this one's last descendant, or with `SYMBOL_IN_NEXT` an identifier's variable,
   /// so it is read with `Ast::next`.
   pub next: NodeId,
@@ -266,15 +265,17 @@ pub struct Node {
   pub data: u32,
 }
 
+// A project has hundreds of millions of nodes.
+const _: () = assert!(std::mem::size_of::<Node>() == 16);
+
 impl Node {
   /// A node that ends where it starts: see `set_end`.
-  pub fn new(kind: Kind, slot: Slot, start: i32, parent: NodeId, next: NodeId, data: u32) -> Node {
+  pub fn new(kind: Kind, slot: Slot, start: i32, next: NodeId, data: u32) -> Node {
     Node {
       kind,
       slot,
       bits: 0,
       start,
-      parent,
       next,
       data,
     }
@@ -365,9 +366,11 @@ pub struct Ast {
   module_level: Vec<(u32, u32)>,
   /// The variable of each identifier that has children (a parameter's decorators), by node.
   pub symbols_of_parents: Vec<(NodeId, u32)>,
+  /// The children of the root (node 0), for finding a node's parent from the root.
+  pub top_level: Vec<NodeId>,
 }
 
-fn name_hash(name: &str) -> u32 {
+pub fn name_hash(name: &str) -> u32 {
   use std::hash::BuildHasher;
 
   rustc_hash::FxBuildHasher.hash_one(name) as u32
@@ -482,10 +485,66 @@ impl Ast {
     self.nodes[id as usize].has(flag)
   }
 
-  #[inline]
+  /// A node's parent, found from the root, since nodes do not keep it: they are in tree order, so
+  /// the parent is the deepest node that `id` is between and `next` of.
   pub fn parent(&self, id: NodeId) -> Option<NodeId> {
-    let parent = self.nodes[id as usize].parent;
-    (parent != NONE).then_some(parent)
+    let mut path = self.top_level_ancestor(id)?;
+    if path == id {
+      return Some(0);
+    }
+
+    loop {
+      let mut child = path + 1;
+      loop {
+        if child == id {
+          return Some(path);
+        }
+        let next = self.next(child);
+        if id < next {
+          path = child;
+          break;
+        }
+        child = next;
+      }
+    }
+  }
+
+  /// The child of the root that is `id` or has it among its descendants; none for the root.
+  fn top_level_ancestor(&self, id: NodeId) -> Option<NodeId> {
+    if id == 0 || id as usize >= self.nodes.len() {
+      return None;
+    }
+
+    let after = self.top_level.partition_point(|&child| child <= id);
+    after.checked_sub(1).map(|index| self.top_level[index])
+  }
+
+  /// A node's ancestors, innermost first, found from the root at once.
+  pub fn ancestors(&self, id: NodeId) -> std::iter::Rev<std::vec::IntoIter<NodeId>> {
+    let mut path = Vec::new();
+
+    if let Some(top) = self.top_level_ancestor(id) {
+      path.push(0);
+      let mut current = top;
+      while current != id {
+        path.push(current);
+        let mut child = current + 1;
+        loop {
+          if child == id {
+            current = id;
+            break;
+          }
+          let next = self.next(child);
+          if id < next {
+            current = child;
+            break;
+          }
+          child = next;
+        }
+      }
+    }
+
+    path.into_iter().rev()
   }
 
   #[inline]
@@ -552,14 +611,6 @@ impl Ast {
       .filter(move |&child| self.slot(child) == slot)
   }
 
-  /// A node and its ancestors, innermost first.
-  pub fn ancestors(&self, id: NodeId) -> Ancestors<'_> {
-    Ancestors {
-      ast: self,
-      current: self.nodes[id as usize].parent,
-    }
-  }
-
   /// The node's position in the parsed code: generated code keeps it apart from its position in the file.
   #[inline]
   pub fn parsed_start(&self, id: NodeId) -> u32 {
@@ -603,6 +654,7 @@ impl Ast {
       + self.assignments.capacity() * 4
       + self.module_level.capacity() * 8
       + self.symbols_of_parents.capacity() * 8
+      + self.top_level.capacity() * 4
   }
 }
 
@@ -628,27 +680,6 @@ impl Iterator for Children<'_> {
   }
 }
 
-pub struct Ancestors<'a> {
-  ast: &'a Ast,
-  current: NodeId,
-}
-
-impl Iterator for Ancestors<'_> {
-  type Item = NodeId;
-
-  #[inline]
-  fn next(&mut self) -> Option<NodeId> {
-    if self.current == NONE {
-      return None;
-    }
-
-    let ancestor = self.current;
-    self.current = self.ast.nodes[ancestor as usize].parent;
-
-    Some(ancestor)
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -670,14 +701,7 @@ mod tests {
     ];
 
     for (id, &(start, end)) in spans.iter().enumerate() {
-      let mut node = Node::new(
-        Kind::Identifier,
-        Slot::Root,
-        start,
-        NONE,
-        id as NodeId + 1,
-        NONE,
-      );
+      let mut node = Node::new(Kind::Identifier, Slot::Root, start, id as NodeId + 1, NONE);
       node.add_flags(REFERENCE | READ | SYMBOL_IN_NEXT);
       node.set_end(id as NodeId, end, &mut ast.long_ends);
       ast.nodes.push(node);
