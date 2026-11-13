@@ -58,6 +58,16 @@ describe('macroExpansionPass', () => {
         {},
       ],
       [
+        't imported from gt-react/unstable',
+        "import { t } from 'gt-react/unstable';\nconst x = t`hello ${{ name }}`;",
+        {},
+      ],
+      [
+        't imported from gt-tanstack-start/unstable',
+        "import { t } from 'gt-tanstack-start/unstable';\nconst x = t`hello ${{ name }}`;",
+        {},
+      ],
+      [
         'a local t variable',
         'const t = (s) => s;\nconst x = t`hello ${name}`;',
         {},
@@ -181,17 +191,4 @@ describe('macroExpansionPass', () => {
       ).toBe('const x = t("hello");');
     });
   });
-});
-
-describe('macroExpansionPass with unstable sources', () => {
-  it.each(['gt-react/unstable', 'gt-tanstack-start/unstable'])(
-    'does NOT transform tagged template t imported from %s',
-    (source) => {
-      const { ast, tCalls } = transform(
-        `import { t } from '${source}';\nconst x = t\`hello \${{ name }}\`;`
-      );
-      expect(tCalls).toHaveLength(0);
-      assertStillTaggedTemplate(ast);
-    }
-  );
 });

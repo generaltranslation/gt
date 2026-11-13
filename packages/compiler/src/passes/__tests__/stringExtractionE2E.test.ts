@@ -181,16 +181,15 @@ describe('unstable tagged-template sources are ignored', () => {
     'gt-tanstack-start/unstable',
     'gt-i18n/unstable',
   ])('does not collect t`` or useGT() tags imported from %s', (source) => {
-    const state = collect(
-      `import { t, useGT } from '${source}';\n` +
-        'const gt = useGT();\n' +
-        't`Hello, ${{ name }}!`;\n' +
-        "t({ context: 'button' })`Save`;\n" +
-        'gt`Hello`;\n' +
-        "gt({ context: 'button' })`Save`;"
-    );
-    expect(getRuntimeContent(state)).toHaveLength(0);
-    expect(getCallbackContent(state)).toHaveLength(0);
-    expect(state.errorTracker.getErrors()).toEqual([]);
+    expect(
+      collect(
+        `import { t, useGT } from '${source}';\n` +
+          'const gt = useGT();\n' +
+          't`Hello, ${{ name }}!`;\n' +
+          "t({ context: 'button' })`Save`;\n" +
+          'gt`Hello`;\n' +
+          "gt({ context: 'button' })`Save`;"
+      )
+    ).toEqual({ errors: [], callback: [], runtimeOnly: [] });
   });
 });
