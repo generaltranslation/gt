@@ -166,11 +166,17 @@ jobs:
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
           version=$(jq -r .version packages/cli/package.json)
 
+          binaries_uploaded() {
+            for binary in gt-darwin-x64 gt-darwin-arm64 gt-linux-x64 gt-linux-arm64 gt-win32-x64.exe; do
+              curl --silent --fail --head --retry 3 --output /dev/null "https://assets.gtx.dev/cli/v${version}/${binary}" || return 1
+            done
+          }
+
           if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gt")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
-          elif npm view "gt@${version}" version > /dev/null 2>&1 && ! npm view "gt@${version}-bin.0" version > /dev/null 2>&1; then
-            # A previous run published gt but failed before the binary
-            # release landed; finish it on this run.
+          elif npm view "gt@${version}" version > /dev/null 2>&1 && ! binaries_uploaded; then
+            # A previous run published gt but failed before its binaries
+            # reached R2; finish it on this run.
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
@@ -267,11 +273,17 @@ jobs:
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
           version=$(jq -r .version packages/gtx-cli/package.json)
 
+          binaries_uploaded() {
+            for binary in gtx-cli-darwin-x64 gtx-cli-darwin-arm64 gtx-cli-linux-x64 gtx-cli-linux-arm64 gtx-cli-win32-x64.exe; do
+              curl --silent --fail --head --retry 3 --output /dev/null "https://assets.gtx.dev/gtx-cli/v${version}/${binary}" || return 1
+            done
+          }
+
           if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gtx-cli")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
-          elif npm view "gtx-cli@${version}" version > /dev/null 2>&1 && ! npm view "gtx-cli@${version}-bin.0" version > /dev/null 2>&1; then
-            # A previous run published gtx-cli but failed before the binary
-            # release landed; finish it on this run.
+          elif npm view "gtx-cli@${version}" version > /dev/null 2>&1 && ! binaries_uploaded; then
+            # A previous run published gtx-cli but failed before its binaries
+            # reached R2; finish it on this run.
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
