@@ -86,7 +86,7 @@ export type FormatIcuOptions = Pick<FormatMessageTreeOptions, 'timeZone'>;
  *   formatIcu('Hi {name}', 'en', { name: 'Ada' }, { timeZone }); // 'Hi Ada'
  */
 export function formatIcu(
-  message: string,
+  icu: string,
   locales: string | string[],
   values: Readonly<Record<string, MessagePlainValue>>,
   options: FormatIcuOptions
@@ -96,20 +96,20 @@ export function formatIcu(
  * or the parts around them, as with `formatMessageTree`.
  */
 export function formatIcu<R>(
-  message: string,
+  icu: string,
   locales: string | string[],
   values: MessageValues<R> & OnePartValues<R>,
   options: FormatIcuOptions
 ): FormattedMessage<R>;
 export function formatIcu<R>(
-  message: string,
+  icu: string,
   locales: string | string[],
   values: MessageValues<R>,
   options: FormatIcuOptions
 ): string | R | Array<string | R> {
   const locale = resolveLocale(locales);
-  const tree = toParsedTree(parse(message, { locale }));
-  return formatParsedTree(tree, message, locales, values, {
+  const tree = toParsedTree(parse(icu, { locale }));
+  return formatParsedTree(tree, icu, locales, values, {
     formats: {},
     timeZone: options.timeZone,
   });

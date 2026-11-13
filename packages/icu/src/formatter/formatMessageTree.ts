@@ -100,7 +100,7 @@ type Part<R> = string | R;
 type MessageValue<R> = MessageValues<R>[string];
 
 type FormatContext<R> = FormatMessageTreeOptions & {
-  message: string;
+  icu: string;
   locales: string | string[];
   values: MessageValues<R>;
 };
@@ -162,10 +162,10 @@ export function formatMessageTree<R>(
   return formatParsedTree(tree, '', locales, values, options);
 }
 
-/** Formats a tree whose locales were already validated; `message` is reported on errors. */
+/** Formats a tree whose locales were already validated; `icu` is reported on errors. */
 export function formatParsedTree<R>(
   tree: ParsedTree,
-  message: string,
+  icu: string,
   locales: string | string[],
   values: MessageValues<R>,
   { formats, timeZone }: FormatMessageTreeOptions
@@ -173,7 +173,7 @@ export function formatParsedTree<R>(
   // Most messages are plain text, which needs no formatter state.
   if (typeof tree === 'string') return tree;
   const parts = formatNodes(tree, {
-    message,
+    icu,
     locales,
     values,
     formats,
@@ -427,7 +427,7 @@ function getPluralRules<R>(
         'Try polyfilling it using "@formatjs/intl-pluralrules"\n'
     ) as Error & { code: string; originalMessage: string };
     error.code = 'MISSING_INTL_API';
-    error.originalMessage = context.message;
+    error.originalMessage = context.icu;
     throw error;
   }
   return intlCache.get('PluralRules', context.locales, { type });
