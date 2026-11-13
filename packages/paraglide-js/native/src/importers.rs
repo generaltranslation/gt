@@ -122,6 +122,10 @@ pub fn call_sites_of(graph: &Graph, record: &Module, function: NodeId) -> Arc<[C
     .clone()
 }
 
+/// From this many importers on, a function's call sites are read on the pool. It is never asked
+/// for while a lock or a value being initialized is held, which a waiting thread could ask again.
+const PARALLEL_REFERRERS: usize = 64;
+
 fn find_call_sites(graph: &Graph, record: &Module, function: NodeId) -> Vec<CallSite> {
   let own = call_sites_in(graph, record)
     .by_declaration
@@ -146,20 +150,36 @@ fn find_call_sites(graph: &Graph, record: &Module, function: NodeId) -> Vec<Call
     names,
   };
   let referrers = referrers_of(graph, &exported);
-
-  for &importer in &referrers.modules {
-    if importer == record.id {
-      continue;
+  let sites_of = |importer: ModuleId, sites: &mut Vec<CallSite>| {
+    if importer != record.id {
+      let module = graph.module(importer);
+      sites_in(
+        graph,
+        module,
+        &exported,
+        &referrers,
+        &IndexKind::CallSites,
+        sites,
+      );
     }
+  };
 
-    sites_in(
-      graph,
-      graph.module(importer),
-      &exported,
-      &referrers,
-      &IndexKind::CallSites,
-      &mut sites,
-    );
+  if referrers.modules.len() < PARALLEL_REFERRERS {
+    for &importer in &referrers.modules {
+      sites_of(importer, &mut sites);
+    }
+  } else {
+    // Each importer's sites index is built on the way, and a function is called from thousands.
+    let found: Vec<Vec<CallSite>> = referrers
+      .modules
+      .par_iter()
+      .map(|&importer| {
+        let mut found = Vec::new();
+        sites_of(importer, &mut found);
+        found
+      })
+      .collect();
+    sites.extend(found.into_iter().flatten());
   }
 
   sites
