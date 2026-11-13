@@ -79,14 +79,33 @@ export function loadIndexedFile(
   return 'module' in parsed ? parsed.module : undefined;
 }
 
+/** Modules a graph keeps loaded if it can: the files around the one analyzed, which it reads again and again. */
+const MODULES_KEPT = 120;
+
+/** Below it, unloading modules costs more than it saves. */
+const MIN_BUDGET = 16_000_000;
+
 /** Above it, collecting garbage in a larger heap costs more than loading modules again. */
-const MAX_BUDGET = 16_000_000;
+const MAX_BUDGET = 32_000_000;
+
+/** The share of a thread's heap its modules take at most: the rest is for the analysis and its garbage. */
+export const THREAD_HEAP_SHARE = 1 / 3.5;
 
 /**
- * Characters of code an indexed graph keeps the modules of loaded. A module's
- * syntax tree and index take about 40 times its code's size: at most 30% of
- * the heap, the rest is for the analysis and its garbage.
+ * Characters of code an indexed graph keeps the modules of loaded, for files
+ * of `averageFileSize` characters, its modules taking at most `heapShare` of
+ * the heap. A module's syntax tree and index take about 40 times its code's size.
  */
-export function analysisBudget(): number {
-  return Math.min(v8.getHeapStatistics().heap_size_limit / 140, MAX_BUDGET);
+export function analysisBudget(
+  averageFileSize: number,
+  heapShare = THREAD_HEAP_SHARE
+): number {
+  const wanted = Math.min(
+    Math.max(MODULES_KEPT * averageFileSize, MIN_BUDGET),
+    MAX_BUDGET
+  );
+
+  const heapLimit = v8.getHeapStatistics().heap_size_limit;
+
+  return Math.min(wanted, (heapLimit * heapShare) / 40);
 }
