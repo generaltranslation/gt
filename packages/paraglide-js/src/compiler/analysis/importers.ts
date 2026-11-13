@@ -10,7 +10,8 @@ import {
   callSitesIn,
   componentInstancesIn,
   ownSite,
-  sitePosition,
+  positionKey,
+  siteRange,
   type CallSite,
   type CallSiteIndex,
   type Candidate,
@@ -104,6 +105,34 @@ type Cache = {
   callSites: WeakMap<FunctionNode, SiteHandle[]>;
   componentProps: WeakMap<ModuleRecord, Candidate[]>;
 };
+
+/**
+ * A site in another module than the callee, found again by its position:
+ * holding it would hold that module. A function can be called from
+ * hundreds of thousands of sites, so a handle holds numbers, not a closure.
+ */
+class ImportedSite implements SiteHandle {
+  readonly imported = true;
+
+  constructor(
+    readonly type: CallSite['type'],
+    private readonly modules: LoadedModules,
+    private readonly ref: ModuleRef,
+    private readonly kind: SiteKind,
+    private readonly start: number,
+    private readonly end: number
+  ) {}
+
+  resolve(): CallSite | undefined {
+    const module = this.modules.module(this.ref);
+    if (!module) return undefined;
+
+    const scope = this.modules.scopeOf(module);
+    return sitesOfKind(this.kind, module.program, scope).byPosition.get(
+      positionKey(this.type, this.start, this.end)
+    );
+  }
+}
 
 /** Which sites of a module: calls and JSX elements, or the components its generated code instantiates. */
 type SiteKind = 'call-sites' | InstantiationSyntax;
@@ -332,21 +361,9 @@ export class ImporterIndex {
     kind: SiteKind,
     site: CallSite
   ): SiteHandle {
-    const position = sitePosition(site);
+    const [start, end] = siteRange(site);
 
-    return {
-      type: site.type,
-      imported: true,
-      resolve: () => {
-        const module = this.modules.module(ref);
-        if (!module) return undefined;
-
-        const scope = this.modules.scopeOf(module);
-        return sitesOfKind(kind, module.program, scope).byPosition.get(
-          position
-        );
-      },
-    };
+    return new ImportedSite(site.type, this.modules, ref, kind, start, end);
   }
 
   private sitesOfImport(
