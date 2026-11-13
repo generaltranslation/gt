@@ -1,5 +1,6 @@
 import {
   isFunction,
+  parsedRange,
   patternBindings,
   staticPropertyName,
   staticString,
@@ -101,7 +102,7 @@ const DESTRUCTURING_PARTS = new Set([
  */
 export class Scope {
   private readonly index: ProgramIndex;
-  private readonly parents: ReadonlyMap<Node, Node>;
+  private readonly parentOf: (node: Node) => Node | undefined;
   private readonly bindings = new WeakMap<Variable, Binding>();
 
   constructor(
@@ -112,7 +113,7 @@ export class Scope {
     private readonly overrides: ReadonlyMap<string, Binding> = new Map()
   ) {
     this.index = indexProgram(program);
-    this.parents = this.index.parents;
+    this.parentOf = this.index.parentOf;
   }
 
   /** What a module-level name holds. */
@@ -186,7 +187,7 @@ export class Scope {
       if (parent.type === 'ArrowFunctionExpression') continue;
 
       if (isFunction(parent)) {
-        const owner = this.parents.get(parent);
+        const owner = this.parentOf(parent);
         return owner?.type === 'MethodDefinition'
           ? this.classOf(owner)
           : undefined;
@@ -205,8 +206,8 @@ export class Scope {
   }
 
   private classOf(member: Node): TrackedSymbol | undefined {
-    const classBody = this.parents.get(member);
-    const classNode = classBody && this.parents.get(classBody);
+    const classBody = this.parentOf(member);
+    const classNode = classBody && this.parentOf(classBody);
 
     const isClass =
       classNode?.type === 'ClassDeclaration' ||
@@ -219,9 +220,9 @@ export class Scope {
     let child = node;
 
     for (
-      let parent = this.parents.get(node);
+      let parent = this.parentOf(node);
       parent;
-      parent = this.parents.get(parent)
+      parent = this.parentOf(parent)
     ) {
       yield { parent, child };
       child = parent;
@@ -278,7 +279,7 @@ export class Scope {
       return { type: 'lazy', get: () => host.namespace(specifier) };
     }
 
-    const declaration = this.parents.get(node);
+    const declaration = this.parentOf(node);
     if (declaration?.type !== 'ImportDeclaration') return SHADOW;
 
     const specifier = declaration.source.value;
@@ -310,7 +311,7 @@ export class Scope {
 
     const isFirst = index === 0;
     const importedSpecifier = isFirst
-      ? dynamicImportOfCallback(fn, this.parents.get(fn))
+      ? dynamicImportOfCallback(fn, this.parentOf(fn))
       : undefined;
 
     if (importedSpecifier !== undefined) {
@@ -395,7 +396,7 @@ export class Scope {
 
   /** `export let t = m` is a statement of its block, as `let t = m` is. */
   private exportOrSelf(statement: Node): Node {
-    const parent = this.parents.get(statement);
+    const parent = this.parentOf(statement);
 
     return parent?.type === 'ExportNamedDeclaration' ? parent : statement;
   }
@@ -450,7 +451,7 @@ export class Scope {
         : undefined;
       if (parent.operator !== '=' || !path) return undefined;
 
-      const statement = this.parents.get(parent);
+      const statement = this.parentOf(parent);
       const isOwnStatement =
         statement?.type === 'ExpressionStatement' &&
         statement.expression === parent;
@@ -501,7 +502,7 @@ export class Scope {
       const isBeforeRead = positionOf(write.node) < readPosition;
       if (!statement || !isBeforeRead) continue;
 
-      const block = this.parents.get(statement);
+      const block = this.parentOf(statement);
       const alwaysRunsBeforeRead =
         block !== undefined &&
         BLOCKS.has(block.type) &&
@@ -519,11 +520,6 @@ export class Scope {
 
 function nameOf(identifier: Node): string | undefined {
   return (identifier as { name?: string }).name;
-}
-
-// A node moved to its position in the source file keeps its position in the parsed code in `range`.
-function parsedRange(node: Node): readonly [number, number] {
-  return (node as { range?: [number, number] }).range ?? [node.start, node.end];
 }
 
 function positionOf(node: Node): number {

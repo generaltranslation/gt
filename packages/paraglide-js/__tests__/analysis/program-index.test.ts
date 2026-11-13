@@ -66,7 +66,7 @@ describe('indexProgram', () => {
       false
     );
     expect(index.references.get(parameter!)).toBeUndefined();
-    expect(index.parents.get(called!)?.type).toBe('CallExpression');
+    expect(index.parentOf(called!)?.type).toBe('CallExpression');
   });
 
   test('drops the ranges that repeat start and end', () => {

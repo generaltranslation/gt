@@ -12,11 +12,16 @@ type ParseError = {
   labels?: ReadonlyArray<{ start: number }>;
 };
 
-/** e.g. oxc-parser's `parseSync` with `{ lang, range: true, astType: "ts" }`. */
+/**
+ * e.g. oxc-parser's `parseSync` with `{ lang, range, astType: "ts" }`. `range`
+ * is required for generated code, whose nodes are moved to their source
+ * position: `range` keeps where they were parsed.
+ */
 export type ParseFunction = (
   file: string,
   code: string,
-  lang: ParseLang
+  lang: ParseLang,
+  options?: { range: boolean }
 ) => { program: ESTree.Program; errors: readonly ParseError[] };
 
 /** A class whose fields a template reads undeclared, e.g. Angular's `{{ m.greeting() }}`. */
@@ -145,11 +150,59 @@ export async function parseSource(
   const language = languageOf(file, code, languages);
   if (language) return parseWithLanguage(file, code, parse, language, context);
 
+  return parseSourceSync(file, code, parse);
+}
+
+/**
+ * Parses a file as `parseSource` does, but with the module a language's
+ * tooling generated for it, if any, already generated.
+ */
+export function parseSourceSync(
+  file: string,
+  code: string,
+  parse: ParseFunction,
+  generated?: { language: string; source: GeneratedSource }
+): { module: ParsedModule } | ParseFailure {
+  if (generated) {
+    return parseGenerated(
+      file,
+      code,
+      parse,
+      generated.language,
+      generated.source
+    );
+  }
+
   if (isScript(file)) return parseScript(file, code, parse);
 
   const { program } = parse(file, '', 'js');
 
   return { module: { code, program } };
+}
+
+/** The generated module of `file`, and the language that generated it; undefined for a script. */
+export async function generateSource(
+  file: string,
+  code: string,
+  languages: readonly SourceLanguage[],
+  context: LanguageContext = NO_PACKAGES
+): Promise<
+  { language: string; source: GeneratedSource } | ParseFailure | undefined
+> {
+  const language = languageOf(file, code, languages);
+  if (!language) return undefined;
+
+  let generated: GeneratedSource | undefined;
+
+  try {
+    generated = await language.generate(code, file, context);
+  } catch (error) {
+    return generationFailure(language, error);
+  }
+
+  if (!generated) return missingToolsFailure(language);
+
+  return { language: language.name, source: generated };
 }
 
 function languageOf(
@@ -171,25 +224,37 @@ async function parseWithLanguage(
   language: SourceLanguage,
   context: LanguageContext
 ): Promise<{ module: ParsedModule } | ParseFailure> {
-  let generated: GeneratedSource | undefined;
+  const generated = await generateSource(file, code, [language], context);
+  if (!generated || 'error' in generated)
+    return generated ?? missingToolsFailure(language);
 
-  try {
-    generated = await language.generate(code, file, context);
-  } catch (error) {
-    return generationFailure(language, error);
-  }
+  return parseGenerated(
+    file,
+    code,
+    parse,
+    generated.language,
+    generated.source
+  );
+}
 
-  if (!generated) return missingToolsFailure(language);
-
+function parseGenerated(
+  file: string,
+  code: string,
+  parse: ParseFunction,
+  language: string,
+  generated: GeneratedSource
+): { module: ParsedModule } | ParseFailure {
   const programs: ESTree.Program[] = [];
 
   for (const script of [generated, ...(generated.scripts ?? [])]) {
-    const { program, errors } = parse(file, script.code, script.lang);
+    const { program, errors } = parse(file, script.code, script.lang, {
+      range: true,
+    });
 
     const error = firstError(errors);
     if (error) {
       return {
-        error: `${language.name} tooling produced unparsable code: ${error.message}`,
+        error: `${language} tooling produced unparsable code: ${error.message}`,
       };
     }
 

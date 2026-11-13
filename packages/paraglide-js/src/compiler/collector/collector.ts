@@ -1,18 +1,13 @@
 import { isBuiltin } from 'node:module';
 import path from 'node:path';
 import { analyzeModule } from '../analysis/analyze.js';
-import {
-  ModuleGraph,
-  type GlobalBinding,
-  type ParsedModule,
-} from '../analysis/module-graph.js';
+import { ModuleGraph, type GlobalBinding } from '../analysis/module-graph.js';
+import { ModuleIndexer, type ParsedSummary } from '../analysis/module-index.js';
 import type { ParaglideUsage } from '../analysis/types.js';
 import {
   isSourceFile,
-  parseSource,
   type LanguageContext,
   type ParseFailure,
-  type ParseFunction,
   type SourceLanguage,
 } from '../languages/language.js';
 import { readCatalog } from '../paraglide/catalog.js';
@@ -26,12 +21,18 @@ import {
 } from '../project/auto-imports.js';
 import type { FileSelection } from '../project/files.js';
 import { projectPackages } from '../project/packages.js';
-import { parseCode } from '../utils/parse.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
 import { readTextFile } from '../utils/read-file.js';
 import { isInCatalog, unknownMessagesWarning } from './catalog-check.js';
 import { MetadataFiles } from './metadata-files.js';
 import { MissingTools } from './missing-tools.js';
+import {
+  analysisBudget,
+  loadIndexedFile,
+  summarizeFile,
+  type GeneratedModule,
+  type SummaryResult,
+} from './module-reader.js';
 import { OutdirProjects } from './outdir-projects.js';
 
 /** Resolves an import like the project's bundler would: a file, or nothing. */
@@ -77,19 +78,17 @@ type Catalog = Set<string> | undefined;
 /** `./paraglide/messages.js`, `$lib/paraglide/runtime` */
 const IN_PARAGLIDE_DIRECTORY = /(^|[/\\])paraglide[/\\]/;
 
-const parse: ParseFunction = (file, code, lang) =>
-  parseCode(file, code, {
-    lang,
-    range: true,
-    astType: 'ts',
-  }) as unknown as ReturnType<ParseFunction>;
-
 /** Analyzes the project's source files and writes their usages to the messages' metadata files. */
 export class ContextCollector {
   private readonly settings: CollectorSettings;
   private readonly packages: LanguageContext;
 
+  /** Finds outdirs and targets; the modules are indexed by `indexer`. */
   private readonly moduleGraph: ModuleGraph;
+  private readonly indexer: ModuleIndexer;
+  /** What languages generated for the indexed files: the analysis parses a file again when it loads it. */
+  private readonly generated = new Map<string, GeneratedModule>();
+  private globals: readonly GlobalBinding[] = [];
   private readonly outdirDetector: OutdirDetector;
   private readonly outdirProjects: OutdirProjects;
   private readonly output: MetadataFiles;
@@ -99,6 +98,8 @@ export class ContextCollector {
   private readonly catalogs = new Map<string, Catalog>();
   /** By message file, absolute. */
   private readonly messageOutdirs = new Map<string, string | undefined>();
+  /** By absolute directory: a project has many usages. */
+  private readonly relativeProjects = new Map<string, string>();
   /** Usages of messages that are not in their catalog. */
   private readonly unknownMessages: string[] = [];
   private readonly missingTools: MissingTools;
@@ -127,12 +128,19 @@ export class ContextCollector {
 
     this.moduleGraph = new ModuleGraph({
       resolve: (specifier, importer) => this.resolve(specifier, importer),
-      readModule: (file) => this.readModule(file),
+      readModule: () => {
+        throw new Error('The collector indexes its modules.');
+      },
       targets: settings.targets,
       outdirs: settings.outdirs,
       isOutdir: (directory) => this.isOutdir(directory),
       shouldFollow: (file) =>
         this.isAppSource(file) && !this.moduleGraph.isGenerated(file),
+    });
+    this.indexer = new ModuleIndexer({
+      graph: this.moduleGraph,
+      resolve: (specifier, importer) => this.resolve(specifier, importer),
+      summarize: (file) => this.summarize(file),
     });
   }
 
@@ -142,23 +150,65 @@ export class ContextCollector {
       await this.settings.selection.list();
     this.warnMissingIncludes(missing);
 
+    const sourceCount = await this.scan(files, autoImportDeclarations);
+
+    this.warnNoOutdir();
+    await this.warnMissingTools();
+    this.warnUnknownMessages();
+    this.logSummary(sourceCount);
+  }
+
+  /** Returns how many source files it analyzed. */
+  private async scan(
+    files: readonly string[],
+    autoImportDeclarations: readonly string[]
+  ): Promise<number> {
     // Outdirs inside `include` must be known before choosing the sources.
     await Promise.all(files.map((file) => this.moduleGraph.detectOutdir(file)));
     await this.loadGlobals(autoImportDeclarations);
 
     const sources = files.filter((file) => !this.moduleGraph.isGenerated(file));
 
-    // Every source is loaded before any is analyzed: a value can flow from one
+    // Every source is indexed before any is analyzed: a value can flow from one
     // module into another's function, e.g. `show(m)` into `function show(t)`.
-    await this.moduleGraph.loadPaths(sources);
+    await this.indexer.indexPaths(sources);
     await this.loadCatalogs();
 
-    for (const file of sources) this.analyzeLoaded(file);
+    const usages = await this.analyzeAll(sources);
 
-    this.warnNoOutdir();
-    await this.warnMissingTools();
-    this.warnUnknownMessages();
-    this.logSummary(sources.length);
+    const codes = await Promise.all(
+      sources.map((file) =>
+        usages.get(file)?.length ? readTextFile(file) : undefined
+      )
+    );
+    sources.forEach((file, index) =>
+      this.addUsages(file, usages.get(file) ?? [], codes[index])
+    );
+
+    return sources.length;
+  }
+
+  private async analyzeAll(
+    sources: readonly string[]
+  ): Promise<Map<string, ParaglideUsage[]>> {
+    const graph = new ModuleGraph({
+      targets: this.settings.targets,
+      outdirs: this.moduleGraph.outdirs,
+      globals: this.globals,
+      index: {
+        summaries: this.indexer.modules,
+        budget: analysisBudget(),
+        load: (file) => loadIndexedFile(file, this.generated.get(file)),
+      },
+    });
+    const usages = new Map<string, ParaglideUsage[]>();
+
+    for (const file of sources) {
+      usages.set(file, analyzeModule(graph, file));
+      graph.trim();
+    }
+
+    return usages;
   }
 
   async write(): Promise<void> {
@@ -189,22 +239,23 @@ export class ContextCollector {
     return path.isAbsolute(file) ? path.normalize(file) : undefined;
   }
 
-  private async readModule(file: string): Promise<ParsedModule | undefined> {
-    const code = await readTextFile(file);
-    if (code === undefined) return undefined;
-
-    const parsed = await parseSource(
+  /** What a file loads, for the index. */
+  private async summarize(file: string): Promise<ParsedSummary | undefined> {
+    const result: SummaryResult = await summarizeFile(
       file,
-      code,
-      parse,
       this.settings.languages,
       this.packages
     );
-    if ('module' in parsed) return parsed.module;
+    if (!result) return undefined;
 
-    this.reportSkipped(file, parsed);
+    if ('failure' in result) {
+      this.reportSkipped(file, result.failure);
+      return undefined;
+    }
 
-    return undefined;
+    if (result.generated) this.generated.set(file, result.generated);
+
+    return result.summary;
   }
 
   private reportSkipped(file: string, failure: ParseFailure): void {
@@ -254,9 +305,9 @@ export class ContextCollector {
     const sources = modules.filter(
       (file) => !this.moduleGraph.targetOf(file) && this.isAppSource(file)
     );
-    await this.moduleGraph.loadPaths(sources);
+    await this.indexer.indexPaths(sources);
 
-    this.moduleGraph.setGlobals(globals);
+    this.globals = globals;
   }
 
   /** The auto-imports of the options, then the detected ones; none if they are disabled. */
@@ -331,21 +382,18 @@ export class ContextCollector {
     );
   }
 
-  private analyzeLoaded(file: string): void {
-    const usages = analyzeModule(this.moduleGraph, file);
-
+  /** `code` is the file's, read again: the analysis does not hold every file's code. */
+  private addUsages(
+    file: string,
+    usages: ParaglideUsage[],
+    code: string | undefined
+  ): void {
     this.tagInlangProjects(usages);
     this.checkCatalogs(file, usages);
     this.analyzed.set(file, usages.length);
+    if (usages.length === 0 || code === undefined) return;
 
-    const record = this.moduleGraph.getRecord(file);
-    if (!record || usages.length === 0) return;
-
-    this.output.add(file, {
-      file: this.relative(file),
-      code: record.code,
-      usages,
-    });
+    this.output.add(file, { file: this.relative(file), code, usages });
   }
 
   /** Records on each message usage the inlang project its outdir is paired with. */
@@ -357,7 +405,7 @@ export class ContextCollector {
       const project = this.outdirProjects.of(outdir);
       if (!project) continue;
 
-      usage.inlangProject = this.relative(project);
+      usage.inlangProject = this.relativeProject(project);
     }
   }
 
@@ -451,6 +499,17 @@ export class ContextCollector {
 
     this.warned.add(message);
     this.settings.logger.warn(`${LOG_PREFIX} ${message}`);
+  }
+
+  private relativeProject(directory: string): string {
+    let relative = this.relativeProjects.get(directory);
+
+    if (relative === undefined) {
+      relative = this.relative(directory);
+      this.relativeProjects.set(directory, relative);
+    }
+
+    return relative;
   }
 
   private relative(file: string): string {

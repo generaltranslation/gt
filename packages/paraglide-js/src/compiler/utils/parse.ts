@@ -1,3 +1,4 @@
+import type { ParseFunction } from '../languages/language.js';
 import {
   parseSync,
   rawTransferSupported,
@@ -28,3 +29,11 @@ export function parseCode(
 function withRawTransfer(options: ParserOptions): ParserOptions {
   return { ...options, experimentalRawTransfer: true } as ParserOptions;
 }
+
+/** How source files are parsed for the analysis. */
+export const parseModuleCode: ParseFunction = (file, code, lang, options) =>
+  parseCode(file, code, {
+    lang,
+    range: options?.range ?? false,
+    astType: 'ts',
+  }) as unknown as ReturnType<ParseFunction>;

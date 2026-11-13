@@ -11,6 +11,13 @@ import {
   loadedSpecifiers,
   type ExportStatement,
 } from './module-syntax.js';
+import {
+  IndexedRecords,
+  LoadedRecords,
+  modulesOf,
+  type IndexedRecordsOptions,
+  type RecordStore,
+} from './module-store.js';
 import { Scope, type Binding, type ModuleHost } from './scope.js';
 import { symbolFromSpec } from './tracked-symbols.js';
 import type { TrackedSymbol } from './types.js';
@@ -66,6 +73,12 @@ export type ModuleGraphOptions = {
   globals?: readonly GlobalBinding[];
 };
 
+/** A graph of modules that were indexed before, each loaded when it is read: see `IndexedRecords`. */
+export type IndexedGraphOptions = Pick<
+  ModuleGraphOptions,
+  'targets' | 'outdirs' | 'globals'
+> & { index: IndexedRecordsOptions };
+
 export type ModuleRecord = Omit<ParsedModule, 'scripts'> & {
   file: string;
   /** The file of each specifier the module loads. */
@@ -91,7 +104,7 @@ const followsScripts = (file: string) => isScript(file) && !isDependency(file);
 
 /** Modules linked by resolved imports. Loading is async; lookups are synchronous. */
 export class ModuleGraph {
-  private readonly options: ModuleGraphOptions;
+  private readonly options: ModuleGraphOptions | IndexedGraphOptions;
 
   /** Longest first, so that a nested outdir wins over its parent. */
   private knownOutdirs: readonly string[] = [];
@@ -102,7 +115,7 @@ export class ModuleGraph {
     string,
     Promise<ModuleRecord | undefined>
   >();
-  private readonly records = new Map<string, ModuleRecord>();
+  private readonly records: RecordStore;
   /** Changes whenever a module is added or the globals change. */
   private generation = 0;
 
@@ -115,15 +128,23 @@ export class ModuleGraph {
     ReadonlySet<string> | undefined
   >();
   private readonly importers = new ImporterIndex({
-    records: this.records,
-    all: () => [...this.records.values()].flatMap(modulesOf),
+    record: (file) => this.records.get(file),
+    module: ({ file, part }) => {
+      const record = this.records.get(file);
+      return record && modulesOf(record)[part];
+    },
+    links: () => this.records.links(),
     scopeOf: (record) => this.scopeOf(record),
     generation: () => this.generation,
     globalExports: () => this.globalExports,
   });
 
-  constructor(options: ModuleGraphOptions) {
+  constructor(options: ModuleGraphOptions | IndexedGraphOptions) {
     this.options = options;
+    this.records =
+      'index' in options
+        ? new IndexedRecords(options.index)
+        : new LoadedRecords();
 
     for (const outdir of options.outdirs ?? []) this.addOutdir(outdir);
     this.declareGlobals(options.globals ?? []);
@@ -132,10 +153,21 @@ export class ModuleGraph {
   setGlobals(globals: readonly GlobalBinding[]): void {
     this.declareGlobals(globals);
 
-    for (const record of this.records.values()) {
+    for (const record of this.records.loaded()) {
       for (const module of modulesOf(record)) module.scope = undefined;
     }
     this.generation++;
+  }
+
+  /**
+   * Of an indexed graph, unloads the modules read least recently, beyond its
+   * budget. Nothing read since the last call may be in use when it is called.
+   */
+  trim(): void {
+    if (!(this.records instanceof IndexedRecords)) return;
+
+    // What was found through the unloaded modules holds their nodes.
+    if (this.records.trim()) this.importers.clear();
   }
 
   get outdirs(): readonly string[] {
@@ -148,7 +180,7 @@ export class ModuleGraph {
 
   /** Verifies the outdir a resolved file may belong to. */
   async detectOutdir(file: string): Promise<void> {
-    const { isOutdir } = this.options;
+    const isOutdir = 'isOutdir' in this.options && this.options.isOutdir;
     if (!isOutdir) return;
 
     const detect = (directory: string) => {
@@ -172,6 +204,12 @@ export class ModuleGraph {
    * them: a module that several entries reach is visited once.
    */
   async loadPaths(entries: readonly string[]): Promise<void> {
+    if ('index' in this.options) {
+      throw new Error(
+        'An indexed module graph loads its modules when it reads them.'
+      );
+    }
+
     const visited = new Set<string>();
     let frontier = [...new Set(entries)];
 
@@ -229,6 +267,8 @@ export class ModuleGraph {
       const spec = match.target.exportSymbol(name, match.file);
       return spec && symbolFromSpec(spec, match.target.name, file);
     }
+
+    if (this.records.isUntrackedExport(file, name)) return undefined;
 
     const record = this.records.get(file);
     const key = `${file}\0${name}`;
@@ -537,8 +577,11 @@ export class ModuleGraph {
     this.exportNames.clear();
   }
 
-  private shouldFollow(file: string): boolean {
-    const shouldFollow = this.options.shouldFollow ?? followsScripts;
+  /** Whether `loadPaths` loads `file` when a loaded module loads it. */
+  shouldFollow(file: string): boolean {
+    const shouldFollow =
+      ('shouldFollow' in this.options && this.options.shouldFollow) ||
+      followsScripts;
 
     return !this.targetOf(file) && shouldFollow(file);
   }
@@ -549,7 +592,7 @@ export class ModuleGraph {
     if (!loading) {
       loading = this.readRecord(file).then((record) => {
         if (record) {
-          this.records.set(file, record);
+          (this.records as LoadedRecords).set(record);
           this.exportNames.clear();
           this.generation++;
         }
@@ -563,7 +606,7 @@ export class ModuleGraph {
   }
 
   private async readRecord(file: string): Promise<ModuleRecord | undefined> {
-    const parsed = await this.options.readModule(file);
+    const parsed = await (this.options as ModuleGraphOptions).readModule(file);
     if (!parsed) return undefined;
 
     const { scripts = [], ...module } = parsed;
@@ -587,9 +630,10 @@ export class ModuleGraph {
       if (specifier !== '') loaded.add(specifier);
     }
 
+    const { resolve } = this.options as ModuleGraphOptions;
     const specifiers = [...loaded];
     const files = await Promise.all(
-      specifiers.map((specifier) => this.options.resolve(specifier, file))
+      specifiers.map((specifier) => resolve(specifier, file))
     );
     const resolved = new Map(
       specifiers.map((specifier, index) => [specifier, files[index]])
@@ -599,10 +643,7 @@ export class ModuleGraph {
   }
 }
 
-/** A file's module, then its scripts. */
-export function modulesOf(record: ModuleRecord): ModuleRecord[] {
-  return [record, ...(record.scripts ?? [])];
-}
+export { modulesOf };
 
 function dependenciesOf(
   records: ReadonlyArray<ModuleRecord | undefined>

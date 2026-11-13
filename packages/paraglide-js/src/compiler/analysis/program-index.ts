@@ -1,10 +1,19 @@
 import {
   analyze,
+  FunctionScope,
   type Definition as ManagedDefinition,
+  type Reference as ManagedReference,
   type Scope as ManagedScope,
   type Variable as ManagedVariable,
 } from '@typescript-eslint/scope-manager';
-import { forEachNode, type ESTree, type Node } from './ast.js';
+import { visitorKeys } from 'oxc-parser';
+import {
+  forEachNode,
+  isNode,
+  parsedRange,
+  type ESTree,
+  type Node,
+} from './ast.js';
 
 export type Definition = {
   type: ManagedDefinition['type'];
@@ -36,11 +45,36 @@ type Variables = {
 };
 
 export type ProgramIndex = Variables & {
-  parents: ReadonlyMap<Node, Node>;
+  parentOf(node: Node): Node | undefined;
 };
 
 /** A program is indexed once: indexing drops the ranges the scope manager reads. */
 const indexes = new WeakMap<ESTree.Program, ProgramIndex>();
+
+// Scripts are parsed without `range`, the only thing the scope manager reads it
+// for: their `start` is the same. Generated code keeps `range`, where it parsed.
+const scopeManagerResolution = FunctionScope.prototype as unknown as {
+  isValidResolution(
+    reference: ManagedReference,
+    variable: ManagedVariable
+  ): boolean;
+  block: { type: string; body?: object | null };
+};
+scopeManagerResolution.isValidResolution = function (reference, variable) {
+  if (this.block.type === 'Program') return true;
+
+  const body = this.block.body as Node | null | undefined;
+  const bodyStart = body ? parsedRange(body)[0] : -1;
+
+  return !(
+    variable.scope === (this as unknown) &&
+    parsedRange(reference.identifier as unknown as Node)[0] < bodyStart &&
+    variable.defs.every(
+      (definition) =>
+        parsedRange(definition.name as unknown as Node)[0] >= bodyStart
+    )
+  );
+};
 
 // scope-manager is typed for typescript-estree's nodes; it is given oxc's, which have the same shape.
 const toNode = (node: object) => node as Node;
@@ -50,7 +84,8 @@ export function indexProgram(program: ESTree.Program): ProgramIndex {
   let index = indexes.get(program);
 
   if (!index) {
-    index = { ...resolveVariables(program), parents: readParents(program) };
+    index = { ...resolveVariables(program), parentOf: parentFinder(program) };
+    dropRedundantRanges(program);
     indexes.set(program, index);
   }
 
@@ -99,23 +134,111 @@ function resolveVariables(program: ESTree.Program): Variables {
   return { moduleLevel, references };
 }
 
-/** Also drops each `range` that repeats `start` and `end`: a third of the AST's memory. */
-function readParents(program: ESTree.Program): Map<Node, Node> {
+/**
+ * Finds a node's parent by descending from the program to it, through the
+ * children whose position holds it. Few nodes are asked for: a map of every
+ * node's parent costs more than the analysis reads.
+ */
+function parentFinder(
+  program: ESTree.Program
+): (node: Node) => Node | undefined {
   const parents = new Map<Node, Node>();
 
-  forEachNode(program, (node, parent) => {
-    if (parent) parents.set(node, parent);
-    dropRedundantRange(node);
-  });
+  return (node) => {
+    if (node === program) return undefined;
 
-  return parents;
+    const known = parents.get(node);
+    if (known) return known;
+
+    // A child outside its parent's position, e.g. a decorator, is found without pruning.
+    const path = pathTo(program, node, true) ?? pathTo(program, node, false);
+    if (!path) return undefined;
+
+    for (let index = 1; index < path.length; index++) {
+      parents.set(path[index]!, path[index - 1]!);
+    }
+
+    return parents.get(node);
+  };
 }
 
-function dropRedundantRange(node: Node): void {
-  const { range } = node as { range?: [number, number] };
-  const isRedundant = range?.[0] === node.start && range[1] === node.end;
+/** The nodes from `root` to `target`; with `prune`, only through nodes whose parsed range holds the target's. */
+function pathTo(root: Node, target: Node, prune: boolean): Node[] | undefined {
+  const start = parsedStart(target);
+  const end = parsedEnd(target);
+  const path: Node[] = [];
 
-  if (isRedundant) (node as { range?: [number, number] }).range = undefined;
+  const visitChild = (child: unknown): boolean => {
+    if (!isNode(child)) return false;
+    if (prune && (parsedStart(child) > start || parsedEnd(child) < end))
+      return false;
+
+    return visit(child);
+  };
+
+  const visit = (node: Node): boolean => {
+    path.push(node);
+    if (node === target) return true;
+
+    const record = node as unknown as Record<string, unknown>;
+
+    for (const key of visitorKeys[node.type] ?? Object.keys(node)) {
+      const value = record[key];
+
+      if (!Array.isArray(value)) {
+        if (visitChild(value)) return true;
+        continue;
+      }
+
+      // Siblings are in parsing order: those that start after the target cannot hold it.
+      const last = prune ? lastStartingBy(value, start) : value.length - 1;
+      for (let index = last; index >= 0; index--) {
+        if (visitChild(value[index])) return true;
+      }
+    }
+
+    path.pop();
+    return false;
+  };
+
+  return visit(root) ? path : undefined;
+}
+
+/** The index of the last of `nodes` that starts at or before `position`; -1 if none does. */
+function lastStartingBy(nodes: readonly unknown[], position: number): number {
+  let low = 0;
+  let high = nodes.length;
+
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    const node = nodes[middle];
+    const startsBy = !isNode(node) || parsedStart(node) <= position;
+
+    if (startsBy) low = middle + 1;
+    else high = middle;
+  }
+
+  return low - 1;
+}
+
+function parsedStart(node: Node): number {
+  return (node as { range?: [number, number] }).range?.[0] ?? node.start;
+}
+
+function parsedEnd(node: Node): number {
+  return (node as { range?: [number, number] }).range?.[1] ?? node.end;
+}
+
+/** Each `range` that repeats `start` and `end`: a third of a program's memory, when it was parsed with ranges. */
+function dropRedundantRanges(program: ESTree.Program): void {
+  if (!(program as { range?: unknown }).range) return;
+
+  forEachNode(program, (node) => {
+    const { range } = node as { range?: [number, number] };
+    const isRedundant = range?.[0] === node.start && range[1] === node.end;
+
+    if (isRedundant) (node as { range?: [number, number] }).range = undefined;
+  });
 }
 
 function toVariable(

@@ -103,12 +103,17 @@ function childKeysOf(node: Node): readonly string[] {
   );
 }
 
-function isNode(value: unknown): value is Node {
+export function isNode(value: unknown): value is Node {
   return (
     typeof value === 'object' &&
     value !== null &&
     typeof (value as { type?: unknown }).type === 'string'
   );
+}
+
+/** Where a node was parsed: generated code moved to its source position keeps it in `range`. */
+export function parsedRange(node: Node): readonly [number, number] {
+  return (node as { range?: [number, number] }).range ?? [node.start, node.end];
 }
 
 export function isFunction(node: Node): node is FunctionNode {
