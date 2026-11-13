@@ -14,6 +14,7 @@ import {
   ChunkQueue,
   widelyImported,
 } from '../../src/compiler/collector/analysis-pool.js';
+import { nameList } from '../../src/compiler/utils/name-list.js';
 import { writeProject } from '../helpers/fixture.js';
 
 const DIST = path.resolve(import.meta.dirname, '../../dist/src/compiler');
@@ -56,7 +57,7 @@ const summary = (
     {
       resolved: [...imported, ...reexported].map((target) => [target, target]),
       links: reexported.map((source) => ({ type: 'star', source })),
-      untrackedExports: [],
+      untrackedExports: nameList([]),
       globalNames: [],
     },
   ],

@@ -2,6 +2,7 @@ import { parseSync } from 'oxc-parser';
 import { expect, test } from 'vitest';
 import type { ESTree } from '../../src/compiler/analysis/ast.js';
 import { summarizeModule } from '../../src/compiler/analysis/module-index.js';
+import { namesIn } from '../../src/compiler/utils/name-list.js';
 
 const program = (code: string, file = '/app/a.ts') =>
   parseSync(file, code, { astType: 'ts' }).program as unknown as ESTree.Program;
@@ -24,7 +25,7 @@ test('lists the exports that a function or a class declares as never holding a t
     ),
   });
 
-  expect(summary?.untrackedExports.sort()).toEqual([
+  expect(namesIn(summary!.untrackedExports).sort()).toEqual([
     'Label',
     'default',
     'show',
@@ -42,7 +43,7 @@ test('lists none for generated code, which reads names through an object that st
     scopeObjects: ['__VLS_ctx'],
   });
 
-  expect(summary?.untrackedExports).toEqual([]);
+  expect(namesIn(summary!.untrackedExports)).toEqual([]);
 });
 
 test('lists the auto-imported names a module has an identifier of', () => {
