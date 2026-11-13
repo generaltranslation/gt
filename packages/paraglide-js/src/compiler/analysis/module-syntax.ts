@@ -7,6 +7,16 @@ import {
 } from './ast.js';
 import { requireSpecifier } from './evaluate.js';
 
+export type ExportStatement =
+  | ESTree.ExportDefaultDeclaration
+  | ESTree.ExportAllDeclaration
+  | ESTree.ExportNamedDeclaration;
+
+const exportingStatementsOf = new WeakMap<
+  ESTree.Program,
+  Map<string, ExportStatement[]>
+>();
+
 /** The specifiers of every module a program loads values from. */
 export function loadedSpecifiers(program: ESTree.Program): Set<string> {
   const specifiers = new Set<string>();
@@ -112,6 +122,60 @@ export function hasEsmExports(program: ESTree.Program): boolean {
       statement.type === 'ExportDefaultDeclaration' ||
       statement.type === 'ExportAllDeclaration'
   );
+}
+
+/** By exported name. The names of `export *` are not among them. */
+export function exportingStatements(
+  program: ESTree.Program
+): ReadonlyMap<string, readonly ExportStatement[]> {
+  let statements = exportingStatementsOf.get(program);
+
+  if (!statements) {
+    statements = new Map();
+    exportingStatementsOf.set(program, statements);
+
+    for (const statement of program.body) {
+      if (!isExportStatement(statement)) continue;
+
+      for (const name of exportedNames(statement)) {
+        const exporting = statements.get(name);
+
+        if (exporting) exporting.push(statement);
+        else statements.set(name, [statement]);
+      }
+    }
+  }
+
+  return statements;
+}
+
+function isExportStatement(
+  statement: ESTree.Statement | ESTree.Directive
+): statement is ExportStatement {
+  return (
+    statement.type === 'ExportDefaultDeclaration' ||
+    statement.type === 'ExportAllDeclaration' ||
+    statement.type === 'ExportNamedDeclaration'
+  );
+}
+
+function exportedNames(statement: ExportStatement): string[] {
+  switch (statement.type) {
+    case 'ExportDefaultDeclaration':
+      return ['default'];
+
+    case 'ExportAllDeclaration':
+      // `export * as ns from "./a"`
+      return statement.exported ? [moduleExportName(statement.exported)] : [];
+
+    case 'ExportNamedDeclaration':
+      return [
+        ...(statement.declaration ? declaredNames(statement.declaration) : []),
+        ...statement.specifiers.map((specifier) =>
+          moduleExportName(specifier.exported)
+        ),
+      ];
+  }
 }
 
 /** Declared or exported at the top level of a module. */
