@@ -20,6 +20,14 @@ default = ["node", "mimalloc"]
 mimalloc = ["dep:mimalloc"]
 # The Node addon. Without it, the crate is the analysis alone: for `cargo test` and the examples.
 node = ["dep:napi", "dep:napi-derive"]
+# The languages whose files the analysis writes itself, each of which can be built alone.
+lang-vue = []
+lang-svelte = []
+lang-angular = []
+lang-astro = []
+lang-mdx = []
+lang-ember = []
+lang-marko = []
 
 [dependencies]
 napi = { version = "3", default-features = false, features = [
@@ -54,3 +62,11 @@ codegen-units = 1
 lto = "fat"
 opt-level = 3
 strip = "symbols"
+
+# Release speed without the long link, for writing code.
+[profile.fast]
+inherits = "release"
+codegen-units = 16
+incremental = true
+lto = false
+strip = "none"

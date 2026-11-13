@@ -23,8 +23,11 @@ const require = createRequire(import.meta.url);
 export const native: typeof Binding = load();
 
 function load(): typeof Binding {
+  // For working on the addon: another build of it, e.g. with one language.
+  const addon = process.env.PARAGLIDE_CONTEXT_ADDON;
+
   try {
-    return require('@generaltranslation/paraglide-js/native');
+    return require(addon || '@generaltranslation/paraglide-js/native');
   } catch (error) {
     throw new Error(
       `@generaltranslation/paraglide-js could not load its analysis, a native addon, on ${process.platform}-${process.arch}. ` +
