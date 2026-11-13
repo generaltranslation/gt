@@ -272,6 +272,9 @@ describe('printAST', () => {
     );
   });
 
+  // About 44,000 print and reparse round trips, which can take over 5 s on
+  // busy CI runners. Keep the input: four-fragment literals catch quoting
+  // bugs that shorter ones miss.
   it('round-trips adversarial apostrophe and syntax combinations in every literal context', () => {
     for (const value of GENERATED_ADVERSARIAL_LITERALS) {
       const literal = { type: TYPE.literal, value } as const;
@@ -309,5 +312,5 @@ describe('printAST', () => {
         }
       }
     }
-  });
+  }, 15_000);
 });
