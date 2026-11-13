@@ -75,6 +75,13 @@ const MB = 1024 * 1024;
  */
 export const THREAD_HEAP_MB = 1536;
 
+/**
+ * The heap of a thread started again after one ran out of memory: the
+ * process's default on a large machine. A file a thread cannot hold under
+ * `THREAD_HEAP_MB`, e.g. a module of several megabytes, is retried in one.
+ */
+export const LARGE_THREAD_HEAP_MB = 4096;
+
 /** What a thread takes besides its heap, about: the parser's buffers, native memory, code. */
 const THREAD_OVERHEAD = 512 * MB;
 
@@ -153,13 +160,22 @@ export class AnalysisPool {
   }> = [];
   private isDispatchScheduled = false;
   private globalNames: readonly string[] = [];
+  private readonly heapMb: number;
+  private readonly largeHeapMb: number;
 
-  constructor(size: number, projectRoot: string) {
+  /** `heaps` are for tests: see `THREAD_HEAP_MB` and `LARGE_THREAD_HEAP_MB`. */
+  constructor(
+    size: number,
+    projectRoot: string,
+    heaps: { heapMb?: number; largeHeapMb?: number } = {}
+  ) {
     this.workerData = {
       projectRoot,
       // The threads share the file descriptors one process has.
       concurrentReads: Math.floor(MAX_CONCURRENT_READS / size),
     };
+    this.heapMb = heaps.heapMb ?? THREAD_HEAP_MB;
+    this.largeHeapMb = heaps.largeHeapMb ?? LARGE_THREAD_HEAP_MB;
     this.workers = this.startWorkers(size);
   }
 
@@ -221,16 +237,13 @@ export class AnalysisPool {
     );
 
     await Promise.all(
-      this.workers.map(async (worker, index) => {
-        for (
-          let chunk = chunks.take(index);
-          chunk;
-          chunk = chunks.take(index)
-        ) {
-          const results = (await worker.request({
-            type: 'analyze',
-            files: chunk,
-          })) as ParaglideUsage[][];
+      this.workers.map(async (_, slot) => {
+        for (let chunk = chunks.take(slot); chunk; chunk = chunks.take(slot)) {
+          const results = (await this.request(
+            slot,
+            { type: 'analyze', files: chunk },
+            (worker) => worker.request({ type: 'index', index: buffer })
+          )) as ParaglideUsage[][];
           chunk.forEach((file, at) =>
             added.push(onAnalyzed(file, results[at]!))
           );
@@ -238,7 +251,7 @@ export class AnalysisPool {
 
         // No file is left for it: its memory goes back while the last
         // threads finish, e.g. one analyzing a widely imported file.
-        await worker.terminate();
+        await this.workers[slot]!.terminate();
       })
     );
 
@@ -251,17 +264,42 @@ export class AnalysisPool {
     this.generated.close();
   }
 
+  /**
+   * Sends `task` to the thread of `slot`. If the thread runs out of memory,
+   * the task runs again in a thread with a larger heap, which takes the slot:
+   * `prepare` gives it what the first had, e.g. the index.
+   */
+  private async request(
+    slot: number,
+    task: WorkerTask,
+    prepare?: (worker: PoolWorker) => Promise<unknown>
+  ): Promise<unknown> {
+    try {
+      return await this.workers[slot]!.request(task);
+    } catch (error) {
+      const isRetried =
+        isOutOfMemory(error) && this.workers[slot]!.heapMb < this.largeHeapMb;
+      if (!isRetried) throw error;
+
+      const worker = this.startWorker(this.largeHeapMb);
+      this.workers[slot] = worker;
+      await prepare?.(worker);
+
+      return this.request(slot, task, prepare);
+    }
+  }
+
   private startWorkers(size: number): PoolWorker[] {
-    return Array.from(
-      { length: size },
-      () =>
-        new PoolWorker(
-          new Worker(WORKER_URL, {
-            workerData: this.workerData,
-            resourceLimits: { maxOldGenerationSizeMb: THREAD_HEAP_MB },
-          })
-        )
-    );
+    return Array.from({ length: size }, () => this.startWorker(this.heapMb));
+  }
+
+  private startWorker(heapMb: number): PoolWorker {
+    const worker = new Worker(WORKER_URL, {
+      workerData: this.workerData,
+      resourceLimits: { maxOldGenerationSizeMb: heapMb },
+    });
+
+    return new PoolWorker(worker, heapMb);
   }
 
   private scheduleDispatch(): void {
@@ -276,7 +314,7 @@ export class AnalysisPool {
   }
 
   private dispatch(): void {
-    for (const worker of this.workers) {
+    for (const [slot, worker] of this.workers.entries()) {
       if (this.queue.length === 0) return;
       if (worker.isBusy) continue;
 
@@ -285,7 +323,7 @@ export class AnalysisPool {
         Math.ceil(this.queue.length / this.workers.length)
       );
       const batch = this.queue.splice(0, size);
-      const results = worker.request({
+      const results = this.request(slot, {
         type: 'summarize',
         files: batch.map(({ file }) => file),
         globalNames: this.globalNames,
@@ -354,7 +392,11 @@ class PoolWorker {
   /** Set once the thread is gone: requests fail with it. */
   private exitError: Error | undefined;
 
-  constructor(private readonly worker: Worker) {
+  constructor(
+    private readonly worker: Worker,
+    /** Its heap limit: see `THREAD_HEAP_MB`. */
+    readonly heapMb: number
+  ) {
     worker.on('message', ({ id, result, error }: WorkerResponse) => {
       const request = this.pending.get(id);
       if (!request) return;
@@ -401,6 +443,14 @@ class PoolWorker {
     for (const { reject } of this.pending.values()) reject(this.exitError);
     this.pending.clear();
   }
+}
+
+/** A thread ended for want of memory: Node's error for a worker over its heap limit. */
+function isOutOfMemory(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error as NodeJS.ErrnoException).code === 'ERR_WORKER_OUT_OF_MEMORY'
+  );
 }
 
 /**
