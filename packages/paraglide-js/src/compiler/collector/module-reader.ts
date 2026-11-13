@@ -94,18 +94,18 @@ export const THREAD_HEAP_SHARE = 1 / 3.5;
 /**
  * Characters of code an indexed graph keeps the modules of loaded, for files
  * of `averageFileSize` characters, its modules taking at most `heapShare` of
- * the heap. A module's syntax tree and index take about 40 times its code's size.
+ * a heap of `heapLimit` bytes, by default this thread's. A module's syntax
+ * tree and index take about 40 times its code's size.
  */
 export function analysisBudget(
   averageFileSize: number,
-  heapShare = THREAD_HEAP_SHARE
+  heapShare = THREAD_HEAP_SHARE,
+  heapLimit = v8.getHeapStatistics().heap_size_limit
 ): number {
   const wanted = Math.min(
     Math.max(MODULES_KEPT * averageFileSize, MIN_BUDGET),
     MAX_BUDGET
   );
-
-  const heapLimit = v8.getHeapStatistics().heap_size_limit;
 
   return Math.min(wanted, (heapLimit * heapShare) / 40);
 }
