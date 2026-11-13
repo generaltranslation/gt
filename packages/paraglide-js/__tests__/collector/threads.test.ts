@@ -127,7 +127,9 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
       outdirs: [],
       globals: [],
     };
-    await expect(failing.analyze(broken, [file])).rejects.toThrow('null');
+    await expect(
+      failing.analyze(broken, [file], async () => {})
+    ).rejects.toThrow('null');
     await failing.close();
 
     // Closed while it has a request.
@@ -140,6 +142,33 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
     await expect(exiting.summarize(file)).rejects.toThrow(
       'an analysis thread exited'
     );
+  });
+
+  test('fail with the error recording a file gave, once the chunks started are done', async () => {
+    const { AnalysisPool } = await builtPool();
+    const root = await writeProject('threads-callback', {});
+    // Three chunks of files the index does not list: each has no usages.
+    const files = Array.from({ length: 48 }, (_, index) =>
+      path.join(root, `src/file${index}.ts`)
+    );
+    const failure = new Error('could not read');
+    const recorded: string[] = [];
+
+    // One thread: the second chunk is analyzed while the first file's usages fail.
+    const pool = new AnalysisPool(1, root);
+    const index = { summaries: [], outdirs: [], globals: [] };
+    try {
+      await expect(
+        pool.analyze(index, files, async (file) => {
+          recorded.push(file);
+          if (file === files[0]) throw failure;
+        })
+      ).rejects.toBe(failure);
+    } finally {
+      await pool.close();
+    }
+
+    expect(recorded).toEqual(files.slice(0, 32));
   });
 });
 
