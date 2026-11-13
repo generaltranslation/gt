@@ -27,6 +27,7 @@ import { DictionarySourceNotFoundError } from './translations-manager/utils/Dict
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import type { I18nConfig } from '../i18n-config/I18nConfig';
+import type { CustomMapping } from '@generaltranslation/format/types';
 
 // Explicit lookup locales can come from input, so the resolved cache keys are capped.
 const MAX_RESOLVED_CACHE_LOCALES = 64;
@@ -122,6 +123,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   // TODO(samsara): remove; samsara uses the given locale as the cache key without resolving it (#2727).
   private resolvedCacheLocales?: {
     config: I18nConfig;
+    configuredLocales: Locale[];
+    mappedCodes: Map<string, string | null>;
     locales: Map<string, Locale | null>;
   };
 
@@ -654,10 +657,20 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   // TODO(samsara): remove; samsara uses the given locale as the cache key without resolving it (#2727).
   private _resolveCacheLocale(locale: string): Locale | undefined {
     const config = getI18nConfig();
-    if (this.resolvedCacheLocales?.config !== config) {
-      this.resolvedCacheLocales = { config, locales: new Map() };
+    if (!this.isResolvedCacheLocalesCurrent(config)) {
+      const mapping = config.getCustomMapping();
+      const mappedCodes = new Map<string, string | null>();
+      for (const key in mapping) {
+        mappedCodes.set(key, getMappedCode(mapping, key) ?? null);
+      }
+      this.resolvedCacheLocales = {
+        config,
+        configuredLocales: [...config.getLocales()],
+        mappedCodes,
+        locales: new Map(),
+      };
     }
-    const { locales } = this.resolvedCacheLocales;
+    const { locales } = this.resolvedCacheLocales!;
     const cached = locales.get(locale);
     if (cached !== undefined) return cached ?? undefined;
 
@@ -666,6 +679,30 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     if (locales.size >= MAX_RESOLVED_CACHE_LOCALES) locales.clear();
     locales.set(locale, resolved ?? null);
     return resolved;
+  }
+
+  /** Matches LocaleConfig, which re-resolves after callers mutate its locales or custom mapping in place. */
+  private isResolvedCacheLocalesCurrent(config: I18nConfig): boolean {
+    const memo = this.resolvedCacheLocales;
+    if (memo?.config !== config) return false;
+    const configuredLocales = config.getLocales();
+    if (configuredLocales.length !== memo.configuredLocales.length) {
+      return false;
+    }
+    for (let index = 0; index < configuredLocales.length; index++) {
+      if (configuredLocales[index] !== memo.configuredLocales[index]) {
+        return false;
+      }
+    }
+    const mapping = config.getCustomMapping();
+    let mappedKeys = 0;
+    for (const key in mapping) {
+      if (memo.mappedCodes.get(key) !== (getMappedCode(mapping, key) ?? null)) {
+        return false;
+      }
+      mappedKeys++;
+    }
+    return mappedKeys === memo.mappedCodes.size;
   }
 
   private computeCacheLocale(locale: string): Locale | undefined {
@@ -736,6 +773,14 @@ class I18nCache<TranslationValue extends Translation = Translation> {
 export { I18nCache };
 
 // ===== Helper Functions ===== //
+
+function getMappedCode(
+  mapping: CustomMapping,
+  locale: string
+): string | undefined {
+  const value = mapping[locale];
+  return typeof value === 'object' && value !== null ? value.code : undefined;
+}
 
 /**
  * Validate constructor params: log warnings for suspicious configs and throw

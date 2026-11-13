@@ -22,7 +22,10 @@ import type { CustomMapping } from '@generaltranslation/format/types';
 import { I18nCache } from '../I18nCache';
 import type { TranslationsCacheMissEvent } from '../I18nCache';
 import type { Dictionary, I18nCacheConstructorParams } from '../types';
-import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
+import {
+  getI18nConfig,
+  initializeI18nConfig,
+} from '../../i18n-config/singleton-operations';
 import { hashMessage } from '../../utils/hashMessage';
 import type { LookupOptions } from '../../translation-functions/types/options';
 
@@ -352,6 +355,59 @@ describe('I18nCache', () => {
         canonicalize.mockRestore();
       }
     });
+
+    it.each([
+      {
+        name: 'a custom mapping code',
+        locales: ['en', 'fr', 'es'],
+        requested: 'brand',
+        before: 'Bonjour {name} !',
+        after: 'Hola {name}!',
+        mutate: (customMapping: CustomMapping) => {
+          (customMapping.brand as { code: string }).code = 'es';
+        },
+      },
+      {
+        name: 'the configured locales',
+        locales: ['en', 'fr'],
+        requested: 'fr-CA',
+        before: 'Bonjour {name} !',
+        after: 'Allô {name} !',
+        mutate: () => {
+          getI18nConfig().getLocales().push('fr-CA');
+        },
+      },
+    ])(
+      're-resolves warmed locales after $name change in place',
+      async ({ locales, requested, before, after, mutate }) => {
+        const catalogs: Record<string, string> = {
+          fr: 'Bonjour {name} !',
+          es: 'Hola {name}!',
+          'fr-CA': 'Allô {name} !',
+        };
+        const customMapping: CustomMapping = { brand: { code: 'fr' } };
+        const cache = createCache({
+          locales,
+          customMapping,
+          loadTranslations: async (locale: string) => ({
+            [expectedHash]: catalogs[locale],
+          }),
+        });
+        await Promise.all(
+          Object.keys(catalogs).map((locale) => cache.loadTranslations(locale))
+        );
+        expect(cache.lookupTranslation(requested, message, lookupOptions)).toBe(
+          before
+        );
+
+        mutate(customMapping);
+        await cache.loadTranslations(requested);
+
+        expect(cache.lookupTranslation(requested, message, lookupOptions)).toBe(
+          after
+        );
+      }
+    );
 
     it('caps the resolved locales it keeps', () => {
       const cache = createCache();
