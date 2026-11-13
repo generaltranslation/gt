@@ -416,6 +416,30 @@ describe('starting the analysis threads', () => {
     );
     await pool.close();
   });
+
+  test('end an analysis thread once no file is left for it, while another still analyzes', async () => {
+    const { AnalysisPool } = await sourcePool();
+    const pool = new AnalysisPool(2, '/app');
+    // A chunk for each thread.
+    const files = Array.from({ length: 32 }, (_, at) => `/app/file${at}.ts`);
+    const analyzed: unknown[] = [];
+
+    const analysis = pool.analyze(index, files, async (file, usages) => {
+      analyzed.push([file, usages]);
+    });
+    await settle();
+    const [, , done, busy] = started;
+    done!.answer();
+    await settle();
+    expect(started.map(({ terminate }) => terminate.mock.calls.length)).toEqual(
+      [1, 1, 1, 0]
+    );
+
+    busy!.answer();
+    await analysis;
+    expect(analyzed).toEqual(files.map((file) => [file, { file }]));
+    await pool.close();
+  });
 });
 
 // From the sources: these tests do not need `dist`.
