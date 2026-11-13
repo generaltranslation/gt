@@ -23,18 +23,11 @@ type SkippedLanguage = Omit<UnavailableTools, 'language'> & {
   files: Set<string>;
 };
 
-/** Projects and languages that were warned about, in this process. */
-const WARNED = new Set<string>();
-
 /** The files skipped because their language's tools are unavailable in the project. */
 export class MissingTools {
   private readonly skippedByLanguage = new Map<string, SkippedLanguage>();
 
   constructor(private readonly settings: MissingToolsSettings) {}
-
-  clear(): void {
-    this.skippedByLanguage.clear();
-  }
 
   add(file: string, { language, requires, reason }: UnavailableTools): void {
     const skipped = this.skippedByLanguage.get(language) ?? {
@@ -50,21 +43,14 @@ export class MissingTools {
   /**
    * One warning per language, e.g. "14 .vue file(s) were not analyzed
    * (e.g. src/App.vue): they need @vue/language-core, which is not installed.
-   * Install it: pnpm add -D @vue/language-core". A language is warned about
-   * once per project, also across collectors.
+   * Install it: pnpm add -D @vue/language-core".
    */
-  async warnings(): Promise<string[]> {
-    const warnings: string[] = [];
-
-    for (const [language, skipped] of this.skippedByLanguage) {
-      const key = `${this.settings.projectRoot}\0${language}`;
-      if (WARNED.has(key)) continue;
-
-      WARNED.add(key);
-      warnings.push(await this.warningFor(language, skipped));
-    }
-
-    return warnings;
+  warnings(): Promise<string[]> {
+    return Promise.all(
+      [...this.skippedByLanguage].map(([language, skipped]) =>
+        this.warningFor(language, skipped)
+      )
+    );
   }
 
   private async warningFor(
