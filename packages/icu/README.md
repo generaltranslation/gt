@@ -10,8 +10,8 @@ no locale-data polyfills are shipped.
   `formatMessageTree()`, `validateMessageTree()` and `isMessageTree()`.
 - `@generaltranslation/icu/convert`: `icuToMessage()` reads an ICU string as
   a message, `messageToIcu()` prints a message as an ICU string,
-  `messageTreeToIcu()` prints its tree alone, and `checkTranslation()` checks
-  a translation against its source.
+  `messageTreeToIcu()` prints its tree alone, and `checkTranslation()` and
+  `checkIcuTranslation()` check a translation against its source.
 - `@generaltranslation/icu/parser`: the ICU string parser. `parse()`,
   `formatIcu()`, `printAST()` and the syntax-tree types.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
@@ -92,10 +92,10 @@ with the returned ones are the message's. `messageTreeToIcu()` prints the tree
 alone, which is what a translator sees: `{due, time, ::jmm}`.
 
 `checkTranslation()` checks a translation against its source: the same
-variables, the same styles, and no formatting context of its own. Given the
-translation's locale, it also checks that each plural has a branch for every
-category the locale has, since a value with no branch for its category falls
-back to `other` and reads wrong:
+variables, the same styles, the source's exact `=N` branches and select keys,
+and no formatting context of its own. Given the translation's locale, it also
+checks that each plural has a branch for every category the locale has, since
+a value with no branch for its category falls back to `other` and reads wrong:
 
 ```ts
 import {
@@ -116,6 +116,26 @@ checkTranslation(
 It returns `undefined` when the translation matches. A category the locale
 does not have, like `one` in Japanese, may be left out or kept; a branch that
 is no category at all, like `lots`, is a problem.
+
+Use `checkTranslation()` for a message tree, and `checkIcuTranslation()` for
+ICU strings from any library, such as FormatJS or ICU4J. It applies the same
+rules to what the parser reads, including what a tree cannot hold: a date
+pattern like `{d, date, MM/dd/yyyy}` is the translator's to localize, so its
+style is not compared. A source that is not valid ICU throws; for a
+translation that is not, it returns the parser's message:
+
+```ts
+import { checkIcuTranslation } from '@generaltranslation/icu/convert';
+
+checkIcuTranslation(
+  '{g, select, male {He} other {They}}',
+  '{g, select, masculino {Él} other {Elle}}',
+  { locale: 'es' }
+);
+// 'The translation does not match its source: "g" is missing the select
+//  branch male; "g" has the select branch masculino, which the source does
+//  not.'
+```
 
 The formatters take every argument: the locales, the values, and the time
 zone of dates and times. This package applies no defaults to them and does

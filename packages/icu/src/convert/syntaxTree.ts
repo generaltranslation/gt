@@ -1,4 +1,4 @@
-import { createUnsupportedTreeFormatError } from '../errors/convertErrors';
+import { createUnsupportedTreeFormatError } from '../errors/treeErrors';
 import { toNumberSkeleton } from '../parser/numberSkeleton';
 import {
   HOUR_CLOCKS,
