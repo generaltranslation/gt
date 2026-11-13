@@ -1,5 +1,12 @@
 # gt-sanity
 
+## 4.0.35-samsara.2
+
+### Patch Changes
+
+- Updated dependencies [886232a]
+  - generaltranslation@10.0.0-samsara.5
+
 ## 4.0.35-samsara.1
 
 ### Patch Changes

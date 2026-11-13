@@ -1,5 +1,16 @@
 # gt-react-native
 
+## 12.0.0-samsara.5
+
+### Patch Changes
+
+- Updated dependencies [886232a]
+  - generaltranslation@10.0.0-samsara.5
+  - @generaltranslation/format@1.0.0-samsara.5
+  - gt-i18n@2.0.0-samsara.5
+  - @generaltranslation/react-core@12.0.0-samsara.5
+  - @generaltranslation/supported-locales@2.1.48-samsara.2
+
 ## 12.0.0-samsara.4
 
 ### Minor Changes
