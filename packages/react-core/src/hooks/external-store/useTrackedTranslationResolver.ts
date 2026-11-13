@@ -9,7 +9,7 @@ import type {
   TranslateLookup,
   TranslateSnapshot,
 } from '../../i18n-store/storeTypes';
-import type { TranslationMetadata } from 'gt-i18n/internal/types';
+import type { RegisteredMessage } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format';
 import {
   useI18nStore,
@@ -25,10 +25,6 @@ import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
 export type TrackedTranslationResolver = <T extends Content>(
   lookup: TranslateLookup<T>
 ) => TranslateSnapshot<T>;
-
-export type RegisteredMessage = TranslationMetadata & {
-  message: string;
-};
 
 /**
  * NOTE:

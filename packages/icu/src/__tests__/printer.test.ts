@@ -318,6 +318,6 @@ describe('printAST', () => {
         }
       }
     }
-    // A loaded CI runner needs 3 to 5 s for this, and the default is 5 s.
+    // Exhaustive round trips need headroom on a loaded runner.
   }, 30_000);
 });

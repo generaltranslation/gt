@@ -46,6 +46,7 @@ import {
 import { GTProvider as _GTProvider } from 'gt-react';
 import type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
 import type { StringFormat } from '@generaltranslation/format/types';
+import type { RegisteredMessage } from 'gt-i18n/types';
 import {
   msg,
   decodeMsg,
@@ -56,15 +57,6 @@ import {
   mFallback,
   gtFallback,
 } from '@generaltranslation/react-core/pure';
-
-type RegisteredMessage = {
-  message: string;
-  $id?: string;
-  $context?: string;
-  $maxChars?: number;
-  $_hash?: string;
-};
-type RegisteredMessages = RegisteredMessage[];
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -425,7 +417,7 @@ export function isLocaleSupported(_: unknown): boolean {
  *
  */
 export const useGT: (
-  _messages?: RegisteredMessages
+  _messages?: RegisteredMessage[]
 ) => (message: string, options?: GTTranslationOptions) => string = () => {
   throw new Error(typesFileError);
 };
@@ -586,7 +578,7 @@ export const useLocaleDirection: typeof _useLocaleDirection = () => {
  * // "Hello, Bob!" id: "greetings.1"
  */
 export const useMessages: (
-  _messages?: RegisteredMessages
+  _messages?: RegisteredMessage[]
 ) => <T extends string | null | undefined>(
   encodedMsg: T,
   options?: GTTranslationOptions

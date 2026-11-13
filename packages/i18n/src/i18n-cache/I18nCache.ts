@@ -15,7 +15,11 @@ import { routeCreateTranslationLoader } from './translations-manager/translation
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { ResourceCache } from './translations-manager/ResourceCache';
 import { TranslationsCache } from './translations-manager/TranslationsCache';
-import type { Hash, Locale } from './translations-manager/TranslationsCache';
+import type {
+  Hash,
+  Locale,
+  TranslationKey,
+} from './translations-manager/TranslationsCache';
 import { DictionaryCache } from './translations-manager/DictionaryCache';
 import type {
   Dictionary,
@@ -54,22 +58,10 @@ type DictionaryResolvers = {
 };
 
 /**
- * A prefetch entry is an entry that we want to prefetch during the async period
- * @template TranslationType - The type of the translation
- * @param {TranslationType} content - The content to prefetch
- * @param {LookupOptions} options - The options for the prefetch
- * @returns {PrefetchEntry<TranslationType>} The prefetch entry
- */
-type PrefetchEntry<TranslationType extends Content> = {
-  content: TranslationType;
-  options: LookupOptions;
-};
-
-/**
  * Callback function to prefetch entries during the async period
  */
 type PrefetchEntriesType<TranslationType extends Content> = (
-  prefetchEntries: PrefetchEntry<TranslationType>[]
+  prefetchEntries: TranslationKey<TranslationType>[]
 ) => Promise<void>;
 
 /**
@@ -517,10 +509,7 @@ class I18nCache<TranslationValue extends Content = Content> {
 
         // Prefetch any entries during async block (dev hot reload only)
         const prefetchEntries = async (
-          prefetchEntries: {
-            content: TranslationValue;
-            options: LookupOptions;
-          }[] = []
+          prefetchEntries: TranslationKey<TranslationValue>[] = []
         ) => {
           if (
             process.env.NODE_ENV !== 'production' &&
@@ -750,12 +739,12 @@ function validateCacheParams(params: I18nCacheConstructorParams): void {
 /**
  * Resolve prefetch entry locales and keep entries matching the active locale.
  * @template TranslationType - The type of the translation
- * @param {PrefetchEntry<TranslationType>[]} prefetchEntries - The prefetch entries to filter
+ * @param {TranslationKey<TranslationType>[]} prefetchEntries - The prefetch entries to filter
  * @param {string} locale - The locale to filter by
- * @returns {PrefetchEntry<TranslationType>[]} The filtered prefetch entries
+ * @returns {TranslationKey<TranslationType>[]} The filtered prefetch entries
  */
 function resolvePrefetchEntriesByLocale<TranslationType extends Content>(
-  prefetchEntries: PrefetchEntry<TranslationType>[],
+  prefetchEntries: TranslationKey<TranslationType>[],
   locale: string,
   resolveLocale: (locale: string) => string
 ) {

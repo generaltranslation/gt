@@ -1,9 +1,12 @@
 import { useCallback } from 'react';
 import { decodeOptions } from 'gt-i18n';
 import { useGT } from './useGT';
-import type { GTTranslationOptions, MFunctionType } from 'gt-i18n/types';
+import type {
+  GTTranslationOptions,
+  MFunctionType,
+  RegisteredMessage,
+} from 'gt-i18n/types';
 import { isEncodedTranslationOptions } from 'gt-i18n/internal';
-import { RegisteredMessage } from './external-store/useTrackedTranslationResolver';
 
 // ===== Hook ===== //
 

@@ -116,11 +116,3 @@ export type Translations = {
   [hash: string]: TranslatedChildren | null;
 };
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
-export type _Message = {
-  message: string;
-  $id?: string;
-  $context?: string;
-  $maxChars?: number;
-  $_hash?: string;
-};
-export type _Messages = _Message[];

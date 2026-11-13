@@ -21,11 +21,9 @@ export function hashContent<T extends Content>(
 
   return hashSource({
     source: options.$format === 'ICU' ? indexVars(content as string) : content,
-    ...(metadataOptions.$context && { context: metadataOptions.$context }),
-    ...(metadataOptions.$maxChars != null && {
-      maxChars: Math.abs(metadataOptions.$maxChars),
-    }),
-    ...(metadataOptions.$requiresReview === true && { requiresReview: true }),
+    context: metadataOptions.$context,
+    maxChars: metadataOptions.$maxChars,
+    requiresReview: metadataOptions.$requiresReview,
     dataFormat: options.$format,
   });
 }
