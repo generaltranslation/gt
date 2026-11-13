@@ -1,5 +1,4 @@
 import * as react from 'react';
-import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
 
 type TrackedPromise<T> = Promise<T> & {
   status?: 'pending' | 'fulfilled' | 'rejected';
@@ -12,30 +11,19 @@ const reactCache = react['cache'.trim() as 'cache'] as
   | typeof react.cache
   | undefined;
 
-const createRequestMemo = (_registeredLocale: string | undefined) =>
-  new Map<string, Promise<unknown>>();
+const createRequestMemo = () => new Map<string, Promise<unknown>>();
 
 // React's cache is scoped to one server render and calls through outside a render, so route handlers, server actions and React versions without `cache` load on every call as before.
 const getRequestMemo = reactCache
   ? reactCache(createRequestMemo)
   : createRequestMemo;
 
-/**
- * Shares one promise per key for the current server render, keyed by the
- * registered locale so a later registerLocale() starts a fresh memo.
- */
+/** Shares one promise per key for the current server render. */
 export function memoizeForRequest<T>(
   key: string,
   load: () => Promise<T>
 ): Promise<T> {
-  let registeredLocale: string | undefined;
-  try {
-    registeredLocale = getAsyncConditionStore().getRegisteredLocale();
-  } catch {
-    // Let the loader report a missing condition store the way it always has.
-    return load();
-  }
-  const memo = getRequestMemo(registeredLocale);
+  const memo = getRequestMemo();
   let promise = memo.get(key) as Promise<T> | undefined;
   if (!promise) {
     promise = trackSettlement(load());

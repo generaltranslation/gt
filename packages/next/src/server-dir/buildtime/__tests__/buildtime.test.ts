@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   mockGetGTInternal,
   mockGetMessagesInternal,
-  mockGetRegisteredLocale,
   mockGetRequestConditions,
   mockGetTranslationsInternal,
   mockRscT,
@@ -11,7 +10,6 @@ const {
 } = vi.hoisted(() => ({
   mockGetGTInternal: vi.fn(),
   mockGetMessagesInternal: vi.fn(),
-  mockGetRegisteredLocale: vi.fn(),
   mockGetRequestConditions: vi.fn(),
   mockGetTranslationsInternal: vi.fn(),
   mockRscT: vi.fn(),
@@ -28,12 +26,6 @@ vi.mock('react', async (importOriginal) => ({
       return memo.get(arg) as R;
     };
   },
-}));
-
-vi.mock('../../../condition-store/AsyncConditionStore', () => ({
-  getAsyncConditionStore: () => ({
-    getRegisteredLocale: mockGetRegisteredLocale,
-  }),
 }));
 
 vi.mock('gt-react', () => ({
@@ -59,7 +51,6 @@ describe('buildtime translation helpers', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    mockGetRegisteredLocale.mockReturnValue(undefined);
     mockGetRequestConditions.mockResolvedValue({
       _locale: 'fr',
       _enableI18n: false,
@@ -234,17 +225,6 @@ describe('buildtime translation helpers', () => {
       expect(mockGetRequestConditions).toHaveBeenCalledTimes(1);
     }
   );
-
-  it('starts a new memo when the request registers a locale', async () => {
-    const { getMessages } = await import('../strings');
-
-    const before = getMessages();
-    mockGetRegisteredLocale.mockReturnValue('de');
-    const after = getMessages();
-
-    expect(after).not.toBe(before);
-    expect(getMessages()).toBe(after);
-  });
 
   it('keeps per-call loading for compiler messages outside production', async () => {
     const messages = [{ message: 'A server-translated string from useGT.' }];
