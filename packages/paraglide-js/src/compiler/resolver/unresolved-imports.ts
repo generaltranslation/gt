@@ -1,3 +1,4 @@
+import type { Diagnostic } from '../utils/diagnostics.js';
 import { relativePath } from '../utils/paths.js';
 import { compareText } from '../utils/sort.js';
 
@@ -21,7 +22,7 @@ export function mayBeAlias(specifier: string): boolean {
 export function unresolvedWarning(
   unresolved: ReadonlyMap<string, string>,
   { projectRoot, reason }: UnresolvedWarningOptions
-): string | undefined {
+): Diagnostic | undefined {
   if (unresolved.size === 0) return undefined;
 
   const imports = [...unresolved].sort(([a], [b]) => compareText(a, b));
@@ -30,15 +31,15 @@ export function unresolvedWarning(
     .map(
       ([specifier, importer]) =>
         `"${specifier}" (${relativePath(projectRoot, importer)})`
-    )
-    .join(', ');
+    );
   const more =
     imports.length > MAX_LISTED
-      ? `, and ${imports.length - MAX_LISTED} more`
-      : '';
+      ? [`and ${imports.length - MAX_LISTED} more`]
+      : [];
 
-  return (
-    `${imports.length} import(s) could not be resolved, so usages through them are missed: ${listed}${more}. ` +
-    `If they are aliases, declare them in tsconfig.json "paths" or pass them with --alias: ${reason}.`
-  );
+  return {
+    whatHappened: `${imports.length} import(s) could not be resolved, so usages through them are missed`,
+    fix: `If they are aliases, declare them in tsconfig.json "paths" or pass them with --alias, since ${reason}`,
+    details: [...listed, ...more],
+  };
 }

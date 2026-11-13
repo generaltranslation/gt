@@ -3,10 +3,11 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterAll, describe, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, test, vi } from 'vitest';
 import { build } from 'vite';
 import { main } from '../src/compiler/cli/index.js';
 import { createCollector } from '../src/compiler/collector/create.js';
+import { runCommand } from '../src/compiler/project/package-manager.js';
 import { nodeResolver } from '../src/compiler/resolver/node-resolver.js';
 import {
   collect,
@@ -22,6 +23,11 @@ import {
 } from './helpers/fixture.js';
 import { writeFiles } from './helpers/files.js';
 
+vi.mock('../src/compiler/project/package-manager.js', async (original) => ({
+  ...(await original<object>()),
+  runCommand: vi.fn(async () => 0),
+}));
+
 const outside: string[] = [];
 afterAll(() =>
   Promise.all(
@@ -30,6 +36,21 @@ afterAll(() =>
     )
   )
 );
+
+/** A project outside this repository, so none of its tools resolve. */
+async function writeOutsideProject(
+  files: Record<string, string>
+): Promise<string> {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'paraglide-context-'));
+  outside.push(root);
+  await writeFiles(root, {
+    'package.json': `{ "name": "app", "type": "module" }`,
+    'pnpm-lock.yaml': "lockfileVersion: '9.0'\n",
+    ...files,
+  });
+
+  return root;
+}
 
 describe('collectContext', () => {
   test('analyzes every format; skips tests, build output, gitignored files and dependencies', async () => {
@@ -61,7 +82,7 @@ describe('collectContext', () => {
       greetingIn('src/main.ts'),
     ]);
     expect(warnings).toEqual([
-      expect.stringContaining('skipped src/broken.ts: '),
+      expect.stringContaining('src/broken.ts was not analyzed. Details: '),
     ]);
   });
 
@@ -77,7 +98,7 @@ describe('collectContext', () => {
     // A key the message file does not have would fail the gt CLI's upload.
     expect(Object.keys(await readMetadata(root))).toEqual(['greeting']);
     expect(warnings).toEqual([
-      '[paraglide-context] 1 usage(s) of messages not in the catalog: greting (src/main.ts:3:21)',
+      'paraglide-context Warning: 1 usage(s) of messages not in the catalog get no metadata. Details: greting (src/main.ts:3:21)',
     ]);
   });
 
@@ -109,7 +130,7 @@ describe('collectContext', () => {
     ]);
     expect(warnings).toEqual([
       expect.stringContaining(
-        '1 usage(s) of messages not in the catalog: hint_* (src/main.ts:3:'
+        '1 usage(s) of messages not in the catalog get no metadata. Details: hint_* (src/main.ts:3:'
       ),
     ]);
   });
@@ -124,28 +145,22 @@ describe('collectContext', () => {
     const { warnings } = await collect(root);
     expect(warnings).toEqual([
       expect.stringMatching(
-        /12 usage\(s\) of messages not in the catalog: typo0 .*typo9 \(src\/main\.ts:11:1\), and 2 more$/
+        /12 usage\(s\) of messages not in the catalog get no metadata\. Details: typo0 .*typo9 \(src\/main\.ts:11:1\), and 2 more\.$/
       ),
     ]);
   });
 
   test('a format whose tools are not installed: one warning with the install command', async () => {
-    // Outside this repository, so none of its tools resolve.
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'paraglide-context-'));
-    outside.push(root);
-    const files: Record<string, string> = {
-      'package.json': `{ "name": "app", "type": "module" }`,
-      'pnpm-lock.yaml': "lockfileVersion: '9.0'\n",
+    const root = await writeOutsideProject({
       'src/main.ts': 'export {};\n',
       'src/App.vue': `<template><p>{{ m.greeting() }}</p></template>\n`,
       'src/Card.vue': `<template><p>{{ m.card() }}</p></template>\n`,
-    };
-    await writeFiles(root, files);
+    });
     const { warnings } = await collect(root);
     expect(warnings.filter((warning) => warning.includes('.vue'))).toEqual([
-      '[paraglide-context] 2 .vue file(s) were not analyzed (e.g. src/App.vue): they need ' +
+      'paraglide-context Warning: 2 .vue file(s) were not analyzed (e.g. src/App.vue): they need ' +
         '@vue/language-core and typescript, which are not installed. ' +
-        'Install them: pnpm add -D vue-tsc typescript (vue-tsc includes @vue/language-core)',
+        'Install them: `pnpm add -D vue-tsc typescript` (vue-tsc includes @vue/language-core)',
     ]);
   });
 
@@ -160,7 +175,7 @@ describe('collectContext', () => {
     const { usages, warnings } = await collect(root);
     expect(usages).toEqual([greetingIn('src/main.ts')]);
     expect(warnings).toEqual([
-      '[paraglide-context] 1 .vue file(s) were not analyzed (e.g. src/App.vue): ' +
+      'paraglide-context Warning: 1 .vue file(s) were not analyzed (e.g. src/App.vue): ' +
         "the project's typescript has no JavaScript API (TypeScript 7), which @vue/language-core needs; " +
         'it works with typescript 5 or 6.',
     ]);
@@ -365,7 +380,7 @@ describe('outdirs', () => {
     const rejected = await collect(root);
     expect(rejected.usages).toEqual([]);
     expect(rejected.warnings.join('\n')).toContain(
-      'src/paraglide is not used as a Paraglide outdir: registry.js was not generated by @inlang/paraglide-js'
+      'src/paraglide is not used as a Paraglide outdir because registry.js was not generated by @inlang/paraglide-js'
     );
 
     const listed = await collect(root, { outdirs: ['src/paraglide'] });
@@ -413,7 +428,7 @@ describe('outdirs', () => {
     // The empty catalog has no `greeting`.
     expect(warnings).toEqual([
       expect.stringContaining(
-        '1 usage(s) of messages not in the catalog: greeting (src/main.ts'
+        '1 usage(s) of messages not in the catalog get no metadata. Details: greeting (src/main.ts'
       ),
     ]);
   });
@@ -459,17 +474,120 @@ describe('the CLI', () => {
 
   test('wrong arguments print the usage and exit with 2; --help prints it', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const log = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
     const usage = expect.stringContaining('Usage: paraglide-context');
 
-    for (const argv of [['--unknown'], ['--radius', 'x'], ['a', 'b']]) {
+    const cases: [string[], string][] = [
+      [['--unknown'], "Unknown option '--unknown'"],
+      [['--radius', 'x'], '--radius must be a whole number. Details: x.'],
+      [['a', 'b'], 'More than one root was given. Details: a, b.'],
+      [['install'], 'No language was given.'],
+      [['install', 'vue', '--unknown'], "Unknown option '--unknown'"],
+    ];
+    for (const [argv, whatHappened] of cases) {
       expect(await main(argv)).toBe(2);
-      expect(error).toHaveBeenLastCalledWith(usage);
+      const [message] = error.mock.lastCall ?? [];
+      expect(message).toMatch(/^paraglide-context Error: [^]*\n\nUsage: /);
+      expect(message).toContain(`Error: ${whatHappened}`);
     }
-    expect(error).toHaveBeenCalledTimes(3);
+    expect(error).toHaveBeenCalledTimes(5);
 
     expect(await main(['--help'])).toBe(0);
     expect(log).toHaveBeenCalledWith(usage);
+    expect(await main(['install', '--help'])).toBe(0);
+    expect(log).toHaveBeenLastCalledWith(
+      expect.stringContaining('Usage: paraglide-context install')
+    );
     vi.restoreAllMocks();
+  });
+});
+
+describe('the install command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.mocked(runCommand).mockClear();
+  });
+
+  test('installs the packages the languages need and the project lacks, with its package manager', async () => {
+    const log = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
+    const root = await writeOutsideProject({
+      'node_modules/svelte/package.json': `{ "name": "svelte", "main": "index.js" }`,
+      'node_modules/svelte/index.js': '',
+    });
+    const src = path.join(root, 'src');
+
+    expect(await main(['install', 'svelte', 'angular', '--root', src])).toBe(0);
+    // svelte2tsx needs TypeScript, which has no JavaScript API from version 7;
+    // `angular` is both Angular formats.
+    const args = [
+      'add',
+      '-D',
+      'svelte2tsx',
+      'typescript@^6',
+      '@angular/compiler',
+    ];
+    expect(runCommand).toHaveBeenCalledExactlyOnceWith(
+      { command: 'pnpm', args },
+      root
+    );
+    expect(log).toHaveBeenCalledWith(`Running pnpm ${args.join(' ')}\n`);
+  });
+
+  test('a TypeScript without a JavaScript API: exits with 1 and names the version to install', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const root = await writeOutsideProject({
+      'node_modules/typescript/package.json': `{ "name": "typescript", "main": "lib/version.cjs" }`,
+      'node_modules/typescript/lib/version.cjs':
+        'module.exports = { version: "7.0.2" };\n',
+    });
+
+    expect(await main(['install', 'vue', 'angular', '--root', root])).toBe(1);
+    expect(runCommand).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledWith(
+      "paraglide-context Error: The project's typescript cannot be used for vue files because TypeScript 7 has no JavaScript API. " +
+        'Install typescript 6 with `pnpm add -D typescript@^6`.'
+    );
+  });
+
+  test('nothing to install: does not run the package manager', async () => {
+    const log = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
+    const root = await writeOutsideProject({
+      'node_modules/@angular/compiler/package.json': `{ "name": "@angular/compiler", "main": "index.js" }`,
+      'node_modules/@angular/compiler/index.js': '',
+    });
+
+    expect(await main(['install', 'angular', '--root', root])).toBe(0);
+    expect(runCommand).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith('Already installed: @angular/compiler\n');
+  });
+
+  test('a package manager that cannot run: exits with 1', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    vi.mocked(runCommand).mockRejectedValueOnce(new Error('spawn pnpm ENOENT'));
+    const root = await writeOutsideProject({});
+
+    expect(await main(['install', 'ember', '--root', root])).toBe(1);
+    expect(error).toHaveBeenCalledWith(
+      'paraglide-context Error: pnpm could not be run. ' +
+        'Install the packages yourself with `pnpm add -D @glint/ember-tsc`. Details: spawn pnpm ENOENT.'
+    );
+  });
+
+  test('an unknown language: exits with 2 and lists the languages', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(await main(['install', 'vue', 'react'])).toBe(2);
+    expect(error).toHaveBeenCalledWith(
+      'paraglide-context Error: react is not a known language. ' +
+        'Choose from vue, svelte, astro, mdx, markdown, angular, analog, marko, ember.'
+    );
+    expect(runCommand).not.toHaveBeenCalled();
   });
 });

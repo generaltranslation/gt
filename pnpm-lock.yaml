@@ -1223,6 +1223,9 @@ importers:
       '@typescript-eslint/scope-manager':
         specifier: ^8.72.1
         version: 8.72.1
+      generaltranslation:
+        specifier: workspace:*
+        version: link:../core
       globby:
         specifier: ^16.2.0
         version: 16.2.0

@@ -15,7 +15,7 @@ import {
 export const svelteLanguage: SourceLanguage = {
   name: 'svelte',
   extensions: ['.svelte'],
-  requires: ['svelte2tsx', 'svelte'],
+  requires: ['svelte2tsx', 'svelte', 'typescript'],
   installedWith: { svelte2tsx: 'svelte-check' },
   async generate(source, file, context) {
     const [tools, compiler] = await Promise.all([
