@@ -164,18 +164,22 @@ describe('collectContext', () => {
     ]);
   });
 
-  test('a format whose tools are not installed: one warning with the install command', async () => {
+  test('a format whose tools are not installed: one warning with the install command, in each run', async () => {
     const root = await writeOutsideProject({
       'src/main.ts': 'export {};\n',
       'src/App.vue': `<template><p>{{ m.greeting() }}</p></template>\n`,
       'src/Card.vue': `<template><p>{{ m.card() }}</p></template>\n`,
     });
-    const { warnings } = await collect(root);
-    expect(warnings.filter((warning) => warning.includes('.vue'))).toEqual([
+    const runs = [await collect(root), await collect(root)];
+    const vueWarning =
       'paraglide-context Warning: 2 .vue file(s) were not analyzed (e.g. src/App.vue): they need ' +
-        '@vue/language-core and typescript, which are not installed. ' +
-        'Install them: `pnpm add -D vue-tsc typescript` (vue-tsc includes @vue/language-core)',
-    ]);
+      '@vue/language-core and typescript, which are not installed. ' +
+      'Install them: `pnpm add -D vue-tsc typescript` (vue-tsc includes @vue/language-core)';
+    expect(
+      runs.map(({ warnings }) =>
+        warnings.filter((warning) => warning.includes('.vue'))
+      )
+    ).toEqual([[vueWarning], [vueWarning]]);
   });
 
   test('Markdown without the Vue tools: only a page with a script is reported', async () => {

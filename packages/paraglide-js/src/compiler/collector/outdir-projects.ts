@@ -18,15 +18,10 @@ export type OutdirProjectsSettings = {
 export class OutdirProjects {
   /** Project directories by outdir, both absolute. */
   private readonly paired = new Map<string, string>();
-  /** The projects an outdir is matched against, read once per scan. */
+  /** The projects an outdir is matched against, read once. */
   private candidates: Promise<InlangProject[]> | undefined;
 
   constructor(private readonly settings: OutdirProjectsSettings) {}
-
-  clear(): void {
-    this.paired.clear();
-    this.candidates = undefined;
-  }
 
   /** The directory of the project paired with `outdir`, absolute. */
   of(outdir: string): string | undefined {
@@ -44,10 +39,7 @@ export class OutdirProjects {
     const project =
       (await this.namedBy(outdir)) ??
       matchInlangProject(await this.loadCandidates(), catalog);
-    if (!project) {
-      this.paired.delete(outdir);
-      return undefined;
-    }
+    if (!project) return undefined;
 
     this.paired.set(outdir, project.directory);
 
