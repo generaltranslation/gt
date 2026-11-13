@@ -1,9 +1,11 @@
+import fsp from 'node:fs/promises';
 import { isBuiltin } from 'node:module';
 import path from 'node:path';
 import { analyzeModule } from '../analysis/analyze.js';
 import { ModuleGraph, type GlobalBinding } from '../analysis/module-graph.js';
 import { ModuleIndexer, type ParsedSummary } from '../analysis/module-index.js';
 import type { ParaglideUsage } from '../analysis/types.js';
+import { defaultLanguages } from '../languages/index.js';
 import {
   isSourceFile,
   type LanguageContext,
@@ -12,7 +14,7 @@ import {
 } from '../languages/language.js';
 import { readCatalog } from '../paraglide/catalog.js';
 import { OutdirDetector } from '../paraglide/outdir.js';
-import type { ParaglideTarget } from '../paraglide/targets.js';
+import { defaultTargets, type ParaglideTarget } from '../paraglide/targets.js';
 import {
   autoImportsFromOptions,
   detectAutoImports,
@@ -22,6 +24,8 @@ import {
 import type { FileSelection } from '../project/files.js';
 import { projectPackages } from '../project/packages.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
+import { readTextFile } from '../utils/read-file.js';
+import { AnalysisPool, analysisThreads } from './analysis-pool.js';
 import { isInCatalog, unknownMessagesWarning } from './catalog-check.js';
 import { MetadataFiles } from './metadata-files.js';
 import { MissingTools } from './missing-tools.js';
@@ -30,6 +34,7 @@ import {
   loadIndexedFile,
   summarizeFile,
   type GeneratedModule,
+  type SummaryResult,
 } from './module-reader.js';
 import { OutdirProjects } from './outdir-projects.js';
 
@@ -84,8 +89,9 @@ export class ContextCollector {
   /** Finds outdirs and targets; the modules are indexed by `indexer`. */
   private readonly moduleGraph: ModuleGraph;
   private readonly indexer: ModuleIndexer;
-  /** What languages generated for the indexed files: the analysis parses a file again when it loads it. */
+  /** What languages generated for the indexed files, when this thread analyzes them: it parses a file again when it loads it. */
   private readonly generated = new Map<string, GeneratedModule>();
+  private pool: AnalysisPool | undefined;
   private globals: readonly GlobalBinding[] = [];
   private globalNames: ReadonlySet<string> = new Set();
   private readonly outdirDetector: OutdirDetector;
@@ -147,6 +153,27 @@ export class ContextCollector {
       await this.settings.selection.list();
     this.warnMissingIncludes(missing);
 
+    let sourceCount: number;
+
+    this.pool = this.startThreads(await sizeOf(files));
+    try {
+      sourceCount = await this.scan(files, autoImportDeclarations);
+    } finally {
+      await this.pool?.close();
+      this.pool = undefined;
+    }
+
+    this.warnNoOutdir();
+    await this.warnMissingTools();
+    this.warnUnknownMessages();
+    this.logSummary(sourceCount);
+  }
+
+  /** Returns how many source files it analyzed. */
+  private async scan(
+    files: readonly string[],
+    autoImportDeclarations: readonly string[]
+  ): Promise<number> {
     // Outdirs inside `include` must be known before choosing the sources.
     await Promise.all(files.map((file) => this.moduleGraph.detectOutdir(file)));
     await this.loadGlobals(autoImportDeclarations);
@@ -158,22 +185,51 @@ export class ContextCollector {
     await this.indexer.indexPaths(sources);
     await this.loadCatalogs();
 
-    this.analyzeAll(sources);
+    await this.analyzeAll(sources);
 
-    this.warnNoOutdir();
-    await this.warnMissingTools();
-    this.warnUnknownMessages();
-    this.logSummary(sources.length);
+    return sources.length;
+  }
+
+  /** Threads that analyze the files, if the project is large enough, and its languages and targets can be given to them. */
+  private startThreads(codeSize: number): AnalysisPool | undefined {
+    const { languages, targets, projectRoot } = this.settings;
+    const isDefault =
+      languages === defaultLanguages && targets === defaultTargets;
+    if (!isDefault) return undefined;
+
+    const threads = analysisThreads(codeSize);
+
+    return threads > 0 ? new AnalysisPool(threads, projectRoot) : undefined;
   }
 
   /** Analyzes each file through an index of the modules, which loads a module when it is read. */
-  private analyzeAll(sources: readonly string[]): void {
-    const graph = new ModuleGraph({
-      targets: this.settings.targets,
+  private async analyzeAll(sources: readonly string[]): Promise<void> {
+    const index = {
+      summaries: this.indexer.modules,
       outdirs: this.moduleGraph.outdirs,
       globals: this.globals,
+    };
+
+    if (this.pool) {
+      const usages = await this.pool.analyze(index, sources);
+      // The threads do not hold the files' code: it is read again.
+      const codes = await Promise.all(
+        sources.map((file) =>
+          usages.get(file)?.length ? readTextFile(file) : undefined
+        )
+      );
+      sources.forEach((file, at) =>
+        this.addUsages(file, usages.get(file) ?? [], codes[at])
+      );
+      return;
+    }
+
+    const graph = new ModuleGraph({
+      targets: this.settings.targets,
+      outdirs: index.outdirs,
+      globals: index.globals,
       index: {
-        summaries: this.indexer.modules,
+        summaries: index.summaries,
         budget: analysisBudget(),
         load: (file) => loadIndexedFile(file, this.generated.get(file)),
       },
@@ -218,12 +274,14 @@ export class ContextCollector {
 
   /** What a file loads, for the index. */
   private async summarize(file: string): Promise<ParsedSummary | undefined> {
-    const result = await summarizeFile(
-      file,
-      this.settings.languages,
-      this.packages,
-      this.globalNames
-    );
+    const result: SummaryResult = this.pool
+      ? await this.pool.summarize(file)
+      : await summarizeFile(
+          file,
+          this.settings.languages,
+          this.packages,
+          this.globalNames
+        );
     if (!result) return undefined;
 
     if ('failure' in result) {
@@ -231,7 +289,9 @@ export class ContextCollector {
       return undefined;
     }
 
-    if (result.generated) this.generated.set(file, result.generated);
+    if (result.generated && !this.pool) {
+      this.generated.set(file, result.generated);
+    }
 
     return result.summary;
   }
@@ -287,6 +347,7 @@ export class ContextCollector {
     // Known before any module is indexed: the index lists which modules use them.
     this.globals = globals;
     this.globalNames = new Set(globals.map(({ name }) => name));
+    this.pool?.setGlobalNames(this.globalNames);
 
     await this.indexer.indexPaths(sources);
   }
@@ -505,4 +566,18 @@ function firstResolvedOfEachName(
   });
 
   return [...globals.values()];
+}
+
+/** The bytes of `files`; a file that cannot be read counts for none. */
+async function sizeOf(files: readonly string[]): Promise<number> {
+  const sizes = await Promise.all(
+    files.map((file) =>
+      fsp.stat(file).then(
+        ({ size }) => size,
+        () => 0
+      )
+    )
+  );
+
+  return sizes.reduce((sum, size) => sum + size, 0);
 }
