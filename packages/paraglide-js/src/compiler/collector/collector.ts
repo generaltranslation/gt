@@ -1,9 +1,11 @@
+import fsp from 'node:fs/promises';
 import { isBuiltin } from 'node:module';
 import path from 'node:path';
 import { analyzeModule } from '../analysis/analyze.js';
 import { ModuleGraph, type GlobalBinding } from '../analysis/module-graph.js';
 import { ModuleIndexer, type ParsedSummary } from '../analysis/module-index.js';
 import type { ParaglideUsage } from '../analysis/types.js';
+import { defaultLanguages } from '../languages/index.js';
 import {
   isSourceFile,
   type LanguageContext,
@@ -12,7 +14,7 @@ import {
 } from '../languages/language.js';
 import { readCatalog } from '../paraglide/catalog.js';
 import { OutdirDetector } from '../paraglide/outdir.js';
-import type { ParaglideTarget } from '../paraglide/targets.js';
+import { defaultTargets, type ParaglideTarget } from '../paraglide/targets.js';
 import {
   autoImportsFromOptions,
   detectAutoImports,
@@ -23,6 +25,7 @@ import type { FileSelection } from '../project/files.js';
 import { projectPackages } from '../project/packages.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
 import { readTextFile } from '../utils/read-file.js';
+import { AnalysisPool, analysisThreads } from './analysis-pool.js';
 import { isInCatalog, unknownMessagesWarning } from './catalog-check.js';
 import { MetadataFiles } from './metadata-files.js';
 import { MissingTools } from './missing-tools.js';
@@ -86,9 +89,10 @@ export class ContextCollector {
   /** Finds outdirs and targets; the modules are indexed by `indexer`. */
   private readonly moduleGraph: ModuleGraph;
   private readonly indexer: ModuleIndexer;
-  /** What languages generated for the indexed files: the analysis parses a file again when it loads it. */
+  /** What languages generated for the indexed files, when this thread analyzes them: it parses a file again when it loads it. */
   private readonly generated = new Map<string, GeneratedModule>();
   private globals: readonly GlobalBinding[] = [];
+  private pool: AnalysisPool | undefined;
   private readonly outdirDetector: OutdirDetector;
   private readonly outdirProjects: OutdirProjects;
   private readonly output: MetadataFiles;
@@ -150,7 +154,15 @@ export class ContextCollector {
       await this.settings.selection.list();
     this.warnMissingIncludes(missing);
 
-    const sourceCount = await this.scan(files, autoImportDeclarations);
+    let sourceCount: number;
+
+    this.pool = await this.startThreads(files);
+    try {
+      sourceCount = await this.scan(files, autoImportDeclarations);
+    } finally {
+      await this.pool?.close();
+      this.pool = undefined;
+    }
 
     this.warnNoOutdir();
     await this.warnMissingTools();
@@ -188,15 +200,45 @@ export class ContextCollector {
     return sources.length;
   }
 
+  /** Threads that analyze the files, if the project is large enough, and its languages and targets can be given to them. */
+  private async startThreads(
+    files: readonly string[]
+  ): Promise<AnalysisPool | undefined> {
+    const { languages, targets, projectRoot } = this.settings;
+    const isDefault =
+      languages === defaultLanguages && targets === defaultTargets;
+    if (!isDefault) return undefined;
+
+    const sizes = await Promise.all(
+      files.map((file) =>
+        fsp.stat(file).then(
+          ({ size }) => size,
+          () => 0
+        )
+      )
+    );
+    const threads = analysisThreads(sizes.reduce((sum, size) => sum + size, 0));
+
+    return threads > 0 ? new AnalysisPool(threads, projectRoot) : undefined;
+  }
+
   private async analyzeAll(
     sources: readonly string[]
   ): Promise<Map<string, ParaglideUsage[]>> {
-    const graph = new ModuleGraph({
-      targets: this.settings.targets,
+    const index = {
+      summaries: this.indexer.modules,
       outdirs: this.moduleGraph.outdirs,
       globals: this.globals,
+    };
+
+    if (this.pool) return this.pool.analyze(index, sources);
+
+    const graph = new ModuleGraph({
+      targets: this.settings.targets,
+      outdirs: index.outdirs,
+      globals: index.globals,
       index: {
-        summaries: this.indexer.modules,
+        summaries: index.summaries,
         budget: analysisBudget(),
         load: (file) => loadIndexedFile(file, this.generated.get(file)),
       },
@@ -241,11 +283,9 @@ export class ContextCollector {
 
   /** What a file loads, for the index. */
   private async summarize(file: string): Promise<ParsedSummary | undefined> {
-    const result: SummaryResult = await summarizeFile(
-      file,
-      this.settings.languages,
-      this.packages
-    );
+    const result: SummaryResult = this.pool
+      ? await this.pool.summarize(file)
+      : await summarizeFile(file, this.settings.languages, this.packages);
     if (!result) return undefined;
 
     if ('failure' in result) {
@@ -253,7 +293,9 @@ export class ContextCollector {
       return undefined;
     }
 
-    if (result.generated) this.generated.set(file, result.generated);
+    if (result.generated && !this.pool) {
+      this.generated.set(file, result.generated);
+    }
 
     return result.summary;
   }
