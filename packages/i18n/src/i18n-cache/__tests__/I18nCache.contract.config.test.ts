@@ -21,7 +21,7 @@ import { GTRuntime } from 'generaltranslation/runtime';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { I18nCache } from '../I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
-import { hashMessage } from '../../utils/hashMessage';
+import { hashContent } from '../../utils/hashContent';
 import type { LookupOptions } from '../../translation-functions/types/options';
 
 type TestGlobal = typeof globalThis & {
@@ -296,7 +296,7 @@ describe('I18nCache config contract', () => {
     expect(translation).toBe('Bonjour {name} !');
     expect(translateManySpy).toHaveBeenCalledTimes(1);
     const [sources, options, timeout] = translateManySpy.mock.calls[0];
-    const expectedHash = hashMessage(message, lookupOptions);
+    const expectedHash = hashContent(message, lookupOptions);
     expect(sources).toEqual({
       [expectedHash]: {
         source: message,
@@ -360,8 +360,8 @@ describe('I18nCache config contract', () => {
     expect(translateManySpy).toHaveBeenCalledTimes(1);
     const [sources] = translateManySpy.mock.calls[0];
     expect(Object.keys(sources as object).length).toBe(2);
-    expect(first).toBe(`t-${hashMessage('One', { $format: 'ICU' })}`);
-    expect(second).toBe(`t-${hashMessage('Two', { $format: 'ICU' })}`);
+    expect(first).toBe(`t-${hashContent('One', { $format: 'ICU' })}`);
+    expect(second).toBe(`t-${hashContent('Two', { $format: 'ICU' })}`);
   });
 
   it('splits misses that exceed maxBatchSize into separate calls', async () => {
@@ -389,7 +389,7 @@ describe('I18nCache config contract', () => {
     }
     expect(batches.flat().sort()).toEqual(
       ['One', 'Two', 'Three']
-        .map((source) => hashMessage(source, { $format: 'ICU' }))
+        .map((source) => hashContent(source, { $format: 'ICU' }))
         .sort()
     );
   });

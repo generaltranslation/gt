@@ -33,6 +33,9 @@ A named placeholder in a message.
 The data that fills a message's variables for one render.
 _Avoid_: variables (for the data)
 
+**Registered message**:
+A message written as a string that the build has collected, with its metadata, so its translation can be fetched ahead of rendering.
+
 **Content**:
 What is stored for one translatable entry, in one data format. A message tree is content; so is an ICU string or JSX.
 _Avoid_: message (for content of any format)

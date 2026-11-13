@@ -12,7 +12,7 @@ import {
   getLocales,
   resolveCanonicalLocale,
 } from '../../helpers/locale';
-import { hashMessage } from '../../utils/hashMessage';
+import { hashContent } from '../../utils/hashContent';
 import { t } from '../t';
 
 type TestGlobal = typeof globalThis & {
@@ -60,7 +60,7 @@ describe('t', () => {
       { defaultLocale: 'en', locales: ['en', 'fr'] },
       {
         loadTranslations: vi.fn().mockResolvedValue({
-          [hashMessage(message, { $format: 'ICU' })]: translatedMessage,
+          [hashContent(message, { $format: 'ICU' })]: translatedMessage,
         }),
       }
     );
@@ -82,7 +82,7 @@ describe('t', () => {
       { defaultLocale: 'en', locales: ['en', 'fr', 'es'] },
       {
         loadTranslations: vi.fn().mockImplementation((locale: string) => ({
-          [hashMessage(message, { $format: 'ICU' })]:
+          [hashContent(message, { $format: 'ICU' })]:
             locale === 'es' ? 'Hola {name}!' : 'Bonjour {name} !',
         })),
       }
@@ -105,7 +105,7 @@ describe('t', () => {
       { defaultLocale: 'en', locales: ['en', 'fr'] },
       {
         loadTranslations: vi.fn().mockResolvedValue({
-          [hashMessage(message, { $format: 'ICU' })]: 'Bonjour Alice !',
+          [hashContent(message, { $format: 'ICU' })]: 'Bonjour Alice !',
         }),
       }
     );
@@ -127,7 +127,7 @@ describe('t', () => {
       { defaultLocale: 'en', locales: ['en', 'fr'] },
       {
         loadTranslations: vi.fn().mockResolvedValue({
-          [hashMessage(message, { $format: 'ICU' })]: 'Bonjour {0} !',
+          [hashContent(message, { $format: 'ICU' })]: 'Bonjour {0} !',
         }),
       }
     );
@@ -148,7 +148,7 @@ describe('t', () => {
       { defaultLocale: 'en', locales: ['en', 'fr'] },
       {
         loadTranslations: vi.fn().mockResolvedValue({
-          [hashMessage(message, { $format: 'ICU' })]: 'Bonjour {name} !',
+          [hashContent(message, { $format: 'ICU' })]: 'Bonjour {name} !',
         }),
       }
     );
@@ -173,7 +173,7 @@ describe('t', () => {
       { defaultLocale: 'en', locales: ['en', 'fr'] },
       {
         loadTranslations: vi.fn().mockResolvedValue({
-          [hashMessage(message, { $format: 'ICU' })]: 'Bonjour {name} !',
+          [hashContent(message, { $format: 'ICU' })]: 'Bonjour {name} !',
         }),
       }
     );

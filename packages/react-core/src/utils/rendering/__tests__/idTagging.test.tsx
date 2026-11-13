@@ -128,7 +128,7 @@ const cfg = vi.hoisted(() => ({ tagIds: true, legacy: false }));
 vi.mock('gt-i18n/internal', async (importOriginal) => {
   const actual = await importOriginal<typeof import('gt-i18n/internal')>();
   return {
-    ...actual, // keep the REAL hashMessage so we verify a genuine hash
+    ...actual, // keep the REAL hashContent so we verify a genuine hash
     getI18nConfig: () => {
       const c: Record<string, unknown> = {
         getDefaultLocale: () => 'en',

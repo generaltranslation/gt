@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { hashStringMessage } from '../hashStringMessage';
-import { hashMessage } from '../hashMessage';
+import { hashContent } from '../hashContent';
 
 describe('hashStringMessage', () => {
   it.each([
@@ -17,11 +17,11 @@ describe('hashStringMessage', () => {
         $requiresReview: true,
       },
     },
-  ] as const)('matches hashMessage for $name', ({ options }) => {
+  ] as const)('matches hashContent for $name', ({ options }) => {
     const message = 'Literal {name}: 你好';
 
     expect(hashStringMessage(message, options)).toBe(
-      hashMessage(message, { ...options, $format: 'STRING' })
+      hashContent(message, { ...options, $format: 'STRING' })
     );
   });
 

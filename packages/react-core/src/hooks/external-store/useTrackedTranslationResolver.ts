@@ -26,7 +26,7 @@ export type TrackedTranslationResolver = <T extends Content>(
   lookup: TranslateLookup<T>
 ) => TranslateSnapshot<T>;
 
-export type Message = TranslationMetadata & {
+export type RegisteredMessage = TranslationMetadata & {
   message: string;
 };
 
@@ -43,7 +43,7 @@ export type Message = TranslationMetadata & {
  */
 
 export function useTrackedTranslationResolver(
-  messages: Message[] = [],
+  messages: RegisteredMessage[] = [],
   locale: string,
   shouldTranslate: boolean
 ): TrackedTranslationResolver {
@@ -117,7 +117,7 @@ export function useTrackedTranslationResolver(
  * and effects are deterministic
  */
 function usePreloadCompilerLookups(
-  messages: Message[],
+  messages: RegisteredMessage[],
   trackedKeysRef: RefObject<Set<string> | null>,
   locale: string,
   shouldTranslate: boolean

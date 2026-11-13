@@ -5,13 +5,13 @@ import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
 import {
-  type Message,
+  type RegisteredMessage,
   useTrackedTranslationResolver,
 } from './external-store/useTrackedTranslationResolver';
 
 // ===== Hook ===== //
 
-export function useGT(_messages?: Message[]): GTFunctionType {
+export function useGT(_messages?: RegisteredMessage[]): GTFunctionType {
   const { locale, shouldTranslate } = useTranslationConditions();
   const defaultLocale = useDefaultLocale();
   const resolveTranslation = useTrackedTranslationResolver(

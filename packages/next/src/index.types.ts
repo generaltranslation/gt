@@ -57,14 +57,14 @@ import {
   gtFallback,
 } from '@generaltranslation/react-core/pure';
 
-type Message = {
+type RegisteredMessage = {
   message: string;
   $id?: string;
   $context?: string;
   $maxChars?: number;
   $_hash?: string;
 };
-type Messages = Message[];
+type RegisteredMessages = RegisteredMessage[];
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -425,7 +425,7 @@ export function isLocaleSupported(_: unknown): boolean {
  *
  */
 export const useGT: (
-  _messages?: Messages
+  _messages?: RegisteredMessages
 ) => (message: string, options?: GTTranslationOptions) => string = () => {
   throw new Error(typesFileError);
 };
@@ -586,7 +586,7 @@ export const useLocaleDirection: typeof _useLocaleDirection = () => {
  * // "Hello, Bob!" id: "greetings.1"
  */
 export const useMessages: (
-  _messages?: Messages
+  _messages?: RegisteredMessages
 ) => <T extends string | null | undefined>(
   encodedMsg: T,
   options?: GTTranslationOptions

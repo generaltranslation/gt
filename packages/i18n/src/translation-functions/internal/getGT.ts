@@ -7,7 +7,7 @@ import { createLookupOptions } from './helpers';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
-export type Message = TranslationMetadata & {
+export type RegisteredMessage = TranslationMetadata & {
   message: string;
 };
 
@@ -19,7 +19,9 @@ export type Message = TranslationMetadata & {
  * const gt = await getGT();
  * const greeting = gt('Hello, world!');
  */
-export async function getGT(_messages?: Message[]): Promise<GTFunctionType> {
+export async function getGT(
+  _messages?: RegisteredMessage[]
+): Promise<GTFunctionType> {
   const conditionStore = getWritableConditionStore();
   const locale = conditionStore.getLocale();
   const enableI18n = conditionStore.getEnableI18n();
@@ -37,7 +39,7 @@ export async function getGTInternal(
     locale: string;
     enableI18n: boolean;
   },
-  _messages?: Message[]
+  _messages?: RegisteredMessage[]
 ): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nCache = getI18nCache();

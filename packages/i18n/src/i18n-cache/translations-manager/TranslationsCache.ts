@@ -1,5 +1,5 @@
 import { LookupOptions } from '../../translation-functions/types/options';
-import { hashMessage } from '../../utils/hashMessage';
+import { hashContent } from '../../utils/hashContent';
 import { dedupePending } from './utils/dedupePending';
 import type { Content } from '@generaltranslation/format/types';
 import type {
@@ -177,7 +177,7 @@ export class TranslationsCache<TranslationValue extends Content> {
   }
 
   private getCacheKey(key: TranslationKey<TranslationValue>): Hash {
-    return hashMessage(key.message, key.options);
+    return hashContent(key.message, key.options);
   }
 
   private translate(

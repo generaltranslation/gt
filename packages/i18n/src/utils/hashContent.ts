@@ -3,11 +3,9 @@ import { indexVars } from 'generaltranslation/internal';
 import { LookupOptions } from '../translation-functions/types/options';
 import type { Content } from '@generaltranslation/format/types';
 
-/**
- * Hash a message string
- */
-export function hashMessage<T extends Content>(
-  message: T,
+/** The hash of content in any data format: its catalog key. */
+export function hashContent<T extends Content>(
+  content: T,
   options: LookupOptions
 ): string {
   const metadataOptions = options as {
@@ -22,7 +20,7 @@ export function hashMessage<T extends Content>(
   }
 
   return hashSource({
-    source: options.$format === 'ICU' ? indexVars(message as string) : message,
+    source: options.$format === 'ICU' ? indexVars(content as string) : content,
     ...(metadataOptions.$context && { context: metadataOptions.$context }),
     ...(metadataOptions.$maxChars != null && {
       maxChars: Math.abs(metadataOptions.$maxChars),

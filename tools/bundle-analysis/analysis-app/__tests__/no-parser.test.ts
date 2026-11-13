@@ -66,7 +66,7 @@ describe('framework /unstable bundles', () => {
   // Known leaks, both static chains into @generaltranslation/icu/parser:
   // A: I18nConfig extends LocaleConfig, whose formatMessage method calls
   //    formatIcu; class methods are never tree-shaken.
-  // B: gt-i18n hashMessage -> generaltranslation/internal indexVars ->
+  // B: gt-i18n hashContent -> generaltranslation/internal indexVars ->
   //    traverseIcu -> parse, via getTranslateListenerKey (react-core tracked
   //    resolver) or TranslationsCache.getCacheKey.
   // These assert the parser IS bundled, so a broken build still fails and a

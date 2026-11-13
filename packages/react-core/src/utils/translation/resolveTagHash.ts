@@ -1,4 +1,4 @@
-import { getI18nConfig, hashMessage } from 'gt-i18n/internal';
+import { getI18nConfig, hashContent } from 'gt-i18n/internal';
 
 // Capability-safe id-tagging gate. isIdTaggingEnabled lives on react-core's
 // ReactI18nConfig, but the config is a first-writer-wins singleton shared across
@@ -17,20 +17,20 @@ export function idTaggingEnabled(): boolean {
 // hash ONLY when id-tagging is enabled (otherwise `undefined` → the output is
 // rendered untouched, so apps not using the feature pay nothing).
 //
-// It also CACHES the result on `options.$_hash`. hashMessage short-circuits to
+// It also CACHES the result on `options.$_hash`. hashContent short-circuits to
 // `options.$_hash` when present, so every downstream hash of these same options
 // — the translation lookup (client store + RSC cache key both go through
-// hashMessage) — reuses this value instead of hashing again. Net effect when
+// hashContent) — reuses this value instead of hashing again. Net effect when
 // id-tagging is on: a single hash shared by tag + lookup, or ZERO extra hashing
 // when the compiler already injected `$_hash`. Called from prepareT (once,
 // BEFORE the lookup) so the lookup benefits from the cached value.
 export function resolveTagHash(
-  ...args: Parameters<typeof hashMessage>
+  ...args: Parameters<typeof hashContent>
 ): string | undefined {
   if (!idTaggingEnabled()) {
     return undefined;
   }
-  const hash = hashMessage(...args); // reuses args[1].$_hash when already set
+  const hash = hashContent(...args); // reuses args[1].$_hash when already set
   (args[1] as { $_hash?: string }).$_hash = hash; // cache for the lookup
   return hash;
 }

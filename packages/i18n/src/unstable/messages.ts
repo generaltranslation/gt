@@ -85,7 +85,7 @@ function formatSource(
   const formatted = isI18nConfigInitialized()
     ? getI18nConfig().formatMessageTree(tree, undefined, {
         locales: libraryDefaultLocale,
-        variables: values,
+        values,
         formats,
       })
     : formatMessageTree(tree, libraryDefaultLocale, values, { formats });

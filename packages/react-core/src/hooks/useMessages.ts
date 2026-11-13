@@ -3,11 +3,11 @@ import { decodeOptions } from 'gt-i18n';
 import { useGT } from './useGT';
 import type { GTTranslationOptions, MFunctionType } from 'gt-i18n/types';
 import { isEncodedTranslationOptions } from 'gt-i18n/internal';
-import { Message } from './external-store/useTrackedTranslationResolver';
+import { RegisteredMessage } from './external-store/useTrackedTranslationResolver';
 
 // ===== Hook ===== //
 
-export function useMessages(_messages?: Message[]): MFunctionType {
+export function useMessages(_messages?: RegisteredMessage[]): MFunctionType {
   const gt = useGT(_messages);
 
   return useCallback(

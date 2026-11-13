@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18nCache } from '../I18nCache';
 import type { TranslationsCacheMissEvent } from '../I18nCache';
 import { createTranslateManyFactory } from '../translations-manager/utils/createTranslateMany';
-import { hashMessage } from '../../utils/hashMessage';
+import { hashContent } from '../../utils/hashContent';
 import { LookupOptions } from '../../translation-functions/types/options';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import type { CustomMapping } from '@generaltranslation/format/types';
@@ -19,7 +19,7 @@ const lookupOptions: LookupOptions = {
   $format: 'ICU',
   $context: 'greeting',
 };
-const expectedHash = hashMessage(message, lookupOptions);
+const expectedHash = hashContent(message, lookupOptions);
 const translatedString = 'Bonjour {name} !';
 
 type TestGlobal = typeof globalThis & {
@@ -669,7 +669,7 @@ describe('I18nCache', () => {
   it('lookupDictionaryWithFallback() runtime translates and caches missing dictionary entries', async () => {
     const source = 'Hello';
     const sourceOptions: LookupOptions = { $format: 'ICU' };
-    const sourceHash = hashMessage(source, sourceOptions);
+    const sourceHash = hashContent(source, sourceOptions);
     const cache = createCache({
       dictionary: {
         greeting: source,
@@ -775,8 +775,8 @@ describe('I18nCache', () => {
   it('lookupDictionaryObjWithFallback() runtime translates and caches missing dictionary subtrees', async () => {
     const name = 'Name';
     const title = 'Title';
-    const nameHash = hashMessage(name, { $format: 'ICU' });
-    const titleHash = hashMessage(title, { $format: 'ICU' });
+    const nameHash = hashContent(name, { $format: 'ICU' });
+    const titleHash = hashContent(title, { $format: 'ICU' });
     const cache = createCache({
       dictionary: {
         user: {
@@ -816,7 +816,7 @@ describe('I18nCache', () => {
   it('lookupDictionaryObjWithFallback() fills missing leaves in partial target subtrees', async () => {
     const name = 'Name';
     const title = 'Title';
-    const titleHash = hashMessage(title, { $format: 'ICU' });
+    const titleHash = hashContent(title, { $format: 'ICU' });
     const cache = createCache({
       dictionary: {
         user: {
@@ -1070,7 +1070,7 @@ describe('I18nCache', () => {
   it('lookupTranslationWithFallback() falls back to runtime translate on cache miss', async () => {
     const unknownMessage = 'Unknown message';
     const unknownOptions: LookupOptions = { $format: 'ICU' };
-    const unknownHash = hashMessage(unknownMessage, unknownOptions);
+    const unknownHash = hashContent(unknownMessage, unknownOptions);
 
     // loadTranslations returns translations that do NOT include unknownMessage
     const cache = createCache({
@@ -1142,7 +1142,7 @@ describe('I18nCache', () => {
       $format: 'I18NEXT',
       $context: 'homepage',
     };
-    const sourceHash = hashMessage(source, sourceOptions);
+    const sourceHash = hashContent(source, sourceOptions);
     const cache = createCache({
       dictionary: {
         greeting: [source, { $format: 'I18NEXT', $context: 'homepage' }],
@@ -1171,7 +1171,7 @@ describe('I18nCache', () => {
       $format: 'ICU',
       $context: 'homepage',
     };
-    const sourceHash = hashMessage(source, sourceOptions);
+    const sourceHash = hashContent(source, sourceOptions);
     const cache = createCache({
       dictionary: {
         greeting: [source, { $context: 'homepage' }],
@@ -1199,7 +1199,7 @@ describe('I18nCache', () => {
 
     const source = 'Hello';
     const sourceOptions: LookupOptions = { $format: 'ICU' };
-    const sourceHash = hashMessage(source, sourceOptions);
+    const sourceHash = hashContent(source, sourceOptions);
     const cache = createCache({
       dictionary: {
         greeting: source,
@@ -1336,7 +1336,7 @@ describe('I18nCache', () => {
   it('emits translations-cache-miss when a runtime translation resolves', async () => {
     const unknownMessage = 'Unknown message';
     const unknownOptions: LookupOptions = { $format: 'ICU' };
-    const unknownHash = hashMessage(unknownMessage, unknownOptions);
+    const unknownHash = hashContent(unknownMessage, unknownOptions);
 
     const cache = createCache({ runtimeTranslation: {} });
     const onTranslationsCacheMiss = vi.fn();

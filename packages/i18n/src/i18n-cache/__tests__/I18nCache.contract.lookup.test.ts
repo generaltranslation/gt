@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { I18nCache } from '../I18nCache';
 import type { TranslationsCacheMissEvent } from '../I18nCache';
-import { hashMessage } from '../../utils/hashMessage';
+import { hashContent } from '../../utils/hashContent';
 import { LookupOptions } from '../../translation-functions/types/options';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 
@@ -13,7 +13,7 @@ import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
  * internals (translations-manager, validation, loaders) can be restructured
  * freely. They must only exercise the I18nCache class itself (public methods
  * plus the protected onTranslationsCacheMiss hook) and stable helpers
- * (hashMessage, initializeI18nConfig). Do not import from or mock internal
+ * (hashContent, initializeI18nConfig). Do not import from or mock internal
  * module paths; runtime translation is observed by spying on
  * GTRuntime.prototype.translateMany.
  */
@@ -23,7 +23,7 @@ const lookupOptions: LookupOptions = {
   $format: 'ICU',
   $context: 'greeting',
 };
-const expectedHash = hashMessage(message, lookupOptions);
+const expectedHash = hashContent(message, lookupOptions);
 const translatedString = 'Bonjour {name} !';
 
 type TestGlobal = typeof globalThis & {
@@ -124,7 +124,7 @@ describe('I18nCache contract: lookup API', () => {
   it('updateTranslations() merges into an already-loaded locale', async () => {
     const otherMessage = 'Goodbye {name}!';
     const otherOptions: LookupOptions = { $format: 'ICU' };
-    const otherHash = hashMessage(otherMessage, otherOptions);
+    const otherHash = hashContent(otherMessage, otherOptions);
     const cache = createCache();
 
     await cache.loadTranslations('fr');

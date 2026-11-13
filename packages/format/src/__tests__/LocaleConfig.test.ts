@@ -207,20 +207,20 @@ describe('determineLocale approved spelling', () => {
     const tree = [['at', 'time', 'short']];
     expect(
       config.formatMessageTree(tree, 'en-US', {
-        variables: { at },
+        values: { at },
         formats: {},
       })
     ).toBe('11:03 PM');
     expect(
       config.formatMessageTree(tree, 'en-US', {
-        variables: { at },
+        values: { at },
         formats: {},
         timeZone: 'UTC',
       })
     ).toBe('2:03 PM');
     expect(
       config.formatMessageTree(['Hi ', ['name']], undefined, {
-        variables: { name: 'Ada' },
+        values: { name: 'Ada' },
         formats: {},
       })
     ).toBe('Hi Ada');

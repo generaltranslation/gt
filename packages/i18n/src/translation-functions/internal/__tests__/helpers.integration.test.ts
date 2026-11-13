@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18nCache } from '../../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
-import { hashMessage } from '../../../utils/hashMessage';
+import { hashContent } from '../../../utils/hashContent';
 import { LookupOptions } from '../../types/options';
 import {
   prefetchStringContentWithRuntimeFallback,
@@ -57,7 +57,7 @@ describe('translation helpers (deep integration)', () => {
   it('resolveStringContentWithRuntimeFallback triggers translateMany when translation not preloaded', async () => {
     const message = 'Good morning';
     const options: LookupOptions = { $format: 'ICU' };
-    const hash = hashMessage(message, options);
+    const hash = hashContent(message, options);
 
     // No preloaded translations — will miss cache and fall back to runtime
     setupManager({});
@@ -88,7 +88,7 @@ describe('translation helpers (deep integration)', () => {
   it('resolveStringContentWithRuntimeFallback returns preloaded translation without calling translateMany', async () => {
     const message = 'Hello';
     const options: LookupOptions = { $format: 'ICU' };
-    const hash = hashMessage(message, options);
+    const hash = hashContent(message, options);
 
     // Preload the translation
     setupManager({ [hash]: 'Bonjour' });
@@ -109,7 +109,7 @@ describe('translation helpers (deep integration)', () => {
   it('resolveJsxWithRuntimeFallback triggers translateMany for missing JSX translation', async () => {
     const content = ['Hello ', 'world'];
     const options: LookupOptions = { $format: 'JSX' };
-    const hash = hashMessage(content, options);
+    const hash = hashContent(content, options);
 
     setupManager({});
 
@@ -134,7 +134,7 @@ describe('translation helpers (deep integration)', () => {
     // "String interpolation failed" for every message with a placeholder.
     const message = 'Hello {0}';
     const options: LookupOptions = { $format: 'ICU' };
-    const hash = hashMessage(message, options);
+    const hash = hashContent(message, options);
 
     setupManager({ [hash]: 'Bonjour {0}' });
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -150,7 +150,7 @@ describe('translation helpers (deep integration)', () => {
   it('prefetchStringContentWithRuntimeFallback still registers missing translations', async () => {
     const message = 'Trip for {0} guests';
     const options: LookupOptions = { $format: 'ICU' };
-    const hash = hashMessage(message, options);
+    const hash = hashContent(message, options);
 
     setupManager({});
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -177,7 +177,7 @@ describe('translation helpers (deep integration)', () => {
   it('resolveStringContentWithRuntimeFallback falls back to source when translateMany fails', async () => {
     const message = 'Fallback test';
     const options: LookupOptions = { $format: 'STRING' };
-    const hash = hashMessage(message, options);
+    const hash = hashContent(message, options);
 
     setupManager({});
 
