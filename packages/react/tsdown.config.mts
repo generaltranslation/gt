@@ -31,6 +31,7 @@ const entries = [
   'src/index.server.ts',
   'src/index.types.ts',
   'src/macros.ts',
+  'src/paths.ts',
 ];
 
 // src/index.types.ts only backs the exports map's "types" conditions; its
