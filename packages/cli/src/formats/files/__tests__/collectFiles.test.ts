@@ -94,10 +94,10 @@ describe('collectFiles GTJSON', () => {
       },
     ]);
 
-    const { files } = await collectFiles(options, settings, Libraries.GT_REACT);
+    const gtFile = await getGtFile(makeSettings({ publish: true }));
 
-    expect(JSON.parse(files[0].content)).toEqual({ 'tree-hash': tree });
-    expect(files[0].formatMetadata).toEqual({
+    expect(JSON.parse(gtFile!.content)).toEqual({ 'tree-hash': tree });
+    expect(gtFile!.formatMetadata).toEqual({
       'tree-hash': {
         hash: 'tree-hash',
         context: 'button',
