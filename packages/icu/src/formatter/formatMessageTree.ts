@@ -16,7 +16,7 @@ import type {
   MessageNode,
   MessageTree,
 } from '../tree/messageTree';
-import type { ParsedNode, ParsedTree } from './formatMessage';
+import type { ParsedNode, ParsedTree } from './formatIcu';
 import { messageTreeNodes } from '../tree/walk';
 import {
   DATE_TIME_STYLE_NAMES,
@@ -130,7 +130,7 @@ type FormatContext<R> = FormatMessageTreeOptions & {
  *     timeZone,
  *   }); // '€5.00'
  *
- * Locales are validated the same way as `formatMessage` from
+ * Locales are validated the same way as `formatIcu` from
  * `@generaltranslation/icu/parser`.
  */
 export function formatMessageTree(

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatMessage, parse } from '@generaltranslation/icu/parser';
+import { formatIcu, parse } from '@generaltranslation/icu/parser';
 import { condenseVars } from '../condenseVars';
 
 // Pins representative serialized output used transiently by condenseVars
@@ -223,7 +223,7 @@ describe('condenseVars printer regression', () => {
     );
 
     expect(
-      formatMessage(
+      formatIcu(
         condensed,
         'en',
         { _gt_1: 'Ada', count: 7 },
@@ -238,7 +238,7 @@ describe('condenseVars printer regression', () => {
     );
 
     expect(
-      formatMessage(condensed, 'en', { _gt_1: 'Ada' }, { timeZone: 'UTC' })
+      formatIcu(condensed, 'en', { _gt_1: 'Ada' }, { timeZone: 'UTC' })
     ).toBe('Ada }<br/> done');
   });
 
@@ -249,7 +249,7 @@ describe('condenseVars printer regression', () => {
     const condensed = condenseVars(message);
 
     expect(
-      formatMessage(condensed, 'en', { _gt_1: 'Ada' }, { timeZone: 'UTC' })
+      formatIcu(condensed, 'en', { _gt_1: 'Ada' }, { timeZone: 'UTC' })
     ).toBe(expected);
   });
 });

@@ -1,6 +1,6 @@
 import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
-import { formatMessage } from '@generaltranslation/icu/parser';
+import { formatIcu } from '@generaltranslation/icu/parser';
 
 // Every argument is passed in: this package applies no defaults of its own
 // to them. `generaltranslation` and the configs resolve what a caller leaves
@@ -35,7 +35,7 @@ export function _formatMessageICU(
   variables: FormatVariables,
   timeZone: string
 ): string {
-  return formatMessage(message, locales, variables, { timeZone });
+  return formatIcu(message, locales, variables, { timeZone });
 }
 
 /**

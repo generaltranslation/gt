@@ -82,7 +82,7 @@ export function readMessage(
 /**
  * The nodes of a syntax tree, in the parsed order. `readFormat` makes each
  * number, date and time node, so the same walk builds a message tree and the
- * tree `formatMessage` formats.
+ * tree `formatIcu` formats.
  */
 export function toNodes<Format>(
   ast: MessageFormatElement[],

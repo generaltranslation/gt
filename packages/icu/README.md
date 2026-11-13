@@ -13,7 +13,7 @@ no locale-data polyfills are shipped.
   `messageTreeToIcu()` prints its tree alone, and `checkTranslation()` checks
   a translation against its source.
 - `@generaltranslation/icu/parser`: the ICU string parser. `parse()`,
-  `formatMessage()`, `printAST()` and the syntax-tree types.
+  `formatIcu()`, `printAST()` and the syntax-tree types.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
   not a public API, and it may change in any release.
 

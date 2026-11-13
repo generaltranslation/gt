@@ -26,7 +26,7 @@ import {
   type MessageFormatElement,
   type ParserOptions,
 } from '../parser';
-import { formatMessage } from './format';
+import { formatIcu } from './format';
 
 const PLURAL_LOCALES = [
   'en',
@@ -338,7 +338,7 @@ describe('live FormatJS runtime compatibility', () => {
     'matches plural formatting for $locale, $value, $message',
     ({ locale, message, value }) => {
       const values = { value };
-      expect(formatMessage(message, locale, values)).toEqual(
+      expect(formatIcu(message, locale, values)).toEqual(
         formatWithFormatJs(message, locale, values)
       );
     }
@@ -348,7 +348,7 @@ describe('live FormatJS runtime compatibility', () => {
     'matches number formatting for $locale, $value, $message',
     ({ locale, message, value }) => {
       const values = { value };
-      expect(formatMessage(message, locale, values)).toEqual(
+      expect(formatIcu(message, locale, values)).toEqual(
         formatWithFormatJs(message, locale, values)
       );
     }
@@ -358,7 +358,7 @@ describe('live FormatJS runtime compatibility', () => {
     'matches date/time formatting for $locale and $message',
     ({ locale, message, value }) => {
       const values = { value };
-      expect(formatMessage(message, locale, values)).toEqual(
+      expect(formatIcu(message, locale, values)).toEqual(
         formatWithFormatJs(message, locale, values)
       );
     }
@@ -369,7 +369,7 @@ describe('live FormatJS runtime compatibility', () => {
     ({ locale, skeleton }) => {
       const message = `{value, time, ::${skeleton}}`;
       const values = { value: new Date(2020, 4, 6, 14, 3, 2) };
-      expect(formatMessage(message, locale, values)).toEqual(
+      expect(formatIcu(message, locale, values)).toEqual(
         formatWithFormatJs(message, locale, values)
       );
     }
@@ -380,7 +380,7 @@ describe('live FormatJS runtime compatibility', () => {
     ({ locale, skeleton }) => {
       const message = `{value, time, ::${skeleton}}`;
       const values = { value: new Date(2020, 4, 6, 19, 3, 2) };
-      expect(formatMessage(message, locale, values)).toEqual(
+      expect(formatIcu(message, locale, values)).toEqual(
         formatWithFormatJs(message, locale, values)
       );
 
@@ -401,17 +401,17 @@ describe('live FormatJS runtime compatibility', () => {
     const sparseLocales: string[] = [];
     sparseLocales[1] = 'fr-FR';
 
-    expect(formatMessage(message, sparseLocales, values)).toEqual(
+    expect(formatIcu(message, sparseLocales, values)).toEqual(
       formatWithFormatJs(message, sparseLocales, values)
     );
-    expect(() => formatMessage(message, [], values)).toThrow();
+    expect(() => formatIcu(message, [], values)).toThrow();
     expect(() => formatWithFormatJs(message, [], values)).toThrow();
   });
 
   it.each(SIMPLE_RUNTIME_CASES)(
     'matches argument/select behavior for $message',
     ({ locale, message, values }) => {
-      expect(formatMessage(message, locale, values)).toEqual(
+      expect(formatIcu(message, locale, values)).toEqual(
         formatWithFormatJs(message, locale, values)
       );
     }
