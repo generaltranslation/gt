@@ -1,4 +1,4 @@
-import type { ESTree } from '../../analysis/ast.js';
+import { forEachNode, type ESTree } from '../../analysis/ast.js';
 import type { SourceRange } from '../../analysis/types.js';
 import { applyEdits, type Edit } from '../edits.js';
 import type { ParseLang } from '../language.js';
@@ -240,13 +240,4 @@ function isCallTo(
     node.callee.type === 'Identifier' &&
     node.callee.name === name
   );
-}
-
-function forEachNode(value: unknown, visit: (node: ESTree.Node) => void): void {
-  if (typeof value !== 'object' || value === null) return;
-
-  if (typeof (value as { type?: unknown }).type === 'string')
-    visit(value as ESTree.Node);
-
-  for (const child of Object.values(value)) forEachNode(child, visit);
 }
