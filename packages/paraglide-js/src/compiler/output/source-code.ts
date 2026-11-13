@@ -1,5 +1,5 @@
 import type { FileUsages, ParaglideUsage } from '../analysis/types.js';
-import { patternMatcher } from '../paraglide/catalog.js';
+import { matchingIds } from '../paraglide/catalog.js';
 import { compareText } from '../utils/sort.js';
 
 /**
@@ -109,14 +109,14 @@ function projectUsages(
 function namedMessages(
   usage: ParaglideUsage,
   ids: ReadonlySet<string>
-): string[] {
+): readonly string[] {
   if (!usage.dynamic) return ids.has(usage.name) ? [usage.name] : [];
 
   // `m[key]` says nothing about any one message.
   const isAnyMessage = usage.name.replaceAll('*', '') === '';
   if (isAnyMessage) return [];
 
-  return [...ids].filter(patternMatcher(usage.name));
+  return matchingIds(usage.name, ids);
 }
 
 function isSameSnippet(a: SourceCode, b: SourceCode): boolean {
