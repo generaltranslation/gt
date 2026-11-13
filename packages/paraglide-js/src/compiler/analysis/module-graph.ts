@@ -10,9 +10,8 @@ import {
   loadedSpecifiers,
 } from './module-syntax.js';
 import { Scope, type Binding, type ModuleHost } from './scope.js';
-import { prependVia, symbolFromSpec } from './tracked-symbols.js';
-import type { ElementRange, TrackedSymbol } from './types.js';
-import type { SourceElement } from '../languages/elements.js';
+import { symbolFromSpec } from './tracked-symbols.js';
+import type { TrackedSymbol } from './types.js';
 import type {
   ComponentFields,
   GeneratedSource,
@@ -29,14 +28,8 @@ import {
 export type ParsedModule = {
   code: string;
   program: ESTree.Program;
-  /** The element of each template expression. */
-  elements?: readonly ElementRange[];
-  /** e.g. "Header" for `Header.vue`. */
-  component?: string;
   /** Written by a language's tooling: nodes that are not in the file are at -1. */
   generated?: boolean;
-  /** The file's elements, from the framework's parser. */
-  sourceElements?: readonly SourceElement[];
   /** Objects the generated code reads the component's names through, e.g. `__VLS_ctx`. */
   scopeObjects?: readonly string[];
   componentFields?: readonly ComponentFields[];
@@ -108,7 +101,7 @@ export class ModuleGraph {
     Promise<ModuleRecord | undefined>
   >();
   private readonly records = new Map<string, ModuleRecord>();
-  /** Changes whenever a module is added or removed. */
+  /** Changes whenever a module is added or the globals change. */
   private generation = 0;
 
   private globals = new Map<string, Binding>();
@@ -193,17 +186,6 @@ export class ModuleGraph {
     }
   }
 
-  clear(): void {
-    this.generation++;
-    this.loading.clear();
-    this.records.clear();
-    this.targets.clear();
-    this.outdirDetections.clear();
-
-    this.knownOutdirs = [];
-    for (const outdir of this.options.outdirs ?? []) this.addOutdir(outdir);
-  }
-
   getRecord(file: string): ModuleRecord | undefined {
     return this.records.get(file);
   }
@@ -239,7 +221,7 @@ export class ModuleGraph {
 
     if (match) {
       const spec = match.target.exportSymbol(name, match.file);
-      return spec && symbolFromSpec(spec, match.target.name, [file]);
+      return spec && symbolFromSpec(spec, match.target.name, file);
     }
 
     const record = this.records.get(file);
@@ -248,8 +230,7 @@ export class ModuleGraph {
 
     this.exportsBeingResolved.add(key);
     try {
-      const symbol = this.localExport(record, name);
-      return symbol && prependVia(file, symbol);
+      return this.localExport(record, name);
     } finally {
       this.exportsBeingResolved.delete(key);
     }
@@ -518,10 +499,7 @@ export class ModuleGraph {
 
     if (!loading) {
       loading = this.readRecord(file).then((record) => {
-        // A load that `clear()` superseded is dropped.
-        const isCurrent = this.loading.get(file) === loading;
-
-        if (record && isCurrent) {
+        if (record) {
           this.records.set(file, record);
           this.generation++;
         }

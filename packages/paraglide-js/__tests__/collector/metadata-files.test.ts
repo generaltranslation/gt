@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
-import { createCollector } from '../../src/compiler/collector/create.js';
+
 import { OutdirProjects } from '../../src/compiler/collector/outdir-projects.js';
 import { MetadataFiles } from '../../src/compiler/collector/metadata-files.js';
 import type { CollectContextOptions } from '../../src/compiler/context.js';
-import { nodeResolver } from '../../src/compiler/resolver/node-resolver.js';
+import { readInlangProject } from '../../src/compiler/inlang/project.js';
+
 import {
   collect as collectProject,
   compileMessages,
@@ -49,13 +50,12 @@ const usages = (file: string, line: string) => ({
       target: 'message',
       name: 'greeting',
       kind: 'call' as const,
-      expression: 'm.greeting()',
       start: 0,
       end: 5,
       line: 1,
       column: 1,
       endLine: 1,
-      resolution: ['src/paraglide/messages.js'],
+      targetFile: '/app/src/paraglide/messages.js',
       inlangProject: 'project.inlang',
     },
   ],
@@ -65,8 +65,10 @@ const usages = (file: string, line: string) => ({
 async function metadataFiles(name: string) {
   const root = await writeProject(name, {});
   const files = new MetadataFiles(root, 0);
-  files.addProject(path.join(root, 'project.inlang'));
-  files.set('/a.ts', usages('a.ts', 'first'));
+  files.addProject(
+    (await readInlangProject(path.join(root, 'project.inlang')))!
+  );
+  files.add('/a.ts', usages('a.ts', 'first'));
 
   const written = () => fs.readdir(path.join(root, 'messages'));
 
@@ -75,39 +77,24 @@ async function metadataFiles(name: string) {
 
 const failure = (code: string) => Object.assign(new Error(code), { code });
 
-test('the latest analysis of each source file wins; writes are serialized', async () => {
-  const root = await writeProject('metadata-unit', {});
-  const files = new MetadataFiles(root, 0);
+test('writes the usages of every source file, and no temporary file', async () => {
+  const { root, files, written } = await metadataFiles('metadata-unit');
+  files.add('/b.ts', usages('b.ts', 'other'));
 
-  files.addProject(path.join(root, 'project.inlang'));
-  files.set('/a.ts', usages('a.ts', 'first'));
-  files.set('/b.ts', usages('b.ts', 'other'));
-  files.set('/a.ts', usages('a.ts', 'second'));
-  files.set('/b.ts', undefined);
-  // Concurrent writes are serialized, and never leave a temporary file.
-  await Promise.all([files.write(), files.write(), files.write()]);
-  expect(await readSnippets(root)).toEqual(['a.ts: second']);
-  expect((await fs.readdir(path.join(root, 'messages'))).sort()).toEqual([
-    'en.json',
-    'en.metadata.json',
-  ]);
+  expect(await files.write()).toEqual([]);
+  expect(await readSnippets(root)).toEqual(['a.ts: first', 'b.ts: other']);
+  expect((await written()).sort()).toEqual(['en.json', 'en.metadata.json']);
 });
 
-test('a write that fails leaves no temporary file, and the next queued write succeeds', async () => {
+test('a write that fails leaves no temporary file', async () => {
   const { root, files, written } = await metadataFiles('metadata-failed-write');
   vi.spyOn(fs, 'rename').mockRejectedValueOnce(failure('EXDEV'));
 
-  const [failed, queued] = await Promise.allSettled([
-    files.write(),
-    files.write(),
-  ]);
+  await expect(files.write()).rejects.toMatchObject({ code: 'EXDEV' });
+  expect(await written()).toEqual(['en.json']);
 
-  expect(failed).toMatchObject({
-    status: 'rejected',
-    reason: { code: 'EXDEV' },
-  });
-  expect(queued).toEqual({ status: 'fulfilled', value: [] });
-  expect((await written()).sort()).toEqual(['en.json', 'en.metadata.json']);
+  // A later write is not affected.
+  expect(await files.write()).toEqual([]);
   expect(await readSnippets(root)).toEqual(['a.ts: first']);
 });
 
@@ -241,26 +228,6 @@ test('hand-written fields survive a rewrite; snippets of removed usages do not',
   });
 });
 
-test('a collector that scans again drops the usages of files that are gone', async () => {
-  const root = await writeProject('metadata-rescan', {
-    'src/a.ts': use('./paraglide/messages.js', 'greeting'),
-    'src/b.ts': use('./paraglide/messages.js', 'greeting'),
-  });
-  const collector = createCollector(
-    {},
-    { root, logger: { warn() {}, info() {} }, resolver: nodeResolver() }
-  );
-  const scan = async () => {
-    await collector.scanAll();
-    await collector.write();
-    return Object.keys((await readMetadata(root)).greeting?.sourceCode ?? {});
-  };
-
-  expect(await scan()).toEqual(['src/a.ts', 'src/b.ts']);
-  await fs.rm(path.join(root, 'src/b.ts'));
-  expect(await scan()).toEqual(['src/a.ts']);
-});
-
 test('a metadata file that is not a JSON object is left alone, with a warning', async () => {
   const root = await writeProject('metadata-invalid', {
     'src/a.ts': use('./paraglide/messages.js', 'greeting'),
@@ -331,8 +298,11 @@ test("an outdir's README names its project; configured projects replace it", asy
 
   // A README that names a project that is gone, e.g. a committed outdir.
   await fs.rm(shared, { recursive: true });
-  searching.clear();
-  expect(await searching.pair(outdir, catalog)).toMatchObject({
+  const afterRemoval = new OutdirProjects({
+    configured: undefined,
+    searchDirectories: [root],
+  });
+  expect(await afterRemoval.pair(outdir, catalog)).toMatchObject({
     directory: detected,
   });
 });

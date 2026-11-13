@@ -96,11 +96,9 @@ export function resolveBinding(binding: Binding, read?: Node): TrackedSymbol[] {
     const scope = aliasScope(binding);
     if (!scope) return [];
 
-    const symbols = evaluateAll(binding.init, scope).flatMap((symbol) =>
+    return evaluateAll(binding.init, scope).flatMap((symbol) =>
       toList(followPath(symbol, binding.path))
     );
-
-    return binding.map ? symbols.map(binding.map) : symbols;
   });
 }
 
@@ -361,7 +359,7 @@ function distinct(symbols: readonly TrackedSymbol[]): TrackedSymbol[] {
 
 /** The target and its file that a value comes from, e.g. an outdir's `messages.js`. */
 function originOf(value: TrackedValue): string {
-  return `${value.target}\0${value.via.at(-1) ?? ''}`;
+  return `${value.target}\0${value.file}`;
 }
 
 function anyValuePerOrigin(values: readonly TrackedValue[]): TrackedValue[] {

@@ -1,6 +1,6 @@
 import type * as MdxLanguageService from '@mdx-js/language-service';
 import type * as TypeScript from 'typescript';
-import { jsxElements } from './jsx-elements.js';
+
 import {
   typescriptWithoutApiError,
   type LanguageContext,
@@ -54,9 +54,8 @@ export const mdxLanguage: SourceLanguage = {
 
     const code = jsx.snapshot.getText(0, jsx.snapshot.getLength());
     const mappings = mappingsFromVolar(jsx.mappings);
-    const elements = jsxElements(file, code, 'jsx', mappings, source);
 
-    return { code, lang: 'jsx', mappings, elements };
+    return { code, lang: 'jsx', mappings };
   },
 };
 

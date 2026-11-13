@@ -5,22 +5,15 @@ import {
   NO_PACKAGES,
   parseSource,
 } from '../../src/compiler/languages/language.js';
-import {
-  ADAPTER_FILES,
-  ADAPTER_TARGETS,
-  analyzeProject,
-  elementLabel,
-  summarize,
-} from '../helpers/project.js';
+import { analyzeProject, summarize } from '../helpers/project.js';
 
 async function analyze(file: string, lines: string[]) {
   const usages = await analyzeProject(
-    { [file]: lines.join('\n'), ...ADAPTER_FILES },
-    { entry: file, targets: ADAPTER_TARGETS, languages: [emberLanguage] }
+    { [file]: lines.join('\n') },
+    { entry: file, languages: [emberLanguage] }
   );
   return usages.map(
-    (usage) =>
-      `${summarize([usage])[0]} ${usage.line}:${usage.column}${elementLabel(usage)}`
+    (usage) => `${summarize([usage])[0]} ${usage.line}:${usage.column}`
   );
 }
 
@@ -54,13 +47,11 @@ test('mustaches, helpers, arguments and modifiers in a class component (.gts)', 
     ])
   ).toEqual([
     'message:label:call 9:11',
-    'message:title:call 12:17 <h1 title>',
-    'message:heading:call 12:29 <h1>',
-    'message:css:call 13:19 <p class>',
-    'message:items:call 13:30 <p>',
-    'runtime:setLocale:reference 14:30 <button>',
-    'adapter:ParaglideMessage:component 15:5',
-    'message:tos:reference 15:34 <ParaglideMessage @message>',
+    'message:title:call 12:17',
+    'message:heading:call 12:29',
+    'message:css:call 13:19',
+    'message:items:call 13:30',
+    'message:tos:reference 15:34',
     'message:enabled:call 17:12',
     'message:yes:call 17:26',
     'message:other:call 17:53',
@@ -84,9 +75,9 @@ test('template-only components and block params (.gjs)', async () => {
       `</template>`,
     ])
   ).toEqual([
-    'message:row:call 4:29 <li>',
+    'message:row:call 4:29',
     'message:short:call 9:11',
-    'message:after:call 11:8 <p>',
+    'message:after:call 11:8',
   ]);
 });
 
@@ -105,8 +96,8 @@ test("class members in the template: `this.label` is the class's field or getter
   ).toEqual([
     'message:label:reference 7:11',
     'message:heading:reference 8:26',
-    'message:label:call 9:24 <p title>',
-    'message:heading:call 9:39 <p>',
+    'message:label:call 9:24',
+    'message:heading:call 9:39',
   ]);
 });
 

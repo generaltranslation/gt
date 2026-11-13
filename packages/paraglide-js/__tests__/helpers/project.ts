@@ -17,7 +17,6 @@ import {
 } from '../../src/compiler/languages/language.js';
 import {
   defaultTargets,
-  packageTarget,
   type ParaglideTarget,
 } from '../../src/compiler/paraglide/targets.js';
 import { projectPackages } from '../../src/compiler/project/packages.js';
@@ -30,15 +29,6 @@ export const REPO_PACKAGES = projectPackages(
 );
 export const OUTDIR = '/app/src/paraglide';
 export const ENTRY = '/app/src/App.tsx';
-
-/** A package of Paraglide components, e.g. `<ParaglideMessage />`, and its target. */
-export const ADAPTER_FILES = {
-  '/app/node_modules/paraglide-adapter/index.js': 'export {}',
-};
-export const ADAPTER_TARGETS = [
-  ...defaultTargets,
-  packageTarget('adapter', 'paraglide-adapter'),
-];
 
 /** Targets match by path, so the contents do not matter. */
 const generated = Object.fromEntries(
@@ -97,7 +87,7 @@ export async function analyzeProject(
   const sources = options.loadAll ? Object.keys(files) : [entry];
   await graph.loadPaths(sources);
 
-  return analyzeModule({ graph, file: entry, root: ROOT });
+  return analyzeModule(graph, entry);
 }
 
 /** Aliases, relative and absolute paths, else a package; with the extensions a bundler tries. */
@@ -164,28 +154,14 @@ async function readInMemory(
   return parsed.module;
 }
 
-/** e.g. `message:tos:method.parts` */
+/** e.g. `message:tos:method` */
 export function summarize(usages: ParaglideUsage[]): string[] {
-  return usages.map(
-    (usage) =>
-      `${usage.target}:${usage.name}:${usage.kind}${usage.method ? `.${usage.method}` : ''}`
-  );
+  return usages.map((usage) => `${usage.target}:${usage.name}:${usage.kind}`);
 }
 
-/** e.g. ` <p title>`; empty for a usage outside an element. */
-export function elementLabel({ element }: ParaglideUsage): string {
-  if (!element) return '';
-
-  const attribute = element.attribute ? ` ${element.attribute}` : '';
-
-  return ` <${element.element}${attribute}>`;
-}
-
-/** e.g. `message:greeting:call 3 <p title>` */
+/** e.g. `message:greeting:call 3` */
 export function describeUsages(usages: ParaglideUsage[]): string[] {
-  return usages.map(
-    (usage) => `${summarize([usage])[0]} ${usage.line}${elementLabel(usage)}`
-  );
+  return usages.map((usage) => `${summarize([usage])[0]} ${usage.line}`);
 }
 
 export async function analyzeEntry(

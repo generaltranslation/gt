@@ -33,19 +33,6 @@ export function isScript(file: string): boolean {
   return SCRIPT.test(file) && !DECLARATION.test(file);
 }
 
-/**
- * `file` relative to `root`; a dependency from its package on, e.g.
- * `node_modules/@inlang/paraglide-js-react/dist/index.js`, without pnpm's store path.
- */
-export function displayPath(root: string, file: string): string {
-  const posix = toPosix(file);
-  const index = posix.lastIndexOf('/node_modules/');
-
-  return index === -1
-    ? toPosix(path.relative(root, file))
-    : posix.slice(index + 1);
-}
-
 export function isDependency(file: string): boolean {
   return toPosix(file).includes('/node_modules/');
 }

@@ -22,8 +22,6 @@ import {
   valueImports,
 } from './module-syntax.js';
 import type { Scope } from './scope.js';
-import { prependVia } from './tracked-symbols.js';
-import type { TrackedSymbol } from './types.js';
 
 /** An auto-imported name: what it stands for, and the node its call sites are indexed under. */
 export type GlobalExport = {
@@ -268,10 +266,7 @@ export class ImporterIndex {
       );
     }
 
-    const viaImporter = (symbol: TrackedSymbol) =>
-      prependVia(importer.file, symbol);
-
-    return sites.map((site) => ({ ...site, map: viaImporter }));
+    return sites.map((site) => ({ ...site, imported: true }));
   }
 
   private sitesOfImport(
