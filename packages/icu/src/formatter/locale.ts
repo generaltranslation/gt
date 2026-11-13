@@ -24,12 +24,14 @@ export function resolveLocale(
  * cached, so two different lists never share a key.
  */
 function cacheKey(locales: string | string[]): string | undefined {
-  const list = typeof locales === 'string' ? [locales] : locales;
-  for (let index = 0; index < list.length; index++) {
-    const locale = list[index];
+  if (typeof locales === 'string') {
+    return locales.includes('\0') ? undefined : locales;
+  }
+  for (let index = 0; index < locales.length; index++) {
+    const locale = locales[index];
     if (typeof locale !== 'string' || locale.includes('\0')) return undefined;
   }
-  return list.join('\0');
+  return locales.join('\0');
 }
 
 function resolveLocaleList(locales: string | string[]): Intl.Locale {
