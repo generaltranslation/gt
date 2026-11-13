@@ -178,17 +178,15 @@ function indexedRecords(budget: number, failing = new Set<string>()) {
 }
 
 test.each([
-  [0, [], [a, b, c]],
-  [2, [c, a], [b]],
-  [3, [b, c, a], []],
+  [0, [a, b, c, a], [a], [b, c]],
+  [2, [a, b, c, a], [c, a], [b, c]],
+  [3, [a, b, c], [b, c, a], []],
 ])(
   'a budget of %i modules keeps the ones read last loaded',
-  (modules, kept, loadedAgain) => {
+  (modules, loadedFirst, kept, loadedAgain) => {
     const { records, loads } = indexedRecords(modules * code.length);
     for (const file of [a, b, c, a]) records.get(file);
-    expect(loads).toEqual([a, b, c]);
-
-    records.trim();
+    expect(loads).toEqual(loadedFirst);
     expect([...records.loaded()].map(({ file }) => file)).toEqual(kept);
 
     loads.length = 0;

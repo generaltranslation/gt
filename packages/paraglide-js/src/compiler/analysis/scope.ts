@@ -13,8 +13,8 @@ import {
 import {
   argumentOf,
   omitsArgument,
-  type CallSite,
   type Candidate,
+  type SiteHandle,
 } from './call-sites.js';
 import {
   classNamespace,
@@ -34,12 +34,14 @@ import type { PropsReads } from '../languages/language.js';
 
 /** What a scope needs from the module graph, for the module it belongs to. */
 export type ModuleHost = {
+  /** The same in every copy of the module: see `Binding.key`. */
+  id?: string;
   namespace(specifier: string): TrackedSymbol | undefined;
   exportOf(specifier: string, exportName: string): TrackedSymbol | undefined;
   /** In its module and in the modules that import it. */
-  callSitesOf?(fn: FunctionNode): CallSite[];
+  callSitesOf?(fn: FunctionNode): SiteHandle[];
   /** Where the component reads its props, and what each place that renders it passes. */
-  props?: { reads: PropsReads; candidates(): Candidate[] };
+  props?: { reads: PropsReads; candidates(): Candidate[]; key?: string };
 };
 
 /** What a name may hold. */
@@ -64,6 +66,11 @@ export type Binding = (
 ) & {
   /** The node its call sites are indexed under: a function or an import specifier. */
   declaration?: Node;
+  /**
+   * The same in every copy of its module, which an analysis parses again once
+   * it unloads it: a cycle of calls through a new copy still ends.
+   */
+  key?: string;
 };
 
 /**
@@ -241,11 +248,21 @@ export class Scope {
     let binding = this.bindings.get(variable);
 
     if (!binding) {
-      binding = this.createBinding(variable);
+      binding = this.withKey(this.createBinding(variable), variable);
       this.bindings.set(variable, binding);
     }
 
     return binding;
+  }
+
+  /** Keyed by where the name is declared. */
+  private withKey(binding: Binding, variable: Variable): Binding {
+    const { id } = this.host;
+    const declared = variable.definitions[0]?.name;
+    const isGuarded = binding.type === 'values' || binding.type === 'alias';
+    if (id === undefined || !declared || !isGuarded) return binding;
+
+    return { ...binding, key: `${id}\0${parsedRange(declared)[0]}` };
   }
 
   private createBinding(variable: Variable): Binding {

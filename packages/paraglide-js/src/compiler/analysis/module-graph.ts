@@ -81,6 +81,8 @@ export type IndexedGraphOptions = Pick<
 
 export type ModuleRecord = Omit<ParsedModule, 'scripts'> & {
   file: string;
+  /** 0 for the file's module, then 1 for its first script. */
+  part: number;
   /** The file of each specifier the module loads. */
   resolved: Map<string, string | undefined>;
   scope?: Scope;
@@ -157,17 +159,6 @@ export class ModuleGraph {
       for (const module of modulesOf(record)) module.scope = undefined;
     }
     this.generation++;
-  }
-
-  /**
-   * Of an indexed graph, unloads the modules read least recently, beyond its
-   * budget. Nothing read since the last call may be in use when it is called.
-   */
-  trim(): void {
-    if (!(this.records instanceof IndexedRecords)) return;
-
-    // What was found through the unloaded modules holds their nodes.
-    if (this.records.trim()) this.importers.clear();
   }
 
   get outdirs(): readonly string[] {
@@ -512,8 +503,11 @@ export class ModuleGraph {
 
   private hostOf(record: ModuleRecord): ModuleHost {
     const fileOf = (specifier: string) => record.resolved.get(specifier);
+    const id = moduleId(record);
 
     return {
+      id,
+
       namespace: (specifier) => {
         const file = fileOf(specifier);
         return file ? this.namespaceOf(file) : undefined;
@@ -527,6 +521,7 @@ export class ModuleGraph {
       callSitesOf: (fn) => this.importers.callSitesOf(record, fn),
 
       props: record.props && {
+        key: `${id}\0props`,
         reads: record.props,
         candidates: () => this.importers.componentProps(record),
       },
@@ -544,6 +539,7 @@ export class ModuleGraph {
     const propBinding = (name: string): Binding => ({
       type: 'values',
       parameter: true,
+      key: `${moduleId(record)}\0props.${name}`,
       candidates: () => {
         const props = this.importers.componentProps(record);
         return props.map((candidate) => followCandidate(candidate, [name]));
@@ -631,8 +627,10 @@ export class ModuleGraph {
 
     const { scripts = [], ...module } = parsed;
     const [record, scriptRecords] = await Promise.all([
-      this.linkModule(file, module),
-      Promise.all(scripts.map((script) => this.linkModule(file, script))),
+      this.linkModule(file, module, 0),
+      Promise.all(
+        scripts.map((script, index) => this.linkModule(file, script, index + 1))
+      ),
     ]);
 
     return scriptRecords.length > 0
@@ -643,7 +641,8 @@ export class ModuleGraph {
   /** Resolves what a module of `file` loads. */
   private async linkModule(
     file: string,
-    module: Omit<ParsedModule, 'scripts'>
+    module: Omit<ParsedModule, 'scripts'>,
+    part: number
   ): Promise<ModuleRecord> {
     const loaded = loadedSpecifiers(module.program);
     for (const { specifier } of module.componentFields ?? []) {
@@ -659,11 +658,16 @@ export class ModuleGraph {
       specifiers.map((specifier, index) => [specifier, files[index]])
     );
 
-    return { file, ...module, resolved };
+    return { file, part, ...module, resolved };
   }
 }
 
 export { modulesOf };
+
+/** The same for every copy of a module: an indexed graph parses a module again once it unloads it. */
+function moduleId({ file, part }: ModuleRecord): string {
+  return `${file}\0${part}`;
+}
 
 function dependenciesOf(
   records: ReadonlyArray<ModuleRecord | undefined>

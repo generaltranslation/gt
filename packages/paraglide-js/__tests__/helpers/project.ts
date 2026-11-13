@@ -70,6 +70,8 @@ export type AnalyzeOptions = {
   context?: LanguageContext;
   /** Load every file first, as the collector does, not only those `entry` reaches. */
   loadAll?: boolean;
+  /** Called each time the indexed analysis parses a module, which it does again once it unloads one. */
+  onLoad?(file: string): void;
 };
 
 /** Analyzes `files[ENTRY]` in memory, with a resolver that mimics Vite's. */
@@ -104,6 +106,7 @@ export async function analyzeProject(
   const indexed = await analyzeIndexed(graphOptions, all, sources, entry, {
     languages,
     context,
+    onLoad: options.onLoad,
   });
   // The values a node holds come in the order their modules were loaded, which the index sets.
   expect(
@@ -146,7 +149,11 @@ async function analyzeIndexed(
   {
     languages,
     context,
-  }: { languages: readonly SourceLanguage[]; context: LanguageContext }
+    onLoad,
+  }: Pick<AnalyzeOptions, 'onLoad'> & {
+    languages: readonly SourceLanguage[];
+    context: LanguageContext;
+  }
 ): Promise<ParaglideUsage[]> {
   const generatedModules = new Map<string, GeneratedModule>();
   const outdirGraph = new ModuleGraph(graphOptions);
@@ -189,6 +196,7 @@ async function analyzeIndexed(
       summaries: indexer.modules,
       budget: 0,
       load: (file) => {
+        onLoad?.(file);
         const parsed = parseSourceSync(
           file,
           files.get(file)!,
@@ -204,7 +212,6 @@ async function analyzeIndexed(
     if (file === entry) continue;
 
     analyzeModule(graph, file);
-    graph.trim();
   }
 
   return analyzeModule(graph, entry);

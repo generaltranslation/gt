@@ -24,7 +24,8 @@ const MAX_DEPTH = 64;
 /** More distinct values than this, e.g. of a helper called with every message, become one `*`. */
 const MAX_VALUES = 16;
 
-const inProgress = new Set<object>();
+/** Bindings and props, by their key when they have one. */
+const inProgress = new Set<object | string>();
 let depth = 0;
 
 const membersBeingRead = new WeakMap<ESTree.Class, Set<string>>();
@@ -86,7 +87,7 @@ export function resolveBinding(binding: Binding, read?: Node): TrackedSymbol[] {
   if (binding.type === 'shadow') return [];
   if (binding.type === 'lazy') return toList(binding.get());
 
-  return guarded(binding, () => {
+  return guarded(binding.key ?? binding, () => {
     if (binding.type === 'values') {
       const candidates =
         read && binding.at ? binding.at(read) : binding.candidates();
@@ -303,7 +304,7 @@ function propsOf(scope: Scope): TrackedSymbol[] {
   const props = scope.host.props;
   if (!props) return [];
 
-  return guarded(props, () =>
+  return guarded(props.key ?? props, () =>
     distinct(props.candidates().flatMap(evaluateCandidate))
   );
 }
@@ -319,7 +320,10 @@ function evaluateCandidate(candidate: Candidate): TrackedSymbol[] {
 }
 
 /** Ends cycles (`let a = b; b = a`) and bounds chains through call sites and assignments. */
-function guarded(key: object, compute: () => TrackedSymbol[]): TrackedSymbol[] {
+function guarded(
+  key: object | string,
+  compute: () => TrackedSymbol[]
+): TrackedSymbol[] {
   if (inProgress.has(key) || depth >= MAX_DEPTH) return [];
 
   inProgress.add(key);
