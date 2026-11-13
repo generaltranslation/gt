@@ -120,9 +120,9 @@ is no category at all, like `lots`, is a problem.
 Use `checkTranslation()` for a message tree, and `checkIcuTranslation()` for
 ICU strings from any library, such as FormatJS or ICU4J. It applies the same
 rules to what the parser reads, including what a tree cannot hold: a date
-pattern like `{d, date, MM/dd/yyyy}` is the translator's to localize, so its
-style is not compared. A source that is not valid ICU throws; for a
-translation that is not, it returns the parser's message:
+pattern like `{d, date, MM/dd/yyyy}` is the translator's to localize, so the
+translation may use any pattern in its place. A source that is not valid ICU
+throws; for a translation that is not, it returns the parser's message:
 
 ```ts
 import { checkIcuTranslation } from '@generaltranslation/icu/convert';

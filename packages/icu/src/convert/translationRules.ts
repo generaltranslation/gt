@@ -191,8 +191,8 @@ function variableProblems(
 
 /**
  * The styles of variables both use; a variable problem is reported above.
- * A style name or a skeleton is kept as written, but where the source uses a
- * pattern, the variable's styles are the translator's.
+ * A style name or a skeleton is kept as written. A pattern is not compared:
+ * where the source uses one, the translation may use any pattern.
  */
 function styleProblems(
   source: MessageFacts,
@@ -202,11 +202,12 @@ function styleProblems(
   const problems: string[] = [];
   for (const [key, used] of translation.styles) {
     const allowed = source.styles.get(key);
-    if (!allowed || [...allowed.values()].some(({ isPattern }) => isPattern)) {
-      continue;
-    }
+    if (!allowed) continue;
+    const patternAllowed = [...allowed.values()].some(
+      ({ isPattern }) => isPattern
+    );
     for (const [style, placeholder] of used) {
-      if (!allowed.has(style)) {
+      if (placeholder.isPattern ? !patternAllowed : !allowed.has(style)) {
         problems.push(
           `"${placeholder.name}" uses ${printPlaceholder(placeholder)}, which the source does not`
         );
@@ -216,7 +217,7 @@ function styleProblems(
     const needed = required.styles.get(key);
     if (!needed) continue;
     for (const [style, placeholder] of needed) {
-      if (!used.has(style)) {
+      if (!placeholder.isPattern && !used.has(style)) {
         problems.push(
           `"${placeholder.name}" is missing ${printPlaceholder(placeholder)}`
         );

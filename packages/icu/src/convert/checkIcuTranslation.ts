@@ -1,5 +1,6 @@
 import { createTranslationMismatchError } from '../errors/convertErrors';
 import { parse } from '../parser/parse';
+import { dateTimeSkeletonFields } from '../parser/dateTimeSkeleton';
 import {
   DATE_TIME_STYLE_NAMES,
   NAMED_NUMBER_STYLES,
@@ -30,8 +31,8 @@ import {
  *
  * A style name or a skeleton is kept as written. A pattern, like
  * `{d, date, MM/dd/yyyy}`, is the translator's to localize, so where the
- * source uses one, that placeholder's styles are not compared. An app's own
- * style name reads as a pattern.
+ * source uses one, the translation may use any pattern. An app's own style
+ * name reads as a pattern.
  *
  * A source that is not valid ICU throws the parser's `SyntaxError`; a
  * translation that is not valid ICU is a problem with it, so the parser's
@@ -126,9 +127,9 @@ function readBranches(
 }
 
 /**
- * A style as written. A skeleton is spelled from its tokens or, for a date
- * or time, its letters, which are all ICU reads of one, so spacing is no
- * change. Any style text but ICU's style names is a pattern.
+ * A style as written. A skeleton is spelled from what the parser reads of
+ * it, its tokens or its date and time fields, so spacing is no change and
+ * quoted text is no field. Any style text but ICU's style names is a pattern.
  */
 function readStyle(
   name: string,
@@ -145,6 +146,6 @@ function readStyle(
       ? style.tokens
           .map(({ stem, options }) => [stem, ...options].join('/'))
           .join(' ')
-      : style.pattern.replace(/[^A-Za-z]/g, '');
+      : dateTimeSkeletonFields(style.pattern).join('');
   return { name, kind, style: `::${skeleton}`, isPattern: false };
 }

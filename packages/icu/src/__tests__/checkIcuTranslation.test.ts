@@ -288,12 +288,23 @@ const CASES: [
     undefined,
   ],
   [
-    'a pattern source with another style in the translation',
+    'a pattern replaced by a style name',
     'Due {d, date, MM/dd/yyyy}',
     'Fällig {d, date, long}',
     'de',
-    undefined,
+    mismatch('"d" uses {d, date, long}, which the source does not'),
     { throws: datePattern('MM/dd/yyyy') },
+  ],
+  [
+    'a pattern beside a skeleton, whose currency changes',
+    '{p, number, 0.00} of {p, number, ::currency/USD}',
+    '{p, number, 0,00} von {p, number, ::currency/EUR}',
+    'de',
+    mismatch(
+      '"p" uses {p, number, ::currency/EUR}, which the source does not',
+      '"p" is missing {p, number, ::currency/USD}'
+    ),
+    { throws: 'cannot be part of a message tree' },
   ],
   [
     'a pattern source with another kind in the translation',
@@ -309,7 +320,7 @@ const CASES: [
   [
     'an app style name in the source, which reads as a pattern',
     'Total {p, number, compact}',
-    'Gesamt {p, number, percent}',
+    'Gesamt {p, number, kompakt}',
     'de',
     undefined,
     {
@@ -373,6 +384,15 @@ describe('checkIcuTranslation', () => {
         '{p, number,   ::currency/USD    .00  } am {d, date,  ::yMMM d }'
       )
     ).toBeUndefined();
+  });
+
+  it('reads quoted text in a date skeleton as no field', () => {
+    expect(checkIcuTranslation('{d, date, ::yM}', "{d, date, ::y'M'}")).toBe(
+      mismatch(
+        '"d" uses {d, date, ::y}, which the source does not',
+        '"d" is missing {d, date, ::yM}'
+      )
+    );
   });
 
   it('reports a problem once when two uses of a variable have it', () => {
