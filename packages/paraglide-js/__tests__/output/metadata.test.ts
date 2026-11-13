@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import { renderMetadataFile } from '../../src/compiler/output/metadata.js';
 import {
+  SourceCodeCollector,
   sourceCodeByMessage,
   sourceSnippet,
   type SourceCodeByFile,
 } from '../../src/compiler/output/source-code.js';
+import { jsonChunks } from '../../src/compiler/utils/json.js';
 import type {
   FileUsages,
   ParaglideUsage,
@@ -246,4 +248,73 @@ describe('sourceSnippet', () => {
       after: 'b\nc\nd\ne',
     });
   });
+});
+
+test('the source code kept as JSON is written as the source code itself, at any depth', () => {
+  const keys = [key('save'), key('nested', ['group', 'nested'])];
+  const collector = new SourceCodeCollector({
+    ids: new Set(keys.map(({ id }) => id)),
+    inlangProject: PROJECT,
+    radius: 1,
+  });
+  collector.add(source('b.ts', [usage('save', 2), usage('nested', 3)]));
+  collector.add(source('a.ts', [usage('save', 1), usage('save', 1)]));
+
+  const expected = renderMetadataFile({
+    keys,
+    sourceCode: collector.byMessage(),
+    existing: { save: { context: 'A button' } },
+  });
+  const streamed = renderMetadataFile({
+    keys,
+    sourceCode: collector.streamedByMessage(),
+    existing: { save: { context: 'A button' } },
+  });
+  const written = [...jsonChunks(streamed)]
+    .map((chunk) => chunk.toString())
+    .join('');
+
+  expect(written).toBe(JSON.stringify(expected, null, 2));
+  expect(Object.keys(expected.save as object)).toEqual([
+    'context',
+    'sourceCode',
+  ]);
+});
+
+test('snippets in several blocks, and ones larger than a block, are kept as they were', () => {
+  // Blocks of 256 bytes: a file's two snippets each. The long line's
+  // snippets take a block each, and the one after them starts another.
+  const collector = new SourceCodeCollector({
+    ids: new Set(['save']),
+    inlangProject: PROJECT,
+    radius: 1,
+    blockSize: 256,
+  });
+  const sourceCode: SourceCodeByFile = {};
+  for (const name of ['a', 'b', 'c', 'd', 'long', 'z']) {
+    const [one, two, three] =
+      name === 'long'
+        ? ['one', 'x'.repeat(400), 'three']
+        : [`one ${name}`, `two ${name}`, `three ${name}`];
+    const file = `src/${name}.ts`;
+    collector.add({
+      file,
+      code: [one, two, three].join('\n'),
+      usages: [usage('save', 2), usage('save', 3)],
+    });
+    sourceCode[file] = [
+      { before: one, target: two, after: three },
+      { before: two, target: three, after: '' },
+    ];
+  }
+
+  expect(collector.byMessage()).toEqual(new Map([['save', sourceCode]]));
+  const streamed = renderMetadataFile({
+    keys: [key('save')],
+    sourceCode: collector.streamedByMessage(),
+    existing: {},
+  });
+  expect(
+    [...jsonChunks(streamed)].map((chunk) => chunk.toString()).join('')
+  ).toBe(JSON.stringify({ save: { sourceCode } }, null, 2));
 });

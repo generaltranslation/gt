@@ -4,18 +4,19 @@ import type { FileUsages } from '../analysis/types.js';
 import type { MessageFile } from '../inlang/message-file.js';
 import { messageIds, type InlangProject } from '../inlang/project.js';
 import { metadataPath, renderMetadataFile } from '../output/metadata.js';
+import { SourceCodeCollector } from '../output/source-code.js';
 import {
-  SourceCodeCollector,
-  type SourceCodeByFile,
-} from '../output/source-code.js';
-import { jsonChunks, parseJsonBytes } from '../utils/json.js';
+  jsonChunks,
+  parseJsonBytes,
+  type StreamedJson,
+} from '../utils/json.js';
 import { relativePath } from '../utils/paths.js';
 import { compareText } from '../utils/sort.js';
 
 /** A metadata file that was left as it is, and why. */
 export type SkippedFile = { file: string; reason: string };
 
-type SourceCodeByMessage = ReadonlyMap<string, SourceCodeByFile>;
+type SourceCodeByMessage = ReadonlyMap<string, StreamedJson>;
 
 /** What a metadata file that does not exist counts as, so that none is created for nothing. */
 const NO_METADATA = Buffer.from('{}\n');
@@ -77,7 +78,9 @@ export class MetadataFiles {
   private writeProject(
     project: InlangProject
   ): Promise<SkippedFile | undefined>[] {
-    const sourceCode = this.snippets.get(project.directory)!.byMessage();
+    const sourceCode = this.snippets
+      .get(project.directory)!
+      .streamedByMessage();
 
     return project.messageFiles.map((messageFile) =>
       writeMetadata(messageFile, sourceCode, this.maxParsedBytes)
@@ -176,12 +179,15 @@ async function readBytes(file: string): Promise<Buffer> {
 }
 
 /** `chunks`, then `end`, joined into pieces of about `WRITE_SIZE` bytes. */
-function* batched(chunks: Iterable<string>, end: string): Generator<Buffer> {
+function* batched(
+  chunks: Iterable<string | Buffer>,
+  end: string
+): Generator<Buffer> {
   let pending: Buffer[] = [];
   let size = 0;
 
   for (const chunk of chunks) {
-    const bytes = Buffer.from(chunk);
+    const bytes = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
     pending.push(bytes);
     size += bytes.length;
     if (size < WRITE_SIZE) continue;

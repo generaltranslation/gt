@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import { jsonChunks, parseJsonBytes } from '../../src/compiler/utils/json.js';
+import {
+  jsonChunks,
+  parseJsonBytes,
+  StreamedJson,
+} from '../../src/compiler/utils/json.js';
 
 const snippet = { before: 'a\n"b"', target: '\tm.greeting()', after: '' };
 
@@ -22,6 +26,19 @@ const metadata = {
 };
 
 describe('jsonChunks', () => {
+  test('writes a StreamedJson as the chunks it gives at its indentation', () => {
+    const value = {
+      a: new StreamedJson((indent) => [
+        `[\n${indent}  1`,
+        Buffer.from(`\n${indent}]`),
+      ]),
+    };
+
+    expect(
+      [...jsonChunks(value)].map((chunk) => chunk.toString()).join('')
+    ).toBe(JSON.stringify({ a: [1] }, null, 2));
+  });
+
   test.each([
     ['a metadata file', metadata],
     ['an empty object', {}],
@@ -29,7 +46,7 @@ describe('jsonChunks', () => {
     ['a string', 'text'],
     ['null', null],
   ])('is JSON.stringify(value, null, 2) in pieces: %s', (_, value) => {
-    expect([...jsonChunks(value)].join('')).toBe(
+    expect([...jsonChunks(value)].map(String).join('')).toBe(
       JSON.stringify(value, null, 2)
     );
   });
