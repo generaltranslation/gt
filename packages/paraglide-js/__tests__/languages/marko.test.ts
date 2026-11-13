@@ -1,11 +1,7 @@
 import { expect, test } from 'vitest';
-import { parseSync } from 'oxc-parser';
-import {
-  NO_PACKAGES,
-  parseSource,
-} from '../../src/compiler/languages/language.js';
+import { NO_PACKAGES } from '../../src/compiler/languages/language.js';
 import { markoLanguage } from '../../src/compiler/languages/marko.js';
-import { analyzeProject, summarize } from '../helpers/project.js';
+import { analyzeProject, skippedFile, summarize } from '../helpers/project.js';
 
 const file = '/app/src/components/cart.marko';
 
@@ -98,10 +94,9 @@ test('an expression that does not parse skips the file', async () => {
 });
 
 test("without Marko's tooling in the project, the file is skipped and the packages are named", async () => {
-  const result = await parseSource(
+  const result = await skippedFile(
     file,
     `<p>\${m.x()}</p>`,
-    (file, code, lang) => parseSync(file, code, { lang }) as never,
     [markoLanguage],
     NO_PACKAGES
   );

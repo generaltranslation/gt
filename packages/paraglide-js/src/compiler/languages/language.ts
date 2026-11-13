@@ -1,23 +1,8 @@
-import type { ESTree } from '../analysis/ast.js';
-import type { ParsedModule } from '../analysis/module-graph.js';
 import type { SourceRange } from '../analysis/types.js';
 import { isScript } from '../utils/paths.js';
-import { remapProgram, type Mapping } from './mapping.js';
+import type { Mapping } from './mapping.js';
 
 export type ParseLang = 'js' | 'jsx' | 'ts' | 'tsx';
-
-type ParseError = {
-  severity: string;
-  message: string;
-  labels?: ReadonlyArray<{ start: number }>;
-};
-
-/** e.g. oxc-parser's `parseSync` with `{ lang, range: true, astType: "ts" }`. */
-export type ParseFunction = (
-  file: string,
-  code: string,
-  lang: ParseLang
-) => { program: ESTree.Program; errors: readonly ParseError[] };
 
 /** A class whose fields a template reads undeclared, e.g. Angular's `{{ m.greeting() }}`. */
 export type ComponentFields = {
@@ -89,6 +74,12 @@ export type SourceLanguage = {
   extensions: readonly string[];
   /** Required to claim script extensions, e.g. Angular components in `.ts` files. */
   detect?(source: string, file: string): boolean;
+  /**
+   * Texts that every file `detect` accepts contains, e.g. "@Component". A file
+   * without all of them is not the language's, and `detect` is not asked: it
+   * spares reading every script in JavaScript.
+   */
+  mayContain?: readonly string[];
   /** The packages it needs in the project, named when one is missing. */
   requires?: readonly string[];
   /** The package that brings a required one: `@vue/language-core` comes with `vue-tsc`. */
@@ -135,21 +126,52 @@ export function isSourceFile(
   );
 }
 
-export async function parseSource(
+/** A file's language, and what its tooling wrote for the file. */
+export type GeneratedFile = {
+  language: SourceLanguage;
+  generated: GeneratedSource;
+};
+
+/**
+ * The file as its language's tooling writes it; undefined for a file that is
+ * no language's, e.g. a script.
+ */
+export async function generateSource(
   file: string,
   code: string,
-  parse: ParseFunction,
   languages: readonly SourceLanguage[],
   context: LanguageContext = NO_PACKAGES
-): Promise<{ module: ParsedModule } | ParseFailure> {
+): Promise<GeneratedFile | ParseFailure | undefined> {
   const language = languageOf(file, code, languages);
-  if (language) return parseWithLanguage(file, code, parse, language, context);
+  if (!language) return undefined;
 
-  if (isScript(file)) return parseScript(file, code, parse);
+  let generated: GeneratedSource | undefined;
 
-  const { program } = parse(file, '', 'js');
+  try {
+    generated = await language.generate(code, file, context);
+  } catch (error) {
+    return generationFailure(language, error);
+  }
 
-  return { module: { code, program } };
+  if (!generated) return missingToolsFailure(language);
+
+  return { language, generated };
+}
+
+/** The scripts a language may claim: `detect` decides, for the files that contain `mayContain`. */
+export function detectedExtensions(
+  languages: readonly SourceLanguage[]
+): Array<{ extension: string; hints: string[] }> {
+  return languages.flatMap((language) => {
+    if (!language.detect) return [];
+
+    return language.extensions
+      .filter((extension) => isScript(`file${extension}`))
+      .map((extension) => ({
+        extension,
+        hints: [...(language.mayContain ?? [])],
+      }));
+  });
 }
 
 function languageOf(
@@ -162,42 +184,6 @@ function languageOf(
 
     return language.detect ? language.detect(code, file) : !isScript(file);
   });
-}
-
-async function parseWithLanguage(
-  file: string,
-  code: string,
-  parse: ParseFunction,
-  language: SourceLanguage,
-  context: LanguageContext
-): Promise<{ module: ParsedModule } | ParseFailure> {
-  let generated: GeneratedSource | undefined;
-
-  try {
-    generated = await language.generate(code, file, context);
-  } catch (error) {
-    return generationFailure(language, error);
-  }
-
-  if (!generated) return missingToolsFailure(language);
-
-  const programs: ESTree.Program[] = [];
-
-  for (const script of [generated, ...(generated.scripts ?? [])]) {
-    const { program, errors } = parse(file, script.code, script.lang);
-
-    const error = firstError(errors);
-    if (error) {
-      return {
-        error: `${language.name} tooling produced unparsable code: ${error.message}`,
-      };
-    }
-
-    remapProgram(program, script.mappings, script.code.length);
-    programs.push(program);
-  }
-
-  return { module: generatedModule(code, programs, generated) };
 }
 
 function generationFailure(
@@ -228,44 +214,11 @@ function missingToolsFailure(language: SourceLanguage): ParseFailure {
   };
 }
 
-/** `programs` are the generated code's and then its scripts'. */
-function generatedModule(
-  code: string,
-  [program, ...scriptPrograms]: readonly ESTree.Program[],
-  generated: GeneratedSource
-): ParsedModule {
-  const inFile = { code, generated: true };
-
-  return {
-    ...inFile,
-    program: program!,
-    componentFields: generated.componentFields,
-    scopeObjects: generated.scopeObjects,
-    props: generated.props,
-    componentInstances: generated.componentInstances,
-    scripts: scriptPrograms.map((script) => ({ ...inFile, program: script })),
-  };
-}
-
-function parseScript(
-  file: string,
-  code: string,
-  parse: ParseFunction
-): { module: ParsedModule } | ParseFailure {
-  const { program, errors } = parse(file, code, scriptLang(file));
-
-  // The parser recovers from syntax errors: a program with errors may be incomplete.
-  const error = firstError(errors);
-  if (error) return { error: error.message };
-
-  return { module: { code, program } };
-}
-
-function scriptLang(file: string): ParseLang {
-  if (file.endsWith('.tsx')) return 'tsx';
-
-  // `.js` often contains JSX.
-  return /\.[cm]?ts$/.test(file) ? 'ts' : 'jsx';
+/** The extensions of the formats that are analyzed besides scripts, e.g. ".vue". */
+export function languageExtensions(
+  languages: readonly SourceLanguage[]
+): string[] {
+  return [...new Set(languages.flatMap((language) => language.extensions))];
 }
 
 function extensionOf(
@@ -276,10 +229,6 @@ function extensionOf(
   if (isDeclarationFile) return undefined;
 
   return language.extensions.find((extension) => file.endsWith(extension));
-}
-
-function firstError(errors: readonly ParseError[]): ParseError | undefined {
-  return errors.find((error) => error.severity === 'Error');
 }
 
 function firstLine(text: string): string {

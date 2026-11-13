@@ -1,5 +1,5 @@
 import type { OxcError, ParseResult } from 'oxc-parser';
-import type { ESTree } from '../analysis/ast.js';
+import type { ESTree } from '../utils/ast.js';
 import type { SourceRange } from '../analysis/types.js';
 import { parseCode } from '../utils/parse.js';
 import type { ParseLang } from './language.js';

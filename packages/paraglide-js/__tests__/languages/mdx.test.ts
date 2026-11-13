@@ -1,10 +1,8 @@
-import { parseSync } from 'oxc-parser';
 import { describe, expect, test } from 'vitest';
 import { defaultLanguages } from '../../src/compiler/languages/index.js';
 import {
+  generateSource,
   NO_PACKAGES,
-  parseSource,
-  type ParseFunction,
 } from '../../src/compiler/languages/language.js';
 import { mdxLanguage } from '../../src/compiler/languages/mdx.js';
 import { analyzeProject, describeUsages } from '../helpers/project.js';
@@ -126,12 +124,9 @@ describe('MDX, through @mdx-js/language-service', () => {
   });
 
   test('without the language service in the project, files are skipped and it is named', async () => {
-    const parse: ParseFunction = (name, code, lang) =>
-      parseSync(name, code, { lang }) as never;
-    const result = await parseSource(
+    const result = await generateSource(
       file,
       `# {m.x()}`,
-      parse,
       [mdxLanguage],
       NO_PACKAGES
     );

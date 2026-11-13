@@ -1,4 +1,4 @@
-import { forEachNode, type ESTree } from '../../analysis/ast.js';
+import { forEachNode, type ESTree } from '../../utils/ast.js';
 import type { SourceRange } from '../../analysis/types.js';
 import { applyEdits, type Edit } from '../edits.js';
 import type { ParseLang } from '../language.js';

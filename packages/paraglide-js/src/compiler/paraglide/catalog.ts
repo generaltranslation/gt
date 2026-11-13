@@ -1,6 +1,5 @@
 import path from 'node:path';
-import { moduleExportName, type ESTree } from '../analysis/ast.js';
-import { declaredNames } from '../analysis/module-syntax.js';
+import { declaredNames, moduleExportName, type ESTree } from '../utils/ast.js';
 import { parseCode } from '../utils/parse.js';
 import { readTextFile } from '../utils/read-file.js';
 import { escapeRegExp } from '../utils/regexp.js';

@@ -1,10 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {
-  moduleExportName,
-  staticString,
-  type ESTree,
-} from '../analysis/ast.js';
+import { moduleExportName, staticString, type ESTree } from '../utils/ast.js';
 import { parseCode } from '../utils/parse.js';
 
 /** A name the app uses without importing it. */

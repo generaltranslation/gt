@@ -38,7 +38,7 @@ type IncludePatterns = {
 };
 
 /** Never app code, wherever they are. */
-const IGNORED_DIRECTORIES = new Set([
+export const IGNORED_DIRECTORIES = new Set([
   'node_modules',
   '.git',
   '.hg',

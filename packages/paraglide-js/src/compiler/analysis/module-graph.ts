@@ -1,48 +1,45 @@
-import path from 'node:path';
-import { moduleExportName, type ESTree, type Node } from './ast.js';
-import { commonJsExports } from './commonjs.js';
-import { componentFieldBindings } from './component-fields.js';
-import { evaluate, followCandidate, memberOf } from './evaluate.js';
-import { ImporterIndex, type GlobalExport } from './importers.js';
+import { builtinModules } from 'node:module';
+import { applyAliases, type ImportAlias } from '../bundler-configs/alias.js';
 import {
-  declaredNames,
-  exportingStatements,
-  hasEsmExports,
-  loadedSpecifiers,
-  type ExportStatement,
-} from './module-syntax.js';
-import { Scope, type Binding, type ModuleHost } from './scope.js';
-import { symbolFromSpec } from './tracked-symbols.js';
-import type { TrackedSymbol } from './types.js';
-import type {
-  ComponentFields,
-  GeneratedSource,
+  detectedExtensions,
+  generateSource,
+  languageExtensions,
+  NO_PACKAGES,
+  type GeneratedFile,
+  type GeneratedScript,
+  type LanguageContext,
+  type ParseFailure,
+  type SourceLanguage,
 } from '../languages/language.js';
-import type { ParaglideTarget, TargetFile } from '../paraglide/targets.js';
 import {
-  isDependency,
-  isScript,
-  isWithin,
-  relativeWithin,
-  toPosix,
-} from '../utils/paths.js';
+  isMessagesTarget,
+  type ParaglideTarget,
+  type SymbolSpec,
+  type TargetFile,
+} from '../paraglide/targets.js';
+import { IGNORED_DIRECTORIES } from '../project/files.js';
+import {
+  nativeResolution,
+  type NativeResolution,
+} from '../resolver/node-resolver.js';
+import { isScript } from '../utils/paths.js';
+import { readTextFile } from '../utils/read-file.js';
+import {
+  native,
+  type NativeAnalysis,
+  type NativeGeneratedCode,
+  type NativeGeneratedSource,
+  type NativeGraph,
+  type NativeLoadResult,
+  type NativeTarget,
+} from './native.js';
+import type { ParaglideUsage } from './types.js';
 
-export type ParsedModule = {
-  code: string;
-  program: ESTree.Program;
-  /** Written by a language's tooling: nodes that are not in the file are at -1. */
-  generated?: boolean;
-  /** Objects the generated code reads the component's names through, e.g. `__VLS_ctx`. */
-  scopeObjects?: readonly string[];
-  componentFields?: readonly ComponentFields[];
-  props?: GeneratedSource['props'];
-  componentInstances?: GeneratedSource['componentInstances'];
-  /**
-   * Modules of their own in the same file, e.g. an Astro page's client
-   * scripts: none shares names with another, or with `program`.
-   */
-  scripts?: readonly ParsedModule[];
-};
+/** Resolves an import like the project's bundler would: a file, or nothing. */
+type Resolve = (
+  specifier: string,
+  importer: string
+) => Promise<string | undefined>;
 
 /** A name every module can use without importing it, e.g. from unplugin-auto-import. */
 export type GlobalBinding = {
@@ -54,117 +51,146 @@ export type GlobalBinding = {
 };
 
 export type ModuleGraphOptions = {
-  resolve(specifier: string, importer: string): Promise<string | undefined>;
-  readModule(file: string): Promise<ParsedModule | undefined>;
   targets: readonly ParaglideTarget[];
+  languages: readonly SourceLanguage[];
+  /** What the languages load their tooling from. Default: nothing is installed. */
+  packages?: LanguageContext;
+  /** The file an import resolves to; nothing if it is not a file, or not found. */
+  resolve: Resolve;
+  /**
+   * The resolver `resolve` asks. If `nodeResolver` or `ProjectResolver` made
+   * it, neither is called: the analysis resolves like it by itself, off the
+   * main thread, never resolves a builtin, and tells `onUnresolved` of each
+   * import that does not resolve.
+   */
+  resolver?: Resolve;
+  onUnresolved?(specifier: string, importer: string): void;
   /** Known Paraglide outdirs, absolute. */
   outdirs?: readonly string[];
   /** Verifies that a directory imports reach is a Paraglide outdir. */
   isOutdir?(directory: string): Promise<boolean>;
-  /** Whether to parse a non-target module to follow its exports. */
-  shouldFollow?(file: string): boolean;
-  globals?: readonly GlobalBinding[];
+  /** Reads every file. Default: the file system; scripts are read off the main thread. */
+  read?(file: string): Promise<string | undefined>;
+  /** Told of each file that is read but not analyzed. */
+  onSkipped?(file: string, failure: ParseFailure): void;
 };
 
-export type ModuleRecord = Omit<ParsedModule, 'scripts'> & {
-  file: string;
-  /** The file of each specifier the module loads. */
-  resolved: Map<string, string | undefined>;
-  scope?: Scope;
-  /** The file's other modules: each has the file's path, and its own imports and scope. */
-  scripts?: readonly ModuleRecord[];
+/** The usages of a file that has any. */
+export type AnalyzedFile = { code: string; usages: ParaglideUsage[] };
+
+/** A usage as the analysis reports it: its target's file is named by index. */
+type ReportedUsage = Omit<ParaglideUsage, 'targetFile'> & {
+  targetFile: number;
 };
 
-type TargetMatch = { target: ParaglideTarget; file: TargetFile };
-
-/** A looked-up export; `symbol` is undefined when the export is not tracked. */
-type FoundExport = { symbol: TrackedSymbol | undefined };
-
-const GENERATED_FILES = new Set([
-  'messages.js',
-  'runtime.js',
-  'server.js',
-  'registry.js',
-]);
-
-const followsScripts = (file: string) => isScript(file) && !isDependency(file);
-
-/** Modules linked by resolved imports. Loading is async; lookups are synchronous. */
+/**
+ * The project's modules, linked by resolved imports, and the usages in them.
+ * The analysis is native code (`native/`); this gives it what only JavaScript
+ * has: what a framework's tooling writes for a component file, what a custom
+ * target matches and exports, and what a custom resolver resolves.
+ */
 export class ModuleGraph {
   private readonly options: ModuleGraphOptions;
+  private readonly graph: NativeGraph;
+  private readonly customTargets: readonly ParaglideTarget[];
+  private readonly resolution: NativeResolution | undefined;
+  /** Set when the analysis resolves but JavaScript's aliases are regular expressions. */
+  private aliases: readonly ImportAlias[] | undefined;
+
+  /** The position of each file among those that were asked for, which orders the modules. */
+  private readonly orders = new Map<string, number>();
+  private aliasQueries: string[] = [];
+  private readonly targetFiles = new Map<string, TargetFile>();
+
+  private constructor(
+    options: ModuleGraphOptions,
+    graph: NativeGraph,
+    resolution: NativeResolution | undefined,
+    aliases: readonly ImportAlias[] | undefined
+  ) {
+    this.options = options;
+    this.graph = graph;
+    this.resolution = resolution;
+    this.aliases = aliases;
+    this.customTargets = options.targets.filter(
+      (target) => !isMessagesTarget(target)
+    );
+  }
+
+  static async create(options: ModuleGraphOptions): Promise<ModuleGraph> {
+    const resolution = options.resolver && nativeResolution(options.resolver);
+    const resolver = await resolution?.options();
+    const hasPatterns =
+      resolver?.aliases.some((alias) => alias.find instanceof RegExp) ?? false;
+
+    const graph = new native.NativeGraph({
+      targets: options.targets.map(nativeTarget),
+      outdirs: [...(options.outdirs ?? [])],
+      sourceExtensions: languageExtensions(options.languages),
+      // With `read`, JavaScript reads every file, and asks `detect` itself.
+      detect: options.read ? [] : detectedExtensions(options.languages),
+      resolver: resolver && {
+        aliases: hasPatterns
+          ? []
+          : resolver.aliases.map(({ find, replacement, exact }) => ({
+              find: String(find),
+              replacement,
+              exact,
+            })),
+        rootDirectory: resolver.rootDirectory,
+        conditions: [...resolver.conditions],
+        builtins: [...builtinModules],
+        aliasesInJs: hasPatterns,
+        ignoredDirectories: [...IGNORED_DIRECTORIES],
+      },
+    });
+
+    return new ModuleGraph(
+      options,
+      graph,
+      resolution,
+      hasPatterns ? resolver?.aliases : undefined
+    );
+  }
 
   /** Longest first, so that a nested outdir wins over its parent. */
-  private knownOutdirs: readonly string[] = [];
-  private readonly outdirDetections = new Map<string, Promise<void>>();
-  private readonly targets = new Map<string, TargetMatch | undefined>();
+  get outdirs(): readonly string[] {
+    return this.graph.outdirs();
+  }
 
-  private readonly loading = new Map<
-    string,
-    Promise<ModuleRecord | undefined>
-  >();
-  private readonly records = new Map<string, ModuleRecord>();
-  /** Changes whenever a module is added or the globals change. */
-  private generation = 0;
-
-  private globals = new Map<string, Binding>();
-  private globalExports: GlobalExport[] = [];
-
-  private readonly exportsBeingResolved = new Set<string>();
-  private readonly exportNames = new Map<
-    string,
-    ReadonlySet<string> | undefined
-  >();
-  private readonly importers = new ImporterIndex({
-    records: this.records,
-    all: () => [...this.records.values()].flatMap(modulesOf),
-    scopeOf: (record) => this.scopeOf(record),
-    generation: () => this.generation,
-    globalExports: () => this.globalExports,
-  });
-
-  constructor(options: ModuleGraphOptions) {
-    this.options = options;
-
-    for (const outdir of options.outdirs ?? []) this.addOutdir(outdir);
-    this.declareGlobals(options.globals ?? []);
+  /** The files that are not in an outdir. */
+  notGenerated(files: readonly string[]): string[] {
+    return this.graph.notGenerated([...files]);
   }
 
   setGlobals(globals: readonly GlobalBinding[]): void {
-    this.declareGlobals(globals);
-
-    for (const record of this.records.values()) {
-      for (const module of modulesOf(record)) module.scope = undefined;
-    }
-    this.generation++;
+    this.graph.setGlobals([...globals]);
   }
 
-  get outdirs(): readonly string[] {
-    return this.knownOutdirs;
-  }
-
-  isGenerated(file: string): boolean {
-    return this.knownOutdirs.some((outdir) => isWithin(outdir, file));
-  }
-
-  /** Verifies the outdir a resolved file may belong to. */
-  async detectOutdir(file: string): Promise<void> {
+  /** Verifies the outdirs that `files` may belong to. */
+  async detectOutdirs(files: readonly string[]): Promise<void> {
     const { isOutdir } = this.options;
     if (!isOutdir) return;
 
-    const detect = (directory: string) => {
-      let detection = this.outdirDetections.get(directory);
+    const candidates = this.graph.outdirCandidates([...files]);
+    if (candidates.length === 0) return;
 
-      if (!detection) {
-        detection = isOutdir(directory).then((verified) => {
-          if (verified) this.addOutdir(directory);
-        });
-        this.outdirDetections.set(directory, detection);
-      }
+    const verdicts = await Promise.all(candidates.map(isOutdir));
 
-      return detection;
-    };
+    candidates.forEach((directory, index) => {
+      if (!verdicts[index]) return;
 
-    await Promise.all(outdirCandidates(file).map(detect));
+      this.graph.addOutdir(directory);
+      // What a file is to a target depends on the outdir it is in.
+      this.targetFiles.clear();
+    });
+  }
+
+  /** The name of the target each file belongs to. */
+  targetsOf(files: readonly string[]): Array<string | undefined> {
+    this.matchCustomTargets(files);
+
+    return files.map((file) => this.graph.targetOf(file) ?? undefined);
   }
 
   /**
@@ -178,483 +204,265 @@ export class ModuleGraph {
     while (frontier.length > 0) {
       for (const file of frontier) visited.add(file);
 
-      const records = await Promise.all(
-        frontier.map((file) => this.loadRecord(file))
-      );
-      const dependencies = dependenciesOf(records);
+      await this.load(frontier);
+      const dependencies = this.graph.dependencies(frontier);
 
       // Outdirs must be known before deciding what is a target.
-      await Promise.all(dependencies.map((file) => this.detectOutdir(file)));
+      await this.detectOutdirs(dependencies);
+      this.matchCustomTargets(dependencies);
 
-      frontier = dependencies.filter(
-        (file) => !visited.has(file) && this.shouldFollow(file)
-      );
+      const unvisited = dependencies.filter((file) => !visited.has(file));
+      frontier = this.graph.followable(unvisited);
     }
   }
 
-  getRecord(file: string): ModuleRecord | undefined {
-    return this.records.get(file);
+  /** The usages in each of `files` that has any. They were loaded with `loadPaths`. */
+  async analyze(files: readonly string[]): Promise<Map<string, AnalyzedFile>> {
+    this.matchCustomTargets([]);
+
+    const analysis =
+      this.customTargets.length > 0
+        ? this.graph.analyzeWithCustomTargets([...files], (...query) =>
+            this.customSymbol(...query)
+          )
+        : await this.graph.analyze([...files]);
+
+    return this.analyzedFiles(analysis);
   }
 
-  /** The scope of the file's module; its scripts have their own: see `scopeOf`. */
-  moduleScope(file: string): Scope | undefined {
-    const record = this.records.get(file);
+  private analyzedFiles(analysis: NativeAnalysis): Map<string, AnalyzedFile> {
+    const { paths } = analysis;
+    const usagesByFile = JSON.parse(analysis.usages) as ReportedUsage[][];
+    const analyzed = new Map<string, AnalyzedFile>();
 
-    return record && this.scopeOf(record);
-  }
+    analysis.files.forEach((file, index) => {
+      const usages = usagesByFile[index]!;
 
-  scopeOf(record: ModuleRecord): Scope {
-    record.scope ??= this.createScope(record);
-
-    return record.scope;
-  }
-
-  targetOf(file: string): TargetMatch | undefined {
-    if (!this.targets.has(file)) this.targets.set(file, this.findTarget(file));
-
-    return this.targets.get(file);
-  }
-
-  namespaceOf(file: string): TrackedSymbol | undefined {
-    const isKnown = this.targetOf(file) !== undefined || this.records.has(file);
-    if (!isKnown) return undefined;
-
-    return { type: 'namespace', member: (name) => this.exportOf(file, name) };
-  }
-
-  exportOf(file: string, name: string): TrackedSymbol | undefined {
-    const match = this.targetOf(file);
-
-    if (match) {
-      const spec = match.target.exportSymbol(name, match.file);
-      return spec && symbolFromSpec(spec, match.target.name, file);
-    }
-
-    const record = this.records.get(file);
-    const key = `${file}\0${name}`;
-    if (!record || this.exportsBeingResolved.has(key)) return undefined;
-
-    this.exportsBeingResolved.add(key);
-    try {
-      return this.localExport(record, name);
-    } finally {
-      this.exportsBeingResolved.delete(key);
-    }
-  }
-
-  private findTarget(file: string): TargetMatch | undefined {
-    const outdir = this.knownOutdirs.find((directory) =>
-      isWithin(directory, file)
-    );
-    const targetFile: TargetFile = {
-      file: toPosix(file),
-      outdir: outdir && toPosix(outdir),
-      outdirPath: outdir && relativeWithin(outdir, file),
-    };
-
-    // The last one, so that `[...defaultTargets, custom]` overrides a built-in target.
-    const target = this.options.targets.findLast((candidate) =>
-      candidate.matches(targetFile)
-    );
-
-    return target && { target, file: targetFile };
-  }
-
-  private localExport(
-    record: ModuleRecord,
-    name: string
-  ): TrackedSymbol | undefined {
-    const { program } = record;
-    const exporting = exportingStatements(program).get(name) ?? [];
-
-    for (const statement of exporting) {
-      const scope = this.scopeOf(record);
-      const found = this.exportDeclaredBy(statement, name, record, scope);
-      if (found) return found.symbol;
-    }
-
-    if (!hasEsmExports(program))
-      return this.commonJsExport(record, this.scopeOf(record), name);
-
-    // `export *` does not re-export "default".
-    if (name === 'default') return undefined;
-
-    for (const file of starExportedFiles(record)) {
-      if (!this.mayExport(file, name)) continue;
-
-      const symbol = this.exportOf(file, name);
-      if (symbol) return symbol;
-    }
-
-    return undefined;
-  }
-
-  /** False only when `file` is known not to export `name`. */
-  private mayExport(file: string, name: string): boolean {
-    const names = this.exportNamesOf(file);
-
-    return names === undefined || names.has(name);
-  }
-
-  /** Undefined when unknown: a target or a CommonJS module is among its `export *`. */
-  private exportNamesOf(file: string): ReadonlySet<string> | undefined {
-    if (!this.exportNames.has(file)) {
-      this.exportNames.set(file, this.listExportNames(file));
-    }
-
-    return this.exportNames.get(file);
-  }
-
-  private listExportNames(file: string): ReadonlySet<string> | undefined {
-    const names = new Set<string>();
-    // Grows while it is iterated.
-    const modules = new Set([file]);
-
-    for (const module of modules) {
-      if (this.targetOf(module)) return undefined;
-
-      const record = this.records.get(module);
-      if (!record) continue;
-      if (!hasEsmExports(record.program)) return undefined;
-
-      for (const name of exportingStatements(record.program).keys()) {
-        names.add(name);
+      // The same objects, with their target's file named.
+      for (const usage of usages) {
+        (usage as unknown as ParaglideUsage).targetFile =
+          paths[usage.targetFile]!;
       }
 
-      for (const reexported of starExportedFiles(record)) {
-        modules.add(reexported);
-      }
-    }
-
-    return names;
-  }
-
-  /** The export `name`, if `statement` is the one that declares it. */
-  private exportDeclaredBy(
-    statement: ExportStatement,
-    name: string,
-    record: ModuleRecord,
-    scope: Scope
-  ): FoundExport | undefined {
-    switch (statement.type) {
-      case 'ExportDefaultDeclaration':
-        return name === 'default'
-          ? { symbol: evaluate(statement.declaration, scope) }
-          : undefined;
-      case 'ExportAllDeclaration':
-        return this.namespaceExport(statement, name, record);
-      case 'ExportNamedDeclaration':
-        return this.namedExport(statement, name, record, scope);
-    }
-  }
-
-  /** `export * as name from "./a"` */
-  private namespaceExport(
-    statement: ESTree.ExportAllDeclaration,
-    name: string,
-    record: ModuleRecord
-  ): FoundExport | undefined {
-    if (statement.exportKind === 'type' || !statement.exported)
-      return undefined;
-    if (moduleExportName(statement.exported) !== name) return undefined;
-
-    const file = record.resolved.get(statement.source.value);
-
-    return file ? { symbol: this.namespaceOf(file) } : undefined;
-  }
-
-  private namedExport(
-    statement: ESTree.ExportNamedDeclaration,
-    name: string,
-    record: ModuleRecord,
-    scope: Scope
-  ): FoundExport | undefined {
-    if (statement.exportKind === 'type') return undefined;
-
-    if (statement.declaration) {
-      const declaresName = declaredNames(statement.declaration).includes(name);
-      return declaresName ? { symbol: scope.lookup(name) } : undefined;
-    }
-
-    const specifier = statement.specifiers.find(
-      (candidate) =>
-        candidate.exportKind !== 'type' &&
-        moduleExportName(candidate.exported) === name
-    );
-    if (!specifier) return undefined;
-
-    const local = moduleExportName(specifier.local);
-    if (!statement.source) return { symbol: scope.lookup(local) };
-
-    const file = record.resolved.get(statement.source.value);
-
-    return { symbol: file ? this.exportOf(file, local) : undefined };
-  }
-
-  private commonJsExport(
-    record: ModuleRecord,
-    scope: Scope,
-    name: string
-  ): TrackedSymbol | undefined {
-    const exports = commonJsExports(record.program);
-    if (!exports) return undefined;
-
-    const named = exports.named.get(name);
-    if (named) return evaluate(named, scope);
-
-    if (exports.whole) {
-      const whole = evaluate(exports.whole, scope);
-      // `import x from "./cjs"` is the whole `module.exports`.
-      if (name === 'default') return whole;
-
-      const member = memberOf(whole, name);
-      if (member) return member;
-    }
-
-    if (name === 'default') return undefined;
-
-    for (const star of exports.stars) {
-      const member = memberOf(evaluate(star, scope), name);
-      if (member) return member;
-    }
-
-    return undefined;
-  }
-
-  private createScope(record: ModuleRecord): Scope {
-    const fields = componentFieldBindings(record, this);
-    const globals = this.globals;
-    const props = this.undeclaredPropBindings(record);
-    const implicitNames = (name: string, at?: Node) =>
-      fields(name, at) ?? globals.get(name) ?? props?.(name);
-
-    const overrides = new Map<string, Binding>();
-    const scope = new Scope(
-      record.program,
-      this.hostOf(record),
-      implicitNames,
-      overrides
-    );
-
-    // `__VLS_ctx.title` reads the module's `title`, whatever the generated code declares `__VLS_ctx` as.
-    for (const name of record.scopeObjects ?? []) {
-      overrides.set(name, {
-        type: 'lazy',
-        get: () => ({
-          type: 'namespace',
-          member: (member: string) => scope.lookup(member),
-        }),
+      analyzed.set(file, {
+        code: analysis.codes[index]!,
+        usages: usages as unknown as ParaglideUsage[],
       });
-    }
-
-    return scope;
-  }
-
-  private hostOf(record: ModuleRecord): ModuleHost {
-    const fileOf = (specifier: string) => record.resolved.get(specifier);
-
-    return {
-      namespace: (specifier) => {
-        const file = fileOf(specifier);
-        return file ? this.namespaceOf(file) : undefined;
-      },
-
-      exportOf: (specifier, name) => {
-        const file = fileOf(specifier);
-        return file ? this.exportOf(file, name) : undefined;
-      },
-
-      callSitesOf: (fn) => this.importers.callSitesOf(record, fn),
-
-      props: record.props && {
-        reads: record.props,
-        candidates: () => this.importers.componentProps(record),
-      },
-    };
-  }
-
-  /** Vue's template reads `message` of `defineProps(["message"])` without declaring it. */
-  private undeclaredPropBindings(
-    record: ModuleRecord
-  ): ((name: string) => Binding) | undefined {
-    if (!record.props?.undeclared) return undefined;
-
-    const bindings = new Map<string, Binding>();
-
-    const propBinding = (name: string): Binding => ({
-      type: 'values',
-      parameter: true,
-      candidates: () => {
-        const props = this.importers.componentProps(record);
-        return props.map((candidate) => followCandidate(candidate, [name]));
-      },
     });
 
-    return (name) => {
-      let binding = bindings.get(name);
+    return analyzed;
+  }
 
-      if (!binding) {
-        binding = propBinding(name);
-        bindings.set(name, binding);
+  // ---------------------------------------------------------------- loading
+
+  /** Reads and parses the files that are not loaded yet, and resolves what they load. */
+  private async load(frontier: readonly string[]): Promise<void> {
+    const scripts: string[] = [];
+    const others: string[] = [];
+
+    for (const file of frontier) {
+      if (this.orders.has(file)) continue;
+      this.orders.set(file, this.orders.size);
+
+      const readsHere = this.options.read !== undefined || !isScript(file);
+      (readsHere ? others : scripts).push(file);
+    }
+
+    await Promise.all(others.map((file) => this.queue(file)));
+    const loaded = await this.graph.load(scripts, this.ordersOf(scripts));
+    this.report(loaded);
+
+    // The scripts a language may claim, e.g. Angular components in `.ts` files.
+    if (loaded.needsJs.length > 0) {
+      await Promise.all(loaded.needsJs.map((file) => this.queue(file)));
+      this.report(await this.graph.load([], []));
+    }
+
+    await this.link();
+  }
+
+  private ordersOf(files: readonly string[]): number[] {
+    return files.map((file) => this.orders.get(file)!);
+  }
+
+  /** Reads a file here, and hands it to the analysis as its language's tooling writes it. */
+  private async queue(file: string): Promise<void> {
+    const {
+      languages,
+      packages = NO_PACKAGES,
+      read = readTextFile,
+    } = this.options;
+    const order = this.orders.get(file)!;
+
+    const code = await read(file);
+    if (code === undefined) return;
+
+    const generated = await generateSource(file, code, languages, packages);
+
+    if (!generated) {
+      if (isScript(file)) this.graph.queueScript(file, order, code);
+      else this.graph.queueEmpty(file, order, code);
+      return;
+    }
+
+    if ('error' in generated) {
+      this.options.onSkipped?.(file, generated);
+      return;
+    }
+
+    this.graph.queueGenerated(file, order, code, nativeSource(generated));
+  }
+
+  private report(loaded: NativeLoadResult): void {
+    for (const { file, error } of loaded.skipped) {
+      this.options.onSkipped?.(file, { error });
+    }
+
+    this.aliasQueries.push(...loaded.aliasQueries);
+  }
+
+  /** Resolves what the loaded modules load. */
+  private async link(): Promise<void> {
+    if (this.resolution) {
+      const queries = this.aliasQueries;
+      this.aliasQueries = [];
+      const aliases = this.aliases ?? [];
+      const aliased = queries.map((query) => applyAliases(query, aliases));
+
+      const unresolved = await this.graph.resolve(queries, aliased);
+
+      for (let index = 0; index < unresolved.length; index += 2) {
+        const specifier = unresolved[index]!;
+        const importer = unresolved[index + 1]!;
+
+        this.resolution.unresolved?.(specifier, importer);
+        this.options.onUnresolved?.(specifier, importer);
       }
 
-      return binding;
+      return;
+    }
+
+    const { importers, counts, specifiers } = this.graph.pendingSpecifiers();
+    const resolving: Array<Promise<string | undefined>> = [];
+    let next = 0;
+
+    importers.forEach((importer, index) => {
+      for (const specifier of specifiers.slice(next, next + counts[index]!)) {
+        resolving.push(this.options.resolve(specifier, importer));
+      }
+      next += counts[index]!;
+    });
+
+    this.graph.setResolved(await Promise.all(resolving));
+  }
+
+  // ---------------------------------------------------------------- custom targets
+
+  /** Asks the targets defined in JavaScript which of the files that imports reach are theirs. */
+  private matchCustomTargets(files: readonly string[]): void {
+    if (this.customTargets.length === 0) return;
+
+    const { targets } = this.options;
+    const queries = this.graph.customTargetQueries([...files]);
+    if (queries.length === 0) return;
+
+    const matches = queries.map((query) => {
+      const file: TargetFile = {
+        file: query.file,
+        outdir: query.outdir ?? undefined,
+        outdirPath: query.outdirPath ?? undefined,
+      };
+      this.targetFiles.set(query.path, file);
+
+      // The last one, so that `[...defaultTargets, custom]` overrides a built-in target.
+      return targets.findLastIndex(
+        (target) => !isMessagesTarget(target) && target.matches(file)
+      );
+    });
+
+    this.graph.setCustomMatches(
+      queries.map((query) => query.path),
+      matches
+    );
+  }
+
+  /** What a custom target says an export of its file, or a member along `path` of it, is. */
+  private customSymbol(
+    target: number,
+    file: string,
+    exportName: string,
+    path: readonly string[]
+  ): { kind: string; name?: string; methods?: string[] } | undefined {
+    const targetFile = this.targetFiles.get(file);
+    if (!targetFile) return undefined;
+
+    let spec: SymbolSpec | undefined = this.options.targets[
+      target
+    ]?.exportSymbol(exportName, targetFile);
+
+    for (const name of path) {
+      spec = spec?.type === 'namespace' ? spec.member(name) : undefined;
+    }
+
+    if (!spec) return undefined;
+    if (spec.type === 'namespace') return { kind: 'namespace' };
+
+    return {
+      kind: 'value',
+      name: spec.name,
+      methods: [...(spec.methods ?? [])],
     };
   }
-
-  private declareGlobals(globals: readonly GlobalBinding[]): void {
-    this.globals = new Map();
-    this.globalExports = [];
-
-    for (const { name, file, exportName } of globals) {
-      if (this.globals.has(name)) continue;
-
-      // No node declares an auto-import; this one stands in, for its call sites.
-      const declaration = { type: 'AutoImport', name } as unknown as Node;
-      const isNamespace = exportName === '*';
-
-      this.globals.set(name, {
-        type: 'lazy',
-        get: () =>
-          isNamespace
-            ? this.namespaceOf(file)
-            : this.exportOf(file, exportName),
-        declaration,
-      });
-
-      if (!isNamespace)
-        this.globalExports.push({ declaration, file, exportName });
-    }
-  }
-
-  private addOutdir(directory: string): void {
-    if (this.knownOutdirs.includes(directory)) return;
-
-    this.knownOutdirs = [...this.knownOutdirs, directory].sort(
-      (a, b) => b.length - a.length
-    );
-    this.targets.clear();
-    this.exportNames.clear();
-  }
-
-  private shouldFollow(file: string): boolean {
-    const shouldFollow = this.options.shouldFollow ?? followsScripts;
-
-    return !this.targetOf(file) && shouldFollow(file);
-  }
-
-  private loadRecord(file: string): Promise<ModuleRecord | undefined> {
-    let loading = this.loading.get(file);
-
-    if (!loading) {
-      loading = this.readRecord(file).then((record) => {
-        if (record) {
-          this.records.set(file, record);
-          this.exportNames.clear();
-          this.generation++;
-        }
-
-        return record;
-      });
-      this.loading.set(file, loading);
-    }
-
-    return loading;
-  }
-
-  private async readRecord(file: string): Promise<ModuleRecord | undefined> {
-    const parsed = await this.options.readModule(file);
-    if (!parsed) return undefined;
-
-    const { scripts = [], ...module } = parsed;
-    const [record, scriptRecords] = await Promise.all([
-      this.linkModule(file, module),
-      Promise.all(scripts.map((script) => this.linkModule(file, script))),
-    ]);
-
-    return scriptRecords.length > 0
-      ? { ...record, scripts: scriptRecords }
-      : record;
-  }
-
-  /** Resolves what a module of `file` loads. */
-  private async linkModule(
-    file: string,
-    module: Omit<ParsedModule, 'scripts'>
-  ): Promise<ModuleRecord> {
-    const loaded = loadedSpecifiers(module.program);
-    for (const { specifier } of module.componentFields ?? []) {
-      if (specifier !== '') loaded.add(specifier);
-    }
-
-    const specifiers = [...loaded];
-    const files = await Promise.all(
-      specifiers.map((specifier) => this.options.resolve(specifier, file))
-    );
-    const resolved = new Map(
-      specifiers.map((specifier, index) => [specifier, files[index]])
-    );
-
-    return { file, ...module, resolved };
-  }
 }
 
-/** A file's module, then its scripts. */
-export function modulesOf(record: ModuleRecord): ModuleRecord[] {
-  return [record, ...(record.scripts ?? [])];
+function nativeTarget(target: ParaglideTarget): NativeTarget {
+  return {
+    name: target.name,
+    kind: isMessagesTarget(target) ? 'messages' : 'custom',
+  };
 }
 
-function dependenciesOf(
-  records: ReadonlyArray<ModuleRecord | undefined>
-): string[] {
-  const dependencies = new Set<string>();
-
-  for (const record of records) {
-    const modules = record ? modulesOf(record) : [];
-
-    for (const module of modules) {
-      for (const file of module.resolved.values()) {
-        if (file) dependencies.add(file);
-      }
-    }
-  }
-
-  return [...dependencies];
+function nativeSource({
+  language,
+  generated,
+}: GeneratedFile): NativeGeneratedSource {
+  return {
+    main: nativeCode(generated),
+    scripts: (generated.scripts ?? []).map(nativeCode),
+    language: language.name,
+    componentFields: generated.componentFields?.map((fields) => ({
+      specifier: fields.specifier,
+      className: fields.className,
+      start: fields.range?.start,
+      end: fields.range?.end,
+    })),
+    scopeObjects: generated.scopeObjects && [...generated.scopeObjects],
+    props: generated.props && {
+      calls: generated.props.calls && [...generated.props.calls],
+      members: generated.props.members && [...generated.props.members],
+      variables: generated.props.variables && [...generated.props.variables],
+      undeclared: generated.props.undeclared,
+    },
+    componentInstances: generated.componentInstances && {
+      via: generated.componentInstances.via,
+      path: [...generated.componentInstances.path],
+    },
+  };
 }
 
-/** The files of `export * from "./a"`. */
-function starExportedFiles(record: ModuleRecord): string[] {
-  const files: string[] = [];
+function nativeCode({
+  code,
+  lang,
+  mappings,
+}: GeneratedScript): NativeGeneratedCode {
+  const flat = new Int32Array(mappings.length * 4);
 
-  for (const statement of record.program.body) {
-    const isStarExport =
-      statement.type === 'ExportAllDeclaration' &&
-      statement.exportKind !== 'type' &&
-      !statement.exported;
-    if (!isStarExport) continue;
+  mappings.forEach((mapping, index) => {
+    flat[index * 4] = mapping.generated;
+    flat[index * 4 + 1] = mapping.source;
+    flat[index * 4 + 2] = mapping.length;
+    flat[index * 4 + 3] = mapping.sourceLength ?? mapping.length;
+  });
 
-    const file = record.resolved.get(statement.source.value);
-    if (file) files.push(file);
-  }
-
-  return files;
-}
-
-/**
- * `…/paraglide/runtime.js` → `…/paraglide`; `…/paraglide/messages/a.js` and
- * Paraglide 1's `…/paraglide/messages/en/a.js` → `…/paraglide`
- */
-function outdirCandidates(file: string): string[] {
-  const parent = path.dirname(file);
-  if (GENERATED_FILES.has(path.basename(file))) return [parent];
-
-  const grandparent = path.dirname(parent);
-
-  for (const directory of [parent, grandparent]) {
-    if (path.basename(directory) === 'messages') {
-      return [path.dirname(directory)];
-    }
-  }
-
-  return [];
+  return { code, lang, mappings: flat };
 }

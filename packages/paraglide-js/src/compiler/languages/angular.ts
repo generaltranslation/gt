@@ -1,8 +1,7 @@
 import path from 'node:path';
 import type * as AngularCompiler from '@angular/compiler';
 import { parse, parseFragment, type DefaultTreeAdapterMap } from 'parse5';
-import { staticKeyName, type ESTree } from '../analysis/ast.js';
-import { topLevelClasses } from '../analysis/module-syntax.js';
+import { staticKeyName, topLevelClasses, type ESTree } from '../utils/ast.js';
 import type { SourceRange } from '../analysis/types.js';
 import { parseCode } from '../utils/parse.js';
 import { GeneratedCode } from './angular/generated-code.js';
@@ -31,6 +30,7 @@ export const angularComponentLanguage: SourceLanguage = {
   requires: REQUIRES,
   detect: (source) =>
     /@Component\s*\(/.test(source) && /\btemplate\s*:/.test(source),
+  mayContain: ['@Component', 'template'],
   async generate(source, file, context) {
     const compiler = await loadCompiler(context);
     if (!compiler) return undefined;

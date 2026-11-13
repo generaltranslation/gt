@@ -19,6 +19,7 @@
     "tests/seeds/*",
     "tests/apps/compiler-cli-parity/**",
     "packages/vue-extractor/src/internal/__tests__/fixtures/template-runtime-parity.vue",
+    "packages/paraglide-js/native/binding.*",
     "**/next-env.d.ts",
     "**/routeTree.gen.ts"
   ]

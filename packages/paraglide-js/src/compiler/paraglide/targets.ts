@@ -47,3 +47,15 @@ export const messagesTarget: ParaglideTarget = {
 };
 
 export const defaultTargets: readonly ParaglideTarget[] = [messagesTarget];
+
+/**
+ * Whether the analysis matches `target` without calling its functions: it is
+ * `messagesTarget`, or a copy of it with both of its functions as they were.
+ * Any other target is asked in JavaScript.
+ */
+export function isMessagesTarget(target: ParaglideTarget): boolean {
+  return (
+    target.matches === messagesTarget.matches &&
+    target.exportSymbol === messagesTarget.exportSymbol
+  );
+}

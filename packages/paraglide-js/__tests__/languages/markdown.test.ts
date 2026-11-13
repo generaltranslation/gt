@@ -1,17 +1,13 @@
 import { describe, expect, test } from 'vitest';
 import { defaultLanguages } from '../../src/compiler/languages/index.js';
 import {
+  generateSource,
   NO_PACKAGES,
-  parseSource,
-  type ParseFunction,
 } from '../../src/compiler/languages/language.js';
-import { parseSync } from 'oxc-parser';
 import { markdownLanguage } from '../../src/compiler/languages/markdown.js';
 import { analyzeProject, describeUsages } from '../helpers/project.js';
 
 const file = '/app/src/docs/guide.md';
-const parse: ParseFunction = (file, code, lang) =>
-  parseSync(file, code, { lang }) as never;
 
 async function analyze(lines: string[]) {
   return analyzeProject(
@@ -105,10 +101,9 @@ describe('Markdown (VitePress)', () => {
   });
 
   test('skipped, naming the packages, without @vue/language-core', async () => {
-    const result = await parseSource(
+    const result = await generateSource(
       file,
       '# Title\n',
-      parse,
       [markdownLanguage],
       NO_PACKAGES
     );

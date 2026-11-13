@@ -229,6 +229,27 @@ describe('values passed into functions', () => {
       expect(summarize(usages)).toEqual([call]);
     });
 
+    test('the values of several importers come in the order the files are loaded', async () => {
+      const importer = (id: string) =>
+        `${imports}import { show } from "./show.js";\nshow(m.${id});\n`;
+      const files = {
+        '/app/src/c.ts': importer('from_c'),
+        '/app/src/a.ts': importer('from_a'),
+        '/app/src/show.ts': `export const show = (message) => message();\n`,
+        '/app/src/b.ts': importer('from_b'),
+      };
+
+      // The same on every run, whichever file is read first.
+      for (let run = 0; run < 3; run++) {
+        const usages = await analyzeAll(files, '/app/src/show.ts');
+        expect(summarize(usages)).toEqual([
+          'message:from_c:call',
+          'message:from_a:call',
+          'message:from_b:call',
+        ]);
+      }
+    });
+
     test('every value of an argument: a computed key with alternatives', async () => {
       const usages = await analyzeAll(
         {

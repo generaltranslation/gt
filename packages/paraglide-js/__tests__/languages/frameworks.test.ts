@@ -1,11 +1,8 @@
-import { parseSync } from 'oxc-parser';
 import { describe, expect, test } from 'vitest';
 import { astroLanguage } from '../../src/compiler/languages/astro.js';
 import {
   NO_PACKAGES,
-  parseSource,
   type LanguageContext,
-  type ParseFunction,
 } from '../../src/compiler/languages/language.js';
 import { sourceSnippet } from '../../src/compiler/output/source-code.js';
 import { svelteLanguage } from '../../src/compiler/languages/svelte.js';
@@ -14,6 +11,7 @@ import {
   analyzeProject,
   describeUsages,
   REPO_PACKAGES,
+  skippedFile,
   summarize,
 } from '../helpers/project.js';
 
@@ -219,25 +217,17 @@ describe('Svelte', () => {
 });
 
 describe('without the language tools, or with a file they reject', () => {
-  const parse: ParseFunction = (file, code, lang) =>
-    parseSync(file, code, { lang }) as never;
   const vue = `<script setup>\nconst = ;\n</script>\n<template><p /></template>`;
   const svelte = `<script>\nconst = ;\n</script>\n<p></p>`;
 
   test('skipped, naming the packages to install', async () => {
     expect(
-      await parseSource('/app/A.vue', vue, parse, [vueLanguage], NO_PACKAGES)
+      await skippedFile('/app/A.vue', vue, [vueLanguage], NO_PACKAGES)
     ).toMatchObject({
       missing: ['@vue/language-core', 'typescript'],
     });
     expect(
-      await parseSource(
-        '/app/A.svelte',
-        svelte,
-        parse,
-        [svelteLanguage],
-        NO_PACKAGES
-      )
+      await skippedFile('/app/A.svelte', svelte, [svelteLanguage], NO_PACKAGES)
     ).toMatchObject({ missing: ['svelte2tsx', 'svelte'] });
   });
 
@@ -246,13 +236,7 @@ describe('without the language tools, or with a file they reject', () => {
       ['/app/A.vue', vue, vueLanguage],
       ['/app/A.svelte', svelte, svelteLanguage],
     ] as const) {
-      const result = await parseSource(
-        file,
-        code,
-        parse,
-        [language],
-        REPO_PACKAGES
-      );
+      const result = await skippedFile(file, code, [language], REPO_PACKAGES);
       expect(result).toMatchObject({ error: expect.any(String) });
       expect(result).not.toHaveProperty('missing');
     }
@@ -428,17 +412,36 @@ describe('Astro', () => {
   });
 
   test("without Astro's TSX tools in the project, files are skipped and astro2tsx is named", async () => {
-    const parse: ParseFunction = (name, code, lang) =>
-      parseSync(name, code, { lang }) as never;
-    const result = await parseSource(
+    const result = await skippedFile(
       file,
       `<p>{m.x()}</p>`,
-      parse,
       [astroLanguage],
       NO_PACKAGES
     );
     expect(result).toMatchObject({ missing: ['@astrojs/astro2tsx'] });
   });
+});
+
+test('positions in a component count UTF-16 code units after non-ASCII text', async () => {
+  const code = [
+    `<script setup>`,
+    `import { m } from "./paraglide/messages.js";`,
+    `const emoji = "👋 é";`,
+    `</script>`,
+    `<template><p>日本語 👋 {{ m.a() }} — <b :title="m.b()">é</b></p></template>`,
+  ].join('\n');
+  const usages = await analyze('/app/src/A.vue', code);
+
+  expect(
+    usages.map(({ start, end, line, column }) => ({
+      inFile: code.slice(start, end),
+      line,
+      column,
+    }))
+  ).toEqual([
+    { inFile: 'm.a()', line: 5, column: 24 },
+    { inFile: 'm.b()', line: 5, column: 46 },
+  ]);
 });
 
 test('template usages report the lines of the file', async () => {

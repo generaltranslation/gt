@@ -1,5 +1,5 @@
 import type * as SvelteCompiler from 'svelte/compiler';
-import type { ESTree } from '../../analysis/ast.js';
+import type { ESTree } from '../../utils/ast.js';
 
 type ComponentAst = {
   instance?: { content?: { body?: readonly ESTree.Statement[] } };

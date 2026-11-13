@@ -1,12 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
-
+import { createCollector } from '../../src/compiler/collector/create.js';
 import { OutdirProjects } from '../../src/compiler/collector/outdir-projects.js';
 import { MetadataFiles } from '../../src/compiler/collector/metadata-files.js';
 import type { CollectContextOptions } from '../../src/compiler/context.js';
 import { readInlangProject } from '../../src/compiler/inlang/project.js';
-
+import { nodeResolver } from '../../src/compiler/resolver/node-resolver.js';
 import {
   collect as collectProject,
   compileMessages,
@@ -226,6 +226,39 @@ test('hand-written fields survive a rewrite; snippets of removed usages do not',
     greeting: { context: 'Shown on the home page', maxChars: 20 },
     later: { context: 'Not used yet' },
   });
+});
+
+test('a resolver of the caller is asked for each import, and finds the same usages', async () => {
+  const root = await writeProject('metadata-custom-resolver', {
+    'src/a.ts': use('~/paraglide/messages.js', 'greeting'),
+    'src/b.ts': `import "node:fs";\n${use('./paraglide/messages.js', 'greeting')}`,
+  });
+  const resolve = nodeResolver({ alias: { '~': path.join(root, 'src') } });
+  const asked: string[] = [];
+  const collector = createCollector(
+    {},
+    {
+      root,
+      logger: { warn() {}, info() {} },
+      // Not the resolver `nodeResolver` made: the analysis cannot resolve like it by itself.
+      resolver: (specifier, importer) => {
+        asked.push(specifier);
+        return resolve(specifier, importer);
+      },
+    }
+  );
+
+  await collector.scanAll();
+  await collector.write();
+
+  expect(
+    Object.keys((await readMetadata(root)).greeting?.sourceCode ?? {})
+  ).toEqual(['src/a.ts', 'src/b.ts']);
+  // Builtins are never asked about.
+  expect(asked.sort()).toEqual([
+    './paraglide/messages.js',
+    '~/paraglide/messages.js',
+  ]);
 });
 
 test('a metadata file that is not a JSON object is left alone, with a warning', async () => {

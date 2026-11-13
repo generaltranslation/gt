@@ -1,4 +1,3 @@
-import { parseSync } from 'oxc-parser';
 import { expect, test } from 'vitest';
 import { ModuleGraph } from '../../src/compiler/analysis/module-graph.js';
 
@@ -13,26 +12,24 @@ test('loading many entries walks a module they share once', async () => {
     ])
   );
 
-  let followChecks = 0;
-  const graph = new ModuleGraph({
+  let reads = 0;
+  let resolutions = 0;
+  const graph = await ModuleGraph.create({
     targets: [],
-    resolve: async (specifier) => `/app/src/${specifier.slice(2)}`,
-    readModule: async (path) => {
-      const code = files.get(path);
-      if (code === undefined) return undefined;
-
-      const { program } = parseSync(path, code, { lang: 'ts', range: true });
-      return { code, program: program as never };
+    languages: [],
+    resolve: async (specifier) => {
+      resolutions++;
+      return `/app/src/${specifier.slice(2)}`;
     },
-    shouldFollow: () => {
-      followChecks++;
-      return true;
+    read: async (path) => {
+      reads++;
+      return files.get(path);
     },
   });
 
   await graph.loadPaths([...files.keys()]);
 
-  expect(graph.getRecord(file(length - 1))).toBeDefined();
-  // One walk from each entry would check every module after it: 1770 times.
-  expect(followChecks).toBeLessThanOrEqual(length);
+  // One walk from each entry would read every module after it: 1770 times.
+  expect(reads).toBe(length);
+  expect(resolutions).toBe(length - 1);
 });

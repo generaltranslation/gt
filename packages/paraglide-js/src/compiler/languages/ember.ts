@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type * as Glint from '@glint/ember-tsc';
 import type * as GlintStandalone from '@glint/ember-tsc/transform/standalone';
-import { walk, type ESTree, type Node } from '../analysis/ast.js';
+import { walk, type ESTree, type Node } from '../utils/ast.js';
 import { parseCode } from '../utils/parse.js';
 import { applyEdits, type Edit } from './edits.js';
 import type { SourceLanguage } from './language.js';

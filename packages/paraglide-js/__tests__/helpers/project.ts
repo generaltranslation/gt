@@ -1,18 +1,14 @@
 import path from 'node:path/posix';
-import { parseSync } from 'oxc-parser';
-import { analyzeModule } from '../../src/compiler/analysis/analyze.js';
 import {
   ModuleGraph,
   type GlobalBinding,
-  type ParsedModule,
 } from '../../src/compiler/analysis/module-graph.js';
 import type { ParaglideUsage } from '../../src/compiler/analysis/types.js';
 import { defaultLanguages } from '../../src/compiler/languages/index.js';
 import {
-  isSourceFile,
-  parseSource,
+  NO_PACKAGES,
   type LanguageContext,
-  type ParseFunction,
+  type ParseFailure,
   type SourceLanguage,
 } from '../../src/compiler/languages/language.js';
 import {
@@ -20,7 +16,6 @@ import {
   type ParaglideTarget,
 } from '../../src/compiler/paraglide/targets.js';
 import { projectPackages } from '../../src/compiler/project/packages.js';
-import { isDependency } from '../../src/compiler/utils/paths.js';
 
 export const ROOT = '/app';
 /** The language tools installed in this repo (its devDependencies), as an app would have them. */
@@ -42,9 +37,6 @@ const generated = Object.fromEntries(
     'registry.js',
   ].map((file) => [`${OUTDIR}/${file}`, 'export {}'])
 );
-
-const parse: ParseFunction = (file, code, lang) =>
-  parseSync(file, code, { lang, range: true, astType: 'ts' }) as never;
 
 export type AnalyzeOptions = {
   aliases?: Record<string, string>;
@@ -69,25 +61,53 @@ export async function analyzeProject(
 ): Promise<ParaglideUsage[]> {
   const all = new Map(Object.entries({ ...generated, ...files }));
   const outdirs = options.outdirs ?? [OUTDIR];
-  const languages = options.languages ?? defaultLanguages;
-  const context = options.context ?? REPO_PACKAGES;
+  const skipped: string[] = [];
 
-  const graph = new ModuleGraph({
+  const graph = await ModuleGraph.create({
     targets: options.targets ?? defaultTargets,
+    languages: options.languages ?? defaultLanguages,
+    packages: options.context ?? REPO_PACKAGES,
     isOutdir: async (directory) => outdirs.includes(directory),
-    globals: options.globals,
-    shouldFollow: (file) =>
-      isSourceFile(file, languages) && !isDependency(file),
     resolve: async (specifier, importer) =>
       resolveInMemory(specifier, importer, all, options.aliases),
-    readModule: (file) => readInMemory(file, all, languages, context),
+    read: async (file) => all.get(file),
+    onSkipped: (file, { error }) => void skipped.push(`${file}: ${error}`),
   });
 
   const entry = options.entry ?? ENTRY;
   const sources = options.loadAll ? Object.keys(files) : [entry];
   await graph.loadPaths(sources);
+  graph.setGlobals(options.globals ?? []);
 
-  return analyzeModule(graph, entry);
+  // A test's code is meant to parse.
+  const [failure] = skipped;
+  if (failure !== undefined) throw new Error(failure);
+
+  const analyzed = await graph.analyze([entry]);
+
+  return analyzed.get(entry)?.usages ?? [];
+}
+
+/** Why the file `code` is not analyzed; undefined if it is. */
+export async function skippedFile(
+  file: string,
+  code: string,
+  languages: readonly SourceLanguage[],
+  context: LanguageContext = NO_PACKAGES
+): Promise<ParseFailure | undefined> {
+  const failures: ParseFailure[] = [];
+
+  const graph = await ModuleGraph.create({
+    targets: defaultTargets,
+    languages,
+    packages: context,
+    resolve: async () => undefined,
+    read: async (path) => (path === file ? code : undefined),
+    onSkipped: (_file, failure) => void failures.push(failure),
+  });
+  await graph.loadPaths([file]);
+
+  return failures[0];
 }
 
 /** Aliases, relative and absolute paths, else a package; with the extensions a bundler tries. */
@@ -136,22 +156,6 @@ function unaliasedPath(specifier: string, importer: string): string {
   return specifier.startsWith('/')
     ? specifier
     : `${ROOT}/node_modules/${specifier}`;
-}
-
-/** Throws when the file does not parse: a test's code is meant to. */
-async function readInMemory(
-  file: string,
-  files: ReadonlyMap<string, string>,
-  languages: readonly SourceLanguage[],
-  context: LanguageContext
-): Promise<ParsedModule | undefined> {
-  const code = files.get(file);
-  if (code === undefined) return undefined;
-
-  const parsed = await parseSource(file, code, parse, languages, context);
-  if ('error' in parsed) throw new Error(`${file}: ${parsed.error}`);
-
-  return parsed.module;
 }
 
 /** e.g. `message:tos:method` */

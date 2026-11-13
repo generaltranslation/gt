@@ -4,8 +4,46 @@ import {
   aliasEntries,
   applyAliases,
   type AliasOption,
+  type ImportAlias,
 } from '../bundler-configs/alias.js';
 import type { Resolver } from '../collector/collector.js';
+
+/**
+ * What `nodeResolver` does, as the analysis can do it itself, off the main
+ * thread: the same resolution, without a call per import.
+ */
+export type NativeResolution = {
+  /** How imports are resolved. */
+  options(): Promise<{
+    aliases: readonly ImportAlias[];
+    rootDirectory: string | undefined;
+    conditions: readonly string[];
+  }>;
+  /** Told of the imports that did not resolve. */
+  unresolved?(specifier: string, importer: string): void;
+};
+
+/** By resolver: those that `nodeResolver` and `ProjectResolver` made. */
+const nativeResolutions = new WeakMap<Resolver, NativeResolution>();
+
+/** Marks `resolver` as doing what `resolution` describes, and nothing else. */
+export function describeResolver(
+  resolver: Resolver,
+  resolution: NativeResolution
+): Resolver {
+  nativeResolutions.set(resolver, resolution);
+
+  return resolver;
+}
+
+/** How to resolve like `resolver` without calling it; undefined for any other function. */
+export function nativeResolution(
+  resolver: Resolver
+): NativeResolution | undefined {
+  return nativeResolutions.get(resolver);
+}
+
+export const DEFAULT_CONDITIONS = ['import', 'module', 'browser', 'default'];
 
 export type NodeResolverOptions = {
   /** Like a bundler's `resolve.alias`: `{ "~": "/abs/src" }` or a list. */
@@ -41,14 +79,10 @@ const EXTENSIONS = [
  * importer), and TypeScript's `./a.js` → `./a.ts`.
  */
 export function nodeResolver(options: NodeResolverOptions = {}): Resolver {
+  const conditions = options.conditions ?? DEFAULT_CONDITIONS;
   const factory = new ResolverFactory({
     tsconfig: 'auto',
-    conditionNames: options.conditions ?? [
-      'import',
-      'module',
-      'browser',
-      'default',
-    ],
+    conditionNames: conditions,
     mainFields: ['browser', 'module', 'main'],
     extensions: EXTENSIONS,
     extensionAlias: {
@@ -61,13 +95,21 @@ export function nodeResolver(options: NodeResolverOptions = {}): Resolver {
   const resolveFile: Resolver = async (specifier, importer) =>
     (await factory.resolveFileAsync(importer, specifier)).path;
 
-  return async (specifier, importer) => {
+  const resolve: Resolver = async (specifier, importer) => {
     const aliased = applyAliases(specifier, aliases);
     const inRoot = rootPath(aliased, options.rootDirectory);
     const file = inRoot && (await resolveFile(inRoot, importer));
 
     return file ?? resolveFile(aliased, importer);
   };
+
+  return describeResolver(resolve, {
+    options: async () => ({
+      aliases,
+      rootDirectory: options.rootDirectory,
+      conditions,
+    }),
+  });
 }
 
 /** `/src/a.js` → `<rootDirectory>/src/a.js` */

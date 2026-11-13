@@ -9,7 +9,8 @@
     "paraglide-context": "./dist/src/compiler/cli/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "native/binding.d.cts"
   ],
   "exports": {
     ".": {
@@ -19,20 +20,28 @@
     "./compiler": {
       "types": "./dist/src/compiler.d.ts",
       "default": "./dist/src/compiler.js"
+    },
+    "./native": {
+      "types": "./native/binding.d.cts",
+      "default": "./dist/native/binding.cjs"
     }
   },
   "author": "General Translation, Inc.",
   "license": "MIT",
   "scripts": {
     "transpile": "tsc -p tsconfig.build.json",
-    "build": "pnpm run transpile",
+    "build": "pnpm run build:native && pnpm run transpile",
     "build:watch": "tsc -p tsconfig.build.json --watch",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
-    "format": "oxfmt src __tests__",
+    "format": "oxfmt src __tests__ scripts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:native": "node scripts/build-native.mjs",
+    "build:native:debug": "node scripts/build-native.mjs --debug",
+    "build:native:bindings": "pnpm --package=@napi-rs/cli@3.10.12 dlx napi build --platform --release --manifest-path native/Cargo.toml --output-dir native --js binding.cjs --dts binding.d.cts",
+    "test:rust": "cargo test --manifest-path native/Cargo.toml --no-default-features --features mimalloc"
   },
   "repository": {
     "type": "git",
@@ -49,7 +58,6 @@
   "dependencies": {
     "@jridgewell/trace-mapping": "^0.3.31",
     "@oxc-project/types": "^0.157.0",
-    "@typescript-eslint/scope-manager": "^8.72.1",
     "globby": "^16.2.0",
     "oxc-parser": "^0.157.0",
     "oxc-resolver": "^11.24.2",
@@ -139,5 +147,18 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "napi": {
+    "binaryName": "paraglide-context",
+    "targets": [
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-musl",
+      "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ]
   }
 }

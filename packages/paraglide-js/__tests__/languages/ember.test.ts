@@ -1,11 +1,7 @@
 import { expect, test } from 'vitest';
-import { parseSync } from 'oxc-parser';
 import { emberLanguage } from '../../src/compiler/languages/ember.js';
-import {
-  NO_PACKAGES,
-  parseSource,
-} from '../../src/compiler/languages/language.js';
-import { analyzeProject, summarize } from '../helpers/project.js';
+import { NO_PACKAGES } from '../../src/compiler/languages/language.js';
+import { analyzeProject, skippedFile, summarize } from '../helpers/project.js';
 
 async function analyze(file: string, lines: string[]) {
   const usages = await analyzeProject(
@@ -113,10 +109,9 @@ test("a template Glint cannot parse skips the file, with Glint's error", async (
 });
 
 test('without Glint in the project, the file is skipped and Glint is named', async () => {
-  const result = await parseSource(
+  const result = await skippedFile(
     '/app/src/components/list.gjs',
     `<template>{{m.x}}</template>`,
-    (file, code, lang) => parseSync(file, code, { lang }) as never,
     [emberLanguage],
     NO_PACKAGES
   );

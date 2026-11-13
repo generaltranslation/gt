@@ -14,7 +14,12 @@ import { isInIgnoredDirectory } from '../project/files.js';
 import { projectPackages } from '../project/packages.js';
 import { findProjectRoot } from '../project/roots.js';
 import { relativePath } from '../utils/paths.js';
-import { nodeResolver, type NodeResolverOptions } from './node-resolver.js';
+import {
+  describeResolver,
+  nativeResolution,
+  nodeResolver,
+  type NodeResolverOptions,
+} from './node-resolver.js';
 import { mayBeAlias, unresolvedWarning } from './unresolved-imports.js';
 
 export type ProjectResolverOptions = NodeResolverOptions & {
@@ -55,6 +60,18 @@ export class ProjectResolver {
 
       return nodeResolver(withConfigResolution(options, probed));
     });
+
+    describeResolver(this.resolve, {
+      options: async () => {
+        const resolution = nativeResolution(await this.resolver);
+        // `nodeResolver` describes every resolver it makes.
+        if (!resolution) throw new Error('the resolver is not described');
+
+        return resolution.options();
+      },
+      unresolved: (specifier, importer) =>
+        this.noteUnresolved(specifier, importer),
+    });
   }
 
   readonly resolve: Resolver = async (specifier, importer) => {
@@ -62,15 +79,21 @@ export class ProjectResolver {
     const file = await resolve(specifier, importer);
     if (file) return file;
 
-    // Generated files (`.nuxt/imports.d.ts`) import framework modules, not aliases.
-    const isAppImport = !isInIgnoredDirectory(importer);
-    const isNew = !this.unresolved.has(specifier);
-    if (isAppImport && isNew && mayBeAlias(specifier)) {
-      this.unresolved.set(specifier, importer);
-    }
+    this.noteUnresolved(specifier, importer);
 
     return undefined;
   };
+
+  /** Keeps the first importer of each import that may be an alias. */
+  private noteUnresolved(specifier: string, importer: string): void {
+    // Generated files (`.nuxt/imports.d.ts`) import framework modules, not aliases.
+    const isAppImport = !isInIgnoredDirectory(importer);
+    const isNew = !this.unresolved.has(specifier);
+
+    if (isAppImport && isNew && mayBeAlias(specifier)) {
+      this.unresolved.set(specifier, importer);
+    }
+  }
 
   /** Warns about the unresolved imports, unless a bundler config gave the aliases. */
   async warnUnresolved(): Promise<void> {

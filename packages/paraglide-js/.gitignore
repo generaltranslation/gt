@@ -1,1 +1,3 @@
 .tmp
+native/target
+native/*.node

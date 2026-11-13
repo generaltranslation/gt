@@ -4,11 +4,7 @@ import {
   type EncodedSourceMap,
   type SourceMapSegment,
 } from '@jridgewell/trace-mapping';
-import {
-  computeLineStarts,
-  forEachNode,
-  type ESTree,
-} from '../analysis/ast.js';
+import { computeLineStarts, forEachNode, type ESTree } from '../utils/ast.js';
 
 /**
  * Generated `[generated, generated + length)` stands for source

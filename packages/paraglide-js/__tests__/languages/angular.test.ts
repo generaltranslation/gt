@@ -4,16 +4,13 @@ import {
   angularComponentLanguage,
   angularTemplateLanguage,
 } from '../../src/compiler/languages/angular.js';
-import { parseSync } from 'oxc-parser';
 import { defaultLanguages } from '../../src/compiler/languages/index.js';
-import {
-  NO_PACKAGES,
-  parseSource,
-} from '../../src/compiler/languages/language.js';
+import { NO_PACKAGES } from '../../src/compiler/languages/language.js';
 import {
   analyzeProject,
   describeUsages,
   REPO_PACKAGES,
+  skippedFile,
 } from '../helpers/project.js';
 
 const languages = [
@@ -361,13 +358,7 @@ describe('plain HTML', () => {
 
 describe("Angular's own tools", () => {
   const parse = (file: string, code: string, context = REPO_PACKAGES) =>
-    parseSource(
-      file,
-      code,
-      (file, code, lang) => parseSync(file, code, { lang }) as never,
-      languages,
-      context
-    );
+    skippedFile(file, code, languages, context);
 
   test('without @angular/compiler in the project, components are skipped', async () => {
     const component = `@Component({ template: "<p>{{ m.x() }}</p>" }) export class A {}`;
@@ -383,14 +374,14 @@ describe("Angular's own tools", () => {
     // Without Angular, an `.html` file is not a template: only module scripts are read.
     expect(
       await parse('/app/src/a.html', '<p>{{ m.x() }}</p>', NO_PACKAGES)
-    ).toHaveProperty('module');
+    ).toBeUndefined();
     expect(
       await parse(
         '/app/index.html',
         '<!doctype html><script type=module>m.x()</script>',
         NO_PACKAGES
       )
-    ).toHaveProperty('module');
+    ).toBeUndefined();
   });
 
   test('a template Angular rejects is skipped with its error', async () => {

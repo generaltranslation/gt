@@ -3,7 +3,6 @@ import { visitorKeys } from 'oxc-parser';
 
 export type { ESTree };
 export type Node = ESTree.Node;
-export type FunctionNode = ESTree.Function | ESTree.ArrowFunctionExpression;
 export type Pattern =
   | ESTree.BindingPattern
   | ESTree.ParamPattern
@@ -12,13 +11,6 @@ export type Pattern =
 export type Visitor = {
   /** Return `false` to skip the node's children. */
   enter(node: Node, ancestors: readonly Node[]): boolean;
-};
-
-export type PatternBinding = {
-  name: string;
-  node: Node;
-  /** The properties leading to the name; undefined in an array or rest element. */
-  path: string[] | undefined;
 };
 
 const TYPE_ANNOTATION_KEYS = new Set([
@@ -37,18 +29,6 @@ const CHILD_KEYS: ReadonlyMap<string, readonly string[]> = new Map(
     keys.filter((key) => !TYPE_ANNOTATION_KEYS.has(key)),
   ])
 );
-
-/** Expressions that wrap another without changing what it is: `(m as any)!`. */
-export const TRANSPARENT_WRAPPERS: ReadonlySet<Node['type']> = new Set<
-  Node['type']
->([
-  'ParenthesizedExpression',
-  'TSAsExpression',
-  'TSSatisfiesExpression',
-  'TSNonNullExpression',
-  'TSTypeAssertion',
-  'ChainExpression',
-]);
 
 /** Depth-first; type annotations are not visited. */
 export function walk(root: Node, visitor: Visitor): void {
@@ -111,32 +91,6 @@ function isNode(value: unknown): value is Node {
   );
 }
 
-export function isFunction(node: Node): node is FunctionNode {
-  return (
-    node.type === 'FunctionDeclaration' ||
-    node.type === 'FunctionExpression' ||
-    node.type === 'ArrowFunctionExpression'
-  );
-}
-
-export function unwrapExpression(node: Node): Node {
-  for (;;) {
-    switch (node.type) {
-      case 'ParenthesizedExpression':
-      case 'TSAsExpression':
-      case 'TSSatisfiesExpression':
-      case 'TSNonNullExpression':
-      case 'TSTypeAssertion':
-      case 'TSInstantiationExpression':
-      case 'ChainExpression':
-        node = node.expression;
-        break;
-      default:
-        return node;
-    }
-  }
-}
-
 export function staticString(
   node: Node | null | undefined
 ): string | undefined {
@@ -149,17 +103,6 @@ export function staticString(
   }
 
   return undefined;
-}
-
-export function staticPropertyName(
-  member: ESTree.MemberExpression
-): string | undefined {
-  const { property } = member;
-
-  if (member.computed) return staticString(property);
-  if (property.type === 'PrivateIdentifier') return `#${property.name}`;
-
-  return property.type === 'Identifier' ? property.name : undefined;
 }
 
 export function staticKeyName(property: {
@@ -178,49 +121,74 @@ export function moduleExportName(name: ESTree.ModuleExportName): string {
   return name.type === 'Literal' ? name.value : name.name;
 }
 
-export function patternBindings(
-  pattern: Pattern,
-  path: string[] | undefined = []
-): PatternBinding[] {
+/** The names a pattern binds: `{ a, b: [c] }` → a, c. */
+function boundNames(pattern: Pattern): string[] {
   switch (pattern.type) {
     case 'Identifier':
-      return [{ name: pattern.name, node: pattern, path }];
+      return [pattern.name];
 
     case 'ObjectPattern':
       return pattern.properties.flatMap((property) =>
-        propertyBindings(property, path)
+        boundNames(
+          property.type === 'RestElement' ? property.argument : property.value
+        )
       );
 
     case 'ArrayPattern':
       return pattern.elements.flatMap((element) =>
-        element ? patternBindings(element, undefined) : []
+        element ? boundNames(element) : []
       );
 
     case 'AssignmentPattern':
-      return patternBindings(pattern.left, path);
+      return boundNames(pattern.left);
 
     case 'RestElement':
-      return patternBindings(pattern.argument, undefined);
+      return boundNames(pattern.argument);
 
     case 'TSParameterProperty':
-      return patternBindings(pattern.parameter, path);
+      return boundNames(pattern.parameter);
   }
 }
 
-function propertyBindings(
-  property: ESTree.BindingProperty | ESTree.BindingRestElement,
-  path: string[] | undefined
-): PatternBinding[] {
-  if (property.type === 'RestElement')
-    return patternBindings(property.argument, undefined);
+/** The names a declaration gives values to: `const { a, b } = …` → a, b. */
+export function declaredNames(declaration: ESTree.Declaration): string[] {
+  switch (declaration.type) {
+    case 'VariableDeclaration':
+      return declaration.declarations.flatMap((declarator) =>
+        boundNames(declarator.id)
+      );
 
-  const key = staticKeyName(property);
-  const isKnownPath = path !== undefined && key !== undefined;
+    case 'FunctionDeclaration':
+    // `declare function f(): void`, as in a `.d.ts` file.
+    case 'TSDeclareFunction':
+    case 'ClassDeclaration':
+    case 'TSEnumDeclaration':
+      return declaration.id ? [declaration.id.name] : [];
 
-  return patternBindings(
-    property.value,
-    isKnownPath ? [...path, key] : undefined
-  );
+    default:
+      return [];
+  }
+}
+
+/** Declared or exported at the top level of a module. */
+export function topLevelClasses(program: ESTree.Program): ESTree.Class[] {
+  const classes: ESTree.Class[] = [];
+
+  for (const statement of program.body) {
+    const isExport =
+      statement.type === 'ExportNamedDeclaration' ||
+      statement.type === 'ExportDefaultDeclaration';
+    const declaration = isExport ? statement.declaration : statement;
+
+    if (
+      declaration?.type === 'ClassDeclaration' ||
+      declaration?.type === 'ClassExpression'
+    ) {
+      classes.push(declaration);
+    }
+  }
+
+  return classes;
 }
 
 export function computeLineStarts(code: string): number[] {
@@ -231,22 +199,4 @@ export function computeLineStarts(code: string): number[] {
   }
 
   return starts;
-}
-
-/** 1-based. */
-export function toLineColumn(
-  lineStarts: number[],
-  offset: number
-): { line: number; column: number } {
-  let low = 0;
-  let high = lineStarts.length - 1;
-
-  while (low < high) {
-    const middle = (low + high + 1) >> 1;
-
-    if (lineStarts[middle]! <= offset) low = middle;
-    else high = middle - 1;
-  }
-
-  return { line: low + 1, column: offset - lineStarts[low]! + 1 };
 }
