@@ -229,6 +229,30 @@ describe('values passed into functions', () => {
       expect(summarize(usages)).toEqual([call]);
     });
 
+    test('parses the modules that call a function to find omitted arguments only for a parameter with a default', async () => {
+      const parsesOfCallers = async (parameter: string) => {
+        const parsed: string[] = [];
+        await analyzeProject(
+          {
+            '/app/src/A.ts': `${imports}import { show } from "./show.js";\nshow(m);\n`,
+            '/app/src/B.ts': `${imports}import { show } from "./show.js";\nshow(m);\n`,
+            '/app/src/show.ts': `export function show(${parameter}) { return t.greeting(); }\n`,
+          },
+          {
+            entry: '/app/src/show.ts',
+            loadAll: true,
+            onIndexedLoad: (file) => parsed.push(file),
+          }
+        );
+
+        return parsed.filter((file) => file !== '/app/src/show.ts').length;
+      };
+
+      expect(await parsesOfCallers('t')).toBeLessThan(
+        await parsesOfCallers('t = null')
+      );
+    });
+
     test('every value of an argument: a computed key with alternatives', async () => {
       const usages = await analyzeAll(
         {

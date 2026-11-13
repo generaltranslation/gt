@@ -628,9 +628,13 @@ function parameterCandidates(
     if (argument) candidates.push(followCandidate(argument, path));
   }
 
-  // `function show(t = m)` called as `show()` holds `m`.
+  // `function show(t = m)` called as `show()` holds `m`. Only a parameter
+  // with a default looks: reading a site in another module can parse that
+  // module again, and a function can be called from thousands.
   const defaultValue = defaultOf(fn.params[index]);
-  const isDefaultUsed = sites.some((site) => omitsArgument(site, index));
+  const isDefaultUsed =
+    defaultValue !== undefined &&
+    sites.some((site) => omitsArgument(site, index));
 
   if (defaultValue && isDefaultUsed) {
     candidates.push({ type: 'expression', node: defaultValue, scope, path });
