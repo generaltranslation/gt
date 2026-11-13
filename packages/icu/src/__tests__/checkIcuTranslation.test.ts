@@ -390,9 +390,18 @@ describe('checkIcuTranslation', () => {
     expect(checkIcuTranslation('{d, date, ::yM}', "{d, date, ::y'M'}")).toBe(
       mismatch(
         '"d" uses {d, date, ::y}, which the source does not',
-        '"d" is missing {d, date, ::yM}'
+        '"d" is missing {d, date, ::y M}'
       )
     );
+  });
+
+  it.each([
+    ['::MMMM', "::MM'd'MM"],
+    ['::yy', "::y'M'y"],
+  ])('keeps the fields of %s apart from those of %s', (source, translation) => {
+    expect(
+      checkIcuTranslation(`{d, date, ${source}}`, `{d, date, ${translation}}`)
+    ).toBeDefined();
   });
 
   it('reports a problem once when two uses of a variable have it', () => {

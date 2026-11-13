@@ -128,8 +128,9 @@ function readBranches(
 
 /**
  * A style as written. A skeleton is spelled from what the parser reads of
- * it, its tokens or its date and time fields, so spacing is no change and
- * quoted text is no field. Any style text but ICU's style names is a pattern.
+ * it, its tokens or its date and time fields, one space apart, so spacing is
+ * no change, quoted text is no field, and `MM'd'MM` is not `MMMM`. Any style
+ * text but ICU's style names is a pattern.
  */
 function readStyle(
   name: string,
@@ -146,6 +147,6 @@ function readStyle(
       ? style.tokens
           .map(({ stem, options }) => [stem, ...options].join('/'))
           .join(' ')
-      : dateTimeSkeletonFields(style.pattern).join('');
+      : dateTimeSkeletonFields(style.pattern).join(' ');
   return { name, kind, style: `::${skeleton}`, isPattern: false };
 }
