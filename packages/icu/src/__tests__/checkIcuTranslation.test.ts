@@ -424,6 +424,43 @@ const CASES: [
     undefined,
   ],
   [
+    'a variable split across two selects on one value',
+    '{x} {g, select, male {he} other {they}}',
+    '{g, select, male {{x} lui} other {}}{g, select, male {} other {{x} eux}}',
+    'fr',
+    undefined,
+  ],
+  [
+    'a variable split across two plurals on one value',
+    `{x}: ${ITEMS}`,
+    '{n, plural, one {{x}: # Artikel} other {}}{n, plural, one {} other {{x}: # Artikel}}',
+    'de',
+    undefined,
+  ],
+  [
+    'a variable split across a second select while the first is checked',
+    '{x} {g, select, male {he} other {they}} {h, select, a {A} other {B}}',
+    '{g, select, male {il} other {ils}} {h, select, a {{x} A} other {}}{h, select, a {} other {{x} B}}',
+    'fr',
+    undefined,
+  ],
+  [
+    'a variable lost only when two selects both have one value',
+    '{g, select, male {{h, select, a {his {x}} other {his}}} other {theirs}}',
+    '{g, select, male {{h, select, a {le sien} other {le sien}}} other {le leur {x}}}',
+    'fr',
+    mismatch(
+      '"x" is not shown when g is male and h is a, as it is in the source'
+    ),
+  ],
+  [
+    'a tag moved from around a plural into each of its branches',
+    `<b>${ITEMS}</b>`,
+    '{n, plural, one {<b># Artikel</b>} other {<b># Artikel</b>}}',
+    'de',
+    undefined,
+  ],
+  [
     'a variable moved out of its tag',
     '<b>{name}</b> joined',
     '{name} <b>a rejoint</b>',
@@ -538,6 +575,29 @@ describe('checkIcuTranslation', () => {
       )
     );
   });
+
+  it.each([
+    [9, true],
+    [10, false],
+  ])(
+    'checks placement only while the combinations of branches are few: %i selects of two',
+    (selects, checked) => {
+      const names = Array.from({ length: selects - 1 }, (_, i) => `s${i + 1}`);
+      const rest = names.map((name) => `{${name}, select, a {} other {}}`);
+      expect(
+        checkIcuTranslation(
+          `{x}{s0, select, a {} other {}}${rest.join('')}`,
+          `{s0, select, a {{x}} other {}}${rest.join('')}`
+        )
+      ).toBe(
+        checked
+          ? mismatch(
+              `"x" is not shown when ${['s0 is other', ...names.map((name) => `${name} is a`)].join(' and ')}, as it is in the source`
+            )
+          : undefined
+      );
+    }
+  );
 
   it('reports a problem once when two uses of a variable have it', () => {
     expect(

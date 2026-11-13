@@ -330,8 +330,14 @@ function branchKeyProblems(
   return problems;
 }
 
-/** The readers one branch of a select is for, like those whose `g` is `male`. */
-type Readers = { select: string; branch: string };
+/** One branch of each select or plural, by `variableKey`: the readers it is picked for. */
+type Readers = Map<string, string>;
+
+/** A select or plural variable, and the branch keys a reader can have for it. */
+type BranchChoice = { variable: string; name: string; keys: string[] };
+
+// shortcut: a message with more combinations of branches than this is not checked for placement; raise it if a real message needs more.
+const MAX_READERS = 1024;
 
 const isBranching = (
   placeholder: CheckedPlaceholder
@@ -345,8 +351,11 @@ const isBranching = (
  * Each language builds its sentences its own way, so a variable may move
  * into every branch or out of them (ICU advises a whole sentence in each
  * branch). Moved into one branch only, it is lost for every other reader: ICU
- * formats that without complaint. Checked for the readers of each branch of
- * each select in turn, then for all readers.
+ * formats that without complaint.
+ *
+ * A select's keys are the same in both, so it is checked for the readers of
+ * each combination of select branches. A language has its own plural
+ * categories, so what those readers see whatever the number is compared.
  */
 function placementProblems(
   source: CheckedPlaceholder[],
@@ -355,26 +364,33 @@ function placementProblems(
   translationFacts: MessageFacts,
   plurals: PluralLocale | undefined
 ): string[] {
-  const everyReaders: (Readers | undefined)[] = [];
-  for (const { placeholder, keys } of sourceFacts.branches.values()) {
-    if (placeholder.kind !== 'select') continue;
-    for (const branch of keys) {
-      everyReaders.push({ select: placeholder.name, branch });
-    }
+  const selects = branchChoices(sourceFacts, true, undefined);
+  const sourceNumbers = branchChoices(sourceFacts, false, undefined);
+  const numbers = branchChoices(translationFacts, false, plurals);
+  const count = (choices: BranchChoice[]): number =>
+    choices.reduce((product, { keys }) => product * keys.length, 1);
+  if (count(selects) * (count(sourceNumbers) + count(numbers)) > MAX_READERS) {
+    return [];
   }
-  everyReaders.push(undefined);
   // One problem for a variable, for the first readers who lose it.
   const problems = new Map<string, string>();
-  for (const readers of everyReaders) {
-    const shown = alwaysShown(translation, readers, plurals);
-    for (const [key, name] of alwaysShown(source, readers, undefined)) {
+  for (const selected of combinations(selects)) {
+    const shown = shownWhateverTheNumber(translation, selected, numbers);
+    for (const [key, name] of shownWhateverTheNumber(
+      source,
+      selected,
+      sourceNumbers
+    )) {
       // A variable the translation lacks is reported as missing.
       if (shown.has(key) || !translationFacts.variables.has(key)) continue;
       if (problems.has(key)) continue;
+      const when = selects
+        .map(({ variable, name }) => `${name} is ${selected.get(variable)}`)
+        .join(' and ');
       problems.set(
         key,
-        readers
-          ? `"${name}" is not shown when ${readers.select} is ${readers.branch}, as it is in the source`
+        when
+          ? `"${name}" is not shown when ${when}, as it is in the source`
           : `"${name}" is not shown in every branch, as it is in the source`
       );
     }
@@ -383,64 +399,89 @@ function placementProblems(
 }
 
 /**
- * The variables these readers see whichever branch is picked, by
- * `variableKey`, with their names. Their own select shows its one branch, or
- * `other`, as ICU picks it. Any other select, and a plural, shows only what
- * every branch shows. With a locale, a plural category it does not have is
- * never picked, so its branch is left out.
+ * The selects of a message, or its plurals, with the keys of their branches.
+ * With a locale, a plural category it does not have is never picked, so it
+ * is no reader's.
  */
-function alwaysShown(
-  placeholders: CheckedPlaceholder[],
-  readers: Readers | undefined,
+function branchChoices(
+  facts: MessageFacts,
+  selects: boolean,
   plurals: PluralLocale | undefined
-): Map<string, string> {
-  const shown = new Map<string, string>();
-  for (const placeholder of placeholders) {
-    shown.set(variableKey(placeholder), placeholder.name);
-    if (placeholder.kind === 'tag') {
-      for (const [key, name] of alwaysShown(
-        placeholder.children,
-        readers,
-        plurals
-      )) {
-        shown.set(key, name);
-      }
-    } else if (isBranching(placeholder)) {
-      let inEvery: Map<string, string> | undefined;
-      for (const branch of pickedBranches(placeholder, readers, plurals)) {
-        const inBranch = alwaysShown(branch, readers, plurals);
-        if (!inEvery) {
-          inEvery = inBranch;
-          continue;
-        }
-        for (const key of inEvery.keys()) {
-          if (!inBranch.has(key)) inEvery.delete(key);
-        }
-      }
-      for (const [key, name] of inEvery ?? []) shown.set(key, name);
-    }
+): BranchChoice[] {
+  const choices: BranchChoice[] = [];
+  for (const [variable, { placeholder, keys }] of facts.branches) {
+    if ((placeholder.kind === 'select') !== selects) continue;
+    const has =
+      placeholder.kind === 'select'
+        ? undefined
+        : plurals?.categories(ruleType(placeholder.kind));
+    choices.push({
+      variable,
+      name: placeholder.name,
+      keys: [...keys].filter(
+        (key) => !has || !isPluralCategoryKey(key) || has.has(key)
+      ),
+    });
   }
-  return shown;
+  return choices;
 }
 
-/** The branches of a select or plural that can be picked for these readers. */
-function pickedBranches(
-  placeholder: BranchingPlaceholder,
-  readers: Readers | undefined,
-  plurals: PluralLocale | undefined
-): CheckedPlaceholder[][] {
-  const { kind, name, branches } = placeholder;
-  if (kind === 'select') {
-    if (name !== readers?.select) return branches.map(([, branch]) => branch);
-    const picked =
-      branches.find(([key]) => key === readers.branch) ??
-      branches.find(([key]) => key === FALLBACK_BRANCH_KEY);
-    return picked ? [picked[1]] : [];
+/** Every way to pick one key for each choice. */
+function combinations(choices: BranchChoice[]): Readers[] {
+  let all: Readers[] = [new Map()];
+  for (const { variable, keys } of choices) {
+    all = all.flatMap((picked) =>
+      keys.map((key) => new Map(picked).set(variable, key))
+    );
   }
-  const has = plurals?.categories(ruleType(kind));
-  return branches
-    .filter(([key]) => !has || !isPluralCategoryKey(key) || has.has(key))
-    .map(([, branch]) => branch);
+  return all;
+}
+
+/** The variables, by `variableKey` with their names, that the readers of these select branches see for every number. */
+function shownWhateverTheNumber(
+  placeholders: CheckedPlaceholder[],
+  selected: Readers,
+  numbers: BranchChoice[]
+): Map<string, string> {
+  let always: Map<string, string> | undefined;
+  for (const picked of combinations(numbers)) {
+    const shown = shownTo(placeholders, new Map([...selected, ...picked]));
+    if (!always) {
+      always = shown;
+      continue;
+    }
+    for (const key of always.keys()) {
+      if (!shown.has(key)) always.delete(key);
+    }
+  }
+  return always ?? new Map();
+}
+
+/**
+ * The variables one reader sees: each select and plural shows the branch
+ * picked for them, or `other` where it has no such branch, as ICU picks it.
+ */
+function shownTo(
+  placeholders: CheckedPlaceholder[],
+  readers: Readers
+): Map<string, string> {
+  const shown = new Map<string, string>();
+  const visit = (placeholder: CheckedPlaceholder): void => {
+    const variable = variableKey(placeholder);
+    shown.set(variable, placeholder.name);
+    if (placeholder.kind === 'tag') {
+      placeholder.children.forEach(visit);
+    } else if (isBranching(placeholder)) {
+      const picked = readers.get(variable);
+      // shortcut: a number with an exact branch elsewhere takes `other` here, not its category's branch; pick by Intl.PluralRules if that ever misjudges a real message.
+      const branch =
+        placeholder.branches.find(([key]) => key === picked) ??
+        placeholder.branches.find(([key]) => key === FALLBACK_BRANCH_KEY);
+      branch?.[1].forEach(visit);
+    }
+  };
+  placeholders.forEach(visit);
+  return shown;
 }
 
 /**
@@ -469,7 +510,11 @@ function tagProblems(
   return problems;
 }
 
-/** For each variable that is not a tag, the tags around every use of it. */
+/**
+ * For each variable a reader sees printed, the tags around every use of it.
+ * A select or plural prints nothing itself, so a tag may sit around it or
+ * inside each of its branches.
+ */
 function enclosingTags(
   placeholders: CheckedPlaceholder[]
 ): Map<string, { name: string; tags: Set<string> }> {
@@ -480,19 +525,20 @@ function enclosingTags(
       placeholder.children.forEach((child) => visit(child, inside));
       return;
     }
-    const key = variableKey(placeholder);
-    const known = found.get(key);
-    if (!known) {
-      found.set(key, { name: placeholder.name, tags: new Set(around) });
-    } else {
-      for (const tag of known.tags) {
-        if (!around.includes(tag)) known.tags.delete(tag);
-      }
-    }
     if (isBranching(placeholder)) {
       for (const [, branch] of placeholder.branches) {
         branch.forEach((child) => visit(child, around));
       }
+      return;
+    }
+    const key = variableKey(placeholder);
+    const known = found.get(key);
+    if (!known) {
+      found.set(key, { name: placeholder.name, tags: new Set(around) });
+      return;
+    }
+    for (const tag of known.tags) {
+      if (!around.includes(tag)) known.tags.delete(tag);
     }
   };
   placeholders.forEach((placeholder) => visit(placeholder, []));
