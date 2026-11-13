@@ -82,6 +82,12 @@
 
 - bb107a8: Remove `typesVersions`. Subpath types such as `gt-next/server` now resolve only through `exports`, which needs `moduleResolution` `bundler` (TypeScript 5.0+) or `node16`/`nodenext` (TypeScript 4.7+). `moduleResolution` `node` (node10) is no longer supported, including its implicit use with `module: commonjs` in TypeScript 5.9 and earlier and in create-next-app projects from Next.js 13.4.10 and earlier.
 
+## 0.1.10
+
+### Patch Changes
+
+- [#2718](https://github.com/generaltranslation/gt/pull/2718) [`7aae545`](https://github.com/generaltranslation/gt/commit/7aae545bd9e65148b8cbf98a4df3ce750ab1cdbf) Thanks [@eoinest](https://github.com/eoinest)! - fix(format): stop revalidating configured locales on every `requiresTranslation` and `determineLocale` call when `customMapping` uses object entries with a `code`, which slowed server renders that look up many messages
+
 ## 0.1.10-samsara.0
 
 ### Patch Changes

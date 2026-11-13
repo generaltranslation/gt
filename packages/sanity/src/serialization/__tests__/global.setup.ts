@@ -3,7 +3,7 @@ import {
   PortableTextSpan,
   PortableTextObject,
 } from 'sanity';
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 // jsdom doesn't provide window.CSS; sanity's form components call
 // CSS.supports at module scope when imported.
@@ -11,7 +11,13 @@ if (typeof globalThis.CSS === 'undefined') {
   (globalThis as { CSS?: unknown }).CSS = { supports: () => false };
 }
 
+// block-tools gives every block and span a random key. Number them instead,
+// from zero in each test, so snapshots do not depend on test order.
 let mockTestKey = 0;
+
+beforeEach(() => {
+  mockTestKey = 0;
+});
 
 vi.mock('@portabletext/block-tools', async () => {
   const originalModule = await vi.importActual<

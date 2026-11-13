@@ -1,17 +1,4 @@
 import { defineConfig } from 'vitest/config';
+import { vitestPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    environment: 'node',
-    testTimeout: 15000,
-    isolate: true,
-    reporters: [
-      [
-        'default',
-        {
-          summary: true,
-        },
-      ],
-    ],
-  },
-});
+export default defineConfig(vitestPreset);

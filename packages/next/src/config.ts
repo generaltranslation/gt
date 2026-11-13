@@ -117,18 +117,20 @@ function getNextI18nConfigMismatches(
     );
   }
 
-  if (
-    gtConfig.locales !== undefined &&
-    !haveSameLocales(
-      gtConfig.defaultLocale === undefined
-        ? gtConfig.locales
-        : [gtConfig.defaultLocale, ...gtConfig.locales],
-      nextI18n.locales
-    )
-  ) {
-    mismatches.push(
-      `locales: GT has ${JSON.stringify(gtConfig.locales)}; Next.js has ${JSON.stringify(nextI18n.locales)}`
+  if (gtConfig.locales !== undefined) {
+    // GT always supports its default locale, so compare and report that set.
+    const gtLocales = Array.from(
+      new Set(
+        gtConfig.defaultLocale === undefined
+          ? gtConfig.locales
+          : [gtConfig.defaultLocale, ...gtConfig.locales]
+      )
     );
+    if (!haveSameLocales(gtLocales, nextI18n.locales)) {
+      mismatches.push(
+        `locales: GT has ${JSON.stringify(gtLocales)}; Next.js has ${JSON.stringify(nextI18n.locales)}`
+      );
+    }
   }
 
   return mismatches;

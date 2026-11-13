@@ -2,12 +2,46 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { devNull, tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import {
   areCredentialsSet,
   getDevelopmentEnvNames,
   setCredentials,
 } from '../credentials.js';
+
+// Git is only spawned by the "in a Git repository" tests (which also cover
+// running the real binary outside a repository). Everywhere else it is
+// answered in-process, the way Git answers outside a repository.
+const realGit = vi.hoisted(() => ({ enabled: false }));
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>();
+  const { promisify } = await import('node:util');
+  const spawn = promisify(actual.execFile);
+  const execFile = Object.assign(
+    (...args: Parameters<typeof actual.execFile>) => actual.execFile(...args),
+    {
+      [promisify.custom]: (...args: Parameters<typeof spawn>) =>
+        realGit.enabled
+          ? spawn(...args)
+          : Promise.reject(
+              Object.assign(new Error('Command failed: git'), {
+                code: 128,
+                stderr:
+                  'fatal: not a git repository (or any of the parent directories): .git\n',
+              })
+            ),
+    }
+  );
+  return { ...actual, execFile };
+});
 
 describe('setCredentials', () => {
   let appDirectory: string;
@@ -16,6 +50,7 @@ describe('setCredentials', () => {
 
   beforeEach(() => {
     appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-credentials-'));
+    realGit.enabled = false;
   });
 
   afterEach(() => {
@@ -305,11 +340,33 @@ describe('setCredentials', () => {
         undefined,
         appDirectory
       );
+    // The user's global excludes or hooks must not affect these repositories.
+    const isolatedConfig = {
+      GIT_CONFIG_GLOBAL: devNull,
+      GIT_CONFIG_SYSTEM: devNull,
+    };
     const git = (cwd: string, ...args: string[]) =>
       execFileSync(
         'git',
-        ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args],
-        { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+        [
+          '-c',
+          'user.name=test',
+          '-c',
+          'user.email=test@example.com',
+          // A commit can start detached maintenance that is still rewriting
+          // `.git/objects` while the repository is copied.
+          '-c',
+          'maintenance.auto=false',
+          '-c',
+          'gc.auto=0',
+          ...args,
+        ],
+        {
+          cwd,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+          env: { ...process.env, ...isolatedConfig },
+        }
       ).trim();
     const gitExitCode = (cwd: string, ...args: string[]) => {
       try {
@@ -321,20 +378,43 @@ describe('setCredentials', () => {
     };
     const isIgnored = (file: string) =>
       gitExitCode(path.dirname(file), 'check-ignore', '-q', '--', file) === 0;
-    const commit = (cwd: string, ...files: string[]) => {
-      git(cwd, 'add', '--', ...files);
-      git(cwd, 'commit', '-q', '-m', 'add');
+
+    // Repositories are built once per shape and copied into each test, which
+    // is far cheaper than running `git init` and `git commit` every time.
+    const templates = fs.mkdtempSync(
+      path.join(tmpdir(), 'gt-credentials-git-')
+    );
+    const template = (trackedFile = '') => {
+      const repository = path.join(templates, trackedFile || 'empty');
+      if (!fs.existsSync(repository)) {
+        fs.mkdirSync(repository);
+        git(repository, 'init', '-q');
+        if (trackedFile) {
+          fs.writeFileSync(path.join(repository, trackedFile), existing);
+          git(repository, 'add', '--', trackedFile);
+          git(repository, 'commit', '-q', '-m', 'add');
+        }
+      }
+      return repository;
     };
+    /** Makes `directory` a repository whose only commit tracks `trackedFile`. */
+    const initRepository = (directory: string, trackedFile?: string) =>
+      fs.cpSync(template(trackedFile), directory, { recursive: true });
 
     beforeEach(() => {
-      // The user's global excludes or hooks must not affect these repositories.
-      vi.stubEnv('GIT_CONFIG_GLOBAL', devNull);
-      vi.stubEnv('GIT_CONFIG_SYSTEM', devNull);
-      git(appDirectory, 'init', '-q');
+      realGit.enabled = true;
+      for (const [name, value] of Object.entries(isolatedConfig)) {
+        vi.stubEnv(name, value);
+      }
+      initRepository(appDirectory);
     });
 
     afterEach(() => {
       vi.unstubAllEnvs();
+    });
+
+    afterAll(() => {
+      fs.rmSync(templates, { recursive: true, force: true });
     });
 
     it('ignores a new .env.local and verifies the rule with Git', async () => {
@@ -371,8 +451,7 @@ describe('setCredentials', () => {
     });
 
     it('refuses a tracked .env.local without changing anything', async () => {
-      fs.writeFileSync(envPath(), existing);
-      commit(appDirectory, '.env.local');
+      initRepository(appDirectory, '.env.local');
 
       await expect(write()).rejects.toThrow('.env.local is tracked by Git');
       expect(readEnv()).toBe(existing);
@@ -380,8 +459,7 @@ describe('setCredentials', () => {
     });
 
     it('checks the actual tracked file when cwd is relative', async () => {
-      fs.writeFileSync(envPath(), existing);
-      commit(appDirectory, '.env.local');
+      initRepository(appDirectory, '.env.local');
       const previousCwd = process.cwd();
       process.chdir(path.dirname(appDirectory));
       try {
@@ -401,8 +479,7 @@ describe('setCredentials', () => {
 
     it('refuses a symlink to a tracked referent', async () => {
       const referent = path.join(appDirectory, 'shared.env');
-      fs.writeFileSync(referent, existing);
-      commit(appDirectory, 'shared.env');
+      initRepository(appDirectory, 'shared.env');
       fs.symlinkSync(referent, envPath());
 
       await expect(write()).rejects.toThrow('shared.env is tracked by Git');
@@ -427,10 +504,8 @@ describe('setCredentials', () => {
         path.join(tmpdir(), 'gt-credentials-other-')
       );
       try {
-        git(otherRepository, 'init', '-q');
+        initRepository(otherRepository, '.env');
         const referent = path.join(otherRepository, '.env');
-        fs.writeFileSync(referent, existing);
-        commit(otherRepository, '.env');
         fs.writeFileSync(gitignorePath(), '.env.local\n');
         fs.symlinkSync(referent, envPath());
 
@@ -487,8 +562,7 @@ describe('setCredentials', () => {
     ])(
       'fails closed on an inherited %s override instead of trusting its view of a tracked file',
       async (name, relativeValue) => {
-        fs.writeFileSync(envPath(), existing);
-        commit(appDirectory, '.env.local');
+        initRepository(appDirectory, '.env.local');
         vi.stubEnv(name, path.join(appDirectory, relativeValue));
 
         await expect(write()).rejects.toThrow(name);
@@ -510,7 +584,7 @@ describe('setCredentials', () => {
         expect(fs.readFileSync(gitignorePath(), 'utf8')).toBe(
           `${initialRules}\n.env.local\n`
         );
-        git(appDirectory, 'init', '-q');
+        initRepository(appDirectory);
         expect(isIgnored(envPath())).toBe(true);
       }
     );

@@ -3,6 +3,7 @@ import {
   createTag,
   getProjectInfo,
   uploadAssets,
+  uploadTranslations,
 } from '@generaltranslation/api';
 import { GT } from '../index';
 
@@ -11,12 +12,17 @@ vi.mock('@generaltranslation/api', async (importOriginal) => ({
   createTag: vi.fn(),
   getProjectInfo: vi.fn(),
   uploadAssets: vi.fn(),
+  uploadTranslations: vi.fn(),
 }));
 
-// Tests in this file run concurrently, so constructions are recorded per
-// projectId; each lifetime test owns a distinct project.
+// Adapter constructions are recorded per projectId; each test that inspects
+// them owns a distinct project.
 const adapterConstructions = vi.hoisted(
-  () => new Map<string | undefined, Array<{ apiKey?: string }>>()
+  () =>
+    new Map<
+      string | undefined,
+      Array<{ apiKey?: string; userTokenProvider?: unknown }>
+    >()
 );
 
 vi.mock('../adapter/createGtApi', async (importOriginal) => {
@@ -111,6 +117,41 @@ describe('GT generated SDK transport', () => {
       ])
     ).resolves.toEqual({ assets: [asset], count: 1 });
   });
+
+  it('canonicalizes the configured source locale for translation uploads', async () => {
+    vi.mocked(uploadTranslations).mockResolvedValue(
+      result({ uploadedFiles: [], count: 0, message: 'Uploaded files' })
+    );
+    const brandGt = new GT({
+      apiKey: 'test-api-key',
+      projectId: 'test-project',
+      sourceLocale: 'brand-english',
+      customMapping: {
+        'brand-english': { code: 'en-US', name: 'Brand English' },
+      },
+    });
+    const file = {
+      content: '{}',
+      fileName: 'messages.json',
+      fileFormat: 'JSON' as const,
+    };
+
+    await brandGt.uploadTranslations(
+      [
+        {
+          source: { ...file, content: '', locale: 'brand-english' },
+          translations: [{ ...file, locale: 'fr' }],
+        },
+      ],
+      { sourceLocale: 'brand-english' }
+    );
+
+    expect(uploadTranslations).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({ sourceLocale: 'en-US' }),
+      })
+    );
+  });
 });
 
 describe('GT adapter lifetime', () => {
@@ -128,6 +169,25 @@ describe('GT adapter lifetime', () => {
 
   beforeEach(() => {
     vi.mocked(createTag).mockResolvedValue(result({ tag }));
+  });
+
+  it('accepts a user token provider in place of an API key', async () => {
+    const projectId = 'lifetime-user-token';
+    const userTokenProvider = {
+      getAccessToken: async () => 'user-token',
+      refreshAccessToken: async () => undefined,
+    };
+    const instance = new GT({
+      baseUrl: 'https://api.example.com',
+      projectId,
+      userTokenProvider,
+    });
+
+    await instance.createTag(request);
+
+    expect(adapterConstructions.get(projectId)).toEqual([
+      expect.objectContaining({ apiKey: undefined, userTokenProvider }),
+    ]);
   });
 
   it('constructs one adapter per instance across calls', async () => {

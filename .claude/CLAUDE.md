@@ -67,6 +67,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 - Build outputs go to `dist/`. Change source files and rebuild instead of editing `dist/` directly.
 - Do not use default exports.
 - Avoid `useEffect` in React code. Prefer derived state, event handlers, refs, or framework data-loading patterns; only use `useEffect` when synchronizing with an external system.
+- Default to no comments. Add one only when a reader would otherwise miss a fact the code cannot show: an outside constraint, why code that looks removable must stay, or a surprising contract on an exported function. Keep it to one sentence. The code is the source of truth; comments that narrate the code, justify decisions, or record history drift from it and make the code harder to read.
 
 ## Canonical Library Defaults
 

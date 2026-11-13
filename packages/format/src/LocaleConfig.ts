@@ -65,6 +65,7 @@ type LocaleResolutionScope = {
   configuredLocales: Set<string>;
   approvedLocalePairs: {
     locale: string;
+    mappedCode: string | undefined;
     canonicalLocale: string;
     standardizedLocale: string;
   }[];
@@ -113,7 +114,7 @@ export class LocaleConfig {
       const pair = scope.approvedLocalePairs[index];
       if (
         pair.locale !== locale ||
-        pair.canonicalLocale !== this.resolveCanonicalLocale(locale) ||
+        pair.mappedCode !== getCustomLocaleCode(this.customMapping, locale) ||
         scope.canonicalMappingCodes[index] !==
           getCustomLocaleCode(this.customMapping, pair.canonicalLocale)
       ) {
@@ -130,6 +131,7 @@ export class LocaleConfig {
       const canonicalLocale = this.resolveCanonicalLocale(locale);
       return {
         locale,
+        mappedCode: getCustomLocaleCode(this.customMapping, locale),
         canonicalLocale,
         // Normalize once with the prepared scope, not during every fallback
         // lookup over the configured list (the regression in #2067).

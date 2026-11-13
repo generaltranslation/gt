@@ -96,8 +96,39 @@ let appDirectory: string;
 let stdout: string[];
 let stderr: string[];
 
-beforeEach(() => {
+/**
+ * The logger singleton reads its format and log file once, when the CLI
+ * modules load. Default-format tests share one copy of the CLI; a test that
+ * needs another format or a log file loads a fresh copy and leaves it behind.
+ */
+type Cli = {
+  ReactCLI: typeof import('../react.js').ReactCLI;
+  main: typeof import('../../index.js').main;
+  logger: typeof import('../../console/logger.js').logger;
+};
+let cli: Cli;
+let cliIsDefault = false;
+
+async function loadCli(): Promise<Cli> {
   vi.resetModules();
+  const [{ ReactCLI }, { main }, { logger }] = await Promise.all([
+    import('../react.js'),
+    import('../../index.js'),
+    import('../../console/logger.js'),
+  ]);
+  return { ReactCLI, main, logger };
+}
+
+async function useJsonLogs(): Promise<string> {
+  const logFile = path.join(path.dirname(appDirectory), 'gt.log');
+  vi.stubEnv('GT_LOG_FORMAT', 'json');
+  vi.stubEnv('GT_LOG_FILE', logFile);
+  cli = await loadCli();
+  cliIsDefault = false;
+  return logFile;
+}
+
+beforeEach(async () => {
   const sandbox = fs.mkdtempSync(path.join(tmpdir(), 'gt-api-key-stdout-'));
   appDirectory = path.join(sandbox, 'app');
   fs.mkdirSync(appDirectory);
@@ -111,6 +142,10 @@ beforeEach(() => {
   vi.stubEnv('GT_LOG_FORMAT', 'default');
   vi.stubEnv('GT_LOG_LEVEL', '');
   vi.stubEnv('GT_LOG_FILE', '');
+  if (!cliIsDefault) {
+    cli = await loadCli();
+    cliIsDefault = true;
+  }
   writeJson(path.join(appDirectory, 'gt.config.json'), {
     projectId: PROJECT_ID,
     baseUrl: BASE_URL,
@@ -146,9 +181,8 @@ afterEach(() => {
 
 describe('api-key create stdout isolation', () => {
   async function run(args: string[] = CREATE_ARGS) {
-    const { ReactCLI } = await import('../react.js');
     const program = new Command().exitOverride();
-    new ReactCLI(program, 'react');
+    new cli.ReactCLI(program, 'react');
     await program.parseAsync(args, { from: 'user' });
   }
 
@@ -240,9 +274,7 @@ describe('api-key create stdout isolation', () => {
   );
 
   it('routes JSON console logs to stderr and keeps the secret out of the log file', async () => {
-    const logFile = path.join(path.dirname(appDirectory), 'gt.log');
-    vi.stubEnv('GT_LOG_FORMAT', 'json');
-    vi.stubEnv('GT_LOG_FILE', logFile);
+    const logFile = await useJsonLogs();
     const descriptorWrites = spyDescriptorWrites();
 
     await run();
@@ -256,8 +288,7 @@ describe('api-key create stdout isolation', () => {
     expect(consoleJson).toContain(PROJECT_ID);
     expect(consoleJson).not.toContain(SECRET);
 
-    const { logger } = await import('../../console/logger.js');
-    logger.flush();
+    cli.logger.flush();
     await vi.waitFor(() =>
       expect(fs.readFileSync(logFile, 'utf8')).toContain(PROJECT_ID)
     );
@@ -291,9 +322,8 @@ describe('api-key create stdout isolation', () => {
 // and the logger singleton outlives each invocation.
 describe('gt entry point console routing', () => {
   async function runMain(args: string[]) {
-    const { main } = await import('../../index.js');
     const program = new Command().exitOverride();
-    main(program);
+    cli.main(program);
     await program.parseAsync(args, { from: 'user' });
   }
 
@@ -343,9 +373,7 @@ describe('gt entry point console routing', () => {
   });
 
   it('restores JSON console routing and keeps file logging across invocations', async () => {
-    const logFile = path.join(path.dirname(appDirectory), 'gt.log');
-    vi.stubEnv('GT_LOG_FORMAT', 'json');
-    vi.stubEnv('GT_LOG_FILE', logFile);
+    const logFile = await useJsonLogs();
     const descriptorWrites = spyDescriptorWrites();
 
     await runMain(CREATE_ARGS);
@@ -363,8 +391,7 @@ describe('gt entry point console routing', () => {
     expect(byDescriptor(1)).toContain('Signed out successfully.');
     expect(byDescriptor(2)).toBe('');
 
-    const { logger } = await import('../../console/logger.js');
-    logger.flush();
+    cli.logger.flush();
     await vi.waitFor(() =>
       expect(fs.readFileSync(logFile, 'utf8')).toContain(
         'Signed out successfully.'

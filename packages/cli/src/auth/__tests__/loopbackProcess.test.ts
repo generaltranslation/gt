@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { request } from 'node:http';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { CALLBACK_RETRY_HOLD_MS } from '../loopback.js';
 
 const fixture = (name: string) =>
@@ -16,11 +16,10 @@ type Login = {
   exited: Promise<number>;
 };
 
-let running: ChildProcess | undefined;
+const running = new Set<ChildProcess>();
 
-afterEach(() => {
-  running?.kill();
-  running = undefined;
+afterAll(() => {
+  for (const child of running) child.kill();
 });
 
 /** Runs one loopback login in its own process, the retry client staying in this one. */
@@ -35,7 +34,7 @@ function startLogin(exchangeMs: number): Login {
     ],
     { stdio: ['ignore', 'pipe', 'inherit'] }
   );
-  running = child;
+  running.add(child);
   const lines = createInterface({ input: child.stdout! })[
     Symbol.asyncIterator
   ]();
@@ -61,7 +60,8 @@ function abandonedGet(url: string, abortMs: number): Promise<void> {
   });
 }
 
-describe('loopback login in its own process', () => {
+// Each case waits on real timers in its own child process, so run them together.
+describe.concurrent('loopback login in its own process', () => {
   it('stays up for the repeat of a navigation abandoned during the exchange, then exits', async () => {
     const login = startLogin(400);
     const callback = `${await login.line()}?code=abc&state=xyz`;

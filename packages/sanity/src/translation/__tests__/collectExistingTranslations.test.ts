@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { Schema } from '@sanity/schema';
 import type { SanityClient, SanityDocument } from 'sanity';
 import { afterEach, describe, expect, test, vi } from 'vitest';

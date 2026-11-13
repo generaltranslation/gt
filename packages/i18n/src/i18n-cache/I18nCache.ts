@@ -253,13 +253,11 @@ class I18nCache<TranslationValue extends Content = Content> {
     locale: string
   ): Promise<Record<Hash, TranslationValue>> {
     return this.guardAsync({}, async () => {
-      // Validate
-      const translationLocale = this._resolveCacheLocale(locale);
-      if (!translationLocale) {
+      if (locale === getI18nConfig().getDefaultLocale()) {
         return {};
       }
 
-      const txCache = await this.translations.getOrLoad(translationLocale);
+      const txCache = await this.translations.getOrLoad(locale);
 
       // Get the translations
       return txCache.getInternalCache();
@@ -272,15 +270,7 @@ class I18nCache<TranslationValue extends Content = Content> {
    */
   async loadDictionary(locale: string): Promise<Dictionary> {
     return this.guardAsync({}, async () => {
-      // Validate
-      const dictionaryLocale = this._resolveCacheLocale(locale);
-      if (!dictionaryLocale) {
-        return this.getDefaultDictionaryCache()?.getInternalCache() ?? {};
-      }
-
-      const dictionaryCache =
-        await this.dictionaries.getOrLoad(dictionaryLocale);
-
+      const dictionaryCache = await this.dictionaries.getOrLoad(locale);
       return dictionaryCache.getInternalCache();
     });
   }
@@ -290,9 +280,7 @@ class I18nCache<TranslationValue extends Content = Content> {
    */
   lookupDictionary(locale: string, id: string): DictionaryEntry | undefined {
     return this.guard(undefined, () =>
-      this.dictionaries
-        .get(this.resolveDictionaryCacheLocale(locale))
-        ?.getEntry(id)
+      this.dictionaries.get(locale)?.getEntry(id)
     );
   }
 
@@ -304,9 +292,7 @@ class I18nCache<TranslationValue extends Content = Content> {
     id: string
   ): DictionaryObject | undefined {
     return this.guard(undefined, () =>
-      this.dictionaries
-        .get(this.resolveDictionaryCacheLocale(locale))
-        ?.getValue(id)
+      this.dictionaries.get(locale)?.getValue(id)
     );
   }
 
@@ -317,10 +303,8 @@ class I18nCache<TranslationValue extends Content = Content> {
         lookupDictionaryObj: () => undefined,
       },
       async () => {
-        const asyncBoundaryLocale = this._resolveCacheLocale(locale);
-        const asyncBoundaryDictionaryCache = asyncBoundaryLocale
-          ? await this.dictionaries.getOrLoad(asyncBoundaryLocale)
-          : this.getDefaultDictionaryCache();
+        const asyncBoundaryDictionaryCache =
+          await this.dictionaries.getOrLoad(locale);
 
         return {
           lookupDictionary: (id) => asyncBoundaryDictionaryCache?.getEntry(id),
@@ -340,13 +324,11 @@ class I18nCache<TranslationValue extends Content = Content> {
     id: string
   ): Promise<DictionaryEntry | undefined> {
     return this.guardAsync(undefined, async () => {
-      const dictionaryLocale = this._resolveCacheLocale(locale);
-      if (!dictionaryLocale) {
+      if (locale === getI18nConfig().getDefaultLocale()) {
         return this.getSourceDictionaryEntry(id);
       }
 
-      const dictionaryCache =
-        await this.dictionaries.getOrLoad(dictionaryLocale);
+      const dictionaryCache = await this.dictionaries.getOrLoad(locale);
 
       return (
         dictionaryCache.getEntry(id) ??
@@ -367,14 +349,11 @@ class I18nCache<TranslationValue extends Content = Content> {
     id: string
   ): Promise<DictionaryObject | undefined> {
     return this.guardAsync(undefined, async () => {
-      const dictionaryLocale = this._resolveCacheLocale(locale);
-
-      if (!dictionaryLocale) {
+      if (locale === getI18nConfig().getDefaultLocale()) {
         return this.getSourceDictionaryObject(id);
       }
 
-      const dictionaryCache =
-        await this.dictionaries.getOrLoad(dictionaryLocale);
+      const dictionaryCache = await this.dictionaries.getOrLoad(locale);
       const targetObject = dictionaryCache.getValue(id);
       const sourceObject = this.getSourceDictionaryObject(id, {
         throwOnMissing: false,
@@ -435,12 +414,6 @@ class I18nCache<TranslationValue extends Content = Content> {
     return this.dictionaries.get(getI18nConfig().getDefaultLocale());
   }
 
-  private resolveDictionaryCacheLocale(locale: string): Locale {
-    return (
-      this._resolveCacheLocale(locale) ?? getI18nConfig().getDefaultLocale()
-    );
-  }
-
   /**
    * Just lookup a translation
    */
@@ -450,17 +423,8 @@ class I18nCache<TranslationValue extends Content = Content> {
     options: LookupOptions
   ): T | undefined {
     return this.guard<T | undefined>(undefined, () => {
-      // Validate
-      const { translationLocale, options: lookupOptions } =
-        this.resolveLookupParams(locale, options);
-
-      // Early return if in default locale
-      if (!translationLocale) return content;
-
-      // Get the translation from the locale cache
-      return this.translations
-        .get(translationLocale)
-        ?.get({ content, options: lookupOptions });
+      if (locale === getI18nConfig().getDefaultLocale()) return content;
+      return this.translations.get(locale)?.get({ content, options });
     });
   }
 
@@ -496,16 +460,14 @@ class I18nCache<TranslationValue extends Content = Content> {
     return this.guardAsync<TranslationResolver<TranslationValue>>(
       (content) => content,
       async () => {
-        // Locale used for the async load
-        const asyncBoundaryLocale = this._resolveCacheLocale(locale);
+        const defaultLocale = getI18nConfig().getDefaultLocale();
 
         // Early return if i18n is disabled or default locale
-        if (!asyncBoundaryLocale) {
+        if (locale === defaultLocale) {
           return (content) => content;
         }
 
-        const asyncBoundaryTxCache =
-          await this.translations.getOrLoad(asyncBoundaryLocale);
+        const asyncBoundaryTxCache = await this.translations.getOrLoad(locale);
 
         // Prefetch any entries during async block (dev hot reload only)
         const prefetchEntries = async (
@@ -517,16 +479,13 @@ class I18nCache<TranslationValue extends Content = Content> {
           ) {
             // Invariant: all prefetchEntries must be the same locale
             // TODO: investigate why we have made this an invariant, we may be able to drop this requirement
-            const resolvedPrefetchEntries = resolvePrefetchEntriesByLocale(
-              prefetchEntries,
-              asyncBoundaryLocale,
-              (entryLocale) =>
-                this._resolveCacheLocale(entryLocale) ??
-                this._resolveLocale(entryLocale)
+            const resolvedPrefetchEntries = prefetchEntries.filter(
+              ({ options }) =>
+                options.$locale == null || options.$locale === locale
             );
             if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
               logger.warn(
-                `I18nCache: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${asyncBoundaryLocale}`
+                `I18nCache: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${locale}`
               );
             }
 
@@ -544,22 +503,19 @@ class I18nCache<TranslationValue extends Content = Content> {
           lookupOptions: LookupOptions = {} as LookupOptions
         ) =>
           this.guard(undefined, () => {
-            const { translationLocale, options } = this.resolveLookupParams(
-              lookupOptions.$locale ?? asyncBoundaryLocale,
-              lookupOptions
-            );
+            const translationLocale = lookupOptions.$locale ?? locale;
 
             // Default locale, return the content
-            if (!translationLocale) return content;
+            if (translationLocale === defaultLocale) return content;
 
             // Request locale overriden, to attempt a synchronous lookup if an alternate locale is requested
             const txCache =
-              translationLocale === asyncBoundaryLocale
+              translationLocale === locale
                 ? asyncBoundaryTxCache
                 : this.translations.get(translationLocale);
 
             // Get the translation
-            return txCache?.get({ content, options });
+            return txCache?.get({ content, options: lookupOptions });
           });
 
         Object.assign(lookupTranslation, { prefetchEntries });
@@ -611,81 +567,18 @@ class I18nCache<TranslationValue extends Content = Content> {
     }
   }
 
-  private _resolveLocale(locale: string) {
-    const i18nConfig = getI18nConfig();
-    const resolvedLocale = i18nConfig.determineLocale(locale);
-    if (!i18nConfig.isValidLocale(locale) || !resolvedLocale) {
-      throw new Error(
-        `Locale "${locale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping.`
-      );
-    }
-    return resolvedLocale;
-  }
-
-  /**
-   * Resolve the locale key used to load/read locale caches.
-   * Returns undefined when the requested locale can use source content.
-   */
-  private _resolveCacheLocale(locale: string) {
-    const resolvedLocale = this._resolveLocale(locale);
-    const i18nConfig = getI18nConfig();
-    if (i18nConfig.requiresTranslation(resolvedLocale)) {
-      return resolvedLocale;
-    }
-
-    // Explicit translation lookups may request a dialect outside the supported
-    // app locales. Preserve that existing fallback independently of routing.
-    const aliasLocale = i18nConfig.resolveAliasLocale(
-      i18nConfig.standardizeLocale(locale)
-    );
-    if (i18nConfig.requiresTranslation(aliasLocale)) {
-      return aliasLocale;
-    }
-
-    return undefined;
-  }
-
-  private resolveLookupParams(locale: string, options: LookupOptions) {
-    const translationLocale = this._resolveCacheLocale(locale);
-    return {
-      translationLocale,
-      options: translationLocale
-        ? this.resolveLookupOptions(options, translationLocale)
-        : options,
-    };
-  }
-
-  private resolveLookupOptions(
-    options: LookupOptions = {} as LookupOptions,
-    translationLocale?: string
-  ): LookupOptions {
-    if (!options.$locale) {
-      return options;
-    }
-    return {
-      ...options,
-      $locale:
-        translationLocale ??
-        this._resolveCacheLocale(options.$locale) ??
-        this._resolveLocale(options.$locale),
-    };
-  }
-
   private async lookupTranslationWithFallbackResolved<
     T extends TranslationValue = TranslationValue,
   >(locale: string, content: T, options: LookupOptions): Promise<T> {
-    const { translationLocale, options: lookupOptions } =
-      this.resolveLookupParams(locale, options);
-
-    if (!translationLocale) {
+    if (locale === getI18nConfig().getDefaultLocale()) {
       return content;
     }
 
-    const txCache = await this.translations.getOrLoad(translationLocale);
+    const txCache = await this.translations.getOrLoad(locale);
 
-    let translation = txCache.get({ content, options: lookupOptions });
+    let translation = txCache.get({ content, options });
     if (translation == null) {
-      translation = await txCache.miss({ content, options: lookupOptions });
+      translation = await txCache.miss({ content, options });
     }
     return translation;
   }
@@ -734,38 +627,4 @@ function validateCacheParams(params: I18nCacheConstructorParams): void {
     );
     throw new Error('Validation errors occurred');
   }
-}
-
-/**
- * Resolve prefetch entry locales and keep entries matching the active locale.
- * @template TranslationType - The type of the translation
- * @param {TranslationKey<TranslationType>[]} prefetchEntries - The prefetch entries to filter
- * @param {string} locale - The locale to filter by
- * @returns {TranslationKey<TranslationType>[]} The filtered prefetch entries
- */
-function resolvePrefetchEntriesByLocale<TranslationType extends Content>(
-  prefetchEntries: TranslationKey<TranslationType>[],
-  locale: string,
-  resolveLocale: (locale: string) => string
-) {
-  return prefetchEntries.flatMap((entry) => {
-    const entryLocale = entry.options.$locale;
-    if (entryLocale == null) return [entry];
-
-    try {
-      const resolvedLocale = resolveLocale(entryLocale);
-      if (resolvedLocale !== locale) return [];
-      return [
-        {
-          content: entry.content,
-          options: {
-            ...entry.options,
-            $locale: resolvedLocale,
-          },
-        },
-      ];
-    } catch {
-      return [];
-    }
-  });
 }

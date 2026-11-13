@@ -1,14 +1,37 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Libraries } from '../../../types/libraries.js';
 import { matchRequirementsTxtDependency } from '../matchRequirementsTxtDependency.js';
 
 describe('matchRequirementsTxtDependency', () => {
-  // ---- Basic detection ----
-
-  it('detects plain gt-flask', () => {
-    expect(matchRequirementsTxtDependency('gt-flask\n')).toBe(
-      Libraries.GT_FLASK
-    );
+  it.each([
+    ['a plain requirement', 'gt-flask\n'],
+    [
+      'a requirement among other packages',
+      'flask\nuvicorn\ngt-flask\nrequests\n',
+    ],
+    // Version specifiers
+    ['a >= specifier', 'gt-flask>=1.0.0\n'],
+    ['an == specifier', 'gt-flask==1.2.3\n'],
+    ['a ~= specifier', 'gt-flask~=1.0\n'],
+    ['a != specifier', 'gt-flask!=1.0.0\n'],
+    ['< and > specifiers', 'gt-flask>1.0,<2.0\n'],
+    // PEP 503 name normalization
+    ['the underscore spelling', 'gt_flask\n'],
+    ['mixed case', 'GT-Flask\n'],
+    ['the period spelling', 'gt.flask\n'],
+    // Extras, markers and URLs
+    ['one extra', 'gt-flask[redis]>=1.0\n'],
+    ['several extras', 'gt-flask[redis,celery]>=1.0\n'],
+    ['an environment marker', 'gt-flask>=1.0; python_version >= "3.8"\n'],
+    ['an @ URL', 'gt-flask @ https://example.com/gt-flask-1.0.tar.gz\n'],
+    ['a trailing comment', 'gt-flask>=1.0 # i18n support\n'],
+    // Whitespace
+    ['leading whitespace', '  gt-flask>=1.0\n'],
+    ['trailing whitespace', 'gt-flask  \n'],
+    ['Windows line endings', 'gt-flask>=1.0\r\n'],
+    ['empty lines between packages', 'flask\n\n\ngt-flask\n\nrequests\n'],
+  ])('detects gt-flask with %s', (_case, content) => {
+    expect(matchRequirementsTxtDependency(content)).toBe(Libraries.GT_FLASK);
   });
 
   it('detects gt-fastapi', () => {
@@ -17,195 +40,23 @@ describe('matchRequirementsTxtDependency', () => {
     );
   });
 
-  it('detects gt-flask among other packages', () => {
-    const content = 'flask\nuvicorn\ngt-flask\nrequests\n';
-    expect(matchRequirementsTxtDependency(content)).toBe(Libraries.GT_FLASK);
-  });
-
-  // ---- Version specifier formats ----
-
-  it('handles >= version specifier', () => {
-    expect(matchRequirementsTxtDependency('gt-flask>=1.0.0\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  it('handles == exact version', () => {
-    expect(matchRequirementsTxtDependency('gt-flask==1.2.3\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  it('handles ~= compatible version', () => {
-    expect(matchRequirementsTxtDependency('gt-flask~=1.0\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  it('handles != exclusion', () => {
-    expect(matchRequirementsTxtDependency('gt-flask!=1.0.0\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  it('handles < and > specifiers', () => {
-    expect(matchRequirementsTxtDependency('gt-flask>1.0,<2.0\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  // ---- PEP 503 normalization ----
-
-  it('detects gt_flask underscore variant', () => {
-    expect(matchRequirementsTxtDependency('gt_flask\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  it('detects GT-Flask mixed case', () => {
-    expect(matchRequirementsTxtDependency('GT-Flask\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  it('detects gt.flask period variant', () => {
-    expect(matchRequirementsTxtDependency('gt.flask\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  // ---- Extras syntax ----
-
-  it('handles extras syntax [redis]', () => {
-    expect(matchRequirementsTxtDependency('gt-flask[redis]>=1.0\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  it('handles multiple extras', () => {
-    expect(
-      matchRequirementsTxtDependency('gt-flask[redis,celery]>=1.0\n')
-    ).toBe(Libraries.GT_FLASK);
-  });
-
-  // ---- Environment markers ----
-
-  it('handles environment markers with semicolon', () => {
-    expect(
-      matchRequirementsTxtDependency('gt-flask>=1.0; python_version >= "3.8"\n')
-    ).toBe(Libraries.GT_FLASK);
-  });
-
-  // ---- URL-based requirements ----
-
-  it('handles @ URL syntax', () => {
-    expect(
-      matchRequirementsTxtDependency(
-        'gt-flask @ https://example.com/gt-flask-1.0.tar.gz\n'
-      )
-    ).toBe(Libraries.GT_FLASK);
-  });
-
-  // ---- Comments ----
-
-  it('ignores full-line comments containing gt-flask', () => {
-    expect(
-      matchRequirementsTxtDependency('# gt-flask is not installed\nflask\n')
-    ).toBeNull();
-  });
-
-  it('ignores inline comments after unrelated package name', () => {
-    expect(
-      matchRequirementsTxtDependency('flask # replaces gt-flask\n')
-    ).toBeNull();
-  });
-
-  it('detects gt-flask even with inline comment after it', () => {
-    expect(
-      matchRequirementsTxtDependency('gt-flask>=1.0 # i18n support\n')
-    ).toBe(Libraries.GT_FLASK);
-  });
-
-  // ---- Pip flags / directives ----
-
-  it('ignores -r include directive', () => {
-    expect(
-      matchRequirementsTxtDependency('-r other-requirements.txt\nflask\n')
-    ).toBeNull();
-  });
-
-  it('ignores --index-url directive', () => {
-    expect(
-      matchRequirementsTxtDependency(
-        '--index-url https://pypi.org/simple\nflask\n'
-      )
-    ).toBeNull();
-  });
-
-  it('ignores -e editable install', () => {
-    expect(
-      matchRequirementsTxtDependency('-e git+https://github.com/x/gt-flask\n')
-    ).toBeNull();
-  });
-
-  it('ignores --find-links', () => {
-    expect(
-      matchRequirementsTxtDependency('--find-links /path/to/gt-flask\nflask\n')
-    ).toBeNull();
-  });
-
-  // ---- Partial name prevention ----
-
-  it('does not match prefix: not-gt-flask', () => {
-    expect(matchRequirementsTxtDependency('not-gt-flask>=1.0\n')).toBeNull();
-  });
-
-  it('does not match suffix: gt-flask-extra', () => {
-    expect(matchRequirementsTxtDependency('gt-flask-extra>=1.0\n')).toBeNull();
-  });
-
-  it('does not match gt-flaskify', () => {
-    expect(matchRequirementsTxtDependency('gt-flaskify>=1.0\n')).toBeNull();
-  });
-
-  // ---- Whitespace / formatting ----
-
-  it('handles leading whitespace', () => {
-    expect(matchRequirementsTxtDependency('  gt-flask>=1.0\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  it('handles trailing whitespace', () => {
-    expect(matchRequirementsTxtDependency('gt-flask  \n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  it('handles Windows line endings', () => {
-    expect(matchRequirementsTxtDependency('gt-flask>=1.0\r\n')).toBe(
-      Libraries.GT_FLASK
-    );
-  });
-
-  it('handles empty lines between packages', () => {
-    const content = 'flask\n\n\ngt-flask\n\nrequests\n';
-    expect(matchRequirementsTxtDependency(content)).toBe(Libraries.GT_FLASK);
-  });
-
-  it('returns null for empty content', () => {
-    expect(matchRequirementsTxtDependency('')).toBeNull();
-  });
-
-  it('returns null for only comments', () => {
-    expect(
-      matchRequirementsTxtDependency('# gt-flask\n# gt-fastapi\n')
-    ).toBeNull();
-  });
-
-  it('returns null for no matching packages', () => {
-    expect(
-      matchRequirementsTxtDependency('flask\nrequests\nuvicorn\n')
-    ).toBeNull();
+  it.each([
+    ['empty content', ''],
+    ['no matching packages', 'flask\nrequests\nuvicorn\n'],
+    // Comments
+    ['only comments', '# gt-flask\n# gt-fastapi\n'],
+    ['a full-line comment naming it', '# gt-flask is not installed\nflask\n'],
+    ['a comment after another package', 'flask # replaces gt-flask\n'],
+    // Pip directives
+    ['an -r include', '-r other-requirements.txt\nflask\n'],
+    ['an --index-url', '--index-url https://pypi.org/simple\nflask\n'],
+    ['an -e editable install', '-e git+https://github.com/x/gt-flask\n'],
+    ['a --find-links path', '--find-links /path/to/gt-flask\nflask\n'],
+    // Partial names
+    ['a longer name ending in it', 'not-gt-flask>=1.0\n'],
+    ['a longer name starting with it', 'gt-flask-extra>=1.0\n'],
+    ['a name it is a prefix of', 'gt-flaskify>=1.0\n'],
+  ])('returns null for %s', (_case, content) => {
+    expect(matchRequirementsTxtDependency(content)).toBeNull();
   });
 });

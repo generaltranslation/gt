@@ -66,6 +66,27 @@
 - Updated dependencies [e6dac30]
   - gt@3.0.0-samsara.0
 
+## 2.28.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.28.2
+
+## 2.28.1
+
+### Patch Changes
+
+- Updated dependencies [[`691493b`](https://github.com/generaltranslation/gt/commit/691493b9f75b10bcafc2fe50e0361a68b76ebd45)]:
+  - gt@2.28.1
+
+## 2.28.0
+
+### Patch Changes
+
+- Updated dependencies [[`2d4868c`](https://github.com/generaltranslation/gt/commit/2d4868c0ca2b2d61931446256b993999cab0284a), [`caea70d`](https://github.com/generaltranslation/gt/commit/caea70d11ba6f7a23d1cc8c14a9e1bec3704c493), [`a3a9b6a`](https://github.com/generaltranslation/gt/commit/a3a9b6a2705cf155d315bc94dfd29aaf44ae71bb), [`69738aa`](https://github.com/generaltranslation/gt/commit/69738aa6f8a67aca67a10e3717d942db9f7410ac)]:
+  - gt@2.28.0
+
 ## 2.27.3
 
 ### Patch Changes

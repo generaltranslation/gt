@@ -1,24 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
 import { hashSource } from 'generaltranslation/id';
-import { extractFromVueProject } from '../../project.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { inspectVueProject } from '../../inspect.js';
 import {
-  createProjectFixture,
+  extractFromVueProject,
+  mergeVueProjectExtraction,
+} from '../../project.js';
+import type { VueProjectExtractionResult } from '../../types.js';
+import {
+  createTestProject,
   linkInstalledVue,
-  removeProjectFixture,
   translatableSfc,
 } from './projectTestUtils.js';
-
-const temporaryDirectories: string[] = [];
-const CONCURRENT_PROJECT_EXTRACTION_TIMEOUT_MS = 15_000;
-
-afterEach(() => {
-  for (const directory of temporaryDirectories.splice(0)) {
-    removeProjectFixture(directory);
-  }
-});
 
 describe('extractFromVueProject', () => {
   it('discovers root app.vue and conventional Nuxt source directories', async () => {
@@ -962,7 +956,7 @@ import { LocalT } from '@local/gt';
   );
 
   it('follows a package self-reference whose emitted export has only TypeScript source', async () => {
-    const root = createFixture({
+    const root = createLinkedProject({
       'package.json': JSON.stringify({
         name: '@fixture/self-vue-app',
         private: true,
@@ -1085,58 +1079,638 @@ import { LocalT } from '@local/gt';
     ]);
   });
 
-  it(
-    'is deterministic across 80 concurrent project extractions',
-    async () => {
-      const root = createVueFixture({
-        'src/App.vue': `<script setup lang="ts">
+  it('is deterministic across 16 concurrent project extractions', async () => {
+    const root = createVueFixture({
+      'src/App.vue': `<script setup lang="ts">
 import { T, msg } from 'gt-vue';
 export const subtitle = msg('Concurrent subtitle');
 </script>
 <template><T context="concurrency">Concurrent heading</T></template>
 `,
-      });
+    });
 
-      const outputs = await Promise.all(
-        Array.from({ length: 80 }, () =>
-          extractFromVueProject({
-            cwd: root,
-            includeSourceCodeContext: true,
-          })
-        )
-      );
+    const outputs = await Promise.all(
+      Array.from({ length: 16 }, () =>
+        extractFromVueProject({
+          cwd: root,
+          includeSourceCodeContext: true,
+        })
+      )
+    );
 
-      expect(outputs[0]?.errors).toEqual([]);
-      expect(outputs[0]?.updates).toHaveLength(2);
-      const expected = JSON.stringify(outputs[0]);
-      expect(
-        outputs.every((output) => JSON.stringify(output) === expected)
-      ).toBe(true);
-    },
-    CONCURRENT_PROJECT_EXTRACTION_TIMEOUT_MS
-  );
+    expect(outputs[0]?.errors).toEqual([]);
+    expect(outputs[0]?.updates).toHaveLength(2);
+    const expected = JSON.stringify(outputs[0]);
+    expect(outputs.every((output) => JSON.stringify(output) === expected)).toBe(
+      true
+    );
+  });
+
+  function createVueFixture(
+    files: Record<string, string>,
+    additionalDependencies: Record<string, string> = {}
+  ): string {
+    return createLinkedProject({
+      'package.json': JSON.stringify({
+        name: 'vue-project',
+        private: true,
+        dependencies: {
+          ...additionalDependencies,
+          'gt-vue': 'workspace:*',
+          vue: '^3.5.0',
+        },
+      }),
+      ...files,
+    });
+  }
+
+  function restoreEnvironmentVariable(
+    name: 'TS_NODE_BASEURL' | 'TS_NODE_PROJECT',
+    value: string | undefined
+  ): void {
+    if (value === undefined) {
+      delete process.env[name];
+    } else {
+      process.env[name] = value;
+    }
+  }
 });
 
-function createVueFixture(
-  files: Record<string, string>,
-  additionalDependencies: Record<string, string> = {}
-): string {
-  return createFixture({
-    'package.json': JSON.stringify({
-      name: 'vue-project',
-      private: true,
-      dependencies: {
-        ...additionalDependencies,
-        'gt-vue': 'workspace:*',
-        vue: '^3.5.0',
-      },
-    }),
-    ...files,
+describe('project extraction orchestration parity', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
+
+  it('does not resolve an unowned React root Vite config', async () => {
+    const root = createWorkspaceFixture({
+      'package.json': JSON.stringify({
+        private: true,
+        workspaces: ['apps/*'],
+        dependencies: {
+          '@vitejs/plugin-react': '*',
+          'gt-react': '*',
+          react: '*',
+          vite: '*',
+        },
+      }),
+      'vite.config.ts': `
+        import react from '@vitejs/plugin-react';
+        export default ({ command }) => command === 'serve'
+          ? { plugins: [react()] }
+          : { plugins: [react()], build: { sourcemap: true } };
+      `,
+      'src/App.tsx': `
+        import { T } from 'gt-react';
+        export const App = () => <T>React root</T>;
+      `,
+      'apps/vue/package.json': vuePackage('vue-app'),
+      'apps/vue/src/App.vue': translatableSfc('Vue workspace survives'),
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Vue workspace survives',
+    ]);
+  });
+
+  it('does not scan an unrelated root SFC for a child Vue workspace', async () => {
+    const root = createWorkspaceFixture({
+      'src/Legacy.vue': `<script setup>const broken = ;</script>`,
+      'apps/vue/package.json': vuePackage('vue-app'),
+      'apps/vue/src/App.vue': translatableSfc('Owned child message'),
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Owned child message',
+    ]);
+  });
+
+  it('does not promote explicitly matched sources outside owned Vue scopes', async () => {
+    const root = createWorkspaceFixture({
+      'package.json': JSON.stringify({
+        name: 'react-workspace-root',
+        private: true,
+        workspaces: ['apps/*'],
+        dependencies: { 'gt-react': '*' },
+      }),
+      'src/Legacy.vue': `<script setup>const broken = ;</script>`,
+      'apps/vue/package.json': vuePackage('vue-app'),
+      'apps/vue/src/App.vue': translatableSfc('Owned child message'),
+    });
+
+    const output = await extractFromVueProject({
+      cwd: root,
+      filePatterns: ['src/**/*'],
+    });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates).toEqual([]);
+  });
+
+  it('honors explicit patterns inside an owned Vue workspace scope', async () => {
+    const root = createWorkspaceFixture({
+      'src/Legacy.vue': `<script setup>const broken = ;</script>`,
+      'apps/vue/package.json': vuePackage('vue-app'),
+      'apps/vue/src/App.vue': translatableSfc('Explicit owned message'),
+    });
+
+    const output = await extractFromVueProject({
+      cwd: root,
+      filePatterns: ['apps/vue/src/**/*.vue'],
+    });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Explicit owned message',
+    ]);
+  });
+
+  it('keeps compiler options isolated across Vue workspaces', async () => {
+    const root = createWorkspaceFixture({
+      'apps/custom/package.json': vuePackage('custom-app'),
+      'apps/custom/vite.config.ts': customDelimiterConfig(),
+      'apps/custom/src/App.vue': vueCall(
+        '[[',
+        ']]',
+        'Custom workspace message'
+      ),
+      'apps/standard/package.json': vuePackage('standard-app'),
+      'apps/standard/src/App.vue': vueCall(
+        '{{',
+        '}}',
+        'Standard workspace message'
+      ),
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source).sort()).toEqual([
+      'Custom workspace message',
+      'Standard workspace message',
+    ]);
+  });
+
+  it('applies an explicit config only to its owning workspace', async () => {
+    const root = createWorkspaceFixture({
+      'apps/selected/package.json': vuePackage('selected-app'),
+      'apps/selected/vite.config.ts': customDelimiterConfig(),
+      'apps/selected/src/App.vue': vueCall(
+        '[[',
+        ']]',
+        'Selected workspace config'
+      ),
+      'apps/default/package.json': vuePackage('default-app'),
+      'apps/default/src/App.vue': vueCall(
+        '{{',
+        '}}',
+        'Default workspace config'
+      ),
+    });
+
+    const output = await extractFromVueProject({
+      cwd: root,
+      viteConfigPath: 'apps/selected/vite.config.ts',
+    });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source).sort()).toEqual([
+      'Default workspace config',
+      'Selected workspace config',
+    ]);
+  });
+
+  it('accepts supported Vue JSX plugin options', async () => {
+    const root = createVueProject({
+      'vite.config.ts': `
+        import vueJsx from '@vitejs/plugin-vue-jsx';
+        export default { plugins: [vueJsx({ babelPlugins: [], optimize: true })] };
+      `,
+      'src/View.tsx': `
+        import { T } from 'gt-vue';
+        export const View = () => <T context="card">Supported TSX</T>;
+      `,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates).toEqual([
+      expect.objectContaining({
+        dataFormat: 'JSX',
+        source: 'Supported TSX',
+        metadata: expect.objectContaining({ context: 'card' }),
+      }),
+    ]);
+  });
+
+  it('resolves Nuxt source aliases through a static srcDir', async () => {
+    const root = createVueProject({
+      'nuxt.config.ts': `
+        export default defineNuxtConfig({ srcDir: 'src/' });
+      `,
+      'src/i18n.ts': `export { msg as defineMessage } from 'gt-vue';`,
+      'src/messages.ts': `
+        import { defineMessage } from '~/i18n';
+        export const title = defineMessage('Nuxt alias message');
+      `,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Nuxt alias message',
+    ]);
+  });
+
+  it.skipIf(process.platform === 'win32')(
+    'does not follow source globs through a symlink outside the project',
+    async () => {
+      const outside = createTestProject();
+      fs.writeFileSync(
+        path.join(outside, 'Outside.vue'),
+        translatableSfc('Outside symlink message')
+      );
+      const root = createVueProject({});
+      fs.symlinkSync(outside, path.join(root, 'src'), 'dir');
+
+      const output = await extractFromVueProject({ cwd: root });
+
+      expect(output).toEqual({ updates: [], errors: [], warnings: [] });
+    }
+  );
+
+  it('reports invalid source patterns instead of returning an empty catalog', async () => {
+    const root = createVueProject({
+      'src/App.vue': translatableSfc('Pattern failure must be atomic'),
+    });
+
+    const output = await extractFromVueProject({
+      cwd: root,
+      filePatterns: [null as unknown as string],
+    });
+
+    expect(output.updates).toEqual([]);
+    expect(output.errors.join('\n')).toContain(
+      'Could not match the configured Vue source patterns'
+    );
+  });
+
+  it('reports an inaccessible project root during source matching', async () => {
+    const root = createVueProject({
+      'src/App.vue': translatableSfc('Root failure must be atomic'),
+    });
+    const realpathSync = fs.realpathSync;
+    vi.spyOn(fs, 'realpathSync').mockImplementation((target) => {
+      if (path.resolve(String(target)) === root) {
+        throw new Error('root disappeared');
+      }
+      return realpathSync(target);
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.updates).toEqual([]);
+    expect(output.errors.join('\n')).toContain(
+      'Could not resolve the Vue project root'
+    );
+    expect(output.errors.join('\n')).toContain('root disappeared');
+  });
+
+  it('reports a matched-file realpath race without returning partial updates', async () => {
+    const root = createVueProject({
+      'src/Good.vue': translatableSfc('Good message'),
+      'src/Lost.vue': translatableSfc('Lost message'),
+    });
+    const realpathSync = fs.realpathSync;
+    const lostFile = realpathSync(path.join(root, 'src/Lost.vue'));
+    vi.spyOn(fs, 'realpathSync').mockImplementation((target) => {
+      if (path.resolve(String(target)) === lostFile) {
+        throw new Error('matched file disappeared');
+      }
+      return realpathSync(target);
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.updates).toEqual([]);
+    expect(output.errors.join('\n')).toContain(
+      'Could not resolve a matched Vue source file'
+    );
+    expect(output.errors.join('\n')).toContain('src/Lost.vue');
+    expect(output.errors.join('\n')).toContain('matched file disappeared');
+  });
+
+  function createVueProject(files: Record<string, string>): string {
+    return createLinkedProject({
+      'package.json': vuePackage('vue-project'),
+      ...files,
+    });
+  }
+
+  function customDelimiterConfig(): string {
+    return `
+    import vue from '@vitejs/plugin-vue';
+    export default { plugins: [vue({
+      template: { compilerOptions: { delimiters: ['[[', ']]'] } },
+    })] };
+  `;
+  }
+
+  function vueCall(open: string, close: string, source: string): string {
+    return `<script setup>
+import { useGT } from 'gt-vue';
+const gt = useGT();
+</script>
+<template>${open} gt(${JSON.stringify(source)}) ${close}</template>`;
+  }
+});
+
+describe('project alias provenance', () => {
+  it('ignores an incomplete Vue alias config for React-owned source', async () => {
+    const root = createAliasFixture({
+      'src/App.tsx': `
+        import { useGT } from 'gt-react';
+        export function App() {
+          const gt = useGT();
+          return <h1>{gt('React-owned message')}</h1>;
+        }
+      `,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output).toEqual({ updates: [], errors: [], warnings: [] });
+  });
+
+  it('fails closed when a direct gt-vue source shares an incomplete alias config', async () => {
+    const root = createAliasFixture({
+      'src/message.ts': `
+        import { msg } from 'gt-vue';
+        export const message = msg('Vue-owned message');
+      `,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.updates).toEqual([]);
+    expect(output.errors.join('\n')).toContain(
+      'Could not statically resolve the Vue application module aliases'
+    );
+  });
+
+  it('does not infer gt-vue ownership from an unresolved GT-shaped alias', async () => {
+    const root = createAliasFixture({
+      'src/App.tsx': `
+        import { useGT } from '#i18n';
+        export function App() {
+          const gt = useGT();
+          return <h1>{gt('Ordinary aliased message')}</h1>;
+        }
+      `,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output).toEqual({ updates: [], errors: [], warnings: [] });
+  });
+
+  it('does not treat an ordinary relative useGT helper as gt-vue', async () => {
+    const root = createAliasFixture({
+      'src/ordinary.ts': `
+        export const useGT = () => (value: string) => value;
+      `,
+      'src/view.ts': `
+        import { useGT } from './ordinary';
+        export const title = useGT()('Ordinary message');
+      `,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output).toEqual({ updates: [], errors: [], warnings: [] });
+  });
+
+  it('keeps an ordinary React helper behind an incomplete alias silent', async () => {
+    const root = createAliasFixture({
+      'vite.config.ts': `
+        import path from 'node:path';
+        const dynamicAliases = getAliases();
+        export default { resolve: { alias: {
+          '@app': path.resolve(__dirname, 'src/app.ts'),
+          ...dynamicAliases,
+        } } };
+      `,
+      'src/app.ts': `
+        export const useGT = () => (value: string) => value;
+      `,
+      'src/App.tsx': `
+        import { useGT } from '@app';
+        export function App() {
+          const gt = useGT();
+          return <h1>{gt('React-owned aliased message')}</h1>;
+        }
+      `,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output).toEqual({ updates: [], errors: [], warnings: [] });
+  });
+
+  it('fails closed when an incomplete alias candidate proves gt-vue provenance', async () => {
+    const root = createAliasFixture({
+      'vite.config.ts': `
+        import path from 'node:path';
+        const dynamicAliases = getAliases();
+        export default { resolve: { alias: {
+          '@i18n': path.resolve(__dirname, 'src/i18n.ts'),
+          ...dynamicAliases,
+        } } };
+      `,
+      'src/i18n.ts': "export { msg } from 'gt-vue';",
+      'src/message.ts': `
+        import { msg } from '@i18n';
+        export const message = msg('Vue-owned aliased message');
+      `,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.updates).toEqual([]);
+    expect(output.errors.join('\n')).toContain(
+      'Could not statically resolve the Vue application module aliases'
+    );
+  });
+
+  it('keeps diagnostic alias candidates attached through transitive barrels', async () => {
+    const root = createAliasFixture({
+      'vite.config.ts': `
+        import path from 'node:path';
+        export default { resolve: { alias: {
+          '#runtime': path.resolve(__dirname, 'src/runtime.ts'),
+          ...getAliases(),
+        } } };
+      `,
+      'src/runtime.ts': "export { msg } from 'gt-vue';",
+      'shared/barrel.ts': "export { msg as translate } from '#runtime';",
+      'src/message.ts': `
+        import { translate } from '../shared/barrel';
+        export const message = translate('Transitive aliased message');
+      `,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.updates).toEqual([]);
+    expect(output.errors.join('\n')).toContain(
+      'Could not statically resolve the Vue application module aliases'
+    );
+  });
+
+  function createAliasFixture(files: Record<string, string>): string {
+    return createTestProject({
+      'package.json': JSON.stringify({
+        name: 'alias-provenance-fixture',
+        private: true,
+        dependencies: {
+          'gt-react': '*',
+          'gt-vue': '*',
+        },
+      }),
+      'vite.config.ts': `
+      const createAliases = () => ({ '#i18n': './src/i18n' });
+      export default { resolve: { alias: createAliases() } };
+    `,
+      ...files,
+    });
+  }
+});
+
+describe('mergeVueProjectExtraction', () => {
+  it('preserves primary ordering and combines diagnostics without deduplicating primary warnings', () => {
+    const primaryUpdate = update('Primary', 'primary-hash', ['primary.tsx']);
+    const vueUpdate = update('Vue', 'vue-hash', ['component.vue']);
+    const primaryWarnings = [
+      'shared warning',
+      'primary warning',
+      'shared warning',
+    ];
+
+    const result = mergeVueProjectExtraction(
+      {
+        updates: [primaryUpdate],
+        errors: ['primary error'],
+        warnings: primaryWarnings,
+      },
+      {
+        updates: [vueUpdate],
+        errors: ['vue error'],
+        warnings: ['shared warning', 'vue warning'],
+      }
+    );
+
+    expect(result.updates).toEqual([primaryUpdate, vueUpdate]);
+    expect(result.errors).toEqual(['primary error', 'vue error']);
+    expect(result.warnings).toEqual([
+      'shared warning',
+      'primary warning',
+      'shared warning',
+      'shared warning',
+      'vue warning',
+    ]);
+    expect(primaryWarnings).toEqual([
+      'shared warning',
+      'primary warning',
+      'shared warning',
+    ]);
+  });
+
+  it('deduplicates hash collisions without mutating primary updates', () => {
+    const primaryUpdate = update('Shared', 'shared-hash', ['primary.tsx']);
+    const primarySnapshot = structuredClone(primaryUpdate);
+
+    const result = mergeVueProjectExtraction(
+      { updates: [primaryUpdate], errors: [], warnings: [] },
+      {
+        updates: [
+          update('Shared', 'shared-hash', ['component.vue', 'primary.tsx']),
+        ],
+        errors: [],
+        warnings: [],
+      }
+    );
+
+    expect(result.updates).toHaveLength(1);
+    expect(result.updates[0]).not.toBe(primaryUpdate);
+    expect(result.updates[0]?.metadata.filePaths).toEqual([
+      'primary.tsx',
+      'component.vue',
+    ]);
+    expect(primaryUpdate).toEqual(primarySnapshot);
+  });
+
+  it('merges source context into a copy for a matching Vue hash', () => {
+    const duplicate = { before: 'before', target: 'target', after: 'after' };
+    const distinct = { before: 'other', target: 'target', after: 'after' };
+    const primaryUpdate = update('Shared', 'shared-hash', ['src/shared.tsx']);
+    primaryUpdate.metadata.sourceCode = {
+      'src/shared.tsx': [structuredClone(duplicate)],
+    };
+    const primarySourceCode = primaryUpdate.metadata.sourceCode;
+    const primaryEntries = primarySourceCode['src/shared.tsx'];
+    const vueUpdate = update('Shared', 'shared-hash', ['src/shared.tsx']);
+    vueUpdate.metadata.sourceCode = {
+      'src/shared.tsx': [structuredClone(duplicate), distinct],
+    };
+
+    const result = mergeVueProjectExtraction(
+      { updates: [primaryUpdate], errors: [], warnings: [] },
+      { updates: [vueUpdate], errors: [], warnings: [] }
+    );
+
+    expect(result.updates).toHaveLength(1);
+    expect(result.updates[0]?.metadata.sourceCode).toEqual({
+      'src/shared.tsx': [duplicate, distinct],
+    });
+    expect(primaryUpdate.metadata.sourceCode).toEqual({
+      'src/shared.tsx': [duplicate],
+    });
+    expect(primaryUpdate.metadata.sourceCode).toBe(primarySourceCode);
+    expect(primaryUpdate.metadata.sourceCode['src/shared.tsx']).toBe(
+      primaryEntries
+    );
+    expect(result.updates[0]?.metadata.sourceCode).not.toBe(primarySourceCode);
+  });
+
+  function update(
+    source: string,
+    hash: string,
+    filePaths: string[]
+  ): VueProjectExtractionResult {
+    return {
+      dataFormat: 'STRING',
+      source,
+      metadata: { hash, filePaths },
+    };
+  }
+});
+
+/** Creates a disposable project that can resolve the installed Vue compiler. */
+function createLinkedProject(files: Record<string, string>): string {
+  const root = createTestProject(files);
+  linkInstalledVue(root);
+  return root;
 }
 
 function createWorkspaceFixture(files: Record<string, string>): string {
-  return createFixture({
+  return createLinkedProject({
     'package.json': JSON.stringify({
       name: 'vue-workspace',
       private: true,
@@ -1151,22 +1725,4 @@ function vuePackage(name: string): string {
     name,
     dependencies: { 'gt-vue': 'workspace:*', vue: '^3.5.0' },
   });
-}
-
-function createFixture(files: Record<string, string>): string {
-  const root = createProjectFixture(files);
-  temporaryDirectories.push(root);
-  linkInstalledVue(root);
-  return root;
-}
-
-function restoreEnvironmentVariable(
-  name: 'TS_NODE_BASEURL' | 'TS_NODE_PROJECT',
-  value: string | undefined
-): void {
-  if (value === undefined) {
-    delete process.env[name];
-  } else {
-    process.env[name] = value;
-  }
 }

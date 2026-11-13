@@ -4,6 +4,18 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { pluginConfig } from '../../adapter/core';
 import { createGroqClient } from '../../utils/__tests__/groqClient';
 import { resolvePreviewUrls, type PreviewUrlConfig } from '../previewUrls';
+import { updateTranslationPreviewUrls } from '../updatePreviewUrls';
+
+const mocks = vi.hoisted(() => ({
+  updateFiles: vi.fn(),
+  overrideConfig: vi.fn(),
+}));
+
+vi.mock('../../adapter/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../adapter/core')>()),
+  api: { updateFiles: mocks.updateFiles },
+  overrideConfig: mocks.overrideConfig,
+}));
 
 const config: PreviewUrlConfig = {
   origin: 'https://staging.acme.test',
@@ -412,5 +424,101 @@ describe('resolvePreviewUrls', () => {
       urls: [undefined, 'https://staging.acme.test/en'],
       failures: [new Error('network down')],
     });
+  });
+});
+
+describe('updateTranslationPreviewUrls', () => {
+  const secrets = { organization: 'org', project: 'project', secret: 'key' };
+
+  // Document-level translations are separate documents with their own slugs, still drafts right after import.
+  const translations = [
+    { _id: 'drafts.pricing-es', _type: 'page', slug: { current: 'precios' } },
+    { _id: 'drafts.pricing-fr', _type: 'page', slug: { current: 'tarifs' } },
+  ];
+
+  const imported = (id: string, language: string) => ({
+    written: { id, type: 'page' },
+    file: { branchId: 'branch', fileId: 'pricing', versionId: 'r1' },
+    language,
+  });
+
+  const update = (...items: ReturnType<typeof imported>[]) =>
+    updateTranslationPreviewUrls(
+      items,
+      createGroqClient(translations).client as SanityClient,
+      secrets
+    );
+
+  beforeEach(() => {
+    mocks.updateFiles.mockReset();
+    mocks.updateFiles.mockResolvedValue({ files: [] });
+    mocks.overrideConfig.mockReset();
+    vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue({
+      origin: 'https://staging.acme.test',
+      locations: {
+        page: {
+          select: { slug: 'slug.current' },
+          resolve: (doc, { language }) =>
+            doc && {
+              locations: [
+                {
+                  title: 'Page',
+                  href: `/${language.slice(0, 2)}/${String(doc.slug)}`,
+                },
+              ],
+            },
+        },
+      },
+    });
+  });
+
+  test("stores each translation's page, read from its written draft in its language", async () => {
+    const failures = await update(
+      imported('pricing-es', 'es-ES'),
+      imported('pricing-fr', 'fr-FR')
+    );
+
+    expect(failures).toEqual([]);
+    expect(mocks.overrideConfig).toHaveBeenCalledWith(secrets);
+    expect(mocks.updateFiles).toHaveBeenCalledWith([
+      {
+        branchId: 'branch',
+        fileId: 'pricing',
+        versionId: 'r1',
+        locale: 'es-ES',
+        metadata: { previewUrl: 'https://staging.acme.test/es/precios' },
+      },
+      {
+        branchId: 'branch',
+        fileId: 'pricing',
+        versionId: 'r1',
+        locale: 'fr-FR',
+        metadata: { previewUrl: 'https://staging.acme.test/fr/tarifs' },
+      },
+    ]);
+  });
+
+  test('sends only the translations that have a page', async () => {
+    await update(imported('pricing-es', 'es-ES'), imported('missing', 'de-DE'));
+
+    expect(mocks.updateFiles).toHaveBeenCalledWith([
+      expect.objectContaining({ locale: 'es-ES' }),
+    ]);
+  });
+
+  test('sends nothing when the plugin has no previewUrl', async () => {
+    vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue(null);
+
+    expect(await update(imported('pricing-es', 'es-ES'))).toEqual([]);
+    expect(mocks.updateFiles).not.toHaveBeenCalled();
+  });
+
+  test('returns a failed update instead of throwing, so the import stands', async () => {
+    const rejected = new Error('API unavailable');
+    mocks.updateFiles.mockRejectedValue(rejected);
+
+    await expect(update(imported('pricing-es', 'es-ES'))).resolves.toEqual([
+      rejected,
+    ]);
   });
 });

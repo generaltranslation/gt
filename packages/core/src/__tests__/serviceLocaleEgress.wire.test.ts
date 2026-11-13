@@ -27,7 +27,7 @@ async function readRequest(
   return { pathname: url.pathname, body: raw ? JSON.parse(raw) : undefined };
 }
 
-describe.sequential('GT service locale egress', () => {
+describe('GT service locale egress', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });

@@ -59,56 +59,45 @@ describe('gt-react package exports', () => {
     buildPackage();
   });
 
-  it('loads named exports from built CJS entrypoints', () => {
+  // One Node process per condition set: CJS is loaded with require() and ESM
+  // with import() from the same script.
+  it('loads named exports and server-only guards from built CJS and ESM entrypoints', () => {
     node([
       '-e',
       `
           const assert = require('node:assert/strict');
-          const react = require('gt-react');
 
-          assert.equal(typeof react.GTProvider, 'function');
-          assert.equal(typeof react.T, 'function');
-          assert.equal(typeof react.parseLocale, 'function');
-          assert.equal(typeof react.GtInternalVar, 'function');
-          assert.equal(typeof react.GtInternalRuntimeTranslateString, 'function');
-        `,
-    ]);
-  });
-
-  it('throws when initializeGTSPA is called from the server entrypoint', () => {
-    node([
-      '-e',
-      `
-          const assert = require('node:assert/strict');
-          const react = require('gt-react');
-
-          assert.equal(typeof react.initializeGTSPA, 'function');
           (async () => {
-            await assert.rejects(
-              () => react.initializeGTSPA({}),
-              /server runtime entry point/
-            );
+            for (const [format, react] of [
+              ['cjs', require('gt-react')],
+              ['esm', await import('gt-react')],
+            ]) {
+              for (const name of [
+                'GTProvider',
+                'T',
+                'parseLocale',
+                'GtInternalVar',
+                'GtInternalRuntimeTranslateString',
+                'initializeGTSPA',
+                'createOrUpdateBrowserConditionStore',
+              ]) {
+                assert.equal(typeof react[name], 'function', format + ' ' + name);
+              }
+              await assert.rejects(
+                () => react.initializeGTSPA({}),
+                /server runtime entry point/,
+                format
+              );
+              assert.throws(
+                () => react.createOrUpdateBrowserConditionStore({}),
+                /server runtime entry point/,
+                format
+              );
+            }
           })().catch((error) => {
             console.error(error);
             process.exit(1);
           });
-        `,
-    ]);
-  });
-
-  it('loads named exports from built ESM entrypoints', () => {
-    node([
-      '--input-type=module',
-      '-e',
-      `
-          import assert from 'node:assert/strict';
-          import { GTProvider, GtInternalRuntimeTranslateString, GtInternalVar, parseLocale, T } from 'gt-react';
-
-          assert.equal(typeof GTProvider, 'function');
-          assert.equal(typeof T, 'function');
-          assert.equal(typeof parseLocale, 'function');
-          assert.equal(typeof GtInternalVar, 'function');
-          assert.equal(typeof GtInternalRuntimeTranslateString, 'function');
         `,
     ]);
   });
@@ -133,48 +122,24 @@ describe('gt-react package exports', () => {
       node([
         `--conditions=${workerCondition}`,
         '--conditions=browser',
-        '-e',
-        `
-          const assert = require('node:assert/strict');
-
-          assert.equal(
-            require.resolve('gt-react').endsWith('/dist/index.server.cjs'),
-            true
-          );
-        `,
-      ]);
-      node([
-        `--conditions=${workerCondition}`,
-        '--conditions=browser',
         '--input-type=module',
         '-e',
         `
           import assert from 'node:assert/strict';
+          import { createRequire } from 'node:module';
 
-          assert.equal(
-            import.meta.resolve('gt-react').endsWith('/dist/index.server.mjs'),
-            true
+          assert.match(
+            createRequire(import.meta.url).resolve('gt-react'),
+            /\\/dist\\/index\\.server\\.cjs$/
+          );
+          assert.match(
+            import.meta.resolve('gt-react'),
+            /\\/dist\\/index\\.server\\.mjs$/
           );
         `,
       ]);
     }
   );
-
-  it('throws when the condition-store factory is called from the server entrypoint', () => {
-    node([
-      '--input-type=module',
-      '-e',
-      `
-          import assert from 'node:assert/strict';
-          import { createOrUpdateBrowserConditionStore } from 'gt-react';
-
-          assert.throws(
-            () => createOrUpdateBrowserConditionStore({}),
-            /server runtime entry point/
-          );
-        `,
-    ]);
-  });
 
   it('loads side-effect entrypoints without default-export interop', () => {
     node([

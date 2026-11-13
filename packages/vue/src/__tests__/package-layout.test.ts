@@ -65,15 +65,14 @@ describe('gt-vue package layout', () => {
     );
   });
 
-  it('accepts React rich-wire literals through TranslationCatalog', async () => {
+  it('type-checks the public catalog and T prop contracts', async () => {
     const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
     const fixtureDirectory = mkdtempSync(
       join(packageRoot, '.gt-vue-typecheck-')
     );
-    const fixture = join(fixtureDirectory, 'catalog.ts');
-    writeFileSync(
-      fixture,
-      `
+    const fixtures = {
+      // TranslationCatalog accepts React rich-wire literals.
+      'catalog.ts': `
         import type { TranslationCatalog } from '../src/index.js';
 
         const catalog = {
@@ -94,37 +93,9 @@ describe('gt-vue package layout', () => {
 
         void catalog;
         void invalidArray;
-      `
-    );
-
-    try {
-      await run(process.execPath, [
-        join(packageRoot, 'node_modules/typescript/bin/tsc'),
-        '--noEmit',
-        '--strict',
-        '--skipLibCheck',
-        '--module',
-        'ESNext',
-        '--moduleResolution',
-        'Bundler',
-        '--target',
-        'ES2022',
-        fixture,
-      ]);
-    } finally {
-      rmSync(fixtureDirectory, { force: true, recursive: true });
-    }
-  }, 30_000);
-
-  it('publishes documented T metadata props and compiler aliases', async () => {
-    const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
-    const fixtureDirectory = mkdtempSync(
-      join(packageRoot, '.gt-vue-typecheck-')
-    );
-    const fixture = join(fixtureDirectory, 't-props.ts');
-    writeFileSync(
-      fixture,
-      `
+      `,
+      // T publishes its documented metadata props and compiler aliases.
+      't-props.ts': `
         import { T } from '../src/index.js';
 
         type TPublicProps = InstanceType<typeof T>['$props'];
@@ -152,26 +123,31 @@ describe('gt-vue package layout', () => {
         void aliases;
         void invalidMaxChars;
         void invalidReview;
-      `
-    );
-
-    try {
-      await run(process.execPath, [
-        join(packageRoot, 'node_modules/typescript/bin/tsc'),
-        '--noEmit',
-        '--strict',
-        '--skipLibCheck',
-        '--module',
-        'ESNext',
-        '--moduleResolution',
-        'Bundler',
-        '--target',
-        'ES2022',
-        fixture,
-      ]);
-    } finally {
-      rmSync(fixtureDirectory, { force: true, recursive: true });
+      `,
+    };
+    for (const [name, source] of Object.entries(fixtures)) {
+      writeFileSync(join(fixtureDirectory, name), source);
     }
+
+    // One compiler process checks both fixtures; each tsc startup is costly.
+    const result = await run(process.execPath, [
+      join(packageRoot, 'node_modules/typescript/bin/tsc'),
+      '--noEmit',
+      '--strict',
+      '--skipLibCheck',
+      '--module',
+      'ESNext',
+      '--moduleResolution',
+      'Bundler',
+      '--target',
+      'ES2022',
+      ...Object.keys(fixtures).map((name) => join(fixtureDirectory, name)),
+    ]).catch((error: Error & { stdout: string; stderr: string }) => error);
+    rmSync(fixtureDirectory, { force: true, recursive: true });
+
+    // tsc reports diagnostics on stdout; surface them in the failure.
+    expect(result.stdout + result.stderr).toBe('');
+    expect(result).not.toBeInstanceOf(Error);
   }, 30_000);
 
   it('publishes server-safe SPA guards and tree-shakes non-SPA consumers', async () => {
@@ -215,49 +191,20 @@ describe('gt-vue package layout', () => {
         symlinkSync(target, join(nodeModulesDirectory, name), 'junction');
       }
 
-      for (const [moduleFormat, script] of [
-        [
-          'ESM',
-          `
-            const gtVue = await import('gt-vue');
-            assertServerRuntime(gtVue);
-
-            function assertServerRuntime(runtime) {
-              if (typeof runtime.initializeGTSPA !== 'function') process.exit(1);
-              if (typeof runtime.t !== 'function') process.exit(1);
-              try {
-                runtime.t('Server message');
-                process.exit(1);
-              } catch (error) {
-                if (!String(error).includes('t() cannot run in a server-rendered environment')) process.exit(1);
-              }
-            }
-          `,
-        ],
-        [
-          'CommonJS',
-          `
-            const gtVue = require('gt-vue');
-            if (typeof gtVue.initializeGTSPA !== 'function') process.exit(1);
-            if (typeof gtVue.t !== 'function') process.exit(1);
-            try {
-              gtVue.t('Server message');
-              process.exit(1);
-            } catch (error) {
-              if (!String(error).includes('t() cannot run in a server-rendered environment')) process.exit(1);
-            }
-          `,
-        ],
-      ] as const) {
-        await run(
-          process.execPath,
-          moduleFormat === 'ESM'
-            ? ['--input-type=module', '--eval', script]
-            : ['--eval', script],
-          { cwd: fixtureDirectory }
-        );
-      }
-
+      // One child process covers the ESM and CommonJS server guards and the
+      // runtime that both module formats must share.
+      const serverGuard = `
+        function assertServerGuard(runtime) {
+          if (typeof runtime.initializeGTSPA !== 'function') process.exit(1);
+          if (typeof runtime.t !== 'function') process.exit(1);
+          try {
+            runtime.t('Server message');
+            process.exit(1);
+          } catch (error) {
+            if (!String(error).includes('t() cannot run in a server-rendered environment')) process.exit(1);
+          }
+        }
+      `;
       await run(
         process.execPath,
         [
@@ -267,10 +214,13 @@ describe('gt-vue package layout', () => {
               import { createRequire } from 'node:module';
               import { createSSRApp, h } from 'vue';
               import { renderToString } from 'vue/server-renderer';
-
+              ${serverGuard}
               const require = createRequire(import.meta.url);
               const esm = await import('gt-vue');
               const commonjs = require('gt-vue');
+              assertServerGuard(esm);
+              assertServerGuard(commonjs);
+
               let cookie = 'generaltranslation.locale=en';
               globalThis.document = {
                 get cookie() { return cookie; },

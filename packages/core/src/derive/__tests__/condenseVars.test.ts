@@ -1,241 +1,330 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@generaltranslation/icu/parser';
+import { formatIcu, parse } from '@generaltranslation/icu/parser';
 import { condenseVars } from '../condenseVars';
 
-const expectParseableIcu = (icu: string) => {
-  expect(() => parse(icu)).not.toThrow();
-};
-
-describe('static condenseVars', () => {
-  describe('source strings without indexed GT variables', () => {
-    it.each([
-      ['empty string', ''],
-      ['plain text', 'Plain text without any variables'],
-      ['normal argument', 'Hello {name}'],
-      ['single unindexed declareVar', 'Hello {_gt_, select, other {Alice}}'],
-      [
-        'multiple unindexed declareVars',
-        'Hey {_gt_, select, other {Alice}}, {_gt_, select, other {Bob}}',
-      ],
-      [
-        'source sms invite with trailing apostrophe',
-        "Hey {_gt_, select, other {Alice}}, {_gt_, select, other {Bob}} invited you to {_gt_, select, other {Haas''}}",
-      ],
-      ['trailing apostrophe', "Join {_gt_, select, other {Haas''}}"],
-      ['internal apostrophe', "Hello {_gt_, select, other {O''Brien}}"],
-      [
-        'multiple internal apostrophes',
-        "Hello {_gt_, select, other {Bob''s and Alice''s party}}",
-      ],
-      ['double trailing apostrophes', "Hello {_gt_, select, other {Haas''''}}"],
-      [
-        'apostrophe before punctuation',
-        "Hello {_gt_, select, other {Haas''}}!",
-      ],
-      [
-        'apostrophe before comma',
-        "Hello {_gt_, select, other {Haas''}}, welcome",
-      ],
-      ['empty unindexed declareVar', 'Hello {_gt_, select, other {}}'],
-      ['quoted braces', "Hello {_gt_, select, other {'{eventId}'}}"],
-      ['quoted angle text', "Hello {_gt_, select, other {'<event>'}}"],
-      [
-        'regular select plus unindexed declareVar',
-        '{name, select, other {Hello}} {_gt_, select, other {World}}',
-      ],
-      [
-        'regular plural plus unindexed declareVar',
-        '{count, plural, one {One} other {Many}} {_gt_, select, other {items}}',
-      ],
-      [
-        'nested unindexed declareVar inside plural',
-        '{count, plural, one {{_gt_, select, other {Alice}} invited you} other {No invites}}',
-      ],
-      [
-        'nested unindexed trailing apostrophe inside plural',
-        "{count, plural, one {{_gt_, select, other {Haas''}} invited you} other {No invites}}",
-      ],
-      [
-        'deeply nested unindexed trailing apostrophe',
-        "{count, plural, one {{status, select, yes {{_gt_, select, other {Haas''}}} other {none}}} other {No invites}}",
-      ],
-      [
-        'plain indexed-looking text',
-        'This literal mentions _gt_1 but has no ICU select',
-      ],
-      [
-        'plain indexed-looking argument',
-        'This literal mentions {_gt_1} but has no select',
-      ],
-    ])('returns the original source for %s', (_name, input) => {
-      const result = condenseVars(input);
-
-      expect(result).toBe(input);
-      expectParseableIcu(result);
-    });
+describe('condenseVars', () => {
+  // Source strings use `_gt_`; translated strings use `_gt_#`. The two forms
+  // never appear in the same real input, so mixed messages are not tested.
+  it.each([
+    ['empty string', ''],
+    ['plain text', 'Plain text without any variables'],
+    ['normal argument', 'Hello {name}'],
+    [
+      'unindexed declareVars with apostrophes',
+      "Hey {_gt_, select, other {O''Brien}}, join {_gt_, select, other {Haas''}}!",
+    ],
+    [
+      'unindexed declareVar nested in a plural',
+      "{count, plural, one {{_gt_, select, other {Haas''}} invited you} other {No invites}}",
+    ],
+    ['select with another _gt_ name', '{_gt_a, select, other {value}}'],
+    ['literal indexed-looking text', 'This literal mentions _gt_1'],
+    ['indexed argument', 'Hello {_gt_1}'],
+    ['indexed number format', '{_gt_1, number}'],
+  ])('returns the source unchanged for %s', (_name, input) => {
+    expect(condenseVars(input)).toBe(input);
   });
 
-  describe('strings that look indexed but have no indexed GT select', () => {
-    it.each([
-      [
-        'select without gt prefix',
-        '{gt_1, select, other {value}}',
-        '{gt_1, select, other {value}}',
-      ],
-      [
-        'invalid gt suffix',
-        '{_gt_a, select, other {value}}',
-        '{_gt_a, select, other {value}}',
-      ],
-      [
-        'extra characters after gt index',
-        '{_gt_1x, select, other {value}}',
-        '{_gt_1x,select,other{value}}',
-      ],
-      ['indexed argument only', 'Hello {_gt_1}', 'Hello {_gt_1}'],
-      [
-        'indexed plural',
-        '{_gt_1, plural, other {items}}',
-        '{_gt_1,plural,other{items}}',
-      ],
-      [
-        'indexed selectordinal',
-        '{_gt_1, selectordinal, one {first} other {other}}',
-        '{_gt_1,selectordinal,one{first} other{other}}',
-      ],
-      ['indexed number format', '{_gt_1, number}', '{_gt_1, number}'],
-      [
-        'indexed select with non-literal other branch',
-        '{_gt_1, select, other {{count, plural, one {item} other {items}}}}',
-        '{_gt_1,select,other{{count,plural,one{item} other{items}}}}',
-      ],
-    ])('returns the expected string for %s', (_name, input, expected) => {
-      const result = condenseVars(input);
+  it.each([
+    [
+      'extra characters after the index',
+      '{_gt_1x, select, other {value}}',
+      '{_gt_1x,select,other{value}}',
+    ],
+    [
+      'indexed plural',
+      '{_gt_1, plural, other {items}}',
+      '{_gt_1,plural,other{items}}',
+    ],
+    [
+      'indexed selectordinal',
+      '{_gt_1, selectordinal, one {first} other {other}}',
+      '{_gt_1,selectordinal,one{first} other{other}}',
+    ],
+    [
+      'indexed select with a non-literal other branch',
+      '{_gt_1, select, other {{count, plural, one {item} other {items}}}}',
+      '{_gt_1,select,other{{count,plural,one{item} other{items}}}}',
+    ],
+  ])('reprints but does not condense %s', (_name, input, expected) => {
+    const result = condenseVars(input);
 
-      expect(result).toBe(expected);
-      expectParseableIcu(result);
-    });
+    expect(result).toBe(expected);
+    expect(() => parse(result)).not.toThrow();
+  });
+});
 
-    // We intentionally do not test messages that mix `_gt_` and `_gt_#`.
-    // Source strings use `_gt_`; translated strings use `_gt_#`; the two forms
-    // should not appear in the same real input.
+// Pins representative serialized output used transiently by condenseVars
+// before runtime interpolation. Round-trip and rendered-value compatibility
+// are required; byte parity with the old printer is preferred but not required.
+// Translation hashing uses indexVars source slices and does not call this printer.
+describe('condenseVars printer regression', () => {
+  it.each([
+    ['single indexed select', '{_gt_1, select, other {}}', '{_gt_1}'],
+    [
+      'leading and trailing literals',
+      'Start {_gt_1, select, other {}} end.',
+      'Start {_gt_1} end.',
+    ],
+    ['plain argument', '{name} {_gt_1, select, other {}}', '{name} {_gt_1}'],
+    [
+      'number without style',
+      '{n, number} {_gt_1, select, other {}}',
+      '{n, number} {_gt_1}',
+    ],
+    [
+      'number with percent style',
+      '{n, number, percent} {_gt_1, select, other {}}',
+      '{n, number, percent} {_gt_1}',
+    ],
+    [
+      'number with simple skeleton',
+      '{n, number, ::percent} {_gt_1, select, other {}}',
+      '{n, number, ::percent} {_gt_1}',
+    ],
+    [
+      'number skeleton with token option',
+      '{n, number, ::compact-short currency/GBP} {_gt_1, select, other {}}',
+      '{n, number, ::compact-short currency/GBP} {_gt_1}',
+    ],
+    [
+      'number skeleton with multiple tokens',
+      '{n, number, ::percent .00 rounding-mode-floor} {_gt_1, select, other {}}',
+      '{n, number, ::percent .00 rounding-mode-floor} {_gt_1}',
+    ],
+    [
+      'number skeleton with multiple options',
+      '{n, number, ::currency/CAD unit-width-narrow} {_gt_1, select, other {}}',
+      '{n, number, ::currency/CAD unit-width-narrow} {_gt_1}',
+    ],
+    [
+      'date without style',
+      '{d, date} {_gt_1, select, other {}}',
+      '{d, date} {_gt_1}',
+    ],
+    [
+      'date with full style',
+      '{d, date, full} {_gt_1, select, other {}}',
+      '{d, date, full} {_gt_1}',
+    ],
+    [
+      'date with skeleton',
+      '{d, date, ::yyyyMMdd} {_gt_1, select, other {}}',
+      '{d, date, ::yyyyMMdd} {_gt_1}',
+    ],
+    [
+      'time with short style',
+      '{t, time, short} {_gt_1, select, other {}}',
+      '{t, time, short} {_gt_1}',
+    ],
+    [
+      'time with skeleton',
+      '{t, time, ::HHmm} {_gt_1, select, other {}}',
+      '{t, time, ::HHmm} {_gt_1}',
+    ],
+    [
+      'select with multiple options',
+      '{gender, select, male {He} female {She} other {They}} {_gt_1, select, other {}}',
+      '{gender,select,male{He} female{She} other{They}} {_gt_1}',
+    ],
+    [
+      'plural with pound',
+      '{count, plural, one {# item} other {# items}} {_gt_1, select, other {}}',
+      '{count,plural,one{# item} other{# items}} {_gt_1}',
+    ],
+    [
+      'plural with offset and exact matches',
+      '{count, plural, offset:2 =0 {none} =1 {one} other {# left}} {_gt_1, select, other {}}',
+      '{count,plural,offset:2 =0{none} =1{one} other{# left}} {_gt_1}',
+    ],
+    [
+      'plural with an exact match spelled another way',
+      '{count, plural, =01 {leading} =+2 {positive} other {other}} {_gt_1, select, other {}}',
+      '{count,plural,=1{leading} =2{positive} other{other}} {_gt_1}',
+    ],
+    [
+      'selectordinal with pound',
+      '{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} {_gt_1, select, other {}}',
+      '{place,selectordinal,one{#st} two{#nd} few{#rd} other{#th}} {_gt_1}',
+    ],
+    [
+      'indexed vars nested in plural with pound',
+      '{count, plural, one {# {_gt_1, select, other {}}} other {# {_gt_2, select, other {}}}}',
+      '{count,plural,one{# {_gt_1}} other{# {_gt_2}}}',
+    ],
+    [
+      'deeply nested indexed var',
+      '{count, plural, one {{status, select, yes {{_gt_1, select, other {}}} other {none}}} other {No}}',
+      '{count,plural,one{{status,select,yes{{_gt_1}} other{none}}} other{No}}',
+    ],
+    [
+      'nested tags',
+      '<b>Bold <i>italic {_gt_1, select, other {}}</i></b>',
+      '<b>Bold <i>italic {_gt_1}</i></b>',
+    ],
+    [
+      'tag with argument sibling',
+      '<link>Click {target} {_gt_1, select, other {}}</link>',
+      '<link>Click {target} {_gt_1}</link>',
+    ],
+    [
+      'quoted braces',
+      "Cost: '{'price'}' {_gt_1, select, other {}}",
+      "Cost: '{price}' {_gt_1}",
+    ],
+    [
+      'quoted brace run',
+      "Show '{'raw'}' and '}' {_gt_1, select, other {}}",
+      "Show '{raw} and }' {_gt_1}",
+    ],
+    [
+      'apostrophe inside quoted braces',
+      "'{isn''t}' {_gt_1, select, other {}}",
+      "'{isn''t}' {_gt_1}",
+    ],
+    [
+      'escaped apostrophes',
+      "It''s {_gt_1, select, other {}} o''clock",
+      "It's {_gt_1} o'clock",
+    ],
+    [
+      'lone apostrophe after select',
+      "{_gt_1, select, other {}}'s book",
+      "{_gt_1}''s book",
+    ],
+    [
+      'even apostrophe run before quoted braces',
+      "{_gt_1,select,other{}}'''{}'#",
+      "{_gt_1}'''{}'#",
+    ],
+    [
+      'even apostrophe run before closing braces',
+      "{_gt_1, select, other {Ada}}''}}",
+      "{_gt_1}'''}}'",
+    ],
+    [
+      'tag-like text in a named style',
+      '{_gt_1, select, other {Ada}} {n, number, custom<a>}',
+      '{_gt_1} {n, number, custom<a>}',
+    ],
+    [
+      'paired braces in a named style',
+      '{_gt_1, select, other {Ada}} {n, number, custom{nested}}',
+      "{_gt_1} {n, number, custom{nested}'}'",
+    ],
+    [
+      'quoted braces in a named style',
+      "{_gt_1, select, other {Ada}} {n, number, custom'{nested}'}",
+      "{_gt_1} {n, number, custom'{nested}'}",
+    ],
+    [
+      'apostrophe at a closing tag boundary',
+      "<b>{_gt_1, select, other {Ada}}''</b>",
+      "<b>{_gt_1}''</b>",
+    ],
+    [
+      'escaped pound inside plural',
+      "{count, plural, other {'#' # {_gt_1, select, other {}}}}",
+      "{count,plural,other{'#' # {_gt_1}}}",
+    ],
+    [
+      'multiple escaped pounds inside plural',
+      "{_gt_1, select, other {Ada}} {count, plural, other {'##'}}",
+      "{_gt_1} {count,plural,other{'##'}}",
+    ],
+    [
+      'self-closing tag after quoted syntax',
+      "{_gt_1, select, other {Ada}} '}'<br/> done",
+      "{_gt_1} '}'<br/> done",
+    ],
+    [
+      'self-closing tag between an argument and text',
+      '{_gt_1, select, other {Ada}}<br/>done',
+      '{_gt_1}<br/>done',
+    ],
+    [
+      'unicode and emoji',
+      'Héllo 🎉 {_gt_1, select, other {}}',
+      'Héllo 🎉 {_gt_1}',
+    ],
+    [
+      'newlines and indentation',
+      'Line 1\nHas {_gt_1, select, other {}}\n  indented',
+      'Line 1\nHas {_gt_1}\n  indented',
+    ],
+    [
+      'adjacent indexed vars and argument',
+      '{_gt_1, select, other {}}{name}{_gt_2, select, other {}}',
+      '{_gt_1}{name}{_gt_2}',
+    ],
+    [
+      'indexed select with non-empty options',
+      '{_gt_1, select, one {won} other {lost}} trailing',
+      '{_gt_1} trailing',
+    ],
+    [
+      'zero and multi-digit indexes',
+      '{_gt_0, select, other {}} {_gt_123, select, other {}}',
+      '{_gt_0} {_gt_123}',
+    ],
+    [
+      'indexed var inside a select branch',
+      '{status, select, invited {{_gt_1, select, other {}} is invited} other {No invite}}',
+      '{status,select,invited{{_gt_1} is invited} other{No invite}}',
+    ],
+    [
+      'indexed vars inside tags in plural branches',
+      '{count, plural, one {<b>{_gt_1, select, other {}}</b>} other {<i>{_gt_2, select, other {}}</i>}}',
+      '{count,plural,one{<b>{_gt_1}</b>} other{<i>{_gt_2}</i>}}',
+    ],
+    [
+      'indexed vars in a plural with offset',
+      '{count, plural, offset:1 =0 {Nobody} one {{_gt_1, select, other {}}} other {{_gt_2, select, other {}}}}',
+      '{count,plural,offset:1 =0{Nobody} one{{_gt_1}} other{{_gt_2}}}',
+    ],
+    [
+      'indexed vars in a selectordinal',
+      '{place, selectordinal, one {{_gt_1, select, other {}}} two {{_gt_2, select, other {}}} other {{_gt_3, select, other {}}}}',
+      '{place,selectordinal,one{{_gt_1}} two{{_gt_2}} other{{_gt_3}}}',
+    ],
+  ])('serializes %s exactly as before', (_name, input, expected) => {
+    const result = condenseVars(input);
+
+    expect(result).toBe(expected);
+    expect(() => parse(result)).not.toThrow();
   });
 
-  describe('indexed translation variables', () => {
-    it.each([
-      [
-        'single empty indexed select',
-        'Hello {_gt_1, select, other {}}',
-        'Hello {_gt_1}',
-      ],
-      [
-        'multiple empty indexed selects',
-        'I play with {_gt_1, select, other {}} at the {_gt_2, select, other {}}',
-        'I play with {_gt_1} at the {_gt_2}',
-      ],
-      ['single digit index', '{_gt_5, select, other {}}', '{_gt_5}'],
-      ['multi-digit index', '{_gt_123, select, other {}}', '{_gt_123}'],
-      ['zero index', '{_gt_0, select, other {}}', '{_gt_0}'],
-      [
-        'translation with regular argument',
-        'User {username} has {_gt_1, select, other {}} {count} tasks',
-        'User {username} has {_gt_1} {count} tasks',
-      ],
-      [
-        'translation with regular select',
-        '{name, select, other {Hello}} {_gt_1, select, other {}}',
-        '{name,select,other{Hello}} {_gt_1}',
-      ],
-      [
-        'translation with regular plural',
-        '{count, plural, one {One invite} other {Many invites}} {_gt_1, select, other {}}',
-        '{count,plural,one{One invite} other{Many invites}} {_gt_1}',
-      ],
-      [
-        'translation with date format',
-        '{date, date, short} {_gt_1, select, other {}}',
-        '{date, date, short} {_gt_1}',
-      ],
-      [
-        'translation with number format',
-        '{count, number} {_gt_1, select, other {}}',
-        '{count, number} {_gt_1}',
-      ],
-      [
-        'translation with newline formatting',
-        'Line 1\nHas {_gt_1, select, other {}}\n  with spacing',
-        'Line 1\nHas {_gt_1}\n  with spacing',
-      ],
-      [
-        'translation with tag',
-        '{_gt_1, select, other {}} <b>bold</b>',
-        '{_gt_1} <b>bold</b>',
-      ],
-      [
-        'translation with multiple select options and empty other',
-        '{_gt_1, select, one {one} other {}}',
-        '{_gt_1}',
-      ],
-    ])('condenses %s', (_name, input, expected) => {
-      const result = condenseVars(input);
+  it.each([
+    [
+      'multiple literal pounds',
+      "{_gt_1, select, other {Ada}} {count, plural, other {'##'}}",
+      'Ada ##',
+    ],
+    [
+      'quoted syntax adjacent to a self-closing tag',
+      "{_gt_1, select, other {Ada}} '}'<br/> done",
+      'Ada }<br/> done',
+    ],
+    [
+      'an even apostrophe run before quoted braces',
+      "{_gt_1,select,other{}}'''{}'#",
+      "Ada'{}#",
+    ],
+    [
+      'an even apostrophe run before closing braces',
+      "{_gt_1, select, other {Ada}}''}}",
+      "Ada'}}",
+    ],
+  ])('preserves %s through runtime formatting', (_name, message, expected) => {
+    const condensed = condenseVars(message);
 
-      expect(result).toBe(expected);
-      expectParseableIcu(result);
-    });
-  });
-
-  describe('nested indexed translation variables', () => {
-    it.each([
-      [
-        'indexed variable inside plural one branch',
-        '{count, plural, one {Invite {_gt_1, select, other {}}} other {Invites}}',
-        '{count,plural,one{Invite {_gt_1}} other{Invites}}',
-      ],
-      [
-        'indexed variable inside plural other branch',
-        '{count, plural, one {Invite} other {Invites {_gt_1, select, other {}}}}',
-        '{count,plural,one{Invite} other{Invites {_gt_1}}}',
-      ],
-      [
-        'indexed variables in multiple plural branches',
-        '{count, plural, one {{_gt_1, select, other {}} invite} other {{_gt_2, select, other {}} invites}}',
-        '{count,plural,one{{_gt_1} invite} other{{_gt_2} invites}}',
-      ],
-      [
-        'indexed variable inside select branch',
-        '{status, select, invited {{_gt_1, select, other {}} is invited} other {No invite}}',
-        '{status,select,invited{{_gt_1} is invited} other{No invite}}',
-      ],
-      [
-        'indexed variables in nested select inside plural',
-        '{count, plural, one {{status, select, yes {{_gt_1, select, other {}}} other {none}}} other {{status, select, yes {{_gt_2, select, other {}}} other {none}}}}',
-        '{count,plural,one{{status,select,yes{{_gt_1}} other{none}}} other{{status,select,yes{{_gt_2}} other{none}}}}',
-      ],
-      [
-        'indexed variable inside tag in plural branch',
-        '{count, plural, one {<b>{_gt_1, select, other {}}</b>} other {<i>{_gt_2, select, other {}}</i>}}',
-        '{count,plural,one{<b>{_gt_1}</b>} other{<i>{_gt_2}</i>}}',
-      ],
-      [
-        'nested plural with offset',
-        '{count, plural, offset:1 =0 {Nobody} one {{_gt_1, select, other {}}} other {{_gt_2, select, other {}}}}',
-        '{count,plural,offset:1 =0{Nobody} one{{_gt_1}} other{{_gt_2}}}',
-      ],
-      [
-        'nested selectordinal',
-        '{place, selectordinal, one {{_gt_1, select, other {}}} two {{_gt_2, select, other {}}} other {{_gt_3, select, other {}}}}',
-        '{place,selectordinal,one{{_gt_1}} two{{_gt_2}} other{{_gt_3}}}',
-      ],
-      [
-        'nested pound in plural remains valid',
-        '{count, plural, one {# {_gt_1, select, other {}}} other {# {_gt_2, select, other {}}}}',
-        '{count,plural,one{# {_gt_1}} other{# {_gt_2}}}',
-      ],
-    ])('condenses %s', (_name, input, expected) => {
-      const result = condenseVars(input);
-
-      expect(result).toBe(expected);
-      expectParseableIcu(result);
-    });
+    expect(
+      formatIcu(
+        condensed,
+        'en',
+        { _gt_1: 'Ada', count: 7 },
+        { timeZone: 'UTC' }
+      )
+    ).toBe(expected);
   });
 });

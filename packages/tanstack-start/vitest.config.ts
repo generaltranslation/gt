@@ -1,43 +1,19 @@
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import { vitestThreadsPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  resolve: {
-    alias: {
-      'gt-tanstack-start/internal/_config': fileURLToPath(
-        new URL('./src/internal/_config.ts', import.meta.url)
-      ),
-      'gt-tanstack-start/internal/localeRouting': fileURLToPath(
-        new URL('./src/internal/localeRouting.ts', import.meta.url)
-      ),
-    },
-  },
-  test: {
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        minThreads: 2,
-        maxThreads: 4,
+export default mergeConfig(
+  vitestThreadsPreset,
+  defineConfig({
+    resolve: {
+      alias: {
+        'gt-tanstack-start/internal/_config': fileURLToPath(
+          new URL('./src/internal/_config.ts', import.meta.url)
+        ),
+        'gt-tanstack-start/internal/localeRouting': fileURLToPath(
+          new URL('./src/internal/localeRouting.ts', import.meta.url)
+        ),
       },
     },
-    fileParallelism: true,
-    sequence: {
-      concurrent: true,
-    },
-    testTimeout: 15000,
-    isolate: true,
-    environment: 'node',
-    globals: true,
-    env: {
-      _GT_LOG_LEVEL: 'off',
-    },
-    reporters: [
-      [
-        'default',
-        {
-          summary: true,
-        },
-      ],
-    ],
-  },
-});
+  })
+);

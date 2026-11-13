@@ -61,53 +61,41 @@ describe('@generaltranslation/react-core package exports', () => {
     buildPackage();
   });
 
-  it('loads named exports from built CJS entrypoints', () => {
+  it('loads named exports from built CJS and ESM entrypoints', () => {
+    // One Node process loads both formats: require() for CJS, import() for ESM.
     node([
       '-e',
       `
           const assert = require('node:assert/strict');
-          const pure = require('@generaltranslation/react-core/pure');
-          const components = require('@generaltranslation/react-core/components');
-          const hooks = require('@generaltranslation/react-core/hooks');
-          const componentsRsc = require('@generaltranslation/react-core/components-rsc');
-          const unstable = require('@generaltranslation/react-core/unstable');
+          const entry = (name) => '@generaltranslation/react-core/' + name;
 
-          assert.equal(typeof pure.msg, 'function');
-          assert.equal(typeof components.T, 'function');
-          assert.equal(typeof hooks.useGT, 'function');
-          assert.equal(typeof componentsRsc.Branch, 'function');
-          assert.equal(typeof unstable.useGT, 'function');
-          assert.equal(typeof unstable.t, 'function');
-          assert.equal(typeof unstable.useMessages, 'function');
-          assert.equal(typeof unstable.msg, 'function');
-        `,
-    ]);
-  });
-
-  it('loads named exports from built ESM entrypoints', () => {
-    node([
-      '--input-type=module',
-      '-e',
-      `
-          import assert from 'node:assert/strict';
-          import { msg } from '@generaltranslation/react-core/pure';
-          import { T } from '@generaltranslation/react-core/components';
-          import { useGT } from '@generaltranslation/react-core/hooks';
-          import { Branch } from '@generaltranslation/react-core/components-rsc';
-          import * as unstable from '@generaltranslation/react-core/unstable';
-
-          assert.equal(typeof msg, 'function');
-          assert.equal(typeof T, 'function');
-          assert.equal(typeof useGT, 'function');
-          assert.equal(typeof Branch, 'function');
-          assert.equal(typeof unstable.t, 'function');
-          assert.equal(typeof unstable.useGT, 'function');
-          assert.equal(typeof unstable.plural, 'function');
-          assert.equal(typeof unstable.derive, 'function');
-          assert.equal(typeof unstable.time, 'function');
-          assert.equal(typeof unstable.useMessages, 'function');
-          assert.equal(typeof unstable.msg, 'function');
-          assert.equal(typeof unstable.mFallback, 'function');
+          (async () => {
+            for (const [format, load] of [
+              ['cjs', (name) => require(entry(name))],
+              ['esm', (name) => import(entry(name))],
+            ]) {
+              for (const [name, exportName] of [
+                ['pure', 'msg'],
+                ['components', 'T'],
+                ['hooks', 'useGT'],
+                ['components-rsc', 'Branch'],
+                ['unstable', 't'],
+                ['unstable', 'useGT'],
+                ['unstable', 'useMessages'],
+                ['unstable', 'msg'],
+                ['unstable', 'plural'],
+                ['unstable', 'derive'],
+                ['unstable', 'time'],
+                ['unstable', 'mFallback'],
+              ]) {
+                const mod = await load(name);
+                assert.equal(typeof mod[exportName], 'function', format + ' ' + name);
+              }
+            }
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
         `,
     ]);
   });
