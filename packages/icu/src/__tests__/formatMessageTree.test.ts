@@ -124,15 +124,18 @@ describe('formatMessageTree', () => {
     expect(format({ ...own, timeZone: 'Asia/Tokyo' }, 'UTC')).toBe('11:03 PM');
   });
 
-  it('resolves a locale once, not on every call', () => {
+  // Locales no other test uses, so they are not cached yet.
+  it.each([
+    ['a locale', 'se-NO'],
+    ['a list of locales', ['nn-NO', 'nb-NO', 'en-US']],
+  ])('resolves %s once, not on every call', (_name, locales) => {
     const supportedLocalesOf = vi.spyOn(
       Intl.NumberFormat,
       'supportedLocalesOf'
     );
     try {
-      // A locale no other test uses, so it is not cached yet.
       for (let i = 0; i < 3; i++) {
-        expect(formatMessageTree(['Hi ', ['n']], 'se-NO', { n: 'Ada' })).toBe(
+        expect(formatMessageTree(['Hi ', ['n']], locales, { n: 'Ada' })).toBe(
           'Hi Ada'
         );
       }
@@ -140,6 +143,15 @@ describe('formatMessageTree', () => {
     } finally {
       supportedLocalesOf.mockRestore();
     }
+  });
+
+  it('does not share a resolved locale between a list and a string', () => {
+    expect(
+      formatMessageTree([['n', 'number']], ['fr-FR', 'en'], { n: 1.5 })
+    ).toBe('1,5');
+    expect(() =>
+      formatMessageTree([['n', 'number']], 'fr-FR\0en', { n: 1.5 })
+    ).toThrow(RangeError);
   });
 });
 

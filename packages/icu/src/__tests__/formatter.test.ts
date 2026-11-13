@@ -382,6 +382,53 @@ describe('formatIcu', () => {
     expect(formatIcu('{d, time, ::hj}', 'de-DE', { d: value })).toBe('14 Uhr');
   });
 
+  it.each([
+    ['getHourCycles()', ['hourCycles'], '07'],
+    // A DateTimeFormat does not see the region override.
+    [
+      'a DateTimeFormat, once per locale',
+      ['hourCycles', 'getHourCycles'],
+      '7 a.m.',
+    ],
+  ])(
+    "reads the locale's hour cycle through %s where the engine has nothing newer",
+    (_how, missing, expected) => {
+      const prototype = Intl.Locale.prototype;
+      const saved = missing.map(
+        (key) => [key, Object.getOwnPropertyDescriptor(prototype, key)] as const
+      );
+      for (const key of missing) {
+        Object.defineProperty(prototype, key, {
+          configurable: true,
+          value: undefined,
+        });
+      }
+      const resolvedOptions = vi.spyOn(
+        Intl.DateTimeFormat.prototype,
+        'resolvedOptions'
+      );
+      try {
+        // A locale no other test uses, so its hour cycle is not cached yet.
+        const locale = `en-CA-u-rg-gbzzzz-x-${missing.length}`;
+        const value = new Date(2020, 4, 6, 7, 3, 2);
+        for (let i = 0; i < 3; i++) {
+          expect(formatIcu('{d, time, ::j}', locale, { d: value })).toBe(
+            expected
+          );
+        }
+        expect(resolvedOptions).toHaveBeenCalledTimes(
+          missing.length === 2 ? 1 : 0
+        );
+      } finally {
+        resolvedOptions.mockRestore();
+        for (const [key, descriptor] of saved) {
+          if (descriptor) Object.defineProperty(prototype, key, descriptor);
+          else delete (prototype as unknown as Record<string, unknown>)[key];
+        }
+      }
+    }
+  );
+
   it('honors Unicode region overrides and sparse locale fallbacks', () => {
     const value = new Date(2020, 4, 6, 7, 3, 2);
     expect(formatIcu('{d, time, ::j}', 'en-u-rg-gbzzzz', { d: value })).toBe(

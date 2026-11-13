@@ -105,10 +105,16 @@ const DATE_RUNTIME_CASES = NUMBER_LOCALES.flatMap((locale) =>
   ].map((message) => ({ locale, message, value: DATE_VALUE }))
 );
 
+// The pinned FormatJS reads a region override like `-u-rg-gbzzzz` only
+// through Intl.Locale's `hourCycles` getter, which V8 has since removed.
+const FORMATJS_READS_REGION = 'hourCycles' in Intl.Locale.prototype;
+const REGION_OVERRIDES = FORMATJS_READS_REGION
+  ? ['en-u-rg-gbzzzz', 'en-GB-u-rg-uszzzz']
+  : [];
+
 const HOUR_SKELETON_RUNTIME_CASES = [
   { locale: 'de-DE', skeleton: 'hj' },
-  { locale: 'en-u-rg-gbzzzz', skeleton: 'j' },
-  { locale: 'en-GB-u-rg-uszzzz', skeleton: 'j' },
+  ...REGION_OVERRIDES.map((locale) => ({ locale, skeleton: 'j' })),
   { locale: 'und-GB', skeleton: 'j' },
 ] as const;
 const HOUR_SKELETON_AST_CASES = [
@@ -145,14 +151,12 @@ const GENERATED_HOUR_SKELETON_LOCALES = [
     locale,
     skeletons: GENERATED_HOUR_SKELETONS,
   })),
-  ...['ar-EG', 'ja-JP', 'en-u-rg-gbzzzz', 'en-GB-u-rg-uszzzz', 'und-GB'].map(
-    (locale) => ({
-      locale,
-      skeletons: GENERATED_HOUR_SKELETONS.filter(
-        (skeleton) => skeleton.length <= 2
-      ),
-    })
-  ),
+  ...['ar-EG', 'ja-JP', ...REGION_OVERRIDES, 'und-GB'].map((locale) => ({
+    locale,
+    skeletons: GENERATED_HOUR_SKELETONS.filter(
+      (skeleton) => skeleton.length <= 2
+    ),
+  })),
 ];
 
 const NON_GRAMMAR_SPACES = [
