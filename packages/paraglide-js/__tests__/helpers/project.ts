@@ -183,7 +183,10 @@ async function analyzeIndexed(
       if ('error' in parsed) throw new Error(`${file}: ${parsed.error}`);
       if (generatedModule) generatedModules.set(file, generatedModule);
 
-      return summarizeModule(parsed.module);
+      return summarizeModule(
+        parsed.module,
+        new Set(graphOptions.globals?.map(({ name }) => name))
+      );
     },
   });
   await indexer.indexPaths(sources);
