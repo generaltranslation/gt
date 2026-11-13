@@ -26,7 +26,7 @@ type TreeWireFormatFixture = {
 const fixtures: TreeWireFormatFixture[] = JSON.parse(
   readFileSync(
     new URL(
-      '../../../../../test-fixtures/icu-tree-wire-format.json',
+      '../../../../../test-fixtures/message-tree-wire-format.json',
       import.meta.url
     ),
     'utf8'
@@ -53,7 +53,7 @@ vi.mock('../renderMessage', async (importOriginal) => {
       captured.tree = tree;
       captured.hash = hashSource({
         source: tree,
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
         context: metadata.context,
         maxChars: metadata.maxChars,
         requiresReview: metadata.requiresReview,
@@ -136,7 +136,7 @@ const cases: Record<string, (gt: GT) => string> = {
   'requires-review': (gt) => gt({ requiresReview: true })`Delete account`,
 };
 
-describe('icu-tree-wire-format fixture parity', () => {
+describe('message-tree-wire-format fixture parity', () => {
   const gt = createGT({ getLocale: () => 'en' });
 
   beforeEach(() => {

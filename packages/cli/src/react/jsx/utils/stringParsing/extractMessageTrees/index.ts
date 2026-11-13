@@ -21,7 +21,7 @@ const traverse = traverseModule.default || traverseModule;
 /**
  * Extracts tagged-template messages written with the unstable `t`, `msg`,
  * `useGT()`, and `getGT()` APIs as message tree updates
- * (`dataFormat: 'ICU_TREE'`).
+ * (`dataFormat: 'MESSAGE_TREE'`).
  *
  * Supports t`...`, t({ ...options })`...`, the same forms on `msg` plus
  * msg('literal'), and the same forms on a

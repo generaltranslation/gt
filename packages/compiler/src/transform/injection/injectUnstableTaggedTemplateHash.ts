@@ -23,7 +23,7 @@ type OptionKey = keyof MessageTreeHashMetadata;
 
 // Derive-free mirror of the CLI walker in
 // packages/cli/src/react/jsx/utils/stringParsing/extractMessageTrees/templateVariants.ts;
-// test-fixtures/icu-tree-wire-format.json keeps both on the same hashes.
+// test-fixtures/message-tree-wire-format.json keeps both on the same hashes.
 
 /** Thrown when a template is not plainly static; the runtime hashes it. */
 function nonStatic(): never {
@@ -53,7 +53,7 @@ export function injectUnstableTaggedTemplateHash(
     const { strings, holes } = templateFragment(quasi, path.scope);
     hash = hashSource({
       source: templateToMessage(strings, holes).tree,
-      dataFormat: 'ICU_TREE',
+      dataFormat: 'MESSAGE_TREE',
       ...metadata,
     });
   } catch {

@@ -27,7 +27,7 @@ export type MessageTreeMetadata = MessageTreeHashMetadata & {
  */
 export type MessageTreeLookupOptions = Extract<
   LookupOptions,
-  { $format: 'ICU_TREE' }
+  { $format: 'MESSAGE_TREE' }
 > & { $locale: string; $_hash: string };
 
 /**
@@ -49,7 +49,7 @@ export function hashMessageTree(
     $_hash ??
     hashSource({
       source: tree,
-      dataFormat: 'ICU_TREE',
+      dataFormat: 'MESSAGE_TREE',
       context,
       maxChars,
       requiresReview,
@@ -111,7 +111,7 @@ export function createMessageTreeLookupOptions(
 ): MessageTreeLookupOptions {
   const { context, maxChars, requiresReview } = metadata;
   return {
-    $format: 'ICU_TREE',
+    $format: 'MESSAGE_TREE',
     $locale: locale,
     $context: context,
     $maxChars: maxChars,

@@ -21,7 +21,7 @@ vi.mock('react', async (importOriginal) => {
 const name = 'Ada';
 const helloHash = hashSource({
   source: ['Hello, ', ['name'], '!'],
-  dataFormat: 'ICU_TREE',
+  dataFormat: 'MESSAGE_TREE',
 });
 const frenchHello: Content = ['Bonjour, ', ['name'], ' !'];
 

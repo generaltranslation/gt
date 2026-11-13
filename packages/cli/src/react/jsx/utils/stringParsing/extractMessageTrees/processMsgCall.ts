@@ -34,7 +34,7 @@ export function processMsgCall(
   }
   if (text === '') return true;
   output.updates.push({
-    dataFormat: 'ICU_TREE',
+    dataFormat: 'MESSAGE_TREE',
     source: templateToMessage([text], []).tree,
     metadata: extractStringEntryMetadata({
       output,

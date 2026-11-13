@@ -56,7 +56,7 @@ describe('react-core/unstable useMessages', () => {
       locale: 'fr',
       message: ['Hello, ', ['name'], '!'],
       options: expect.objectContaining({
-        $format: 'ICU_TREE',
+        $format: 'MESSAGE_TREE',
         $locale: 'fr',
         $context: 'greeting',
       }),

@@ -15,7 +15,7 @@ type TreeWireFormatFixture = {
 const fixtures: TreeWireFormatFixture[] = JSON.parse(
   readFileSync(
     new URL(
-      '../../../../../test-fixtures/icu-tree-wire-format.json',
+      '../../../../../test-fixtures/message-tree-wire-format.json',
       import.meta.url
     ),
     'utf8'
@@ -31,11 +31,11 @@ const hashTree = (
   hashFunction?: (input: string) => string
 ) =>
   hashSource(
-    { source: tree, dataFormat: 'ICU_TREE', ...metadata },
+    { source: tree, dataFormat: 'MESSAGE_TREE', ...metadata },
     hashFunction
   );
 
-describe('hashSource with ICU_TREE', () => {
+describe('hashSource with MESSAGE_TREE', () => {
   it.each(fixtures)('$name: $template', ({ tree, options, hash }) => {
     expect(hashTree(tree, options)).toBe(hash);
   });
@@ -87,7 +87,7 @@ describe('hashSource with ICU_TREE', () => {
 
   it('hashes the tree with its format, like any other source', () => {
     expect(hashTree(['Hi', ['name']], {}, (input) => input)).toBe(
-      '{"dataFormat":"ICU_TREE","source":["Hi",["name"]]}'
+      '{"dataFormat":"MESSAGE_TREE","source":["Hi",["name"]]}'
     );
   });
 });

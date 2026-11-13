@@ -87,19 +87,19 @@ describe.sequential('runtime translation requests', () => {
         success: true,
         translation: ['Hola, ', ['name']],
         locale: 'es',
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
       },
       textTree: {
         success: true,
         translation: 'Hola',
         locale: 'es',
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
       },
       invalidTree: {
         success: true,
         translation: [{ text: 'Hola' }],
         locale: 'es',
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
       },
     });
 
@@ -109,15 +109,15 @@ describe.sequential('runtime translation requests', () => {
         invalid: { source: 'Forty-two' },
         tree: {
           source: ['Hello, ', ['name']],
-          metadata: { dataFormat: 'ICU_TREE' },
+          metadata: { dataFormat: 'MESSAGE_TREE' },
         },
         textTree: {
           source: 'Hello',
-          metadata: { dataFormat: 'ICU_TREE' },
+          metadata: { dataFormat: 'MESSAGE_TREE' },
         },
         invalidTree: {
           source: 'Hello',
-          metadata: { dataFormat: 'ICU_TREE' },
+          metadata: { dataFormat: 'MESSAGE_TREE' },
         },
       },
       options,
@@ -140,13 +140,13 @@ describe.sequential('runtime translation requests', () => {
         success: true,
         translation: ['Hola, ', ['name']],
         locale: 'es',
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
       },
       textTree: {
         success: true,
         translation: 'Hola',
         locale: 'es',
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
       },
       invalidTree: {
         success: false,

@@ -265,7 +265,7 @@ describe('gt-next package exports', () => {
             )});
             assert.equal(typeof unstable.dyn, typeof unstable.tx);
             assert.equal(getI18nCache(), cache);
-            assert.deepEqual(getI18nCache().lookupTranslation('fr', ['Save'], { $format: 'ICU_TREE', $_hash: 'save' }), tree);
+            assert.deepEqual(getI18nCache().lookupTranslation('fr', ['Save'], { $format: 'MESSAGE_TREE', $_hash: 'save' }), tree);
           `,
         ],
         {

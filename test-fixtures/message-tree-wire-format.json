@@ -4,7 +4,7 @@
     "template": "gt`Save`",
     "options": {},
     "tree": "Save",
-    "hash": "7b5303cc62f82aa7"
+    "hash": "ab72d114d0d156a9"
   },
   {
     "name": "context",
@@ -13,14 +13,14 @@
       "context": "button"
     },
     "tree": "Save",
-    "hash": "46c85d11ef7b97de"
+    "hash": "3638c6269a914b05"
   },
   {
     "name": "one-argument",
     "template": "gt`Hello, ${{ name }}!`",
     "options": {},
     "tree": ["Hello, ", ["name"], "!"],
-    "hash": "f9deaca8485377d4"
+    "hash": "b785eb9d5af50191"
   },
   {
     "name": "max-chars",
@@ -29,7 +29,7 @@
       "maxChars": 12
     },
     "tree": "Read more about pricing",
-    "hash": "ea3d80ea235d22c6"
+    "hash": "ebb62b7d36df296e"
   },
   {
     "name": "max-chars-negative",
@@ -38,7 +38,7 @@
       "maxChars": -12
     },
     "tree": "Read more about pricing",
-    "hash": "ea3d80ea235d22c6"
+    "hash": "ebb62b7d36df296e"
   },
   {
     "name": "nested-plural-pound-select",
@@ -76,7 +76,7 @@
         }
       ]
     ],
-    "hash": "b747f373c330d7c1"
+    "hash": "2ce6cb2fcd65379b"
   },
   {
     "name": "plural-exact-key-order",
@@ -93,7 +93,7 @@
         }
       ]
     ],
-    "hash": "c9b4519286aac3ac"
+    "hash": "0e19cec014da66bd"
   },
   {
     "name": "selectordinal",
@@ -113,21 +113,21 @@
       ],
       "!"
     ],
-    "hash": "405c759eb4ea31bc"
+    "hash": "3991c8c60ac6dc1c"
   },
   {
     "name": "number-intl-options",
     "template": "gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`",
     "options": {},
     "tree": ["Total: ", ["price", "number", "currency"]],
-    "hash": "77efc9faa9e35bfc"
+    "hash": "d0a156bbfb4a8267"
   },
   {
     "name": "number-currency-dynamic",
     "template": "gt`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`",
     "options": {},
     "tree": ["Total: ", ["price", "number", "currency"]],
-    "hash": "77efc9faa9e35bfc"
+    "hash": "d0a156bbfb4a8267"
   },
   {
     "name": "number-unit",
@@ -144,28 +144,28 @@
       ],
       " away"
     ],
-    "hash": "efc7f08b37431049"
+    "hash": "7c832f40b1d5f62c"
   },
   {
     "name": "date",
     "template": "gt`Due ${date({ due }, { style: 'medium' })}`",
     "options": {},
     "tree": ["Due ", ["due", "date", "medium"]],
-    "hash": "7d1e546676f9c40b"
+    "hash": "84910212b94cc11b"
   },
   {
     "name": "date-style-dynamic-time-zone",
     "template": "gt`Due ${date({ due }, { style: 'medium', timeZone })}`",
     "options": {},
     "tree": ["Due ", ["due", "date", "medium"]],
-    "hash": "7d1e546676f9c40b"
+    "hash": "84910212b94cc11b"
   },
   {
     "name": "time-style",
     "template": "gt`Starts at ${time({ start }, { style: 'short' })}`",
     "options": {},
     "tree": ["Starts at ", ["start", "time", "short"]],
-    "hash": "baa7f74d4cb57efb"
+    "hash": "401c5ce0c936b517"
   },
   {
     "name": "date-fields-hour",
@@ -185,7 +185,7 @@
         }
       ]
     ],
-    "hash": "0e27bbf3bab0c178"
+    "hash": "6457e1f18f4d9c24"
   },
   {
     "name": "time-fractional-seconds",
@@ -203,7 +203,7 @@
         }
       ]
     ],
-    "hash": "c18bba89fd8eb580"
+    "hash": "c07fa4bc51aee45b"
   },
   {
     "name": "time-day-period",
@@ -220,28 +220,28 @@
         }
       ]
     ],
-    "hash": "9f200248c38561c9"
+    "hash": "617d46ff7ab4a3b5"
   },
   {
     "name": "derive",
     "template": "gt`Welcome ${derive('back')}, ${{ user }}!`",
     "options": {},
     "tree": ["Welcome back, ", ["user"], "!"],
-    "hash": "3d5b86bc2ce5e591"
+    "hash": "7866dbd0773f8dea"
   },
   {
     "name": "anonymous",
     "template": "gt`Hi ${name}!`",
     "options": {},
     "tree": ["Hi ", ["_gt_1"], "!"],
-    "hash": "aad943c4663a842e"
+    "hash": "067ccea6cfb338fd"
   },
   {
     "name": "anonymous-numbering",
     "template": "gt`${first} meets ${second} today`",
     "options": {},
     "tree": [["_gt_1"], " meets ", ["_gt_2"], " today"],
-    "hash": "625da41f624d1057"
+    "hash": "19a57bdc700c786f"
   },
   {
     "name": "anonymous-helper-values",
@@ -272,14 +272,14 @@
       " from ",
       ["_gt_5"]
     ],
-    "hash": "395a376105fdb85f"
+    "hash": "aa63ab12d9712f30"
   },
   {
     "name": "literal-icu-syntax",
     "template": "gt`Don't stop, '{team}' ${derive(\"O'Brien {x} #1\")} and ${{ name }}`",
     "options": {},
     "tree": ["Don't stop, '{team}' O'Brien {x} #1 and ", ["name"]],
-    "hash": "0556034078ec0b60"
+    "hash": "6b3613e07d084640"
   },
   {
     "name": "part-in-branch",
@@ -296,7 +296,7 @@
         }
       ]
     ],
-    "hash": "385fdcc8ee35ce63"
+    "hash": "544daf4c816df850"
   },
   {
     "name": "select-integer-like-keys",
@@ -313,7 +313,7 @@
         }
       ]
     ],
-    "hash": "c2b4203bae1d25ee"
+    "hash": "fd2a80cdf70888fc"
   },
   {
     "name": "requires-review",
@@ -322,6 +322,6 @@
       "requiresReview": true
     },
     "tree": "Delete account",
-    "hash": "d0b66052a8d61260"
+    "hash": "dedfcaa38764e985"
   }
 ]

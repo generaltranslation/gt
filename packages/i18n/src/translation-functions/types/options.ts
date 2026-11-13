@@ -103,7 +103,7 @@ export type LookupOptions =
       TranslationMetadata,
       '$context' | '$locale' | '$_hash' | '$maxChars' | '$requiresReview'
     > & {
-      $format: 'ICU_TREE';
+      $format: 'MESSAGE_TREE';
     });
 
 export type LookupOptionsFor<T extends DataFormat> = T extends 'JSX'

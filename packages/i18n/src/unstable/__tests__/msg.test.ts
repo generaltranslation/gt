@@ -17,7 +17,7 @@ type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 function keyOf(strings: TemplateStringsArray, ...holes: unknown[]) {
   return hashSource({
     source: buildMessage(strings, holes).tree,
-    dataFormat: 'ICU_TREE',
+    dataFormat: 'MESSAGE_TREE',
   });
 }
 
@@ -109,7 +109,7 @@ describe('gt-i18n/unstable msg', () => {
     const m = await setup({
       [hashSource({
         source: 'Save',
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
         context: 'button',
       })]: 'Enregistrer',
     });
@@ -121,7 +121,7 @@ describe('gt-i18n/unstable msg', () => {
   });
 
   it('reads the same with and without a compiler-injected $_hash', async () => {
-    const saveHash = hashSource({ source: 'Save', dataFormat: 'ICU_TREE' });
+    const saveHash = hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' });
     const m = await setup({
       [saveHash]: 'Enregistrer',
       injected: ['Bonjour, ', ['name']],

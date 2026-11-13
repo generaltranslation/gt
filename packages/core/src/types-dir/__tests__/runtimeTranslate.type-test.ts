@@ -45,9 +45,9 @@ const invalidTimeoutSpelling: TranslateConfig = {
 void invalidTimeoutSpelling;
 
 // A message tree is translation input like any other format.
-const tree: ContentFor<'ICU_TREE'> = ['Hello, ', ['name']];
+const tree: ContentFor<'MESSAGE_TREE'> = ['Hello, ', ['name']];
 const treeEntry: TranslateManyEntry = {
   source: tree,
-  metadata: { dataFormat: 'ICU_TREE' },
+  metadata: { dataFormat: 'MESSAGE_TREE' },
 };
 void treeEntry;

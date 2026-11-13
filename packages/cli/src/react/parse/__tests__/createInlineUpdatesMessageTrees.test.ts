@@ -8,7 +8,7 @@ import { createInlineUpdates } from '../createInlineUpdates.js';
 import { Libraries, type GTLibrary } from '../../../types/libraries.js';
 import type { GTParsingFlags } from '../../../types/parsing.js';
 import { matchFiles } from '../../../fs/matchFiles.js';
-import wireFormatCases from '../../../../../../test-fixtures/icu-tree-wire-format.json' with { type: 'json' };
+import wireFormatCases from '../../../../../../test-fixtures/message-tree-wire-format.json' with { type: 'json' };
 
 vi.mock('../../../fs/matchFiles.js', () => ({ matchFiles: vi.fn() }));
 
@@ -100,7 +100,7 @@ async function extract(
 }
 
 const treeUpdates = (result: Awaited<ReturnType<typeof extract>>) =>
-  result.updates.filter((update) => update.dataFormat === 'ICU_TREE');
+  result.updates.filter((update) => update.dataFormat === 'MESSAGE_TREE');
 
 describe('createInlineUpdates: unstable tagged templates', () => {
   // `gt` in each fixture template becomes the tag under test.
@@ -125,7 +125,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
         expect(result.warnings).toEqual([]);
         expect(result.updates).toHaveLength(1);
         const [update] = result.updates;
-        expect(update.dataFormat).toBe('ICU_TREE');
+        expect(update.dataFormat).toBe('MESSAGE_TREE');
         expect(update.source).toEqual(testCase.tree);
         expect(update.metadata.hash).toBe(testCase.hash);
       }
@@ -171,7 +171,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     expect(update.metadata.hash).toBe(
       hashSource({
         source: 'Read more',
-        dataFormat: 'ICU_TREE',
+        dataFormat: 'MESSAGE_TREE',
         maxChars: 12,
         requiresReview: true,
       })
@@ -642,10 +642,10 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       expect(updates.map((u) => u.metadata.hash)).toEqual([
         hashSource({
           source: 'Save',
-          dataFormat: 'ICU_TREE',
+          dataFormat: 'MESSAGE_TREE',
           context: 'button',
         }),
-        hashSource({ source: 'Open', dataFormat: 'ICU_TREE', maxChars: 4 }),
+        hashSource({ source: 'Open', dataFormat: 'MESSAGE_TREE', maxChars: 4 }),
       ]);
     });
 
@@ -694,10 +694,10 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       expect(
         treeUpdates(result).map((u) => [u.source, u.metadata.hash])
       ).toEqual([
-        ['Save', hashSource({ source: 'Save', dataFormat: 'ICU_TREE' })],
+        ['Save', hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' })],
         [
           'Hello {name}',
-          hashSource({ source: 'Hello {name}', dataFormat: 'ICU_TREE' }),
+          hashSource({ source: 'Hello {name}', dataFormat: 'MESSAGE_TREE' }),
         ],
       ]);
     });
@@ -711,10 +711,10 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
       expect(result.warnings).toEqual([]);
       expect(treeUpdates(result).map((u) => u.metadata.hash)).toEqual([
-        hashSource({ source: 'Save', dataFormat: 'ICU_TREE' }),
+        hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' }),
         hashSource({
           source: 'Save',
-          dataFormat: 'ICU_TREE',
+          dataFormat: 'MESSAGE_TREE',
           context: 'button',
         }),
       ]);
@@ -1013,12 +1013,12 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       const [update] = treeUpdates(result);
       expect(Object.keys(update.source[0][2])).toEqual(['__proto__', 'other']);
       expect(update.metadata.hash).toBe(
-        hashSource({ source: select(branches), dataFormat: 'ICU_TREE' })
+        hashSource({ source: select(branches), dataFormat: 'MESSAGE_TREE' })
       );
       expect(update.metadata.hash).not.toBe(
         hashSource({
           source: select({ other: 'Guest' }),
-          dataFormat: 'ICU_TREE',
+          dataFormat: 'MESSAGE_TREE',
         })
       );
     });

@@ -47,7 +47,7 @@ describe('gt-i18n/unstable runtime translation', () => {
     const source = 'Save';
     const hash = hashSource({
       source,
-      dataFormat: 'ICU_TREE',
+      dataFormat: 'MESSAGE_TREE',
       context: 'button',
     });
     translateMany.mockResolvedValue({
@@ -63,7 +63,7 @@ describe('gt-i18n/unstable runtime translation', () => {
         metadata: expect.objectContaining({
           hash,
           context: 'button',
-          dataFormat: 'ICU_TREE',
+          dataFormat: 'MESSAGE_TREE',
         }),
       },
     });
@@ -81,7 +81,7 @@ describe('gt-i18n/unstable runtime translation', () => {
     setI18nCache(
       new I18nCache({ loadTranslations: async () => ({}), cacheExpiryTime: 0 })
     );
-    const hash = hashSource({ source: 'Save', dataFormat: 'ICU_TREE' });
+    const hash = hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' });
     translateMany.mockResolvedValue({
       [hash]: { success: true, translation: 'Enregistrer' },
     });
