@@ -318,5 +318,6 @@ describe('printAST', () => {
         }
       }
     }
-  });
+    // A loaded CI runner needs 3 to 5 s for this, and the default is 5 s.
+  }, 30_000);
 });
