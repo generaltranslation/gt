@@ -1,22 +1,10 @@
 import path from 'node:path';
 import type * as MarkoCompiler from '@marko/compiler';
 import type * as MarkoTools from '@marko/language-tools';
-import { applyEdits, type Edit } from './edits.js';
-import {
-  SPREAD_ATTRIBUTE,
-  type SourceAttribute,
-  type SourceElement,
-} from './elements.js';
 import type { SourceLanguage } from './language.js';
 import type { Mapping } from './mapping.js';
 
 type Tools = typeof MarkoTools;
-type Parsed = ReturnType<Tools['parse']>;
-type MarkoNode = Parsed['program']['body'][number];
-type TagNode = Extract<
-  MarkoNode,
-  { type: MarkoTools.NodeType.Tag | MarkoTools.NodeType.AttrTag }
->;
 
 let hasDefaultCompiler = false;
 
@@ -48,18 +36,12 @@ export const markoLanguage: SourceLanguage = {
       translator,
     });
 
-    const generated = extracted.toString();
-    const copies = copyMappings(generated, (offset) =>
+    const code = extracted.toString();
+    const mappings = copyMappings(code, (offset) =>
       extracted.sourceOffsetAt(offset)
     );
-    const { code, mappings } = applyEdits(
-      generated,
-      copies,
-      tagAliasDeclarations(generated)
-    );
-    const elements = sourceElements(tools, parsed);
 
-    return { code, lang: 'ts', mappings, elements };
+    return { code, lang: 'ts', mappings };
   },
 };
 
@@ -109,77 +91,4 @@ function copyMappings(
   }
 
   return mappings;
-}
-
-/**
- * The tooling renders a custom tag through an alias,
- * `const __marko_internal_tag_1 = (\nParaglideMessage\n);`. Without the
- * declaration, the tag's name is a reference of its own: a component usage.
- */
-function tagAliasDeclarations(code: string): Edit[] {
-  const declarations = [
-    ...code.matchAll(/const __marko_internal_tag_\d+ = (?=\()/g),
-  ];
-
-  return declarations.map((declaration) => ({
-    start: declaration.index,
-    end: declaration.index + declaration[0].length,
-  }));
-}
-
-function sourceElements({ NodeType }: Tools, parsed: Parsed): SourceElement[] {
-  const elements: SourceElement[] = [];
-
-  const visit = (nodes: readonly MarkoNode[] | undefined) => {
-    for (const node of nodes ?? []) {
-      if (node.type !== NodeType.Tag && node.type !== NodeType.AttrTag)
-        continue;
-
-      elements.push(sourceElement(node, NodeType, parsed));
-      visit(node.body);
-    }
-  };
-
-  visit(parsed.program.body);
-
-  return elements;
-}
-
-function sourceElement(
-  tag: TagNode,
-  NodeType: Tools['NodeType'],
-  parsed: Parsed
-): SourceElement {
-  const name = parsed.read(tag.name);
-  const nameEnd = tag.name.end;
-  // `<Card>`, `<my-tag>`, `<ui.Card>`, `<${dynamic}>`: not HTML elements or `<if>`.
-  const isComponent = /^[A-Z]/.test(name) || /[-.$]/.test(name);
-
-  return {
-    name,
-    start: nameEnd,
-    end: tag.end,
-    nameStart: tag.name.start,
-    nameEnd,
-    openEnd: tag.open?.end ?? nameEnd,
-    component: isComponent,
-    attributes: sourceAttributes(tag, NodeType, parsed),
-  };
-}
-
-function sourceAttributes(
-  tag: TagNode,
-  NodeType: Tools['NodeType'],
-  parsed: Parsed
-): SourceAttribute[] {
-  return (tag.attrs ?? []).flatMap((attribute) => {
-    const { start, end } = attribute;
-    if (attribute.type === NodeType.AttrSpread)
-      return [{ name: SPREAD_ATTRIBUTE, start, end }];
-
-    const name = parsed.read(attribute.name);
-
-    // `<if=x>`: the tag's default attribute has no name.
-    return name ? [{ name, start, end }] : [];
-  });
 }

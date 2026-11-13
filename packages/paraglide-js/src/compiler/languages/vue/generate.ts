@@ -1,6 +1,5 @@
 import type * as VueLanguageCore from '@vue/language-core';
 import type * as TypeScript from 'typescript';
-import { closingTagNames } from '../elements.js';
 import {
   typescriptWithoutApiError,
   type GeneratedSource,
@@ -9,16 +8,11 @@ import {
 } from '../language.js';
 import {
   mappingsFromVolar,
-  withoutSource,
   type Mapping,
   type VolarMapping,
 } from '../mapping.js';
 import { COMPONENT_INSTANCE, normalizeVueCode } from './normalize.js';
-import {
-  templateElements,
-  templateExpressions,
-  type ParsedTemplate,
-} from './template.js';
+import { templateExpressions, type ParsedTemplate } from './template.js';
 
 export const VUE_REQUIRES = ['@vue/language-core', 'typescript'] as const;
 export const VUE_INSTALLED_WITH = { '@vue/language-core': 'vue-tsc' };
@@ -84,15 +78,10 @@ export async function generateVue(
     source
   );
 
-  const elements = template ? templateElements(template, source) : [];
-  const closingTags = closingTagNames(elements, source);
-  const mappings = withoutSource(normalized.mappings, closingTags);
-
   return {
     code: normalized.code,
     lang: script.lang,
-    mappings,
-    elements,
+    mappings: normalized.mappings,
     scopeObjects: [COMPONENT_INSTANCE],
     props: { calls: ['defineProps', 'withDefaults'], undeclared: true },
     // `const __VLS_0 = Label; const __VLS_1 = __VLS_asFunctionalComponent1(__VLS_0, …);
@@ -171,14 +160,7 @@ function parsedTemplate(virtualCode: VirtualCode): ParsedTemplate | undefined {
   if (!template?.ast) return undefined;
 
   // -1 for VitePress, whose template is the whole file after a leading newline.
-  const contentStart = template.startTagEnd ?? 0;
-
-  return {
-    ast: template.ast,
-    contentStart,
-    contentEnd: contentStart + template.content.length,
-    isPug: template.lang === 'pug',
-  };
+  return { ast: template.ast, contentStart: template.startTagEnd ?? 0 };
 }
 
 function embeddedCodes(code: {

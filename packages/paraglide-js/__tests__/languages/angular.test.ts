@@ -62,17 +62,15 @@ describe('inline templates', () => {
     });
     // In source order.
     expect(describeUsages(usages)).toEqual([
-      'message:title:call 7 <h1 [title]>',
-      'message:heading:call 7 <h1>',
-      'message:renamed:call 8 <p>',
-      'message:greeting:call 8 <p>',
-      'message:clicked:call 9 <button (click)>',
+      'message:title:call 7',
+      'message:heading:call 7',
+      'message:renamed:call 8',
+      'message:greeting:call 8',
+      'message:clicked:call 9',
       'message:greeting:reference 15',
     ]);
     expect(usages[1]).toMatchObject({
-      expression: 'm.heading()',
       column: 32,
-      scope: 'header',
     });
   });
 
@@ -92,9 +90,9 @@ describe('inline templates', () => {
     expect(
       describeUsages(usages).filter((usage) => usage.includes(':call'))
     ).toEqual([
-      'message:first:call 3 <p>',
-      'message:second:call 5 <b>',
-      'message:own:call 5 <b>',
+      'message:first:call 3',
+      'message:second:call 5',
+      'message:own:call 5',
     ]);
   });
 
@@ -122,7 +120,7 @@ describe('inline templates', () => {
     });
     expect(describeUsages(usages)).toEqual([
       'message:cast:call 4',
-      'message:inline:call 5 <p>',
+      'message:inline:call 5',
     ]);
   });
 });
@@ -149,15 +147,13 @@ describe('templateUrl', () => {
       ),
     });
     expect(describeUsages(usages)).toEqual([
-      'message:user_title:call 2 <h2>',
-      'message:hi:call 3 <span title>',
-      'runtime:getLocale:call 3 <span>',
+      'message:user_title:call 2',
+      'message:hi:call 3',
     ]);
     expect(usages[0]).toMatchObject({
       column: 10,
-      scope: 'user',
       // Through the component's field.
-      resolution: ['src/app/user.component.ts', 'src/paraglide/messages.js'],
+      targetFile: '/app/src/paraglide/messages.js',
     });
   });
 
@@ -172,7 +168,7 @@ describe('templateUrl', () => {
       ),
       [template]: `<p>{{ m.hello() }}</p>`,
     });
-    expect(describeUsages(usages)).toEqual(['message:hello:call 1 <p>']);
+    expect(describeUsages(usages)).toEqual(['message:hello:call 1']);
   });
 });
 
@@ -198,11 +194,11 @@ describe('template syntax', () => {
       )
     );
     expect(describeUsages(usages)).toEqual([
-      'message:price:call 1 <p>',
-      'message:currency:call 1 <p>',
-      'message:or:call 2 <p [title]>',
-      'message:paren:call 2 <p>',
-      'message:fallback:call 2 <p>',
+      'message:price:call 1',
+      'message:currency:call 1',
+      'message:or:call 2',
+      'message:paren:call 2',
+      'message:fallback:call 2',
       'message:label:call 3',
     ]);
   });
@@ -236,13 +232,13 @@ describe('template syntax', () => {
     expect(describeUsages(usages)).toEqual([
       'message:cond:call 1',
       'message:other:call 3',
-      'message:elseif:call 4 <p>',
-      'message:otherwise:call 6 <p>',
-      'message:empty:call 11 <li>',
+      'message:elseif:call 4',
+      'message:otherwise:call 6',
+      'message:empty:call 11',
       'message:mode:call 13',
       'message:caseValue:call 14',
-      'message:inCase:call 14 <span>',
-      'message:inDefault:call 15 <span>',
+      'message:inCase:call 14',
+      'message:inDefault:call 15',
       'message:ready:call 17',
       'message:deferred:call 17',
       'message:placeholder:call 17',
@@ -261,11 +257,11 @@ describe('template syntax', () => {
       )
     );
     expect(describeUsages(usages)).toEqual([
-      'message:track:reference 1 <li *ngFor>',
-      'message:max:call 2 <li *ngFor>',
-      'message:loaded:call 3 <p *ngIf>',
-      'message:outside:call 5 <p>',
-      'message:after:call 6 <p>',
+      'message:track:reference 1',
+      'message:max:call 2',
+      'message:loaded:call 3',
+      'message:outside:call 5',
+      'message:after:call 6',
     ]);
   });
 
@@ -279,10 +275,10 @@ describe('template syntax', () => {
       )
     );
     expect(describeUsages(usages)).toEqual([
-      'message:icu:call 2 <span>',
-      'message:ok:call 3 <p>',
-      'message:bound:call 4 <input bind-title>',
-      'message:handler:call 4 <input on-click>',
+      'message:icu:call 2',
+      'message:ok:call 3',
+      'message:bound:call 4',
+      'message:handler:call 4',
     ]);
   });
 });
@@ -307,10 +303,10 @@ describe('Analog', () => {
     });
     // `const title = m.title` is an alias, not a usage.
     expect(describeUsages(usages)).toEqual([
-      'message:title:call 7 <h1>',
-      'message:row:call 8 <p>',
+      'message:title:call 7',
+      'message:row:call 8',
     ]);
-    expect(usages[0]).toMatchObject({ column: 10, scope: 'index.page' });
+    expect(usages[0]).toMatchObject({ column: 10 });
   });
 });
 

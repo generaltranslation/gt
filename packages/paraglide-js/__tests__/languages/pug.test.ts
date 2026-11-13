@@ -1,22 +1,15 @@
 import { expect, test } from 'vitest';
-import {
-  ADAPTER_FILES,
-  ADAPTER_TARGETS,
-  analyzeProject,
-  elementLabel,
-  summarize,
-} from '../helpers/project.js';
+import { analyzeProject, summarize } from '../helpers/project.js';
 
 const file = '/app/src/components/Cart.vue';
 
 async function analyze(lines: string[]) {
   const usages = await analyzeProject(
-    { [file]: lines.join('\n'), ...ADAPTER_FILES },
-    { entry: file, targets: ADAPTER_TARGETS }
+    { [file]: lines.join('\n') },
+    { entry: file }
   );
   return usages.map(
-    (usage) =>
-      `${summarize([usage])[0]} ${usage.line}:${usage.column}${elementLabel(usage)}`
+    (usage) => `${summarize([usage])[0]} ${usage.line}:${usage.column}`
   );
 }
 
@@ -52,19 +45,15 @@ test('interpolation, directives and components', async () => {
       `</template>`,
     ])
   ).toEqual([
-    'message:title:call 8:14 <h1 :title>',
-    'message:heading:call 8:41 <h1>',
+    'message:title:call 8:14',
+    'message:heading:call 8:41',
     // Not `#{m.total()}` or `span= m.buffered()`: pug runs those when it
     // compiles the template, not Vue in the component.
-    'runtime:setLocale:call 13:13 <button @click>',
-    'message:piped:call 15:14 <div>',
-    // A tag's own usage is in its parent element.
-    'adapter:ParaglideMessage:component 16:3 <div>',
-    'message:tos:reference 16:30 <ParaglideMessage :message>',
-    'adapter:ParaglideMessage:component 17:3 <div>',
-    'message:tos:reference 17:31 <paraglide-message :message>',
-    'message:nested:call 18:13 <li>',
-    'message:block:call 22:21 <p>',
+    'message:piped:call 15:14',
+    'message:tos:reference 16:30',
+    'message:tos:reference 17:31',
+    'message:nested:call 18:13',
+    'message:block:call 22:21',
   ]);
 });
 
@@ -83,7 +72,7 @@ test("v-for and slot props shadow imports for their element's children", async (
       `  p {{ m.footer() }}`,
       `</template>`,
     ])
-  ).toEqual(['message:after:call 10:9 <li>', 'message:footer:call 14:8 <p>']);
+  ).toEqual(['message:after:call 10:9', 'message:footer:call 14:8']);
 });
 
 test('an expression that does not parse is skipped, not the file', async () => {
@@ -94,5 +83,5 @@ test('an expression that does not parse is skipped, not the file', async () => {
       `p(:title="m.broken(") {{ m.ok() }}`,
       `</template>`,
     ])
-  ).toEqual(['message:ok:call 7:26 <p>']);
+  ).toEqual(['message:ok:call 7:26']);
 });

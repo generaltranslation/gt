@@ -81,38 +81,50 @@ describe('collectContext', () => {
     ]);
   });
 
-  test('a dynamic name gives its usage to every message it matches', async () => {
-    const ids = ['error_404', 'error_500', 'greeting'];
-    const root = await writeProject('context-dynamic', {
-      ...filesIn('src/paraglide', await compileMessages(ids)),
-      'messages/en.json': JSON.stringify(
-        Object.fromEntries(ids.map((id) => [id, 'Hi']))
-      ),
-      'src/main.ts': [
-        `import { m } from "./paraglide/messages.js";`,
-        'export const error = (code: number) => m[`error_${code}`]();',
-        'export const hint = (kind: string) => m[`hint_${kind}`]();',
-      ].join('\n'),
-    });
-    const { warnings } = await collect(root);
-    const snippet =
-      'src/main.ts: export const error = (code: number) => m[`error_${code}`]();';
-    expect(await readSnippets(root, { message: 'error_404' })).toEqual([
-      snippet,
-    ]);
-    expect(await readSnippets(root, { message: 'error_500' })).toEqual([
-      snippet,
-    ]);
-    expect(Object.keys(await readMetadata(root))).toEqual([
-      'error_404',
-      'error_500',
-    ]);
-    expect(warnings).toEqual([
-      expect.stringContaining(
-        '1 usage(s) of messages not in the catalog: hint_* (src/main.ts:3:'
-      ),
-    ]);
-  });
+  test.each([
+    ['no module calls it', 'context-dynamic', {}],
+    // error_500 gets the usage only if the key stays error_*.
+    [
+      'another module calls it with 404',
+      'context-dynamic-imported',
+      { 'src/page.ts': `import { error } from "./main.js";\nerror(404);\n` },
+    ],
+  ])(
+    'a dynamic name gives its usage to every message it matches: %s',
+    async (_name, project, caller) => {
+      const ids = ['error_404', 'error_500', 'greeting'];
+      const root = await writeProject(project, {
+        ...filesIn('src/paraglide', await compileMessages(ids)),
+        'messages/en.json': JSON.stringify(
+          Object.fromEntries(ids.map((id) => [id, 'Hi']))
+        ),
+        'src/main.ts': [
+          `import { m } from "./paraglide/messages.js";`,
+          'export const error = (code: number) => m[`error_${code}`]();',
+          'export const hint = (kind: string) => m[`hint_${kind}`]();',
+        ].join('\n'),
+        ...caller,
+      });
+      const { warnings } = await collect(root);
+      const snippet =
+        'src/main.ts: export const error = (code: number) => m[`error_${code}`]();';
+      expect(await readSnippets(root, { message: 'error_404' })).toEqual([
+        snippet,
+      ]);
+      expect(await readSnippets(root, { message: 'error_500' })).toEqual([
+        snippet,
+      ]);
+      expect(Object.keys(await readMetadata(root))).toEqual([
+        'error_404',
+        'error_500',
+      ]);
+      expect(warnings).toEqual([
+        expect.stringContaining(
+          '1 usage(s) of messages not in the catalog: hint_* (src/main.ts:3:'
+        ),
+      ]);
+    }
+  );
 
   test('a long list of unknown messages is cut', async () => {
     const root = await writeProject('context-catalog-many', {

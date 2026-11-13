@@ -5,7 +5,6 @@ import {
   type SourceMapSegment,
 } from '@jridgewell/trace-mapping';
 import { computeLineStarts, type ESTree } from '../analysis/ast.js';
-import type { SourceRange } from '../analysis/types.js';
 
 /**
  * Generated `[generated, generated + length)` stands for source
@@ -98,20 +97,6 @@ export function sourceOffsets(
   generatedLength: number
 ): Int32Array {
   return offsetTable(mappings, generatedLength, sourceStartOf);
-}
-
-/** `mappings` without the source text in `ranges`: the code generated for it no longer counts. */
-export function withoutSource(
-  mappings: readonly Mapping[],
-  ranges: readonly SourceRange[]
-): Mapping[] {
-  let remaining = [...mappings];
-
-  for (const range of ranges) {
-    remaining = remaining.flatMap((mapping) => mappingOutside(mapping, range));
-  }
-
-  return remaining;
 }
 
 function mappingsOfVolarMapping(mapping: VolarMapping): Mapping[] {
@@ -252,35 +237,6 @@ function isPositionedNode(value: object): value is PositionedNode {
     node.start !== undefined &&
     node.end !== undefined
   );
-}
-
-function mappingOutside(mapping: Mapping, range: SourceRange): Mapping[] {
-  const sourceEnd = mapping.source + sourceLengthOf(mapping);
-  const isOutside = sourceEnd <= range.start || mapping.source >= range.end;
-  if (isOutside) return [mapping];
-
-  // Only a copy can be cut around the range; other mappings stand for their source as a whole.
-  if (!isCopy(mapping)) return [];
-
-  const pieces: Mapping[] = [];
-
-  if (mapping.source < range.start) {
-    pieces.push({
-      generated: mapping.generated,
-      source: mapping.source,
-      length: range.start - mapping.source,
-    });
-  }
-
-  if (sourceEnd > range.end) {
-    pieces.push({
-      generated: mapping.generated + (range.end - mapping.source),
-      source: range.end,
-      length: sourceEnd - range.end,
-    });
-  }
-
-  return pieces;
 }
 
 function sourceStartOf(mapping: Mapping, offset: number): number {
