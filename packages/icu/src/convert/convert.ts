@@ -61,12 +61,6 @@ export function messageTreeToIcu(tree: MessageTree): string {
   return printAST(fromMessageTree(tree));
 }
 
-/** An ICU string, and the formatting context of its message that it does not spell. */
-export type IcuMessage = {
-  icu: string;
-  formats: MessageFormats;
-};
-
 /**
  * Prints a message as an ICU MessageFormat string that says as much of it as
  * ICU can: the tree, and the formatting context a skeleton spells, like a
@@ -89,7 +83,10 @@ export type IcuMessage = {
  * ones returned here are the message's. To print what a translator sees,
  * which is the tree alone, use `messageTreeToIcu`.
  */
-export function messageToIcu(message: Message): IcuMessage {
+export function messageToIcu(message: Message): {
+  icu: string;
+  formats: MessageFormats;
+} {
   const [ast, formats] = fromMessage(message);
   return { icu: printAST(ast), formats };
 }

@@ -1,8 +1,8 @@
 /*
- * Formatting an ICU string without making it a message. Everything that
- * exists only for that is in this file: the tree it is parsed to, how that
- * tree is made, and `formatIcu`. A message is formatted by
- * `formatMessageTree`, which never loads the parser.
+ * Formatting an ICU string without converting it to a message tree.
+ * Everything that exists only for that is in this file: the tree it is
+ * parsed to, how that tree is made, and `formatIcu`. A message tree is
+ * formatted by `formatMessageTree`, which never loads the parser.
  */
 
 import { parse } from '../parser/parse';
