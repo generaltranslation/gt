@@ -7,6 +7,7 @@ import {
   type SpecifierLinks,
 } from './importers.js';
 import type { ModuleRecord, ParsedModule } from './module-graph.js';
+import { hasName, type NameList } from '../utils/name-list.js';
 
 /** What the analysis knows of a module without its syntax tree. */
 export type ModuleSummary = {
@@ -17,7 +18,7 @@ export type ModuleSummary = {
     resolved: ReadonlyArray<readonly [string, string | undefined]>;
     links: SpecifierLinks;
     /** Exports that never hold a tracked value: see `summarizeModule`. */
-    untrackedExports: readonly string[];
+    untrackedExports: NameList;
     /** The auto-imported names it may use: see `summarizeModule`. */
     globalNames: readonly string[];
   }>;
@@ -97,7 +98,7 @@ export type IndexedRecordsOptions = {
 type IndexedModule = {
   resolved: ReadonlyArray<Map<string, string | undefined>>;
   links: readonly Links[];
-  untrackedExports: ReadonlySet<string>;
+  untrackedExports: NameList | undefined;
 };
 
 /**
@@ -126,7 +127,7 @@ export class IndexedRecords implements RecordStore {
         links: parts.map((part, index) =>
           resolveLinks(part.links, resolved[index]!)
         ),
-        untrackedExports: new Set(parts[0]?.untrackedExports),
+        untrackedExports: parts[0]?.untrackedExports,
       });
 
       parts.forEach(({ globalNames }, part) => {
@@ -165,7 +166,9 @@ export class IndexedRecords implements RecordStore {
   }
 
   isUntrackedExport(file: string, name: string): boolean {
-    return this.modules.get(file)?.untrackedExports.has(name) ?? false;
+    const untracked = this.modules.get(file)?.untrackedExports;
+
+    return untracked !== undefined && hasName(untracked, name);
   }
 
   loaded(): Iterable<ModuleRecord> {
