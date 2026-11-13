@@ -324,6 +324,61 @@ describe('I18nCache', () => {
   });
 
   describe('locale identity', () => {
+    it.each([
+      {
+        name: 'a configured locale of the same dialect',
+        defaultLocale: 'en-US',
+        locale: 'en',
+      },
+      {
+        name: 'a custom alias for the default locale code',
+        defaultLocale: 'en-us',
+        locale: 'brand-us',
+        customMapping: {
+          'en-us': { code: 'en-US' },
+          'brand-us': { code: 'en-US' },
+        },
+      },
+    ])(
+      'serves $name as source content without loading',
+      async ({ defaultLocale, locale, customMapping }) => {
+        const loadTranslations = vi
+          .fn()
+          .mockRejectedValue(new Error('No translations file'));
+        const loadDictionary = vi
+          .fn()
+          .mockRejectedValue(new Error('No dictionary file'));
+        const cache = createCache({
+          defaultLocale,
+          locales: [defaultLocale, locale, 'fr'],
+          customMapping,
+          loadTranslations,
+          loadDictionary,
+          dictionary: { greeting: 'Hello' },
+        });
+
+        const resolver = await cache.getLookupTranslation(locale);
+        expect(resolver(message, lookupOptions)).toBe(message);
+        expect(cache.lookupTranslation(locale, message, lookupOptions)).toBe(
+          message
+        );
+        await expect(
+          settle(cache.lookupTranslationWithFallback(locale, message, icu))
+        ).resolves.toBe(message);
+        await expect(cache.loadTranslations(locale)).resolves.toEqual({});
+        await expect(cache.loadDictionary(locale)).resolves.toEqual({
+          greeting: 'Hello',
+        });
+        expect(cache.lookupDictionary(locale, 'greeting')).toEqual({
+          entry: 'Hello',
+          options: {},
+        });
+        expect(loadTranslations).not.toHaveBeenCalled();
+        expect(loadDictionary).not.toHaveBeenCalled();
+        expect(translateMany).not.toHaveBeenCalled();
+      }
+    );
+
     it('uses the requested locale string as the cache key without resolving it', async () => {
       const loadTranslations = vi
         .fn()
@@ -333,6 +388,10 @@ describe('I18nCache', () => {
         locales: ['en', 'fr-fr', 'brand-french'],
         customMapping: { 'brand-french': { code: 'fr', name: 'Brand French' } },
       });
+      // The first lookup builds the configured source-locale set.
+      expect(cache.lookupTranslation('en', message, lookupOptions)).toBe(
+        message
+      );
       const canonicalize = vi.spyOn(Intl, 'getCanonicalLocales');
       try {
         await cache.loadTranslations('fr-FR');

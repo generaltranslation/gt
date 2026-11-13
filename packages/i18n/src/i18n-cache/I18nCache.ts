@@ -26,6 +26,7 @@ import { resolveDictionaryLookupOptions } from './translations-manager/utils/dic
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import type { I18nConfig } from '../i18n-config/I18nConfig';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -114,6 +115,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
    * Creates a locale-bound translateMany for runtime translation
    */
   private createTranslateMany: CreateTranslateMany;
+
+  private sourceLocales?: { config: I18nConfig; locales: Set<Locale> };
 
   /**
    * Creates an instance of I18nCache.
@@ -263,7 +266,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     locale: string
   ): Promise<Record<Hash, TranslationValue>> {
     return this.guardAsync({}, async () => {
-      if (locale === getI18nConfig().getDefaultLocale()) {
+      if (this.isSourceLocale(locale)) {
         return {};
       }
 
@@ -280,7 +283,9 @@ class I18nCache<TranslationValue extends Translation = Translation> {
    */
   async loadDictionary(locale: string): Promise<Dictionary> {
     return this.guardAsync({}, async () => {
-      const dictionaryCache = await this.dictionaries.getOrLoad(locale);
+      const dictionaryCache = await this.dictionaries.getOrLoad(
+        this.getDictionaryLocale(locale)
+      );
       return dictionaryCache.getInternalCache();
     });
   }
@@ -290,7 +295,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
    */
   lookupDictionary(locale: string, id: string): DictionaryEntry | undefined {
     return this.guard(undefined, () =>
-      this.dictionaries.get(locale)?.getEntry(id)
+      this.dictionaries.get(this.getDictionaryLocale(locale))?.getEntry(id)
     );
   }
 
@@ -302,7 +307,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     id: string
   ): DictionaryObject | undefined {
     return this.guard(undefined, () =>
-      this.dictionaries.get(locale)?.getValue(id)
+      this.dictionaries.get(this.getDictionaryLocale(locale))?.getValue(id)
     );
   }
 
@@ -313,8 +318,9 @@ class I18nCache<TranslationValue extends Translation = Translation> {
         lookupDictionaryObj: () => undefined,
       },
       async () => {
-        const asyncBoundaryDictionaryCache =
-          await this.dictionaries.getOrLoad(locale);
+        const asyncBoundaryDictionaryCache = await this.dictionaries.getOrLoad(
+          this.getDictionaryLocale(locale)
+        );
 
         return {
           lookupDictionary: (id) => asyncBoundaryDictionaryCache?.getEntry(id),
@@ -334,7 +340,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     id: string
   ): Promise<DictionaryEntry | undefined> {
     return this.guardAsync(undefined, async () => {
-      if (locale === getI18nConfig().getDefaultLocale()) {
+      if (this.isSourceLocale(locale)) {
         return this.getSourceDictionaryEntry(id);
       }
 
@@ -359,7 +365,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     id: string
   ): Promise<DictionaryObject | undefined> {
     return this.guardAsync(undefined, async () => {
-      if (locale === getI18nConfig().getDefaultLocale()) {
+      if (this.isSourceLocale(locale)) {
         return this.getSourceDictionaryObject(id);
       }
 
@@ -425,6 +431,32 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   }
 
   /**
+   * GT never produces translations for the default locale or a configured
+   * locale of the same dialect, so those are served as source content.
+   */
+  private isSourceLocale(locale: Locale): boolean {
+    const config = getI18nConfig();
+    if (this.sourceLocales?.config !== config) {
+      this.sourceLocales = {
+        config,
+        locales: new Set([
+          config.getDefaultLocale(),
+          ...config
+            .getLocales()
+            .filter((configured) => !config.requiresTranslation(configured)),
+        ]),
+      };
+    }
+    return this.sourceLocales.locales.has(locale);
+  }
+
+  private getDictionaryLocale(locale: Locale): Locale {
+    return this.isSourceLocale(locale)
+      ? getI18nConfig().getDefaultLocale()
+      : locale;
+  }
+
+  /**
    * Just lookup a translation
    */
   lookupTranslation<T extends TranslationValue = TranslationValue>(
@@ -433,7 +465,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     options: LookupOptions
   ): T | undefined {
     return this.guard<T | undefined>(undefined, () => {
-      if (locale === getI18nConfig().getDefaultLocale()) return message;
+      if (this.isSourceLocale(locale)) return message;
       return this.translations.get(locale)?.get({ message, options });
     });
   }
@@ -470,10 +502,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     return this.guardAsync<TranslationResolver<TranslationValue>>(
       (message) => message,
       async () => {
-        const defaultLocale = getI18nConfig().getDefaultLocale();
-
-        // Early return if i18n is disabled or default locale
-        if (locale === defaultLocale) {
+        // Early return if i18n is disabled or the locale is served as source
+        if (this.isSourceLocale(locale)) {
           return (message) => message;
         }
 
@@ -518,8 +548,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
           this.guard(undefined, () => {
             const translationLocale = lookupOptions.$locale ?? locale;
 
-            // Default locale, return the message
-            if (translationLocale === defaultLocale) return message;
+            // Source locale, return the message
+            if (this.isSourceLocale(translationLocale)) return message;
 
             // Request locale overriden, to attempt a synchronous lookup if an alternate locale is requested
             const txCache =
@@ -583,7 +613,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   private async lookupTranslationWithFallbackResolved<
     T extends TranslationValue = TranslationValue,
   >(locale: string, message: T, options: LookupOptions): Promise<T> {
-    if (locale === getI18nConfig().getDefaultLocale()) {
+    if (this.isSourceLocale(locale)) {
       return message;
     }
 
