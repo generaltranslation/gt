@@ -199,6 +199,9 @@ export const Currency = /* @__PURE__ */ withGTMetadata<CurrencyProps>(
           : formatCurrency(number, props.currency, {
               locales: getVariableFormatLocales(props, state),
               ...props.options,
+              // The props say it is a currency, and which; options do not.
+              currency: props.currency,
+              style: 'currency',
             });
         return asFragmentRoot(formatted);
       };
