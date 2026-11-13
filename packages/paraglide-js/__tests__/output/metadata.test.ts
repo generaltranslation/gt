@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { renderMetadataFile } from '../../src/compiler/output/metadata.js';
 import {
+  SourceCodeCollector,
   sourceCodeByMessage,
   sourceSnippet,
 } from '../../src/compiler/output/source-code.js';
+import { jsonChunks } from '../../src/compiler/utils/json.js';
 import type {
   FileUsages,
   ParaglideUsage,
@@ -238,4 +240,35 @@ describe('sourceSnippet', () => {
       after: 'b\nc\nd\ne',
     });
   });
+});
+
+test('the source code kept as JSON is written as the source code itself, at any depth', () => {
+  const keys = [key('save'), key('nested', ['group', 'nested'])];
+  const collector = new SourceCodeCollector({
+    ids: new Set(keys.map(({ id }) => id)),
+    inlangProject: PROJECT,
+    radius: 1,
+  });
+  collector.add(source('b.ts', [usage('save', 2), usage('nested', 3)]));
+  collector.add(source('a.ts', [usage('save', 1), usage('save', 1)]));
+
+  const expected = renderMetadataFile({
+    keys,
+    sourceCode: collector.byMessage(),
+    existing: { save: { context: 'A button' } },
+  });
+  const streamed = renderMetadataFile({
+    keys,
+    sourceCode: collector.streamedByMessage(),
+    existing: { save: { context: 'A button' } },
+  });
+  const written = [...jsonChunks(streamed)]
+    .map((chunk) => chunk.toString())
+    .join('');
+
+  expect(written).toBe(JSON.stringify(expected, null, 2));
+  expect(Object.keys(expected.save as object)).toEqual([
+    'context',
+    'sourceCode',
+  ]);
 });
