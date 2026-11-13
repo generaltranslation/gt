@@ -1,16 +1,25 @@
 import path from 'node:path/posix';
 import { parseSync } from 'oxc-parser';
+import { expect } from 'vitest';
 import { analyzeModule } from '../../src/compiler/analysis/analyze.js';
+import {
+  ModuleIndexer,
+  summarizeModule,
+} from '../../src/compiler/analysis/module-index.js';
 import {
   ModuleGraph,
   type GlobalBinding,
+  type ModuleGraphOptions,
   type ParsedModule,
 } from '../../src/compiler/analysis/module-graph.js';
 import type { ParaglideUsage } from '../../src/compiler/analysis/types.js';
+import type { GeneratedModule } from '../../src/compiler/collector/module-reader.js';
 import { defaultLanguages } from '../../src/compiler/languages/index.js';
 import {
+  generateSource,
   isSourceFile,
   parseSource,
+  parseSourceSync,
   type LanguageContext,
   type ParseFunction,
   type SourceLanguage,
@@ -20,6 +29,7 @@ import {
   type ParaglideTarget,
 } from '../../src/compiler/paraglide/targets.js';
 import { projectPackages } from '../../src/compiler/project/packages.js';
+import { parseModuleCode } from '../../src/compiler/utils/parse.js';
 import { isDependency } from '../../src/compiler/utils/paths.js';
 
 export const ROOT = '/app';
@@ -72,20 +82,130 @@ export async function analyzeProject(
   const languages = options.languages ?? defaultLanguages;
   const context = options.context ?? REPO_PACKAGES;
 
-  const graph = new ModuleGraph({
+  const graphOptions = {
     targets: options.targets ?? defaultTargets,
-    isOutdir: async (directory) => outdirs.includes(directory),
+    isOutdir: async (directory: string) => outdirs.includes(directory),
     globals: options.globals,
-    shouldFollow: (file) =>
+    shouldFollow: (file: string) =>
       isSourceFile(file, languages) && !isDependency(file),
-    resolve: async (specifier, importer) =>
+    resolve: async (specifier: string, importer: string) =>
       resolveInMemory(specifier, importer, all, options.aliases),
-    readModule: (file) => readInMemory(file, all, languages, context),
-  });
+    readModule: (file: string) => readInMemory(file, all, languages, context),
+  };
+  const graph = new ModuleGraph(graphOptions);
 
   const entry = options.entry ?? ENTRY;
   const sources = options.loadAll ? Object.keys(files) : [entry];
   await graph.loadPaths(sources);
+
+  const usages = analyzeModule(graph, entry);
+
+  // The collector indexes the modules and loads each when it is read: it must find the same.
+  const indexed = await analyzeIndexed(graphOptions, all, sources, entry, {
+    languages,
+    context,
+  });
+  // The values a node holds come in the order their modules were loaded, which the index sets.
+  expect(
+    inCanonicalOrder(indexed),
+    'usages found through an indexed graph'
+  ).toEqual(inCanonicalOrder(usages));
+
+  return usages;
+}
+
+function inCanonicalOrder(usages: readonly ParaglideUsage[]): ParaglideUsage[] {
+  const key = (usage: ParaglideUsage) =>
+    [
+      usage.target,
+      usage.targetFile,
+      usage.name,
+      usage.kind,
+      usage.dynamic,
+    ].join('\0');
+
+  return [...usages].sort(
+    (a, b) =>
+      a.start - b.start ||
+      a.end - b.end ||
+      (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0)
+  );
+}
+
+/**
+ * Analyzes `entry` as the collector does: through an index of the modules,
+ * with scripts parsed without ranges. Every other module is analyzed first,
+ * with no module kept loaded after each, so that the entry's modules are
+ * loaded again.
+ */
+async function analyzeIndexed(
+  graphOptions: ModuleGraphOptions,
+  files: ReadonlyMap<string, string>,
+  sources: readonly string[],
+  entry: string,
+  {
+    languages,
+    context,
+  }: { languages: readonly SourceLanguage[]; context: LanguageContext }
+): Promise<ParaglideUsage[]> {
+  const generatedModules = new Map<string, GeneratedModule>();
+  const outdirGraph = new ModuleGraph(graphOptions);
+  const indexer = new ModuleIndexer({
+    graph: outdirGraph,
+    resolve: graphOptions.resolve,
+    summarize: async (file) => {
+      const code = files.get(file);
+      if (code === undefined) return undefined;
+
+      const generatedModule = await generateSource(
+        file,
+        code,
+        languages,
+        context
+      );
+      if (generatedModule && 'error' in generatedModule) {
+        throw new Error(`${file}: ${generatedModule.error}`);
+      }
+
+      const parsed = parseSourceSync(
+        file,
+        code,
+        parseModuleCode,
+        generatedModule
+      );
+      if ('error' in parsed) throw new Error(`${file}: ${parsed.error}`);
+      if (generatedModule) generatedModules.set(file, generatedModule);
+
+      return summarizeModule(parsed.module);
+    },
+  });
+  await indexer.indexPaths(sources);
+
+  const graph = new ModuleGraph({
+    targets: graphOptions.targets,
+    outdirs: outdirGraph.outdirs,
+    globals: graphOptions.globals,
+    index: {
+      summaries: indexer.modules,
+      budget: 0,
+      load: (file) => {
+        const parsed = parseSourceSync(
+          file,
+          files.get(file)!,
+          parseModuleCode,
+          generatedModules.get(file)
+        );
+        return 'module' in parsed ? parsed.module : undefined;
+      },
+    },
+  });
+
+  for (const { file } of indexer.modules) {
+    if (file === entry) continue;
+
+    analyzeModule(graph, file);
+    graph.trim();
+  }
 
   return analyzeModule(graph, entry);
 }
