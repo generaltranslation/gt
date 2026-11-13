@@ -25,6 +25,12 @@ export declare class NativeGraph {
   /** A component file, as the code its language's tooling wrote for it. */
   queueGenerated(file: string, order: number, code: string, generated: NativeGeneratedSource): void
   /**
+   * Starts reading and parsing scripts that are about to be loaded, on the
+   * cores JavaScript leaves idle while it lists the others; `load` takes them.
+   * Returns at once.
+   */
+  prefetch(files: Array<string>): void
+  /**
    * Reads the scripts `files`, and parses them and what was queued. `orders`
    * are the positions of `files` among the loaded files.
    */
@@ -57,6 +63,18 @@ export declare class NativeGraph {
   analyze(files: Array<string>): Promise<NativeAnalysis>
   /** As `analyze`, on this thread: `symbol` says what the custom targets export. */
   analyzeWithCustomTargets(files: Array<string>, symbol: (target: number, file: string, exportName: string, path: Array<string>) => NativeCustomSymbol | undefined | null): NativeAnalysis
+  /**
+   * Gives back the memory of the modules, on a thread of its own; what
+   * `writeMetadata` writes is kept. The graph is then as new, with the same
+   * targets and outdirs.
+   */
+  release(): void
+  /**
+   * Writes the metadata file of each message file of `input`'s projects, from
+   * the usages of the analyzed files. `input` is the JSON of `MetadataInput`
+   * (`src/compiler/collector/metadata-files.ts`).
+   */
+  writeMetadata(input: string, radius: number): Promise<NativeMetadataResult>
   stats(): NativeStats
 }
 
@@ -70,14 +88,18 @@ export interface NativeAlias {
 }
 
 export interface NativeAnalysis {
-  /** The analyzed files that have usages. */
+  /**
+   * The analyzed files that have usages. Their code and usages are kept for
+   * `writeMetadata`.
+   */
   files: Array<string>
-  /** The code of each. */
-  codes: Array<string>
   /** How many usages each has. */
   counts: Array<number>
-  /** The usages of each, as a JSON list of lists. */
-  usages: string
+  /**
+   * The usages of each, as a JSON list: one text per file, so that a
+   * project's usages are not limited by the length of one JavaScript string.
+   */
+  usages: Array<string>
   /** The files that the usages' `targetFile` name by index. */
   paths: Array<string>
 }
@@ -146,6 +168,15 @@ export interface NativeLoadResult {
   aliasQueries: Array<string>
 }
 
+export interface NativeMetadataResult {
+  /** The metadata files that were left as they are, in order. */
+  skipped: Array<NativeSkippedMetadata>
+  /** The first write that failed: then some files may not be written. */
+  failure?: NativeSystemError
+  /** A field written by hand nests deeper than `JSON.stringify` can write. */
+  tooDeep: boolean
+}
+
 export interface NativePending {
   importers: Array<string>
   /** How many of `specifiers` each importer has. */
@@ -176,12 +207,28 @@ export interface NativeSkipped {
   error: string
 }
 
+export interface NativeSkippedMetadata {
+  file: string
+  /** Why it could not be read; none if it is not the JSON of an object. */
+  error?: NativeSystemError
+}
+
 export interface NativeStats {
   modules: number
   files: number
   nodes: number
   /** Bytes held by the modules' trees. */
   treeBytes: number
+}
+
+export interface NativeSystemError {
+  /** The system's number for the error, on a system whose numbers JavaScript knows. */
+  errno?: number
+  /** The error's code, for a number JavaScript does not know. */
+  code: string
+  syscall: string
+  path?: string
+  dest?: string
 }
 
 export interface NativeTarget {
@@ -198,3 +245,11 @@ export interface NativeTargetFile {
   outdir?: string
   outdirPath?: string
 }
+
+/**
+ * The content of a metadata file, as `writeMetadata` writes it: for tests.
+ * `input` is the JSON of `{ inlangProject, keys, existing, sources }`; none if
+ * `existing` is not the JSON of an object. A field written by hand too deep
+ * for `JSON.stringify` is an error.
+ */
+export declare function renderMetadata(input: string, radius: number): string | null

@@ -121,26 +121,15 @@ fn collect_module(
   let line_starts = OnceLock::new();
   let mut marks = vec![0u8; length];
 
-  match custom {
-    // Custom targets are asked in JavaScript, on its own thread.
-    Some(_) => {
-      UsageCollector::new(graph, module, custom, &mut marks, 0, &line_starts).walk(
-        0,
-        length as NodeId,
-        usages,
-      );
-    }
-    None if length < PARALLEL_NODES => {
-      UsageCollector::new(graph, module, None, &mut marks, 0, &line_starts).walk(
-        0,
-        length as NodeId,
-        usages,
-      );
-    }
-    None if length > 0 => {
-      usages.extend(collect_subtree(graph, module, 0, &mut marks, &line_starts));
-    }
-    None => {}
+  // Custom targets are asked in JavaScript, on its own thread; a small module is one walk.
+  if custom.is_some() || length < PARALLEL_NODES {
+    UsageCollector::new(graph, module, custom, &mut marks, 0, &line_starts).walk(
+      0,
+      length as NodeId,
+      usages,
+    );
+  } else {
+    usages.extend(collect_subtree(graph, module, 0, &mut marks, &line_starts));
   }
 }
 
@@ -533,7 +522,10 @@ impl<'g, 'm> UsageCollector<'g, 'm> {
       return;
     }
 
-    let (start, end) = (position.start as u32, position.end.max(0) as u32);
+    let (start, end) = (
+      position.start as u32,
+      self.record.ast.end(node).max(0) as u32,
+    );
 
     let code: &'g str = &self.record.source.code;
     let starts = self.line_starts.get_or_init(|| line_starts(code));
@@ -570,7 +562,7 @@ fn holds_arguments(graph: &Graph, binding: &Binding, depth: u32) -> bool {
   let ast = &record.ast;
   let init = unwrap_expression(ast, init);
 
-  if reads_props(graph, record, init) {
+  if reads_props(record, init) {
     return true;
   }
   if ast.kind(init) != Kind::Identifier {
@@ -583,10 +575,7 @@ fn holds_arguments(graph: &Graph, binding: &Binding, depth: u32) -> bool {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    graph::{GraphOptions, Target, TargetKind},
-    load::{link_with, load, unlinked, Input, Request},
-  };
+  use crate::graph::{module_of, script_graph};
 
   /// A module of many statements, with usages at every depth: in functions,
   /// objects, aliases and assignments, whose marks must stay with their subtree.
@@ -603,34 +592,8 @@ mod tests {
   }
 
   fn usages(parallel: bool) -> Vec<(u32, u32, String, &'static str, bool)> {
-    let mut graph = Graph::new(GraphOptions {
-      targets: vec![Target {
-        name: "message".into(),
-        kind: TargetKind::Messages,
-      }],
-      outdirs: vec!["/app/src/paraglide".into()],
-      source_extensions: Vec::new(),
-    });
-
-    let request = Request {
-      file: "/app/src/large.ts".into(),
-      order: 0,
-      input: Input::Script {
-        code: large_module(),
-      },
-    };
-    load(&mut graph, vec![request], &[]);
-    let modules = unlinked(&graph);
-    let messages = Some("/app/src/paraglide/messages.js".to_string());
-    link_with(&mut graph, &modules, vec![messages.clone(), messages]);
-    graph.prepare();
-
-    let file = graph.known_file("/app/src/large.ts").unwrap_or_default();
-    let module = graph
-      .record(file)
-      .map(|record| record.id)
-      .unwrap_or_default();
-    let module = graph.module(module);
+    let graph = script_graph("/app/src/large.ts", large_module());
+    let module = module_of(&graph, "/app/src/large.ts");
     assert!(module.ast.nodes.len() > PARALLEL_NODES);
 
     let mut found = Vec::new();

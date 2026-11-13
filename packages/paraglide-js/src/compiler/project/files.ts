@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { globby, isIgnoredByIgnoreFiles } from 'globby';
+import { globby, globbyStream, isIgnoredByIgnoreFiles } from 'globby';
 import picomatch from 'picomatch';
 import { isWithin, relativePath, toPosix } from '../utils/paths.js';
 
@@ -15,6 +15,17 @@ export type FileSelectionOptions = {
   exclude?: readonly string[];
   isSourceFile(file: string): boolean;
 };
+
+export type ListOptions = {
+  /**
+   * Told of the selected files as they are found, in batches, before `list`
+   * resolves: what is done with them overlaps the listing of the others.
+   */
+  onFiles?(files: string[]): void;
+};
+
+/** How many files `onFiles` is told of at a time. */
+const LISTED_BATCH = 256;
 
 export type SelectedFiles = {
   /** The included source files, absolute and sorted. */
@@ -117,13 +128,18 @@ export class FileSelection {
   }
 
   /** Lists the included source files, and `auto-imports.d.ts` files among them. */
-  async list(): Promise<SelectedFiles> {
+  async list({ onFiles }: ListOptions = {}): Promise<SelectedFiles> {
     const { projectRoot, workspaceRoot } = this.options;
     const { patterns, missing } = await this.includePatterns();
 
     const base = await ignoreBase(projectRoot, workspaceRoot);
-    const found = await findFiles(patterns, projectRoot, base);
-    const all = found.map((file) => path.normalize(file));
+    const onFound =
+      onFiles &&
+      ((found: string[]) => {
+        const selected = found.filter((file) => this.isSelected(file));
+        if (selected.length > 0) onFiles(selected);
+      });
+    const all = await findFiles(patterns, projectRoot, base, onFound);
 
     return {
       files: all.filter((file) => this.isSelected(file)).sort(),
@@ -185,22 +201,24 @@ function compilePattern(entry: string, root: string): Pattern {
 }
 
 /**
- * The files matching `patterns`, which are relative to the project root. Every
- * .gitignore from `base` (the repository's root, a monorepo's root one
- * included) down to each file applies, as git applies them.
+ * The files matching `patterns`, which are relative to the project root, with
+ * their paths normalized. Every .gitignore from `base` (the repository's root,
+ * a monorepo's root one included) down to each file applies, as git applies
+ * them. With `onFound`, the files are streamed to it in batches as they are found.
  */
 async function findFiles(
   patterns: readonly string[],
   projectRoot: string,
-  base: string
+  base: string,
+  onFound?: (files: string[]) => void
 ): Promise<string[]> {
   if (patterns.length === 0) return [];
 
   const prefix = toPosix(path.relative(base, projectRoot));
   const inBase = (pattern: string) =>
     prefix ? path.posix.join(prefix, pattern) : pattern;
-
-  return globby(patterns.map(inBase), {
+  const globs = patterns.map(inBase);
+  const options = {
     cwd: base,
     absolute: true,
     dot: true,
@@ -209,7 +227,29 @@ async function findFiles(
     ignore: PROJECT_IGNORE_GLOBS.map((glob) =>
       glob.startsWith('**/') ? glob : inBase(glob)
     ),
-  });
+  };
+
+  if (!onFound) {
+    const found = await globby(globs, options);
+    return found.map((file) => path.normalize(file));
+  }
+
+  const found: string[] = [];
+  let batch: string[] = [];
+
+  for await (const entry of globbyStream(globs, options)) {
+    const file = path.normalize(String(entry));
+    found.push(file);
+    batch.push(file);
+
+    if (batch.length === LISTED_BATCH) {
+      onFound(batch);
+      batch = [];
+    }
+  }
+  if (batch.length > 0) onFound(batch);
+
+  return found;
 }
 
 /**

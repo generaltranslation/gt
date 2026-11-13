@@ -181,7 +181,7 @@ impl<'g> Cx<'g> {
     if ast.kind(node) == Kind::Identifier {
       return self.lookup_all_at(module, node);
     }
-    if reads_props(self.g, record, node) {
+    if reads_props(record, node) {
       return self.props_of(module);
     }
     if ast.kind(node) != Kind::MemberExpression {
@@ -215,7 +215,7 @@ impl<'g> Cx<'g> {
     let record = self.module(module);
     let ast = &record.ast;
 
-    if reads_props(self.g, record, node) {
+    if reads_props(record, node) {
       return self.props_of(module).into_iter().next();
     }
 
@@ -246,7 +246,7 @@ impl<'g> Cx<'g> {
     let record = self.module(module);
     let ast = &record.ast;
 
-    if reads_props(self.g, record, call) {
+    if reads_props(record, call) {
       return self.props_of(module).into_iter().next();
     }
 
@@ -329,7 +329,9 @@ impl<'g> Cx<'g> {
         source: ValuesSource::Reassignable { .. },
         ..
       } if read.is_some() => None,
-      BindingKind::Values { .. } | BindingKind::Alias { .. } if is_top_level => {
+      BindingKind::Values { .. } | BindingKind::Alias { .. } | BindingKind::Lazy(_)
+        if is_top_level =>
+      {
         binding.guard.as_ref()
       }
       _ => None,
@@ -675,23 +677,13 @@ impl<'g> Cx<'g> {
   // ---------------------------------------------------------------- modules
 
   fn host_namespace(&mut self, module: ModuleId, specifier: &str) -> Option<Symbol> {
-    let file = self
-      .module(module)
-      .resolved
-      .get(specifier)
-      .copied()
-      .flatten()?;
+    let file = self.module(module).resolved_file(specifier)?;
 
     self.namespace_of(file)
   }
 
   fn host_export(&mut self, module: ModuleId, specifier: &str, name: &str) -> Option<Symbol> {
-    let file = self
-      .module(module)
-      .resolved
-      .get(specifier)
-      .copied()
-      .flatten()?;
+    let file = self.module(module).resolved_file(specifier)?;
 
     self.export_of(file, name)
   }
@@ -758,7 +750,10 @@ impl<'g> Cx<'g> {
     match &self.g.options.targets[target as usize].kind {
       TargetKind::Messages => {
         let is_namespace = name == "m"
-          && self.g.target_file(self.g.file(file)).outdir_path.as_deref() == Some("messages.js");
+          && self
+            .g
+            .target_match(file)
+            .is_some_and(|found| found.is_messages_module);
 
         if is_namespace {
           Some(Symbol::namespace(Namespace::Messages { target, file }))
@@ -1014,10 +1009,7 @@ fn list_export_names(graph: &Graph, file: FileId) -> Option<FxHashSet<Box<str>>>
 
 /// The file a statement's `from "…"` resolves to.
 fn resolved_source(record: &Module, statement: NodeId) -> Option<FileId> {
-  let ast = &record.ast;
-  let source = static_string(ast, ast.child(statement, Slot::Source)?)?;
-
-  record.resolved.get(source).copied().flatten()
+  record.resolved_file(crate::syntax::source_of(&record.ast, statement)?)
 }
 
 /// What a values binding may hold; `read` narrows a reassigned variable to the writes reaching it.

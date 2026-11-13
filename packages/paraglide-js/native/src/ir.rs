@@ -241,16 +241,23 @@ pub const OP_OTHER: u32 = 0;
 pub const OP_PLAIN: u32 = 1;
 
 /// Of any node: `next` holds the identifier's variable, and the node after it is the next one.
-pub const SYMBOL_IN_NEXT: u16 = 1 << 15;
+pub const SYMBOL_IN_NEXT: u16 = 1 << 9;
+
+/// The bits of `Node::bits` that hold flags. Those above hold the node's length.
+const FLAG_BITS: u16 = (1 << 10) - 1;
+const LENGTH_SHIFT: u16 = 10;
+/// The length of a node at least this long is in `Ast::long_ends`: most nodes are shorter.
+const LONG: u16 = u16::MAX >> LENGTH_SHIFT;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Node {
   pub kind: Kind,
   pub slot: Slot,
-  pub flags: u16,
+  /// The flags, and above them the node's length, up to `LONG`: where it ends
+  /// is read with `Ast::end`. A node is 20 bytes, not 24.
+  bits: u16,
   /// In the source file, UTF-16; `UNMAPPED` for generated-only code.
   pub start: i32,
-  pub end: i32,
   pub parent: NodeId,
   /// The node after this one's last descendant; read with `Ast::next`. An
   /// identifier without children holds its variable here instead, with
@@ -258,6 +265,57 @@ pub struct Node {
   pub next: NodeId,
   /// An atom (a name or a string value), a number's index, or an operator.
   pub data: u32,
+}
+
+impl Node {
+  /// A node that ends where it starts: see `set_end`.
+  pub fn new(kind: Kind, slot: Slot, start: i32, parent: NodeId, next: NodeId, data: u32) -> Node {
+    Node {
+      kind,
+      slot,
+      bits: 0,
+      start,
+      parent,
+      next,
+      data,
+    }
+  }
+
+  #[inline]
+  pub fn flags(&self) -> u16 {
+    self.bits & FLAG_BITS
+  }
+
+  #[inline]
+  pub fn has(&self, flag: u16) -> bool {
+    self.bits & flag & FLAG_BITS != 0
+  }
+
+  #[inline]
+  pub fn add_flags(&mut self, flags: u16) {
+    self.bits |= flags & FLAG_BITS;
+  }
+
+  #[inline]
+  pub fn remove_flags(&mut self, flags: u16) {
+    self.bits &= !(flags & FLAG_BITS);
+  }
+
+  /// Sets where node `id` ends. One too long for its bits is added to
+  /// `long_ends`, which is in node order: nodes are given their ends in order.
+  pub fn set_end(&mut self, id: NodeId, end: i32, long_ends: &mut Vec<(NodeId, i32)>) {
+    let length = i64::from(end) - i64::from(self.start);
+    let length = match u16::try_from(length) {
+      Ok(length) if length < LONG => length,
+      _ => {
+        debug_assert!(long_ends.last().is_none_or(|&(last, _)| last < id));
+        long_ends.push((id, end));
+        LONG
+      }
+    };
+
+    self.bits = (self.bits & FLAG_BITS) | (length << LENGTH_SHIFT);
+  }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -296,6 +354,8 @@ pub struct Ast {
   pub nodes: Vec<Node>,
   /// The position of each node in the parsed code, where it differs from the node's.
   pub parsed: Option<Vec<(u32, u32)>>,
+  /// Where each node too long for its bits ends, by node.
+  pub long_ends: Vec<(NodeId, i32)>,
   pub atom_text: String,
   pub atom_spans: Vec<(u32, u32)>,
   pub numbers: Vec<f64>,
@@ -328,20 +388,30 @@ impl Ast {
     definitions.sort_by_key(|&(variable, _)| variable);
     assignments.sort_by_key(|&(variable, _)| variable);
 
-    for (index, &(variable, _)) in definitions.iter().enumerate() {
-      let range = &mut variables[variable as usize].definitions;
-      if range.1 == 0 {
-        range.0 = index as u32;
+    // Each variable's range in the lists, which are sorted by variable.
+    fn set_ranges(
+      variables: &mut [Variable],
+      sorted: impl Iterator<Item = u32>,
+      range_of: impl Fn(&mut Variable) -> &mut (u32, u32),
+    ) {
+      for (index, variable) in sorted.enumerate() {
+        let range = range_of(&mut variables[variable as usize]);
+        if range.1 == 0 {
+          range.0 = index as u32;
+        }
+        range.1 += 1;
       }
-      range.1 += 1;
     }
-    for (index, &(variable, _)) in assignments.iter().enumerate() {
-      let range = &mut variables[variable as usize].assignments;
-      if range.1 == 0 {
-        range.0 = index as u32;
-      }
-      range.1 += 1;
-    }
+    set_ranges(
+      &mut variables,
+      definitions.iter().map(|&(variable, _)| variable),
+      |variable| &mut variable.definitions,
+    );
+    set_ranges(
+      &mut variables,
+      assignments.iter().map(|&(variable, _)| variable),
+      |variable| &mut variable.assignments,
+    );
 
     let mut module_level: Vec<(u32, u32)> = (0..variables.len() as u32)
       .filter(|&variable| variables[variable as usize].is_module_level)
@@ -410,12 +480,12 @@ impl Ast {
 
   #[inline]
   pub fn flags(&self, id: NodeId) -> u16 {
-    self.nodes[id as usize].flags
+    self.nodes[id as usize].flags()
   }
 
   #[inline]
   pub fn has(&self, id: NodeId, flag: u16) -> bool {
-    self.nodes[id as usize].flags & flag != 0
+    self.nodes[id as usize].has(flag)
   }
 
   #[inline]
@@ -441,7 +511,7 @@ impl Ast {
   pub fn next(&self, id: NodeId) -> NodeId {
     let node = &self.nodes[id as usize];
 
-    if node.flags & SYMBOL_IN_NEXT != 0 {
+    if node.has(SYMBOL_IN_NEXT) {
       id + 1
     } else {
       node.next
@@ -453,7 +523,7 @@ impl Ast {
   pub fn symbol(&self, id: NodeId) -> u32 {
     let node = &self.nodes[id as usize];
 
-    if node.flags & SYMBOL_IN_NEXT != 0 {
+    if node.has(SYMBOL_IN_NEXT) {
       return node.next;
     }
     if self.symbols_of_parents.is_empty() {
@@ -509,7 +579,23 @@ impl Ast {
   pub fn parsed_end(&self, id: NodeId) -> u32 {
     match &self.parsed {
       Some(parsed) => parsed[id as usize].1,
-      None => self.nodes[id as usize].end as u32,
+      None => self.end(id) as u32,
+    }
+  }
+
+  /// Where a node ends, in the source file as `start` is.
+  #[inline]
+  pub fn end(&self, id: NodeId) -> i32 {
+    let node = &self.nodes[id as usize];
+    let length = node.bits >> LENGTH_SHIFT;
+    if length < LONG {
+      return node.start + i32::from(length);
+    }
+
+    match self.long_ends.binary_search_by_key(&id, |&(node, _)| node) {
+      Ok(index) => self.long_ends[index].1,
+      // Every long node is there.
+      Err(_) => node.start,
     }
   }
 
@@ -523,6 +609,7 @@ impl Ast {
         .parsed
         .as_ref()
         .map_or(0, |parsed| parsed.capacity() * 8)
+      + self.long_ends.capacity() * 8
       + self.atom_text.capacity()
       + self.atom_spans.capacity() * 8
       + self.variables.capacity() * std::mem::size_of::<Variable>()
@@ -573,5 +660,49 @@ impl Iterator for Ancestors<'_> {
     self.current = self.ast.nodes[ancestor as usize].parent;
 
     Some(ancestor)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn ends_are_kept_in_the_node_or_beside_it() {
+    let mut ast = Ast::default();
+    // (start, end): short, at the limit, long, unmapped, and an end before the start.
+    let spans = [
+      (0, 0),
+      (5, 9),
+      (10, 10 + i32::from(LONG) - 1),
+      (10, 10 + i32::from(LONG)),
+      (0, 1_000_000),
+      (UNMAPPED, UNMAPPED),
+      (7, 3),
+      (i32::MAX - 1, i32::MAX),
+      (0, i32::MAX),
+    ];
+
+    for (id, &(start, end)) in spans.iter().enumerate() {
+      let mut node = Node::new(
+        Kind::Identifier,
+        Slot::Root,
+        start,
+        NONE,
+        id as NodeId + 1,
+        NONE,
+      );
+      node.add_flags(REFERENCE | READ | SYMBOL_IN_NEXT);
+      node.set_end(id as NodeId, end, &mut ast.long_ends);
+      ast.nodes.push(node);
+    }
+
+    for (id, &(start, end)) in spans.iter().enumerate() {
+      let id = id as NodeId;
+      assert_eq!((ast.nodes[id as usize].start, ast.end(id)), (start, end));
+      // The length does not reach into the flags.
+      assert_eq!(ast.flags(id), REFERENCE | READ | SYMBOL_IN_NEXT);
+    }
+    assert_eq!(ast.long_ends.len(), 4);
   }
 }

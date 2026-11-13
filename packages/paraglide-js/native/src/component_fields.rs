@@ -59,11 +59,7 @@ fn field_bindings(
   let declaring_file: Option<FileId> = if is_in_template_module {
     Some(template.file)
   } else {
-    template
-      .resolved
-      .get(classes.specifier.as_str())
-      .copied()
-      .flatten()
+    template.resolved_file(&classes.specifier)
   };
   let Some(declaring_file) = declaring_file else {
     return bindings;

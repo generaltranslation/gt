@@ -86,10 +86,6 @@ impl Symbol {
       Symbol::Namespace(_) => None,
     }
   }
-
-  pub fn is_dynamic(&self) -> bool {
-    matches!(self, Symbol::Value(value) if value.dynamic)
-  }
 }
 
 pub fn as_dynamic(value: &Value) -> Value {

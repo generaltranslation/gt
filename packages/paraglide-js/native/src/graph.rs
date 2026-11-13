@@ -1,7 +1,10 @@
 //! The loaded modules, linked by resolved imports, and what is known about
 //! Paraglide in the project: its outdirs and its targets.
 
-use std::sync::{Arc, OnceLock};
+use std::{
+  borrow::Cow,
+  sync::{Arc, OnceLock, RwLock},
+};
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -51,7 +54,8 @@ pub struct ComponentInstances {
 
 /// What a file's modules share.
 pub struct SourceFile {
-  pub code: Arc<str>,
+  /// As it was read: kept, not copied, from the read to the metadata files.
+  pub code: String,
   /// Written by a language's tooling: nodes that are not in the file are at -1.
   pub generated: bool,
 }
@@ -77,6 +81,14 @@ pub struct Module {
   pub cache: ModuleCache,
 }
 
+impl Module {
+  /// The file an import of the module resolves to.
+  #[inline]
+  pub fn resolved_file(&self, specifier: &str) -> Option<FileId> {
+    self.resolved.get(specifier).copied().flatten()
+  }
+}
+
 /// What is derived from a module and the graph around it. Emptied when the graph changes.
 #[derive(Default)]
 pub struct ModuleCache {
@@ -88,8 +100,8 @@ pub struct ModuleCache {
   pub links: OnceLock<Links>,
   pub commonjs: OnceLock<Option<CommonJsExports>>,
   pub component_props: OnceLock<Vec<Candidate>>,
-  /// The call sites of each function of the module, found when they are first asked for.
-  pub call_sites_of: OnceLock<FxHashMap<NodeId, OnceLock<Vec<CallSite>>>>,
+  /// The call sites of the functions of the module that were asked about: few are.
+  pub call_sites_of: RwLock<FxHashMap<NodeId, Arc<[CallSite]>>>,
   /// The names each function of the module is exported under.
   pub function_exports: OnceLock<FxHashMap<NodeId, Vec<Box<str>>>>,
 }
@@ -104,6 +116,7 @@ pub struct TargetFile {
   pub outdir_path: Option<String>,
 }
 
+#[derive(Clone, Copy)]
 pub enum TargetKind {
   /// `messages.js` (with the `m` namespace) and every module in `messages/`.
   Messages,
@@ -111,9 +124,18 @@ pub enum TargetKind {
   Custom,
 }
 
+#[derive(Clone)]
 pub struct Target {
   pub name: Arc<str>,
   pub kind: TargetKind,
+}
+
+/// The target a file belongs to.
+#[derive(Clone, Copy, Debug)]
+pub struct TargetMatch {
+  pub target: u32,
+  /// The file is an outdir's `messages.js`, whose `m` is the messages' namespace.
+  pub is_messages_module: bool,
 }
 
 /// A name every module can use without importing it.
@@ -127,7 +149,7 @@ pub struct Global {
 #[derive(Default)]
 pub struct GraphCache {
   /// The target of each file, by file.
-  pub targets: Vec<OnceLock<Option<u32>>>,
+  pub targets: Vec<OnceLock<Option<TargetMatch>>>,
   /// The names each file exports, by file; `None` when they are unknown.
   pub export_names: Vec<OnceLock<Option<FxHashSet<Box<str>>>>>,
   pub dependents: OnceLock<Dependents>,
@@ -146,6 +168,7 @@ impl GraphCache {
   }
 }
 
+#[derive(Clone)]
 pub struct GraphOptions {
   pub targets: Vec<Target>,
   /// Outdirs that are used without verification.
@@ -206,6 +229,22 @@ impl Graph {
     }
 
     graph
+  }
+
+  /// Empties the graph and returns what it held: it is then as new, with the
+  /// same targets and the outdirs it knows.
+  pub fn take(&mut self) -> Graph {
+    let options = GraphOptions {
+      targets: self.options.targets.clone(),
+      // The outdirs it knows, verified or not: none is added again.
+      outdirs: Vec::new(),
+      source_extensions: self.options.source_extensions.clone(),
+    };
+    let mut emptied = Graph::new(options);
+    emptied.outdirs = std::mem::take(&mut self.outdirs);
+    emptied.outdir_detections = std::mem::take(&mut self.outdir_detections);
+
+    std::mem::replace(self, emptied)
   }
 
   // ---------------------------------------------------------------- files
@@ -301,7 +340,7 @@ impl Graph {
     // Stable: outdirs of the same length stay in the order they were found.
     self
       .outdirs
-      .sort_by_key(|outdir| std::cmp::Reverse(outdir.encode_utf16().count()));
+      .sort_by_key(|outdir| std::cmp::Reverse(crate::positions::utf16_length(outdir)));
 
     self.custom_matches.clear();
     self.invalidate();
@@ -328,14 +367,27 @@ impl Graph {
       .find(|directory| is_within(directory, file));
 
     TargetFile {
-      file: to_posix(file),
-      outdir: outdir.map(|outdir| to_posix(outdir)),
-      outdir_path: outdir.and_then(|outdir| relative_within(outdir, file)),
+      file: to_posix(file).into_owned(),
+      outdir: outdir.map(|outdir| to_posix(outdir).into_owned()),
+      outdir_path: outdir.and_then(|outdir| relative_within(outdir, file).map(Cow::into_owned)),
     }
+  }
+
+  /// Where `file` is in its outdir, the innermost: `messages.js`, `messages/en.js`.
+  fn outdir_path<'f>(&self, file: &'f str) -> Option<Cow<'f, str>> {
+    self
+      .outdirs
+      .iter()
+      .find_map(|outdir| relative_within(outdir, file))
   }
 
   /// The index of the file's target.
   pub fn target_of(&self, file: FileId) -> Option<u32> {
+    self.target_match(file).map(|found| found.target)
+  }
+
+  /// The file's target, and whether the file is an outdir's `messages.js`.
+  pub fn target_match(&self, file: FileId) -> Option<TargetMatch> {
     match self.cache.targets.get(file as usize) {
       Some(target) => *target.get_or_init(|| self.find_target(file)),
       None => self.find_target(file),
@@ -354,9 +406,9 @@ impl Graph {
   }
 
   /// The last one, so that `[...defaultTargets, custom]` overrides a built-in target.
-  fn find_target(&self, file: FileId) -> Option<u32> {
-    let target_file = self.target_file(self.file(file));
-    let outdir_path = target_file.outdir_path.as_deref().unwrap_or("");
+  fn find_target(&self, file: FileId) -> Option<TargetMatch> {
+    let outdir_path = self.outdir_path(self.file(file));
+    let outdir_path = outdir_path.as_deref().unwrap_or("");
 
     let native = self
       .options
@@ -371,11 +423,16 @@ impl Graph {
       });
     let custom = self.custom_matches.get(&file).copied().flatten();
 
-    match (native, custom) {
+    let target = match (native, custom) {
       (Some(native), Some(custom)) => Some((native as u32).max(custom)),
       (Some(native), None) => Some(native as u32),
       (None, custom) => custom,
-    }
+    };
+
+    target.map(|target| TargetMatch {
+      target,
+      is_messages_module: outdir_path == "messages.js",
+    })
   }
 
   /// Whether to parse a module to follow its exports: a file of the app, in a format that is analyzed.
@@ -470,4 +527,48 @@ fn outdir_candidate(file: &str) -> Option<&str> {
     .into_iter()
     .find(|directory| basename(directory) == "messages")
     .map(dirname)
+}
+
+/// For tests: a graph of one script, whose every import resolves to an outdir's `messages.js`.
+#[cfg(test)]
+pub fn script_graph(file: &str, code: String) -> Graph {
+  use crate::load::{link_with, load, unlinked, Input, Request};
+
+  let mut graph = Graph::new(GraphOptions {
+    targets: vec![Target {
+      name: "message".into(),
+      kind: TargetKind::Messages,
+    }],
+    outdirs: vec!["/app/src/paraglide".into()],
+    source_extensions: Vec::new(),
+  });
+  let request = Request {
+    file: file.to_string(),
+    order: 0,
+    input: Input::Script { code },
+  };
+  load(&mut graph, vec![request], &[], None);
+
+  let modules = unlinked(&graph);
+  let specifiers = modules
+    .iter()
+    .map(|&id| graph.module(id).specifiers.len())
+    .sum();
+  let messages = Some("/app/src/paraglide/messages.js".to_string());
+  link_with(&mut graph, &modules, vec![messages; specifiers]);
+  graph.prepare();
+
+  graph
+}
+
+/// For tests: the module of a file of `script_graph`.
+#[cfg(test)]
+pub fn module_of<'g>(graph: &'g Graph, file: &str) -> &'g Module {
+  let file = graph.known_file(file).unwrap_or_default();
+  graph.module(
+    graph
+      .record(file)
+      .map(|record| record.id)
+      .unwrap_or_default(),
+  )
 }

@@ -139,7 +139,10 @@ export class ContextCollector {
     const graph = (this.moduleGraph ??= await this.createGraph());
 
     const { files, missing, autoImportDeclarations } =
-      await this.settings.selection.list();
+      await this.settings.selection.list({
+        // Read and parsed while the others are listed.
+        onFiles: (found) => graph.prefetch(found),
+      });
     this.warnMissingIncludes(missing);
 
     // Outdirs inside `include` must be known before choosing the sources.
@@ -154,6 +157,8 @@ export class ContextCollector {
     await this.loadCatalogs(graph);
 
     const analyzed = await graph.analyze(sources);
+    // The modules are not needed anymore: their memory is given back while the usages are recorded.
+    graph.release();
     for (const file of sources) this.record(file, analyzed.get(file));
 
     this.warnNoOutdir();
@@ -163,7 +168,11 @@ export class ContextCollector {
   }
 
   async write(): Promise<void> {
-    for (const { file, reason } of await this.output.write()) {
+    // Without a scan, no project has metadata files.
+    const graph = this.moduleGraph;
+    if (!graph) return;
+
+    for (const { file, reason } of await this.output.write(graph)) {
       this.warn(`${this.relative(file)} was not updated: ${reason}`);
     }
   }
@@ -320,21 +329,18 @@ export class ContextCollector {
   private record(file: string, analyzed: AnalyzedFile | undefined): void {
     const usages = analyzed?.usages ?? [];
 
-    this.tagInlangProjects(usages);
+    this.recordInlangProjects(usages);
     this.checkCatalogs(file, usages);
     this.analyzed.set(file, usages.length);
 
     if (!analyzed || usages.length === 0) return;
 
-    this.output.add(file, {
-      file: this.relative(file),
-      code: analyzed.code,
-      usages,
-    });
+    // The analysis kept the usages, and the file's code.
+    this.output.add(file);
   }
 
-  /** Records on each message usage the inlang project its outdir is paired with. */
-  private tagInlangProjects(usages: readonly ParaglideUsage[]): void {
+  /** Records the inlang project the outdir of each message usage is paired with: the usage counts for it. */
+  private recordInlangProjects(usages: readonly ParaglideUsage[]): void {
     for (const usage of usages) {
       const outdir = this.messageOutdir(usage);
       if (!outdir) continue;
@@ -342,7 +348,7 @@ export class ContextCollector {
       const project = this.outdirProjects.of(outdir);
       if (!project) continue;
 
-      usage.inlangProject = this.relative(project);
+      this.output.addTarget(usage.targetFile, project);
     }
   }
 

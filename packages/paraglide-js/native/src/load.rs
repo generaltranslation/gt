@@ -122,7 +122,7 @@ fn prepare_generated(code: &GeneratedCode) -> Result<PreparedModule, String> {
 
 fn plain_source(code: String) -> SourceFile {
   SourceFile {
-    code: Arc::from(code),
+    code,
     generated: false,
   }
 }
@@ -152,20 +152,19 @@ pub fn read_text(file: &str) -> Option<String> {
 
   let mut source = std::fs::File::open(file).ok()?;
   let mut bytes: Vec<u8> = Vec::with_capacity(FIRST_READ);
+  let read = source
+    .by_ref()
+    .take(FIRST_READ as u64)
+    .read_to_end(&mut bytes)
+    .ok()?;
 
-  loop {
-    let free = bytes.capacity() - bytes.len();
-    let read = source
-      .by_ref()
-      .take(free as u64)
-      .read_to_end(&mut bytes)
-      .ok()?;
-
-    // A file ends where a read gets less than it asks for.
-    if read < free {
-      break;
-    }
-    bytes.reserve(bytes.capacity());
+  // A larger file is read into a buffer of its size: none is grown and copied.
+  if read == FIRST_READ {
+    let size = source
+      .metadata()
+      .map_or(0, |metadata| metadata.len() as usize);
+    bytes.reserve_exact(size.saturating_sub(bytes.len()));
+    source.read_to_end(&mut bytes).ok()?;
   }
 
   Some(match String::from_utf8(bytes) {
@@ -197,19 +196,13 @@ impl Gate {
   }
 
   fn lock(&self) -> std::sync::MutexGuard<'_, usize> {
-    self
-      .free
-      .lock()
-      .unwrap_or_else(|poisoned| poisoned.into_inner())
+    crate::unpoisoned(self.free.lock())
   }
 
   fn pass<T>(&self, work: impl FnOnce() -> T) -> T {
     let mut free = self.lock();
     while *free == 0 {
-      free = self
-        .freed
-        .wait(free)
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
+      free = crate::unpoisoned(self.freed.wait(free));
     }
     *free -= 1;
     drop(free);
@@ -223,11 +216,13 @@ impl Gate {
   }
 }
 
-/// The gate file reads go through; none where reads run side by side.
-fn read_gate() -> Option<Gate> {
+/// The gate file reads go through, loads and prefetches alike; none where
+/// reads run side by side.
+fn read_gate() -> Option<&'static Gate> {
   #[cfg(target_os = "macos")]
   {
-    Some(Gate::new(MAX_CONCURRENT_OPENS))
+    static GATE: std::sync::OnceLock<Gate> = std::sync::OnceLock::new();
+    Some(GATE.get_or_init(|| Gate::new(MAX_CONCURRENT_OPENS)))
   }
   #[cfg(not(target_os = "macos"))]
   {
@@ -235,11 +230,16 @@ fn read_gate() -> Option<Gate> {
   }
 }
 
-/// Reads the files of a batch that are read here, and makes each a script JavaScript could have read.
-fn read_batch(requests: &mut [Request], gate: Option<&Gate>) {
+/// Reads the files of a batch that are read here and not prepared yet, and
+/// makes each a script JavaScript could have read.
+fn read_batch(requests: &mut [Request], outcomes: &[Option<Outcome>], gate: Option<&Gate>) {
+  let is_read_here = |request: &Request, outcome: &Option<Outcome>| {
+    outcome.is_none() && matches!(request.input, Input::Read)
+  };
+
   let read = |requests: &mut [Request]| {
-    for request in requests {
-      if matches!(request.input, Input::Read) {
+    for (request, outcome) in requests.iter_mut().zip(outcomes) {
+      if is_read_here(request, outcome) {
         request.input = match read_text(&request.file) {
           Some(code) => Input::ReadScript { code },
           None => Input::Unreadable,
@@ -250,7 +250,8 @@ fn read_batch(requests: &mut [Request], gate: Option<&Gate>) {
 
   let reads_any = requests
     .iter()
-    .any(|request| matches!(request.input, Input::Read));
+    .zip(outcomes)
+    .any(|(request, outcome)| is_read_here(request, outcome));
 
   match gate {
     Some(gate) if reads_any => gate.pass(|| read(requests)),
@@ -311,7 +312,7 @@ fn prepare(request: &mut Request, detected: &[DetectedExtension]) -> Outcome {
 
       Outcome::Prepared(Box::new(PreparedFile {
         source: SourceFile {
-          code: Arc::from(code),
+          code,
           generated: true,
         },
         modules,
@@ -324,11 +325,128 @@ fn prepare(request: &mut Request, detected: &[DetectedExtension]) -> Outcome {
   }
 }
 
-/// Reads and parses the files of `requests`, and adds their modules to the graph.
+/// Reads and prepares the files of `requests` whose outcome is missing, on every core.
+fn read_and_prepare(
+  requests: &mut [Request],
+  outcomes: &mut [Option<Outcome>],
+  detected: &[DetectedExtension],
+) {
+  let gate = read_gate();
+
+  requests
+    .par_chunks_mut(READ_BATCH)
+    .zip(outcomes.par_chunks_mut(READ_BATCH))
+    .for_each(|(batch, outcomes)| {
+      read_batch(batch, outcomes, gate);
+      for (request, outcome) in batch.iter_mut().zip(outcomes) {
+        if outcome.is_none() {
+          *outcome = Some(prepare(request, detected));
+        }
+      }
+    });
+}
+
+/// Scripts read and parsed before they are loaded: while JavaScript still lists
+/// the project's files, those it found are prepared on the cores it leaves idle.
+pub struct Prefetch {
+  /// The scripts a language may claim, as `load` is given them.
+  detected: Arc<[DetectedExtension]>,
+  state: Mutex<PrefetchState>,
+  finished: Condvar,
+}
+
+#[derive(Default)]
+struct PrefetchState {
+  /// Batches being prepared.
+  running: usize,
+  prepared: FxHashMap<String, Outcome>,
+}
+
+impl Prefetch {
+  pub fn new(detected: Arc<[DetectedExtension]>) -> Self {
+    Prefetch {
+      detected,
+      state: Mutex::default(),
+      finished: Condvar::new(),
+    }
+  }
+
+  fn lock(&self) -> std::sync::MutexGuard<'_, PrefetchState> {
+    crate::unpoisoned(self.state.lock())
+  }
+
+  /// Starts preparing `files`, scripts that are read here, and returns.
+  pub fn start(self: &Arc<Self>, files: Vec<String>) {
+    if files.is_empty() {
+      return;
+    }
+
+    self.lock().running += 1;
+    let prefetch = self.clone();
+
+    rayon::spawn(move || {
+      let mut requests: Vec<Request> = files
+        .into_iter()
+        .map(|file| Request {
+          file,
+          order: 0,
+          input: Input::Read,
+        })
+        .collect();
+      let mut outcomes: Vec<Option<Outcome>> = requests.iter().map(|_| None).collect();
+      // A panic leaves files to their load.
+      let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        read_and_prepare(&mut requests, &mut outcomes, &prefetch.detected)
+      }));
+
+      let mut state = prefetch.lock();
+      for (request, outcome) in requests.into_iter().zip(outcomes) {
+        if let Some(outcome) = outcome {
+          state.prepared.insert(request.file, outcome);
+        }
+      }
+      state.running -= 1;
+      drop(state);
+      prefetch.finished.notify_all();
+    });
+  }
+
+  /// Waits for the batches being prepared.
+  fn wait(&self) -> std::sync::MutexGuard<'_, PrefetchState> {
+    let mut state = self.lock();
+    while state.running > 0 {
+      state = crate::unpoisoned(self.finished.wait(state));
+    }
+    state
+  }
+
+  /// The outcome of each of `requests` that is read here and was prepared.
+  fn take(&self, requests: &[Request]) -> Vec<Option<Outcome>> {
+    let mut state = self.wait();
+
+    requests
+      .iter()
+      .map(|request| match request.input {
+        Input::Read => state.prepared.remove(&request.file),
+        _ => None,
+      })
+      .collect()
+  }
+
+  /// Forgets what was prepared and not loaded, once it is prepared.
+  pub fn clear(&self) {
+    let leftovers = std::mem::take(&mut self.wait().prepared);
+    drop(leftovers);
+  }
+}
+
+/// Reads and parses the files of `requests`, and adds their modules to the
+/// graph. Those `prefetch` prepared are taken from it.
 pub fn load(
   graph: &mut Graph,
   mut requests: Vec<Request>,
   detected: &[DetectedExtension],
+  prefetch: Option<&Prefetch>,
 ) -> LoadResult {
   // Each file is loaded once.
   let mut seen = FxHashSet::default();
@@ -338,17 +456,11 @@ pub fn load(
     !graph.loading.contains(&file) && seen.insert(file)
   });
 
-  let gate = read_gate();
-  let outcomes: Vec<Outcome> = requests
-    .par_chunks_mut(READ_BATCH)
-    .flat_map_iter(|batch| {
-      read_batch(batch, gate.as_ref());
-      batch
-        .iter_mut()
-        .map(|request| prepare(request, detected))
-        .collect::<Vec<_>>()
-    })
-    .collect();
+  let mut outcomes = match prefetch {
+    Some(prefetch) => prefetch.take(&requests),
+    None => requests.iter().map(|_| None).collect(),
+  };
+  read_and_prepare(&mut requests, &mut outcomes, detected);
 
   let mut result = LoadResult::default();
   let mut added = false;
@@ -356,7 +468,8 @@ pub fn load(
   for (request, outcome) in requests.into_iter().zip(outcomes) {
     let file = graph.file_id(&request.file);
 
-    match outcome {
+    // Each one was prepared.
+    match outcome.unwrap_or(Outcome::Unreadable) {
       // JavaScript loads the file: it is not marked as loading here.
       Outcome::NeedsJs => result.needs_js.push(request.file),
       Outcome::Unreadable => {
@@ -527,4 +640,137 @@ pub fn link_with(graph: &mut Graph, modules: &[ModuleId], files: Vec<Option<Stri
   }
 
   graph.invalidate();
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::graph::GraphOptions;
+
+  fn graph() -> Graph {
+    Graph::new(GraphOptions {
+      targets: Vec::new(),
+      outdirs: Vec::new(),
+      source_extensions: Vec::new(),
+    })
+  }
+
+  fn read(file: &str) -> Request {
+    Request {
+      file: file.to_string(),
+      order: 0,
+      input: Input::Read,
+    }
+  }
+
+  /// Each file's module, or what became of it.
+  fn loaded(graph: &Graph, result: &LoadResult, files: &[String]) -> Vec<String> {
+    files
+      .iter()
+      .map(|file| {
+        if result.needs_js.contains(file) {
+          return "needs JavaScript".to_string();
+        }
+        if let Some((_, error)) = result.skipped.iter().find(|(skipped, _)| skipped == file) {
+          return format!("skipped: {error}");
+        }
+        match graph.known_file(file).and_then(|id| graph.record(id)) {
+          Some(module) => format!(
+            "{} nodes, {} specifiers, {} bytes",
+            module.ast.nodes.len(),
+            module.specifiers.len(),
+            module.source.code.len()
+          ),
+          None => "not loaded".to_string(),
+        }
+      })
+      .collect()
+  }
+
+  #[test]
+  fn prefetched_files_load_as_files_read_then() {
+    let root = std::env::temp_dir().join(format!("prefetch-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let _ = std::fs::create_dir_all(root.join("directory.ts"));
+    let write = |name: &str, code: &str| {
+      let _ = std::fs::write(root.join(name), code);
+      root.join(name).to_string_lossy().into_owned()
+    };
+
+    let files = vec![
+      write(
+        "a.ts",
+        "import { m } from './paraglide/messages.js';\nexport const t = m.a();\n",
+      ),
+      write("b.tsx", "export const B = () => <p>{'b'}</p>;\n"),
+      write("broken.ts", "export const = ;\n"),
+      write(
+        "component.ts",
+        "@Component({ template: '' }) export class C {}\n",
+      ),
+      write("not-utf8.ts", "export const t = \"\u{fffd}\";\n"),
+      root.join("directory.ts").to_string_lossy().into_owned(),
+      root.join("missing.ts").to_string_lossy().into_owned(),
+    ];
+    let _ = std::fs::write(root.join("not-utf8.ts"), b"export const t = \"\xff\";\n");
+    let detected: Arc<[DetectedExtension]> = Arc::from(vec![DetectedExtension {
+      extension: ".ts".to_string(),
+      hints: vec!["@Component".to_string()],
+    }]);
+
+    let mut plain = graph();
+    let result = load(
+      &mut plain,
+      files.iter().map(|file| read(file)).collect(),
+      &detected,
+      None,
+    );
+    let expected = loaded(&plain, &result, &files);
+    assert!(
+      expected
+        .iter()
+        .any(|outcome| outcome.starts_with("skipped")),
+      "{expected:?}"
+    );
+    assert!(
+      expected.contains(&"needs JavaScript".to_string()),
+      "{expected:?}"
+    );
+    assert!(expected.contains(&"not loaded".to_string()), "{expected:?}");
+
+    // All prefetched, in two batches, and a file that is never loaded.
+    let prefetch = Arc::new(Prefetch::new(detected.clone()));
+    let leftover = write("leftover.ts", "export {};\n");
+    prefetch.start(files[..3].to_vec());
+    prefetch.start([&files[3..], std::slice::from_ref(&leftover)].concat());
+
+    let mut prefetched = graph();
+    let result = load(
+      &mut prefetched,
+      files.iter().map(|file| read(file)).collect(),
+      &detected,
+      Some(&prefetch),
+    );
+    assert_eq!(loaded(&prefetched, &result, &files), expected);
+    assert_eq!(prefetch.wait().prepared.len(), 1);
+    prefetch.clear();
+    assert!(prefetch.wait().prepared.is_empty());
+
+    // Some prefetched; a file JavaScript read is its code, not the prefetched one.
+    prefetch.start(vec![files[0].clone(), files[1].clone()]);
+    let mut mixed = graph();
+    let mut requests: Vec<Request> = files.iter().map(|file| read(file)).collect();
+    requests[1].input = Input::Script {
+      code: "export const other = 1;".to_string(),
+    };
+    let result = load(&mut mixed, requests, &detected, Some(&prefetch));
+    let outcomes = loaded(&mixed, &result, &files);
+    assert_eq!(outcomes[0], expected[0]);
+    assert_ne!(outcomes[1], expected[1]);
+    assert_eq!(outcomes[2..], expected[2..]);
+    // The prefetched `b.tsx` was not taken: it was not read here.
+    assert_eq!(prefetch.wait().prepared.len(), 1);
+
+    let _ = std::fs::remove_dir_all(&root);
+  }
 }

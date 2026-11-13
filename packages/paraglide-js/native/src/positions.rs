@@ -58,27 +58,37 @@ pub fn line_starts(text: &str) -> Vec<u32> {
   starts
 }
 
-/// 1-based.
-pub fn line_column(line_starts: &[u32], offset: u32) -> (u32, u32) {
-  let mut low = 0usize;
-  let mut high = line_starts.len() - 1;
-
-  while low < high {
-    let middle = (low + high + 1) >> 1;
-
-    if line_starts[middle] <= offset {
-      low = middle;
-    } else {
-      high = middle - 1;
-    }
+/// A text's length in UTF-16 code units, as JavaScript's `length`: one for each
+/// character's first byte, and one more for a character beyond U+FFFF.
+pub fn utf16_length(text: &str) -> usize {
+  if text.is_ascii() {
+    return text.len();
   }
 
-  (low as u32 + 1, offset - line_starts[low] + 1)
+  text
+    .bytes()
+    .map(|byte| usize::from(byte & 0xC0 != 0x80) + usize::from(byte >= 0xF0))
+    .sum()
+}
+
+/// 1-based.
+pub fn line_column(line_starts: &[u32], offset: u32) -> (u32, u32) {
+  // The first line starts at 0, at or before any offset.
+  let line = line_starts.partition_point(|&start| start <= offset) - 1;
+
+  (line as u32 + 1, offset - line_starts[line] + 1)
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn utf16_lengths_are_javascripts() {
+    for text in ["", "abc", "é", "日本", "😀", "a😀é日\u{10FFFF}\u{FFFF}"] {
+      assert_eq!(utf16_length(text), text.encode_utf16().count(), "{text}");
+    }
+  }
 
   #[test]
   fn ascii_offsets_are_their_own() {

@@ -1,11 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { afterEach, expect, test, vi } from 'vitest';
+import { afterEach, expect, test } from 'vitest';
 import { createCollector } from '../../src/compiler/collector/create.js';
 import { OutdirProjects } from '../../src/compiler/collector/outdir-projects.js';
-import { MetadataFiles } from '../../src/compiler/collector/metadata-files.js';
 import type { CollectContextOptions } from '../../src/compiler/context.js';
-import { readInlangProject } from '../../src/compiler/inlang/project.js';
 import { nodeResolver } from '../../src/compiler/resolver/node-resolver.js';
 import {
   collect as collectProject,
@@ -13,8 +11,13 @@ import {
   filesIn,
   readMetadata,
   readSnippets,
+  useGreeting,
   writeProject,
 } from '../helpers/fixture.js';
+
+// The writes that fail part way, a rename that fails and a partly written
+// temporary file, are tested in the crate that writes the files
+// (`native/src/metadata/tests.rs`): there the file system can be made to fail.
 
 const settings = (pathPattern: string | string[], baseLocale = 'en') =>
   JSON.stringify({
@@ -37,106 +40,218 @@ async function collect(
   return (await collectProject(root, options)).warnings;
 }
 
-afterEach(() => {
-  vi.restoreAllMocks();
-});
+/** Permissions do not hold for root, nor on Windows. */
+const canLockFiles = process.platform !== 'win32' && process.getuid?.() !== 0;
 
-/** A source file whose only line uses `greeting`. */
-const usages = (file: string, line: string) => ({
-  file,
-  code: line,
-  usages: [
-    {
-      target: 'message',
-      name: 'greeting',
-      kind: 'call' as const,
-      start: 0,
-      end: 5,
-      line: 1,
-      column: 1,
-      endLine: 1,
-      targetFile: '/app/src/paraglide/messages.js',
-      inlangProject: 'project.inlang',
-    },
-  ],
-});
+/** What was made unreadable or unwritable, made accessible again for the next run. */
+const locked: Array<{ file: string; mode: number }> = [];
 
-/** The metadata files of a new project's `project.inlang`, with one usage to write. */
-async function metadataFiles(name: string) {
-  const root = await writeProject(name, {});
-  const files = new MetadataFiles(root, 0);
-  files.addProject(
-    (await readInlangProject(path.join(root, 'project.inlang')))!
-  );
-  files.add('/a.ts', usages('a.ts', 'first'));
-
-  const written = () => fs.readdir(path.join(root, 'messages'));
-
-  return { root, files, written };
+async function lock(file: string, mode: number): Promise<void> {
+  const { mode: previous } = await fs.stat(file);
+  locked.push({ file, mode: previous });
+  await fs.chmod(file, mode);
 }
 
-const failure = (code: string) => Object.assign(new Error(code), { code });
+afterEach(async () => {
+  for (const { file, mode } of locked.splice(0)) {
+    await fs.chmod(file, mode).catch(() => undefined);
+  }
+});
+
+const messagesOf = (root: string) => fs.readdir(path.join(root, 'messages'));
+const metadataFile = (root: string) =>
+  path.join(root, 'messages/en.metadata.json');
 
 test('writes the usages of every source file, and no temporary file', async () => {
-  const { root, files, written } = await metadataFiles('metadata-unit');
-  files.add('/b.ts', usages('b.ts', 'other'));
-
-  expect(await files.write()).toEqual([]);
-  expect(await readSnippets(root)).toEqual(['a.ts: first', 'b.ts: other']);
-  expect((await written()).sort()).toEqual(['en.json', 'en.metadata.json']);
-});
-
-test('a write that fails leaves no temporary file', async () => {
-  const { root, files, written } = await metadataFiles('metadata-failed-write');
-  vi.spyOn(fs, 'rename').mockRejectedValueOnce(failure('EXDEV'));
-
-  await expect(files.write()).rejects.toMatchObject({ code: 'EXDEV' });
-  expect(await written()).toEqual(['en.json']);
-
-  // A later write is not affected.
-  expect(await files.write()).toEqual([]);
-  expect(await readSnippets(root)).toEqual(['a.ts: first']);
-});
-
-test('a temporary file that was only partly written is removed', async () => {
-  const { root, files, written } = await metadataFiles(
-    'metadata-partial-write'
-  );
-  const writeFile = fs.writeFile.bind(fs);
-  vi.spyOn(fs, 'writeFile').mockImplementationOnce(async (file) => {
-    await writeFile(file, '{ "greeting": ');
-    throw failure('ENOSPC');
+  const root = await writeProject('metadata-unit', {
+    'src/b.ts': useGreeting('./paraglide/messages.js'),
+    'src/a.ts': useGreeting('./paraglide/messages.js'),
   });
 
-  await expect(files.write()).rejects.toMatchObject({ code: 'ENOSPC' });
-  expect(await written()).toEqual(['en.json']);
+  expect(await collect(root)).toEqual([]);
+  expect(await readSnippets(root)).toEqual([
+    'src/a.ts: export const text = m.greeting();',
+    'src/b.ts: export const text = m.greeting();',
+  ]);
+  expect((await messagesOf(root)).sort()).toEqual([
+    'en.json',
+    'en.metadata.json',
+  ]);
+});
 
-  // A later write is not affected.
-  expect(await files.write()).toEqual([]);
-  expect((await written()).sort()).toEqual(['en.json', 'en.metadata.json']);
-  expect(await readSnippets(root)).toEqual(['a.ts: first']);
+test('a metadata file whose content did not change is not written again', async () => {
+  const root = await writeProject('metadata-unchanged', {
+    'src/a.ts': useGreeting('./paraglide/messages.js'),
+  });
+
+  await collect(root);
+  const written = await fs.stat(metadataFile(root));
+
+  await collect(root);
+  // A write would be a new file, renamed onto it.
+  expect((await fs.stat(metadataFile(root))).ino).toBe(written.ino);
+
+  // A new usage changes it.
+  await fs.writeFile(
+    path.join(root, 'src/b.ts'),
+    useGreeting('./paraglide/messages.js')
+  );
+  await collect(root);
+  expect((await fs.stat(metadataFile(root))).ino).not.toBe(written.ino);
+  expect(await readSnippets(root)).toHaveLength(2);
+});
+
+test('a metadata file is compared as JavaScript reads it: bytes that are not UTF-8 read as U+FFFD', async () => {
+  const root = await writeProject('metadata-not-utf8', {
+    'src/a.ts': useGreeting('./paraglide/messages.js'),
+  });
+  await collect(root);
+
+  // The content it has, with a hand-written field whose byte is not UTF-8.
+  const content = await fs.readFile(metadataFile(root), 'utf8');
+  const notUtf8 = Buffer.from(
+    content.replace(
+      '{\n    "sourceCode"',
+      '{\n    "context": "\u00ff",\n    "sourceCode"'
+    ),
+    'latin1'
+  );
+  await fs.writeFile(metadataFile(root), notUtf8);
+  const before = await fs.stat(metadataFile(root));
+
+  // Read as JavaScript reads it, the field is "\uFFFD", which is what would be
+  // written: the content did not change, and the file is left as it is.
+  await collect(root);
+  expect((await fs.stat(metadataFile(root))).ino).toBe(before.ino);
+  expect(await fs.readFile(metadataFile(root))).toEqual(notUtf8);
+  expect((await readMetadata(root)).greeting).toMatchObject({
+    context: '\uFFFD',
+  });
+
+  // A change rewrites it, as UTF-8.
+  await fs.writeFile(
+    path.join(root, 'src/b.ts'),
+    useGreeting('./paraglide/messages.js')
+  );
+  await collect(root);
+  const rewritten = await fs.readFile(metadataFile(root));
+  expect(rewritten.includes(0xff)).toBe(false);
+  expect(rewritten.toString('utf8')).toContain('"context": "\uFFFD"');
 });
 
 test('a metadata file that cannot be read is left alone, with a warning', async () => {
-  const { root, files } = await metadataFiles('metadata-unreadable');
-  const file = path.join(root, 'messages/en.metadata.json');
-  const handWritten = JSON.stringify({
-    greeting: { context: 'On the home page' },
+  const root = await writeProject('metadata-unreadable', {
+    'src/a.ts': useGreeting('./paraglide/messages.js'),
   });
-  await fs.writeFile(file, handWritten);
+  // A directory where the file would be.
+  await fs.mkdir(metadataFile(root));
 
-  const readFile = fs.readFile.bind(fs) as (
-    ...args: unknown[]
-  ) => Promise<never>;
-  vi.spyOn(fs, 'readFile').mockImplementation((...args: unknown[]) =>
-    args[0] === file ? Promise.reject(failure('EACCES')) : readFile(...args)
-  );
-  expect(await files.write()).toEqual([
-    { file, reason: 'it could not be read (EACCES)' },
+  expect(await collect(root)).toEqual([
+    '[paraglide-context] messages/en.metadata.json was not updated: it could not be read (EISDIR)',
   ]);
-  vi.restoreAllMocks();
+  expect(await messagesOf(root)).toEqual(['en.json', 'en.metadata.json']);
+});
 
-  expect(await fs.readFile(file, 'utf8')).toBe(handWritten);
+test.runIf(canLockFiles)(
+  'a metadata file without permission to read it is left alone, with a warning',
+  async () => {
+    const root = await writeProject('metadata-locked', {
+      'src/a.ts': useGreeting('./paraglide/messages.js'),
+    });
+    const handWritten = JSON.stringify({
+      greeting: { context: 'On the home page' },
+    });
+    await fs.writeFile(metadataFile(root), handWritten);
+    await lock(metadataFile(root), 0o000);
+
+    expect(await collect(root)).toEqual([
+      '[paraglide-context] messages/en.metadata.json was not updated: it could not be read (EACCES)',
+    ]);
+
+    await fs.chmod(metadataFile(root), 0o644);
+    expect(await fs.readFile(metadataFile(root), 'utf8')).toBe(handWritten);
+  }
+);
+
+test.runIf(canLockFiles)(
+  'a write that fails rejects as `node:fs` would, and leaves no temporary file',
+  async () => {
+    const root = await writeProject('metadata-failed-write', {
+      'src/a.ts': useGreeting('./paraglide/messages.js'),
+    });
+    const directory = path.join(root, 'messages');
+    await lock(directory, 0o555);
+
+    const failure = collect(root);
+    await expect(failure).rejects.toMatchObject({
+      code: 'EACCES',
+      syscall: 'open',
+      errno: expect.any(Number),
+      path: expect.stringMatching(
+        new RegExp(
+          `^${metadataFile(root)}\\.${process.pid}\\.[0-9a-f-]{36}\\.tmp$`
+        )
+      ),
+    });
+    await expect(failure).rejects.toThrow(/^EACCES: permission denied, open '/);
+    expect(await messagesOf(root)).toEqual(['en.json']);
+
+    // A later write is not affected.
+    await fs.chmod(directory, 0o755);
+    expect(await collect(root)).toEqual([]);
+    expect(await readSnippets(root)).toEqual([
+      'src/a.ts: export const text = m.greeting();',
+    ]);
+    expect((await messagesOf(root)).sort()).toEqual([
+      'en.json',
+      'en.metadata.json',
+    ]);
+  }
+);
+
+test('a hand-written field nested too deep for JSON.stringify fails the write as it did', async () => {
+  const root = await writeProject('metadata-too-deep', {
+    'src/a.ts': useGreeting('./paraglide/messages.js'),
+  });
+  const deep = (depth: number) => '['.repeat(depth) + ']'.repeat(depth);
+  const existing = `{"greeting": {"context": ${deep(20_000)}}}`;
+  await fs.writeFile(metadataFile(root), existing);
+
+  try {
+    await expect(collect(root)).rejects.toThrow(RangeError);
+    expect(await fs.readFile(metadataFile(root), 'utf8')).toBe(existing);
+  } finally {
+    // Too deep for the formatter as well, which reads the tests' directory.
+    await fs.rm(metadataFile(root), { force: true });
+  }
+});
+
+test('without a scan, nothing is written', async () => {
+  const root = await writeProject('metadata-no-scan', {
+    'src/a.ts': useGreeting('./paraglide/messages.js'),
+  });
+  const collector = createCollector(
+    {},
+    { root, logger: { warn() {}, info() {} }, resolver: nodeResolver() }
+  );
+
+  await collector.write();
+  expect(await messagesOf(root)).toEqual(['en.json']);
+});
+
+test('usages of a message in no inlang project count for none', async () => {
+  const root = await writeProject('metadata-custom-target', {
+    'src/a.ts': [
+      useGreeting('./paraglide/messages.js'),
+      'import { getLocale } from "./paraglide/runtime.js";',
+      'export const locale = getLocale();',
+      '',
+    ].join('\n'),
+  });
+
+  expect(await collect(root)).toEqual([]);
+  // Only the message's usage, not the runtime's.
+  expect(Object.keys(await readMetadata(root))).toEqual(['greeting']);
 });
 
 test('several inlang projects and message files: each file gets the usages of its own messages', async () => {

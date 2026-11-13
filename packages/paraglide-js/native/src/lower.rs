@@ -12,6 +12,7 @@ use oxc_syntax::{
   symbol::SymbolId,
 };
 use rustc_hash::FxHashMap;
+use std::collections::hash_map::Entry;
 
 use crate::{
   ir::{self, Ast, Definition, DefinitionKind, Kind, Node, NodeId, Slot, Variable, NONE},
@@ -128,6 +129,7 @@ struct Lowerer<'a, 's> {
   assignments: Vec<(u32, NodeId)>,
   /// The variable of each identifier that has children.
   symbols_of_parents: Vec<(NodeId, u32)>,
+  long_ends: Vec<(NodeId, i32)>,
   /// How many functions that have their own `arguments` are around the node being lowered.
   function_depth: u32,
   /// What `arguments` refers to in a function: a variable no declaration gives a value.
@@ -142,8 +144,9 @@ impl<'a, 's> Lowerer<'a, 's> {
     Self {
       scoping,
       utf16,
-      // About one node per six bytes of code.
-      nodes: Vec::with_capacity(code_length / 5 + 16),
+      // About one node per five or six bytes of code: room for one per four, so
+      // that few files grow it, and copy it, before it is copied at its size.
+      nodes: Vec::with_capacity(code_length / 4 + 16),
       parent: NONE,
       atoms: FxHashMap::default(),
       atom_text: String::new(),
@@ -153,6 +156,7 @@ impl<'a, 's> Lowerer<'a, 's> {
       definitions: Vec::new(),
       assignments: Vec::new(),
       symbols_of_parents: Vec::new(),
+      long_ends: Vec::new(),
       function_depth: 0,
       arguments: None,
     }
@@ -179,6 +183,7 @@ impl<'a, 's> Lowerer<'a, 's> {
     ast.numbers = self.numbers.as_slice().to_vec();
     self.symbols_of_parents.sort_unstable();
     ast.symbols_of_parents = self.symbols_of_parents;
+    ast.long_ends = self.long_ends.as_slice().to_vec();
     ast.set_variables(self.variables, self.definitions, self.assignments);
 
     ast
@@ -186,44 +191,50 @@ impl<'a, 's> Lowerer<'a, 's> {
 
   // ---------------------------------------------------------------- nodes
 
+  /// Adds a text to the atoms.
+  fn push_atom(atom_text: &mut String, atom_spans: &mut Vec<(u32, u32)>, text: &str) -> u32 {
+    let start = atom_text.len() as u32;
+    atom_text.push_str(text);
+    let atom = atom_spans.len() as u32;
+    atom_spans.push((start, atom_text.len() as u32));
+
+    atom
+  }
+
   fn atom_of(&mut self, text: &str) -> u32 {
     // The key must live as long as the arena; texts that do not are copied into `atom_text` only.
     if let Some(&atom) = self.atoms.get(text) {
       return atom;
     }
 
-    let start = self.atom_text.len() as u32;
-    self.atom_text.push_str(text);
-    let atom = self.atom_spans.len() as u32;
-    self.atom_spans.push((start, self.atom_text.len() as u32));
-
-    atom
+    Self::push_atom(&mut self.atom_text, &mut self.atom_spans, text)
   }
 
   fn atom(&mut self, text: &'a str) -> u32 {
-    if let Some(&atom) = self.atoms.get(text) {
-      return atom;
+    // One lookup, found or not.
+    match self.atoms.entry(text) {
+      Entry::Occupied(found) => *found.get(),
+      Entry::Vacant(missing) => *missing.insert(Self::push_atom(
+        &mut self.atom_text,
+        &mut self.atom_spans,
+        text,
+      )),
     }
-
-    let atom = self.atom_of(text);
-    self.atoms.insert(text, atom);
-
-    atom
   }
 
   fn push(&mut self, kind: Kind, slot: Slot, start: u32, end: u32) -> NodeId {
     let id = self.nodes.len() as NodeId;
 
-    self.nodes.push(Node {
+    let mut node = Node::new(
       kind,
       slot,
-      flags: 0,
-      start: self.utf16.of(start) as i32,
-      end: self.utf16.of(end) as i32,
-      parent: self.parent,
-      next: id + 1,
-      data: NONE,
-    });
+      self.utf16.of(start) as i32,
+      self.parent,
+      id + 1,
+      NONE,
+    );
+    node.set_end(id, self.utf16.of(end) as i32, &mut self.long_ends);
+    self.nodes.push(node);
 
     id
   }
@@ -245,9 +256,9 @@ impl<'a, 's> Lowerer<'a, 's> {
     let node = &mut self.nodes[id as usize];
 
     // An identifier with children, e.g. a decorated parameter, keeps its variable apart.
-    if node.flags & ir::SYMBOL_IN_NEXT != 0 && next > id + 1 {
+    if node.has(ir::SYMBOL_IN_NEXT) && next > id + 1 {
       self.symbols_of_parents.push((id, node.next));
-      node.flags &= !ir::SYMBOL_IN_NEXT;
+      node.remove_flags(ir::SYMBOL_IN_NEXT);
     }
 
     node.next = next;
@@ -258,11 +269,11 @@ impl<'a, 's> Lowerer<'a, 's> {
   fn set_symbol(&mut self, id: NodeId, symbol: u32) {
     let node = &mut self.nodes[id as usize];
     node.next = symbol;
-    node.flags |= ir::SYMBOL_IN_NEXT;
+    node.add_flags(ir::SYMBOL_IN_NEXT);
   }
 
   fn flag(&mut self, id: NodeId, flags: u16) {
-    self.nodes[id as usize].flags |= flags;
+    self.nodes[id as usize].add_flags(flags);
   }
 
   fn flag_if(&mut self, id: NodeId, condition: bool, flags: u16) {

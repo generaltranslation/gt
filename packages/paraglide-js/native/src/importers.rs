@@ -2,7 +2,7 @@
 //! in the module and in the modules that import it, directly or through
 //! re-exports. Only those are searched, not every module for every function.
 
-use std::sync::OnceLock;
+use std::sync::Arc;
 
 use rayon::prelude::*;
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -15,9 +15,7 @@ use crate::{
   graph::{FileId, Graph, Module, ModuleId},
   ir::{self, Ast, Kind, NodeId, Slot},
   scope::{binding_of, Declaration},
-  syntax::{
-    declared_names, import_of, imported_name, module_export_name, static_string, unwrap_expression,
-  },
+  syntax::{declared_names, import_of, imported_name, module_export_name, unwrap_expression},
 };
 
 /// Some of a module's exports, by the names it exports them under.
@@ -108,21 +106,27 @@ fn index_of<'g>(graph: &'g Graph, module: &'g Module, kind: &IndexKind) -> &'g C
   }
 }
 
-/// The call sites of a function of `record`: in its module and in the modules that import it.
-pub fn call_sites_of<'g>(graph: &'g Graph, record: &'g Module, function: NodeId) -> &'g [CallSite] {
-  let by_function = record.cache.call_sites_of.get_or_init(|| {
-    let ast = &record.ast;
-
-    (0..ast.nodes.len() as NodeId)
-      .filter(|&node| ast.kind(node).is_function())
-      .map(|node| (node, OnceLock::new()))
-      .collect()
-  });
-
-  match by_function.get(&function) {
-    Some(sites) => sites.get_or_init(|| find_call_sites(graph, record, function)),
-    None => &[],
+/// The call sites of a function of `record`: in its module and in the modules
+/// that import it. Found once, when they are first asked for.
+pub fn call_sites_of(graph: &Graph, record: &Module, function: NodeId) -> Arc<[CallSite]> {
+  let known = crate::unpoisoned(record.cache.call_sites_of.read())
+    .get(&function)
+    .cloned();
+  if let Some(sites) = known {
+    return sites;
   }
+
+  if !record.ast.kind(function).is_function() {
+    return Arc::from([]);
+  }
+
+  // Found outside the lock: finding them asks about other functions. Of two
+  // threads that find them at once, the first one's are kept; both are the same.
+  let sites: Arc<[CallSite]> = find_call_sites(graph, record, function).into();
+  crate::unpoisoned(record.cache.call_sites_of.write())
+    .entry(function)
+    .or_insert(sites)
+    .clone()
 }
 
 fn find_call_sites(graph: &Graph, record: &Module, function: NodeId) -> Vec<CallSite> {
@@ -271,7 +275,7 @@ fn sites_in(
   out: &mut Vec<CallSite>,
 ) {
   let ast = &importer.ast;
-  let imports = &links_of(graph, importer).value_imports;
+  let imports = &links_of(importer).value_imports;
   if imports.is_empty() && referrers.globals.is_empty() {
     return;
   }
@@ -354,21 +358,14 @@ fn is_exported(
 
   let ast = &record.ast;
   let is_exported_by = |specifier: &str, export_name: &str, seen: &mut FxHashSet<_>| match record
-    .resolved
-    .get(specifier)
-    .copied()
-    .flatten()
+    .resolved_file(specifier)
   {
     Some(from) if exporters.contains(&from) => {
       is_exported(graph, from, export_name, exported, exporters, seen)
     }
     _ => false,
   };
-  let source_of = |statement: NodeId| {
-    ast
-      .child(statement, Slot::Source)
-      .and_then(|source| static_string(ast, source))
-  };
+  let source_of = |statement: NodeId| crate::syntax::source_of(ast, statement);
 
   for statement in ast.children(0) {
     match ast.kind(statement) {
@@ -442,7 +439,7 @@ fn build_dependents(graph: &Graph, parallel: bool) -> Dependents {
     let is_in_shard = |file: FileId| file as usize % count == shard;
 
     for &id in all {
-      let links = links_of(graph, graph.module(id));
+      let links = links_of(graph.module(id));
 
       for (file, name) in &links.imported_names {
         if !is_in_shard(*file) {
@@ -475,7 +472,7 @@ fn build_dependents(graph: &Graph, parallel: bool) -> Dependents {
   let shards = if parallel {
     // The links are made once per module, on every core.
     all.par_iter().for_each(|&id| {
-      links_of(graph, graph.module(id));
+      links_of(graph.module(id));
     });
 
     let count = rayon::current_num_threads().max(1);
@@ -540,7 +537,7 @@ fn reexports_of(
       }
 
       queue.push(record.file);
-      renames.extend(links_of(graph, record).renames.iter());
+      renames.extend(links_of(record).renames.iter());
     }
   }
 
@@ -566,16 +563,12 @@ fn names_after_renames(names: &[&str], renames: &[&Rename]) -> FxHashSet<Box<str
   exported_as
 }
 
-fn links_of<'g>(_graph: &'g Graph, record: &'g Module) -> &'g Links {
+fn links_of(record: &Module) -> &Links {
   record.cache.links.get_or_init(|| {
     let ast = &record.ast;
     let mut links = Links::default();
-    let file_of = |specifier: &str| record.resolved.get(specifier).copied().flatten();
-    let source_of = |statement: NodeId| {
-      ast
-        .child(statement, Slot::Source)
-        .and_then(|source| static_string(ast, source))
-    };
+    let file_of = |specifier: &str| record.resolved_file(specifier);
+    let source_of = |statement: NodeId| crate::syntax::source_of(ast, statement);
 
     for statement in ast.children(0) {
       match ast.kind(statement) {

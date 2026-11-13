@@ -7,6 +7,8 @@ export type {
   NativeGeneratedSource,
   NativeGraphOptions,
   NativeLoadResult,
+  NativeMetadataResult,
+  NativeSystemError,
   NativeTarget,
 } from '@generaltranslation/paraglide-js/native';
 

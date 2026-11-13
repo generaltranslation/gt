@@ -1,6 +1,6 @@
 //! Moves the nodes of code a language tool generated to their positions in the source file.
 
-use crate::ir::{Ast, UNMAPPED};
+use crate::ir::{Ast, NodeId, UNMAPPED};
 
 /// Generated `[generated, generated + length)` stands for source
 /// `[source, source + source_length)`. Equal lengths are a copy, mapped character
@@ -50,11 +50,13 @@ pub fn remap(ast: &mut Ast, mappings: &[Mapping], generated_length: usize) {
     }
   }
 
-  let mut parsed = Vec::with_capacity(ast.nodes.len());
+  let parsed: Vec<(u32, u32)> = (0..ast.nodes.len() as NodeId)
+    .map(|id| (ast.nodes[id as usize].start as u32, ast.end(id) as u32))
+    .collect();
+  let mut long_ends = Vec::new();
 
-  for node in &mut ast.nodes {
-    let (parsed_start, parsed_end) = (node.start as usize, node.end as usize);
-    parsed.push((parsed_start as u32, parsed_end as u32));
+  for (id, node) in ast.nodes.iter_mut().enumerate() {
+    let (parsed_start, parsed_end) = (parsed[id].0 as usize, parsed[id].1 as usize);
 
     let start = source_start_at
       .get(parsed_start)
@@ -64,9 +66,11 @@ pub fn remap(ast: &mut Ast, mappings: &[Mapping], generated_length: usize) {
     let is_mapped = start != UNMAPPED;
 
     node.start = start;
-    node.end = if is_mapped { start.max(end) } else { UNMAPPED };
+    let end = if is_mapped { start.max(end) } else { UNMAPPED };
+    node.set_end(id as NodeId, end, &mut long_ends);
   }
 
+  ast.long_ends = long_ends;
   ast.parsed = Some(parsed);
 }
 
@@ -97,10 +101,8 @@ mod tests {
     let mut ast = lower(code, Lang::Ts).unwrap_or_default();
     remap(&mut ast, mappings, code.len());
 
-    ast
-      .nodes
-      .iter()
-      .map(|node| (node.start, node.end))
+    (0..ast.nodes.len() as NodeId)
+      .map(|id| (ast.nodes[id as usize].start, ast.end(id)))
       .collect()
   }
 

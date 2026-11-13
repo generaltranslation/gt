@@ -12,7 +12,10 @@ export type ParaglideUsage = {
    * `m[key]` → "*"; `` m[`error_${code}`] `` → "error_*".
    */
   dynamic?: boolean;
-  /** For messages: the inlang project that defines them, project-relative. Unset if unknown. */
+  /**
+   * For messages: the inlang project that defines them, project-relative.
+   * Unset if unknown, and by the analysis: `renderMetadataFile` reads it.
+   */
   inlangProject?: string;
   kind: UsageKind;
   /** UTF-16 offsets. */
@@ -25,11 +28,12 @@ export type ParaglideUsage = {
   targetFile: string;
 };
 
+/** A source file and its usages, as `renderMetadataFile` reads them. */
 export type FileUsages = {
   /** Project-relative. */
   file: string;
   code: string;
-  usages: ParaglideUsage[];
+  usages: readonly ParaglideUsage[];
 };
 
 export type TrackedValue = {

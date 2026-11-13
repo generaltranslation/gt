@@ -96,36 +96,15 @@ pub fn call_sites_in<'g>(graph: &'g Graph, module: &'g Module) -> &'g CallSiteIn
     for (id, node) in ast.nodes.iter().enumerate() {
       let id = id as NodeId;
 
-      match node.kind {
-        Kind::CallExpression => {
-          if let Some(callee) = ast.child(id, Slot::Callee) {
-            add_site(
-              graph,
-              module,
-              &mut index,
-              callee,
-              Site {
-                kind: SiteKind::Call,
-                node: id,
-              },
-            );
-          }
-        }
-        Kind::JSXOpeningElement => {
-          if let Some(name) = ast.child(id, Slot::Name) {
-            add_site(
-              graph,
-              module,
-              &mut index,
-              name,
-              Site {
-                kind: SiteKind::Jsx,
-                node: id,
-              },
-            );
-          }
-        }
-        _ => {}
+      // What is called: a call's callee, an element's name.
+      let (slot, kind) = match node.kind {
+        Kind::CallExpression => (Slot::Callee, SiteKind::Call),
+        Kind::JSXOpeningElement => (Slot::Name, SiteKind::Jsx),
+        _ => continue,
+      };
+
+      if let Some(called) = ast.child(id, slot) {
+        add_site(graph, module, &mut index, called, Site { kind, node: id });
       }
     }
 

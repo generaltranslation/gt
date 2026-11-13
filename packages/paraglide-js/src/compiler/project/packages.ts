@@ -46,6 +46,7 @@ export function projectPackages(projectRoot: string): LanguageContext {
   };
 
   return {
+    root: projectRoot,
     load<T>(specifier: string): Promise<T | undefined> {
       let module = loaded.get(specifier);
 

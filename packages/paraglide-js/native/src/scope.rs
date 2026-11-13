@@ -8,7 +8,7 @@ use crate::{
   graph::{FileId, Graph, Module, ModuleId},
   ir::{self, Ast, DefinitionKind, Kind, NodeId, Slot},
   syntax::{
-    imported_name, nth_child, path_of, pattern_binds, static_property_name, static_string,
+    binding_path, imported_name, nth_child, path_of, static_property_name, static_string,
     unwrap_expression, Path,
   },
 };
@@ -102,6 +102,7 @@ pub struct Binding {
   pub owner: ModuleId,
   pub kind: BindingKind,
   pub declaration: Option<Declaration>,
+  /// What tells it from the bindings being resolved, and what what it holds is remembered by.
   pub guard: Option<GuardKey>,
 }
 
@@ -196,61 +197,149 @@ pub fn enclosing_function(ast: &Ast, node: NodeId) -> Option<NodeId> {
     .find(|&ancestor| ast.kind(ancestor).is_function())
 }
 
-/// A variable's binding, as it is kept: most variables hold nothing that is tracked.
+/// A variable's binding, as it is kept: most variables hold nothing that is
+/// tracked, and most of the others are a `const` or a parameter, read whole.
+/// Those are kept in a few bytes, not as a `Binding`: a project has tens of
+/// millions of variables.
 pub enum CachedBinding {
-  Shadow { declaration: Option<NodeId> },
+  Shadow {
+    declaration: Option<NodeId>,
+  },
+  /// `const t = init`
+  Const {
+    init: NodeId,
+    /// The function `init` declares.
+    declaration: Option<NodeId>,
+  },
+  /// `function f(t)`: what call sites pass as the parameter at `index`.
+  Parameter {
+    function: NodeId,
+    index: u32,
+  },
   Other(Box<Binding>),
 }
 
+impl CachedBinding {
+  /// How the binding of `variable` of `owner` is kept.
+  fn of(binding: Binding, owner: ModuleId, variable: u32) -> CachedBinding {
+    let is_own = binding.owner == owner;
+    let is_guarded = binding.guard == Some(GuardKey::Variable(owner, variable));
+    let declaration = match binding.declaration {
+      None => Some(None),
+      Some(Declaration::Node(node)) => Some(Some(node)),
+      Some(Declaration::Global(_)) => None,
+    };
+
+    match (&binding.kind, declaration) {
+      (BindingKind::Shadow, Some(declaration)) if is_own && binding.guard.is_none() => {
+        CachedBinding::Shadow { declaration }
+      }
+      (
+        BindingKind::Alias {
+          init,
+          path,
+          scope: AliasScope::Own,
+        },
+        Some(declaration),
+      ) if is_own && is_guarded && path.is_empty() => CachedBinding::Const {
+        init: *init,
+        declaration,
+      },
+      (
+        BindingKind::Values {
+          source:
+            ValuesSource::Parameter {
+              function,
+              index,
+              path,
+            },
+          parameter: true,
+        },
+        Some(None),
+      ) if is_own && is_guarded && path.is_empty() && u32::try_from(*index).is_ok() => {
+        CachedBinding::Parameter {
+          function: *function,
+          index: *index as u32,
+        }
+      }
+      _ => CachedBinding::Other(Box::new(binding)),
+    }
+  }
+
+  /// The binding, as `of` was given it.
+  fn binding(&self, owner: ModuleId, variable: u32) -> BindingRef<'_> {
+    let guard = || Some(GuardKey::Variable(owner, variable));
+
+    match *self {
+      CachedBinding::Shadow { declaration } => Cow::Owned(Binding::shadow(owner, declaration)),
+      CachedBinding::Const { init, declaration } => Cow::Owned(Binding {
+        owner,
+        kind: BindingKind::Alias {
+          init,
+          path: Vec::new(),
+          scope: AliasScope::Own,
+        },
+        declaration: declaration.map(Declaration::Node),
+        guard: guard(),
+      }),
+      CachedBinding::Parameter { function, index } => Cow::Owned(Binding {
+        owner,
+        kind: BindingKind::Values {
+          source: ValuesSource::Parameter {
+            function,
+            index: index as usize,
+            path: Vec::new(),
+          },
+          parameter: true,
+        },
+        declaration: None,
+        guard: guard(),
+      }),
+      CachedBinding::Other(ref binding) => Cow::Borrowed(binding),
+    }
+  }
+}
+
 /// The binding of a variable of `module`, made once.
-pub fn binding_of_variable<'g>(
-  graph: &'g Graph,
-  module: &'g Module,
-  variable: u32,
-) -> BindingRef<'g> {
+pub fn binding_of_variable(module: &Module, variable: u32) -> BindingRef<'_> {
   let bindings = module.cache.bindings.get_or_init(|| {
     let mut bindings = Vec::with_capacity(module.ast.variables.len());
     bindings.resize_with(module.ast.variables.len(), Default::default);
     bindings
   });
 
-  let cached = bindings[variable as usize].get_or_init(|| {
-    let binding = create_binding(graph, module, variable);
-
-    match (&binding.kind, binding.declaration) {
-      (BindingKind::Shadow, None) => CachedBinding::Shadow { declaration: None },
-      (BindingKind::Shadow, Some(Declaration::Node(declaration))) => CachedBinding::Shadow {
-        declaration: Some(declaration),
-      },
-      _ => CachedBinding::Other(Box::new(binding)),
-    }
-  });
-
-  match cached {
-    CachedBinding::Shadow { declaration } => Cow::Owned(Binding::shadow(module.id, *declaration)),
-    CachedBinding::Other(binding) => Cow::Borrowed(binding),
-  }
+  bindings[variable as usize]
+    .get_or_init(|| CachedBinding::of(create_binding(module, variable), module.id, variable))
+    .binding(module.id, variable)
 }
 
-fn create_binding(graph: &Graph, module: &Module, index: u32) -> Binding {
+fn create_binding(module: &Module, index: u32) -> Binding {
   let ast = &module.ast;
   let Some(definition) = ast.definitions(index).first() else {
     return Binding::shadow(module.id, None);
   };
 
-  match definition.kind {
+  let mut binding = match definition.kind {
     DefinitionKind::ImportBinding => import_binding(module, definition.node),
     DefinitionKind::FunctionName => Binding::shadow(module.id, Some(definition.node)),
     DefinitionKind::Parameter => parameter_binding(module, index, definition.node, definition.name),
     DefinitionKind::Variable => {
       if is_prop_variable(module, definition.name) {
-        prop_variable_binding(graph, module, index)
+        prop_variable_binding(module, index)
       } else {
-        variable_binding(graph, module, index)
+        variable_binding(module, index)
       }
     }
     DefinitionKind::Other => Binding::shadow(module.id, None),
+  };
+
+  // An import is resolved once, as a variable's values are: by its variable.
+  // It is never entered, so this is only what it is remembered by.
+  if matches!(binding.kind, BindingKind::Lazy(_)) {
+    binding.guard = Some(GuardKey::Variable(module.id, index));
   }
+
+  binding
 }
 
 fn import_binding(module: &Module, node: NodeId) -> Binding {
@@ -282,10 +371,7 @@ fn import_binding(module: &Module, node: NodeId) -> Binding {
   else {
     return shadow;
   };
-  let Some(specifier) = ast
-    .child(declaration, Slot::Source)
-    .and_then(|source| static_string(ast, source))
-  else {
+  let Some(specifier) = crate::syntax::source_of(ast, declaration) else {
     return shadow;
   };
 
@@ -312,14 +398,14 @@ fn parameter_binding(
   let ast = &module.ast;
   let shadow = Binding::shadow(module.id, None);
 
+  // The parameter that binds it, and the properties leading to it: one walk of each pattern.
   let found = ast
     .children_in(function, Slot::Param)
     .enumerate()
-    .find(|&(_, parameter)| pattern_binds(ast, parameter, identifier));
-  let Some((index, parameter)) = found else {
-    return shadow;
-  };
-  let Some(path) = path_of(ast, parameter, identifier) else {
+    .find_map(|(index, parameter)| {
+      binding_path(ast, parameter, identifier).map(|path| (index, path))
+    });
+  let Some((index, Some(path))) = found else {
     return shadow;
   };
 
@@ -362,8 +448,8 @@ fn is_prop_variable(module: &Module, name: NodeId) -> bool {
     .is_some_and(|props| props.variables.contains(&declared_at))
 }
 
-fn prop_variable_binding(graph: &Graph, module: &Module, index: u32) -> Binding {
-  let own = variable_binding(graph, module, index);
+fn prop_variable_binding(module: &Module, index: u32) -> Binding {
+  let own = variable_binding(module, index);
   let variable = &module.ast.variables[index as usize];
   let own_values = match &own.kind {
     BindingKind::Values {
@@ -388,7 +474,7 @@ fn prop_variable_binding(graph: &Graph, module: &Module, index: u32) -> Binding 
 }
 
 /// A `const` is its initializer; a `let` or `var` may hold any value written to it.
-fn variable_binding(graph: &Graph, module: &Module, index: u32) -> Binding {
+fn variable_binding(module: &Module, index: u32) -> Binding {
   let ast = &module.ast;
   let guard = Some(GuardKey::Variable(module.id, index));
 
@@ -444,7 +530,7 @@ fn variable_binding(graph: &Graph, module: &Module, index: u32) -> Binding {
 
   // `let { message } = $props()`
   let holds_props = initializations.iter().any(|write| match &write.candidate {
-    Candidate::Expression { node, .. } => reads_props(graph, module, *node),
+    Candidate::Expression { node, .. } => reads_props(module, *node),
     _ => false,
   });
 
@@ -589,7 +675,7 @@ fn last_replacing_write<'a>(ast: &Ast, writes: &'a [Write], read: NodeId) -> Opt
 }
 
 /// `$props()`, `defineProps(…)`, `Astro.props`: whatever the module's language says.
-pub fn reads_props(_graph: &Graph, module: &Module, expression: NodeId) -> bool {
+pub fn reads_props(module: &Module, expression: NodeId) -> bool {
   let Some(reads) = &module.props else {
     return false;
   };
@@ -703,7 +789,7 @@ pub fn binding_of<'g>(
   }
 
   match module.ast.module_level(name) {
-    Some(variable) => Some(binding_of_variable(graph, module, variable)),
+    Some(variable) => Some(binding_of_variable(module, variable)),
     None => implicit_names(graph, module, name, at),
   }
 }
@@ -733,7 +819,7 @@ pub fn binding_at<'g>(
     return Some(Cow::Owned(Binding::scope_object(module.id)));
   }
 
-  Some(binding_of_variable(graph, module, variable))
+  Some(binding_of_variable(module, variable))
 }
 
 fn is_scope_object(module: &Module, name: &str) -> bool {
@@ -768,4 +854,78 @@ fn implicit_names<'g>(
   let has_undeclared_props = module.props.as_ref().is_some_and(|props| props.undeclared);
 
   has_undeclared_props.then(|| Cow::Owned(Binding::undeclared_prop(module.id, name)))
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::graph::{module_of, script_graph};
+
+  /// Variables of every shape a binding has.
+  const CODE: &str = r#"
+    import { m } from "./paraglide/messages.js";
+    import * as all from "./paraglide/messages.js";
+    import def, { a as b } from "./other.js";
+    import ns = require("./legacy.js");
+    const alias = m.greeting;
+    const called = make(() => m.a);
+    const factory = function named() { return m.b; };
+    const arrow = (x) => x;
+    const { greeting, nested: { deep } } = m;
+    const [first, ...rest] = [m.a, m.b];
+    let later;
+    later = m.c;
+    let counted = 0;
+    counted += 1;
+    var reassigned = m.a, other = m.b;
+    reassigned = other;
+    for (const item of [m.a]) item();
+    for (let index = 0; index < 2; index++) {}
+    function f(plain, { field }, [element], withDefault = m.a, ...spread) {
+      try { plain(); } catch (error) { error; }
+      return [field, element, withDefault, spread];
+    }
+    import("./lazy.js").then((module) => module.x);
+    import("./lazy.js").then(({ x }) => x);
+    class Store { field = m.a; method(parameter) { return parameter; } }
+    label: for (;;) break label;
+    export const exported = m.greeting;
+    export let exportedLet = m.a;
+    { const inner = m.b; let innerLet; function hoisted(p) { return p; } }
+  "#;
+
+  #[test]
+  fn kept_bindings_are_the_bindings_made() {
+    let graph = script_graph("/app/src/a.ts", CODE.into());
+    let module = module_of(&graph, "/app/src/a.ts");
+
+    let mut kept = std::collections::BTreeMap::<&str, usize>::new();
+    for variable in 0..module.ast.variables.len() as u32 {
+      let made = format!("{:?}", create_binding(module, variable));
+      // Twice: made, then kept.
+      for _ in 0..2 {
+        let binding = binding_of_variable(module, variable);
+        assert_eq!(format!("{binding:?}"), made, "variable {variable}");
+      }
+
+      let cached = module
+        .cache
+        .bindings
+        .get()
+        .and_then(|bindings| bindings[variable as usize].get());
+      let shape = match cached {
+        Some(CachedBinding::Shadow { .. }) => "shadow",
+        Some(CachedBinding::Const { .. }) => "const",
+        Some(CachedBinding::Parameter { .. }) => "parameter",
+        Some(CachedBinding::Other(_)) => "other",
+        None => "none",
+      };
+      *kept.entry(shape).or_default() += 1;
+    }
+
+    // Each shape is there to compare.
+    for shape in ["shadow", "const", "parameter", "other"] {
+      assert!(kept.get(shape).is_some_and(|&count| count > 0), "{kept:?}");
+    }
+  }
 }

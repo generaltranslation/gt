@@ -2,15 +2,19 @@ import { builtinModules } from 'node:module';
 import { applyAliases, type ImportAlias } from '../bundler-configs/alias.js';
 import {
   detectedExtensions,
-  generateSource,
   languageExtensions,
   NO_PACKAGES,
-  type GeneratedFile,
-  type GeneratedScript,
   type LanguageContext,
   type ParseFailure,
   type SourceLanguage,
 } from '../languages/language.js';
+import {
+  startToolingThread,
+  toolingThreads,
+  toolingWorkerData,
+  ToolingPool,
+} from '../languages/tooling-pool.js';
+import { runTooling } from '../languages/tooling.js';
 import {
   isMessagesTarget,
   type ParaglideTarget,
@@ -27,12 +31,12 @@ import { readTextFile } from '../utils/read-file.js';
 import {
   native,
   type NativeAnalysis,
-  type NativeGeneratedCode,
-  type NativeGeneratedSource,
   type NativeGraph,
   type NativeLoadResult,
+  type NativeMetadataResult,
   type NativeTarget,
 } from './native.js';
+import type { MetadataInput } from '../output/metadata.js';
 import type { ParaglideUsage } from './types.js';
 
 /** Resolves an import like the project's bundler would: a file, or nothing. */
@@ -73,10 +77,15 @@ export type ModuleGraphOptions = {
   read?(file: string): Promise<string | undefined>;
   /** Told of each file that is read but not analyzed. */
   onSkipped?(file: string, failure: ParseFailure): void;
+  /**
+   * For tests: the threads that run languages' tooling for `files` files.
+   * Default: worker threads, if the files are many enough.
+   */
+  toolingPool?(files: number): ToolingPool | undefined;
 };
 
-/** The usages of a file that has any. */
-export type AnalyzedFile = { code: string; usages: ParaglideUsage[] };
+/** The usages of a file that has any. The analysis keeps them, and the file's code, for `writeMetadata`. */
+export type AnalyzedFile = { usages: ParaglideUsage[] };
 
 /** A usage as the analysis reports it: its target's file is named by index. */
 type ReportedUsage = Omit<ParaglideUsage, 'targetFile'> & {
@@ -101,6 +110,8 @@ export class ModuleGraph {
   private readonly orders = new Map<string, number>();
   private aliasQueries: string[] = [];
   private readonly targetFiles = new Map<string, TargetFile>();
+  /** The threads that run languages' tooling, while files are loaded. */
+  private tooling: ToolingPool | undefined;
 
   private constructor(
     options: ModuleGraphOptions,
@@ -151,6 +162,22 @@ export class ModuleGraph {
       resolution,
       hasPatterns ? resolver?.aliases : undefined
     );
+  }
+
+  /**
+   * Starts reading and parsing `files` that are about to be loaded, while
+   * JavaScript does something else, e.g. lists the other files. Only scripts
+   * the analysis reads itself, outside the outdirs known now.
+   */
+  prefetch(files: readonly string[]): void {
+    if (this.options.read) return;
+
+    const scripts = files.filter(
+      (file) => isScript(file) && !this.orders.has(file)
+    );
+    if (scripts.length === 0) return;
+
+    this.graph.prefetch(this.graph.notGenerated(scripts));
   }
 
   /** Longest first, so that a nested outdir wins over its parent. */
@@ -218,6 +245,8 @@ export class ModuleGraph {
 
   /** The usages in each of `files` that has any. They were loaded with `loadPaths`. */
   async analyze(files: readonly string[]): Promise<Map<string, AnalyzedFile>> {
+    // Nothing is loaded anymore: the threads' memory is given back first.
+    await this.closeTooling();
     this.matchCustomTargets([]);
 
     const analysis =
@@ -232,11 +261,10 @@ export class ModuleGraph {
 
   private analyzedFiles(analysis: NativeAnalysis): Map<string, AnalyzedFile> {
     const { paths } = analysis;
-    const usagesByFile = JSON.parse(analysis.usages) as ReportedUsage[][];
     const analyzed = new Map<string, AnalyzedFile>();
 
     analysis.files.forEach((file, index) => {
-      const usages = usagesByFile[index]!;
+      const usages = JSON.parse(analysis.usages[index]!) as ReportedUsage[];
 
       // The same objects, with their target's file named.
       for (const usage of usages) {
@@ -244,13 +272,31 @@ export class ModuleGraph {
           paths[usage.targetFile]!;
       }
 
-      analyzed.set(file, {
-        code: analysis.codes[index]!,
-        usages: usages as unknown as ParaglideUsage[],
-      });
+      analyzed.set(file, { usages: usages as unknown as ParaglideUsage[] });
     });
 
     return analyzed;
+  }
+
+  /**
+   * Gives back the memory the modules take: after the analysis, only what the
+   * metadata files are written from is needed. The graph is then as new, with
+   * the same targets and outdirs.
+   */
+  release(): void {
+    void this.closeTooling();
+    this.graph.release();
+  }
+
+  /**
+   * Writes the metadata files of `input`'s projects, from the code and usages
+   * of the files that were analyzed. See `MetadataFiles`.
+   */
+  writeMetadata(
+    input: MetadataInput,
+    radius: number
+  ): Promise<NativeMetadataResult> {
+    return this.graph.writeMetadata(JSON.stringify(input), radius);
   }
 
   // ---------------------------------------------------------------- loading
@@ -268,13 +314,13 @@ export class ModuleGraph {
       (readsHere ? others : scripts).push(file);
     }
 
-    await Promise.all(others.map((file) => this.queue(file)));
+    await this.queueAll(others);
     const loaded = await this.graph.load(scripts, this.ordersOf(scripts));
     this.report(loaded);
 
     // The scripts a language may claim, e.g. Angular components in `.ts` files.
     if (loaded.needsJs.length > 0) {
-      await Promise.all(loaded.needsJs.map((file) => this.queue(file)));
+      await this.queueAll(loaded.needsJs);
       this.report(await this.graph.load([], []));
     }
 
@@ -285,8 +331,28 @@ export class ModuleGraph {
     return files.map((file) => this.orders.get(file)!);
   }
 
-  /** Reads a file here, and hands it to the analysis as its language's tooling writes it. */
-  private async queue(file: string): Promise<void> {
+  /**
+   * Reads `files` here, and hands each to the analysis as its language's
+   * tooling writes it. The files that are skipped are reported in their order,
+   * whichever is done first.
+   */
+  private async queueAll(files: readonly string[]): Promise<void> {
+    const pool = this.toolingPool(files.length);
+    const failures = await Promise.all(
+      files.map((file) => this.queue(file, pool))
+    );
+
+    files.forEach((file, index) => {
+      const failure = failures[index];
+      if (failure) this.options.onSkipped?.(file, failure);
+    });
+  }
+
+  /** Reads a file, and queues it. Returns why it is skipped, if it is. */
+  private async queue(
+    file: string,
+    pool: ToolingPool | undefined
+  ): Promise<ParseFailure | undefined> {
     const {
       languages,
       packages = NO_PACKAGES,
@@ -295,22 +361,52 @@ export class ModuleGraph {
     const order = this.orders.get(file)!;
 
     const code = await read(file);
-    if (code === undefined) return;
+    if (code === undefined) return undefined;
 
-    const generated = await generateSource(file, code, languages, packages);
+    const result =
+      (await pool?.run(file, code)) ??
+      (await runTooling(file, code, languages, packages));
 
-    if (!generated) {
-      if (isScript(file)) this.graph.queueScript(file, order, code);
-      else this.graph.queueEmpty(file, order, code);
-      return;
+    switch (result.type) {
+      case 'unclaimed':
+        if (isScript(file)) this.graph.queueScript(file, order, code);
+        else this.graph.queueEmpty(file, order, code);
+        return undefined;
+      case 'failed':
+        return result.failure;
+      case 'generated':
+        this.graph.queueGenerated(file, order, code, result.source);
+        return undefined;
+    }
+  }
+
+  /**
+   * The threads that run the tooling, started for the first files that are
+   * many enough; none if the tooling runs only on the main thread, e.g. a
+   * language of the caller's.
+   */
+  private toolingPool(files: number): ToolingPool | undefined {
+    if (this.tooling) return this.tooling;
+    if (this.options.toolingPool) {
+      this.tooling = this.options.toolingPool(files);
+      return this.tooling;
     }
 
-    if ('error' in generated) {
-      this.options.onSkipped?.(file, generated);
-      return;
-    }
+    const threads = toolingThreads(files);
+    if (threads === 0) return undefined;
 
-    this.graph.queueGenerated(file, order, code, nativeSource(generated));
+    const { languages, packages = NO_PACKAGES } = this.options;
+    const data = toolingWorkerData(languages, packages);
+    if (!data) return undefined;
+
+    this.tooling = new ToolingPool(threads, () => startToolingThread(data));
+    return this.tooling;
+  }
+
+  private async closeTooling(): Promise<void> {
+    const pool = this.tooling;
+    this.tooling = undefined;
+    await pool?.close();
   }
 
   private report(loaded: NativeLoadResult): void {
@@ -420,49 +516,4 @@ function nativeTarget(target: ParaglideTarget): NativeTarget {
     name: target.name,
     kind: isMessagesTarget(target) ? 'messages' : 'custom',
   };
-}
-
-function nativeSource({
-  language,
-  generated,
-}: GeneratedFile): NativeGeneratedSource {
-  return {
-    main: nativeCode(generated),
-    scripts: (generated.scripts ?? []).map(nativeCode),
-    language: language.name,
-    componentFields: generated.componentFields?.map((fields) => ({
-      specifier: fields.specifier,
-      className: fields.className,
-      start: fields.range?.start,
-      end: fields.range?.end,
-    })),
-    scopeObjects: generated.scopeObjects && [...generated.scopeObjects],
-    props: generated.props && {
-      calls: generated.props.calls && [...generated.props.calls],
-      members: generated.props.members && [...generated.props.members],
-      variables: generated.props.variables && [...generated.props.variables],
-      undeclared: generated.props.undeclared,
-    },
-    componentInstances: generated.componentInstances && {
-      via: generated.componentInstances.via,
-      path: [...generated.componentInstances.path],
-    },
-  };
-}
-
-function nativeCode({
-  code,
-  lang,
-  mappings,
-}: GeneratedScript): NativeGeneratedCode {
-  const flat = new Int32Array(mappings.length * 4);
-
-  mappings.forEach((mapping, index) => {
-    flat[index * 4] = mapping.generated;
-    flat[index * 4 + 1] = mapping.source;
-    flat[index * 4 + 2] = mapping.length;
-    flat[index * 4 + 3] = mapping.sourceLength ?? mapping.length;
-  });
-
-  return { code, lang, mappings: flat };
 }

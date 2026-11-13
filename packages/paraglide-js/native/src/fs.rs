@@ -37,6 +37,7 @@ struct Listing {
   entries: FxHashMap<Box<str>, Vec<(Box<OsStr>, Kind)>>,
 }
 
+#[derive(Clone, Copy)]
 enum Lookup {
   Found(Kind),
   Missing,
@@ -144,10 +145,7 @@ impl ListedFileSystem {
   /// Forgets every listing.
   pub fn clear(&self) {
     for shard in &self.shards {
-      shard
-        .write()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .clear();
+      crate::unpoisoned(shard.write()).clear();
     }
   }
 
@@ -156,34 +154,30 @@ impl ListedFileSystem {
   }
 
   fn find(&self, directory: &Path) -> Option<Slot> {
-    self
-      .shard(directory)
-      .read()
-      .unwrap_or_else(|poisoned| poisoned.into_inner())
+    crate::unpoisoned(self.shard(directory).read())
       .get(directory)
       .cloned()
   }
 
   fn find_or_add(&self, directory: &Path) -> Slot {
-    self
-      .shard(directory)
-      .write()
-      .unwrap_or_else(|poisoned| poisoned.into_inner())
+    crate::unpoisoned(self.shard(directory).write())
       .entry(directory.to_path_buf())
       .or_default()
       .clone()
   }
 
-  /// What `path` is by its directory's listing: `None` when the listing cannot tell.
-  fn lookup(&self, path: &Path) -> Option<Result<Kind, ()>> {
+  /// What `path` is by its directory's listing.
+  fn lookup(&self, path: &Path) -> Lookup {
     if !cfg!(unix) {
-      return None;
+      return Lookup::Unknown;
     }
 
-    let (directory, name) = (path.parent()?, path.file_name()?);
+    let (Some(directory), Some(name)) = (path.parent(), path.file_name()) else {
+      return Lookup::Unknown;
+    };
     // `a/..` and `a/.` name another directory than their parent's entry.
     if name == ".." || name == "." {
-      return None;
+      return Lookup::Unknown;
     }
 
     let slot = self.find(directory);
@@ -193,13 +187,13 @@ impl ListedFileSystem {
 
     // The parent's listing tells a file, or a path that does not exist, without
     // a system call: tsconfig.json is looked for "in" each importer too.
-    if let Some(Ok(Kind::File | Kind::Other) | Err(())) = self.lookup(directory) {
-      return Some(Err(()));
+    if let Lookup::Found(Kind::File | Kind::Other) | Lookup::Missing = self.lookup(directory) {
+      return Lookup::Missing;
     }
 
     let slot = slot.unwrap_or_else(|| self.find_or_add(directory));
     if slot.asked.fetch_add(1, Ordering::Relaxed) == 0 {
-      return None;
+      return Lookup::Unknown;
     }
 
     slot
@@ -217,16 +211,11 @@ impl Contents {
     }
   }
 
-  /// What `name` is: `None` when the listing cannot tell.
-  fn lookup(&self, name: &OsStr) -> Option<Result<Kind, ()>> {
-    let Contents::Listed(listing) = self else {
-      return None;
-    };
-
-    match listing.lookup(name) {
-      Lookup::Found(kind) => Some(Ok(kind)),
-      Lookup::Missing => Some(Err(())),
-      Lookup::Unknown => None,
+  /// What `name` is.
+  fn lookup(&self, name: &OsStr) -> Lookup {
+    match self {
+      Contents::Listed(listing) => listing.lookup(name),
+      Contents::Unlisted => Lookup::Unknown,
     }
   }
 }
@@ -263,17 +252,17 @@ impl FileSystem for SharedFileSystem {
   fn metadata(&self, path: &Path) -> io::Result<FileMetadata> {
     match self.0.lookup(path) {
       // A symlink is followed by the system.
-      Some(Ok(Kind::Symlink)) | None => FileSystemOs::metadata(path),
-      Some(Ok(kind)) => Ok(metadata_of(kind)),
-      Some(Err(())) => Err(not_found()),
+      Lookup::Found(Kind::Symlink) | Lookup::Unknown => FileSystemOs::metadata(path),
+      Lookup::Found(kind) => Ok(metadata_of(kind)),
+      Lookup::Missing => Err(not_found()),
     }
   }
 
   fn symlink_metadata(&self, path: &Path) -> io::Result<FileMetadata> {
     match self.0.lookup(path) {
-      Some(Ok(kind)) => Ok(metadata_of(kind)),
-      Some(Err(())) => Err(not_found()),
-      None => FileSystemOs::symlink_metadata(path),
+      Lookup::Found(kind) => Ok(metadata_of(kind)),
+      Lookup::Missing => Err(not_found()),
+      Lookup::Unknown => FileSystemOs::symlink_metadata(path),
     }
   }
 

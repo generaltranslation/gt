@@ -11,6 +11,44 @@ use paraglide_context_native::{
 };
 use rayon::prelude::*;
 
+/// Without mimalloc (`--no-default-features`): the system's allocator, counting the
+/// bytes in use, for `CACHES=1`.
+#[cfg(not(feature = "mimalloc"))]
+mod counting {
+  use std::{
+    alloc::{GlobalAlloc, Layout, System},
+    sync::atomic::{AtomicIsize, Ordering},
+  };
+
+  pub static IN_USE: AtomicIsize = AtomicIsize::new(0);
+
+  pub struct Counting;
+
+  unsafe impl GlobalAlloc for Counting {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+      IN_USE.fetch_add(layout.size() as isize, Ordering::Relaxed);
+      unsafe { System.alloc(layout) }
+    }
+
+    unsafe fn dealloc(&self, pointer: *mut u8, layout: Layout) {
+      IN_USE.fetch_sub(layout.size() as isize, Ordering::Relaxed);
+      unsafe { System.dealloc(pointer, layout) }
+    }
+
+    unsafe fn realloc(&self, pointer: *mut u8, layout: Layout, size: usize) -> *mut u8 {
+      IN_USE.fetch_add(size as isize - layout.size() as isize, Ordering::Relaxed);
+      unsafe { System.realloc(pointer, layout, size) }
+    }
+  }
+
+  #[global_allocator]
+  static GLOBAL: Counting = Counting;
+
+  pub fn megabytes() -> isize {
+    IN_USE.load(Ordering::Relaxed) >> 20
+  }
+}
+
 fn collect(directory: &Path, files: &mut Vec<String>) {
   let Ok(entries) = std::fs::read_dir(directory) else {
     return;
@@ -106,7 +144,7 @@ fn main() {
   };
 
   let started = Instant::now();
-  let result = load(&mut graph, requests, &[]);
+  let result = load(&mut graph, requests, &[], None);
   println!(
     "load: {:?} ({} skipped) {}",
     started.elapsed(),
@@ -197,4 +235,156 @@ fn main() {
     bytes >> 20,
     code >> 20
   );
+
+  // `CACHES=1`, without mimalloc: the bytes each of the analysis' caches holds.
+  #[cfg(not(feature = "mimalloc"))]
+  if std::env::var("CACHES").is_ok() {
+    use std::sync::OnceLock;
+
+    fn freed(
+      graph: &mut Graph,
+      name: &str,
+      drop_it: &mut dyn FnMut(&mut paraglide_context_native::graph::Module),
+    ) {
+      let before = counting::megabytes();
+      graph.modules.iter_mut().for_each(drop_it);
+      println!("  {name:<20} {:>8} MB", before - counting::megabytes());
+    }
+    println!("in use: {} MB", counting::megabytes());
+    {
+      use paraglide_context_native::scope::{BindingKind, CachedBinding};
+      let (mut variables, mut asked, mut shadows, mut other) = (0usize, 0usize, 0usize, 0usize);
+      let mut kinds: std::collections::BTreeMap<&str, usize> = Default::default();
+      for module in &graph.modules {
+        let Some(bindings) = module.cache.bindings.get() else {
+          continue;
+        };
+        variables += bindings.len();
+        for binding in bindings {
+          match binding.get() {
+            None => {}
+            Some(
+              CachedBinding::Shadow { .. }
+              | CachedBinding::Const { .. }
+              | CachedBinding::Parameter { .. },
+            ) => {
+              asked += 1;
+              shadows += 1;
+            }
+            Some(CachedBinding::Other(binding)) => {
+              asked += 1;
+              other += 1;
+              let kind = match &binding.kind {
+                BindingKind::Shadow => "Shadow",
+                BindingKind::Lazy(_) => "Lazy",
+                BindingKind::Alias { path, .. } if path.is_empty() => "Alias (no path)",
+                BindingKind::Alias { .. } => "Alias (path)",
+                BindingKind::Values {
+                  source: paraglide_context_native::scope::ValuesSource::Parameter { path, .. },
+                  ..
+                } if path.is_empty() => "Values: parameter (no path)",
+                BindingKind::Values {
+                  source: paraglide_context_native::scope::ValuesSource::Parameter { .. },
+                  ..
+                } => "Values: parameter (path)",
+                BindingKind::Values {
+                  source: paraglide_context_native::scope::ValuesSource::Reassignable { writes },
+                  ..
+                } if writes.len() <= 1 => "Values: let, one write or none",
+                BindingKind::Values {
+                  source: paraglide_context_native::scope::ValuesSource::Reassignable { .. },
+                  ..
+                } => "Values: let, writes",
+                BindingKind::Values { .. } => "Values: other",
+              };
+              *kinds.entry(kind).or_default() += 1;
+            }
+          }
+        }
+      }
+      println!(
+        "  variables {variables}, bindings asked {asked}, kept inline {shadows}, boxed {other}; sizes: slot {} B, Binding {} B",
+        std::mem::size_of::<OnceLock<CachedBinding>>(),
+        std::mem::size_of::<paraglide_context_native::scope::Binding>()
+      );
+      println!("  boxed by kind: {kinds:?}");
+    }
+    freed(&mut graph, "bindings", &mut |module| {
+      module.cache.bindings = OnceLock::new()
+    });
+    freed(&mut graph, "field_scopes", &mut |module| {
+      module.cache.field_scopes = OnceLock::new()
+    });
+    freed(&mut graph, "call_sites", &mut |module| {
+      module.cache.call_sites = OnceLock::new()
+    });
+    freed(&mut graph, "new_instances", &mut |module| {
+      module.cache.new_instances = OnceLock::new()
+    });
+    freed(&mut graph, "call_instances", &mut |module| {
+      module.cache.call_instances = OnceLock::new()
+    });
+    freed(&mut graph, "links", &mut |module| {
+      module.cache.links = OnceLock::new()
+    });
+    freed(&mut graph, "commonjs", &mut |module| {
+      module.cache.commonjs = OnceLock::new()
+    });
+    freed(&mut graph, "component_props", &mut |module| {
+      module.cache.component_props = OnceLock::new()
+    });
+    freed(&mut graph, "call_sites_of", &mut |module| {
+      module.cache.call_sites_of = Default::default()
+    });
+    freed(&mut graph, "function_exports", &mut |module| {
+      module.cache.function_exports = OnceLock::new()
+    });
+    let before = counting::megabytes();
+    graph.invalidate();
+    println!(
+      "  {:<20} {:>8} MB",
+      "graph caches",
+      before - counting::megabytes()
+    );
+    freed(&mut graph, "nodes", &mut |module| {
+      module.ast.nodes = Vec::new()
+    });
+    freed(&mut graph, "parsed positions", &mut |module| {
+      module.ast.parsed = None
+    });
+    freed(&mut graph, "syntax", &mut |module| {
+      module.syntax = Default::default()
+    });
+    freed(&mut graph, "resolved", &mut |module| {
+      module.resolved = Default::default()
+    });
+    let before = counting::megabytes();
+    let modules = std::mem::take(&mut graph.modules);
+    drop(modules);
+    println!(
+      "  {:<20} {:>8} MB",
+      "rest of modules",
+      before - counting::megabytes()
+    );
+    println!("in use after: {} MB", counting::megabytes());
+  }
+
+  // `KINDS=1`: how many nodes of each kind, most first.
+  if std::env::var("KINDS").is_ok() {
+    let mut counts: std::collections::HashMap<_, usize> = std::collections::HashMap::new();
+    for module in &graph.modules {
+      for node in &module.ast.nodes {
+        *counts.entry(node.kind).or_default() += 1;
+      }
+    }
+    let mut counts: Vec<_> = counts.into_iter().collect();
+    counts.sort_by_key(|&(_, count)| std::cmp::Reverse(count));
+    for (kind, count) in counts.iter().take(40) {
+      let kind = format!("{kind:?}");
+      println!(
+        "  {kind:<28} {count:>12} {:>5.1}%",
+        *count as f64 * 100.0 / nodes as f64
+      );
+    }
+  }
 }

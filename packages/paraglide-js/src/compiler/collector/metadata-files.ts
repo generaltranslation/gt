@@ -1,35 +1,42 @@
-import { randomUUID } from 'node:crypto';
-import fsp from 'node:fs/promises';
-import type { FileUsages } from '../analysis/types.js';
-import type { MessageFile } from '../inlang/message-file.js';
-import { messageIds, type InlangProject } from '../inlang/project.js';
-import { metadataPath, renderMetadataFile } from '../output/metadata.js';
+import { getSystemErrorMap } from 'node:util';
+import type {
+  NativeMetadataResult,
+  NativeSystemError,
+} from '../analysis/native.js';
+import type { InlangProject } from '../inlang/project.js';
 import {
-  sourceCodeByMessage,
-  type SourceCodeByFile,
-} from '../output/source-code.js';
-import { parseJsonObject } from '../utils/json.js';
+  metadataPath,
+  nativeKeys,
+  tooDeepError,
+  type MetadataInput,
+} from '../output/metadata.js';
 import { relativePath } from '../utils/paths.js';
 import { compareText } from '../utils/sort.js';
 
 /** A metadata file that was left as it is, and why. */
 export type SkippedFile = { file: string; reason: string };
 
-type SourceCodeByMessage = ReadonlyMap<string, SourceCodeByFile>;
-
-/** What a metadata file that does not exist counts as, so that none is created for nothing. */
-const NO_METADATA = '{}\n';
+/** What writes the files: the analysis, which kept the code and usages of the files it analyzed. */
+export type MetadataWriter = {
+  writeMetadata(
+    input: MetadataInput,
+    radius: number
+  ): Promise<NativeMetadataResult>;
+};
 
 /**
- * The metadata files of a project's messages: holds the usages of each
- * analyzed source file and writes them next to the message files. Writes are
- * atomic for readers.
+ * The metadata files of a project's messages: next to each message file, the
+ * source code around the usages of its messages. The analysis writes them;
+ * this tells it which files and projects there are. Writes are atomic for
+ * readers, and a file whose content did not change is not written.
  */
 export class MetadataFiles {
-  /** The source files with usages, by absolute path. */
-  private readonly entries = new Map<string, FileUsages>();
   /** By absolute directory. */
   private readonly projects = new Map<string, InlangProject>();
+  /** The analyzed files with usages, absolute. */
+  private readonly sources = new Set<string>();
+  /** By message file that usages resolve to: the directory of the inlang project they count for. */
+  private readonly targetProjects = new Map<string, string>();
 
   constructor(
     private readonly projectRoot: string,
@@ -41,93 +48,77 @@ export class MetadataFiles {
     this.projects.set(project.directory, project);
   }
 
-  /** Records the usages of `file` (absolute). */
-  add(file: string, usages: FileUsages): void {
-    this.entries.set(file, usages);
+  /** Records that `file` (absolute) has usages: the analysis kept them. */
+  add(file: string): void {
+    this.sources.add(file);
+  }
+
+  /** Usages of the messages in `targetFile` count for the inlang project in `directory`. */
+  addTarget(targetFile: string, directory: string): void {
+    this.targetProjects.set(targetFile, directory);
   }
 
   /** Writes the files whose content changed. Resolves with those it had to skip. */
-  async write(): Promise<SkippedFile[]> {
+  async write(writer: MetadataWriter): Promise<SkippedFile[]> {
+    if (this.projects.size === 0) return [];
+
+    const { skipped, failure, tooDeep } = await writer.writeMetadata(
+      this.input(),
+      this.radius
+    );
+    if (failure) throw systemError(failure);
+    if (tooDeep) throw tooDeepError();
+
+    return skipped.map(({ file, error }) => ({
+      file,
+      reason: error
+        ? `it could not be read (${systemError(error).code})`
+        : 'it is not a JSON object; fix or delete it',
+    }));
+  }
+
+  private input(): MetadataInput {
+    const relative = (file: string) => relativePath(this.projectRoot, file);
     const projects = [...this.projects.values()].sort((a, b) =>
       compareText(a.directory, b.directory)
     );
-    const results = await Promise.all(
-      projects.flatMap((project) => this.writeProject(project))
-    );
 
-    return results.filter((skipped) => skipped !== undefined);
-  }
-
-  /** One write per message file of the project. */
-  private writeProject(
-    project: InlangProject
-  ): Promise<SkippedFile | undefined>[] {
-    const sourceCode = sourceCodeByMessage([...this.entries.values()], {
-      ids: messageIds(project),
-      inlangProject: relativePath(this.projectRoot, project.directory),
-      radius: this.radius,
-    });
-
-    return project.messageFiles.map((messageFile) =>
-      writeMetadata(messageFile, sourceCode)
-    );
+    return {
+      files: [...this.sources],
+      names: [...this.sources].map(relative),
+      targets: [...this.targetProjects.keys()],
+      targetProjects: [...this.targetProjects.values()].map(relative),
+      projects: projects.map((project) => ({
+        inlangProject: relative(project.directory),
+        messageFiles: project.messageFiles.map((file) => ({
+          metadata: metadataPath(file.path),
+          keys: nativeKeys(file.keys),
+        })),
+      })),
+    };
   }
 }
 
-/** Writes the metadata file of a message file if its content changed. Returns the file if it was skipped. */
-async function writeMetadata(
-  messageFile: MessageFile,
-  sourceCode: SourceCodeByMessage
-): Promise<SkippedFile | undefined> {
-  const file = metadataPath(messageFile.path);
-  const current = await readMetadata(file);
-  // Overwriting it could lose hand-written fields.
-  if ('unreadable' in current) {
-    return { file, reason: `it could not be read (${current.unreadable})` };
-  }
+/** An error like those of `node:fs`, for a system call of the analysis that failed. */
+function systemError(failed: NativeSystemError): NodeJS.ErrnoException {
+  const errno = failed.errno ?? undefined;
+  const known =
+    errno === undefined ? undefined : getSystemErrorMap().get(-errno);
+  const [code, description] = known ?? [failed.code, 'unknown error'];
 
-  const existing = parseJsonObject(current.content);
-  if (!existing) {
-    return { file, reason: 'it is not a JSON object; fix or delete it' };
-  }
+  const paths = [failed.path, failed.dest]
+    .filter((path) => path != null)
+    .map((path) => `'${path}'`)
+    .join(' -> ');
+  const error: NodeJS.ErrnoException = new Error(
+    `${code}: ${description}, ${failed.syscall}${paths && ` ${paths}`}`
+  );
 
-  const metadata = renderMetadataFile({
-    keys: messageFile.keys,
-    sourceCode,
-    existing,
+  return Object.assign(error, {
+    errno: errno === undefined ? undefined : -errno,
+    code,
+    syscall: failed.syscall,
+    ...(failed.path != null && { path: failed.path }),
+    ...(failed.dest != null && { dest: failed.dest }),
   });
-  const content = `${JSON.stringify(metadata, null, 2)}\n`;
-  if (content === current.content) return undefined;
-
-  await writeAtomically(file, content);
-
-  return undefined;
-}
-
-/** Only a file that does not exist counts as empty: one that cannot be read may hold hand-written fields. */
-async function readMetadata(
-  file: string
-): Promise<{ content: string } | { unreadable: string }> {
-  try {
-    return { content: await fsp.readFile(file, 'utf8') };
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === 'ENOENT') return { content: NO_METADATA };
-
-    return { unreadable: code ?? (error as Error).message };
-  }
-}
-
-async function writeAtomically(file: string, content: string): Promise<void> {
-  // A unique name: other processes may write the same file.
-  const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
-
-  try {
-    await fsp.writeFile(temporary, content);
-    await fsp.rename(temporary, file);
-  } catch (error) {
-    // The failed write is what is reported, not a failed cleanup.
-    await fsp.rm(temporary, { force: true }).catch(() => undefined);
-    throw error;
-  }
 }

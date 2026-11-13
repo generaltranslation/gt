@@ -29,6 +29,11 @@ pub fn unwrap_expression(ast: &Ast, mut node: NodeId) -> NodeId {
   }
 }
 
+/// The module a statement's `from "…"` names, e.g. of an import or a re-export.
+pub fn source_of(ast: &Ast, statement: NodeId) -> Option<&str> {
+  static_string(ast, ast.child(statement, Slot::Source)?)
+}
+
 pub fn static_string(ast: &Ast, node: NodeId) -> Option<&str> {
   match ast.kind(node) {
     Kind::Literal if ast.has(node, ir::STRING) => Some(ast.text(node)),
@@ -169,22 +174,10 @@ pub fn pattern_bindings(
   }
 }
 
-/// Whether `identifier` is one of the names `pattern` binds.
-pub fn pattern_binds(ast: &Ast, pattern: NodeId, identifier: NodeId) -> bool {
+/// How `pattern` binds `identifier`: None if it is not one of its names, else
+/// the properties leading to it, `None` when they are not all known.
+pub fn binding_path(ast: &Ast, pattern: NodeId, identifier: NodeId) -> Option<Option<Path>> {
   // A pattern's names are among its descendants.
-  let is_inside = identifier >= pattern && identifier < ast.next(pattern);
-  if !is_inside {
-    return false;
-  }
-
-  let mut bindings = Vec::new();
-  pattern_bindings(ast, pattern, Some(Vec::new()), &mut bindings);
-
-  bindings.iter().any(|binding| binding.node == identifier)
-}
-
-/// The properties leading from a pattern to a name it binds; `None` when they are not all known.
-pub fn path_of(ast: &Ast, pattern: NodeId, identifier: NodeId) -> Option<Path> {
   let is_inside = identifier >= pattern && identifier < ast.next(pattern);
   if !is_inside {
     return None;
@@ -195,8 +188,13 @@ pub fn path_of(ast: &Ast, pattern: NodeId, identifier: NodeId) -> Option<Path> {
 
   bindings
     .into_iter()
-    .find(|binding| binding.node == identifier)?
-    .path
+    .find(|binding| binding.node == identifier)
+    .map(|binding| binding.path)
+}
+
+/// The properties leading from a pattern to a name it binds; `None` when they are not all known.
+pub fn path_of(ast: &Ast, pattern: NodeId, identifier: NodeId) -> Option<Path> {
+  binding_path(ast, pattern, identifier).flatten()
 }
 
 /// The names a declaration gives values to: `const { a, b } = …` → a, b.
@@ -315,11 +313,7 @@ pub fn loaded_specifiers(ast: &Ast) -> Vec<Box<str>> {
     }
   };
 
-  let source_of = |node: NodeId| {
-    ast
-      .child(node, Slot::Source)
-      .and_then(|source| static_string(ast, source))
-  };
+  let source_of = |node: NodeId| self::source_of(ast, node);
 
   let end = ast.nodes.len() as NodeId;
   let mut node = 0;
@@ -402,9 +396,7 @@ pub fn import_of<'a>(ast: &'a Ast, local: &str) -> Option<(&'a str, &'a str)> {
         continue;
       }
 
-      let source = ast
-        .child(statement, Slot::Source)
-        .and_then(|source| static_string(ast, source))?;
+      let source = source_of(ast, statement)?;
 
       return Some((source, imported_name(ast, specifier)));
     }

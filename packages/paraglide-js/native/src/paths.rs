@@ -1,12 +1,13 @@
 //! Paths as the analysis compares them: absolute, normalized strings.
 
-use std::path::MAIN_SEPARATOR;
+use std::{borrow::Cow, path::MAIN_SEPARATOR};
 
-pub fn to_posix(file: &str) -> String {
+/// With forward slashes: the path itself where they are the separator.
+pub fn to_posix(file: &str) -> Cow<'_, str> {
   if MAIN_SEPARATOR == '/' {
-    file.to_string()
+    Cow::Borrowed(file)
   } else {
-    file.replace(MAIN_SEPARATOR, "/")
+    Cow::Owned(file.replace(MAIN_SEPARATOR, "/"))
   }
 }
 
@@ -29,8 +30,8 @@ pub fn basename(file: &str) -> &str {
   }
 }
 
-/// `file` relative to `directory` with forward slashes, if inside it.
-pub fn relative_within(directory: &str, file: &str) -> Option<String> {
+/// `file` relative to `directory`, with its separators, if inside it.
+fn within<'f>(directory: &str, file: &'f str) -> Option<&'f str> {
   let rest = file.strip_prefix(directory)?;
   let directory_ends_with_separator = directory.ends_with(is_separator);
 
@@ -50,11 +51,16 @@ pub fn relative_within(directory: &str, file: &str) -> Option<String> {
     return None;
   }
 
-  Some(to_posix(relative))
+  Some(relative)
+}
+
+/// `file` relative to `directory` with forward slashes, if inside it.
+pub fn relative_within<'f>(directory: &str, file: &'f str) -> Option<Cow<'f, str>> {
+  within(directory, file).map(to_posix)
 }
 
 pub fn is_within(directory: &str, file: &str) -> bool {
-  relative_within(directory, file).is_some()
+  within(directory, file).is_some()
 }
 
 /// `.js`, `.mjs`, `.cts`, `.tsx`, …: the extension of a script, if `file` has one.
@@ -104,6 +110,8 @@ mod tests {
       relative_within("/a", "/a/b/c.js").as_deref(),
       Some("b/c.js")
     );
+    assert_eq!(relative_within("/a", "/a/"), None);
+    assert_eq!(relative_within("/a/", "/a/b.js").as_deref(), Some("b.js"));
     assert_eq!(relative_within("/a", "/a"), None);
     assert_eq!(relative_within("/a", "/ab/c.js"), None);
     assert_eq!(relative_within("/a", "/a/..b/c.js"), None);

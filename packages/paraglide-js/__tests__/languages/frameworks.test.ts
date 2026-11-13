@@ -4,7 +4,7 @@ import {
   NO_PACKAGES,
   type LanguageContext,
 } from '../../src/compiler/languages/language.js';
-import { sourceSnippet } from '../../src/compiler/output/source-code.js';
+import { sourceSnippet } from '../helpers/metadata-reference.js';
 import { svelteLanguage } from '../../src/compiler/languages/svelte.js';
 import { vueLanguage } from '../../src/compiler/languages/vue.js';
 import {

@@ -64,6 +64,11 @@ export type PropsReads = {
 export type LanguageContext = {
   /** Imports a package installed in the project; undefined if it is not installed. */
   load<T = unknown>(specifier: string): Promise<T | undefined>;
+  /**
+   * The project the packages are found from, if `projectPackages` made the
+   * context: the threads that run the tooling make their own from it.
+   */
+  root?: string;
 };
 
 export const NO_PACKAGES: LanguageContext = { load: async () => undefined };

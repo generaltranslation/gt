@@ -17,10 +17,11 @@ use crate::{
   },
   load::{
     link, link_with, load, unlinked, DetectedExtension, GeneratedCode, GeneratedSource, Input,
-    LoadResult, Request, Unresolved,
+    LoadResult, Prefetch, Request, Unresolved,
   },
   lower::Lang,
   mapping::Mapping,
+  metadata::{self, snippets::SourceFile, Failure, Skipped, SystemError, SystemFiles},
   resolve::{ImportAlias, NativeResolver, ResolverOptions},
 };
 
@@ -157,14 +158,14 @@ pub struct NativeCustomSymbol {
 
 #[napi(object)]
 pub struct NativeAnalysis {
-  /// The analyzed files that have usages.
+  /// The analyzed files that have usages. Their code and usages are kept for
+  /// `writeMetadata`.
   pub files: Vec<String>,
-  /// The code of each.
-  pub codes: Vec<String>,
   /// How many usages each has.
   pub counts: Vec<u32>,
-  /// The usages of each, as a JSON list of lists.
-  pub usages: String,
+  /// The usages of each, as a JSON list: one text per file, so that a
+  /// project's usages are not limited by the length of one JavaScript string.
+  pub usages: Vec<String>,
   /// The files that the usages' `targetFile` name by index.
   pub paths: Vec<String>,
 }
@@ -178,11 +179,43 @@ pub struct NativeStats {
   pub tree_bytes: f64,
 }
 
+/// What an analyzed file with usages keeps for the metadata files.
+struct Recorded {
+  source: Arc<crate::graph::SourceFile>,
+  /// Each one's `target_file` is the number of its file in `State::targets`:
+  /// file ids do not outlive `release`.
+  usages: Vec<Usage>,
+}
+
+/// The files that usages' targets are in, numbered in the order they are first
+/// named: JavaScript is given them by number, and they outlive `release`.
+#[derive(Default)]
+struct TargetFiles {
+  paths: Vec<String>,
+  numbers: FxHashMap<Box<str>, u32>,
+}
+
+impl TargetFiles {
+  fn number(&mut self, path: &str) -> u32 {
+    if let Some(&number) = self.numbers.get(path) {
+      return number;
+    }
+
+    let number = self.paths.len() as u32;
+    self.paths.push(path.to_string());
+    self.numbers.insert(path.into(), number);
+    number
+  }
+}
+
 struct State {
   graph: Graph,
+  /// The analyzed files with usages, by path; a later analysis replaces a file's.
+  recorded: FxHashMap<Box<str>, Recorded>,
+  targets: TargetFiles,
   resolver: Option<NativeResolver>,
   ignored_directories: FxHashSet<String>,
-  detected: Vec<DetectedExtension>,
+  detected: Arc<[DetectedExtension]>,
   /// What JavaScript read or generated, until the next load parses it.
   queue: Vec<Request>,
 }
@@ -190,6 +223,8 @@ struct State {
 #[napi]
 pub struct NativeGraph {
   state: Arc<Mutex<State>>,
+  /// Apart from the state: files are prefetched while a load holds it.
+  prefetch: Arc<Prefetch>,
 }
 
 /// The stack of each thread that parses and analyzes: deeply nested code is read by functions that call themselves.
@@ -200,11 +235,26 @@ fn start_workers() {
   static STARTED: std::sync::Once = std::sync::Once::new();
 
   STARTED.call_once(|| {
+    let mut builder = rayon::ThreadPoolBuilder::new().stack_size(WORKER_STACK_BYTES);
+    // As many threads as `PARAGLIDE_CONTEXT_THREADS` says, at least one; else one per core.
+    if let Some(threads) = configured_threads() {
+      builder = builder.num_threads(threads.max(1));
+    }
+
     // If another addon set the pool up first, its threads are used as they are.
-    let _ = rayon::ThreadPoolBuilder::new()
-      .stack_size(WORKER_STACK_BYTES)
-      .build_global();
+    let _ = builder.build_global();
   });
+}
+
+/// The threads `PARAGLIDE_CONTEXT_THREADS` asks for, if it is a number.
+fn configured_threads() -> Option<usize> {
+  std::env::var("PARAGLIDE_CONTEXT_THREADS")
+    .ok()?
+    .trim()
+    .parse::<f64>()
+    .ok()
+    .filter(|threads| threads.is_finite() && *threads >= 0.0)
+    .map(|threads| threads as usize)
 }
 
 /// Runs a step of the analysis; a bug in it is an error in JavaScript, not the end of the process.
@@ -223,10 +273,7 @@ fn guarded<T>(work: impl FnOnce() -> T) -> Result<T> {
 }
 
 fn lock(state: &Mutex<State>) -> MutexGuard<'_, State> {
-  // A panic while the lock is held leaves the graph as it was: it is only read after.
-  state
-    .lock()
-    .unwrap_or_else(|poisoned| poisoned.into_inner())
+  crate::unpoisoned(state.lock())
 }
 
 fn to_target(target: NativeTarget) -> Target {
@@ -254,7 +301,7 @@ fn to_generated_code(code: NativeGeneratedCode) -> GeneratedCode {
       source_length: mapping[3],
     })
     .collect();
-  let length = code.code.encode_utf16().count();
+  let length = crate::positions::utf16_length(&code.code);
 
   GeneratedCode {
     lang: Lang::parse(&code.lang),
@@ -313,6 +360,7 @@ fn to_load_result(result: LoadResult, alias_queries: Vec<String>) -> NativeLoadR
 
 pub struct LoadTask {
   state: Arc<Mutex<State>>,
+  prefetch: Arc<Prefetch>,
   requests: Vec<Request>,
 }
 
@@ -329,7 +377,12 @@ impl Task for LoadTask {
       requests.append(&mut self.requests);
       requests.sort_by_key(|request| request.order);
 
-      let result = load(&mut state.graph, requests, &state.detected);
+      let result = load(
+        &mut state.graph,
+        requests,
+        &state.detected,
+        Some(&self.prefetch),
+      );
 
       // JavaScript's aliases are asked about each specifier once.
       let mut alias_queries = Vec::new();
@@ -441,7 +494,7 @@ struct UsageJson<'a> {
   column: u32,
   #[serde(rename = "endLine")]
   end_line: u32,
-  /// An index of `NativeAnalysis::paths`.
+  /// An index of `NativeAnalysis::paths`: the file's number in `TargetFiles`.
   #[serde(rename = "targetFile")]
   target_file: u32,
 }
@@ -449,32 +502,25 @@ struct UsageJson<'a> {
 /// A file's usages, written for JavaScript.
 struct WrittenFile {
   file: String,
-  code: String,
   count: u32,
-  json: Vec<u8>,
+  json: String,
 }
 
 /// The usages of the files that have any, for JavaScript. Each file's are
-/// written on a core of its own.
-fn to_analysis(graph: &Graph, files: Vec<String>, analyzed: Vec<Vec<Usage>>) -> NativeAnalysis {
-  // The target files, numbered in the order they are first named.
-  let mut path_indexes: FxHashMap<FileId, u32> = FxHashMap::default();
-  let mut paths: Vec<String> = Vec::new();
-  for usage in analyzed.iter().flatten() {
-    path_indexes.entry(usage.target_file).or_insert_with(|| {
-      paths.push(graph.file(usage.target_file).to_string());
-      paths.len() as u32 - 1
-    });
-  }
-
+/// written on a core of its own. Each usage's `target_file` is a number of `targets`.
+fn to_analysis(
+  graph: &Graph,
+  targets: &TargetFiles,
+  files: &[String],
+  analyzed: &[Vec<Usage>],
+) -> NativeAnalysis {
   let written: Vec<Option<WrittenFile>> = files
-    .into_par_iter()
+    .par_iter()
     .zip(analyzed)
     .map(|(file, usages)| {
       if usages.is_empty() {
         return None;
       }
-      let record = graph.known_file(&file).and_then(|id| graph.record(id))?;
 
       let rows: Vec<UsageJson> = usages
         .iter()
@@ -488,55 +534,96 @@ fn to_analysis(graph: &Graph, files: Vec<String>, analyzed: Vec<Vec<Usage>>) -> 
           line: usage.line,
           column: usage.column,
           end_line: usage.end_line,
-          target_file: path_indexes[&usage.target_file],
+          target_file: usage.target_file,
         })
         .collect();
 
-      let mut json = Vec::with_capacity(usages.len() * 160);
-      // Writing to a `Vec` does not fail.
-      let _ = serde_json::to_writer(&mut json, &rows);
+      // Writing to a `String` does not fail.
+      let json = serde_json::to_string(&rows).unwrap_or_default();
 
       Some(WrittenFile {
-        file,
-        code: record.source.code.to_string(),
+        file: file.clone(),
         count: usages.len() as u32,
         json,
       })
     })
     .collect();
 
-  let written: Vec<_> = written.into_iter().flatten().collect();
-  let length = written
-    .iter()
-    .map(|written| written.json.len() + 1)
-    .sum::<usize>();
-  let mut json: Vec<u8> = Vec::with_capacity(length + 2);
-  json.push(b'[');
+  let mut analysis = NativeAnalysis {
+    files: Vec::new(),
+    counts: Vec::new(),
+    usages: Vec::new(),
+    paths: targets.paths.clone(),
+  };
+  for written in written.into_iter().flatten() {
+    analysis.files.push(written.file);
+    analysis.counts.push(written.count);
+    analysis.usages.push(written.json);
+  }
 
-  let mut with_usages = Vec::with_capacity(written.len());
-  let mut codes = Vec::with_capacity(written.len());
-  let mut counts = Vec::with_capacity(written.len());
+  analysis
+}
 
-  for written in written {
-    if !with_usages.is_empty() {
-      json.push(b',');
+/// Analyzes `files`, and records those with usages.
+fn analyze_files(
+  state: &mut State,
+  files: Vec<String>,
+  custom: Option<&dyn CustomTargets>,
+) -> NativeAnalysis {
+  state.graph.prepare();
+  let State {
+    graph,
+    targets,
+    recorded,
+    ..
+  } = state;
+  let ids = file_ids(graph, &files);
+
+  let mut analyzed: Vec<Vec<Usage>> = match custom {
+    // JavaScript is asked on its own thread.
+    Some(custom) => ids
+      .into_iter()
+      .map(|file| file.map(|file| analyze_file(graph, file, Some(custom))))
+      .map(Option::unwrap_or_default)
+      .collect(),
+    None => ids
+      .into_par_iter()
+      .map(|file| file.map(|file| analyze_file(graph, file, None)))
+      .map(Option::unwrap_or_default)
+      .collect(),
+  };
+
+  // Each target's file by its number, which outlives the graph's ids.
+  let mut numbers: FxHashMap<FileId, u32> = FxHashMap::default();
+  for usage in analyzed.iter_mut().flatten() {
+    usage.target_file = *numbers
+      .entry(usage.target_file)
+      .or_insert_with(|| targets.number(graph.file(usage.target_file)));
+  }
+
+  let analysis = to_analysis(graph, targets, &files, &analyzed);
+
+  for (file, usages) in files.into_iter().zip(analyzed) {
+    let record = graph.known_file(&file).and_then(|id| graph.record(id));
+    if let (Some(record), false) = (record, usages.is_empty()) {
+      let source = record.source.clone();
+      recorded.insert(file.into_boxed_str(), Recorded { source, usages });
     }
-    json.extend_from_slice(&written.json);
-
-    with_usages.push(written.file);
-    codes.push(written.code);
-    counts.push(written.count);
   }
 
-  json.push(b']');
+  analysis
+}
 
-  NativeAnalysis {
-    files: with_usages,
-    codes,
-    counts,
-    usages: String::from_utf8(json).unwrap_or_default(),
-    paths,
+/// The end of loading: what the loads kept to resolve and read files is given back.
+fn finish_loading(state: &State, prefetch: &Prefetch) {
+  // What was read of the file system is given back while the analysis runs,
+  // before its own memory is at its peak.
+  if let Some(resolver) = &state.resolver {
+    resolver.clear_cache_later();
   }
+
+  // What was prefetched and not loaded will not be.
+  prefetch.clear();
 }
 
 fn file_ids(graph: &Graph, files: &[String]) -> Vec<Option<FileId>> {
@@ -545,6 +632,7 @@ fn file_ids(graph: &Graph, files: &[String]) -> Vec<Option<FileId>> {
 
 pub struct AnalyzeTask {
   state: Arc<Mutex<State>>,
+  prefetch: Arc<Prefetch>,
   files: Vec<String>,
 }
 
@@ -555,27 +643,10 @@ impl Task for AnalyzeTask {
   fn compute(&mut self) -> Result<Self::Output> {
     guarded(|| {
       let mut state = lock(&self.state);
-      state.graph.prepare();
+      finish_loading(&state, &self.prefetch);
 
-      // The analysis resolves nothing: what was read of the file system is given
-      // back while it runs, before its own memory is at its peak.
-      if let Some(resolver) = &state.resolver {
-        resolver.clear_cache_later();
-      }
-
-      let graph = &state.graph;
       let files = std::mem::take(&mut self.files);
-
-      let analyzed: Vec<Vec<Usage>> = file_ids(graph, &files)
-        .into_par_iter()
-        .map(|file| {
-          file
-            .map(|file| analyze_file(graph, file, None))
-            .unwrap_or_default()
-        })
-        .collect();
-
-      Ok(to_analysis(graph, files, analyzed))
+      Ok(analyze_files(&mut state, files, None))
     })?
   }
 
@@ -615,6 +686,200 @@ impl CustomTargets for JsTargets<'_> {
   }
 }
 
+#[napi(object)]
+pub struct NativeSystemError {
+  /// The system's number for the error, on a system whose numbers JavaScript knows.
+  pub errno: Option<i32>,
+  /// The error's code, for a number JavaScript does not know.
+  pub code: String,
+  pub syscall: String,
+  pub path: Option<String>,
+  pub dest: Option<String>,
+}
+
+#[napi(object)]
+pub struct NativeSkippedMetadata {
+  pub file: String,
+  /// Why it could not be read; none if it is not the JSON of an object.
+  pub error: Option<NativeSystemError>,
+}
+
+#[napi(object)]
+pub struct NativeMetadataResult {
+  /// The metadata files that were left as they are, in order.
+  pub skipped: Vec<NativeSkippedMetadata>,
+  /// The first write that failed: then some files may not be written.
+  pub failure: Option<NativeSystemError>,
+  /// A field written by hand nests deeper than `JSON.stringify` can write.
+  pub too_deep: bool,
+}
+
+/// `ENOENT` for a file that is not found, as libuv names errors.
+fn error_code(error: &std::io::Error) -> &'static str {
+  use std::io::ErrorKind;
+
+  match error.kind() {
+    ErrorKind::NotFound => "ENOENT",
+    ErrorKind::PermissionDenied => "EACCES",
+    ErrorKind::AlreadyExists => "EEXIST",
+    ErrorKind::IsADirectory => "EISDIR",
+    ErrorKind::NotADirectory => "ENOTDIR",
+    ErrorKind::DirectoryNotEmpty => "ENOTEMPTY",
+    ErrorKind::StorageFull => "ENOSPC",
+    ErrorKind::ReadOnlyFilesystem => "EROFS",
+    ErrorKind::CrossesDevices => "EXDEV",
+    ErrorKind::ResourceBusy => "EBUSY",
+    ErrorKind::InvalidFilename => "ENAMETOOLONG",
+    ErrorKind::Interrupted => "EINTR",
+    ErrorKind::QuotaExceeded => "EDQUOT",
+    _ => "EIO",
+  }
+}
+
+fn to_system_error(
+  error: &std::io::Error,
+  syscall: &str,
+  path: Option<String>,
+  dest: Option<String>,
+) -> NativeSystemError {
+  NativeSystemError {
+    // Windows' numbers are not those JavaScript knows.
+    errno: if cfg!(windows) {
+      None
+    } else {
+      error.raw_os_error()
+    },
+    code: error_code(error).to_string(),
+    syscall: syscall.to_string(),
+    path,
+    dest,
+  }
+}
+
+pub struct WriteMetadataTask {
+  state: Arc<Mutex<State>>,
+  input: String,
+  radius: f64,
+}
+
+impl Task for WriteMetadataTask {
+  type Output = NativeMetadataResult;
+  type JsValue = NativeMetadataResult;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    guarded(|| write_metadata(&lock(&self.state), self.input.as_bytes(), self.radius))?
+  }
+
+  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output)
+  }
+}
+
+fn bad_input(metadata::BadInput(what): metadata::BadInput) -> Error {
+  Error::from_reason(format!("the metadata input is not as expected: `{what}`"))
+}
+
+/// `{ files, names, targets, targetProjects, projects }`: the analyzed files with
+/// usages and their names, the inlang project of each target file, and the projects.
+fn write_metadata(state: &State, input: &[u8], radius: f64) -> Result<NativeMetadataResult> {
+  let input = metadata::input_object(input).map_err(bad_input)?;
+  let metadata::WriteInput {
+    files,
+    target_projects,
+    projects,
+  } = metadata::write_input(&input).map_err(bad_input)?;
+
+  // Only a message's usage counts, in the project its outdir is paired with:
+  // decided once per target, and once per target file.
+  let is_message: Vec<bool> = state
+    .graph
+    .options
+    .targets
+    .iter()
+    .map(|target| &*target.name == "message")
+    .collect();
+  let project_of_target: Vec<Option<&[u8]>> = state
+    .targets
+    .paths
+    .iter()
+    .map(|path| target_projects.get(path.as_bytes()).copied())
+    .collect();
+
+  let sources: Vec<SourceFile> = files
+    .par_iter()
+    .filter_map(|&(file, name)| {
+      let recorded = state.recorded.get(std::str::from_utf8(file).ok()?)?;
+      let usages = recorded
+        .usages
+        .iter()
+        .map(|usage| metadata::snippets::SourceUsage {
+          name: usage.name.as_bytes(),
+          dynamic: usage.dynamic,
+          start: f64::from(usage.start),
+          end: f64::from(usage.end),
+          line: f64::from(usage.line),
+          end_line: f64::from(usage.end_line),
+          project: is_message[usage.target as usize]
+            .then(|| project_of_target[usage.target_file as usize])
+            .flatten(),
+        })
+        .collect();
+
+      Some(SourceFile {
+        name,
+        code: recorded.source.code.as_bytes(),
+        usages,
+      })
+    })
+    .collect();
+
+  let mut result = NativeMetadataResult {
+    skipped: Vec::new(),
+    failure: None,
+    too_deep: false,
+  };
+
+  match metadata::write_all(&sources, &projects, radius, &SystemFiles) {
+    Ok(skipped) => {
+      result.skipped = skipped
+        .into_iter()
+        .map(|(file, reason)| NativeSkippedMetadata {
+          error: match reason {
+            Skipped::Unreadable(error) => {
+              Some(to_system_error(&error, "open", Some(file.clone()), None))
+            }
+            Skipped::NotAnObject => None,
+          },
+          file,
+        })
+        .collect();
+    }
+    Err(Failure::System(SystemError {
+      error,
+      syscall,
+      path,
+      dest,
+    })) => result.failure = Some(to_system_error(&error, syscall, path, dest)),
+    Err(Failure::TooDeep) => result.too_deep = true,
+  }
+
+  Ok(result)
+}
+
+/// The content of a metadata file, as `writeMetadata` writes it: for tests.
+/// `input` is the JSON of `{ inlangProject, keys, existing, sources }`; none if
+/// `existing` is not the JSON of an object. A field written by hand too deep
+/// for `JSON.stringify` is an error.
+#[napi]
+pub fn render_metadata(input: String, radius: f64) -> Result<Option<String>> {
+  guarded(|| match metadata::render_input(input.as_bytes(), radius) {
+    Err(bad) => Err(bad_input(bad)),
+    Ok(Err(_)) => Err(Error::from_reason("Maximum call stack size exceeded")),
+    // What is written is UTF-8: lone surrogates are escaped.
+    Ok(Ok(rendered)) => Ok(rendered.map(|bytes| String::from_utf8_lossy(&bytes).into_owned())),
+  })?
+}
+
 #[napi]
 impl NativeGraph {
   #[napi(constructor)]
@@ -651,7 +916,7 @@ impl NativeGraph {
       })
     });
 
-    let detected = options
+    let detected: Arc<[DetectedExtension]> = options
       .detect
       .into_iter()
       .map(|detect| DetectedExtension {
@@ -663,11 +928,14 @@ impl NativeGraph {
     Self {
       state: Arc::new(Mutex::new(State {
         graph,
+        recorded: FxHashMap::default(),
+        targets: TargetFiles::default(),
         resolver,
         ignored_directories,
-        detected,
+        detected: detected.clone(),
         queue: Vec::new(),
       })),
+      prefetch: Arc::new(Prefetch::new(detected)),
     }
   }
 
@@ -706,23 +974,13 @@ impl NativeGraph {
   /// A script that JavaScript read.
   #[napi]
   pub fn queue_script(&self, file: String, order: u32, code: String) {
-    let request = Request {
-      file,
-      order: order as u64,
-      input: Input::Script { code },
-    };
-    lock(&self.state).queue.push(request);
+    self.queue(file, order, Input::Script { code });
   }
 
   /// A file in a format that is not analyzed.
   #[napi]
   pub fn queue_empty(&self, file: String, order: u32, code: String) {
-    let request = Request {
-      file,
-      order: order as u64,
-      input: Input::Empty { code },
-    };
-    lock(&self.state).queue.push(request);
+    self.queue(file, order, Input::Empty { code });
   }
 
   /// A component file, as the code its language's tooling wrote for it.
@@ -734,15 +992,22 @@ impl NativeGraph {
     code: String,
     generated: NativeGeneratedSource,
   ) {
-    let input = Input::Generated {
-      code,
-      generated: Box::new(to_generated_source(generated)),
-    };
-    lock(&self.state).queue.push(Request {
-      file,
-      order: order as u64,
-      input,
-    });
+    let generated = Box::new(to_generated_source(generated));
+    self.queue(file, order, Input::Generated { code, generated });
+  }
+
+  /// Keeps what JavaScript read or generated for the next load.
+  fn queue(&self, file: String, order: u32, input: Input) {
+    let order = order as u64;
+    lock(&self.state).queue.push(Request { file, order, input });
+  }
+
+  /// Starts reading and parsing scripts that are about to be loaded, on the
+  /// cores JavaScript leaves idle while it lists the others; `load` takes them.
+  /// Returns at once.
+  #[napi]
+  pub fn prefetch(&self, files: Vec<String>) {
+    self.prefetch.start(files);
   }
 
   /// Reads the scripts `files`, and parses them and what was queued. `orders`
@@ -761,6 +1026,7 @@ impl NativeGraph {
 
     AsyncTask::new(LoadTask {
       state: self.state.clone(),
+      prefetch: self.prefetch.clone(),
       requests,
     })
   }
@@ -938,6 +1204,7 @@ impl NativeGraph {
   pub fn analyze(&self, files: Vec<String>) -> AsyncTask<AnalyzeTask> {
     AsyncTask::new(AnalyzeTask {
       state: self.state.clone(),
+      prefetch: self.prefetch.clone(),
       files,
     })
   }
@@ -957,20 +1224,34 @@ impl NativeGraph {
 
   fn analyze_here(&self, files: Vec<String>, symbol: CustomSymbolFunction<'_>) -> NativeAnalysis {
     let mut state = lock(&self.state);
-    state.graph.prepare();
-    let graph = &state.graph;
+    finish_loading(&state, &self.prefetch);
+
     let custom = JsTargets { symbol };
+    analyze_files(&mut state, files, Some(&custom))
+  }
 
-    let analyzed: Vec<Vec<Usage>> = file_ids(graph, &files)
-      .into_iter()
-      .map(|file| {
-        file
-          .map(|file| analyze_file(graph, file, Some(&custom)))
-          .unwrap_or_default()
-      })
-      .collect();
+  /// Gives back the memory of the modules, on a thread of its own; what
+  /// `writeMetadata` writes is kept. The graph is then as new, with the same
+  /// targets and outdirs.
+  #[napi]
+  pub fn release(&self) {
+    let modules = lock(&self.state).graph.take();
+    std::thread::spawn(move || drop(modules));
+    self.prefetch.clear();
+  }
 
-    to_analysis(graph, files, analyzed)
+  // ---------------------------------------------------------------- metadata
+
+  /// Writes the metadata file of each message file of `input`'s projects, from
+  /// the usages of the analyzed files. `input` is the JSON of `MetadataInput`
+  /// (`src/compiler/collector/metadata-files.ts`).
+  #[napi(ts_return_type = "Promise<NativeMetadataResult>")]
+  pub fn write_metadata(&self, input: String, radius: f64) -> AsyncTask<WriteMetadataTask> {
+    AsyncTask::new(WriteMetadataTask {
+      state: self.state.clone(),
+      input,
+      radius,
+    })
   }
 
   #[napi]
@@ -1003,8 +1284,8 @@ pub fn debug_tree(code: String, lang: String) -> Result<String> {
   let ast = crate::lower::lower(&code, Lang::parse(&lang)).map_err(Error::from_reason)?;
   let mut out = String::new();
 
-  for node in &ast.nodes {
-    let _ = writeln!(out, "{:?} {} {}", node.kind, node.start, node.end);
+  for (id, node) in ast.nodes.iter().enumerate() {
+    let _ = writeln!(out, "{:?} {} {}", node.kind, node.start, ast.end(id as u32));
   }
 
   Ok(out)
