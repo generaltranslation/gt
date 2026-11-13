@@ -1,4 +1,9 @@
 import { defineComponent, type PropType } from 'vue';
+import {
+  formatCurrency,
+  formatDateTime,
+  formatNum,
+} from 'generaltranslation/internal';
 import { useGTState } from '../runtime/state';
 import { asFragmentRoot, getFormatLocales, withGTMetadata } from './utils';
 
@@ -87,10 +92,10 @@ export const Num = /* @__PURE__ */ withGTMetadata<NumberFormatProps>(
         const number = typeof value === 'number' ? value : Number(value);
         const formatted = Number.isNaN(number)
           ? String(value)
-          : new Intl.NumberFormat(
-              getVariableFormatLocales(props, state),
-              props.options
-            ).format(number);
+          : formatNum(number, {
+              locales: getVariableFormatLocales(props, state),
+              ...props.options,
+            });
         return asFragmentRoot(formatted);
       };
     },
@@ -137,12 +142,10 @@ export const DateTime = /* @__PURE__ */ withGTMetadata<DateTimeProps>(
         const date = value instanceof Date ? value : new Date(value);
         const formatted = Number.isNaN(date.getTime())
           ? String(value)
-          : new Intl.DateTimeFormat(
-              getVariableFormatLocales(props, state),
-              props.options
-            )
-              .format(date)
-              .replace(/[\u200F\u202B\u202E]/g, '');
+          : formatDateTime(date, {
+              locales: getVariableFormatLocales(props, state),
+              ...props.options,
+            }).replace(/[\u200F\u202B\u202E]/g, '');
         return asFragmentRoot(formatted);
       };
     },
@@ -193,11 +196,10 @@ export const Currency = /* @__PURE__ */ withGTMetadata<CurrencyProps>(
         const number = typeof value === 'number' ? value : Number(value);
         const formatted = Number.isNaN(number)
           ? String(value)
-          : new Intl.NumberFormat(getVariableFormatLocales(props, state), {
+          : formatCurrency(number, props.currency, {
+              locales: getVariableFormatLocales(props, state),
               ...props.options,
-              currency: props.currency,
-              style: 'currency',
-            }).format(number);
+            });
         return asFragmentRoot(formatted);
       };
     },

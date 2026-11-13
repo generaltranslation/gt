@@ -879,6 +879,29 @@ describe('gt-vue formatting components', () => {
     );
   });
 
+  it('formats with Latin digits and the Gregorian calendar, as gt-react does', async () => {
+    const date = new Date(Date.UTC(2020, 4, 6, 12));
+    const Root = defineComponent({
+      setup() {
+        return () => [
+          h(Num, { value: 1234.5 }),
+          ' ',
+          h(DateTime, {
+            options: { dateStyle: 'short', timeZone: 'UTC' },
+            value: date,
+          }),
+        ];
+      },
+    });
+    const app = createSSRApp(Root).use(
+      createGT({ defaultLocale: 'en', locale: 'ar-EG' })
+    );
+
+    expect(stripFragmentMarkers(await renderToString(app))).toBe(
+      `${new Intl.NumberFormat('ar-EG', { numberingSystem: 'latn' }).format(1234.5)} ${new Intl.DateTimeFormat('ar-EG', { calendar: 'gregory', dateStyle: 'short', numberingSystem: 'latn', timeZone: 'UTC' }).format(date).replace(/[\u200F\u202B\u202E]/g, '')}`
+    );
+  });
+
   it('tries explicit, active, and default locales once while translating', () => {
     expect(getFormatLocales(['fr-CA', 'fr', 'en'], 'fr', 'en')).toEqual([
       'fr-CA',
