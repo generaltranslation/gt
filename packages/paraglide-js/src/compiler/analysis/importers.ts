@@ -29,6 +29,8 @@ import type { Scope } from './scope.js';
 
 /** An auto-imported name: what it stands for, and the node its call sites are indexed under. */
 export type GlobalExport = {
+  /** The name modules use it by. */
+  name: string;
   declaration: Node;
   file: string;
   exportName: string;
@@ -44,6 +46,8 @@ export type LoadedModules = {
   module(ref: ModuleRef): ModuleRecord | undefined;
   /** Every module with its links, in loading order: a file's scripts after its module. */
   links(): Iterable<{ ref: ModuleRef; links: Links }>;
+  /** The modules that may mention one of `names`; undefined if every module may. */
+  mentioning(names: ReadonlySet<string>): readonly ModuleRef[] | undefined;
   scopeOf(record: ModuleRecord): Scope;
   /** Changes whenever a module is added or removed. */
   generation(): number;
@@ -267,12 +271,31 @@ export class ImporterIndex {
         );
       });
 
-    const isUsableWithoutImport = globals.length > 0;
-    const modules = isUsableWithoutImport
-      ? [...dependents.loadingOrder.keys()].map(parseRefKey)
-      : importersOf(exporters, exportedAs, dependents);
+    const importers = importersOf(exporters, exportedAs, dependents);
+    const modules =
+      globals.length > 0
+        ? this.withMentions(importers, globals, dependents)
+        : importers;
 
     return { modules, globals, exporters, exportedAs };
+  }
+
+  /** `importers` and the modules that may use one of `globals` without importing it, in loading order. */
+  private withMentions(
+    importers: readonly ModuleRef[],
+    globals: readonly GlobalExport[],
+    { loadingOrder }: Dependents
+  ): ModuleRef[] {
+    const mentioning = this.modules.mentioning(
+      new Set(globals.map(({ name }) => name))
+    );
+    if (!mentioning) return [...loadingOrder.keys()].map(parseRefKey);
+
+    const keys = new Set([...importers, ...mentioning].map(refKey));
+
+    return [...loadingOrder.keys()]
+      .filter((key) => keys.has(key))
+      .map(parseRefKey);
   }
 
   /** The sites in `importer` that refer to `exported`; what they pass records `importer` in its resolution. */

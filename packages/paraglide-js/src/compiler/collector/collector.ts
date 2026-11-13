@@ -87,6 +87,7 @@ export class ContextCollector {
   /** What languages generated for the indexed files: the analysis parses a file again when it loads it. */
   private readonly generated = new Map<string, GeneratedModule>();
   private globals: readonly GlobalBinding[] = [];
+  private globalNames: ReadonlySet<string> = new Set();
   private readonly outdirDetector: OutdirDetector;
   private readonly outdirProjects: OutdirProjects;
   private readonly output: MetadataFiles;
@@ -220,7 +221,8 @@ export class ContextCollector {
     const result = await summarizeFile(
       file,
       this.settings.languages,
-      this.packages
+      this.packages,
+      this.globalNames
     );
     if (!result) return undefined;
 
@@ -281,9 +283,12 @@ export class ContextCollector {
     const sources = modules.filter(
       (file) => !this.moduleGraph.targetOf(file) && this.isAppSource(file)
     );
-    await this.indexer.indexPaths(sources);
 
+    // Known before any module is indexed: the index lists which modules use them.
     this.globals = globals;
+    this.globalNames = new Set(globals.map(({ name }) => name));
+
+    await this.indexer.indexPaths(sources);
   }
 
   /** The auto-imports of the options, then the detected ones; none if they are disabled. */

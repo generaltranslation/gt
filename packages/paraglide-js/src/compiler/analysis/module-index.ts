@@ -1,6 +1,7 @@
 import { specifierLinks, type SpecifierLinks } from './importers.js';
 import type { ModuleGraph, ParsedModule } from './module-graph.js';
 import type { ModuleSummary } from './module-store.js';
+import { forEachNode, type Node } from './ast.js';
 import { exportingStatements, loadedSpecifiers } from './module-syntax.js';
 
 /** What each module of a file loads and links: the file's module, then its scripts. */
@@ -8,6 +9,7 @@ export type ParsedSummary = Array<{
   specifiers: string[];
   links: SpecifierLinks;
   untrackedExports: string[];
+  globalNames: string[];
 }>;
 
 export type ModuleIndexerOptions = {
@@ -18,8 +20,16 @@ export type ModuleIndexerOptions = {
   summarize(file: string): Promise<ParsedSummary | undefined>;
 };
 
-/** Reads what `ModuleGraph.linkModule` reads of a module: no syntax tree is kept. */
-export function summarizeModule(parsed: ParsedModule): ParsedSummary {
+/**
+ * Reads what `ModuleGraph.linkModule` reads of a module: no syntax tree is
+ * kept. `globalNames` are the auto-imported names, of which each part lists
+ * those it has an identifier of: a module can use one only through such an
+ * identifier, so the others need not be searched for its uses.
+ */
+export function summarizeModule(
+  parsed: ParsedModule,
+  globalNames: ReadonlySet<string> = new Set()
+): ParsedSummary {
   const { scripts = [], ...module } = parsed;
 
   return [module, ...scripts].map((part) => {
@@ -33,6 +43,7 @@ export function summarizeModule(parsed: ParsedModule): ParsedSummary {
       links: specifierLinks(part.program),
       // Generated code can read a name through an object that stands for the module.
       untrackedExports: part.scopeObjects ? [] : untrackedExports(part.program),
+      globalNames: namesIn(part.program, globalNames),
     };
   });
 }
@@ -60,6 +71,27 @@ function untrackedExports(program: ParsedModule['program']): string[] {
   }
 
   return names;
+}
+
+/** Of `names`, those an identifier of `program` has. */
+function namesIn(
+  program: ParsedModule['program'],
+  names: ReadonlySet<string>
+): string[] {
+  if (names.size === 0) return [];
+
+  const found = new Set<string>();
+
+  forEachNode(program, (node: Node) => {
+    const { name } = node as { name?: unknown };
+    const isIdentifier =
+      node.type === 'Identifier' || node.type === 'JSXIdentifier';
+    if (isIdentifier && typeof name === 'string' && names.has(name)) {
+      found.add(name);
+    }
+  });
+
+  return [...found];
 }
 
 /**
@@ -130,16 +162,18 @@ export class ModuleIndexer {
     if (!parsed) return undefined;
 
     const parts = await Promise.all(
-      parsed.map(async ({ specifiers, links, untrackedExports }) => {
-        const files = await Promise.all(
-          specifiers.map((specifier) => resolve(specifier, file))
-        );
-        const resolved = specifiers.map(
-          (specifier, index) => [specifier, files[index]] as const
-        );
+      parsed.map(
+        async ({ specifiers, links, untrackedExports, globalNames }) => {
+          const files = await Promise.all(
+            specifiers.map((specifier) => resolve(specifier, file))
+          );
+          const resolved = specifiers.map(
+            (specifier, index) => [specifier, files[index]] as const
+          );
 
-        return { resolved, links, untrackedExports };
-      })
+          return { resolved, links, untrackedExports, globalNames };
+        }
+      )
     );
 
     return { file, parts };
