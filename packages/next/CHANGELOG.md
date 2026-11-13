@@ -1,5 +1,19 @@
 # gt-next
 
+## 12.0.0-samsara.7
+
+### Patch Changes
+
+- 27c26cd: From `main` (gt-next 11.4.21): the `withGTConfig` warning for a Next.js `i18n` mismatch lists the GT locales it compared, including the default locale (#2645).
+- Updated dependencies [27c26cd]
+- Updated dependencies [27c26cd]
+  - gt-i18n@2.0.0-samsara.7
+  - @generaltranslation/format@1.0.0-samsara.7
+  - gt-react@12.0.0-samsara.7
+  - @generaltranslation/react-core@12.0.0-samsara.7
+  - @generaltranslation/compiler@1.4.0-samsara.6
+  - generaltranslation@10.0.0-samsara.7
+
 ## 12.0.0-samsara.6
 
 ### Patch Changes

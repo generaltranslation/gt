@@ -1,5 +1,11 @@
 # gt-payload
 
+## 0.2.0-samsara.8
+
+### Patch Changes
+
+- generaltranslation@10.0.0-samsara.7
+
 ## 0.2.0-samsara.7
 
 ### Patch Changes

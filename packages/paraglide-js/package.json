@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/paraglide-js",
-  "version": "0.1.0",
+  "version": "0.2.0-samsara.0",
   "description": "Paraglide JS integration for General Translation. Collects the source-code context of Paraglide message usages, as a CLI or a library, without changing Paraglide.",
   "type": "module",
   "main": "./dist/src/index.js",

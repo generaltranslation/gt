@@ -1,5 +1,14 @@
 # @generaltranslation/format
 
+## 1.0.0-samsara.7
+
+### Patch Changes
+
+- 27c26cd: From `main` (`@generaltranslation/format` 0.1.10): configured locales are no longer revalidated on every `requiresTranslation` and `determineLocale` call when `customMapping` uses object entries with a `code`, which slowed server renders that look up many messages (#2718).
+- Updated dependencies [b1b9d26]
+- Updated dependencies [27c26cd]
+  - @generaltranslation/icu@0.2.0-samsara.5
+
 ## 1.0.0-samsara.6
 
 ### Minor Changes
