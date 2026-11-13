@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import type { JsxChildren } from 'generaltranslation/types';
-import { hashMessage } from 'gt-i18n/internal';
+import { hashContent } from 'gt-i18n/internal';
 import {
   Branch as ReactBranch,
   Currency as ReactCurrency,
@@ -957,7 +957,7 @@ function getReactLookupHash(
     params,
     sourceChildren,
   });
-  return hashMessage(prepared.sourceJsxChildren, prepared.targetOptions);
+  return hashContent(prepared.sourceJsxChildren, prepared.targetOptions);
 }
 
 function getReactWire(sourceChildren: React.ReactNode): JsxChildren {
