@@ -94,21 +94,37 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
       const constrained = vi.spyOn(process, 'constrainedMemory');
 
       constrained.mockReturnValue(0);
-      expect(analysisThreads(144_000_000)).toBe(17);
+      expect(analysisThreads(144_000_000, 16_000_000)).toBe(17);
 
       constrained.mockReturnValue(8_000_000_000);
-      expect(analysisThreads(144_000_000)).toBe(0);
+      expect(analysisThreads(144_000_000, 16_000_000)).toBe(0);
     });
+
+    test.each([
+      [16_000_000, 3],
+      [32_000_000, 2],
+    ])(
+      'fewer, the larger their budget: %i characters, %i threads',
+      async (budget, threads) => {
+        const { analysisThreads } = await builtPool();
+        vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', '');
+        vi.spyOn(os, 'availableParallelism').mockReturnValue(18);
+        vi.spyOn(os, 'totalmem').mockReturnValue(16_000_000_000);
+        vi.spyOn(process, 'constrainedMemory').mockReturnValue(0);
+
+        expect(analysisThreads(144_000_000, budget)).toBe(threads);
+      }
+    );
 
     test('PARAGLIDE_CONTEXT_THREADS, a whole number', async () => {
       const { analysisThreads } = await builtPool();
 
       vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', '3');
-      expect(analysisThreads(0)).toBe(3);
+      expect(analysisThreads(0, 0)).toBe(3);
 
       for (const invalid of ['0.5', '-1', 'Infinity', 'two']) {
         vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', invalid);
-        expect(() => analysisThreads(0)).toThrow(
+        expect(() => analysisThreads(0, 0)).toThrow(
           `PARAGLIDE_CONTEXT_THREADS is a number of threads, 0 or more; it is "${invalid}".`
         );
       }
@@ -126,6 +142,7 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
       summaries: [{ file, parts: null as never }],
       outdirs: [],
       globals: [],
+      budget: 0,
     };
     await expect(
       failing.analyze(broken, [file], async () => {})
@@ -156,7 +173,7 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
 
     // One thread: the second chunk is analyzed while the first file's usages fail.
     const pool = new AnalysisPool(1, root);
-    const index = { summaries: [], outdirs: [], globals: [] };
+    const index = { summaries: [], outdirs: [], globals: [], budget: 0 };
     try {
       await expect(
         pool.analyze(index, files, async (file) => {
