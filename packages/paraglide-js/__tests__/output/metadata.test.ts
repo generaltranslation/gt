@@ -49,8 +49,7 @@ const render = (
   existing: Record<string, unknown> = {}
 ) => {
   const sourceCode = sourceCodeByMessage(sourceFiles, {
-    ids: new Set(keys.map(({ id }) => id)),
-    inlangProject: PROJECT,
+    idsByProject: new Map([[PROJECT, new Set(keys.map(({ id }) => id))]]),
     radius: 1,
   });
 

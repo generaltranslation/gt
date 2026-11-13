@@ -200,6 +200,42 @@ test('several inlang projects and message files: each file gets the usages of it
   expect(await readMetadata(root)).toEqual({});
 });
 
+test('inlang projects that share a message file: its metadata file gets the usages of both', async () => {
+  const root = await writeProject('metadata-shared-file', {
+    ...filesIn('src/paraglide', await compileMessages(['greeting', 'login'])),
+    'project.inlang/settings.json': settings('./messages/{locale}.json'),
+    ...filesIn(
+      'src/admin/paraglide',
+      await compileMessages(['greeting', 'login'])
+    ),
+    'admin.inlang/settings.json': settings('./messages/{locale}.json'),
+    'messages/en.json': JSON.stringify({ greeting: 'Hi', login: 'Log in' }),
+    'src/app.ts': use('./paraglide/messages.js', 'greeting'),
+    'src/admin/panel.ts': use('./paraglide/messages.js', 'greeting', 'login'),
+  });
+  // Each outdir names the project it was compiled from.
+  for (const [outdir, project] of [
+    ['src/paraglide', 'project.inlang'],
+    ['src/admin/paraglide', 'admin.inlang'],
+  ] as const) {
+    await fs.writeFile(
+      path.join(root, outdir, 'README.md'),
+      `Compiled from: \`${path.join(root, project)}\`\n`
+    );
+  }
+
+  expect(await collect(root)).toEqual([]);
+
+  const metadata = await readMetadata(root);
+  expect(Object.keys(metadata.greeting?.sourceCode ?? {})).toEqual([
+    'src/admin/panel.ts',
+    'src/app.ts',
+  ]);
+  expect(Object.keys(metadata.login?.sourceCode ?? {})).toEqual([
+    'src/admin/panel.ts',
+  ]);
+});
+
 test('hand-written fields survive a rewrite; snippets of removed usages do not', async () => {
   const root = await writeProject('metadata-rewrite', {
     'src/a.ts': use('./paraglide/messages.js', 'greeting'),

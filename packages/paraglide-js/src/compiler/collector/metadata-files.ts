@@ -63,26 +63,47 @@ export class MetadataFiles {
   /** The projects are read anew for each write: message files change while the collector runs. */
   private async writeAll(): Promise<SkippedFile[]> {
     const projects = await readInlangProjects([...this.projects].sort());
+
+    // Projects can share a message file. Its metadata file is written once,
+    // with the usages of each: a write per project would replace the other's.
+    const sharing = new Map<string, [MessageFile, InlangProject[]]>();
+    for (const project of projects) {
+      for (const messageFile of project.messageFiles) {
+        const shared = sharing.get(messageFile.path);
+        if (shared) shared[1].push(project);
+        else sharing.set(messageFile.path, [messageFile, [project]]);
+      }
+    }
+
+    const sourceCode = new Map<string, SourceCodeByMessage>();
     const results = await Promise.all(
-      projects.flatMap((project) => this.writeProject(project))
+      [...sharing.values()].map(([messageFile, sharedBy]) => {
+        const key = sharedBy.map(({ directory }) => directory).join('\0');
+        let ofProjects = sourceCode.get(key);
+        if (!ofProjects) {
+          ofProjects = this.sourceCodeOf(sharedBy);
+          sourceCode.set(key, ofProjects);
+        }
+
+        return writeMetadata(messageFile, ofProjects);
+      })
     );
 
     return results.filter((skipped) => skipped !== undefined);
   }
 
-  /** One write per message file of the project. */
-  private writeProject(
-    project: InlangProject
-  ): Promise<SkippedFile | undefined>[] {
-    const sourceCode = sourceCodeByMessage([...this.entries.values()], {
-      ids: messageIds(project),
-      inlangProject: relativePath(this.projectRoot, project.directory),
+  private sourceCodeOf(
+    projects: readonly InlangProject[]
+  ): SourceCodeByMessage {
+    return sourceCodeByMessage([...this.entries.values()], {
+      idsByProject: new Map(
+        projects.map((project) => [
+          relativePath(this.projectRoot, project.directory),
+          messageIds(project),
+        ])
+      ),
       radius: this.radius,
     });
-
-    return project.messageFiles.map((messageFile) =>
-      writeMetadata(messageFile, sourceCode)
-    );
   }
 }
 

@@ -13,10 +13,11 @@ export type SourceCode = { before: string; target: string; after: string };
 export type SourceCodeByFile = Record<string, SourceCode[]>;
 
 export type SourceCodeOptions = {
-  /** The messages snippets are collected for. */
-  ids: ReadonlySet<string>;
-  /** Only usages of this project count; compared with `ParaglideUsage.inlangProject`. */
-  inlangProject: string;
+  /**
+   * The messages snippets are collected for, by inlang project. Only usages of
+   * these projects count; the key is compared with `ParaglideUsage.inlangProject`.
+   */
+  idsByProject: ReadonlyMap<string, ReadonlySet<string>>;
   /** Lines of context above and below each usage. */
   radius: number;
 };
@@ -26,6 +27,8 @@ type LocatedUsage = {
   file: string;
   lines: readonly string[];
   usage: ParaglideUsage;
+  /** The messages of the usage's project. */
+  ids: ReadonlySet<string>;
 };
 
 type MessageSnippet = { id: string; file: string; snippet: SourceCode };
@@ -70,11 +73,11 @@ export function sourceSnippet(
 
 function messageSnippets(
   sourceFiles: readonly FileUsages[],
-  { ids, inlangProject, radius }: SourceCodeOptions
+  { idsByProject, radius }: SourceCodeOptions
 ): MessageSnippet[] {
-  const usages = projectUsages(sourceFiles, inlangProject);
+  const usages = projectUsages(sourceFiles, idsByProject);
 
-  return usages.flatMap(({ file, lines, usage }) => {
+  return usages.flatMap(({ file, lines, usage, ids }) => {
     const named = namedMessages(usage, ids);
     if (named.length === 0) return [];
 
@@ -84,24 +87,30 @@ function messageSnippets(
   });
 }
 
-/** The project's usages, in an order that does not depend on the analysis. */
+/** The projects' usages, in an order that does not depend on the analysis. */
 function projectUsages(
   sourceFiles: readonly FileUsages[],
-  inlangProject: string
+  idsByProject: SourceCodeOptions['idsByProject']
 ): LocatedUsage[] {
   const sorted = [...sourceFiles].sort((a, b) => compareText(a.file, b.file));
 
   return sorted.flatMap(({ file, code, usages }) => {
-    const ofProject = usages.filter(
-      (usage) => usage.inlangProject === inlangProject
-    );
-    if (ofProject.length === 0) return [];
+    const ofProjects = usages.flatMap((usage) => {
+      const ids =
+        usage.inlangProject === undefined
+          ? undefined
+          : idsByProject.get(usage.inlangProject);
+      return ids ? [{ usage, ids }] : [];
+    });
+    if (ofProjects.length === 0) return [];
 
     const lines = code.split(/\r?\n/);
 
-    return ofProject
-      .sort((a, b) => a.start - b.start || a.end - b.end)
-      .map((usage) => ({ file, lines, usage }));
+    return ofProjects
+      .sort(
+        (a, b) => a.usage.start - b.usage.start || a.usage.end - b.usage.end
+      )
+      .map(({ usage, ids }) => ({ file, lines, usage, ids }));
   });
 }
 
