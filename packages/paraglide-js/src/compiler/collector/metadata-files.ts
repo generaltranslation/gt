@@ -72,6 +72,11 @@ export class MetadataFiles {
     return results.filter((skipped) => skipped !== undefined);
   }
 
+  /** Deletes the snippets kept for writing: see `SourceCodeCollector`. */
+  close(): void {
+    for (const snippets of this.snippets.values()) snippets.close();
+  }
+
   /** One write per message file of the project. */
   private writeProject(
     project: InlangProject

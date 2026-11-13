@@ -266,9 +266,14 @@ export class ContextCollector {
     }
   }
 
+  /** Writes the metadata files, once: the source code kept for them is deleted. */
   async write(): Promise<void> {
-    for (const { file, reason } of await this.output.write()) {
-      this.warn(`${this.relative(file)} was not updated: ${reason}`);
+    try {
+      for (const { file, reason } of await this.output.write()) {
+        this.warn(`${this.relative(file)} was not updated: ${reason}`);
+      }
+    } finally {
+      this.output.close();
     }
   }
 
