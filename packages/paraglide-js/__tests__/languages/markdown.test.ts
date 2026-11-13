@@ -7,12 +7,7 @@ import {
 } from '../../src/compiler/languages/language.js';
 import { parseSync } from 'oxc-parser';
 import { markdownLanguage } from '../../src/compiler/languages/markdown.js';
-import {
-  ADAPTER_FILES,
-  ADAPTER_TARGETS,
-  analyzeProject,
-  describeUsages,
-} from '../helpers/project.js';
+import { analyzeProject, describeUsages } from '../helpers/project.js';
 
 const file = '/app/src/docs/guide.md';
 const parse: ParseFunction = (file, code, lang) =>
@@ -20,10 +15,9 @@ const parse: ParseFunction = (file, code, lang) =>
 
 async function analyze(lines: string[]) {
   return analyzeProject(
-    { [file]: lines.join('\n'), ...ADAPTER_FILES },
+    { [file]: lines.join('\n') },
     {
       entry: file,
-      targets: ADAPTER_TARGETS,
       languages: [...defaultLanguages, markdownLanguage],
     }
   );
@@ -60,17 +54,13 @@ describe('Markdown (VitePress)', () => {
       'message:label:call 8',
       'message:heading:call 11',
       'message:inline:call 13',
-      'message:title:call 13 <span :title>',
-      'runtime:setLocale:call 15 <button @click>',
-      'adapter:ParaglideMessage:component 19',
-      'message:tos:reference 19 <paraglide-message :message>',
+      'message:title:call 13',
+      'message:tos:reference 19',
     ]);
     expect(usages[2]).toMatchObject({
-      expression: 'm.inline()',
       line: 13,
       column: 14,
-      scope: 'guide',
-      resolution: ['src/paraglide/messages.js'],
+      targetFile: '/app/src/paraglide/messages.js',
     });
   });
 
@@ -135,6 +125,6 @@ describe('Markdown (VitePress)', () => {
       ``,
       `<p :title="m.broken(">{{ m.ok() }}</p>`,
     ]);
-    expect(describeUsages(usages)).toEqual(['message:ok:call 5 <p>']);
+    expect(describeUsages(usages)).toEqual(['message:ok:call 5']);
   });
 });

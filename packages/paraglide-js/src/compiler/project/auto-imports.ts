@@ -80,7 +80,7 @@ export async function detectAutoImports(
     imports.push(...parseAutoImportDeclarations(code, file));
   }
 
-  return firstOfEachName(imports);
+  return imports;
 }
 
 /**
@@ -213,15 +213,4 @@ function importQuery(
   const isExport = qualifier.type === 'Identifier' && indexed === undefined;
 
   return isExport ? { specifier, exportName: qualifier.name } : undefined;
-}
-
-/** The first declaration of each name wins. */
-function firstOfEachName(imports: readonly AutoImport[]): AutoImport[] {
-  const byName = new Map<string, AutoImport>();
-
-  for (const autoImport of imports) {
-    if (!byName.has(autoImport.name)) byName.set(autoImport.name, autoImport);
-  }
-
-  return [...byName.values()];
 }

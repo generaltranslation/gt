@@ -1,7 +1,7 @@
 import type * as Astro2Tsx from '@astrojs/astro2tsx';
 import type * as AstroCompiler from '@astrojs/compiler';
 import type { EncodedSourceMap } from '@jridgewell/trace-mapping';
-import { jsxElements } from './jsx-elements.js';
+
 import type {
   GeneratedScript,
   LanguageContext,
@@ -40,13 +40,11 @@ export const astroLanguage: SourceLanguage = {
     const { code } = parseSkippingUnparsable(file, tsx.code, 'tsx', mappings, {
       skipCopiedText: true,
     });
-    const elements = jsxElements(file, code, 'tsx', mappings, source);
 
     return {
       code,
       lang: 'tsx',
       mappings,
-      elements,
       props: { members: ['Astro.props'] },
       scripts: tsx.bundledScripts.map((script) => clientScript(file, script)),
     };

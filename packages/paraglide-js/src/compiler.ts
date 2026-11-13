@@ -13,15 +13,9 @@ export type { AutoImportOptions } from './compiler/project/auto-imports.js';
 
 // `targets`: what counts as Paraglide.
 export {
-  adapterTargets,
   defaultTargets,
   defineTarget,
-  generatedFileTarget,
   messagesTarget,
-  packageTarget,
-  registryTarget,
-  runtimeTarget,
-  serverTarget,
   type ParaglideTarget,
   type SymbolSpec,
   type TargetFile,
@@ -54,7 +48,6 @@ export {
   mappingsFromVolar,
   type Mapping,
 } from './compiler/languages/mapping.js';
-export type { SourceElement } from './compiler/languages/elements.js';
 
 // `alias` and `bundlerConfigs`: where import aliases come from.
 export { defaultBundlerConfigs } from './compiler/bundler-configs/index.js';

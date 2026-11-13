@@ -3,8 +3,6 @@ import {
   defaultTargets,
   defineTarget,
   messagesTarget,
-  packageTarget,
-  runtimeTarget,
 } from '../../src/compiler/paraglide/targets.js';
 import {
   ENTRY,
@@ -127,13 +125,10 @@ describe('following re-exports', () => {
       ...barrel(barrelCode),
     });
     expect(summarize(usages)).toEqual([call]);
-    expect(usages[0]!.resolution).toEqual([
-      'src/i18n.ts',
-      'src/paraglide/messages.js',
-    ]);
+    expect(usages[0]!.targetFile).toBe('/app/src/paraglide/messages.js');
   });
 
-  test('export * as ns, default exports, and the resolution chain', async () => {
+  test('export * as ns and default exports', async () => {
     const usages = await analyzeProject({
       [ENTRY]: [
         `import { messages } from "./i18n/index.js";`,
@@ -145,9 +140,10 @@ describe('following re-exports', () => {
       '/app/src/i18n/inner.ts': `export * from "../paraglide/messages.js";`,
       '/app/src/greet.ts': `import { m } from "./paraglide/messages.js"; export default m.greeting;`,
     });
-    expect(usages.map((usage) => usage.resolution)).toEqual([
-      ['src/i18n/index.ts', 'src/i18n/inner.ts', 'src/paraglide/messages.js'],
-      ['src/greet.ts', 'src/paraglide/messages.js'],
+    expect(summarize(usages)).toEqual([call, call]);
+    expect(usages.map((usage) => usage.targetFile)).toEqual([
+      `${OUTDIR}/messages.js`,
+      `${OUTDIR}/messages.js`,
     ]);
   });
 
@@ -197,7 +193,7 @@ describe('bindings and scopes', () => {
           `}`,
         ].join('\n')
       )
-    ).toEqual([call, 'message:tos:method.parts']);
+    ).toEqual([call, 'message:tos:method']);
   });
 
   test('local declarations shadow imports', async () => {
@@ -275,96 +271,30 @@ describe('verification: specifiers that do not reach Paraglide', () => {
 });
 
 describe('targets', () => {
-  test('runtime usages', async () => {
-    expect(
-      await analyzeEntry(
-        [
-          `import { getLocale, setLocale, locales } from "./paraglide/runtime.js";`,
-          `import * as runtime from "./paraglide/runtime.js";`,
-          `setLocale(getLocale()); locales.map((l) => l); runtime.localizeHref("/");`,
-        ].join('\n')
-      )
-    ).toEqual([
-      'runtime:setLocale:call',
-      'runtime:getLocale:call',
-      'runtime:locales:reference',
-      'runtime:localizeHref:call',
-    ]);
-  });
-
-  test('restricting targets', async () => {
+  test('only messages are usages by default', async () => {
     expect(
       await analyzeEntry(
         [
           `import { m } from "./paraglide/messages.js";`,
-          `import { getLocale } from "./paraglide/runtime.js";`,
-          `m.greeting(getLocale());`,
-        ].join('\n'),
-        {},
-        { targets: [messagesTarget] }
-      )
-    ).toEqual([call]);
-  });
-
-  test('custom package target used as a component', async () => {
-    expect(
-      await analyzeEntry(
-        [
+          `import { getLocale, setLocale } from "./paraglide/runtime.js";`,
           `import { ParaglideMessage } from "@inlang/paraglide-js-react";`,
-          `import { m } from "./paraglide/messages.js";`,
+          `setLocale(getLocale()); m.greeting(getLocale());`,
           `export const Tos = () => <ParaglideMessage message={m.tos} />;`,
         ].join('\n'),
-        {
-          '/app/node_modules/@inlang/paraglide-js-react/index.js': 'export {}',
-        },
-        {
-          targets: [
-            messagesTarget,
-            runtimeTarget,
-            packageTarget('react-adapter', '@inlang/paraglide-js-react'),
-          ],
-        }
+        { '/app/node_modules/@inlang/paraglide-js-react/index.js': 'export {}' }
       )
-    ).toEqual([
-      'react-adapter:ParaglideMessage:component',
-      'message:tos:reference',
-    ]);
+    ).toEqual([call, 'message:tos:reference']);
   });
 
   test('a target after defaultTargets relabels a built-in one', async () => {
+    const relabeled = defineTarget({ ...messagesTarget, name: 'relabeled' });
     expect(
       await analyzeEntry(
-        `import { Message } from "@inlang/paraglide-js-react";\nexport const A = () => <Message />;`,
-        {
-          '/app/node_modules/@inlang/paraglide-js-react/index.js': 'export {}',
-        },
-        {
-          targets: [
-            ...defaultTargets,
-            packageTarget('react-adapter', '@inlang/paraglide-js-react'),
-          ],
-        }
+        `import { m } from "./paraglide/messages.js"; m.greeting();`,
+        {},
+        { targets: [...defaultTargets, relabeled] }
       )
-    ).toEqual(['react-adapter:Message:component']);
-  });
-
-  test("a dependency's resolution starts at node_modules, without pnpm's store path", async () => {
-    // As pnpm resolves it: the real path in the store.
-    const installed =
-      '/app/node_modules/.pnpm/paraglide-adapter@1.0.0_abc/node_modules/paraglide-adapter/index.js';
-    const [usage] = await analyzeProject(
-      {
-        [ENTRY]: `import { ParaglideMessage } from "paraglide-adapter";\nexport const A = () => <ParaglideMessage />;\n`,
-        [installed]: 'export {}',
-      },
-      {
-        targets: [packageTarget('adapter', 'paraglide-adapter')],
-        aliases: { 'paraglide-adapter': installed },
-      }
-    );
-    expect(usage!.resolution).toEqual([
-      'node_modules/paraglide-adapter/index.js',
-    ]);
+    ).toEqual(['relabeled:greeting:call']);
   });
 });
 
@@ -386,11 +316,10 @@ describe('multiple Paraglide projects', () => {
       outdirs: [OUTDIR, UI_OUTDIR],
     });
     expect(
-      usages.map(({ target, name, resolution }) => [target, name, resolution])
+      usages.map(({ target, name, targetFile }) => [target, name, targetFile])
     ).toEqual([
-      ['message', 'greeting', ['src/paraglide/messages.js']],
-      ['message', 'save_button', ['packages/ui/paraglide/messages.js']],
-      ['runtime', 'getLocale', ['packages/ui/paraglide/runtime.js']],
+      ['message', 'greeting', '/app/src/paraglide/messages.js'],
+      ['message', 'save_button', '/app/packages/ui/paraglide/messages.js'],
     ]);
   });
 
@@ -418,10 +347,10 @@ describe('multiple Paraglide projects', () => {
       expect(
         usages
           .filter(({ kind }) => kind === 'call')
-          .map(({ name, resolution }) => [name, resolution])
+          .map(({ name, targetFile }) => [name, targetFile])
       ).toEqual([
-        ['greeting', ['src/paraglide/messages.js']],
-        ['greeting', ['packages/ui/paraglide/messages.js']],
+        ['greeting', '/app/src/paraglide/messages.js'],
+        ['greeting', '/app/packages/ui/paraglide/messages.js'],
       ]);
     }
   );
@@ -455,26 +384,5 @@ describe('multiple Paraglide projects', () => {
       { outdirs: [OUTDIR, nested] }
     );
     expect(summarize(usages)).toEqual([call]);
-  });
-});
-
-describe("Paraglide's framework adapters are targets by default", () => {
-  test.each([
-    [
-      '@inlang/paraglide-js-react',
-      `import { Message } from "@inlang/paraglide-js-react"; export const A = () => <Message message={m.tos} />;`,
-    ],
-    [
-      '@inlang/paraglide-sveltekit',
-      `import { i18n } from "@inlang/paraglide-sveltekit"; i18n.resolveRoute("/");`,
-    ],
-  ])('%s', async (packageName, code) => {
-    const usages = await analyzeProject({
-      [ENTRY]: `import { m } from "./paraglide/messages.js";\n${code}`,
-      [`/app/node_modules/${packageName}/index.js`]: 'export {}',
-    });
-    expect(summarize(usages)).toContainEqual(
-      expect.stringMatching(new RegExp(`^${packageName}:`))
-    );
   });
 });

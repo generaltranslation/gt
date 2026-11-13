@@ -3,6 +3,7 @@ import path from 'node:path';
 import { parseSync } from 'oxc-parser';
 import { moduleExportName, type ESTree } from '../analysis/ast.js';
 import { declaredNames } from '../analysis/module-syntax.js';
+import { escapeRegExp } from '../utils/regexp.js';
 
 type ModuleBody = ReadonlyArray<ESTree.Statement | ESTree.Directive>;
 
@@ -37,16 +38,9 @@ export async function readCatalog(
   return exports.names;
 }
 
-/** Whether `name`, a message id or a dynamic pattern where `*` is any text, matches `id`. */
-export function matchesPattern(pattern: string, id: string): boolean {
-  return patternMatcher(pattern)(id);
-}
-
-/** `matchesPattern` for one pattern and many ids: the pattern is compiled once. */
+/** Whether ids match `pattern`, a message id or a dynamic pattern where `*` is any text. */
 export function patternMatcher(pattern: string): (id: string) => boolean {
-  const parts = pattern
-    .split('*')
-    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const parts = pattern.split('*').map(escapeRegExp);
   const expression = new RegExp(`^${parts.join('[\\s\\S]*')}$`);
 
   return (id) => expression.test(id);
