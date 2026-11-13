@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
+import v8 from 'node:v8';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { ModuleSummary } from '../../src/compiler/analysis/module-store.js';
 import {
@@ -104,6 +105,11 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
   });
 
   describe('how many', () => {
+    beforeEach(() => {
+      // A heap flag the tests run with would size the threads.
+      vi.stubEnv('NODE_OPTIONS', '');
+    });
+
     afterEach(() => {
       vi.restoreAllMocks();
       vi.unstubAllEnvs();
@@ -117,27 +123,15 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
       const constrained = vi.spyOn(process, 'constrainedMemory');
 
       constrained.mockReturnValue(0);
-      expect(analysisThreads(144_000_000, 16_000_000)).toBe(17);
+      expect(analysisThreads(144_000_000)).toBe(17);
 
-      constrained.mockReturnValue(8_000_000_000);
-      expect(analysisThreads(144_000_000, 16_000_000)).toBe(0);
+      // Half of it, for threads of 1.5 GB of heap and 0.5 GB besides.
+      constrained.mockReturnValue(8 * 1024 ** 3);
+      expect(analysisThreads(144_000_000)).toBe(2);
+
+      constrained.mockReturnValue(4 * 1024 ** 3);
+      expect(analysisThreads(144_000_000)).toBe(0);
     });
-
-    test.each([
-      [16_000_000, 3],
-      [32_000_000, 2],
-    ])(
-      'fewer, the larger their budget: %i characters, %i threads',
-      async (budget, threads) => {
-        const { analysisThreads } = await builtPool();
-        vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', '');
-        vi.spyOn(os, 'availableParallelism').mockReturnValue(18);
-        vi.spyOn(os, 'totalmem').mockReturnValue(16_000_000_000);
-        vi.spyOn(process, 'constrainedMemory').mockReturnValue(0);
-
-        expect(analysisThreads(144_000_000, budget)).toBe(threads);
-      }
-    );
 
     test('as many as PARAGLIDE_CONTEXT_MEMORY_MB holds, a number of megabytes', async () => {
       const { analysisThreads } = await builtPool();
@@ -146,25 +140,60 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
       vi.spyOn(os, 'totalmem').mockReturnValue(128_000_000_000);
 
       vi.stubEnv('PARAGLIDE_CONTEXT_MEMORY_MB', String(8 * 1024));
-      expect(analysisThreads(144_000_000, 16_000_000)).toBe(0);
+      expect(analysisThreads(144_000_000)).toBe(2);
 
       for (const invalid of ['0', '-1', 'Infinity', 'eight']) {
         vi.stubEnv('PARAGLIDE_CONTEXT_MEMORY_MB', invalid);
-        expect(() => analysisThreads(144_000_000, 16_000_000)).toThrow(
+        expect(() => analysisThreads(144_000_000)).toThrow(
           `PARAGLIDE_CONTEXT_MEMORY_MB is a number of megabytes, more than 0; it is "${invalid}".`
         );
       }
+    });
+
+    test("a thread's module budget is sized by its heap, not the main thread's", async () => {
+      const { threadBudget, THREAD_HEAP_MB } = await builtPool();
+
+      // 10,000-line files: the heap, not the files, sets it.
+      expect(threadBudget(280_000)).toBeCloseTo(
+        (THREAD_HEAP_MB * 1024 * 1024) / 3.5 / 40
+      );
+    });
+
+    test('by the heap a Node flag, e.g. in NODE_OPTIONS, gives every thread over its cap', async () => {
+      const { analysisThreads, threadBudget } = await builtPool();
+      vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', '');
+      vi.spyOn(os, 'availableParallelism').mockReturnValue(18);
+      vi.spyOn(os, 'totalmem').mockReturnValue(128_000_000_000);
+      vi.spyOn(process, 'constrainedMemory').mockReturnValue(0);
+      const statistics = v8.getHeapStatistics();
+      const heap = vi.spyOn(v8, 'getHeapStatistics');
+
+      // Half of 128 GB, for threads of 8 GB of heap and 0.5 GB besides.
+      vi.stubEnv('NODE_OPTIONS', '--max-old-space-size=8192');
+      heap.mockReturnValue({
+        ...statistics,
+        heap_size_limit: 8192 * 1024 ** 2,
+      });
+      expect(analysisThreads(144_000_000)).toBe(7);
+
+      // 512 MB of heap: a module budget for it, not for 1.5 GB.
+      vi.stubEnv(
+        'NODE_OPTIONS',
+        '--require ./setup.js --max_old_space_size=512'
+      );
+      heap.mockReturnValue({ ...statistics, heap_size_limit: 512 * 1024 ** 2 });
+      expect(threadBudget(280_000)).toBeCloseTo((512 * 1024 ** 2) / 3.5 / 40);
     });
 
     test('PARAGLIDE_CONTEXT_THREADS, a whole number', async () => {
       const { analysisThreads } = await builtPool();
 
       vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', '3');
-      expect(analysisThreads(0, 0)).toBe(3);
+      expect(analysisThreads(0)).toBe(3);
 
       for (const invalid of ['0.5', '-1', 'Infinity', 'two']) {
         vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', invalid);
-        expect(() => analysisThreads(0, 0)).toThrow(
+        expect(() => analysisThreads(0)).toThrow(
           `PARAGLIDE_CONTEXT_THREADS is a number of threads, 0 or more; it is "${invalid}".`
         );
       }

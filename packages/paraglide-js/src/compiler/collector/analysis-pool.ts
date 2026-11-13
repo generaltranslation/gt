@@ -7,7 +7,11 @@ import type { GlobalBinding } from '../analysis/module-graph.js';
 import type { ModuleSummary } from '../analysis/module-store.js';
 import type { ParaglideUsage } from '../analysis/types.js';
 import { MAX_CONCURRENT_READS } from '../utils/read-file.js';
-import type { GeneratedBytes, SummaryResult } from './module-reader.js';
+import {
+  analysisBudget,
+  type GeneratedBytes,
+  type SummaryResult,
+} from './module-reader.js';
 
 export type AnalysisWorkerData = {
   projectRoot: string;
@@ -68,21 +72,28 @@ const MANY_REFERRERS = 1000;
 /** A thread is worth starting for this much code, in bytes: it takes longer to start than to analyze less. */
 const CODE_PER_THREAD = 8_000_000;
 
-/** What a thread takes besides its modules, about. */
-const THREAD_MEMORY = 1_500_000_000;
+const MB = 1024 * 1024;
 
-/** What a thread takes per character of its budget, about: syntax trees, their index, and garbage. */
-const MEMORY_PER_BUDGET_CHARACTER = 60;
+/**
+ * The heap an analysis thread may grow to, in MB. Without a limit, a thread
+ * grows its heap to the process's default, 4 GB on a large machine, mostly
+ * with garbage it has not collected yet. Its modules take a share of it: see
+ * `threadBudget`.
+ */
+export const THREAD_HEAP_MB = 1536;
+
+/** What a thread takes besides its heap, about: the parser's buffers, native memory, code. */
+const THREAD_OVERHEAD = 512 * MB;
 
 const WORKER_URL = new URL('./analysis-worker.js', import.meta.url);
 
 /**
- * How many threads analyze `codeSize` bytes of files, each with `budget`:
- * none for a small project, else one per core but the main thread's, as many
- * as half the memory holds. `PARAGLIDE_CONTEXT_THREADS` sets it, e.g. to 0 to
- * analyze in the main thread.
+ * How many threads analyze `codeSize` bytes of files: none for a small
+ * project, else one per core but the main thread's, as many as half the
+ * memory holds. `PARAGLIDE_CONTEXT_THREADS` sets it, e.g. to 0 to analyze in
+ * the main thread.
  */
-export function analysisThreads(codeSize: number, budget: number): number {
+export function analysisThreads(codeSize: number): number {
   const configured = process.env.PARAGLIDE_CONTEXT_THREADS;
   if (configured !== undefined && configured !== '') {
     const threads = Number(configured);
@@ -100,15 +111,29 @@ export function analysisThreads(codeSize: number, budget: number): number {
 
   const threads = Math.min(
     os.availableParallelism() - 1,
-    Math.floor(
-      availableMemory() /
-        2 /
-        (THREAD_MEMORY + budget * MEMORY_PER_BUDGET_CHARACTER)
-    ),
+    Math.floor(availableMemory() / 2 / (threadHeap() + THREAD_OVERHEAD)),
     Math.floor(codeSize / CODE_PER_THREAD)
   );
 
   return threads >= 2 ? threads : 0;
+}
+
+/** See `analysisBudget`: for a thread's heap, of files of `averageFileSize` characters. */
+export function threadBudget(averageFileSize: number): number {
+  return analysisBudget(averageFileSize, undefined, threadHeap());
+}
+
+/**
+ * The heap a thread has, in bytes. A heap flag of Node's, e.g.
+ * `--max-old-space-size` in `NODE_OPTIONS`, sets the heap of every thread of
+ * the process, over the limit a thread is started with.
+ */
+function threadHeap(): number {
+  const flags = [...process.execArgv, process.env.NODE_OPTIONS].join(' ');
+
+  return /--max[-_](old[-_]space|heap)[-_]size/.test(flags)
+    ? v8.getHeapStatistics().heap_size_limit
+    : THREAD_HEAP_MB * MB;
 }
 
 /**
@@ -126,7 +151,7 @@ export function availableMemory(): number {
       );
     }
 
-    return megabytes * 1024 * 1024;
+    return megabytes * MB;
   }
 
   const total = os.totalmem();
@@ -160,7 +185,12 @@ export class AnalysisPool {
     try {
       for (let started = 0; started < threads; started++) {
         this.workers.push(
-          new PoolWorker(new Worker(WORKER_URL, { workerData }))
+          new PoolWorker(
+            new Worker(WORKER_URL, {
+              workerData,
+              resourceLimits: { maxOldGenerationSizeMb: THREAD_HEAP_MB },
+            })
+          )
         );
       }
     } catch (error) {
