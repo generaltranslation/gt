@@ -102,10 +102,20 @@ test('a temporary file that was only partly written is removed', async () => {
   const { root, files, written } = await metadataFiles(
     'metadata-partial-write'
   );
-  const writeFile = fs.writeFile.bind(fs);
-  vi.spyOn(fs, 'writeFile').mockImplementationOnce(async (file) => {
-    await writeFile(file, '{ "greeting": ');
-    throw failure('ENOSPC');
+  const open = fs.open.bind(fs);
+  let isFirstWrite = true;
+  vi.spyOn(fs, 'open').mockImplementation(async (file, flags) => {
+    const handle = await open(file, flags);
+    if (flags !== 'w' || !isFirstWrite) return handle;
+
+    isFirstWrite = false;
+    const write = handle.write.bind(handle);
+    handle.write = (async () => {
+      await write('{ "greeting": ');
+      throw failure('ENOSPC');
+    }) as typeof handle.write;
+
+    return handle;
   });
 
   await expect(files.write()).rejects.toMatchObject({ code: 'ENOSPC' });
@@ -125,11 +135,11 @@ test('a metadata file that cannot be read is left alone, with a warning', async 
   });
   await fs.writeFile(file, handWritten);
 
-  const readFile = fs.readFile.bind(fs) as (
-    ...args: unknown[]
-  ) => Promise<never>;
-  vi.spyOn(fs, 'readFile').mockImplementation((...args: unknown[]) =>
-    args[0] === file ? Promise.reject(failure('EACCES')) : readFile(...args)
+  const open = fs.open.bind(fs);
+  vi.spyOn(fs, 'open').mockImplementation((path, flags) =>
+    path === file && flags === 'r'
+      ? Promise.reject(failure('EACCES'))
+      : open(path, flags)
   );
   expect(await files.write()).toEqual([
     { file, reason: 'it could not be read (EACCES)' },

@@ -8,7 +8,7 @@ import {
   sourceCodeByMessage,
   type SourceCodeByFile,
 } from '../output/source-code.js';
-import { parseJsonObject } from '../utils/json.js';
+import { jsonChunks, parseJsonBytes } from '../utils/json.js';
 import { relativePath } from '../utils/paths.js';
 import { compareText } from '../utils/sort.js';
 
@@ -18,7 +18,10 @@ export type SkippedFile = { file: string; reason: string };
 type SourceCodeByMessage = ReadonlyMap<string, SourceCodeByFile>;
 
 /** What a metadata file that does not exist counts as, so that none is created for nothing. */
-const NO_METADATA = '{}\n';
+const NO_METADATA = Buffer.from('{}\n');
+
+/** Bytes written at once. */
+const WRITE_SIZE = 1024 * 1024;
 
 /**
  * The metadata files of a project's messages: holds the usages of each
@@ -86,7 +89,8 @@ async function writeMetadata(
     return { file, reason: `it could not be read (${current.unreadable})` };
   }
 
-  const existing = parseJsonObject(current.content);
+  // Only the hand-written fields of the current file are kept.
+  const existing = parseJsonBytes(current.content, 'sourceCode');
   if (!existing) {
     return { file, reason: 'it is not a JSON object; fix or delete it' };
   }
@@ -96,10 +100,11 @@ async function writeMetadata(
     sourceCode,
     existing,
   });
-  const content = `${JSON.stringify(metadata, null, 2)}\n`;
-  if (content === current.content) return undefined;
+  // A large project's JSON is longer than the longest string V8 holds.
+  const content = () => batched(jsonChunks(metadata), '\n');
+  if (isSameContent(content(), current.content)) return undefined;
 
-  await writeAtomically(file, content);
+  await writeAtomically(file, content());
 
   return undefined;
 }
@@ -107,9 +112,9 @@ async function writeMetadata(
 /** Only a file that does not exist counts as empty: one that cannot be read may hold hand-written fields. */
 async function readMetadata(
   file: string
-): Promise<{ content: string } | { unreadable: string }> {
+): Promise<{ content: Buffer } | { unreadable: string }> {
   try {
-    return { content: await fsp.readFile(file, 'utf8') };
+    return { content: await readBytes(file) };
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
     if (code === 'ENOENT') return { content: NO_METADATA };
@@ -118,12 +123,77 @@ async function readMetadata(
   }
 }
 
-async function writeAtomically(file: string, content: string): Promise<void> {
+/** A file's bytes, read in pieces: `readFile` refuses files of 2 GB and more. */
+async function readBytes(file: string): Promise<Buffer> {
+  const handle = await fsp.open(file, 'r');
+
+  try {
+    const { size } = await handle.stat();
+    const bytes = Buffer.allocUnsafe(size);
+    let read = 0;
+
+    while (read < size) {
+      const length = Math.min(WRITE_SIZE * 64, size - read);
+      const { bytesRead } = await handle.read(bytes, read, length, read);
+      if (bytesRead === 0) break;
+      read += bytesRead;
+    }
+
+    return bytes.subarray(0, read);
+  } finally {
+    await handle.close();
+  }
+}
+
+/** `chunks`, then `end`, joined into pieces of about `WRITE_SIZE` bytes. */
+function* batched(chunks: Iterable<string>, end: string): Generator<Buffer> {
+  let pending: Buffer[] = [];
+  let size = 0;
+
+  for (const chunk of chunks) {
+    const bytes = Buffer.from(chunk);
+    pending.push(bytes);
+    size += bytes.length;
+    if (size < WRITE_SIZE) continue;
+
+    yield Buffer.concat(pending, size);
+    pending = [];
+    size = 0;
+  }
+
+  pending.push(Buffer.from(end));
+  yield Buffer.concat(pending);
+}
+
+function isSameContent(chunks: Iterable<Buffer>, current: Buffer): boolean {
+  let offset = 0;
+
+  for (const bytes of chunks) {
+    const end = offset + bytes.length;
+    if (end > current.length || !bytes.equals(current.subarray(offset, end))) {
+      return false;
+    }
+
+    offset = end;
+  }
+
+  return offset === current.length;
+}
+
+async function writeAtomically(
+  file: string,
+  chunks: Iterable<Buffer>
+): Promise<void> {
   // A unique name: other processes may write the same file.
   const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
 
   try {
-    await fsp.writeFile(temporary, content);
+    const handle = await fsp.open(temporary, 'w');
+    try {
+      for (const chunk of chunks) await handle.write(chunk);
+    } finally {
+      await handle.close();
+    }
     await fsp.rename(temporary, file);
   } catch (error) {
     // The failed write is what is reported, not a failed cleanup.
