@@ -204,7 +204,6 @@ async function analyzeIndexed(
     if (file === entry) continue;
 
     analyzeModule(graph, file);
-    graph.trim();
   }
 
   return analyzeModule(graph, entry);

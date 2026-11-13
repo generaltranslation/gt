@@ -159,17 +159,6 @@ export class ModuleGraph {
     this.generation++;
   }
 
-  /**
-   * Of an indexed graph, unloads the modules read least recently, beyond its
-   * budget. Nothing read since the last call may be in use when it is called.
-   */
-  trim(): void {
-    if (!(this.records instanceof IndexedRecords)) return;
-
-    // What was found through the unloaded modules holds their nodes.
-    if (this.records.trim()) this.importers.clear();
-  }
-
   get outdirs(): readonly string[] {
     return this.knownOutdirs;
   }
