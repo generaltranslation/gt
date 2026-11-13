@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { hashMessage } from '../hashMessage';
+import { hashContent } from '../hashContent';
 
-describe('hashMessage', () => {
+describe('hashContent', () => {
   // ===== REGRESSION ===== //
 
   it('produces consistent hashes for same input', () => {
-    const hash1 = hashMessage('Hello {name}!', {
+    const hash1 = hashContent('Hello {name}!', {
       $format: 'ICU',
       $context: 'greeting',
     });
-    const hash2 = hashMessage('Hello {name}!', {
+    const hash2 = hashContent('Hello {name}!', {
       $format: 'ICU',
       $context: 'greeting',
     });
@@ -22,8 +22,8 @@ describe('hashMessage', () => {
   // ===== NEW BEHAVIOR ===== //
 
   it('applies indexVars only for ICU format (ICU vs STRING hash differs)', () => {
-    const icuHash = hashMessage('Hello {name}!', { $format: 'ICU' });
-    const stringHash = hashMessage('Hello {name}!', { $format: 'STRING' });
+    const icuHash = hashContent('Hello {name}!', { $format: 'ICU' });
+    const stringHash = hashContent('Hello {name}!', { $format: 'STRING' });
 
     // ICU format applies indexVars() which transforms {name} → {0}
     // STRING format passes the message as-is
@@ -33,7 +33,7 @@ describe('hashMessage', () => {
 
   it('uses an explicit hash when provided', () => {
     expect(
-      hashMessage('Hello {name}!', {
+      hashContent('Hello {name}!', {
         $format: 'ICU',
         $_hash: 'precomputed-hash',
       })
@@ -42,7 +42,7 @@ describe('hashMessage', () => {
 
   it('uses an explicit empty hash when provided', () => {
     expect(
-      hashMessage('Hello {name}!', {
+      hashContent('Hello {name}!', {
         $format: 'ICU',
         $_hash: '',
       })
@@ -50,11 +50,11 @@ describe('hashMessage', () => {
   });
 
   it('does not include custom id in calculated hashes', () => {
-    const hash1 = hashMessage('Hello {name}!', {
+    const hash1 = hashContent('Hello {name}!', {
       $format: 'ICU',
       $id: 'first',
     });
-    const hash2 = hashMessage('Hello {name}!', {
+    const hash2 = hashContent('Hello {name}!', {
       $format: 'ICU',
       $id: 'second',
     });

@@ -10,7 +10,7 @@ import {
 import { createInterpolationFailureMessage } from '../utils/messages';
 import logger from '../../logs/logger';
 import { extractVariables } from '../../utils/extractVariables';
-import { hashMessage } from '../../utils/hashMessage';
+import { hashContent } from '../../utils/hashContent';
 import { RegisterableMessages } from '../types/message';
 import { encodeMsg } from './encodeMsg';
 import { msgString } from './msgString';
@@ -95,7 +95,7 @@ export function msg(
   const $_source = message;
   const $_hash =
     options.$_hash ||
-    hashMessage(message, {
+    hashContent(message, {
       $format: 'ICU',
       ...options,
     });

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { I18nCache } from '../I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
-import { hashMessage } from '../../utils/hashMessage';
+import { hashContent } from '../../utils/hashContent';
 import type { LookupOptions } from '../../translation-functions/types/options';
 
 /**
@@ -18,7 +18,7 @@ const lookupOptions: LookupOptions = {
   $format: 'ICU',
   $context: 'greeting',
 };
-const expectedHash = hashMessage(message, lookupOptions);
+const expectedHash = hashContent(message, lookupOptions);
 const translatedString = 'Bonjour {name} !';
 
 // Characterized default: locale caches expire after 60 seconds.
@@ -242,7 +242,7 @@ describe('I18nCache expiry contract', () => {
   it('deduplicates concurrent runtime-translation misses for the same message', async () => {
     const unknownMessage = 'Unknown message';
     const unknownOptions: LookupOptions = { $format: 'ICU' };
-    const unknownHash = hashMessage(unknownMessage, unknownOptions);
+    const unknownHash = hashContent(unknownMessage, unknownOptions);
     const translateManySpy = vi
       .spyOn(GTRuntime.prototype, 'translateMany')
       .mockResolvedValue({

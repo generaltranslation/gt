@@ -8,7 +8,7 @@ export type {
   TFunctionType,
 } from './translation-functions/types/functions';
 export type { RegisterableMessages } from './translation-functions/types/message';
-export type { Message } from './translation-functions/internal/getGT';
+export type { RegisteredMessage } from './translation-functions/internal/getGT';
 export type {
   TranslationVariables,
   GTTranslationOptions,

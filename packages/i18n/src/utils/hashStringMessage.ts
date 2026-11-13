@@ -6,7 +6,7 @@ import type { GTTranslationOptions } from '../translation-functions/types/option
  *
  * Keeping STRING metadata normalization in this dependency-light helper lets
  * framework runtimes share the same persisted catalog-key contract without
- * importing the ICU message parser used by {@link hashMessage}.
+ * importing the ICU message parser used by {@link hashContent}.
  *
  * @param message - Literal source text. Braces are not interpreted.
  * @param options - Optional precomputed hash and source metadata.

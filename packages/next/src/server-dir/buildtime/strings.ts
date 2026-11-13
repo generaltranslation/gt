@@ -5,13 +5,13 @@ import {
   getTranslationsInternal,
 } from 'gt-i18n/internal';
 import type {
-  Message,
+  RegisteredMessage,
   SyncResolutionFunctionWithFallback,
 } from 'gt-i18n/types';
 import { getRequestConditions } from '../../request/getRequestConditions';
 
 export async function getGT(
-  _messages?: Message[]
+  _messages?: RegisteredMessage[]
 ): Promise<SyncResolutionFunctionWithFallback> {
   const conditions = await getRequestConditions();
   return getGTInternal(
@@ -41,7 +41,7 @@ export async function getTranslations(rootId?: string) {
 }
 
 export function useGT(
-  _messages?: Message[]
+  _messages?: RegisteredMessage[]
 ): SyncResolutionFunctionWithFallback {
   return use(getGT(_messages));
 }

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { I18nCache } from '../I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
-import { hashMessage } from '../../utils/hashMessage';
+import { hashContent } from '../../utils/hashContent';
 import type { LookupOptions } from '../../translation-functions/types/options';
 
 /**
@@ -21,7 +21,7 @@ const lookupOptions: LookupOptions = {
   $format: 'ICU',
   $context: 'greeting',
 };
-const expectedHash = hashMessage(message, lookupOptions);
+const expectedHash = hashContent(message, lookupOptions);
 const translatedString = 'Bonjour {name} !';
 const invalidLocale = 'not a locale!!';
 

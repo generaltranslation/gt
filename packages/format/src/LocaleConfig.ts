@@ -310,16 +310,16 @@ export class LocaleConfig {
     tree: MessageTree,
     targetLocale: string | undefined,
     options: WithLocales<{
-      variables: MessageValues<unknown>;
+      values: MessageValues<unknown>;
       formats: FormatMessageTreeOptions['formats'];
       timeZone?: string;
     }>
   ): unknown {
-    const { locales, variables, formats, timeZone = this.timeZone } = options;
+    const { locales, values, formats, timeZone = this.timeZone } = options;
     return formatMessageTree<unknown>(
       tree,
       this.getFormattingLocales(targetLocale, locales),
-      variables,
+      values,
       { formats, timeZone }
     );
   }

@@ -2,7 +2,7 @@ import { prepareT } from '@generaltranslation/react-core/components-rsc';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { hashSource } from 'generaltranslation/id';
 import type { JsxChildren } from 'generaltranslation/types';
-import { hashMessage } from 'gt-i18n/internal';
+import { hashContent } from 'gt-i18n/internal';
 import * as React from 'react';
 import * as Vue from 'vue';
 import {
@@ -518,7 +518,7 @@ function getReactLookupHash(
     params,
     sourceChildren,
   });
-  return hashMessage(prepared.sourceJsxChildren, prepared.targetOptions);
+  return hashContent(prepared.sourceJsxChildren, prepared.targetOptions);
 }
 
 function getReactWire(sourceChildren: React.ReactNode): JsxChildren {

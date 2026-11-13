@@ -53,5 +53,5 @@ export { createConditionStoreSingleton } from './condition-store/createCondition
 export { createGlobalSingleton } from './globals/createGlobalSingleton';
 export type { GlobalSingleton } from './globals/createGlobalSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
-export { hashMessage } from './utils/hashMessage';
+export { hashContent } from './utils/hashContent';
 export { getCookieValue, parseAcceptLanguage } from './utils/request';

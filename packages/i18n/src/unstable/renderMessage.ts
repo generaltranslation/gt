@@ -44,7 +44,7 @@ export function hashMessageTree(
   tree: MessageTree,
   { context, maxChars, requiresReview, $_hash }: MessageTreeMetadata
 ): string {
-  // Hashed here, without gt-i18n's hashMessage, which loads the ICU parser.
+  // Hashed here, without gt-i18n's hashContent, which loads the ICU parser.
   return (
     $_hash ??
     hashSource({
@@ -169,7 +169,7 @@ function formatTree(
   // language codes, and formats in its time zone.
   const formatted = config.formatMessageTree(tree, undefined, {
     locales: [locale, config.getDefaultLocale()],
-    variables: values,
+    values,
     formats,
   });
   return Array.isArray(formatted) ? formatted.join('') : String(formatted);

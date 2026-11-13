@@ -1,6 +1,6 @@
 import type { LookupOptions } from '../translation-functions/types/options';
 import type { Content } from '@generaltranslation/format/types';
-import { hashMessage } from './hashMessage';
+import { hashContent } from './hashContent';
 
 export type TranslateListenerLookup<T extends Content = Content> =
   | {
@@ -24,7 +24,7 @@ export function getTranslateListenerKey<T extends Content>(
   const hash =
     'hash' in lookup
       ? lookup.hash
-      : hashMessage(lookup.message, lookup.options);
+      : hashContent(lookup.message, lookup.options);
   return `${lookup.locale}:${hash}`;
 }
 

@@ -6,7 +6,7 @@ import { setWritableConditionStore } from '../../../condition-store/singleton-op
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 import type { I18nConfigParams } from '../../../i18n-config/I18nConfig';
 import { msg } from '../../msg/msg';
-import { hashMessage } from '../../../utils/hashMessage';
+import { hashContent } from '../../../utils/hashContent';
 import { getGT, getGTInternal } from '../getGT';
 import { getTranslations } from '../getTranslations';
 import { getMessages } from '../getMessages';
@@ -62,7 +62,7 @@ describe('translation function locale defaults', () => {
   it('getGT uses the current locale without accepting a locale parameter', async () => {
     const message = 'Hello {name}!';
     setupManager({
-      [hashMessage(message, { $format: 'ICU' })]: 'Bonjour {name} !',
+      [hashContent(message, { $format: 'ICU' })]: 'Bonjour {name} !',
     });
 
     const gt = await getGT();
@@ -76,7 +76,7 @@ describe('translation function locale defaults', () => {
       { defaultLocale: 'en', locales: ['en', 'fr', 'es'] },
       {
         loadTranslations: vi.fn().mockImplementation((locale: string) => ({
-          [hashMessage(message, { $format: 'ICU' })]:
+          [hashContent(message, { $format: 'ICU' })]:
             locale === 'es' ? 'Hola {name}!' : 'Bonjour {name} !',
         })),
       }
@@ -242,7 +242,7 @@ describe('translation function locale defaults', () => {
     const message = 'Hello {name}!';
     const lookupOptions = { $format: 'ICU', $context: 'homepage' } as const;
     const loadTranslations = vi.fn().mockResolvedValue({
-      [hashMessage(message, lookupOptions)]: 'Bonjour {name} !',
+      [hashContent(message, lookupOptions)]: 'Bonjour {name} !',
     });
     const cache = createCache(
       { defaultLocale: 'en', locales: ['en', 'fr'] },
@@ -267,7 +267,7 @@ describe('translation function locale defaults', () => {
     const message = 'Hello {name}!';
     const lookupOptions = { $format: 'ICU', $context: 'homepage' } as const;
     const loadTranslations = vi.fn().mockResolvedValue({
-      [hashMessage(message, lookupOptions)]: 'Bonjour {name} !',
+      [hashContent(message, lookupOptions)]: 'Bonjour {name} !',
     });
     const cache = createCache(
       { defaultLocale: 'en', locales: ['en', 'fr'] },
@@ -409,7 +409,7 @@ describe('translation function locale defaults', () => {
       $context: 'profile title',
     } as const;
     const loadTranslations = vi.fn().mockResolvedValue({
-      [hashMessage(title, titleOptions)]: 'Titre',
+      [hashContent(title, titleOptions)]: 'Titre',
     });
     const cache = createCache(
       { defaultLocale: 'en', locales: ['en', 'fr'] },
@@ -447,7 +447,7 @@ describe('translation function locale defaults', () => {
   it('getMessages uses the current locale without accepting a locale parameter', async () => {
     const message = 'Hello {name}!';
     setupManager({
-      [hashMessage(message, { $format: 'ICU' })]: 'Bonjour {name} !',
+      [hashContent(message, { $format: 'ICU' })]: 'Bonjour {name} !',
     });
 
     const m = await getMessages();
@@ -458,7 +458,7 @@ describe('translation function locale defaults', () => {
   it('tx uses the current locale when $locale is omitted', async () => {
     const message = 'Hello';
     setupManager({
-      [hashMessage(message, { $format: 'STRING' })]: 'Bonjour',
+      [hashContent(message, { $format: 'STRING' })]: 'Bonjour',
     });
 
     await expect(tx(message)).resolves.toBe('Bonjour');
@@ -470,7 +470,7 @@ describe('translation function locale defaults', () => {
       { defaultLocale: 'en', locales: ['en', 'fr'] },
       {
         loadTranslations: vi.fn().mockResolvedValue({
-          [hashMessage(message, { $format: 'STRING' })]: 'Bonjour',
+          [hashContent(message, { $format: 'STRING' })]: 'Bonjour',
         }),
       }
     );

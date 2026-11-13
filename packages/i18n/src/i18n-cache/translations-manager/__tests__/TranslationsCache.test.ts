@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TranslationsCache } from '../TranslationsCache';
-import { hashMessage } from '../../../utils/hashMessage';
+import { hashContent } from '../../../utils/hashContent';
 import { LookupOptions } from '../../../translation-functions/types/options';
 import type { Content } from '@generaltranslation/format/types';
 
@@ -9,7 +9,7 @@ function makeKey<T extends Content>(
   message: T,
   options: LookupOptions = { $format: 'ICU' }
 ) {
-  const hash = hashMessage(message, options);
+  const hash = hashContent(message, options);
   return { message, options, hash };
 }
 

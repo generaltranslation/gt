@@ -7,7 +7,7 @@ import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import type {
   GTFunctionType,
   MFunctionType,
-  Message,
+  RegisteredMessage,
   TFunctionType,
 } from 'gt-i18n/types';
 
@@ -23,7 +23,7 @@ export function createRuntime(getStore: () => ReadonlyConditionStoreInterface) {
   return {
     getLocale,
     getEnableI18n,
-    getGT: (messages?: Message[]): Promise<GTFunctionType> =>
+    getGT: (messages?: RegisteredMessage[]): Promise<GTFunctionType> =>
       getGTInternal(
         { locale: getLocale(), enableI18n: getEnableI18n() },
         messages
