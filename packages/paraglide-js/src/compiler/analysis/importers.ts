@@ -608,22 +608,42 @@ function append(
   getOrCreate(map, key, () => []).push(ref);
 }
 
+const exportNamesByScope = new WeakMap<Scope, Map<Node, string[]>>();
+
 /** `export function f`, `export { f as g }`, `export default f` */
 function exportNamesOf(
   program: ESTree.Program,
   fn: FunctionNode,
   scope: Scope
-): string[] {
-  const declaresFn = (local: string) =>
-    scope.bindingOf(local)?.declaration === fn;
-  const names: string[] = [];
+): readonly string[] {
+  let byDeclaration = exportNamesByScope.get(scope);
+
+  if (!byDeclaration) {
+    byDeclaration = exportNamesByDeclaration(program, scope);
+    exportNamesByScope.set(scope, byDeclaration);
+  }
+
+  return byDeclaration.get(fn) ?? [];
+}
+
+/** Read once per module: a module has many functions, and each would read every export. */
+function exportNamesByDeclaration(
+  program: ESTree.Program,
+  scope: Scope
+): Map<Node, string[]> {
+  const names = new Map<Node, string[]>();
+
+  const add = (declaration: Node | undefined, name: string) => {
+    if (declaration) getOrCreate(names, declaration, () => []).push(name);
+  };
+  const declarationOf = (local: string) => scope.bindingOf(local)?.declaration;
 
   for (const statement of program.body) {
     if (statement.type === 'ExportDefaultDeclaration') {
       const value = unwrapExpression(statement.declaration);
-      const isFn =
-        value === fn || (value.type === 'Identifier' && declaresFn(value.name));
-      if (isFn) names.push('default');
+      const declaration =
+        value.type === 'Identifier' ? declarationOf(value.name) : value;
+      add(declaration, 'default');
       continue;
     }
 
@@ -633,11 +653,13 @@ function exportNamesOf(
     const declared = statement.declaration
       ? declaredNames(statement.declaration)
       : [];
-    names.push(...declared.filter(declaresFn));
+    for (const name of declared) add(declarationOf(name), name);
 
     for (const specifier of statement.specifiers) {
-      const isFn = declaresFn(moduleExportName(specifier.local));
-      if (isFn) names.push(moduleExportName(specifier.exported));
+      add(
+        declarationOf(moduleExportName(specifier.local)),
+        moduleExportName(specifier.exported)
+      );
     }
   }
 
