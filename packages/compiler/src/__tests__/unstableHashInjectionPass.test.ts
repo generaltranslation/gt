@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { hashSource } from 'generaltranslation/id';
-import { transformWithPlugin } from '../../__tests__/transformWithPlugin';
-import wireFormatCases from '../../../../../test-fixtures/message-tree-wire-format.json';
+import { transformWithPlugin } from './transformWithPlugin';
+import wireFormatCases from '../../../../test-fixtures/message-tree-wire-format.json';
 
 const UNSTABLE_HELPERS =
   't, msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
