@@ -30,11 +30,16 @@ export type GlobalExport = {
   exportName: string;
 };
 
+/** A module of a file: its own module (part 0), or one of its scripts (part 1 on). */
+export type ModuleRef = { file: string; part: number };
+
 export type LoadedModules = {
-  /** Each file's module, by file. */
-  records: ReadonlyMap<string, ModuleRecord>;
-  /** Every module in loading order, a file's scripts after its module. */
-  all(): Iterable<ModuleRecord>;
+  /** A file's module, with its scripts. */
+  record(file: string): ModuleRecord | undefined;
+  /** The module `ref` names. */
+  module(ref: ModuleRef): ModuleRecord | undefined;
+  /** Every module with its links, in loading order: a file's scripts after its module. */
+  links(): Iterable<{ ref: ModuleRef; links: Links }>;
   scopeOf(record: ModuleRecord): Scope;
   /** Changes whenever a module is added or removed. */
   generation(): number;
@@ -47,7 +52,7 @@ type ExportedNames = { file: string; names: readonly string[] };
 /** Everything that can refer to some exports of a module. */
 type Referrers = {
   /** In loading order. */
-  modules: Iterable<ModuleRecord>;
+  modules: readonly ModuleRecord[];
   globals: readonly GlobalExport[];
   /** The exporting module and every module that may re-export from it. */
   exporters: ReadonlySet<string>;
@@ -58,7 +63,7 @@ type Referrers = {
 type Rename = { imported: string; exported: string };
 
 /** What a module imports and re-exports, by resolved file. */
-type Links = {
+export type Links = {
   importedNames: Map<string, Set<string>>;
   importedNamespaces: Set<string>;
   /** The files whose exports it may re-export. */
@@ -66,13 +71,23 @@ type Links = {
   renames: Rename[];
 };
 
+/** A module's links before its specifiers are resolved: it reads only the syntax tree. */
+export type SpecifierLinks = Array<
+  | { type: 'import'; source: string; names: string[]; namespace: boolean }
+  | { type: 'star'; source: string }
+  | { type: 'reexport'; source: string; name: string; exported: string }
+>;
+
 /** Who imports each file. */
 type Dependents = {
-  loadingOrder: Map<ModuleRecord, number>;
+  /** By `refKey`. */
+  loadingOrder: Map<string, number>;
+  /** By `refKey`. */
+  links: Map<string, Links>;
   /** By file, then by export name. */
-  importers: Map<string, Map<string, ModuleRecord[]>>;
-  namespaceImporters: Map<string, ModuleRecord[]>;
-  reexporters: Map<string, ModuleRecord[]>;
+  importers: Map<string, Map<string, ModuleRef[]>>;
+  namespaceImporters: Map<string, ModuleRef[]>;
+  reexporters: Map<string, ModuleRef[]>;
 };
 
 type Cache = {
@@ -84,7 +99,7 @@ type Cache = {
 
 type IndexSites = (program: ESTree.Program, scope: Scope) => CallSiteIndex;
 
-const links = new WeakMap<ModuleRecord, Links>();
+const linksOfRecords = new WeakMap<ModuleRecord, Links>();
 
 /**
  * Finds where a module's functions are called and its component is rendered:
@@ -213,17 +228,14 @@ export class ImporterIndex {
 
   private dependents(): Dependents {
     const cache = this.currentCache();
-    cache.dependents ??= dependentsOf(this.modules.all());
+    cache.dependents ??= dependentsOf(this.modules.links());
 
     return cache.dependents;
   }
 
   private referrersOf(exported: ExportedNames): Referrers {
     const dependents = this.dependents();
-    const { exporters, exportedAs } = reexportsOf(
-      exported,
-      dependents.reexporters
-    );
+    const { exporters, exportedAs } = reexportsOf(exported, dependents);
 
     const globals = this.modules
       .globalExports()
@@ -235,9 +247,13 @@ export class ImporterIndex {
       });
 
     const isUsableWithoutImport = globals.length > 0;
-    const modules = isUsableWithoutImport
-      ? this.modules.all()
+    const refs = isUsableWithoutImport
+      ? [...dependents.loadingOrder.keys()].map(parseRefKey)
       : importersOf(exporters, exportedAs, dependents);
+
+    const modules = refs
+      .map((ref) => this.modules.module(ref))
+      .filter((module) => module !== undefined);
 
     return { modules, globals, exporters, exportedAs };
   }
@@ -313,7 +329,7 @@ export class ImporterIndex {
   ): boolean {
     if (file === exported.file) return exported.names.includes(name);
 
-    const record = this.modules.records.get(file);
+    const record = this.modules.record(file);
     const key = `${file}\0${name}`;
     if (!record || seen.has(key)) return false;
     seen.add(key);
@@ -357,18 +373,23 @@ export class ImporterIndex {
   }
 }
 
-function dependentsOf(records: Iterable<ModuleRecord>): Dependents {
+function dependentsOf(
+  modules: Iterable<{ ref: ModuleRef; links: Links }>
+): Dependents {
   const dependents: Dependents = {
     loadingOrder: new Map(),
+    links: new Map(),
     importers: new Map(),
     namespaceImporters: new Map(),
     reexporters: new Map(),
   };
 
-  for (const record of records) {
-    dependents.loadingOrder.set(record, dependents.loadingOrder.size);
+  for (const { ref, links } of modules) {
+    const key = refKey(ref);
+    dependents.loadingOrder.set(key, dependents.loadingOrder.size);
+    dependents.links.set(key, links);
 
-    const { importedNames, importedNamespaces, reexported } = linksOf(record);
+    const { importedNames, importedNamespaces, reexported } = links;
 
     for (const [file, names] of importedNames) {
       const importersByName = getOrCreate(
@@ -376,12 +397,12 @@ function dependentsOf(records: Iterable<ModuleRecord>): Dependents {
         file,
         () => new Map()
       );
-      for (const name of names) append(importersByName, name, record);
+      for (const name of names) append(importersByName, name, ref);
     }
 
     for (const file of importedNamespaces)
-      append(dependents.namespaceImporters, file, record);
-    for (const file of reexported) append(dependents.reexporters, file, record);
+      append(dependents.namespaceImporters, file, ref);
+    for (const file of reexported) append(dependents.reexporters, file, ref);
   }
 
   return dependents;
@@ -391,8 +412,8 @@ function importersOf(
   exporters: ReadonlySet<string>,
   exportedAs: ReadonlySet<string>,
   { importers, namespaceImporters, loadingOrder }: Dependents
-): ModuleRecord[] {
-  const found = new Set<ModuleRecord>();
+): ModuleRef[] {
+  const found = new Map<string, ModuleRef>();
 
   for (const file of exporters) {
     const importersByName = importers.get(file);
@@ -401,26 +422,29 @@ function importersOf(
       (name) => importersByName?.get(name) ?? []
     );
 
-    for (const importer of [...ofNamespace, ...ofNames]) found.add(importer);
+    for (const importer of [...ofNamespace, ...ofNames])
+      found.set(refKey(importer), importer);
   }
 
-  return [...found].sort((a, b) => loadingOrder.get(a)! - loadingOrder.get(b)!);
+  const order = (ref: ModuleRef) => loadingOrder.get(refKey(ref))!;
+
+  return [...found.values()].sort((a, b) => order(a) - order(b));
 }
 
 function reexportsOf(
   { file, names }: ExportedNames,
-  reexporters: ReadonlyMap<string, readonly ModuleRecord[]>
+  { reexporters, links }: Dependents
 ): { exporters: Set<string>; exportedAs: Set<string> } {
   const exporters = new Set([file]);
   const renames: Rename[] = [];
 
   // Grows while it is iterated: re-exports of re-exports.
   for (const exporter of exporters) {
-    for (const record of reexporters.get(exporter) ?? []) {
-      if (exporters.has(record.file)) continue;
+    for (const ref of reexporters.get(exporter) ?? []) {
+      if (exporters.has(ref.file)) continue;
 
-      exporters.add(record.file);
-      renames.push(...linksOf(record).renames);
+      exporters.add(ref.file);
+      renames.push(...links.get(refKey(ref))!.renames);
     }
   }
 
@@ -447,87 +471,122 @@ function namesAfterRenames(
   return exportedAs;
 }
 
-function linksOf(record: ModuleRecord): Links {
-  const cached = links.get(record);
-  if (cached) return cached;
+function refKey({ file, part }: ModuleRef): string {
+  return `${part}\0${file}`;
+}
 
+function parseRefKey(key: string): ModuleRef {
+  const separator = key.indexOf('\0');
+
+  return {
+    file: key.slice(separator + 1),
+    part: Number(key.slice(0, separator)),
+  };
+}
+
+/** The links of a loaded module, read from its syntax tree. */
+export function linksOf(record: ModuleRecord): Links {
+  let links = linksOfRecords.get(record);
+
+  if (!links) {
+    links = resolveLinks(specifierLinks(record.program), record.resolved);
+    linksOfRecords.set(record, links);
+  }
+
+  return links;
+}
+
+/** What a program imports and re-exports, by specifier. */
+export function specifierLinks(program: ESTree.Program): SpecifierLinks {
+  const links: SpecifierLinks = [];
+
+  for (const statement of program.body) {
+    if (statement.type === 'ImportDeclaration') {
+      if (statement.importKind === 'type') continue;
+
+      const names: string[] = [];
+      let namespace = false;
+
+      for (const specifier of statement.specifiers) {
+        if (specifier.type === 'ImportNamespaceSpecifier') namespace = true;
+        else names.push(importedName(specifier));
+      }
+
+      links.push({
+        type: 'import',
+        source: statement.source.value,
+        names,
+        namespace,
+      });
+    } else if (statement.type === 'ExportAllDeclaration') {
+      // `export * as ns` exports a namespace, not the module's exports.
+      if (statement.exported) continue;
+
+      links.push({ type: 'star', source: statement.source.value });
+    } else if (
+      statement.type === 'ExportNamedDeclaration' &&
+      statement.exportKind !== 'type'
+    ) {
+      for (const specifier of statement.specifiers) {
+        const local = moduleExportName(specifier.local);
+        const imported = statement.source
+          ? { source: statement.source.value, name: local }
+          : importOf(program, local);
+        if (!imported) continue;
+
+        links.push({
+          type: 'reexport',
+          source: imported.source,
+          name: imported.name,
+          exported: moduleExportName(specifier.exported),
+        });
+      }
+    }
+  }
+
+  return links;
+}
+
+/** `links` with each specifier replaced by the file it resolves to; unresolved ones are left out. */
+export function resolveLinks(
+  links: SpecifierLinks,
+  resolved: ReadonlyMap<string, string | undefined>
+): Links {
   const found: Links = {
     importedNames: new Map(),
     importedNamespaces: new Set(),
     reexported: new Set(),
     renames: [],
   };
-  links.set(record, found);
 
-  for (const statement of record.program.body) {
-    if (statement.type === 'ImportDeclaration') {
-      addImports(found, statement, record);
-    } else if (statement.type === 'ExportAllDeclaration') {
-      addStarExport(found, statement, record);
-    } else if (
-      statement.type === 'ExportNamedDeclaration' &&
-      statement.exportKind !== 'type'
-    ) {
-      addNamedExports(found, statement, record);
+  for (const link of links) {
+    const file = resolved.get(link.source);
+    if (file === undefined) continue;
+
+    switch (link.type) {
+      case 'import': {
+        if (link.namespace) found.importedNamespaces.add(file);
+        if (link.names.length === 0) break;
+
+        const names = getOrCreate(
+          found.importedNames,
+          file,
+          () => new Set<string>()
+        );
+        for (const name of link.names) names.add(name);
+        break;
+      }
+      case 'star':
+        found.reexported.add(file);
+        break;
+      case 'reexport':
+        found.reexported.add(file);
+        found.renames.push({ imported: link.name, exported: link.exported });
+        break;
     }
   }
 
   return found;
-}
-
-function addImports(
-  { importedNames, importedNamespaces }: Links,
-  statement: ESTree.ImportDeclaration,
-  record: ModuleRecord
-): void {
-  if (statement.importKind === 'type') return;
-
-  const file = record.resolved.get(statement.source.value);
-  if (file === undefined) return;
-
-  for (const specifier of statement.specifiers) {
-    if (specifier.type === 'ImportNamespaceSpecifier') {
-      importedNamespaces.add(file);
-    } else {
-      const names = getOrCreate(importedNames, file, () => new Set<string>());
-      names.add(importedName(specifier));
-    }
-  }
-}
-
-function addStarExport(
-  { reexported }: Links,
-  statement: ESTree.ExportAllDeclaration,
-  record: ModuleRecord
-): void {
-  // `export * as ns` exports a namespace, not the module's exports.
-  if (statement.exported) return;
-
-  const file = record.resolved.get(statement.source.value);
-  if (file !== undefined) reexported.add(file);
-}
-
-function addNamedExports(
-  { reexported, renames }: Links,
-  statement: ESTree.ExportNamedDeclaration,
-  record: ModuleRecord
-): void {
-  for (const specifier of statement.specifiers) {
-    const local = moduleExportName(specifier.local);
-    const imported = statement.source
-      ? { source: statement.source.value, name: local }
-      : importOf(record.program, local);
-    if (!imported) continue;
-
-    const file = record.resolved.get(imported.source);
-    if (file === undefined) continue;
-
-    reexported.add(file);
-    renames.push({
-      imported: imported.name,
-      exported: moduleExportName(specifier.exported),
-    });
-  }
 }
 
 function getOrCreate<K, V>(map: Map<K, V>, key: K, create: () => V): V {
@@ -542,11 +601,11 @@ function getOrCreate<K, V>(map: Map<K, V>, key: K, create: () => V): V {
 }
 
 function append(
-  map: Map<string, ModuleRecord[]>,
+  map: Map<string, ModuleRef[]>,
   key: string,
-  record: ModuleRecord
+  ref: ModuleRef
 ): void {
-  getOrCreate(map, key, () => []).push(record);
+  getOrCreate(map, key, () => []).push(ref);
 }
 
 /** `export function f`, `export { f as g }`, `export default f` */
