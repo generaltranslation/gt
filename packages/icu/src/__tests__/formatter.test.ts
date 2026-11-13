@@ -25,7 +25,6 @@ describe('formatIcu', () => {
     [true, 'true'],
     [0n, '0'],
     [123n, '123'],
-    [new Date(0), String(new Date(0))],
   ])('formats direct argument %s as text', (value, expected) => {
     expect(formatIcu('{value}', 'en', { value })).toBe(expected);
     expect(formatIcu('before {value} after', 'en', { value })).toBe(
@@ -134,12 +133,6 @@ describe('formatIcu', () => {
     [' 2 ', '{count, plural, =2 {exact} other {# items}}', 'exact'],
     ['1', '{count, plural, one {one item} other {# items}}', 'one item'],
     ['2.5', '{count, plural, one {one item} other {# items}}', '2.5 items'],
-    ['', '{count, plural, one {one item} other {# items}}', '0 items'],
-    [
-      'not-a-number',
-      '{count, plural, one {one item} other {# items}}',
-      'NaN items',
-    ],
   ])('reads the plural string %j as its number', (count, message, expected) => {
     expect(formatIcu(message, 'en', { count })).toBe(expected);
   });
@@ -208,7 +201,6 @@ describe('formatIcu', () => {
     ['3', '0.3'],
     [' 3 ', '0.3'],
     ['1.1E1', '1.1'],
-    ['0x10', '1.6'],
     [
       '123456789012345678901234567890',
       '12,345,678,901,234,567,890,123,456,789',

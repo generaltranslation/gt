@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it, vi } from 'vitest';
 import type { MessageTree } from '../index';
@@ -291,13 +292,154 @@ describe('values', () => {
     expect(formatMessageTree([['x']], 'en', { x })).toBe(text);
   });
 
-  it('formats a Date in a date node, and as String(date) elsewhere', () => {
+  it('formats a Date in a date node, and as a short date and time elsewhere', () => {
     const due = new Date(Date.UTC(2026, 0, 15));
     expect(
       formatMessageTree([['d', 'date']], 'en', { d: due }, { timeZone: 'UTC' })
     ).toBe('Jan 15, 2026');
-    expect(formatMessageTree(['Due ', ['d']], 'en', { d: due })).toBe(
-      `Due ${due}`
+    expect(
+      formatMessageTree(
+        [['d', 'date']],
+        'en',
+        { d: due.getTime() },
+        { timeZone: 'UTC' }
+      )
+    ).toBe('Jan 15, 2026');
+    expect(
+      formatMessageTree(['Due ', ['d']], 'de', { d: due }, { timeZone: 'UTC' })
+    ).toBe('Due 15.01.26, 00:00');
+    expect(
+      formatMessageTree(
+        ['Due ', ['d']],
+        'de',
+        { d: due },
+        { timeZone: 'Asia/Tokyo' }
+      )
+    ).toBe('Due 15.01.26, 09:00');
+  });
+
+  it('formats a Date made in another realm', () => {
+    const d: Date = runInNewContext('new Date(Date.UTC(2026, 0, 15))');
+    expect(d instanceof Date).toBe(false);
+    for (const tree of [[['d']], [['d', 'date', 'short']]] as const) {
+      expect(formatMessageTree(tree, 'en', { d }, { timeZone: 'UTC' })).toMatch(
+        /^1\/15\/26/
+      );
+    }
+  });
+
+  it.each([
+    ['{n, number}', '1e400'],
+    ['{n, number, ::scale/10}', 1e308],
+    ['{n, number, ::scale/10}', 10n ** 400n],
+  ])('throws for %s with %s, which Intl prints as ∞', (message, n) => {
+    expect(() => formatIcu(message, 'en', { n })).toThrow(
+      new RangeError('The ICU variable "n" is too large for Intl to format.')
+    );
+  });
+
+  it('formats ∞ itself, and a bigint of any size', () => {
+    expect(formatIcu('{n, number, ::scale/10}', 'en', { n: Infinity })).toBe(
+      '∞'
+    );
+    expect(formatIcu('{n, number}', 'en', { n: 10n ** 400n })).toMatch(
+      /^10(,000){133}$/
+    );
+  });
+
+  it.each([
+    ['::numbering-system/bogus', 'bogus'],
+    ['::numbering-system/roman', 'roman'],
+  ])(
+    'throws for %s, a numbering system Intl does not have',
+    (skeleton, name) => {
+      expect(() =>
+        formatIcu(`{n, number, ${skeleton}}`, 'ar-EG', { n: 1 })
+      ).toThrow(
+        new RangeError(
+          `The ICU variable "n" has the numbering system "${name}", which Intl does not have.`
+        )
+      );
+      expect(() =>
+        formatMessageTree(
+          [['n', 'number']],
+          'en',
+          { n: 1 },
+          {
+            formats: { n: { numberingSystem: name } },
+          }
+        )
+      ).toThrow(RangeError);
+    }
+  );
+
+  const NOT_NUMBERS = [
+    '',
+    'abc',
+    '1,234',
+    '0x10',
+    null,
+    undefined,
+    true,
+    new Date(0),
+  ];
+  it.each(NOT_NUMBERS)('takes no %j for a number or a plural', (n) => {
+    const error = new TypeError(
+      'The ICU variable "n" must be a number, a bigint or a numeric string.'
+    );
+    expect(() => formatMessageTree([['n', 'number']], 'en', { n })).toThrow(
+      error
+    );
+    expect(() =>
+      formatMessageTree([['n', 'plural', { other: [0] }]], 'en', { n })
+    ).toThrow(error);
+  });
+
+  it.each([
+    ['1234.5', '1,234.5'],
+    [' 12 ', '12'],
+    [12n, '12'],
+    [NaN, 'NaN'],
+  ])('takes %s for a number and a plural', (n, text) => {
+    expect(formatMessageTree([['n', 'number']], 'en', { n })).toBe(text);
+    expect(
+      formatMessageTree([['n', 'plural', { other: [0] }]], 'en', { n })
+    ).toBe(text);
+  });
+
+  it.each(['', '1588807805123', '2026-01-15', null, undefined, true, 12n])(
+    'takes no %s for a date or a time',
+    (d) => {
+      for (const kind of ['date', 'time'] as const) {
+        expect(() => formatMessageTree([['d', kind]], 'en', { d })).toThrow(
+          new TypeError('The ICU variable "d" must be a Date or a number.')
+        );
+      }
+    }
+  );
+
+  it.each([1, 1n, true, null, undefined, new Date(0)])(
+    'takes no %s for a select',
+    (s) => {
+      expect(() =>
+        formatMessageTree([['s', 'select', { other: 'x' }]], 'en', { s })
+      ).toThrow(new TypeError('The ICU variable "s" must be a string.'));
+    }
+  );
+
+  it('prints an era or a time zone name alone, without the date Intl adds', () => {
+    const d = new Date(Date.UTC(2026, 0, 15));
+    const format = (fields: Intl.DateTimeFormatOptions) =>
+      formatMessageTree(
+        [['d', 'date', fields]],
+        'en',
+        { d },
+        { timeZone: 'UTC' }
+      );
+    expect(format({ timeZoneName: 'long' })).toBe('Coordinated Universal Time');
+    expect(format({ era: 'short' })).toBe('AD');
+    expect(() => format({ era: 'short', timeZoneName: 'short' })).toThrow(
+      RangeError
     );
   });
 

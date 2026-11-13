@@ -164,15 +164,35 @@ not read the host's time zone; its caller passes them in.
 
 ## ICU compatibility
 
-An ICU string means here what it means in ICU4C, or it throws: a `RangeError`
-that names the token or field when Intl cannot format it, and a `SyntaxError`
-when it is not valid, with the kind of error as its `code` and the place in
-the message as its `location`. What a message leaves out, like how to round a
-tie, is filled in by Intl, not by ICU.
+A message means what it means in ICU, and `Intl` formats it. Where the two
+disagree:
 
-`src/__tests__/icu4c-messages.test.ts` and `icu4c-conformance.test.ts` format
-about 3,500 cases and check each result against what ICU4C 78.3 prints for it.
-They hold every difference, each with its reason.
+1. **ICU decides what a message says**: its syntax, types, styles and
+   skeletons.
+2. **`Intl` does the formatting.** This package ships no locale data. What a
+   message leaves unsaid is `Intl`'s default: `{n, number, integer}` rounds
+   2.5 to `3`, where ICU rounds it to `2`.
+3. **What `Intl` can't do throws.** `{n, number, ::permille}` throws a
+   `RangeError` that names `permille`, rather than printing something else.
+4. **Values aren't converted.** A number, plural or selectordinal takes a
+   number, a bigint or a numeric string; a date or time takes a Date or a
+   number; a select takes a string. Anything else throws a `TypeError`.
+
+Where this package differs from ICU on purpose:
+
+| Message                                                                                         | ICU       | Here                                          |
+| ----------------------------------------------------------------------------------------------- | --------- | --------------------------------------------- |
+| `{d, date, yyyy-MM-dd}`, `choice`, `{n, NUMBER}`, a branch key written twice, a value not given | formats   | throws: ICU keeps these only for old messages |
+| `<b>bold</b>`                                                                                   | text      | a tag, as in FormatJS                         |
+| `{year}`, with 2024                                                                             | `2,024`   | `2024`, as a template literal prints it       |
+| `{d, time, ::hhmm}`, at 3:04                                                                    | `3:04 AM` | `03:04 AM`, as `Intl`'s 2-digit hour          |
+
+An invalid message throws a `SyntaxError` with the kind of error as its
+`code` and its place as its `location`.
+
+Every difference from ICU4C 78.3 is listed with its reason in
+`src/__tests__/icu4c-messages.test.ts` and `icu4c-conformance.test.ts`, which
+check about 3,500 cases.
 
 Parts of the compatibility behavior and regression suite are adapted from
 FormatJS. See `THIRD_PARTY_NOTICES.md` for attribution and license details.

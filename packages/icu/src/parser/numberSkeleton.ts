@@ -230,6 +230,16 @@ export function parseNumberSkeletonOptions(
   ) {
     Object.assign(result, { style: 'unit', unit: 'percent', scale: 100 });
   }
+  // ICU rounds to a currency's digits, which are two for a number without one.
+  if (
+    result.style !== 'currency' &&
+    tokens.some(({ stem }) => stem === 'precision-currency-standard')
+  ) {
+    Object.assign(result, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
   // A unit width is a currency's or a unit's; ICU ignores it for other numbers.
   if (result.style !== 'currency') delete result.currencyDisplay;
   if (result.style !== 'unit') delete result.unitDisplay;
@@ -353,7 +363,15 @@ function readPrecision(token: NumberSkeletonToken): Options | undefined {
     };
     const significant = options.shift();
     if (significant !== undefined) {
-      Object.assign(precision, readFractionSignificant(token, significant));
+      const digits = readFractionSignificant(token, significant);
+      // Without a priority ICU pads to the fraction's minimum.
+      if (zeros.length && !/[rs]$/.test(significant)) {
+        throw unsupported(
+          token,
+          'Intl does not pad to the minimum of the fraction; write a priority, like .00/@##s'
+        );
+      }
+      Object.assign(precision, digits);
     }
   } else if ((match = SIGNIFICANT_PRECISION.exec(stem)) && !match[3]) {
     const [, required, rest] = match;
