@@ -4,8 +4,11 @@
  */
 
 import { SKELETON_TYPE, TYPE } from '../types-dir/ast';
-import { isAsciiLetter, isTagNameCharacter } from './tag';
-import { GRAMMAR_WHITE_SPACE } from '../settings/syntax';
+import {
+  GRAMMAR_WHITE_SPACE,
+  isAsciiLetter,
+  isTagName,
+} from '../settings/syntax';
 import type {
   DateElement,
   LiteralElement,
@@ -218,13 +221,7 @@ function isSelfClosingTagLiteral(value: string): boolean {
   // The parser keeps the space before `/>` as written, like `<br />`.
   let end = value.length - 2;
   while (end > 1 && GRAMMAR_WHITE_SPACE.test(value[end - 1])) end -= 1;
-  const name = value.slice(1, end);
-  if (!isAsciiLetter(name[0])) return false;
-
-  for (const character of name.slice(1)) {
-    if (!isTagNameCharacter(character)) return false;
-  }
-  return true;
+  return isTagName(value.slice(1, end));
 }
 
 function printSimpleFormat(

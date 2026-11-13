@@ -26,8 +26,95 @@ describe('validateMessageTree', () => {
 
   it('accepts pound and an absent style', () => {
     expect(
-      validateMessageTree([0, ['n', 'number'], ['n', 'number', 'percent']])
+      validateMessageTree([
+        [
+          'n',
+          'plural',
+          { other: [0, ['n', 'number'], ['n', 'number', 'percent']] },
+        ],
+      ])
     ).toBeUndefined();
+  });
+
+  // ICU reads `#` as the count only there, so elsewhere it would not print back.
+  it.each([
+    ['at the top of a message', [0, ' files'], [0]],
+    ['in a select', [select({ other: [0, ' files'] })], [0, 2, 'other', 0]],
+    [
+      'in a select inside a plural',
+      [['n', 'plural', { other: [select({ other: [0, ' files'] })] }]],
+      [0, 2, 'other', 0, 2, 'other', 0],
+    ],
+    ['in a tag outside a plural', [['b', 'tag', [0, ' files']]], [0, 2, 0]],
+  ])('rejects pound %s', (_name, tree, path) => {
+    expect(validateMessageTree(tree)).toEqual({
+      path,
+      message:
+        'expected 0, the plural count, only in a plural or selectordinal branch',
+    });
+  });
+
+  it('accepts pound in a tag inside a plural or selectordinal branch', () => {
+    expect(
+      isMessageTree([
+        ['n', 'selectordinal', { other: [['b', 'tag', [0, 'th']]] }],
+      ])
+    ).toBe(true);
+  });
+
+  // The formatter has no branch for a value that matches none.
+  it.each(['select', 'plural', 'selectordinal'])(
+    'rejects a %s without an other branch',
+    (kind) => {
+      expect(validateMessageTree([['x', kind, { one: 'One' }]])).toEqual({
+        path: [0, 2],
+        message: 'expected an other branch',
+      });
+      expect(validateMessageTree([['x', kind, {}]])?.path).toEqual([0, 2]);
+    }
+  );
+
+  // A tree is printed as ICU for translation, so names and keys must parse back.
+  it.each([
+    ['an empty name', [['']], [0, 0]],
+    ['a name with a space', [['first name']], [0, 0]],
+    ['a name with ICU syntax', [['a.b', 'number']], [0, 0]],
+    ['a tag name that starts with a digit', [['1b', 'tag', 'x']], [0, 0]],
+    ['an empty tag name', [['', 'tag', 'x']], [0, 0]],
+    [
+      'a select key with a space',
+      [select({ 'in progress': 'Running', other: 'Done' })],
+      [0, 2, 'in progress'],
+    ],
+    ['an empty select key', [select({ '': 'x', other: 'y' })], [0, 2, '']],
+    [
+      'an exact key on a select',
+      [select({ '=1': 'x', other: 'y' })],
+      [0, 2, '=1'],
+    ],
+    [
+      'a plural key with ICU syntax',
+      [['n', 'plural', { 'a-b': 'x', other: 'y' }]],
+      [0, 2, 'a-b'],
+    ],
+  ])('rejects %s', (_name, tree, path) => {
+    expect(validateMessageTree(tree)?.path).toEqual(path);
+  });
+
+  it('accepts a negative plural offset, which the parser reads too', () => {
+    expect(
+      isMessageTree(icuToMessage('{n, plural, offset:-2 other {#}}').tree)
+    ).toBe(true);
+    expect(isMessageTree([['n', 'plural', { other: [0] }, -2]])).toBe(true);
+  });
+
+  it('accepts a tag name with tag-name characters and an exact plural key', () => {
+    expect(
+      isMessageTree([
+        ['my-tag.v2', 'tag', 'x'],
+        ['n', 'plural', { '=0': 'none', '=-1': 'owed', other: 'some' }],
+      ])
+    ).toBe(true);
   });
 
   it.each([
@@ -177,6 +264,16 @@ describe('validateMessageTree', () => {
       [['n', 'selectordinal', { other: '' }, '1']],
       [0, 3],
     ],
+    [
+      'a fractional plural offset',
+      [['n', 'plural', { other: '' }, 0.5]],
+      [0, 3],
+    ],
+    [
+      'a plural offset past the safe integers',
+      [['n', 'plural', { other: '' }, 2 ** 53]],
+      [0, 3],
+    ],
     ['missing tag children', [['b', 'tag']], [0, 2]],
     [
       'an invalid nested tag child',
@@ -188,8 +285,12 @@ describe('validateMessageTree', () => {
   });
 
   it('ignores inherited branches and options', () => {
+    // An inherited `other` is not a branch, so it is neither read nor enough.
     const branches = Object.create({ other: 5 });
-    expect(isMessageTree([select(branches)])).toBe(true);
+    expect(validateMessageTree([select(branches)])).toEqual({
+      path: [0, 2],
+      message: 'expected an other branch',
+    });
     const style = Object.assign(Object.create({ currency: 'USD' }), {
       style: 'unit',
       unit: 'meter',
@@ -247,9 +348,10 @@ describe('validateMessageTree', () => {
   });
 
   it('counts select and plural branches toward the node limit', () => {
-    const branches = Object.fromEntries(
-      Array.from({ length: 100 }, (_, index) => [`k${index}`, ''])
-    );
+    const branches = Object.fromEntries([
+      ...Array.from({ length: 99 }, (_, index) => [`k${index}`, '']),
+      ['other', ''],
+    ]);
     expect(isMessageTree([select(branches)], { maxNodes: 101 })).toBe(true);
     expect(validateMessageTree([select(branches)], { maxNodes: 5 })).toEqual({
       path: [0, 2, 'k4'],
