@@ -9,12 +9,14 @@ import {
   exportingStatements,
   hasEsmExports,
   loadedSpecifiers,
+  starExportSpecifiers,
   type ExportStatement,
 } from './module-syntax.js';
 import {
   IndexedRecords,
   LoadedRecords,
   modulesOf,
+  resolvedFiles,
   type IndexedRecordsOptions,
   type RecordStore,
 } from './module-store.js';
@@ -347,14 +349,16 @@ export class ModuleGraph {
     order.set(file, index);
     listing.push(own);
 
-    const record = this.records.get(file);
-    if (this.targetOf(file) || (record && !hasEsmExports(record.program))) {
+    const exports = this.targetOf(file)
+      ? 'unknown'
+      : this.records.exportsOf(file);
+    if (exports === 'unknown') {
       own.parts = undefined;
-    } else if (record) {
-      const exporting = exportingStatements(record.program);
-      if (exporting.size > 0) own.parts?.push(new Set(exporting.keys()));
+    } else if (exports) {
+      const names = new Set(exports.names);
+      if (names.size > 0) own.parts?.push(names);
 
-      for (const reexported of starExportedFiles(record)) {
+      for (const reexported of exports.starExported) {
         if (!this.exportNames.has(reexported)) {
           const reached =
             order.get(reexported) ??
@@ -365,8 +369,8 @@ export class ModuleGraph {
         // Still not listed when in a cycle with `file`: the cycle's list has its names.
         if (!this.exportNames.has(reexported)) continue;
 
-        const names = this.exportNames.get(reexported);
-        if (names) own.parts?.push(names);
+        const listed = this.exportNames.get(reexported);
+        if (listed) own.parts?.push(listed);
         else own.parts = undefined;
       }
     }
@@ -690,20 +694,7 @@ function dependenciesOf(
 
 /** The files of `export * from "./a"`. */
 function starExportedFiles(record: ModuleRecord): string[] {
-  const files: string[] = [];
-
-  for (const statement of record.program.body) {
-    const isStarExport =
-      statement.type === 'ExportAllDeclaration' &&
-      statement.exportKind !== 'type' &&
-      !statement.exported;
-    if (!isStarExport) continue;
-
-    const file = record.resolved.get(statement.source.value);
-    if (file) files.push(file);
-  }
-
-  return files;
+  return resolvedFiles(starExportSpecifiers(record.program), record.resolved);
 }
 
 /** Its own names and the lists below it; undefined when unknown. */

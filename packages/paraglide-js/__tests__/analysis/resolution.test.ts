@@ -175,6 +175,23 @@ describe('following re-exports', () => {
     ).toEqual([call]);
   });
 
+  test('lists the names of the modules behind a barrel from the index, parsing none of them', async () => {
+    const parsed: string[] = [];
+    const usages = await analyzeProject(
+      {
+        [ENTRY]: `import { m } from "./index.js"; m.greeting()`,
+        '/app/src/index.ts': `export * from "./one.js"; export * from "./i18n.js";`,
+        '/app/src/one.ts': `export const one = 1;`,
+        '/app/src/i18n.ts': `export { m } from "./paraglide/messages.js";`,
+      },
+      { loadAll: true, onLoad: (file) => parsed.push(file) }
+    );
+
+    expect(summarize(usages)).toEqual([call]);
+    // Once, to analyze it: the indexed graph keeps no module loaded.
+    expect(parsed.filter((file) => file === '/app/src/one.ts')).toHaveLength(1);
+  });
+
   test('export * of a CommonJS module, whose exports are not listed', async () => {
     expect(
       await analyzeEntry(`import { m } from "./barrel.js"; m.greeting()`, {
