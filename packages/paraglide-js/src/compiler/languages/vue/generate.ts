@@ -66,6 +66,11 @@ export async function generateVue(
   if (!virtualCode)
     throw new Error('@vue/language-core could not read the file');
 
+  // @vue/language-core keeps every virtual code it creates, by file, for
+  // the life of the process: about 30 MB for a component of 10,000 lines.
+  // Each file is generated once, so it is not kept.
+  plugin.disposeVirtualCode?.(file, virtualCode);
+
   const script = generatedScript(virtualCode);
   const template = parsedTemplate(virtualCode);
   const expressions = template ? templateExpressions(template) : [];
