@@ -17,10 +17,10 @@ type Location = {
  * decodeVars(encodedIcu)
  * // 'Hi Brian, my name is {name}'
  */
-export function decodeVars(icuString: string): string {
+export function decodeVars(icu: string): string {
   // Check if the string contains _gt_
-  if (!icuString.includes(VAR_IDENTIFIER)) {
-    return icuString;
+  if (!icu.includes(VAR_IDENTIFIER)) {
+    return icu;
   }
 
   // Record the location of the variable
@@ -38,7 +38,7 @@ export function decodeVars(icuString: string): string {
 
   // Find all variable identifiers.
   traverseIcu({
-    icuString,
+    icu,
     shouldVisit: isGTUnindexedSelectElement,
     visitor,
     options: {
@@ -51,12 +51,12 @@ export function decodeVars(icuString: string): string {
   let previousIndex = 0;
   const outputList = [];
   for (let i = 0; i < variableLocations.length; i++) {
-    outputList.push(icuString.slice(previousIndex, variableLocations[i].start));
+    outputList.push(icu.slice(previousIndex, variableLocations[i].start));
     outputList.push(variableLocations[i].value);
     previousIndex = variableLocations[i].end;
   }
-  if (previousIndex < icuString.length) {
-    outputList.push(icuString.slice(previousIndex));
+  if (previousIndex < icu.length) {
+    outputList.push(icu.slice(previousIndex));
   }
   const outputString = outputList.join('');
 

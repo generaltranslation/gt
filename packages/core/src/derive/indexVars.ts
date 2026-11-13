@@ -2,7 +2,6 @@ import { VAR_IDENTIFIER } from './utils/constants';
 import { traverseIcu } from './utils/traverseIcu';
 import { GTUnindexedSelectElement } from './utils/types';
 import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
-import type { IcuMessage } from '@generaltranslation/format/types';
 
 type Location = {
   start: number;
@@ -15,10 +14,10 @@ type Location = {
  * Given an ICU string adds identifiers to each _gt_ placeholder
  * indexVars('Hello {_gt_} {_gt_} World') => 'Hello {_gt_1_} {_gt_2_} World'
  */
-export function indexVars(icuString: IcuMessage): string {
+export function indexVars(icu: string): string {
   // Check if the string contains _gt_
-  if (!icuString.includes(VAR_IDENTIFIER)) {
-    return icuString;
+  if (!icu.includes(VAR_IDENTIFIER)) {
+    return icu;
   }
 
   // Record the location of the variable
@@ -34,7 +33,7 @@ export function indexVars(icuString: IcuMessage): string {
 
   // Find all variable identifiers.
   traverseIcu({
-    icuString,
+    icu,
     shouldVisit: isGTUnindexedSelectElement,
     visitor,
     options: { recurseIntoVisited: false, captureLocation: true },
@@ -46,21 +45,21 @@ export function indexVars(icuString: IcuMessage): string {
   for (let i = 0; i < variableLocations.length; i++) {
     const { start, end, otherStart, otherEnd } = variableLocations[i];
     // Before the variable
-    result.push(icuString.slice(current, start));
+    result.push(icu.slice(current, start));
     // Replace the variable with the new identifier (+1 is for the curly brace)
-    result.push(icuString.slice(start, start + VAR_IDENTIFIER.length + 1));
+    result.push(icu.slice(start, start + VAR_IDENTIFIER.length + 1));
 
     // Add the new identifier.
     result.push(String(i + 1));
     // After the variable
-    result.push(icuString.slice(start + VAR_IDENTIFIER.length + 1, otherStart));
+    result.push(icu.slice(start + VAR_IDENTIFIER.length + 1, otherStart));
     // Before the other option
     result.push('{}');
     // The other option
-    result.push(icuString.slice(otherEnd, end));
+    result.push(icu.slice(otherEnd, end));
     current = end;
   }
-  result.push(icuString.slice(current, icuString.length));
+  result.push(icu.slice(current, icu.length));
 
   return result.join('');
 }

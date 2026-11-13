@@ -12,14 +12,11 @@ export type {
   GTProp,
   HtmlContentPropKeysRecord,
   HtmlContentPropValuesRecord,
-  I18nextMessage,
-  IcuMessage,
   JsxChild,
   JsxChildren,
   JsxElement,
   StringContent,
   StringFormat,
-  StringMessage,
 } from './types-dir/jsx/content';
 
 export type FormatVariables = Record<

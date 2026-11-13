@@ -303,7 +303,7 @@ export function mergeStaticParts(parts: FlatPart[]): string | null {
 }
 
 type ICUResult = {
-  icuString: string;
+  icu: string;
   options: { key: string; value: string }[];
 };
 
@@ -364,7 +364,7 @@ export function generateICUReplacement(
   sourceCode: SourceCode,
   reservedKeys: Set<string> = new Set()
 ): ICUResult {
-  let icuString = '';
+  let icu = '';
   const state: VarState = {
     counter: 0,
     options: [],
@@ -375,16 +375,16 @@ export function generateICUReplacement(
   for (const part of parts) {
     switch (part.kind) {
       case 'static':
-        icuString += escapeICUText(part.value);
+        icu += escapeICUText(part.value);
         break;
       case 'dynamic': {
         const sourceText = sourceCode.getText(part.node);
         const varName = resolveVarName(sourceText, state);
-        icuString += `{${varName}}`;
+        icu += `{${varName}}`;
         break;
       }
       case 'select': {
-        icuString += `{${renderSelect(part, state)}}`;
+        icu += `{${renderSelect(part, state)}}`;
         break;
       }
       case 'derive':
@@ -392,7 +392,7 @@ export function generateICUReplacement(
     }
   }
 
-  return { icuString, options: state.options };
+  return { icu, options: state.options };
 }
 
 /**
@@ -447,7 +447,7 @@ export function generateTemplateLiteralReplacement(
   templateString += '`';
 
   return {
-    icuString: '',
+    icu: '',
     options: state.options,
     templateString,
   };
@@ -484,7 +484,7 @@ export function buildICUFix(
     const {
       options: icuOptions,
       templateString,
-      icuString,
+      icu,
     } = containsDerive
       ? generateTemplateLiteralReplacement(parts, sourceCode, reservedKeys)
       : {
@@ -492,7 +492,7 @@ export function buildICUFix(
           templateString: null,
         };
 
-    const escapedICU = escapeJSString(icuString);
+    const escapedICU = escapeJSString(icu);
     const replacementStr = containsDerive ? templateString! : `"${escapedICU}"`;
 
     const optionsStr = icuOptions.map((o) => `${o.key}: ${o.value}`).join(', ');

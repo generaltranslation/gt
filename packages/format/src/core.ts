@@ -3,12 +3,12 @@ import {
   _formatDateTime,
   _formatList,
   _formatListToParts,
-  _formatMessageICU,
   _formatNum,
   _formatRelativeTime,
   _selectRelativeTimeUnit,
   type ZonedDateTimeFormatOptions,
 } from './formatting/format';
+import { formatIcu } from '@generaltranslation/icu/parser';
 import { intlCache } from './cache/IntlCache';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import { _determineLocale } from './locales/determineLocale';
@@ -126,12 +126,9 @@ export function formatCutoff(
  */
 export function formatMessage(message: string, options: MessageFormatOptions) {
   if (options.dataFormat === 'STRING') return message;
-  return _formatMessageICU(
-    message,
-    options.locales,
-    options.variables,
-    options.timeZone
-  );
+  return formatIcu(message, options.locales, options.variables, {
+    timeZone: options.timeZone,
+  });
 }
 
 /**

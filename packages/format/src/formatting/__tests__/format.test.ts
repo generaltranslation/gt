@@ -5,12 +5,21 @@ import {
   formatMessage as publicFormatMessage,
 } from '../../core';
 import { intlCache } from '../../cache/IntlCache';
-import { _formatListToParts, _formatMessageICU } from '../format';
+import { _formatListToParts } from '../format';
+import type { FormatVariables } from '../../types';
 
 // The host's zone, so a formatted date compares with what Intl gives.
 const timeZone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-describe('_formatMessageICU', () => {
+// formatMessage with positional arguments, as these cases are written.
+const formatIcuString = (
+  message: string,
+  locales: string | string[],
+  variables: FormatVariables,
+  zone: string
+) => publicFormatMessage(message, { locales, variables, timeZone: zone });
+
+describe('formatMessage with ICU strings', () => {
   it.each([
     ['plain text', {}, 'plain text'],
     ['Hello {name}', { name: 'Ada' }, 'Hello Ada'],
@@ -67,7 +76,7 @@ describe('_formatMessageICU', () => {
   ])(
     'formats %j through the public format boundary',
     (message, variables, expected) => {
-      expect(_formatMessageICU(message, 'en-US', variables, timeZone)).toBe(
+      expect(formatIcuString(message, 'en-US', variables, timeZone)).toBe(
         expected
       );
     }
@@ -75,7 +84,7 @@ describe('_formatMessageICU', () => {
 
   it('passes number skeletons through the package boundary', () => {
     expect(
-      _formatMessageICU(
+      formatIcuString(
         '{value, number, ::currency/USD .00}',
         'en-US',
         {
@@ -85,7 +94,7 @@ describe('_formatMessageICU', () => {
       )
     ).toBe('$1,234.50');
     expect(
-      _formatMessageICU(
+      formatIcuString(
         '{value, number, ::scale/0.5}',
         'en-US',
         {
@@ -111,7 +120,7 @@ describe('_formatMessageICU', () => {
     '{value, time, ::Jj}',
   ])('rejects %j through the public boundary', (message) => {
     expect(() =>
-      _formatMessageICU(message, 'en-US', { value: 1 }, timeZone)
+      formatIcuString(message, 'en-US', { value: 1 }, timeZone)
     ).toThrow();
   });
 
@@ -159,7 +168,7 @@ describe('_formatMessageICU', () => {
   it('passes date skeletons through the package boundary', () => {
     const value = new Date('2020-05-06T14:03:02Z');
     expect(
-      _formatMessageICU(
+      formatIcuString(
         '{value, date, ::yyyyMMMdd}',
         'en-US',
         { value },
@@ -218,7 +227,7 @@ describe('_formatMessageICU', () => {
 
   it('preserves locale arrays through the package boundary', () => {
     expect(
-      _formatMessageICU(
+      formatIcuString(
         '{value, number}',
         ['de-DE', 'en-US'],
         {
@@ -231,7 +240,7 @@ describe('_formatMessageICU', () => {
 
   it('still surfaces missing-variable failures through the package boundary', () => {
     expect(() =>
-      _formatMessageICU('Hello {name}', 'en-US', {}, timeZone)
+      formatIcuString('Hello {name}', 'en-US', {}, timeZone)
     ).toThrow('variable "name" was not provided');
   });
 

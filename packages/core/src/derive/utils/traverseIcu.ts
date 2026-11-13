@@ -19,17 +19,17 @@ type TraverseIcuOptions = ParserOptions & {
  * @note This function is a heavy operation, use sparingly
  */
 export function traverseIcu<T extends MessageFormatElement>({
-  icuString,
+  icu,
   shouldVisit,
   visitor,
   options: { recurseIntoVisited = true, ...otherOptions },
 }: {
-  icuString: string;
+  icu: string;
   shouldVisit: (element: MessageFormatElement) => element is T;
   visitor: (element: T) => void;
   options: TraverseIcuOptions;
 }): MessageFormatElement[] {
-  const ast = parse(icuString, otherOptions);
+  const ast = parse(icu, otherOptions);
   handleChildren(ast);
   return ast;
 

@@ -3,7 +3,6 @@ import {
   _formatDateTime,
   _formatList,
   _formatListToParts,
-  _formatMessageICU,
   _formatNum,
   _formatRelativeTime,
   _selectRelativeTimeUnit,
@@ -14,6 +13,7 @@ import {
   type MessageTree,
   type MessageValues,
 } from '@generaltranslation/icu';
+import { formatIcu } from '@generaltranslation/icu/parser';
 import { intlCache } from './cache/IntlCache';
 import {
   _prepareApprovedLocales,
@@ -294,11 +294,11 @@ export class LocaleConfig {
   ) {
     const { locales, variables, dataFormat } = options;
     if (dataFormat === 'STRING') return message;
-    return _formatMessageICU(
+    return formatIcu(
       message,
       this.getFormattingLocales(targetLocale, locales),
       variables ?? {},
-      this.timeZone
+      { timeZone: this.timeZone }
     );
   }
 

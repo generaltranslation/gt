@@ -1,6 +1,4 @@
-import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
-import { formatIcu } from '@generaltranslation/icu/parser';
 
 // Every argument is passed in: this package applies no defaults of its own
 // to them. `generaltranslation` and the configs resolve what a caller leaves
@@ -18,25 +16,6 @@ type FormatParams<Value, Options> = {
 export type ZonedDateTimeFormatOptions = Intl.DateTimeFormatOptions & {
   timeZone: string;
 };
-
-/**
- * Formats a message according to the specified locales and options.
- *
- * @param {string} message - The message to format.
- * @param {string | string[]} locales - The locales to use for formatting.
- * @param {Record<string, any>} variables - The variables to use for formatting.
- * @param {string} timeZone - The time zone of the dates and times in the message.
- * @returns {string} The formatted message.
- * @internal
- */
-export function _formatMessageICU(
-  message: string,
-  locales: string | string[],
-  variables: FormatVariables,
-  timeZone: string
-): string {
-  return formatIcu(message, locales, variables, { timeZone });
-}
 
 /**
  * Formats a number according to the specified locales and options.

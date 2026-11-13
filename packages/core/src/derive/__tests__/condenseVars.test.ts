@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { parse } from '@generaltranslation/icu/parser';
 import { condenseVars } from '../condenseVars';
 
-const expectParseableIcu = (icuString: string) => {
-  expect(() => parse(icuString)).not.toThrow();
+const expectParseableIcu = (icu: string) => {
+  expect(() => parse(icu)).not.toThrow();
 };
 
 describe('static condenseVars', () => {

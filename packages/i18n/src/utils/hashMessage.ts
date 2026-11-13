@@ -2,7 +2,6 @@ import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
 import { LookupOptions } from '../translation-functions/types/options';
 import type { Content } from '@generaltranslation/format/types';
-import type { IcuMessage } from '@generaltranslation/format/types';
 
 /**
  * Hash a message string
@@ -23,8 +22,7 @@ export function hashMessage<T extends Content>(
   }
 
   return hashSource({
-    source:
-      options.$format === 'ICU' ? indexVars(message as IcuMessage) : message,
+    source: options.$format === 'ICU' ? indexVars(message as string) : message,
     ...(metadataOptions.$context && { context: metadataOptions.$context }),
     ...(metadataOptions.$maxChars != null && {
       maxChars: Math.abs(metadataOptions.$maxChars),
