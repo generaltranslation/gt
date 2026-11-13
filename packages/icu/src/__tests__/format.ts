@@ -7,10 +7,7 @@ import {
   type MessageTree,
   type MessageValues,
 } from '../index';
-import {
-  formatMessage as formatIcu,
-  type FormatMessageOptions,
-} from '../parser';
+import { formatIcu as formatString, type FormatIcuOptions } from '../parser';
 
 export const hostTimeZone = new Intl.DateTimeFormat().resolvedOptions()
   .timeZone;
@@ -28,13 +25,13 @@ export function formatMessageTree(
   });
 }
 
-export function formatMessage(
+export function formatIcu(
   message: string,
   locales: string | string[] = 'en',
   variables: MessageValues<unknown> = {},
-  options?: Partial<FormatMessageOptions>
+  options?: Partial<FormatIcuOptions>
 ): unknown {
-  return formatIcu<unknown>(message, locales, variables, {
+  return formatString<unknown>(message, locales, variables, {
     timeZone: hostTimeZone,
     ...options,
   });

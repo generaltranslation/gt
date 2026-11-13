@@ -644,10 +644,10 @@ function characterAt(value: string, index: number): string {
 }
 
 export function parse(
-  message: string,
+  icu: string,
   options: ParserOptions = {}
 ): MessageFormatElement[] {
-  return new IcuParser(message, {
+  return new IcuParser(icu, {
     shouldParseSkeletons: true,
     requiresOtherClause: true,
     ...options,

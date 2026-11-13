@@ -2,10 +2,10 @@ import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it, vi } from 'vitest';
 import type { MessageTree } from '../index';
 import { icuToMessage } from '../convert';
-import { formatMessage, formatMessageTree } from './format';
+import { formatIcu, formatMessageTree } from './format';
 
 describe('formatMessageTree', () => {
-  it('matches formatMessage for a localized currency', () => {
+  it('matches formatIcu for a localized currency', () => {
     expect(
       formatMessageTree(
         icuToMessage('{n, number, currency}').tree,
@@ -13,9 +13,7 @@ describe('formatMessageTree', () => {
         { n: 1234.5 },
         { formats: { n: { currency: 'EUR' } } }
       )
-    ).toEqual(
-      formatMessage('{n, number, ::currency/EUR}', 'de', { n: 1234.5 })
-    );
+    ).toEqual(formatIcu('{n, number, ::currency/EUR}', 'de', { n: 1234.5 }));
   });
 
   it('defaults to the library locale and empty variables', () => {
@@ -74,7 +72,7 @@ describe('formatMessageTree', () => {
     ).toThrow('did not match any of: a');
   });
 
-  it('validates locales like formatMessage instead of using the host locale', () => {
+  it('validates locales like formatIcu instead of using the host locale', () => {
     const tree: MessageTree = ['Hi'];
     const errorOf = (format: () => unknown): unknown => {
       try {
@@ -86,7 +84,7 @@ describe('formatMessageTree', () => {
     };
     for (const locales of [[], 'not a locale!', ['en', 'x!']]) {
       expect(errorOf(() => formatMessageTree(tree, locales))).toEqual(
-        errorOf(() => formatMessage('Hi', locales))
+        errorOf(() => formatIcu('Hi', locales))
       );
     }
     expect(() => formatMessageTree(tree, [])).toThrow(TypeError);
@@ -261,7 +259,7 @@ describe('empty branches', () => {
     '{n, selectordinal, one {} other {fallback}}{x}',
   ])('adds no part for an empty branch in %j', (message) => {
     const values = { s: 'yes', n: 1, x: rich };
-    expect(formatMessage(message, 'en', values)).toBe(
+    expect(formatIcu(message, 'en', values)).toBe(
       new IntlMessageFormat(message, 'en').format(values)
     );
     expect(formatMessageTree(icuToMessage(message).tree, 'en', values)).toBe(
@@ -272,7 +270,7 @@ describe('empty branches', () => {
   it('passes a tag callback no children for an empty branch', () => {
     const message = '<b>{s, select, yes {} other {fallback}}</b>';
     const values = { s: 'yes', b: (parts: unknown[]) => parts.length };
-    expect(formatMessage(message, 'en', values)).toBe(0);
+    expect(formatIcu(message, 'en', values)).toBe(0);
     expect(new IntlMessageFormat(message, 'en').format(values)).toBe(0);
     expect(formatMessageTree([['b', 'tag', '']], 'en', values)).toBe(0);
   });
@@ -333,8 +331,8 @@ describe('values', () => {
     expect(outer).toHaveBeenCalledWith([42, 43]);
   });
 
-  it('formats ICU strings through formatMessage with the same value rules', () => {
-    expect(formatMessage('a {x} b', 'en', { x: true })).toBe('a true b');
-    expect(formatMessage('a {x} b', 'en', { x: false })).toBe('a false b');
+  it('formats ICU strings through formatIcu with the same value rules', () => {
+    expect(formatIcu('a {x} b', 'en', { x: true })).toBe('a true b');
+    expect(formatIcu('a {x} b', 'en', { x: false })).toBe('a false b');
   });
 });

@@ -23,7 +23,7 @@ import {
 } from '../settings/formatOptions';
 import { DATE_TIME_FIELD_SYMBOLS } from '../convert/skeleton';
 import { normalizeMessageTree } from '../tree/canonical';
-import { formatMessage, formatMessageTree } from './format';
+import { formatIcu, formatMessageTree } from './format';
 import { DATE_SKELETONS, NUMBER_SKELETONS } from './skeletonCases';
 
 const POUND: TemplateHole = { kind: 'pound' };
@@ -123,12 +123,12 @@ describe('icuToMessage', () => {
     ]);
   });
 
-  it('formats the locale hour like formatMessage', () => {
+  it('formats the locale hour like formatIcu', () => {
     const d = new Date(2026, 0, 1, 13, 5);
     for (const icu of ['{d, time, ::j}', '{d, time, ::jjmm}']) {
       for (const locale of ['en-US', 'de']) {
         expect(formatMessageTree(icuToMessage(icu).tree, locale, { d })).toBe(
-          formatMessage(icu, locale, { d })
+          formatIcu(icu, locale, { d })
         );
       }
     }
@@ -239,7 +239,7 @@ describe('icuToMessage', () => {
     const values = { n: 1234.567, d: new Date(2020, 4, 6, 23, 30, 5, 123) };
     for (const locale of ['en-US', 'de', 'ja']) {
       expect(formatMessageTree(tree, locale, values, { formats })).toBe(
-        formatMessage(icu, locale, values)
+        formatIcu(icu, locale, values)
       );
     }
   });
@@ -826,7 +826,7 @@ describe('the tree and ICU text', () => {
       const values = node[1] === 'number' ? { n: 1234.5 } : { d };
       for (const locale of ['en-US', 'de', 'ja']) {
         expect(formatMessageTree([node], locale, values)).toBe(
-          formatMessage(icu, locale, values)
+          formatIcu(icu, locale, values)
         );
       }
     }

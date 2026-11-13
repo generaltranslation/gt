@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { formatMessage } from './format';
+import { formatIcu } from './format';
 import { DATE_SKELETONS, NUMBER_SKELETONS } from './skeletonCases';
 
 const LOCALES = ['en-US', 'fr-FR', 'de-DE'] as const;
@@ -52,7 +52,7 @@ describe('pinned intl-messageformat compatibility matrix', () => {
     'formats $skeleton for $value in $locale',
     ({ locale, skeleton, options, scale, value }) => {
       expect(
-        formatMessage(`{n, number, ::${skeleton}}`, locale, { value, n: value })
+        formatIcu(`{n, number, ::${skeleton}}`, locale, { value, n: value })
       ).toBe(new Intl.NumberFormat(locale, options).format(value * scale));
     }
   );
@@ -73,7 +73,7 @@ describe('pinned intl-messageformat compatibility matrix', () => {
         exact ??
         `${category}:${new Intl.NumberFormat(locale).format(adjusted)}`;
 
-      expect(formatMessage(message, locale, { n: value })).toBe(expected);
+      expect(formatIcu(message, locale, { n: value })).toBe(expected);
     }
   );
 
@@ -90,16 +90,16 @@ describe('pinned intl-messageformat compatibility matrix', () => {
           ? 'exact-zero'
           : `${category}:${new Intl.NumberFormat(locale).format(value)}`;
 
-      expect(formatMessage(message, locale, { n: value })).toBe(expected);
+      expect(formatIcu(message, locale, { n: value })).toBe(expected);
     }
   );
 
   it.each(DATE_CASES)(
     'formats $skeleton for $value in $locale',
     ({ locale, skeleton, options, value }) => {
-      expect(
-        formatMessage(`{value, date, ::${skeleton}}`, locale, { value })
-      ).toBe(new Intl.DateTimeFormat(locale, options).format(value));
+      expect(formatIcu(`{value, date, ::${skeleton}}`, locale, { value })).toBe(
+        new Intl.DateTimeFormat(locale, options).format(value)
+      );
     }
   );
 });

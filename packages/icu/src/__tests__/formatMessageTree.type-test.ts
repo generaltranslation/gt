@@ -1,12 +1,12 @@
-// Type-level tests for formatMessageTree and formatMessage, checked by
+// Type-level tests for formatMessageTree and formatIcu, checked by
 // `tsc --noEmit` (not run by vitest).
 import {
   formatMessageTree,
   type FormatMessageTreeOptions,
   type MessageTree,
 } from '../index';
-import { formatMessage } from '../parser';
-import type { ParsedTree } from '../formatter/formatMessage';
+import { formatIcu } from '../parser';
+import type { ParsedTree } from '../formatter/formatIcu';
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
@@ -117,8 +117,8 @@ const treeUnrelated = formatMessageTree<string | Element>(
 );
 expectType<Equal<typeof treeUnrelated, Rich>>();
 
-// formatMessage formats an ICU string with the same rules and types.
-const icuText = formatMessage(
+// formatIcu formats an ICU string with the same rules and types.
+const icuText = formatIcu(
   '{a} {b} {c}',
   'en',
   {
@@ -134,16 +134,16 @@ const icuText = formatMessage(
   options
 );
 expectType<Equal<typeof icuText, string>>();
-const icuNone = formatMessage('Hi', 'en', {}, options);
+const icuNone = formatIcu('Hi', 'en', {}, options);
 expectType<Equal<typeof icuNone, string>>();
-const icuRich = formatMessage(
+const icuRich = formatIcu(
   '<b>hi</b> {avatar}',
   'en',
   { avatar: element },
   options
 );
 expectType<Equal<typeof icuRich, Rich>>();
-const icuTagged = formatMessage<Element>(
+const icuTagged = formatIcu<Element>(
   '<b>hi</b>',
   'en',
   {
@@ -152,7 +152,7 @@ const icuTagged = formatMessage<Element>(
   options
 );
 expectType<Equal<typeof icuTagged, Rich>>();
-const icuMixed = formatMessage(
+const icuMixed = formatIcu(
   '{date, date} <b>deadline</b>',
   'en',
   {
@@ -165,14 +165,14 @@ expectType<Equal<typeof icuMixed, string>>();
 // A tag typed for text next to a rich value is an error: the value could end
 // up among its parts. With unknown[] parts, R is written, since TypeScript
 // does not join the value's type and the tag's into one union.
-formatMessage(
+formatIcu(
   '<b>hi</b> {avatar}',
   'en',
   // @ts-expect-error parts typed string[] next to a rich value
   { avatar: element, b: textTag },
   options
 );
-const icuUnrelated = formatMessage<string | Element>(
+const icuUnrelated = formatIcu<string | Element>(
   '<b>hi</b> {avatar}',
   'en',
   {
@@ -197,7 +197,7 @@ formatMessageTree<number[]>(
   options
 );
 // The same holds for an array member of a union R.
-formatMessage<string | number[]>(
+formatIcu<string | number[]>(
   '<o><i>x</i></o>',
   'en',
   {
@@ -224,11 +224,11 @@ expectType<
 // @ts-expect-error a message is formatted with a time zone
 formatMessageTree(tree, 'en', {});
 // @ts-expect-error a message is formatted with a time zone
-formatMessage('Hi {name}', 'en', { name: 'Ada' });
+formatIcu('Hi {name}', 'en', { name: 'Ada' });
 // @ts-expect-error a message is formatted in the locales it is given
 formatMessageTree(tree, undefined, {}, options);
 // @ts-expect-error a message is formatted with the values it is given
-formatMessage('Hi', 'en', undefined, options);
+formatIcu('Hi', 'en', undefined, options);
 
 // An ICU string's syntax tree holds styles a message tree does not, so the
 // formatter reads both and nothing else takes one for a message tree.

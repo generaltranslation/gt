@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { icuToMessage } from '../convert';
 import { formatMessageTree } from '../index';
-import { formatMessage } from '../parser';
+import { formatIcu } from '../parser';
 
 type Row = { message: string; value: string; icu: string };
 
@@ -214,7 +214,7 @@ function valuesOf({ value }: Row) {
 }
 
 function format(row: Row): string {
-  return formatMessage(row.message, 'en-US', valuesOf(row), {
+  return formatIcu(row.message, 'en-US', valuesOf(row), {
     timeZone: 'UTC',
   });
 }

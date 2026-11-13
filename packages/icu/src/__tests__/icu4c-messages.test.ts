@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { icuToMessage } from '../convert';
 import { formatMessageTree } from '../index';
-import { formatMessage, parse } from '../parser';
+import { formatIcu, parse } from '../parser';
 import { MAX_NESTING_DEPTH } from '../settings/syntax';
 
 /** Why a message does not format as it does in ICU4C. */
@@ -155,7 +155,7 @@ const attempt = (format: () => unknown): Outcome => {
 };
 const asString = ({ locale, message, values }: Case) =>
   attempt(() =>
-    formatMessage(message, locale, valuesOf(values), { timeZone: 'UTC' })
+    formatIcu(message, locale, valuesOf(values), { timeZone: 'UTC' })
   );
 const asTree = ({ locale, message, values }: Case) =>
   attempt(() => {
@@ -225,7 +225,7 @@ describe('ICU4C messages', () => {
     const nested = (levels: number) =>
       '{a, select, other{'.repeat(levels) + 'x' + '}}'.repeat(levels);
     expect(
-      formatMessage(
+      formatIcu(
         nested(MAX_NESTING_DEPTH),
         'en',
         { a: 'z' },

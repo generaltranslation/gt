@@ -5,12 +5,12 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { formatMessage } from './format';
+import { formatIcu } from './format';
 
-describe('formatMessage', () => {
+describe('formatIcu', () => {
   it('interpolates direct arguments without dropping zero', () => {
     expect(
-      formatMessage('Hi {name}, count: {count}', 'en', {
+      formatIcu('Hi {name}, count: {count}', 'en', {
         name: 'Ada',
         count: 0,
       })
@@ -27,22 +27,22 @@ describe('formatMessage', () => {
     [123n, '123'],
     [new Date(0), String(new Date(0))],
   ])('formats direct argument %s as text', (value, expected) => {
-    expect(formatMessage('{value}', 'en', { value })).toBe(expected);
-    expect(formatMessage('before {value} after', 'en', { value })).toBe(
+    expect(formatIcu('{value}', 'en', { value })).toBe(expected);
+    expect(formatIcu('before {value} after', 'en', { value })).toBe(
       `before ${expected} after`
     );
   });
 
   it('keeps rich values as parts', () => {
     const element = { type: 'b' };
-    expect(
-      formatMessage('before {value} after', 'en', { value: element })
-    ).toEqual(['before ', element, ' after']);
-    expect(formatMessage('{value}', 'en', { value: element })).toBe(element);
+    expect(formatIcu('before {value} after', 'en', { value: element })).toEqual(
+      ['before ', element, ' after']
+    );
+    expect(formatIcu('{value}', 'en', { value: element })).toBe(element);
   });
 
   it('requires every referenced variable', () => {
-    expect(() => formatMessage('Hello {name}', 'en')).toThrow(
+    expect(() => formatIcu('Hello {name}', 'en')).toThrow(
       'variable "name" was not provided'
     );
   });
@@ -50,10 +50,10 @@ describe('formatMessage', () => {
   it('reads own values only, so no name is found on every object', () => {
     const inherited = Object.create({ name: 'Ada' }) as Record<string, unknown>;
 
-    expect(() => formatMessage('Hello {name}', 'en', inherited)).toThrow(
+    expect(() => formatIcu('Hello {name}', 'en', inherited)).toThrow(
       'The ICU message variable "name" was not provided.'
     );
-    expect(() => formatMessage('{toString}', 'en', {})).toThrow(
+    expect(() => formatIcu('{toString}', 'en', {})).toThrow(
       'The ICU message variable "toString" was not provided.'
     );
   });
@@ -67,7 +67,7 @@ describe('formatMessage', () => {
 
     try {
       expect(
-        formatMessage('{kind, select, yes {Hi {name}} other {No}}', 'en', {
+        formatIcu('{kind, select, yes {Hi {name}} other {No}}', 'en', {
           kind: 'yes',
           name: 'Ada',
         })
@@ -84,10 +84,10 @@ describe('formatMessage', () => {
   it('selects exact and fallback branches without prototype collisions', () => {
     const message =
       '{value, select, constructor {ctor} __proto__ {proto} toString {string} other {fallback}}';
-    expect(formatMessage(message, 'en', { value: 'constructor' })).toBe('ctor');
-    expect(formatMessage(message, 'en', { value: '__proto__' })).toBe('proto');
-    expect(formatMessage(message, 'en', { value: 'toString' })).toBe('string');
-    expect(formatMessage(message, 'en', { value: 'missing' })).toBe('fallback');
+    expect(formatIcu(message, 'en', { value: 'constructor' })).toBe('ctor');
+    expect(formatIcu(message, 'en', { value: '__proto__' })).toBe('proto');
+    expect(formatIcu(message, 'en', { value: 'toString' })).toBe('string');
+    expect(formatIcu(message, 'en', { value: 'missing' })).toBe('fallback');
   });
 
   it.each([
@@ -100,18 +100,16 @@ describe('formatMessage', () => {
   ])('uses %s cardinal plural rules for %d', (locale, count, expected) => {
     const message =
       '{count, plural, zero {zero} one {one} two {two} few {few} many {many} other {other}}';
-    expect(formatMessage(message, locale, { count })).toBe(expected);
+    expect(formatIcu(message, locale, { count })).toBe(expected);
   });
 
   it('prefers exact plural matches and applies offsets to rules and pound', () => {
     const message =
       '{count, plural, offset:1 =0 {Nobody came} =1 {Only Ada came} one {Ada and one other} other {Ada and # others}}';
-    expect(formatMessage(message, 'en', { count: 0 })).toBe('Nobody came');
-    expect(formatMessage(message, 'en', { count: 1 })).toBe('Only Ada came');
-    expect(formatMessage(message, 'en', { count: 2 })).toBe(
-      'Ada and one other'
-    );
-    expect(formatMessage(message, 'en', { count: 5 })).toBe('Ada and 4 others');
+    expect(formatIcu(message, 'en', { count: 0 })).toBe('Nobody came');
+    expect(formatIcu(message, 'en', { count: 1 })).toBe('Only Ada came');
+    expect(formatIcu(message, 'en', { count: 2 })).toBe('Ada and one other');
+    expect(formatIcu(message, 'en', { count: 5 })).toBe('Ada and 4 others');
   });
 
   it.each([
@@ -127,7 +125,7 @@ describe('formatMessage', () => {
     const message =
       '{count, plural, =1 {one} =0 {zero} =-01 {minus one} other {other}}';
 
-    expect(formatMessage(message, 'en', { count })).toBe(expected);
+    expect(formatIcu(message, 'en', { count })).toBe(expected);
   });
 
   it.each([
@@ -143,29 +141,27 @@ describe('formatMessage', () => {
       'NaN items',
     ],
   ])('reads the plural string %j as its number', (count, message, expected) => {
-    expect(formatMessage(message, 'en', { count })).toBe(expected);
+    expect(formatIcu(message, 'en', { count })).toBe(expected);
   });
 
   it('uses ordinal plural rules', () => {
     const message =
       '{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}';
     expect(
-      [1, 2, 3, 4, 11, 21].map((place) =>
-        formatMessage(message, 'en', { place })
-      )
+      [1, 2, 3, 4, 11, 21].map((place) => formatIcu(message, 'en', { place }))
     ).toEqual(['1st', '2nd', '3rd', '4th', '11th', '21st']);
   });
 
   it('preserves a plural value through tags but not nested selects', () => {
     const bold = ([value]: string[]) => `<b>${value}</b>`;
     expect(
-      formatMessage('{count, plural, other {<b># items</b>}}', 'en', {
+      formatIcu('{count, plural, other {<b># items</b>}}', 'en', {
         count: 3,
         b: bold,
       })
     ).toBe('<b>3 items</b>');
     expect(
-      formatMessage(
+      formatIcu(
         '{count, plural, other {{kind, select, a {# items} other {none}}}}',
         'en',
         { count: 3, kind: 'a' }
@@ -175,7 +171,7 @@ describe('formatMessage', () => {
 
   it('flattens nested rich-text tag arrays without adding separators', () => {
     expect(
-      formatMessage('hello <b>world<i>!</i> <br/> </b>', 'en', {
+      formatIcu('hello <b>world<i>!</i> <br/> </b>', 'en', {
         b: (chunks: string[]) => ['<b>', ...chunks, '</b>'],
         i: (chunks: string[]) => `$$${chunks}$$`,
       })
@@ -184,29 +180,27 @@ describe('formatMessage', () => {
 
   it('preserves a falsy rich-text result', () => {
     expect(
-      formatMessage('<value>ignored</value>', 'en', {
+      formatIcu('<value>ignored</value>', 'en', {
         value: () => 0,
       })
     ).toBe(0);
   });
 
   it('formats named number styles', () => {
-    expect(formatMessage('{n, number}', 'en-US', { n: 123456.78 })).toBe(
+    expect(formatIcu('{n, number}', 'en-US', { n: 123456.78 })).toBe(
       new Intl.NumberFormat('en-US').format(123456.78)
     );
-    expect(
-      formatMessage('{n, number, integer}', 'en-US', { n: 123456.78 })
-    ).toBe('123,457');
-    expect(formatMessage('{n, number, percent}', 'en-US', { n: 0.56 })).toBe(
-      '56%'
+    expect(formatIcu('{n, number, integer}', 'en-US', { n: 123456.78 })).toBe(
+      '123,457'
     );
+    expect(formatIcu('{n, number, percent}', 'en-US', { n: 0.56 })).toBe('56%');
   });
 
   it('preserves unscaled numeric-string precision', () => {
     const value = '123456789012345678901234567890';
     const expected = '123,456,789,012,345,678,901,234,567,890';
 
-    expect(formatMessage('{n, number}', 'en-US', { n: value })).toBe(expected);
+    expect(formatIcu('{n, number}', 'en-US', { n: value })).toBe(expected);
   });
 
   it.each([
@@ -221,7 +215,7 @@ describe('formatMessage', () => {
     ],
   ])('scales %j as a decimal', (n, expected) => {
     expect(
-      formatMessage('{n, number, ::scale/0.1 precision-unlimited}', 'en-US', {
+      formatIcu('{n, number, ::scale/0.1 precision-unlimited}', 'en-US', {
         n,
       })
     ).toBe(expected);
@@ -229,20 +223,20 @@ describe('formatMessage', () => {
 
   it('formats number skeleton precision, grouping, currency, and scale', () => {
     expect(
-      formatMessage('{n, number, ::currency/CAD .0 group-off}', 'en-US', {
+      formatIcu('{n, number, ::currency/CAD .0 group-off}', 'en-US', {
         n: 123456.78,
       })
     ).toMatch(/\$123456\.8/u);
     expect(
-      formatMessage('{n, number, ::currency/GBP .0#}', 'en-US', {
+      formatIcu('{n, number, ::currency/GBP .0#}', 'en-US', {
         n: 123456.789,
       })
     ).toBe('£123,456.79');
     // ICU's percent does not multiply by 100, and a scale of 0 multiplies by it.
     expect(
-      formatMessage('{n, number, ::percent scale/0.01}', 'en-US', { n: 12.3 })
+      formatIcu('{n, number, ::percent scale/0.01}', 'en-US', { n: 12.3 })
     ).toBe('0.123%');
-    expect(formatMessage('{n, number, ::scale/0}', 'en-US', { n: 12.34 })).toBe(
+    expect(formatIcu('{n, number, ::scale/0}', 'en-US', { n: 12.34 })).toBe(
       '0'
     );
   });
@@ -251,46 +245,46 @@ describe('formatMessage', () => {
     'rejects ::%s, whose scale is not a number',
     (skeleton) => {
       expect(() =>
-        formatMessage(`{n, number, ::${skeleton}}`, 'en-US', { n: 3 })
+        formatIcu(`{n, number, ::${skeleton}}`, 'en-US', { n: 3 })
       ).toThrow(`"${skeleton}" is not an ICU number skeleton token.`);
     }
   );
 
   it('formats minimum integer-width skeletons', () => {
-    expect(
-      formatMessage('{n, number, ::integer-width/*000}', 'en', { n: 7 })
-    ).toBe('007');
+    expect(formatIcu('{n, number, ::integer-width/*000}', 'en', { n: 7 })).toBe(
+      '007'
+    );
   });
 
   it.each(['000', '##00'])(
     'rejects integer-width/%s, a maximum of integer digits',
     (width) => {
       expect(() =>
-        formatMessage(`{n, number, ::integer-width/${width}}`, 'en', { n: 7 })
+        formatIcu(`{n, number, ::integer-width/${width}}`, 'en', { n: 7 })
       ).toThrow('Intl shows every integer digit');
     }
   );
 
   it('supports bigint number and plural formatting', () => {
     expect(
-      formatMessage('Total: {total, number, ::currency/USD}', 'en-US', {
+      formatIcu('Total: {total, number, ::currency/USD}', 'en-US', {
         total: 12345678901234567890n,
       })
     ).toContain('$12,345,678,901,234,567,890.00');
     expect(
-      formatMessage('{count, plural, one {one} other {many}}', 'en', {
+      formatIcu('{count, plural, one {one} other {many}}', 'en', {
         count: 2n,
       })
     ).toBe('many');
     expect(() =>
-      formatMessage('{value, number, ::scale/1.5}', 'en', { value: 2n })
+      formatIcu('{value, number, ::scale/1.5}', 'en', { value: 2n })
     ).toThrow('Cannot apply fractional scale');
   });
 
   // ICU4C keeps every digit; Intl keeps at most 21 significant digits.
   it('rounds a bigint past 21 significant digits for an unlimited ::@@@*', () => {
     expect(
-      formatMessage('{n, number, ::@@@*}', 'en', {
+      formatIcu('{n, number, ::@@@*}', 'en', {
         n: 123456789012345678901234567890n,
       })
     ).toBe('123,456,789,012,345,678,901,000,000,000');
@@ -306,7 +300,7 @@ describe('formatMessage', () => {
     'formats midnight for %s in %s as ICU4C does',
     (skeleton, locale, text) => {
       expect(
-        formatMessage(
+        formatIcu(
           `{d, time, ${skeleton}}`,
           locale,
           { d: new Date('2020-05-06T00:00:00Z') },
@@ -318,12 +312,12 @@ describe('formatMessage', () => {
 
   it('rejects unsafe bigint plural selection instead of losing precision', () => {
     const count = 1000000000000000001n;
-    expect(
-      formatMessage('{count, plural, other {# items}}', 'ru', { count })
-    ).toBe(`${new Intl.NumberFormat('ru').format(count)} items`);
+    expect(formatIcu('{count, plural, other {# items}}', 'ru', { count })).toBe(
+      `${new Intl.NumberFormat('ru').format(count)} items`
+    );
 
     expect(() =>
-      formatMessage(
+      formatIcu(
         '{count, plural, one {one} few {few} many {many} other {other}}',
         'ru',
         { count }
@@ -341,10 +335,10 @@ describe('formatMessage', () => {
     const d = new Date('2020-05-06T14:03:02Z');
     const intl = (options: Intl.DateTimeFormatOptions) =>
       new Intl.DateTimeFormat(locale, options).format(d);
-    expect(formatMessage(`{d, date, ${style}}`, locale, { d })).toBe(
+    expect(formatIcu(`{d, date, ${style}}`, locale, { d })).toBe(
       intl({ dateStyle: style as 'full' })
     );
-    expect(formatMessage(`{d, time, ${style}}`, locale, { d })).toBe(
+    expect(formatIcu(`{d, time, ${style}}`, locale, { d })).toBe(
       intl({ timeStyle: style as 'full' })
     );
   });
@@ -354,10 +348,10 @@ describe('formatMessage', () => {
     'formats a date or time without a style as the medium style in %s',
     (locale) => {
       const d = new Date('2020-05-06T14:03:02Z');
-      expect(formatMessage('{d, date}', locale, { d })).toBe(
+      expect(formatIcu('{d, date}', locale, { d })).toBe(
         new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(d)
       );
-      expect(formatMessage('{d, time}', locale, { d })).toBe(
+      expect(formatIcu('{d, time}', locale, { d })).toBe(
         new Intl.DateTimeFormat(locale, { timeStyle: 'medium' }).format(d)
       );
     }
@@ -366,24 +360,22 @@ describe('formatMessage', () => {
   it('formats fractional seconds and day periods as ICU4C does', () => {
     const d = new Date(2020, 4, 6, 23, 30, 0, 123);
     // ICU4C 78.3 formats these as '11:30:00.123 PM' and '11 at night'.
-    expect(formatMessage('{d, date, ::jmmssSSS}', 'en-US', { d })).toBe(
+    expect(formatIcu('{d, date, ::jmmssSSS}', 'en-US', { d })).toBe(
       '11:30:00.123 PM'
     );
-    expect(formatMessage('{d, time, ::hB}', 'en-US', { d })).toBe(
-      '11 at night'
-    );
+    expect(formatIcu('{d, time, ::hB}', 'en-US', { d })).toBe('11 at night');
   });
 
   it('formats date and locale-aware hour skeletons', () => {
     const value = new Date('2020-05-06T14:03:02Z');
-    expect(formatMessage('{d, date, ::yyyyMMMdd}', 'en-US', { d: value })).toBe(
+    expect(formatIcu('{d, date, ::yyyyMMMdd}', 'en-US', { d: value })).toBe(
       new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'short',
         day: '2-digit',
       }).format(value)
     );
-    expect(formatMessage('{d, time, ::jjmmss}', 'de-DE', { d: value })).toBe(
+    expect(formatIcu('{d, time, ::jjmmss}', 'de-DE', { d: value })).toBe(
       new Intl.DateTimeFormat('de-DE', {
         hourCycle: 'h23',
         hour: '2-digit',
@@ -395,24 +387,22 @@ describe('formatMessage', () => {
 
   it('preserves FormatJS hour skeleton ordering for de-DE ::hj', () => {
     const value = new Date(2020, 4, 6, 14, 3, 2);
-    expect(formatMessage('{d, time, ::hj}', 'de-DE', { d: value })).toBe(
-      '14 Uhr'
-    );
+    expect(formatIcu('{d, time, ::hj}', 'de-DE', { d: value })).toBe('14 Uhr');
   });
 
   it('honors Unicode region overrides and sparse locale fallbacks', () => {
     const value = new Date(2020, 4, 6, 7, 3, 2);
-    expect(
-      formatMessage('{d, time, ::j}', 'en-u-rg-gbzzzz', { d: value })
-    ).toBe('07');
-    expect(
-      formatMessage('{d, time, ::j}', 'en-GB-u-rg-uszzzz', { d: value })
-    ).toBe('7 am');
+    expect(formatIcu('{d, time, ::j}', 'en-u-rg-gbzzzz', { d: value })).toBe(
+      '07'
+    );
+    expect(formatIcu('{d, time, ::j}', 'en-GB-u-rg-uszzzz', { d: value })).toBe(
+      '7 am'
+    );
 
     const locales: string[] = [];
     locales[1] = 'fr-FR';
-    expect(formatMessage('{d, time, ::j}', locales, { d: value })).toBe('07 h');
-    expect(() => formatMessage('{d, time, ::j}', [], { d: value })).toThrow();
+    expect(formatIcu('{d, time, ::j}', locales, { d: value })).toBe('07 h');
+    expect(() => formatIcu('{d, time, ::j}', [], { d: value })).toThrow();
   });
 
   // FormatJS skips `C` and `A` and reads `J` as `H`.
@@ -420,7 +410,7 @@ describe('formatMessage', () => {
     'rejects the %s date/time skeleton field, which Intl cannot format',
     (field) => {
       expect(() =>
-        formatMessage(`{d, time, ::${field}}`, 'en-US', { d: new Date() })
+        formatIcu(`{d, time, ::${field}}`, 'en-US', { d: new Date() })
       ).toThrow(`Unsupported date/time skeleton field: ${field}.`);
     }
   );
@@ -464,7 +454,7 @@ describe('formatMessage', () => {
       const value = new Date('2020-05-06T14:03:02Z');
       // A locale no other test uses, so no formatter is cached yet.
       for (let call = 0; call < 2; call++) {
-        formatMessage(
+        formatIcu(
           '{n, number} {n, number} {d, date, short} {d, date, short} ' +
             '{n, plural, one {# item} other {# items}} ' +
             '{n, plural, one {# item} other {# items}}',
@@ -494,7 +484,7 @@ describe('formatMessage', () => {
 
     try {
       expect.assertions(4);
-      formatMessage('{count, plural, one {one} other {other}}', 'en', {
+      formatIcu('{count, plural, one {one} other {other}}', 'en', {
         count: 2,
       });
     } catch (error) {
@@ -516,9 +506,9 @@ describe('formatMessage', () => {
   });
 
   it('applies ICU apostrophe escaping', () => {
-    expect(formatMessage("This '{isn''t}' obvious", 'en')).toBe(
+    expect(formatIcu("This '{isn''t}' obvious", 'en')).toBe(
       "This {isn't} obvious"
     );
-    expect(formatMessage("'{name}'", 'en', { name: 'ignored' })).toBe('{name}');
+    expect(formatIcu("'{name}'", 'en', { name: 'ignored' })).toBe('{name}');
   });
 });

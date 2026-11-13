@@ -1,8 +1,8 @@
 /*
- * Formatting an ICU string without making it a message. Everything that
- * exists only for that is in this file: the tree it is parsed to, how that
- * tree is made, and `formatMessage`. A message is formatted by
- * `formatMessageTree`, which never loads the parser.
+ * Formatting an ICU string without converting it to a message tree.
+ * Everything that exists only for that is in this file: the tree it is
+ * parsed to, how that tree is made, and `formatIcu`. A message tree is
+ * formatted by `formatMessageTree`, which never loads the parser.
  */
 
 import { parse } from '../parser/parse';
@@ -77,39 +77,39 @@ function parsedNode(element: FormatElement): ParsedNode {
 }
 
 /** An ICU string spells its own formatting context, so it takes none. */
-export type FormatMessageOptions = Pick<FormatMessageTreeOptions, 'timeZone'>;
+export type FormatIcuOptions = Pick<FormatMessageTreeOptions, 'timeZone'>;
 
 /**
  * Formats an ICU MessageFormat string: it is parsed to a tree and formatted
  * like `formatMessageTree`, with the same values and result types.
  *
- *   formatMessage('Hi {name}', 'en', { name: 'Ada' }, { timeZone }); // 'Hi Ada'
+ *   formatIcu('Hi {name}', 'en', { name: 'Ada' }, { timeZone }); // 'Hi Ada'
  */
-export function formatMessage(
-  message: string,
+export function formatIcu(
+  icu: string,
   locales: string | string[],
   values: Readonly<Record<string, MessagePlainValue>>,
-  options: FormatMessageOptions
+  options: FormatIcuOptions
 ): string;
 /**
  * With rich values or tag formatters, the result is a string, a rich value,
  * or the parts around them, as with `formatMessageTree`.
  */
-export function formatMessage<R>(
-  message: string,
+export function formatIcu<R>(
+  icu: string,
   locales: string | string[],
   values: MessageValues<R> & OnePartValues<R>,
-  options: FormatMessageOptions
+  options: FormatIcuOptions
 ): FormattedMessage<R>;
-export function formatMessage<R>(
-  message: string,
+export function formatIcu<R>(
+  icu: string,
   locales: string | string[],
   values: MessageValues<R>,
-  options: FormatMessageOptions
+  options: FormatIcuOptions
 ): string | R | Array<string | R> {
   const locale = resolveLocale(locales);
-  const tree = toParsedTree(parse(message, { locale }));
-  return formatParsedTree(tree, message, locales, values, {
+  const tree = toParsedTree(parse(icu, { locale }));
+  return formatParsedTree(tree, icu, locales, values, {
     formats: {},
     timeZone: options.timeZone,
   });
