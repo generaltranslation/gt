@@ -1,5 +1,6 @@
 import {
   isFunction,
+  parsedRange,
   patternBindings,
   staticPropertyName,
   staticString,
@@ -519,11 +520,6 @@ export class Scope {
 
 function nameOf(identifier: Node): string | undefined {
   return (identifier as { name?: string }).name;
-}
-
-// A node moved to its position in the source file keeps its position in the parsed code in `range`.
-function parsedRange(node: Node): readonly [number, number] {
-  return (node as { range?: [number, number] }).range ?? [node.start, node.end];
 }
 
 function positionOf(node: Node): number {

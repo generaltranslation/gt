@@ -69,6 +69,21 @@ describe('indexProgram', () => {
     expect(index.parents.get(called!)?.type).toBe('CallExpression');
   });
 
+  test("resolves a parameter's default to the name outside the function, without ranges", () => {
+    const code = 'const x = 1;\nfunction f(a = x) { const x = 2; return a; }';
+    const { program } = parseCode('/app/a.ts', code, {
+      lang: 'ts',
+      astType: 'ts',
+    });
+    const parsed = program as unknown as ESTree.Program;
+    const [, inDefault] = identifiers(parsed, 'x');
+
+    expect(rangeOf(inDefault!)).toBeUndefined();
+    expect(
+      indexProgram(parsed).references.get(inDefault!)?.variable?.isModuleLevel
+    ).toBe(true);
+  });
+
   test('drops the ranges that repeat start and end', () => {
     const program = parse('const a = { b: [1, 2] };');
 
