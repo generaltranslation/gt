@@ -19,8 +19,9 @@ import type { FormattedNode, MessageTree } from './messageTree';
 
 export interface MessageTreeValidationOptions {
   /**
-   * Deepest allowed nesting of branches and tag children that hold nodes;
-   * text adds no level. Defaults to 64.
+   * Deepest allowed nesting of branches and tag children, whatever they
+   * hold: one that is only text, or empty, is a level too, as the parser
+   * counts it. Defaults to 64.
    */
   maxDepth?: number;
   /**

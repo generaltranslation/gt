@@ -475,6 +475,13 @@ const CASES: [
     undefined,
   ],
   [
+    'a count added to another plural of the same variable, with its own offset',
+    '<b>{n, plural, one {# attendee} other {# attendees}}</b>: you {n, plural, offset:1 one {and one other} other {and others}}',
+    '<b>{n, plural, one {# Teilnehmer} other {# Teilnehmer}}</b>: du {n, plural, offset:1 one {und # weitere Person} other {und # weitere}}',
+    'de',
+    undefined,
+  ],
+  [
     'a count the source has inside and outside a tag',
     '{n, plural, one {<b>#</b> item} other {# items}}',
     '{n, plural, one {# <b>Artikel</b>} other {# Artikel}}',

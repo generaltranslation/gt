@@ -17,15 +17,26 @@ export type CheckTranslationOptions = {
 /**
  * A placeholder as the translation rules read it, whether from an ICU
  * string or a message tree. Text is left out: a translation's is its own.
- * So is whether it writes `#`; a `count` is a `#` it did write, under its
- * plural's name, read only for the tag around it.
+ * So is whether it writes `#`; a `count` is a `#` it did write, read only
+ * for the tag around it.
  */
 export type CheckedPlaceholder =
   | { name: string; kind: 'argument' }
-  | { name: string; kind: 'count' }
+  | CountPlaceholder
   | { name: string; kind: 'tag'; children: CheckedPlaceholder[] }
   | FormattedPlaceholder
   | BranchingPlaceholder;
+
+/**
+ * The `#` of a plural: its variable, and the plural's kind and offset, since
+ * two plurals of one variable print different counts.
+ */
+export type CountPlaceholder = {
+  name: string;
+  kind: 'count';
+  of: 'plural' | 'selectordinal';
+  offset: number;
+};
 
 /**
  * A `number`, `date` or `time` placeholder. `style` is as written, like
@@ -115,11 +126,24 @@ export function translationProblems(
  * changes what `#` prints, so it is part of the identity too.
  */
 function variableKey(placeholder: CheckedPlaceholder): string {
-  return JSON.stringify(
-    placeholder.kind === 'plural' || placeholder.kind === 'selectordinal'
-      ? [placeholder.name, placeholder.kind, placeholder.offset]
-      : [placeholder.name, placeholder.kind]
-  );
+  switch (placeholder.kind) {
+    case 'plural':
+    case 'selectordinal':
+      return JSON.stringify([
+        placeholder.name,
+        placeholder.kind,
+        placeholder.offset,
+      ]);
+    case 'count':
+      return JSON.stringify([
+        placeholder.name,
+        placeholder.kind,
+        placeholder.of,
+        placeholder.offset,
+      ]);
+    default:
+      return JSON.stringify([placeholder.name, placeholder.kind]);
+  }
 }
 
 /**

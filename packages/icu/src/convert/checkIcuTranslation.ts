@@ -17,6 +17,7 @@ import {
   type CheckedBranches,
   type CheckedPlaceholder,
   type CheckTranslationOptions,
+  type CountPlaceholder,
   type FormattedPlaceholder,
 } from './translationRules';
 
@@ -59,23 +60,23 @@ export function checkIcuTranslation(
   return problems.length ? createTranslationMismatchError(problems) : undefined;
 }
 
-/** `plural` names the plural whose branch these elements are in, through any tags: the one a `#` counts. */
+/** `count` is what a `#` among these elements is: that of the plural whose branch they are in, through any tags. */
 function readPlaceholders(
   elements: MessageFormatElement[],
-  plural: string | undefined
+  count: CountPlaceholder | undefined
 ): CheckedPlaceholder[] {
-  return elements.flatMap((element) => readPlaceholder(element, plural));
+  return elements.flatMap((element) => readPlaceholder(element, count));
 }
 
 function readPlaceholder(
   element: MessageFormatElement,
-  plural: string | undefined
+  count: CountPlaceholder | undefined
 ): CheckedPlaceholder[] {
   switch (element.type) {
     case TYPE.literal:
       return [];
     case TYPE.pound:
-      return plural === undefined ? [] : [{ name: plural, kind: 'count' }];
+      return count ? [count] : [];
     case TYPE.argument:
       return [{ name: element.value, kind: 'argument' }];
     case TYPE.number:
@@ -100,7 +101,7 @@ function readPlaceholder(
         {
           name: element.value,
           kind: 'tag',
-          children: readPlaceholders(element.children, plural),
+          children: readPlaceholders(element.children, count),
         },
       ];
     case TYPE.select:
@@ -111,25 +112,34 @@ function readPlaceholder(
           branches: readBranches(element.options, undefined),
         },
       ];
-    case TYPE.plural:
+    case TYPE.plural: {
+      const { value: name, offset } = element;
+      const kind =
+        element.pluralType === 'ordinal' ? 'selectordinal' : 'plural';
       return [
         {
-          name: element.value,
-          kind: element.pluralType === 'ordinal' ? 'selectordinal' : 'plural',
-          offset: element.offset,
-          branches: readBranches(element.options, element.value),
+          name,
+          kind,
+          offset,
+          branches: readBranches(element.options, {
+            name,
+            kind: 'count',
+            of: kind,
+            offset,
+          }),
         },
       ];
+    }
   }
 }
 
 function readBranches(
   options: Record<string, PluralOrSelectOption>,
-  plural: string | undefined
+  count: CountPlaceholder | undefined
 ): CheckedBranches {
   return Object.entries(options).map(([key, { value }]) => [
     key,
-    readPlaceholders(value, plural),
+    readPlaceholders(value, count),
   ]);
 }
 
