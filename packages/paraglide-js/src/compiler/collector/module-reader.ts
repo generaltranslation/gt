@@ -29,7 +29,8 @@ export type SummaryResult =
 export async function summarizeFile(
   file: string,
   languages: readonly SourceLanguage[],
-  packages: LanguageContext
+  packages: LanguageContext,
+  globalNames: ReadonlySet<string>
 ): Promise<SummaryResult> {
   const code = await readTextFile(file);
   if (code === undefined) return undefined;
@@ -40,7 +41,10 @@ export async function summarizeFile(
   const parsed = parseSourceSync(file, code, parseModuleCode, generated);
   if (!('module' in parsed)) return { failure: parsed };
 
-  return { summary: summarizeModule(parsed.module), generated };
+  return {
+    summary: summarizeModule(parsed.module, globalNames),
+    generated,
+  };
 }
 
 /**
