@@ -164,40 +164,35 @@ not read the host's time zone; its caller passes them in.
 
 ## ICU compatibility
 
-A message follows ICU and Intl, by five rules. An earlier rule wins over a
-later one:
+A message means what it means in ICU, and `Intl` formats it. Where the two
+disagree:
 
-1. ICU decides what a message means: its syntax, and what each type, style
-   and skeleton asks for.
-2. Intl formats the values. This package has no locale data of its own and
-   does not emulate ICU.
-3. Where Intl has no option for what a message asks for, formatting throws
-   rather than print something else. A `RangeError` names the token or
-   field. A message that is not valid throws a `SyntaxError`, with the kind
-   of error as its `code` and the place in the message as its `location`.
-4. What a message leaves unsaid, like how to round a tie, is Intl's default,
-   not ICU's. So is how Intl prints what it has an option for, like a date
-   before 1582.
-5. Values are not coerced. A number, a plural and a selectordinal take a
-   number, a bigint or a numeric string; a date and a time take a Date or a
-   number; a select takes a string. Any other value throws a `TypeError`.
+1. **ICU decides what a message says**: its syntax, types, styles and
+   skeletons.
+2. **`Intl` does the formatting.** This package ships no locale data. What a
+   message leaves unsaid is `Intl`'s default: `{n, number, integer}` rounds
+   2.5 to `3`, where ICU rounds it to `2`.
+3. **What `Intl` can't do throws.** `{n, number, ::permille}` throws a
+   `RangeError` that names `permille`, rather than printing something else.
+4. **Values aren't converted.** A number, plural or selectordinal takes a
+   number, a bigint or a numeric string; a date or time takes a Date or a
+   number; a select takes a string. Anything else throws a `TypeError`.
 
-A few things are read differently from ICU on purpose:
+Where this package differs from ICU on purpose:
 
-- What ICU keeps only for old messages is an error: a pattern as a style,
-  like `{d, date, yyyy-MM-dd}`, `choice`, a type in capitals, a branch key
-  written twice, and a value that was not given.
-- `<b>…</b>` is a tag, as in FormatJS. ICU reads it as text.
-- A plain `{name}` reads a value as its text, as a template literal does,
-  so `{year}` is `2024` and not `2,024`. A Date has no such text: it formats
-  as the locale's short date and time, as in ICU.
-- `hh` and `HH` pad the hour, as Intl's `2-digit` hour does, which is what a
-  message tree holds for them. ICU pads as the locale's own pattern does.
+| Message                                                                                         | ICU       | Here                                          |
+| ----------------------------------------------------------------------------------------------- | --------- | --------------------------------------------- |
+| `{d, date, yyyy-MM-dd}`, `choice`, `{n, NUMBER}`, a branch key written twice, a value not given | formats   | throws: ICU keeps these only for old messages |
+| `<b>bold</b>`                                                                                   | text      | a tag, as in FormatJS                         |
+| `{year}`, with 2024                                                                             | `2,024`   | `2024`, as a template literal prints it       |
+| `{d, time, ::hhmm}`, at 3:04                                                                    | `3:04 AM` | `03:04 AM`, as `Intl`'s 2-digit hour          |
 
-`src/__tests__/icu4c-messages.test.ts` and `icu4c-conformance.test.ts` format
-about 3,500 cases and check each result against what ICU4C 78.3 prints for it.
-They hold every difference, each with its reason. A new difference needs a
-reason there, and one of the rules above to stand on.
+An invalid message throws a `SyntaxError` with the kind of error as its
+`code` and its place as its `location`.
+
+Every difference from ICU4C 78.3 is listed with its reason in
+`src/__tests__/icu4c-messages.test.ts` and `icu4c-conformance.test.ts`, which
+check about 3,500 cases.
 
 Parts of the compatibility behavior and regression suite are adapted from
 FormatJS. See `THIRD_PARTY_NOTICES.md` for attribution and license details.
