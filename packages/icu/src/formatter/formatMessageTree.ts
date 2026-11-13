@@ -258,11 +258,22 @@ function formatNodes<R>(
             `The ICU variable "${name}" is too large for Intl to format.`
           );
         }
-        append(
-          intlCache
-            .get('NumberFormat', context.locales, intlOptions)
-            .format(scaledValue as number)
+        const formatter = intlCache.get(
+          'NumberFormat',
+          context.locales,
+          intlOptions
         );
+        // Intl formats a numbering system it does not have with the locale's.
+        const { numberingSystem } = intlOptions;
+        if (
+          numberingSystem &&
+          formatter.resolvedOptions().numberingSystem !== numberingSystem
+        ) {
+          throw new RangeError(
+            `The ICU variable "${name}" has the numbering system "${numberingSystem}", which Intl does not have.`
+          );
+        }
+        append(formatter.format(scaledValue as number));
         break;
       }
       case 'date':

@@ -277,13 +277,8 @@ function readToken(token: NumberSkeletonToken): Options {
     case 'unit':
       // `unit/kilometer-per-hour`: the whole core unit.
       return { style: 'unit', unit: onlyOption(token) };
-    case 'numbering-system': {
-      const numberingSystem = onlyOption(token);
-      if (!hasNumberingSystem(numberingSystem)) {
-        throw unsupported(token, 'Intl does not have this numbering system');
-      }
-      return { numberingSystem };
-    }
+    case 'numbering-system':
+      return { numberingSystem: onlyOption(token) };
     case 'scale': {
       const scale = onlyOption(token);
       if (!DECIMAL_NUMBER.test(scale)) throw invalid(token);
@@ -319,19 +314,6 @@ function unsupported(token: NumberSkeletonToken, reason: string): RangeError {
   return new RangeError(
     createUnsupportedNumberSkeletonTokenError(tokenText(token), reason)
   );
-}
-
-// Intl formats a numbering system it does not have with the locale's, and
-// throws for a name that could not be one.
-function hasNumberingSystem(name: string): boolean {
-  try {
-    return (
-      new Intl.NumberFormat('und', { numberingSystem: name }).resolvedOptions()
-        .numberingSystem === name
-    );
-  } catch {
-    return false;
-  }
 }
 
 function onlyOption(token: NumberSkeletonToken): string {
@@ -541,10 +523,7 @@ export function toNumberSkeleton(options: Options): NumberSkeleton {
     add(stemOf(values, ['useGrouping']));
     const latin = stemOf(values, ['numberingSystem']);
     if (latin) add(latin);
-    else if (
-      isTokenText(numberingSystem) &&
-      hasNumberingSystem(numberingSystem)
-    ) {
+    else if (isTokenText(numberingSystem)) {
       add('numbering-system', numberingSystem);
     }
     add(stemOf(values, SIGN));

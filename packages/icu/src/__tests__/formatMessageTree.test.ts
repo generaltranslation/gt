@@ -347,6 +347,32 @@ describe('values', () => {
     );
   });
 
+  it.each([
+    ['::numbering-system/bogus', 'bogus'],
+    ['::numbering-system/roman', 'roman'],
+  ])(
+    'throws for %s, a numbering system Intl does not have',
+    (skeleton, name) => {
+      expect(() =>
+        formatIcu(`{n, number, ${skeleton}}`, 'ar-EG', { n: 1 })
+      ).toThrow(
+        new RangeError(
+          `The ICU variable "n" has the numbering system "${name}", which Intl does not have.`
+        )
+      );
+      expect(() =>
+        formatMessageTree(
+          [['n', 'number']],
+          'en',
+          { n: 1 },
+          {
+            formats: { n: { numberingSystem: name } },
+          }
+        )
+      ).toThrow(RangeError);
+    }
+  );
+
   const NOT_NUMBERS = [
     '',
     'abc',
