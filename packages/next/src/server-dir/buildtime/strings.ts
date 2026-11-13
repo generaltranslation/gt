@@ -8,17 +8,19 @@ import type { Message } from 'gt-i18n/types';
 import { getRequestConditions } from '../../request/getRequestConditions';
 import { memoizeForRequest } from '../../utils/requestMemo';
 
-export function getGT(_messages?: Message[]) {
-  const load = async () => {
-    const conditions = await getRequestConditions();
-    return getGTInternal(
-      {
-        locale: conditions._locale,
-        enableI18n: conditions._enableI18n,
-      },
-      _messages
-    );
+function withRequestConditions<T>(
+  resolve: (conditions: { locale: string; enableI18n: boolean }) => Promise<T>
+): () => Promise<T> {
+  return async () => {
+    const { _locale, _enableI18n } = await getRequestConditions();
+    return resolve({ locale: _locale, enableI18n: _enableI18n });
   };
+}
+
+export function getGT(_messages?: Message[]) {
+  const load = withRequestConditions((conditions) =>
+    getGTInternal(conditions, _messages)
+  );
   // Development prefetches each call's compiler-injected messages for hot reload.
   return process.env.NODE_ENV !== 'production' && _messages?.length
     ? load()
@@ -26,26 +28,18 @@ export function getGT(_messages?: Message[]) {
 }
 
 export function getMessages() {
-  return memoizeForRequest('messages', async () => {
-    const conditions = await getRequestConditions();
-    return getMessagesInternal({
-      locale: conditions._locale,
-      enableI18n: conditions._enableI18n,
-    });
-  });
+  return memoizeForRequest(
+    'messages',
+    withRequestConditions(getMessagesInternal)
+  );
 }
 
 export function getTranslations(rootId?: string) {
   return memoizeForRequest(
     rootId === undefined ? 'translations' : `translations:${rootId}`,
-    async () => {
-      const conditions = await getRequestConditions();
-      return getTranslationsInternal({
-        locale: conditions._locale,
-        enableI18n: conditions._enableI18n,
-        rootId,
-      });
-    }
+    withRequestConditions((conditions) =>
+      getTranslationsInternal({ ...conditions, rootId })
+    )
   );
 }
 
