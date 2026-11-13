@@ -179,8 +179,8 @@ later one:
    not ICU's. So is how Intl prints what it has an option for, like a date
    before 1582.
 5. Values are not coerced. A number, a plural and a selectordinal take a
-   number, a bigint or a numeric string, and a date and a time take a Date or
-   a number. Any other value throws a `TypeError`.
+   number, a bigint or a numeric string; a date and a time take a Date or a
+   number; a select takes a string. Any other value throws a `TypeError`.
 
 A few things are read differently from ICU on purpose:
 
@@ -188,9 +188,9 @@ A few things are read differently from ICU on purpose:
   like `{d, date, yyyy-MM-dd}`, `choice`, a type in capitals, a branch key
   written twice, and a value that was not given.
 - `<b>…</b>` is a tag, as in FormatJS. ICU reads it as text.
-- A plain `{name}` and a select read a value as its text, as a template
-  literal does, so `{year}` is `2024` and not `2,024`. A Date has no such
-  text: it formats as the locale's short date and time, as in ICU.
+- A plain `{name}` reads a value as its text, as a template literal does,
+  so `{year}` is `2024` and not `2,024`. A Date has no such text: it formats
+  as the locale's short date and time, as in ICU.
 - `hh` and `HH` pad the hour, as Intl's `2-digit` hour does, which is what a
   message tree holds for them. ICU pads as the locale's own pattern does.
 

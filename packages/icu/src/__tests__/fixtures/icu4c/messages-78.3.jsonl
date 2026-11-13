@@ -431,12 +431,12 @@
 {"id":"pl-selo-1","locale":"en-US","message":"{g, select, male {He} female {She}}","values":{"g":"male"},"icu":"U_DEFAULT_KEYWORD_MISSING","rejects":true}
 {"id":"pl-selo-2","locale":"en-US","message":"{g, select, male {He} female {She}}","values":{"g":"x"},"icu":"U_DEFAULT_KEYWORD_MISSING","rejects":true}
 {"id":"pl-selo-3","locale":"en-US","message":"{g, select, }","values":{"g":"x"},"icu":"U_DEFAULT_KEYWORD_MISSING","rejects":true}
-{"id":"pl-selv-1","locale":"en-US","message":"{s, select, 1 {one} other {other}}","values":{"s":1},"ours":"one","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-selv-1","locale":"en-US","message":"{s, select, 1 {one} other {other}}","values":{"s":1},"icu":"U_INVALID_FORMAT_ERROR","rejects":true}
 {"id":"pl-selv-2","locale":"en-US","message":"{s, select, 1 {one} other {other}}","values":{"s":"1"},"icu":"one"}
 {"id":"pl-selv-3","locale":"en-US","message":"{s, select, true {yes} other {no}}","values":{"s":"true"},"icu":"yes"}
-{"id":"pl-selv-4","locale":"en-US","message":"{s, select, 1 {one} other {other}}","values":{"s":{"$int":"1"}},"ours":"one","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-selv-4","locale":"en-US","message":"{s, select, 1 {one} other {other}}","values":{"s":{"$int":"1"}},"icu":"U_INVALID_FORMAT_ERROR","rejects":true}
 {"id":"pl-selv-5","locale":"en-US","message":"{s, select, 1.5 {x} other {other}}","values":{"s":1.5},"icu":"U_PATTERN_SYNTAX_ERROR","rejects":true}
-{"id":"pl-selv-6","locale":"en-US","message":"{s, select, 0 {zero} other {other}}","values":{"s":0},"ours":"zero","icu":"U_INVALID_FORMAT_ERROR","rejects":true,"differs":"value-type"}
+{"id":"pl-selv-6","locale":"en-US","message":"{s, select, 0 {zero} other {other}}","values":{"s":0},"icu":"U_INVALID_FORMAT_ERROR","rejects":true}
 {"id":"pl-selc-1","locale":"en-US","message":"{g, select, male {He} female {She} other {They}}","values":{"g":"Female"},"icu":"They"}
 {"id":"pl-selc-2","locale":"en-US","message":"{g, select, A {upper} a {lower} other {other}}","values":{"g":"a"},"icu":"lower"}
 {"id":"pl-selk-1","locale":"en-US","message":"{s, select, é {e-acute} 日本 {ja} other {other}}","values":{"s":"日本"},"icu":"ja"}

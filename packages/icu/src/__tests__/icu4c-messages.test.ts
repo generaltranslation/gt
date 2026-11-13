@@ -53,7 +53,7 @@ const REASONS = {
   bigint:
     'Intl picks a plural category for a double, and a scale that is no power of ten multiplies as one. An int64 they would round is an error.',
   'intl-range':
-    'A scaled number past the largest double is an error: Intl prints ∞ for it. ICU4C multiplies as a decimal.',
+    'A number past the largest double is an error, unless it is a bigint: Intl prints ∞ for it. ICU4C multiplies a scale as a decimal.',
   'intl-lone-field':
     'An era and a time zone name with no other field are an error: Intl adds the date to them. ICU4C prints the two.',
   'invalid-date':
@@ -77,7 +77,7 @@ const REASONS = {
   'plain-value':
     '{name} prints a number as JavaScript does, as in FormatJS: {year} is 2024, not 2,024. ICU4C formats it for the locale. Write {n, number}.',
   'value-type':
-    'A numeric string is a number, as Intl reads one, and a select reads a number as its text. ICU4C fails.',
+    'A numeric string is a number, as Intl reads one exactly. ICU4C fails.',
   'hour-width':
     'hh and HH pad the hour, as Intl’s 2-digit hour does, which is what a message tree holds for them. ICU4C pads as the locale’s own pattern does, however many letters are written.',
   currency:

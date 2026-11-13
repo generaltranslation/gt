@@ -321,9 +321,17 @@ function unsupported(token: NumberSkeletonToken, reason: string): RangeError {
   );
 }
 
-// Intl formats a numbering system it does not have with the locale's.
+// Intl formats a numbering system it does not have with the locale's, and
+// throws for a name that could not be one.
 function hasNumberingSystem(name: string): boolean {
-  return Intl.supportedValuesOf?.('numberingSystem').includes(name) !== false;
+  try {
+    return (
+      new Intl.NumberFormat('und', { numberingSystem: name }).resolvedOptions()
+        .numberingSystem === name
+    );
+  } catch {
+    return false;
+  }
 }
 
 function onlyOption(token: NumberSkeletonToken): string {
@@ -378,7 +386,7 @@ function readPrecision(token: NumberSkeletonToken): Options | undefined {
       if (zeros.length && !/[rs]$/.test(significant)) {
         throw unsupported(
           token,
-          'Intl does not pad these digits to the minimum of the fraction; write their priority, like .00/@##s'
+          'Intl does not pad to the minimum of the fraction; write a priority, like .00/@##s'
         );
       }
       Object.assign(precision, digits);

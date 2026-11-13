@@ -19,7 +19,6 @@ import type {
 import type { ParsedNode, ParsedTree } from './formatIcu';
 import { messageTreeNodes } from '../tree/walk';
 import {
-  DATE_FIELD_OPTIONS,
   DATE_TIME_STYLE_NAMES,
   NAMED_NUMBER_STYLES,
   type DateTimeStyleName,
@@ -220,7 +219,7 @@ function formatNodes<R>(
       case undefined: {
         const value = requireVariable(context.values, name);
         append(
-          value instanceof Date
+          isDateValue(value)
             ? intlCache
                 .get('DateTimeFormat', context.locales, {
                   dateStyle: 'short',
@@ -249,15 +248,14 @@ function formatNodes<R>(
           );
         }
         const scaledValue = applyScale(value, scale);
-        // Intl prints ∞ past the largest double, where ICU keeps every digit.
+        // Intl prints ∞ for a decimal past the largest double; a bigint is exact.
         if (
-          scale !== undefined &&
           typeof scaledValue !== 'bigint' &&
-          Number.isFinite(Number(value)) &&
-          !Number.isFinite(Number(scaledValue))
+          !Number.isFinite(Number(scaledValue)) &&
+          (typeof value !== 'number' || Number.isFinite(value))
         ) {
           throw new RangeError(
-            `The ICU variable "${name}" is too large to format once it is scaled.`
+            `The ICU variable "${name}" is too large for Intl to format.`
           );
         }
         append(
@@ -270,7 +268,7 @@ function formatNodes<R>(
       case 'date':
       case 'time': {
         const value = requireVariable(context.values, name);
-        if (typeof value !== 'number' && !(value instanceof Date)) {
+        if (typeof value !== 'number' && !isDateValue(value)) {
           throw new TypeError(
             `The ICU variable "${name}" must be a Date or a number.`
           );
@@ -294,32 +292,32 @@ function formatNodes<R>(
           timeZone: options.timeZone ?? context.timeZone,
         });
         // Intl adds a date to an era or a time zone name with no other field.
-        const fields = DATE_FIELD_OPTIONS.filter(
-          (field) => options[field] !== undefined
+        const fields = Object.keys(styleOptions ?? {});
+        const alone = fields.every(
+          (field) => field === 'era' || field === 'timeZoneName'
         );
-        const alone =
-          !options.dateStyle &&
-          !options.timeStyle &&
-          fields.every((field) => field === 'era' || field === 'timeZoneName');
         if (alone && fields.length > 1) {
           throw new RangeError(
-            `The ICU variable "${name}" has an era and a time zone name with no other field, which Intl cannot format without a date.`
+            `The ICU variable "${name}" needs a date or time field beside its era and time zone name.`
           );
         }
         append(
           alone && fields.length
             ? formatter
-                .formatToParts(value)
+                .formatToParts(value as number | Date)
                 .filter((part) => part.type === fields[0])
                 .map((part) => part.value)
                 .join('')
-            : formatter.format(value)
+            : formatter.format(value as number | Date)
         );
         break;
       }
       case 'select': {
         const branches = node[2];
-        const value = String(requireVariable(context.values, name));
+        const value = requireVariable(context.values, name);
+        if (typeof value !== 'string') {
+          throw new TypeError(`The ICU variable "${name}" must be a string.`);
+        }
         const branch =
           ownBranch(branches, value) ??
           ownBranch(branches, FALLBACK_BRANCH_KEY);
@@ -417,6 +415,11 @@ function plainValueText<R>(value: MessageValue<R>): Part<R> {
     ? String(value)
     : // A value that is not plain is a rich one, kept as a part.
       (value as R);
+}
+
+// A Date made in another realm, like an iframe, is no `instanceof Date`.
+function isDateValue(value: unknown): value is Date {
+  return Object.prototype.toString.call(value) === '[object Date]';
 }
 
 function requireVariable<R>(

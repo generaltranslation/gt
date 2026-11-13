@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it, vi } from 'vitest';
 import type { MessageTree } from '../index';
@@ -317,6 +318,35 @@ describe('values', () => {
     ).toBe('Due 15.01.26, 09:00');
   });
 
+  it('formats a Date made in another realm', () => {
+    const d: Date = runInNewContext('new Date(Date.UTC(2026, 0, 15))');
+    expect(d instanceof Date).toBe(false);
+    for (const tree of [[['d']], [['d', 'date', 'short']]] as const) {
+      expect(formatMessageTree(tree, 'en', { d }, { timeZone: 'UTC' })).toMatch(
+        /^1\/15\/26/
+      );
+    }
+  });
+
+  it.each([
+    ['{n, number}', '1e400'],
+    ['{n, number, ::scale/10}', 1e308],
+    ['{n, number, ::scale/10}', 10n ** 400n],
+  ])('throws for %s with %s, which Intl prints as ∞', (message, n) => {
+    expect(() => formatIcu(message, 'en', { n })).toThrow(
+      new RangeError('The ICU variable "n" is too large for Intl to format.')
+    );
+  });
+
+  it('formats ∞ itself, and a bigint of any size', () => {
+    expect(formatIcu('{n, number, ::scale/10}', 'en', { n: Infinity })).toBe(
+      '∞'
+    );
+    expect(formatIcu('{n, number}', 'en', { n: 10n ** 400n })).toMatch(
+      /^10(,000){133}$/
+    );
+  });
+
   const NOT_NUMBERS = [
     '',
     'abc',
@@ -359,6 +389,15 @@ describe('values', () => {
           new TypeError('The ICU variable "d" must be a Date or a number.')
         );
       }
+    }
+  );
+
+  it.each([1, 1n, true, null, undefined, new Date(0)])(
+    'takes no %s for a select',
+    (s) => {
+      expect(() =>
+        formatMessageTree([['s', 'select', { other: 'x' }]], 'en', { s })
+      ).toThrow(new TypeError('The ICU variable "s" must be a string.'));
     }
   );
 
