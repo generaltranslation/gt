@@ -59,6 +59,12 @@ const MAX_BATCH = 64;
 /** Files are analyzed in chunks of this many. */
 const CHUNK = 16;
 
+/**
+ * A file this many modules can call into is analyzed first, alone: finding
+ * what they pass its functions takes reading every one of them.
+ */
+const MANY_REFERRERS = 1000;
+
 /** A thread is worth starting for this much code, in bytes: it takes longer to start than to analyze less. */
 const CODE_PER_THREAD = 8_000_000;
 
@@ -186,7 +192,11 @@ export class AnalysisPool {
     );
 
     const added: Promise<void>[] = [];
-    const chunks = new ChunkQueue(files, this.workers.length);
+    const chunks = new ChunkQueue(
+      files,
+      this.workers.length,
+      widelyImported(files, index.summaries)
+    );
 
     await Promise.all(
       this.workers.map(async (worker, index) => {
@@ -269,12 +279,22 @@ export class AnalysisPool {
  * its share takes from the end of the largest one left.
  */
 class ChunkQueue {
+  private readonly first: string[][];
   private readonly chunks: string[][] = [];
   private readonly shares: Array<{ next: number; end: number }>;
 
-  constructor(files: readonly string[], threads: number) {
-    for (let start = 0; start < files.length; start += CHUNK) {
-      this.chunks.push(files.slice(start, start + CHUNK));
+  /** `first` are taken before any share, one at a time. */
+  constructor(
+    files: readonly string[],
+    threads: number,
+    first: readonly string[]
+  ) {
+    const isFirst = new Set(first);
+    const rest = files.filter((file) => !isFirst.has(file));
+
+    this.first = first.map((file) => [file]);
+    for (let start = 0; start < rest.length; start += CHUNK) {
+      this.chunks.push(rest.slice(start, start + CHUNK));
     }
 
     this.shares = Array.from({ length: threads }, (_, index) => ({
@@ -284,6 +304,9 @@ class ChunkQueue {
   }
 
   take(thread: number): string[] | undefined {
+    const first = this.first.shift();
+    if (first) return first;
+
     const own = this.shares[thread]!;
     if (own.next < own.end) return this.chunks[own.next++];
 
@@ -352,4 +375,58 @@ class PoolWorker {
     for (const { reject } of this.pending.values()) reject(this.exitError);
     this.pending.clear();
   }
+}
+
+/**
+ * Of `files`, those `MANY_REFERRERS` modules or more import, directly or
+ * through modules that re-export them; the most imported first.
+ */
+function widelyImported(
+  files: readonly string[],
+  summaries: readonly ModuleSummary[]
+): string[] {
+  const importers = new Map<string, Set<string>>();
+  const reexporters = new Map<string, Set<string>>();
+  const add = (map: Map<string, Set<string>>, key: string, file: string) => {
+    const files = map.get(key);
+    if (files) files.add(file);
+    else map.set(key, new Set([file]));
+  };
+
+  for (const { file, parts } of summaries) {
+    for (const { resolved, links } of parts) {
+      const fileOf = new Map(resolved);
+
+      for (const [, target] of resolved) {
+        if (target && target !== file) add(importers, target, file);
+      }
+
+      for (const link of links) {
+        const target =
+          link.type === 'import' ? undefined : fileOf.get(link.source);
+        if (target && target !== file) add(reexporters, target, file);
+      }
+    }
+  }
+
+  const referrers = (file: string) => {
+    // Grows while it is iterated: re-exporters of re-exporters.
+    const exporters = new Set([file]);
+    let count = 0;
+
+    for (const exporter of exporters) {
+      count += importers.get(exporter)?.size ?? 0;
+      for (const reexporter of reexporters.get(exporter) ?? []) {
+        exporters.add(reexporter);
+      }
+    }
+
+    return count;
+  };
+
+  return files
+    .map((file) => ({ file, count: referrers(file) }))
+    .filter(({ count }) => count >= MANY_REFERRERS)
+    .sort((a, b) => b.count - a.count)
+    .map(({ file }) => file);
 }
