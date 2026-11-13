@@ -62,9 +62,13 @@ const usages = (file: string, line: string) => ({
 });
 
 /** The metadata files of a new project's `project.inlang`, with one usage to write. */
-async function metadataFiles(name: string) {
-  const root = await writeProject(name, {});
-  const files = new MetadataFiles(root, 0);
+async function metadataFiles(
+  name: string,
+  projectFiles: Record<string, string> = {},
+  maxParsedBytes?: number
+) {
+  const root = await writeProject(name, projectFiles);
+  const files = new MetadataFiles(root, 0, maxParsedBytes);
   files.addProject(
     (await readInlangProject(path.join(root, 'project.inlang')))!
   );
@@ -76,6 +80,11 @@ async function metadataFiles(name: string) {
 }
 
 const failure = (code: string) => Object.assign(new Error(code), { code });
+
+/** The snippet `metadataFiles` writes for `greeting`. */
+const firstSourceCode = {
+  'a.ts': [{ before: '', target: 'first', after: '' }],
+};
 
 test('writes the usages of every source file, and no temporary file', async () => {
   const { root, files, written } = await metadataFiles('metadata-unit');
@@ -102,10 +111,20 @@ test('a temporary file that was only partly written is removed', async () => {
   const { root, files, written } = await metadataFiles(
     'metadata-partial-write'
   );
-  const writeFile = fs.writeFile.bind(fs);
-  vi.spyOn(fs, 'writeFile').mockImplementationOnce(async (file) => {
-    await writeFile(file, '{ "greeting": ');
-    throw failure('ENOSPC');
+  const open = fs.open.bind(fs);
+  let isFirstWrite = true;
+  vi.spyOn(fs, 'open').mockImplementation(async (file, flags) => {
+    const handle = await open(file, flags);
+    if (flags !== 'w' || !isFirstWrite) return handle;
+
+    isFirstWrite = false;
+    const write = handle.write.bind(handle);
+    handle.write = (async () => {
+      await write('{ "greeting": ');
+      throw failure('ENOSPC');
+    }) as typeof handle.write;
+
+    return handle;
   });
 
   await expect(files.write()).rejects.toMatchObject({ code: 'ENOSPC' });
@@ -117,6 +136,33 @@ test('a temporary file that was only partly written is removed', async () => {
   expect(await readSnippets(root)).toEqual(['a.ts: first']);
 });
 
+test('a write that stops short is continued', async () => {
+  const { root, files } = await metadataFiles('metadata-short-write');
+  const open = fs.open.bind(fs);
+  vi.spyOn(fs, 'open').mockImplementation(async (file, flags) => {
+    const handle = await open(file, flags);
+    if (flags !== 'w') return handle;
+
+    // As at a file size limit, each write takes 3 bytes at most.
+    const write = handle.write.bind(handle);
+    handle.write = ((buffer: Buffer, offset = 0) =>
+      write(
+        buffer,
+        offset,
+        Math.min(3, buffer.length - offset)
+      )) as typeof handle.write;
+
+    return handle;
+  });
+
+  expect(await files.write()).toEqual([]);
+  expect(
+    await fs.readFile(path.join(root, 'messages/en.metadata.json'), 'utf8')
+  ).toBe(
+    `${JSON.stringify({ greeting: { sourceCode: firstSourceCode } }, null, 2)}\n`
+  );
+});
+
 test('a metadata file that cannot be read is left alone, with a warning', async () => {
   const { root, files } = await metadataFiles('metadata-unreadable');
   const file = path.join(root, 'messages/en.metadata.json');
@@ -125,11 +171,11 @@ test('a metadata file that cannot be read is left alone, with a warning', async 
   });
   await fs.writeFile(file, handWritten);
 
-  const readFile = fs.readFile.bind(fs) as (
-    ...args: unknown[]
-  ) => Promise<never>;
-  vi.spyOn(fs, 'readFile').mockImplementation((...args: unknown[]) =>
-    args[0] === file ? Promise.reject(failure('EACCES')) : readFile(...args)
+  const open = fs.open.bind(fs);
+  vi.spyOn(fs, 'open').mockImplementation((path, flags) =>
+    path === file && flags === 'r'
+      ? Promise.reject(failure('EACCES'))
+      : open(path, flags)
   );
   expect(await files.write()).toEqual([
     { file, reason: 'it could not be read (EACCES)' },
@@ -226,6 +272,59 @@ test('hand-written fields survive a rewrite; snippets of removed usages do not',
     greeting: { context: 'Shown on the home page', maxChars: 20 },
     later: { context: 'Not used yet' },
   });
+});
+
+// The file is parsed member by member, as one too long to parse at once is.
+test.each([
+  [
+    'a message',
+    { sourceCode: 'Source code' },
+    { sourceCode: { context: 'A heading' } },
+  ],
+  [
+    'a group',
+    { sourceCode: { title: 'Title' } },
+    { sourceCode: { title: { context: 'A heading' } } },
+  ],
+  [
+    'a message in a group',
+    { nav: { sourceCode: 'Source code' } },
+    { nav: { sourceCode: { context: 'A link' } } },
+  ],
+])(
+  '%s named sourceCode keeps its hand-written fields in a long metadata file',
+  async (_, messages, handWritten) => {
+    const { root, files } = await metadataFiles(
+      'metadata-named-source-code',
+      {
+        'messages/en.json': JSON.stringify({ greeting: 'Hi', ...messages }),
+        'messages/en.metadata.json': JSON.stringify(handWritten),
+      },
+      1
+    );
+
+    expect(await files.write()).toEqual([]);
+    expect(await readMetadata(root)).toEqual({
+      greeting: { sourceCode: firstSourceCode },
+      ...handWritten,
+    });
+  }
+);
+
+test('a long metadata file with invalid JSON in the sourceCode it rewrites is left alone, with a warning', async () => {
+  const invalid =
+    '{ "greeting": { "context": "Hi", "sourceCode": { "a.ts": tru } } }';
+  const { root, files } = await metadataFiles(
+    'metadata-invalid-source-code',
+    { 'messages/en.metadata.json': invalid },
+    1
+  );
+  const file = path.join(root, 'messages/en.metadata.json');
+
+  expect(await files.write()).toEqual([
+    { file, reason: 'it is not a JSON object; fix or delete it' },
+  ]);
+  expect(await fs.readFile(file, 'utf8')).toBe(invalid);
 });
 
 test('a metadata file that is not a JSON object is left alone, with a warning', async () => {
