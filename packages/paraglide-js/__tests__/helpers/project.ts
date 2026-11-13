@@ -6,6 +6,7 @@ import {
   ModuleIndexer,
   summarizeModule,
 } from '../../src/compiler/analysis/module-index.js';
+import { withSharedNames } from '../../src/compiler/analysis/module-store.js';
 import {
   ModuleGraph,
   type GlobalBinding,
@@ -30,6 +31,7 @@ import {
   type ParaglideTarget,
 } from '../../src/compiler/paraglide/targets.js';
 import { projectPackages } from '../../src/compiler/project/packages.js';
+import { SharedNames } from '../../src/compiler/utils/name-list.js';
 import { parseModuleCode } from '../../src/compiler/utils/parse.js';
 import { isDependency } from '../../src/compiler/utils/paths.js';
 
@@ -116,9 +118,10 @@ export async function analyzeProject(
     inCanonicalOrder(indexed),
     'usages found through an indexed graph'
   ).toEqual(inCanonicalOrder(usages));
-  expect(shared, 'usages found with sites shared between graphs').toEqual(
-    indexed
-  );
+  expect(
+    shared,
+    'usages found as threads find them: sites shared, names in a shared buffer'
+  ).toEqual(indexed);
 
   return usages;
 }
@@ -198,16 +201,22 @@ async function analyzeIndexed(
   });
   await indexer.indexPaths(sources);
 
+  // As the threads read the index: its name lists in one shared buffer.
+  const threadIndex = withSharedNames(indexer.modules);
   const indexedGraph = ({
     shared,
     isCounted,
-  }: { shared?: SharedSites; isCounted?: boolean } = {}) =>
+    asThreads,
+  }: { shared?: SharedSites; isCounted?: boolean; asThreads?: boolean } = {}) =>
     new ModuleGraph({
       targets: graphOptions.targets,
       outdirs: outdirGraph.outdirs,
       globals: graphOptions.globals,
       index: {
-        summaries: indexer.modules,
+        summaries: asThreads ? threadIndex.summaries : indexer.modules,
+        names: asThreads
+          ? new SharedNames(Buffer.from(threadIndex.names))
+          : undefined,
         budget: 0,
         load: (file) => {
           if (isCounted) onLoad?.(file);
@@ -235,7 +244,7 @@ async function analyzeIndexed(
 
   // As the threads share a function's sites: every other referrer is
   // evaluated by another graph, which has read none of the same modules.
-  const other = indexedGraph();
+  const other = indexedGraph({ asThreads: true });
   const shared: SharedSites = {
     minReferrers: 1,
     share(job) {
@@ -254,7 +263,7 @@ async function analyzeIndexed(
 
   return {
     indexed: analyzeAll(indexedGraph({ isCounted: true })),
-    shared: analyzeAll(indexedGraph({ shared })),
+    shared: analyzeAll(indexedGraph({ shared, asThreads: true })),
   };
 }
 
