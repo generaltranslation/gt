@@ -94,13 +94,13 @@ export class ContextCollector {
   private readonly outdirProjects: OutdirProjects;
   private readonly output: MetadataFiles;
 
-  /** The files of the last scan, and how many usages each has. */
+  /** The analyzed files, and how many usages each has. */
   private readonly analyzed = new Map<string, number>();
   private readonly catalogs = new Map<string, Catalog>();
-  /** The last scan's usages of messages that are not in their catalog. */
+  /** Usages of messages that are not in their catalog. */
   private readonly unknownMessages: string[] = [];
   private readonly missingTools: MissingTools;
-  /** Warnings are logged once, also when another scan gives them again. */
+  /** Warnings are logged once. */
   private readonly warned = new Set<string>();
 
   constructor(settings: CollectorSettings) {
@@ -136,9 +136,6 @@ export class ContextCollector {
 
   /** Analyzes the files `include` selects. `write()` writes what they use. */
   async scanAll(): Promise<void> {
-    const previouslyAnalyzed = [...this.analyzed.keys()];
-    this.reset();
-
     const { files, missing, autoImportDeclarations } =
       await this.settings.selection.list();
     this.warnMissingIncludes(missing);
@@ -155,7 +152,6 @@ export class ContextCollector {
     await this.loadCatalogs();
 
     for (const file of sources) this.analyzeLoaded(file);
-    this.forgetUnanalyzed(previouslyAnalyzed);
 
     this.warnNoOutdir();
     await this.warnMissingTools();
@@ -167,17 +163,6 @@ export class ContextCollector {
     for (const { file, reason } of await this.output.write()) {
       this.warn(`${this.relative(file)} was not updated: ${reason}`);
     }
-  }
-
-  private reset(): void {
-    this.moduleGraph.clear();
-    this.outdirDetector.clear();
-    this.outdirProjects.clear();
-    this.missingTools.clear();
-
-    this.analyzed.clear();
-    this.catalogs.clear();
-    this.unknownMessages.length = 0;
   }
 
   /** The file an import resolves to; undefined if it is not a file, or not found. */
@@ -311,12 +296,8 @@ export class ContextCollector {
 
   /** Reads the catalog of every known outdir, and pairs each outdir with its inlang project. */
   private async loadCatalogs(): Promise<void> {
-    const unread = this.moduleGraph.outdirs.filter(
-      (outdir) => !this.catalogs.has(outdir)
-    );
-
     await Promise.all(
-      unread.map(async (outdir) => {
+      this.moduleGraph.outdirs.map(async (outdir) => {
         const catalog = await readCatalog(outdir).catch(() => undefined);
 
         this.catalogs.set(outdir, catalog);
@@ -337,7 +318,7 @@ export class ContextCollector {
       return;
     }
 
-    this.output.addProject(project.directory);
+    this.output.addProject(project);
 
     const hasMessageFiles = project.messageFiles.length > 0;
     if (hasMessageFiles) return;
@@ -357,14 +338,13 @@ export class ContextCollector {
     this.analyzed.set(file, usages.length);
 
     const record = this.moduleGraph.getRecord(file);
-    const hasUsages = record !== undefined && usages.length > 0;
+    if (!record || usages.length === 0) return;
 
-    this.output.set(
-      file,
-      hasUsages
-        ? { file: this.relative(file), code: record.code, usages }
-        : undefined
-    );
+    this.output.add(file, {
+      file: this.relative(file),
+      code: record.code,
+      usages,
+    });
   }
 
   /** Records on each message usage the inlang project its outdir is paired with. */
@@ -406,13 +386,6 @@ export class ContextCollector {
 
     // The innermost one, if outdirs are nested.
     return this.moduleGraph.outdirs.find((outdir) => isWithin(outdir, file));
-  }
-
-  /** Files of the scan before that are gone, or are no longer selected, lose their usages. */
-  private forgetUnanalyzed(previouslyAnalyzed: readonly string[]): void {
-    for (const file of previouslyAnalyzed) {
-      if (!this.analyzed.has(file)) this.output.set(file, undefined);
-    }
   }
 
   private warnMissingIncludes(missing: readonly string[]): void {
