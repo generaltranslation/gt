@@ -1,15 +1,10 @@
 import type { EncodedSourceMap } from '@jridgewell/trace-mapping';
 import type * as Svelte2Tsx from 'svelte2tsx';
 import type * as SvelteCompiler from 'svelte/compiler';
-import { closingTagNames } from './elements.js';
 import type { SourceLanguage } from './language.js';
-import { mappingsFromSourceMap, withoutSource } from './mapping.js';
+import { mappingsFromSourceMap } from './mapping.js';
 import { parseSkippingUnparsable } from './recover.js';
-import {
-  parseComponent,
-  propDeclarationOffsets,
-  svelteElements,
-} from './svelte/elements.js';
+import { parseComponent, propDeclarationOffsets } from './svelte/component.js';
 
 /** Svelte components, read by `svelte2tsx` with the project's own Svelte (3, 4 or 5). */
 export const svelteLanguage: SourceLanguage = {
@@ -27,15 +22,12 @@ export const svelteLanguage: SourceLanguage = {
     const ast = parseComponent(compiler, source);
     const { code, map } = convertToTsx(tools, compiler, source, file);
 
-    const elements = svelteElements(ast, source);
     // svelte2tsx types the map's `version` as a number.
-    const allMappings = mappingsFromSourceMap(
+    const mappings = mappingsFromSourceMap(
       map as EncodedSourceMap,
       code,
       source
     );
-    const closingTags = closingTagNames(elements, source);
-    const mappings = withoutSource(allMappings, closingTags);
 
     const recovered = parseSkippingUnparsable(file, code, 'ts', mappings, {
       skipCopiedText: true,
@@ -45,7 +37,6 @@ export const svelteLanguage: SourceLanguage = {
       code: recovered.code,
       lang: 'ts',
       mappings,
-      elements,
       props: { calls: ['$props'], variables: propDeclarationOffsets(ast) },
       // `const $$_C = __sveltets_2_ensureComponent(C); new $$_C({ target, props: { … } })`
       componentInstances: { via: 'new', path: ['props'] },

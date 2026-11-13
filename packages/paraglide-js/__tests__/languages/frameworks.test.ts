@@ -11,18 +11,14 @@ import { sourceSnippet } from '../../src/compiler/output/source-code.js';
 import { svelteLanguage } from '../../src/compiler/languages/svelte.js';
 import { vueLanguage } from '../../src/compiler/languages/vue.js';
 import {
-  ADAPTER_FILES,
-  ADAPTER_TARGETS,
   analyzeProject,
   describeUsages,
   REPO_PACKAGES,
+  summarize,
 } from '../helpers/project.js';
 
 async function analyze(file: string, code: string) {
-  return analyzeProject(
-    { [file]: code, ...ADAPTER_FILES },
-    { entry: file, targets: ADAPTER_TARGETS }
-  );
+  return analyzeProject({ [file]: code }, { entry: file });
 }
 
 describe('Vue', () => {
@@ -60,27 +56,18 @@ describe('Vue', () => {
       ].join('\n')
     );
     expect(describeUsages(usages)).toEqual([
-      'message:title:call 2 <h1 :title>',
-      'message:greeting:call 2 <h1>',
-      'message:items:call 3 <p>',
-      'message:item:call 3 <p>',
-      'runtime:setLocale:call 4 <button @click>',
-      'message:name_placeholder:call 5 <input :placeholder>',
-      'adapter:ParaglideMessage:component 6',
-      'message:tos:reference 6 <paraglide-message :message>',
-      'adapter:ParaglideMessage:component 7',
-      'message:tos:reference 7 <ParaglideMessage v-bind:message>',
+      'message:title:call 2',
+      'message:greeting:call 2',
+      'message:items:call 3',
+      'message:item:call 3',
+      'message:name_placeholder:call 5',
+      'message:tos:reference 6',
+      'message:tos:reference 7',
       'message:cart_label:call 20',
     ]);
     expect(usages[0]).toMatchObject({
-      expression: 'm.title()',
       column: 15,
-      scope: 'Cart',
-      resolution: ['src/paraglide/messages.js'],
-    });
-    expect(usages[6]).toMatchObject({
-      expression: `<paraglide-message :message="m.tos" />`,
-      column: 3,
+      targetFile: '/app/src/paraglide/messages.js',
     });
   });
 
@@ -102,8 +89,8 @@ describe('Vue', () => {
       ].join('\n')
     );
     expect(describeUsages(usages)).toEqual([
-      'message:row:call 7 <li>',
-      'message:footer:call 10 <p>',
+      'message:row:call 7',
+      'message:footer:call 10',
     ]);
   });
 
@@ -119,7 +106,7 @@ describe('Vue', () => {
         `</template>`,
       ].join('\n')
     );
-    expect(describeUsages(usages)).toEqual(['message:ok:call 5 <p>']);
+    expect(describeUsages(usages)).toEqual(['message:ok:call 5']);
   });
 });
 
@@ -158,19 +145,17 @@ describe('Svelte', () => {
     );
     expect(describeUsages(usages)).toEqual([
       'message:title:call 6',
-      'message:page_title:call 9 <title>',
-      'message:greeting:call 10 <h1 title>',
-      'message:heading:call 10 <h1>',
-      'message:empty:call 12 <p>',
+      'message:page_title:call 9',
+      'message:greeting:call 10',
+      'message:heading:call 10',
+      'message:empty:call 12',
       'message:many:call 14',
       'message:none:call 16',
-      'runtime:setLocale:call 18 <button onclick>',
-      'adapter:ParaglideMessage:component 19',
-      'message:tos:reference 19 <ParaglideMessage message>',
-      'message:short:call 21 <p>',
+      'message:tos:reference 19',
+      'message:short:call 21',
       'message:failed:call 23',
     ]);
-    expect(usages[1]).toMatchObject({ scope: '+page', column: 22 });
+    expect(usages[1]).toMatchObject({ column: 22 });
   });
 
   test('Svelte 4 let: directives shadow imports in their element', async () => {
@@ -189,8 +174,8 @@ describe('Svelte', () => {
       ].join('\n')
     );
     expect(describeUsages(usages)).toEqual([
-      'message:inside:call 7 <List>',
-      'message:after:call 9 <p>',
+      'message:inside:call 7',
+      'message:after:call 9',
     ]);
   });
 
@@ -207,9 +192,9 @@ describe('Svelte', () => {
       ].join('\n')
     );
     expect(describeUsages(usages)).toEqual([
-      'message:after_attribute:call 4 <p>',
+      'message:after_attribute:call 4',
       'message:block:call 5',
-      'message:last:call 6 <p>',
+      'message:last:call 6',
     ]);
   });
 
@@ -228,7 +213,7 @@ describe('Svelte', () => {
     );
     expect(usages[0]).toMatchObject({
       name: 'greeting',
-      resolution: ['src/i18n.svelte', 'src/paraglide/messages.js'],
+      targetFile: '/app/src/paraglide/messages.js',
     });
   });
 });
@@ -309,20 +294,13 @@ describe('Astro', () => {
     expect(describeUsages(usages)).toEqual([
       'message:first:call 5',
       'message:second:call 5',
-      'message:title:call 9 <title>',
-      'message:greeting:call 12 <p>',
-      'message:tip:call 13 <li title>',
-      'message:suffix:call 13 <li>',
-      'message:link:call 15 <a title>',
-      // A component tag is in its parent element.
-      'adapter:ParaglideMessage:component 16 <body>',
-      'message:tos:reference 16 <ParaglideMessage message>',
-      'runtime:setLocale:call 20 <script>',
+      'message:title:call 9',
+      'message:greeting:call 12',
+      'message:tip:call 13',
+      'message:suffix:call 13',
+      'message:link:call 15',
+      'message:tos:reference 16',
     ]);
-    expect(usages[4]).toMatchObject({
-      expression: 'm.tip({ item })',
-      scope: 'index',
-    });
   });
 
   test('positions after non-ASCII text, in the markup and in a client script', async () => {
@@ -341,14 +319,12 @@ describe('Astro', () => {
       ].join('\n')
     );
     expect(
-      usages.map(
-        ({ expression, line, column }) => `${expression} ${line}:${column}`
-      )
+      usages.map(({ name, line, column }) => `${name} ${line}:${column}`)
     ).toEqual([
       // 👋 is two UTF-16 units.
-      'm.greeting() 5:14',
-      'm.bold() 5:38',
-      'm.client() 8:20',
+      'greeting 5:14',
+      'bold 5:38',
+      'client 8:20',
     ]);
   });
 
@@ -385,8 +361,8 @@ describe('Astro', () => {
     const usages = await analyzeProject(files, { ...options, entry: file });
     expect(
       usages.map(
-        ({ name, kind, line, resolution }) =>
-          `${name}:${kind} ${line} ${resolution.at(-1)}`
+        ({ name, kind, line, targetFile }) =>
+          `${name}:${kind} ${line} ${targetFile.replace('/app/', '')}`
       )
     ).toEqual([
       'server:call 5 src/paraglide/messages.js',
@@ -400,13 +376,9 @@ describe('Astro', () => {
       ...options,
       entry: '/app/src/show.ts',
     });
-    expect(
-      helper.map(
-        ({ name, kind, resolution }) => `${name}:${kind} ${resolution[0]}`
-      )
-    ).toEqual([
-      'other:call src/pages/index.astro',
-      'passed:call src/pages/index.astro',
+    expect(summarize(helper)).toEqual([
+      'message:other:call',
+      'message:passed:call',
     ]);
   });
 
@@ -422,8 +394,8 @@ describe('Astro', () => {
       ].join('\n')
     );
     expect(describeUsages(usages)).toEqual([
-      'message:after_a:call 4 <p>',
-      'message:after_b:call 5 <p>',
+      'message:after_a:call 4',
+      'message:after_b:call 5',
     ]);
   });
 
@@ -447,10 +419,10 @@ describe('Astro', () => {
       { entry: file, context: withoutAstro2Tsx }
     );
     expect(describeUsages(usages)).toEqual([
-      'message:title:call 4 <h1 title>',
-      'message:greeting:call 4 <h1>',
-      'message:tos:reference 5 <Card message>',
-      'message:client:call 6 <script>',
+      'message:title:call 4',
+      'message:greeting:call 4',
+      'message:tos:reference 5',
+      'message:client:call 6',
     ]);
     expect(usages).toEqual(await analyze(file, page));
   });
@@ -469,15 +441,13 @@ describe('Astro', () => {
   });
 });
 
-test('template usages report their element and the lines of the file', async () => {
+test('template usages report the lines of the file', async () => {
   const code = `<script setup>\nimport { m } from "./paraglide/messages.js";\n</script>\n<template><p :title="m.a()" /></template>`;
   const usages = await analyze('/app/src/A.vue', code);
   expect(usages).toMatchObject([
     {
       line: 4,
       column: 22,
-      scope: 'A',
-      element: { element: 'p', attribute: ':title' },
     },
   ]);
   expect(sourceSnippet(code.split('\n'), usages[0]!, 1)).toEqual({

@@ -1,4 +1,3 @@
-import path from 'node:path';
 import {
   computeLineStarts,
   staticPropertyName,
@@ -13,38 +12,20 @@ import {
   evaluate,
   evaluateAll,
   isDynamic,
-  memberOf,
   requireSpecifier,
 } from './evaluate.js';
-import { jsxElementContext } from './jsx-context.js';
 import {
   modulesOf,
   type ModuleGraph,
   type ModuleRecord,
 } from './module-graph.js';
 import { holdsArguments, type Scope } from './scope.js';
-import { enclosingScopeName } from './scope-name.js';
 import type {
-  ElementContext,
-  ElementRange,
   ParaglideUsage,
-  SourceRange,
   TrackedSymbol,
   TrackedValue,
   UsageKind,
 } from './types.js';
-import { componentTagAt, elementContextAt } from '../languages/elements.js';
-import { displayPath } from '../utils/paths.js';
-
-type NewUsage = {
-  node: Node;
-  value: TrackedValue;
-  kind: UsageKind;
-  ancestors: readonly Node[];
-  method?: string;
-  /** Reported instead of the node's, e.g. a component's whole opening tag. */
-  range?: SourceRange;
-};
 
 type Reference = Extract<Node, { type: 'Identifier' | 'MemberExpression' }>;
 
@@ -59,20 +40,15 @@ const NEVER_USAGES = new Set<Node['type']>([
 ]);
 
 /** The usages in a module loaded with `graph.loadPaths([file])`. */
-export function analyzeModule({
-  graph,
-  file,
-  root,
-}: {
-  graph: ModuleGraph;
-  file: string;
-  root: string;
-}): ParaglideUsage[] {
+export function analyzeModule(
+  graph: ModuleGraph,
+  file: string
+): ParaglideUsage[] {
   const record = graph.getRecord(file);
   if (!record) return [];
 
   const usages = modulesOf(record).flatMap((module) =>
-    new UsageCollector(module, graph.scopeOf(module), root).collect()
+    new UsageCollector(module, graph.scopeOf(module)).collect()
   );
 
   return record.generated ? onePerSourceRange(usages) : usages;
@@ -81,7 +57,6 @@ export function analyzeModule({
 class UsageCollector {
   private readonly usages: ParaglideUsage[] = [];
   private readonly lineStarts: number[];
-  private readonly defaultExportName: string;
 
   /** Alias initializers and assignment targets, which are not usages. */
   private readonly skipped = new Set<Node>();
@@ -90,11 +65,9 @@ class UsageCollector {
 
   constructor(
     private readonly record: ModuleRecord,
-    private readonly scope: Scope,
-    private readonly root: string
+    private readonly scope: Scope
   ) {
     this.lineStarts = computeLineStarts(record.code);
-    this.defaultExportName = record.component ?? scriptName(record.file);
   }
 
   collect(): ParaglideUsage[] {
@@ -129,11 +102,7 @@ class UsageCollector {
         return true;
 
       case 'CallExpression':
-        this.recordCall(node, ancestors);
-        return true;
-
-      case 'JSXOpeningElement':
-        this.recordJsxElement(node, ancestors);
+        this.recordCall(node);
         return true;
 
       case 'Identifier':
@@ -158,16 +127,13 @@ class UsageCollector {
     this.skipAlias(assignment.right);
   }
 
-  private recordCall(
-    call: ESTree.CallExpression,
-    ancestors: readonly Node[]
-  ): void {
+  private recordCall(call: ESTree.CallExpression): void {
     const callee = unwrapExpression(call.callee);
     const called = evaluateAll(callee, this.scope).filter(isValue);
 
     if (called.length > 0) {
       for (const value of called) {
-        this.add({ node: call, value, kind: 'call', ancestors });
+        this.add(call, value, 'call');
       }
 
       this.markRecorded(callee);
@@ -185,19 +151,9 @@ class UsageCollector {
     if (receivers.length === 0) return;
 
     for (const value of receivers) {
-      this.add({ node: call, value, kind: 'method', method, ancestors });
+      this.add(call, value, 'method');
     }
     this.markRecorded(callee);
-  }
-
-  private recordJsxElement(
-    element: ESTree.JSXOpeningElement,
-    ancestors: readonly Node[]
-  ): void {
-    const value = evaluateJsxName(element.name, this.scope);
-    if (value?.type !== 'value') return;
-
-    this.add({ node: element, value, kind: 'component', ancestors });
   }
 
   private recordReference(
@@ -214,44 +170,11 @@ class UsageCollector {
 
     const values = symbols.filter(isValue);
     if (values.length === 0) return true;
-
-    const tagRange = this.componentTagRange(node);
-
-    if (tagRange) {
-      for (const value of values) {
-        this.add({
-          node,
-          value,
-          kind: 'component',
-          ancestors,
-          range: tagRange,
-        });
-      }
-
-      return true;
-    }
-
     if (isPassedThroughOrInspected(node, ancestors, this.scope)) return true;
 
-    for (const value of values) {
-      this.add({ node, value, kind: 'reference', ancestors });
-    }
+    for (const value of values) this.add(node, value, 'reference');
 
     return true;
-  }
-
-  /** The opening tag `node` is the name of, in a file with markup: `<Card title="t">`. */
-  private componentTagRange(node: Reference): SourceRange | undefined {
-    const { sourceElements, code } = this.record;
-    const tag =
-      sourceElements && componentTagAt(sourceElements, node.start, node.end);
-    if (!tag) return undefined;
-
-    // Pug tags have no `<`.
-    const startsWithBracket = code[tag.nameStart - 1] === '<';
-    const start = startsWithBracket ? tag.nameStart - 1 : tag.nameStart;
-
-    return { start, end: tag.openEnd };
   }
 
   /** With the objects it is a member of: `m.greeting` and `m` of `m.greeting()`. */
@@ -265,53 +188,26 @@ class UsageCollector {
     }
   }
 
-  private add({
-    node,
-    value,
-    kind,
-    ancestors,
-    method,
-    range = node,
-  }: NewUsage): void {
+  private add(node: Node, value: TrackedValue, kind: UsageKind): void {
     // Code a language tool generated is not in the file.
     if (node.start < 0) return;
 
-    const { record, lineStarts } = this;
-    const start = toLineColumn(lineStarts, range.start);
-    const lastLine = toLineColumn(lineStarts, range.end - 1).line;
-
-    const element = record.sourceElements
-      ? elementContextAt(record.sourceElements, range.start)
-      : (jsxElementContext(ancestors) ??
-        templateElementAt(record.elements, node.start));
+    const start = toLineColumn(this.lineStarts, node.start);
+    const lastLine = toLineColumn(this.lineStarts, node.end - 1).line;
 
     this.usages.push({
       target: value.target,
       name: value.name,
       ...(isDynamic(value) && { dynamic: true }),
       kind,
-      method,
-      expression: record.code.slice(range.start, range.end),
-      start: range.start,
-      end: range.end,
+      start: node.start,
+      end: node.end,
       line: start.line,
       column: start.column,
       endLine: lastLine,
-      scope:
-        enclosingScopeName(ancestors, this.defaultExportName) ??
-        record.component,
-      element,
-      resolution: value.via.map((via) => displayPath(this.root, via)),
+      targetFile: value.file,
     });
   }
-}
-
-/** `counter.svelte.ts` → "counter", `greeting.get.ts` → "greeting.get" */
-function scriptName(file: string): string {
-  return path
-    .basename(file)
-    .replace(/\.[cm]?[jt]sx?$/, '')
-    .replace(/\.svelte$/, '');
 }
 
 function isValue(symbol: TrackedSymbol): symbol is TrackedValue {
@@ -329,8 +225,7 @@ function onePerSourceRange(usages: ParaglideUsage[]): ParaglideUsage[] {
 
   for (const usage of usages) {
     // Two outdirs can define a message of the same name: the target's file tells them apart.
-    const targetFile = usage.resolution.at(-1) ?? '';
-    const key = `${usage.start}\0${usage.target}\0${targetFile}\0${usage.name}`;
+    const key = `${usage.start}\0${usage.target}\0${usage.targetFile}\0${usage.name}`;
     const existing = kept.get(key);
 
     if (!existing || rank(usage) > rank(existing)) kept.set(key, usage);
@@ -416,33 +311,4 @@ function outsideWrappers(
   }
 
   return { parent: ancestors[index], child };
-}
-
-function templateElementAt(
-  elements: readonly ElementRange[] | undefined,
-  offset: number
-): ElementContext | undefined {
-  // Nested ranges come after their parent, so the last match is the innermost.
-  const innermost = elements?.findLast(
-    (range) => range.start <= offset && offset < range.end
-  );
-
-  return innermost?.context;
-}
-
-function evaluateJsxName(
-  name: ESTree.JSXElementName | ESTree.JSXMemberExpressionObject,
-  scope: Scope
-): TrackedSymbol | undefined {
-  if (name.type === 'JSXIdentifier') {
-    const isComponent = /^[A-Z_$]/.test(name.name);
-    return isComponent ? scope.lookupAt(name) : undefined;
-  }
-
-  if (name.type === 'JSXMemberExpression') {
-    const object = evaluateJsxName(name.object, scope);
-    return memberOf(object, name.property.name);
-  }
-
-  return undefined;
 }

@@ -3,8 +3,7 @@ import { staticString, type ESTree, type Node } from './ast.js';
 import type { ModuleGraph, ModuleRecord } from './module-graph.js';
 import { topLevelClasses } from './module-syntax.js';
 import type { Binding, ImplicitNames } from './scope.js';
-import { prependVia } from './tracked-symbols.js';
-import type { SourceRange, TrackedSymbol } from './types.js';
+import type { SourceRange } from './types.js';
 import type { ComponentFields } from '../languages/language.js';
 
 type Modules = Pick<ModuleGraph, 'getRecord' | 'moduleScope'>;
@@ -71,7 +70,7 @@ function fieldBindings(
     const isAlreadyBound = bindings.has(field.name);
     if (isAlreadyBound) continue;
 
-    bindings.set(field.name, fieldBinding(field, template, modules));
+    bindings.set(field.name, fieldBinding(field, modules));
   }
 
   return bindings;
@@ -102,22 +101,12 @@ function fieldsOf(
   );
 }
 
-function fieldBinding(
-  field: ComponentField,
-  template: ModuleRecord,
-  modules: Modules
-): Binding {
-  const { declaredIn } = field;
-  const isInTemplateModule = declaredIn === template.file;
-
+function fieldBinding(field: ComponentField, modules: Modules): Binding {
   return {
     type: 'alias',
     init: field.value,
     path: [],
-    scope: () => modules.moduleScope(declaredIn),
-    map: isInTemplateModule
-      ? undefined
-      : (symbol: TrackedSymbol) => prependVia(declaredIn, symbol),
+    scope: () => modules.moduleScope(field.declaredIn),
   };
 }
 

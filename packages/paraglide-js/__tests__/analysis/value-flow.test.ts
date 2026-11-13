@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import {
   ENTRY,
+  OUTDIR,
   analyzeEntry,
   analyzeProject,
+  describeUsages,
   summarize,
 } from '../helpers/project.js';
 
@@ -13,12 +15,9 @@ const call = 'message:greeting:call';
 const analyzeAll = (files: Record<string, string>, entry: string) =>
   analyzeProject(files, { entry, loadAll: true });
 
-/** e.g. `message:flow_first:call 3 Label` */
-async function describeScopes(code: string): Promise<string[]> {
-  const usages = await analyzeProject({ [ENTRY]: code });
-  return usages.map(
-    (usage) => `${summarize([usage])[0]} ${usage.line} ${usage.scope ?? '-'}`
-  );
+/** e.g. `message:flow_first:call 3` */
+async function describeLines(code: string): Promise<string[]> {
+  return describeUsages(await analyzeProject({ [ENTRY]: code }));
 }
 
 describe('let and var', () => {
@@ -216,10 +215,7 @@ describe('values passed into functions', () => {
         '/app/src/Title.tsx'
       );
       expect(summarize(usages)).toEqual([call]);
-      expect(usages[0]!.resolution).toEqual([
-        'src/App.tsx',
-        'src/paraglide/messages.js',
-      ]);
+      expect(usages[0]!.targetFile).toBe('/app/src/paraglide/messages.js');
     });
 
     test('a default-exported function called from another module', async () => {
@@ -269,10 +265,7 @@ describe('values passed into functions', () => {
         }
       );
       expect(summarize(usages)).toEqual([call]);
-      expect(usages[0]!.resolution).toEqual([
-        'src/App.ts',
-        'src/paraglide/messages.js',
-      ]);
+      expect(usages[0]!.targetFile).toBe('/app/src/paraglide/messages.js');
     });
 
     test.each([
@@ -304,10 +297,7 @@ describe('values passed into functions', () => {
         '/app/src/ui/show.ts'
       );
       expect(summarize(usages)).toEqual([call]);
-      expect(usages[0]!.resolution).toEqual([
-        'src/App.ts',
-        'src/paraglide/messages.js',
-      ]);
+      expect(usages[0]!.targetFile).toBe('/app/src/paraglide/messages.js');
     });
 
     test('through a barrel, as a namespace member', async () => {
@@ -339,10 +329,7 @@ describe('values passed into functions', () => {
         '/app/src/show.ts'
       );
       expect(summarize(usages)).toEqual([call]);
-      expect(usages[0]!.resolution).toEqual([
-        component.replace('/app/', ''),
-        'src/paraglide/messages.js',
-      ]);
+      expect(usages[0]!.targetFile).toBe(`${OUTDIR}/messages.js`);
     });
   });
 });
@@ -350,7 +337,7 @@ describe('values passed into functions', () => {
 describe('a parameter or prop that receives several values follows each', () => {
   test('props and arguments', async () => {
     expect(
-      await describeScopes(
+      await describeLines(
         [
           imports,
           `function Label({ message }) { return <em>{message()}</em>; }`,
@@ -366,14 +353,14 @@ describe('a parameter or prop that receives several values follows each', () => 
         ].join('\n')
       )
     ).toEqual([
-      'message:flow_first:call 3 Label',
-      'message:flow_second:call 3 Label',
-      'message:flow_helper_first:call 4 translate',
-      'message:flow_helper_second:call 4 translate',
-      'message:flow_first:reference 7 Page',
-      'message:flow_second:reference 8 Page',
-      'message:flow_helper_first:reference 9 Page',
-      'message:flow_helper_second:reference 10 Page',
+      'message:flow_first:call 3',
+      'message:flow_second:call 3',
+      'message:flow_helper_first:call 4',
+      'message:flow_helper_second:call 4',
+      'message:flow_first:reference 7',
+      'message:flow_second:reference 8',
+      'message:flow_helper_first:reference 9',
+      'message:flow_helper_second:reference 10',
     ]);
   });
 
@@ -422,7 +409,7 @@ describe('a `let` reassigned away from `m`', () => {
 describe("a parameter's value that is only passed through or inspected", () => {
   test('is not a reference; the call site and calls are', async () => {
     expect(
-      await describeScopes(
+      await describeLines(
         [
           imports,
           `const identity = (value) => value;`,
@@ -436,9 +423,9 @@ describe("a parameter's value that is only passed through or inspected", () => {
         ].join('\n')
       )
     ).toEqual([
-      'message:pass_identity:reference 4 -',
-      'message:pass_inspected:call 6 render',
-      'message:pass_inspected:reference 9 -',
+      'message:pass_identity:reference 4',
+      'message:pass_inspected:call 6',
+      'message:pass_inspected:reference 9',
     ]);
   });
 

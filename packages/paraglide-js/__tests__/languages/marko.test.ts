@@ -5,24 +5,17 @@ import {
   parseSource,
 } from '../../src/compiler/languages/language.js';
 import { markoLanguage } from '../../src/compiler/languages/marko.js';
-import {
-  ADAPTER_FILES,
-  ADAPTER_TARGETS,
-  analyzeProject,
-  elementLabel,
-  summarize,
-} from '../helpers/project.js';
+import { analyzeProject, summarize } from '../helpers/project.js';
 
 const file = '/app/src/components/cart.marko';
 
 async function analyze(lines: string[]) {
   const usages = await analyzeProject(
-    { [file]: lines.join('\n'), ...ADAPTER_FILES },
-    { entry: file, targets: ADAPTER_TARGETS, languages: [markoLanguage] }
+    { [file]: lines.join('\n') },
+    { entry: file, languages: [markoLanguage] }
   );
   return usages.map(
-    (usage) =>
-      `${summarize([usage])[0]} ${usage.line}:${usage.column}${elementLabel(usage)}`
+    (usage) => `${summarize([usage])[0]} ${usage.line}:${usage.column}`
   );
 }
 
@@ -56,17 +49,15 @@ test('placeholders, attributes, scriptlets and components', async () => {
   ).toEqual([
     'message:title:call 4:22',
     'message:label:call 7:29',
-    'message:tip:call 11:11 <h1 title>',
-    'message:heading:call 11:42 <h1>',
+    'message:tip:call 11:11',
+    'message:heading:call 11:42',
     // The tooling writes `class="a ${…}"` as a plain string, so `m.css()` is not read.
-    'message:html:call 12:28 <p>',
-    'runtime:setLocale:call 13:21 <button onClick>',
-    'adapter:ParaglideMessage:component 14:1',
-    'message:tos:reference 14:27 <ParaglideMessage message>',
-    'message:enabled:call 15:5 <if>',
-    'message:inside:call 16:11 <span>',
+    'message:html:call 12:28',
+    'message:tos:reference 14:27',
+    'message:enabled:call 15:5',
+    'message:inside:call 16:11',
     // Placeholders in `<script>` are expressions to the tooling.
-    'message:script:call 19:11 <script>',
+    'message:script:call 19:11',
   ]);
 });
 
@@ -80,7 +71,7 @@ test('tag parameters scope their names', async () => {
       `<for|item| of=items>\${m.row({ item })}</for>`,
       `<p>\${m.after()}</p>`,
     ])
-  ).toEqual(['message:row:call 7:23 <for>', 'message:after:call 8:6 <p>']);
+  ).toEqual(['message:row:call 7:23', 'message:after:call 8:6']);
 });
 
 test('tag variables are hoisted: one named `m` shadows the import in the whole template', async () => {

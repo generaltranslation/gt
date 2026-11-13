@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { ENTRY, analyzeProject, summarize } from '../helpers/project.js';
+import {
+  ENTRY,
+  OUTDIR,
+  analyzeProject,
+  summarize,
+} from '../helpers/project.js';
 
 const call = 'message:greeting:call';
 const cjs = '/app/src/i18n.cjs';
@@ -9,7 +14,7 @@ async function through(
   entry = `import { m } from "./i18n.cjs"; m.greeting();`
 ) {
   const usages = await analyzeProject({ [ENTRY]: entry, [cjs]: cjsCode });
-  return { summary: summarize(usages), resolution: usages[0]?.resolution };
+  return { summary: summarize(usages), targetFile: usages[0]?.targetFile };
 }
 
 describe('CommonJS exports of followed modules', () => {
@@ -59,9 +64,9 @@ describe('CommonJS exports of followed modules', () => {
       ].join('\n'),
     ],
   ])('%s', async (_name, code) => {
-    const { summary, resolution } = await through(code);
+    const { summary, targetFile } = await through(code);
     expect(summary).toEqual([call]);
-    expect(resolution).toEqual(['src/i18n.cjs', 'src/paraglide/messages.js']);
+    expect(targetFile).toBe(`${OUTDIR}/messages.js`);
   });
 
   test('a default import is the whole module.exports', async () => {

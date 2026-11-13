@@ -1,14 +1,8 @@
-import path from 'node:path';
 import type { ESTree } from '../analysis/ast.js';
 import type { ParsedModule } from '../analysis/module-graph.js';
 import type { SourceRange } from '../analysis/types.js';
 import { isScript } from '../utils/paths.js';
-import type { SourceElement } from './elements.js';
 import { remapProgram, type Mapping } from './mapping.js';
-import {
-  mayHaveTaggedTemplates,
-  taggedTemplateElements,
-} from './tagged-templates.js';
 
 export type ParseLang = 'js' | 'jsx' | 'ts' | 'tsx';
 
@@ -46,8 +40,6 @@ export type GeneratedSource = {
   code: string;
   lang: ParseLang;
   mappings: readonly Mapping[];
-  /** The file's markup. Without it, usages in generated JSX report the JSX's elements. */
-  elements?: readonly SourceElement[];
   componentFields?: readonly ComponentFields[];
   /** Objects whose members resolve like names of the module, e.g. Vue's `__VLS_ctx.title`. */
   scopeObjects?: readonly string[];
@@ -136,8 +128,6 @@ export type ParseFailure = {
 /** `skipped`: a part of the file that is not in the module. */
 export type ParsedSource = { module: ParsedModule; skipped?: ParseFailure };
 
-type LanguageMatch = { language: SourceLanguage; extension: string };
-
 /** Thrown by a language whose tool is installed but cannot be used; the file is skipped. */
 export class UnusableToolError extends Error {
   override name = 'UnusableToolError';
@@ -166,8 +156,8 @@ export async function parseSource(
   languages: readonly SourceLanguage[],
   context: LanguageContext = NO_PACKAGES
 ): Promise<ParsedSource | ParseFailure> {
-  const match = languageOf(file, code, languages);
-  if (match) return parseWithLanguage(file, code, parse, match, context);
+  const language = languageOf(file, code, languages);
+  if (language) return parseWithLanguage(file, code, parse, language, context);
 
   if (isScript(file)) return parseScript(file, code, parse);
 
@@ -180,25 +170,19 @@ function languageOf(
   file: string,
   code: string,
   languages: readonly SourceLanguage[]
-): LanguageMatch | undefined {
-  for (const language of languages) {
-    const extension = extensionOf(file, language);
-    if (extension === undefined) continue;
+): SourceLanguage | undefined {
+  return languages.find((language) => {
+    if (extensionOf(file, language) === undefined) return false;
 
-    const isInLanguage = language.detect
-      ? language.detect(code, file)
-      : !isScript(file);
-    if (isInLanguage) return { language, extension };
-  }
-
-  return undefined;
+    return language.detect ? language.detect(code, file) : !isScript(file);
+  });
 }
 
 async function parseWithLanguage(
   file: string,
   code: string,
   parse: ParseFunction,
-  { language, extension }: LanguageMatch,
+  language: SourceLanguage,
   context: LanguageContext
 ): Promise<ParsedSource | ParseFailure> {
   let generated: GeneratedSource | undefined;
@@ -227,8 +211,7 @@ async function parseWithLanguage(
     programs.push(program);
   }
 
-  const component = path.basename(file, extension).replace(/\.component$/, '');
-  const module = generatedModule(code, programs, component, generated);
+  const module = generatedModule(code, programs, generated);
   if (!generated.skipped) return { module };
 
   return { module, skipped: skippedPartFailure(language, generated.skipped) };
@@ -278,15 +261,9 @@ function skippedPartFailure(
 function generatedModule(
   code: string,
   [program, ...scriptPrograms]: readonly ESTree.Program[],
-  component: string,
   generated: GeneratedSource
 ): ParsedModule {
-  const inFile = {
-    code,
-    component,
-    generated: true,
-    sourceElements: generated.elements,
-  };
+  const inFile = { code, generated: true };
 
   return {
     ...inFile,
@@ -310,13 +287,7 @@ function parseScript(
   const error = firstError(errors);
   if (error) return { error: error.message };
 
-  const elements = mayHaveTaggedTemplates(code)
-    ? taggedTemplateElements(program, code)
-    : [];
-  const module =
-    elements.length > 0 ? { code, program, elements } : { code, program };
-
-  return { module };
+  return { module: { code, program } };
 }
 
 function scriptLang(file: string): ParseLang {

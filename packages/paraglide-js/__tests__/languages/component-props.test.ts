@@ -6,7 +6,7 @@ import { analyzeProject, describeUsages } from '../helpers/project.js';
 
 const imports = `import { m } from "./paraglide/messages.js";`;
 
-/** The usages in `entry`, with every file loaded: e.g. `message:a:call 1 <em>`. */
+/** The usages in `entry`, with every file loaded: e.g. `message:a:call 1`. */
 async function usagesIn(
   entry: string,
   files: Record<string, string>,
@@ -33,8 +33,8 @@ describe('Svelte', () => {
         '/app/src/Page.svelte': page,
       })
     ).toEqual([
-      'message:flow_svelte_first:call 1 <em>',
-      'message:flow_svelte_second:call 1 <em>',
+      'message:flow_svelte_first:call 1',
+      'message:flow_svelte_second:call 1',
     ]);
   });
 
@@ -56,10 +56,7 @@ describe('Svelte', () => {
           `<Label {message} {...rest} />`,
         ].join('\n'),
       })
-    ).toEqual([
-      'message:shorthand:call 2 <em>',
-      'message:spread_title:call 3 <b>',
-    ]);
+    ).toEqual(['message:shorthand:call 2', 'message:spread_title:call 3']);
   });
 
   // The default is an alias, as in `let t = m.fallback`; its reads are the usages.
@@ -76,9 +73,9 @@ describe('Svelte', () => {
         '/app/src/Page.svelte': page,
       })
     ).toEqual([
-      'message:fallback:call 5 <em>',
-      'message:flow_svelte_first:call 5 <em>',
-      'message:flow_svelte_second:call 5 <em>',
+      'message:fallback:call 5',
+      'message:flow_svelte_first:call 5',
+      'message:flow_svelte_second:call 5',
     ]);
   });
 
@@ -89,8 +86,8 @@ describe('Svelte', () => {
         '/app/src/Page.svelte': page,
       })
     ).toEqual([
-      'message:flow_svelte_first:call 1 <em>',
-      'message:flow_svelte_second:call 1 <em>',
+      'message:flow_svelte_first:call 1',
+      'message:flow_svelte_second:call 1',
     ]);
   });
 
@@ -107,7 +104,7 @@ describe('Svelte', () => {
           `<Label message={m.barrel} />`,
         ].join('\n'),
       })
-    ).toEqual(['message:barrel:call 1 <em>']);
+    ).toEqual(['message:barrel:call 1']);
   });
 });
 
@@ -135,10 +132,10 @@ describe('Vue', () => {
         '/app/src/Page.vue': page,
       })
     ).toEqual([
-      'message:flow_vue_first:call 4 <em>',
-      'message:flow_vue_second:call 4 <em>',
-      'message:flow_vue_first:call 4 <b>',
-      'message:flow_vue_second:call 4 <b>',
+      'message:flow_vue_first:call 4',
+      'message:flow_vue_second:call 4',
+      'message:flow_vue_first:call 4',
+      'message:flow_vue_second:call 4',
     ]);
   });
 
@@ -154,8 +151,8 @@ describe('Vue', () => {
         '/app/src/Page.vue': page,
       })
     ).toEqual([
-      'message:flow_vue_first:call 4 <em>',
-      'message:flow_vue_second:call 4 <em>',
+      'message:flow_vue_first:call 4',
+      'message:flow_vue_second:call 4',
     ]);
   });
 
@@ -176,7 +173,7 @@ describe('Vue', () => {
           `<template><Label :my-message="m.kebab" /></template>`,
         ].join('\n'),
       })
-    ).toEqual(['message:kebab:call 4 <em>']);
+    ).toEqual(['message:kebab:call 4']);
   });
 
   // Nuxt, unplugin-vue-components: the page renders a component it does not import.
@@ -212,8 +209,8 @@ describe('Vue', () => {
           ]
         )
       ).toEqual([
-        'message:auto_imported:call 4 <em>',
-        'message:auto_imported_kebab:call 4 <em>',
+        'message:auto_imported:call 4',
+        'message:auto_imported_kebab:call 4',
       ]);
     }
   );
@@ -239,8 +236,8 @@ describe('Astro', () => {
         ].join('\n'),
       })
     ).toEqual([
-      'message:flow_astro_first:call 4 <em>',
-      'message:flow_astro_second:call 4 <em>',
+      'message:flow_astro_first:call 4',
+      'message:flow_astro_second:call 4',
     ]);
   });
 
@@ -258,8 +255,8 @@ describe('Astro', () => {
       '/app/src/App.tsx': `${imports}\nimport Label from "./Label.svelte";\nexport const App = () => <Label message={m.from_tsx} />;`,
     });
     expect(usages.sort()).toEqual([
-      'message:from_astro:call 1 <em>',
-      'message:from_tsx:call 1 <em>',
+      'message:from_astro:call 1',
+      'message:from_tsx:call 1',
     ]);
   });
 });

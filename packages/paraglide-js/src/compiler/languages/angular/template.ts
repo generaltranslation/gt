@@ -1,5 +1,4 @@
 import type * as AngularCompiler from '@angular/compiler';
-import type { SourceAttribute, SourceElement } from '../elements.js';
 import { GeneratedCode, lexerRange } from './generated-code.js';
 
 type Compiler = typeof AngularCompiler;
@@ -35,15 +34,14 @@ export type TemplateRange = {
 
 /**
  * Writes every expression of the template `source[range]` (by default the whole
- * source) as a statement of `generated`, and returns the template's elements.
- * Throws when Angular rejects the markup, e.g. an unclosed block or element.
+ * source) as a statement of `generated`. Throws when Angular rejects the markup, e.g. an unclosed block or element.
  */
 export function writeTemplate(
   compiler: Compiler,
   generated: GeneratedCode,
   file: string,
   range: TemplateRange = { start: 0, end: generated.source.length }
-): SourceElement[] {
+): void {
   const { source } = generated;
   const options = {
     range: lexerRange(source, range.start, range.end),
@@ -76,8 +74,6 @@ export function writeTemplate(
   forEachExpression(compiler, template.nodes, (expression) =>
     writer.write(expression)
   );
-
-  return sourceElements(compiler, html.rootNodes);
 }
 
 class ExpressionWriter {
@@ -201,60 +197,6 @@ function forEachExpression(
   };
 
   walk(templateNodes);
-}
-
-function sourceElements(
-  compiler: Compiler,
-  nodes: readonly AngularCompiler.Node[]
-): SourceElement[] {
-  const elements: SourceElement[] = [];
-
-  const visit = (node: AngularCompiler.Node) => {
-    if (node instanceof compiler.Element) {
-      elements.push(sourceElement(node));
-      node.children.forEach(visit);
-    } else if (node instanceof compiler.Block) {
-      node.children.forEach(visit);
-    } else if (node instanceof compiler.Expansion) {
-      for (const expansionCase of node.cases)
-        expansionCase.expression.forEach(visit);
-    }
-  };
-
-  nodes.forEach(visit);
-
-  return elements;
-}
-
-function sourceElement(element: AngularCompiler.Element): SourceElement {
-  // `:svg:text` → `text`
-  const name = element.name.replace(/^:[^:]+:/, '');
-  const nameStart = element.startSourceSpan.start.offset + 1;
-  const nameEnd = nameStart + name.length;
-  const lastSpan = element.endSourceSpan ?? element.sourceSpan;
-
-  return {
-    name,
-    start: nameEnd,
-    end: lastSpan.end.offset,
-    nameStart,
-    nameEnd,
-    openEnd: element.startSourceSpan.end.offset,
-    component: false,
-    attributes: element.attrs.map((attribute) => sourceAttribute(attribute)),
-  };
-}
-
-function sourceAttribute(
-  attribute: AngularCompiler.Attribute
-): SourceAttribute {
-  const span = attribute.valueSpan ?? attribute.sourceSpan;
-
-  return {
-    name: attribute.name,
-    start: span.start.offset,
-    end: span.end.offset,
-  };
 }
 
 function childExpressions(
