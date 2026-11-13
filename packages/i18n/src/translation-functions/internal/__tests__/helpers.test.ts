@@ -11,7 +11,7 @@ import { GTRuntime } from 'generaltranslation/runtime';
 import { I18nCache } from '../../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
-import { hashMessage } from '../../../utils/hashMessage';
+import { hashContent } from '../../../utils/hashContent';
 import {
   prefetchStringContentWithRuntimeFallback,
   resolveJsx,
@@ -20,7 +20,7 @@ import {
   resolveStringContentWithRuntimeFallback,
 } from '../helpers';
 
-const icuHash = (message: string) => hashMessage(message, { $format: 'ICU' });
+const icuHash = (message: string) => hashContent(message, { $format: 'ICU' });
 
 function setupCache(preloadedTranslations: Record<string, string> = {}) {
   initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
@@ -126,7 +126,7 @@ describe('translation helpers', () => {
     const message = 'Fallback test';
     setupCache();
     translateMany.mockResolvedValue({
-      [hashMessage(message, { $format: 'STRING' })]: {
+      [hashContent(message, { $format: 'STRING' })]: {
         success: false,
         error: 'Translation failed',
       },
@@ -147,7 +147,7 @@ describe('translation helpers', () => {
     const translatedContent = ['Bonjour ', 'le monde'];
     setupCache();
     translateMany.mockResolvedValue({
-      [hashMessage(content, { $format: 'JSX' })]: {
+      [hashContent(content, { $format: 'JSX' })]: {
         success: true,
         translation: translatedContent,
       },
