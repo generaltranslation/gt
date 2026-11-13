@@ -241,14 +241,13 @@ function formatViolations(violations: Violation[]): string {
 const serverArtifacts = ['dist/index.server.js', 'dist/server.js'];
 
 function buildPackage(): void {
-  if (process.env.npm_execpath) {
-    execFileSync(process.execPath, [process.env.npm_execpath, 'run', 'build'], {
-      cwd: packageRoot,
-      stdio: 'pipe',
-    });
-    return;
-  }
-  execFileSync('pnpm', ['run', 'build'], { cwd: packageRoot, stdio: 'pipe' });
+  // npm_execpath may be a JS CLI (corepack pnpm.cjs, runnable via node) or
+  // a native binary (mise-installed pnpm on CI, runnable directly).
+  const npmExecpath = process.env.npm_execpath;
+  const isJsCli = npmExecpath !== undefined && /\.[cm]?js$/.test(npmExecpath);
+  const command = isJsCli ? process.execPath : (npmExecpath ?? 'pnpm');
+  const args = isJsCli ? [npmExecpath, 'run', 'build'] : ['run', 'build'];
+  execFileSync(command, args, { cwd: packageRoot, stdio: 'pipe' });
 }
 
 describe('gt-next RSC leak enforcement', () => {

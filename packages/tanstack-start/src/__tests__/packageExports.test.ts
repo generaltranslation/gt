@@ -10,10 +10,12 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
 function buildPackage(): void {
-  const command = process.env.npm_execpath ? process.execPath : 'pnpm';
-  const args = process.env.npm_execpath
-    ? [process.env.npm_execpath, 'run', 'build']
-    : ['run', 'build'];
+  // npm_execpath may be a JS CLI (corepack pnpm.cjs, runnable via node) or
+  // a native binary (mise-installed pnpm on CI, runnable directly).
+  const npmExecpath = process.env.npm_execpath;
+  const isJsCli = npmExecpath !== undefined && /\.[cm]?js$/.test(npmExecpath);
+  const command = isJsCli ? process.execPath : (npmExecpath ?? 'pnpm');
+  const args = isJsCli ? [npmExecpath, 'run', 'build'] : ['run', 'build'];
 
   execFileSync(command, args, {
     cwd: packageRoot,
