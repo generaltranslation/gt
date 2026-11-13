@@ -403,12 +403,18 @@ describe('formatIcu', () => {
           value: undefined,
         });
       }
-      const resolvedOptions = vi.spyOn(
-        Intl.DateTimeFormat.prototype,
-        'resolvedOptions'
-      );
+      const DateTimeFormat = Intl.DateTimeFormat;
+      const built = vi.fn();
+      Object.defineProperty(Intl, 'DateTimeFormat', {
+        value: new Proxy(DateTimeFormat, {
+          construct(target, args) {
+            built();
+            return Reflect.construct(target, args);
+          },
+        }),
+      });
       try {
-        // A locale no other test uses, so its hour cycle is not cached yet.
+        // A locale no other test uses, so none of its formatters is cached.
         const locale = `en-CA-u-rg-gbzzzz-x-${missing.length}`;
         const value = new Date(2020, 4, 6, 7, 3, 2);
         for (let i = 0; i < 3; i++) {
@@ -416,11 +422,12 @@ describe('formatIcu', () => {
             expected
           );
         }
-        expect(resolvedOptions).toHaveBeenCalledTimes(
-          missing.length === 2 ? 1 : 0
-        );
+        // The one that formats, and the one the hour cycle is read from.
+        expect(built).toHaveBeenCalledTimes(missing.length);
       } finally {
-        resolvedOptions.mockRestore();
+        Object.defineProperty(Intl, 'DateTimeFormat', {
+          value: DateTimeFormat,
+        });
         for (const [key, descriptor] of saved) {
           if (descriptor) Object.defineProperty(prototype, key, descriptor);
           else delete (prototype as unknown as Record<string, unknown>)[key];

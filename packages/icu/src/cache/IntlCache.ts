@@ -91,5 +91,10 @@ export class IntlCache<Constructors extends Record<string, Constructor>> {
   }
 }
 
-/** The instances of Intl's own constructors, shared by every package. */
-export const intlCache = new IntlCache<SharedIntlConstructors>(Intl);
+/**
+ * The instances of Intl's own constructors, shared by every package. Marked
+ * pure, so a bundle that formats nothing drops the cache.
+ */
+export const intlCache = /* @__PURE__ */ new IntlCache<SharedIntlConstructors>(
+  Intl
+);

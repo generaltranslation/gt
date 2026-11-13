@@ -7,6 +7,7 @@
  * what differs.
  */
 
+import { intlCache } from '../cache/IntlCache';
 import {
   createDayPeriodWithoutHourError,
   createInvalidDateTimeFieldError,
@@ -191,39 +192,28 @@ export function resolveLocaleHourSkeleton(
   return resolvedSkeleton;
 }
 
-// A formatter resolves the same Intl.Locale for every message in a locale.
-const localeHourSymbols = new WeakMap<Intl.Locale, 'h' | 'H' | 'K' | 'k'>();
-
-function getLocaleHourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
-  let symbol = localeHourSymbols.get(locale);
-  if (!symbol) {
-    symbol = hourSymbol(localeHourCycle(locale));
-    localeHourSymbols.set(locale, symbol);
-  }
-  return symbol;
-}
-
 /**
- * The locale's hour cycle, region override included. Engines expose it as
- * `getHourCycles()`, or as the older `hourCycles` getter that V8 has since
- * removed; a DateTimeFormat, the last resort, ignores a `-u-rg-` override.
+ * The symbol of the locale's hour cycle, region override included. Engines
+ * expose the cycle as `getHourCycles()`, or as the older `hourCycles` getter
+ * that V8 has since removed; a DateTimeFormat, the last resort, ignores a
+ * `-u-rg-` override, and resolves the same cycle in any time zone.
  */
-function localeHourCycle(locale: Intl.Locale): string | undefined {
+function getLocaleHourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
   const withHourCycles = locale as Intl.Locale & {
     getHourCycles?: () => Intl.LocaleHourCycleKey[];
     hourCycles?: Intl.LocaleHourCycleKey[];
   };
-  return (
+  const hourCycle =
     locale.hourCycle ??
     withHourCycles.getHourCycles?.()[0] ??
     withHourCycles.hourCycles?.[0] ??
-    new Intl.DateTimeFormat(locale.toString(), {
-      hour: 'numeric',
-    }).resolvedOptions().hourCycle
-  );
-}
+    intlCache
+      .get('DateTimeFormat', locale.toString(), {
+        hour: 'numeric',
+        timeZone: 'UTC',
+      })
+      .resolvedOptions().hourCycle;
 
-function hourSymbol(hourCycle: string | undefined): 'h' | 'H' | 'K' | 'k' {
   switch (hourCycle) {
     case 'h11':
       return 'K';
