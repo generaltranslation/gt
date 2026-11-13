@@ -1,5 +1,17 @@
 # gt-i18n
 
+## 2.0.0-samsara.7
+
+### Patch Changes
+
+- 27c26cd: perf(i18n): `I18nCache` uses the locale it is given as the translation and dictionary cache key, without negotiating, validating or aliasing it on every lookup. Pass the configured locale string. A canonical spelling of an aliased locale (for example `en-GB` when `en-gb` is configured), an unconfigured dialect (`fr-FR` when only `fr` is configured) and an invalid locale are no longer mapped to a configured locale or reported as errors; they read as cache misses and fall back to source content. Request locale detection (`Accept-Language`, cookies, browser preferences) is unchanged.
+- Updated dependencies [b1b9d26]
+- Updated dependencies [27c26cd]
+- Updated dependencies [27c26cd]
+  - @generaltranslation/icu@0.2.0-samsara.5
+  - @generaltranslation/format@1.0.0-samsara.7
+  - generaltranslation@10.0.0-samsara.7
+
 ## 2.0.0-samsara.6
 
 ### Minor Changes

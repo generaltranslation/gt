@@ -1,5 +1,11 @@
 # @generaltranslation/python-extractor
 
+## 0.2.68-samsara.0
+
+### Patch Changes
+
+- generaltranslation@10.0.0-samsara.7
+
 ## 0.2.67
 
 ### Patch Changes

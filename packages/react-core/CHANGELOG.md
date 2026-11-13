@@ -1,5 +1,15 @@
 # @generaltranslation/react-core
 
+## 12.0.0-samsara.7
+
+### Patch Changes
+
+- Updated dependencies [27c26cd]
+- Updated dependencies [27c26cd]
+  - gt-i18n@2.0.0-samsara.7
+  - @generaltranslation/format@1.0.0-samsara.7
+  - generaltranslation@10.0.0-samsara.7
+
 ## 12.0.0-samsara.6
 
 ### Minor Changes

@@ -1,5 +1,14 @@
 # @generaltranslation/react-core-linter
 
+## 0.2.0-samsara.8
+
+### Patch Changes
+
+- Updated dependencies [b1b9d26]
+- Updated dependencies [27c26cd]
+  - @generaltranslation/icu@0.2.0-samsara.5
+  - generaltranslation@10.0.0-samsara.7
+
 ## 0.2.0-samsara.7
 
 ### Patch Changes
