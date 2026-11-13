@@ -111,6 +111,11 @@ function isNode(value: unknown): value is Node {
   );
 }
 
+/** Where a node was parsed: generated code moved to its source position keeps it in `range`. */
+export function parsedRange(node: Node): readonly [number, number] {
+  return (node as { range?: [number, number] }).range ?? [node.start, node.end];
+}
+
 export function isFunction(node: Node): node is FunctionNode {
   return (
     node.type === 'FunctionDeclaration' ||

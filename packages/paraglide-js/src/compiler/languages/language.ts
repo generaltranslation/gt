@@ -12,11 +12,16 @@ type ParseError = {
   labels?: ReadonlyArray<{ start: number }>;
 };
 
-/** e.g. oxc-parser's `parseSync` with `{ lang, range: true, astType: "ts" }`. */
+/**
+ * e.g. oxc-parser's `parseSync` with `{ lang, range, astType: "ts" }`. `range`
+ * is required for generated code, whose nodes are moved to their source
+ * position: `range` keeps where they were parsed.
+ */
 export type ParseFunction = (
   file: string,
   code: string,
-  lang: ParseLang
+  lang: ParseLang,
+  options?: { range: boolean }
 ) => { program: ESTree.Program; errors: readonly ParseError[] };
 
 /** A class whose fields a template reads undeclared, e.g. Angular's `{{ m.greeting() }}`. */
@@ -222,7 +227,9 @@ function parseGenerated(
   const programs: ESTree.Program[] = [];
 
   for (const script of [generated, ...(generated.scripts ?? [])]) {
-    const { program, errors } = parse(file, script.code, script.lang);
+    const { program, errors } = parse(file, script.code, script.lang, {
+      range: true,
+    });
 
     const error = firstError(errors);
     if (error) {

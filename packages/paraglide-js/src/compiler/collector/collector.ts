@@ -12,7 +12,6 @@ import {
   parseSource,
   type LanguageContext,
   type ParseFailure,
-  type ParseFunction,
   type SourceLanguage,
 } from '../languages/language.js';
 import { readCatalog } from '../paraglide/catalog.js';
@@ -26,7 +25,7 @@ import {
 } from '../project/auto-imports.js';
 import type { FileSelection } from '../project/files.js';
 import { projectPackages } from '../project/packages.js';
-import { parseCode } from '../utils/parse.js';
+import { parseModuleCode } from '../utils/parse.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
 import { readTextFile } from '../utils/read-file.js';
 import { isInCatalog, unknownMessagesWarning } from './catalog-check.js';
@@ -76,13 +75,6 @@ type Catalog = Set<string> | undefined;
 
 /** `./paraglide/messages.js`, `$lib/paraglide/runtime` */
 const IN_PARAGLIDE_DIRECTORY = /(^|[/\\])paraglide[/\\]/;
-
-const parse: ParseFunction = (file, code, lang) =>
-  parseCode(file, code, {
-    lang,
-    range: true,
-    astType: 'ts',
-  }) as unknown as ReturnType<ParseFunction>;
 
 /** Analyzes the project's source files and writes their usages to the messages' metadata files. */
 export class ContextCollector {
@@ -196,7 +188,7 @@ export class ContextCollector {
     const parsed = await parseSource(
       file,
       code,
-      parse,
+      parseModuleCode,
       this.settings.languages,
       this.packages
     );

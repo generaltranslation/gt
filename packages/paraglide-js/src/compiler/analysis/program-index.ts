@@ -1,10 +1,12 @@
 import {
   analyze,
+  FunctionScope,
   type Definition as ManagedDefinition,
+  type Reference as ManagedReference,
   type Scope as ManagedScope,
   type Variable as ManagedVariable,
 } from '@typescript-eslint/scope-manager';
-import { forEachNode, type ESTree, type Node } from './ast.js';
+import { forEachNode, parsedRange, type ESTree, type Node } from './ast.js';
 
 export type Definition = {
   type: ManagedDefinition['type'];
@@ -41,6 +43,31 @@ export type ProgramIndex = Variables & {
 
 /** A program is indexed once: indexing drops the ranges the scope manager reads. */
 const indexes = new WeakMap<ESTree.Program, ProgramIndex>();
+
+// Scripts are parsed without `range`, the only thing the scope manager reads it
+// for: their `start` is the same. Generated code keeps `range`, where it parsed.
+const scopeManagerResolution = FunctionScope.prototype as unknown as {
+  isValidResolution(
+    reference: ManagedReference,
+    variable: ManagedVariable
+  ): boolean;
+  block: { type: string; body?: object | null };
+};
+scopeManagerResolution.isValidResolution = function (reference, variable) {
+  if (this.block.type === 'Program') return true;
+
+  const body = this.block.body as Node | null | undefined;
+  const bodyStart = body ? parsedRange(body)[0] : -1;
+
+  return !(
+    variable.scope === (this as unknown) &&
+    parsedRange(reference.identifier as unknown as Node)[0] < bodyStart &&
+    variable.defs.every(
+      (definition) =>
+        parsedRange(definition.name as unknown as Node)[0] >= bodyStart
+    )
+  );
+};
 
 // scope-manager is typed for typescript-estree's nodes; it is given oxc's, which have the same shape.
 const toNode = (node: object) => node as Node;
