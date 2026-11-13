@@ -166,9 +166,15 @@ jobs:
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
           version=$(jq -r .version packages/cli/package.json)
 
+          etag() {
+            curl --silent --fail --head --retry 3 "https://assets.gtx.dev/cli/$1" | tr -d '\r' | grep -i '^etag:' | cut -d' ' -f2
+          }
+
+          # Comparing ETags also catches a failed upload to latest after the versioned upload succeeded.
           binaries_uploaded() {
             for binary in gt-darwin-x64 gt-darwin-arm64 gt-linux-x64 gt-linux-arm64 gt-win32-x64.exe; do
-              curl --silent --fail --head --retry 3 --output /dev/null "https://assets.gtx.dev/cli/v${version}/${binary}" || return 1
+              versioned=$(etag "v${version}/${binary}")
+              [ -n "$versioned" ] && [ "$versioned" = "$(etag "latest/${binary}")" ] || return 1
             done
           }
 
@@ -273,9 +279,15 @@ jobs:
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
           version=$(jq -r .version packages/gtx-cli/package.json)
 
+          etag() {
+            curl --silent --fail --head --retry 3 "https://assets.gtx.dev/gtx-cli/$1" | tr -d '\r' | grep -i '^etag:' | cut -d' ' -f2
+          }
+
+          # Comparing ETags also catches a failed upload to latest after the versioned upload succeeded.
           binaries_uploaded() {
             for binary in gtx-cli-darwin-x64 gtx-cli-darwin-arm64 gtx-cli-linux-x64 gtx-cli-linux-arm64 gtx-cli-win32-x64.exe; do
-              curl --silent --fail --head --retry 3 --output /dev/null "https://assets.gtx.dev/gtx-cli/v${version}/${binary}" || return 1
+              versioned=$(etag "v${version}/${binary}")
+              [ -n "$versioned" ] && [ "$versioned" = "$(etag "latest/${binary}")" ] || return 1
             done
           }
 
