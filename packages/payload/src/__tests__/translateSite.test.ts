@@ -54,7 +54,14 @@ const readPage = (id: string | number, locale: string) =>
   });
 
 const editSpanish = (id: string | number, data: Record<string, unknown>) =>
-  payload.update({ collection: 'pages', id, locale: 'es', draft: true, data });
+  payload.update({
+    overrideAccess: true,
+    collection: 'pages',
+    id,
+    locale: 'es',
+    draft: true,
+    data,
+  });
 
 describe('translateSite', () => {
   it('sends every document as its own file and writes every translation', async () => {
@@ -149,6 +156,7 @@ describe('translateSite', () => {
 describe('translateSite: which documents take part', () => {
   it('leaves documents with nothing to translate out of a site run', async () => {
     const media = await payload.create({
+      overrideAccess: true,
       collection: 'media',
       locale: 'en',
       data: {},
@@ -171,6 +179,7 @@ describe('translateSite: which documents take part', () => {
 
   it('leaves out collections editors cannot edit, like search results', async () => {
     const result = await payload.create({
+      overrideAccess: true,
       collection: 'search',
       locale: 'en',
       data: { title: 'Pricing' },
@@ -193,6 +202,7 @@ describe('translateSite: which documents take part', () => {
 
   it('includes documents whose text is only in a referenced block', async () => {
     const story = await payload.create({
+      overrideAccess: true,
       collection: 'stories',
       locale: 'en',
       data: { layout: [{ blockType: 'quote', text: 'Well said' }] },
@@ -297,6 +307,7 @@ describe('siteCoverage', () => {
       locales: ['es'],
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -318,6 +329,7 @@ describe('siteCoverage', () => {
       locales: ['es'],
     });
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -326,6 +338,7 @@ describe('siteCoverage', () => {
       depth: 0,
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -395,6 +408,7 @@ describe('siteCoverage', () => {
       locales: ['es'],
     });
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -403,6 +417,7 @@ describe('siteCoverage', () => {
       depth: 0,
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -438,6 +453,7 @@ describe('siteCoverage', () => {
       locales: ['es'],
     });
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -446,6 +462,7 @@ describe('siteCoverage', () => {
       depth: 0,
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
