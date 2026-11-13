@@ -31,6 +31,7 @@ import { MetadataFiles } from './metadata-files.js';
 import { MissingTools } from './missing-tools.js';
 import {
   analysisBudget,
+  THREAD_HEAP_SHARE,
   loadIndexedFile,
   summarizeFile,
   type GeneratedBytes,
@@ -91,9 +92,12 @@ export class ContextCollector {
   private readonly indexer: ModuleIndexer;
   /** What languages generated for the indexed files, when this thread analyzes them: it parses a file again when it loads it. */
   private readonly generated = new Map<string, GeneratedBytes>();
-  private pool: AnalysisPool | undefined;
   private globals: readonly GlobalBinding[] = [];
   private globalNames: ReadonlySet<string> = new Set();
+  private pool: AnalysisPool | undefined;
+  /** See `analysisBudget`; set by `scanAll`. */
+  private budget = 0;
+  private averageFileSize = 0;
   private readonly outdirDetector: OutdirDetector;
   private readonly outdirProjects: OutdirProjects;
   private readonly output: MetadataFiles;
@@ -159,7 +163,10 @@ export class ContextCollector {
 
     let sourceCount: number;
 
-    this.pool = this.startThreads(await sizeOf(files));
+    const codeSize = await sizeOf(files);
+    this.averageFileSize = codeSize / Math.max(1, files.length);
+    this.budget = analysisBudget(this.averageFileSize);
+    this.pool = this.startThreads(codeSize);
     try {
       sourceCount = await this.scan(files, autoImportDeclarations);
     } finally {
@@ -202,7 +209,7 @@ export class ContextCollector {
       languages === defaultLanguages && targets === defaultTargets;
     if (!isDefault) return undefined;
 
-    const threads = analysisThreads(codeSize);
+    const threads = analysisThreads(codeSize, this.budget);
 
     return threads > 0 ? new AnalysisPool(threads, projectRoot) : undefined;
   }
@@ -217,6 +224,7 @@ export class ContextCollector {
       summaries: this.indexer.modules,
       outdirs: this.moduleGraph.outdirs,
       globals: this.globals,
+      budget: this.budget,
     };
 
     if (this.pool) {
@@ -234,7 +242,11 @@ export class ContextCollector {
       globals: index.globals,
       index: {
         summaries: index.summaries,
-        budget: analysisBudget(),
+        // This thread also holds the source code around every usage.
+        budget: Math.min(
+          index.budget,
+          analysisBudget(this.averageFileSize, THREAD_HEAP_SHARE / 2)
+        ),
         load: (file) => loadIndexedFile(file, this.generated.get(file)),
       },
     });
