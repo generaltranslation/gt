@@ -93,10 +93,14 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
       const constrained = vi.spyOn(process, 'constrainedMemory');
 
       constrained.mockReturnValue(0);
-      expect(analysisThreads(144_000_000, 16_000_000)).toBe(17);
+      expect(analysisThreads(144_000_000)).toBe(17);
 
-      constrained.mockReturnValue(8_000_000_000);
-      expect(analysisThreads(144_000_000, 16_000_000)).toBe(0);
+      // Half of it, for threads of 1.5 GB of heap and 0.5 GB besides.
+      constrained.mockReturnValue(8 * 1024 ** 3);
+      expect(analysisThreads(144_000_000)).toBe(2);
+
+      constrained.mockReturnValue(4 * 1024 ** 3);
+      expect(analysisThreads(144_000_000)).toBe(0);
     });
 
     test('as many as PARAGLIDE_CONTEXT_MEMORY_MB holds, a number of megabytes', async () => {
@@ -106,25 +110,34 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
       vi.spyOn(os, 'totalmem').mockReturnValue(128_000_000_000);
 
       vi.stubEnv('PARAGLIDE_CONTEXT_MEMORY_MB', String(8 * 1024));
-      expect(analysisThreads(144_000_000, 16_000_000)).toBe(0);
+      expect(analysisThreads(144_000_000)).toBe(2);
 
       for (const invalid of ['0', '-1', 'Infinity', 'eight']) {
         vi.stubEnv('PARAGLIDE_CONTEXT_MEMORY_MB', invalid);
-        expect(() => analysisThreads(144_000_000, 16_000_000)).toThrow(
+        expect(() => analysisThreads(144_000_000)).toThrow(
           `PARAGLIDE_CONTEXT_MEMORY_MB is a number of megabytes, more than 0; it is "${invalid}".`
         );
       }
+    });
+
+    test("a thread's module budget is sized by its heap, not the main thread's", async () => {
+      const { threadBudget, THREAD_HEAP_MB } = await builtPool();
+
+      // 10,000-line files: the heap, not the files, sets it.
+      expect(threadBudget(280_000)).toBeCloseTo(
+        (THREAD_HEAP_MB * 1024 * 1024) / 3.5 / 40
+      );
     });
 
     test('PARAGLIDE_CONTEXT_THREADS, a whole number', async () => {
       const { analysisThreads } = await builtPool();
 
       vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', '3');
-      expect(analysisThreads(0, 0)).toBe(3);
+      expect(analysisThreads(0)).toBe(3);
 
       for (const invalid of ['0.5', '-1', 'Infinity', 'two']) {
         vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', invalid);
-        expect(() => analysisThreads(0, 0)).toThrow(
+        expect(() => analysisThreads(0)).toThrow(
           `PARAGLIDE_CONTEXT_THREADS is a number of threads, 0 or more; it is "${invalid}".`
         );
       }
