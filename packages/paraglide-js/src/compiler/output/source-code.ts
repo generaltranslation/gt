@@ -1,5 +1,6 @@
 import type { FileUsages, ParaglideUsage } from '../analysis/types.js';
 import { matchingIds } from '../paraglide/catalog.js';
+import { StreamedJson } from '../utils/json.js';
 import { compareText } from '../utils/sort.js';
 
 /**
@@ -32,15 +33,22 @@ export function sourceCodeByMessage(
   return collector.byMessage();
 }
 
+/** Where a snippet is in a metadata file whose message keys are not nested: the indentation it is kept with. */
+const SNIPPET_INDENT = ' '.repeat(8);
+
+/** Bytes of snippets kept in one buffer. */
+const BLOCK_SIZE = 16 * 1024 * 1024;
+
 /**
  * Collects the source code around usages one source file at a time: a file's
- * code is not held once it is added. Each file is added once. A snippet is
- * kept as its JSON: its lines are slices of its file's code, which V8 keeps
- * whole while a slice is held.
+ * code is not held once it is added. Each file is added once. The snippets
+ * are kept as JSON outside the JavaScript heap: a large project's do not fit
+ * in it.
  */
 export class SourceCodeCollector {
-  /** The JSON of each snippet, by message id, then by project-relative file. */
-  private readonly snippets = new Map<string, Map<string, string[]>>();
+  /** Snippet numbers in `store`, by message id, then by project-relative file. */
+  private readonly snippets = new Map<string, Map<string, number[]>>();
+  private readonly store = new SnippetStore();
 
   constructor(private readonly options: SourceCodeOptions) {}
 
@@ -57,16 +65,20 @@ export class SourceCodeCollector {
       const named = namedMessages(usage, ids);
       if (named.length === 0) continue;
 
-      const snippet = JSON.stringify(sourceSnippet(lines, usage, radius));
+      const snippet = snippetJson(sourceSnippet(lines, usage, radius));
+      let stored: number | undefined;
 
       for (const id of named) {
         const snippets = this.snippetsOf(id, file);
 
         // Usages on the same lines, e.g. `a ? m.x() : m.x()`.
-        const isRepeated = snippets.includes(snippet);
+        const isRepeated = snippets.some((other) =>
+          this.store.equals(other, snippet)
+        );
         if (isRepeated) continue;
 
-        snippets.push(snippet);
+        stored ??= this.store.add(snippet);
+        snippets.push(stored);
       }
     }
   }
@@ -78,10 +90,10 @@ export class SourceCodeCollector {
     for (const [id, byFile] of this.snippets) {
       const sourceCode: SourceCodeByFile = {};
 
-      for (const file of [...byFile.keys()].sort(compareText)) {
+      for (const file of sortedFiles(byFile)) {
         sourceCode[file] = byFile
           .get(file)!
-          .map((snippet) => JSON.parse(snippet) as SourceCode);
+          .map((snippet) => JSON.parse(this.store.text(snippet)) as SourceCode);
       }
       byMessage.set(id, sourceCode);
     }
@@ -89,7 +101,44 @@ export class SourceCodeCollector {
     return byMessage;
   }
 
-  private snippetsOf(id: string, file: string): string[] {
+  /** As `byMessage`, each message's written as JSON from the kept snippets. */
+  streamedByMessage(): Map<string, StreamedJson> {
+    const byMessage = new Map<string, StreamedJson>();
+
+    for (const [id, byFile] of this.snippets) {
+      byMessage.set(
+        id,
+        new StreamedJson((indent) => this.sourceCodeChunks(byFile, indent))
+      );
+    }
+
+    return byMessage;
+  }
+
+  private *sourceCodeChunks(
+    byFile: ReadonlyMap<string, readonly number[]>,
+    indent: string
+  ): Generator<string | Buffer> {
+    const inner = `${indent}  `;
+    const item = `${inner}  `;
+    let isFirstFile = true;
+
+    for (const file of sortedFiles(byFile)) {
+      yield `${isFirstFile ? '{' : ','}\n${inner}${JSON.stringify(file)}: [`;
+      isFirstFile = false;
+
+      for (const [index, snippet] of byFile.get(file)!.entries()) {
+        yield `${index === 0 ? '' : ','}\n${item}`;
+        yield this.store.indented(snippet, item);
+      }
+
+      yield `\n${inner}]`;
+    }
+
+    yield `\n${indent}}`;
+  }
+
+  private snippetsOf(id: string, file: string): number[] {
     let byFile = this.snippets.get(id);
 
     if (!byFile) {
@@ -106,6 +155,66 @@ export class SourceCodeCollector {
 
     return snippets;
   }
+}
+
+/** Snippets' JSON, in buffers that the JavaScript heap does not count. */
+class SnippetStore {
+  private readonly blocks: Buffer[] = [];
+  private used = BLOCK_SIZE;
+  /** Of each snippet: its block, start and end. */
+  private readonly locations: number[] = [];
+
+  add(json: Buffer): number {
+    if (this.used + json.length > BLOCK_SIZE) {
+      this.blocks.push(Buffer.allocUnsafe(Math.max(BLOCK_SIZE, json.length)));
+      this.used = 0;
+    }
+
+    const block = this.blocks.length - 1;
+    json.copy(this.blocks[block]!, this.used);
+    this.locations.push(block, this.used, this.used + json.length);
+    this.used += json.length;
+
+    return this.locations.length / 3 - 1;
+  }
+
+  bytes(snippet: number): Buffer {
+    const at = snippet * 3;
+    const block = this.blocks[this.locations[at]!]!;
+
+    return block.subarray(this.locations[at + 1], this.locations[at + 2]);
+  }
+
+  equals(snippet: number, json: Buffer): boolean {
+    return this.bytes(snippet).equals(json);
+  }
+
+  text(snippet: number): string {
+    return this.bytes(snippet).toString('utf8');
+  }
+
+  /** The snippet's JSON at `indent`. */
+  indented(snippet: number, indent: string): Buffer {
+    const bytes = this.bytes(snippet);
+    if (indent === SNIPPET_INDENT) return bytes;
+
+    const text = this.text(snippet).replaceAll(
+      `\n${SNIPPET_INDENT}`,
+      `\n${indent}`
+    );
+    return Buffer.from(text);
+  }
+}
+
+/** `JSON.stringify(snippet, null, 2)`, indented as `SNIPPET_INDENT`. Newlines in JSON are between tokens, never inside a string. */
+function snippetJson(snippet: SourceCode): Buffer {
+  const json = JSON.stringify(snippet, null, 2);
+
+  return Buffer.from(json.replaceAll('\n', `\n${SNIPPET_INDENT}`));
+}
+
+function sortedFiles(byFile: ReadonlyMap<string, unknown>): string[] {
+  return [...byFile.keys()].sort(compareText);
 }
 
 /** `radius` of the file's `lines` around a usage, and the usage's own lines. */
