@@ -16,6 +16,8 @@ export type ModuleSummary = {
     /** The file each loaded specifier resolves to. */
     resolved: ReadonlyArray<readonly [string, string | undefined]>;
     links: SpecifierLinks;
+    /** Exports that never hold a tracked value: see `summarizeModule`. */
+    untrackedExports: readonly string[];
   }>;
 };
 
@@ -24,6 +26,8 @@ export interface RecordStore {
   /** Whether `file` is one of the graph's modules, loaded or not. */
   has(file: string): boolean;
   get(file: string): ModuleRecord | undefined;
+  /** True when the export is known to hold no tracked value, without loading the module. */
+  isUntrackedExport(file: string, name: string): boolean;
   /** The records in memory. */
   loaded(): Iterable<ModuleRecord>;
   /** Every module's links, in loading order: a file's scripts after its module. */
@@ -49,6 +53,10 @@ export class LoadedRecords implements RecordStore {
 
   get(file: string): ModuleRecord | undefined {
     return this.records.get(file);
+  }
+
+  isUntrackedExport(): boolean {
+    return false;
   }
 
   loaded(): Iterable<ModuleRecord> {
@@ -81,6 +89,7 @@ export type IndexedRecordsOptions = {
 type IndexedModule = {
   resolved: ReadonlyArray<Map<string, string | undefined>>;
   links: readonly Links[];
+  untrackedExports: ReadonlySet<string>;
 };
 
 /**
@@ -103,6 +112,7 @@ export class IndexedRecords implements RecordStore {
         links: parts.map((part, index) =>
           resolveLinks(part.links, resolved[index]!)
         ),
+        untrackedExports: new Set(parts[0]?.untrackedExports),
       });
     }
   }
@@ -129,6 +139,10 @@ export class IndexedRecords implements RecordStore {
     this.size += sizeOf(record);
 
     return record;
+  }
+
+  isUntrackedExport(file: string, name: string): boolean {
+    return this.modules.get(file)?.untrackedExports.has(name) ?? false;
   }
 
   loaded(): Iterable<ModuleRecord> {
