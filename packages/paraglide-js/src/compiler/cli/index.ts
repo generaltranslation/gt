@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { collectContext, type CollectContextOptions } from '../context.js';
 import { findProjectRoot } from '../project/roots.js';
+import { printUsageError } from './print.js';
 
 const USAGE = `Usage: paraglide-context [root] [options]
 
@@ -37,7 +38,7 @@ export async function main(argv: string[]): Promise<number> {
   try {
     parsed = parseArguments(argv);
   } catch (error) {
-    console.error(`${(error as Error).message}\n\n${USAGE}`);
+    printUsageError({ whatHappened: (error as Error).message }, USAGE);
     return 2;
   }
 
@@ -48,10 +49,17 @@ export async function main(argv: string[]): Promise<number> {
     return 0;
   }
 
+  if (positionals.length > 1) {
+    const whatHappened = 'More than one root was given';
+    printUsageError({ whatHappened, details: positionals }, USAGE);
+    return 2;
+  }
+
   const isRadiusValid =
     values.radius === undefined || /^\d+$/.test(values.radius);
-  if (positionals.length > 1 || !isRadiusValid) {
-    console.error(USAGE);
+  if (!isRadiusValid) {
+    const whatHappened = '--radius must be a whole number';
+    printUsageError({ whatHappened, details: values.radius }, USAGE);
     return 2;
   }
 

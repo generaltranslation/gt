@@ -16,7 +16,7 @@ import { parseJsonObject } from '../utils/json.js';
 import { relativePath } from '../utils/paths.js';
 
 /** A metadata file that was left as it is, and why. */
-export type SkippedFile = { file: string; reason: string };
+export type SkippedFile = { file: string; why: string; fix?: string };
 
 type SourceCodeByMessage = ReadonlyMap<string, SourceCodeByFile>;
 
@@ -95,12 +95,12 @@ async function writeMetadata(
   const current = await readMetadata(file);
   // Overwriting it could lose hand-written fields.
   if ('unreadable' in current) {
-    return { file, reason: `it could not be read (${current.unreadable})` };
+    return { file, why: `it could not be read (${current.unreadable})` };
   }
 
   const existing = parseJsonObject(current.content);
   if (!existing) {
-    return { file, reason: 'it is not a JSON object; fix or delete it' };
+    return { file, why: 'it is not a JSON object', fix: 'Fix or delete it' };
   }
 
   const metadata = renderMetadataFile({
