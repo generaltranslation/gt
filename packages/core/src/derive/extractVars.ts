@@ -7,12 +7,12 @@ import { GTUnindexedSelectElement } from './utils/types';
  *
  * extractVars('Hello {_gt_, select, other {World}}') => { _gt_1: 'World' }
  *
- * @param {string} icuString - The ICU string to extract variables from.
+ * @param {string} icu - The ICU string to extract variables from.
  * @returns {Record<string, string>} A mapping of the variable to the value.
  */
-export function extractVars(icuString: string): Record<string, string> {
+export function extractVars(icu: string): Record<string, string> {
   // Check if the string contains _gt_
-  if (!icuString.includes(VAR_IDENTIFIER)) {
+  if (!icu.includes(VAR_IDENTIFIER)) {
     return {};
   }
 
@@ -27,7 +27,7 @@ export function extractVars(icuString: string): Record<string, string> {
   }
 
   traverseIcu({
-    icuString,
+    icu,
     shouldVisit: isGTUnindexedSelectElement,
     visitor,
     options: { recurseIntoVisited: false },

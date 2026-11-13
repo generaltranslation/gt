@@ -51,9 +51,9 @@ export type StringFormat = 'ICU' | 'I18NEXT' | 'STRING';
  */
 export type ContentByFormat = {
   JSX: JsxChildren;
-  ICU: IcuMessage;
-  I18NEXT: I18nextMessage;
-  STRING: StringMessage;
+  ICU: string;
+  I18NEXT: string;
+  STRING: string;
   MESSAGE_TREE: MessageTree;
 };
 
@@ -85,18 +85,3 @@ export type Content = ContentFor<DataFormat>;
  * primitives through React's child normalization.
  */
 export type JsxChildren = boolean | null | JsxChild | JsxChild[];
-
-/**
- * A content type representing ICU messages.
- */
-export type IcuMessage = string;
-
-/**
- * A content type representing I18next messages.
- */
-export type I18nextMessage = string;
-
-/**
- * A content type representing plain strings.
- */
-export type StringMessage = string;

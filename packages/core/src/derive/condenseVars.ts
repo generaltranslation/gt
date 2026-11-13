@@ -18,13 +18,13 @@ const CONTAINS_INDEXED_GT_REGEX = new RegExp(`${VAR_IDENTIFIER}\\d+`);
  * Unindexed _gt_ source strings and indexed _gt_# translation strings
  * are mutually exclusive.
  * indexVars('Hello {_gt_1, select, other {World}}') => 'Hello {_gt_1}'
- * @param {string} icuString - The ICU string to condense.
+ * @param {string} icu - The ICU string to condense.
  * @returns {string} The condensed ICU string.
  */
-export function condenseVars(icuString: string): string {
+export function condenseVars(icu: string): string {
   // Check if the string contains an indexed _gt_ identifier.
-  if (!CONTAINS_INDEXED_GT_REGEX.test(icuString)) {
-    return icuString;
+  if (!CONTAINS_INDEXED_GT_REGEX.test(icu)) {
+    return icu;
   }
 
   // Replace with argument
@@ -34,7 +34,7 @@ export function condenseVars(icuString: string): string {
   }
 
   const ast = traverseIcu({
-    icuString,
+    icu,
     shouldVisit: isGTIndexedSelectElement,
     visitor,
     options: { recurseIntoVisited: false },
