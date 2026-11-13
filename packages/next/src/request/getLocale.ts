@@ -1,5 +1,6 @@
 import { use } from '../utils/use';
 import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
+import { memoizeForRequest } from '../utils/requestMemo';
 
 /**
  * Gets the user's current locale.
@@ -11,7 +12,9 @@ import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
  * console.log(locale); // 'en-US'
  */
 export function getLocale(): Promise<string> {
-  return getAsyncConditionStore().getLocale();
+  return memoizeForRequest('locale', () =>
+    getAsyncConditionStore().getLocale()
+  );
 }
 
 export function useLocale() {

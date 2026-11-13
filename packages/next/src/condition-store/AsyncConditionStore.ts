@@ -75,6 +75,10 @@ export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface
     this.enableI18n = enableI18n;
   }
 
+  getRegisteredLocale(): string | undefined {
+    return this.localeStore.getStore();
+  }
+
   async getLocale() {
     // If a locale has been registered for this request, return it
     const registeredLocale = this.localeStore.getStore();
