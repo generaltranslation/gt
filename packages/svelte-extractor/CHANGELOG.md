@@ -1,5 +1,16 @@
 # @generaltranslation/svelte-extractor
 
+## 0.1.0-samsara.9
+
+### Patch Changes
+
+- Updated dependencies [fe7b0cc]
+- Updated dependencies [2a5fe85]
+- Updated dependencies [2a5fe85]
+  - @generaltranslation/icu@0.2.0-samsara.6
+  - generaltranslation@10.0.0-samsara.8
+  - @generaltranslation/format@1.0.0-samsara.8
+
 ## 0.1.0-samsara.8
 
 ### Patch Changes

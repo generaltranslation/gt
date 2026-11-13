@@ -1,5 +1,15 @@
 # gt-react-native
 
+## 12.0.0-samsara.8
+
+### Patch Changes
+
+- generaltranslation@10.0.0-samsara.8
+- @generaltranslation/format@1.0.0-samsara.8
+- gt-i18n@2.0.0-samsara.8
+- @generaltranslation/react-core@12.0.0-samsara.8
+- @generaltranslation/supported-locales@2.1.49-samsara.1
+
 ## 12.0.0-samsara.7
 
 ### Patch Changes

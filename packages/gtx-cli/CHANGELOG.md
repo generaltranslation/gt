@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 3.0.0-samsara.9
+
+### Patch Changes
+
+- gt@3.0.0-samsara.9
+
 ## 3.0.0-samsara.8
 
 ### Patch Changes

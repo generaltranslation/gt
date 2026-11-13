@@ -1,5 +1,11 @@
 # @generaltranslation/paraglide-js
 
+## 0.2.0-samsara.1
+
+### Patch Changes
+
+- generaltranslation@10.0.0-samsara.8
+
 ## 0.2.0-samsara.0
 
 ### Minor Changes

@@ -1,5 +1,14 @@
 # gt-svelte
 
+## 0.1.0-samsara.9
+
+### Patch Changes
+
+- generaltranslation@10.0.0-samsara.8
+- @generaltranslation/format@1.0.0-samsara.8
+- gt-i18n@2.0.0-samsara.8
+- @generaltranslation/svelte-extractor@0.1.0-samsara.9
+
 ## 0.1.0-samsara.8
 
 ### Patch Changes

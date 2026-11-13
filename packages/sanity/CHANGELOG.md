@@ -1,5 +1,11 @@
 # gt-sanity
 
+## 4.0.36-samsara.1
+
+### Patch Changes
+
+- generaltranslation@10.0.0-samsara.8
+
 ## 4.0.36-samsara.0
 
 ### Patch Changes
