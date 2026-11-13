@@ -9,6 +9,11 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import type { ModuleSummary } from '../../src/compiler/analysis/module-store.js';
+import {
+  ChunkQueue,
+  widelyImported,
+} from '../../src/compiler/collector/analysis-pool.js';
 import { writeProject } from '../helpers/fixture.js';
 
 const DIST = path.resolve(import.meta.dirname, '../../dist/src/compiler');
@@ -39,6 +44,23 @@ function pages(count: number): Record<string, string> {
     ])
   );
 }
+
+/** A module that imports `imported` and re-exports everything of `reexported`. */
+const summary = (
+  file: string,
+  imported: readonly string[],
+  reexported: readonly string[] = []
+): ModuleSummary => ({
+  file,
+  parts: [
+    {
+      resolved: [...imported, ...reexported].map((target) => [target, target]),
+      links: reexported.map((source) => ({ type: 'star', source })),
+      untrackedExports: [],
+      globalNames: [],
+    },
+  ],
+});
 
 async function collectWith(
   root: string,
@@ -161,32 +183,44 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
     );
   });
 
-  test('fail with the error recording a file gave, once the chunks started are done', async () => {
-    const { AnalysisPool } = await builtPool();
-    const root = await writeProject('threads-callback', {});
-    // Three chunks of files the index does not list: each has no usages.
-    const files = Array.from({ length: 48 }, (_, index) =>
-      path.join(root, `src/file${index}.ts`)
-    );
-    const failure = new Error('could not read');
-    const recorded: string[] = [];
+  // The file whose usages fail, how many modules import it, and the files
+  // analyzed. One thread: the chunk after the failing file's is analyzed
+  // while its usages fail.
+  test.each([
+    ['in its share', 0, 0, [...Array(32).keys()]],
+    // Alone, before the shares.
+    ['widely imported', 40, 1000, [40, ...Array(16).keys()]],
+  ])(
+    'fail with the error recording a file gave, once the chunks started are done: %s',
+    async (_, failing, importers, analyzed) => {
+      const { AnalysisPool } = await builtPool();
+      const root = await writeProject('threads-callback', {});
+      // Three chunks of files the index does not list: each has no usages.
+      const files = Array.from({ length: 48 }, (_, index) =>
+        path.join(root, `src/file${index}.ts`)
+      );
+      const summaries = Array.from({ length: importers }, (_, index) =>
+        summary(path.join(root, `src/importer${index}.ts`), [files[failing]!])
+      );
+      const failure = new Error('could not read');
+      const recorded: string[] = [];
 
-    // One thread: the second chunk is analyzed while the first file's usages fail.
-    const pool = new AnalysisPool(1, root);
-    const index = { summaries: [], outdirs: [], globals: [], budget: 0 };
-    try {
-      await expect(
-        pool.analyze(index, files, async (file) => {
-          recorded.push(file);
-          if (file === files[0]) throw failure;
-        })
-      ).rejects.toBe(failure);
-    } finally {
-      await pool.close();
+      const pool = new AnalysisPool(1, root);
+      const index = { summaries, outdirs: [], globals: [], budget: 0 };
+      try {
+        await expect(
+          pool.analyze(index, files, async (file) => {
+            recorded.push(file);
+            if (file === files[failing]) throw failure;
+          })
+        ).rejects.toBe(failure);
+      } finally {
+        await pool.close();
+      }
+
+      expect(recorded).toEqual(analyzed.map((at) => files[at]));
     }
-
-    expect(recorded).toEqual(files.slice(0, 32));
-  });
+  );
 });
 
 // Stand-in threads, from the sources: these tests do not need `dist`.
@@ -258,5 +292,80 @@ describe('starting the analysis threads', () => {
     expect(started.map(({ terminate }) => terminate.mock.calls.length)).toEqual(
       [1, 1]
     );
+  });
+});
+
+// From the sources: these tests do not need `dist`.
+describe('the order files are analyzed in', () => {
+  const [F, G, B1, B2] = ['/f.ts', '/g.ts', '/b1.ts', '/b2.ts'] as const;
+
+  const importers = (count: number, imported: string[], first = 0) =>
+    Array.from({ length: count }, (_, index) =>
+      summary(`/importer${first + index}.ts`, imported)
+    );
+
+  test.each([
+    ['999 modules import it', importers(999, [F]), []],
+    ['1000 modules import it', importers(1000, [F]), [F]],
+    [
+      '600 modules import it through both of two barrels: 602 modules',
+      [summary(B1, [], [F]), summary(B2, [], [F]), ...importers(600, [B1, B2])],
+      [],
+    ],
+    [
+      '500 modules import it through each of two barrels: 1002 modules',
+      [
+        summary(B1, [], [F]),
+        summary(B2, [], [F]),
+        ...importers(500, [B1]),
+        ...importers(500, [B2], 500),
+      ],
+      [F],
+    ],
+    [
+      '1000 modules import it through barrels that re-export each other',
+      [
+        summary(B1, [], [F, B2]),
+        summary(B2, [], [B1]),
+        ...importers(1000, [B2]),
+      ],
+      [F],
+    ],
+    [
+      '500 modules import it through both barrels that re-export each other: 502 modules',
+      [
+        summary(B1, [], [F, B2]),
+        summary(B2, [], [B1]),
+        ...importers(500, [B1, B2]),
+      ],
+      [],
+    ],
+  ])('a widely imported file is analyzed first: %s', (_, summaries, first) => {
+    expect(widelyImported([F], summaries)).toEqual(first);
+  });
+
+  test('the most imported first', () => {
+    const summaries = [...importers(1000, [F]), ...importers(1001, [G], 1000)];
+
+    expect(widelyImported([F, G, B1], summaries)).toEqual([G, F]);
+  });
+
+  test('each thread takes the first files one at a time, then its share; each file once', () => {
+    const files = Array.from({ length: 40 }, (_, index) => `/file${index}.ts`);
+    const first = [files[20]!, files[5]!];
+    const rest = files.filter((file) => !first.includes(file));
+    // Three chunks of the others: thread 0's share is the first, thread 1's the others.
+    const queue = new ChunkQueue(files, 2, first);
+
+    expect([0, 1, 0, 0, 1, 1, 0].map((thread) => queue.take(thread))).toEqual([
+      [files[20]],
+      [files[5]],
+      rest.slice(0, 16),
+      // Done with its share: from the end of the largest one left.
+      rest.slice(32),
+      rest.slice(16, 32),
+      undefined,
+      undefined,
+    ]);
   });
 });
