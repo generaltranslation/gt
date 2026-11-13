@@ -98,6 +98,22 @@ describe('dedupeUpdates', () => {
     expect(updates[0].metadata.filePaths).toEqual(['pathA', 'pathB']);
   });
 
+  it('does not merge an update repeated by reference into itself', () => {
+    const sourceCode = { 'page.tsx': [{ before: '', target: 'x', after: '' }] };
+    const update: Updates[number] = {
+      dataFormat: 'ICU',
+      source: 'hello',
+      metadata: { hash: 'h1', filePaths: ['pathA'], sourceCode },
+    };
+    const updates: Updates = Array.from({ length: 30 }, () => update);
+
+    dedupeUpdates(updates);
+
+    expect(updates).toEqual([update]);
+    expect(update.metadata.sourceCode).toEqual(sourceCode);
+    expect(update.metadata.filePaths).toEqual(['pathA']);
+  });
+
   it('keeps distinct entries with different hashes', () => {
     const updates: Updates = [
       {
