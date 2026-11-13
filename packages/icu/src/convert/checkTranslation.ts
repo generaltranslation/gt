@@ -21,17 +21,24 @@ import {
 /**
  * Checks a translation, as `icuToMessage` reads it, against its source tree,
  * and returns `undefined` when it matches, or a message listing every
- * problem. Text, word order and branch content are free; the translation
- * must use the same variables, by name, kind and plural offset, keep the
- * source's exact `=N` branches and select keys, and format each `number`,
- * `date` or `time` placeholder with a style the source uses for it, keeping
- * every such style:
+ * problem. Text and word order are free; the translation must use the same
+ * variables, by name, kind and plural offset, keep the source's exact `=N`
+ * branches and select keys, and format each `number`, `date` or `time`
+ * placeholder with a style the source uses for it, keeping every such style:
  *
  *   const source = [['n', 'plural', { one: ['Only ', ['name']], other: [0, ' files'] }]];
  *   checkTranslation(source, icuToMessage('{n, plural, other {#件}}'), { locale: 'ja' });
  *   // undefined
  *   checkTranslation(source, icuToMessage('{n, plural, other {#件}}'));
  *   // 'The translation does not match its source: "name" is missing from the translation.'
+ *
+ * A variable may move into every branch of a select or plural, or out of
+ * them, but a reader who sees it in the source must see it in the
+ * translation, and one inside a tag stays inside that tag:
+ *
+ *   const items = icuToMessage('{n, plural, one {# item} other {# items}} for {g, select, male {him} other {them}}').tree;
+ *   checkTranslation(items, icuToMessage('{g, select, male {{n, plural, one {# Artikel} other {# Artikel}} für ihn} other {für sie}}'));
+ *   // '… "n" is not shown when g is other, as it is in the source.'
  *
  * A translation says the sentence; how a value is rendered is the source's.
  * So formatting context the translation sets, in its `formats`, like a

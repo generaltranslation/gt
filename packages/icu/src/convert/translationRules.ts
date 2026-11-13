@@ -1,4 +1,8 @@
-import { isPluralCategoryKey, PLURAL_CATEGORIES } from '../settings/syntax';
+import {
+  FALLBACK_BRANCH_KEY,
+  isPluralCategoryKey,
+  PLURAL_CATEGORIES,
+} from '../settings/syntax';
 
 export type CheckTranslationOptions = {
   /**
@@ -73,8 +77,8 @@ type MessageFacts = {
 
 /**
  * Every way a translation does not match its source, in this order: its
- * variables, their styles, its plural branches, and the exact and select
- * branch keys. Empty when it matches.
+ * variables, their styles, its plural branches, the exact and select branch
+ * keys, and where its variables are shown. Empty when it matches.
  */
 export function translationProblems(
   source: CheckedPlaceholder[],
@@ -92,6 +96,14 @@ export function translationProblems(
       ...styleProblems(sourceFacts, required, translationFacts),
       ...pluralBranchProblems(translationFacts, plurals),
       ...branchKeyProblems(sourceFacts, required, translationFacts),
+      ...placementProblems(
+        source,
+        sourceFacts,
+        translation,
+        translationFacts,
+        plurals
+      ),
+      ...tagProblems(source, translation),
     ]),
   ];
 }
@@ -208,15 +220,17 @@ function styleProblems(
   for (const [key, used] of translation.styles) {
     const allowed = source.styles.get(key);
     if (!allowed) continue;
-    const patternAllowed = [...allowed.values()].some(
-      ({ isPattern }) => isPattern
-    );
+    const sourceStyles = [...allowed.values()];
+    const pattern = sourceStyles.find(({ isPattern }) => isPattern);
     for (const [style, placeholder] of used) {
-      if (placeholder.isPattern ? !patternAllowed : !allowed.has(style)) {
-        problems.push(
-          `"${placeholder.name}" uses ${printPlaceholder(placeholder)}, which the source does not`
-        );
-      }
+      if (placeholder.isPattern ? pattern : allowed.has(style)) continue;
+      const uses = `"${placeholder.name}" uses ${printPlaceholder(placeholder)}`;
+      problems.push(
+        // Where a pattern is the source's one style, say what may stand in for it.
+        pattern && sourceStyles.length === 1
+          ? `${uses}, where the source has ${printPlaceholder(pattern)}: keep it or localize its pattern`
+          : `${uses}, which the source does not`
+      );
     }
     // A style used only in a branch the locale leaves out is not required.
     const needed = required.styles.get(key);
@@ -314,6 +328,221 @@ function branchKeyProblems(
     }
   }
   return problems;
+}
+
+/** One branch of each select or plural, by `variableKey`: the readers it is picked for. */
+type Readers = Map<string, string>;
+
+/** A select or plural variable, and the branch keys a reader can have for it. */
+type BranchChoice = { variable: string; name: string; keys: string[] };
+
+// shortcut: a message with more combinations of branches than this is not checked for placement; raise it if a real message needs more.
+const MAX_READERS = 1024;
+
+const isBranching = (
+  placeholder: CheckedPlaceholder
+): placeholder is BranchingPlaceholder =>
+  placeholder.kind === 'select' ||
+  placeholder.kind === 'plural' ||
+  placeholder.kind === 'selectordinal';
+
+/**
+ * A reader who sees a variable in the source sees it in the translation.
+ * Each language builds its sentences its own way, so a variable may move
+ * into every branch or out of them (ICU advises a whole sentence in each
+ * branch). Moved into one branch only, it is lost for every other reader: ICU
+ * formats that without complaint.
+ *
+ * A select's keys are the same in both, so it is checked for the readers of
+ * each combination of select branches. A language has its own plural
+ * categories, so what those readers see whatever the number is compared.
+ */
+function placementProblems(
+  source: CheckedPlaceholder[],
+  sourceFacts: MessageFacts,
+  translation: CheckedPlaceholder[],
+  translationFacts: MessageFacts,
+  plurals: PluralLocale | undefined
+): string[] {
+  const selects = branchChoices(sourceFacts, true, undefined);
+  const sourceNumbers = branchChoices(sourceFacts, false, undefined);
+  const numbers = branchChoices(translationFacts, false, plurals);
+  const count = (choices: BranchChoice[]): number =>
+    choices.reduce((product, { keys }) => product * keys.length, 1);
+  if (count(selects) * (count(sourceNumbers) + count(numbers)) > MAX_READERS) {
+    return [];
+  }
+  // One problem for a variable, for the first readers who lose it.
+  const problems = new Map<string, string>();
+  for (const selected of combinations(selects)) {
+    const shown = shownWhateverTheNumber(translation, selected, numbers);
+    for (const [key, name] of shownWhateverTheNumber(
+      source,
+      selected,
+      sourceNumbers
+    )) {
+      // A variable the translation lacks is reported as missing.
+      if (shown.has(key) || !translationFacts.variables.has(key)) continue;
+      if (problems.has(key)) continue;
+      const when = selects
+        .map(({ variable, name }) => `${name} is ${selected.get(variable)}`)
+        .join(' and ');
+      problems.set(
+        key,
+        when
+          ? `"${name}" is not shown when ${when}, as it is in the source`
+          : `"${name}" is not shown in every branch, as it is in the source`
+      );
+    }
+  }
+  return [...problems.values()];
+}
+
+/**
+ * The selects of a message, or its plurals, with the keys of their branches.
+ * With a locale, a plural category it does not have is never picked, so it
+ * is no reader's.
+ */
+function branchChoices(
+  facts: MessageFacts,
+  selects: boolean,
+  plurals: PluralLocale | undefined
+): BranchChoice[] {
+  const choices: BranchChoice[] = [];
+  for (const [variable, { placeholder, keys }] of facts.branches) {
+    if ((placeholder.kind === 'select') !== selects) continue;
+    const has =
+      placeholder.kind === 'select'
+        ? undefined
+        : plurals?.categories(ruleType(placeholder.kind));
+    choices.push({
+      variable,
+      name: placeholder.name,
+      keys: [...keys].filter(
+        (key) => !has || !isPluralCategoryKey(key) || has.has(key)
+      ),
+    });
+  }
+  return choices;
+}
+
+/** Every way to pick one key for each choice. */
+function combinations(choices: BranchChoice[]): Readers[] {
+  let all: Readers[] = [new Map()];
+  for (const { variable, keys } of choices) {
+    all = all.flatMap((picked) =>
+      keys.map((key) => new Map(picked).set(variable, key))
+    );
+  }
+  return all;
+}
+
+/** The variables, by `variableKey` with their names, that the readers of these select branches see for every number. */
+function shownWhateverTheNumber(
+  placeholders: CheckedPlaceholder[],
+  selected: Readers,
+  numbers: BranchChoice[]
+): Map<string, string> {
+  let always: Map<string, string> | undefined;
+  for (const picked of combinations(numbers)) {
+    const shown = shownTo(placeholders, new Map([...selected, ...picked]));
+    if (!always) {
+      always = shown;
+      continue;
+    }
+    for (const key of always.keys()) {
+      if (!shown.has(key)) always.delete(key);
+    }
+  }
+  return always ?? new Map();
+}
+
+/**
+ * The variables one reader sees: each select and plural shows the branch
+ * picked for them, or `other` where it has no such branch, as ICU picks it.
+ */
+function shownTo(
+  placeholders: CheckedPlaceholder[],
+  readers: Readers
+): Map<string, string> {
+  const shown = new Map<string, string>();
+  const visit = (placeholder: CheckedPlaceholder): void => {
+    const variable = variableKey(placeholder);
+    shown.set(variable, placeholder.name);
+    if (placeholder.kind === 'tag') {
+      placeholder.children.forEach(visit);
+    } else if (isBranching(placeholder)) {
+      const picked = readers.get(variable);
+      // shortcut: a number with an exact branch elsewhere takes `other` here, not its category's branch; pick by Intl.PluralRules if that ever misjudges a real message.
+      const branch =
+        placeholder.branches.find(([key]) => key === picked) ??
+        placeholder.branches.find(([key]) => key === FALLBACK_BRANCH_KEY);
+      branch?.[1].forEach(visit);
+    }
+  };
+  placeholders.forEach(visit);
+  return shown;
+}
+
+/**
+ * A variable that is inside a tag at every use in the source stays inside
+ * that tag: a link or a style around other words is a visible defect. Moving
+ * a variable into a tag, splitting a tag and nesting tags another way are
+ * free. ICU has no tags, so this rule is this library's own.
+ */
+function tagProblems(
+  source: CheckedPlaceholder[],
+  translation: CheckedPlaceholder[]
+): string[] {
+  const problems: string[] = [];
+  const inTranslation = enclosingTags(translation);
+  for (const [key, { name, tags }] of enclosingTags(source)) {
+    const translated = inTranslation.get(key);
+    if (!translated) continue;
+    for (const tag of tags) {
+      if (!translated.tags.has(tag)) {
+        problems.push(
+          `"${name}" is not inside <${tag}>, as it is in the source`
+        );
+      }
+    }
+  }
+  return problems;
+}
+
+/**
+ * For each variable a reader sees printed, the tags around every use of it.
+ * A select or plural prints nothing itself, so a tag may sit around it or
+ * inside each of its branches.
+ */
+function enclosingTags(
+  placeholders: CheckedPlaceholder[]
+): Map<string, { name: string; tags: Set<string> }> {
+  const found = new Map<string, { name: string; tags: Set<string> }>();
+  const visit = (placeholder: CheckedPlaceholder, around: string[]): void => {
+    if (placeholder.kind === 'tag') {
+      const inside = [...around, placeholder.name];
+      placeholder.children.forEach((child) => visit(child, inside));
+      return;
+    }
+    if (isBranching(placeholder)) {
+      for (const [, branch] of placeholder.branches) {
+        branch.forEach((child) => visit(child, around));
+      }
+      return;
+    }
+    const key = variableKey(placeholder);
+    const known = found.get(key);
+    if (!known) {
+      found.set(key, { name: placeholder.name, tags: new Set(around) });
+      return;
+    }
+    for (const tag of known.tags) {
+      if (!around.includes(tag)) known.tags.delete(tag);
+    }
+  };
+  placeholders.forEach((placeholder) => visit(placeholder, []));
+  return found;
 }
 
 type PluralLocale = {

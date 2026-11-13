@@ -10,6 +10,9 @@ const mismatch = (...problems: string[]) =>
 
 const FILES = '{n, plural, one {# file} other {# files}}';
 const GENDER = '{g, select, male {He} female {She} other {They}}';
+const ITEMS = '{n, plural, one {# item} other {# items}}';
+const IN_FOLDER =
+  '{n, plural, one {# file in {folder}} other {# files in {folder}}}';
 const NO_OTHER = 'A plural, select or selectordinal needs an other branch.';
 const datePattern = (pattern: string) =>
   `{d, date, ${pattern}} cannot be part of a message tree: "${pattern}" is not a style name; pass the app's own style names as \`styles\`.`;
@@ -72,7 +75,10 @@ const CASES: [
     '{n, plural, one {# file for {user}} other {# files for {user}}}',
     '{n, plural, one {# файл для {user}} few {# файла для {usr}} many {# файлов для {user}} other {# файла для {user}}}',
     'ru',
-    mismatch('"usr" does not exist in the source'),
+    mismatch(
+      '"usr" does not exist in the source',
+      '"user" is not shown in every branch, as it is in the source'
+    ),
   ],
   [
     'every category Russian has',
@@ -292,7 +298,9 @@ const CASES: [
     'Due {d, date, MM/dd/yyyy}',
     'Fällig {d, date, long}',
     'de',
-    mismatch('"d" uses {d, date, long}, which the source does not'),
+    mismatch(
+      '"d" uses {d, date, long}, where the source has {d, date, MM/dd/yyyy}: keep it or localize its pattern'
+    ),
     { throws: datePattern('MM/dd/yyyy') },
   ],
   [
@@ -333,6 +341,165 @@ const CASES: [
     FILES,
     '{n, plural, other {# файлов}}',
     'zz',
+    undefined,
+  ],
+  [
+    'a plural moved into one branch of a select',
+    `${ITEMS} for {g, select, male {him} other {them}}`,
+    '{g, select, male {{n, plural, one {# Artikel} other {# Artikel}} für ihn} other {für sie}}',
+    'de',
+    mismatch('"n" is not shown when g is other, as it is in the source'),
+  ],
+  [
+    'a variable dropped from one select branch',
+    '{g, select, male {He invited {name}} female {She invited {name}} other {They invited {name}}}',
+    '{g, select, male {Il a invité {name}} female {Elle a invité} other {Ils ont invité {name}}}',
+    'fr',
+    mismatch('"name" is not shown when g is female, as it is in the source'),
+  ],
+  [
+    'a variable dropped from one plural branch',
+    IN_FOLDER,
+    '{n, plural, one {# файл в {folder}} few {# файла} many {# файлов в {folder}} other {# файла в {folder}}}',
+    'ru',
+    mismatch('"folder" is not shown in every branch, as it is in the source'),
+  ],
+  [
+    'a variable moved to another select branch',
+    '{g, select, male {his {x}} other {theirs}}',
+    '{g, select, male {le sien} other {leur {x}}}',
+    'fr',
+    mismatch('"x" is not shown when g is male, as it is in the source'),
+  ],
+  [
+    'a variable dropped from a select branch the translation leaves to other',
+    '{g, select, male {his {x}} female {her {x}} other {their {x}}}',
+    '{g, select, male {son {x}} other {le leur}}',
+    'fr',
+    mismatch(
+      '"g" is missing the select branch female',
+      '"x" is not shown when g is female, as it is in the source'
+    ),
+  ],
+  [
+    'an added exact branch without a variable every source branch has',
+    IN_FOLDER,
+    '{n, plural, =0 {Keine Dateien} one {# Datei in {folder}} other {# Dateien in {folder}}}',
+    'de',
+    mismatch('"folder" is not shown in every branch, as it is in the source'),
+  ],
+  [
+    'a variable moved into every branch',
+    `${ITEMS} for {name}`,
+    '{n, plural, one {# Artikel für {name}} other {# Artikel für {name}}}',
+    'de',
+    undefined,
+  ],
+  [
+    'a variable moved out of every branch',
+    '{g, select, male {He likes {x}} other {They like {x}}}',
+    '{x} : {g, select, male {il aime ça} other {ils aiment ça}}',
+    'fr',
+    undefined,
+  ],
+  [
+    'a select and a plural nested the other way round',
+    '{n, plural, one {{g, select, male {his item} other {their item}}} other {{g, select, male {his items} other {their items}}}}',
+    '{g, select, male {{n, plural, one {sein # Artikel} other {seine # Artikel}}} other {{n, plural, one {ihr # Artikel} other {ihre # Artikel}}}}',
+    'de',
+    undefined,
+  ],
+  [
+    'a variable left out of a plural branch the locale never picks',
+    IN_FOLDER,
+    '{n, plural, one {ファイル} other {{folder} のファイル # 件}}',
+    'ja',
+    undefined,
+  ],
+  [
+    'a variable some readers see in the source and all see in the translation',
+    '{g, select, male {his {x}} other {theirs}}',
+    '{x} : {g, select, male {le sien} other {le leur}}',
+    'fr',
+    undefined,
+  ],
+  [
+    'a variable split across two selects on one value',
+    '{x} {g, select, male {he} other {they}}',
+    '{g, select, male {{x} lui} other {}}{g, select, male {} other {{x} eux}}',
+    'fr',
+    undefined,
+  ],
+  [
+    'a variable split across two plurals on one value',
+    `{x}: ${ITEMS}`,
+    '{n, plural, one {{x}: # Artikel} other {}}{n, plural, one {} other {{x}: # Artikel}}',
+    'de',
+    undefined,
+  ],
+  [
+    'a variable split across a second select while the first is checked',
+    '{x} {g, select, male {he} other {they}} {h, select, a {A} other {B}}',
+    '{g, select, male {il} other {ils}} {h, select, a {{x} A} other {}}{h, select, a {} other {{x} B}}',
+    'fr',
+    undefined,
+  ],
+  [
+    'a variable lost only when two selects both have one value',
+    '{g, select, male {{h, select, a {his {x}} other {his}}} other {theirs}}',
+    '{g, select, male {{h, select, a {le sien} other {le sien}}} other {le leur {x}}}',
+    'fr',
+    mismatch(
+      '"x" is not shown when g is male and h is a, as it is in the source'
+    ),
+  ],
+  [
+    'a tag moved from around a plural into each of its branches',
+    `<b>${ITEMS}</b>`,
+    '{n, plural, one {<b># Artikel</b>} other {<b># Artikel</b>}}',
+    'de',
+    undefined,
+  ],
+  [
+    'a variable moved out of its tag',
+    '<b>{name}</b> joined',
+    '{name} <b>a rejoint</b>',
+    'fr',
+    mismatch('"name" is not inside <b>, as it is in the source'),
+  ],
+  [
+    'a variable kept in its tag in one branch only',
+    '{g, select, male {<b>{name}</b> and him} other {<b>{name}</b> and them}}',
+    '{g, select, male {<b>{name}</b> et lui} other {{name} et <b>eux</b>}}',
+    'fr',
+    mismatch('"name" is not inside <b>, as it is in the source'),
+  ],
+  [
+    'a variable moved into a tag',
+    '<a>Read more</a> about {topic}',
+    '<a>En savoir plus sur {topic}</a>',
+    'fr',
+    undefined,
+  ],
+  [
+    'a tag split in two around its variables',
+    '<i>{a} and {b}</i>',
+    '<i>{a}</i> et <i>{b}</i>',
+    'fr',
+    undefined,
+  ],
+  [
+    'tags nested the other way round',
+    '<a><b>{x}</b></a>',
+    '<b><a>{x}</a></b>',
+    'fr',
+    undefined,
+  ],
+  [
+    'a variable the source has inside and outside a tag',
+    '<b>{name}</b> and {name}',
+    '{name} <b>et</b> {name}',
+    'fr',
     undefined,
   ],
 ];
@@ -408,6 +575,29 @@ describe('checkIcuTranslation', () => {
       )
     );
   });
+
+  it.each([
+    [9, true],
+    [10, false],
+  ])(
+    'checks placement only while the combinations of branches are few: %i selects of two',
+    (selects, checked) => {
+      const names = Array.from({ length: selects - 1 }, (_, i) => `s${i + 1}`);
+      const rest = names.map((name) => `{${name}, select, a {} other {}}`);
+      expect(
+        checkIcuTranslation(
+          `{x}{s0, select, a {} other {}}${rest.join('')}`,
+          `{s0, select, a {{x}} other {}}${rest.join('')}`
+        )
+      ).toBe(
+        checked
+          ? mismatch(
+              `"x" is not shown when ${['s0 is other', ...names.map((name) => `${name} is a`)].join(' and ')}, as it is in the source`
+            )
+          : undefined
+      );
+    }
+  );
 
   it('reports a problem once when two uses of a variable have it', () => {
     expect(
