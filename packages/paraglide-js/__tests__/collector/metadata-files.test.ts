@@ -1,10 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
+
 import { OutdirProjects } from '../../src/compiler/collector/outdir-projects.js';
 import { MetadataFiles } from '../../src/compiler/collector/metadata-files.js';
 import type { CollectContextOptions } from '../../src/compiler/context.js';
 import { readInlangProject } from '../../src/compiler/inlang/project.js';
+
 import {
   collect as collectProject,
   compileMessages,
@@ -48,13 +50,12 @@ const usages = (file: string, line: string) => ({
       target: 'message',
       name: 'greeting',
       kind: 'call' as const,
-      expression: 'm.greeting()',
       start: 0,
       end: 5,
       line: 1,
       column: 1,
       endLine: 1,
-      resolution: ['src/paraglide/messages.js'],
+      targetFile: '/app/src/paraglide/messages.js',
       inlangProject: 'project.inlang',
     },
   ],

@@ -14,16 +14,14 @@ export type Candidate =
   | { type: 'expression'; node: Node; scope: Scope; path: readonly string[] }
   | { type: 'computed'; get: () => TrackedSymbol[] };
 
-export type SymbolMap = (symbol: TrackedSymbol) => TrackedSymbol;
-
-/** A call of a function or a JSX element of a component; `map` is applied to what it passes. */
+/** A call of a function or a JSX element of a component; `imported` when in another module than the callee. */
 export type CallSite =
-  | { type: 'call'; arguments: readonly Node[]; scope: Scope; map?: SymbolMap }
+  | { type: 'call'; arguments: readonly Node[]; scope: Scope; imported?: true }
   | {
       type: 'jsx';
       element: ESTree.JSXOpeningElement;
       scope: Scope;
-      map?: SymbolMap;
+      imported?: true;
     };
 
 export type CallSiteIndex = {
@@ -257,27 +255,21 @@ function callArgument(site: Call, index: number): Candidate | undefined {
   if (earlierArguments.some((earlier) => earlier.type === 'SpreadElement'))
     return undefined;
 
-  const { scope, map } = site;
-  if (!map) return { type: 'expression', node: argument, scope, path: [] };
+  const { scope } = site;
 
-  // Every value: `show(m[cond ? "first" : "second"])` passes two messages.
-  return {
-    type: 'computed',
-    get: () => evaluateAll(argument, scope).map(map),
-  };
+  // Computed keys do not follow another module's literals: `show(404)` leaves `` m[`error_${code}`] `` at error_*.
+  if (site.imported)
+    return { type: 'computed', get: () => evaluateAll(argument, scope) };
+
+  return { type: 'expression', node: argument, scope, path: [] };
 }
 
-function propsArgument({ element, scope, map }: JsxElement): Candidate {
+function propsArgument({ element, scope }: JsxElement): Candidate {
   return {
     type: 'computed',
-    get: () => {
-      const props = layeredNamespace(
-        () => element.attributes.flatMap(attributeLayer),
-        scope
-      );
-
-      return [map ? map(props) : props];
-    },
+    get: () => [
+      layeredNamespace(() => element.attributes.flatMap(attributeLayer), scope),
+    ],
   };
 }
 

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
 import { compileCatalog } from '@inlang/paraglide-js';
 import {
-  matchesPattern,
+  patternMatcher,
   readCatalog,
 } from '../../src/compiler/paraglide/catalog.js';
 import { writeFiles } from '../helpers/files.js';
@@ -162,9 +162,9 @@ test('an unreadable outdir has no catalog', async () => {
 });
 
 test('dynamic patterns', () => {
-  expect(matchesPattern('error_*', 'error_404')).toBe(true);
-  expect(matchesPattern('error_*', 'greeting')).toBe(false);
-  expect(matchesPattern('*', 'foo-bar')).toBe(true);
-  expect(matchesPattern('a.b*', 'axb')).toBe(false);
-  expect(matchesPattern('greeting', 'greeting')).toBe(true);
+  expect(patternMatcher('error_*')('error_404')).toBe(true);
+  expect(patternMatcher('error_*')('greeting')).toBe(false);
+  expect(patternMatcher('*')('foo-bar')).toBe(true);
+  expect(patternMatcher('a.b*')('axb')).toBe(false);
+  expect(patternMatcher('greeting')('greeting')).toBe(true);
 });
