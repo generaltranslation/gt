@@ -103,8 +103,12 @@ export class ContextCollector {
   private readonly catalogs = new Map<string, Catalog>();
   /** By message file, absolute. */
   private readonly messageOutdirs = new Map<string, string | undefined>();
-  /** Usages of messages that are not in their catalog. */
-  private readonly unknownMessages: string[] = [];
+  /** By absolute directory: a project has many usages. */
+  private readonly relativeProjects = new Map<string, string>();
+  /** Usages of messages that are not in their catalog, by file: files are analyzed in any order. */
+  private readonly unknownMessages = new Map<string, string[]>();
+  /** The analyzed files, in the order their warnings are listed. */
+  private sources: readonly string[] = [];
   private readonly missingTools: MissingTools;
   /** Warnings are logged once. */
   private readonly warned = new Set<string>();
@@ -185,6 +189,7 @@ export class ContextCollector {
     await this.indexer.indexPaths(sources);
     await this.loadCatalogs();
 
+    this.sources = sources;
     await this.analyzeAll(sources);
 
     return sources.length;
@@ -202,7 +207,11 @@ export class ContextCollector {
     return threads > 0 ? new AnalysisPool(threads, projectRoot) : undefined;
   }
 
-  /** Analyzes each file through an index of the modules, which loads a module when it is read. */
+  /**
+   * Analyzes each file through an index of the modules, which loads a module
+   * when it is read. Records the usages of each file as soon as they are
+   * found: the code of every file does not fit in memory.
+   */
   private async analyzeAll(sources: readonly string[]): Promise<void> {
     const index = {
       summaries: this.indexer.modules,
@@ -211,16 +220,11 @@ export class ContextCollector {
     };
 
     if (this.pool) {
-      const usages = await this.pool.analyze(index, sources);
       // The threads do not hold the files' code: it is read again.
-      const codes = await Promise.all(
-        sources.map((file) =>
-          usages.get(file)?.length ? readTextFile(file) : undefined
-        )
-      );
-      sources.forEach((file, at) =>
-        this.addUsages(file, usages.get(file) ?? [], codes[at])
-      );
+      await this.pool.analyze(index, sources, async (file, usages) => {
+        const code = usages.length > 0 ? await readTextFile(file) : undefined;
+        this.addUsages(file, usages, code);
+      });
       return;
     }
 
@@ -434,7 +438,7 @@ export class ContextCollector {
     this.analyzed.set(file, usages.length);
     if (usages.length === 0 || code === undefined) return;
 
-    this.output.add(file, { file: this.relative(file), code, usages });
+    this.output.add({ file: this.relative(file), code, usages });
   }
 
   /** Records on each message usage the inlang project its outdir is paired with. */
@@ -446,7 +450,7 @@ export class ContextCollector {
       const project = this.outdirProjects.of(outdir);
       if (!project) continue;
 
-      usage.inlangProject = this.relative(project);
+      usage.inlangProject = this.relativeProject(project);
     }
   }
 
@@ -457,7 +461,11 @@ export class ContextCollector {
       if (!catalog || isInCatalog(usage, catalog)) continue;
 
       const position = `${this.relative(file)}:${usage.line}:${usage.column}`;
-      this.unknownMessages.push(`${usage.name} (${position})`);
+      const unknown = this.unknownMessages.get(file);
+      const description = `${usage.name} (${position})`;
+
+      if (unknown) unknown.push(description);
+      else this.unknownMessages.set(file, [description]);
     }
   }
 
@@ -512,7 +520,9 @@ export class ContextCollector {
   }
 
   private warnUnknownMessages(): void {
-    const warning = unknownMessagesWarning(this.unknownMessages);
+    const warning = unknownMessagesWarning(
+      this.sources.flatMap((file) => this.unknownMessages.get(file) ?? [])
+    );
     if (warning) this.warn(warning);
   }
 
@@ -540,6 +550,17 @@ export class ContextCollector {
 
     this.warned.add(message);
     this.settings.logger.warn(`${LOG_PREFIX} ${message}`);
+  }
+
+  private relativeProject(directory: string): string {
+    let relative = this.relativeProjects.get(directory);
+
+    if (relative === undefined) {
+      relative = this.relative(directory);
+      this.relativeProjects.set(directory, relative);
+    }
+
+    return relative;
   }
 
   private relative(file: string): string {

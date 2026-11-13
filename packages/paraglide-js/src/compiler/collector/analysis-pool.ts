@@ -148,11 +148,16 @@ export class AnalysisPool {
     });
   }
 
-  /** The usages of each of `files`, which `index` lists, analyzed by every thread at once. */
+  /**
+   * Analyzes `files`, which `index` lists, in every thread at once. Gives the
+   * usages of each file to `onAnalyzed` as soon as a thread found them, and
+   * resolves once every call it made resolved.
+   */
   async analyze(
     index: AnalysisIndex,
-    files: readonly string[]
-  ): Promise<Map<string, ParaglideUsage[]>> {
+    files: readonly string[],
+    onAnalyzed: (file: string, usages: ParaglideUsage[]) => Promise<void>
+  ): Promise<void> {
     const shared: SharedIndex = {
       ...index,
       generatedFiles: [...this.generated.keys()],
@@ -170,7 +175,7 @@ export class AnalysisPool {
       })
     );
 
-    const usages = new Map<string, ParaglideUsage[]>();
+    const added: Promise<void>[] = [];
     const chunks = new ChunkQueue(files, this.workers.length);
 
     await Promise.all(
@@ -184,12 +189,14 @@ export class AnalysisPool {
             type: 'analyze',
             files: chunk,
           })) as ParaglideUsage[][];
-          chunk.forEach((file, at) => usages.set(file, results[at]!));
+          chunk.forEach((file, at) =>
+            added.push(onAnalyzed(file, results[at]!))
+          );
         }
       })
     );
 
-    return usages;
+    await Promise.all(added);
   }
 
   async close(): Promise<void> {

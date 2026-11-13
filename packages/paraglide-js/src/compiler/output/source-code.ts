@@ -21,35 +21,91 @@ export type SourceCodeOptions = {
   radius: number;
 };
 
-type LocatedUsage = {
-  /** Project-relative. */
-  file: string;
-  lines: readonly string[];
-  usage: ParaglideUsage;
-};
-
-type MessageSnippet = { id: string; file: string; snippet: SourceCode };
-
 /** For each message that is used, the source code around its usages. */
 export function sourceCodeByMessage(
   sourceFiles: readonly FileUsages[],
   options: SourceCodeOptions
 ): Map<string, SourceCodeByFile> {
-  const byMessage = new Map<string, SourceCodeByFile>();
+  const collector = new SourceCodeCollector(options);
+  for (const sourceFile of sourceFiles) collector.add(sourceFile);
 
-  for (const { id, file, snippet } of messageSnippets(sourceFiles, options)) {
-    const byFile = byMessage.get(id) ?? {};
-    const snippets = (byFile[file] ??= []);
-    byMessage.set(id, byFile);
+  return collector.byMessage();
+}
 
-    // Usages on the same lines, e.g. `a ? m.x() : m.x()`.
-    const isRepeated = snippets.some((other) => isSameSnippet(other, snippet));
-    if (isRepeated) continue;
+/**
+ * Collects the source code around usages one source file at a time: a file's
+ * code is not held once it is added. Each file is added once. A snippet is
+ * kept as its JSON: its lines are slices of its file's code, which V8 keeps
+ * whole while a slice is held.
+ */
+export class SourceCodeCollector {
+  /** The JSON of each snippet, by message id, then by project-relative file. */
+  private readonly snippets = new Map<string, Map<string, string[]>>();
 
-    snippets.push(snippet);
+  constructor(private readonly options: SourceCodeOptions) {}
+
+  add({ file, code, usages }: FileUsages): void {
+    const { ids, inlangProject, radius } = this.options;
+    const ofProject = usages
+      .filter((usage) => usage.inlangProject === inlangProject)
+      .sort((a, b) => a.start - b.start || a.end - b.end);
+    if (ofProject.length === 0) return;
+
+    const lines = code.split(/\r?\n/);
+
+    for (const usage of ofProject) {
+      const named = namedMessages(usage, ids);
+      if (named.length === 0) continue;
+
+      const snippet = JSON.stringify(sourceSnippet(lines, usage, radius));
+
+      for (const id of named) {
+        const snippets = this.snippetsOf(id, file);
+
+        // Usages on the same lines, e.g. `a ? m.x() : m.x()`.
+        const isRepeated = snippets.includes(snippet);
+        if (isRepeated) continue;
+
+        snippets.push(snippet);
+      }
+    }
   }
 
-  return byMessage;
+  /** For each message that is used, its snippets by file, in an order that does not depend on the analysis. */
+  byMessage(): Map<string, SourceCodeByFile> {
+    const byMessage = new Map<string, SourceCodeByFile>();
+
+    for (const [id, byFile] of this.snippets) {
+      const sourceCode: SourceCodeByFile = {};
+
+      for (const file of [...byFile.keys()].sort(compareText)) {
+        sourceCode[file] = byFile
+          .get(file)!
+          .map((snippet) => JSON.parse(snippet) as SourceCode);
+      }
+      byMessage.set(id, sourceCode);
+    }
+
+    return byMessage;
+  }
+
+  private snippetsOf(id: string, file: string): string[] {
+    let byFile = this.snippets.get(id);
+
+    if (!byFile) {
+      byFile = new Map();
+      this.snippets.set(id, byFile);
+    }
+
+    let snippets = byFile.get(file);
+
+    if (!snippets) {
+      snippets = [];
+      byFile.set(file, snippets);
+    }
+
+    return snippets;
+  }
 }
 
 /** `radius` of the file's `lines` around a usage, and the usage's own lines. */
@@ -68,43 +124,6 @@ export function sourceSnippet(
   };
 }
 
-function messageSnippets(
-  sourceFiles: readonly FileUsages[],
-  { ids, inlangProject, radius }: SourceCodeOptions
-): MessageSnippet[] {
-  const usages = projectUsages(sourceFiles, inlangProject);
-
-  return usages.flatMap(({ file, lines, usage }) => {
-    const named = namedMessages(usage, ids);
-    if (named.length === 0) return [];
-
-    const snippet = sourceSnippet(lines, usage, radius);
-
-    return named.map((id) => ({ id, file, snippet }));
-  });
-}
-
-/** The project's usages, in an order that does not depend on the analysis. */
-function projectUsages(
-  sourceFiles: readonly FileUsages[],
-  inlangProject: string
-): LocatedUsage[] {
-  const sorted = [...sourceFiles].sort((a, b) => compareText(a.file, b.file));
-
-  return sorted.flatMap(({ file, code, usages }) => {
-    const ofProject = usages.filter(
-      (usage) => usage.inlangProject === inlangProject
-    );
-    if (ofProject.length === 0) return [];
-
-    const lines = code.split(/\r?\n/);
-
-    return ofProject
-      .sort((a, b) => a.start - b.start || a.end - b.end)
-      .map((usage) => ({ file, lines, usage }));
-  });
-}
-
 /** The messages a usage names: its own, or every match of a dynamic name like `error_*`. */
 function namedMessages(
   usage: ParaglideUsage,
@@ -117,8 +136,4 @@ function namedMessages(
   if (isAnyMessage) return [];
 
   return matchingIds(usage.name, ids);
-}
-
-function isSameSnippet(a: SourceCode, b: SourceCode): boolean {
-  return a.before === b.before && a.target === b.target && a.after === b.after;
 }

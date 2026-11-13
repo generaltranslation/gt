@@ -126,7 +126,9 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
       outdirs: [],
       globals: [],
     };
-    await expect(failing.analyze(broken, [file])).rejects.toThrow('null');
+    await expect(
+      failing.analyze(broken, [file], async () => {})
+    ).rejects.toThrow('null');
     await failing.close();
 
     // Closed while it has a request.
