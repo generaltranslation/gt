@@ -1,5 +1,13 @@
 # gt-payload
 
+## 0.2.0-samsara.7
+
+### Patch Changes
+
+- Updated dependencies [6440bd1]
+- Updated dependencies [ada6894]
+  - generaltranslation@10.0.0-samsara.6
+
 ## 0.2.0-samsara.6
 
 ### Patch Changes

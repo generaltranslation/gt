@@ -1,5 +1,28 @@
 # @generaltranslation/icu
 
+## 0.2.0-samsara.4
+
+### Minor Changes
+
+- 930e443: `checkIcuTranslation(sourceIcu, translationIcu, { locale })` checks a translated ICU string from any library against its source, by the same rules as `checkTranslation`, which checks a message tree.
+  - It reads any ICU the parser reads. A style name or a skeleton is kept as written, and a skeleton is compared by its tokens or fields, so spacing is no change. A pattern, like `{d, date, MM/dd/yyyy}`, or an app's own style name, is the translator's to localize: where the source uses one, the translation may use any pattern in its place.
+  - A source that is not valid ICU throws the parser's `SyntaxError`. A translation that is not valid ICU is a problem with it: its parser message is returned.
+
+  `checkTranslation` now checks branch keys too:
+  - Every exact `=N` branch the source has for a plural must be in the translation, as in `"n" is missing the exact branch =0, which the source has`. Adding one is still allowed.
+  - A select's keys must be the source's, compared across all uses of the variable: `"g" is missing the select branch female` and `"g" has the select branch femenino, which the source does not`.
+  - A plural branch that is no CLDR category, like `lots`, is reported without a `locale` too.
+  - Keys only inside a plural category branch the locale does not have, and so may be left out, are not required.
+
+- 8dde4bb: Rename `formatMessage` in `@generaltranslation/icu/parser` to `formatIcu`, and its options type `FormatMessageOptions` to `FormatIcuOptions`. It formats an ICU string, and the name now says so, like `icuToMessage` and `messageToIcu`. `@generaltranslation/icu/convert` no longer exports the `IcuMessage` type: `messageToIcu` returns `{ icu, formats }` as before. Nothing else changes: `formatMessage` in `@generaltranslation/format` and `generaltranslation` keeps its name and behavior.
+- 84d0104: `validateMessageTree` and `isMessageTree` now reject four kinds of tree that passed before. Neither `templateToMessage` nor `icuToMessage` makes any of them:
+  - A `select`, `plural` or `selectordinal` without an `other` branch. Formatting it threw for any value that matched no branch.
+  - `0`, the plural count, outside a plural or selectordinal branch. It formatted as nothing, and printed as a `#` that ICU reads back as text.
+  - A variable name, tag name or branch key that ICU cannot write, such as an empty name or one with a space. The tree printed as an ICU string that does not parse.
+  - A plural offset that is not a safe integer, such as `0.5`. The parser reads only whole offsets, and formatting a bigint count with a fractional one threw.
+
+  A tree built by `templateToMessage` or read by `icuToMessage` is unaffected. A hand-written translation in one of these forms is now invalid, and the runtime renders the source message in its place.
+
 ## 0.2.0-samsara.3
 
 ### Minor Changes

@@ -1,5 +1,18 @@
 # @generaltranslation/compiler
 
+## 1.4.0-samsara.5
+
+### Patch Changes
+
+- Updated dependencies [6440bd1]
+- Updated dependencies [930e443]
+- Updated dependencies [8dde4bb]
+- Updated dependencies [84d0104]
+- Updated dependencies [ada6894]
+  - @generaltranslation/format@1.0.0-samsara.6
+  - generaltranslation@10.0.0-samsara.6
+  - @generaltranslation/icu@0.2.0-samsara.4
+
 ## 1.4.0-samsara.4
 
 ### Minor Changes

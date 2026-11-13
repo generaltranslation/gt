@@ -1,5 +1,31 @@
 # gt-i18n
 
+## 2.0.0-samsara.6
+
+### Minor Changes
+
+- f88a4dc: Rename the `message` field of translation lookups to `content`, to match `GLOSSARY.md`: it holds content in any data format, JSX and message trees included, not only string messages. No behavior changes.
+  - `gt-i18n/internal`: the variant of `TranslateListenerLookup` that carries the source is `{ locale, content, options }`; the `{ locale, hash }` variant is unchanged. The entries passed to a lookup's `prefetchEntries` are `{ content, options }`.
+  - `@generaltranslation/react-core`: `TranslateLookup` is `{ locale, content, options }`.
+
+  `RegisteredMessage.message` is unchanged: it is a string message.
+
+- ada6894: Rename three names to match `GLOSSARY.md`. No behavior changes.
+  - The `Message` type in `gt-i18n/types`, a string message with its metadata as passed to `getGT()` and `useGT()`, is now `RegisteredMessage`. `Message` is left to mean a message tree and its formats.
+  - `hashMessage` in `gt-i18n/internal` is now `hashContent`: it hashes content in any data format, JSX included.
+  - `LocaleConfig.formatMessageTree()` takes the data for its variables as `values`, not `variables`, as `formatMessageTree` does everywhere else. This also applies to `LocaleConfig` in `generaltranslation` and `I18nConfig` in `gt-i18n`.
+
+### Patch Changes
+
+- Updated dependencies [6440bd1]
+- Updated dependencies [930e443]
+- Updated dependencies [8dde4bb]
+- Updated dependencies [84d0104]
+- Updated dependencies [ada6894]
+  - @generaltranslation/format@1.0.0-samsara.6
+  - generaltranslation@10.0.0-samsara.6
+  - @generaltranslation/icu@0.2.0-samsara.4
+
 ## 2.0.0-samsara.5
 
 ### Minor Changes

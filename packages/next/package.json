@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "12.0.0-samsara.5",
+  "version": "12.0.0-samsara.6",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
