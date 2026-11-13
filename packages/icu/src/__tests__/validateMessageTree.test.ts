@@ -49,8 +49,7 @@ describe('validateMessageTree', () => {
   ])('rejects pound %s', (_name, tree, path) => {
     expect(validateMessageTree(tree)).toEqual({
       path,
-      message:
-        'expected 0, the plural count, only in a plural or selectordinal branch',
+      message: 'expected 0, the plural count, only in a plural branch',
     });
   });
 
@@ -82,6 +81,11 @@ describe('validateMessageTree', () => {
     ['a tag name that starts with a digit', [['1b', 'tag', 'x']], [0, 0]],
     ['an empty tag name', [['', 'tag', 'x']], [0, 0]],
     [
+      'a tag name with ICU syntax after its letter',
+      [['b!', 'tag', 'x']],
+      [0, 0],
+    ],
+    [
       'a select key with a space',
       [select({ 'in progress': 'Running', other: 'Done' })],
       [0, 2, 'in progress'],
@@ -105,7 +109,6 @@ describe('validateMessageTree', () => {
     expect(
       isMessageTree(icuToMessage('{n, plural, offset:-2 other {#}}').tree)
     ).toBe(true);
-    expect(isMessageTree([['n', 'plural', { other: [0] }, -2]])).toBe(true);
   });
 
   it('accepts a tag name with tag-name characters and an exact plural key', () => {

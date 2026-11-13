@@ -38,6 +38,11 @@ const WIDTHS = ['short', 'long', 'narrow'] as const;
 /** The fields of UTS #35 that Intl has no option for at any length. */
 const ICU_ONLY_FIELDS = 'YuUrQqlwWDFgbJCAZVXx';
 
+/** The fields of a date skeleton as written; quoted text is not a field. */
+export function dateTimeSkeletonFields(skeleton: string): string[] {
+  return Array.from(skeleton.matchAll(DATE_TIME_FIELD), ([field]) => field);
+}
+
 /**
  * The Intl options of a date skeleton. `localeHour` says how to read `j`,
  * which remains only when the skeleton was parsed without a locale: as the
@@ -51,7 +56,7 @@ export function parseDateTimeSkeletonOptions(
   let hasHour = false;
   let hasAmPm = false;
 
-  for (const [field] of skeleton.matchAll(DATE_TIME_FIELD)) {
+  for (const field of dateTimeSkeletonFields(skeleton)) {
     const length = field.length;
     switch (field[0]) {
       case 'G':

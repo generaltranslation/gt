@@ -9,4 +9,4 @@
 - A variable name, tag name or branch key that ICU cannot write, such as an empty name or one with a space. The tree printed as an ICU string that does not parse.
 - A plural offset that is not a safe integer, such as `0.5`. The parser reads only whole offsets, and formatting a bigint count with a fractional one threw.
 
-A tree built by `templateToMessage` or read by `icuToMessage` is unaffected. A hand-written tree in one of these forms is now invalid, and the runtime renders the source message in its place.
+A tree built by `templateToMessage` or read by `icuToMessage` is unaffected. A hand-written translation in one of these forms is now invalid, and the runtime renders the source message in its place.

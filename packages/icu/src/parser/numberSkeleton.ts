@@ -109,8 +109,9 @@ const STEMS: readonly (readonly [
   ],
 ];
 
-const STEM_OPTIONS = new Map<string, Options>(
-  STEMS.flatMap(([stem, concise, options]) =>
+// Marked pure, so a bundle that reads no number skeleton drops the stems.
+const STEM_OPTIONS = /* @__PURE__ */ new Map<string, Options>(
+  /* @__PURE__ */ STEMS.flatMap(([stem, concise, options]) =>
     concise
       ? [[stem, options] as const, [concise, options] as const]
       : [[stem, options] as const]
