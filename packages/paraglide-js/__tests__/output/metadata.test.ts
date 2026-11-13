@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { describe, expect, test } from 'vitest';
 import type {
   FileUsages,
@@ -757,4 +758,27 @@ describe('random projects render as the TypeScript implementation rendered them'
     expect(renderedCount).toBeGreaterThan(2500);
     expect(notObjects).toBeGreaterThan(50);
   });
+});
+
+test('rendering before any analysis leaves the analysis its threads', () => {
+  // In a process of its own: the threads are set up once per process.
+  const script = `
+    const native = require('@generaltranslation/paraglide-js/native');
+    const sources = [{ file: 'src/a.ts', code: 'm.a()', usages: [{ name: 'a', start: 0, end: 5, line: 1, endLine: 1, project: '' }] }];
+    native.renderMetadata(JSON.stringify({ inlangProject: '', keys: [['a', ['a']]], existing: '{}', sources }), 3);
+
+    // Nested deeper than threads with a default stack can parse.
+    const code = 'export const x = ' + '('.repeat(3000) + '1' + ')'.repeat(3000) + ';';
+    const graph = new native.NativeGraph({ targets: [], outdirs: [], sourceExtensions: [], detect: [] });
+    graph.queueScript('/app/a.js', 0, code);
+    graph.load([], []).then(({ skipped }) => graph.analyze(['/app/a.js']).then(() => console.log(JSON.stringify(skipped))));
+  `;
+
+  const output = execFileSync(process.execPath, ['-e', script], {
+    cwd: import.meta.dirname,
+    encoding: 'utf8',
+    // Rust's default for a thread, set here for every system alike.
+    env: { ...process.env, RUST_MIN_STACK: String(2 << 20) },
+  });
+  expect(output.trim()).toBe('[]');
 });

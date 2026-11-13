@@ -19,17 +19,12 @@ import type {
   ToolingWorkerData,
 } from './tooling-pool.js';
 
-/**
- * What a language's tooling made of a file, as the analysis takes it: data
- * only, so that a thread of its own can make it.
- */
+/** Plain data, so that a worker thread can post it back. */
 export type ToolingResult =
-  /** No language claims the file. */
   | { type: 'unclaimed' }
   | { type: 'failed'; failure: ParseFailure }
   | { type: 'generated'; source: NativeGeneratedSource };
 
-/** Runs the tooling of the language that claims `file`, if one does. */
 export async function runTooling(
   file: string,
   code: string,

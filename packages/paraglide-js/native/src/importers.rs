@@ -1,7 +1,3 @@
-//! Finds where a module's functions are called and its component is rendered:
-//! in the module and in the modules that import it, directly or through
-//! re-exports. Only those are searched, not every module for every function.
-
 use std::sync::Arc;
 
 use rayon::prelude::*;
@@ -18,13 +14,11 @@ use crate::{
   syntax::{declared_names, import_of, imported_name, module_export_name, unwrap_expression},
 };
 
-/// Some of a module's exports, by the names it exports them under.
 struct ExportedNames<'a> {
   file: FileId,
   names: Vec<&'a str>,
 }
 
-/// Everything that can refer to some exports of a module.
 struct Referrers {
   /// In loading order.
   modules: Vec<ModuleId>,
@@ -41,19 +35,16 @@ struct Rename {
   exported: Box<str>,
 }
 
-/// What a module imports and re-exports, by resolved file.
 #[derive(Default)]
 pub struct Links {
   /// Each specifier of an import of values, with the file it imports from, in order.
   value_imports: Vec<(FileId, NodeId)>,
   imported_names: Vec<(FileId, Box<str>)>,
   imported_namespaces: Vec<FileId>,
-  /// The files whose exports it may re-export.
   reexported: Vec<FileId>,
   renames: Vec<Rename>,
 }
 
-/// Who imports each file, in shards by file: each shard is built on a core of its own.
 pub struct Dependents {
   /// The position of each module in loading order, by module.
   loading_order: Vec<u32>,
@@ -106,8 +97,8 @@ fn index_of<'g>(graph: &'g Graph, module: &'g Module, kind: &IndexKind) -> &'g C
   }
 }
 
-/// The call sites of a function of `record`: in its module and in the modules
-/// that import it. Found once, when they are first asked for.
+/// The call sites of a function of `record`, in its module and the modules that import it, found
+/// once when first asked for.
 pub fn call_sites_of(graph: &Graph, record: &Module, function: NodeId) -> Arc<[CallSite]> {
   let known = crate::unpoisoned(record.cache.call_sites_of.read())
     .get(&function)
@@ -120,8 +111,7 @@ pub fn call_sites_of(graph: &Graph, record: &Module, function: NodeId) -> Arc<[C
     return Arc::from([]);
   }
 
-  // Found outside the lock: finding them asks about other functions. Of two
-  // threads that find them at once, the first one's are kept; both are the same.
+  // Found outside the lock, since finding them asks about other functions.
   let sites: Arc<[CallSite]> = find_call_sites(graph, record, function).into();
   crate::unpoisoned(record.cache.call_sites_of.write())
     .entry(function)
@@ -190,7 +180,6 @@ pub fn component_props<'g>(graph: &'g Graph, record: &'g Module) -> &'g [Candida
 
         let importer = graph.module(importer_id);
 
-        // JSX elements of the component.
         let mut sites = Vec::new();
         sites_in(
           graph,
@@ -265,7 +254,6 @@ fn referrers_of(graph: &Graph, exported: &ExportedNames) -> Referrers {
   }
 }
 
-/// The sites in `importer` that refer to `exported`.
 fn sites_in(
   graph: &Graph,
   importer: &Module,
@@ -323,7 +311,6 @@ fn sites_in(
       continue;
     };
 
-    // In the order the members are first used.
     let mut members: Vec<(&Box<str>, &Vec<Site>)> = sites_by_member.iter().collect();
     members.sort_by_key(|(_, sites)| sites.first().map(|site| site.node));
 
@@ -335,8 +322,8 @@ fn sites_in(
   }
 }
 
-/// Whether `file`'s export `name` is, through `export { f } from`, `export *`
-/// or `import { f } …; export { f }`, one of `exported`. Only `exporters` are read.
+/// Whether `file`'s export `name` is one of `exported` through `export { f } from`, `export *` or
+/// `import { f } …; export { f }`, reading only `exporters`.
 fn is_exported(
   graph: &Graph,
   file: FileId,
@@ -433,7 +420,6 @@ fn build_dependents(graph: &Graph, parallel: bool) -> Dependents {
     loading_order[id as usize] = order as u32;
   }
 
-  // Each shard reads every module's links in loading order and keeps those of its files.
   let build_shard = |shard: usize, count: usize| {
     let mut built = DependentsShard::default();
     let is_in_shard = |file: FileId| file as usize % count == shard;
@@ -470,7 +456,6 @@ fn build_dependents(graph: &Graph, parallel: bool) -> Dependents {
   };
 
   let shards = if parallel {
-    // The links are made once per module, on every core.
     all.par_iter().for_each(|&id| {
       links_of(graph.module(id));
     });
@@ -566,7 +551,7 @@ fn names_after_renames(names: &[&str], renames: &[&Rename]) -> FxHashSet<Box<str
 fn links_of(record: &Module) -> &Links {
   record.cache.links.get_or_init(|| {
     let ast = &record.ast;
-    let mut links = Links::default();
+    let mut links = LinksBuilder::default();
     let file_of = |specifier: &str| record.resolved_file(specifier);
     let source_of = |statement: NodeId| crate::syntax::source_of(ast, statement);
 
@@ -581,18 +566,16 @@ fn links_of(record: &Module) -> &Links {
           };
 
           for specifier in ast.children_in(statement, Slot::Specifier) {
-            links.value_imports.push((file, specifier));
+            links.links.value_imports.push((file, specifier));
 
             if ast.kind(specifier) == Kind::ImportNamespaceSpecifier {
-              push_unique(&mut links.imported_namespaces, file);
+              if links.namespaces.insert(file) {
+                links.links.imported_namespaces.push(file);
+              }
             } else {
               let name = imported_name(ast, specifier);
-              let is_known = links
-                .imported_names
-                .iter()
-                .any(|(known_file, known_name)| *known_file == file && &**known_name == name);
-              if !is_known {
-                links.imported_names.push((file, name.into()));
+              if links.names.insert((file, name)) {
+                links.links.imported_names.push((file, name.into()));
               }
             }
           }
@@ -604,7 +587,7 @@ fn links_of(record: &Module) -> &Links {
             continue;
           }
           if let Some(file) = source_of(statement).and_then(file_of) {
-            push_unique(&mut links.reexported, file);
+            links.reexport(file);
           }
         }
 
@@ -616,8 +599,25 @@ fn links_of(record: &Module) -> &Links {
       }
     }
 
-    links
+    links.links
   })
+}
+
+/// `Links` being built, where each item is added once.
+#[derive(Default)]
+struct LinksBuilder<'a> {
+  links: Links,
+  names: FxHashSet<(FileId, &'a str)>,
+  namespaces: FxHashSet<FileId>,
+  reexported: FxHashSet<FileId>,
+}
+
+impl LinksBuilder<'_> {
+  fn reexport(&mut self, file: FileId) {
+    if self.reexported.insert(file) {
+      self.links.reexported.push(file);
+    }
+  }
 }
 
 fn add_named_exports(
@@ -625,7 +625,7 @@ fn add_named_exports(
   statement: NodeId,
   source: Option<&str>,
   file_of: &dyn Fn(&str) -> Option<FileId>,
-  links: &mut Links,
+  links: &mut LinksBuilder<'_>,
 ) {
   for specifier in ast.children_in(statement, Slot::Specifier) {
     let (Some(local), Some(exported)) = (
@@ -647,17 +647,11 @@ fn add_named_exports(
       continue;
     };
 
-    push_unique(&mut links.reexported, file);
-    links.renames.push(Rename {
+    links.reexport(file);
+    links.links.renames.push(Rename {
       imported: imported_name.into(),
       exported: module_export_name(ast, exported).into(),
     });
-  }
-}
-
-fn push_unique(files: &mut Vec<FileId>, file: FileId) {
-  if !files.contains(&file) {
-    files.push(file);
   }
 }
 
@@ -669,8 +663,7 @@ fn export_names_of<'g>(graph: &'g Graph, record: &'g Module, function: NodeId) -
     .unwrap_or_default()
 }
 
-/// The names each function of a module is exported under, found with one pass
-/// over its export statements: in the order a function's names are exported.
+/// The names each function of a module is exported under, in the order they are exported.
 fn function_exports<'g>(
   graph: &'g Graph,
   record: &'g Module,
@@ -678,7 +671,6 @@ fn function_exports<'g>(
   record.cache.function_exports.get_or_init(|| {
     let ast = &record.ast;
     let mut exports: FxHashMap<NodeId, Vec<Box<str>>> = FxHashMap::default();
-    // The function a module-level name declares.
     let function_of = |local: &str| match binding_of(graph, record, local, None)?.declaration {
       Some(Declaration::Node(function)) => Some(function),
       _ => None,

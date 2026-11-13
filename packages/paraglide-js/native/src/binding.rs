@@ -1,6 +1,4 @@
-//! What JavaScript calls. Long steps run off the main thread, on every core.
-
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{mpsc, Arc, Mutex, MutexGuard};
 
 use napi::{bindgen_prelude::*, Env, Task};
 use napi_derive::napi;
@@ -158,13 +156,12 @@ pub struct NativeCustomSymbol {
 
 #[napi(object)]
 pub struct NativeAnalysis {
-  /// The analyzed files that have usages. Their code and usages are kept for
-  /// `writeMetadata`.
+  /// The analyzed files that have usages, whose code and usages are kept for `writeMetadata`.
   pub files: Vec<String>,
   /// How many usages each has.
   pub counts: Vec<u32>,
-  /// The usages of each, as a JSON list: one text per file, so that a
-  /// project's usages are not limited by the length of one JavaScript string.
+  /// The usages of each as a JSON list, one text per file so that a project's usages are not
+  /// limited by the length of one JavaScript string.
   pub usages: Vec<String>,
   /// The files that the usages' `targetFile` name by index.
   pub paths: Vec<String>,
@@ -175,20 +172,18 @@ pub struct NativeStats {
   pub modules: u32,
   pub files: u32,
   pub nodes: f64,
-  /// Bytes held by the modules' trees.
   pub tree_bytes: f64,
 }
 
-/// What an analyzed file with usages keeps for the metadata files.
 struct Recorded {
   source: Arc<crate::graph::SourceFile>,
-  /// Each one's `target_file` is the number of its file in `State::targets`:
-  /// file ids do not outlive `release`.
+  /// Each one's `target_file` is its file's number in `State::targets`, since file ids do not
+  /// outlive `release`.
   usages: Vec<Usage>,
 }
 
-/// The files that usages' targets are in, numbered in the order they are first
-/// named: JavaScript is given them by number, and they outlive `release`.
+/// Target files numbered in the order they are first named, which unlike file ids outlive
+/// `release`.
 #[derive(Default)]
 struct TargetFiles {
   paths: Vec<String>,
@@ -227,17 +222,17 @@ pub struct NativeGraph {
   prefetch: Arc<Prefetch>,
 }
 
-/// The stack of each thread that parses and analyzes: deeply nested code is read by functions that call themselves.
+/// Deeply nested code is read by functions that call themselves, which need a large stack.
 const WORKER_STACK_BYTES: usize = 16 << 20;
 
-/// Sets up the threads the analysis runs on, once.
 fn start_workers() {
   static STARTED: std::sync::Once = std::sync::Once::new();
 
   STARTED.call_once(|| {
     let mut builder = rayon::ThreadPoolBuilder::new().stack_size(WORKER_STACK_BYTES);
-    // As many threads as `PARAGLIDE_CONTEXT_THREADS` says, at least one; else one per core.
-    if let Some(threads) = configured_threads() {
+    // The analysis never runs on the main thread: `0` is as few threads as it can, one.
+    let configured = std::env::var("PARAGLIDE_CONTEXT_THREADS").ok();
+    if let Some(threads) = configured.as_deref().and_then(crate::configured_threads) {
       builder = builder.num_threads(threads.max(1));
     }
 
@@ -246,18 +241,7 @@ fn start_workers() {
   });
 }
 
-/// The threads `PARAGLIDE_CONTEXT_THREADS` asks for, if it is a number.
-fn configured_threads() -> Option<usize> {
-  std::env::var("PARAGLIDE_CONTEXT_THREADS")
-    .ok()?
-    .trim()
-    .parse::<f64>()
-    .ok()
-    .filter(|threads| threads.is_finite() && *threads >= 0.0)
-    .map(|threads| threads as usize)
-}
-
-/// Runs a step of the analysis; a bug in it is an error in JavaScript, not the end of the process.
+/// A panic in `work` becomes an error in JavaScript instead of ending the process.
 fn guarded<T>(work: impl FnOnce() -> T) -> Result<T> {
   std::panic::catch_unwind(std::panic::AssertUnwindSafe(work)).map_err(|payload| {
     let reason = payload
@@ -384,7 +368,6 @@ impl Task for LoadTask {
         Some(&self.prefetch),
       );
 
-      // JavaScript's aliases are asked about each specifier once.
       let mut alias_queries = Vec::new();
       if let Some(resolver) = state
         .resolver
@@ -499,15 +482,12 @@ struct UsageJson<'a> {
   target_file: u32,
 }
 
-/// A file's usages, written for JavaScript.
 struct WrittenFile {
   file: String,
   count: u32,
   json: String,
 }
 
-/// The usages of the files that have any, for JavaScript. Each file's are
-/// written on a core of its own. Each usage's `target_file` is a number of `targets`.
 fn to_analysis(
   graph: &Graph,
   targets: &TargetFiles,
@@ -564,7 +544,6 @@ fn to_analysis(
   analysis
 }
 
-/// Analyzes `files`, and records those with usages.
 fn analyze_files(
   state: &mut State,
   files: Vec<String>,
@@ -579,21 +558,14 @@ fn analyze_files(
   } = state;
   let ids = file_ids(graph, &files);
 
-  let mut analyzed: Vec<Vec<Usage>> = match custom {
-    // JavaScript is asked on its own thread.
-    Some(custom) => ids
-      .into_iter()
-      .map(|file| file.map(|file| analyze_file(graph, file, Some(custom))))
-      .map(Option::unwrap_or_default)
-      .collect(),
-    None => ids
+  let mut analyzed: Vec<Vec<Usage>> = crate::on_pool(|| {
+    ids
       .into_par_iter()
-      .map(|file| file.map(|file| analyze_file(graph, file, None)))
+      .map(|file| file.map(|file| analyze_file(graph, file, custom)))
       .map(Option::unwrap_or_default)
-      .collect(),
-  };
+      .collect()
+  });
 
-  // Each target's file by its number, which outlives the graph's ids.
   let mut numbers: FxHashMap<FileId, u32> = FxHashMap::default();
   for usage in analyzed.iter_mut().flatten() {
     usage.target_file = *numbers
@@ -605,24 +577,25 @@ fn analyze_files(
 
   for (file, usages) in files.into_iter().zip(analyzed) {
     let record = graph.known_file(&file).and_then(|id| graph.record(id));
-    if let (Some(record), false) = (record, usages.is_empty()) {
-      let source = record.source.clone();
-      recorded.insert(file.into_boxed_str(), Recorded { source, usages });
+    match record {
+      Some(record) if !usages.is_empty() => {
+        let source = record.source.clone();
+        recorded.insert(file.into_boxed_str(), Recorded { source, usages });
+      }
+      _ => {
+        recorded.remove(file.as_str());
+      }
     }
   }
 
   analysis
 }
 
-/// The end of loading: what the loads kept to resolve and read files is given back.
 fn finish_loading(state: &State, prefetch: &Prefetch) {
-  // What was read of the file system is given back while the analysis runs,
-  // before its own memory is at its peak.
   if let Some(resolver) = &state.resolver {
     resolver.clear_cache_later();
   }
 
-  // What was prefetched and not loaded will not be.
   prefetch.clear();
 }
 
@@ -658,12 +631,25 @@ impl Task for AnalyzeTask {
 type CustomSymbolFunction<'a> =
   Function<'a, FnArgs<(u32, String, String, Vec<String>)>, Option<NativeCustomSymbol>>;
 
-/// Asks JavaScript what a custom target's exports are.
-struct JsTargets<'a> {
-  symbol: CustomSymbolFunction<'a>,
+struct Question {
+  target: u32,
+  file: String,
+  export: String,
+  path: Vec<String>,
+  answer: mpsc::SyncSender<Option<CustomSymbol>>,
 }
 
-impl CustomTargets for JsTargets<'_> {
+enum Message<T> {
+  Ask(Question),
+  Done(T),
+}
+
+/// Asks the main thread, where JavaScript runs, what the custom targets' exports are.
+struct AskedTargets<T> {
+  questions: mpsc::Sender<Message<T>>,
+}
+
+impl<T: Send> CustomTargets for AskedTargets<T> {
   fn symbol(
     &self,
     target: u32,
@@ -671,19 +657,79 @@ impl CustomTargets for JsTargets<'_> {
     export: &str,
     path: &[Arc<str>],
   ) -> Option<CustomSymbol> {
-    let path: Vec<String> = path.iter().map(|name| name.to_string()).collect();
-    let arguments = FnArgs::from((target, file.to_string(), export.to_string(), path));
-    let symbol = self.symbol.call(arguments).ok().flatten()?;
+    let (answer, answered) = mpsc::sync_channel(1);
+    let question = Question {
+      target,
+      file: file.to_string(),
+      export: export.to_string(),
+      path: path.iter().map(|name| name.to_string()).collect(),
+      answer,
+    };
 
-    Some(if symbol.kind == "value" {
+    self.questions.send(Message::Ask(question)).ok()?;
+    answered.recv().ok().flatten()
+  }
+}
+
+/// Runs `work` on the analysis' threads while this thread answers its questions with `symbol`,
+/// whose first error is the result once `work` is done.
+fn with_custom_targets<T: Send>(
+  symbol: &CustomSymbolFunction<'_>,
+  work: impl FnOnce(&AskedTargets<Result<T>>) -> Result<T> + Send,
+) -> Result<T> {
+  let (questions, asked) = mpsc::channel();
+  let mut thrown: Option<Error> = None;
+
+  let result = rayon::in_place_scope(|scope| {
+    let done = questions.clone();
+    scope.spawn(move |_| {
+      let targets = AskedTargets { questions };
+      let result = work(&targets);
+      let _ = done.send(Message::Done(result));
+    });
+
+    loop {
+      match asked.recv() {
+        Ok(Message::Ask(question)) => {
+          let answer = match &thrown {
+            Some(_) => None,
+            None => ask(symbol, &question).unwrap_or_else(|error| {
+              thrown = Some(error);
+              None
+            }),
+          };
+          let _ = question.answer.send(answer);
+        }
+        Ok(Message::Done(result)) => break result,
+        Err(_) => break Err(Error::from_reason("the analysis stopped without a result")),
+      }
+    }
+  });
+
+  match thrown {
+    Some(error) => Err(error),
+    None => result,
+  }
+}
+
+fn ask(symbol: &CustomSymbolFunction<'_>, question: &Question) -> Result<Option<CustomSymbol>> {
+  let arguments = FnArgs::from((
+    question.target,
+    question.file.clone(),
+    question.export.clone(),
+    question.path.clone(),
+  ));
+
+  Ok(symbol.call(arguments)?.map(|symbol| {
+    if symbol.kind == "value" {
       CustomSymbol::Value {
         name: symbol.name.unwrap_or_default(),
         methods: symbol.methods.unwrap_or_default(),
       }
     } else {
       CustomSymbol::Namespace
-    })
-  }
+    }
+  }))
 }
 
 #[napi(object)]
@@ -779,8 +825,7 @@ fn bad_input(metadata::BadInput(what): metadata::BadInput) -> Error {
   Error::from_reason(format!("the metadata input is not as expected: `{what}`"))
 }
 
-/// `{ files, names, targets, targetProjects, projects }`: the analyzed files with
-/// usages and their names, the inlang project of each target file, and the projects.
+/// `input` is the JSON of `{ files, names, targets, targetProjects, projects }`.
 fn write_metadata(state: &State, input: &[u8], radius: f64) -> Result<NativeMetadataResult> {
   let input = metadata::input_object(input).map_err(bad_input)?;
   let metadata::WriteInput {
@@ -789,8 +834,7 @@ fn write_metadata(state: &State, input: &[u8], radius: f64) -> Result<NativeMeta
     projects,
   } = metadata::write_input(&input).map_err(bad_input)?;
 
-  // Only a message's usage counts, in the project its outdir is paired with:
-  // decided once per target, and once per target file.
+  // Only a message's usage counts, in the project its outdir is paired with.
   let is_message: Vec<bool> = state
     .graph
     .options
@@ -866,12 +910,12 @@ fn write_metadata(state: &State, input: &[u8], radius: f64) -> Result<NativeMeta
   Ok(result)
 }
 
-/// The content of a metadata file, as `writeMetadata` writes it: for tests.
-/// `input` is the JSON of `{ inlangProject, keys, existing, sources }`; none if
-/// `existing` is not the JSON of an object. A field written by hand too deep
-/// for `JSON.stringify` is an error.
+/// For tests: a metadata file as `writeMetadata` writes it from the JSON of
+/// `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
+/// object.
 #[napi]
 pub fn render_metadata(input: String, radius: f64) -> Result<Option<String>> {
+  start_workers();
   guarded(|| match metadata::render_input(input.as_bytes(), radius) {
     Err(bad) => Err(bad_input(bad)),
     Ok(Err(_)) => Err(Error::from_reason("Maximum call stack size exceeded")),
@@ -971,7 +1015,6 @@ impl NativeGraph {
 
   // ---------------------------------------------------------------- loading
 
-  /// A script that JavaScript read.
   #[napi]
   pub fn queue_script(&self, file: String, order: u32, code: String) {
     self.queue(file, order, Input::Script { code });
@@ -983,7 +1026,6 @@ impl NativeGraph {
     self.queue(file, order, Input::Empty { code });
   }
 
-  /// A component file, as the code its language's tooling wrote for it.
   #[napi]
   pub fn queue_generated(
     &self,
@@ -996,22 +1038,20 @@ impl NativeGraph {
     self.queue(file, order, Input::Generated { code, generated });
   }
 
-  /// Keeps what JavaScript read or generated for the next load.
   fn queue(&self, file: String, order: u32, input: Input) {
     let order = order as u64;
     lock(&self.state).queue.push(Request { file, order, input });
   }
 
-  /// Starts reading and parsing scripts that are about to be loaded, on the
-  /// cores JavaScript leaves idle while it lists the others; `load` takes them.
-  /// Returns at once.
+  /// Starts reading and parsing scripts that are about to be loaded, for `load` to take, and
+  /// returns at once.
   #[napi]
   pub fn prefetch(&self, files: Vec<String>) {
     self.prefetch.start(files);
   }
 
-  /// Reads the scripts `files`, and parses them and what was queued. `orders`
-  /// are the positions of `files` among the loaded files.
+  /// Reads and parses the scripts `files` and what was queued, where `orders` are the positions of
+  /// `files` among the loaded files.
   #[napi(ts_return_type = "Promise<NativeLoadResult>")]
   pub fn load(&self, files: Vec<String>, orders: Vec<u32>) -> AsyncTask<LoadTask> {
     let requests = files
@@ -1031,9 +1071,8 @@ impl NativeGraph {
     })
   }
 
-  /// Resolves what the loaded modules load. `aliased` is what JavaScript's
-  /// aliases make of `queries`. Resolves with the unresolved imports to report,
-  /// as `specifier, importer` pairs.
+  /// `aliased` is what JavaScript's aliases make of `queries`, and the result is the unresolved
+  /// imports to report as `specifier, importer` pairs.
   #[napi(ts_return_type = "Promise<Array<string>>")]
   pub fn resolve(&self, queries: Vec<String>, aliased: Vec<String>) -> AsyncTask<ResolveTask> {
     AsyncTask::new(ResolveTask {
@@ -1108,7 +1147,6 @@ impl NativeGraph {
       .collect()
   }
 
-  /// Whether each file was loaded.
   #[napi]
   pub fn is_loaded(&self, files: Vec<String>) -> Vec<bool> {
     let state = lock(&self.state);
@@ -1122,7 +1160,6 @@ impl NativeGraph {
 
   // ---------------------------------------------------------------- targets
 
-  /// The name of the target a file belongs to.
   #[napi]
   pub fn target_of(&self, file: String) -> Option<String> {
     let mut state = lock(&self.state);
@@ -1199,7 +1236,7 @@ impl NativeGraph {
 
   // ---------------------------------------------------------------- analysis
 
-  /// The usages in each of `files`, which were loaded.
+  /// The usages in each of `files`, which must have been loaded.
   #[napi(ts_return_type = "Promise<NativeAnalysis>")]
   pub fn analyze(&self, files: Vec<String>) -> AsyncTask<AnalyzeTask> {
     AsyncTask::new(AnalyzeTask {
@@ -1209,7 +1246,7 @@ impl NativeGraph {
     })
   }
 
-  /// As `analyze`, on this thread: `symbol` says what the custom targets export.
+  /// As `analyze`, waiting for the result: `symbol` says what the custom targets export, and an error it throws is thrown.
   #[napi]
   pub fn analyze_with_custom_targets(
     &self,
@@ -1219,20 +1256,17 @@ impl NativeGraph {
     )]
     symbol: CustomSymbolFunction<'_>,
   ) -> Result<NativeAnalysis> {
-    guarded(|| self.analyze_here(files, symbol))
-  }
-
-  fn analyze_here(&self, files: Vec<String>, symbol: CustomSymbolFunction<'_>) -> NativeAnalysis {
     let mut state = lock(&self.state);
     finish_loading(&state, &self.prefetch);
+    let state = &mut *state;
 
-    let custom = JsTargets { symbol };
-    analyze_files(&mut state, files, Some(&custom))
+    with_custom_targets(&symbol, move |custom| {
+      guarded(|| analyze_files(state, files, Some(custom)))
+    })
   }
 
-  /// Gives back the memory of the modules, on a thread of its own; what
-  /// `writeMetadata` writes is kept. The graph is then as new, with the same
-  /// targets and outdirs.
+  /// Frees the modules on a thread of its own, keeping what `writeMetadata` writes and the targets
+  /// and outdirs.
   #[napi]
   pub fn release(&self) {
     let modules = lock(&self.state).graph.take();
@@ -1242,9 +1276,8 @@ impl NativeGraph {
 
   // ---------------------------------------------------------------- metadata
 
-  /// Writes the metadata file of each message file of `input`'s projects, from
-  /// the usages of the analyzed files. `input` is the JSON of `MetadataInput`
-  /// (`src/compiler/collector/metadata-files.ts`).
+  /// Writes the metadata file of each message file of `input`'s projects, where `input` is the JSON
+  /// of `MetadataInput` (`src/compiler/output/metadata.ts`).
   #[napi(ts_return_type = "Promise<NativeMetadataResult>")]
   pub fn write_metadata(&self, input: String, radius: f64) -> AsyncTask<WriteMetadataTask> {
     AsyncTask::new(WriteMetadataTask {

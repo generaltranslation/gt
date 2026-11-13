@@ -1,5 +1,3 @@
-//! Where functions are called and components are rendered, and what each place passes.
-
 use std::sync::Arc;
 
 use rustc_hash::FxHashMap;
@@ -11,7 +9,6 @@ use crate::{
   syntax::{nth_child, static_string, unwrap_expression, Path},
 };
 
-/// What a binding may hold: an expression's values, or computed ones.
 #[derive(Clone, Debug)]
 pub enum Candidate {
   /// The values of `node`, then their members along `path`.
@@ -20,12 +17,16 @@ pub enum Candidate {
     node: NodeId,
     path: Path,
   },
-  /// Every value of an argument of a call in another module than the callee.
-  /// Unlike an expression's, its literals do not narrow a computed key:
-  /// `show(404)` leaves `` m[`error_${code}`] `` at error_*.
-  Imported { module: ModuleId, node: NodeId },
-  /// The props of a JSX element.
-  JsxProps { module: ModuleId, element: NodeId },
+  /// Every value of an argument of a call in another module than the callee, whose literals, unlike
+  /// an expression's, do not narrow a computed key.
+  Imported {
+    module: ModuleId,
+    node: NodeId,
+  },
+  JsxProps {
+    module: ModuleId,
+    element: NodeId,
+  },
   /// The members along `path` of another candidate's values.
   Follow {
     candidate: Arc<Candidate>,
@@ -96,7 +97,6 @@ pub fn call_sites_in<'g>(graph: &'g Graph, module: &'g Module) -> &'g CallSiteIn
     for (id, node) in ast.nodes.iter().enumerate() {
       let id = id as NodeId;
 
-      // What is called: a call's callee, an element's name.
       let (slot, kind) = match node.kind {
         Kind::CallExpression => (Slot::Callee, SiteKind::Call),
         Kind::JSXOpeningElement => (Slot::Name, SiteKind::Jsx),
@@ -319,8 +319,8 @@ pub fn argument_of(graph: &Graph, site: &CallSite, index: usize) -> Option<Candi
   })
 }
 
-/// Whether a call site leaves parameter `index` to its default: it passes
-/// nothing there, or `undefined`. A JSX element passes only its props.
+/// Whether a call site passes nothing or `undefined` as parameter `index`, leaving it to its
+/// default; a JSX element passes only its props.
 pub fn omits_argument(graph: &Graph, site: &CallSite, index: usize) -> bool {
   if site.site.kind == SiteKind::Jsx {
     return index > 0;

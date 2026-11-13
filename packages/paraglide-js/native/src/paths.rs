@@ -2,7 +2,6 @@
 
 use std::{borrow::Cow, path::MAIN_SEPARATOR};
 
-/// With forward slashes: the path itself where they are the separator.
 pub fn to_posix(file: &str) -> Cow<'_, str> {
   if MAIN_SEPARATOR == '/' {
     Cow::Borrowed(file)
@@ -30,7 +29,6 @@ pub fn basename(file: &str) -> &str {
   }
 }
 
-/// `file` relative to `directory`, with its separators, if inside it.
 fn within<'f>(directory: &str, file: &'f str) -> Option<&'f str> {
   let rest = file.strip_prefix(directory)?;
   let directory_ends_with_separator = directory.ends_with(is_separator);
@@ -54,7 +52,6 @@ fn within<'f>(directory: &str, file: &'f str) -> Option<&'f str> {
   Some(relative)
 }
 
-/// `file` relative to `directory` with forward slashes, if inside it.
 pub fn relative_within<'f>(directory: &str, file: &'f str) -> Option<Cow<'f, str>> {
   within(directory, file).map(to_posix)
 }
@@ -63,7 +60,6 @@ pub fn is_within(directory: &str, file: &str) -> bool {
   within(directory, file).is_some()
 }
 
-/// `.js`, `.mjs`, `.cts`, `.tsx`, …: the extension of a script, if `file` has one.
 fn script_extension(file: &str) -> Option<&str> {
   let dot = file.rfind('.')?;
   let extension = &file[dot + 1..];
@@ -75,7 +71,6 @@ fn script_extension(file: &str) -> Option<&str> {
   is_script.then_some(&file[dot..])
 }
 
-/// `a.d.ts`, `a.d.mts`, `a.d.cts`
 pub fn is_declaration_file(file: &str) -> bool {
   [".d.ts", ".d.mts", ".d.cts"]
     .iter()

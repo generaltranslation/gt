@@ -884,6 +884,7 @@ dependencies = [
 name = "paraglide-context-native"
 version = "0.0.1"
 dependencies = [
+ "hashbrown 0.17.1",
  "memchr",
  "mimalloc",
  "napi",

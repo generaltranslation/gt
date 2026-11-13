@@ -1,6 +1,5 @@
-//! A metadata file's content: shaped like its message file, with under each
-//! message that is used the source code around its usages, and the fields
-//! written by hand kept. As `JSON.stringify(metadata, null, 2)` writes it.
+//! A metadata file's content, shaped like its message file and written as
+//! `JSON.stringify(metadata, null, 2)` writes it.
 
 use rayon::prelude::*;
 
@@ -48,7 +47,6 @@ fn order(object: &OutObject) -> Vec<usize> {
   js_order(members.len(), |member| members[member].0)
 }
 
-/// A metadata file's content, in pieces: the large ones are written on every core.
 pub struct Rendered {
   pub chunks: Vec<Vec<u8>>,
 }
@@ -58,7 +56,6 @@ impl Rendered {
     self.chunks.iter().map(Vec::len).sum()
   }
 
-  /// Whether the content is `text`.
   pub fn equals(&self, text: &[u8]) -> bool {
     if self.len() != text.len() {
       return false;
@@ -110,7 +107,6 @@ pub fn render(keys: &[MessageKey], existing: &Object, source: &SourceCode) -> Re
     };
   }
 
-  // Each of the top level's members on a core of its own.
   let order = order(&metadata);
   let members: Vec<Vec<u8>> = order
     .par_iter()

@@ -1,6 +1,5 @@
-//! The file system as the resolver reads it: one listing of a directory answers
-//! the many names an import probes in it (`./a` → `a.ts`, `a.tsx`, …).
-//! Nothing is written while the analysis runs, so a listing stays true.
+//! Caches directory listings for the resolver, which stay true because nothing is written while the
+//! analysis runs.
 
 use std::{
   ffi::OsStr,
@@ -30,10 +29,9 @@ enum Kind {
   Other,
 }
 
-/// What a directory contains.
 struct Listing {
-  /// By name with ASCII letters in lower case: on a case-insensitive file system,
-  /// `./Card` finds `card.ts`, so a name is missing only when no entry of any case has it.
+  /// Keyed by name with ASCII letters lowercased, since on a case-insensitive file system `./Card`
+  /// finds `card.ts`.
   entries: FxHashMap<Box<str>, Vec<(Box<OsStr>, Kind)>>,
 }
 
@@ -107,16 +105,11 @@ fn fold(name: &str) -> String {
   }
 }
 
-/// What is known of a directory's entries.
 enum Contents {
   Listed(Listing),
-  /// It cannot be listed: the system is asked about each name.
   Unlisted,
 }
 
-/// A directory is listed when it is asked about a second time: one asked about
-/// once, e.g. a parent directory whose `package.json` is looked for, costs one
-/// system call, not a listing of all its entries.
 #[derive(Default)]
 struct Directory {
   asked: AtomicU32,
@@ -142,7 +135,6 @@ impl Default for ListedFileSystem {
 }
 
 impl ListedFileSystem {
-  /// Forgets every listing.
   pub fn clear(&self) {
     for shard in &self.shards {
       crate::unpoisoned(shard.write()).clear();
@@ -166,7 +158,6 @@ impl ListedFileSystem {
       .clone()
   }
 
-  /// What `path` is by its directory's listing.
   fn lookup(&self, path: &Path) -> Lookup {
     if !cfg!(unix) {
       return Lookup::Unknown;
@@ -185,8 +176,8 @@ impl ListedFileSystem {
       return contents.lookup(name);
     }
 
-    // The parent's listing tells a file, or a path that does not exist, without
-    // a system call: tsconfig.json is looked for "in" each importer too.
+    // The resolver also probes paths under files, e.g. `tsconfig.json` "in" each importer, which
+    // the parent's listing answers without a system call.
     if let Lookup::Found(Kind::File | Kind::Other) | Lookup::Missing = self.lookup(directory) {
       return Lookup::Missing;
     }
@@ -211,7 +202,6 @@ impl Contents {
     }
   }
 
-  /// What `name` is.
   fn lookup(&self, name: &OsStr) -> Lookup {
     match self {
       Contents::Listed(listing) => listing.lookup(name),
@@ -232,7 +222,7 @@ fn not_found() -> io::Error {
   io::Error::from(io::ErrorKind::NotFound)
 }
 
-/// What the resolver is given: the listings are shared with `NativeResolver`, which clears them.
+/// The listings are shared with `NativeResolver`, which clears them.
 #[derive(Clone, Default)]
 pub struct SharedFileSystem(pub Arc<ListedFileSystem>);
 

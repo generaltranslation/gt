@@ -1,8 +1,6 @@
-//! What an expression refers to: follows names through declarations, imports,
-//! exports, call sites and props to the tracked values they hold.
-
 use std::{hash::BuildHasher, sync::Arc};
 
+use hashbrown::HashTable;
 use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 
 use crate::{
@@ -33,8 +31,7 @@ pub enum CustomSymbol {
   Namespace,
 }
 
-/// The targets defined in JavaScript.
-pub trait CustomTargets {
+pub trait CustomTargets: Sync {
   /// `export` of `file`, then its members along `path`.
   fn symbol(
     &self,
@@ -45,19 +42,21 @@ pub trait CustomTargets {
   ) -> Option<CustomSymbol>;
 }
 
-/// One evaluation at a time: what is being resolved, so that cycles end. Each
-/// is a stack: what is entered is left before what was entered before it.
+/// What one evaluation at a time is resolving, so that cycles end.
 pub struct Cx<'g> {
   pub g: &'g Graph,
   pub custom: Option<&'g dyn CustomTargets>,
   /// The bindings being resolved; its length is how deep the evaluation is.
   in_progress: Vec<GuardKey>,
   members_being_read: Vec<(ModuleId, NodeId, Box<str>)>,
-  /// With the hash of each name: a chain of `export *` can be a thousand modules deep.
-  exports_being_resolved: Vec<(FileId, u64, Box<str>)>,
-  export_hashes_being_resolved: FxHashMap<(FileId, u64), u32>,
-  /// What bindings hold, resolved with nothing else in progress: no cycle was cut short, so it holds every time.
+  exports_being_resolved: HashTable<(FileId, Box<str>)>,
+  /// What bindings hold, cached only when resolved with nothing else in progress, since then no
+  /// cycle was cut short.
   resolved: FxHashMap<GuardKey, Vec<Symbol>>,
+}
+
+fn export_hash(file: FileId, name: &str) -> u64 {
+  FxBuildHasher.hash_one((file, name))
 }
 
 fn to_list(symbol: Option<Symbol>) -> Vec<Symbol> {
@@ -71,8 +70,7 @@ impl<'g> Cx<'g> {
       custom,
       in_progress: Vec::new(),
       members_being_read: Vec::new(),
-      exports_being_resolved: Vec::new(),
-      export_hashes_being_resolved: FxHashMap::default(),
+      exports_being_resolved: HashTable::new(),
       resolved: FxHashMap::default(),
     }
   }
@@ -84,7 +82,6 @@ impl<'g> Cx<'g> {
 
   // ---------------------------------------------------------------- names
 
-  /// What a module-level name holds.
   pub fn lookup(&mut self, module: ModuleId, name: &str) -> Option<Symbol> {
     let binding = binding_of(self.g, self.module(module), name, None)?;
 
@@ -170,9 +167,8 @@ impl<'g> Cx<'g> {
     }
   }
 
-  /// Every value a node may refer to: `m[cond ? "a" : "b"]` refers to two
-  /// messages. A key with unknown parts gives a `dynamic` value whose name is a
-  /// pattern: `m[key]` → "*", `` m[`err_${code}`] `` → "err_*".
+  /// Every value a node may refer to, where a key with unknown parts gives a `dynamic` value
+  /// whose name is a pattern: `m[key]` → "*", `` m[`err_${code}`] `` → "err_*".
   pub fn evaluate_all(&mut self, module: ModuleId, expression: NodeId) -> Vec<Symbol> {
     let record = self.module(module);
     let ast = &record.ast;
@@ -324,7 +320,6 @@ impl<'g> Cx<'g> {
       && self.members_being_read.is_empty()
       && self.exports_being_resolved.is_empty();
     let key = match &binding.kind {
-      // Narrowed by the read.
       BindingKind::Values {
         source: ValuesSource::Reassignable { .. },
         ..
@@ -469,8 +464,8 @@ impl<'g> Cx<'g> {
     }
   }
 
-  /// Ends cycles (`let a = b; b = a`) and bounds chains through call sites and
-  /// assignments. Whether to go on; each entry is followed by a `leave`.
+  /// Whether to go on, ending cycles (`let a = b; b = a`) and bounding chains through call sites
+  /// and assignments; each entry must be followed by a `leave`.
   fn enter(&mut self, key: Option<&GuardKey>) -> bool {
     let Some(key) = key else { return false };
     if self.in_progress.len() >= MAX_DEPTH as usize || self.in_progress.contains(key) {
@@ -659,7 +654,6 @@ impl<'g> Cx<'g> {
         return None;
       }
 
-      // Of a getter that only returns: `get label() { return m.title }`.
       let function = ast.child(element, Slot::Value)?;
       let body = ast.child(function, Slot::Body)?;
       let mut statements = ast.children(body);
@@ -700,42 +694,28 @@ impl<'g> Cx<'g> {
     }
 
     let record = self.g.record(file)?;
-    let hash = FxBuildHasher.hash_one(name);
-    let is_being_resolved = self
-      .export_hashes_being_resolved
-      .contains_key(&(file, hash))
-      && self
-        .exports_being_resolved
-        .iter()
-        .any(|(other_file, other_hash, other_name)| {
-          *other_file == file && *other_hash == hash && &**other_name == name
-        });
-    if is_being_resolved {
+    let hash = export_hash(file, name);
+    let is_this =
+      |(other_file, other_name): &(FileId, Box<str>)| *other_file == file && &**other_name == name;
+    if self.exports_being_resolved.find(hash, is_this).is_some() {
       return None;
     }
 
     self
       .exports_being_resolved
-      .push((file, hash, Box::from(name)));
-    *self
-      .export_hashes_being_resolved
-      .entry((file, hash))
-      .or_default() += 1;
+      .insert_unique(hash, (file, Box::from(name)), |(file, name)| {
+        export_hash(*file, name)
+      });
 
     let symbol = self.local_export(record, name);
 
-    self.exports_being_resolved.pop();
-    if let Some(count) = self.export_hashes_being_resolved.get_mut(&(file, hash)) {
-      *count -= 1;
-      if *count == 0 {
-        self.export_hashes_being_resolved.remove(&(file, hash));
-      }
+    if let Ok(entry) = self.exports_being_resolved.find_entry(hash, is_this) {
+      entry.remove();
     }
 
     symbol
   }
 
-  /// What a target says the export `name` of its file is.
   fn target_export(&mut self, target: u32, file: FileId, name: &str) -> Option<Symbol> {
     let value = |methods: Methods| {
       Some(Symbol::Value(Arc::new(Value {
@@ -835,7 +815,6 @@ impl<'g> Cx<'g> {
   fn may_export(&mut self, file: FileId, name: &str) -> bool {
     let graph = self.g;
 
-    // A module without `export *` lists its names itself.
     if let Some(record) = graph.record(file) {
       let is_leaf = record.syntax.star_exports.is_empty() && graph.target_of(file).is_none();
       if is_leaf {
@@ -853,8 +832,8 @@ impl<'g> Cx<'g> {
     names.is_none_or(|names| names.contains(name))
   }
 
-  /// The export `name`, if `statement` is the one that declares it. The inner
-  /// `None` is an export that is not tracked.
+  /// The export `name` if `statement` declares it, where the inner `None` is an export that is not
+  /// tracked.
   fn export_declared_by(
     &mut self,
     record: &'g Module,
@@ -959,13 +938,13 @@ impl<'g> Cx<'g> {
   }
 }
 
-/// A file's names are not listed when reaching them reads more modules than this,
-/// e.g. at the start of a long chain of `export *`: each set would repeat the next one's.
+/// A file's names are not listed when reaching them reads more modules than this, e.g. at the start
+/// of a long chain of `export *`.
 const MAX_EXPORT_WALK: usize = 64;
 const MAX_EXPORT_NAMES: usize = 4096;
 
-/// The names a file exports. `None` when unknown: a target or a CommonJS module
-/// is among its `export *`, or there are too many to list.
+/// The names a file exports, or `None` when a target or a CommonJS module is among its `export *`
+/// or there are too many to list.
 fn list_export_names(graph: &Graph, file: FileId) -> Option<FxHashSet<Box<str>>> {
   let mut names: FxHashSet<Box<str>> = FxHashSet::default();
   let mut seen: FxHashSet<FileId> = FxHashSet::default();
@@ -1007,7 +986,6 @@ fn list_export_names(graph: &Graph, file: FileId) -> Option<FxHashSet<Box<str>>>
   Some(names)
 }
 
-/// The file a statement's `from "…"` resolves to.
 fn resolved_source(record: &Module, statement: NodeId) -> Option<FileId> {
   record.resolved_file(crate::syntax::source_of(&record.ast, statement)?)
 }
@@ -1101,7 +1079,6 @@ fn props_candidates<'g>(graph: &'g Graph, record: &'g Module) -> &'g [Candidate]
   component_props(graph, record)
 }
 
-/// The expression of the attribute `name={…}`.
 fn jsx_attribute_expression(ast: &ir::Ast, attribute: NodeId, name: &str) -> Option<NodeId> {
   let attribute_name = ast.child(attribute, Slot::Name)?;
   if ast.kind(attribute_name) != Kind::JSXIdentifier || ast.text(attribute_name) != name {
@@ -1135,8 +1112,8 @@ fn class_element_name(ast: &ir::Ast, element: NodeId) -> Option<std::borrow::Cow
   }
 }
 
-/// One value per name and origin, the first found; namespaces as they are. Two
-/// outdirs can define a message of the same name: those are two values.
+/// One value per name and origin (two outdirs can define a message of the same name), the first
+/// found; namespaces stay as they are.
 fn distinct(symbols: Vec<Symbol>) -> Vec<Symbol> {
   if symbols.len() <= 1 {
     return symbols;

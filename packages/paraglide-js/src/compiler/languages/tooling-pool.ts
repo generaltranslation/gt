@@ -39,22 +39,18 @@ export type ToolingThread = {
 
 const WORKER_URL = new URL('./tooling-worker.js', import.meta.url);
 
-/** Fewer files than this are not worth a thread: starting one, and its tools, takes longer. */
 const FILES_PER_THREAD = 4;
 
 /**
- * How many threads run the tooling of `files` files: none for a few, else one
- * per core but the main thread's. `PARAGLIDE_CONTEXT_THREADS` sets it, e.g. to
- * 0 to run it on the main thread.
+ * `PARAGLIDE_CONTEXT_THREADS` overrides the count, where `0` runs the tooling
+ * on the main thread only.
  */
 export function toolingThreads(files: number): number {
   // Run from the TypeScript sources, as in tests, there is no worker to start.
   if (!fs.existsSync(fileURLToPath(WORKER_URL))) return 0;
 
-  const configured = process.env.PARAGLIDE_CONTEXT_THREADS;
-  if (configured !== undefined) {
-    return Math.max(0, Math.floor(Number(configured)) || 0);
-  }
+  const configured = configuredThreads(process.env.PARAGLIDE_CONTEXT_THREADS);
+  if (configured !== undefined) return configured;
 
   return Math.min(
     os.availableParallelism() - 1,
@@ -63,10 +59,21 @@ export function toolingThreads(files: number): number {
 }
 
 /**
- * What the threads are started with, if they can run the tooling as the main
- * thread would: with languages of this package, which a thread loads by
- * itself, and the project's packages or none. A language or a context of the
- * caller exists only on the main thread.
+ * Parses `PARAGLIDE_CONTEXT_THREADS` as `configured_threads` in
+ * `native/src/lib.rs` does: digits only.
+ */
+export function configuredThreads(
+  value: string | undefined
+): number | undefined {
+  if (value === undefined || !/^[0-9]+$/.test(value)) return undefined;
+
+  const threads = Number(value);
+  return Number.isSafeInteger(threads) ? threads : undefined;
+}
+
+/**
+ * Undefined unless a thread can run the tooling as the main thread would, since
+ * a language or packages context of the caller exists only on the main thread.
  */
 export function toolingWorkerData(
   languages: readonly SourceLanguage[],
@@ -89,7 +96,6 @@ export function startToolingThread(data: ToolingWorkerData): ToolingThread {
 
 type Task = {
   request: ToolingRequest;
-  /** `.vue`, `.component.html`: files of a kind cost about the same per character. */
   kind: string;
   resolve(result: ToolingResult | undefined): void;
 };
@@ -97,11 +103,9 @@ type Task = {
 type Running = {
   thread: ToolingThread;
   task: Task | undefined;
-  /** When the thread was given its task. */
   started: number;
 };
 
-/** The time the files of a kind took, and their length. */
 type Cost = { ms: number; characters: number };
 
 /** A file's kind: its extensions, `.component.html` for `user.component.html`. */
@@ -112,12 +116,6 @@ function kindOf(file: string): string {
   return dot === -1 ? '' : name.slice(dot);
 }
 
-/**
- * Threads that run languages' tooling, the slowest step of a project with many
- * component files. Each takes a file when it is done with one: the one that
- * will take longest, by what the files of its kind took so far, so that no
- * slow file is left for the end.
- */
 export class ToolingPool {
   private readonly threads: Running[] = [];
   private readonly waiting: Task[] = [];
@@ -131,10 +129,7 @@ export class ToolingPool {
     private readonly start: () => ToolingThread
   ) {}
 
-  /**
-   * What the tooling makes of `file`; undefined if its thread failed, and the
-   * caller runs the tooling itself.
-   */
+  /** Undefined if its thread failed, and the caller then runs the tooling. */
   run(file: string, code: string): Promise<ToolingResult | undefined> {
     if (this.closed) return Promise.resolve(undefined);
 
@@ -148,7 +143,7 @@ export class ToolingPool {
     });
   }
 
-  /** Stops the threads. What is still waiting is run by the callers. */
+  /** Stops the threads, leaving what is still waiting to the callers. */
   async close(): Promise<void> {
     this.closed = true;
 
@@ -173,16 +168,11 @@ export class ToolingPool {
       running.thread.postMessage(task.request);
     }
 
-    // No thread is left to run them: the callers do.
     if (this.threads.length === 0 && this.size === 0) {
       for (const task of this.waiting.splice(0)) task.resolve(undefined);
     }
   }
 
-  /**
-   * The waiting file that will take longest, the first of those: by the time
-   * per character of its kind, or of the slowest kind if its own did not run yet.
-   */
   private longestWaiting(): number {
     const perCharacter = (cost: Cost) => cost.ms / Math.max(1, cost.characters);
     const slowest = Math.max(
@@ -231,7 +221,6 @@ export class ToolingPool {
       this.dispatch();
     });
 
-    // A thread that fails is not used again: its file is run by the caller.
     const drop = () => {
       const index = this.threads.indexOf(running);
       if (index === -1) return;

@@ -84,6 +84,31 @@ describe('dynamic member access', () => {
       ['message:*:call dynamic'],
     ],
     ['an untracked object', `obj[key]();`, []],
+    [
+      'a key a function passes to itself is the key it is called with',
+      `function walk(key, d) { m[key](); if (d) { walk(key, d - 1); walk(key, d - 1); } } walk("a", 3);`,
+      ['message:a:call'],
+    ],
+    [
+      'keys that functions pass to each other',
+      `function a(k) { m[k](); b(k); } function b(k) { a(k); } a("x"); b("y");`,
+      ['message:y:call', 'message:x:call'],
+    ],
+    [
+      'a key a function changes before passing it to itself may be any text',
+      `function walk(key) { m[key](); walk(key + "_"); } walk("a");`,
+      ['message:*:call dynamic', 'message:a:call'],
+    ],
+    [
+      'a variable assigned from itself',
+      `let k = "a"; if (x) k = k + "b"; m[k]();`,
+      ['message:a:call', 'message:*:call dynamic'],
+    ],
+    [
+      'a variable assigned only from itself',
+      `let k; k = k; m[k]();`,
+      ['message:*:call dynamic'],
+    ],
   ])('%s', async (_name, code, expected) => {
     expect(await usages(code)).toEqual(expected);
   });

@@ -1,6 +1,5 @@
-//! The names a template can use without declaring them: the fields of its
-//! component classes, e.g. Angular's `protected readonly m = m`. A file with
-//! several components has several templates: each reads its own class.
+//! The fields of a template's component classes, e.g. Angular's `protected readonly m = m`, which
+//! the template reads without declaring them.
 
 use std::sync::Arc;
 
@@ -129,8 +128,8 @@ fn initialized_fields(ast: &Ast, class: NodeId) -> Vec<(&str, NodeId)> {
   fields
 }
 
-/// The classes named `class_name`. Without a name: the decorated classes,
-/// preferring those whose `templateUrl` is the template's file.
+/// The classes named `class_name`, or without a name the decorated classes, preferring those whose
+/// `templateUrl` is the template's file.
 fn component_classes(ast: &Ast, class_name: Option<&str>, template_file_name: &str) -> Vec<NodeId> {
   let classes = top_level_classes(ast);
 

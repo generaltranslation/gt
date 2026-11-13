@@ -1,6 +1,5 @@
-//! Parses a module and writes its tree as `ir::Ast`: the nodes `oxc-parser`
-//! gives JavaScript (ESTree, with TypeScript's nodes), in the order a walk by
-//! its visitor keys reaches them, and which variable each identifier refers to.
+//! Writes a module's tree as `ir::Ast`: the nodes `oxc-parser` gives JavaScript (ESTree, with
+//! TypeScript's nodes), in the order a walk by its visitor keys reaches them.
 
 use oxc_allocator::Allocator;
 use oxc_ast::ast::*;
@@ -63,14 +62,14 @@ impl Lang {
 }
 
 thread_local! {
-  /// The parser's memory, kept between the files a thread parses.
   static ALLOCATOR: std::cell::RefCell<Allocator> = std::cell::RefCell::new(Allocator::default());
 }
 
 /// Above this, the memory of one large file is given back instead of being kept.
 const MAX_KEPT_ALLOCATOR_BYTES: usize = 32 << 20;
 
-/// The first syntax error's message. The parser recovers from errors: a program with one may be incomplete.
+/// Fails with the first syntax error's message, since the parser recovers from errors and a program
+/// with one may be incomplete.
 pub fn lower(code: &str, lang: Lang) -> Result<Ast, String> {
   ALLOCATOR.with(|allocator| {
     let mut allocator = allocator.borrow_mut();
@@ -115,7 +114,7 @@ fn lower_in(allocator: &Allocator, code: &str, lang: Lang) -> Result<Ast, String
 
 struct Lowerer<'a, 's> {
   scoping: &'s Scoping,
-  utf16: &'s Utf16Offsets,
+  utf16: &'s Utf16Offsets<'s>,
   nodes: Vec<Node>,
   parent: NodeId,
   atoms: FxHashMap<&'a str, u32>,
@@ -137,15 +136,14 @@ struct Lowerer<'a, 's> {
 }
 
 impl<'a, 's> Lowerer<'a, 's> {
-  fn new(scoping: &'s Scoping, utf16: &'s Utf16Offsets, code_length: usize) -> Self {
+  fn new(scoping: &'s Scoping, utf16: &'s Utf16Offsets<'s>, code_length: usize) -> Self {
     let mut variables = Vec::with_capacity(scoping.symbols_len());
     variables.resize_with(scoping.symbols_len(), Variable::default);
 
     Self {
       scoping,
       utf16,
-      // About one node per five or six bytes of code: room for one per four, so
-      // that few files grow it, and copy it, before it is copied at its size.
+      // About one node per five or six bytes of code.
       nodes: Vec::with_capacity(code_length / 4 + 16),
       parent: NONE,
       atoms: FxHashMap::default(),
@@ -191,7 +189,6 @@ impl<'a, 's> Lowerer<'a, 's> {
 
   // ---------------------------------------------------------------- nodes
 
-  /// Adds a text to the atoms.
   fn push_atom(atom_text: &mut String, atom_spans: &mut Vec<(u32, u32)>, text: &str) -> u32 {
     let start = atom_text.len() as u32;
     atom_text.push_str(text);
@@ -211,7 +208,6 @@ impl<'a, 's> Lowerer<'a, 's> {
   }
 
   fn atom(&mut self, text: &'a str) -> u32 {
-    // One lookup, found or not.
     match self.atoms.entry(text) {
       Entry::Occupied(found) => *found.get(),
       Entry::Vacant(missing) => *missing.insert(Self::push_atom(
@@ -979,9 +975,8 @@ impl<'a, 's> Lowerer<'a, 's> {
       );
     }
 
-    // ESTree lists `this` with the parameters.
     if let Some(this_param) = &function.this_param {
-      self.name_node(Kind::Identifier, Slot::Param, this_param.span, "this");
+      self.name_node(Kind::Identifier, Slot::This, this_param.span, "this");
     }
     self.function_depth += 1;
     self.formal_parameters(&function.params, id);
@@ -1000,7 +995,6 @@ impl<'a, 's> Lowerer<'a, 's> {
     let id = self.open(Kind::ArrowFunctionExpression, slot, arrow.span);
     self.formal_parameters(&arrow.params, id);
 
-    // `() => m.a()` holds the expression, not a block.
     match &arrow.body {
       ArrowFunctionBody::FunctionBody(body) => {
         self.function_body(body, Slot::Body);
@@ -1940,7 +1934,6 @@ impl<'a, 's> Lowerer<'a, 's> {
   }
 }
 
-/// What the identifiers of a pattern declare.
 #[derive(Clone, Copy)]
 struct DefinitionSite {
   kind: DefinitionKind,
@@ -1979,7 +1972,6 @@ mod tests {
       panic!("two y");
     };
 
-    // `x` has its decorator as a child; `y` has none.
     assert_eq!(ast.children(declared_x).count(), 1);
     assert_eq!(ast.next(declared_y), declared_y + 1);
     assert_ne!(ast.symbol(declared_x), NONE);

@@ -1,9 +1,12 @@
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
+import { native } from '../../src/compiler/analysis/native.js';
 import { createCollector } from '../../src/compiler/collector/create.js';
 import { OutdirProjects } from '../../src/compiler/collector/outdir-projects.js';
 import type { CollectContextOptions } from '../../src/compiler/context.js';
+import type { MetadataInput } from '../../src/compiler/output/metadata.js';
 import { nodeResolver } from '../../src/compiler/resolver/node-resolver.js';
 import {
   collect as collectProject,
@@ -237,6 +240,59 @@ test('without a scan, nothing is written', async () => {
 
   await collector.write();
   expect(await messagesOf(root)).toEqual(['en.json']);
+});
+
+test('a file analyzed again without usages has no snippets', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'metadata-reanalyzed-'));
+  const messages = '/app/src/paraglide/messages.js';
+  const used = `import { m } from "./paraglide/messages.js";\nexport const text = m.greeting();\n`;
+  const graph = new native.NativeGraph({
+    targets: [{ name: 'message', kind: 'messages' }],
+    outdirs: ['/app/src/paraglide'],
+    sourceExtensions: [],
+    detect: [],
+  });
+  const analyze = async (files: Record<string, string>) => {
+    Object.entries(files).forEach(([file, code], order) =>
+      graph.queueScript(file, order, code)
+    );
+    await graph.load([], []);
+    const { specifiers } = graph.pendingSpecifiers();
+    graph.setResolved(specifiers.map(() => messages));
+
+    return (await graph.analyze(Object.keys(files))).files;
+  };
+
+  expect(
+    await analyze({ '/app/src/a.ts': used, '/app/src/b.ts': used })
+  ).toEqual(['/app/src/a.ts', '/app/src/b.ts']);
+  graph.release();
+  expect(
+    await analyze({
+      '/app/src/a.ts': 'export const text = "";\n',
+      '/app/src/b.ts': used,
+    })
+  ).toEqual(['/app/src/b.ts']);
+
+  const metadata = path.join(root, 'en.metadata.json');
+  const input: MetadataInput = {
+    // Both, as before.
+    files: ['/app/src/a.ts', '/app/src/b.ts'],
+    names: ['src/a.ts', 'src/b.ts'],
+    targets: [messages],
+    targetProjects: ['project.inlang'],
+    projects: [
+      {
+        inlangProject: 'project.inlang',
+        messageFiles: [{ metadata, keys: [['greeting', ['greeting']]] }],
+      },
+    ],
+  };
+  await graph.writeMetadata(JSON.stringify(input), 3);
+
+  const written = JSON.parse(await fs.readFile(metadata, 'utf8'));
+  expect(Object.keys(written.greeting.sourceCode)).toEqual(['src/b.ts']);
+  await fs.rm(root, { recursive: true });
 });
 
 test('usages of a message in no inlang project count for none', async () => {

@@ -60,7 +60,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 
 ## Code Conventions
 
-- TypeScript everywhere. Strict mode.
+- TypeScript everywhere. Strict mode. The exceptions are native code in Rust: `gt-next`'s SWC plugin (`packages/next/swc-plugin`) and paraglide-js's analysis (`packages/paraglide-js/native`).
 - oxfmt: single quotes, 2-space indent, trailing commas (es5), semicolons, LF line endings.
 - ESLint: `@typescript-eslint` rules, unused vars prefixed with `_`, no explicit `any` (warn).
 - Prefer `const` over `let`. Never `var`.

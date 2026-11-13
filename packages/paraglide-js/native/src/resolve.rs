@@ -39,7 +39,6 @@ const EXTENSIONS: [&str; 16] = [
 
 pub struct NativeResolver {
   resolver: Arc<ResolverGeneric<SharedFileSystem>>,
-  /// What the resolver reads of the file system, by directory.
   listings: Arc<ListedFileSystem>,
   aliases: Vec<ImportAlias>,
   root_directory: Option<String>,
@@ -89,8 +88,7 @@ impl NativeResolver {
     self.listings.clear();
   }
 
-  /// As `clear_cache`, on a thread of its own: the analysis that follows
-  /// resolves nothing, and need not wait for the memory to be given back.
+  /// As `clear_cache`, on a thread of its own.
   pub fn clear_cache_later(&self) {
     let resolver = self.resolver.clone();
     let listings = self.listings.clone();
@@ -114,7 +112,7 @@ impl NativeResolver {
         .is_some_and(|name| self.builtins.contains(name))
   }
 
-  /// `~/a.js` → `/app/src/a.js`. The first match wins.
+  /// `~/a.js` → `/app/src/a.js`, by the first alias that matches.
   fn apply_aliases<'a>(&'a self, specifier: &'a str) -> std::borrow::Cow<'a, str> {
     if self.aliases_in_js {
       return match self.aliased.get(specifier) {
@@ -145,7 +143,6 @@ impl NativeResolver {
   pub fn resolve(&self, specifier: &str, importer: &str) -> Option<String> {
     let aliased = self.apply_aliases(specifier);
 
-    // `/src/a.js` → `<root_directory>/src/a.js`
     let in_root = match &self.root_directory {
       Some(root) if aliased.starts_with('/') => {
         let joined = normalize(&Path::new(root).join(aliased.trim_start_matches('/')));

@@ -1,4 +1,3 @@
-// A thread that runs languages' tooling for `ToolingPool`.
 import { parentPort, workerData } from 'node:worker_threads';
 import type { ToolingRequest, ToolingWorkerData } from './tooling-pool.js';
 import { toolingHandler, transferables } from './tooling.js';

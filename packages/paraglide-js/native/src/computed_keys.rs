@@ -6,7 +6,7 @@ use crate::{
   call_sites::Candidate,
   graph::{Graph, ModuleId},
   ir::{self, Kind, NodeId, Slot},
-  scope::{binding_at, Binding, BindingKind, ValuesSource},
+  scope::{binding_at, Binding, BindingKind, GuardKey, ValuesSource},
   syntax::unwrap_expression,
 };
 
@@ -16,7 +16,8 @@ pub struct Key {
   pub dynamic: bool,
 }
 
-/// What a part of a key evaluates to. `+` adds numbers and joins texts; of an unknown value, it may do either.
+/// What a part of a key evaluates to, where `+` adds numbers and joins texts, and of an unknown
+/// value may do either.
 #[derive(Clone, PartialEq)]
 enum Operand {
   Text { text: String, dynamic: bool },
@@ -32,86 +33,146 @@ fn unknown() -> Vec<Operand> {
 }
 
 pub fn key_alternatives(graph: &Graph, module: ModuleId, expression: NodeId) -> Vec<Key> {
-  let keys = operands_of(graph, module, expression, 0)
-    .iter()
-    .map(to_key)
-    .collect();
-
-  unique_by_text(keys)
-}
-
-fn operands_of(graph: &Graph, module: ModuleId, expression: NodeId, depth: u32) -> Vec<Operand> {
-  if depth > MAX_DEPTH {
-    return unknown();
+  let mut keys = Keys {
+    graph,
+    in_progress: Vec::new(),
+  };
+  let mut operands = keys.operands_of(module, expression, 0);
+  // Only cycles, as `let k; k = k`: nothing says what it holds.
+  if operands.is_empty() {
+    operands = unknown();
   }
 
-  let ast = &graph.module(module).ast;
-  let node = unwrap_expression(ast, expression);
-  let operands_of_part = |part: Option<NodeId>| match part {
-    Some(part) => operands_of(graph, module, part, depth + 1),
-    None => unknown(),
-  };
+  unique_by_text(operands.iter().map(to_key).collect())
+}
 
-  match ast.kind(node) {
-    Kind::Literal => {
-      if ast.has(node, ir::STRING) {
-        vec![static_text(ast.text(node))]
-      } else if ast.has(node, ir::NUMBER) {
-        vec![Operand::Number(ast.numbers[ast.node(node).data as usize])]
-      } else {
-        unknown()
-      }
+struct Keys<'g> {
+  graph: &'g Graph,
+  /// The bindings being read: one read again within itself is no operand, as `key` in `walk(key)` within `walk`.
+  in_progress: Vec<GuardKey>,
+}
+
+impl Keys<'_> {
+  fn operands_of(&mut self, module: ModuleId, expression: NodeId, depth: u32) -> Vec<Operand> {
+    if depth > MAX_DEPTH {
+      return unknown();
     }
 
-    // A template is a text, whatever its parts are: `` `step_${index + 1}` `` → step_*.
-    Kind::TemplateLiteral => {
-      let quasis: Vec<NodeId> = ast.children_in(node, Slot::Quasi).collect();
-      let text_at = |index: usize| {
-        let cooked = quasis
-          .get(index)
-          .map(|&quasi| ast.node(quasi).data)
-          .filter(|&atom| atom != ir::NONE);
-        vec![static_text(cooked.map_or("", |atom| ast.atom(atom)))]
-      };
+    let graph = self.graph;
+    let ast = &graph.module(module).ast;
+    let node = unwrap_expression(ast, expression);
 
-      let mut operands = text_at(0);
-      for (index, part) in ast.children_in(node, Slot::Expression).enumerate() {
-        operands = combine(&operands, &operands_of_part(Some(part)), join);
-        operands = combine(&operands, &text_at(index + 1), join);
+    match ast.kind(node) {
+      Kind::Literal => {
+        if ast.has(node, ir::STRING) {
+          vec![static_text(ast.text(node))]
+        } else if ast.has(node, ir::NUMBER) {
+          vec![Operand::Number(ast.numbers[ast.node(node).data as usize])]
+        } else {
+          unknown()
+        }
       }
 
-      operands
+      // A template is a text, whatever its parts are: `` `step_${index + 1}` `` → step_*.
+      Kind::TemplateLiteral => {
+        let quasis: Vec<NodeId> = ast.children_in(node, Slot::Quasi).collect();
+        let text_at = |index: usize| {
+          let cooked = quasis
+            .get(index)
+            .map(|&quasi| ast.node(quasi).data)
+            .filter(|&atom| atom != ir::NONE);
+          vec![static_text(cooked.map_or("", |atom| ast.atom(atom)))]
+        };
+
+        let mut operands = text_at(0);
+        for (index, part) in ast.children_in(node, Slot::Expression).enumerate() {
+          operands = combine(&operands, &self.part(module, Some(part), depth), join);
+          operands = combine(&operands, &text_at(index + 1), join);
+        }
+
+        operands
+      }
+
+      Kind::BinaryExpression => {
+        if ast.node(node).data != ir::OP_PLAIN {
+          return unknown();
+        }
+
+        let left = self.part(module, ast.child(node, Slot::Left), depth);
+        let right = self.part(module, ast.child(node, Slot::Right), depth);
+        combine(&left, &right, sum)
+      }
+
+      Kind::ConditionalExpression => {
+        let consequent = self.part(module, ast.child(node, Slot::Consequent), depth);
+        let alternate = self.part(module, ast.child(node, Slot::Alternate), depth);
+        union(consequent, alternate)
+      }
+
+      Kind::LogicalExpression => {
+        let left = self.part(module, ast.child(node, Slot::Left), depth);
+        let right = self.part(module, ast.child(node, Slot::Right), depth);
+        union(left, right)
+      }
+
+      Kind::Identifier => self.identifier_operands(module, node, depth),
+
+      _ => unknown(),
+    }
+  }
+
+  fn part(&mut self, module: ModuleId, part: Option<NodeId>, depth: u32) -> Vec<Operand> {
+    match part {
+      Some(part) => self.operands_of(module, part, depth + 1),
+      None => unknown(),
+    }
+  }
+
+  fn identifier_operands(
+    &mut self,
+    module: ModuleId,
+    identifier: NodeId,
+    depth: u32,
+  ) -> Vec<Operand> {
+    let graph = self.graph;
+    let Some(binding) = binding_at(graph, graph.module(module), identifier) else {
+      return unknown();
+    };
+
+    let Some(guard) = binding.guard.clone() else {
+      return self.held_operands(&binding, depth);
+    };
+    if self.in_progress.contains(&guard) {
+      return Vec::new();
     }
 
-    Kind::BinaryExpression => {
-      if ast.node(node).data != ir::OP_PLAIN {
+    self.in_progress.push(guard);
+    let operands = self.held_operands(&binding, depth);
+    self.in_progress.pop();
+
+    operands
+  }
+
+  fn held_operands(&mut self, binding: &Binding, depth: u32) -> Vec<Operand> {
+    let held = expressions_of(self.graph, binding);
+    if held.is_empty() {
+      return unknown();
+    }
+
+    let mut operands: Vec<Operand> = Vec::new();
+
+    for (held_module, node, is_destructured) in held {
+      if is_destructured {
         return unknown();
       }
 
-      combine(
-        &operands_of_part(ast.child(node, Slot::Left)),
-        &operands_of_part(ast.child(node, Slot::Right)),
-        sum,
-      )
+      operands = union(operands, self.operands_of(held_module, node, depth + 1));
     }
 
-    Kind::ConditionalExpression => union(
-      operands_of_part(ast.child(node, Slot::Consequent)),
-      operands_of_part(ast.child(node, Slot::Alternate)),
-    ),
-
-    Kind::LogicalExpression => union(
-      operands_of_part(ast.child(node, Slot::Left)),
-      operands_of_part(ast.child(node, Slot::Right)),
-    ),
-
-    Kind::Identifier => identifier_operands(graph, module, node, depth),
-
-    _ => unknown(),
+    operands
   }
 }
 
-/// The expressions a binding holds, each in its module.
 fn expressions_of(graph: &Graph, binding: &Binding) -> Vec<(ModuleId, NodeId, bool)> {
   let expression = |candidate: &Candidate| match candidate {
     Candidate::Expression { module, node, path } => Some((*module, *node, !path.is_empty())),
@@ -137,33 +198,6 @@ fn expressions_of(graph: &Graph, binding: &Binding) -> Vec<(ModuleId, NodeId, bo
 
     _ => Vec::new(),
   }
-}
-
-fn identifier_operands(
-  graph: &Graph,
-  module: ModuleId,
-  identifier: NodeId,
-  depth: u32,
-) -> Vec<Operand> {
-  let Some(binding) = binding_at(graph, graph.module(module), identifier) else {
-    return unknown();
-  };
-  let held = expressions_of(graph, &binding);
-  if held.is_empty() {
-    return unknown();
-  }
-
-  let mut operands: Vec<Operand> = Vec::new();
-
-  for (held_module, node, is_destructured) in held {
-    if is_destructured {
-      return unknown();
-    }
-
-    operands = union(operands, operands_of(graph, held_module, node, depth + 1));
-  }
-
-  operands
 }
 
 /// `1 + 2` → 3; `"step_" + index` → step_*; `index + 1` → *, not *1: an
@@ -205,6 +239,11 @@ fn combine(
   right: &[Operand],
   operation: fn(&Operand, &Operand) -> Operand,
 ) -> Vec<Operand> {
+  // A binding read again within itself: changed, it can be any of endless texts, as `k` in `k = k + "b"`.
+  if left.is_empty() || right.is_empty() {
+    return unknown();
+  }
+
   let mut operands = Vec::with_capacity(left.len() * right.len());
   for a in left {
     for b in right {

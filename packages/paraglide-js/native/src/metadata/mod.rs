@@ -1,10 +1,5 @@
-//! The metadata files: next to each message file, the source code around the
-//! usages of each of its messages, which the gt CLI reads as `sourceCode`.
-//!
-//! JavaScript hands over what it knows of the projects (their message files and
-//! keys); the files' code and usages stay here from the analysis. Each metadata
-//! file is written as `JSON.stringify(metadata, null, 2)` would write it, and
-//! only if its content changed.
+//! Writes next to each message file the source code around its messages' usages, which the gt CLI
+//! reads as `sourceCode`.
 
 pub mod json;
 pub mod render;
@@ -27,7 +22,6 @@ use self::{
   snippets::{SourceCode, SourceFile},
 };
 
-/// A message file of an inlang project, and the metadata file it gets.
 pub struct MessageFile<'a> {
   pub metadata: String,
   pub keys: Vec<MessageKey<'a>>,
@@ -39,16 +33,13 @@ pub struct Project<'a> {
   pub message_files: Vec<MessageFile<'a>>,
 }
 
-/// Why a metadata file was left as it is.
 #[derive(Debug)]
 pub enum Skipped {
   /// It could not be read: it may hold fields written by hand.
   Unreadable(io::Error),
-  /// It is not the JSON of an object.
   NotAnObject,
 }
 
-/// A failed system call.
 #[derive(Debug)]
 pub struct SystemError {
   pub error: io::Error,
@@ -57,7 +48,6 @@ pub struct SystemError {
   pub dest: Option<String>,
 }
 
-/// Why the metadata could not be written.
 #[derive(Debug)]
 pub enum Failure {
   System(SystemError),
@@ -65,16 +55,13 @@ pub enum Failure {
   TooDeep,
 }
 
-/// What metadata files are read and written with.
 pub trait Files: Sync {
   fn read(&self, path: &Path) -> io::Result<Vec<u8>>;
-  /// Writes a new file, or replaces one.
   fn write(&self, path: &Path, chunks: &[Vec<u8>]) -> Result<(), SystemError>;
   fn rename(&self, from: &Path, to: &Path) -> io::Result<()>;
   fn remove(&self, path: &Path) -> io::Result<()>;
 }
 
-/// The file system.
 pub struct SystemFiles;
 
 impl Files for SystemFiles {
@@ -110,12 +97,11 @@ impl Files for SystemFiles {
   }
 }
 
-/// What a metadata file that does not exist counts as, so that none is created
-/// for nothing: what metadata with no member is written as.
+/// What a missing metadata file counts as, so that none is created for metadata with no member.
 const NO_METADATA: &[u8] = b"{}\n";
 
-/// Writes the metadata files of `projects` whose content changed. Returns those it
-/// had to leave as they are, in order. `sources` are the files with usages.
+/// Writes the metadata files of `projects` whose content changed, and returns those it had to leave
+/// as they are, in order.
 pub fn write_all(
   sources: &[SourceFile],
   projects: &[Project],
@@ -174,7 +160,6 @@ pub fn render_file(
   Ok(Some(render(keys, &existing, source)))
 }
 
-/// Writes a metadata file if its content changed. Returns why it was skipped, if it was.
 fn write_metadata(
   file: &MessageFile,
   source: &SourceCode,
@@ -272,11 +257,9 @@ fn random_uuid() -> String {
 
 // ---------------------------------------------------------------- input
 
-/// The input is not what JavaScript writes.
 #[derive(Debug)]
 pub struct BadInput(pub &'static str);
 
-/// The object JavaScript wrote as JSON.
 pub fn input_object(input: &[u8]) -> Result<Value, BadInput> {
   json::parse(input)
     .filter(|value| value.as_object().is_some())
@@ -376,9 +359,10 @@ pub fn write_input(input: &Value) -> Result<WriteInput<'_>, BadInput> {
   })
 }
 
-/// For tests, and for JavaScript's: `{ "inlangProject", "keys", "existing", "sources": [{ "file",
-/// "code", "usages": [{ "name", "dynamic", "start", "end", "line", "endLine", "inlangProject" }] }] }`.
-/// The content a message file's metadata file gets; None if `existing` is not the JSON of an object.
+/// For tests and JavaScript's: the content a message file's metadata file gets from
+/// `{ "inlangProject", "keys", "existing", "sources": [{ "file", "code", "usages": [{ "name",
+/// "dynamic", "start", "end", "line", "endLine", "inlangProject" }] }] }`, or None if `existing`
+/// is not the JSON of an object.
 pub fn render_input(
   input: &[u8],
   radius: f64,

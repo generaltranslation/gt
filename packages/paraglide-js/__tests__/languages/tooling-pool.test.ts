@@ -11,6 +11,7 @@ import {
 } from '../../src/compiler/languages/language.js';
 import {
   ToolingPool,
+  configuredThreads,
   toolingThreads,
   toolingWorkerData,
   type ToolingRequest,
@@ -295,6 +296,26 @@ describe('what the threads run', () => {
 
   test('from the TypeScript sources there is no worker to start', () => {
     expect(toolingThreads(10_000)).toBe(0);
+  });
+
+  // As `configured_threads` in `native/src/lib.rs` reads the same variable.
+  test.each([
+    ['0', 0],
+    ['8', 8],
+    ['012', 12],
+    ['', undefined],
+    [' 8', undefined],
+    ['8 ', undefined],
+    ['+8', undefined],
+    ['-1', undefined],
+    ['1.5', undefined],
+    ['1e3', undefined],
+    ['0x10', undefined],
+    ['eight', undefined],
+    ['99999999999999999999999', undefined],
+    [undefined, undefined],
+  ])('PARAGLIDE_CONTEXT_THREADS=%j is %j threads', (value, threads) => {
+    expect(configuredThreads(value)).toBe(threads);
   });
 });
 

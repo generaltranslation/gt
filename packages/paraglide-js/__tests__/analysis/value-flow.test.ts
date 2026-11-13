@@ -107,6 +107,14 @@ describe('values passed into functions', () => {
     ['arrow', `const show = (t) => t.greeting(); show(m);`],
     ['second parameter', `function show(a, t) { t.greeting(); } show(1, m);`],
     [
+      'after a TypeScript `this` parameter, which takes no argument',
+      `function show(this: unknown, t: typeof m) { t.greeting(); } show(m);`,
+    ],
+    [
+      'the default value after a `this` parameter',
+      `function show(this: unknown, t = m) { return t.greeting(); } show();`,
+    ],
+    [
       'destructured parameter',
       `function show({ t }) { t.greeting(); } show({ t: m });`,
     ],

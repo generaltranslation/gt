@@ -1,10 +1,5 @@
-//! JSON as JavaScript reads and writes it: `JSON.parse`, and
-//! `JSON.stringify(value, null, 2)`. A metadata file is written byte for byte
-//! as the TypeScript implementation wrote it, so that one whose content did not
-//! change is not rewritten.
-//!
-//! Strings are WTF-8: UTF-8 that may also hold lone surrogates, as a JavaScript
-//! string may (`"\ud800"`), each as the three bytes UTF-8 would give its code point.
+//! JSON as JavaScript's `JSON.parse` and `JSON.stringify(value, null, 2)` read and write it, with
+//! strings as WTF-8: UTF-8 that may also hold lone surrogates, as a JavaScript string may.
 
 use std::{borrow::Borrow, cmp::Ordering, hash::Hash};
 
@@ -62,9 +57,8 @@ impl Value {
 /// An object with more members than this finds a key by a map, not by a walk.
 const INDEXED: usize = 16;
 
-/// An object's members in the order their keys were first set. Of duplicate
-/// keys, `JSON.parse` keeps the last value, at the first key's place, as does
-/// `Object.defineProperty`. A small object is searched; a larger one is indexed.
+/// An object's members in the order their keys were first set, where a duplicate key's value
+/// replaces the first one's in place, as `JSON.parse` and `Object.defineProperty` do.
 #[derive(Debug, Clone)]
 pub struct Object<K = JsStr, V = Value> {
   members: Vec<(K, V)>,
@@ -115,7 +109,7 @@ impl<K: Borrow<[u8]> + Eq + Hash + Clone, V> Object<K, V> {
     &mut self.members[position].1
   }
 
-  /// Sets a member: a key that is there keeps its place. Returns its position.
+  /// Sets a member, keeping the place of a key that is there, and returns its position.
   pub fn insert(&mut self, key: K, value: V) -> usize {
     if let Some(position) = self.position(key.borrow()) {
       self.members[position].1 = value;
@@ -143,8 +137,8 @@ impl<K: Borrow<[u8]> + Eq + Hash + Clone, V> Object<K, V> {
 
 // ---------------------------------------------------------------- key order
 
-/// The array index a key names, e.g. `"12"`: JavaScript enumerates such keys first, in
-/// ascending order. `"012"`, `"-1"` and `"4294967295"` are not array indexes.
+/// The array index a key names, which JavaScript enumerates first in ascending order: `"12"` is
+/// one, but not `"012"`, `"-1"` or `"4294967295"`.
 pub fn array_index(key: &[u8]) -> Option<u32> {
   match key {
     [b'0'] => Some(0),
@@ -229,8 +223,8 @@ fn code_point_at(text: &[u8], at: usize) -> Option<(u32, usize)> {
   })
 }
 
-/// Orders texts by their UTF-16 code units, as JavaScript's `<` does. UTF-8's
-/// byte order differs for characters above U+FFFF.
+/// Orders texts by their UTF-16 code units, as JavaScript's `<` does, which differs from UTF-8's
+/// byte order above U+FFFF.
 pub fn compare_utf16(a: &[u8], b: &[u8]) -> Ordering {
   if a.is_ascii() && b.is_ascii() {
     return a.cmp(b);
@@ -305,7 +299,6 @@ fn push_code_point(out: &mut Vec<u8>, point: u32) {
 const ONES: u64 = 0x0101_0101_0101_0101;
 const HIGHS: u64 = 0x8080_8080_8080_8080;
 
-/// Whether a byte of `word` is zero.
 #[inline]
 fn has_zero(word: u64) -> bool {
   word.wrapping_sub(ONES) & !word & HIGHS != 0
@@ -317,8 +310,8 @@ fn has_less(word: u64, limit: u8) -> bool {
   word.wrapping_sub(ONES * u64::from(limit)) & !word & HIGHS != 0
 }
 
-/// The first byte of `text` that is `"`, `\`, a control character, or (if
-/// `surrogates`) 0xED, which starts a surrogate's three bytes; eight bytes at a time.
+/// The first byte of `text` that is `"`, `\`, a control character, or (if `surrogates`) 0xED, which
+/// starts a surrogate's three bytes.
 #[inline]
 fn find_special(text: &[u8], surrogates: bool) -> Option<usize> {
   let mut at = 0;
@@ -346,11 +339,10 @@ fn find_special(text: &[u8], surrogates: bool) -> Option<usize> {
 
 // ---------------------------------------------------------------- parsing
 
-/// Values nested deeper than this are not kept: `JSON.stringify` overflows
-/// JavaScript's stack a little deeper, and the write fails as it did.
+/// Values nested deeper than this are not kept, since `JSON.stringify` overflows JavaScript's stack
+/// a little deeper.
 pub const MAX_DEPTH: usize = 5000;
 
-/// The text is not JSON.
 #[derive(Debug)]
 pub struct Invalid;
 
@@ -377,19 +369,16 @@ impl KeyPaths {
 /// What of a value is kept.
 #[derive(Clone, Copy)]
 enum Guide<'g> {
-  /// All of it.
   Keep,
   /// Nothing: it is only checked to be JSON.
   Skip,
-  /// What is along these paths: an object's members on them; another value is
-  /// kept as `null`, since all that is asked of it is that it is not an object.
+  /// An object's members on these paths, with any other value kept as `null` since all that is
+  /// asked of it is that it is not an object.
   Along(&'g KeyPaths),
 }
 
-/// A metadata file's object, with what is along the message keys' paths: the
-/// fields of each message other than `sourceCode`, which is written anew. None
-/// if the text is not the JSON of an object. `too_deep` if a kept value is
-/// nested deeper than `MAX_DEPTH`.
+/// A metadata file's object with only what is along `paths`, or None if the text is not the JSON of
+/// an object; the flag says whether a kept value nests deeper than `MAX_DEPTH`.
 pub fn parse_object_along(text: &[u8], paths: &KeyPaths) -> Option<(Object, bool)> {
   let mut parser = Parser::new(text);
 
@@ -472,8 +461,8 @@ impl<'t> Parser<'t> {
     }
   }
 
-  /// A value, all of it, at `depth`. Containers are kept on a stack of their own,
-  /// not on the thread's: how deep a value may be does not depend on the thread.
+  /// Parses a value at `depth` on a stack of its own, so that how deep a value may be does not
+  /// depend on the thread's stack.
   fn kept_value(&mut self, depth: usize) -> Parsed<Value> {
     enum Open {
       Array(Vec<Value>),
@@ -484,7 +473,6 @@ impl<'t> Parser<'t> {
     let mut open: Vec<Open> = Vec::new();
 
     loop {
-      // A value.
       self.whitespace();
       let mut value = if depth + open.len() >= MAX_DEPTH {
         self.too_deep = true;
@@ -524,7 +512,6 @@ impl<'t> Parser<'t> {
         }
       };
 
-      // Into the containers it ends.
       loop {
         self.whitespace();
         match open.last_mut() {
@@ -578,7 +565,6 @@ impl<'t> Parser<'t> {
     Ok(key)
   }
 
-  /// An object along key paths: its members on them, kept as `value` keeps them.
   fn object_along(&mut self, paths: &KeyPaths, depth: usize) -> Parsed<Object> {
     self.eat(b'{')?;
     let mut object = Object::default();
@@ -776,7 +762,6 @@ impl<'t> Parser<'t> {
     let mut open: Vec<bool> = Vec::new();
 
     loop {
-      // A value.
       self.whitespace();
       match self.peek() {
         Some(b'{') => {
@@ -810,7 +795,6 @@ impl<'t> Parser<'t> {
         _ => return Err(Invalid),
       }
 
-      // What follows it: the next member or item, or the end of containers.
       loop {
         let Some(&is_object) = open.last() else {
           return Ok(());
@@ -850,9 +834,8 @@ impl<'t> Parser<'t> {
 
 // ---------------------------------------------------------------- writing
 
-/// Writes a string as `JSON.stringify` does: `"`, `\` and control characters
-/// escaped, and lone surrogates as `\udxxx`. With `crlf_as_lf`, a `\r` before
-/// a `\n` is left out, as `split(/\r?\n/).join("\n")` leaves it out.
+/// Writes a string as `JSON.stringify` does, and with `crlf_as_lf` leaves out a `\r` before a `\n`
+/// as `split(/\r?\n/).join("\n")` does.
 pub fn write_string(out: &mut Vec<u8>, text: &[u8], crlf_as_lf: bool) {
   out.reserve(text.len() + 2);
   out.push(b'"');
@@ -912,7 +895,6 @@ pub fn write_number(out: &mut Vec<u8>, number: f64) {
   out.extend_from_slice(buffer.format_finite(number).as_bytes());
 }
 
-/// A line break, and the indent of `level`.
 #[inline]
 pub fn newline(out: &mut Vec<u8>, level: usize) {
   out.push(b'\n');
@@ -921,8 +903,7 @@ pub fn newline(out: &mut Vec<u8>, level: usize) {
   }
 }
 
-/// A value as `JSON.stringify(value, null, 2)` writes it at `level`. Containers
-/// are kept on a stack of their own, as they are when parsed.
+/// A value as `JSON.stringify(value, null, 2)` writes it at `level`.
 pub fn write_value(out: &mut Vec<u8>, value: &Value, level: usize) {
   /// A container being written, and the position of its next member.
   enum Open<'v> {
@@ -1137,7 +1118,6 @@ mod tests {
     let (_, too_deep) =
       parse_object_along(nested(MAX_DEPTH).as_bytes(), &paths).unwrap_or_default();
     assert!(too_deep);
-    // Invalid JSON is not an object, however deep.
     assert!(parse_object_along(format!("{}]", nested(MAX_DEPTH)).as_bytes(), &paths).is_none());
   }
 
@@ -1161,7 +1141,6 @@ mod tests {
       r#"{"nav":{"home":{"context":"Start","maxChars":3}},"save":{"context":"last wins"}}"#
     );
 
-    // Not objects.
     for text in ["[]", "null", "\"{}\"", "1", "{} {}", "{\"a\": 1,}"] {
       assert!(
         parse_object_along(text.as_bytes(), &paths).is_none(),

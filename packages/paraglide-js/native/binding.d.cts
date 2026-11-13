@@ -18,27 +18,23 @@ export declare class NativeGraph {
   outdirs(): Array<string>
   /** The files that are not in an outdir. */
   notGenerated(files: Array<string>): Array<string>
-  /** A script that JavaScript read. */
   queueScript(file: string, order: number, code: string): void
   /** A file in a format that is not analyzed. */
   queueEmpty(file: string, order: number, code: string): void
-  /** A component file, as the code its language's tooling wrote for it. */
   queueGenerated(file: string, order: number, code: string, generated: NativeGeneratedSource): void
   /**
-   * Starts reading and parsing scripts that are about to be loaded, on the
-   * cores JavaScript leaves idle while it lists the others; `load` takes them.
-   * Returns at once.
+   * Starts reading and parsing scripts that are about to be loaded, for `load` to take, and
+   * returns at once.
    */
   prefetch(files: Array<string>): void
   /**
-   * Reads the scripts `files`, and parses them and what was queued. `orders`
-   * are the positions of `files` among the loaded files.
+   * Reads and parses the scripts `files` and what was queued, where `orders` are the positions of
+   * `files` among the loaded files.
    */
   load(files: Array<string>, orders: Array<number>): Promise<NativeLoadResult>
   /**
-   * Resolves what the loaded modules load. `aliased` is what JavaScript's
-   * aliases make of `queries`. Resolves with the unresolved imports to report,
-   * as `specifier, importer` pairs.
+   * `aliased` is what JavaScript's aliases make of `queries`, and the result is the unresolved
+   * imports to report as `specifier, importer` pairs.
    */
   resolve(queries: Array<string>, aliased: Array<string>): Promise<Array<string>>
   /** What the loaded modules load, for JavaScript to resolve. */
@@ -49,9 +45,7 @@ export declare class NativeGraph {
   dependencies(files: Array<string>): Array<string>
   /** The files to parse for their exports: the app's own sources that are not Paraglide's. */
   followable(files: Array<string>): Array<string>
-  /** Whether each file was loaded. */
   isLoaded(files: Array<string>): Array<boolean>
-  /** The name of the target a file belongs to. */
   targetOf(file: string): string | null
   /** The files the custom targets were not asked about, for the outdirs known now. */
   customTargetQueries(files: Array<string>): Array<NativeTargetFile>
@@ -59,20 +53,18 @@ export declare class NativeGraph {
   setCustomMatches(files: Array<string>, targets: Array<number>): void
   /** Names every module can use without importing them. */
   setGlobals(globals: Array<NativeGlobal>): void
-  /** The usages in each of `files`, which were loaded. */
+  /** The usages in each of `files`, which must have been loaded. */
   analyze(files: Array<string>): Promise<NativeAnalysis>
-  /** As `analyze`, on this thread: `symbol` says what the custom targets export. */
+  /** As `analyze`, waiting for the result: `symbol` says what the custom targets export, and an error it throws is thrown. */
   analyzeWithCustomTargets(files: Array<string>, symbol: (target: number, file: string, exportName: string, path: Array<string>) => NativeCustomSymbol | undefined | null): NativeAnalysis
   /**
-   * Gives back the memory of the modules, on a thread of its own; what
-   * `writeMetadata` writes is kept. The graph is then as new, with the same
-   * targets and outdirs.
+   * Frees the modules on a thread of its own, keeping what `writeMetadata` writes and the targets
+   * and outdirs.
    */
   release(): void
   /**
-   * Writes the metadata file of each message file of `input`'s projects, from
-   * the usages of the analyzed files. `input` is the JSON of `MetadataInput`
-   * (`src/compiler/collector/metadata-files.ts`).
+   * Writes the metadata file of each message file of `input`'s projects, where `input` is the JSON
+   * of `MetadataInput` (`src/compiler/output/metadata.ts`).
    */
   writeMetadata(input: string, radius: number): Promise<NativeMetadataResult>
   stats(): NativeStats
@@ -88,16 +80,13 @@ export interface NativeAlias {
 }
 
 export interface NativeAnalysis {
-  /**
-   * The analyzed files that have usages. Their code and usages are kept for
-   * `writeMetadata`.
-   */
+  /** The analyzed files that have usages, whose code and usages are kept for `writeMetadata`. */
   files: Array<string>
   /** How many usages each has. */
   counts: Array<number>
   /**
-   * The usages of each, as a JSON list: one text per file, so that a
-   * project's usages are not limited by the length of one JavaScript string.
+   * The usages of each as a JSON list, one text per file so that a project's usages are not
+   * limited by the length of one JavaScript string.
    */
   usages: Array<string>
   /** The files that the usages' `targetFile` name by index. */
@@ -217,7 +206,6 @@ export interface NativeStats {
   modules: number
   files: number
   nodes: number
-  /** Bytes held by the modules' trees. */
   treeBytes: number
 }
 
@@ -247,9 +235,8 @@ export interface NativeTargetFile {
 }
 
 /**
- * The content of a metadata file, as `writeMetadata` writes it: for tests.
- * `input` is the JSON of `{ inlangProject, keys, existing, sources }`; none if
- * `existing` is not the JSON of an object. A field written by hand too deep
- * for `JSON.stringify` is an error.
+ * For tests: a metadata file as `writeMetadata` writes it from the JSON of
+ * `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
+ * object.
  */
 export declare function renderMetadata(input: string, radius: number): string | null

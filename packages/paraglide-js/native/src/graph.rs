@@ -1,6 +1,3 @@
-//! The loaded modules, linked by resolved imports, and what is known about
-//! Paraglide in the project: its outdirs and its targets.
-
 use std::{
   borrow::Cow,
   sync::{Arc, OnceLock, RwLock},
@@ -27,7 +24,7 @@ pub struct ComponentFields {
   /// The module that declares the class, relative to the file; "" for the file.
   pub specifier: String,
   pub class_name: Option<String>,
-  /// The part of the file that reads the fields. Default: the whole file.
+  /// The part of the file that reads the fields; none for the whole file.
   pub range: Option<(i32, i32)>,
 }
 
@@ -52,9 +49,7 @@ pub struct ComponentInstances {
   pub path: Vec<Arc<str>>,
 }
 
-/// What a file's modules share.
 pub struct SourceFile {
-  /// As it was read: kept, not copied, from the read to the metadata files.
   pub code: String,
   /// Written by a language's tooling: nodes that are not in the file are at -1.
   pub generated: bool,
@@ -74,7 +69,6 @@ pub struct Module {
   pub scripts: Vec<ModuleId>,
   /// The specifiers of every module it loads values from, in the order they appear.
   pub specifiers: Vec<Box<str>>,
-  /// The file of each specifier.
   pub resolved: FxHashMap<Box<str>, Option<FileId>>,
   pub is_linked: bool,
   pub syntax: ModuleSyntax,
@@ -82,14 +76,13 @@ pub struct Module {
 }
 
 impl Module {
-  /// The file an import of the module resolves to.
   #[inline]
   pub fn resolved_file(&self, specifier: &str) -> Option<FileId> {
     self.resolved.get(specifier).copied().flatten()
   }
 }
 
-/// What is derived from a module and the graph around it. Emptied when the graph changes.
+/// Derived from a module and the graph around it, so emptied when the graph changes.
 #[derive(Default)]
 pub struct ModuleCache {
   pub bindings: OnceLock<Vec<OnceLock<CachedBinding>>>,
@@ -100,13 +93,11 @@ pub struct ModuleCache {
   pub links: OnceLock<Links>,
   pub commonjs: OnceLock<Option<CommonJsExports>>,
   pub component_props: OnceLock<Vec<Candidate>>,
-  /// The call sites of the functions of the module that were asked about: few are.
   pub call_sites_of: RwLock<FxHashMap<NodeId, Arc<[CallSite]>>>,
   /// The names each function of the module is exported under.
   pub function_exports: OnceLock<FxHashMap<NodeId, Vec<Box<str>>>>,
 }
 
-/// The file being matched against the targets.
 pub struct TargetFile {
   /// Absolute, with forward slashes.
   pub file: String,
@@ -130,7 +121,6 @@ pub struct Target {
   pub kind: TargetKind,
 }
 
-/// The target a file belongs to.
 #[derive(Clone, Copy, Debug)]
 pub struct TargetMatch {
   pub target: u32,
@@ -148,12 +138,10 @@ pub struct Global {
 
 #[derive(Default)]
 pub struct GraphCache {
-  /// The target of each file, by file.
   pub targets: Vec<OnceLock<Option<TargetMatch>>>,
   /// The names each file exports, by file; `None` when they are unknown.
   pub export_names: Vec<OnceLock<Option<FxHashSet<Box<str>>>>>,
   pub dependents: OnceLock<Dependents>,
-  /// Every module in loading order, a file's scripts after its module.
   pub all: OnceLock<Vec<ModuleId>>,
 }
 
@@ -305,7 +293,7 @@ impl Graph {
     })
   }
 
-  /// The derived data is of the graph as it was: a change empties it.
+  /// Must be called when the graph changes, since the derived data describes the graph as it was.
   pub fn invalidate(&mut self) {
     self.cache = GraphCache::new(self.files.len());
 
@@ -386,7 +374,6 @@ impl Graph {
     self.target_match(file).map(|found| found.target)
   }
 
-  /// The file's target, and whether the file is an outdir's `messages.js`.
   pub fn target_match(&self, file: FileId) -> Option<TargetMatch> {
     match self.cache.targets.get(file as usize) {
       Some(target) => *target.get_or_init(|| self.find_target(file)),
@@ -394,8 +381,8 @@ impl Graph {
     }
   }
 
-  /// Makes room in the caches for every file known now, and builds what every
-  /// module's analysis reads; not from a thread of the pool, which it runs on.
+  /// Builds what every module's analysis reads, and must not be called from a thread of the pool,
+  /// which it runs on.
   pub fn prepare(&mut self) {
     if self.cache.targets.len() < self.files.len() {
       self.invalidate();
@@ -515,7 +502,7 @@ impl Graph {
 
 /// `…/paraglide/runtime.js` → `…/paraglide`; `…/paraglide/messages/a.js` and
 /// Paraglide 1's `…/paraglide/messages/en/a.js` → `…/paraglide`
-fn outdir_candidate(file: &str) -> Option<&str> {
+pub fn outdir_candidate(file: &str) -> Option<&str> {
   let parent = dirname(file);
   if GENERATED_FILES.contains(&basename(file)) {
     return Some(parent);
@@ -561,7 +548,6 @@ pub fn script_graph(file: &str, code: String) -> Graph {
   graph
 }
 
-/// For tests: the module of a file of `script_graph`.
 #[cfg(test)]
 pub fn module_of<'g>(graph: &'g Graph, file: &str) -> &'g Module {
   let file = graph.known_file(file).unwrap_or_default();

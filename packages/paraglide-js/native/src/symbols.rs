@@ -1,5 +1,3 @@
-//! What a name can refer to: a tracked value, e.g. a message, or an object whose members are looked up.
-
 use std::sync::Arc;
 
 use crate::{
@@ -29,11 +27,9 @@ impl Methods {
 pub struct Value {
   /// `name` is a pattern where `*` stands for any text.
   pub dynamic: bool,
-  /// The index of the target.
   pub target: u32,
   pub name: Arc<str>,
   pub methods: Methods,
-  /// The target's file.
   pub file: FileId,
 }
 

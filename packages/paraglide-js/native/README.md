@@ -53,6 +53,10 @@ cargo run --release --no-default-features --features mimalloc --example bench --
 
 times each step on a project's scripts without Node. `PREREAD=1` reads the files before timing the parse, `FRESH=n` analyzes `n` more times with emptied caches, for a profiler, and `KINDS=1` counts the nodes of each kind. Built without mimalloc (`--no-default-features`), `CACHES=1` measures the memory each of the analysis' caches holds.
 
+## Threads
+
+Parsing and the analysis run on rayon's threads, whose 16 MiB stacks hold the functions that call themselves for each level of deeply nested code; with custom targets, JavaScript's thread only answers what they export. `PARAGLIDE_CONTEXT_THREADS` sets how many threads work besides JavaScript's: digits only, as the tooling pool (`src/compiler/languages/tooling-pool.ts`) reads it. With `0`, the tooling runs on JavaScript's thread and the analysis on one thread of its own.
+
 ## Memory
 
 A project's trees are about five times its source code: a node is 20 bytes, its length kept in the bits its flags leave free, and the end of a longer one beside the tree. Of what the analysis keeps, the binding of each variable is the most: a `const` or a parameter read whole, most of them, is kept in a few bytes. Once the usages are found, `release` gives the trees back on a thread of its own; the files' code and usages stay, for the metadata files.

@@ -1,6 +1,3 @@
-//! A module's names: which declaration each identifier refers to is in the
-//! tree; this adds what a declaration may hold.
-
 use std::{borrow::Cow, sync::Arc};
 
 use crate::{
@@ -23,7 +20,6 @@ pub enum Declaration {
   Global(u32),
 }
 
-/// What tells one binding from another while its values are being resolved.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum GuardKey {
   Variable(ModuleId, u32),
@@ -32,7 +28,6 @@ pub enum GuardKey {
   Props(ModuleId),
 }
 
-/// A value written to a variable.
 #[derive(Clone, Debug)]
 pub struct Write {
   pub candidate: Candidate,
@@ -57,7 +52,6 @@ pub enum Lazy {
 
 #[derive(Clone, Debug)]
 pub enum AliasScope {
-  /// The binding's own module.
   Own,
   /// The module of another file, if it is loaded: a component class's.
   File(FileId),
@@ -95,14 +89,12 @@ pub enum BindingKind {
   },
 }
 
-/// What a name may hold.
 #[derive(Clone, Debug)]
 pub struct Binding {
-  /// The module whose scope the binding is of.
   pub owner: ModuleId,
   pub kind: BindingKind,
   pub declaration: Option<Declaration>,
-  /// What tells it from the bindings being resolved, and what what it holds is remembered by.
+  /// What tells it from the bindings being resolved, and the key its values are cached under.
   pub guard: Option<GuardKey>,
 }
 
@@ -197,10 +189,7 @@ pub fn enclosing_function(ast: &Ast, node: NodeId) -> Option<NodeId> {
     .find(|&ancestor| ast.kind(ancestor).is_function())
 }
 
-/// A variable's binding, as it is kept: most variables hold nothing that is
-/// tracked, and most of the others are a `const` or a parameter, read whole.
-/// Those are kept in a few bytes, not as a `Binding`: a project has tens of
-/// millions of variables.
+/// A compact form of a variable's binding, since a project has tens of millions of variables.
 pub enum CachedBinding {
   Shadow {
     declaration: Option<NodeId>,
@@ -220,7 +209,6 @@ pub enum CachedBinding {
 }
 
 impl CachedBinding {
-  /// How the binding of `variable` of `owner` is kept.
   fn of(binding: Binding, owner: ModuleId, variable: u32) -> CachedBinding {
     let is_own = binding.owner == owner;
     let is_guarded = binding.guard == Some(GuardKey::Variable(owner, variable));
@@ -266,7 +254,6 @@ impl CachedBinding {
     }
   }
 
-  /// The binding, as `of` was given it.
   fn binding(&self, owner: ModuleId, variable: u32) -> BindingRef<'_> {
     let guard = || Some(GuardKey::Variable(owner, variable));
 
@@ -300,7 +287,6 @@ impl CachedBinding {
   }
 }
 
-/// The binding of a variable of `module`, made once.
 pub fn binding_of_variable(module: &Module, variable: u32) -> BindingRef<'_> {
   let bindings = module.cache.bindings.get_or_init(|| {
     let mut bindings = Vec::with_capacity(module.ast.variables.len());
@@ -333,8 +319,8 @@ fn create_binding(module: &Module, index: u32) -> Binding {
     DefinitionKind::Other => Binding::shadow(module.id, None),
   };
 
-  // An import is resolved once, as a variable's values are: by its variable.
-  // It is never entered, so this is only what it is remembered by.
+  // An import is never entered, so its guard is only the key its values are cached under, by
+  // variable.
   if matches!(binding.kind, BindingKind::Lazy(_)) {
     binding.guard = Some(GuardKey::Variable(module.id, index));
   }
@@ -398,7 +384,6 @@ fn parameter_binding(
   let ast = &module.ast;
   let shadow = Binding::shadow(module.id, None);
 
-  // The parameter that binds it, and the properties leading to it: one walk of each pattern.
   let found = ast
     .children_in(function, Slot::Param)
     .enumerate()
@@ -616,9 +601,9 @@ fn assignment_to(module: &Module, identifier: NodeId) -> Option<Write> {
   None
 }
 
-/// A write that is a statement of a block around the read, in the same
-/// function, always runs before it and replaces the earlier ones:
-/// `let t = m; t = other; t.x()` holds `other`. Without one, every write counts.
+/// The writes that may reach `read`: the last one that is a statement of a block around it in the
+/// same function replaces the earlier ones (`let t = m; t = other; t.x()` holds `other`), and
+/// without one every write counts.
 pub fn writes_reaching<'a>(ast: &Ast, writes: &'a [Write], read: NodeId) -> Vec<&'a Write> {
   let Some(replacing) = last_replacing_write(ast, writes, read) else {
     return writes.iter().collect();
@@ -776,7 +761,7 @@ fn dynamic_import_of_callback(ast: &Ast, callback: NodeId) -> Option<&str> {
 
 pub type BindingRef<'g> = Cow<'g, Binding>;
 
-/// What a module-level name holds. `at` is the identifier that reads the name, when one does.
+/// What a module-level name holds, where `at` is the identifier that reads it, if one does.
 pub fn binding_of<'g>(
   graph: &'g Graph,
   module: &'g Module,
@@ -861,7 +846,6 @@ mod tests {
   use super::*;
   use crate::graph::{module_of, script_graph};
 
-  /// Variables of every shape a binding has.
   const CODE: &str = r#"
     import { m } from "./paraglide/messages.js";
     import * as all from "./paraglide/messages.js";
@@ -923,7 +907,6 @@ mod tests {
       *kept.entry(shape).or_default() += 1;
     }
 
-    // Each shape is there to compare.
     for shape in ["shadow", "const", "parameter", "other"] {
       assert!(kept.get(shape).is_some_and(|&count| count > 0), "{kept:?}");
     }

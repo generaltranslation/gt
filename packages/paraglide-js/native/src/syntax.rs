@@ -1,9 +1,6 @@
-//! What a module's statements say without resolving any name: what it loads,
-//! what it exports, and the helpers that read names and keys off the tree.
-
 use std::{borrow::Cow, sync::Arc};
 
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::ir::{self, Ast, Kind, NodeId, Slot};
 
@@ -29,7 +26,6 @@ pub fn unwrap_expression(ast: &Ast, mut node: NodeId) -> NodeId {
   }
 }
 
-/// The module a statement's `from "…"` names, e.g. of an import or a re-export.
 pub fn source_of(ast: &Ast, statement: NodeId) -> Option<&str> {
   static_string(ast, ast.child(statement, Slot::Source)?)
 }
@@ -94,7 +90,6 @@ pub fn module_export_name(ast: &Ast, name: NodeId) -> &str {
   ast.text(name)
 }
 
-/// The arguments of a call, or the parameters of a function.
 pub fn nth_child(ast: &Ast, node: NodeId, slot: Slot, index: usize) -> Option<NodeId> {
   ast.children_in(node, slot).nth(index)
 }
@@ -177,7 +172,6 @@ pub fn pattern_bindings(
 /// How `pattern` binds `identifier`: None if it is not one of its names, else
 /// the properties leading to it, `None` when they are not all known.
 pub fn binding_path(ast: &Ast, pattern: NodeId, identifier: NodeId) -> Option<Option<Path>> {
-  // A pattern's names are among its descendants.
   let is_inside = identifier >= pattern && identifier < ast.next(pattern);
   if !is_inside {
     return None;
@@ -228,7 +222,8 @@ pub fn declared_names<'a>(ast: &'a Ast, declaration: NodeId, out: &mut Vec<&'a s
 
 // ---------------------------------------------------------------- statements
 
-/// The global `require("x")`: its specifier. `is_global` says whether an identifier is a global.
+/// The specifier of a call of the global `require`, where `is_global` says whether an identifier is
+/// a global.
 pub fn require_specifier<'a>(
   ast: &'a Ast,
   call: NodeId,
@@ -249,7 +244,7 @@ pub fn require_specifier<'a>(
 
 #[derive(Default)]
 pub struct ModuleSyntax {
-  /// The export statements, by exported name. The names of `export *` are not among them.
+  /// The export statements by exported name, without the names of `export *`.
   pub exporting: FxHashMap<Box<str>, Vec<NodeId>>,
   pub has_esm_exports: bool,
   /// The `export * from "…"` statements of values, in order.
@@ -303,11 +298,12 @@ impl ModuleSyntax {
 }
 
 /// The specifiers of every module a program loads values from.
-pub fn loaded_specifiers(ast: &Ast) -> Vec<Box<str>> {
+pub fn loaded_specifiers<'a>(ast: &'a Ast) -> Vec<Box<str>> {
   let mut specifiers: Vec<Box<str>> = Vec::new();
-  let mut add = |specifier: Option<&str>| {
+  let mut seen: FxHashSet<&'a str> = FxHashSet::default();
+  let mut add = |specifier: Option<&'a str>| {
     if let Some(specifier) = specifier {
-      if !specifiers.iter().any(|known| &**known == specifier) {
+      if seen.insert(specifier) {
         specifiers.push(specifier.into());
       }
     }
@@ -432,7 +428,6 @@ pub fn top_level_classes(ast: &Ast) -> Vec<NodeId> {
 
 // ---------------------------------------------------------------- CommonJS
 
-/// What a CommonJS module exports, as expressions of its own code.
 #[derive(Default)]
 pub struct CommonJsExports {
   /// `module.exports = …`; the last one wins.
@@ -700,4 +695,31 @@ fn mentions_exports(ast: &Ast, root: NodeId) -> bool {
 
 fn is_void(ast: &Ast, node: NodeId) -> bool {
   ast.kind(node) == Kind::UnaryExpression && ast.node(node).data == ir::OP_PLAIN
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lower::{lower, Lang};
+
+  #[test]
+  fn each_loaded_specifier_once_in_order_of_first_use() {
+    let code = [
+      "import a from './a';",
+      "export * from './b';",
+      "import type { T } from './types';",
+      "const lazy = import('./a');",
+      "const c = require('./c');",
+      "export { x } from './b';",
+      "import d = require('./d');",
+    ]
+    .join("\n");
+    let Ok(ast) = lower(&code, Lang::Ts) else {
+      panic!("not parsed");
+    };
+
+    let specifiers = loaded_specifiers(&ast);
+    let specifiers: Vec<&str> = specifiers.iter().map(|specifier| &**specifier).collect();
+    assert_eq!(specifiers, ["./a", "./b", "./c", "./d"]);
+  }
 }

@@ -1,6 +1,5 @@
-//! A module's syntax tree, as the analysis reads it: shaped like the ESTree that
-//! `oxc-parser` gives JavaScript, without types. Nodes are in walk order, so a
-//! node's descendants are the nodes after it, up to `next`.
+//! An ESTree-shaped syntax tree without types, whose nodes are in walk order so that a node's
+//! descendants are the nodes after it, up to `next`.
 
 pub type NodeId = u32;
 
@@ -171,7 +170,6 @@ pub enum Slot {
   Left,
   Right,
   Argument,
-  /// An item of `arguments`.
   Arg,
   Callee,
   Object,
@@ -206,9 +204,11 @@ pub enum Slot {
   Parameter,
   Reference,
   Options,
+  /// TypeScript's `this` parameter: not one of the parameters that arguments are passed to.
+  This,
 }
 
-// Flags. Each kind reads its own.
+// Flags, whose bits mean something different for each kind.
 pub const COMPUTED: u16 = 1 << 0;
 pub const STATIC: u16 = 1 << 1;
 pub const METHOD: u16 = 1 << 2;
@@ -243,25 +243,24 @@ pub const OP_PLAIN: u32 = 1;
 /// Of any node: `next` holds the identifier's variable, and the node after it is the next one.
 pub const SYMBOL_IN_NEXT: u16 = 1 << 9;
 
-/// The bits of `Node::bits` that hold flags. Those above hold the node's length.
+/// The bits of `Node::bits` that hold flags, with the node's length above them.
 const FLAG_BITS: u16 = (1 << 10) - 1;
 const LENGTH_SHIFT: u16 = 10;
-/// The length of a node at least this long is in `Ast::long_ends`: most nodes are shorter.
+/// The length of a node at least this long is in `Ast::long_ends`.
 const LONG: u16 = u16::MAX >> LENGTH_SHIFT;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Node {
   pub kind: Kind,
   pub slot: Slot,
-  /// The flags, and above them the node's length, up to `LONG`: where it ends
-  /// is read with `Ast::end`. A node is 20 bytes, not 24.
+  /// The flags and, above them, the node's length up to `LONG`, so where it ends is read with
+  /// `Ast::end`.
   bits: u16,
   /// In the source file, UTF-16; `UNMAPPED` for generated-only code.
   pub start: i32,
   pub parent: NodeId,
-  /// The node after this one's last descendant; read with `Ast::next`. An
-  /// identifier without children holds its variable here instead, with
-  /// `SYMBOL_IN_NEXT`: most nodes have no variable, and every node is smaller.
+  /// The node after this one's last descendant, or with `SYMBOL_IN_NEXT` an identifier's variable,
+  /// so it is read with `Ast::next`.
   pub next: NodeId,
   /// An atom (a name or a string value), a number's index, or an operator.
   pub data: u32,
@@ -301,8 +300,8 @@ impl Node {
     self.bits &= !(flags & FLAG_BITS);
   }
 
-  /// Sets where node `id` ends. One too long for its bits is added to
-  /// `long_ends`, which is in node order: nodes are given their ends in order.
+  /// Must be called in node order, since an end too long for the node's bits is appended to
+  /// `long_ends`, which is searched by node.
   pub fn set_end(&mut self, id: NodeId, end: i32, long_ends: &mut Vec<(NodeId, i32)>) {
     let length = i64::from(end) - i64::from(self.start);
     let length = match u16::try_from(length) {
@@ -333,7 +332,6 @@ pub struct Definition {
   pub kind: DefinitionKind,
   /// The import specifier, the function or the declarator.
   pub node: NodeId,
-  /// The declared identifier.
   pub name: NodeId,
   /// The `VariableDeclaration` or `ImportDeclaration`.
   pub parent: NodeId,
@@ -343,9 +341,8 @@ pub struct Definition {
 pub struct Variable {
   pub name: u32,
   pub is_module_level: bool,
-  /// Where its definitions are in `Ast::definitions`. None for a type.
+  /// Where its definitions are in `Ast::definitions`, none for a type.
   definitions: (u32, u32),
-  /// Where its assignments are in `Ast::assignments`.
   assignments: (u32, u32),
 }
 
@@ -370,7 +367,6 @@ pub struct Ast {
   pub symbols_of_parents: Vec<(NodeId, u32)>,
 }
 
-/// The hash a module-level name is found by.
 fn name_hash(name: &str) -> u32 {
   use std::hash::BuildHasher;
 
@@ -388,7 +384,6 @@ impl Ast {
     definitions.sort_by_key(|&(variable, _)| variable);
     assignments.sort_by_key(|&(variable, _)| variable);
 
-    // Each variable's range in the lists, which are sorted by variable.
     fn set_ranges(
       variables: &mut [Variable],
       sorted: impl Iterator<Item = u32>,
@@ -422,7 +417,7 @@ impl Ast {
       .collect();
     module_level.sort_unstable();
 
-    // Each of the exact size.
+    // Copies of the exact size, without spare capacity.
     self.variables = variables.as_slice().to_vec();
     self.definitions = definitions
       .into_iter()
@@ -449,7 +444,6 @@ impl Ast {
     &self.assignments[start as usize..(start + length) as usize]
   }
 
-  /// The module-level variable of a name.
   pub fn module_level(&self, name: &str) -> Option<u32> {
     let hash = name_hash(name);
     let first = self

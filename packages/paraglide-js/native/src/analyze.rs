@@ -1,5 +1,3 @@
-//! The usages in a module: every place a tracked value is called or referenced.
-
 use std::sync::{Arc, OnceLock};
 
 use rayon::prelude::*;
@@ -34,7 +32,6 @@ impl UsageKind {
 
 #[derive(Debug)]
 pub struct Usage {
-  /// The index of the target.
   pub target: u32,
   /// The name within the target, e.g. a message id.
   pub name: Arc<str>,
@@ -47,11 +44,9 @@ pub struct Usage {
   pub line: u32,
   pub column: u32,
   pub end_line: u32,
-  /// The target's file.
   pub target_file: FileId,
 }
 
-/// The usages in a loaded file.
 pub fn analyze_file(graph: &Graph, file: FileId, custom: Option<&dyn CustomTargets>) -> Vec<Usage> {
   let Some(record) = graph.record(file) else {
     return Vec::new();
@@ -69,9 +64,9 @@ pub fn analyze_file(graph: &Graph, file: FileId, custom: Option<&dyn CustomTarge
   }
 }
 
-/// Language tools write some code twice (Vue's component props) or reference a
-/// name next to its call (`[greeting]` and `greeting()` for `{{ greeting() }}`).
-/// A call is kept rather than a reference.
+/// Language tools write some code twice (Vue's component props) or reference a name next to its
+/// call (`[greeting]` and `greeting()` for `{{ greeting() }}`), so a call is kept rather than a
+/// reference.
 fn one_per_source_range(usages: Vec<Usage>) -> Vec<Usage> {
   let rank = |usage: &Usage| u8::from(usage.kind != UsageKind::Reference);
   let mut kept: Vec<Usage> = Vec::with_capacity(usages.len());
@@ -107,7 +102,6 @@ fn one_per_source_range(usages: Vec<Usage>) -> Vec<Usage> {
 const SKIPPED: u8 = 1;
 const RECORDED: u8 = 2;
 
-/// A module of more nodes is split between the cores, in subtrees of up to `CHUNK_NODES` nodes.
 const PARALLEL_NODES: usize = 32_768;
 const CHUNK_NODES: u32 = 8_192;
 
@@ -121,89 +115,95 @@ fn collect_module(
   let line_starts = OnceLock::new();
   let mut marks = vec![0u8; length];
 
-  // Custom targets are asked in JavaScript, on its own thread; a small module is one walk.
-  if custom.is_some() || length < PARALLEL_NODES {
+  if length < PARALLEL_NODES {
     UsageCollector::new(graph, module, custom, &mut marks, 0, &line_starts).walk(
       0,
       length as NodeId,
       usages,
     );
   } else {
-    usages.extend(collect_subtree(graph, module, 0, &mut marks, &line_starts));
+    usages.extend(collect_split(
+      graph,
+      module,
+      custom,
+      &mut marks,
+      &line_starts,
+    ));
   }
 }
 
-/// The usages in the subtree of `node`, its children's on cores of their own: marks only reach descendants.
-fn collect_subtree(
+fn collect_split(
   graph: &Graph,
   module: &Module,
-  node: NodeId,
+  custom: Option<&dyn CustomTargets>,
   marks: &mut [u8],
   line_starts: &OnceLock<Vec<u32>>,
 ) -> Vec<Usage> {
   let ast = &module.ast;
-  let next = ast.next(node);
-  let mut usages = Vec::new();
+  // Marks only reach descendants, so the runs are walked once every node above them was entered.
+  let mut entered: Vec<(NodeId, Vec<Usage>)> = Vec::new();
+  let mut runs: Vec<(NodeId, NodeId)> = Vec::new();
 
-  if next - node <= CHUNK_NODES {
-    UsageCollector::new(graph, module, None, marks, node, line_starts).walk(
-      node,
-      next,
-      &mut usages,
-    );
-    return usages;
-  }
+  let mut collector = UsageCollector::new(graph, module, custom, marks, 0, line_starts);
+  let mut to_split = vec![0];
 
-  let visits_children =
-    UsageCollector::new(graph, module, None, marks, node, line_starts).enter(node, &mut usages);
-  if !visits_children {
-    return usages;
-  }
-
-  // Consecutive children of up to `CHUNK_NODES` nodes together; a larger one alone, split in turn.
-  let mut groups: Vec<(NodeId, NodeId, &mut [u8])> = Vec::new();
-  let mut rest = &mut marks[1..];
-  let mut start = node + 1;
-  let mut group_end = start;
-
-  for child in ast.children(node) {
-    let child_end = ast.next(child);
-    let is_large = child_end - child > CHUNK_NODES;
-    let overflows = child_end - start > CHUNK_NODES && group_end > start;
-
-    if is_large || overflows {
-      if group_end > start {
-        let (group, after) = rest.split_at_mut((group_end - start) as usize);
-        groups.push((start, group_end, group));
-        rest = after;
-        start = group_end;
-      }
-
-      if is_large {
-        let (group, after) = rest.split_at_mut((child_end - child) as usize);
-        groups.push((child, child_end, group));
-        rest = after;
-        start = child_end;
-      }
+  while let Some(node) = to_split.pop() {
+    let mut found = Vec::new();
+    let visits_children = collector.enter(node, &mut found);
+    if !found.is_empty() {
+      entered.push((node, found));
+    }
+    if !visits_children {
+      continue;
     }
 
-    group_end = child_end;
-  }
-  if group_end > start {
-    groups.push((start, group_end, rest));
-  }
+    let mut start = node + 1;
+    let mut run_end = start;
 
-  let parts: Vec<Vec<Usage>> = groups
-    .into_par_iter()
-    .map(|(start, end, marks)| {
-      let is_one_subtree = ast.next(start) == end;
+    for child in ast.children(node) {
+      let child_end = ast.next(child);
+      let is_large = child_end - child > CHUNK_NODES;
+      let overflows = child_end - start > CHUNK_NODES && run_end > start;
 
-      if is_one_subtree && end - start > CHUNK_NODES {
-        return collect_subtree(graph, module, start, marks, line_starts);
+      if is_large || overflows {
+        if run_end > start {
+          runs.push((start, run_end));
+          start = run_end;
+        }
+
+        if is_large {
+          to_split.push(child);
+          start = child_end;
+        }
       }
 
+      run_end = child_end;
+    }
+    if run_end > start {
+      runs.push((start, run_end));
+    }
+  }
+  drop(collector);
+
+  runs.sort_unstable_by_key(|&(start, _)| start);
+  entered.sort_unstable_by_key(|&(node, _)| node);
+
+  let mut parts = Vec::with_capacity(runs.len());
+  let mut rest = marks;
+  let mut offset = 0;
+  for &(start, end) in &runs {
+    let (_, after) = rest.split_at_mut((start - offset) as usize);
+    let (run, after) = after.split_at_mut((end - start) as usize);
+    parts.push((start, end, run));
+    rest = after;
+    offset = end;
+  }
+
+  let walked: Vec<Vec<Usage>> = parts
+    .into_par_iter()
+    .map(|(start, end, marks)| {
       let mut usages = Vec::new();
-      UsageCollector::new(graph, module, None, marks, start, line_starts).walk(
+      UsageCollector::new(graph, module, custom, marks, start, line_starts).walk(
         start,
         end,
         &mut usages,
@@ -212,7 +212,17 @@ fn collect_subtree(
     })
     .collect();
 
-  usages.extend(parts.into_iter().flatten());
+  // In walk order: an entered node's usages come before those of the runs after it.
+  let mut usages = Vec::new();
+  let mut entered = entered.into_iter().peekable();
+  for (&(start, _), walked) in runs.iter().zip(walked) {
+    while let Some((_, found)) = entered.next_if(|&(node, _)| node < start) {
+      usages.extend(found);
+    }
+    usages.extend(walked);
+  }
+  usages.extend(entered.flat_map(|(_, found)| found));
+
   usages
 }
 
@@ -220,9 +230,8 @@ struct UsageCollector<'g, 'm> {
   cx: Cx<'g>,
   record: &'g Module,
   module: ModuleId,
-  /// `SKIPPED`: alias initializers and assignment targets, which are not usages.
-  /// `RECORDED`: recorded as part of a usage, e.g. a callee; their computed keys can still hold usages.
-  /// Of the nodes from `base` on.
+  /// Marks of the nodes from `base` on: `SKIPPED` for those that are not usages, and `RECORDED` for
+  /// parts of a usage, whose computed keys can still hold usages.
   marks: &'m mut [u8],
   base: NodeId,
   line_starts: &'m OnceLock<Vec<u32>>,
@@ -247,7 +256,6 @@ impl<'g, 'm> UsageCollector<'g, 'm> {
     }
   }
 
-  /// Walks the subtrees from `start` to `end`, which follow each other.
   fn walk(mut self, start: NodeId, end: NodeId, usages: &mut Vec<Usage>) {
     let ast = &self.record.ast;
     let mut node = start;
@@ -349,9 +357,8 @@ impl<'g, 'm> UsageCollector<'g, 'm> {
     }
   }
 
-  /// An expression that only names a tracked value, so that assigning it makes
-  /// an alias and not a usage: `m`, `m.greeting`, `await import(…)`, `require(…)`.
-  /// `{ title: m.title }` does not: it uses `m.title`.
+  /// An expression that only names a tracked value, so assigning it makes an alias and not a usage:
+  /// `m`, `m.greeting`, `await import(…)`, `require(…)`, but not `{ title: m.title }`.
   fn is_alias(&mut self, expression: NodeId) -> bool {
     let ast = &self.record.ast;
     let node = unwrap_expression(ast, expression);
@@ -467,14 +474,12 @@ impl<'g, 'm> UsageCollector<'g, 'm> {
     }
   }
 
-  /// A parameter's or prop's value, or a member of it, that is only returned
-  /// (`(value) => value`) or inspected (`if (!message.parts)`, `typeof message`,
-  /// `message && …`). Its call site is the reference.
+  /// A parameter's or prop's value, or a member of it, that is only returned or inspected
+  /// (`if (!message.parts)`, `typeof message`), so that its call site is the reference.
   fn is_passed_through_or_inspected(&mut self, node: NodeId) -> bool {
     let graph = self.cx.g;
     let ast = &self.record.ast;
 
-    // `props` of `props.message.parts`
     let mut root = node;
     while ast.kind(root) == Kind::MemberExpression {
       let Some(object) = ast.child(root, Slot::Object) else {
@@ -491,7 +496,6 @@ impl<'g, 'm> UsageCollector<'g, 'm> {
       return false;
     }
 
-    // The nearest ancestor that is not a wrapper like `(…)` or `… as T`, and its child on the way to `node`.
     let mut child = node;
     let mut parent = ast.parent(node);
     while let Some(wrapper) = parent.filter(|&parent| ast.kind(parent).is_transparent_wrapper()) {
@@ -577,8 +581,6 @@ mod tests {
   use super::*;
   use crate::graph::{module_of, script_graph};
 
-  /// A module of many statements, with usages at every depth: in functions,
-  /// objects, aliases and assignments, whose marks must stay with their subtree.
   fn large_module() -> String {
     let mut code = String::from("import { m } from \"./paraglide/messages.js\";\nimport * as all from \"./paraglide/messages.js\";\n");
 
@@ -591,8 +593,25 @@ mod tests {
     code
   }
 
-  fn usages(parallel: bool) -> Vec<(u32, u32, String, &'static str, bool)> {
-    let graph = script_graph("/app/src/large.ts", large_module());
+  /// `"s0" + m.k1() + "s2" + …`: a chain of `+` as deep as it is long, with usages along it.
+  fn deep_module(terms: usize) -> String {
+    let mut code =
+      String::from("import { m } from \"./paraglide/messages.js\";\nexport const x = \"s0\"");
+
+    for index in 1..terms {
+      if index % 50 == 0 {
+        code.push_str(&format!(" + m.k{index}()"));
+      } else {
+        code.push_str(&format!(" + \"s{index}\""));
+      }
+    }
+    code.push_str(";\n");
+
+    code
+  }
+
+  fn usages(code: String, parallel: bool) -> Vec<(u32, u32, String, &'static str, bool)> {
+    let graph = script_graph("/app/src/large.ts", code);
     let module = module_of(&graph, "/app/src/large.ts");
     assert!(module.ast.nodes.len() > PARALLEL_NODES);
 
@@ -623,8 +642,22 @@ mod tests {
 
   #[test]
   fn a_large_module_split_between_cores_has_the_usages_of_one_walk() {
-    let sequential = usages(false);
+    let sequential = usages(large_module(), false);
     assert!(sequential.len() > 7000, "{}", sequential.len());
-    assert_eq!(usages(true), sequential);
+    assert_eq!(usages(large_module(), true), sequential);
+  }
+
+  #[test]
+  fn a_deep_module_is_split_without_a_call_per_level() {
+    // As the addon's threads, whose stack is `WORKER_STACK_BYTES`.
+    let Ok(pool) = rayon::ThreadPoolBuilder::new().stack_size(16 << 20).build() else {
+      panic!("no threads");
+    };
+
+    pool.install(|| {
+      let sequential = usages(deep_module(40_000), false);
+      assert_eq!(sequential.len(), 799);
+      assert_eq!(usages(deep_module(40_000), true), sequential);
+    });
   }
 }

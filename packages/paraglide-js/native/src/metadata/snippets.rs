@@ -1,9 +1,3 @@
-//! The source code around each usage of a message, by message and source file:
-//! what a metadata file holds as each message's `sourceCode`.
-//!
-//! A snippet is not copied out of its file: it is three ranges of the file's
-//! code, written as text only into the metadata file itself.
-
 use std::{
   cmp::Ordering,
   hash::{Hash, Hasher},
@@ -15,7 +9,6 @@ use rustc_hash::{FxHashMap, FxHasher};
 
 use super::json::compare_utf16;
 
-/// A source file that has usages.
 pub struct SourceFile<'a> {
   /// Project-relative: the metadata names the file by it.
   pub name: &'a [u8],
@@ -54,7 +47,6 @@ pub struct Snippet {
   pub after: Span,
 }
 
-/// The snippets of one file.
 pub struct FileSnippets<'a> {
   pub name: &'a [u8],
   pub code: &'a [u8],
@@ -149,7 +141,6 @@ impl<'a> SourceCode<'a> {
   }
 }
 
-/// What a usage's name is matched with.
 struct Names<'n, 'a> {
   ids: &'n FxHashMap<&'a [u8], u32>,
   /// The messages each dynamic name matches.
@@ -170,8 +161,8 @@ impl Names<'_, '_> {
   }
 }
 
-/// The messages each dynamic name of the project's usages matches. `m[key]` is
-/// all `*`, and says nothing about any one message.
+/// The messages each dynamic name of the project's usages matches, leaving out a name that is all
+/// `*` (`m[key]`), which says nothing about any one message.
 fn patterns_of<'a>(
   sources: &'a [SourceFile<'a>],
   inlang_project: &[u8],
@@ -198,9 +189,8 @@ fn patterns_of<'a>(
     .collect()
 }
 
-/// Whether `id` matches `pattern`, where `*` is any text: the regular expression
-/// `matchingIds` makes of it. On WTF-8 as on UTF-16, as `*` is one byte that is
-/// part of no other character.
+/// Whether `id` matches `pattern` as the regular expression `matchingIds` makes of it does, where
+/// `*` is any text.
 pub fn matches_pattern(pattern: &[u8], id: &[u8]) -> bool {
   let parts: Vec<&[u8]> = pattern.split(|&byte| byte == b'*').collect();
   let (first, last) = match parts.as_slice() {
@@ -263,7 +253,6 @@ fn snippets_of<'a>(
   let code = source.code;
   let mut lines: Option<Lines> = None;
   let mut snippets: Vec<(u32, Snippet)> = Vec::new();
-  // The snippets of each message with the same text's hash.
   let mut seen: FxHashMap<(u32, u64), Vec<usize>> = FxHashMap::default();
   let mut text = Vec::new();
 
@@ -278,7 +267,6 @@ fn snippets_of<'a>(
     let hash = hash_of(code, &snippet, &mut text);
 
     for &id in named {
-      // Usages on the same lines, e.g. `a ? m.x() : m.x()`.
       let same = seen.entry((id, hash)).or_default();
       let is_repeated = same
         .iter()
@@ -292,7 +280,6 @@ fn snippets_of<'a>(
     }
   }
 
-  // Each message's in the order they were found.
   snippets.sort_by_key(|&(id, _)| id);
 
   let mut groups: FileGroups = Vec::new();
@@ -456,7 +443,6 @@ pub fn text_of(code: &[u8], span: Span) -> Vec<u8> {
 pub(super) mod tests {
   use super::*;
 
-  /// A usage of `name` on `line`, of `project.inlang`.
   pub fn usage(name: &str, line: u32) -> SourceUsage<'_> {
     SourceUsage {
       name: name.as_bytes(),
@@ -530,7 +516,6 @@ pub(super) mod tests {
         .collect();
       assert_eq!(actual, expected, "{code:?}");
 
-      // Lines joined by `\n`.
       let whole = lines.span((0, lines.starts.len()));
       assert_eq!(
         String::from_utf8_lossy(&text_of(code.as_bytes(), whole)),
@@ -634,7 +619,6 @@ pub(super) mod tests {
           start: 250.0,
           ..usage("save", 2)
         },
-        // The same text, elsewhere.
         usage("save", 4),
         usage("save", 3),
         usage("save", 1),

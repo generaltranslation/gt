@@ -1,7 +1,3 @@
-//! Reads and parses files into modules. Each file is prepared on its own, so
-//! that all of a round's files are prepared at once; adding them to the graph
-//! and resolving what they load are steps after it.
-
 use std::sync::{Arc, Condvar, Mutex};
 
 use rayon::prelude::*;
@@ -9,8 +5,8 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
   graph::{
-    ComponentFields, ComponentInstances, FileId, Graph, Module, ModuleCache, ModuleId, PropsReads,
-    SourceFile,
+    outdir_candidate, ComponentFields, ComponentInstances, FileId, Graph, Module, ModuleCache,
+    ModuleId, PropsReads, SourceFile,
   },
   ir::Ast,
   lower::{lower, Lang},
@@ -19,7 +15,6 @@ use crate::{
   syntax::{loaded_specifiers, ModuleSyntax},
 };
 
-/// Code a language's tooling wrote for a file, and where each part of it comes from.
 pub struct GeneratedCode {
   pub code: String,
   pub lang: Lang,
@@ -28,7 +23,6 @@ pub struct GeneratedCode {
   pub length: usize,
 }
 
-/// A component file as one module, written by the framework's own tooling.
 pub struct GeneratedSource {
   pub main: GeneratedCode,
   /// Modules of their own in the file, e.g. an Astro page's client scripts.
@@ -44,17 +38,22 @@ pub enum Input {
   /// A script that is read here.
   Read,
   /// A script that was read here: a language may still claim it.
-  ReadScript { code: String },
-  /// A file that could not be read.
+  ReadScript {
+    code: String,
+  },
   Unreadable,
   /// A script that JavaScript read.
-  Script { code: String },
+  Script {
+    code: String,
+  },
   Generated {
     code: String,
     generated: Box<GeneratedSource>,
   },
   /// A file in a format that is not analyzed: a module without code of its own.
-  Empty { code: String },
+  Empty {
+    code: String,
+  },
 }
 
 pub struct Request {
@@ -147,7 +146,6 @@ fn prepare_script(file: &str, code: String) -> Outcome {
 pub fn read_text(file: &str) -> Option<String> {
   use std::io::Read;
 
-  // Most sources fit: one read, and no call for the file's size.
   const FIRST_READ: usize = 16 * 1024;
 
   let mut source = std::fs::File::open(file).ok()?;
@@ -158,7 +156,6 @@ pub fn read_text(file: &str) -> Option<String> {
     .read_to_end(&mut bytes)
     .ok()?;
 
-  // A larger file is read into a buffer of its size: none is grown and copied.
   if read == FIRST_READ {
     let size = source
       .metadata()
@@ -173,15 +170,12 @@ pub fn read_text(file: &str) -> Option<String> {
   })
 }
 
-/// How many files are opened at once. macOS opens files one after the other
-/// whatever asks: more threads opening only wait on each other, at full load.
+/// macOS serializes file opens, so more concurrent opens only wait on each other.
 #[cfg(target_os = "macos")]
 const MAX_CONCURRENT_OPENS: usize = 4;
 
-/// How many files a thread reads before it parses them: others read meanwhile.
 const READ_BATCH: usize = 16;
 
-/// Lets a bounded number of threads through at a time.
 struct Gate {
   free: Mutex<usize>,
   freed: Condvar,
@@ -216,8 +210,6 @@ impl Gate {
   }
 }
 
-/// The gate file reads go through, loads and prefetches alike; none where
-/// reads run side by side.
 fn read_gate() -> Option<&'static Gate> {
   #[cfg(target_os = "macos")]
   {
@@ -230,8 +222,6 @@ fn read_gate() -> Option<&'static Gate> {
   }
 }
 
-/// Reads the files of a batch that are read here and not prepared yet, and
-/// makes each a script JavaScript could have read.
 fn read_batch(requests: &mut [Request], outcomes: &[Option<Outcome>], gate: Option<&Gate>) {
   let is_read_here = |request: &Request, outcome: &Option<Outcome>| {
     outcome.is_none() && matches!(request.input, Input::Read)
@@ -325,7 +315,6 @@ fn prepare(request: &mut Request, detected: &[DetectedExtension]) -> Outcome {
   }
 }
 
-/// Reads and prepares the files of `requests` whose outcome is missing, on every core.
 fn read_and_prepare(
   requests: &mut [Request],
   outcomes: &mut [Option<Outcome>],
@@ -333,21 +322,22 @@ fn read_and_prepare(
 ) {
   let gate = read_gate();
 
-  requests
-    .par_chunks_mut(READ_BATCH)
-    .zip(outcomes.par_chunks_mut(READ_BATCH))
-    .for_each(|(batch, outcomes)| {
-      read_batch(batch, outcomes, gate);
-      for (request, outcome) in batch.iter_mut().zip(outcomes) {
-        if outcome.is_none() {
-          *outcome = Some(prepare(request, detected));
+  crate::on_pool(|| {
+    requests
+      .par_chunks_mut(READ_BATCH)
+      .zip(outcomes.par_chunks_mut(READ_BATCH))
+      .for_each(|(batch, outcomes)| {
+        read_batch(batch, outcomes, gate);
+        for (request, outcome) in batch.iter_mut().zip(outcomes) {
+          if outcome.is_none() {
+            *outcome = Some(prepare(request, detected));
+          }
         }
-      }
-    });
+      });
+  });
 }
 
-/// Scripts read and parsed before they are loaded: while JavaScript still lists
-/// the project's files, those it found are prepared on the cores it leaves idle.
+/// Scripts read and parsed ahead of `load`, while JavaScript is still listing the project's files.
 pub struct Prefetch {
   /// The scripts a language may claim, as `load` is given them.
   detected: Arc<[DetectedExtension]>,
@@ -375,8 +365,10 @@ impl Prefetch {
     crate::unpoisoned(self.state.lock())
   }
 
-  /// Starts preparing `files`, scripts that are read here, and returns.
-  pub fn start(self: &Arc<Self>, files: Vec<String>) {
+  /// Starts preparing `files` in the background, skipping any that may be Paraglide's output since
+  /// outdirs are known only once every file is listed.
+  pub fn start(self: &Arc<Self>, mut files: Vec<String>) {
+    files.retain(|file| outdir_candidate(file).is_none());
     if files.is_empty() {
       return;
     }
@@ -411,7 +403,6 @@ impl Prefetch {
     });
   }
 
-  /// Waits for the batches being prepared.
   fn wait(&self) -> std::sync::MutexGuard<'_, PrefetchState> {
     let mut state = self.lock();
     while state.running > 0 {
@@ -420,7 +411,6 @@ impl Prefetch {
     state
   }
 
-  /// The outcome of each of `requests` that is read here and was prepared.
   fn take(&self, requests: &[Request]) -> Vec<Option<Outcome>> {
     let mut state = self.wait();
 
@@ -440,15 +430,13 @@ impl Prefetch {
   }
 }
 
-/// Reads and parses the files of `requests`, and adds their modules to the
-/// graph. Those `prefetch` prepared are taken from it.
+/// Reads and parses `requests` into the graph, taking from `prefetch` those it prepared.
 pub fn load(
   graph: &mut Graph,
   mut requests: Vec<Request>,
   detected: &[DetectedExtension],
   prefetch: Option<&Prefetch>,
 ) -> LoadResult {
-  // Each file is loaded once.
   let mut seen = FxHashSet::default();
   requests.retain(|request| {
     let file = graph.file_id(&request.file);
@@ -468,9 +456,7 @@ pub fn load(
   for (request, outcome) in requests.into_iter().zip(outcomes) {
     let file = graph.file_id(&request.file);
 
-    // Each one was prepared.
     match outcome.unwrap_or(Outcome::Unreadable) {
-      // JavaScript loads the file: it is not marked as loading here.
       Outcome::NeedsJs => result.needs_js.push(request.file),
       Outcome::Unreadable => {
         graph.loading.insert(file);
@@ -551,7 +537,6 @@ fn add_file(graph: &mut Graph, file: FileId, order: u64, prepared: PreparedFile)
   graph.order.insert(file, order);
 }
 
-/// The modules whose specifiers are not resolved yet.
 pub fn unlinked(graph: &Graph) -> Vec<ModuleId> {
   graph
     .modules
@@ -561,13 +546,12 @@ pub fn unlinked(graph: &Graph) -> Vec<ModuleId> {
     .collect()
 }
 
-/// An import that did not resolve.
 pub struct Unresolved {
   pub specifier: String,
   pub importer: String,
 }
 
-/// Resolves what the loaded modules load. Returns the imports that do not resolve, each once.
+/// Returns the imports that do not resolve, each once.
 pub fn link(graph: &mut Graph, resolver: &NativeResolver) -> Vec<Unresolved> {
   let modules = unlinked(graph);
 
@@ -663,7 +647,6 @@ mod tests {
     }
   }
 
-  /// Each file's module, or what became of it.
   fn loaded(graph: &Graph, result: &LoadResult, files: &[String]) -> Vec<String> {
     files
       .iter()
@@ -738,7 +721,6 @@ mod tests {
     );
     assert!(expected.contains(&"not loaded".to_string()), "{expected:?}");
 
-    // All prefetched, in two batches, and a file that is never loaded.
     let prefetch = Arc::new(Prefetch::new(detected.clone()));
     let leftover = write("leftover.ts", "export {};\n");
     prefetch.start(files[..3].to_vec());
@@ -756,7 +738,7 @@ mod tests {
     prefetch.clear();
     assert!(prefetch.wait().prepared.is_empty());
 
-    // Some prefetched; a file JavaScript read is its code, not the prefetched one.
+    // A file JavaScript read keeps its own code, not the prefetched one.
     prefetch.start(vec![files[0].clone(), files[1].clone()]);
     let mut mixed = graph();
     let mut requests: Vec<Request> = files.iter().map(|file| read(file)).collect();
@@ -770,6 +752,35 @@ mod tests {
     assert_eq!(outcomes[2..], expected[2..]);
     // The prefetched `b.tsx` was not taken: it was not read here.
     assert_eq!(prefetch.wait().prepared.len(), 1);
+
+    let _ = std::fs::remove_dir_all(&root);
+  }
+
+  #[test]
+  fn files_that_may_be_paraglides_are_not_prefetched() {
+    let root = std::env::temp_dir().join(format!("prefetch-outdir-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let _ = std::fs::create_dir_all(root.join("paraglide/messages"));
+    let files: Vec<String> = [
+      "app.ts",
+      "paraglide/runtime.js",
+      "paraglide/server.js",
+      "paraglide/messages.js",
+      "paraglide/messages/_index.js",
+      "paraglide/messages/hello.js",
+    ]
+    .iter()
+    .map(|name| {
+      let _ = std::fs::write(root.join(name), "export const a = 1;\n");
+      root.join(name).to_string_lossy().into_owned()
+    })
+    .collect();
+
+    let prefetch = Arc::new(Prefetch::new(Arc::from(Vec::new())));
+    prefetch.start(files.clone());
+
+    let prepared: Vec<String> = prefetch.wait().prepared.keys().cloned().collect();
+    assert_eq!(prepared, vec![files[0].clone()]);
 
     let _ = std::fs::remove_dir_all(&root);
   }

@@ -1,10 +1,7 @@
-//! Moves the nodes of code a language tool generated to their positions in the source file.
-
 use crate::ir::{Ast, NodeId, UNMAPPED};
 
-/// Generated `[generated, generated + length)` stands for source
-/// `[source, source + source_length)`. Equal lengths are a copy, mapped character
-/// by character; otherwise the whole generated range stands for the whole source range.
+/// Maps generated `[generated, generated + length)` to source `[source, source + source_length)`,
+/// character by character when the lengths are equal and as a whole otherwise.
 #[derive(Clone, Copy, Debug)]
 pub struct Mapping {
   pub generated: i32,
@@ -19,9 +16,8 @@ impl Mapping {
   }
 }
 
-/// Moves every node to its source position, and keeps its position in the
-/// generated code apart. A node that starts in generated-only text gets
-/// `start = end = -1` and is not a usage.
+/// Moves each node to its source position, or to `start = end = -1` when it starts in
+/// generated-only text, and keeps its generated position apart.
 pub fn remap(ast: &mut Ast, mappings: &[Mapping], generated_length: usize) {
   // Longer mappings first, so that nested (more precise) ones win.
   let mut outermost_first: Vec<&Mapping> = mappings.iter().collect();
@@ -108,7 +104,6 @@ mod tests {
 
   #[test]
   fn a_copy_maps_character_by_character() {
-    // `m.a()` at 10 in the generated code stands for `m.a()` at 100 in the file.
     let code = "wrapper = m.a();";
     let copy = Mapping {
       generated: 10,
@@ -118,7 +113,6 @@ mod tests {
     };
     let positions = positions(code, &[copy]);
 
-    // The call, the member, and its two names.
     assert!(positions.contains(&(100, 105)));
     assert!(positions.contains(&(100, 103)));
     assert!(positions.contains(&(100, 101)));
@@ -136,7 +130,6 @@ mod tests {
     };
     let positions = positions(code, &[copy]);
 
-    // The program and the statement start in text the tool wrote.
     assert_eq!(positions[0], (UNMAPPED, UNMAPPED));
     assert_eq!(positions[1], (UNMAPPED, UNMAPPED));
   }

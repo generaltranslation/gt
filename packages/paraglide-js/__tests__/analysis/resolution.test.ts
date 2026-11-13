@@ -1,3 +1,6 @@
+import { once } from 'node:events';
+import { createRequire } from 'node:module';
+import { Worker } from 'node:worker_threads';
 import { describe, expect, test } from 'vitest';
 import {
   defaultTargets,
@@ -307,6 +310,83 @@ describe('targets', () => {
         { '/app/node_modules/@inlang/paraglide-js-react/index.js': 'export {}' }
       )
     ).toEqual([call, 'message:tos:reference']);
+  });
+
+  test("an error a custom target throws is the analysis' error", async () => {
+    const thrown = new Error('no such export');
+    const failing = defineTarget({
+      ...messagesTarget,
+      name: 'failing',
+      exportSymbol: () => {
+        throw thrown;
+      },
+    });
+
+    await expect(
+      analyzeEntry(
+        `import { m } from "./paraglide/messages.js"; m.greeting();`,
+        {},
+        { targets: [failing] }
+      )
+    ).rejects.toBe(thrown);
+  });
+
+  test('a custom target finds what a built-in one does in a large module, split between cores', async () => {
+    // More than 32,768 nodes, at every depth, and deeper than a call per level could go.
+    const code = [
+      `import { m } from "./paraglide/messages.js";`,
+      ...Array.from(
+        { length: 1500 },
+        (_, index) =>
+          `export function f${index}(t = m.a${index}) { const alias = m.b${index}; return [t(), alias(), m[\`c_\${index}\`]()]; }`
+      ),
+      `export const chain = "s"${Array.from({ length: 20_000 }, (_, index) => (index % 1000 === 0 ? ` + m.d${index}()` : ` + "s${index}"`)).join('')};`,
+    ].join('\n');
+    const relabeled = defineTarget({ ...messagesTarget, name: 'relabeled' });
+
+    const builtIn = await analyzeEntry(code);
+    const custom = await analyzeEntry(code, {}, { targets: [relabeled] });
+
+    expect(builtIn.length).toBeGreaterThan(4500);
+    expect(custom).toEqual(
+      builtIn.map((usage) => usage.replace(/^message:/, 'relabeled:'))
+    );
+  });
+
+  test('a custom target is asked from a thread of a small stack: the analysis runs on its own', async () => {
+    const binding = createRequire(import.meta.url).resolve(
+      '@generaltranslation/paraglide-js/native'
+    );
+    // A chain of `export *` 10,000 modules deep, which the analysis follows by calling itself.
+    const script = `
+      const { parentPort, workerData } = require('node:worker_threads');
+      const path = require('node:path');
+      const native = require(workerData.binding);
+      const depth = 10000;
+      const graph = new native.NativeGraph({ targets: [{ name: 'custom', kind: 'custom' }], outdirs: ['/app/src/paraglide'], sourceExtensions: [], detect: [] });
+      for (let i = 0; i < depth; i++) graph.queueScript('/app/src/n' + i + '.js', i, 'export * from "./n' + (i + 1) + '.js";');
+      graph.queueScript('/app/src/n' + depth + '.js', depth, 'export { greeting } from "./paraglide/messages.js";');
+      graph.queueScript('/app/src/app.js', depth + 1, 'import { greeting } from "./n0.js"; greeting();');
+      graph.load([], []).then(() => {
+        const { importers, counts, specifiers } = graph.pendingSpecifiers();
+        const directories = importers.flatMap((importer, i) => Array(counts[i]).fill(path.posix.dirname(importer)));
+        graph.setResolved(specifiers.map((specifier, i) => path.posix.join(directories[i], specifier)));
+        graph.setCustomMatches(['/app/src/paraglide/messages.js'], [0]);
+        const analysis = graph.analyzeWithCustomTargets(['/app/src/app.js'], (target, file, name) => ({ kind: 'value', name }));
+        parentPort.postMessage(analysis.usages);
+      });
+    `;
+    const worker = new Worker(script, {
+      eval: true,
+      workerData: { binding },
+      resourceLimits: { stackSizeMb: 1 },
+    });
+
+    const [usages] = (await once(worker, 'message')) as [string[]];
+    expect(JSON.parse(usages[0]!)).toMatchObject([
+      { target: 'custom', name: 'greeting', kind: 'call' },
+    ]);
+    await worker.terminate();
   });
 
   test('a target after defaultTargets relabels a built-in one', async () => {
