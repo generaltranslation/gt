@@ -5,9 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { collectContext, type CollectContextOptions } from '../context.js';
 import { findProjectRoot } from '../project/roots.js';
-import { printUsageError } from './print.js';
+import { install } from './install.js';
+import { print, printUsageError } from './print.js';
 
 const USAGE = `Usage: paraglide-context [root] [options]
+       paraglide-context install <language...> [options]
 
 Writes the source context of Paraglide's message usages to a metadata file
 next to each message file (messages/en.json → messages/en.metadata.json),
@@ -16,6 +18,9 @@ relative to the project root (its nearest package.json).
 
 Import aliases are read from tsconfig.json, package.json and the project's
 vite, webpack or rspack config.
+
+"paraglide-context install vue svelte" installs the packages that .vue and
+.svelte files need; see "paraglide-context install --help".
 
 Options:
   --include <path>    path or glob to analyze; repeatable (default: the project)
@@ -33,6 +38,8 @@ type Arguments = ReturnType<typeof parseArguments>['values'];
 
 /** Runs the CLI. Returns the exit code. */
 export async function main(argv: string[]): Promise<number> {
+  if (argv[0] === 'install') return install(argv.slice(1));
+
   let parsed;
 
   try {
@@ -45,7 +52,7 @@ export async function main(argv: string[]): Promise<number> {
   const { values, positionals } = parsed;
 
   if (values.help) {
-    console.log(USAGE);
+    print(USAGE);
     return 0;
   }
 
@@ -106,7 +113,7 @@ function contextOptions(
     bundlerConfigs: values['no-bundler-config'] ? [] : undefined,
     logger: {
       warn: (message) => console.warn(message),
-      info: (message) => (values.verbose ? console.log(message) : undefined),
+      info: (message) => (values.verbose ? print(message) : undefined),
     },
   };
 }
