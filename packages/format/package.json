@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/format",
-  "version": "1.0.0-samsara.4",
+  "version": "1.0.0-samsara.5",
   "description": "Locale and formatting utilities for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

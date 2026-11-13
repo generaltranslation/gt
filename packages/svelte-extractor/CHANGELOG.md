@@ -1,5 +1,13 @@
 # @generaltranslation/svelte-extractor
 
+## 0.1.0-samsara.6
+
+### Patch Changes
+
+- Updated dependencies [886232a]
+  - generaltranslation@10.0.0-samsara.5
+  - @generaltranslation/format@1.0.0-samsara.5
+
 ## 0.1.0-samsara.5
 
 ### Patch Changes

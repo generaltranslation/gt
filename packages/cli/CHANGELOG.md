@@ -1,5 +1,23 @@
 # gtx-cli
 
+## 3.0.0-samsara.6
+
+### Minor Changes
+
+- 886232a: The data format of a message tree is named `MESSAGE_TREE`. It was `ICU_TREE`, which reads as the ICU parser's syntax tree, the one tree it is not; everything else already calls it a message tree (`MessageTree`, `formatMessageTree`, `messageTreeToIcu`).
+
+  The name is part of what `hashSource` hashes, so every tagged-template message gets a new hash: regenerate the translations of `/unstable` messages. A server that still expects `ICU_TREE` rejects the new name, and the other way round.
+
+### Patch Changes
+
+- Updated dependencies [886232a]
+  - generaltranslation@10.0.0-samsara.5
+  - @generaltranslation/format@1.0.0-samsara.5
+  - @generaltranslation/python-extractor@0.2.67-samsara.2
+  - @generaltranslation/supported-locales@2.1.48-samsara.2
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.6
+  - @generaltranslation/vue-extractor@0.1.26-samsara.2
+
 ## 3.0.0-samsara.5
 
 ### Minor Changes

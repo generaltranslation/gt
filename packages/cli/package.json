@@ -1,6 +1,6 @@
 {
   "name": "gt",
-  "version": "3.0.0-samsara.5",
+  "version": "3.0.0-samsara.6",
   "main": "dist/index.js",
   "bin": "bin/main.js",
   "files": [
