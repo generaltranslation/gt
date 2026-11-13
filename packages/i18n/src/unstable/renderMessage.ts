@@ -35,7 +35,7 @@ export type MessageTreeLookupOptions = Extract<
  * locale in `options.$locale`; the result is validated before use.
  */
 export type LookupTreeTranslation = (
-  message: MessageTree,
+  tree: MessageTree,
   options: MessageTreeLookupOptions
 ) => unknown;
 

@@ -53,7 +53,7 @@ function useComputeT({
   // Lookup translation in cache
   const targetJsxChildren = useTranslate({
     locale,
-    message: sourceJsxChildren,
+    content: sourceJsxChildren,
     options: targetOptions,
   });
 

@@ -117,7 +117,7 @@ describe('translation function locale defaults', () => {
 
     expect(prefetchEntries).toHaveBeenCalledWith([
       {
-        message: 'Hello {name}!',
+        content: 'Hello {name}!',
         options: {
           $context: 'greeting',
           $format: 'ICU',

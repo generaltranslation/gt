@@ -52,8 +52,8 @@ export type RenderTree = (
 export function createRenderTree({
   getLocale,
   getEnableI18n,
-  lookupTranslation = withDevHotReload((message, options) =>
-    getI18nCache().lookupTranslation(options.$locale, message, options)
+  lookupTranslation = withDevHotReload((tree, options) =>
+    getI18nCache().lookupTranslation(options.$locale, tree, options)
   ),
 }: CreateGTParams): RenderTree {
   return (tree, values, formats, options) => {
@@ -110,23 +110,23 @@ export async function loadCreateGTParams({
   return {
     getLocale: () => locale,
     getEnableI18n: () => enableI18n,
-    lookupTranslation: withDevHotReload(lookupTranslation, (message, options) =>
+    lookupTranslation: withDevHotReload(lookupTranslation, (tree, options) =>
       // Every lookup is in the bound locale, so a miss goes into the kept
       // cache that later lookups read, even after the global entry expires.
       lookupTranslation.prefetchEntries
-        ? lookupTranslation.prefetchEntries([{ message, options }])
-        : translateMiss(message, options)
+        ? lookupTranslation.prefetchEntries([{ content: tree, options }])
+        : translateMiss(tree, options)
     ),
   };
 }
 
 function translateMiss(
-  message: MessageTree,
+  tree: MessageTree,
   options: MessageTreeLookupOptions
 ): Promise<unknown> {
   return getI18nCache().lookupTranslationWithFallback(
     options.$locale,
-    message,
+    tree,
     options
   );
 }
@@ -139,15 +139,15 @@ function withDevHotReload(
   lookupTranslation: LookupTreeTranslation,
   translate = translateMiss
 ): LookupTreeTranslation {
-  return (message, options) => {
-    const translation = lookupTranslation(message, options);
+  return (tree, options) => {
+    const translation = lookupTranslation(tree, options);
     // Statically gated so bundlers drop it from production builds.
     if (
       process.env.NODE_ENV !== 'production' &&
       translation == null &&
       getI18nConfig().isDevHotReloadEnabled()
     ) {
-      void translate(message, options).catch(() => {});
+      void translate(tree, options).catch(() => {});
     }
     return translation;
   };

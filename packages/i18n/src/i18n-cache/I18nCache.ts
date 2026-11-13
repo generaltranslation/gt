@@ -35,12 +35,12 @@ const DEFAULT_TRANSLATION_TIMEOUT = 12_000; // 12 seconds
 /**
  * A translation resolver is a function that synchronously resolves a translation
  * @template U - The type of the translation (default: Content)
- * @param {U} message - The message to get the translation for
+ * @param {U} content - The content to get the translation for
  * @param {LookupOptions} [options] - The options for the translation
- * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
+ * @returns {U | undefined} The translation for the given content and options or undefined if the translation is not found
  */
 type TranslationResolver<U extends Content = Content> = <T extends U = U>(
-  message: T,
+  content: T,
   options?: LookupOptions
 ) => T | undefined;
 
@@ -56,12 +56,12 @@ type DictionaryResolvers = {
 /**
  * A prefetch entry is an entry that we want to prefetch during the async period
  * @template TranslationType - The type of the translation
- * @param {TranslationType} message - The message to prefetch
+ * @param {TranslationType} content - The content to prefetch
  * @param {LookupOptions} options - The options for the prefetch
  * @returns {PrefetchEntry<TranslationType>} The prefetch entry
  */
 type PrefetchEntry<TranslationType extends Content> = {
-  message: TranslationType;
+  content: TranslationType;
   options: LookupOptions;
 };
 
@@ -454,7 +454,7 @@ class I18nCache<TranslationValue extends Content = Content> {
    */
   lookupTranslation<T extends TranslationValue = TranslationValue>(
     locale: string,
-    message: T,
+    content: T,
     options: LookupOptions
   ): T | undefined {
     return this.guard<T | undefined>(undefined, () => {
@@ -463,12 +463,12 @@ class I18nCache<TranslationValue extends Content = Content> {
         this.resolveLookupParams(locale, options);
 
       // Early return if in default locale
-      if (!translationLocale) return message;
+      if (!translationLocale) return content;
 
       // Get the translation from the locale cache
       return this.translations
         .get(translationLocale)
-        ?.get({ message, options: lookupOptions });
+        ?.get({ content, options: lookupOptions });
     });
   }
 
@@ -480,11 +480,11 @@ class I18nCache<TranslationValue extends Content = Content> {
     T extends TranslationValue = TranslationValue,
   >(
     locale: string,
-    message: T,
+    content: T,
     options: LookupOptions
   ): Promise<T | undefined> {
     return this.guardAsync<T | undefined>(undefined, () =>
-      this.lookupTranslationWithFallbackResolved(locale, message, options)
+      this.lookupTranslationWithFallbackResolved(locale, content, options)
     );
   }
 
@@ -502,14 +502,14 @@ class I18nCache<TranslationValue extends Content = Content> {
     }
   > {
     return this.guardAsync<TranslationResolver<TranslationValue>>(
-      (message) => message,
+      (content) => content,
       async () => {
         // Locale used for the async load
         const asyncBoundaryLocale = this._resolveCacheLocale(locale);
 
         // Early return if i18n is disabled or default locale
         if (!asyncBoundaryLocale) {
-          return (message) => message;
+          return (content) => content;
         }
 
         const asyncBoundaryTxCache =
@@ -518,7 +518,7 @@ class I18nCache<TranslationValue extends Content = Content> {
         // Prefetch any entries during async block (dev hot reload only)
         const prefetchEntries = async (
           prefetchEntries: {
-            message: TranslationValue;
+            content: TranslationValue;
             options: LookupOptions;
           }[] = []
         ) => {
@@ -551,7 +551,7 @@ class I18nCache<TranslationValue extends Content = Content> {
 
         // Create translation resolver
         const lookupTranslation: TranslationResolver<TranslationValue> = (
-          message,
+          content,
           lookupOptions: LookupOptions = {} as LookupOptions
         ) =>
           this.guard(undefined, () => {
@@ -560,8 +560,8 @@ class I18nCache<TranslationValue extends Content = Content> {
               lookupOptions
             );
 
-            // Default locale, return the message
-            if (!translationLocale) return message;
+            // Default locale, return the content
+            if (!translationLocale) return content;
 
             // Request locale overriden, to attempt a synchronous lookup if an alternate locale is requested
             const txCache =
@@ -570,7 +570,7 @@ class I18nCache<TranslationValue extends Content = Content> {
                 : this.translations.get(translationLocale);
 
             // Get the translation
-            return txCache?.get({ message, options });
+            return txCache?.get({ content, options });
           });
 
         Object.assign(lookupTranslation, { prefetchEntries });
@@ -684,19 +684,19 @@ class I18nCache<TranslationValue extends Content = Content> {
 
   private async lookupTranslationWithFallbackResolved<
     T extends TranslationValue = TranslationValue,
-  >(locale: string, message: T, options: LookupOptions): Promise<T> {
+  >(locale: string, content: T, options: LookupOptions): Promise<T> {
     const { translationLocale, options: lookupOptions } =
       this.resolveLookupParams(locale, options);
 
     if (!translationLocale) {
-      return message;
+      return content;
     }
 
     const txCache = await this.translations.getOrLoad(translationLocale);
 
-    let translation = txCache.get({ message, options: lookupOptions });
+    let translation = txCache.get({ content, options: lookupOptions });
     if (translation == null) {
-      translation = await txCache.miss({ message, options: lookupOptions });
+      translation = await txCache.miss({ content, options: lookupOptions });
     }
     return translation;
   }
@@ -768,7 +768,7 @@ function resolvePrefetchEntriesByLocale<TranslationType extends Content>(
       if (resolvedLocale !== locale) return [];
       return [
         {
-          message: entry.message,
+          content: entry.content,
           options: {
             ...entry.options,
             $locale: resolvedLocale,

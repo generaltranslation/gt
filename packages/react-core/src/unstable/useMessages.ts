@@ -27,8 +27,12 @@ export function useMessages(): M {
       createMessages({
         getLocale: () => locale,
         getEnableI18n: () => enableI18n,
-        lookupTranslation: (message, options) =>
-          resolveTranslation({ locale: options.$locale, message, options }),
+        lookupTranslation: (tree, options) =>
+          resolveTranslation({
+            locale: options.$locale,
+            content: tree,
+            options,
+          }),
       }),
     [locale, enableI18n, resolveTranslation]
   );
