@@ -1,5 +1,23 @@
 # @generaltranslation/format
 
+## 1.0.0-samsara.6
+
+### Minor Changes
+
+- 6440bd1: Remove the `IcuMessage`, `I18nextMessage` and `StringMessage` types from `@generaltranslation/format`, `@generaltranslation/format/types` and `generaltranslation/types`. Each was an alias of `string` and checked nothing; use `string`. `ContentByFormat`, `ContentFor`, `StringContent` and `Content` are unchanged.
+- ada6894: Rename three names to match `GLOSSARY.md`. No behavior changes.
+  - The `Message` type in `gt-i18n/types`, a string message with its metadata as passed to `getGT()` and `useGT()`, is now `RegisteredMessage`. `Message` is left to mean a message tree and its formats.
+  - `hashMessage` in `gt-i18n/internal` is now `hashContent`: it hashes content in any data format, JSX included.
+  - `LocaleConfig.formatMessageTree()` takes the data for its variables as `values`, not `variables`, as `formatMessageTree` does everywhere else. This also applies to `LocaleConfig` in `generaltranslation` and `I18nConfig` in `gt-i18n`.
+
+### Patch Changes
+
+- 8dde4bb: Rename `formatMessage` in `@generaltranslation/icu/parser` to `formatIcu`, and its options type `FormatMessageOptions` to `FormatIcuOptions`. It formats an ICU string, and the name now says so, like `icuToMessage` and `messageToIcu`. `@generaltranslation/icu/convert` no longer exports the `IcuMessage` type: `messageToIcu` returns `{ icu, formats }` as before. Nothing else changes: `formatMessage` in `@generaltranslation/format` and `generaltranslation` keeps its name and behavior.
+- Updated dependencies [930e443]
+- Updated dependencies [8dde4bb]
+- Updated dependencies [84d0104]
+  - @generaltranslation/icu@0.2.0-samsara.4
+
 ## 1.0.0-samsara.5
 
 ### Minor Changes

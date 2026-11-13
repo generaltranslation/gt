@@ -1,5 +1,15 @@
 # gt-node
 
+## 2.0.0-samsara.6
+
+### Patch Changes
+
+- Updated dependencies [6440bd1]
+- Updated dependencies [f88a4dc]
+- Updated dependencies [ada6894]
+  - generaltranslation@10.0.0-samsara.6
+  - gt-i18n@2.0.0-samsara.6
+
 ## 2.0.0-samsara.5
 
 ### Patch Changes

@@ -1,5 +1,24 @@
 # gt-tanstack-start
 
+## 12.0.0-samsara.6
+
+### Patch Changes
+
+- ada6894: Rename three names to match `GLOSSARY.md`. No behavior changes.
+  - The `Message` type in `gt-i18n/types`, a string message with its metadata as passed to `getGT()` and `useGT()`, is now `RegisteredMessage`. `Message` is left to mean a message tree and its formats.
+  - `hashMessage` in `gt-i18n/internal` is now `hashContent`: it hashes content in any data format, JSX included.
+  - `LocaleConfig.formatMessageTree()` takes the data for its variables as `values`, not `variables`, as `formatMessageTree` does everywhere else. This also applies to `LocaleConfig` in `generaltranslation` and `I18nConfig` in `gt-i18n`.
+
+- Updated dependencies [6440bd1]
+- Updated dependencies [f88a4dc]
+- Updated dependencies [ada6894]
+- Updated dependencies [067e175]
+  - generaltranslation@10.0.0-samsara.6
+  - gt-i18n@2.0.0-samsara.6
+  - @generaltranslation/react-core@12.0.0-samsara.6
+  - @generaltranslation/compiler@1.4.0-samsara.5
+  - gt-react@12.0.0-samsara.6
+
 ## 12.0.0-samsara.5
 
 ### Patch Changes
