@@ -1,7 +1,6 @@
 {
   "name": "gt-react-router",
   "version": "11.4.12",
-  "private": true,
   "description": "React Router integration for General Translation",
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
