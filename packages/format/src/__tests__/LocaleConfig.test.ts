@@ -65,6 +65,7 @@ describe('LocaleConfig', () => {
       defaultLocale: 'en-us',
       locales,
       customMapping,
+      timeZone: 'UTC',
     });
     expect(config.determineLocale('en-us')).toBe('en-us');
     expect(config.requiresTranslation('es-mx')).toBe(true);
