@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { isMessageTree, validateMessageTree } from '../index';
-import { icuToMessage } from '../convert';
+import { isMessageTree, validateMessageTree, type MessageTree } from '../index';
+import { icuToMessage, messageTreeToIcu } from '../convert';
 
 const select = (branches: unknown) => ['x', 'select', branches];
+
+function nestedText(levels: number): MessageTree {
+  let tree: MessageTree = 'x';
+  for (let level = 0; level < levels; level++) tree = [['b', 'tag', tree]];
+  return tree;
+}
 
 function nestedTags(levels: number): unknown[] {
   let tree: unknown[] = [['leaf']];
@@ -323,6 +329,17 @@ describe('validateMessageTree', () => {
       validateMessageTree(JSON.parse('[["x","select",{"__proto__":null}]]'))
         ?.path
     ).toEqual([0, 2, '__proto__']);
+  });
+
+  it('counts a level that holds only text, as the parser does', () => {
+    expect(isMessageTree(nestedText(64))).toBe(true);
+    expect(() => icuToMessage(messageTreeToIcu(nestedText(64)))).not.toThrow();
+    expect(validateMessageTree(nestedText(65))?.message).toBe(
+      'nesting deeper than 64 levels'
+    );
+    expect(() => icuToMessage(messageTreeToIcu(nestedText(65)))).toThrow(
+      'A message nests at most 64 levels of branches and tags.'
+    );
   });
 
   it('limits nesting depth', () => {

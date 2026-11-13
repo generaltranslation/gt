@@ -19,8 +19,9 @@ import type { FormattedNode, MessageTree } from './messageTree';
 
 export interface MessageTreeValidationOptions {
   /**
-   * Deepest allowed nesting of branches and tag children that hold nodes;
-   * text adds no level. Defaults to 64.
+   * Deepest allowed nesting of branches and tag children, whatever they
+   * hold: one that is only text, or empty, is a level too, as the parser
+   * counts it. Defaults to 64.
    */
   maxDepth?: number;
   /**
@@ -78,12 +79,13 @@ function treeError(
   state: WalkState,
   inPlural: boolean
 ): MessageTreeValidationError | undefined {
+  // Before text returns: the parser counts a level that holds only text, so a tree must too to print and read back.
+  if (depth > state.maxDepth) {
+    return { path, message: `nesting deeper than ${state.maxDepth} levels` };
+  }
   if (typeof value === 'string') return undefined;
   if (!Array.isArray(value)) {
     return { path, message: 'expected text or an array of nodes' };
-  }
-  if (depth > state.maxDepth) {
-    return { path, message: `nesting deeper than ${state.maxDepth} levels` };
   }
   let hasPlaceholder = false;
   for (let index = 0; index < value.length; index++) {

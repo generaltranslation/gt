@@ -16,6 +16,7 @@ import {
   type CheckedBranches,
   type CheckedPlaceholder,
   type CheckTranslationOptions,
+  type CountPlaceholder,
 } from './translationRules';
 
 /**
@@ -60,8 +61,8 @@ export function checkTranslation(
   { locale }: CheckTranslationOptions = {}
 ): string | undefined {
   const problems = translationProblems(
-    readPlaceholders(source),
-    readPlaceholders(translation),
+    readPlaceholders(source, undefined),
+    readPlaceholders(translation, undefined),
     locale
   );
   for (const [name, formatting] of Object.entries(formats)) {
@@ -72,11 +73,21 @@ export function checkTranslation(
   return problems.length ? createTranslationMismatchError(problems) : undefined;
 }
 
-function readPlaceholders(tree: MessageTree): CheckedPlaceholder[] {
-  return messageTreeNodes(tree).filter(isPlaceholderNode).map(readPlaceholder);
+/** `count` is what a `#` in this tree is: that of the plural whose branch it is, through any tags. */
+function readPlaceholders(
+  tree: MessageTree,
+  count: CountPlaceholder | undefined
+): CheckedPlaceholder[] {
+  return messageTreeNodes(tree).flatMap((node): CheckedPlaceholder[] => {
+    if (isPlaceholderNode(node)) return [readPlaceholder(node, count)];
+    return node === 0 && count ? [count] : [];
+  });
 }
 
-function readPlaceholder(node: PlaceholderNode): CheckedPlaceholder {
+function readPlaceholder(
+  node: PlaceholderNode,
+  count: CountPlaceholder | undefined
+): CheckedPlaceholder {
   const name = node[0];
   switch (node[1]) {
     case undefined:
@@ -88,21 +99,38 @@ function readPlaceholder(node: PlaceholderNode): CheckedPlaceholder {
       return { name, kind: node[1], style, styleKey: style, isPattern: false };
     }
     case 'tag':
-      return { name, kind: 'tag', children: readPlaceholders(node[2]) };
+      return { name, kind: 'tag', children: readPlaceholders(node[2], count) };
     case 'select':
-      return { name, kind: 'select', branches: readBranches(node[2]) };
+      return {
+        name,
+        kind: 'select',
+        branches: readBranches(node[2], undefined),
+      };
     case 'plural':
     case 'selectordinal': {
       const [, kind, branches, offset = 0] = node;
-      return { name, kind, offset, branches: readBranches(branches) };
+      return {
+        name,
+        kind,
+        offset,
+        branches: readBranches(branches, {
+          name,
+          kind: 'count',
+          of: kind,
+          offset,
+        }),
+      };
     }
   }
 }
 
-function readBranches(branches: MessageBranches): CheckedBranches {
+function readBranches(
+  branches: MessageBranches,
+  count: CountPlaceholder | undefined
+): CheckedBranches {
   return Object.entries(branches).map(([key, branch]) => [
     key,
-    readPlaceholders(branch),
+    readPlaceholders(branch, count),
   ]);
 }
 
