@@ -8,7 +8,13 @@ import {
   NUMBER_STYLE_NAMES,
   TIME_FIELD_OPTIONS,
 } from '../settings/formatOptions';
-import { isExactKey, MAX_NESTING_DEPTH } from '../settings/syntax';
+import {
+  FALLBACK_BRANCH_KEY,
+  isArgumentName,
+  isExactKey,
+  isTagName,
+  MAX_NESTING_DEPTH,
+} from '../settings/syntax';
 import type { FormattedNode, MessageTree } from './messageTree';
 
 export interface MessageTreeValidationOptions {
@@ -43,6 +49,10 @@ interface WalkState {
  * catalog JSON, or `undefined` when it is a valid tree. A message has one
  * valid tree, apart from the order of keys, so a valid tree has the key its
  * message is looked up by.
+ *
+ * Beyond its shape, a valid tree has an `other` branch in every select and
+ * plural, the count only where a plural is in scope, and names, keys and
+ * offsets that ICU can write and read back.
  */
 export function validateMessageTree(
   value: unknown,
@@ -51,7 +61,7 @@ export function validateMessageTree(
     maxNodes = 10_000,
   }: MessageTreeValidationOptions = {}
 ): MessageTreeValidationError | undefined {
-  return treeError(value, [], 0, { maxDepth, maxNodes, nodes: 0 });
+  return treeError(value, [], 0, { maxDepth, maxNodes, nodes: 0 }, false);
 }
 
 export function isMessageTree(
@@ -65,7 +75,8 @@ function treeError(
   value: unknown,
   path: Path,
   depth: number,
-  state: WalkState
+  state: WalkState,
+  inPlural: boolean
 ): MessageTreeValidationError | undefined {
   if (typeof value === 'string') return undefined;
   if (!Array.isArray(value)) {
@@ -90,7 +101,7 @@ function treeError(
       if (message) return { path: [...path, index], message };
     } else {
       hasPlaceholder = true;
-      const error = nodeError(node, [...path, index], depth, state);
+      const error = nodeError(node, [...path, index], depth, state, inPlural);
       if (error) return error;
     }
   }
@@ -103,17 +114,33 @@ function nodeError(
   node: unknown,
   path: Path,
   depth: number,
-  state: WalkState
+  state: WalkState,
+  inPlural: boolean
 ): MessageTreeValidationError | undefined {
-  if (node === 0) return undefined;
+  if (node === 0) {
+    // Outside a plural, ICU reads `#` as text, so the count would not print back.
+    return inPlural
+      ? undefined
+      : {
+          path,
+          message: 'expected 0, the plural count, only in a plural branch',
+        };
+  }
   if (!Array.isArray(node)) {
     return { path, message: 'expected text, 0, or a placeholder array' };
   }
   if (typeof node[0] !== 'string') {
     return { path: [...path, 0], message: 'expected a variable name' };
   }
+  // The tree is printed as ICU for translation, so a name must parse back.
+  if (node[1] === 'tag' ? !isTagName(node[0]) : !isArgumentName(node[0])) {
+    return {
+      path: [...path, 0],
+      message: `expected an ICU ${node[1] === 'tag' ? 'tag' : 'variable'} name`,
+    };
+  }
   if (node.length === 1) return undefined;
-  const error = kindError(node, path, depth, state);
+  const error = kindError(node, path, depth, state, inPlural);
   if (error) return error;
   const entries = node[1] === 'plural' || node[1] === 'selectordinal' ? 4 : 3;
   return node.length > entries
@@ -125,7 +152,8 @@ function kindError(
   node: unknown[],
   path: Path,
   depth: number,
-  state: WalkState
+  state: WalkState,
+  inPlural: boolean
 ): MessageTreeValidationError | undefined {
   switch (node[1]) {
     case 'number':
@@ -138,15 +166,14 @@ function kindError(
       return { path: stylePath, message: problem.message };
     }
     case 'select':
-      return branchesError(node[2], [...path, 2], depth, state);
+      // Like ICU, a select has no count, even inside a plural.
+      return branchesError(node[2], [...path, 2], depth, state, false);
     case 'plural':
     case 'selectordinal': {
       const offset: unknown = node[3];
-      if (
-        offset !== undefined &&
-        (typeof offset !== 'number' || !Number.isFinite(offset))
-      ) {
-        return { path: [...path, 3], message: 'expected a finite number' };
+      // As the parser reads it: ICU's offset is a count of things.
+      if (offset !== undefined && !Number.isSafeInteger(offset)) {
+        return { path: [...path, 3], message: 'expected a safe integer' };
       }
       if (offset === 0) {
         return { path: [...path, 3], message: 'leave out an offset of 0' };
@@ -162,10 +189,10 @@ function kindError(
             'expected = and a safe integer as JavaScript writes it, like =1',
         };
       }
-      return branchesError(node[2], [...path, 2], depth, state);
+      return branchesError(node[2], [...path, 2], depth, state, true);
     }
     case 'tag':
-      return treeError(node[2], [...path, 2], depth + 1, state);
+      return treeError(node[2], [...path, 2], depth + 1, state, inPlural);
     default:
       return { path: [...path, 1], message: 'unknown placeholder kind' };
   }
@@ -264,7 +291,8 @@ function branchesError(
   branches: unknown,
   path: Path,
   depth: number,
-  state: WalkState
+  state: WalkState,
+  isPlural: boolean
 ): MessageTreeValidationError | undefined {
   if (!isRecord(branches)) return { path, message: 'expected an object' };
   const keys = Object.keys(branches);
@@ -275,10 +303,23 @@ function branchesError(
   }
   state.nodes += keys.length;
   for (const key of keys) {
-    const error = treeError(branches[key], [...path, key], depth + 1, state);
+    // Like names, keys must parse back; a plural also has exact `=N` keys.
+    if (!isArgumentName(key) && !(isPlural && isExactKey(key))) {
+      return { path: [...path, key], message: 'expected an ICU branch key' };
+    }
+    const error = treeError(
+      branches[key],
+      [...path, key],
+      depth + 1,
+      state,
+      isPlural
+    );
     if (error) return error;
   }
-  return undefined;
+  // Without it, a value that matches no branch cannot be formatted.
+  return keys.includes(FALLBACK_BRANCH_KEY)
+    ? undefined
+    : { path, message: 'expected an other branch' };
 }
 
 function budgetMessage(state: WalkState): string {

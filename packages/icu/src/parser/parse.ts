@@ -22,10 +22,11 @@ import {
   parseDateTimeSkeletonOptions,
   resolveLocaleHourSkeleton,
 } from './dateTimeSkeleton';
-import { isAsciiLetter, isTagNameCharacter } from './tag';
 import {
   GRAMMAR_WHITE_SPACE,
   IDENTIFIER_BOUNDARY,
+  isAsciiLetter,
+  isTagNameCharacter,
   MAX_NESTING_DEPTH,
 } from '../settings/syntax';
 import {
