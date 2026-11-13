@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { hashSource } from 'generaltranslation/id';
+import { indexVars } from 'generaltranslation/internal';
 import { hashContent } from '../hashContent';
 
 describe('hashContent', () => {
@@ -21,14 +23,17 @@ describe('hashContent', () => {
 
   // ===== NEW BEHAVIOR ===== //
 
-  it('applies indexVars only for ICU format (ICU vs STRING hash differs)', () => {
-    const icuHash = hashContent('Hello {name}!', { $format: 'ICU' });
-    const stringHash = hashContent('Hello {name}!', { $format: 'STRING' });
+  it('applies indexVars only for ICU format', () => {
+    const source = 'Hello {_gt_, select, other {Ada}}!';
+    const indexed = indexVars(source);
+    expect(indexed).not.toBe(source);
 
-    // ICU format applies indexVars() which transforms {name} → {0}
-    // STRING format passes the message as-is
-    // So the hashes should be different
-    expect(icuHash).not.toBe(stringHash);
+    expect(hashContent(source, { $format: 'ICU' })).toBe(
+      hashSource({ source: indexed, dataFormat: 'ICU' })
+    );
+    expect(hashContent(source, { $format: 'STRING' })).toBe(
+      hashSource({ source, dataFormat: 'STRING' })
+    );
   });
 
   it('uses an explicit hash when provided', () => {
