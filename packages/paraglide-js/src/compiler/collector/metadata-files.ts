@@ -39,7 +39,9 @@ export class MetadataFiles {
     private readonly projectRoot: string,
     private readonly radius: number,
     /** Bytes of a metadata file parsed at once: see `parseJsonBytes`. */
-    private readonly maxParsedBytes?: number
+    private readonly maxParsedBytes?: number,
+    /** Bytes of snippets kept in memory: see `SnippetStore`. */
+    private readonly snippetBlockSize?: number
   ) {}
 
   /** Each message file of `project` gets a metadata file. Projects are added before any usages. */
@@ -53,6 +55,7 @@ export class MetadataFiles {
         ids: messageIds(project),
         inlangProject: relativePath(this.projectRoot, project.directory),
         radius: this.radius,
+        blockSize: this.snippetBlockSize,
       })
     );
   }
@@ -62,16 +65,31 @@ export class MetadataFiles {
     for (const snippets of this.snippets.values()) snippets.add(usages);
   }
 
-  /** Writes the files whose content changed. Resolves with those it had to skip. */
+  /**
+   * Writes the files whose content changed. Resolves with those it had to
+   * skip; if a write fails, rejects with the first failure once every write
+   * is done, so that the snippets can be closed.
+   */
   async write(): Promise<SkippedFile[]> {
     const projects = [...this.projects.values()].sort((a, b) =>
       compareText(a.directory, b.directory)
     );
-    const results = await Promise.all(
+    const results = await Promise.allSettled(
       projects.flatMap((project) => this.writeProject(project))
     );
 
-    return results.filter((skipped) => skipped !== undefined);
+    const skipped: SkippedFile[] = [];
+    for (const result of results) {
+      if (result.status === 'rejected') throw result.reason;
+      if (result.value) skipped.push(result.value);
+    }
+
+    return skipped;
+  }
+
+  /** Deletes the snippets kept for writing: see `SourceCodeCollector`. */
+  close(): void {
+    for (const snippets of this.snippets.values()) snippets.close();
   }
 
   /** One write per message file of the project. */

@@ -4,8 +4,12 @@ import { afterEach, expect, test, vi } from 'vitest';
 
 import { OutdirProjects } from '../../src/compiler/collector/outdir-projects.js';
 import { MetadataFiles } from '../../src/compiler/collector/metadata-files.js';
-import type { CollectContextOptions } from '../../src/compiler/context.js';
+import {
+  collectContext,
+  type CollectContextOptions,
+} from '../../src/compiler/context.js';
 import { readInlangProject } from '../../src/compiler/inlang/project.js';
+import { SourceCodeCollector } from '../../src/compiler/output/source-code.js';
 
 import {
   collect as collectProject,
@@ -41,14 +45,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** A source file whose only line uses `greeting`. */
-const usages = (file: string, line: string) => ({
+/** A source file whose only line uses `name`. */
+const usages = (file: string, line: string, name = 'greeting') => ({
   file,
   code: line,
   usages: [
     {
       target: 'message',
-      name: 'greeting',
+      name,
       kind: 'call' as const,
       start: 0,
       end: 5,
@@ -105,6 +109,47 @@ test('a write that fails leaves no temporary file', async () => {
   // A later write is not affected.
   expect(await files.write()).toEqual([]);
   expect(await readSnippets(root)).toEqual(['a.ts: first']);
+});
+
+test('a write that fails is reported once the others, which read the snippets kept in a temporary file, are done', async () => {
+  const root = await writeProject('metadata-failed-write-spilled', {
+    'project.inlang/settings.json': settings([
+      './messages/{locale}/common.json',
+      './messages/{locale}/auth.json',
+    ]),
+    'messages/en/common.json': JSON.stringify({ greeting: 'Hi' }),
+    'messages/en/auth.json': JSON.stringify({ login: 'Log in' }),
+  });
+  // Blocks of 1 byte: the snippet of `greeting` is in the temporary file.
+  const files = new MetadataFiles(root, 0, undefined, 1);
+  files.addProject(
+    (await readInlangProject(path.join(root, 'project.inlang')))!
+  );
+  files.add(usages('a.ts', 'first'));
+  files.add(usages('b.ts', 'second', 'login'));
+
+  // common.metadata.json is read once auth.metadata.json failed.
+  let fail!: () => void;
+  const failed = new Promise<void>((resolve) => (fail = resolve));
+  const open = fs.open.bind(fs);
+  vi.spyOn(fs, 'open').mockImplementation(async (file, flags) => {
+    const name = path.basename(String(file));
+    if (name.startsWith('auth.metadata.json.')) {
+      fail();
+      throw failure('ENOSPC');
+    }
+    if (name === 'common.metadata.json') await failed;
+
+    return open(file, flags);
+  });
+
+  // As `ContextCollector.write()`, which closes the snippets after.
+  await expect(
+    files.write().finally(() => files.close())
+  ).rejects.toMatchObject({ code: 'ENOSPC' });
+  expect(
+    await readSnippets(root, { file: 'messages/en/common.metadata.json' })
+  ).toEqual(['a.ts: first']);
 });
 
 test('a temporary file that was only partly written is removed', async () => {
@@ -325,6 +370,38 @@ test('a long metadata file with invalid JSON in the sourceCode it rewrites is le
     { file, reason: 'it is not a JSON object; fix or delete it' },
   ]);
   expect(await fs.readFile(file, 'utf8')).toBe(invalid);
+});
+
+test.each([
+  [
+    'while it analyzes, as a temporary file that cannot be written',
+    (error: Error) => {
+      vi.spyOn(SourceCodeCollector.prototype, 'add').mockImplementation(() => {
+        throw error;
+      });
+      return { warn: () => {}, info: () => {} };
+    },
+  ],
+  [
+    'after, as a logger',
+    (error: Error) => ({
+      warn: () => {},
+      info: () => {
+        throw error;
+      },
+    }),
+  ],
+])('a scan that fails %s deletes the snippets it kept', async (_, logger) => {
+  const root = await writeProject('metadata-failed-scan', {
+    'src/a.ts': use('./paraglide/messages.js', 'greeting'),
+  });
+  const close = vi.spyOn(SourceCodeCollector.prototype, 'close');
+  const error = new Error('failed');
+
+  await expect(collectContext({ root, logger: logger(error) })).rejects.toBe(
+    error
+  );
+  expect(close).toHaveBeenCalledTimes(1);
 });
 
 test('a metadata file that is not a JSON object is left alone, with a warning', async () => {
