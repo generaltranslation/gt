@@ -25,6 +25,7 @@ import type { FileSelection } from '../project/files.js';
 import { projectPackages } from '../project/packages.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
 import { readTextFile } from '../utils/read-file.js';
+import { SpilledBytes } from '../utils/spill-file.js';
 import {
   AnalysisPool,
   analysisThreads,
@@ -38,7 +39,6 @@ import {
   THREAD_HEAP_SHARE,
   loadIndexedFile,
   summarizeFile,
-  type GeneratedBytes,
   type SummaryResult,
 } from './module-reader.js';
 import { OutdirProjects } from './outdir-projects.js';
@@ -95,7 +95,7 @@ export class ContextCollector {
   private readonly moduleGraph: ModuleGraph;
   private readonly indexer: ModuleIndexer;
   /** What languages generated for the indexed files, when this thread analyzes them: it parses a file again when it loads it. */
-  private readonly generated = new Map<string, GeneratedBytes>();
+  private readonly generated = new SpilledBytes();
   private globals: readonly GlobalBinding[] = [];
   private globalNames: ReadonlySet<string> = new Set();
   private pool: AnalysisPool | undefined;
@@ -189,6 +189,7 @@ export class ContextCollector {
     } finally {
       await this.pool?.close();
       this.pool = undefined;
+      this.generated.close();
     }
 
     this.warnNoOutdir();

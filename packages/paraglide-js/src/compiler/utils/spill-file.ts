@@ -78,3 +78,52 @@ export function readSpilled(
 
   return bytes;
 }
+
+/** Where bytes are in a `SpillFile`: their position, and how many. */
+export type SpilledPlace = readonly [position: number, length: number];
+
+/** What another thread reads `SpilledBytes` with: see `spilledReader`. */
+export type SharedSpill = {
+  /** -1 when no bytes were added. */
+  fd: number;
+  places: ReadonlyArray<readonly [key: string, place: SpilledPlace]>;
+};
+
+/** Bytes by key, in a `SpillFile` made when the first are added. */
+export class SpilledBytes {
+  private file: SpillFile | undefined;
+  private readonly places = new Map<string, SpilledPlace>();
+
+  set(key: string, bytes: Uint8Array): void {
+    this.file ??= new SpillFile();
+    this.places.set(key, [this.file.append(bytes), bytes.length]);
+  }
+
+  get(key: string): Buffer | undefined {
+    const place = this.places.get(key);
+    return place && readSpilled(this.file!.fd, ...place);
+  }
+
+  shared(): SharedSpill {
+    return { fd: this.file?.fd ?? -1, places: [...this.places] };
+  }
+
+  close(): void {
+    this.file?.close();
+    this.file = undefined;
+    this.places.clear();
+  }
+}
+
+/** Reads, in any thread of the process, the bytes `shared` describes, until they are closed. */
+export function spilledReader({
+  fd,
+  places,
+}: SharedSpill): (key: string) => Buffer | undefined {
+  const byKey = new Map(places);
+
+  return (key) => {
+    const place = byKey.get(key);
+    return place && readSpilled(fd, ...place);
+  };
+}
