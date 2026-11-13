@@ -14,6 +14,7 @@ import type { ModuleSummary } from '../../src/compiler/analysis/module-store.js'
 import {
   ChunkQueue,
   widelyImported,
+  type WorkerRequest,
 } from '../../src/compiler/collector/analysis-pool.js';
 import { nameList } from '../../src/compiler/utils/name-list.js';
 import { writeProject } from '../helpers/fixture.js';
@@ -275,14 +276,32 @@ describe('starting the analysis threads', () => {
   let started: FakeWorker[] = [];
   /** The index of the thread that fails to start. */
   let failing = -1;
+  /** While set, a thread told to end exits only once `exit()` is called. */
+  let isExitHeld = false;
+  const index = { summaries: [], outdirs: [], globals: [], budget: 0 };
 
   class FakeWorker extends EventEmitter {
     readonly workerData: { concurrentReads: number };
-    readonly terminate = vi.fn(async () => 0);
+    readonly heapMb: number;
+    /** The type of each request it was sent. */
+    readonly tasks: string[] = [];
+    /** The requests it has not answered: it answers an index at once. */
+    readonly pending: Array<{ id: number; files: readonly string[] }> = [];
+    exit = (): void => {};
+    readonly terminate = vi.fn(async () => {
+      if (isExitHeld) {
+        await new Promise<void>((resolve) => (this.exit = () => resolve()));
+      }
+      this.emit('exit', 1);
+      return 1;
+    });
 
     constructor(
       _url: URL,
-      options: { workerData: { concurrentReads: number } }
+      options: {
+        workerData: { concurrentReads: number };
+        resourceLimits: { maxOldGenerationSizeMb: number };
+      }
     ) {
       super();
       if (started.length === failing) {
@@ -290,9 +309,28 @@ describe('starting the analysis threads', () => {
       }
 
       this.workerData = options.workerData;
+      this.heapMb = options.resourceLimits.maxOldGenerationSizeMb;
       started.push(this);
     }
+
+    postMessage(request: WorkerRequest): void {
+      this.tasks.push(request.type);
+      if (request.type === 'index') {
+        queueMicrotask(() => this.emit('message', { id: request.id }));
+      } else {
+        this.pending.push(request);
+      }
+    }
+
+    /** Answers its oldest request, or the one at `at`: `{ file }` for each file. */
+    answer(at = 0): void {
+      const { id, files } = this.pending.splice(at, 1)[0]!;
+      this.emit('message', { id, result: files.map((file) => ({ file })) });
+    }
   }
+
+  /** Once what the pool does next has run. */
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
 
   async function sourcePool(): Promise<Pool> {
     vi.doMock('node:worker_threads', async (importOriginal) => ({
@@ -307,6 +345,7 @@ describe('starting the analysis threads', () => {
   beforeEach(() => {
     started = [];
     failing = -1;
+    isExitHeld = false;
   });
 
   afterEach(() => {
@@ -339,6 +378,43 @@ describe('starting the analysis threads', () => {
     expect(started.map(({ terminate }) => terminate.mock.calls.length)).toEqual(
       [1, 1]
     );
+  });
+
+  test('analyze in new threads, started once the ones that indexed exited', async () => {
+    const { AnalysisPool, THREAD_HEAP_MB } = await sourcePool();
+    const pool = new AnalysisPool(2, '/app');
+    isExitHeld = true;
+
+    const analysis = pool.analyze(index, [], async () => {});
+    await settle();
+    expect(started.map(({ terminate }) => terminate.mock.calls.length)).toEqual(
+      [1, 1]
+    );
+
+    isExitHeld = false;
+    for (const worker of started) worker.exit();
+    await analysis;
+    expect(started.map(({ heapMb, tasks }) => [heapMb, tasks])).toEqual([
+      [THREAD_HEAP_MB, []],
+      [THREAD_HEAP_MB, []],
+      [THREAD_HEAP_MB, ['index']],
+      [THREAD_HEAP_MB, ['index']],
+    ]);
+    await pool.close();
+  });
+
+  test('fail to analyze, ending the new threads, when one fails to start', async () => {
+    const { AnalysisPool } = await sourcePool();
+    const pool = new AnalysisPool(2, '/app');
+    failing = 3;
+
+    await expect(pool.analyze(index, [], async () => {})).rejects.toThrow(
+      'ERR_WORKER_INIT_FAILED'
+    );
+    expect(started.map(({ terminate }) => terminate.mock.calls.length)).toEqual(
+      [1, 1, 1]
+    );
+    await pool.close();
   });
 });
 

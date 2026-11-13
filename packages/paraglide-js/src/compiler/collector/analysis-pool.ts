@@ -163,7 +163,8 @@ export function availableMemory(): number {
 
 /** Worker threads that index and analyze the project's files with the default languages and targets. */
 export class AnalysisPool {
-  private readonly workers: PoolWorker[] = [];
+  private workers: PoolWorker[];
+  private readonly workerData: AnalysisWorkerData;
   /** By file, kept from indexing: a thread that loads the file again asks for it. */
   private readonly generated = new Map<string, GeneratedBytes>();
   private readonly queue: Array<{
@@ -176,28 +177,12 @@ export class AnalysisPool {
   constructor(size: number, projectRoot: string) {
     // A thread reads one file at a time at least.
     const threads = Math.min(size, MAX_CONCURRENT_READS);
-    const workerData: AnalysisWorkerData = {
+    this.workerData = {
       projectRoot,
       // The threads share the file descriptors one process has.
       concurrentReads: Math.floor(MAX_CONCURRENT_READS / threads),
     };
-
-    try {
-      for (let started = 0; started < threads; started++) {
-        this.workers.push(
-          new PoolWorker(
-            new Worker(WORKER_URL, {
-              workerData,
-              resourceLimits: { maxOldGenerationSizeMb: THREAD_HEAP_MB },
-            })
-          )
-        );
-      }
-    } catch (error) {
-      // The threads already started would keep the process running.
-      void this.close();
-      throw error;
-    }
+    this.workers = this.startWorkers(threads);
   }
 
   /** The auto-imported names: see `summarizeModule`. */
@@ -231,6 +216,13 @@ export class AnalysisPool {
     files: readonly string[],
     onAnalyzed: (file: string, usages: ParaglideUsage[]) => Promise<void>
   ): Promise<void> {
+    // The threads that indexed keep what the languages' tools loaded:
+    // compilers, and WebAssembly memory that never shrinks. The analysis
+    // reads what the tools generated, so new threads do it without them.
+    const size = this.workers.length;
+    await Promise.all(this.workers.map((worker) => worker.terminate()));
+    this.workers = this.startWorkers(size);
+
     const shared: SharedIndex = {
       ...index,
       generatedFiles: [...this.generated.keys()],
@@ -284,6 +276,29 @@ export class AnalysisPool {
 
   async close(): Promise<void> {
     await Promise.all(this.workers.map((worker) => worker.terminate()));
+  }
+
+  private startWorkers(size: number): PoolWorker[] {
+    const workers: PoolWorker[] = [];
+
+    try {
+      for (let started = 0; started < size; started++) {
+        workers.push(
+          new PoolWorker(
+            new Worker(WORKER_URL, {
+              workerData: this.workerData,
+              resourceLimits: { maxOldGenerationSizeMb: THREAD_HEAP_MB },
+            })
+          )
+        );
+      }
+    } catch (error) {
+      // The threads already started would keep the process running.
+      void Promise.all(workers.map((worker) => worker.terminate()));
+      throw error;
+    }
+
+    return workers;
   }
 
   /** A thread blocks on the flag until the main thread answers on the port. */
