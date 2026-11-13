@@ -1993,13 +1993,18 @@ mod tests {
         walked.push(ancestor);
         current = parents[ancestor as usize];
       }
-      assert_eq!(ast.ancestors(id).collect::<Vec<_>>(), walked, "{file} node {id}");
+      assert_eq!(
+        ast.ancestors(id).collect::<Vec<_>>(),
+        walked,
+        "{file} node {id}"
+      );
     }
   }
 
   #[test]
   fn parents_are_found_from_the_root() {
-    let code = "@d class A { m(@p x) { if (a) { return [b, { c: () => d?.e }]; } } }\nconst f = 1;\n";
+    let code =
+      "@d class A { m(@p x) { if (a) { return [b, { c: () => d?.e }]; } } }\nconst f = 1;\n";
     let ast = lower(code, Lang::Ts).unwrap();
     assert_found_parents(&ast, "a.ts");
     assert_eq!(ast.parent(0), None);
@@ -2015,7 +2020,11 @@ mod tests {
 
     while let Some(path) = stack.pop() {
       if path.is_dir() {
-        stack.extend(std::fs::read_dir(&path).unwrap().map(|entry| entry.unwrap().path()));
+        stack.extend(
+          std::fs::read_dir(&path)
+            .unwrap()
+            .map(|entry| entry.unwrap().path()),
+        );
         continue;
       }
       let file = path.to_string_lossy();

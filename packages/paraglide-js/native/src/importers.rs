@@ -243,10 +243,30 @@ fn referrers_of(graph: &Graph, exported: &ExportedNames) -> Referrers {
     .collect();
 
   let is_usable_without_import = !globals.is_empty();
-  let modules = if is_usable_without_import {
-    graph.all().to_vec()
-  } else {
-    importers_of(&exporters, &exported_as, dependents)
+  let modules = match graph.cache.global_mentions.get() {
+    // A name is used without an import only where the module names it.
+    Some(mentions) if is_usable_without_import => {
+      let mut found: FxHashSet<ModuleId> = importers_of(&exporters, &exported_as, dependents)
+        .into_iter()
+        .collect();
+      found.extend(
+        exporters
+          .iter()
+          .filter_map(|file| graph.records.get(file).copied()),
+      );
+      for &global in &globals {
+        found.extend(&mentions[global as usize]);
+      }
+
+      graph
+        .all()
+        .iter()
+        .copied()
+        .filter(|id| found.contains(id))
+        .collect()
+    }
+    None if is_usable_without_import => graph.all().to_vec(),
+    _ => importers_of(&exporters, &exported_as, dependents),
   };
 
   Referrers {
@@ -409,6 +429,38 @@ fn dependents(graph: &Graph) -> &Dependents {
 }
 
 /// Builds who imports each file on every core, before any analysis would wait on one thread building it.
+/// Which modules name each global, read from each module's names once. Built ahead of the analysis
+/// rather than when first asked, since it runs on the pool.
+pub fn prepare_global_mentions(graph: &Graph) {
+  if graph.globals.is_empty() || graph.cache.global_mentions.get().is_some() {
+    return;
+  }
+
+  let all = graph.all();
+  let named: Vec<Vec<u32>> = crate::on_pool(|| {
+    all
+      .par_iter()
+      .map(|&id| {
+        let ast = &graph.module(id).ast;
+        let mut globals: Vec<u32> = (0..ast.atom_spans.len() as u32)
+          .filter_map(|atom| graph.globals_by_name.get(ast.atom(atom)).copied())
+          .collect();
+        globals.sort_unstable();
+        globals.dedup();
+        globals
+      })
+      .collect()
+  });
+
+  let mut mentions = vec![Vec::new(); graph.globals.len()];
+  for (&id, globals) in all.iter().zip(named) {
+    for global in globals {
+      mentions[global as usize].push(id);
+    }
+  }
+  let _ = graph.cache.global_mentions.set(mentions);
+}
+
 pub fn prepare_dependents(graph: &Graph) {
   if graph.cache.dependents.get().is_none() {
     let _ = graph.cache.dependents.set(build_dependents(graph, true));

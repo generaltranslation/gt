@@ -296,12 +296,12 @@ pub fn module_export_atom(ast: &Ast, name: NodeId) -> u32 {
 /// The export statements of a module by exported name, as atoms rather than copies of the names
 /// and sorted rather than hashed, since a project's modules export millions of names.
 #[derive(Default)]
-pub struct ExportedNames {
+pub struct ExportStatements {
   /// The hash of the name, its atom and the statement, sorted by hash and then in order.
   entries: Box<[(u32, u32, NodeId)]>,
 }
 
-impl ExportedNames {
+impl ExportStatements {
   fn new(ast: &Ast, mut entries: Vec<(u32, NodeId)>) -> Self {
     let mut entries: Vec<(u32, u32, NodeId)> = entries
       .drain(..)
@@ -310,13 +310,17 @@ impl ExportedNames {
     // Stable: a name's statements stay in order.
     entries.sort_by_key(|&(hash, _, _)| hash);
 
-    ExportedNames {
+    ExportStatements {
       entries: entries.into_boxed_slice(),
     }
   }
 
   /// The statements that export `name`, in order.
-  pub fn statements<'s>(&'s self, ast: &'s Ast, name: &'s str) -> impl Iterator<Item = NodeId> + 's {
+  pub fn statements<'s>(
+    &'s self,
+    ast: &'s Ast,
+    name: &'s str,
+  ) -> impl Iterator<Item = NodeId> + 's {
     let hash = ir::name_hash(name);
     let first = self.entries.partition_point(|&(other, _, _)| other < hash);
 
@@ -347,7 +351,7 @@ impl ExportedNames {
 #[derive(Default)]
 pub struct ModuleSyntax {
   /// The export statements by exported name, without the names of `export *`.
-  pub exporting: ExportedNames,
+  pub exporting: ExportStatements,
   pub has_esm_exports: bool,
   /// The `export * from "…"` statements of values, in order.
   pub star_exports: Vec<NodeId>,
@@ -391,7 +395,7 @@ impl ModuleSyntax {
       exporting.extend(names.iter().map(|&name| (name, statement)));
     }
 
-    syntax.exporting = ExportedNames::new(ast, exporting);
+    syntax.exporting = ExportStatements::new(ast, exporting);
     syntax
   }
 }
