@@ -497,15 +497,24 @@ export class Scope {
    * A write that is a statement of a block around the read, in the same
    * function, always runs before it and replaces the earlier ones:
    * `let t = m; t = other; t.x()` holds `other`. Without one, every write counts.
+   * A write never reaches a read in its own right side: `t = { ...t }` spreads
+   * what `t` held before, and counting it would expand the spread without end.
    */
   private writesReaching(writes: readonly Write[], read: Node): Write[] {
-    const replacing = this.lastReplacingWrite(writes, read);
-    if (!replacing) return [...writes];
+    const readPosition = positionOf(read);
+    const readFunction = this.enclosingFunction(read);
+    const others = writes.filter(
+      ({ node }) =>
+        !contains(node, readPosition) ||
+        this.enclosingFunction(node) !== readFunction
+    );
+
+    const replacing = this.lastReplacingWrite(others, read);
+    if (!replacing) return others;
 
     const firstPosition = positionOf(replacing.node);
-    const readPosition = positionOf(read);
 
-    return writes.filter((write) => {
+    return others.filter((write) => {
       const position = positionOf(write.node);
       return position >= firstPosition && position < readPosition;
     });

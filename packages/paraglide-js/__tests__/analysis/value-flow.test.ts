@@ -61,6 +61,32 @@ describe('let and var', () => {
     expect(await analyzeEntry(imports + code)).toEqual([]);
   });
 
+  test.each([
+    ['spread of itself', `let t = m; t = { ...t }; t.greeting();`],
+    ['in a branch', `let t = m; if (x) t = { ...t }; t.greeting();`],
+    [
+      'in a loop',
+      `let t = m; while (x) { t = { ...t, extra: 1 }; } t.greeting();`,
+    ],
+    [
+      'with no write that always runs first',
+      `let t; if (a) t = m; if (b) t = { ...t }; t.greeting();`,
+    ],
+  ])(
+    'a write reads what the variable held before it: %s',
+    async (_name, code) => {
+      expect(await analyzeEntry(imports + code)).toEqual([call]);
+    }
+  );
+
+  test('a function in a write reads what the write stored', async () => {
+    expect(
+      await analyzeEntry(
+        imports + `let ui = { m, show: () => ui.m.greeting() }; ui.show();`
+      )
+    ).toEqual([call]);
+  });
+
   test('an alias assignment is not a usage; the call is', async () => {
     expect(await analyzeEntry(imports + `let t; t = m.greeting; t();`)).toEqual(
       [call]
