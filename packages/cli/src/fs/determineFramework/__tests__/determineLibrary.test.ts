@@ -50,6 +50,18 @@ describe('determineLibrary', () => {
       expect(result.library).toBe(Libraries.GT_REACT);
     });
 
+    it('detects gt-react-router before the gt-react it depends on', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: { 'gt-react': '1.0.0', 'gt-react-router': '1.0.0' },
+        })
+      );
+
+      const result = determineLibrary();
+      expect(result.library).toBe(Libraries.GT_REACT_ROUTER);
+    });
+
     it('detects gt-node from package.json dependencies', () => {
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockReturnValue(

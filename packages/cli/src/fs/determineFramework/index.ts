@@ -47,6 +47,8 @@ export function determineLibraryForCLI(): DeterminedCLILibrary {
         library = Libraries.GT_NEXT;
       } else if (dependencies[Libraries.GT_TANSTACK_START]) {
         library = Libraries.GT_TANSTACK_START;
+      } else if (dependencies[Libraries.GT_REACT_ROUTER]) {
+        library = Libraries.GT_REACT_ROUTER;
       } else if (dependencies[Libraries.GT_REACT]) {
         library = Libraries.GT_REACT;
       } else if (dependencies[Libraries.GT_REACT_NATIVE]) {

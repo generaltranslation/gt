@@ -8,6 +8,7 @@ const REACT_FAMILY_RUNTIMES = [
   'gt-react',
   'gt-next',
   'gt-react-native',
+  'gt-react-router',
   'gt-tanstack-start',
 ] as const;
 
