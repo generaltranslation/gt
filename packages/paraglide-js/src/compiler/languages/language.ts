@@ -142,14 +142,62 @@ export async function parseSource(
   languages: readonly SourceLanguage[],
   context: LanguageContext = NO_PACKAGES
 ): Promise<{ module: ParsedModule } | ParseFailure> {
-  const language = languageOf(file, code, languages);
-  if (language) return parseWithLanguage(file, code, parse, language, context);
+  const generated = await generateSource(file, code, languages, context);
+  if (generated && 'error' in generated) return generated;
+
+  return parseSourceSync(file, code, parse, generated);
+}
+
+/**
+ * Parses a file as `parseSource` does, but with the module a language's
+ * tooling generated for it, if any, already generated.
+ */
+export function parseSourceSync(
+  file: string,
+  code: string,
+  parse: ParseFunction,
+  generated?: { language: string; source: GeneratedSource }
+): { module: ParsedModule } | ParseFailure {
+  if (generated) {
+    return parseGenerated(
+      file,
+      code,
+      parse,
+      generated.language,
+      generated.source
+    );
+  }
 
   if (isScript(file)) return parseScript(file, code, parse);
 
   const { program } = parse(file, '', 'js');
 
   return { module: { code, program } };
+}
+
+/** The generated module of `file`, and the language that generated it; undefined for a script. */
+export async function generateSource(
+  file: string,
+  code: string,
+  languages: readonly SourceLanguage[],
+  context: LanguageContext = NO_PACKAGES
+): Promise<
+  { language: string; source: GeneratedSource } | ParseFailure | undefined
+> {
+  const language = languageOf(file, code, languages);
+  if (!language) return undefined;
+
+  let generated: GeneratedSource | undefined;
+
+  try {
+    generated = await language.generate(code, file, context);
+  } catch (error) {
+    return generationFailure(language, error);
+  }
+
+  if (!generated) return missingToolsFailure(language);
+
+  return { language: language.name, source: generated };
 }
 
 function languageOf(
@@ -164,23 +212,13 @@ function languageOf(
   });
 }
 
-async function parseWithLanguage(
+function parseGenerated(
   file: string,
   code: string,
   parse: ParseFunction,
-  language: SourceLanguage,
-  context: LanguageContext
-): Promise<{ module: ParsedModule } | ParseFailure> {
-  let generated: GeneratedSource | undefined;
-
-  try {
-    generated = await language.generate(code, file, context);
-  } catch (error) {
-    return generationFailure(language, error);
-  }
-
-  if (!generated) return missingToolsFailure(language);
-
+  language: string,
+  generated: GeneratedSource
+): { module: ParsedModule } | ParseFailure {
   const programs: ESTree.Program[] = [];
 
   for (const script of [generated, ...(generated.scripts ?? [])]) {
@@ -189,7 +227,7 @@ async function parseWithLanguage(
     const error = firstError(errors);
     if (error) {
       return {
-        error: `${language.name} tooling produced unparsable code: ${error.message}`,
+        error: `${language} tooling produced unparsable code: ${error.message}`,
       };
     }
 
