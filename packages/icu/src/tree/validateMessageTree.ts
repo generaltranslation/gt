@@ -50,10 +50,9 @@ interface WalkState {
  * valid tree, apart from the order of keys, so a valid tree has the key its
  * message is looked up by.
  *
- * `templateToMessage` and `icuToMessage` make only valid trees. Beyond its
- * shape, a valid tree has an `other` branch in every select and plural, the
- * count only where a plural is in scope, and names, keys and offsets that
- * ICU can write and read back.
+ * Beyond its shape, a valid tree has an `other` branch in every select and
+ * plural, the count only where a plural is in scope, and names, keys and
+ * offsets that ICU can write and read back.
  */
 export function validateMessageTree(
   value: unknown,
@@ -124,8 +123,7 @@ function nodeError(
       ? undefined
       : {
           path,
-          message:
-            'expected 0, the plural count, only in a plural or selectordinal branch',
+          message: 'expected 0, the plural count, only in a plural branch',
         };
   }
   if (!Array.isArray(node)) {
@@ -138,10 +136,7 @@ function nodeError(
   if (node[1] === 'tag' ? !isTagName(node[0]) : !isArgumentName(node[0])) {
     return {
       path: [...path, 0],
-      message:
-        node[1] === 'tag'
-          ? 'expected a tag name: a letter, then letters, digits, or - . _'
-          : 'expected a variable name that is not empty and has no whitespace or ICU syntax characters',
+      message: `expected an ICU ${node[1] === 'tag' ? 'tag' : 'variable'} name`,
     };
   }
   if (node.length === 1) return undefined;
@@ -310,11 +305,7 @@ function branchesError(
   for (const key of keys) {
     // Like names, keys must parse back; a plural also has exact `=N` keys.
     if (!isArgumentName(key) && !(isPlural && isExactKey(key))) {
-      return {
-        path: [...path, key],
-        message:
-          'expected a branch key that is not empty and has no whitespace or ICU syntax characters',
-      };
+      return { path: [...path, key], message: 'expected an ICU branch key' };
     }
     const error = treeError(
       branches[key],
