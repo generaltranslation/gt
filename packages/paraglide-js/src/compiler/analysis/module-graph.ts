@@ -3,13 +3,7 @@ import { moduleExportName, type ESTree, type Node } from './ast.js';
 import { commonJsExports } from './commonjs.js';
 import { componentFieldBindings } from './component-fields.js';
 import { evaluate, followCandidate, memberOf } from './evaluate.js';
-import {
-  ImporterIndex,
-  linksOf,
-  type GlobalExport,
-  type Links,
-  type ModuleRef,
-} from './importers.js';
+import { ImporterIndex, type GlobalExport } from './importers.js';
 import {
   declaredNames,
   exportingStatements,
@@ -17,6 +11,7 @@ import {
   loadedSpecifiers,
   type ExportStatement,
 } from './module-syntax.js';
+import { LoadedRecords, modulesOf, type RecordStore } from './module-store.js';
 import { Scope, type Binding, type ModuleHost } from './scope.js';
 import { symbolFromSpec } from './tracked-symbols.js';
 import type { TrackedSymbol } from './types.js';
@@ -108,7 +103,7 @@ export class ModuleGraph {
     string,
     Promise<ModuleRecord | undefined>
   >();
-  private readonly records = new Map<string, ModuleRecord>();
+  private readonly records: RecordStore = new LoadedRecords();
   /** Changes whenever a module is added or the globals change. */
   private generation = 0;
 
@@ -126,7 +121,7 @@ export class ModuleGraph {
       const record = this.records.get(file);
       return record && modulesOf(record)[part];
     },
-    links: () => this.links(),
+    links: () => this.records.links(),
     scopeOf: (record) => this.scopeOf(record),
     generation: () => this.generation,
     globalExports: () => this.globalExports,
@@ -142,7 +137,7 @@ export class ModuleGraph {
   setGlobals(globals: readonly GlobalBinding[]): void {
     this.declareGlobals(globals);
 
-    for (const record of this.records.values()) {
+    for (const record of this.records.loaded()) {
       for (const module of modulesOf(record)) module.scope = undefined;
     }
     this.generation++;
@@ -249,20 +244,6 @@ export class ModuleGraph {
       return this.localExport(record, name);
     } finally {
       this.exportsBeingResolved.delete(key);
-    }
-  }
-
-  /** Every module's links, in loading order: a file's scripts after its module. */
-  private *links(): Iterable<{ ref: ModuleRef; links: Links }> {
-    for (const record of this.records.values()) {
-      const modules = modulesOf(record);
-
-      for (let part = 0; part < modules.length; part++) {
-        yield {
-          ref: { file: record.file, part },
-          links: linksOf(modules[part]!),
-        };
-      }
     }
   }
 
@@ -573,7 +554,7 @@ export class ModuleGraph {
     if (!loading) {
       loading = this.readRecord(file).then((record) => {
         if (record) {
-          this.records.set(file, record);
+          (this.records as LoadedRecords).set(record);
           this.exportNames.clear();
           this.generation++;
         }
@@ -623,10 +604,7 @@ export class ModuleGraph {
   }
 }
 
-/** A file's module, then its scripts. */
-export function modulesOf(record: ModuleRecord): ModuleRecord[] {
-  return [record, ...(record.scripts ?? [])];
-}
+export { modulesOf };
 
 function dependenciesOf(
   records: ReadonlyArray<ModuleRecord | undefined>
