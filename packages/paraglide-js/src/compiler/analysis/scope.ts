@@ -11,7 +11,6 @@ import {
   type Pattern,
 } from './ast.js';
 import {
-  argumentOf,
   omitsArgument,
   type Candidate,
   type SiteHandle,
@@ -20,6 +19,7 @@ import {
   classNamespace,
   followCandidate,
   followPath,
+  passedCandidates,
   resolveBinding,
 } from './evaluate.js';
 import { importedName } from './module-syntax.js';
@@ -39,9 +39,26 @@ export type ModuleHost = {
   namespace(specifier: string): TrackedSymbol | undefined;
   exportOf(specifier: string, exportName: string): TrackedSymbol | undefined;
   /** In its module and in the modules that import it. */
-  callSitesOf?(fn: FunctionNode): Iterable<SiteHandle>;
+  callSitesOf?(fn: FunctionNode): CallSites;
+  /**
+   * What the sites of `fn` pass as parameter `index`, followed by `path`,
+   * evaluated in other threads too when it has many; undefined when they
+   * are evaluated here. `read` is the identifier being evaluated.
+   */
+  sharedSites?(
+    fn: FunctionNode,
+    index: number,
+    path: readonly string[],
+    read: Node
+  ): TrackedSymbol[] | undefined;
   /** Where the component reads its props, and what each place that renders it passes. */
   props?: { reads: PropsReads; candidates(): Candidate[]; key?: string };
+};
+
+/** A function's sites, read as they are reached: see `SiteList`. */
+export type CallSites = Iterable<SiteHandle> & {
+  /** The sites in the function's own module. */
+  readonly own: readonly SiteHandle[];
 };
 
 /** What a name may hold. */
@@ -59,10 +76,20 @@ export type Binding = (
       type: 'values';
       /** Read in order, once: a parameter's are found as they are read. */
       candidates: () => Iterable<Candidate>;
+      /**
+       * Those of `candidates` that can be expressions, when they are fewer:
+       * another module's site passes a computed value, so its module is not
+       * read for them.
+       */
+      expressions?: () => Iterable<Candidate>;
       /** The candidates that can reach `read`. */
       at?: (read: Node) => Candidate[];
       /** Holds what call sites pass: a parameter or a prop. */
       parameter?: boolean;
+      /** Of a function's parameter: its sites' values, evaluated in other threads too. */
+      shared?: (read: Node) => TrackedSymbol[] | undefined;
+      /** Of a function's parameter: which one. */
+      site?: { fn: FunctionNode; index: number; path: readonly string[] };
     }
 ) & {
   /** The node its call sites are indexed under: a function or an import specifier. */
@@ -340,10 +367,21 @@ export class Scope {
       };
     }
 
+    const { host } = this;
+    // A default needs the calls that omit the argument: those stay here.
+    const isShared =
+      host.sharedSites !== undefined &&
+      defaultOf(fn.params[index]) === undefined;
+
     return {
       type: 'values',
       parameter: true,
       candidates: () => parameterCandidates(fn, this, index, path),
+      expressions: () => parameterCandidates(fn, this, index, path, true),
+      site: { fn, index, path },
+      shared: isShared
+        ? (read) => host.sharedSites!(fn, index, path, read)
+        : undefined,
     };
   }
 
@@ -617,7 +655,9 @@ export function expressionsOf(
   binding: Binding | undefined
 ): ExpressionCandidate[] {
   if (binding?.type === 'values') {
-    return [...binding.candidates()].filter(
+    const candidates = binding.expressions?.() ?? binding.candidates();
+
+    return [...candidates].filter(
       (candidate) => candidate.type === 'expression'
     );
   }
@@ -632,19 +672,18 @@ export function expressionsOf(
   ];
 }
 
-/** Each one as its site is read: see `SiteList`. */
+/** Each one as its site is read: see `SiteList`. `ownSitesOnly` leaves out what other modules' sites pass. */
 function* parameterCandidates(
   fn: FunctionNode,
   scope: Scope,
   index: number,
-  path: readonly string[]
+  path: readonly string[],
+  ownSitesOnly = false
 ): Generator<Candidate> {
-  const sites = scope.host.callSitesOf?.(fn) ?? [];
+  const sites = scope.host.callSitesOf?.(fn);
+  if (!sites) return;
 
-  for (const site of sites) {
-    const argument = argumentOf(site, index);
-    if (argument) yield followCandidate(argument, path);
-  }
+  yield* passedCandidates(ownSitesOnly ? sites.own : sites, index, path);
 
   // `function show(t = m)` called as `show()` holds `m`. Only a parameter
   // with a default looks: reading a site in another module can parse that

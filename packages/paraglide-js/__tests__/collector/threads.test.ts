@@ -9,11 +9,21 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import v8 from 'node:v8';
+import { MessageChannel, type MessagePort } from 'node:worker_threads';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import type {
+  IndexedGraphOptions,
+  SharedSites,
+  SitesJob,
+} from '../../src/compiler/analysis/module-graph.js';
 import type { ModuleSummary } from '../../src/compiler/analysis/module-store.js';
+import type { TrackedSymbol } from '../../src/compiler/analysis/types.js';
 import {
   ChunkQueue,
   widelyImported,
+  type ChunkMessage,
+  type SharedChannel,
+  type SharedJob,
   type WorkerRequest,
 } from '../../src/compiler/collector/analysis-pool.js';
 import { nameList } from '../../src/compiler/utils/name-list.js';
@@ -29,6 +39,14 @@ const builtPool = (): Promise<Pool> =>
   import(pathToFileURL(path.join(DIST, 'collector/analysis-pool.js')).href);
 
 const run = promisify(execFile);
+
+const value = (name: string): TrackedSymbol => ({
+  type: 'value',
+  target: 'message',
+  name,
+  methods: [],
+  file: '/app/src/paraglide/messages.js',
+});
 
 /** Many modules pass messages to a function of another: the threads load each other's modules. */
 function pages(count: number): Record<string, string> {
@@ -305,6 +323,10 @@ describe('stand-in analysis threads', () => {
   /** While set, a thread told to end exits only once `exit()` is called. */
   let isExitHeld = false;
   const index = { summaries: [], outdirs: [], globals: [], budget: 0 };
+  /** How a thread answers every request, if a test sets it: otherwise as `postMessage` says. */
+  let respond:
+    | ((worker: FakeWorker, request: WorkerRequest) => void)
+    | undefined;
 
   class FakeWorker extends EventEmitter {
     readonly workerData: { concurrentReads: number };
@@ -321,6 +343,10 @@ describe('stand-in analysis threads', () => {
       this.emit('exit', 1);
       return 1;
     });
+
+    reply(id: number, response: { result?: unknown; error?: string }): void {
+      setImmediate(() => this.emit('message', { id, ...response }));
+    }
 
     constructor(
       _url: URL,
@@ -339,11 +365,14 @@ describe('stand-in analysis threads', () => {
       started.push(this);
     }
 
+    /** Answers an index at once, and holds the other requests until `answer()`. */
     postMessage(request: WorkerRequest): void {
       this.tasks.push(request.type);
-      if (request.type === 'index') {
+      if (respond) {
+        respond(this, request);
+      } else if (request.type === 'index') {
         queueMicrotask(() => this.emit('message', { id: request.id }));
-      } else {
+      } else if ('files' in request) {
         this.pending.push(request);
       }
     }
@@ -372,6 +401,7 @@ describe('stand-in analysis threads', () => {
     started = [];
     failing = -1;
     isExitHeld = false;
+    respond = undefined;
   });
 
   afterEach(() => {
@@ -579,6 +609,216 @@ describe('stand-in analysis threads', () => {
       );
       await pool.close();
     });
+  });
+
+  test.each([
+    [
+      'sends values',
+      { result: [{ chunk: 0, symbols: [value('greeting')] }] },
+      [
+        { id: 0, chunk: 0, symbols: [value('greeting')] },
+        { id: 0, done: true },
+      ],
+    ],
+    ['fails', { error: 'a helper failed' }, [{ id: 0, done: true }]],
+  ])(
+    'when a helper %s, tell the thread that shared the job what it sent, then that no helper holds a range',
+    async (_, helped, expected) => {
+      const { AnalysisPool } = await sourcePool();
+      const job: SharedJob = {
+        id: 0,
+        file: '/app/src/show.ts',
+        part: 0,
+        read: 0,
+        referrers: 16,
+        chunks: 1,
+        claims: new SharedArrayBuffer(4),
+      };
+      const received: ChunkMessage[] = [];
+      const channels = new Map<FakeWorker, SharedChannel>();
+
+      // The first analyzing thread shares a job and waits until no helper holds a range of it.
+      respond = (worker, request) => {
+        if (request.type === 'index') channels.set(worker, request.channel);
+        if (request.type === 'analyze') {
+          worker.emit('message', { share: job });
+          channels.get(worker)!.port.on('message', (message: ChunkMessage) => {
+            received.push(message);
+            if ('done' in message) worker.reply(request.id, { result: [[]] });
+          });
+          return;
+        }
+        if (request.type === 'help') {
+          Atomics.add(new Int32Array(job.claims), 0, 1);
+          worker.reply(request.id, helped);
+          return;
+        }
+
+        worker.reply(request.id, {});
+      };
+
+      const pool = new AnalysisPool(2, '/app');
+      const index = { summaries: [], outdirs: [], globals: [], budget: 0 };
+      await pool.analyze(index, ['/app/src/a.ts'], async () => {});
+      await pool.close();
+
+      expect(received).toEqual(expected);
+    }
+  );
+});
+
+// A thread's side of sharing a function's sites, from the sources, with a
+// stand-in parent port and graph: these tests do not need `dist`.
+describe("sharing a function's sites in a thread", () => {
+  let parent: EventEmitter & { postMessage(message: unknown): void };
+  let shared: SharedSites;
+  let helpers: MessagePort;
+  const evaluateSharedSites = vi.fn();
+
+  /** What the pool and other threads do once the thread shares a job, before it waits. */
+  let onShare: (job: SharedJob) => void;
+
+  const send = (request: WorkerRequest) =>
+    new Promise<unknown>((resolve) => {
+      parent.on('posted', (message: { id?: number; result?: unknown }) => {
+        if (message.id === request.id) resolve(message.result);
+      });
+      parent.emit('message', request);
+    });
+
+  beforeEach(async () => {
+    parent = Object.assign(new EventEmitter(), {
+      postMessage(message: { share?: SharedJob }) {
+        if (message.share) onShare(message.share);
+        else parent.emit('posted', message);
+      },
+    });
+    onShare = () => {};
+    evaluateSharedSites.mockReset();
+
+    vi.doMock('node:worker_threads', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('node:worker_threads')>()),
+      parentPort: parent,
+      workerData: { projectRoot: '/app', concurrentReads: 1 },
+    }));
+    vi.doMock(
+      '../../src/compiler/analysis/module-graph.js',
+      async (importOriginal) => ({
+        ...(await importOriginal<
+          typeof import('../../src/compiler/analysis/module-graph.js')
+        >()),
+        ModuleGraph: class {
+          evaluateSharedSites = evaluateSharedSites;
+          constructor(options: IndexedGraphOptions) {
+            shared = options.shared!;
+          }
+        },
+      })
+    );
+    vi.resetModules();
+    await import('../../src/compiler/collector/analysis-worker.js');
+
+    const serialized = v8.serialize({
+      summaries: [],
+      outdirs: [],
+      globals: [],
+      generated: { fd: -1, places: [] },
+      budget: 0,
+    });
+    const index = new SharedArrayBuffer(serialized.length);
+    serialized.copy(Buffer.from(index));
+    const { port1, port2 } = new MessageChannel();
+    helpers = port1;
+    const flag = new Int32Array(new SharedArrayBuffer(4));
+    await send({ id: 0, type: 'index', index, channel: { port: port2, flag } });
+  });
+
+  afterEach(() => {
+    helpers.close();
+    vi.doUnmock('node:worker_threads');
+    vi.doUnmock('../../src/compiler/analysis/module-graph.js');
+    vi.resetModules();
+  });
+
+  /** Of a function with `referrers` referrers: `values` gives what a range of them passes. */
+  function sitesJob(
+    referrers: number,
+    values: (from: number) => TrackedSymbol[],
+    evaluated: Array<[number, number]> = []
+  ): SitesJob {
+    return {
+      file: '/app/src/show.ts',
+      part: 0,
+      read: 40,
+      referrers,
+      own: () => [value('own')],
+      range: (from, to) => {
+        evaluated.push([from, to]);
+        return values(from);
+      },
+    };
+  }
+
+  test('use the values helpers sent, and evaluate the ranges they did not', () => {
+    // Four ranges: helpers take the first three. The first's values are
+    // sent, the second's cannot be, and the third's helper fails.
+    onShare = ({ id, claims }) => {
+      Atomics.add(new Int32Array(claims), 0, 3);
+      helpers.postMessage({ id, chunk: 0, symbols: [value('sent')] });
+      helpers.postMessage({ id, chunk: 1, symbols: null });
+      helpers.postMessage({ id, done: true });
+    };
+    const evaluated: Array<[number, number]> = [];
+
+    const values = shared.share(
+      sitesJob(64, (from) => [value(`from${from}`)], evaluated)
+    );
+
+    expect(values).toEqual(
+      ['own', 'sent', 'from16', 'from32', 'from48'].map(value)
+    );
+    expect(evaluated).toEqual([
+      [48, 64],
+      [16, 32],
+      [32, 48],
+    ]);
+  });
+
+  test('join more values than a call takes arguments, without repeats', () => {
+    // More than V8 passes to `push(...values)`, even with a thread's 4 MB stack.
+    const many = Array<TrackedSymbol>(600_000).fill(value('greeting'));
+
+    expect(shared.share(sitesJob(32, () => many))).toEqual([
+      value('own'),
+      value('greeting'),
+    ]);
+  });
+
+  test('help with the ranges left: send the values of each, null for one that cannot be sent', async () => {
+    const claims = new SharedArrayBuffer(4);
+    // The thread that shared it took the first.
+    Atomics.add(new Int32Array(claims), 0, 1);
+    evaluateSharedSites.mockImplementation((_job: SharedJob, from: number) =>
+      from === 16 ? [value('greeting')] : undefined
+    );
+    const job: SharedJob = {
+      id: 0,
+      file: '/app/src/show.ts',
+      part: 0,
+      read: 40,
+      referrers: 40,
+      chunks: 3,
+      claims,
+    };
+
+    expect(await send({ id: 1, type: 'help', job })).toEqual([
+      { chunk: 1, symbols: [value('greeting')] },
+      { chunk: 2, symbols: null },
+    ]);
+    expect(evaluateSharedSites.mock.calls).toEqual([
+      [job, 16, 32],
+      [job, 32, 40],
+    ]);
   });
 });
 
