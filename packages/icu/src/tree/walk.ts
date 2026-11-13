@@ -62,41 +62,6 @@ export function forEachPlaceholder(
   }
 }
 
-/**
- * Copies the tree's nodes with each placeholder replaced by `map(placeholder)`.
- * The branches and tag children of the result are mapped the same way; text
- * comes back as nodes, not in canonical form.
- */
-export function mapPlaceholders(
-  tree: MessageTree,
-  map: (node: PlaceholderNode) => PlaceholderNode
-): MessageNode[] {
-  return messageTreeNodes(tree).map((node) => {
-    if (!isPlaceholderNode(node)) return node;
-    const mapped = map(node);
-    if (isBranchingNode(mapped)) {
-      return withBranches(
-        mapped,
-        mapBranches(mapped[2], (branch) => mapPlaceholders(branch, map))
-      );
-    }
-    if (isTagNode(mapped)) {
-      return [mapped[0], 'tag', mapPlaceholders(mapped[2], map)];
-    }
-    return mapped;
-  });
-}
-
-/** A copy of a select or plural with other branches. */
-export function withBranches(
-  node: SelectNode | PluralNode,
-  branches: MessageBranches
-): SelectNode | PluralNode {
-  if (node[1] === 'select') return [node[0], node[1], branches];
-  const [name, kind, , ...rest] = node;
-  return [name, kind, branches, ...rest];
-}
-
 /** Copies branches in `keys` order, mapping each one. */
 export function mapBranches(
   branches: MessageBranches,
