@@ -9,12 +9,14 @@ import {
   exportingStatements,
   hasEsmExports,
   loadedSpecifiers,
+  starExportSpecifiers,
   type ExportStatement,
 } from './module-syntax.js';
 import {
   IndexedRecords,
   LoadedRecords,
   modulesOf,
+  resolvedFiles,
   type IndexedRecordsOptions,
   type RecordStore,
 } from './module-store.js';
@@ -336,17 +338,12 @@ export class ModuleGraph {
     for (const module of modules) {
       if (this.targetOf(module)) return undefined;
 
-      const record = this.records.get(module);
-      if (!record) continue;
-      if (!hasEsmExports(record.program)) return undefined;
+      const exports = this.records.exportsOf(module);
+      if (!exports) continue;
+      if (exports === 'unknown') return undefined;
 
-      for (const name of exportingStatements(record.program).keys()) {
-        names.add(name);
-      }
-
-      for (const reexported of starExportedFiles(record)) {
-        modules.add(reexported);
-      }
+      for (const name of exports.names) names.add(name);
+      for (const reexported of exports.starExported) modules.add(reexported);
     }
 
     return names;
@@ -648,20 +645,7 @@ function dependenciesOf(
 
 /** The files of `export * from "./a"`. */
 function starExportedFiles(record: ModuleRecord): string[] {
-  const files: string[] = [];
-
-  for (const statement of record.program.body) {
-    const isStarExport =
-      statement.type === 'ExportAllDeclaration' &&
-      statement.exportKind !== 'type' &&
-      !statement.exported;
-    if (!isStarExport) continue;
-
-    const file = record.resolved.get(statement.source.value);
-    if (file) files.push(file);
-  }
-
-  return files;
+  return resolvedFiles(starExportSpecifiers(record.program), record.resolved);
 }
 
 /**

@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import {
+  completeNameList,
   hasName,
   nameList,
   namesIn,
@@ -30,4 +31,9 @@ test('leaves out a name that holds the separator', () => {
   expect(namesIn(list)).toEqual(['c']);
   expect(hasName(list, 'a')).toBe(false);
   expect(hasName(list, 'b')).toBe(false);
+});
+
+test('a complete list is undefined if it would leave a name out', () => {
+  expect(completeNameList(['a\0b', 'c'])).toBeUndefined();
+  expect(namesIn(completeNameList(['a', 'c'])!)).toEqual(['a', 'c']);
 });
