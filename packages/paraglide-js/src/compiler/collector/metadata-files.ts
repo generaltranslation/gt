@@ -2,11 +2,7 @@ import { randomUUID } from 'node:crypto';
 import fsp from 'node:fs/promises';
 import type { FileUsages } from '../analysis/types.js';
 import type { MessageFile } from '../inlang/message-file.js';
-import {
-  messageIds,
-  readInlangProjects,
-  type InlangProject,
-} from '../inlang/project.js';
+import { messageIds, type InlangProject } from '../inlang/project.js';
 import { metadataPath, renderMetadataFile } from '../output/metadata.js';
 import {
   sourceCodeByMessage,
@@ -14,6 +10,7 @@ import {
 } from '../output/source-code.js';
 import { parseJsonObject } from '../utils/json.js';
 import { relativePath } from '../utils/paths.js';
+import { compareText } from '../utils/sort.js';
 
 /** A metadata file that was left as it is, and why. */
 export type SkippedFile = { file: string; why: string; fix?: string };
@@ -26,43 +23,34 @@ const NO_METADATA = '{}\n';
 /**
  * The metadata files of a project's messages: holds the usages of each
  * analyzed source file and writes them next to the message files. Writes are
- * serialized, and atomic for readers.
+ * atomic for readers.
  */
 export class MetadataFiles {
   /** The source files with usages, by absolute path. */
   private readonly entries = new Map<string, FileUsages>();
-  /** Absolute inlang project directories. */
-  private readonly projects = new Set<string>();
-  private queue: Promise<unknown> = Promise.resolve();
+  /** By absolute directory. */
+  private readonly projects = new Map<string, InlangProject>();
 
   constructor(
     private readonly projectRoot: string,
     private readonly radius: number
   ) {}
 
-  /** Each message file of the inlang project at `directory` (absolute) gets a metadata file. */
-  addProject(directory: string): void {
-    this.projects.add(directory);
+  /** Each message file of `project` gets a metadata file. */
+  addProject(project: InlangProject): void {
+    this.projects.set(project.directory, project);
   }
 
-  /** Records the analysis of `file` (absolute); `undefined` when it has no usages. */
-  set(file: string, usages: FileUsages | undefined): void {
-    if (usages) this.entries.set(file, usages);
-    else this.entries.delete(file);
+  /** Records the usages of `file` (absolute). */
+  add(file: string, usages: FileUsages): void {
+    this.entries.set(file, usages);
   }
 
   /** Writes the files whose content changed. Resolves with those it had to skip. */
-  write(): Promise<SkippedFile[]> {
-    const written = this.queue.then(() => this.writeAll());
-    // A write that fails does not stop the ones after it.
-    this.queue = written.catch(() => undefined);
-
-    return written;
-  }
-
-  /** The projects are read anew for each write: message files change while the collector runs. */
-  private async writeAll(): Promise<SkippedFile[]> {
-    const projects = await readInlangProjects([...this.projects].sort());
+  async write(): Promise<SkippedFile[]> {
+    const projects = [...this.projects.values()].sort((a, b) =>
+      compareText(a.directory, b.directory)
+    );
     const results = await Promise.all(
       projects.flatMap((project) => this.writeProject(project))
     );
