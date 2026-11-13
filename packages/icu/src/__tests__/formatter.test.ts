@@ -383,6 +383,53 @@ describe('formatMessage', () => {
     expect(() => formatMessage('{d, time, ::j}', [], { d: value })).toThrow();
   });
 
+  it.each([
+    ['a locale string', 'se-NO'],
+    ['a locale list', ['nn-NO', 'nb-NO', 'en-US']],
+  ])('resolves %s once across calls', (_label, locales) => {
+    const supportedLocalesOf = vi.spyOn(
+      Intl.NumberFormat,
+      'supportedLocalesOf'
+    );
+    try {
+      const results = Array.from({ length: 3 }, () =>
+        formatMessage('Hi {n, number}', locales, { n: 1234.5 })
+      );
+      expect(new Set(results).size).toBe(1);
+      expect(supportedLocalesOf).toHaveBeenCalledTimes(1);
+    } finally {
+      supportedLocalesOf.mockRestore();
+    }
+  });
+
+  it('bounds the resolved-locale cache', () => {
+    formatMessage('Hi', 'kl-GL');
+    const supportedLocalesOf = vi.spyOn(
+      Intl.NumberFormat,
+      'supportedLocalesOf'
+    );
+    try {
+      formatMessage('Hi', 'kl-GL');
+      expect(supportedLocalesOf).not.toHaveBeenCalled();
+      for (let index = 0; index < 64; index++) {
+        formatMessage('Hi', `en-x-c${index}`);
+      }
+      supportedLocalesOf.mockClear();
+      formatMessage('Hi', 'kl-GL');
+      expect(supportedLocalesOf).toHaveBeenCalledTimes(1);
+    } finally {
+      supportedLocalesOf.mockRestore();
+    }
+  });
+
+  it.each([
+    ['an empty locale list', [] as string[]],
+    ['an invalid locale', 'not a locale!!'],
+  ])('rejects %s on every call', (_label, locales) => {
+    expect(() => formatMessage('Hi', locales)).toThrow();
+    expect(() => formatMessage('Hi', locales)).toThrow();
+  });
+
   it.each(['C', 'S', 'A'])(
     'preserves FormatJS handling of the %s date/time skeleton field',
     (field) => {
