@@ -16,6 +16,18 @@ const {
   mockUse: vi.fn(),
 }));
 
+// Each test re-imports the modules, so this memo stands in for one server render.
+vi.mock('react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react')>()),
+  cache: <A, R>(fn: (arg: A) => R) => {
+    const memo = new Map<A, R>();
+    return (arg: A) => {
+      if (!memo.has(arg)) memo.set(arg, fn(arg));
+      return memo.get(arg) as R;
+    };
+  },
+}));
+
 vi.mock('gt-react', () => ({
   createRenderPipeline: vi.fn(() => ({ renderPreparedT: vi.fn() })),
   T: mockRscT,
@@ -37,6 +49,7 @@ vi.mock('../../../utils/use', () => ({
 
 describe('buildtime translation helpers', () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
     mockGetRequestConditions.mockResolvedValue({
       _locale: 'fr',
@@ -188,5 +201,36 @@ describe('buildtime translation helpers', () => {
       enableI18n: false,
       rootId: 'metadata',
     });
+  });
+
+  it.each([
+    ['useGT', mockGetGTInternal],
+    ['useMessages', mockGetMessagesInternal],
+    ['useTranslations', mockGetTranslationsInternal],
+  ] as const)(
+    '%s shares one settled promise across calls in a request',
+    async (hook, mock) => {
+      const value = vi.fn();
+      mock.mockReturnValue(value);
+      const module = await import('../strings');
+
+      module[hook]();
+      module[hook]();
+      const [[first], [second]] = mockUse.mock.calls;
+
+      expect(second).toBe(first);
+      await expect(first).resolves.toBe(value);
+      expect(first).toMatchObject({ status: 'fulfilled', value });
+      expect(mock).toHaveBeenCalledTimes(1);
+      expect(mockGetRequestConditions).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it('keeps per-call loading for compiler messages outside production', async () => {
+    const messages = [{ message: 'A server-translated string from useGT.' }];
+    const { getGT } = await import('../strings');
+
+    expect(getGT(messages)).not.toBe(getGT(messages));
+    expect(getGT()).toBe(getGT());
   });
 });
