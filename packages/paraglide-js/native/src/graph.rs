@@ -144,7 +144,7 @@ pub struct ModuleCache {
   pub component_props: OnceLock<Vec<Candidate>>,
   pub call_sites_of: RwLock<FxHashMap<NodeId, Arc<[CallSite]>>>,
   /// The names each function of the module is exported under.
-  pub function_exports: OnceLock<FxHashMap<NodeId, Vec<Box<str>>>>,
+  pub function_exports: OnceLock<crate::importers::FunctionExports>,
 }
 
 pub struct TargetFile {

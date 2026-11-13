@@ -11,7 +11,10 @@ use crate::{
   graph::{FileId, Graph, Module, ModuleId},
   ir::{self, Ast, Kind, NodeId, Slot},
   scope::{binding_of, Declaration},
-  syntax::{declared_names, import_of, imported_name, module_export_name, unwrap_expression},
+  syntax::{
+    declared_name_atoms, import_of, imported_name, module_export_atom, module_export_name,
+    name_text, unwrap_expression, DEFAULT_NAME,
+  },
 };
 
 struct ExportedNames<'a> {
@@ -658,26 +661,42 @@ fn add_named_exports(
 /// `export function f`, `export { f as g }`, `export default f`
 fn export_names_of<'g>(graph: &'g Graph, record: &'g Module, function: NodeId) -> Vec<&'g str> {
   function_exports(graph, record)
-    .get(&function)
-    .map(|names| names.iter().map(|name| &**name).collect())
-    .unwrap_or_default()
+    .names_of(function)
+    .map(|atom| name_text(&record.ast, atom))
+    .collect()
+}
+
+/// The names each function of a module is exported under, as atoms.
+#[derive(Default)]
+pub struct FunctionExports {
+  /// The function and the name's atom, sorted by function and then in the order they are
+  /// exported.
+  entries: Box<[(NodeId, u32)]>,
+}
+
+impl FunctionExports {
+  fn names_of(&self, function: NodeId) -> impl Iterator<Item = u32> + '_ {
+    let first = self.entries.partition_point(|&(other, _)| other < function);
+
+    self.entries[first..]
+      .iter()
+      .take_while(move |&&(other, _)| other == function)
+      .map(|&(_, atom)| atom)
+  }
 }
 
 /// The names each function of a module is exported under, in the order they are exported.
-fn function_exports<'g>(
-  graph: &'g Graph,
-  record: &'g Module,
-) -> &'g FxHashMap<NodeId, Vec<Box<str>>> {
+fn function_exports<'g>(graph: &'g Graph, record: &'g Module) -> &'g FunctionExports {
   record.cache.function_exports.get_or_init(|| {
     let ast = &record.ast;
-    let mut exports: FxHashMap<NodeId, Vec<Box<str>>> = FxHashMap::default();
+    let mut exports: Vec<(NodeId, u32)> = Vec::new();
     let function_of = |local: &str| match binding_of(graph, record, local, None)?.declaration {
       Some(Declaration::Node(function)) => Some(function),
       _ => None,
     };
-    let mut export = |function: Option<NodeId>, name: &str| {
+    let mut export = |function: Option<NodeId>, name: u32| {
       if let Some(function) = function {
-        exports.entry(function).or_default().push(name.into());
+        exports.push((function, name));
       }
     };
 
@@ -690,9 +709,9 @@ fn function_exports<'g>(
           let value = unwrap_expression(ast, declaration);
 
           if ast.kind(value).is_function() {
-            export(Some(value), "default");
+            export(Some(value), DEFAULT_NAME);
           } else if ast.kind(value) == Kind::Identifier {
-            export(function_of(ast.text(value)), "default");
+            export(function_of(ast.text(value)), DEFAULT_NAME);
           }
         }
 
@@ -704,9 +723,9 @@ fn function_exports<'g>(
 
           if let Some(declaration) = ast.child(statement, Slot::Declaration) {
             let mut declared = Vec::new();
-            declared_names(ast, declaration, &mut declared);
+            declared_name_atoms(ast, declaration, &mut declared);
             for name in declared {
-              export(function_of(name), name);
+              export(function_of(ast.atom(name)), name);
             }
           }
 
@@ -720,7 +739,7 @@ fn function_exports<'g>(
 
             export(
               function_of(module_export_name(ast, local)),
-              module_export_name(ast, exported),
+              module_export_atom(ast, exported),
             );
           }
         }
@@ -729,6 +748,10 @@ fn function_exports<'g>(
       }
     }
 
-    exports
+    // Stable: a function's names stay in the order they are exported.
+    exports.sort_by_key(|&(function, _)| function);
+    FunctionExports {
+      entries: exports.into_boxed_slice(),
+    }
   })
 }

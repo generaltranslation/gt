@@ -778,11 +778,9 @@ impl<'g> Cx<'g> {
   }
 
   fn local_export(&mut self, record: &'g Module, name: &str) -> Option<Symbol> {
-    if let Some(statements) = record.syntax.exporting.get(name) {
-      for &statement in statements {
-        if let Some(found) = self.export_declared_by(record, statement, name) {
-          return found;
-        }
+    for statement in record.syntax.exporting.statements(&record.ast, name) {
+      if let Some(found) = self.export_declared_by(record, statement, name) {
+        return found;
       }
     }
 
@@ -818,7 +816,8 @@ impl<'g> Cx<'g> {
     if let Some(record) = graph.record(file) {
       let is_leaf = record.syntax.star_exports.is_empty() && graph.target_of(file).is_none();
       if is_leaf {
-        return !record.syntax.has_esm_exports || record.syntax.exporting.contains_key(name);
+        return !record.syntax.has_esm_exports
+          || record.syntax.exporting.contains(&record.ast, name);
       }
     }
 
@@ -972,7 +971,7 @@ fn list_export_names(graph: &Graph, file: FileId) -> Option<FxHashSet<Box<str>>>
       return None;
     }
 
-    names.extend(record.syntax.exporting.keys().cloned());
+    names.extend(record.syntax.exporting.names(&record.ast).map(Box::from));
 
     for &statement in &record.syntax.star_exports {
       if let Some(reexported) = resolved_source(record, statement) {
