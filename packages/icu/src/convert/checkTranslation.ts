@@ -60,8 +60,8 @@ export function checkTranslation(
   { locale }: CheckTranslationOptions = {}
 ): string | undefined {
   const problems = translationProblems(
-    readPlaceholders(source),
-    readPlaceholders(translation),
+    readPlaceholders(source, undefined),
+    readPlaceholders(translation, undefined),
     locale
   );
   for (const [name, formatting] of Object.entries(formats)) {
@@ -72,11 +72,23 @@ export function checkTranslation(
   return problems.length ? createTranslationMismatchError(problems) : undefined;
 }
 
-function readPlaceholders(tree: MessageTree): CheckedPlaceholder[] {
-  return messageTreeNodes(tree).filter(isPlaceholderNode).map(readPlaceholder);
+/** `plural` names the plural whose branch this tree is, through any tags: the one a `#` counts. */
+function readPlaceholders(
+  tree: MessageTree,
+  plural: string | undefined
+): CheckedPlaceholder[] {
+  return messageTreeNodes(tree).flatMap((node): CheckedPlaceholder[] => {
+    if (isPlaceholderNode(node)) return [readPlaceholder(node, plural)];
+    return node === 0 && plural !== undefined
+      ? [{ name: plural, kind: 'count' }]
+      : [];
+  });
 }
 
-function readPlaceholder(node: PlaceholderNode): CheckedPlaceholder {
+function readPlaceholder(
+  node: PlaceholderNode,
+  plural: string | undefined
+): CheckedPlaceholder {
   const name = node[0];
   switch (node[1]) {
     case undefined:
@@ -88,21 +100,28 @@ function readPlaceholder(node: PlaceholderNode): CheckedPlaceholder {
       return { name, kind: node[1], style, styleKey: style, isPattern: false };
     }
     case 'tag':
-      return { name, kind: 'tag', children: readPlaceholders(node[2]) };
+      return { name, kind: 'tag', children: readPlaceholders(node[2], plural) };
     case 'select':
-      return { name, kind: 'select', branches: readBranches(node[2]) };
+      return {
+        name,
+        kind: 'select',
+        branches: readBranches(node[2], undefined),
+      };
     case 'plural':
     case 'selectordinal': {
       const [, kind, branches, offset = 0] = node;
-      return { name, kind, offset, branches: readBranches(branches) };
+      return { name, kind, offset, branches: readBranches(branches, name) };
     }
   }
 }
 
-function readBranches(branches: MessageBranches): CheckedBranches {
+function readBranches(
+  branches: MessageBranches,
+  plural: string | undefined
+): CheckedBranches {
   return Object.entries(branches).map(([key, branch]) => [
     key,
-    readPlaceholders(branch),
+    readPlaceholders(branch, plural),
   ]);
 }
 

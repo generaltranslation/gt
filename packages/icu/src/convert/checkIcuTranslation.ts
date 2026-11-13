@@ -43,7 +43,7 @@ export function checkIcuTranslation(
   translationIcu: string,
   { locale }: CheckTranslationOptions = {}
 ): string | undefined {
-  const source = readPlaceholders(parse(sourceIcu));
+  const source = readPlaceholders(parse(sourceIcu), undefined);
   let translation: MessageFormatElement[];
   try {
     translation = parse(translationIcu);
@@ -53,23 +53,29 @@ export function checkIcuTranslation(
   }
   const problems = translationProblems(
     source,
-    readPlaceholders(translation),
+    readPlaceholders(translation, undefined),
     locale
   );
   return problems.length ? createTranslationMismatchError(problems) : undefined;
 }
 
+/** `plural` names the plural whose branch these elements are in, through any tags: the one a `#` counts. */
 function readPlaceholders(
-  elements: MessageFormatElement[]
+  elements: MessageFormatElement[],
+  plural: string | undefined
 ): CheckedPlaceholder[] {
-  return elements.flatMap(readPlaceholder);
+  return elements.flatMap((element) => readPlaceholder(element, plural));
 }
 
-function readPlaceholder(element: MessageFormatElement): CheckedPlaceholder[] {
+function readPlaceholder(
+  element: MessageFormatElement,
+  plural: string | undefined
+): CheckedPlaceholder[] {
   switch (element.type) {
     case TYPE.literal:
-    case TYPE.pound:
       return [];
+    case TYPE.pound:
+      return plural === undefined ? [] : [{ name: plural, kind: 'count' }];
     case TYPE.argument:
       return [{ name: element.value, kind: 'argument' }];
     case TYPE.number:
@@ -94,7 +100,7 @@ function readPlaceholder(element: MessageFormatElement): CheckedPlaceholder[] {
         {
           name: element.value,
           kind: 'tag',
-          children: readPlaceholders(element.children),
+          children: readPlaceholders(element.children, plural),
         },
       ];
     case TYPE.select:
@@ -102,7 +108,7 @@ function readPlaceholder(element: MessageFormatElement): CheckedPlaceholder[] {
         {
           name: element.value,
           kind: 'select',
-          branches: readBranches(element.options),
+          branches: readBranches(element.options, undefined),
         },
       ];
     case TYPE.plural:
@@ -111,18 +117,19 @@ function readPlaceholder(element: MessageFormatElement): CheckedPlaceholder[] {
           name: element.value,
           kind: element.pluralType === 'ordinal' ? 'selectordinal' : 'plural',
           offset: element.offset,
-          branches: readBranches(element.options),
+          branches: readBranches(element.options, element.value),
         },
       ];
   }
 }
 
 function readBranches(
-  options: Record<string, PluralOrSelectOption>
+  options: Record<string, PluralOrSelectOption>,
+  plural: string | undefined
 ): CheckedBranches {
   return Object.entries(options).map(([key, { value }]) => [
     key,
-    readPlaceholders(value),
+    readPlaceholders(value, plural),
   ]);
 }
 

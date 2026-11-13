@@ -461,6 +461,27 @@ const CASES: [
     undefined,
   ],
   [
+    'a count moved out of the tag around its plural',
+    `<b>${ITEMS}</b>`,
+    '{n, plural, one {# <b>Artikel</b>} other {# <b>Artikel</b>}}',
+    'de',
+    mismatch('"n" is not inside <b>, as it is in the source'),
+  ],
+  [
+    'a count left out of one branch, and kept in its tag in the other',
+    `<b>${ITEMS}</b>`,
+    '{n, plural, one {<b>Ein Artikel</b>} other {<b># Artikel</b>}}',
+    'de',
+    undefined,
+  ],
+  [
+    'a count the source has inside and outside a tag',
+    '{n, plural, one {<b>#</b> item} other {# items}}',
+    '{n, plural, one {# <b>Artikel</b>} other {# Artikel}}',
+    'de',
+    undefined,
+  ],
+  [
     'a variable moved out of its tag',
     '<b>{name}</b> joined',
     '{name} <b>a rejoint</b>',
