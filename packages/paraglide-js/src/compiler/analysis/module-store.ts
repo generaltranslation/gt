@@ -18,6 +18,8 @@ export type ModuleSummary = {
     links: SpecifierLinks;
     /** Exports that never hold a tracked value: see `summarizeModule`. */
     untrackedExports: readonly string[];
+    /** The auto-imported names it may use: see `summarizeModule`. */
+    globalNames: readonly string[];
   }>;
 };
 
@@ -32,6 +34,8 @@ export interface RecordStore {
   loaded(): Iterable<ModuleRecord>;
   /** Every module's links, in loading order: a file's scripts after its module. */
   links(): Iterable<{ ref: ModuleRef; links: Links }>;
+  /** The modules that may mention one of `names`; undefined if every module may. */
+  mentioning(names: ReadonlySet<string>): readonly ModuleRef[] | undefined;
 }
 
 /** A file's module, then its scripts. */
@@ -57,6 +61,10 @@ export class LoadedRecords implements RecordStore {
 
   isUntrackedExport(): boolean {
     return false;
+  }
+
+  mentioning(): undefined {
+    return undefined;
   }
 
   loaded(): Iterable<ModuleRecord> {
@@ -107,6 +115,7 @@ export class IndexedRecords implements RecordStore {
   private readonly modules = new Map<string, IndexedModule>();
   /** Least recently read first. */
   private readonly records = new Map<string, ModuleRecord>();
+  private readonly mentions = new Map<string, ModuleRef[]>();
   private size = 0;
 
   constructor(private readonly options: IndexedRecordsOptions) {
@@ -119,6 +128,14 @@ export class IndexedRecords implements RecordStore {
           resolveLinks(part.links, resolved[index]!)
         ),
         untrackedExports: new Set(parts[0]?.untrackedExports),
+      });
+
+      parts.forEach(({ globalNames }, part) => {
+        for (const name of globalNames) {
+          const modules = this.mentions.get(name);
+          if (modules) modules.push({ file, part });
+          else this.mentions.set(name, [{ file, part }]);
+        }
       });
     }
   }
@@ -162,6 +179,10 @@ export class IndexedRecords implements RecordStore {
         yield { ref: { file, part }, links: links[part]! };
       }
     }
+  }
+
+  mentioning(names: ReadonlySet<string>): readonly ModuleRef[] {
+    return [...names].flatMap((name) => this.mentions.get(name) ?? []);
   }
 
   /** Keeps the module read last, whatever its size. */
