@@ -100,6 +100,22 @@
   - gt-i18n@2.0.0-samsara.0
   - @generaltranslation/react-core@12.0.0-samsara.0
 
+## 11.4.22
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.12
+  - gt-i18n@1.0.43
+  - @generaltranslation/react-core@11.4.22
+
+## 11.4.21
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.21
+
 ## 11.4.20
 
 ### Patch Changes

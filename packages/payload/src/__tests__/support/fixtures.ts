@@ -55,7 +55,13 @@ export async function createPage(payload: Payload) {
   });
 }
 
-export async function setHeader(payload: Payload) {
+// Sets the header's English rows only: what earlier tests wrote in other
+// languages stays. A test that reads a translation back passes labels of its
+// own, so the rows it reads can only come from its own run.
+export async function setHeader(
+  payload: Payload,
+  [about, blog]: [string, string] = ['About us', 'Blog']
+) {
   return payload.updateGlobal({
     overrideAccess: true,
     slug: 'header',
@@ -63,8 +69,8 @@ export async function setHeader(payload: Payload) {
     draft: false,
     data: {
       navItems: [
-        { link: { url: '/about', label: 'About us' } },
-        { link: { url: 'https://blog.example.com', label: 'Blog' } },
+        { link: { url: '/about', label: about } },
+        { link: { url: 'https://blog.example.com', label: blog } },
       ],
     },
   });

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { intlCache } from '../cache/IntlCache';
 import { LocaleConfig } from '../LocaleConfig';
 import type { CustomMapping } from '../types';
 
@@ -50,6 +51,37 @@ describe('LocaleConfig', () => {
 
     expect(config.requiresTranslation('es')).toBe(false);
     expect(config.requiresTranslation('fr')).toBe(true);
+  });
+
+  it('does not revalidate configured canonical codes on warmed lookups', () => {
+    const locales = ['en-us', 'en-gb', 'es-mx', 'fr-ca'];
+    const customMapping: CustomMapping = Object.fromEntries(
+      locales.map((locale) => [
+        locale,
+        { code: locale.slice(0, 3) + locale.slice(3).toUpperCase() },
+      ])
+    );
+    const config = new LocaleConfig({
+      defaultLocale: 'en-us',
+      locales,
+      customMapping,
+      timeZone: 'UTC',
+    });
+    expect(config.determineLocale('en-us')).toBe('en-us');
+    expect(config.requiresTranslation('es-mx')).toBe(true);
+
+    const get = vi.spyOn(intlCache, 'get');
+    try {
+      for (let index = 0; index < 10; index++) {
+        expect(config.determineLocale('en-us')).toBe('en-us');
+        expect(config.requiresTranslation('es-mx')).toBe(true);
+      }
+      expect(
+        get.mock.calls.filter(([constructor]) => constructor === 'DisplayNames')
+      ).toEqual([]);
+    } finally {
+      get.mockRestore();
+    }
   });
 
   it('does not expose the prepared locale scope as enumerable state', () => {

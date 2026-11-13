@@ -30,6 +30,17 @@ export type ParsingConfigOptions = {
 export type BaseParsingFlags = Record<string, unknown>;
 
 /**
+ * @property {boolean} includeSourceCodeContext - Collect source code context for Paraglide JS messages. Requires `@generaltranslation/paraglide-js`.
+ */
+export type JsonParsingFlags = BaseParsingFlags & {
+  includeSourceCodeContext?: boolean;
+};
+
+export type ParsingFlagsFor<K extends SupportedFileExtension> = K extends 'json'
+  ? JsonParsingFlags
+  : BaseParsingFlags;
+
+/**
  * Flags for parsing content. Not to be confused with ParsingConfig which helps us enable/disable
  * parsing features depending on the function being parsed. Parsing flags is for users to override
  * some of these defaults or enable/disable other features.
@@ -70,5 +81,5 @@ export function resolveAutoderive(
  * This is really a helper type that helps us map across filetypes
  */
 export type ParseFlagsByFileType = {
-  [K in SupportedFileExtension]?: BaseParsingFlags;
+  [K in SupportedFileExtension]?: ParsingFlagsFor<K>;
 };

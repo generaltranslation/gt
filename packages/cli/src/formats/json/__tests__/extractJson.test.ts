@@ -1,955 +1,333 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { extractJson } from '../extractJson';
 import { readFileSync } from 'fs';
 import path from 'path';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { extractJson } from '../extractJson';
 import { logger } from '../../../console/logger.js';
 import { exitSync } from '../../../console/logging.js';
 import { configureApiClient } from '../../../utils/api.js';
+import type { AdditionalOptions } from '../../../types/index.js';
 
 vi.mock('../../../console/logger.js');
 vi.mock('../../../console/logging.js');
 
-const mockLogError = vi.spyOn(logger, 'error');
-const mockLogWarning = vi.spyOn(logger, 'warn');
-const mockExit = vi.mocked(exitSync).mockImplementation(() => {
-  throw new Error('Process exit called');
+type Schema = NonNullable<AdditionalOptions['jsonSchema']>[string];
+
+/** Extracts the `locale` values of `json` under `schema`, parsed. */
+const extract = (
+  json: unknown,
+  schema: Schema,
+  locale = 'es',
+  options: AdditionalOptions = {}
+) => {
+  const result = extractJson(
+    JSON.stringify(json),
+    'test.json',
+    { ...options, jsonSchema: { '**/*.json': schema } },
+    locale,
+    'en'
+  );
+  return result === null ? null : JSON.parse(result);
+};
+
+const localeArray = (include: string[], key = '$.locale'): Schema => ({
+  composite: { '$.items': { type: 'array', include, key } },
+});
+
+const localeObject = (include: string[]): Schema => ({
+  composite: { '$.translations': { type: 'object', include } },
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(exitSync).mockImplementation(() => {
+    throw new Error('Process exit called');
+  });
 });
 
 describe('extractJson', () => {
-  beforeEach(() => {
-    mockLogError.mockClear();
-    mockLogWarning.mockClear();
-    mockExit.mockClear();
+  it.each<[string, string, AdditionalOptions]>([
+    [
+      'no glob matches the file',
+      'file.txt',
+      { jsonSchema: { '**/*.json': { include: ['$.title'] } } },
+    ],
+    ['no jsonSchema is configured', 'test.json', {}],
+  ])('returns null when %s', (_name, file, options) => {
+    expect(
+      extractJson('{"title":"Hello"}', file, options, 'es', 'en')
+    ).toBeNull();
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('No Schema Tests', () => {
-    it('should return null when no schema matches', () => {
-      const localContent = JSON.stringify({ title: 'Hello', desc: 'World' });
-
-      const result = extractJson(
-        localContent,
-        'file.txt', // doesn't match any schema
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$.title'],
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).toBeNull();
-    });
-
-    it('should return null when no jsonSchema option provided', () => {
-      const localContent = JSON.stringify({ title: 'Hello' });
-
-      const result = extractJson(localContent, 'test.json', {}, 'es', 'en');
-
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('Include Schema Tests', () => {
-    it('should extract values using include schema', () => {
-      const localContent = JSON.stringify({
-        title: 'Título Español',
-        description: 'Descripción Española',
-        metadata: {
-          author: 'John Doe',
-          version: '1.0.0',
-        },
-      });
-
-      const result = extractJson(
-        localContent,
+  it('returns null and logs an error for invalid JSON', () => {
+    expect(
+      extractJson(
+        '{ invalid json }',
         'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$.title', '$.description'],
-            },
-          },
-        },
+        { jsonSchema: { '**/*.json': { include: ['$.title'] } } },
         'es',
         'en'
-      );
+      )
+    ).toBeNull();
+    expect(logger.error).toHaveBeenCalledWith('Invalid JSON file: test.json');
+  });
 
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      expect(parsed['/title']).toBe('Título Español');
-      expect(parsed['/description']).toBe('Descripción Española');
-      expect(parsed['/metadata']).toBeUndefined();
-    });
+  it('exits when the schema has neither include nor composite', () => {
+    expect(() => extract({ title: 'Test' }, {})).toThrow('Process exit called');
+    expect(logger.error).toHaveBeenCalledWith(
+      'No include or composite property found in JSON schema'
+    );
+    expect(exitSync).toHaveBeenCalledWith(1);
+  });
 
-    it('should extract nested values using include schema', () => {
-      const localContent = JSON.stringify({
-        app: {
-          ui: {
-            buttons: {
-              save: 'Guardar',
-              cancel: 'Cancelar',
-            },
-          },
-        },
-      });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
+  it('flattens the included paths of an include schema', () => {
+    expect(
+      extract(
         {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$.app.ui.buttons.*'],
-            },
-          },
+          title: 'Título Español',
+          app: { buttons: { save: 'Guardar', cancel: 'Cancelar' } },
+          metadata: { author: 'John Doe', version: '1.0.0' },
         },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      expect(parsed['/app/ui/buttons/save']).toBe('Guardar');
-      expect(parsed['/app/ui/buttons/cancel']).toBe('Cancelar');
+        { include: ['$.title', '$.app.buttons.*'] }
+      )
+    ).toEqual({
+      '/title': 'Título Español',
+      '/app/buttons/save': 'Guardar',
+      '/app/buttons/cancel': 'Cancelar',
     });
   });
 
-  describe('Composite Schema Array Type Tests', () => {
-    it('should extract array composite values for target locale', () => {
-      const localContent = JSON.stringify({
-        items: [
+  describe('composite array schema', () => {
+    it.each<[string, unknown[], unknown]>([
+      [
+        'keys target items by the position of the default-locale item',
+        [
           { locale: 'en', title: 'English Title', desc: 'English Description' },
-          {
-            locale: 'es',
-            title: 'Título Español',
-            desc: 'Descripción Española',
-          },
+          { locale: 'es', title: 'Título Español', desc: 'Descripción' },
         ],
-      });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title', '$.desc'],
-                  key: '$.locale',
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      // Should extract Spanish values using default locale's key position (/0)
-      expect(parsed['/items']).toBeDefined();
-      expect(parsed['/items']['/0']).toBeDefined();
-      expect(parsed['/items']['/0']['/title']).toBe('Título Español');
-      expect(parsed['/items']['/0']['/desc']).toBe('Descripción Española');
-    });
-
-    it('should extract array composite values when target locale is at index 0', () => {
-      const localContent = JSON.stringify({
-        items: [
-          {
-            locale: 'es',
-            title: 'Título Español',
-            desc: 'Descripción Española',
-          },
-          { locale: 'en', title: 'English Title', desc: 'English Description' },
+        { '/0': { '/title': 'Título Español', '/desc': 'Descripción' } },
+      ],
+      [
+        'uses the default-locale position even when the target item comes first',
+        [
+          { locale: 'es', title: 'Título Español' },
+          { locale: 'en', title: 'English Title' },
         ],
-      });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title', '$.desc'],
-                  key: '$.locale',
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      // Should extract Spanish values using default locale's key position (/1)
-      expect(parsed['/items']).toBeDefined();
-      expect(parsed['/items']['/1']).toBeDefined();
-      expect(parsed['/items']['/1']['/title']).toBe('Título Español');
-      expect(parsed['/items']['/1']['/desc']).toBe('Descripción Española');
-    });
-
-    it('should extract multiple matching items for same locale', () => {
-      const localContent = JSON.stringify({
-        items: [
+        { '/1': { '/title': 'Título Español' } },
+      ],
+      [
+        'pairs several target items with the default-locale items in order',
+        [
           { locale: 'en', title: 'English Title 1' },
           { locale: 'es', title: 'Título Español 1' },
           { locale: 'en', title: 'English Title 2' },
           { locale: 'es', title: 'Título Español 2' },
         ],
+        {
+          '/0': { '/title': 'Título Español 1' },
+          '/2': { '/title': 'Título Español 2' },
+        },
+      ],
+      [
+        'falls back to the target position when there is no default-locale item',
+        [{ title: 'No locale field' }, { locale: 'es', title: 'Spanish' }],
+        { '/1': { '/title': 'Spanish' } },
+      ],
+    ])('%s', (_name, items, expected) => {
+      expect(extract({ items }, localeArray(['$.title', '$.desc']))).toEqual({
+        '/items': expected,
+      });
+    });
+
+    it('supports nested source paths, key paths and include paths', () => {
+      const page = (language: string, ...links: string[]) => ({
+        meta: { language },
+        sections: { nav: { links: links.map((text) => ({ text })) } },
       });
 
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.locale',
-                },
-              },
+      expect(
+        extract(
+          {
+            data: {
+              pages: [
+                page('en', 'Home', 'About'),
+                page('es', 'Inicio', 'Acerca'),
+              ],
             },
           },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      // Keys should use default locale positions (/0, /2)
-      expect(parsed['/items']['/0']['/title']).toBe('Título Español 1');
-      expect(parsed['/items']['/2']['/title']).toBe('Título Español 2');
-    });
-
-    it('should handle nested key paths in array type', () => {
-      const localContent = JSON.stringify({
-        items: [
-          { meta: { locale: 'en' }, title: 'English Title' },
-          { meta: { locale: 'es' }, title: 'Título Español' },
-        ],
-      });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.meta.locale',
-                },
+          {
+            composite: {
+              '$.data.pages': {
+                type: 'array',
+                include: ['$.sections.nav.links[*].text'],
+                key: '$.meta.language',
               },
             },
+          }
+        )
+      ).toEqual({
+        '/data/pages': {
+          '/0': {
+            '/sections/nav/links/0/text': 'Inicio',
+            '/sections/nav/links/1/text': 'Acerca',
           },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      // Key should use default locale position (/0)
-      expect(parsed['/items']['/0']['/title']).toBe('Título Español');
-    });
-
-    it('should warn when no matching items found for locale', () => {
-      const localContent = JSON.stringify({
-        items: [{ locale: 'en', title: 'English Title' }],
-      });
-
-      extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.locale',
-                },
-              },
-            },
-          },
-        },
-        'fr', // French not present
-        'en'
-      );
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'No matching items found for locale fr at path: /items'
-      );
-    });
-
-    it('should warn when source object value is not an array', () => {
-      const localContent = JSON.stringify({
-        items: 'not-an-array',
-      });
-
-      extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.locale',
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Source object value is not an array at path: /items'
-      );
-    });
-  });
-
-  describe('Composite Schema Object Type Tests', () => {
-    it('should extract object composite values for target locale', () => {
-      const localContent = JSON.stringify({
-        translations: {
-          en: { title: 'English Title', desc: 'English Description' },
-          es: { title: 'Título Español', desc: 'Descripción Española' },
         },
       });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.translations': {
-                  type: 'object',
-                  include: ['$.title', '$.desc'],
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      expect(parsed['/translations']['/title']).toBe('Título Español');
-      expect(parsed['/translations']['/desc']).toBe('Descripción Española');
     });
 
-    it('should handle multiple composite objects', () => {
-      const localContent = JSON.stringify({
-        nav: {
-          en: { home: 'Home', about: 'About' },
-          es: { home: 'Inicio', about: 'Acerca de' },
-        },
-        content: {
-          en: { title: 'Title', body: 'Body' },
-          es: { title: 'Título', body: 'Cuerpo' },
-        },
+    it('matches the canonical locale when experimentalCanonicalLocaleKeys is set', () => {
+      configureApiClient({
+        baseUrl: 'https://api.example.com',
+        customMapping: { 'fr-ca': { code: 'fr-CA' } },
       });
 
-      const result = extractJson(
-        localContent,
-        'test.json',
+      const result = extract(
         {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.nav': {
-                  type: 'object',
-                  include: ['$.*'],
-                },
-                '$.content': {
-                  type: 'object',
-                  include: ['$.*'],
-                },
-              },
-            },
-          },
+          items: [
+            { locale: 'en', title: 'English Title' },
+            { locale: 'fr-CA', title: 'Titre Français Canadien' },
+          ],
         },
-        'es',
-        'en'
+        localeArray(['$.title']),
+        'fr-ca',
+        { experimentalCanonicalLocaleKeys: true }
       );
+      configureApiClient({ baseUrl: 'https://api.example.com' });
 
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      expect(parsed['/nav']['/home']).toBe('Inicio');
-      expect(parsed['/nav']['/about']).toBe('Acerca de');
-      expect(parsed['/content']['/title']).toBe('Título');
-      expect(parsed['/content']['/body']).toBe('Cuerpo');
-    });
-
-    it('should warn when no matching item found for locale in object', () => {
-      const localContent = JSON.stringify({
-        translations: {
-          en: { title: 'English Title' },
-        },
+      expect(result).toEqual({
+        '/items': { '/0': { '/title': 'Titre Français Canadien' } },
       });
-
-      extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.translations': {
-                  type: 'object',
-                  include: ['$.title'],
-                },
-              },
-            },
-          },
-        },
-        'fr', // French not present
-        'en'
-      );
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'No matching item found for locale fr at path: /translations'
-      );
     });
 
-    it('should warn when source object value is not an object', () => {
-      const localContent = JSON.stringify({
-        translations: 'not-an-object',
-      });
-
-      extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.translations': {
-                  type: 'object',
-                  include: ['$.title'],
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Source object value is not an object at path: /translations'
-      );
-    });
-
-    it('should warn when source object value is null', () => {
-      const localContent = JSON.stringify({
-        translations: null,
-      });
-
-      extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.translations': {
-                  type: 'object',
-                  include: ['$.title'],
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Source object value is not an object at path: /translations'
-      );
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should return null and log error for invalid JSON', () => {
-      const result = extractJson(
-        '{ invalid json }',
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$.title'],
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).toBeNull();
-      expect(mockLogError).toHaveBeenCalledWith('Invalid JSON file: test.json');
-    });
-
-    it('should exit when schema has no include or composite', () => {
-      const localContent = JSON.stringify({ title: 'Test' });
-
-      expect(() => {
-        extractJson(
-          localContent,
-          'test.json',
+    it.each([
+      ['pt-BR', 'Anúncios', 'Introdução', 'Funcionalidades'],
+      ['en', 'Announcements', 'Introduction', 'Features'],
+    ])(
+      'extracts the %s entries of a Mintlify navigation structure',
+      (locale, anchor, firstTab, secondTab) => {
+        const result = extractJson(
+          readFileSync(
+            path.join(__dirname, '../__mocks__', 'test_file1.json'),
+            'utf8'
+          ),
+          'test_file1.json',
           {
             jsonSchema: {
               '**/*.json': {
-                // Missing both include and composite
+                composite: {
+                  '$.navigation.languages': {
+                    type: 'array',
+                    include: ['$.global.anchors[*].anchor', '$.tabs[*].tab'],
+                    key: '$.language',
+                  },
+                },
               },
             },
           },
-          'es',
+          locale,
           'en'
         );
-      }).toThrow('Process exit called');
 
-      expect(mockLogError).toHaveBeenCalledWith(
-        'No include or composite property found in JSON schema'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
+        // Keyed by the position of the default-locale (en) entry.
+        const languages = JSON.parse(result!)['/navigation/languages'];
+        expect(Object.keys(languages)).toEqual(['/0']);
+        expect(languages['/0']).toMatchObject({
+          '/global/anchors/0/anchor': anchor,
+          '/global/anchors/1/anchor': 'Status',
+          '/tabs/0/tab': firstTab,
+          '/tabs/1/tab': secondTab,
+        });
+      }
+    );
+
+    it.each<[string, unknown, string]>([
+      [
+        'no item has the target locale',
+        [{ locale: 'en', title: 'English Title' }],
+        'No matching items found for locale es at path: /items',
+      ],
+      [
+        'the array is empty',
+        [],
+        'No matching items found for locale es at path: /items',
+      ],
+      [
+        'the source is not an array',
+        'not-an-array',
+        'Source object value is not an array at path: /items',
+      ],
+    ])('warns and extracts nothing when %s', (_name, items, warning) => {
+      expect(extract({ items }, localeArray(['$.title']))).toEqual({});
+      expect(logger.warn).toHaveBeenCalledWith(warning);
     });
   });
 
-  describe('Real-world Scenarios', () => {
-    it('should extract navigation structure from merged file', () => {
-      const localContent = readFileSync(
-        path.join(__dirname, '../__mocks__', 'test_file1.json'),
-        'utf8'
-      );
-
-      const result = extractJson(
-        localContent,
-        'test_file1.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.navigation.languages': {
-                  type: 'array',
-                  include: ['$.global.anchors[*].anchor', '$.tabs[*].tab'],
-                  key: '$.language',
-                },
-              },
-            },
-          },
-        },
-        'pt-BR',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-
-      // Should use default locale (en) key position (/0)
-      expect(parsed['/navigation/languages']).toBeDefined();
-      expect(parsed['/navigation/languages']['/0']).toBeDefined();
+  describe('composite object schema', () => {
+    it('extracts the target-locale entry of every composite object', () => {
       expect(
-        parsed['/navigation/languages']['/0']['/global/anchors/0/anchor']
-      ).toBe('Anúncios');
-      expect(
-        parsed['/navigation/languages']['/0']['/global/anchors/1/anchor']
-      ).toBe('Status');
-      expect(parsed['/navigation/languages']['/0']['/tabs/0/tab']).toBe(
-        'Introdução'
-      );
-      expect(parsed['/navigation/languages']['/0']['/tabs/1/tab']).toBe(
-        'Funcionalidades'
-      );
-    });
-
-    it('should extract English content from merged file', () => {
-      const localContent = readFileSync(
-        path.join(__dirname, '../__mocks__', 'test_file1.json'),
-        'utf8'
-      );
-
-      const result = extractJson(
-        localContent,
-        'test_file1.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.navigation.languages': {
-                  type: 'array',
-                  include: ['$.global.anchors[*].anchor', '$.tabs[*].tab'],
-                  key: '$.language',
-                },
-              },
-            },
-          },
-        },
-        'en',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-
-      // en is at index 0 in the test file
-      expect(parsed['/navigation/languages']['/0']).toBeDefined();
-      expect(
-        parsed['/navigation/languages']['/0']['/global/anchors/0/anchor']
-      ).toBe('Announcements');
-      expect(
-        parsed['/navigation/languages']['/0']['/global/anchors/1/anchor']
-      ).toBe('Status');
-      expect(parsed['/navigation/languages']['/0']['/tabs/0/tab']).toBe(
-        'Introduction'
-      );
-      expect(parsed['/navigation/languages']['/0']['/tabs/1/tab']).toBe(
-        'Features'
-      );
-    });
-
-    it('should handle special characters in extracted values', () => {
-      const localContent = JSON.stringify({
-        items: [
-          { locale: 'en', message: 'Simple message' },
+        extract(
           {
-            locale: 'es',
-            message:
-              'Mensaje con "comillas", \'apostrofes\', y\nnuevas líneas\tcon tabs',
-          },
-        ],
-      });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.message'],
-                  key: '$.locale',
-                },
-              },
+            nav: {
+              en: { home: 'Home', about: 'About' },
+              es: { home: 'Inicio', about: 'Acerca de' },
+            },
+            content: {
+              en: { title: 'Title', body: 'Body' },
+              es: { title: 'Título', body: 'Cuerpo' },
             },
           },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      // Key should use default locale position (/0)
-      expect(parsed['/items']['/0']['/message']).toBe(
-        'Mensaje con "comillas", \'apostrofes\', y\nnuevas líneas\tcon tabs'
-      );
+          {
+            composite: {
+              '$.nav': { type: 'object', include: ['$.*'] },
+              '$.content': { type: 'object', include: ['$.title'] },
+            },
+          }
+        )
+      ).toEqual({
+        '/nav': { '/home': 'Inicio', '/about': 'Acerca de' },
+        '/content': { '/title': 'Título' },
+      });
     });
 
-    it('should handle deeply nested structures', () => {
-      const localContent = JSON.stringify({
-        data: {
-          pages: [
-            {
-              language: 'en',
-              sections: {
-                header: {
-                  nav: {
-                    links: [{ text: 'Home' }, { text: 'About' }],
-                  },
-                },
-              },
-            },
-            {
-              language: 'es',
-              sections: {
-                header: {
-                  nav: {
-                    links: [{ text: 'Inicio' }, { text: 'Acerca de' }],
-                  },
-                },
-              },
-            },
-          ],
-        },
-      });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.data.pages': {
-                  type: 'array',
-                  include: ['$.sections.header.nav.links[*].text'],
-                  key: '$.language',
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      // Key should use default locale position (/0)
+    it('uses a string target-locale entry directly', () => {
       expect(
-        parsed['/data/pages']['/0']['/sections/header/nav/links/0/text']
-      ).toBe('Inicio');
-      expect(
-        parsed['/data/pages']['/0']['/sections/header/nav/links/1/text']
-      ).toBe('Acerca de');
-    });
-  });
-
-  describe('Canonical Locale Keys', () => {
-    it('should use canonical locale when experimentalCanonicalLocaleKeys is enabled', () => {
-      const localContent = JSON.stringify({
-        items: [
-          { locale: 'en', title: 'English Title' },
-          { locale: 'fr-CA', title: 'Titre Français Canadien' },
-        ],
-      });
-
-      const customMapping = {
-        'fr-ca': { code: 'fr-CA' },
-      };
-      configureApiClient({ baseUrl: 'https://api.example.com', customMapping });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.locale',
-                },
-              },
+        extract(
+          {
+            content: {
+              en: 'Contact name, phone number, email, 2',
+              es: 'Nombre del contacto, número de teléfono, email, 2',
             },
           },
-          experimentalCanonicalLocaleKeys: true,
-        },
-        'fr-ca',
-        'en'
-      );
-
-      configureApiClient({ baseUrl: 'https://api.example.com' });
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      // Should match fr-CA in the data using canonical locale lookup
-      // Key should use default locale position (/0)
-      expect(parsed['/items']['/0']['/title']).toBe('Titre Français Canadien');
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle empty items array', () => {
-      const localContent = JSON.stringify({
-        items: [],
+          { composite: { '$.content': { type: 'object', include: ['$.*'] } } }
+        )
+      ).toEqual({
+        '/content': 'Nombre del contacto, número de teléfono, email, 2',
       });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.locale',
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      // Should return empty composite result
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'No matching items found for locale es at path: /items'
-      );
     });
 
-    it('should handle string sourceItem in object composite schema', () => {
-      const localContent = JSON.stringify({
-        content: {
-          en: 'Contact name, phone number, email, 2',
-          es: 'Nombre del contacto, número de teléfono, email, 2',
-        },
-      });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.content': {
-                  type: 'object',
-                  include: ['$.*'],
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      expect(parsed['/content']).toBe(
-        'Nombre del contacto, número de teléfono, email, 2'
-      );
-    });
-
-    it('should handle empty translations object', () => {
-      const localContent = JSON.stringify({
-        translations: {},
-      });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.translations': {
-                  type: 'object',
-                  include: ['$.title'],
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'No matching item found for locale es at path: /translations'
-      );
-    });
-
-    it('should handle items without the key field', () => {
-      const localContent = JSON.stringify({
-        items: [
-          { title: 'No locale field' },
-          { locale: 'es', title: 'Spanish' },
-        ],
-      });
-
-      const result = extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.locale',
-                },
-              },
-            },
-          },
-        },
-        'es',
-        'en'
-      );
-
-      expect(result).not.toBeNull();
-      const parsed = JSON.parse(result!);
-      // Should only extract the item that has the locale field
-      // No default locale items found, so falls back to target key (/1)
-      expect(parsed['/items']['/1']['/title']).toBe('Spanish');
-      expect(parsed['/items']['/0']).toBeUndefined();
-    });
-
-    it('should return empty result for composite with no matching locales', () => {
-      const localContent = JSON.stringify({
-        items: [
-          { locale: 'de', title: 'German' },
-          { locale: 'ja', title: 'Japanese' },
-        ],
-      });
-
-      extractJson(
-        localContent,
-        'test.json',
-        {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.items': {
-                  type: 'array',
-                  include: ['$.title'],
-                  key: '$.locale',
-                },
-              },
-            },
-          },
-        },
-        'es', // Spanish not present
-        'en'
-      );
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'No matching items found for locale es at path: /items'
-      );
+    it.each<[string, unknown, string]>([
+      [
+        'no entry has the target locale',
+        { en: { title: 'English Title' } },
+        'No matching item found for locale es at path: /translations',
+      ],
+      [
+        'the object is empty',
+        {},
+        'No matching item found for locale es at path: /translations',
+      ],
+      [
+        'the source is not an object',
+        'not-an-object',
+        'Source object value is not an object at path: /translations',
+      ],
+      [
+        'the source is null',
+        null,
+        'Source object value is not an object at path: /translations',
+      ],
+    ])('warns and extracts nothing when %s', (_name, translations, warning) => {
+      expect(extract({ translations }, localeObject(['$.title']))).toEqual({});
+      expect(logger.warn).toHaveBeenCalledWith(warning);
     });
   });
 });

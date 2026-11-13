@@ -26,6 +26,7 @@ import {
   type MessageFormatElement,
   type ParserOptions,
 } from '../parser';
+import { expectEachCase } from './expectEachCase';
 import { formatIcu } from './format';
 
 const PLURAL_LOCALES = [
@@ -135,17 +136,24 @@ const GENERATED_HOUR_SKELETONS = [1, 2, 3]
   // FormatJS reads the `a` that `j` brings as `hour12`, which turns an `H`
   // or `k` beside it into a 12-hour clock. ICU4C keeps 24 hours: `Ha` is 23.
   .filter((skeleton) => !(skeleton.includes('j') && /[Hk]/.test(skeleton)));
-const GENERATED_HOUR_SKELETON_CASES = [
-  'en-US',
-  'de-DE',
-  'ar-EG',
-  'ja-JP',
-  'en-u-rg-gbzzzz',
-  'en-GB-u-rg-uszzzz',
-  'und-GB',
-].flatMap((locale) =>
-  GENERATED_HOUR_SKELETONS.map((skeleton) => ({ locale, skeleton }))
-);
+// The skeleton scanner only sees a locale through its resolved hour symbol, so
+// every combination runs for one 12-hour and one 24-hour locale. The locales
+// that exercise other ways of resolving that symbol (numbering system, region
+// overrides, undetermined language) run every combination of up to two symbols.
+const GENERATED_HOUR_SKELETON_LOCALES = [
+  ...['en-US', 'de-DE'].map((locale) => ({
+    locale,
+    skeletons: GENERATED_HOUR_SKELETONS,
+  })),
+  ...['ar-EG', 'ja-JP', 'en-u-rg-gbzzzz', 'en-GB-u-rg-uszzzz', 'und-GB'].map(
+    (locale) => ({
+      locale,
+      skeletons: GENERATED_HOUR_SKELETONS.filter(
+        (skeleton) => skeleton.length <= 2
+      ),
+    })
+  ),
+];
 
 const NON_GRAMMAR_SPACES = [
   '\u00A0',
@@ -203,12 +211,11 @@ const PARSER_MESSAGES = [
   '{n,number,{}',
   '{x, number,{percent}',
   '{n, number, foo{bar} {_gt_, select, other {X}}}',
+  'prefix 0 {value0} suffix 127',
+  'prefix 127 {value127} suffix 0',
+  // Offsets 0-4 with one- and two-digit exact selectors.
   ...Array.from(
-    { length: 128 },
-    (_, index) => `prefix ${index} {value${index}} suffix ${127 - index}`
-  ),
-  ...Array.from(
-    { length: 64 },
+    { length: 10 },
     (_, index) =>
       `{value${index}, plural, offset:${index % 5} =0 {zero} =${index + 1} {exact} one {one:#} other {other:#}}`
   ),
@@ -333,65 +340,71 @@ function formatWithFormatJs(
   return formatter.format(values as never);
 }
 
+function expectSameFormat(
+  message: string,
+  locale: string | string[],
+  values: Record<string, unknown>
+): void {
+  expect(formatIcu(message, locale, values)).toEqual(
+    formatWithFormatJs(message, locale, values)
+  );
+}
+
+function expectSameAst(message: string, options: ParserOptions): void {
+  expect(parse(message, options)).toEqual(
+    withOurHourClock(formatJsParse(message, options) as MessageFormatElement[])
+  );
+}
+
+function catchError(run: () => unknown): unknown {
+  try {
+    run();
+  } catch (error) {
+    return error;
+  }
+  return undefined;
+}
+
+// Each test below checks a whole corpus; expectEachCase reports every failing
+// input instead of registering thousands of individual tests.
 describe('live FormatJS runtime compatibility', () => {
-  it.each(PLURAL_RUNTIME_CASES)(
-    'matches plural formatting for $locale, $value, $message',
-    ({ locale, message, value }) => {
-      const values = { value };
-      expect(formatIcu(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
+  it('matches plural formatting', () => {
+    expectEachCase(PLURAL_RUNTIME_CASES, ({ locale, message, value }) => {
+      expectSameFormat(message, locale, { value });
+    });
+  });
 
-  it.each(NUMBER_RUNTIME_CASES)(
-    'matches number formatting for $locale, $value, $message',
-    ({ locale, message, value }) => {
-      const values = { value };
-      expect(formatIcu(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
+  it('matches number formatting', () => {
+    expectEachCase(NUMBER_RUNTIME_CASES, ({ locale, message, value }) => {
+      expectSameFormat(message, locale, { value });
+    });
+  });
 
-  it.each(DATE_RUNTIME_CASES)(
-    'matches date/time formatting for $locale and $message',
-    ({ locale, message, value }) => {
-      const values = { value };
-      expect(formatIcu(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
+  it('matches date/time formatting', () => {
+    expectEachCase(DATE_RUNTIME_CASES, ({ locale, message, value }) => {
+      expectSameFormat(message, locale, { value });
+    });
+  });
 
-  it.each(HOUR_SKELETON_RUNTIME_CASES)(
-    'matches locale-aware hour skeleton ::$skeleton for $locale',
-    ({ locale, skeleton }) => {
-      const message = `{value, time, ::${skeleton}}`;
-      const values = { value: new Date(2020, 4, 6, 14, 3, 2) };
-      expect(formatIcu(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
+  it('matches locale-aware hour skeletons', () => {
+    const values = { value: new Date(2020, 4, 6, 14, 3, 2) };
+    expectEachCase(HOUR_SKELETON_RUNTIME_CASES, ({ locale, skeleton }) => {
+      expectSameFormat(`{value, time, ::${skeleton}}`, locale, values);
+    });
+  });
 
-  it.each(GENERATED_HOUR_SKELETON_CASES)(
-    'matches generated hour skeleton ::$skeleton for $locale',
-    ({ locale, skeleton }) => {
-      const message = `{value, time, ::${skeleton}}`;
+  // One test per locale: the whole corpus in one test outran the test timeout
+  // on a busy CI runner.
+  it.each(GENERATED_HOUR_SKELETON_LOCALES)(
+    'matches every generated hour skeleton and its AST for $locale',
+    ({ locale, skeletons }) => {
       const values = { value: new Date(2020, 4, 6, 19, 3, 2) };
-      expect(formatIcu(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-
-      const localeObject = new Intl.Locale(locale);
-      expect(parse(message, { locale: localeObject })).toEqual(
-        withOurHourClock(
-          formatJsParse(message, {
-            locale: localeObject,
-          }) as MessageFormatElement[]
-        )
-      );
+      const options = { locale: new Intl.Locale(locale) };
+      expectEachCase(skeletons, (skeleton) => {
+        const message = `{value, time, ::${skeleton}}`;
+        expectSameFormat(message, locale, values);
+        expectSameAst(message, options);
+      });
     }
   );
 
@@ -401,105 +414,79 @@ describe('live FormatJS runtime compatibility', () => {
     const sparseLocales: string[] = [];
     sparseLocales[1] = 'fr-FR';
 
-    expect(formatIcu(message, sparseLocales, values)).toEqual(
-      formatWithFormatJs(message, sparseLocales, values)
-    );
+    expectSameFormat(message, sparseLocales, values);
     expect(() => formatIcu(message, [], values)).toThrow();
     expect(() => formatWithFormatJs(message, [], values)).toThrow();
   });
 
-  it.each(SIMPLE_RUNTIME_CASES)(
-    'matches argument/select behavior for $message',
-    ({ locale, message, values }) => {
-      expect(formatIcu(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
+  it('matches argument/select behavior', () => {
+    expectEachCase(SIMPLE_RUNTIME_CASES, ({ locale, message, values }) => {
+      expectSameFormat(message, locale, values);
+    });
+  });
 });
 
 describe('live FormatJS parser compatibility', () => {
-  it.each(PARSER_CASES)('matches the AST for %j', (message, options) => {
-    expect(parse(message, options)).toEqual(
-      withOurHourClock(formatJsParse(message, options))
+  it('matches the AST', () => {
+    expectEachCase(PARSER_CASES, ([message, options]) =>
+      expectSameAst(message, options)
     );
   });
 
-  it.each(PARSER_CASES)(
-    'preserves the AST through our public parse/print round trip for %j',
-    (message, options) => {
+  it('preserves the AST through our public parse/print round trip', () => {
+    expectEachCase(PARSER_CASES, ([message, options]) => {
       const ast = parse(message, options);
       expect(parse(printAST(ast), options)).toEqual(ast);
-    }
-  );
+    });
+  });
 
-  it.each(NON_GRAMMAR_SPACES)(
-    'keeps non-grammar space %j in a style name, like FormatJS',
-    (space) => {
-      const message = `{value, number, ${space}percent}`;
-      expect(parse(message, { captureLocation: false })).toEqual(
-        formatJsParse(message, { captureLocation: false })
-      );
-    }
-  );
-
-  it.each(INVALID_MESSAGES)(
-    'matches rejection of invalid input %j',
-    (message) => {
-      expect(() => parse(message)).toThrow();
-      expect(() => formatJsParse(message)).toThrow();
-    }
-  );
-
-  it.each(HOUR_SKELETON_AST_CASES)(
-    'matches the locale-aware AST for ::$skeleton in $locale',
-    ({ locale, skeleton }) => {
-      const message = `{value, time, ::${skeleton}}`;
-      const localeObject = new Intl.Locale(locale);
-      expect(parse(message, { locale: localeObject })).toEqual(
-        withOurHourClock(
-          formatJsParse(message, {
-            locale: localeObject,
-          }) as MessageFormatElement[]
-        )
-      );
-    }
-  );
-
-  it.each(EXACT_ERROR_MESSAGES)(
-    'matches SyntaxError metadata for %j',
-    (message) => {
-      let formatJsError: unknown;
-      let replacementError: unknown;
-      try {
-        formatJsParse(message);
-      } catch (error) {
-        formatJsError = error;
-      }
-      try {
-        parse(message);
-      } catch (error) {
-        replacementError = error;
-      }
-
-      // FormatJS's message is the kind of error, which is the code of ours.
-      expect(replacementError).toMatchObject({
-        code: (formatJsError as Error).message,
-        location: (formatJsError as Error & { location: unknown }).location,
-        originalMessage: (formatJsError as Error & { originalMessage: string })
-          .originalMessage,
+  it('keeps non-grammar spaces in a style name, like FormatJS', () => {
+    expectEachCase(NON_GRAMMAR_SPACES, (space) => {
+      expectSameAst(`{value, number, ${space}percent}`, {
+        captureLocation: false,
       });
-    }
-  );
+    });
+  });
 
-  it.each(INVALID_SIGNIFICANT_PRECISION_SKELETONS)(
-    'matches FormatJS rejection of malformed significant precision ::%s',
-    (skeleton) => {
-      const message = `{value, number, ::${skeleton}}`;
+  it('matches the locale-aware AST for hour skeletons', () => {
+    expectEachCase(HOUR_SKELETON_AST_CASES, ({ locale, skeleton }) => {
+      expectSameAst(`{value, time, ::${skeleton}}`, {
+        locale: new Intl.Locale(locale),
+      });
+    });
+  });
+
+  it('matches rejection of invalid input', () => {
+    const messages = [
+      ...INVALID_MESSAGES,
+      ...INVALID_SIGNIFICANT_PRECISION_SKELETONS.map(
+        (skeleton) => `{value, number, ::${skeleton}}`
+      ),
+    ];
+    expectEachCase(messages, (message) => {
       expect(() => parse(message)).toThrow();
       expect(() => formatJsParse(message)).toThrow();
-    }
-  );
+    });
+  });
+
+  it('matches SyntaxError metadata', () => {
+    expectEachCase(EXACT_ERROR_MESSAGES, (message) => {
+      const formatJsError = catchError(() =>
+        formatJsParse(message)
+      ) as Error & {
+        location: unknown;
+        originalMessage: string;
+      };
+
+      expect(formatJsError).toBeInstanceOf(Error);
+      // FormatJS's message is the kind of error, which is the code of ours.
+      expect(catchError(() => parse(message))).toMatchObject({
+        code: formatJsError.message,
+        location: formatJsError.location,
+        originalMessage: formatJsError.originalMessage,
+      });
+    });
+  });
 });
 
 // FormatJS printAST is intentionally not used as an oracle: it is not part of

@@ -166,6 +166,37 @@
   - @generaltranslation/svelte-extractor@0.1.0-samsara.0
   - @generaltranslation/supported-locales@2.1.45-samsara.0
 
+## 2.28.2
+
+### Patch Changes
+
+- Updated dependencies [[`7aae545`](https://github.com/generaltranslation/gt/commit/7aae545bd9e65148b8cbf98a4df3ce750ab1cdbf)]:
+  - @generaltranslation/format@0.1.10
+  - generaltranslation@9.5.12
+  - @generaltranslation/vue-extractor@0.1.26
+  - @generaltranslation/python-extractor@0.2.67
+  - @generaltranslation/supported-locales@2.1.48
+
+## 2.28.1
+
+### Patch Changes
+
+- [#2707](https://github.com/generaltranslation/gt/pull/2707) [`691493b`](https://github.com/generaltranslation/gt/commit/691493b9f75b10bcafc2fe50e0361a68b76ebd45) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - fix(cli): stop `--save-local` from replacing a Mintlify `docs.json` translation with an empty one when its languages are split into `$ref` files
+
+## 2.28.0
+
+### Minor Changes
+
+- [#2692](https://github.com/generaltranslation/gt/pull/2692) [`2d4868c`](https://github.com/generaltranslation/gt/commit/2d4868c0ca2b2d61931446256b993999cab0284a) Thanks [@JacksonO123](https://github.com/JacksonO123)! - `gt translate`, `gt stage`, `gt upload` and `gt setup` collect the source code context of Paraglide JS messages before reading the files to upload. Set `files.json.parsingFlags.includeSourceCodeContext` to `true` in `gt.config.json` in a project that has `@generaltranslation/paraglide-js` installed; running `paraglide-context` before the CLI is then no longer needed.
+
+### Patch Changes
+
+- [#2642](https://github.com/generaltranslation/gt/pull/2642) [`caea70d`](https://github.com/generaltranslation/gt/commit/caea70d11ba6f7a23d1cc8c14a9e1bec3704c493) Thanks [@eoinest](https://github.com/eoinest)! - `gt init --create-project` now lists the organizations you can use (name and ID) when a noninteractive run needs `--org-id` or gets one you can't access.
+
+- [#2644](https://github.com/generaltranslation/gt/pull/2644) [`a3a9b6a`](https://github.com/generaltranslation/gt/commit/a3a9b6a2705cf155d315bc94dfd29aaf44ae71bb) Thanks [@eoinest](https://github.com/eoinest)! - `gt init --locadex` now returns you to the dashboard after you connect GitHub, instead of a page that doesn't exist.
+
+- [#2645](https://github.com/generaltranslation/gt/pull/2645) [`69738aa`](https://github.com/generaltranslation/gt/commit/69738aa6f8a67aca67a10e3717d942db9f7410ac) Thanks [@eoinest](https://github.com/eoinest)! - `gt init` no longer installs gt-react or reports a finished setup on Next.js Pages Router apps. It leaves the app unchanged, links the Pages Router quickstart as a manual step, and adds `defaultLocale` to `locales` in `gt.config.json` so the quickstart's Next.js `i18n` config builds.
+
 ## 2.27.3
 
 ### Patch Changes

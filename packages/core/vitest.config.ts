@@ -1,41 +1,35 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
+import { vitestThreadsPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    // Enable parallel execution
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        // Use more workers for better parallelization
-        minThreads: 2,
-        maxThreads: 4,
+// A worker thread cannot change the time zone: setting process.env.TZ there
+// changes only the thread's copy of the environment.
+const TIME_ZONE_TESTS = ['src/__tests__/formatting.test.ts'];
+
+export default mergeConfig(
+  vitestThreadsPreset,
+  defineConfig({
+    test: {
+      // Keep the GT logger quiet in test output.
+      env: {
+        _GT_LOG_LEVEL: 'off',
       },
-    },
-    // Run tests in parallel (default is true, but being explicit)
-    fileParallelism: true,
-    // Enable concurrent test execution within files
-    sequence: {
-      concurrent: true,
-    },
-    // Set reasonable timeout for all tests
-    testTimeout: 15000,
-    // Proper test isolation to prevent mock interference
-    isolate: true,
-    // Environment setup
-    environment: 'node',
-    // Globals for easier test writing
-    globals: true,
-    // Suppress GT logger output during tests for cleaner output
-    env: {
-      _GT_LOG_LEVEL: 'off',
-    },
-    reporters: [
-      [
-        'default',
+      projects: [
         {
-          summary: true,
+          extends: true,
+          test: {
+            name: 'threads',
+            exclude: [...configDefaults.exclude, ...TIME_ZONE_TESTS],
+          },
+        },
+        {
+          extends: true,
+          test: {
+            name: 'time-zone',
+            include: TIME_ZONE_TESTS,
+            pool: 'forks',
+          },
         },
       ],
-    ],
-  },
-});
+    },
+  })
+);

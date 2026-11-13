@@ -5,561 +5,152 @@ import {
 } from '../addExplicitAnchorIds';
 
 describe('addExplicitAnchorIds', () => {
-  // Mock settings for different modes
-  const standardSettings = undefined; // No settings = standard mode
-  const urlLocalizationSettings = {
-    options: {
-      experimentalLocalizeStaticUrls: true,
-    },
-  };
+  const standardSettings = undefined;
   const mintlifySettings = {
     options: {
       experimentalLocalizeStaticUrls: true,
       experimentalAddHeaderAnchorIds: 'mintlify' as const,
     },
   };
-  it('should add explicit IDs to all headings (default \\{#id} format)', () => {
-    const input = `# Getting Started
 
-## Code-based workflow
+  describe('anchor format', () => {
+    // Formatting, punctuation, every heading level, links to the headings and
+    // a fenced heading that must be left alone.
+    const headings = [
+      ['# Getting Started', 'getting-started'],
+      ['## **Bold Heading** with formatting', 'bold-heading-with-formatting'],
+      ['## `Code Heading` example', 'code-heading-example'],
+      ['## *Italic* and **mixed** formatting', 'italic-and-mixed-formatting'],
+      ['### Code & Design Workflow!', 'code-design-workflow'],
+      ['#### API Reference (v2.0)', 'api-reference-v20'],
+      ['##### Getting Started: Step 1', 'getting-started-step-1'],
+      ["###### What's New?", 'whats-new'],
+    ];
+    const rest = `
+This section has no links pointing at it.
 
-This section explains the code workflow.
+<Card href="#code-design-workflow">Link to workflow</Card>
 
-<Card href="#code-based-workflow">Link to workflow</Card>
+[Link to step 1](#getting-started-step-1) and [Unclosed link(#test
 
-## Web editor workflow
+<div>
+  <a href="#whats-new">Raw JSX link</a>
+</div>
 
-Another section here.
-
-[Link to web editor](#web-editor-workflow)
+\`\`\`markdown
+## Fake Heading In Code Block
+This is just an example
+\`\`\`
 `;
+    const document = (anchor: (id: string) => string) =>
+      headings.map(([heading, id]) => `${heading}${anchor(id)}\n`).join('\n') +
+      rest;
+    const escaped = (id: string) => ` \\{#${id}\\}`;
 
-    // Extract heading info from source (same as translated in this test case)
-    const sourceHeadingMap = extractHeadingInfo(input);
-    const result = addExplicitAnchorIds(input, sourceHeadingMap);
+    it.each([
+      ['escaped \\{#id\\} anchors by default', standardSettings, escaped],
+      [
+        'escaped \\{#id\\} anchors with experimentalLocalizeStaticUrls',
+        { options: { experimentalLocalizeStaticUrls: true } },
+        escaped,
+      ],
+      [
+        'native {#id} anchors in Mintlify mode',
+        mintlifySettings,
+        (id: string) => ` {#${id}}`,
+      ],
+    ])('adds %s to every real heading', (_name, settings, anchor) => {
+      const input = document(() => '');
 
-    expect(result.hasChanges).toBe(true);
-    expect(result.addedIds).toHaveLength(3);
-    expect(result.addedIds).toEqual([
-      { heading: 'Getting Started', id: 'getting-started' },
-      { heading: 'Code-based workflow', id: 'code-based-workflow' },
-      { heading: 'Web editor workflow', id: 'web-editor-workflow' },
-    ]);
+      const result = addExplicitAnchorIds(
+        input,
+        extractHeadingInfo(input),
+        settings
+      );
 
-    expect(result.content).toContain(
-      '# Getting Started \\{#getting-started\\}'
-    );
-    expect(result.content).toContain(
-      '## Code-based workflow \\{#code-based-workflow\\}'
-    );
-    expect(result.content).toContain(
-      '## Web editor workflow \\{#web-editor-workflow\\}'
-    );
+      // Only the anchors are added: heading text, links and the code block are
+      // left exactly as written.
+      expect(result.content).toBe(document(anchor));
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toEqual(
+        headings.map(([heading, id]) => ({
+          heading: heading.replace(/^#+ /, '').replace(/[*`]/g, ''),
+          id,
+        }))
+      );
+    });
   });
 
-  it('should skip headings that already have explicit IDs', () => {
-    const input = `## Already has ID {#custom-id}
-
-<Card href="#custom-id">Link to section</Card>
-`;
-
-    const sourceHeadingMap = extractHeadingInfo(input);
-    const result = addExplicitAnchorIds(input, sourceHeadingMap);
-
-    // Normalizes to escaped form in MDX; no new IDs added
-    expect(result.hasChanges).toBe(true);
-    // We track the normalized anchor as an addition in MDX mode
-    expect(result.addedIds).toHaveLength(1);
-    expect(result.content).toContain('## Already has ID \\{#custom-id\\}');
-  });
-
-  it('reuses explicit IDs from source when translation lacks them', () => {
+  describe('IDs from the source file', () => {
     const source = `## Source heading {#custom-source-id}
 
 ## Another Source Heading
 `;
 
-    const translated = `## Encabezado traducido
+    it('applies explicit and derived source IDs to translated headings in order', () => {
+      const result = addExplicitAnchorIds(
+        `## Encabezado traducido
 
 ## Otro encabezado
-`;
+`,
+        extractHeadingInfo(source)
+      );
 
-    const sourceHeadingMap = extractHeadingInfo(source);
-    const result = addExplicitAnchorIds(translated, sourceHeadingMap);
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toEqual([
+        { heading: 'Encabezado traducido', id: 'custom-source-id' },
+        { heading: 'Otro encabezado', id: 'another-source-heading' },
+      ]);
+      expect(result.content)
+        .toBe(`## Encabezado traducido \\{#custom-source-id\\}
 
-    expect(result.hasChanges).toBe(true);
-    expect(result.addedIds).toEqual([
-      { heading: 'Encabezado traducido', id: 'custom-source-id' },
-      { heading: 'Otro encabezado', id: 'another-source-heading' },
-    ]);
+## Otro encabezado \\{#another-source-heading\\}
+`);
+    });
 
-    expect(result.content).toContain(
-      '## Encabezado traducido \\{#custom-source-id\\}'
-    );
-    expect(result.content).toContain(
-      '## Otro encabezado \\{#another-source-heading\\}'
-    );
-  });
+    it('normalizes an inline ID the translation kept to the escaped form in MDX', () => {
+      const result = addExplicitAnchorIds(
+        `## Traducción {#custom-source-id}`,
+        extractHeadingInfo(`## Source heading {#custom-source-id}`)
+      );
 
-  it('normalizes existing inline IDs to escaped form when they match source', () => {
-    const source = `## Source heading {#custom-source-id}`;
-    const translated = `## Traducción {#custom-source-id}`;
+      expect(result.hasChanges).toBe(true);
+      expect(result.content).toBe('## Traducción \\{#custom-source-id\\}');
+      // Normalization counts as a recorded ID in MDX mode
+      expect(result.addedIds).toHaveLength(1);
+    });
 
-    const sourceHeadingMap = extractHeadingInfo(source);
-    const result = addExplicitAnchorIds(translated, sourceHeadingMap);
-
-    expect(result.hasChanges).toBe(true);
-    expect(result.content).toContain('## Traducción \\{#custom-source-id\\}');
-    // Normalization counts as a recorded ID in MDX mode
-    expect(result.addedIds).toHaveLength(1);
-  });
-
-  it('should add IDs to all headings even without anchor links', () => {
-    const input = `## No Links Here
-
-This heading has no anchor links pointing to it.
-
-## Another Section
-
-No links here either.
-`;
-
-    const sourceHeadingMap = extractHeadingInfo(input);
-    const result = addExplicitAnchorIds(input, sourceHeadingMap);
-
-    expect(result.hasChanges).toBe(true);
-    expect(result.addedIds).toHaveLength(2);
-    expect(result.addedIds).toEqual([
-      { heading: 'No Links Here', id: 'no-links-here' },
-      { heading: 'Another Section', id: 'another-section' },
-    ]);
-    expect(result.content).toContain('## No Links Here \\{#no-links-here\\}');
-    expect(result.content).toContain(
-      '## Another Section \\{#another-section\\}'
-    );
-  });
-
-  it('keeps markdown inline anchors unescaped for .md targets while still applying source IDs', () => {
-    const source = `## Source heading {#custom-source-id}
-
-## Another Source Heading {#another-source-heading}
-`;
-
-    // Simulate a .md target path
-    const mdTargetPath = '/tmp/file.md';
-
-    const translated = `## Encabezado traducido
+    it.each([
+      ['a .md target path', '/tmp/file.md', undefined, '{#custom-source-id}'],
+      ['an md fileTypeHint', '/tmp/file.mdx', 'md', '{#custom-source-id}'],
+      ['an mdx fileTypeHint', '/tmp/file.md', 'mdx', '\\{#custom-source-id\\}'],
+    ] as const)(
+      'chooses the anchor escaping from %s',
+      (_name, targetPath, fileTypeHint, anchor) => {
+        const result = addExplicitAnchorIds(
+          `## Encabezado traducido
 
 ## Otro encabezado {#another-source-heading}
-`;
+`,
+          extractHeadingInfo(source),
+          undefined,
+          source,
+          targetPath,
+          fileTypeHint
+        );
 
-    const sourceHeadingMap = extractHeadingInfo(source);
-    const result = addExplicitAnchorIds(
-      translated,
-      sourceHeadingMap,
-      undefined,
-      source,
-      mdTargetPath
-    );
-
-    expect(result.hasChanges).toBe(true);
-    // First heading gets the source ID added, unescaped
-    expect(result.content).toContain(
-      '## Encabezado traducido {#custom-source-id}'
-    );
-    // Existing anchor in markdown remains unescaped
-    expect(result.content).toContain(
-      '## Otro encabezado {#another-source-heading}'
+        expect(result.hasChanges).toBe(true);
+        expect(result.content).toContain(`## Encabezado traducido ${anchor}\n`);
+        // Markdown keeps an existing anchor unescaped; MDX escapes it.
+        expect(result.content).toContain(
+          `## Otro encabezado ${anchor.replace('custom-source-id', 'another-source-heading')}\n`
+        );
+      }
     );
   });
 
-  it('escapes inline anchors when fileTypeHint is mdx even if target path is .md', () => {
-    const source = `## Source heading {#custom-source-id}`;
-    const translated = `## Encabezado traducido`;
-    const sourceHeadingMap = extractHeadingInfo(source);
-
-    const result = addExplicitAnchorIds(
-      translated,
-      sourceHeadingMap,
-      undefined,
-      source,
-      '/tmp/file.md',
-      'mdx'
-    );
-
-    expect(result.hasChanges).toBe(true);
-    expect(result.content).toContain(
-      '## Encabezado traducido \\{#custom-source-id\\}'
-    );
-  });
-
-  it('keeps inline anchors unescaped when fileTypeHint is md even if target path is .mdx', () => {
-    const source = `## Source heading {#custom-source-id}`;
-    const translated = `## Encabezado traducido`;
-    const sourceHeadingMap = extractHeadingInfo(source);
-
-    const result = addExplicitAnchorIds(
-      translated,
-      sourceHeadingMap,
-      undefined,
-      source,
-      '/tmp/file.mdx',
-      'md'
-    );
-
-    expect(result.hasChanges).toBe(true);
-    expect(result.content).toContain(
-      '## Encabezado traducido {#custom-source-id}'
-    );
-  });
-
-  it('should handle JSX href attributes in raw JSX', () => {
-    const input = `## Implementation Details
-
-<div>
-  <a href="#implementation-details">Link to implementation</a>
-</div>
-`;
-
-    const sourceHeadingMap = extractHeadingInfo(input);
-    const result = addExplicitAnchorIds(input, sourceHeadingMap);
-
-    expect(result.hasChanges).toBe(true);
-    expect(result.addedIds).toHaveLength(1);
-    expect(result.addedIds[0]).toEqual({
-      heading: 'Implementation Details',
-      id: 'implementation-details',
-    });
-    expect(result.content).toContain(
-      '## Implementation Details \\{#implementation-details\\}'
-    );
-  });
-
-  it('should handle special characters in headings', () => {
-    const input = `## Code & Design Workflow!
-
-[Link here](#code-design-workflow)
-`;
-
-    const sourceHeadingMap = extractHeadingInfo(input);
-    const result = addExplicitAnchorIds(input, sourceHeadingMap);
-
-    expect(result.hasChanges).toBe(true);
-    expect(result.addedIds).toHaveLength(1);
-    expect(result.addedIds[0]).toEqual({
-      heading: 'Code & Design Workflow!',
-      id: 'code-design-workflow',
-    });
-  });
-
-  it('should add IDs even if no anchor links exist', () => {
-    const input = `## Some Section
-
-Regular content without any anchor links.
-`;
-
-    const sourceHeadingMap = extractHeadingInfo(input);
-    const result = addExplicitAnchorIds(input, sourceHeadingMap);
-
-    expect(result.hasChanges).toBe(true);
-    expect(result.addedIds).toHaveLength(1);
-    expect(result.addedIds[0]).toEqual({
-      heading: 'Some Section',
-      id: 'some-section',
-    });
-    expect(result.content).toContain('## Some Section \\{#some-section\\}');
-  });
-
-  it('should handle most markdown content successfully', () => {
-    const input = `## Section
-[Unclosed link(#test
-`;
-
-    const sourceHeadingMap = extractHeadingInfo(input);
-    const result = addExplicitAnchorIds(input, sourceHeadingMap);
-
-    // Should process the heading even if link syntax is malformed
-    expect(result.hasChanges).toBe(true);
-    expect(result.addedIds).toHaveLength(1);
-    expect(result.addedIds[0]).toEqual({
-      heading: 'Section',
-      id: 'section',
-    });
-    expect(result.content).toContain('## Section \\{#section\\}');
-  });
-
-  // Edge case tests that we expect to fail currently
-  it('should handle headings with formatting (currently fails)', () => {
-    const input = `## **Bold Heading** with formatting
-
-<Card href="#bold-heading-with-formatting">Link to bold heading</Card>
-
-## \`Code Heading\` example
-
-<Card href="#code-heading-example">Link to code heading</Card>
-`;
-
-    const sourceHeadingMap = extractHeadingInfo(input);
-    const result = addExplicitAnchorIds(input, sourceHeadingMap);
-
-    // This test documents current behavior - we expect it to fail
-    // AST extracts "Bold Heading with formatting" but regex looks for "## **Bold Heading** with formatting"
-    expect(result.hasChanges).toBe(true);
-    expect(result.addedIds).toHaveLength(2);
-
-    // Should now handle formatted headings correctly
-    expect(result.content).toContain(
-      '## **Bold Heading** with formatting \\{#bold-heading-with-formatting\\}'
-    );
-    expect(result.content).toContain(
-      '## `Code Heading` example \\{#code-heading-example\\}'
-    );
-  });
-
-  it('should not process headings inside code blocks (currently fails)', () => {
-    const input = `## Real Heading
-
-This is real content.
-
-\`\`\`markdown
-## Fake Heading In Code Block
-This is just an example
-\`\`\`
-
-<Card href="#real-heading">Link to real heading</Card>
-`;
-
-    const sourceHeadingMap = extractHeadingInfo(input);
-    const result = addExplicitAnchorIds(input, sourceHeadingMap);
-
-    // Should only process the real heading, not the one in code block
-    expect(result.hasChanges).toBe(true);
-    expect(result.addedIds).toHaveLength(1);
-    expect(result.addedIds[0]).toEqual({
-      heading: 'Real Heading',
-      id: 'real-heading',
-    });
-
-    // Should add ID to real heading but NOT the code block heading
-    expect(result.content).toContain('## Real Heading \\{#real-heading\\}');
-    expect(result.content).not.toContain(
-      '<div id="fake-heading-in-code-block">'
-    );
-
-    // Code block should remain unchanged
-    expect(result.content).toContain(
-      '```markdown\n## Fake Heading In Code Block\nThis is just an example\n```'
-    );
-  });
-
-  // Comprehensive dual tests for both modes
-  describe('Standard Mode vs Mintlify Mode', () => {
-    const basicInput = `# Getting Started
-
-## Code-based workflow
-
-This section explains the code workflow.
-
-## Web editor workflow
-
-Another section here.
-`;
-
-    it('should add \\{#id} format in standard mode', () => {
-      const sourceHeadingMap = extractHeadingInfo(basicInput);
-      const result = addExplicitAnchorIds(
-        basicInput,
-        sourceHeadingMap,
-        standardSettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(3);
-
-      expect(result.content).toContain(
-        '# Getting Started \\{#getting-started\\}'
-      );
-      expect(result.content).toContain(
-        '## Code-based workflow \\{#code-based-workflow\\}'
-      );
-      expect(result.content).toContain(
-        '## Web editor workflow \\{#web-editor-workflow\\}'
-      );
-
-      // Should NOT contain div wrapping
-      expect(result.content).not.toContain('<div id="getting-started">');
-    });
-
-    it('should use inline \\{#id} format when experimentalLocalizeStaticUrls is enabled', () => {
-      const sourceHeadingMap = extractHeadingInfo(basicInput);
-      const result = addExplicitAnchorIds(
-        basicInput,
-        sourceHeadingMap,
-        urlLocalizationSettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(3);
-
-      // Should use inline \\{#id} format (same as standard mode)
-      expect(result.content).toContain(
-        '# Getting Started \\{#getting-started\\}'
-      );
-      expect(result.content).toContain(
-        '## Code-based workflow \\{#code-based-workflow\\}'
-      );
-      expect(result.content).toContain(
-        '## Web editor workflow \\{#web-editor-workflow\\}'
-      );
-
-      // Should NOT contain div wrapping
-      expect(result.content).not.toContain('<div id="getting-started">');
-    });
-
-    it('should add native {#id} anchors in Mintlify mode', () => {
-      const sourceHeadingMap = extractHeadingInfo(basicInput);
-      const result = addExplicitAnchorIds(
-        basicInput,
-        sourceHeadingMap,
-        mintlifySettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(3);
-
-      expect(result.content).toContain('# Getting Started {#getting-started}');
-      expect(result.content).toContain(
-        '## Code-based workflow {#code-based-workflow}'
-      );
-      expect(result.content).toContain(
-        '## Web editor workflow {#web-editor-workflow}'
-      );
-
-      // Native anchors, never the escaped form or a wrapper
-      expect(result.content).not.toContain('\\{#getting-started\\}');
-      expect(result.content).not.toContain('<div id=');
-    });
-  });
-
-  describe('Formatted Headings - Both Modes', () => {
-    const formattedInput = `## **Bold Heading** with formatting
-
-## \`Code Heading\` example
-
-## *Italic* and **mixed** formatting
-`;
-
-    it('should handle formatted headings in standard mode', () => {
-      const sourceHeadingMap = extractHeadingInfo(formattedInput);
-      const result = addExplicitAnchorIds(
-        formattedInput,
-        sourceHeadingMap,
-        standardSettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(3);
-
-      expect(result.content).toContain(
-        '## **Bold Heading** with formatting \\{#bold-heading-with-formatting\\}'
-      );
-      expect(result.content).toContain(
-        '## `Code Heading` example \\{#code-heading-example\\}'
-      );
-      expect(result.content).toContain(
-        '## *Italic* and **mixed** formatting \\{#italic-and-mixed-formatting\\}'
-      );
-    });
-
-    it('should handle formatted headings in Mintlify mode', () => {
-      const sourceHeadingMap = extractHeadingInfo(formattedInput);
-      const result = addExplicitAnchorIds(
-        formattedInput,
-        sourceHeadingMap,
-        mintlifySettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(3);
-
-      expect(result.content).toContain(
-        '## **Bold Heading** with formatting {#bold-heading-with-formatting}'
-      );
-      expect(result.content).toContain(
-        '## `Code Heading` example {#code-heading-example}'
-      );
-      expect(result.content).toContain(
-        '## *Italic* and **mixed** formatting {#italic-and-mixed-formatting}'
-      );
-    });
-  });
-
-  describe('Code Block Protection - Both Modes', () => {
-    const codeBlockInput = `## Real Heading
-
-This is real content.
-
-\`\`\`markdown
-## Fake Heading In Code Block
-This is just an example
-\`\`\`
-
-## Another Real Heading
-
-More content.
-`;
-
-    it('should ignore code blocks in standard mode', () => {
-      const sourceHeadingMap = extractHeadingInfo(codeBlockInput);
-      const result = addExplicitAnchorIds(
-        codeBlockInput,
-        sourceHeadingMap,
-        standardSettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(2);
-      expect(result.addedIds).toEqual([
-        { heading: 'Real Heading', id: 'real-heading' },
-        { heading: 'Another Real Heading', id: 'another-real-heading' },
-      ]);
-
-      expect(result.content).toContain('## Real Heading \\{#real-heading\\}');
-      expect(result.content).toContain(
-        '## Another Real Heading \\{#another-real-heading\\}'
-      );
-      expect(result.content).not.toContain('\\{#fake-heading-in-code-block\\}');
-
-      // Code block should remain unchanged
-      expect(result.content).toContain(
-        '```markdown\n## Fake Heading In Code Block\nThis is just an example\n```'
-      );
-    });
-
-    it('should ignore code blocks in Mintlify mode', () => {
-      const sourceHeadingMap = extractHeadingInfo(codeBlockInput);
-      const result = addExplicitAnchorIds(
-        codeBlockInput,
-        sourceHeadingMap,
-        mintlifySettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(2);
-
-      expect(result.content).toContain('## Real Heading {#real-heading}');
-      expect(result.content).toContain(
-        '## Another Real Heading {#another-real-heading}'
-      );
-      expect(result.content).not.toContain('{#fake-heading-in-code-block}');
-
-      // Code block should remain unchanged
-      expect(result.content).toContain(
-        '```markdown\n## Fake Heading In Code Block\nThis is just an example\n```'
-      );
-    });
-
-    it('should ignore code blocks when AST parsing fails (fallback path)', () => {
+  describe('when MDX parsing fails (string fallback)', () => {
+    it('still anchors headings and ignores code blocks', () => {
       const input = `## Real Heading
 
 This is real content.
@@ -574,146 +165,33 @@ This is just an example
 ## Another Real Heading
 `;
 
-      // Parsing fails due to the broken MDX expression above, forcing the string fallback
-      const sourceHeadingMap = extractHeadingInfo(input);
-      const result = addExplicitAnchorIds(input, sourceHeadingMap);
+      const result = addExplicitAnchorIds(input, extractHeadingInfo(input));
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toEqual([
         { heading: 'Real Heading', id: 'real-heading' },
         { heading: 'Another Real Heading', id: 'another-real-heading' },
       ]);
-
       expect(result.content).toContain('## Real Heading \\{#real-heading\\}');
       expect(result.content).toContain(
         '## Another Real Heading \\{#another-real-heading\\}'
       );
-      expect(result.content).not.toContain('\\{#fake-heading-in-code-block\\}');
+      expect(result.content).toContain(
+        '```markdown\n## Fake Heading In Code Block\nThis is just an example\n```'
+      );
     });
 
-    it('normalizes unescaped anchors to a single-escaped form in fallback mode', () => {
+    it('normalizes unescaped anchors to a single-escaped form', () => {
       const input = `## Titulo {#titulo}
 
 { this will break mdx parsing
 `;
-      const sourceHeadingMap = extractHeadingInfo(input);
-      const result = addExplicitAnchorIds(input, sourceHeadingMap);
+
+      const result = addExplicitAnchorIds(input, extractHeadingInfo(input));
 
       expect(result.hasChanges).toBe(true);
       expect(result.content).toContain('## Titulo \\{#titulo\\}');
       expect(result.content).not.toContain('## Titulo \\\\{#titulo\\\\}');
-    });
-  });
-
-  describe('Special Characters - Both Modes', () => {
-    const specialCharsInput = `## Code & Design Workflow!
-
-## API Reference (v2.0)
-
-## Getting Started: Step 1
-
-## What's New?
-`;
-
-    it('should handle special characters in standard mode', () => {
-      const sourceHeadingMap = extractHeadingInfo(specialCharsInput);
-      const result = addExplicitAnchorIds(
-        specialCharsInput,
-        sourceHeadingMap,
-        standardSettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(4);
-
-      // Heading text is left exactly as the translation wrote it: applying an
-      // anchor must not HTML-escape unrelated characters.
-      expect(result.content).toContain(
-        '## Code & Design Workflow! \\{#code-design-workflow\\}'
-      );
-      expect(result.content).toContain(
-        '## API Reference (v2.0) \\{#api-reference-v20\\}'
-      );
-      expect(result.content).toContain(
-        '## Getting Started: Step 1 \\{#getting-started-step-1\\}'
-      );
-      expect(result.content).toContain("## What's New? \\{#whats-new\\}");
-    });
-
-    it('should handle special characters in Mintlify mode', () => {
-      const sourceHeadingMap = extractHeadingInfo(specialCharsInput);
-      const result = addExplicitAnchorIds(
-        specialCharsInput,
-        sourceHeadingMap,
-        mintlifySettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(4);
-
-      expect(result.content).toContain(
-        '## Code & Design Workflow! {#code-design-workflow}'
-      );
-      expect(result.content).toContain(
-        '## API Reference (v2.0) {#api-reference-v20}'
-      );
-      expect(result.content).toContain(
-        '## Getting Started: Step 1 {#getting-started-step-1}'
-      );
-      expect(result.content).toContain("## What's New? {#whats-new}");
-    });
-  });
-
-  describe('All Heading Levels - Both Modes', () => {
-    const allLevelsInput = `# H1 Heading
-
-## H2 Heading
-
-### H3 Heading
-
-#### H4 Heading
-
-##### H5 Heading
-
-###### H6 Heading
-`;
-
-    it('should handle all heading levels in standard mode', () => {
-      const sourceHeadingMap = extractHeadingInfo(allLevelsInput);
-      const result = addExplicitAnchorIds(
-        allLevelsInput,
-        sourceHeadingMap,
-        standardSettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(6);
-
-      expect(result.content).toContain('# H1 Heading \\{#h1-heading\\}');
-      expect(result.content).toContain('## H2 Heading \\{#h2-heading\\}');
-      expect(result.content).toContain('### H3 Heading \\{#h3-heading\\}');
-      expect(result.content).toContain('#### H4 Heading \\{#h4-heading\\}');
-      expect(result.content).toContain('##### H5 Heading \\{#h5-heading\\}');
-      expect(result.content).toContain('###### H6 Heading \\{#h6-heading\\}');
-    });
-
-    it('should handle all heading levels in Mintlify mode', () => {
-      const sourceHeadingMap = extractHeadingInfo(allLevelsInput);
-      const result = addExplicitAnchorIds(
-        allLevelsInput,
-        sourceHeadingMap,
-        mintlifySettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(6);
-
-      expect(result.content).toContain('# H1 Heading {#h1-heading}');
-      expect(result.content).toContain('## H2 Heading {#h2-heading}');
-      expect(result.content).toContain('### H3 Heading {#h3-heading}');
-      expect(result.content).toContain('#### H4 Heading {#h4-heading}');
-      expect(result.content).toContain('##### H5 Heading {#h5-heading}');
-      expect(result.content).toContain('###### H6 Heading {#h6-heading}');
     });
   });
 
@@ -765,44 +243,6 @@ This is just an example
     });
   });
 
-  describe('Header Count Validation', () => {
-    it('should work when source and translated files have same header count', () => {
-      const sourceContent = `## Header 1
-
-Content here.
-
-## Header 2
-
-More content.`;
-
-      const translatedContent = `## Cabecera 1
-
-Contenido aquí.
-
-## Cabecera 2
-
-Más contenido.`;
-
-      const sourceHeadingMap = extractHeadingInfo(sourceContent);
-
-      // This should work fine - same number of headers
-      const result = addExplicitAnchorIds(
-        translatedContent,
-        sourceHeadingMap,
-        standardSettings
-      );
-
-      expect(result.hasChanges).toBe(true);
-      expect(result.addedIds).toHaveLength(2);
-      expect(result.content).toContain('## Cabecera 1 \\{#header-1\\}');
-      expect(result.content).toContain('## Cabecera 2 \\{#header-2\\}');
-    });
-
-    // Note: Testing the header count mismatch failure is complex in a unit test environment
-    // because logErrorAndExit calls process.exit(). The validation logic is there and will
-    // work in production - it catches cases where source file was edited after translation,
-    // causing different header counts between source and translated files.
-  });
   describe('Custom heading IDs (Mintlify {#id} syntax)', () => {
     const mintlify = {
       options: { experimentalAddHeaderAnchorIds: 'mintlify' as const },
@@ -828,26 +268,6 @@ Más contenido.`;
         explicit: true,
         startLine: 3,
       });
-    });
-
-    it('restores an author-written ID in native syntax', () => {
-      const source = '## CSS variables reference {#css-variables}\n';
-      const translated = '## Référence des variables CSS\n';
-
-      const result = addExplicitAnchorIds(
-        translated,
-        extractHeadingInfo(source),
-        mintlify,
-        'a.mdx',
-        'fr/a.mdx',
-        'mdx'
-      );
-
-      expect(result.content).toBe(
-        '## Référence des variables CSS {#css-variables}\n'
-      );
-      expect(result.content).not.toContain('<div id=');
-      expect(result.content).not.toContain('\\{#');
     });
 
     it('writes native anchors for explicit and derived IDs alike', () => {

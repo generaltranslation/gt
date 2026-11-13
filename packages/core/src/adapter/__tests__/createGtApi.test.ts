@@ -48,7 +48,7 @@ const customMapping = {
   target: { code: 'es-ES' },
 };
 
-describe.sequential('createGtApiAdapter', () => {
+describe('createGtApiAdapter', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });

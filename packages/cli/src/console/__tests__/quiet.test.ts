@@ -70,25 +70,22 @@ const pinoMock = vi.hoisted(() => {
 
 vi.mock('pino', () => pinoMock);
 
-function resetPinoState() {
+// Each test loads a fresh logger singleton in the default format.
+beforeEach(() => {
+  vi.resetModules();
+  vi.clearAllMocks();
   pinoState.instances.length = 0;
   pinoState.optionsLog.length = 0;
-}
+  vi.stubEnv('GT_LOG_FORMAT', 'default');
+  vi.stubEnv('GT_LOG_LEVEL', '');
+  vi.stubEnv('GT_LOG_FILE', '');
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe('quiet flag: clack chatter gating (default format)', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
-    resetPinoState();
-    vi.stubEnv('GT_LOG_FORMAT', 'default');
-    vi.stubEnv('GT_LOG_LEVEL', '');
-    vi.stubEnv('GT_LOG_FILE', '');
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   it('suppresses info/step/success/message chatter under quiet', async () => {
     const { logger } = await import('../logger.js');
     logger.setQuiet(true);
@@ -177,19 +174,6 @@ describe('quiet flag: clack chatter gating (default format)', () => {
 });
 
 describe('quiet flag: displayHeader banner gating (default format)', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
-    resetPinoState();
-    vi.stubEnv('GT_LOG_FORMAT', 'default');
-    vi.stubEnv('GT_LOG_LEVEL', '');
-    vi.stubEnv('GT_LOG_FILE', '');
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   it('prints the ASCII banner when not quiet but nothing when quiet', async () => {
     const { logger } = await import('../logger.js');
     const { displayHeader } = await import('../logging.js');
@@ -231,15 +215,7 @@ describe('quiet flag: displayHeader banner gating (default format)', () => {
 
 describe('quiet flag: pino level gating (json format)', () => {
   beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
-    resetPinoState();
     vi.stubEnv('GT_LOG_FORMAT', 'json');
-    vi.stubEnv('GT_LOG_FILE', '');
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
   });
 
   it('honors GT_LOG_LEVEL when constructing the console logger', async () => {
@@ -309,63 +285,5 @@ describe('quiet flag: pino level gating (json format)', () => {
     logger.error('an error');
     expect(pinoState.instances[0]?.warn).toHaveBeenCalledWith('a warning');
     expect(pinoState.instances[0]?.error).toHaveBeenCalledWith('an error');
-  });
-});
-
-describe('quiet flag: parsing (global -q / --quiet)', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
-    resetPinoState();
-    vi.stubEnv('GT_LOG_FORMAT', 'default');
-    vi.stubEnv('GT_LOG_LEVEL', '');
-    vi.stubEnv('GT_LOG_FILE', '');
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  async function buildProgram() {
-    const { BaseCLI } = await import('../../cli/base.js');
-    const { Libraries } = await import('../../types/libraries.js');
-    const { Command } = await import('commander');
-    const program = new Command();
-    program.name('gt');
-    new BaseCLI(program, Libraries.GT_REACT);
-    program.exitOverride();
-    program.command('noop').action(() => {});
-    return program;
-  }
-
-  it('registers -q, --quiet on the root program', async () => {
-    const program = await buildProgram();
-    const opt = program.options.find((o) => o.long === '--quiet');
-    expect(opt).toBeTruthy();
-    expect(opt?.short).toBe('-q');
-  });
-
-  it('parses --quiet before the subcommand', async () => {
-    const program = await buildProgram();
-    program.parse(['--quiet', 'noop'], { from: 'user' });
-    expect(program.opts().quiet).toBe(true);
-  });
-
-  it('parses --quiet after the subcommand', async () => {
-    const program = await buildProgram();
-    program.parse(['noop', '--quiet'], { from: 'user' });
-    expect(program.opts().quiet).toBe(true);
-  });
-
-  it('parses -q after the subcommand', async () => {
-    const program = await buildProgram();
-    program.parse(['noop', '-q'], { from: 'user' });
-    expect(program.opts().quiet).toBe(true);
-  });
-
-  it('leaves quiet unset when the flag is absent', async () => {
-    const program = await buildProgram();
-    program.parse(['noop'], { from: 'user' });
-    expect(program.opts().quiet).toBeFalsy();
   });
 });

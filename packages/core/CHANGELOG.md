@@ -116,6 +116,13 @@
 - Updated dependencies [bb107a8]
   - @generaltranslation/format@1.0.0-samsara.1
 
+## 9.5.12
+
+### Patch Changes
+
+- Updated dependencies [[`7aae545`](https://github.com/generaltranslation/gt/commit/7aae545bd9e65148b8cbf98a4df3ce750ab1cdbf)]:
+  - @generaltranslation/format@0.1.10
+
 ## 9.5.11
 
 ### Patch Changes

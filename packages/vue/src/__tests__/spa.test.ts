@@ -1,6 +1,5 @@
 import { hashStringMessage } from 'gt-i18n/internal/string';
-import { createSSRApp, defineComponent, h } from 'vue';
-import { renderToString } from 'vue/server-renderer';
+import { defineComponent, h } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   Currency,
@@ -16,6 +15,12 @@ import {
 } from '../index';
 import { resetGTSPAForTests } from '../runtime/spa';
 import type { TranslationCatalog } from '../types';
+import {
+  installCookieDocument,
+  renderWithPlugin,
+  stripFragmentMarkers,
+  type TestCookieDocument,
+} from './testUtils';
 
 describe('gt-vue SPA runtime', () => {
   afterEach(() => {
@@ -47,7 +52,7 @@ describe('gt-vue SPA runtime', () => {
         return () => h('p', gt(source, { $context: context }));
       },
     });
-    const html = await renderToString(createSSRApp(Root).use(plugin));
+    const html = await renderWithPlugin(Root, plugin);
 
     expect(html).toContain('Documentation FR');
     expect(loadTranslations).toHaveBeenCalledOnce();
@@ -197,9 +202,7 @@ describe('gt-vue SPA runtime', () => {
       },
     });
 
-    const html = (await renderToString(createSSRApp(Root).use(plugin)))
-      .replaceAll('<!--[-->', '')
-      .replaceAll('<!--]-->', '');
+    const html = stripFragmentMarkers(await renderWithPlugin(Root, plugin));
 
     expect(html).toBe(
       `<div>${expectedFormatters}|one|${expectedFormatters}|un</div>`
@@ -380,7 +383,9 @@ describe('gt-vue SPA runtime', () => {
           resolveCatalog = resolve;
         }),
     });
-    await vi.waitFor(() => expect(resolveCatalog).toBeTypeOf('function'));
+    await vi.waitFor(() => expect(resolveCatalog).toBeTypeOf('function'), {
+      interval: 1,
+    });
 
     expect(() => t('Still too early')).toThrow(
       't() ran before the GT Vue SPA runtime finished initializing'
@@ -401,7 +406,9 @@ describe('gt-vue SPA runtime', () => {
           resolveCatalog = resolve;
         }),
     });
-    await vi.waitFor(() => expect(resolveCatalog).toBeTypeOf('function'));
+    await vi.waitFor(() => expect(resolveCatalog).toBeTypeOf('function'), {
+      interval: 1,
+    });
 
     browser.cookies.cookie = 'generaltranslation.locale=de';
     resolveCatalog({ [hashStringMessage(source)]: 'Bienvenue' });
@@ -433,7 +440,9 @@ describe('gt-vue SPA runtime', () => {
 
     const first = initializeGTSPA({ loadTranslations });
     const second = initializeGTSPA({ loadTranslations });
-    await vi.waitFor(() => expect(loadTranslations).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(loadTranslations).toHaveBeenCalledOnce(), {
+      interval: 1,
+    });
 
     resolveCatalog({});
     const [firstPlugin, secondPlugin] = await Promise.all([first, second]);
@@ -486,7 +495,7 @@ describe('gt-vue SPA runtime', () => {
         return () => h('p', t(source));
       },
     });
-    await renderToString(createSSRApp(Root).use(plugin));
+    await renderWithPlugin(Root, plugin);
 
     await setLocale('fr');
 
@@ -527,50 +536,12 @@ describe('gt-vue SPA runtime', () => {
   });
 });
 
-class TestCookieDocument {
-  readonly writes: string[] = [];
-  private readonly values = new Map<string, string>();
-
-  constructor(cookieHeader = '') {
-    for (const cookie of cookieHeader.split(';')) {
-      const separator = cookie.indexOf('=');
-      if (separator < 0) continue;
-      this.values.set(
-        cookie.slice(0, separator).trim(),
-        cookie.slice(separator + 1).trim()
-      );
-    }
-  }
-
-  get cookie(): string {
-    return [...this.values]
-      .map(([name, value]) => `${name}=${value}`)
-      .join('; ');
-  }
-
-  set cookie(serializedCookie: string) {
-    this.writes.push(serializedCookie);
-    const [cookie = ''] = serializedCookie.split(';');
-    const separator = cookie.indexOf('=');
-    if (separator < 0) return;
-    this.values.set(
-      cookie.slice(0, separator).trim(),
-      cookie.slice(separator + 1).trim()
-    );
-  }
-
-  get(cookieName: string): string | undefined {
-    return this.values.get(cookieName);
-  }
-}
-
 function installBrowser(cookieHeader = ''): {
   cookies: TestCookieDocument;
   reload: ReturnType<typeof vi.fn>;
 } {
-  const cookies = new TestCookieDocument(cookieHeader);
+  const cookies = installCookieDocument(cookieHeader);
   const reload = vi.fn();
-  vi.stubGlobal('document', cookies);
   vi.stubGlobal('window', { location: { reload } });
   return { cookies, reload };
 }

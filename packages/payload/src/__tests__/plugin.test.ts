@@ -1,8 +1,10 @@
-// The plugin's endpoints, as the admin panel calls them: start and step runs
-// that translate or save local edits, and report coverage.
+// What the plugin adds to a Payload config, and its endpoints, as the admin
+// panel calls them: start and step runs that translate or save local edits,
+// and report coverage.
 import type { Payload, User } from 'payload';
 import { createPayloadRequest } from 'payload';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { hasTranslatableFields } from '../content/fields';
 import { canUpdate, editableTargets } from '../documents';
 import type { CoveragePage } from '../coverage';
 import { gtPlugin } from '../plugin';
@@ -11,6 +13,7 @@ import {
   CANNOT_READ,
   createTestPayload,
   LOCKED_OUT,
+  testConfig,
 } from './support/createTestPayload';
 import { FakeGt } from './support/fakeGt';
 import { createPage } from './support/fixtures';
@@ -478,5 +481,82 @@ describe('gtPlugin endpoints', () => {
     CANNOT_READ.delete(String(user.email));
 
     expect(progress.failedLocales).toEqual(['es']);
+  });
+});
+
+describe('gtPlugin config', () => {
+  it('adds the Translate button, the Translations page and its endpoints', async () => {
+    const config = await testConfig([gtPlugin({ client: new FakeGt() })]);
+
+    expect(config.endpoints.map((e) => e.path)).toEqual(
+      expect.arrayContaining(['/gt/runs', '/gt/runs/step', '/gt/coverage'])
+    );
+    expect(config.admin.components?.views).toHaveProperty('gtTranslations');
+    const pages = config.collections.find((c) => c.slug === 'pages');
+    expect(pages?.admin.components?.edit?.beforeDocumentControls).toContain(
+      'gt-payload/client#GtDocumentControls'
+    );
+  });
+
+  it('leaves a config without localization as it is', async () => {
+    const config = await testConfig([gtPlugin({ client: new FakeGt() })], {
+      localization: false,
+    });
+
+    expect(config.endpoints.some((e) => e.path.startsWith('/gt/'))).toBe(false);
+    expect(config.admin.components?.views ?? {}).not.toHaveProperty(
+      'gtTranslations'
+    );
+  });
+
+  it('passes customMapping to the admin panel', async () => {
+    const customMapping = { cn: { code: 'zh' } };
+    const config = await testConfig([
+      gtPlugin({ client: new FakeGt(), customMapping }),
+    ]);
+
+    expect(config.admin.custom).toMatchObject({ gtPayload: { customMapping } });
+  });
+
+  it('adds the Translate button where text is only in a named localized tab or a referenced block', async () => {
+    const config = await testConfig([gtPlugin({ client: new FakeGt() })]);
+
+    for (const slug of ['faqs', 'stories']) {
+      const collection = config.collections.find((c) => c.slug === slug);
+      expect(
+        collection?.admin.components?.edit?.beforeDocumentControls,
+        slug
+      ).toContain('gt-payload/client#GtDocumentControls');
+    }
+  });
+
+  it('adds no Translate button where nothing would be translated', async () => {
+    const config = await testConfig([gtPlugin({ client: new FakeGt() })]);
+    const tags = config.collections.find((c) => c.slug === 'tags');
+
+    expect(
+      tags?.admin.components?.edit?.beforeDocumentControls ?? []
+    ).not.toContain('gt-payload/client#GtDocumentControls');
+    expect(
+      hasTranslatableFields(tags!.flattenedFields, {
+        blocks: config.blocks ?? [],
+      })
+    ).toBe(false);
+  });
+
+  it('loads a config with a block that can hold itself', async () => {
+    const config = await testConfig([gtPlugin({ client: new FakeGt() })], {
+      recursiveBlocks: true,
+    });
+    const trees = config.collections.find((c) => c.slug === 'trees');
+
+    expect(trees?.admin.components?.edit?.beforeDocumentControls).toContain(
+      'gt-payload/client#GtDocumentControls'
+    );
+    expect(
+      hasTranslatableFields(trees!.flattenedFields, {
+        blocks: config.blocks ?? [],
+      })
+    ).toBe(true);
   });
 });

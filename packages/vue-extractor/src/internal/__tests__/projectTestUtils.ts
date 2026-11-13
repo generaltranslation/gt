@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { onTestFinished } from 'vitest';
 
 const requireFromVuePackage = createRequire(import.meta.url);
 const installedVueDirectory = path.dirname(
@@ -12,6 +13,13 @@ const installedVueDirectory = path.dirname(
 export function createProjectFixture(files: Record<string, string>): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-vue-project-'));
   writeProjectFiles(root, files);
+  return root;
+}
+
+/** Creates a project fixture that is removed when the current test finishes. */
+export function createTestProject(files: Record<string, string> = {}): string {
+  const root = createProjectFixture(files);
+  onTestFinished(() => removeProjectFixture(root));
   return root;
 }
 

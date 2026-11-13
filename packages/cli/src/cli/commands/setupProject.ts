@@ -10,6 +10,7 @@ import { BranchData } from '../../types/branch.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { runSetupProjectWorkflow } from '../../workflows/setupProject.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
+import { collectParaglideContext } from '../../paraglide/collectParaglideContext.js';
 
 export async function handleSetupProject(
   options: TranslateFlags,
@@ -23,6 +24,10 @@ export async function handleSetupProject(
     return exitSync(1);
   // Validate credentials if not in dry run
   if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
+
+  if (settings.files?.parsingFlags?.json?.includeSourceCodeContext) {
+    await collectParaglideContext();
+  }
 
   const {
     files: allFiles,

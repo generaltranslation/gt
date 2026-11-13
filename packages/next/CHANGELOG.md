@@ -145,6 +145,28 @@
   - gt-react@12.0.0-samsara.0
   - @generaltranslation/react-core@12.0.0-samsara.0
 
+## 11.4.22
+
+### Patch Changes
+
+- Updated dependencies [[`7aae545`](https://github.com/generaltranslation/gt/commit/7aae545bd9e65148b8cbf98a4df3ce750ab1cdbf)]:
+  - @generaltranslation/format@0.1.10
+  - @generaltranslation/compiler@1.3.69
+  - generaltranslation@9.5.12
+  - gt-i18n@1.0.43
+  - @generaltranslation/react-core@11.4.22
+  - gt-react@11.4.22
+
+## 11.4.21
+
+### Patch Changes
+
+- [#2645](https://github.com/generaltranslation/gt/pull/2645) [`69738aa`](https://github.com/generaltranslation/gt/commit/69738aa6f8a67aca67a10e3717d942db9f7410ac) Thanks [@eoinest](https://github.com/eoinest)! - The `withGTConfig` warning for a Next.js `i18n` mismatch now lists the GT locales it compared, including the default locale.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.21
+  - gt-react@11.4.21
+
 ## 11.4.20
 
 ### Patch Changes

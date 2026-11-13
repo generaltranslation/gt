@@ -60,7 +60,6 @@ vi.mock('gt-react', () => mockComponents);
 
 describe('rsc component wrappers', () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     mockGetRequestConditions.mockResolvedValue({
       _locale: 'fr',
@@ -156,6 +155,8 @@ describe('rsc component wrappers', () => {
   });
 
   it('initializes GT from the server entrypoint', async () => {
+    // Initialization is an import side effect, so load the entrypoint fresh.
+    vi.resetModules();
     const { initializeGTServer } = await import('../setup/initGT.server');
 
     await import('../server');

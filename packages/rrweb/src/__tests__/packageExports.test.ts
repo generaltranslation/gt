@@ -1,10 +1,24 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-// Smoke test for the package entry. The scaffold exports nothing yet; this just
-// asserts the module loads. Real export assertions land with the public API.
-describe('gt-rrweb', () => {
-  it('loads its entry point', async () => {
+// The replay entry pulls in @rrweb/replay + morphdom (browser runtimes). Mock them
+// so the module graph loads under the node test env (no DOM) — we're asserting the
+// public API surface here, not running a replay.
+vi.mock('@rrweb/replay', () => ({ Replayer: class {} }));
+vi.mock('morphdom', () => ({ default: () => {} }));
+
+describe('gt-rrweb package entry points', () => {
+  it('exposes the recorder API from the main entry', async () => {
     const mod = await import('../index');
-    expect(mod).toBeTypeOf('object');
+    expect(mod.GTRecorder).toBeTypeOf('function');
+    expect(mod.RecordingOverlay).toBeTypeOf('function');
+    expect(mod.useRecorder).toBeTypeOf('function');
+    expect(mod.GT_EVENT).toBeTypeOf('object');
+    expect(mod.DEFAULT_CONTENT_SELECTOR).toBeTypeOf('string');
+  });
+
+  it('exposes the replayer API from gt-rrweb/replay', async () => {
+    const mod = await import('../replay');
+    expect(mod.createGTReplayer).toBeTypeOf('function');
+    expect(mod.GTReplayer).toBeTypeOf('function');
   });
 });

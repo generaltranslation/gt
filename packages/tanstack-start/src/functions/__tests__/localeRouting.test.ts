@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { getLocaleFromPath, getPathnameForLocale } from '../localeRouting';
 
-describe.sequential('locale routing', () => {
+describe('locale routing', () => {
   beforeAll(() => {
     initializeI18nConfig({
       defaultLocale: 'en',

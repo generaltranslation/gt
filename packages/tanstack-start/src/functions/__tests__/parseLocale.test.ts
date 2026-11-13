@@ -55,6 +55,12 @@ const localeConfig = {
   },
 };
 
+const cookieOptions = {
+  path: '/',
+  sameSite: 'lax',
+  maxAge: 60 * 60 * 24 * 365,
+};
+
 const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   'document'
@@ -72,7 +78,7 @@ function restoreGlobalProperty(
   Reflect.deleteProperty(globalThis, property);
 }
 
-describe.sequential('locale resolution', () => {
+describe('locale resolution', () => {
   beforeEach(() => {
     resetI18nConfigSingleton();
     initializeI18nConfig(localeConfig);
@@ -82,6 +88,7 @@ describe.sequential('locale resolution', () => {
   afterEach(() => {
     restoreGlobalProperty('document', originalDocumentDescriptor);
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('uses the server cookie before Accept-Language', () => {
@@ -96,11 +103,7 @@ describe.sequential('locale resolution', () => {
     expect(mockSetCookie).toHaveBeenCalledWith(
       'generaltranslation.locale',
       'brand-french',
-      {
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365,
-      }
+      cookieOptions
     );
   });
 
@@ -111,11 +114,7 @@ describe.sequential('locale resolution', () => {
     expect(mockSetCookie).toHaveBeenCalledWith(
       'generaltranslation.locale',
       'es',
-      {
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365,
-      }
+      cookieOptions
     );
   });
 
@@ -136,11 +135,7 @@ describe.sequential('locale resolution', () => {
     expect(mockSetCookie).toHaveBeenCalledWith(
       'custom-locale',
       'brand-french',
-      {
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365,
-      }
+      cookieOptions
     );
   });
 
@@ -192,7 +187,8 @@ describe.sequential('locale resolution', () => {
     expect(determineLocaleClient(localeConfig)).toBe('es');
   });
 
-  it('falls back to the default locale during client initialization', () => {
+  it('warns and falls back to the default locale during client initialization', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
       value: { cookie: '' },
@@ -200,6 +196,9 @@ describe.sequential('locale resolution', () => {
     vi.stubGlobal('navigator', { languages: [] });
 
     expect(determineLocaleClient(localeConfig)).toBe('en');
+    expect(warn).toHaveBeenCalledWith(
+      'gt-tanstack-start(client): no locales could be determined for this request'
+    );
   });
 
   it('prefers the pathname locale during client initialization with locale routing', () => {

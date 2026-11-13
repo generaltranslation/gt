@@ -276,11 +276,13 @@ describe('init development credentials', () => {
       name: 'next-pages',
       type: 'react',
     });
+    // Pages Router app setup is left to the quickstart, so it asks nothing.
     vi.mocked(promptConfirm)
       .mockResolvedValueOnce(false) // recommended defaults
-      .mockResolvedValueOnce(false) // install gt-next
       .mockResolvedValueOnce(true); // set up credentials
-    vi.mocked(promptSelect).mockResolvedValueOnce(projects[0]);
+    vi.mocked(promptSelect)
+      .mockResolvedValueOnce('cdn') // translation storage
+      .mockResolvedValueOnce(projects[0]);
 
     await runInit('--config', 'custom.gt.config.json', '--src', 'src/**/*.tsx');
 
@@ -399,6 +401,75 @@ describe('init development credentials', () => {
 
     await expect(runInit()).rejects.toThrow(
       'No accessible organizations were found'
+    );
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(fs.existsSync(envPath())).toBe(false);
+  });
+
+  it('lists the accessible organizations when a noninteractive --create-project needs --org-id', async () => {
+    setTerminal(false);
+    vi.mocked(hasLogin).mockResolvedValue(false);
+    vi.mocked(api.listOrgs).mockResolvedValue([
+      { id: 'o1', name: 'Acme' },
+      { id: 'o2', name: 'Beta' },
+    ]);
+
+    await expect(
+      runInit(
+        '--defaults',
+        '--file-patterns',
+        'json=./locales/[locale]/*.json',
+        '--dev-credentials',
+        '--create-project',
+        '--project-name',
+        'New App'
+      )
+    ).rejects.toThrow(
+      /Setup needs these options: --org-id[\s\S]*Accessible organizations for --org-id:\n {2}- Acme \(o1\)\n {2}- Beta \(o2\)/
+    );
+    // Only the sign-in reveals how many organizations there are.
+    expect(login).toHaveBeenCalledTimes(1);
+    expect(api.createProject).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(appDirectory, 'gt.config.json'))).toBe(
+      false
+    );
+  });
+
+  it('lists the accessible organizations when --org-id is not one of them', async () => {
+    vi.mocked(api.listOrgs).mockResolvedValue([
+      { id: 'o1', name: 'Acme' },
+      { id: 'o2', name: 'Beta' },
+    ]);
+
+    await expect(
+      runInit(
+        '--dev-credentials',
+        '--create-project',
+        '--org-id',
+        'o3',
+        '--project-name',
+        'New App'
+      )
+    ).rejects.toThrow(
+      '--org-id o3 is not an accessible organization; use one of:\n  - Acme (o1)\n  - Beta (o2)'
+    );
+    expect(api.createProject).not.toHaveBeenCalled();
+  });
+
+  it('names the files already changed when project creation is denied', async () => {
+    vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
+    vi.mocked(api.createProject).mockRejectedValue(
+      new ApiError('Forbidden', 403, 'Forbidden')
+    );
+
+    await expect(
+      runInit('--create-project', '--project-name', 'New App')
+    ).rejects.toThrow(/Project creation was denied for organization o1/);
+    // Creation runs after the app files are written, so the failure says so.
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /Setup stopped after these steps: created gt\.config\.json/
+      )
     );
     expect(api.createProjectApiKey).not.toHaveBeenCalled();
     expect(fs.existsSync(envPath())).toBe(false);

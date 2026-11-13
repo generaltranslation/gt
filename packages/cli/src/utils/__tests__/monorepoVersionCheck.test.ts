@@ -34,6 +34,25 @@ const mockExistsSync = vi.mocked(fs.existsSync);
 const mockReadFileSync = vi.mocked(fs.readFileSync);
 const mockFgSync = vi.mocked(fg.sync);
 
+type Dependencies = Record<string, string>;
+
+/** A monorepo whose packages app-a, app-b, ... have the given dependencies. */
+function setupApps(apps: Dependencies[], lockfile?: string) {
+  const dirs = apps.map(
+    (_, index) => `/repo/packages/app-${String.fromCharCode(97 + index)}`
+  );
+  setupMocks({
+    lockfile,
+    packageDirs: dirs,
+    packages: Object.fromEntries(
+      dirs.map((dir, index) => [
+        dir,
+        { name: path.basename(dir), dependencies: apps[index] },
+      ])
+    ),
+  });
+}
+
 describe('checkMonorepoVersionConsistency', () => {
   const originalCwd = process.cwd;
   const originalExit = process.exit;
@@ -49,360 +68,128 @@ describe('checkMonorepoVersionConsistency', () => {
     process.exit = originalExit;
   });
 
-  it('should silently return if no lockfile is found', () => {
+  it('silently returns when no lockfile is found', () => {
     mockExistsSync.mockReturnValue(false);
+
     checkMonorepoVersionConsistency(REACT_LIBRARIES);
+
     expect(process.exit).not.toHaveBeenCalled();
     expect(logger.error).not.toHaveBeenCalled();
   });
 
-  it('should silently return if only one package exists', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.11.0' },
-        },
-      },
-    });
+  it.each<
+    [
+      string,
+      Dependencies[],
+      Parameters<typeof checkMonorepoVersionConsistency>[0],
+    ]
+  >([
+    ['only one package exists', [{ 'gt-react': '^10.11.0' }], REACT_LIBRARIES],
+    [
+      'every package uses the same specifier',
+      [{ 'gt-react': '^10.11.0' }, { 'gt-react': '^10.11.0' }],
+      REACT_LIBRARIES,
+    ],
+    [
+      'gt-react and gt-react-native specifiers match',
+      [{ 'gt-react': '^10.19.3' }, { 'gt-react-native': '^10.19.3' }],
+      REACT_LIBRARIES,
+    ],
+    [
+      'gt-react and gt-react-native differ but both are below 10.19.1',
+      [{ 'gt-react': '^10.18.0' }, { 'gt-react-native': '^10.19.0' }],
+      REACT_LIBRARIES,
+    ],
+    [
+      'gt-react and gt-react-native differ but only one library is checked',
+      [{ 'gt-react': '^10.19.3' }, { 'gt-react-native': '^10.18.0' }],
+      [Libraries.GT_REACT],
+    ],
+    [
+      'the other packages do not depend on GT packages',
+      [{ 'gt-react': '^10.11.0' }, { lodash: '^4.0.0' }],
+      REACT_LIBRARIES,
+    ],
+  ])('silently returns when %s', (_name, apps, libraries) => {
+    setupApps(apps);
 
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(process.exit).not.toHaveBeenCalled();
-  });
+    checkMonorepoVersionConsistency(libraries);
 
-  it('should silently return when all GT package version specifiers match', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.11.0' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react': '^10.11.0' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(process.exit).not.toHaveBeenCalled();
-  });
-
-  it('should silently return when gt-react and gt-react-native version specifiers match', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.19.3' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react-native': '^10.19.3' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(process.exit).not.toHaveBeenCalled();
     expect(logger.error).not.toHaveBeenCalled();
   });
 
-  it('should not enforce gt-react and gt-react-native sync when both versions are below 10.19.1', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.18.0' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react-native': '^10.19.0' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(process.exit).not.toHaveBeenCalled();
-    expect(logger.error).not.toHaveBeenCalled();
-  });
-
-  it('should exit with code 1 when GT package version specifiers mismatch', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.5.0' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react': '^10.11.0' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(logger.error).toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
-  });
-
-  it('should exit with code 1 when gt-react and gt-react-native version specifiers mismatch at or above 10.19.1', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.19.1' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react-native': '^10.18.0' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(logger.error).toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
-
-    const errorMessage = vi.mocked(logger.error).mock.calls[0][0];
-    expect(errorMessage).toContain('gt-react / gt-react-native');
-    expect(errorMessage).toContain('gt-react in app-a');
-    expect(errorMessage).toContain('gt-react-native in app-b');
-  });
-
-  it('should not report a cross-package mismatch when only gt-react is present', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.19.1' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react': '^10.19.3' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(logger.error).toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
-
-    const errorMessage = vi.mocked(logger.error).mock.calls[0][0];
-    expect(errorMessage).toContain('gt-react:');
-    expect(errorMessage).not.toContain('gt-react / gt-react-native');
-  });
-
-  it('should not report a cross-package mismatch when only gt-react-native is present', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react-native': '^10.19.1' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react-native': '^10.19.3' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(logger.error).toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
-
-    const errorMessage = vi.mocked(logger.error).mock.calls[0][0];
-    expect(errorMessage).toContain('gt-react-native:');
-    expect(errorMessage).not.toContain('gt-react / gt-react-native');
-  });
-
-  it('should not compare gt-react with gt-react-native unless both libraries are checked', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.19.3' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react-native': '^10.18.0' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency([Libraries.GT_REACT]);
-    expect(process.exit).not.toHaveBeenCalled();
-    expect(logger.error).not.toHaveBeenCalled();
-  });
-
-  it('should detect mismatches in transitive GT dependencies like react-core', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: {
-            'gt-react': '^10.5.0',
-            '@generaltranslation/react-core': '^1.3.0',
-          },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: {
-            'gt-react': '^10.11.0',
-            '@generaltranslation/react-core': '^1.5.0',
-          },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(logger.error).toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
-  });
-
-  it('should ignore packages that do not depend on GT packages', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/utils'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.11.0' },
-        },
-        '/repo/packages/utils': {
-          name: 'utils',
-          dependencies: { lodash: '^4.0.0' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(process.exit).not.toHaveBeenCalled();
-  });
-
-  it('should detect root via package-lock.json', () => {
-    setupMocks({
-      lockfile: 'package-lock.json',
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.5.0' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react': '^10.11.0' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(logger.error).toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
-  });
-
-  it('should detect root via yarn.lock', () => {
-    setupMocks({
-      lockfile: 'yarn.lock',
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-next': '^6.10.0' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-next': '^6.13.0' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(logger.error).toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
-  });
-
-  it('should detect root via bun.lock', () => {
-    setupMocks({
-      lockfile: 'bun.lock',
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.5.0' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react': '^10.11.0' },
-        },
-      },
-    });
-
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(logger.error).toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
-  });
-
-  it('should group multiple packages with the same version together', () => {
-    setupMocks({
-      packageDirs: [
-        '/repo/packages/app-a',
-        '/repo/packages/app-b',
-        '/repo/packages/app-c',
+  // Only package.json files are read, so this works without node_modules.
+  it.each<[string, Dependencies[], string[], string[]]>([
+    [
+      'a GT package has different specifiers',
+      [{ 'gt-react': '^10.5.0' }, { 'gt-react': '^10.11.0' }],
+      ['gt-react:'],
+      ['gt-react / gt-react-native'],
+    ],
+    [
+      'only gt-react is present and its specifiers differ',
+      [{ 'gt-react': '^10.19.1' }, { 'gt-react': '^10.19.3' }],
+      ['gt-react:'],
+      ['gt-react / gt-react-native'],
+    ],
+    [
+      'only gt-react-native is present and its specifiers differ',
+      [{ 'gt-react-native': '^10.19.1' }, { 'gt-react-native': '^10.19.3' }],
+      ['gt-react-native:'],
+      ['gt-react / gt-react-native'],
+    ],
+    [
+      'gt-react and gt-react-native differ at or above 10.19.1',
+      [{ 'gt-react': '^10.19.1' }, { 'gt-react-native': '^10.18.0' }],
+      [
+        'gt-react / gt-react-native',
+        'gt-react in app-a',
+        'gt-react-native in app-b',
       ],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.5.0' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react': '^10.11.0' },
-        },
-        '/repo/packages/app-c': {
-          name: 'app-c',
-          dependencies: { 'gt-react': '^10.11.0' },
-        },
-      },
-    });
+      [],
+    ],
+    [
+      'a transitive GT dependency like react-core differs too',
+      [
+        { 'gt-react': '^10.5.0', '@generaltranslation/react-core': '^1.3.0' },
+        { 'gt-react': '^10.11.0', '@generaltranslation/react-core': '^1.5.0' },
+      ],
+      ['gt-react:', '@generaltranslation/react-core:'],
+      [],
+    ],
+    [
+      'several packages share one of the differing specifiers',
+      [
+        { 'gt-react': '^10.5.0' },
+        { 'gt-react': '^10.11.0' },
+        { 'gt-react': '^10.11.0' },
+      ],
+      ['app-a', 'app-b', 'app-c'],
+      [],
+    ],
+  ])('exits with code 1 when %s', (_name, apps, mentions, omits) => {
+    setupApps(apps);
 
     checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(process.exit).toHaveBeenCalledWith(1);
 
+    expect(process.exit).toHaveBeenCalledWith(1);
     const errorMessage = vi.mocked(logger.error).mock.calls[0][0];
-    expect(errorMessage).toContain('app-b');
-    expect(errorMessage).toContain('app-c');
-    expect(errorMessage).toContain('app-a');
+    for (const text of mentions) expect(errorMessage).toContain(text);
+    for (const text of omits) expect(errorMessage).not.toContain(text);
   });
 
-  it('should work without node_modules installed (no deps)', () => {
-    setupMocks({
-      packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
-      packages: {
-        '/repo/packages/app-a': {
-          name: 'app-a',
-          dependencies: { 'gt-react': '^10.5.0' },
-        },
-        '/repo/packages/app-b': {
-          name: 'app-b',
-          dependencies: { 'gt-react': '^10.11.0' },
-        },
-      },
-    });
+  it.each(['package-lock.json', 'yarn.lock', 'bun.lock'])(
+    'finds the monorepo root through %s',
+    (lockfile) => {
+      setupApps([{ 'gt-next': '^6.10.0' }, { 'gt-next': '^6.13.0' }], lockfile);
 
-    // No node_modules exist at all — should still detect mismatch from package.json
-    checkMonorepoVersionConsistency(REACT_LIBRARIES);
-    expect(logger.error).toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
-  });
+      checkMonorepoVersionConsistency(REACT_LIBRARIES);
+
+      expect(logger.error).toHaveBeenCalled();
+      expect(process.exit).toHaveBeenCalledWith(1);
+    }
+  );
 });
 
 // Helper to set up common mock patterns

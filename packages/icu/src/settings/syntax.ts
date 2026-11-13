@@ -39,8 +39,10 @@ export function isTagName(name: string): boolean {
   return true;
 }
 
-// A decimal number as ICU and Intl both read it, like `1.5e3` or `+.05`.
-export const DECIMAL_NUMBER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
+// A decimal number as ICU and Intl both read it, like `1.5e3` or `+.05`. The
+// fraction's digits follow only a point: with `\d+\.?\d*` a long run of digits
+// can be split between the two groups in every way, which takes quadratic time.
+export const DECIMAL_NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
 
 // `=N` as the parser writes it: a safe integer spelled one way, so `=1` and
 // not `=01`.

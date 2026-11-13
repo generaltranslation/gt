@@ -38,7 +38,7 @@ const config = {
   },
 };
 
-describe.sequential('configured locales at GT service boundaries', () => {
+describe('configured locales at GT service boundaries', () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.unstubAllGlobals());
 
