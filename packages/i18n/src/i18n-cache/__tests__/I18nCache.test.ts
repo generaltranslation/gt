@@ -565,6 +565,23 @@ describe('I18nCache', () => {
       expect(resolver(message, spanish)).toBe('Hola {name}!');
     });
 
+    it('does not re-resolve the boundary locale for each message', async () => {
+      const cache = createCache();
+      const resolver = await cache.getLookupTranslation('fr');
+      const canonicalize = vi.spyOn(Intl, 'getCanonicalLocales');
+      try {
+        for (let index = 0; index < 10; index++) {
+          expect(resolver(message, { ...lookupOptions, $locale: 'fr' })).toBe(
+            translatedString
+          );
+          expect(resolver(message, lookupOptions)).toBe(translatedString);
+        }
+        expect(canonicalize).not.toHaveBeenCalled();
+      } finally {
+        canonicalize.mockRestore();
+      }
+    });
+
     it('keeps the loaded snapshot when cacheExpiryTime is 0', async () => {
       const cache = createCache({
         cacheExpiryTime: 0,

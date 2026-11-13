@@ -557,10 +557,17 @@ class I18nCache<TranslationValue extends Translation = Translation> {
           lookupOptions: LookupOptions = {} as LookupOptions
         ) =>
           this.guard(undefined, () => {
-            const { translationLocale, options } = this.resolveLookupParams(
-              lookupOptions.$locale ?? asyncBoundaryLocale,
-              lookupOptions
-            );
+            const requestedLocale = lookupOptions.$locale ?? locale;
+            const { translationLocale, options } =
+              requestedLocale === locale
+                ? {
+                    translationLocale: asyncBoundaryLocale,
+                    options: this.resolveLookupOptions(
+                      lookupOptions,
+                      asyncBoundaryLocale
+                    ),
+                  }
+                : this.resolveLookupParams(requestedLocale, lookupOptions);
 
             // Default locale, return the message
             if (!translationLocale) return message;
