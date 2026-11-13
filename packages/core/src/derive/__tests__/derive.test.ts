@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatMessage, parse } from '@generaltranslation/icu';
+import { formatIcu, parse } from '@generaltranslation/icu/parser';
 import { GT } from '../../index';
 import { declareVar } from '../declareVar';
 import { decodeVars } from '../decodeVars';
@@ -90,7 +90,9 @@ describe('declareVar', () => {
   ])('round-trips %s', (_name, value) => {
     const encoded = declareVar(value);
 
-    expect(formatMessage(encoded, 'en', { _gt_: 'placeholder' })).toBe(value);
+    expect(
+      formatIcu(encoded, 'en', { _gt_: 'placeholder' }, { timeZone: 'UTC' })
+    ).toBe(value);
     expect(decodeVars(`before ${encoded} after`)).toBe(`before ${value} after`);
     expect(extractVars(encoded)).toEqual({ _gt_1: value });
   });
