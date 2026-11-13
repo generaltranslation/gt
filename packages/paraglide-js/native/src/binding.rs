@@ -567,12 +567,10 @@ fn analyze_files(
   } = state;
   let ids = file_ids(graph, &files);
 
-  let found: Vec<Option<Vec<Usage>>> = crate::on_pool(|| {
-    ids
-      .into_par_iter()
-      .map(|file| file.map_or(Some(Vec::new()), |file| analyze_file(graph, file, custom)))
-      .collect()
-  });
+  let analyze =
+    |file: Option<FileId>| file.map_or(Some(Vec::new()), |file| analyze_file(graph, file, custom));
+  let found: Vec<Option<Vec<Usage>>> =
+    crate::on_pool(|| analyze_widely_imported_first(graph, &ids, analyze));
 
   let mut changed = Vec::new();
   let mut analyzed: Vec<Vec<Usage>> = Vec::with_capacity(found.len());
@@ -607,6 +605,62 @@ fn analyze_files(
   }
 
   analysis
+}
+
+/// From this many importers on, a file is analyzed ahead of the others, as a job of its own: the
+/// functions of a file that thousands of modules import have thousands of call sites to read.
+const WIDELY_IMPORTED: usize = 1000;
+
+/// `analyze` of each of `files`, in order, the most widely imported started first.
+fn analyze_widely_imported_first<T: Send + Sync>(
+  graph: &Graph,
+  files: &[Option<FileId>],
+  analyze: impl Fn(Option<FileId>) -> T + Sync,
+) -> Vec<T> {
+  let mut widely_imported: Vec<(usize, usize)> = files
+    .par_iter()
+    .enumerate()
+    .filter_map(|(index, file)| {
+      let importers = crate::importers::importer_count(graph, (*file)?);
+      (importers >= WIDELY_IMPORTED).then_some((importers, index))
+    })
+    .collect();
+  if widely_imported.is_empty() {
+    return files.par_iter().map(|&file| analyze(file)).collect();
+  }
+
+  // Most imported first: other threads take a thread's jobs oldest first.
+  widely_imported.sort_unstable_by(|a, b| b.cmp(a));
+  let mut is_widely_imported = vec![false; files.len()];
+  for &(_, index) in &widely_imported {
+    is_widely_imported[index] = true;
+  }
+
+  let found: Vec<std::sync::OnceLock<T>> =
+    files.iter().map(|_| std::sync::OnceLock::new()).collect();
+  let analyze = &analyze;
+  let found_ref = &found;
+  rayon::scope(|scope| {
+    for &(_, index) in &widely_imported {
+      let file = files[index];
+      scope.spawn(move |_| {
+        let _ = found_ref[index].set(analyze(file));
+      });
+    }
+
+    files
+      .par_iter()
+      .enumerate()
+      .filter(|(index, _)| !is_widely_imported[*index])
+      .for_each(|(index, &file)| {
+        let _ = found_ref[index].set(analyze(file));
+      });
+  });
+
+  found
+    .into_iter()
+    .map(|result| result.into_inner().expect("every file is analyzed"))
+    .collect()
 }
 
 fn finish_loading(state: &State, prefetch: &Prefetch) {

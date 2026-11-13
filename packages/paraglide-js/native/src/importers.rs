@@ -481,6 +481,21 @@ pub fn prepare_global_mentions(graph: &Graph) {
   let _ = graph.cache.global_mentions.set(mentions);
 }
 
+/// How many modules import `file` directly, by name or as a namespace.
+pub fn importer_count(graph: &Graph, file: FileId) -> usize {
+  let dependents = dependents(graph);
+  let mut importers: FxHashSet<ModuleId> = dependents
+    .namespace_importers(file)
+    .iter()
+    .copied()
+    .collect();
+  if let Some(by_name) = dependents.importers(file) {
+    importers.extend(by_name.values().flatten());
+  }
+
+  importers.len()
+}
+
 pub fn prepare_dependents(graph: &Graph) {
   if graph.cache.dependents.get().is_none() {
     let _ = graph.cache.dependents.set(build_dependents(graph, true));
