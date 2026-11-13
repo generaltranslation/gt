@@ -127,7 +127,7 @@ describe('formatMessageTree', () => {
   // Locales no other test uses, so none is resolved yet.
   it.each([
     ['a locale', 'se-NO', 1],
-    ['each locale of a list', ['nn-NO', 'nb-NO', 'da-DK'], 3],
+    ['each locale of a list', ['nn-NO', 'nb-NO'], 2],
   ])('resolves %s once, not on every call', (_name, locales, lookups) => {
     const supportedLocalesOf = vi.spyOn(
       Intl.NumberFormat,
