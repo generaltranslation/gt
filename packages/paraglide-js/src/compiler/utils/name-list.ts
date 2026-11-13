@@ -18,6 +18,16 @@ export function nameList(names: Iterable<string>): NameList {
   return `${SEPARATOR}${kept.map((name) => `${name}${SEPARATOR}`).join('')}`;
 }
 
+/** As `nameList`, but undefined if it would leave a name out. */
+export function completeNameList(
+  names: Iterable<string>
+): NameList | undefined {
+  const all = [...names];
+  if (all.some((name) => name.includes(SEPARATOR))) return undefined;
+
+  return nameList(all);
+}
+
 export function hasName(list: NameList, name: string): boolean {
   return (
     !name.includes(SEPARATOR) &&

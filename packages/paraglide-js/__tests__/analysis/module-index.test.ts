@@ -36,6 +36,42 @@ test('lists the exports that a function or a class declares as never holding a t
   ]);
 });
 
+test('lists the names a module exports and the specifiers of its export *', () => {
+  const [summary] = summarizeModule({
+    code: '',
+    program: program(
+      [
+        `export function show() {}`,
+        `export const title = 1, other = 2;`,
+        `export { title as heading };`,
+        `export default title;`,
+        `export * as ns from "./ns";`,
+        `export * from "./a";`,
+        `export type * from "./types";`,
+        `export * from "./b";`,
+      ].join('\n')
+    ),
+  });
+
+  expect(namesIn(summary!.exports!.names).sort()).toEqual([
+    'default',
+    'heading',
+    'ns',
+    'other',
+    'show',
+    'title',
+  ]);
+  expect(summary!.exports!.stars).toEqual(['./a', './b']);
+});
+
+test('leaves the exports unknown without ESM exports, or with a name it cannot list', () => {
+  const exportsOf = (code: string) =>
+    summarizeModule({ code: '', program: program(code) })[0]!.exports;
+
+  expect(exportsOf(`module.exports = { a: 1 };`)).toBeUndefined();
+  expect(exportsOf(`const a = 1; export { a as "a\0b" };`)).toBeUndefined();
+});
+
 test('lists none for generated code, which reads names through an object that stands for the module', () => {
   const [summary] = summarizeModule({
     code: '',

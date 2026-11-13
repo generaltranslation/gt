@@ -2,14 +2,24 @@ import { specifierLinks, type SpecifierLinks } from './importers.js';
 import type { ModuleGraph, ParsedModule } from './module-graph.js';
 import type { ModuleSummary } from './module-store.js';
 import { forEachNode, type Node } from './ast.js';
-import { exportingStatements, loadedSpecifiers } from './module-syntax.js';
-import { nameList, type NameList } from '../utils/name-list.js';
+import {
+  exportingStatements,
+  hasEsmExports,
+  loadedSpecifiers,
+  starExportSpecifiers,
+} from './module-syntax.js';
+import {
+  completeNameList,
+  nameList,
+  type NameList,
+} from '../utils/name-list.js';
 
 /** What each module of a file loads and links: the file's module, then its scripts. */
 export type ParsedSummary = Array<{
   specifiers: string[];
   links: SpecifierLinks;
   untrackedExports: NameList;
+  exports?: { names: NameList; stars: string[] };
   globalNames: string[];
 }>;
 
@@ -46,9 +56,23 @@ export function summarizeModule(
       untrackedExports: nameList(
         part.scopeObjects ? [] : untrackedExports(part.program)
       ),
+      exports: exportsOf(part.program),
       globalNames: namesIn(part.program, globalNames),
     };
   });
+}
+
+/** See `ModuleSummary`. A name that cannot be listed leaves its exports unknown. */
+function exportsOf(
+  program: ParsedModule['program']
+): ParsedSummary[number]['exports'] {
+  if (!hasEsmExports(program)) return undefined;
+
+  const names = completeNameList(exportingStatements(program).keys());
+
+  return names === undefined
+    ? undefined
+    : { names, stars: starExportSpecifiers(program) };
 }
 
 /**
@@ -166,7 +190,13 @@ export class ModuleIndexer {
 
     const parts = await Promise.all(
       parsed.map(
-        async ({ specifiers, links, untrackedExports, globalNames }) => {
+        async ({
+          specifiers,
+          links,
+          untrackedExports,
+          exports,
+          globalNames,
+        }) => {
           const files = await Promise.all(
             specifiers.map((specifier) => resolve(specifier, file))
           );
@@ -174,7 +204,7 @@ export class ModuleIndexer {
             (specifier, index) => [specifier, files[index]] as const
           );
 
-          return { resolved, links, untrackedExports, globalNames };
+          return { resolved, links, untrackedExports, exports, globalNames };
         }
       )
     );

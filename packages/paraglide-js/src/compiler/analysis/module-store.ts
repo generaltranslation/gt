@@ -7,7 +7,12 @@ import {
   type SpecifierLinks,
 } from './importers.js';
 import type { ModuleRecord, ParsedModule } from './module-graph.js';
-import { hasName, type NameList } from '../utils/name-list.js';
+import {
+  exportingStatements,
+  hasEsmExports,
+  starExportSpecifiers,
+} from './module-syntax.js';
+import { hasName, namesIn, type NameList } from '../utils/name-list.js';
 
 /** What the analysis knows of a module without its syntax tree. */
 export type ModuleSummary = {
@@ -19,10 +24,24 @@ export type ModuleSummary = {
     links: SpecifierLinks;
     /** Exports that never hold a tracked value: see `summarizeModule`. */
     untrackedExports: NameList;
+    /**
+     * The names it exports, `export *` aside, and the specifiers of its
+     * `export *`. Unset when unknown: without ESM exports, the module may be
+     * CommonJS.
+     */
+    exports?: { names: NameList; stars: readonly string[] };
     /** The auto-imported names it may use: see `summarizeModule`. */
     globalNames: readonly string[];
   }>;
 };
+
+/**
+ * The names a module exports, `export *` aside, and the files of its
+ * `export *`; unknown without ESM exports.
+ */
+export type ModuleExports =
+  | { names: Iterable<string>; starExported: readonly string[] }
+  | 'unknown';
 
 /** Where a module graph keeps its modules. */
 export interface RecordStore {
@@ -31,6 +50,8 @@ export interface RecordStore {
   get(file: string): ModuleRecord | undefined;
   /** True when the export is known to hold no tracked value, without loading the module. */
   isUntrackedExport(file: string, name: string): boolean;
+  /** Undefined if `file` is not one of the graph's modules, or cannot be read. */
+  exportsOf(file: string): ModuleExports | undefined;
   /** The records in memory. */
   loaded(): Iterable<ModuleRecord>;
   /** Every module's links, in loading order: a file's scripts after its module. */
@@ -62,6 +83,20 @@ export class LoadedRecords implements RecordStore {
 
   isUntrackedExport(): boolean {
     return false;
+  }
+
+  exportsOf(file: string): ModuleExports | undefined {
+    const record = this.records.get(file);
+    if (!record) return undefined;
+    if (!hasEsmExports(record.program)) return 'unknown';
+
+    return {
+      names: exportingStatements(record.program).keys(),
+      starExported: resolvedFiles(
+        starExportSpecifiers(record.program),
+        record.resolved
+      ),
+    };
   }
 
   mentioning(): undefined {
@@ -99,6 +134,7 @@ type IndexedModule = {
   resolved: ReadonlyArray<Map<string, string | undefined>>;
   links: readonly Links[];
   untrackedExports: NameList | undefined;
+  exports: { names: NameList; starExported: readonly string[] } | undefined;
 };
 
 /**
@@ -129,6 +165,7 @@ export class IndexedRecords implements RecordStore {
           resolveLinks(part.links, resolved[index]!)
         ),
         untrackedExports: parts[0]?.untrackedExports,
+        exports: indexedExports(parts[0]?.exports, resolved[0]),
       });
 
       parts.forEach(({ globalNames }, part) => {
@@ -172,6 +209,20 @@ export class IndexedRecords implements RecordStore {
     return untracked !== undefined && hasName(untracked, name);
   }
 
+  /** Read from the index: listing a module's exports parses none. */
+  exportsOf(file: string): ModuleExports | undefined {
+    const module = this.modules.get(file);
+    if (!module) return undefined;
+
+    const { exports } = module;
+    if (!exports) return 'unknown';
+
+    return {
+      names: namesIn(exports.names),
+      starExported: exports.starExported,
+    };
+  }
+
   loaded(): Iterable<ModuleRecord> {
     return this.records.values();
   }
@@ -197,6 +248,29 @@ export class IndexedRecords implements RecordStore {
       this.size -= sizeOf(record);
     }
   }
+}
+
+function indexedExports(
+  exports: ModuleSummary['parts'][number]['exports'],
+  resolved: ReadonlyMap<string, string | undefined> | undefined
+): IndexedModule['exports'] {
+  return (
+    exports && {
+      names: exports.names,
+      starExported: resolvedFiles(exports.stars, resolved ?? new Map()),
+    }
+  );
+}
+
+/** The files `specifiers` resolve to, without those that resolve to none. */
+export function resolvedFiles(
+  specifiers: readonly string[],
+  resolved: ReadonlyMap<string, string | undefined>
+): string[] {
+  return specifiers.flatMap((specifier) => {
+    const file = resolved.get(specifier);
+    return file ? [file] : [];
+  });
 }
 
 /** Shaped as `ModuleGraph` links a module it reads. */
