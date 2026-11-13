@@ -233,6 +233,7 @@ describe('pass gating by plugin options', () => {
     '<T>': T_COMPONENT_CODE,
     'useGT()': USEGT_CODE,
     't`` macro': TAGGED_TEMPLATE_CODE,
+    'auto JSX': AUTO_JSX_CODE,
   };
 
   it.each<
@@ -264,7 +265,20 @@ describe('pass gating by plugin options', () => {
     ['<T>', { disableBuildChecks: true }, { has: ['_hash: "'] }],
     ['<T>', { compileTimeHash: false, disableBuildChecks: true }, null],
     ['useGT()', { compileTimeHash: false, disableBuildChecks: true }, null],
-    ['t`` macro', { compileTimeHash: false, disableBuildChecks: true }, null],
+    [
+      't`` macro',
+      { compileTimeHash: false, disableBuildChecks: true },
+      { has: ['t("Hello world")'], lacks: ['t`', '$_hash'] },
+    ],
+    [
+      'auto JSX',
+      {
+        compileTimeHash: false,
+        disableBuildChecks: true,
+        enableAutoJsxInjection: true,
+      },
+      { has: ['GtInternalTranslateJsx'] },
+    ],
     [
       'useGT()',
       { devHotReload: true },

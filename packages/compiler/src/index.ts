@@ -232,14 +232,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         const state = initializeState(resolvedOptions, id);
         if (debugManifest) state.debugManifest = debugManifest;
         try {
-          // Skip transformation if not needed
-          if (
-            state.settings.disableBuildChecks &&
-            !state.settings.compileTimeHash
-          ) {
-            return null;
-          }
-
           // Parse the code into AST
           const ast = parser.parse(code, {
             sourceType: 'module',
