@@ -261,6 +261,8 @@ export class ModuleGraph {
       return spec && symbolFromSpec(spec, match.target.name, file);
     }
 
+    if (this.records.isUntrackedExport(file, name)) return undefined;
+
     const record = this.records.get(file);
     const key = `${file}\0${name}`;
     if (!record || this.exportsBeingResolved.has(key)) return undefined;
