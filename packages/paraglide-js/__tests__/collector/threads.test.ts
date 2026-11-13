@@ -99,6 +99,23 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
       expect(analysisThreads(144_000_000, 16_000_000)).toBe(0);
     });
 
+    test('as many as PARAGLIDE_CONTEXT_MEMORY_MB holds, a number of megabytes', async () => {
+      const { analysisThreads } = await builtPool();
+      vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', '');
+      vi.spyOn(os, 'availableParallelism').mockReturnValue(18);
+      vi.spyOn(os, 'totalmem').mockReturnValue(128_000_000_000);
+
+      vi.stubEnv('PARAGLIDE_CONTEXT_MEMORY_MB', String(8 * 1024));
+      expect(analysisThreads(144_000_000, 16_000_000)).toBe(0);
+
+      for (const invalid of ['0', '-1', 'Infinity', 'eight']) {
+        vi.stubEnv('PARAGLIDE_CONTEXT_MEMORY_MB', invalid);
+        expect(() => analysisThreads(144_000_000, 16_000_000)).toThrow(
+          `PARAGLIDE_CONTEXT_MEMORY_MB is a number of megabytes, more than 0; it is "${invalid}".`
+        );
+      }
+    });
+
     test('PARAGLIDE_CONTEXT_THREADS, a whole number', async () => {
       const { analysisThreads } = await builtPool();
 
