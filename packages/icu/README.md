@@ -117,6 +117,27 @@ It returns `undefined` when the translation matches. A category the locale
 does not have, like `one` in Japanese, may be left out or kept; a branch that
 is no category at all, like `lots`, is a problem.
 
+Word order is the translation's, so a variable may repeat, and may move into
+every branch of a select or plural or out of them. A reader who sees a
+variable in the source must still see it: moved into one branch only, it is
+lost for every other reader, and ICU formats that without complaint. A
+variable inside a tag stays inside that tag:
+
+```ts
+const items = icuToMessage(
+  '{n, plural, one {# item} other {# items}} for {g, select, male {him} other {them}}'
+).tree;
+checkTranslation(
+  items,
+  icuToMessage(
+    '{g, select, male {{n, plural, one {# Artikel} other {# Artikel}} für ihn} other {für sie}}'
+  ),
+  { locale: 'de' }
+);
+// 'The translation does not match its source: "n" is not shown when g is
+//  other, as it is in the source.'
+```
+
 Use `checkTranslation()` for a message tree, and `checkIcuTranslation()` for
 ICU strings from any library, such as FormatJS or ICU4J. It applies the same
 rules to what the parser reads, including what a tree cannot hold: a date
