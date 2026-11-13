@@ -201,6 +201,32 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
     });
   });
 
+  test('run a task again in a thread with a larger heap when one runs out of memory', async () => {
+    const { AnalysisPool } = await builtPool();
+    // Its syntax tree takes far more than a 16 MB heap.
+    const big = Array.from(
+      { length: 60_000 },
+      (_, line) =>
+        `export const value${line} = { key: "${line}", list: [${line}] };`
+    ).join('\n');
+    const root = await writeProject('threads-out-of-memory', {
+      'src/big.ts': big,
+      'src/small.ts': 'export const small = 1;',
+    });
+    const pool = new AnalysisPool(1, root, { heapMb: 16, largeHeapMb: 1024 });
+
+    try {
+      const result = await pool.summarize(path.join(root, 'src/big.ts'));
+      expect(result && 'summary' in result).toBe(true);
+
+      // Then in a thread of the usual heap again.
+      const next = await pool.summarize(path.join(root, 'src/small.ts'));
+      expect(next && 'summary' in next).toBe(true);
+    } finally {
+      await pool.close();
+    }
+  });
+
   test('fail, rather than wait, when one fails or exits', async () => {
     const { AnalysisPool } = await builtPool();
     const root = await writeProject('threads-failure', { 'src/a.ts': '' });
@@ -468,6 +494,91 @@ describe('stand-in analysis threads', () => {
     }
 
     expect(recorded).toEqual(files.slice(0, 16));
+  });
+
+  describe('running out of memory', () => {
+    /** What a thread fails with when it reaches its heap limit. */
+    const outOfMemory = () =>
+      Object.assign(new Error('JS heap out of memory'), {
+        code: 'ERR_WORKER_OUT_OF_MEMORY',
+      });
+
+    test('analyze a chunk again with a larger heap, then the next with the usual one, each thread given the index', async () => {
+      const { AnalysisPool, THREAD_HEAP_MB, LARGE_THREAD_HEAP_MB } =
+        await sourcePool();
+      const pool = new AnalysisPool(1, '/app');
+      // Two chunks: the thread runs out of memory on the first.
+      const files = Array.from({ length: 17 }, (_, at) => `/app/file${at}.ts`);
+      const analyzed: unknown[] = [];
+
+      const analysis = pool.analyze(index, files, async (file, usages) => {
+        analyzed.push([file, usages]);
+      });
+      await settle();
+      started[1]!.emit('error', outOfMemory());
+      await settle();
+      started[2]!.answer();
+      await settle();
+      started[3]!.answer();
+      await analysis;
+
+      expect(analyzed).toEqual(files.map((file) => [file, { file }]));
+      expect(started.map(({ heapMb, tasks }) => [heapMb, tasks])).toEqual([
+        [THREAD_HEAP_MB, []],
+        [THREAD_HEAP_MB, ['index', 'analyze']],
+        [LARGE_THREAD_HEAP_MB, ['index', 'analyze']],
+        [THREAD_HEAP_MB, ['index', 'analyze']],
+      ]);
+      await pool.close();
+    });
+
+    test('fail when the thread with the larger heap runs out of memory too', async () => {
+      const { AnalysisPool } = await sourcePool();
+      const pool = new AnalysisPool(1, '/app');
+      const analysis = pool.analyze(index, ['/app/a.ts'], async () => {});
+      await settle();
+      started[1]!.emit('error', outOfMemory());
+      await settle();
+
+      const again = outOfMemory();
+      started[2]!.emit('error', again);
+      await expect(analysis).rejects.toBe(again);
+      // No thread is started after it.
+      expect(started).toHaveLength(3);
+      await pool.close();
+    });
+
+    test('send no other batch to a slot while its batch runs again', async () => {
+      const { AnalysisPool } = await sourcePool();
+      const pool = new AnalysisPool(2, '/app');
+      const files = ['/app/a.ts', '/app/b.ts', '/app/c.ts'];
+      // A batch for each thread.
+      const summaries = files.slice(0, 2).map((file) => pool.summarize(file));
+      await settle();
+
+      // A file queued while the thread out of memory exits.
+      isExitHeld = true;
+      started[0]!.emit('error', outOfMemory());
+      await settle();
+      summaries.push(pool.summarize(files[2]!));
+      await settle();
+      isExitHeld = false;
+      started[0]!.exit();
+      await settle();
+
+      // The batch run again is done first, and its thread ends.
+      const large = started[2]!;
+      large.answer(large.pending.length - 1);
+      await settle();
+      for (const worker of started) {
+        while (worker.pending.length > 0) worker.answer();
+      }
+
+      await expect(Promise.all(summaries)).resolves.toEqual(
+        files.map((file) => ({ file }))
+      );
+      await pool.close();
+    });
   });
 });
 
