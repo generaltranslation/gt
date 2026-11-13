@@ -13,8 +13,8 @@ import {
 import {
   argumentOf,
   omitsArgument,
-  type CallSite,
   type Candidate,
+  type SiteHandle,
 } from './call-sites.js';
 import {
   classNamespace,
@@ -37,7 +37,7 @@ export type ModuleHost = {
   namespace(specifier: string): TrackedSymbol | undefined;
   exportOf(specifier: string, exportName: string): TrackedSymbol | undefined;
   /** In its module and in the modules that import it. */
-  callSitesOf?(fn: FunctionNode): CallSite[];
+  callSitesOf?(fn: FunctionNode): SiteHandle[];
   /** Where the component reads its props, and what each place that renders it passes. */
   props?: { reads: PropsReads; candidates(): Candidate[] };
 };

@@ -9,9 +9,13 @@ import {
   argumentOf,
   callSitesIn,
   componentInstancesIn,
+  ownSite,
+  sitePosition,
   type CallSite,
   type CallSiteIndex,
   type Candidate,
+  type InstantiationSyntax,
+  type SiteHandle,
 } from './call-sites.js';
 import { followCandidate } from './evaluate.js';
 import type { ModuleRecord } from './module-graph.js';
@@ -51,8 +55,8 @@ type ExportedNames = { file: string; names: readonly string[] };
 
 /** Everything that can refer to some exports of a module. */
 type Referrers = {
-  /** In loading order. */
-  modules: readonly ModuleRecord[];
+  /** In loading order: each is loaded when it is searched. */
+  modules: readonly ModuleRef[];
   globals: readonly GlobalExport[];
   /** The exporting module and every module that may re-export from it. */
   exporters: ReadonlySet<string>;
@@ -90,13 +94,15 @@ type Dependents = {
   reexporters: Map<string, ModuleRef[]>;
 };
 
+/** Handles and candidates only: holding a module's sites would hold the module. */
 type Cache = {
   generation: number;
-  callSites: Map<FunctionNode, CallSite[]>;
-  componentProps: Map<ModuleRecord, Candidate[]>;
+  callSites: WeakMap<FunctionNode, SiteHandle[]>;
+  componentProps: WeakMap<ModuleRecord, Candidate[]>;
 };
 
-type IndexSites = (program: ESTree.Program, scope: Scope) => CallSiteIndex;
+/** Which sites of a module: calls and JSX elements, or the components its generated code instantiates. */
+type SiteKind = 'call-sites' | InstantiationSyntax;
 
 const linksOfRecords = new WeakMap<ModuleRecord, Links>();
 
@@ -114,25 +120,20 @@ export class ImporterIndex {
 
   constructor(private readonly modules: LoadedModules) {}
 
-  /** Forgets the call sites and props it found, e.g. once modules they are in were unloaded. */
-  clear(): void {
-    this.cache = undefined;
-  }
-
-  callSitesOf(record: ModuleRecord, fn: FunctionNode): CallSite[] {
+  callSitesOf(record: ModuleRecord, fn: FunctionNode): SiteHandle[] {
     const { callSites } = this.currentCache();
 
     const cached = callSites.get(fn);
     if (cached) return cached;
 
     // Cached before it is filled, so that a cycle of calls ends.
-    const sites: CallSite[] = [];
+    const sites: SiteHandle[] = [];
     callSites.set(fn, sites);
 
     const scope = this.modules.scopeOf(record);
     const sitesInOwnModule =
       callSitesIn(record.program, scope).byDeclaration.get(fn) ?? [];
-    sites.push(...sitesInOwnModule);
+    sites.push(...sitesInOwnModule.map(ownSite));
 
     const exportNames = exportNamesOf(record.program, fn, scope);
     if (exportNames.length === 0) return sites;
@@ -140,10 +141,13 @@ export class ImporterIndex {
     const exported = { file: record.file, names: exportNames };
     const referrers = this.referrersOf(exported);
 
-    for (const importer of referrers.modules) {
-      if (importer === record) continue;
+    for (const ref of referrers.modules) {
+      const importer = this.modules.module(ref);
+      if (!importer || importer === record) continue;
 
-      sites.push(...this.sitesIn(importer, exported, referrers, callSitesIn));
+      sites.push(
+        ...this.sitesIn(ref, importer, exported, referrers, 'call-sites')
+      );
     }
 
     return sites;
@@ -163,17 +167,19 @@ export class ImporterIndex {
     const component = { file: record.file, names: ['default'] };
     const referrers = this.referrersOf(component);
 
-    for (const importer of referrers.modules) {
-      if (importer === record) continue;
+    for (const ref of referrers.modules) {
+      const importer = this.modules.module(ref);
+      if (!importer || importer === record) continue;
 
-      props.push(...this.jsxProps(importer, component, referrers));
-      props.push(...this.instanceProps(importer, component, referrers));
+      props.push(...this.jsxProps(ref, importer, component, referrers));
+      props.push(...this.instanceProps(ref, importer, component, referrers));
     }
 
     return props;
   }
 
   private jsxProps(
+    ref: ModuleRef,
     importer: ModuleRecord,
     component: ExportedNames,
     referrers: Referrers
@@ -181,10 +187,11 @@ export class ImporterIndex {
     const props: Candidate[] = [];
 
     for (const site of this.sitesIn(
+      ref,
       importer,
       component,
       referrers,
-      callSitesIn
+      'call-sites'
     )) {
       const elementProps =
         site.type === 'jsx' ? argumentOf(site, 0) : undefined;
@@ -196,6 +203,7 @@ export class ImporterIndex {
 
   /** Of the components a language tool's generated code instantiates: `new Label({ props })`. */
   private instanceProps(
+    ref: ModuleRef,
     importer: ModuleRecord,
     component: ExportedNames,
     referrers: Referrers
@@ -203,15 +211,14 @@ export class ImporterIndex {
     const instances = importer.componentInstances;
     if (!instances) return [];
 
-    const instancesIn: IndexSites = (program, scope) =>
-      componentInstancesIn(program, scope, instances.via);
     const props: Candidate[] = [];
 
     for (const site of this.sitesIn(
+      ref,
       importer,
       component,
       referrers,
-      instancesIn
+      instances.via
     )) {
       const options = argumentOf(site, 0);
       if (options) props.push(followCandidate(options, instances.path));
@@ -226,8 +233,8 @@ export class ImporterIndex {
     if (this.cache?.generation !== generation) {
       this.cache = {
         generation,
-        callSites: new Map(),
-        componentProps: new Map(),
+        callSites: new WeakMap(),
+        componentProps: new WeakMap(),
       };
     }
 
@@ -261,29 +268,26 @@ export class ImporterIndex {
       });
 
     const isUsableWithoutImport = globals.length > 0;
-    const refs = isUsableWithoutImport
+    const modules = isUsableWithoutImport
       ? [...dependents.loadingOrder.keys()].map(parseRefKey)
       : importersOf(exporters, exportedAs, dependents);
-
-    const modules = refs
-      .map((ref) => this.modules.module(ref))
-      .filter((module) => module !== undefined);
 
     return { modules, globals, exporters, exportedAs };
   }
 
   /** The sites in `importer` that refer to `exported`; what they pass records `importer` in its resolution. */
   private sitesIn(
+    ref: ModuleRef,
     importer: ModuleRecord,
     exported: ExportedNames,
     referrers: Referrers,
-    indexSites: IndexSites
-  ): CallSite[] {
+    kind: SiteKind
+  ): SiteHandle[] {
     const imports = valueImports(importer.program);
     if (imports.length === 0 && referrers.globals.length === 0) return [];
 
     const scope = this.modules.scopeOf(importer);
-    const index = indexSites(importer.program, scope);
+    const index = sitesOfKind(kind, importer.program, scope);
     const sites: CallSite[] = [];
 
     for (const { declaration } of referrers.globals) {
@@ -296,7 +300,30 @@ export class ImporterIndex {
       );
     }
 
-    return sites.map((site) => ({ ...site, imported: true }));
+    return sites.map((site) => this.importedSite(ref, kind, site));
+  }
+
+  /** Found again by its position: the handle does not hold the module. */
+  private importedSite(
+    ref: ModuleRef,
+    kind: SiteKind,
+    site: CallSite
+  ): SiteHandle {
+    const position = sitePosition(site);
+
+    return {
+      type: site.type,
+      imported: true,
+      resolve: () => {
+        const module = this.modules.module(ref);
+        if (!module) return undefined;
+
+        const scope = this.modules.scopeOf(module);
+        return sitesOfKind(kind, module.program, scope).byPosition.get(
+          position
+        );
+      },
+    };
   }
 
   private sitesOfImport(
@@ -678,4 +705,14 @@ function exportNamesByDeclaration(
   }
 
   return names;
+}
+
+function sitesOfKind(
+  kind: SiteKind,
+  program: ESTree.Program,
+  scope: Scope
+): CallSiteIndex {
+  return kind === 'call-sites'
+    ? callSitesIn(program, scope)
+    : componentInstancesIn(program, scope, kind);
 }

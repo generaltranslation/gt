@@ -179,12 +179,11 @@ export class ContextCollector {
     });
 
     for (const file of sources) {
+      // Held for its code: the analysis may unload it.
+      const record = graph.getRecord(file);
       const usages = analyzeModule(graph, file);
-      // Still loaded: modules are unloaded between files.
-      const code = graph.getRecord(file)?.code;
 
-      this.addUsages(file, usages, code);
-      graph.trim();
+      this.addUsages(file, usages, record?.code);
     }
   }
 

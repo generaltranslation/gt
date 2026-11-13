@@ -1,4 +1,5 @@
 import {
+  parsedRange,
   staticString,
   unwrapExpression,
   walk,
@@ -14,21 +15,29 @@ export type Candidate =
   | { type: 'expression'; node: Node; scope: Scope; path: readonly string[] }
   | { type: 'computed'; get: () => TrackedSymbol[] };
 
-/** A call of a function or a JSX element of a component; `imported` when in another module than the callee. */
+/** A call of a function, or a JSX element of a component. */
 export type CallSite =
-  | { type: 'call'; arguments: readonly Node[]; scope: Scope; imported?: true }
-  | {
-      type: 'jsx';
-      element: ESTree.JSXOpeningElement;
-      scope: Scope;
-      imported?: true;
-    };
+  | { type: 'call'; node: Node; arguments: readonly Node[]; scope: Scope }
+  | { type: 'jsx'; element: ESTree.JSXOpeningElement; scope: Scope };
+
+/**
+ * A call site as the analysis keeps it. One in another module than the callee
+ * is `imported`, and found again when it is read: holding it would hold that
+ * whole module, and a function can be called from thousands.
+ */
+export type SiteHandle = {
+  type: CallSite['type'];
+  imported: boolean;
+  resolve(): CallSite | undefined;
+};
 
 export type CallSiteIndex = {
   /** By the node that declares the callee: a function, or an import specifier. */
   byDeclaration: Map<Node, CallSite[]>;
   /** `ns.f(…)` and `<ns.F />`: by the namespace import specifier, then by member name. */
   byNamespaceMember: Map<Node, Map<string, CallSite[]>>;
+  /** By `sitePosition`. */
+  byPosition: Map<string, CallSite>;
 };
 
 export type InstantiationSyntax = 'new' | 'call';
@@ -50,6 +59,7 @@ export function callSitesIn(
         if (node.type === 'CallExpression') {
           const site: Call = {
             type: 'call',
+            node,
             arguments: node.arguments,
             scope: moduleScope,
           };
@@ -87,6 +97,7 @@ export function componentInstancesIn(
         const component = instantiatedComponent(node.callee, moduleScope);
         const site: Call = {
           type: 'call',
+          node,
           arguments: node.arguments,
           scope: moduleScope,
         };
@@ -98,22 +109,56 @@ export function componentInstancesIn(
   });
 }
 
+/** Where a site is in its module, the same once the module is parsed again. */
+export function sitePosition(site: CallSite): string {
+  const [start, end] = parsedRange(
+    site.type === 'call' ? site.node : site.element
+  );
+
+  return `${site.type}:${start}:${end}`;
+}
+
+/** A handle on a site of the module being read, which holds it already. */
+export function ownSite(site: CallSite): SiteHandle {
+  return { type: site.type, imported: false, resolve: () => site };
+}
+
 /** What a call site passes as parameter `index`; a JSX element passes its props as the first. */
 export function argumentOf(
-  site: CallSite,
+  handle: SiteHandle,
   index: number
 ): Candidate | undefined {
-  if (site.type === 'call') return callArgument(site, index);
+  if (handle.type === 'jsx') {
+    return index === 0 ? propsArgument(handle) : undefined;
+  }
 
-  return index === 0 ? propsArgument(site) : undefined;
+  if (!handle.imported) {
+    const site = handle.resolve();
+    return site?.type === 'call' ? callArgument(site, index) : undefined;
+  }
+
+  // Computed keys do not follow another module's literals: `show(404)` leaves `` m[`error_${code}`] `` at error_*.
+  return {
+    type: 'computed',
+    get: () => {
+      const site = handle.resolve();
+      const argument =
+        site?.type === 'call' ? passedArgument(site, index) : undefined;
+
+      return argument ? evaluateAll(argument, site!.scope) : [];
+    },
+  };
 }
 
 /**
  * Whether a call site leaves parameter `index` to its default: it passes
  * nothing there, or `undefined`. A JSX element passes only its props.
  */
-export function omitsArgument(site: CallSite, index: number): boolean {
-  if (site.type === 'jsx') return index > 0;
+export function omitsArgument(handle: SiteHandle, index: number): boolean {
+  if (handle.type === 'jsx') return index > 0;
+
+  const site = handle.resolve();
+  if (site?.type !== 'call') return false;
 
   // After a spread, what is passed where is unknown.
   const upToIndex = site.arguments.slice(0, index + 1);
@@ -140,7 +185,11 @@ function indexOnce(
   let index = indexesOfScope.get(kind);
 
   if (!index) {
-    index = { byDeclaration: new Map(), byNamespaceMember: new Map() };
+    index = {
+      byDeclaration: new Map(),
+      byNamespaceMember: new Map(),
+      byPosition: new Map(),
+    };
     indexesOfScope.set(kind, index);
     fill(index);
   }
@@ -153,7 +202,10 @@ function addSite(index: CallSiteIndex, callee: Node, site: CallSite): void {
 
   if (node.type === 'Identifier' || node.type === 'JSXIdentifier') {
     const declaration = site.scope.bindingAt(node)?.declaration;
-    if (declaration) append(index.byDeclaration, declaration, site);
+    if (!declaration) return;
+
+    append(index.byDeclaration, declaration, site);
+    index.byPosition.set(sitePosition(site), site);
     return;
   }
 
@@ -177,6 +229,7 @@ function addSite(index: CallSiteIndex, callee: Node, site: CallSite): void {
   }
 
   append(sitesByMember, member, site);
+  index.byPosition.set(sitePosition(site), site);
 }
 
 function calleeMemberName(
@@ -247,6 +300,20 @@ function isUndefined(expression: Node, scope: Scope): boolean {
 }
 
 function callArgument(site: Call, index: number): Candidate | undefined {
+  const argument = passedArgument(site, index);
+
+  return (
+    argument && {
+      type: 'expression',
+      node: argument,
+      scope: site.scope,
+      path: [],
+    }
+  );
+}
+
+/** The argument at `index`; undefined if there is none, or a spread may move it. */
+function passedArgument(site: Call, index: number): Node | undefined {
   const argument = site.arguments[index];
   if (!argument || argument.type === 'SpreadElement') return undefined;
 
@@ -255,21 +322,24 @@ function callArgument(site: Call, index: number): Candidate | undefined {
   if (earlierArguments.some((earlier) => earlier.type === 'SpreadElement'))
     return undefined;
 
-  const { scope } = site;
-
-  // Computed keys do not follow another module's literals: `show(404)` leaves `` m[`error_${code}`] `` at error_*.
-  if (site.imported)
-    return { type: 'computed', get: () => evaluateAll(argument, scope) };
-
-  return { type: 'expression', node: argument, scope, path: [] };
+  return argument;
 }
 
-function propsArgument({ element, scope }: JsxElement): Candidate {
+function propsArgument(handle: SiteHandle): Candidate {
   return {
     type: 'computed',
-    get: () => [
-      layeredNamespace(() => element.attributes.flatMap(attributeLayer), scope),
-    ],
+    get: () => {
+      const site = handle.resolve();
+      if (site?.type !== 'jsx') return [];
+
+      const { element, scope } = site;
+      return [
+        layeredNamespace(
+          () => element.attributes.flatMap(attributeLayer),
+          scope
+        ),
+      ];
+    },
   };
 }
 
