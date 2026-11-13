@@ -39,7 +39,7 @@ const rejectedKeyError = new Error(
 
 const lookup: TranslateLookup = {
   locale: 'fr',
-  message: 'Hello',
+  content: 'Hello',
   options: { $format: 'ICU' },
 };
 
@@ -81,7 +81,7 @@ describe('I18nStore runtime translation failure handling', () => {
     const store = new I18nStore();
 
     await store.translate(lookup);
-    await store.translate({ ...lookup, message: 'Goodbye' });
+    await store.translate({ ...lookup, content: 'Goodbye' });
 
     expect(consoleError).toHaveBeenCalledTimes(1);
   });
@@ -101,7 +101,7 @@ describe('I18nStore runtime translation failure handling', () => {
       lookupTranslationWithFallback.mockRejectedValueOnce(
         new Error(`failure ${i}`)
       );
-      await store.translate({ ...lookup, message: `message ${i}` });
+      await store.translate({ ...lookup, content: `message ${i}` });
     }
     expect(consoleError).toHaveBeenCalledTimes(101);
 
@@ -115,19 +115,19 @@ describe('I18nStore runtime translation failure handling', () => {
     const store = new I18nStore();
 
     lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'A' });
-    await store.translate({ ...lookup, message: 'm1' });
+    await store.translate({ ...lookup, content: 'm1' });
     lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'B' });
-    await store.translate({ ...lookup, message: 'm2' });
+    await store.translate({ ...lookup, content: 'm2' });
     expect(consoleError).toHaveBeenCalledTimes(2);
 
     lookupTranslationWithFallback.mockRejectedValueOnce(null);
-    await store.translate({ ...lookup, message: 'm3' });
+    await store.translate({ ...lookup, content: 'm3' });
     lookupTranslationWithFallback.mockRejectedValueOnce(undefined);
-    await store.translate({ ...lookup, message: 'm4' });
+    await store.translate({ ...lookup, content: 'm4' });
     expect(consoleError).toHaveBeenCalledTimes(4);
 
     lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'A' });
-    await store.translate({ ...lookup, message: 'm5' });
+    await store.translate({ ...lookup, content: 'm5' });
     expect(consoleError).toHaveBeenCalledTimes(4);
   });
 

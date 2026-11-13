@@ -55,7 +55,7 @@ describe('react-core/unstable useGT', () => {
     );
     expect(resolveTranslation).toHaveBeenCalledWith({
       locale: 'fr',
-      message: hello,
+      content: hello,
       options: expect.objectContaining({
         $format: 'MESSAGE_TREE',
         $locale: 'fr',

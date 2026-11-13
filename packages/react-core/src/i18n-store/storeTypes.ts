@@ -12,7 +12,7 @@ export type TranslateEventListener = (lookup: TranslateLookup) => void;
 
 export type TranslateLookup<T extends Content = Content> = {
   locale: string;
-  message: T;
+  content: T;
   options: LookupOptions;
 };
 

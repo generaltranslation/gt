@@ -55,11 +55,11 @@ function normalizeBatchConfig(
 /**
  * InputKey type for lookups
  * @typedef {Object} TranslationKey
- * @property {TranslationValue} message - The message from the source
+ * @property {TranslationValue} content - The content from the source
  * @property {LookupOptions} options - The options for the translation
  */
 export type TranslationKey<TranslationValue extends Content> = {
-  message: TranslationValue;
+  content: TranslationValue;
   options: LookupOptions;
 };
 
@@ -177,7 +177,7 @@ export class TranslationsCache<TranslationValue extends Content> {
   }
 
   private getCacheKey(key: TranslationKey<TranslationValue>): Hash {
-    return hashContent(key.message, key.options);
+    return hashContent(key.content, key.options);
   }
 
   private translate(
@@ -242,7 +242,7 @@ export class TranslationsCache<TranslationValue extends Content> {
     return new Promise<TranslationValue>((resolve, reject) => {
       this.queue.push({
         key: hash,
-        source: key.message,
+        source: key.content,
         metadata: {
           hash,
           ...(metadataOptions.$context && {

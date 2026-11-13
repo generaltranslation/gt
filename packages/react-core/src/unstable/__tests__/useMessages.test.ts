@@ -54,7 +54,7 @@ describe('react-core/unstable useMessages', () => {
     );
     expect(resolveTranslation).toHaveBeenCalledWith({
       locale: 'fr',
-      message: ['Hello, ', ['name'], '!'],
+      content: ['Hello, ', ['name'], '!'],
       options: expect.objectContaining({
         $format: 'MESSAGE_TREE',
         $locale: 'fr',

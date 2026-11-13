@@ -244,7 +244,9 @@ describe('I18nCache contract: lookup API', () => {
     });
 
     const resolver = await cache.getLookupTranslation('fr');
-    await resolver.prefetchEntries?.([{ message, options: lookupOptions }]);
+    await resolver.prefetchEntries?.([
+      { content: message, options: lookupOptions },
+    ]);
 
     expect(translateManySpy).not.toHaveBeenCalled();
     expect(resolver(message, lookupOptions)).toBeUndefined();
@@ -265,7 +267,9 @@ describe('I18nCache contract: lookup API', () => {
     });
 
     const resolver = await cache.getLookupTranslation('fr');
-    await resolver.prefetchEntries?.([{ message, options: lookupOptions }]);
+    await resolver.prefetchEntries?.([
+      { content: message, options: lookupOptions },
+    ]);
 
     expect(translateManySpy).toHaveBeenCalledTimes(1);
     const [sources, requestOptions] = translateManySpy.mock.calls[0];
@@ -294,8 +298,8 @@ describe('I18nCache contract: lookup API', () => {
 
     const resolver = await cache.getLookupTranslation('fr');
     await resolver.prefetchEntries?.([
-      { message, options: lookupOptions },
-      { message: otherMessage, options: otherOptions },
+      { content: message, options: lookupOptions },
+      { content: otherMessage, options: otherOptions },
     ]);
 
     expect(warnSpy).toHaveBeenCalledWith(
@@ -316,7 +320,9 @@ describe('I18nCache contract: lookup API', () => {
     });
 
     const resolver = await cache.getLookupTranslation('fr');
-    await resolver.prefetchEntries?.([{ message, options: lookupOptions }]);
+    await resolver.prefetchEntries?.([
+      { content: message, options: lookupOptions },
+    ]);
 
     expect(translateManySpy).not.toHaveBeenCalled();
     expect(resolver(message, lookupOptions)).toBe(translatedString);

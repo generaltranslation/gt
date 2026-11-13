@@ -84,7 +84,7 @@ export class I18nStore {
     return getReactI18nCache()
       .lookupTranslationWithFallback(
         lookup.locale,
-        lookup.message,
+        lookup.content,
         lookup.options
       )
       .then(() => {
@@ -189,7 +189,7 @@ export class I18nStore {
       lookupTranslation(translationsSnapshot, lookup) ??
       getReactI18nCache().lookupTranslation<T>(
         lookup.locale,
-        lookup.message,
+        lookup.content,
         lookup.options
       )
     );

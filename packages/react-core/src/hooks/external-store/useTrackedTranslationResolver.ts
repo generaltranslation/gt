@@ -143,7 +143,7 @@ function usePreloadCompilerLookups(
       );
       const lookup = {
         locale: targetLocale,
-        message,
+        content: message,
         options: lookupOptions,
       };
       return [lookup, getTranslateListenerKey(lookup)];

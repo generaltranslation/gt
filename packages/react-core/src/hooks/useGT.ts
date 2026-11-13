@@ -41,7 +41,7 @@ export function useGT(_messages?: RegisteredMessage[]): GTFunctionType {
 
       const translation = resolveTranslation({
         locale: lookupOptions.$locale,
-        message,
+        content: message,
         options: lookupOptions,
       });
 

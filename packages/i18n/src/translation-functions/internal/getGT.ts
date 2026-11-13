@@ -57,7 +57,7 @@ export async function getGTInternal(
   if (devHotReloadEnabled && lookupTranslation.prefetchEntries) {
     await lookupTranslation.prefetchEntries(
       _messages?.map(({ message, ...options }) => ({
-        message,
+        content: message,
         options: {
           $format: 'ICU',
           ...options,

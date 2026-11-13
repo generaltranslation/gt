@@ -8,6 +8,6 @@ export function lookupTranslation<T extends Content>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
   const hash =
-    lookup.options.$_hash ?? hashContent(lookup.message, lookup.options);
+    lookup.options.$_hash ?? hashContent(lookup.content, lookup.options);
   return translationsSnapshot?.[lookup.locale]?.[hash] as TranslateSnapshot<T>;
 }
