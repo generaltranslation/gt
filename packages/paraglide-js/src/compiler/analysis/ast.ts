@@ -76,6 +76,54 @@ export function walk(root: Node, visitor: Visitor): void {
   visit(root);
 }
 
+/**
+ * The node of `type` parsed at `[start, end]`, as `walk` visits nodes: found
+ * by descending through the nodes whose parsed range holds it. Generated code
+ * moved to its source can put a node outside its parent's range: then every
+ * node is visited. Undefined if there is none.
+ */
+export function nodeAt(
+  root: Node,
+  type: Node['type'],
+  start: number,
+  end: number
+): Node | undefined {
+  const isIt = (node: Node) => {
+    const [nodeStart, nodeEnd] = parsedRange(node);
+    return node.type === type && nodeStart === start && nodeEnd === end;
+  };
+  let found: Node | undefined;
+
+  const descend = (node: Node, prune: boolean): boolean => {
+    if (isIt(node)) {
+      found = node;
+      return true;
+    }
+
+    const record = node as unknown as Record<string, unknown>;
+
+    for (const key of childKeysOf(node)) {
+      const value = record[key];
+      const children = Array.isArray(value) ? value : [value];
+
+      for (const child of children) {
+        if (!isNode(child)) continue;
+        if (prune && !holds(child, start, end)) continue;
+        if (descend(child, prune)) return true;
+      }
+    }
+
+    return false;
+  };
+
+  return descend(root, true) || descend(root, false) ? found : undefined;
+}
+
+function holds(node: Node, start: number, end: number): boolean {
+  const [nodeStart, nodeEnd] = parsedRange(node);
+  return nodeStart <= start && end <= nodeEnd;
+}
+
 /** Unlike `walk`, visits type annotations too. */
 export function forEachNode(
   root: Node,

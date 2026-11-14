@@ -27,6 +27,7 @@ import {
   valueImports,
 } from './module-syntax.js';
 import type { Scope } from './scope.js';
+import { PositionedSites, type SitePositions } from './site-positions.js';
 
 /** An auto-imported name: what it stands for, and the node its call sites are indexed under. */
 export type GlobalExport = {
@@ -50,6 +51,8 @@ export type LoadedModules = {
   /** The modules that may mention one of `names`; undefined if every module may. */
   mentioning(names: ReadonlySet<string>): readonly ModuleRef[] | undefined;
   scopeOf(record: ModuleRecord): Scope;
+  /** Where the module's sites are, if the index has them: see `sitePositions`. */
+  sitePositions(ref: ModuleRef): SitePositions | undefined;
   /** Changes whenever a module is added or removed. */
   generation(): number;
   globalExports(): readonly GlobalExport[];
@@ -175,11 +178,58 @@ class ImportedSite implements SiteHandle {
     const module = this.modules.module(this.ref);
     if (!module) return undefined;
 
+    const positioned =
+      this.kind === 'call-sites'
+        ? positionedSites(this.modules, this.ref, module)
+        : undefined;
+    if (positioned) return positioned.at(this.type, this.start, this.end);
+
     const scope = this.modules.scopeOf(module);
     return sitesOfKind(this.kind, module.program, scope).byPosition.get(
       positionKey(this.type, this.start, this.end)
     );
   }
+}
+
+/** Finds a module's sites as `CallSiteIndex` does. */
+type SiteLookup = {
+  sitesOf(declaration: Node, name: string): readonly CallSite[];
+  sitesByMember(
+    namespace: Node,
+    name: string
+  ): ReadonlyMap<string, readonly CallSite[]>;
+};
+
+function indexLookup(index: CallSiteIndex): SiteLookup {
+  return {
+    sitesOf: (declaration) => index.byDeclaration.get(declaration) ?? [],
+    sitesByMember: (namespace) =>
+      index.byNamespaceMember.get(namespace) ?? new Map(),
+  };
+}
+
+const positionedOfPrograms = new WeakMap<ESTree.Program, PositionedSites>();
+
+/** The module's call sites by their positions in the index, if it has them: the module is not walked. */
+function positionedSites(
+  modules: LoadedModules,
+  ref: ModuleRef,
+  module: ModuleRecord
+): PositionedSites | undefined {
+  const known = positionedOfPrograms.get(module.program);
+  if (known) return known;
+
+  const positions = modules.sitePositions(ref);
+  if (!positions) return undefined;
+
+  const positioned = new PositionedSites(
+    module.program,
+    modules.scopeOf(module),
+    positions
+  );
+  positionedOfPrograms.set(module.program, positioned);
+
+  return positioned;
 }
 
 /** Which sites of a module: calls and JSX elements, or the components its generated code instantiates. */
@@ -381,17 +431,24 @@ export class ImporterIndex {
     const imports = valueImports(importer.program);
     if (imports.length === 0 && referrers.globals.length === 0) return [];
 
-    const scope = this.modules.scopeOf(importer);
-    const index = sitesOfKind(kind, importer.program, scope);
+    const positioned =
+      kind === 'call-sites'
+        ? positionedSites(this.modules, ref, importer)
+        : undefined;
+    const lookup =
+      positioned ??
+      indexLookup(
+        sitesOfKind(kind, importer.program, this.modules.scopeOf(importer))
+      );
     const sites: CallSite[] = [];
 
-    for (const { declaration } of referrers.globals) {
-      sites.push(...(index.byDeclaration.get(declaration) ?? []));
+    for (const { declaration, name } of referrers.globals) {
+      sites.push(...lookup.sitesOf(declaration, name));
     }
 
     for (const statement of imports) {
       sites.push(
-        ...this.sitesOfImport(statement, importer, index, exported, referrers)
+        ...this.sitesOfImport(statement, importer, lookup, exported, referrers)
       );
     }
 
@@ -412,7 +469,7 @@ export class ImporterIndex {
   private sitesOfImport(
     statement: ESTree.ImportDeclaration,
     importer: ModuleRecord,
-    index: CallSiteIndex,
+    lookup: SiteLookup,
     exported: ExportedNames,
     { exporters, exportedAs }: Referrers
   ): CallSite[] {
@@ -424,13 +481,16 @@ export class ImporterIndex {
     const sites: CallSite[] = [];
 
     for (const specifier of statement.specifiers) {
+      const name = specifier.local.name;
+
       if (specifier.type !== 'ImportNamespaceSpecifier') {
-        const sitesOfName = index.byDeclaration.get(specifier) ?? [];
-        if (isExported(importedName(specifier))) sites.push(...sitesOfName);
+        if (isExported(importedName(specifier))) {
+          sites.push(...lookup.sitesOf(specifier, name));
+        }
         continue;
       }
 
-      const sitesByMember = index.byNamespaceMember.get(specifier) ?? [];
+      const sitesByMember = lookup.sitesByMember(specifier, name);
 
       for (const [member, sitesOfMember] of sitesByMember) {
         if (isExported(member)) sites.push(...sitesOfMember);
