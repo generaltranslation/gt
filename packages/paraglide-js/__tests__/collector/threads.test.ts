@@ -368,13 +368,14 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
     const root = await writeProject('threads-failure', { 'src/a.ts': '' });
     const file = path.join(root, 'src/a.ts');
 
-    // A summary without parts fails the threads' indexing.
+    // An index without its generated modules fails each thread that reads it.
     const failing = new AnalysisPool(2, root);
     const broken = {
-      summaries: [{ file, parts: null as never }],
+      summaries: [],
       outdirs: [],
       globals: [],
       budget: 0,
+      generated: null as never,
     };
     await expect(
       failing.analyze(broken, [file], async () => {})
@@ -393,30 +394,43 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
     );
   });
 
-  // The file whose usages fail, how many modules import it, and the files
+  // The file whose usages fail, the widely imported files, and the files
   // analyzed. One thread: the chunk after the failing file's is analyzed
   // while its usages fail.
   test.each([
-    ['in its share', 0, 0, [...Array(32).keys()]],
+    ['in its share', 0, [], [...Array(32).keys()]],
     // Alone, before the shares.
-    ['widely imported', 40, 1000, [40, ...Array(16).keys()]],
+    ['widely imported', 40, [40], [40, ...Array(16).keys()]],
+    // The thread does not wait for the third, which never starts.
+    ['before other widely imported files', 40, [40, 41, 42], [40, 41]],
   ])(
     'fail with the error recording a file gave, once the chunks started are done: %s',
-    async (_, failing, importers, analyzed) => {
+    async (_, failing, widely, analyzed) => {
       const { AnalysisPool } = await builtPool();
       const root = await writeProject('threads-callback', {});
       // Three chunks of files the index does not list: each has no usages.
       const files = Array.from({ length: 48 }, (_, index) =>
         path.join(root, `src/file${index}.ts`)
       );
-      const summaries = Array.from({ length: importers }, (_, index) =>
-        summary(path.join(root, `src/importer${index}.ts`), [files[failing]!])
+      // 1000 importers each.
+      const summaries = widely.flatMap((at) =>
+        Array.from({ length: 1000 }, (_, index) =>
+          summary(path.join(root, `src/importer${at}-${index}.ts`), [
+            files[at]!,
+          ])
+        )
       );
       const failure = new Error('could not read');
       const recorded: string[] = [];
 
       const pool = new AnalysisPool(1, root);
-      const index = { summaries, outdirs: [], globals: [], budget: 0 };
+      const index = {
+        summaries,
+        outdirs: [],
+        globals: [],
+        budget: 0,
+        generated: { fd: -1, places: [] },
+      };
       try {
         await expect(
           pool.analyze(index, files, async (file) => {
@@ -440,7 +454,13 @@ describe('stand-in analysis threads', () => {
   let failing = -1;
   /** While set, a thread told to end exits only once `exit()` is called. */
   let isExitHeld = false;
-  const index = { summaries: [], outdirs: [], globals: [], budget: 0 };
+  const index = {
+    summaries: [],
+    outdirs: [],
+    globals: [],
+    budget: 0,
+    generated: { fd: -1, places: [] },
+  };
   /** How a thread answers every request, if a test sets it: otherwise as `postMessage` says. */
   let respond:
     | ((worker: FakeWorker, request: WorkerRequest) => void)
@@ -559,7 +579,9 @@ describe('stand-in analysis threads', () => {
     const pool = new AnalysisPool(2, '/app');
     isExitHeld = true;
 
-    const analysis = pool.analyze(index, [], async () => {});
+    // Two chunks: a thread for each.
+    const files = Array.from({ length: 32 }, (_, at) => `/app/file${at}.ts`);
+    const analysis = pool.analyze(index, files, async () => {});
     await settle();
     expect(started.map(({ terminate }) => terminate.mock.calls.length)).toEqual(
       [1, 1]
@@ -567,12 +589,14 @@ describe('stand-in analysis threads', () => {
 
     isExitHeld = false;
     for (const worker of started) worker.exit();
+    await settle();
+    for (const worker of started.slice(2)) worker.answer();
     await analysis;
     expect(started.map(({ heapMb, tasks }) => [heapMb, tasks])).toEqual([
       [THREAD_HEAP_MB, []],
       [THREAD_HEAP_MB, []],
-      [THREAD_HEAP_MB, ['index']],
-      [THREAD_HEAP_MB, ['index']],
+      [THREAD_HEAP_MB, ['index', 'analyze']],
+      [THREAD_HEAP_MB, ['index', 'analyze']],
     ]);
     await pool.close();
   });
@@ -581,8 +605,10 @@ describe('stand-in analysis threads', () => {
     const { AnalysisPool } = await sourcePool();
     const pool = new AnalysisPool(2, '/app');
     failing = 3;
+    // Two chunks: a thread for each.
+    const files = Array.from({ length: 32 }, (_, at) => `/app/file${at}.ts`);
 
-    await expect(pool.analyze(index, [], async () => {})).rejects.toThrow(
+    await expect(pool.analyze(index, files, async () => {})).rejects.toThrow(
       'ERR_WORKER_INIT_FAILED'
     );
     expect(started.map(({ terminate }) => terminate.mock.calls.length)).toEqual(
@@ -776,7 +802,17 @@ describe('stand-in analysis threads', () => {
       };
 
       const pool = new AnalysisPool(2, '/app');
-      const index = { summaries: [], outdirs: [], globals: [], budget: 0 };
+      // Widely imported: every thread runs, and one can help the other.
+      const importers = Array.from({ length: 1000 }, (_, at) =>
+        summary(`/app/src/importer${at}.ts`, ['/app/src/a.ts'])
+      );
+      const index = {
+        summaries: importers,
+        outdirs: [],
+        globals: [],
+        budget: 0,
+        generated: { fd: -1, places: [] },
+      };
       await pool.analyze(index, ['/app/src/a.ts'], async () => {});
       await pool.close();
 
@@ -1000,13 +1036,16 @@ describe('the order files are analyzed in', () => {
       [],
     ],
   ])('a widely imported file is analyzed first: %s', (_, summaries, first) => {
-    expect(widelyImported([F], summaries)).toEqual(first);
+    expect(widelyImported([F], { summaries, globals: [] })).toEqual(first);
   });
 
   test('the most imported first', () => {
     const summaries = [...importers(1000, [F]), ...importers(1001, [G], 1000)];
 
-    expect(widelyImported([F, G, B1], summaries)).toEqual([G, F]);
+    expect(widelyImported([F, G, B1], { summaries, globals: [] })).toEqual([
+      G,
+      F,
+    ]);
   });
 
   test('each thread takes the first files one at a time, then its share; each file once', () => {

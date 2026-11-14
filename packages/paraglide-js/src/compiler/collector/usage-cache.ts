@@ -52,7 +52,6 @@ const MAX_EXPANSION = 64;
 export type CachedFile = {
   /** See `contentHash`. */
   hash: string;
-  /** Unset for a file a language's tooling generates a module for: it is generated again. */
   summary?: ParsedSummary;
   /** For an analyzed file: what it uses, and what finding that read, project-relative. */
   analysis?: {
@@ -164,6 +163,12 @@ export class UsageCache {
   /** What this run found of `file`: only what a run records is saved. */
   set(file: string, entry: CachedFile): void {
     this.found.set(this.relative(file), entry);
+  }
+
+  /** Drops what this run found of `file`, as if it could not be read: analyses that read it are not reused. */
+  forget(file: string): void {
+    this.found.delete(this.relative(file));
+    this.state?.forgetDigests();
   }
 
   /** Records what `file` links to in this run: the files its specifiers resolve to, and the auto-imported names it mentions. */
@@ -347,6 +352,13 @@ class ProjectState {
         ),
       ])
     );
+  }
+
+  /** Once an entry is dropped: the digests computed so far had it. */
+  forgetDigests(): void {
+    this.fileDigests.clear();
+    this.importerDigests.clear();
+    this.mentionDigests.clear();
   }
 
   /** Its content, and what its links are: what an analysis that reads it sees. */

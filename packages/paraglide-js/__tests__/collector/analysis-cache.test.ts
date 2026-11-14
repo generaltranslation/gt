@@ -1,15 +1,20 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { expect, test } from 'vitest';
+import v8 from 'node:v8';
+import { expect, test, vi } from 'vitest';
+import { createCollector } from '../../src/compiler/collector/create.js';
 import {
   readFile,
   trackReads,
   tracked,
 } from '../../src/compiler/analysis/reads.js';
 import {
+  contentHash,
   LOCK_FILE,
   SECTION,
 } from '../../src/compiler/collector/usage-cache.js';
+import { svelteLanguage } from '../../src/compiler/languages/index.js';
+import { nodeResolver } from '../../src/compiler/resolver/node-resolver.js';
 import { collect, readMetadata, writeProject } from '../helpers/fixture.js';
 
 const LOCK = `${JSON.stringify({ version: 2, branchId: '', entries: [] }, null, 2)}\n`;
@@ -140,6 +145,116 @@ test('changing a file the helper does not see leaves the helper reused', async (
   const { info } = await collect(root, CACHED);
   // All but plain.ts.
   expect(info.join('\n')).toMatch(/4 file\(s\) analyzed as in the last run/);
+});
+
+test('a component a language generates a module for is generated only if a file is analyzed', async () => {
+  const files = {
+    'src/Card.svelte': `<script>\n  import { m } from "./paraglide/messages.js";\n  import { label } from "./label";\n</script>\n<p title={label(m.greeting)}></p>\n`,
+    'src/label.ts': PROJECT['src/label.ts']!,
+    'src/plain.ts': PROJECT['src/plain.ts']!,
+  };
+  const root = await writeProject('analysis-cache-svelte', {
+    ...files,
+    [LOCK_FILE]: LOCK,
+  });
+  const first = await collect(root, CACHED);
+
+  // Only messages changed: nothing is analyzed, and the component is not generated.
+  await apply(root, {
+    'messages/en.json': JSON.stringify({ greeting: 'Hello' }),
+  });
+  const reused = await collect(root, CACHED);
+  expect(reused.info.join('\n')).toMatch(
+    /3 file\(s\) indexed as in the last run/
+  );
+  expect(reused.info.join('\n')).toMatch(
+    /3 file\(s\) analyzed as in the last run/
+  );
+  expect(reused.usages).toEqual(first.usages);
+
+  // A changed file is analyzed: the component's module is generated, as the analysis may load it.
+  const change = {
+    'src/label.ts': `export function label(message: () => string) { return message() + message(); }`,
+  };
+  await apply(root, change);
+  const warm = await collect(root, CACHED);
+  const cold = await writeProject('analysis-cache-svelte-cold', {
+    ...files,
+    ...change,
+  });
+  const fresh = await collect(cold);
+
+  expect(await readMetadata(root)).toEqual(await readMetadata(cold));
+  expect(warm.usages).toEqual(fresh.usages);
+  expect(warm.warnings).toEqual(fresh.warnings);
+});
+
+test('a component whose module cannot be generated when a file is analyzed is skipped, and its analysis is not kept', async () => {
+  const files = {
+    'src/Card.svelte': `<script>\n  import { m } from "./paraglide/messages.js";\n  import { label } from "./label";\n</script>\n<p title={label(m.greeting)}></p>\n`,
+    'src/label.ts': PROJECT['src/label.ts']!,
+    // A usage that stays: a run that finds none leaves the metadata file as it was.
+    'src/main.ts': `import { m } from "./paraglide/messages.js";\nexport const main = m.greeting();\n`,
+  };
+  const root = await writeProject('analysis-cache-svelte-missing', {
+    ...files,
+    [LOCK_FILE]: LOCK,
+  });
+  await collect(root, CACHED);
+
+  // A file is analyzed while the tooling cannot be loaded, its version unchanged.
+  const change = {
+    'src/label.ts': `export function label(message: () => string) { return message() + message(); }`,
+  };
+  await apply(root, change);
+  const generate = vi
+    .spyOn(svelteLanguage, 'generate')
+    .mockReturnValue(undefined);
+  try {
+    const { warnings } = await collect(root, CACHED);
+    expect(warnings).toEqual([
+      '[paraglide-context] 1 .svelte file(s) were not analyzed (e.g. src/Card.svelte): ' +
+        'svelte2tsx and svelte could not be loaded.',
+    ]);
+  } finally {
+    generate.mockRestore();
+  }
+
+  // Once it loads, the component is analyzed again.
+  const restored = await collect(root, CACHED);
+  const cold = await writeProject('analysis-cache-svelte-missing-cold', {
+    ...files,
+    ...change,
+  });
+  const fresh = await collect(cold);
+
+  expect(restored.usages).toEqual(fresh.usages);
+  expect(await readMetadata(root)).toEqual(await readMetadata(cold));
+});
+
+test('a module generated for the analysis is kept in the spill file, not in what reading it gave', async () => {
+  const code = `<script>\n  import { m } from "./paraglide/messages.js";\n</script>\n<p title={m.greeting()}></p>\n`;
+  const root = await writeProject('analysis-cache-svelte-spilled', {
+    'src/Card.svelte': code,
+  });
+  const collector = createCollector(
+    {},
+    { root, logger: { warn() {}, info() {} }, resolver: nodeResolver() }
+  );
+  const file = path.join(root, 'src/Card.svelte');
+
+  try {
+    // As `generateDeferred` reads every component: what it gives is held until the last is read.
+    expect(
+      await collector['readFile'](file, { generateOnly: true })
+    ).toStrictEqual({ generatedOnly: true, hash: contentHash(code) });
+    const spilled = collector['generated'].get(file);
+    expect(spilled && v8.deserialize(spilled)).toMatchObject({
+      language: 'svelte',
+    });
+  } finally {
+    collector['generated'].close();
+  }
 });
 
 test('an auto-imported module is seen to change', async () => {

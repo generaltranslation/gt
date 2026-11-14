@@ -9,8 +9,12 @@ import type { Reads } from '../analysis/reads.js';
 import type { ParaglideUsage, TrackedSymbol } from '../analysis/types.js';
 import type { SharedNameList } from '../utils/name-list.js';
 import { MAX_CONCURRENT_READS } from '../utils/read-file.js';
-import { SpilledBytes, type SharedSpill } from '../utils/spill-file.js';
-import { analysisBudget, type SummaryResult } from './module-reader.js';
+import type { SharedSpill } from '../utils/spill-file.js';
+import {
+  analysisBudget,
+  type ReadOptions,
+  type SummaryResult,
+} from './module-reader.js';
 
 export type AnalysisWorkerData = {
   projectRoot: string;
@@ -28,6 +32,8 @@ export type AnalysisIndex = {
   globals: readonly GlobalBinding[];
   /** See `analysisBudget`. */
   budget: number;
+  /** What languages generated, by file: see `GeneratedBytes`. */
+  generated: SharedSpill;
 };
 
 export type IndexRequest = {
@@ -79,16 +85,14 @@ export type AnalyzedFile = { usages: ParaglideUsage[]; reads: Reads };
 
 export type SharedIndex = Omit<AnalysisIndex, 'summaries'> & {
   summaries: readonly ModuleSummary<SharedNameList>[];
-  /** What languages generated, by file: see `GeneratedBytes`. */
-  generated: SharedSpill;
 };
 
 type WorkerTask =
   | {
       type: 'summarize';
       files: readonly string[];
-      /** By file: see `summarizeFile`. */
-      knownHashes: ReadonlyArray<string | undefined>;
+      /** By file. */
+      options: readonly ReadOptions[];
       globalNames: readonly string[];
     }
   | IndexRequest
@@ -227,17 +231,16 @@ export function availableMemory(): number {
 export class AnalysisPool {
   private workers: PoolWorker[];
   private readonly workerData: AnalysisWorkerData;
-  /** By file, kept from indexing in a temporary file: a thread that loads the file again reads it. */
-  private readonly generated = new SpilledBytes();
   private readonly queue: Array<{
     file: string;
-    knownHash: string | undefined;
+    options: ReadOptions;
     settle: (result: Promise<SummaryResult | undefined>) => void;
   }> = [];
   private isDispatchScheduled = false;
   private globalNames: readonly string[] = [];
   /** Jobs threads shared while analyzing, and each thread's channel for their values. */
   private shares: Share[] = [];
+  private readonly idle: Array<() => void> = [];
   private readonly channels = new Map<PoolWorker, SharedChannel>();
   private readonly heapMb: number;
   private readonly largeHeapMb: number;
@@ -278,17 +281,11 @@ export class AnalysisPool {
   /** Reads a file to index it, in whichever thread is free first: see `summarizeFile`. */
   summarize(
     file: string,
-    knownHash?: string
+    options: ReadOptions = {}
   ): Promise<SummaryResult | undefined> {
     return new Promise<SummaryResult | undefined>((resolve) => {
-      this.queue.push({ file, knownHash, settle: resolve });
+      this.queue.push({ file, options, settle: resolve });
       this.scheduleDispatch();
-    }).then((result) => {
-      if (result && 'generated' in result && result.generated) {
-        this.generated.set(file, result.generated);
-      }
-
-      return result;
     });
   }
 
@@ -304,19 +301,22 @@ export class AnalysisPool {
     files: readonly string[],
     onAnalyzed: (file: string, analyzed: AnalyzedFile) => Promise<void>
   ): Promise<void> {
+    // A thread per chunk at most: each takes the whole index. Every thread
+    // can help with the sites of a widely imported file.
+    const first = widelyImported(files, index);
+    const threads =
+      first.length > 0
+        ? this.workers.length
+        : Math.min(this.workers.length, Math.ceil(files.length / CHUNK));
+
     // The threads that indexed keep what the languages' tools loaded:
     // compilers, and WebAssembly memory that never shrinks. The analysis
     // reads what the tools generated, so new threads do it without them.
-    const size = this.workers.length;
     await Promise.all(this.workers.map((worker) => worker.terminate()));
-    this.workers = this.startWorkers(size);
+    this.workers = this.startWorkers(threads);
 
     const { summaries, names, sites } = forThreads(index.summaries);
-    const shared: SharedIndex = {
-      ...index,
-      summaries,
-      generated: this.generated.shared(),
-    };
+    const shared: SharedIndex = { ...index, summaries };
     const serialized = v8.serialize(shared);
     const buffer = new SharedArrayBuffer(serialized.length);
     serialized.copy(Buffer.from(buffer));
@@ -341,11 +341,15 @@ export class AnalysisPool {
 
     const added: Promise<void>[] = [];
     let failure: { error: unknown } | undefined;
-    const chunks = new ChunkQueue(
-      files,
-      this.workers.length,
-      widelyImported(files, index.summaries)
-    );
+    const chunks = new ChunkQueue(files, threads, first);
+    // The widely imported files not analyzed yet, which may share their sites.
+    const sharing = new Set(first);
+    const fail = (error: unknown) => {
+      failure ??= { error };
+      // No file starts after a failure: no thread waits for one to share its sites.
+      sharing.clear();
+      this.wakeIdle();
+    };
 
     await Promise.all(
       this.workers.map(async (_, slot) => {
@@ -354,28 +358,35 @@ export class AnalysisPool {
             const chunk = chunks.take(slot);
             if (!chunk) break;
 
-            const results = (await this.request(
-              slot,
-              { type: 'analyze', files: chunk },
-              giveIndex
-            )) as AnalyzedFile[];
-            chunk.forEach((file, at) =>
-              added.push(
-                // Handled as it starts: a rejection left until the threads are done is unhandled.
-                onAnalyzed(file, results[at]!).catch((error: unknown) => {
-                  failure ??= { error };
-                })
-              )
-            );
+            try {
+              const results = (await this.request(
+                slot,
+                { type: 'analyze', files: chunk },
+                giveIndex
+              )) as AnalyzedFile[];
+              chunk.forEach((file, at) =>
+                added.push(
+                  // Handled as it starts: a rejection left until the threads are done is unhandled.
+                  onAnalyzed(file, results[at]!).catch(fail)
+                )
+              );
+            } finally {
+              for (const file of chunk) sharing.delete(file);
+              this.wakeIdle();
+            }
           }
         } catch (error) {
           // A thread that exits stops the others too, after their chunk.
-          failure ??= { error };
+          fail(error);
         }
 
         // No file is left for it: it helps with the sites a thread shared,
         // e.g. of a widely imported file, then its memory goes back.
-        for (let share = this.openShare(); share; share = this.openShare()) {
+        for (
+          let share = await this.nextShare(sharing);
+          share;
+          share = await this.nextShare(sharing)
+        ) {
           const isHelping = await this.help(slot, share);
           if (!isHelping) break;
         }
@@ -392,8 +403,6 @@ export class AnalysisPool {
     await Promise.all(this.workers.map((worker) => worker.terminate()));
     for (const { port } of this.channels.values()) port.close();
     this.channels.clear();
-    // Once no thread reads it.
-    this.generated.close();
   }
 
   /**
@@ -460,11 +469,26 @@ export class AnalysisPool {
     this.channels.delete(worker);
   }
 
-  /** A shared job with a range no thread took yet. */
-  private openShare(): Share | undefined {
-    return this.shares.find(
-      ({ job }) => Atomics.load(new Int32Array(job.claims), 0) < job.chunks
-    );
+  /**
+   * A shared job with a range no thread took yet. While a file of `sharing`
+   * is analyzed, waits for one: its thread shares its sites as it reads them.
+   */
+  private async nextShare(
+    sharing: ReadonlySet<string>
+  ): Promise<Share | undefined> {
+    for (;;) {
+      const share = this.shares.find(
+        ({ job }) => Atomics.load(new Int32Array(job.claims), 0) < job.chunks
+      );
+      if (share || sharing.size === 0) return share;
+
+      await new Promise<void>((resolve) => this.idle.push(resolve));
+    }
+  }
+
+  /** Wakes the threads waiting for a shared job: see `nextShare`. */
+  private wakeIdle(): void {
+    for (const resolve of this.idle.splice(0)) resolve();
   }
 
   /**
@@ -529,9 +553,10 @@ export class AnalysisPool {
       },
     });
 
-    const pool = new PoolWorker(worker, heapMb, (job) =>
-      this.shares.push({ job, requester: pool, helpers: 0 })
-    );
+    const pool = new PoolWorker(worker, heapMb, (job) => {
+      this.shares.push({ job, requester: pool, helpers: 0 });
+      this.wakeIdle();
+    });
 
     return pool;
   }
@@ -560,7 +585,7 @@ export class AnalysisPool {
       const results = this.request(slot, {
         type: 'summarize',
         files: batch.map(({ file }) => file),
-        knownHashes: batch.map(({ knownHash }) => knownHash),
+        options: batch.map(({ options }) => options),
         globalNames: this.globalNames,
       }) as Promise<Array<SummaryResult | undefined>>;
 
@@ -696,13 +721,16 @@ function isOutOfMemory(error: unknown): boolean {
 }
 
 /**
- * Of `files`, those `MANY_REFERRERS` modules or more import, directly or
- * through modules that re-export them; the most imported first.
+ * Of `files`, those `MANY_REFERRERS` modules or more import: directly, by
+ * an auto-imported name, or through modules that re-export them; the most
+ * imported first.
  */
 export function widelyImported(
   files: readonly string[],
-  summaries: readonly ModuleSummary[]
+  { summaries, globals }: Pick<AnalysisIndex, 'summaries' | 'globals'>
 ): string[] {
+  // An auto-imported name refers to its module wherever it is mentioned.
+  const globalFiles = new Map(globals.map(({ name, file }) => [name, file]));
   const importers = new Map<string, Set<string>>();
   const reexporters = new Map<string, Set<string>>();
   const add = (map: Map<string, Set<string>>, key: string, file: string) => {
@@ -712,10 +740,14 @@ export function widelyImported(
   };
 
   for (const { file, parts } of summaries) {
-    for (const { resolved, links } of parts) {
+    for (const { resolved, links, globalNames } of parts) {
       const fileOf = new Map(resolved);
+      const targets = [
+        ...resolved.map(([, target]) => target),
+        ...globalNames.map((name) => globalFiles.get(name)),
+      ];
 
-      for (const [, target] of resolved) {
+      for (const target of targets) {
         if (target && target !== file) add(importers, target, file);
       }
 

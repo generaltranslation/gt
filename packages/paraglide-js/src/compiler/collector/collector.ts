@@ -39,6 +39,7 @@ import {
   THREAD_HEAP_SHARE,
   loadIndexedFile,
   summarizeFile,
+  type ReadOptions,
   type SummaryResult,
 } from './module-reader.js';
 import { OutdirProjects } from './outdir-projects.js';
@@ -111,9 +112,6 @@ function optionSetting(
   return `${kind} ${fields.join(' ')}`;
 }
 
-/** Files whose code a run reading reused usages holds at once. */
-const REUSED_READS = 64;
-
 /** An outdir's message ids; undefined if they cannot be read. */
 type Catalog = Set<string> | undefined;
 
@@ -128,7 +126,7 @@ export class ContextCollector {
   /** Finds outdirs and targets; the modules are indexed by `indexer`. */
   private readonly moduleGraph: ModuleGraph;
   private readonly indexer: ModuleIndexer;
-  /** What languages generated for the indexed files, when this thread analyzes them: it parses a file again when it loads it. */
+  /** What languages generated for the indexed files, kept in a temporary file: a thread that loads a file again parses it with it. */
   private readonly generated = new SpilledBytes();
   private globals: readonly GlobalBinding[] = [];
   private globalNames: ReadonlySet<string> = new Set();
@@ -148,6 +146,8 @@ export class ContextCollector {
   private unchangedFiles = 0;
   /** Sources whose usages were kept from the last run. */
   private reusedAnalyses = 0;
+  /** Unchanged files a language generates a module for, generated only if a file is analyzed. */
+  private readonly deferredGeneration: string[] = [];
 
   /** The analyzed files, and how many usages each has. */
   private readonly analyzed = new Map<string, number>();
@@ -266,7 +266,12 @@ export class ContextCollector {
     this.sources = sources;
     this.recordLinks();
     const reused = this.reusableAnalyses(sources);
-    await this.analyzeAll(sources.filter((file) => !reused.has(file)));
+    const analyzed = sources.filter((file) => !reused.has(file));
+    if (analyzed.length > 0) {
+      // An analysis may load any module: they are all generated, or none is.
+      await this.generateDeferred();
+      await this.analyzeAll(analyzed);
+    }
     await this.addReused(reused);
 
     return sources.length;
@@ -297,6 +302,7 @@ export class ContextCollector {
       outdirs: this.moduleGraph.outdirs,
       globals: this.globals,
       budget: this.budget,
+      generated: this.generated.shared(),
     };
 
     if (this.pool) {
@@ -377,20 +383,13 @@ export class ContextCollector {
   private async summarize(file: string): Promise<ParsedSummary | undefined> {
     const known = this.cache?.previous(file);
     const knownHash = known?.summary ? known.hash : undefined;
-    const result: SummaryResult | undefined = this.pool
-      ? await this.pool.summarize(file, knownHash)
-      : await summarizeFile(
-          file,
-          this.settings.languages,
-          this.packages,
-          this.globalNames,
-          knownHash
-        );
+    const result = await this.readFile(file, { knownHash });
     if (!result) return undefined;
 
     if ('unchanged' in result) {
       this.unchangedFiles++;
       this.cache!.set(file, { hash: known!.hash, summary: known!.summary });
+      if (result.generates) this.deferredGeneration.push(file);
       return known!.summary;
     }
 
@@ -399,17 +398,58 @@ export class ContextCollector {
       return undefined;
     }
 
-    if (result.generated && !this.pool) {
-      this.generated.set(file, result.generated);
-    }
+    // Not asked for: a summary is.
+    if ('generatedOnly' in result) return undefined;
 
-    // A generated module is not kept: the analysis may load it.
-    this.cache?.set(file, {
-      hash: result.hash,
-      summary: result.generated ? undefined : result.summary,
-    });
+    this.cache?.set(file, { hash: result.hash, summary: result.summary });
 
     return result.summary;
+  }
+
+  /**
+   * Generates the modules of the unchanged files indexed from the last run,
+   * which a language generates a module for: the analysis loads modules
+   * synchronously, and a language's tooling runs asynchronously.
+   */
+  private async generateDeferred(): Promise<void> {
+    const files = this.deferredGeneration.splice(0);
+
+    await Promise.all(
+      files.map(async (file) => {
+        const result = await this.readFile(file, { generateOnly: true });
+        if (result && 'failure' in result) {
+          this.reportSkipped(file, result.failure);
+        }
+        // Its analysis loads it without its module: none is kept.
+        if (!result || 'failure' in result) this.cache?.forget(file);
+      })
+    );
+  }
+
+  /**
+   * Reads a file to index it, in a thread if there are threads, and keeps
+   * the module its language generated for its analysis.
+   */
+  private async readFile(
+    file: string,
+    options: ReadOptions
+  ): Promise<SummaryResult | undefined> {
+    const result = this.pool
+      ? await this.pool.summarize(file, options)
+      : await summarizeFile(
+          file,
+          this.settings.languages,
+          this.packages,
+          this.globalNames,
+          options
+        );
+    if (result && 'generated' in result && result.generated) {
+      this.generated.set(file, result.generated);
+      // Spilled: not held while the other files are read.
+      delete result.generated;
+    }
+
+    return result;
   }
 
   /** Records what each indexed file links to: a change to it changes who imports those. */

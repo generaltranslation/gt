@@ -76,7 +76,7 @@ async function handle(request: WorkerRequest): Promise<unknown> {
             defaultLanguages,
             packages,
             globalNames,
-            request.knownHashes[index]
+            request.options[index]
           )
         )
       );

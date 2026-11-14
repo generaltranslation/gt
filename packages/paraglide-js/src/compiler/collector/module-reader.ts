@@ -30,15 +30,28 @@ export type GeneratedBytes = Uint8Array;
 
 export type SummaryResult = (
   | { summary: ParsedSummary; generated?: GeneratedBytes }
-  /** The file still has the hash it was summarized with: see `UsageCache`. */
-  | { unchanged: true }
+  /**
+   * The file still has the hash it was summarized with: see `UsageCache`.
+   * If a language generates a module for it, it is not generated, unless a
+   * file is analyzed: see the collector's `generateDeferred`.
+   */
+  | { unchanged: true; generates: boolean }
+  /** Only what its language generated: see `ReadOptions.generateOnly`. */
+  | { generatedOnly: true; generated?: GeneratedBytes }
   | { failure: ParseFailure }
 ) & { hash: string };
 
+/** What reading a file to index it may skip: see `summarizeFile`. */
+export type ReadOptions = {
+  /** The hash its summary was made with: the file is read no further if it still has it. */
+  knownHash?: string;
+  /** Its summary is known: only the module its language generates is wanted. */
+  generateOnly?: boolean;
+};
+
 /**
  * Reads a file to index it: what it loads, and the module its language
- * generates. A file whose content still has `knownHash` is not read further,
- * unless a language generates a module for it: the analysis may load it.
+ * generates. A file whose content still has `knownHash` is not read further.
  * Undefined if the file cannot be read.
  */
 export async function summarizeFile(
@@ -46,18 +59,30 @@ export async function summarizeFile(
   languages: readonly SourceLanguage[],
   packages: LanguageContext,
   globalNames: ReadonlySet<string>,
-  knownHash?: string
+  { knownHash, generateOnly = false }: ReadOptions = {}
 ): Promise<SummaryResult | undefined> {
   const code = await readTextFile(file);
   if (code === undefined) return undefined;
 
   const hash = contentHash(code);
-  if (hash === knownHash && !hasLanguage(file, code, languages)) {
-    return { unchanged: true, hash };
+  if (hash === knownHash) {
+    return {
+      unchanged: true,
+      generates: hasLanguage(file, code, languages),
+      hash,
+    };
   }
 
   const generated = await generateSource(file, code, languages, packages);
   if (generated && 'error' in generated) return { failure: generated, hash };
+
+  if (generateOnly) {
+    return {
+      generatedOnly: true,
+      generated: generated && v8.serialize(generated),
+      hash,
+    };
+  }
 
   const parsed = parseSourceSync(file, code, parseModuleCode, generated);
   if (!('module' in parsed)) return { failure: parsed, hash };
