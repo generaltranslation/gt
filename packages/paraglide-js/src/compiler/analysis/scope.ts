@@ -37,7 +37,7 @@ export type ModuleHost = {
   namespace(specifier: string): TrackedSymbol | undefined;
   exportOf(specifier: string, exportName: string): TrackedSymbol | undefined;
   /** In its module and in the modules that import it. */
-  callSitesOf?(fn: FunctionNode): SiteHandle[];
+  callSitesOf?(fn: FunctionNode): Iterable<SiteHandle>;
   /** Where the component reads its props, and what each place that renders it passes. */
   props?: { reads: PropsReads; candidates(): Candidate[] };
 };
@@ -55,7 +55,8 @@ export type Binding = (
     }
   | {
       type: 'values';
-      candidates: () => Candidate[];
+      /** Read in order, once: a parameter's are found as they are read. */
+      candidates: () => Iterable<Candidate>;
       /** The candidates that can reach `read`. */
       at?: (read: Node) => Candidate[];
       /** Holds what call sites pass: a parameter or a prop. */
@@ -599,9 +600,9 @@ export function expressionsOf(
   binding: Binding | undefined
 ): ExpressionCandidate[] {
   if (binding?.type === 'values') {
-    return binding
-      .candidates()
-      .filter((candidate) => candidate.type === 'expression');
+    return [...binding.candidates()].filter(
+      (candidate) => candidate.type === 'expression'
+    );
   }
 
   if (binding?.type !== 'alias') return [];
@@ -614,33 +615,32 @@ export function expressionsOf(
   ];
 }
 
-function parameterCandidates(
+/** Each one as its site is read: see `SiteList`. */
+function* parameterCandidates(
   fn: FunctionNode,
   scope: Scope,
   index: number,
   path: readonly string[]
-): Candidate[] {
-  const candidates: Candidate[] = [];
+): Generator<Candidate> {
   const sites = scope.host.callSitesOf?.(fn) ?? [];
 
   for (const site of sites) {
     const argument = argumentOf(site, index);
-    if (argument) candidates.push(followCandidate(argument, path));
+    if (argument) yield followCandidate(argument, path);
   }
 
   // `function show(t = m)` called as `show()` holds `m`. Only a parameter
   // with a default looks: reading a site in another module can parse that
   // module again, and a function can be called from thousands.
   const defaultValue = defaultOf(fn.params[index]);
-  const isDefaultUsed =
-    defaultValue !== undefined &&
-    sites.some((site) => omitsArgument(site, index));
+  if (defaultValue === undefined) return;
 
-  if (defaultValue && isDefaultUsed) {
-    candidates.push({ type: 'expression', node: defaultValue, scope, path });
+  for (const site of sites) {
+    if (omitsArgument(site, index)) {
+      yield { type: 'expression', node: defaultValue, scope, path };
+      return;
+    }
   }
-
-  return candidates;
 }
 
 /** `m` of the parameter `t = m`, or of the constructor's `private t = m`. */

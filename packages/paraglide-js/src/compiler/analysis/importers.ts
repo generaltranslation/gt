@@ -102,9 +102,41 @@ type Dependents = {
 /** Handles and candidates only: holding a module's sites would hold the module. */
 type Cache = {
   generation: number;
-  callSites: WeakMap<FunctionNode, SiteHandle[]>;
+  callSites: WeakMap<FunctionNode, SiteList>;
   componentProps: WeakMap<ModuleRecord, Candidate[]>;
 };
+
+/**
+ * The sites of a function: those in its own module, then those of each module
+ * that refers to it, read only when an iteration gets to them. The analysis
+ * evaluates what each site passes as it iterates, so it reads a module's
+ * sites and their arguments while the module is loaded: a function called
+ * from thousands of modules does not load each of them twice. Every
+ * iteration sees the same sites in the same order.
+ */
+class SiteList implements Iterable<SiteHandle> {
+  private readonly sites: SiteHandle[];
+  private nextReferrer = 0;
+
+  constructor(
+    own: SiteHandle[],
+    private readonly referrers: readonly ModuleRef[],
+    private readonly sitesOf: (ref: ModuleRef) => SiteHandle[]
+  ) {
+    this.sites = own;
+  }
+
+  *[Symbol.iterator](): Iterator<SiteHandle> {
+    for (let index = 0; ; index++) {
+      while (index >= this.sites.length) {
+        if (this.nextReferrer >= this.referrers.length) return;
+        this.sites.push(...this.sitesOf(this.referrers[this.nextReferrer++]!));
+      }
+
+      yield this.sites[index]!;
+    }
+  }
+}
 
 /**
  * A site in another module than the callee, found again by its position:
@@ -153,35 +185,30 @@ export class ImporterIndex {
 
   constructor(private readonly modules: LoadedModules) {}
 
-  callSitesOf(record: ModuleRecord, fn: FunctionNode): SiteHandle[] {
+  /** Found module by module as they are read: see `SiteList`. */
+  callSitesOf(record: ModuleRecord, fn: FunctionNode): Iterable<SiteHandle> {
     const { callSites } = this.currentCache();
 
     const cached = callSites.get(fn);
     if (cached) return cached;
 
-    // Cached before it is filled, so that a cycle of calls ends.
-    const sites: SiteHandle[] = [];
-    callSites.set(fn, sites);
-
     const scope = this.modules.scopeOf(record);
     const sitesInOwnModule =
       callSitesIn(record.program, scope).byDeclaration.get(fn) ?? [];
-    sites.push(...sitesInOwnModule.map(ownSite));
+    const own = sitesInOwnModule.map(ownSite);
 
     const exportNames = exportNamesOf(record.program, fn, scope);
-    if (exportNames.length === 0) return sites;
-
     const exported = { file: record.file, names: exportNames };
-    const referrers = this.referrersOf(exported);
+    const referrers =
+      exportNames.length === 0 ? undefined : this.referrersOf(exported);
 
-    for (const ref of referrers.modules) {
+    const sites = new SiteList(own, referrers?.modules ?? [], (ref) => {
       const importer = this.modules.module(ref);
-      if (!importer || importer === record) continue;
+      if (!importer || importer === record) return [];
 
-      sites.push(
-        ...this.sitesIn(ref, importer, exported, referrers, 'call-sites')
-      );
-    }
+      return this.sitesIn(ref, importer, exported, referrers!, 'call-sites');
+    });
+    callSites.set(fn, sites);
 
     return sites;
   }
