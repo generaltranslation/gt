@@ -79,6 +79,31 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 - Each symbol is exported from exactly one subpath, and types are exported from the same entry as their values. Do not add types-only subpaths. The exception is `GTIntl` and the resolving formatters: end users import them from `generaltranslation`, and other General Translation packages import them from `generaltranslation/internal`, which loads without the API client.
 - `pnpm check:reexports` (part of `pnpm lint`) checks two of these rules: only entry files re-export, and an entry re-exports only its own package or, in a facade's user-facing entry, its allowed owner packages. Its allowed facades, named exceptions and skipped packages (`ungatedPackages`, such as `packages/paraglide-js`) live in `scripts/check-reexports.mjs`. `pnpm check:export-owners` checks two more against the built declarations, so run it after `pnpm build`: a declaration is exported from one subpath of its package, and first-party code imports it from the package that defines it. Its exceptions live in `scripts/check-export-owners.mjs`.
 
+### Runtime validation
+
+- Check at trust boundaries only: user-authored files (`gt.config.json`, `next.config.*`, Babel/Vite plugin options), CLI flags, user-set environment variables, request data (cookies, headers, `Accept-Language`, URLs) and `localStorage`. Past the boundary, TypeScript carries the guarantees.
+- Trust GT API responses (typed by the generated client in `@generaltranslation/api`) and JSON our own build serialized (for example gt-next's `withGTConfig` environment config).
+- Shape-check configuration once, at load time in Node, with the valibot config schema (`.claude/rules/core.md`, "Config schema"); valibot stays out of browser bundles. Check locale validity with the `Intl`-based helpers from `@generaltranslation/format` (`isValidLocale`, `standardizeLocale`).
+- Key long-lived caches by configured values only. For request-controlled strings, build per-call objects (for example `new Intl.Locale(tag)`) and cap parsed lists (`parseAcceptLanguage` keeps 32 entries).
+- Name the failing key or file in diagnostics, and keep secrets out of them. `describeConfigIssues()` from `generaltranslation/config-schema` echoes invalid values except under `apiKey` and `devApiKey`; `describeConfigParseError()` drops the input that V8 quotes in `JSON.parse` messages.
+
+### Single source of truth
+
+- Give each type, value list, default and option doc one owner, and derive the rest from it:
+  - union types from `as const` lists: `type LocaleMatcher = (typeof localeMatchers)[number]`;
+  - config types from the schema: `v.InferInput`;
+  - framework option types with one `Pick` per owning type: `Pick<GTConfig, 'localeRouting'> & Pick<LocaleConfig, 'locales'>` (a `Pick` over a union accepts only keys every member has);
+  - generated files from their source, such as `assets/config-schema.json` from the schema.
+- Option docs live once: in the schema `description` or the owner's TSDoc.
+
+### Compatibility APIs
+
+- APIs that mirror other i18n libraries' conventions rather than the native GT way live under a `/compat` subpath of the user-facing packages: `gt-react/compat`, `gt-react-native/compat`, `gt-next/compat` (plus server-only `gt-next/compat/server`), `gt-tanstack-start/compat` and `gt-node/compat`. Today that is the dictionary (key-based) API: `useTranslations`, `getTranslations`, a `GTProvider` that also takes dictionaries, `initializeGTDictionary`, gt-next's `withGTServerSideProps`/`withGTStaticProps` that add dictionaries, gt-tanstack-start's `setupRouterGTIntegration` that loads them, and the `Dictionary*` types. Native APIs (`<T>` including `id`, `useGT`/`getGT`, `msg`/`useMessages`, `tx`, the variable and branching components) stay on the main entries.
+- Dependencies run one way: compat may import native code, internals included, and native code never imports compat, so apps that skip `/compat` ship none of it.
+- gt-i18n and react-core keep compat internals in `compat/` modules behind `gt-i18n/internal/compat` and `@generaltranslation/react-core/compat`. Only compat modules import them, so CommonJS consumers of the native entries never load them. Compat singletons use `createGlobalSingleton`, like native ones.
+- Compat state gets its own provider or router integration rather than props on native providers, caches or setup functions. User files that only compat reads (the dictionary) are imported only from compat modules, so bundlers include them only when `/compat` is imported.
+- gt-next's `compatLeaks.test.ts` and `rscLeaks.test.ts` guard these boundaries; extend them with each new compat API.
+
 ## Canonical Library Defaults
 
 - Never repeat a library fallback as a literal in production source. Import the canonical constant so a default change propagates across every package. Before adding a fallback, search the owning package's settings and constants modules for an existing default.
@@ -104,6 +129,18 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 - Commit messages should follow Conventional Commits style (for example, `feat: add locale fallback` or `fix: preserve formatter options`).
 - PR titles should also follow Conventional Commits style.
 
+## Breaking Changes and Changesets
+
+- In a major release, remove superseded exports, subpaths and props outright and document the replacement. Add aliases, throwing stubs or deprecated re-exports only when explicitly asked.
+- Give every breaking change a major changeset with a migration line per removed export, subpath or prop (old import or usage, then the new one). Packages in a fixed group in `.changeset/config.json` release together.
+- Pending changesets ship as one release note. When you remove or rename a path, fix every pending changeset that points users at it, and leave history lines such as "`X` no longer exports `Y`" as they are.
+
+## Verification
+
+- publint and attw (`withPackageChecks` in `tsdown.preset.mts`) run only when turbo's build cache misses, and `CI` is not part of the cache key, so `CI=true pnpm build` usually replays the cache without them. To force them, run `CI=true pnpm exec turbo run build --filter='./packages/*' --force --env-mode=loose`.
+- gt-next's `pnpm size` entries measure its CommonJS `dist/*.js`, where nothing tree-shakes. When a bundle claim matters, also measure the ESM file that apps resolve (for example `dist/index.client.mjs`) with an esbuild metafile.
+- In a PR stack, each commit installs, builds and typechecks on its own, unless its PR description says it lands together with named PRs as one unit.
+
 ## Focused References
 
 Load only the relevant file for the area being changed:
@@ -117,17 +154,16 @@ Load only the relevant file for the area being changed:
 
 ## Important Patterns
 
-- **Exports:** Most packages use conditional exports (`package.json` `exports` field) with separate paths for different entry points (e.g., `gt-next` has `/client`, `/server`, `/middleware`, `/config`).
+- **Exports:** Most packages split their API across conditional entry points; the `exports` field in each `package.json` lists them.
 - **Internal subpaths:** Packages expose `/internal` subpaths for cross-package use. These are not part of the public API.
 - **Where arguments are resolved:** three layers, one rule each.
   - `@generaltranslation/icu` and `@generaltranslation/format` take every argument. They apply no defaults to their own parameters and read nothing from the environment: `locales`, a message's `variables`, the `timeZone` of dates and times, and a relative time's `baseDate` are required there. Intl's own options, like `dateStyle`, stay optional.
   - `packages/core` is the only place that resolves what a caller leaves out (the default locale, the host's time zone, the clock). It has a resolving version of each formatter and of `GTIntl`, exported from `generaltranslation` and `generaltranslation/internal`.
   - gt-i18n and the framework packages pass along what the user configured, even when it is `undefined`, to core's versions. Do not import a formatter or `GTIntl` from `@generaltranslation/format` or `@generaltranslation/icu` there, and do not fill in a default.
 - **ICU compatibility:** `@generaltranslation/icu` follows the four rules under "ICU compatibility" in `packages/icu/README.md`: ICU decides what a message says, Intl formats it, what Intl cannot format throws, and values are not converted. A message that does not format as in ICU4C needs a reason in `packages/icu/src/__tests__/icu4c-messages.test.ts`.
-- **Compatibility APIs:** The dictionary (key-based) API (`useTranslations`, `getTranslations`, a `GTProvider` that also takes dictionaries, the `Dictionary*` types) lives under `<pkg>/compat` (`gt-react`, `gt-react-native`, `gt-next` plus `gt-next/compat/server`, `gt-tanstack-start`, `gt-node`). gt-i18n and react-core host its internals in `compat/` modules behind their own internal subpaths, `gt-i18n/internal/compat` and `@generaltranslation/react-core/compat`, which only compat modules import. Native code never imports compat code; compat builds on public native APIs.
 - **React i18n-context:** `packages/react/src/i18n-context/` has restricted imports from `gt-i18n` (only the root entry and `/internal`). This is enforced by ESLint.
 - **CLI version generation:** `packages/cli/src/generated/version.ts` is ignored and generated from `packages/cli/package.json` by `node scripts/generate-version.js`; do not edit or track it manually.
-- **gt-react / gt-react-native parity:** These two packages are fixed-version siblings (released together via changesets). When a feature is added to one, the equivalent should be added to the other unless it's platform-specific (e.g., DOM-only UI components). Compare their `index.ts`/`index.tsx` exports to verify parity.
+- **gt-react / gt-react-native parity:** These two packages are fixed-version siblings (released together via changesets). When a feature is added to one, the equivalent should be added to the other unless it's platform-specific (e.g., DOM-only UI components). Compare gt-react's `src/index.*.ts` entries with gt-react-native's `src/index.tsx` to verify parity.
 
 ## MCP Server
 
