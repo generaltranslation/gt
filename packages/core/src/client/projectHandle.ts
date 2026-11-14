@@ -4,6 +4,7 @@ import {
   createProjectApiKey,
   DEFAULT_BATCH_SIZE,
   deleteProjectApiKey,
+  fetchFileDownload,
   generateProjectContext,
   getFileContent,
   getFileStatus,
@@ -844,7 +845,8 @@ export class ProjectHandle extends GTRuntime {
    * @param query - Branch, source version, and translation locale.
    * @returns The content, or `status: 'pending'` with `data: null` when the translation is stored but not
    * completed yet (for example during a layout pass). Until its translation job stores the translation
-   * the read is a 404, so wait for the job with `awaitJobs` or `getJob` first.
+   * the read is a 404, so wait for the job with `awaitJobs` or `getJob` first. A ready media file over
+   * 20MB also has `data: null`, with a `downloadUrl` to pass to `fetchFileDownload()`.
    */
   async getFileContent(
     fileId: string,
@@ -877,7 +879,8 @@ export class ProjectHandle extends GTRuntime {
    * server accepts. A selector without `locale` reads the source file.
    *
    * @param files - Selectors sharing a file ID, branch ID, version ID, and resolved locale share one request result.
-   * @returns One result per selector, in selector order: `ready`, `pending`, or `not_found`.
+   * @returns One result per selector, in selector order: `ready`, `pending`, or `not_found`. A ready
+   * media file over 20MB has `data: null` and a `downloadUrl` to pass to `fetchFileDownload()`.
    */
   async queryFilesContent(
     files: QueryFilesContentData['body']['files'],
@@ -902,6 +905,21 @@ export class ProjectHandle extends GTRuntime {
         }),
       })),
     };
+  }
+
+  /**
+   * Opens the signed `downloadUrl` that `getFileContent()` and
+   * `queryFilesContent()` return instead of `data` for media too large to
+   * return inline. The URL works for 15 minutes; read the content again for a
+   * new one.
+   *
+   * @returns The file as a stream, so it can be saved without holding it in memory. Cancel a stream you do not read.
+   * @throws {ApiError} If the URL is rejected, with the HTTP status.
+   */
+  async fetchFileDownload(
+    downloadUrl: string
+  ): Promise<ReadableStream<Uint8Array>> {
+    return fetchFileDownload(downloadUrl);
   }
 
   /**

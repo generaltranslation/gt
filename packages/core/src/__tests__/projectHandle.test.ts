@@ -456,6 +456,24 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     });
   });
 
+  it('streams a signed download URL without API credentials', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(new Uint8Array([1, 2, 3])));
+    const adapter = configuredProject(fetchMock);
+
+    const stream = await adapter.fetchFileDownload(
+      'https://bucket.example.com/file'
+    );
+
+    expect(new Uint8Array(await new Response(stream).arrayBuffer())).toEqual(
+      new Uint8Array([1, 2, 3])
+    );
+    const request = new Request(...fetchMock.mock.calls[0]!);
+    expect(request.url).toBe('https://bucket.example.com/file');
+    expect(request.headers.has('authorization')).toBe(false);
+  });
+
   it('awaits jobs through queryJobs with not_found as a terminal status', async () => {
     const statuses: Record<string, Record<string, unknown>> = {
       'failed-job': { status: 'failed', error: null },
