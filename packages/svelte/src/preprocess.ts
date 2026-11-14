@@ -11,7 +11,9 @@ import {
 
 /**
  * Prepares `<T>` components for translation. Add it last in `preprocess` so
- * it sees the final Svelte markup.
+ * it sees the final Svelte markup. When `NODE_ENV` is `development`, as under
+ * `vite dev`, each `<T>` also gets its source, so a missing translation can
+ * be requested at runtime; builds leave it out.
  *
  * @example
  * ```js
@@ -31,6 +33,9 @@ export function gtPreprocess(): PreprocessorGroup {
       const result = transformSvelteSource(content, {
         parse,
         filename,
+        // Vite sets NODE_ENV before preprocessing, and inlines the same value
+        // into the runtime that decides whether to hot-reload translations.
+        includeSource: process.env.NODE_ENV === 'development',
       });
       if (!result) return;
       if (result.errors.length > 0) {

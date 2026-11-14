@@ -5,6 +5,7 @@ import {
   initializeI18nConfig,
   setI18nCache,
 } from 'gt-i18n/internal';
+import { addRuntimeCredentials } from 'gt-i18n/internal/credentials';
 import type {
   I18nCacheConstructorParams,
   I18nConfigParams,
@@ -24,6 +25,9 @@ export type GTTranslationsData = {
 /**
  * Initializes General Translation. Call it once, from a module shared by the
  * server and the browser, before rendering or loading translations.
+ * `projectId` and `apiKey` default to the `GT_PROJECT_ID` and `GT_API_KEY`
+ * environment variables; `gtSvelte()` from `gt-svelte/vite` passes them to
+ * the browser, and the API key only while the dev server runs.
  *
  * @example
  * ```ts
@@ -39,10 +43,11 @@ export type GTTranslationsData = {
  * ```
  */
 export function initializeGT(config: GTSvelteConfig = {}): void {
-  initializeI18nConfig(config);
+  const runtimeConfig = addRuntimeCredentials(config, 'gt-svelte');
+  initializeI18nConfig(runtimeConfig);
   setI18nCache(
     new I18nCache<Content>({
-      ...config,
+      ...runtimeConfig,
       // In the browser, translations usually arrive once, from a load
       // function that client-side navigation does not rerun, so nothing
       // would reload them after they expire. Servers keep the default

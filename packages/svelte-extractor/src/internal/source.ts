@@ -38,7 +38,13 @@ export type AnalyzeSvelteSourceOptions = {
   surroundingLineCount?: number;
 };
 
-export type TransformSvelteSourceOptions = AnalyzeSvelteSourceOptions;
+export type TransformSvelteSourceOptions = AnalyzeSvelteSourceOptions & {
+  /**
+   * Pass each `<T>`'s serialized children as `_source`, so the runtime can
+   * request a translation that is missing. Only development needs it.
+   */
+  includeSource?: boolean;
+};
 
 export type TransformSvelteSourceResult = {
   code: string;
@@ -163,7 +169,7 @@ export function transformSvelteSource(
     magic.overwrite(edit.start, edit.end, edit.text);
   }
   for (const plan of plans) {
-    applyPlan(parsed.source, magic, plan);
+    applyPlan(parsed.source, magic, plan, options.includeSource === true);
   }
 
   return {
@@ -386,20 +392,16 @@ function findTranslationComponents(
 function applyPlan(
   source: string,
   magic: MagicString,
-  plan: TranslationPlan
+  plan: TranslationPlan,
+  includeSource: boolean
 ): void {
   const { node } = plan;
   const nameEnd = node.start + 1 + node.name.length;
   let props = ` _hash=${JSON.stringify(plan.hash)}`;
   if (plan.runtimeMetadata.v || plan.runtimeMetadata.b) {
-    const json = JSON.stringify(plan.runtimeMetadata);
-    // A "__proto__" key in an object literal sets the prototype instead, so
-    // metadata naming a variable "__proto__" is parsed from JSON.
-    const value = json.includes('"__proto__"')
-      ? `JSON.parse(${JSON.stringify(json)})`
-      : json;
-    props += ` _gtm={${value}}`;
+    props += ` _gtm={${toExpression(plan.runtimeMetadata)}}`;
   }
+  if (includeSource) props += ` _source={${toExpression(plan.source)}}`;
   magic.appendLeft(nameEnd, props);
 
   for (const edit of plan.edits) {
@@ -412,6 +414,16 @@ function applyPlan(
 
   const closeStart = source.lastIndexOf('</', node.end - 1);
   magic.appendRight(closeStart, plan.snippets.join(''));
+}
+
+/** Writes JSON-compatible data as a JavaScript expression. */
+function toExpression(data: unknown): string {
+  const json = JSON.stringify(data);
+  // A "__proto__" key in an object literal sets the prototype instead, so
+  // data with that key, such as a variable named "__proto__", is parsed from JSON.
+  return json.includes('"__proto__"')
+    ? `JSON.parse(${JSON.stringify(json)})`
+    : json;
 }
 
 /** Offsets where lines start, after `\r\n`, `\n`, or a lone `\r`. */

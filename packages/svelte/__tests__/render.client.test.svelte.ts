@@ -13,7 +13,7 @@ import Harness from './fixtures/Harness.svelte';
 import LocaleSwitcher from './fixtures/LocaleSwitcher.svelte';
 import Strings from './fixtures/Strings.svelte';
 import { initializeGT } from '../src/runtime/config';
-import { hashesOf, setupGT } from './helpers';
+import { hashesOf, setupGT, setupRuntimeTranslation } from './helpers';
 
 const [greetingHash] = hashesOf('Greeting.svelte');
 
@@ -138,5 +138,39 @@ describe('translations passed to <GTProvider>', () => {
     expect(lookup()).toBe('Enregistré');
     vi.advanceTimersByTime(2000);
     expect(lookup()).toBeUndefined();
+  });
+});
+
+describe('dev hot reload in the browser', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('re-renders strings when a missing translation arrives', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    // Node's Request rejects jsdom's AbortSignal, which the API client passes.
+    vi.stubGlobal(
+      'Request',
+      class extends Request {
+        constructor(input: RequestInfo, init?: RequestInit) {
+          super(input, { ...init, signal: undefined });
+        }
+      }
+    );
+    setupRuntimeTranslation((source) => `[fr] ${source}`);
+
+    const target = mountHarness({
+      component: Strings,
+      locale: 'fr',
+      translations: {},
+    });
+    expect(target.querySelector('.gt')?.textContent).toBe('Hello, Ada!');
+
+    await vi.waitFor(() => {
+      flushSync();
+      expect(target.querySelector('.gt')?.textContent).toBe('[fr] Hello, Ada!');
+      expect(target.querySelector('.msg')?.textContent).toBe('[fr] Saved');
+    });
   });
 });

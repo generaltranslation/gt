@@ -27,7 +27,7 @@ import type {
 export const RESERVED_PREFIX = '__gt_';
 
 /** Props the preprocessor adds to `<T>`; users may not set them. */
-const RESERVED_T_PROPS = new Set(['_hash', '_gtm']);
+const RESERVED_T_PROPS = new Set(['_hash', '_gtm', '_source']);
 
 const VARIABLE_TYPES = {
   Var: 'variable',
