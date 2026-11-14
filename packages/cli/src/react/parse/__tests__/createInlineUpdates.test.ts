@@ -5,7 +5,7 @@ import { createInlineUpdates } from '../createInlineUpdates.js';
 import { matchFiles } from '../../../fs/matchFiles.js';
 import { hashSource } from 'generaltranslation/id';
 import type {
-  GTParsingFlags,
+  ResolvedGTParsingFlags,
   ParsingConfigOptions,
 } from '../../../types/parsing.js';
 import { Libraries, type GTLibrary } from '../../../types/libraries.js';
@@ -23,7 +23,7 @@ function scan(pkg: GTLibrary, files: string[]) {
     pkg,
     false,
     undefined,
-    {} as GTParsingFlags,
+    {} as ResolvedGTParsingFlags,
     parsingOptions
   );
 }

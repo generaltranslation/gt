@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
 import { configJsonSchemaPath } from '../../../scripts/generate-config-schema.js';
+import { GT_CONFIG_SCHEMA_URL } from '../../utils/constants.js';
 
 const compileSchema = (path: string | URL) =>
   new Ajv({ strict: false, validateFormats: false }).compile(
@@ -17,6 +18,12 @@ const validateFor = (packageDirectory: string) =>
   );
 
 describe('GT config JSON Schema', () => {
+  it('is published at GT_CONFIG_SCHEMA_URL', () => {
+    expect(JSON.parse(fs.readFileSync(configJsonSchemaPath, 'utf8')).$id).toBe(
+      GT_CONFIG_SCHEMA_URL
+    );
+  });
+
   it.each([
     ['an empty config', {}],
     ['files.html', { files: { html: { include: ['[locale]/*.html'] } } }],

@@ -84,12 +84,24 @@ export const GTParsingFlagsSchema = pipe(
     vueCompilerOptions: optional(
       pipe(
         strictObject({
-          whitespace: optional(picklist(['condense', 'preserve'])),
+          whitespace: optional(
+            pipe(
+              picklist(['condense', 'preserve']),
+              description(
+                'How Vue normalizes whitespace between template children'
+              )
+            )
+          ),
           delimiters: optional(
-            strictTuple([
-              pipe(string(), minLength(1)),
-              pipe(string(), minLength(1)),
-            ])
+            pipe(
+              strictTuple([
+                pipe(string(), minLength(1)),
+                pipe(string(), minLength(1)),
+              ]),
+              description(
+                "Replaces Vue's default {{ and }} interpolation delimiters"
+              )
+            )
           ),
         }),
         description('Hash-affecting Vue template compiler options')
@@ -158,7 +170,11 @@ export const GTConfigSchema = looseObject({
   ),
   customMapping: optional(
     pipe(
-      record(string(), union([string(), record(string(), string())])),
+      record(
+        string(),
+        // optional: a mapping typed Partial<LocaleProperties> may hold undefined.
+        union([string(), record(string(), optional(string()))])
+      ),
       description(
         'Custom locale properties by locale code. A string overrides the display name; an object overrides properties, and its code makes the locale an alias, such as { "cn": { "code": "zh" } }'
       )
@@ -316,6 +332,14 @@ export const GTConfigSchema = looseObject({
   ),
   files: optional(GTFilesConfigSchema),
 });
+
+/** Where gt.config.json is looked up from the project root, in order. */
+export const gtConfigFilePaths = [
+  'gt.config.json',
+  '.gt/gt.config.json',
+  // Legacy location
+  '.locadex/gt.config.json',
+] as const;
 
 // Issue values for these keys are secrets and never appear in messages.
 const secretConfigKeys = new Set(['apiKey', 'devApiKey']);

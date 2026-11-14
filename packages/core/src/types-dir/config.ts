@@ -1,3 +1,4 @@
+import type { CustomMapping } from '@generaltranslation/format/types';
 import type { InferInput, ObjectEntries, ObjectSchema } from 'valibot';
 import type {
   GTConfigSchema,
@@ -62,4 +63,10 @@ export type GTFilesConfig = InferInput<typeof GTFilesConfigSchema>;
  * `dictionary` is left out: the file holds a path, but runtime params hold the
  * loaded dictionary, and a GTConfig must still pass to initializeGT().
  */
-export type GTConfig = Omit<KnownKeys<typeof GTConfigSchema>, 'dictionary'>;
+export type GTConfig = Omit<
+  KnownKeys<typeof GTConfigSchema>,
+  'dictionary' | 'customMapping'
+> & {
+  // The schema only checks JSON shapes; the type names the locale properties.
+  customMapping?: CustomMapping;
+};

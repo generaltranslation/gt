@@ -19,45 +19,17 @@ export type CompilerOptions = GTCompilerOptions & {
   type: 'babel' | 'swc' | 'none';
 };
 
-export type RenderMethod = NonNullable<GTConfig['renderSettings']>['method'];
-
 export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getLocale: 'getLocalePath',
   getRegion: 'getRegionPath',
 } as const;
 
 // Middleware options are defaults for createNextMiddleware(), passed via env.
-// Keys gt.config.json can also set come from GTConfig and GTNextOptions,
-// which document them.
+// Every gt.config.json key gt-next reads is accepted; GTConfig and
+// GTNextOptions document them.
 export type BaseWithGTConfigProps = MiddlewareConfig &
-  Pick<
-    GTConfig,
-    | 'loadTranslationsPath'
-    | 'loadDictionaryPath'
-    | 'runtimeUrl'
-    | 'cacheUrl'
-    | 'cacheExpiryTime'
-    | 'locales'
-    | 'defaultLocale'
-    | 'localeMatcher'
-    | 'timeZone'
-    | 'renderSettings'
-    | 'maxConcurrentRequests'
-    | 'maxBatchSize'
-    | 'batchInterval'
-    | 'description'
-    | '_tagIds'
-  > &
-  Pick<
-    GTNextOptions,
-    | 'getLocalePath'
-    | 'getRegionPath'
-    | 'ignoreBrowserLocales'
-    | 'disableInvalidLocaleWarning'
-    | 'pathRegex'
-  > & {
-    // Additional top-level keys are forwarded as runtime translation metadata.
-    [key: string]: unknown;
+  Omit<GTConfig & GTNextOptions, keyof MiddlewareConfig> & {
+    /** Path to gt.config.json. Defaults to the first standard location that exists. */
     config?: string;
     // GTConfig omits the file's dictionary path; see its definition.
     dictionary?: string;
