@@ -1,8 +1,8 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import type { GTIntl } from '@generaltranslation/format';
-import { defaultDefaultLocale } from '@generaltranslation/format/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { translateString } from '../messages/translation';
 import type { GTFunction, GTPlugin, InitializeGTSPAOptions } from '../types';
+import { initializeGT } from './config';
 import { createGTRuntime, type GTRuntime } from './state';
 
 type SPARuntimeManager = {
@@ -27,6 +27,9 @@ type GlobalWithGTRegistry = typeof globalThis & {
  * its initialized locale, then reload the document. This guarantees that
  * module-level `t()` calls execute again for the new locale. Ordinary
  * {@link createGT} plugins retain reactive, no-reload switching.
+ *
+ * It calls `initializeGT()` with the configuration, so do not call that
+ * separately.
  *
  * @param options - SPA locale, cookie, and translation loader configuration.
  * @returns The preloaded singleton plugin to install in the Vue application.
@@ -94,32 +97,16 @@ export function resetGTSPAForTests(): void {
 async function createSPARuntime(
   options: InitializeGTSPAOptions
 ): Promise<GTRuntime> {
-  const { customMapping, locales, localeMatcher, ...createOptions } = options;
-  const [
-    { createIntl },
-    { isValidLocale, resolveCanonicalLocale, standardizeLocale },
-  ] = await Promise.all([
-    import('./intl'),
-    import('@generaltranslation/format'),
-  ]);
-  const resolveFormattingLocale = (locale: string): string => {
-    const canonicalLocale = resolveCanonicalLocale(locale, customMapping);
-    return isValidLocale(canonicalLocale)
-      ? standardizeLocale(canonicalLocale)
-      : canonicalLocale;
-  };
-  const runtime = createGTRuntime(createOptions, {
-    pinLocale: true,
-    reloadDocument: () => window.location.reload(),
-    resolveFormattingLocale,
-    resolveLocale: createSupportedLocaleResolver(
-      createOptions.defaultLocale ?? defaultDefaultLocale,
-      locales,
-      (supportedLocales) =>
-        createIntl({ localeMatcher, locales: supportedLocales, customMapping }),
-      resolveFormattingLocale
-    ),
-  });
+  const { locale, localeCookieName, ...config } = options;
+  initializeGT(config);
+  const runtime = createGTRuntime(
+    { locale, localeCookieName },
+    {
+      pinLocale: true,
+      reloadDocument: () => window.location.reload(),
+      resolveLocale: createSupportedLocaleResolver(config.locales),
+    }
+  );
 
   await runtime.plugin.loadTranslations(runtime.plugin.getLocale());
   return runtime;
@@ -127,11 +114,16 @@ async function createSPARuntime(
 
 /** Creates a compact resolver for the locales declared by an SPA config. */
 function createSupportedLocaleResolver(
-  defaultLocale: string,
-  locales: readonly string[] | undefined,
-  createIntl: (supportedLocales: string[]) => GTIntl,
-  canonicalizeLocale: (locale: string) => string
+  locales: readonly string[] | undefined
 ): (locale: string) => string {
+  const config = getI18nConfig();
+  const defaultLocale = config.getDefaultLocale();
+  const canonicalizeLocale = (locale: string): string => {
+    const canonicalLocale = config.resolveCanonicalLocale(locale);
+    return config.isValidLocale(canonicalLocale)
+      ? config.standardizeLocale(canonicalLocale)
+      : canonicalLocale;
+  };
   if (locales === undefined) {
     const canonicalDefaultLocale = canonicalizeLocale(defaultLocale);
     return (locale) =>
@@ -141,8 +133,7 @@ function createSupportedLocaleResolver(
         : locale;
   }
 
-  const configuredLocales = Array.from(new Set([defaultLocale, ...locales]));
-  const intl = createIntl(configuredLocales);
+  const configuredLocales = config.getLocales();
 
   return (locale) => {
     // File and directory placeholders use the spelling from gt.config.json.
@@ -153,7 +144,7 @@ function createSupportedLocaleResolver(
     );
     if (exactIndex !== -1) return configuredLocales[exactIndex];
 
-    return intl.determineLocale(locale) ?? defaultLocale;
+    return config.determineLocale(locale) ?? defaultLocale;
   };
 }
 

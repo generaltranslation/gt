@@ -20,18 +20,14 @@ import {
 import { renderToString } from 'vue/server-renderer';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { getFormatLocales, isBranchAttribute } from '../components/utils';
-import {
-  Branch,
-  Currency,
-  DateTime,
-  Num,
-  Plural,
-  T,
-  Var,
-  createGT,
-} from '../index';
+import { Branch, Currency, DateTime, Num, Plural, T, Var } from '../index';
 import { serializeVueChildren } from '../rendering/translateVueChildren';
-import { jsxHash, renderWithPlugin, stripFragmentMarkers } from './testUtils';
+import {
+  createTestGT,
+  jsxHash,
+  renderWithPlugin,
+  stripFragmentMarkers,
+} from './testUtils';
 
 type BranchTransformation = 'branch' | 'plural';
 type BranchSourceValue =
@@ -419,7 +415,7 @@ describe('Branch and Plural attributes', () => {
       },
     });
 
-    expect(stripFragmentMarkers(await renderWithPlugin(Root, createGT()))).toBe(
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, createTestGT()))).toBe(
       'beforeafter|'
     );
   });
@@ -464,7 +460,7 @@ describe('Branch and Plural attributes', () => {
         t: 'b',
       },
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
     });
     await plugin.setLocale('fr');
@@ -512,7 +508,7 @@ describe('Branch and Plural attributes', () => {
         t: 'b',
       },
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
     });
     await plugin.setLocale('fr');
@@ -594,7 +590,7 @@ describe('Branch and Plural attributes', () => {
     const html = await renderTemplate(
       '<Plural :n="0"><template #one>French one</template><template #default>English other</template></Plural>',
       () => ({}),
-      createGT({ defaultLocale: 'en' })
+      createTestGT({ defaultLocale: 'en' })
     );
 
     expect(html).toContain('English other');
@@ -602,7 +598,7 @@ describe('Branch and Plural attributes', () => {
   });
 
   it('uses the active locale plural rules before the default locale', async () => {
-    const plugin = createGT({ defaultLocale: 'en' });
+    const plugin = createTestGT({ defaultLocale: 'en' });
     await plugin.setLocale('fr');
     const html = await renderTemplate(
       '<Plural :n="0"><template #one>French one</template><template #default>English other</template></Plural>',
@@ -634,7 +630,7 @@ describe('Branch and Plural attributes', () => {
         t: 'p',
       },
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
     });
     await plugin.setLocale('ru');
@@ -659,7 +655,7 @@ describe('Branch and Plural attributes', () => {
       i: 1,
       d: { b: { b: 'B traduit' }, t: 'b' },
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
     });
     await plugin.setLocale('fr');
@@ -684,7 +680,7 @@ describe('Branch and Plural attributes', () => {
       i: 1,
       d: { b: { other: 'Autres' }, t: 'p' },
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
     });
     await plugin.setLocale('fr');
@@ -761,13 +757,13 @@ describe('Branch and Plural attributes', () => {
     });
 
     const defaultHtml = stripFragmentMarkers(
-      await renderWithPlugin(Root, createGT())
+      await renderWithPlugin(Root, createTestGT())
     );
     expect(defaultHtml).toContain('beforeafter');
     expect(defaultHtml).not.toContain('true');
     expect(defaultHtml).not.toContain('null');
 
-    const translatedPlugin = createGT({
+    const translatedPlugin = createTestGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
     });
     await translatedPlugin.setLocale('fr');
@@ -838,7 +834,7 @@ describe('gt-vue formatting components', () => {
       },
     });
     const warnings: string[] = [];
-    const app = createSSRApp(Root).use(createGT());
+    const app = createSSRApp(Root).use(createTestGT());
     app.config.warnHandler = (message) => warnings.push(message);
 
     expect(stripFragmentMarkers(await renderToString(app))).toContain(
@@ -868,7 +864,7 @@ describe('gt-vue formatting components', () => {
     });
 
     expect(
-      stripFragmentMarkers(await renderWithPlugin(Root, createGT()))
+      stripFragmentMarkers(await renderWithPlugin(Root, createTestGT()))
     ).toContain('2$3.002024');
     expect(slot).not.toHaveBeenCalled();
   });
@@ -880,7 +876,7 @@ describe('gt-vue formatting components', () => {
       },
     });
 
-    expect(await renderWithPlugin(Root, createGT())).toContain('Invalid Date');
+    expect(await renderWithPlugin(Root, createTestGT())).toContain('Invalid Date');
   });
 
   it('renders null values as empty without prop warnings', async () => {
@@ -895,7 +891,7 @@ describe('gt-vue formatting components', () => {
       },
     });
     const warnings: string[] = [];
-    const app = createSSRApp(Root).use(createGT());
+    const app = createSSRApp(Root).use(createTestGT());
     app.config.warnHandler = (message) => warnings.push(message);
 
     expect(stripFragmentMarkers(await renderToString(app))).toBe('<div></div>');
@@ -918,7 +914,7 @@ describe('gt-vue formatting components', () => {
     });
     // Persian has digits and a calendar of its own, so both defaults show.
     const app = createSSRApp(Root).use(
-      createGT({ defaultLocale: 'en', locale: 'fa-IR' })
+      createTestGT({ defaultLocale: 'en', locale: 'fa-IR' })
     );
 
     expect(stripFragmentMarkers(await renderToString(app))).toBe(
@@ -945,7 +941,7 @@ describe('gt-vue formatting components', () => {
       });
 
       expect(
-        stripFragmentMarkers(await renderWithPlugin(Root, createGT()))
+        stripFragmentMarkers(await renderWithPlugin(Root, createTestGT()))
       ).toBe('€12.00');
     }
   );
@@ -987,7 +983,7 @@ describe('gt-vue formatting components', () => {
       },
     });
     const warnings: string[] = [];
-    const app = createSSRApp(Root).use(createGT());
+    const app = createSSRApp(Root).use(createTestGT());
     app.config.warnHandler = (message) => warnings.push(message);
 
     const html = await renderToString(app);
@@ -1007,7 +1003,7 @@ describe('gt-vue formatting components', () => {
 async function renderTemplate(
   template: string,
   setup: () => Record<string, unknown> = () => ({}),
-  plugin = createGT()
+  plugin = createTestGT()
 ): Promise<string> {
   const Root = defineComponent({
     components: { Branch, Plural, T } satisfies Record<string, Component>,
@@ -1050,7 +1046,7 @@ async function renderVueMatrixCase(
     createVueMatrixSource(transformation, sourceValue),
   ]);
   const target = createMatrixTarget(transformation, targetValue);
-  const plugin = createGT({
+  const plugin = createTestGT({
     loadTranslations: async () => ({ [jsxHash(source)]: target }),
   });
   await plugin.setLocale('fr');

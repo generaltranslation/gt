@@ -34,7 +34,7 @@ describe('gt-vue package layout', () => {
   it('keeps every source directory under src', () => {
     const src = fileURLToPath(new URL('..', import.meta.url));
     expect(readdirSync(src).sort()).toEqual(
-      [...sourceDirectories, 'index.ts'].sort()
+      [...sourceDirectories, 'index.ts', 'vite.ts'].sort()
     );
     expect(
       sourceDirectories.filter((directory) =>
@@ -54,6 +54,7 @@ describe('gt-vue package layout', () => {
         'T',
         'Var',
         'createGT',
+        'initializeGT',
         'initializeGTSPA',
         'msg',
         't',
@@ -249,19 +250,15 @@ describe('gt-vue package layout', () => {
         join(unpackDirectory, 'package', 'dist', 'index.mjs'),
         'utf8'
       );
-      // The only static format import is HTML_CONTENT_PROPS, which bundlers
-      // tree-shake down to the constant; locale matching stays lazy.
+      // The only format import is HTML_CONTENT_PROPS, which bundlers
+      // tree-shake down to the constant; locale matching runs through
+      // gt-i18n's I18nConfig.
       expect(
         esmPackageSource.replace(
           'import { HTML_CONTENT_PROPS } from "@generaltranslation/format";',
           ''
         )
-      ).not.toMatch(
-        /(?:^|\n)import\s+[^;]*["']@generaltranslation\/format["']/
-      );
-      expect(esmPackageSource).toMatch(
-        /import\(["']@generaltranslation\/format["']\)/
-      );
+      ).not.toMatch(/["']@generaltranslation\/format["']/);
       const commonJSPackageSource = readFileSync(
         join(unpackDirectory, 'package', 'dist', 'index.cjs'),
         'utf8'
@@ -269,9 +266,6 @@ describe('gt-vue package layout', () => {
       expect(
         new Set(commonJSPackageSource.match(/_generaltranslation_format\.\w+/g))
       ).toEqual(new Set(['_generaltranslation_format.HTML_CONTENT_PROPS']));
-      expect(commonJSPackageSource).toMatch(
-        /import\(["']@generaltranslation\/format["']\)/
-      );
 
       for (const exportName of ['msg', 'useGT']) {
         const consumerEntry = join(
@@ -318,7 +312,13 @@ describe('gt-vue package layout', () => {
         expect(bundledSource).not.toMatch(
           /(?:from\s*|import\s*)["']generaltranslation["']/
         );
-        expect(bundledSource).not.toMatch(/["']gt-i18n\/internal["']/);
+        // tsdown keeps bare imports of externals; gt-i18n declares no side
+        // effects, so app bundlers drop this one for msg-only consumers.
+        if (exportName === 'msg') {
+          expect(
+            bundledSource.replace('import "gt-i18n/internal";', '')
+          ).not.toMatch(/["']gt-i18n\/internal["']/);
+        }
         expect(bundledSource).not.toContain('spaRuntime');
         // External-only consumers keep the tree-shaken HTML_CONTENT_PROPS
         // import as a bare side-effect import; nothing else may reach format.
