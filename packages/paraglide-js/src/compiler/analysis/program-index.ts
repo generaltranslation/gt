@@ -9,7 +9,9 @@ import {
 import { visitorKeys } from 'oxc-parser';
 import {
   forEachNode,
+  parsedEnd,
   parsedRange,
+  parsedStart,
   type Child,
   type ESTree,
   type Node,
@@ -220,14 +222,6 @@ function lastStartingBy(
   }
 
   return low - 1;
-}
-
-function parsedStart(node: Node): number {
-  return (node as { range?: [number, number] }).range?.[0] ?? node.start;
-}
-
-function parsedEnd(node: Node): number {
-  return (node as { range?: [number, number] }).range?.[1] ?? node.end;
 }
 
 /** Each `range` that repeats `start` and `end`: a third of a program's memory, when it was parsed with ranges. */

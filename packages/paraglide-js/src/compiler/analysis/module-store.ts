@@ -7,6 +7,7 @@ import {
   type SpecifierLinks,
 } from './importers.js';
 import type { ModuleRecord, ParsedModule } from './module-graph.js';
+import type { SitePositions } from './site-positions.js';
 import {
   exportingStatements,
   hasEsmExports,
@@ -22,7 +23,7 @@ import {
 
 /**
  * What the analysis knows of a module without its syntax tree. Its name lists
- * are strings, or places in a buffer threads share: see `withSharedNames`.
+ * are strings, or places in a buffer threads share: see `forThreads`.
  */
 export type ModuleSummary<Names extends AnyNameList = NameList> = {
   file: string;
@@ -41,8 +42,13 @@ export type ModuleSummary<Names extends AnyNameList = NameList> = {
     exports?: { names: Names; stars: readonly string[] };
     /** The auto-imported names it may use: see `summarizeModule`. */
     globalNames: readonly string[];
+    /** Unset when unknown: see `sitePositions`. */
+    sites?: SitePositions | SharedSitesPlace;
   }>;
 };
+
+/** Where a module's `SitePositions` are in the buffer of `forThreads`, in numbers. */
+export type SharedSitesPlace = { at: number; length: number };
 
 /**
  * The names a module exports, `export *` aside, and the files of its
@@ -67,6 +73,8 @@ export interface RecordStore {
   links(): Iterable<{ ref: ModuleRef; links: Links }>;
   /** The modules that may mention one of `names`; undefined if every module may. */
   mentioning(names: ReadonlySet<string>): readonly ModuleRef[] | undefined;
+  /** Where the module's sites are, if the index has them: see `sitePositions`. */
+  sitePositions(ref: ModuleRef): SitePositions | undefined;
 }
 
 /** A file's module, then its scripts. */
@@ -112,6 +120,11 @@ export class LoadedRecords implements RecordStore {
     return undefined;
   }
 
+  /** A loaded module is walked: it is in memory already. */
+  sitePositions(): undefined {
+    return undefined;
+  }
+
   loaded(): Iterable<ModuleRecord> {
     return this.records.values();
   }
@@ -137,8 +150,10 @@ export type IndexedRecordsOptions = {
   load(file: string): ParsedModule | undefined;
   /** Characters of code the loaded modules hold before the least recently read are unloaded. */
   budget: number;
-  /** Where the summaries' shared name lists are: see `withSharedNames`. */
+  /** Where the summaries' shared name lists are: see `forThreads`. */
   names?: SharedNames;
+  /** Where the summaries' shared site positions are: see `forThreads`. */
+  sites?: Int32Array;
 };
 
 type IndexedModule = {
@@ -146,6 +161,7 @@ type IndexedModule = {
   links: readonly Links[];
   untrackedExports: AnyNameList | undefined;
   exports: { names: AnyNameList; starExported: readonly string[] } | undefined;
+  sites: ReadonlyArray<SitePositions | SharedSitesPlace | undefined>;
 };
 
 /**
@@ -181,6 +197,7 @@ export class IndexedRecords implements RecordStore {
         ),
         untrackedExports: parts[0]?.untrackedExports,
         exports: indexedExports(parts[0]?.exports, resolved[0]),
+        sites: parts.map((part) => part.sites),
       });
 
       parts.forEach(({ globalNames }, part) => {
@@ -260,6 +277,13 @@ export class IndexedRecords implements RecordStore {
     return [...names].flatMap((name) => this.mentions.get(name) ?? []);
   }
 
+  sitePositions({ file, part }: ModuleRef): SitePositions | undefined {
+    const sites = this.modules.get(file)?.sites[part];
+    if (!sites || sites instanceof Int32Array) return sites;
+
+    return this.options.sites?.subarray(sites.at, sites.at + sites.length);
+  }
+
   /** Keeps the module read last, whatever its size. */
   private unloadOverBudget(): void {
     for (const [file, record] of this.records) {
@@ -272,34 +296,60 @@ export class IndexedRecords implements RecordStore {
 }
 
 /**
- * `summaries` with their name lists in one buffer that threads share: each
- * reads them there (`IndexedRecordsOptions.names`) instead of holding a copy.
- * A large project's modules export millions of names.
+ * `summaries` as the threads read them: their name lists and site positions
+ * in buffers they share (`IndexedRecordsOptions.names` and `.sites`), which
+ * each reads instead of holding a copy. A large project's modules export
+ * millions of names and have millions of calls.
  */
-export function withSharedNames(summaries: readonly ModuleSummary[]): {
+export function forThreads(summaries: readonly ModuleSummary[]): {
   summaries: ModuleSummary<SharedNameList>[];
   names: SharedArrayBuffer;
+  sites: SharedArrayBuffer;
 } {
   const lists = summaries.flatMap(({ parts }) =>
     parts.flatMap(({ untrackedExports, exports }) =>
       exports ? [untrackedExports, exports.names] : [untrackedExports]
     )
   );
-  const { bytes, places } = shareNameLists(lists);
+  const { bytes: names, places } = shareNameLists(lists);
 
-  let next = 0;
+  let siteCount = 0;
+  for (const { parts } of summaries) {
+    for (const { sites } of parts) {
+      if (sites instanceof Int32Array) siteCount += sites.length;
+    }
+  }
+
+  const sites = new SharedArrayBuffer(siteCount * Int32Array.BYTES_PER_ELEMENT);
+  const sharedSites = new Int32Array(sites);
+
+  let nextList = 0;
+  let nextSite = 0;
   const shared = summaries.map(({ file, parts }) => ({
     file,
-    parts: parts.map(({ untrackedExports: _, exports, ...part }) => ({
-      ...part,
-      untrackedExports: places[next++]!,
-      ...(exports && {
-        exports: { names: places[next++]!, stars: exports.stars },
-      }),
-    })),
+    parts: parts.map(
+      ({ untrackedExports: _, exports, sites: ownSites, ...part }) => {
+        let sitesPlace = ownSites;
+
+        if (ownSites instanceof Int32Array) {
+          sharedSites.set(ownSites, nextSite);
+          sitesPlace = { at: nextSite, length: ownSites.length };
+          nextSite += ownSites.length;
+        }
+
+        return {
+          ...part,
+          untrackedExports: places[nextList++]!,
+          ...(exports && {
+            exports: { names: places[nextList++]!, stars: exports.stars },
+          }),
+          sites: sitesPlace,
+        };
+      }
+    ),
   }));
 
-  return { summaries: shared, names: bytes };
+  return { summaries: shared, names, sites };
 }
 
 function indexedExports(

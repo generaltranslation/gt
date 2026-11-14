@@ -83,6 +83,7 @@ async function handle(request: WorkerRequest): Promise<unknown> {
 function indexedGraph({
   index,
   names,
+  sites,
   channel: given,
 }: IndexRequest): ModuleGraph {
   channel = given;
@@ -98,6 +99,7 @@ function indexedGraph({
     index: {
       summaries,
       names: new SharedNames(Buffer.from(names)),
+      sites: new Int32Array(sites),
       budget,
       load: (file) => loadIndexedFile(file, generatedModule(file)),
     },
