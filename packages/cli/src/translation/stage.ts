@@ -13,8 +13,12 @@ export async function aggregateInlineTranslations(
   settings: Settings,
   library: InlineLibrary
 ): Promise<Updates> {
-  if (!options.dictionary) {
-    options.dictionary = findFilepath([
+  // Resolve the dictionary path: --dictionary flag, then the `dictionary`
+  // key from gt.config.json, then auto-detection (mirrors `gt validate`).
+  const dictionary =
+    options.dictionary ||
+    settings.dictionary ||
+    findFilepath([
       './dictionary.js',
       './src/dictionary.js',
       './dictionary.json',
@@ -22,13 +26,12 @@ export async function aggregateInlineTranslations(
       './dictionary.ts',
       './src/dictionary.ts',
     ]);
-  }
 
   // ---- CREATING UPDATES ---- //
   const { updates, errors, warnings } = await createUpdates(
     options,
     settings.src,
-    options.dictionary,
+    dictionary,
     library,
     false,
     settings.files.gtJson.parsingFlags,
