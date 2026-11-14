@@ -143,6 +143,8 @@ struct Lowerer<'a, 's> {
   scoping: &'s Scoping,
   utf16: &'s Utf16Offsets<'s>,
   nodes: Vec<Node>,
+  /// The root's children, in order.
+  top_level: Vec<NodeId>,
   atoms: FxHashMap<&'a str, u32>,
   atom_text: String,
   atom_spans: Vec<(u32, u32)>,
@@ -171,6 +173,7 @@ impl<'a, 's> Lowerer<'a, 's> {
       utf16,
       // About one node per five or six bytes of code.
       nodes: Vec::with_capacity(code_length / 4 + 16),
+      top_level: Vec::new(),
       atoms: FxHashMap::default(),
       atom_text: String::new(),
       atom_spans: Vec::new(),
@@ -207,7 +210,7 @@ impl<'a, 's> Lowerer<'a, 's> {
     self.symbols_of_parents.sort_unstable();
     ast.symbols_of_parents = self.symbols_of_parents;
     ast.long_ends = self.long_ends.as_slice().to_vec();
-    ast.index_children();
+    ast.set_top_level(self.top_level);
     ast.set_variables(self.variables, self.definitions, self.assignments);
 
     ast
@@ -436,13 +439,32 @@ impl<'a, 's> Lowerer<'a, 's> {
     let id = self.open(Kind::Program, Slot::Root, program.span);
 
     for directive in &program.directives {
+      let first = self.nodes.len() as NodeId;
       self.directive(directive);
+      self.note_top_level(first);
     }
     for statement in &program.body {
+      let first = self.nodes.len() as NodeId;
       self.statement(statement, Slot::Body);
+      self.note_top_level(first);
     }
 
     self.close(id);
+  }
+
+  /// Notes the root's children written from `first` on, while they are at hand: read from the
+  /// finished tree, they are far apart.
+  fn note_top_level(&mut self, first: NodeId) {
+    let mut child = first;
+    while (child as usize) < self.nodes.len() {
+      self.top_level.push(child);
+      let node = &self.nodes[child as usize];
+      child = if node.has(ir::SYMBOL_IN_NEXT) {
+        child + 1
+      } else {
+        node.next
+      };
+    }
   }
 
   fn directive(&mut self, directive: &Directive<'a>) {

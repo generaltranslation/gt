@@ -587,13 +587,12 @@ impl Ast {
     }
   }
 
-  /// Lists the root's children, for `parent` and `ancestors`; once the nodes are written.
-  pub fn index_children(&mut self) {
+  /// The root's children, in order, for `parent` and `ancestors`.
+  pub fn set_top_level(&mut self, children: Vec<NodeId>) {
     if self.nodes.is_empty() {
       return;
     }
 
-    let children: Vec<NodeId> = self.children(0).collect();
     self.wide = vec![(0, 0, children.len() as u32)];
     self.wide_children = children;
   }
