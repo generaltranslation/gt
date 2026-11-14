@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { native } from '../../src/compiler/analysis/native.js';
 import {
   analogLanguage,
   angularComponentLanguage,
@@ -12,6 +13,9 @@ import {
   REPO_PACKAGES,
   skippedFile,
 } from '../helpers/project.js';
+
+/** The analysis writes Angular's files itself, without @angular/compiler, when built with them. */
+const isNative = native.nativeLanguages().includes('angular-template');
 
 const languages = [
   ...defaultLanguages,
@@ -360,33 +364,142 @@ describe("Angular's own tools", () => {
   const parse = (file: string, code: string, context = REPO_PACKAGES) =>
     skippedFile(file, code, languages, context);
 
-  test('without @angular/compiler in the project, components are skipped', async () => {
-    const component = `@Component({ template: "<p>{{ m.x() }}</p>" }) export class A {}`;
-    for (const [file, code] of [
-      ['/app/src/a.component.ts', component],
-      ['/app/src/a.page.ag', '<template><p>{{ m.x() }}</p></template>'],
-    ] as const) {
-      expect(await parse(file, code, NO_PACKAGES)).toMatchObject({
-        error: expect.stringContaining('@angular/compiler'),
-        missing: ['@angular/compiler'],
-      });
+  test.skipIf(isNative)(
+    'without @angular/compiler in the project, components are skipped',
+    async () => {
+      const component = `@Component({ template: "<p>{{ m.x() }}</p>" }) export class A {}`;
+      for (const [file, code] of [
+        ['/app/src/a.component.ts', component],
+        ['/app/src/a.page.ag', '<template><p>{{ m.x() }}</p></template>'],
+      ] as const) {
+        expect(await parse(file, code, NO_PACKAGES)).toMatchObject({
+          error: expect.stringContaining('@angular/compiler'),
+          missing: ['@angular/compiler'],
+        });
+      }
+      // Without Angular, an `.html` file is not a template: only module scripts are read.
+      expect(
+        await parse('/app/src/a.html', '<p>{{ m.x() }}</p>', NO_PACKAGES)
+      ).toBeUndefined();
+      expect(
+        await parse(
+          '/app/index.html',
+          '<!doctype html><script type=module>m.x()</script>',
+          NO_PACKAGES
+        )
+      ).toBeUndefined();
     }
-    // Without Angular, an `.html` file is not a template: only module scripts are read.
-    expect(
-      await parse('/app/src/a.html', '<p>{{ m.x() }}</p>', NO_PACKAGES)
-    ).toBeUndefined();
-    expect(
-      await parse(
-        '/app/index.html',
-        '<!doctype html><script type=module>m.x()</script>',
-        NO_PACKAGES
-      )
-    ).toBeUndefined();
-  });
+  );
+
+  test.runIf(isNative)(
+    'the analysis reads Angular files itself: @angular/compiler is not needed',
+    async () => {
+      const component = `@Component({ template: "<p>{{ m.x() }}</p>" }) export class A {}`;
+      for (const [file, code] of [
+        ['/app/src/a.component.ts', component],
+        ['/app/src/a.page.ag', '<template><p>{{ m.x() }}</p></template>'],
+        ['/app/src/a.html', '<p>{{ m.x() }}</p>'],
+        [
+          '/app/index.html',
+          '<!doctype html><script type=module>m.x()</script>',
+        ],
+      ] as const) {
+        expect(await parse(file, code, NO_PACKAGES)).toBeUndefined();
+      }
+      // A template the analysis rejects is still Angular's: not read as a page.
+      expect(
+        await parse('/app/src/a.html', '<p>{ m.x() }</p>', NO_PACKAGES)
+      ).toMatchObject({ error: expect.stringContaining('Angular rejected') });
+    }
+  );
 
   test('a template Angular rejects is skipped with its error', async () => {
     expect(await parse('/app/src/a.component.html', '@if (x) { <p>')).toEqual({
       error: expect.stringContaining('Unclosed block "if"'),
     });
+    for (const [code, error] of [
+      ['<div></span>', 'Unexpected closing tag "span"'],
+      ['<p>{ not an icu }</p>', 'Unexpected character "EOF"'],
+      ['<div/>', 'Only void, custom and foreign elements can be self closed'],
+      ['@let x = 1', 'Incomplete @let declaration "x"'],
+      ['a } b', 'Unexpected closing block'],
+      ['&nope;', 'Unknown entity "nope"'],
+    ]) {
+      expect(await parse('/app/src/a.component.html', code)).toEqual({
+        error: expect.stringContaining(error),
+      });
+    }
+  });
+});
+
+describe.runIf(isNative)('what the analysis reads exactly', () => {
+  const file = '/app/src/app/list.component.ts';
+  const template = '/app/src/app/list.component.html';
+  const component = lines(
+    `import { Component } from "@angular/core";`,
+    `import { m } from "../paraglide/messages.js";`,
+    `@Component({ selector: "app-list", templateUrl: "./list.component.html" })`,
+    `export class ListComponent { m = m; items = []; }`
+  );
+  const analyzeTemplate = (code: string) =>
+    analyze(template, { [file]: component, [template]: code });
+
+  test('escapes of an inline template are mapped to the file', async () => {
+    const inline = '/app/src/app/inline.component.ts';
+    const usages = await analyze(inline, {
+      [inline]: lines(
+        `import { Component } from "@angular/core";`,
+        `import { m } from "../paraglide/messages.js";`,
+        `@Component({ selector: "x", template: '<p title="{{ m.quoted(\\'a\\') }}">\\n{{ m.after() }}</p>' })`,
+        `export class X { m = m; }`
+      ),
+    });
+    expect(describeUsages(usages)).toEqual([
+      'message:quoted:call 3',
+      'message:after:call 3',
+    ]);
+    expect(usages[0]).toMatchObject({ column: 53 });
+  });
+
+  test('character references in bindings, and handlers on several lines', async () => {
+    const usages = await analyzeTemplate(
+      lines(
+        `<p [title]="ready &amp;&amp; m.ready()"`,
+        `   (click)="`,
+        `     m.first();`,
+        `     m.second()`,
+        `   "></p>`
+      )
+    );
+    expect(describeUsages(usages)).toEqual([
+      'message:ready:call 1',
+      'message:first:call 3',
+      'message:second:call 4',
+    ]);
+    expect(usages.map(({ column }) => column)).toEqual([30, 6, 6]);
+  });
+
+  test('blocks Angular leaves out, and those it keeps', async () => {
+    const usages = await analyzeTemplate(
+      lines(
+        `@else { {{ m.orphan() }} }`,
+        `@defer (when m.when(); prefetch when m.prefetch()) { {{ m.main() }} }`,
+        `@placeholder (minimum 500ms) { {{ m.placeholder() }} }`,
+        `@loading (after 1s; minimum 2s) { {{ m.loading() }} }`,
+        `@switch (m.mode()) { @case (1) @case (2) { {{ m.both() }} } @default { {{ m.other() }} } }`,
+        `<p ngNonBindable>{{ m.nonBindable() }}</p>`,
+        `<ng-content [select]="m.content()"></ng-content>`
+      )
+    );
+    expect(describeUsages(usages)).toEqual([
+      'message:when:call 2',
+      'message:prefetch:call 2',
+      'message:main:call 2',
+      'message:placeholder:call 3',
+      'message:loading:call 4',
+      'message:mode:call 5',
+      'message:both:call 5',
+      'message:other:call 5',
+    ]);
   });
 });

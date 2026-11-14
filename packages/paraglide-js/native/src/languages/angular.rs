@@ -3,11 +3,42 @@
 
 use super::Generate;
 
+#[cfg(feature = "lang-angular")]
+mod component;
+#[cfg(feature = "lang-angular")]
+mod entities;
+#[cfg(feature = "lang-angular")]
+mod expr;
+#[cfg(feature = "lang-angular")]
+mod generate;
+#[cfg(feature = "lang-angular")]
+mod html;
+#[cfg(feature = "lang-angular")]
+mod lexer;
+#[cfg(feature = "lang-angular")]
+mod tags;
+#[cfg(feature = "lang-angular")]
+mod template;
+#[cfg(feature = "lang-angular")]
+mod text;
+#[cfg(feature = "lang-angular")]
+mod tree;
+
+#[cfg(feature = "lang-angular")]
+pub const GENERATE_COMPONENT: Option<Generate> = Some(generate::component);
+#[cfg(feature = "lang-angular")]
+pub const GENERATE_TEMPLATE: Option<Generate> = Some(generate::template);
+#[cfg(feature = "lang-angular")]
+pub const GENERATE_ANALOG: Option<Generate> = Some(generate::analog);
+
 /// None while JavaScript's tooling writes these files.
+#[cfg(not(feature = "lang-angular"))]
 pub const GENERATE_COMPONENT: Option<Generate> = None;
 /// None while JavaScript's tooling writes these files.
+#[cfg(not(feature = "lang-angular"))]
 pub const GENERATE_TEMPLATE: Option<Generate> = None;
 /// None while JavaScript's tooling writes these files.
+#[cfg(not(feature = "lang-angular"))]
 pub const GENERATE_ANALOG: Option<Generate> = None;
 
 /// As `/@Component\s*\(/` and `/\btemplate\s*:/` in JavaScript: a component with an inline template.
