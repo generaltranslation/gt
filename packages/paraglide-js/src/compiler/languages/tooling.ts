@@ -2,8 +2,6 @@ import type {
   NativeGeneratedCode,
   NativeGeneratedSource,
 } from '../analysis/native.js';
-import { projectPackages } from '../project/packages.js';
-import { defaultLanguages } from './index.js';
 import {
   generateSource,
   NO_PACKAGES,
@@ -13,13 +11,7 @@ import {
   type ParseFailure,
   type SourceLanguage,
 } from './language.js';
-import type {
-  ToolingRequest,
-  ToolingResponse,
-  ToolingWorkerData,
-} from './tooling-pool.js';
-
-/** Plain data, so that a worker thread can post it back. */
+/** What a language of the caller's, which runs in JavaScript, wrote for a file. */
 export type ToolingResult =
   | { type: 'unclaimed' }
   | { type: 'failed'; failure: ParseFailure }
@@ -37,38 +29,6 @@ export async function runTooling(
   if ('error' in generated) return { type: 'failed', failure: generated };
 
   return { type: 'generated', source: nativeSource(generated) };
-}
-
-/** What a thread of `ToolingPool` answers each request with. */
-export function toolingHandler({
-  languages,
-  packagesRoot,
-}: ToolingWorkerData): (request: ToolingRequest) => Promise<ToolingResponse> {
-  const ownLanguages = languages.map((index) => defaultLanguages[index]!);
-  const packages =
-    packagesRoot === undefined ? NO_PACKAGES : projectPackages(packagesRoot);
-
-  return async ({ id, file, code }) => {
-    try {
-      return {
-        id,
-        result: await runTooling(file, code, ownLanguages, packages),
-      };
-    } catch (error) {
-      return { id, error: String(error) };
-    }
-  };
-}
-
-/** The buffers of a result, which a thread hands over rather than copies. */
-export function transferables(result: ToolingResult): ArrayBuffer[] {
-  if (result.type !== 'generated') return [];
-
-  const { main, scripts } = result.source;
-
-  return [main, ...scripts].map(
-    ({ mappings }) => mappings.buffer as ArrayBuffer
-  );
 }
 
 function nativeSource({

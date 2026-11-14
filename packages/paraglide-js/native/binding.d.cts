@@ -267,10 +267,11 @@ export interface NativeTargetFile {
 }
 
 /**
- * For tests: a metadata file as `writeMetadata` writes it from the JSON of
- * `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
- * object.
+ * What the analysis writes for `file`, of the built-in language named `language`, as a language's
+ * `generate` returns it; fails when the file is not valid in the language.
  */
+export declare function generateSource(file: string, code: string, language: string): NativeGeneratedSource
+
 /**
  * The outermost directory between `base` (excluded) and `projectRoot` (included) that a `.gitignore`
  * file ignores; none if none is.
@@ -286,4 +287,9 @@ export declare function listProjectFiles(options: NativeListOptions): Promise<Ar
 /** The built-in languages whose files the analysis writes itself, by name. */
 export declare function nativeLanguages(): Array<string>
 
+/**
+ * For tests: a metadata file as `writeMetadata` writes it from the JSON of
+ * `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
+ * object.
+ */
 export declare function renderMetadata(input: string, radius: number): string | null

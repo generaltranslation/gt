@@ -1021,9 +1021,6 @@ fn write_metadata(state: &State, input: &[u8], radius: f64) -> Result<NativeMeta
   Ok(result)
 }
 
-/// For tests: a metadata file as `writeMetadata` writes it from the JSON of
-/// `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
-/// object.
 #[napi(object)]
 pub struct NativeListOptions {
   /// Where `.gitignore` files apply from: the repository's or the workspace's root.
@@ -1084,6 +1081,89 @@ pub fn ignored_directory(base: String, project_root: String) -> Option<String> {
   .and_then(|directory| directory.to_str().map(str::to_string))
 }
 
+/// What the analysis writes for `file`, of the built-in language named `language`, as a language's
+/// `generate` returns it; fails when the file is not valid in the language.
+#[napi]
+pub fn generate_source(
+  file: String,
+  code: String,
+  language: String,
+) -> Result<NativeGeneratedSource> {
+  let language = Language::named(&language)
+    .ok_or_else(|| Error::from_reason(format!("no built-in language is named {language}")))?;
+  start_workers();
+  // On the pool, whose threads have the stack that deeply nested code needs.
+  let generated =
+    guarded(|| crate::on_pool(|| crate::load::generate_source(&file, &code, language)))?
+      .map_err(Error::from_reason)?;
+
+  Ok(to_native_source(generated))
+}
+
+fn to_native_code(code: GeneratedCode) -> NativeGeneratedCode {
+  let mappings: Vec<i32> = code
+    .mappings
+    .iter()
+    .flat_map(|mapping| {
+      [
+        mapping.generated,
+        mapping.source,
+        mapping.length,
+        mapping.source_length,
+      ]
+    })
+    .collect();
+  let lang = match code.lang {
+    Lang::Js => "js",
+    Lang::Jsx => "jsx",
+    Lang::Ts => "ts",
+    Lang::Tsx => "tsx",
+  };
+
+  NativeGeneratedCode {
+    code: code.code,
+    lang: lang.to_string(),
+    mappings: Int32Array::new(mappings),
+  }
+}
+
+fn to_native_source(source: GeneratedSource) -> NativeGeneratedSource {
+  NativeGeneratedSource {
+    main: to_native_code(source.main),
+    scripts: source.scripts.into_iter().map(to_native_code).collect(),
+    language: source.language,
+    component_fields: Some(
+      source
+        .component_fields
+        .into_iter()
+        .map(|fields| NativeComponentFields {
+          specifier: fields.specifier,
+          class_name: fields.class_name,
+          start: fields.range.map(|(start, _)| start),
+          end: fields.range.map(|(_, end)| end),
+        })
+        .collect(),
+    ),
+    scope_objects: Some(source.scope_objects),
+    props: source.props.map(|props| NativePropsReads {
+      calls: Some(props.calls),
+      members: Some(props.members),
+      variables: Some(props.variables),
+      undeclared: Some(props.undeclared),
+    }),
+    component_instances: source
+      .component_instances
+      .map(|instances| NativeComponentInstances {
+        via: match instances.via {
+          InstantiationSyntax::New => "new",
+          InstantiationSyntax::Call => "call",
+        }
+        .to_string(),
+        path: instances.path.iter().map(|name| name.to_string()).collect(),
+      }),
+  }
+}
+
 /// The built-in languages whose files the analysis writes itself, by name.
 #[napi]
 pub fn native_languages() -> Vec<String> {
@@ -1094,6 +1174,9 @@ pub fn native_languages() -> Vec<String> {
     .collect()
 }
 
+/// For tests: a metadata file as `writeMetadata` writes it from the JSON of
+/// `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
+/// object.
 #[napi]
 pub fn render_metadata(input: String, radius: f64) -> Result<Option<String>> {
   start_workers();
