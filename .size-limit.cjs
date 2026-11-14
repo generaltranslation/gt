@@ -124,6 +124,7 @@ module.exports = [
   i18n('gt-i18n/internal', 'internal'),
   i18n('gt-i18n/internal/compat', 'internal-compat'),
   i18n('gt-i18n/internal/cookies', 'internal-cookies'),
+  i18n('gt-i18n/internal/credentials', 'internal-credentials'),
   i18n('gt-i18n/internal/string', 'internal-string'),
 
   reactCore('@generaltranslation/react-core/pure', 'pure'),

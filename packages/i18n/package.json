@@ -46,7 +46,8 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "tsdown": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "^7.1.7"
   },
   "typescript": {
     "definition": "dist/index.d.cts"
@@ -87,6 +88,16 @@
         "default": "./dist/internal-compat.mjs"
       }
     },
+    "./internal/credentials": {
+      "require": {
+        "types": "./dist/internal-credentials.d.cts",
+        "default": "./dist/internal-credentials.cjs"
+      },
+      "import": {
+        "types": "./dist/internal-credentials.d.mts",
+        "default": "./dist/internal-credentials.mjs"
+      }
+    },
     "./internal/cookies": {
       "require": {
         "types": "./dist/internal-cookies.d.cts",
@@ -105,6 +116,16 @@
       "import": {
         "types": "./dist/internal-string.d.mts",
         "default": "./dist/internal-string.mjs"
+      }
+    },
+    "./internal/vite": {
+      "require": {
+        "types": "./dist/internal-vite.d.cts",
+        "default": "./dist/internal-vite.cjs"
+      },
+      "import": {
+        "types": "./dist/internal-vite.d.mts",
+        "default": "./dist/internal-vite.mjs"
       }
     },
     "./unstable": {
@@ -126,6 +147,14 @@
         "types": "./dist/unstable-internal.d.mts",
         "default": "./dist/unstable-internal.mjs"
       }
+    }
+  },
+  "peerDependencies": {
+    "vite": ">=6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
     }
   }
 }

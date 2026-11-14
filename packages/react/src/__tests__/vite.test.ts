@@ -132,11 +132,17 @@ describe('gtReact', () => {
       optimizeDeps: { noDiscovery: true, include: [] },
     });
     try {
+      // The shared reader's source, so Vite applies the plugin's define to it.
       const { addRuntimeCredentials } = await server.ssrLoadModule(
-        '/src/setup/runtimeCredentials.ts'
+        fileURLToPath(
+          new URL(
+            '../../../i18n/src/credentials/runtimeCredentials.ts',
+            import.meta.url
+          )
+        )
       );
 
-      expect(addRuntimeCredentials({})).toMatchObject({
+      expect(addRuntimeCredentials({}, 'gt-react')).toMatchObject({
         projectId: 'project-id',
         apiKey: 'SENTINEL_KEY',
       });
