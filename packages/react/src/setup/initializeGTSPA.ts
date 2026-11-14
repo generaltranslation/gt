@@ -13,7 +13,7 @@ import {
   createOrUpdateBrowserConditionStore,
   CreateBrowserConditionStoreParams,
 } from '../condition-store/createBrowserConditionStore';
-import { addRuntimeCredentials } from './runtimeCredentials';
+import { addRuntimeCredentials } from 'gt-i18n/internal/credentials';
 
 export type InitializeGTSPAParams = I18nConfigParams &
   BrowserI18nCacheParams &
@@ -30,7 +30,7 @@ export type InitializeGTSPAParams = I18nConfigParams &
  * Translations never expire in the browser, so `cacheExpiryTime` is ignored.
  */
 export async function initializeGTSPA(config: InitializeGTSPAParams) {
-  const runtimeConfig = addRuntimeCredentials(config);
+  const runtimeConfig = addRuntimeCredentials(config, 'gt-react');
   initializeI18nConfig(runtimeConfig, 'SPA');
 
   const i18nCache = new BrowserI18nCache({

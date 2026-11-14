@@ -11,13 +11,13 @@ describe('runtime credentials', () => {
     process.env.NODE_ENV = originalNodeEnv;
   });
 
-  // src/__tests__/vite.test.ts covers the values gtReact() injects.
+  // gt-react's src/__tests__/vite.test.ts covers the values the Vite plugin injects.
   it('reads GT_PROJECT_ID and GT_API_KEY from process.env on a server', () => {
     process.env.NODE_ENV = 'development';
     vi.stubEnv('GT_PROJECT_ID', 'project-id');
     vi.stubEnv('GT_API_KEY', 'api-key');
 
-    expect(addRuntimeCredentials({})).toMatchObject({
+    expect(addRuntimeCredentials({}, 'gt-react')).toMatchObject({
       projectId: 'project-id',
       apiKey: 'api-key',
     });
@@ -28,7 +28,7 @@ describe('runtime credentials', () => {
     vi.stubGlobal('window', {});
     vi.stubEnv('GT_API_KEY', 'api-key');
 
-    expect(addRuntimeCredentials({}).apiKey).toBeUndefined();
+    expect(addRuntimeCredentials({}, 'gt-react').apiKey).toBeUndefined();
   });
 
   it('keeps explicitly supplied credentials', () => {
@@ -37,10 +37,13 @@ describe('runtime credentials', () => {
     vi.stubEnv('GT_API_KEY', 'api-key');
 
     expect(
-      addRuntimeCredentials({
-        projectId: 'explicit-project-id',
-        apiKey: 'explicit-api-key',
-      })
+      addRuntimeCredentials(
+        {
+          projectId: 'explicit-project-id',
+          apiKey: 'explicit-api-key',
+        },
+        'gt-react'
+      )
     ).toMatchObject({
       projectId: 'explicit-project-id',
       apiKey: 'explicit-api-key',
@@ -53,7 +56,10 @@ describe('runtime credentials', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     expect(
-      addRuntimeCredentials({ projectId: 'project-id', apiKey: 'leaked-key' })
+      addRuntimeCredentials(
+        { projectId: 'project-id', apiKey: 'leaked-key' },
+        'gt-react'
+      )
     ).toMatchObject({ projectId: 'project-id', apiKey: undefined });
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('An API key reached production browser code')
@@ -64,9 +70,9 @@ describe('runtime credentials', () => {
     process.env.NODE_ENV = 'production';
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    expect(addRuntimeCredentials({ apiKey: 'server-key' }).apiKey).toBe(
-      'server-key'
-    );
+    expect(
+      addRuntimeCredentials({ apiKey: 'server-key' }, 'gt-react').apiKey
+    ).toBe('server-key');
     expect(warn).not.toHaveBeenCalled();
   });
 });
