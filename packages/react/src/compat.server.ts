@@ -7,7 +7,6 @@
 export { ServerGTProvider as GTProvider } from './compat/ServerGTProvider';
 export type { GTProviderProps } from './compat/GTProviderProps';
 export { useTranslations } from '@generaltranslation/react-core/compat';
-export type { UseTranslationsFunction } from '@generaltranslation/react-core/compat';
 export { initializeDictionaryManager as initializeGTDictionary } from 'gt-i18n/internal/compat';
 export type {
   DictionaryManagerParams as InitializeGTDictionaryParams,

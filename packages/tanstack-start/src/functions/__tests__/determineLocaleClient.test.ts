@@ -97,7 +97,7 @@ describe('locale resolution', () => {
       acceptLanguage: 'es,en;q=0.8',
     });
 
-    expect(resolveRequestConditions(request, localeConfig).locale).toBe(
+    expect(resolveRequestConditions(request, false).locale).toBe(
       'brand-french'
     );
     expect(mockSetCookie).toHaveBeenCalledWith(
@@ -110,7 +110,7 @@ describe('locale resolution', () => {
   it('falls back to the server Accept-Language header', () => {
     const request = createRequest({ acceptLanguage: 'es,en;q=0.8' });
 
-    expect(resolveRequestConditions(request, localeConfig).locale).toBe('es');
+    expect(resolveRequestConditions(request, false).locale).toBe('es');
     expect(mockSetCookie).toHaveBeenCalledWith(
       'generaltranslation.locale',
       'es',
@@ -129,7 +129,7 @@ describe('locale resolution', () => {
       acceptLanguage: 'es,en;q=0.8',
     });
 
-    expect(resolveRequestConditions(request, localeConfig).locale).toBe(
+    expect(resolveRequestConditions(request, false).locale).toBe(
       'brand-french'
     );
     expect(mockSetCookie).toHaveBeenCalledWith(

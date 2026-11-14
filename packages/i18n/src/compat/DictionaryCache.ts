@@ -15,7 +15,7 @@ import type {
   DictionaryValue,
 } from './types';
 
-export type DictionaryRuntimeTranslate = (
+type DictionaryRuntimeTranslate = (
   key: DictionaryKey,
   sourceEntry: DictionaryEntry
 ) => Promise<string>;

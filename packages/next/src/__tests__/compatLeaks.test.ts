@@ -49,7 +49,6 @@ const nativeModules = [
   'packages/react-core/src/hooks/useGT.ts',
   'packages/react-core/src/hooks/useMessages.ts',
   'packages/react-core/src/setup/initializeGTSRA.ts',
-  'packages/next/src/i18n-cache/NextI18nCache.ts',
   'packages/next/src/setup/initGT.ts',
   'packages/next/src/setup/initGT.server.ts',
   'packages/next/src/setup/initGT.client.ts',

@@ -1,4 +1,8 @@
-import { handleCacheError } from '../i18n-cache/utils/handleCacheError';
+import {
+  guard,
+  guardAsync,
+  handleCacheError,
+} from '../i18n-cache/utils/handleCacheError';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { getI18nCache } from '../i18n-cache/singleton-operations';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
@@ -87,7 +91,7 @@ export class DictionaryManager {
    * Edge case usage: access the dictionary object directly
    */
   async loadDictionary(locale: string): Promise<Dictionary> {
-    return this.guardAsync({}, async () => {
+    return guardAsync(this.handleError, {}, async () => {
       const dictionaryCache = await this.dictionaries.getOrLoad(locale);
       return dictionaryCache.getInternalCache();
     });
@@ -97,7 +101,7 @@ export class DictionaryManager {
    * Look up a dictionary entry
    */
   lookupDictionary(locale: string, id: string): DictionaryEntry | undefined {
-    return this.guard(undefined, () =>
+    return guard(this.handleError, undefined, () =>
       this.dictionaries.get(locale)?.getEntry(id)
     );
   }
@@ -109,13 +113,14 @@ export class DictionaryManager {
     locale: string,
     id: string
   ): DictionaryObject | undefined {
-    return this.guard(undefined, () =>
+    return guard(this.handleError, undefined, () =>
       this.dictionaries.get(locale)?.getValue(id)
     );
   }
 
   async getLookupDictionary(locale: string): Promise<DictionaryResolvers> {
-    return this.guardAsync<DictionaryResolvers>(
+    return guardAsync<DictionaryResolvers>(
+      this.handleError,
       {
         lookupDictionary: () => undefined,
         lookupDictionaryObj: () => undefined,
@@ -141,7 +146,7 @@ export class DictionaryManager {
     locale: string,
     id: string
   ): Promise<DictionaryEntry | undefined> {
-    return this.guardAsync(undefined, async () => {
+    return guardAsync(this.handleError, undefined, async () => {
       if (locale === getI18nConfig().getDefaultLocale()) {
         return this.getSourceDictionaryEntry(id);
       }
@@ -166,7 +171,7 @@ export class DictionaryManager {
     locale: string,
     id: string
   ): Promise<DictionaryObject | undefined> {
-    return this.guardAsync(undefined, async () => {
+    return guardAsync(this.handleError, undefined, async () => {
       if (locale === getI18nConfig().getDefaultLocale()) {
         return this.getSourceDictionaryObject(id, { throwOnMissing: true });
       }
@@ -238,28 +243,10 @@ export class DictionaryManager {
    * Same policy as I18nCache (handleCacheError), except that a missing
    * source entry always throws.
    */
-  private guard<T>(fallback: T, fn: () => T): T {
-    try {
-      return fn();
-    } catch (error) {
-      this.handleError(error);
-      return fallback;
-    }
-  }
-
-  private async guardAsync<T>(fallback: T, fn: () => Promise<T>): Promise<T> {
-    try {
-      return await fn();
-    } catch (error) {
-      this.handleError(error);
-      return fallback;
-    }
-  }
-
-  private handleError(error: unknown) {
+  private handleError = (error: unknown) => {
     if (error instanceof DictionarySourceNotFoundError) {
       throw error;
     }
     handleCacheError('DictionaryManager', error, this.environment);
-  }
+  };
 }

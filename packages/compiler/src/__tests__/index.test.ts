@@ -217,16 +217,17 @@ describe('gtUnplugin config loading', () => {
     expect(outputs).toEqual([null]);
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain(
-      `[@generaltranslation/compiler] Failed to load gt.config.json at ${path.join(cwd, 'gt.config.json')}.`
+      `@generaltranslation/compiler Warning: ${path.join(cwd, 'gt.config.json')} could not be read as JSON`
     );
-    expect(warnings[0]).toContain('valid gt.config.json');
   });
 
   it('warns with the invalid keys when gt.config.json does not match the schema', async () => {
     const cwd = createProject(parsingFlags({ enableAutoJsxInjection: 'yes' }));
     const { warnings } = await runPlugin(undefined, AUTO_JSX_CODE, { cwd });
     expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain('Failed to load gt.config.json');
+    expect(warnings[0]).toContain(
+      `@generaltranslation/compiler Warning: ${path.join(cwd, 'gt.config.json')} is invalid`
+    );
     expect(warnings[0]).toContain(
       'files.gt.parsingFlags.enableAutoJsxInjection: Invalid type'
     );

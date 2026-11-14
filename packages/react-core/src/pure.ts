@@ -15,7 +15,6 @@ export {
 export { getDefaultRenderSettings } from './utils/rendering/getDefaultRenderSettings';
 
 export type {
-  VariableProps,
   RelativeTimeFormatOptions,
   RenderMethod,
   RenderVariable,
@@ -35,4 +34,3 @@ export { I18nStore } from './i18n-store/I18nStore';
 export { getI18nConfig, initializeI18nConfig } from './setup/i18nConfig';
 export { getReadonlyConditionStore } from './condition-store/singleton-operations';
 export type { ReactI18nConfigParams as I18nConfigParams } from './setup/i18nConfig';
-export type { OnMissingTranslation } from './hooks/utils/missing-translation';

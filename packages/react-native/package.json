@@ -112,8 +112,7 @@
     "@generaltranslation/react-core": "workspace:*",
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
-    "gt-i18n": "workspace:*",
-    "valibot": "catalog:"
+    "gt-i18n": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

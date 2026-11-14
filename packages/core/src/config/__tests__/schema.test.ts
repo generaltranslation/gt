@@ -11,6 +11,7 @@ import {
   GTConfigSchema,
   describeConfigIssues,
   describeConfigParseError,
+  validateGTConfig,
 } from '../schema';
 
 function diagnosticFor(
@@ -66,6 +67,30 @@ describe('describeConfigIssues', () => {
     expect(message).toContain(
       'files.gt.parsingFlags.autoderive.jsxx: Invalid key'
     );
+  });
+});
+
+describe('validateGTConfig', () => {
+  it('returns the parsed config, keeping unknown keys', () => {
+    const config = { defaultLocale: 'en', custom: true };
+
+    expect(validateGTConfig(config, 'gt.config.json')).toEqual({
+      success: true,
+      output: config,
+    });
+  });
+
+  it('returns the diagnostic fields naming the invalid keys', () => {
+    const result = validateGTConfig({ locales: 'fr' }, 'gt.config.json');
+
+    expect(result).toEqual({
+      success: false,
+      diagnostic: {
+        whatHappened: 'gt.config.json is invalid',
+        fix: 'Correct the listed keys',
+        details: ['locales: Invalid type: Expected Array but received "fr"'],
+      },
+    });
   });
 });
 

@@ -1109,6 +1109,43 @@ describe('withGTConfig', () => {
       );
     });
 
+    it('passes the gt.config.json it loaded to the webpack compiler', () => {
+      const compiler = require('@generaltranslation/compiler');
+      const compilerWebpack = vi.spyOn(compiler, 'webpack').mockReturnValue({});
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockImplementation((p) =>
+        JSON.stringify({
+          defaultLocale: p === './custom/my-config.json' ? 'ko' : 'en',
+        })
+      );
+
+      runWebpack(
+        withGTConfig(
+          {},
+          {
+            config: './custom/my-config.json',
+            experimentalCompilerOptions: { type: 'babel' },
+          }
+        )
+      );
+
+      expect(compilerWebpack.mock.calls[0][0]).toHaveProperty('gtConfig', {
+        defaultLocale: 'ko',
+      });
+    });
+
+    it('passes no gtConfig to the webpack compiler when there is no gt.config.json', () => {
+      const compiler = require('@generaltranslation/compiler');
+      const compilerWebpack = vi.spyOn(compiler, 'webpack').mockReturnValue({});
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+
+      runWebpack(
+        withGTConfig({}, { experimentalCompilerOptions: { type: 'babel' } })
+      );
+
+      expect(compilerWebpack.mock.calls[0][0]).not.toHaveProperty('gtConfig');
+    });
+
     it('leaves automatic JSX injection to gt.config.json when unset', () => {
       const compiler = require('@generaltranslation/compiler');
       const compilerWebpack = vi.spyOn(compiler, 'webpack').mockReturnValue({});

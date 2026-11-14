@@ -12,7 +12,7 @@ import type {
 } from './types';
 
 export function lookupDictionaryEntry(
-  dictionariesSnapshot: Record<Locale, Dictionary> | undefined,
+  dictionariesSnapshot: Record<Locale, Dictionary>,
   lookup: DictionaryLookup
 ): DictionaryEntrySnapshot {
   return getDictionaryEntry(
@@ -21,17 +21,17 @@ export function lookupDictionaryEntry(
 }
 
 export function lookupDictionaryObject(
-  dictionariesSnapshot: Record<Locale, Dictionary> | undefined,
+  dictionariesSnapshot: Record<Locale, Dictionary>,
   lookup: DictionaryLookup
 ): DictionaryObjectSnapshot {
   return lookupDictionaryValue(dictionariesSnapshot, lookup);
 }
 
 function lookupDictionaryValue(
-  dictionariesSnapshot: Record<Locale, Dictionary> | undefined,
+  dictionariesSnapshot: Record<Locale, Dictionary>,
   { locale, id }: DictionaryLookup
 ): DictionaryObjectSnapshot {
-  const dictionary = dictionariesSnapshot?.[locale];
+  const dictionary = dictionariesSnapshot[locale];
   if (!dictionary) return undefined;
   if (!id) return dictionary;
 

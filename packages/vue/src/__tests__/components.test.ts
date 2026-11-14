@@ -6,7 +6,7 @@ import {
   renderTranslatedChildren as renderReactTranslatedChildren,
 } from '@generaltranslation/react-core/components-rsc';
 import { initializeI18nConfig as initializeReactI18nConfig } from '@generaltranslation/react-core/pure';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import type { JsxChildren } from '@generaltranslation/format';
 import * as React from 'react';
 import {

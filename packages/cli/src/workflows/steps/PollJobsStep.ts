@@ -2,14 +2,13 @@ import chalk from 'chalk';
 import type { JobResult, UnpolledJobResult } from '@generaltranslation/api';
 import { logger } from '../../console/logger.js';
 import type { ProjectHandle } from 'generaltranslation';
-import type { EnqueueFilesResult } from './EnqueueStep.js';
+import type { FileTranslationJob } from './EnqueueStep.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import type { FileProperties } from '../../types/files.js';
 import {
   getFileTranslationKey,
   queryCompletedTranslationKeys,
 } from '../utils/queryCompletedTranslations.js';
-import { retryTransientRead } from '../utils/retryTransientRead.js';
 import {
   getInlineElementsLabel,
   type InlineLibrary,
@@ -18,7 +17,7 @@ import {
 export type PollJobsInput = {
   fileTracker: FileStatusTracker;
   fileQueryData: FileProperties[];
-  jobData: EnqueueFilesResult;
+  jobData: FileTranslationJob[];
   timeoutDuration: number;
   forceRetranslation?: boolean;
 };
@@ -68,8 +67,9 @@ export class PollTranslationJobsStep {
     // Skip when force retranslation is enabled, since the server
     // no longer marks force-retranslated files as incomplete
     if (!forceRetranslation) {
-      const completedKeys = await retryTransientRead(() =>
-        queryCompletedTranslationKeys(this.api, fileQueryData)
+      const completedKeys = await queryCompletedTranslationKeys(
+        this.api,
+        fileQueryData
       );
 
       completedKeys.forEach((fileKey) => {
@@ -80,37 +80,12 @@ export class PollTranslationJobsStep {
       });
     }
 
-    // Build a map of jobs for quick lookup:
-    // branchId:fileId:versionId:locale -> job
-    const jobMap = new Map<
-      string,
-      (typeof jobData.jobData)[number] & { jobId: string }
-    >();
-    // Job locales already come back under the configured aliases.
-    Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      const key = `${job.branchId}:${job.fileId}:${job.versionId}:${job.targetLocale}`;
-      jobMap.set(key, { ...job, jobId });
-    });
-
-    // Build a map of jobs for quick lookup:
+    // Job subjects already come back under the configured locale aliases.
+    const jobKeys = new Set(
+      jobData.map(({ subject }) => getFileTranslationKey(subject))
+    );
     // jobId -> file data for the job
-    const jobFileMap = new Map<
-      string,
-      {
-        branchId: string;
-        fileId: string;
-        versionId: string;
-        locale: string;
-      }
-    >();
-    Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      jobFileMap.set(jobId, {
-        branchId: job.branchId,
-        fileId: job.fileId,
-        versionId: job.versionId,
-        locale: job.targetLocale,
-      });
-    });
+    const jobFileMap = new Map(jobData.map(({ id, subject }) => [id, subject]));
 
     // Categorize each file query item
     for (const item of fileQueryData) {
@@ -124,10 +99,7 @@ export class PollTranslationJobsStep {
       }
 
       // Check if there's a job for this file
-      const jobKey = `${item.branchId}:${item.fileId}:${item.versionId}:${item.locale}`;
-      const job = jobMap.get(jobKey);
-
-      if (job) {
+      if (jobKeys.has(fileKey)) {
         // Job exists - mark as in progress initially
         fileTracker.inProgress.set(fileKey, item);
       } else {

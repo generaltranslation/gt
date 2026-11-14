@@ -43,7 +43,6 @@ export type MiddlewareRouting = {
   pathRegex: RegExp | undefined;
   gt: GTIntl;
   defaultLocale: string;
-  locales: string[];
   localeRoutingEnabledCookieName: string;
   referrerLocaleCookieName: string;
   localeCookieName: string;

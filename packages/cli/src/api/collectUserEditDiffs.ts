@@ -165,7 +165,7 @@ type UserEditDiff = OverwriteTranslationsData['body']['diffs'][number] & {
   fileName: string;
 };
 
-export type UserEditDiffResults = {
+type UserEditDiffResults = {
   saved: UserEditDiff[];
   failed: UserEditDiff[];
 };

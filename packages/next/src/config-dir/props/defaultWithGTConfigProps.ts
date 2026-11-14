@@ -1,8 +1,8 @@
 import {
-  defaultDefaultLocale,
   defaultCacheUrl,
   defaultRuntimeApiUrl,
 } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import {
   defaultLocaleCookieName,
   defaultEnableI18nCookieName,

@@ -19,7 +19,7 @@ import type {
   Locale,
   TranslationKey,
 } from './translations-manager/TranslationsCache';
-import { handleCacheError } from './utils/handleCacheError';
+import { guard, guardAsync, handleCacheError } from './utils/handleCacheError';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 
@@ -101,9 +101,6 @@ class I18nCache<TranslationValue extends Content = Content> {
     validateCacheParams(params);
 
     this.config = {
-      projectId: params.projectId,
-      apiKey: params.apiKey,
-      runtimeUrl: params.runtimeUrl,
       modelProvider: params.modelProvider,
       cacheExpiryTime:
         params.cacheExpiryTime === undefined
@@ -205,7 +202,7 @@ class I18nCache<TranslationValue extends Content = Content> {
   async loadTranslations(
     locale: string
   ): Promise<Record<Hash, TranslationValue>> {
-    return this.guardAsync({}, async () => {
+    return guardAsync(this.handleError, {}, async () => {
       if (locale === getI18nConfig().getDefaultLocale()) {
         return {};
       }
@@ -225,7 +222,7 @@ class I18nCache<TranslationValue extends Content = Content> {
     content: T,
     options: LookupOptions
   ): T | undefined {
-    return this.guard<T | undefined>(undefined, () => {
+    return guard<T | undefined>(this.handleError, undefined, () => {
       if (locale === getI18nConfig().getDefaultLocale()) return content;
       return this.translations.get(locale)?.get({ content, options });
     });
@@ -242,7 +239,7 @@ class I18nCache<TranslationValue extends Content = Content> {
     content: T,
     options: LookupOptions
   ): Promise<T | undefined> {
-    return this.guardAsync<T | undefined>(undefined, () =>
+    return guardAsync<T | undefined>(this.handleError, undefined, () =>
       this.lookupTranslationWithFallbackResolved(locale, content, options)
     );
   }
@@ -260,7 +257,8 @@ class I18nCache<TranslationValue extends Content = Content> {
       prefetchEntries?: PrefetchEntriesType<TranslationValue>;
     }
   > {
-    return this.guardAsync<TranslationResolver<TranslationValue>>(
+    return guardAsync<TranslationResolver<TranslationValue>>(
+      this.handleError,
       (content) => content,
       async () => {
         const defaultLocale = getI18nConfig().getDefaultLocale();
@@ -305,7 +303,7 @@ class I18nCache<TranslationValue extends Content = Content> {
           content,
           lookupOptions: LookupOptions = {} as LookupOptions
         ) =>
-          this.guard(undefined, () => {
+          guard(this.handleError, undefined, () => {
             const translationLocale = lookupOptions.$locale ?? locale;
 
             // Default locale, return the content
@@ -330,34 +328,12 @@ class I18nCache<TranslationValue extends Content = Content> {
   // ========== Error Handling ========== //
 
   /**
-   * Run a lookup, routing errors through handleError (log in production,
-   * throw in development) and returning the fallback once handled.
-   */
-  private guard<T>(fallback: T, fn: () => T): T {
-    try {
-      return fn();
-    } catch (error) {
-      this.handleError(error);
-      return fallback;
-    }
-  }
-
-  private async guardAsync<T>(fallback: T, fn: () => Promise<T>): Promise<T> {
-    try {
-      return await fn();
-    } catch (error) {
-      this.handleError(error);
-      return fallback;
-    }
-  }
-
-  /**
    * Handle errors
    * Soft error in production, throw in development
    */
-  private handleError(error: unknown) {
+  private handleError = (error: unknown) => {
     handleCacheError('I18nCache', error, this.environment);
-  }
+  };
 
   private async lookupTranslationWithFallbackResolved<
     T extends TranslationValue = TranslationValue,

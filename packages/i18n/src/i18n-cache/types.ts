@@ -42,10 +42,7 @@ export type I18nCacheConstructorParams =
  * I18nCache class configuration
  */
 export type I18nCacheConfig = {
-  projectId?: string;
-  apiKey?: string;
-  runtimeUrl?: string | null;
-  modelProvider?: string;
+  modelProvider?: GTConfig['modelProvider'];
   /** Locale cache TTL in milliseconds; null disables expiry. */
   cacheExpiryTime: number | null;
   batchConfig?: TranslationBatchConfig;

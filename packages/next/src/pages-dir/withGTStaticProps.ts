@@ -5,7 +5,7 @@ import {
   getTranslationsSnapshot,
 } from '@generaltranslation/react-core/pure';
 import { withGTStaticPropsLocaleRoutingError } from '../errors/ssg';
-import { resolvePagesRouterLocale } from './parseLocale';
+import { parseLocale } from './parseLocale';
 
 type TranslationsSnapshot = Awaited<ReturnType<typeof getTranslationsSnapshot>>;
 
@@ -46,7 +46,7 @@ export function withGTStaticProps<
     const props = await result.props;
     const i18nConfig = getI18nConfig();
     const defaultLocale = i18nConfig.getDefaultLocale();
-    const locale = resolvePagesRouterLocale(context);
+    const locale = parseLocale(context);
     const translations =
       locale === defaultLocale ? {} : await getTranslationsSnapshot(locale);
 

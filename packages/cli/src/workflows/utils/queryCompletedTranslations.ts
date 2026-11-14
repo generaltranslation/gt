@@ -1,10 +1,7 @@
 import type { FileProperties } from '../../types/files.js';
 import type { ProjectHandle } from 'generaltranslation';
 
-export type QueryCompletedTranslationsClient = Pick<
-  ProjectHandle,
-  'queryFiles'
->;
+type QueryCompletedTranslationsClient = Pick<ProjectHandle, 'queryFiles'>;
 
 export function getFileTranslationKey(
   file: Pick<FileProperties, 'branchId' | 'fileId' | 'versionId' | 'locale'>

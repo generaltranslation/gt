@@ -32,11 +32,11 @@ export type BaseParsingFlags = Record<string, unknown>;
 /**
  * @property {boolean} includeSourceCodeContext - Collect source code context for Paraglide JS messages. Requires `@generaltranslation/paraglide-js`.
  */
-export type JsonParsingFlags = BaseParsingFlags & {
+type JsonParsingFlags = BaseParsingFlags & {
   includeSourceCodeContext?: boolean;
 };
 
-export type ParsingFlagsFor<K extends SupportedFileExtension> = K extends 'json'
+type ParsingFlagsFor<K extends SupportedFileExtension> = K extends 'json'
   ? JsonParsingFlags
   : BaseParsingFlags;
 

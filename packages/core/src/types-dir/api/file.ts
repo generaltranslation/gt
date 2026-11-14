@@ -33,7 +33,7 @@ export function isBinaryFileFormat(fileFormat: FileFormat): boolean {
 /**
  * Metadata for files or entries.
  */
-export type FormatMetadata = JsonObject | Updates[number]['metadata'];
+type FormatMetadata = JsonObject | Updates[number]['metadata'];
 
 /**
  * File object structure for uploading files.

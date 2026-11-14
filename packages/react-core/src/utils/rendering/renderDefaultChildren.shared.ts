@@ -3,7 +3,7 @@ import {
   getVariableProps,
   isVariableElementProps,
 } from '../variables/_getVariableProps';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../types';
 import { getGTTag } from './getGTTag';
 import { getPluralBranch } from '../plurals/getPluralBranch';

@@ -1,10 +1,11 @@
-import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import {
-  NextI18nCache,
-  NextI18nCacheParams,
-  setNextI18nCache,
-} from '../i18n-cache/NextI18nCache';
-import { getParams, type NextSetupI18nConfigParams } from './shared';
+  initializeI18nConfig,
+  ReactI18nCache,
+  setReactI18nCache,
+  type I18nConfigParams,
+  type ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';
+import { getParams } from './shared';
 
 /**
  * Initialize GT for Next.js
@@ -12,14 +13,14 @@ import { getParams, type NextSetupI18nConfigParams } from './shared';
 export function initializeGT(
   {
     i18nConfigParams,
-    nextI18nCacheParams,
+    i18nCacheParams,
   }: {
-    i18nConfigParams: NextSetupI18nConfigParams;
-    nextI18nCacheParams: NextI18nCacheParams;
+    i18nConfigParams: I18nConfigParams;
+    i18nCacheParams: ReactI18nCacheParams;
   } = getParams()
 ): void {
   initializeI18nConfig(i18nConfigParams);
 
-  const i18nCache = new NextI18nCache(nextI18nCacheParams);
-  setNextI18nCache(i18nCache);
+  const i18nCache = new ReactI18nCache(i18nCacheParams);
+  setReactI18nCache(i18nCache);
 }

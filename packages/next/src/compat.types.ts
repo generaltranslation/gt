@@ -55,7 +55,7 @@ export const withGTStaticProps: WithGTStaticPropsFunction = () => {
 };
 
 export type { WithGTServerSideProps, WithGTStaticProps } from './compat/pages';
-export { useTranslations, type UseTranslationsFunction } from 'gt-react/compat';
+export { useTranslations } from 'gt-react/compat';
 export type {
   Dictionary,
   DictionaryEntry,

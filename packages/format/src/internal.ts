@@ -7,4 +7,7 @@ export function getCachedPluralRules(
 }
 
 export { localeMatchers, snapshotLocaleConfig } from './intl/localeConfig';
-export { defaultLocaleMatcher } from './settings/settings';
+export {
+  defaultDefaultLocale,
+  defaultLocaleMatcher,
+} from './settings/settings';

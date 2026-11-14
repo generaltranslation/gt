@@ -1,65 +1,55 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, ErrorCode } from '@generaltranslation/api';
+// @vitest-environment node
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '@generaltranslation/api';
 import type { Secrets } from '../../types';
+import { downloadTranslations } from '../downloadTranslations';
 
-const queryFilesContent = vi.fn();
-
-vi.mock('../../adapter/core', () => ({
-  projectFor: () => ({ queryFilesContent }),
-}));
-
-const { downloadTranslations } = await import('../downloadTranslations');
-
-const secrets = {} as Secrets;
+const secrets = { secret: 'gtx-api-test', project: 'project-1' } as Secrets;
 const file = {
   branchId: 'branch-1',
   fileId: 'doc-1',
   versionId: 'v1',
   locale: 'fr',
 };
-const ready = {
-  status: 'ready',
-  ...file,
-  data: '{}',
-};
-const forbidden = new ApiError(
-  'Missing permission',
-  403,
-  ErrorCode.PERMISSION_MISSING
-);
-const unavailable = new ApiError('Unavailable', 503, ErrorCode.UNAVAILABLE);
 
 describe('downloadTranslations', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    vi.useFakeTimers();
   });
 
-  it('retries a transient failure', async () => {
-    queryFilesContent
-      .mockRejectedValueOnce(unavailable)
-      .mockResolvedValueOnce({ results: [ready] });
-
-    await expect(downloadTranslations([file], secrets, 3, 0)).resolves.toEqual([
-      ready,
-    ]);
-    expect(queryFilesContent).toHaveBeenCalledTimes(2);
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
-  it('surfaces a permanent failure without retrying', async () => {
-    queryFilesContent.mockRejectedValue(forbidden);
-
-    await expect(downloadTranslations([file], secrets, 3, 0)).rejects.toBe(
-      forbidden
+  it('leaves a rate-limited read to the transport budget and its Retry-After', async () => {
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ code: 'rate_limited', message: 'Slow down' }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': '2',
+            },
+          }
+        )
     );
-    expect(queryFilesContent).toHaveBeenCalledTimes(1);
-  });
-
-  it('surfaces the last transient failure once retries run out', async () => {
-    queryFilesContent.mockRejectedValue(unavailable);
-
-    await expect(downloadTranslations([file], secrets, 2, 0)).rejects.toBe(
-      unavailable
+    vi.stubGlobal('fetch', fetch);
+    const download = downloadTranslations([file], secrets).catch(
+      (error: unknown) => error
     );
-    expect(queryFilesContent).toHaveBeenCalledTimes(3);
+
+    // Each retry waits the 2s the last response asked for.
+    await vi.advanceTimersByTimeAsync(5_999);
+    expect(fetch).toHaveBeenCalledTimes(3);
+    await vi.runAllTimersAsync();
+
+    const error = await download;
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 429 });
+    // The first request and the transport's three retries, nothing more
+    expect(fetch).toHaveBeenCalledTimes(4);
   });
 });

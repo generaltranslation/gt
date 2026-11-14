@@ -15,7 +15,7 @@ import {
   type MessageTree,
   type MessageValues,
 } from '@generaltranslation/icu';
-import { defaultDefaultLocale } from '../settings/settings';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
 // `@generaltranslation/format` and `@generaltranslation/icu` take every

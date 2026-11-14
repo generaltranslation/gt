@@ -940,7 +940,7 @@ const TranslationsProviderContent: React.FC<
       } catch (error) {
         console.error('Error creating translation tasks:', error);
         toast.push({
-          title: `Translation tasks could not be created. No documents were changed. ${apiErrorCause(error) ?? 'Try again or check the console for details.'}`,
+          title: `Translation tasks could not be created. No documents were changed. ${apiErrorCause(error, 'Try again or check the console for details.')}`,
           status: 'error',
           closable: true,
         });
@@ -1062,7 +1062,7 @@ const TranslationsProviderContent: React.FC<
     } catch (error) {
       console.error('Error uploading existing translations:', error);
       toast.push({
-        title: `Existing translations could not be uploaded. No documents were changed. ${apiErrorCause(error) ?? 'Try again or check the console for details.'}`,
+        title: `Existing translations could not be uploaded. No documents were changed. ${apiErrorCause(error, 'Try again or check the console for details.')}`,
         status: 'error',
         closable: true,
       });
@@ -1153,7 +1153,7 @@ const TranslationsProviderContent: React.FC<
     } catch (error) {
       console.error('Error importing translations:', error);
       toast.push({
-        title: `Translations could not be imported. No documents were changed. ${apiErrorCause(error) ?? 'Try again or check the console for details.'}`,
+        title: `Translations could not be imported. No documents were changed. ${apiErrorCause(error, 'Try again or check the console for details.')}`,
         status: 'error',
         closable: true,
       });
@@ -1306,7 +1306,7 @@ const TranslationsProviderContent: React.FC<
     } catch (error) {
       console.error('Error importing missing translations:', error);
       toast.push({
-        title: `Missing translations could not be imported. No documents were changed. ${apiErrorCause(error) ?? 'Try again or check the console for details.'}`,
+        title: `Missing translations could not be imported. No documents were changed. ${apiErrorCause(error, 'Try again or check the console for details.')}`,
         status: 'error',
         closable: true,
       });
@@ -1456,7 +1456,7 @@ const TranslationsProviderContent: React.FC<
       } catch (error) {
         console.error('Error refreshing translation status:', error);
         toast.push({
-          title: `Translation status could not be refreshed. ${apiErrorCause(error) ?? 'Try again before importing.'}`,
+          title: `Translation status could not be refreshed. ${apiErrorCause(error, 'Try again before importing.')}`,
           status: 'error',
           closable: true,
         });

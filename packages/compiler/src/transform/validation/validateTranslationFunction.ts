@@ -164,18 +164,6 @@ export function validateTranslationFunction(
   };
 }
 
-/**
- * Validate useMessages_callback / getMessages_callback
- * - always valid
- */
-// eslint-disable-next-line no-unused-vars
-export function validateUseMessagesCallback(_callExpr: t.CallExpression): {
-  errors: string[];
-} {
-  const errors: string[] = [];
-  return { errors };
-}
-
 /* =============================== */
 /* Helper Functions */
 /* =============================== */

@@ -205,7 +205,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     gtConfigFilePaths
       .map((configFilePath) => `./${configFilePath}`)
       .find((configFilePath) => fs.existsSync(configFilePath));
-  if (configPath && fs.existsSync(configPath)) {
+  const configFileExists = !!configPath && fs.existsSync(configPath);
+  if (configFileExists) {
     let fileContent: unknown;
     try {
       fileContent = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -775,6 +776,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
             webpackConfig.plugins.unshift(
               gtUnplugin({
                 ...mergedConfig.experimentalCompilerOptions,
+                // Without a file, the compiler warns that there is no config.
+                ...(configFileExists && { gtConfig: loadedConfig }),
                 autoJsxImportSource: 'gt-next',
               })
             );

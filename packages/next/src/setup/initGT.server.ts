@@ -3,8 +3,10 @@ import * as getRegionModule from 'gt-next/internal/_getRegion';
 import { getParams } from './shared';
 import type { BaseWithGTConfigProps } from '../config-dir/props/withGTConfigProps';
 import { parseEnvConfig } from '../utils/parseEnvConfig';
-import type { NextSetupI18nConfigParams } from './shared';
-import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
+import type {
+  I18nConfigParams,
+  ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';
 import { initializeGT as coreInitializeGT } from './initGT';
 import {
   AsyncConditionStore,
@@ -31,15 +33,15 @@ import {
 export function initializeGTServer(
   {
     i18nConfigParams,
-    nextI18nCacheParams,
+    i18nCacheParams,
   }: {
-    i18nConfigParams: NextSetupI18nConfigParams;
-    nextI18nCacheParams: NextI18nCacheParams;
+    i18nConfigParams: I18nConfigParams;
+    i18nCacheParams: ReactI18nCacheParams;
   } = getParams()
 ): void {
   coreInitializeGT({
     i18nConfigParams,
-    nextI18nCacheParams,
+    i18nCacheParams,
   });
 
   const asyncConditionStoreParams = getAsyncConditionStoreParams();
@@ -53,7 +55,6 @@ export function initializeGTServer(
 function getAsyncConditionStoreParams(): AsyncConditionStoreParams {
   // TODO: we are parsing this twice, address in separate PR
   const privateConfig = parseEnvConfig<BaseWithGTConfigProps>(
-    '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
     process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS
   );
   return {

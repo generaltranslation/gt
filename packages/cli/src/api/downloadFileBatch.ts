@@ -1,12 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { isBinaryFileFormat, type ProjectHandle } from 'generaltranslation';
-import {
-  isTransientApiError,
-  type QueryFilesContentResponse,
-} from '@generaltranslation/api';
+import type { QueryFilesContentResponse } from '@generaltranslation/api';
 import { logger } from '../console/logger.js';
-import { requireProject } from '../utils/api.js';
 import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
@@ -220,6 +216,42 @@ async function saveDownload(
   }
 }
 
+/**
+ * Opens a file's content, inline or from its signed URL. The URL lasts 15 minutes
+ * and files download one at a time, so it is requested when the file's turn comes.
+ */
+async function openDownload(
+  project: ProjectHandle,
+  file: BatchedFiles[number],
+  onPending: () => void
+): Promise<ReadableStream<Uint8Array>> {
+  // The client already retried these requests, so their failures are final.
+  const [fresh] = (await project.queryFilesContent([file])).results;
+  if (fresh?.status === 'ready') {
+    if (typeof fresh.data === 'string') {
+      // The client decodes inline text; only binary formats stay base64.
+      return new Blob([
+        Buffer.from(
+          fresh.data,
+          fresh.fileFormat && isBinaryFileFormat(fresh.fileFormat)
+            ? 'base64'
+            : 'utf8'
+        ),
+      ]).stream();
+    }
+    if (fresh.downloadUrl) {
+      return project.fetchFileDownload(fresh.downloadUrl);
+    }
+  }
+  if (!fresh) throw new Error('The API returned no result for the file');
+  if (fresh.status === 'pending') onPending();
+  throw new Error(
+    fresh.status === 'ready'
+      ? 'The API returned the file as ready without its content'
+      : `The API returned the file as ${fresh.status}`
+  );
+}
+
 /** Passes `download` through, calling `onError` when reading it fails. */
 function onReadError(
   download: ReadableStream<Uint8Array>,
@@ -243,11 +275,12 @@ export type DownloadFileBatchResult = {
   successful: BatchedFiles;
   failed: BatchedFiles;
   skipped: BatchedFiles;
-  /** Not downloaded yet but worth requesting again: pending on the server, or the whole batch after a transient read failure. */
+  /** Not downloaded yet but worth requesting again: pending on the server, or a media download that broke off. */
   retryable: BatchedFiles;
 };
 /**
  * Downloads multiple translation files in a single batch request
+ * @param project - The project the files belong to
  * @param fileTracker - Current translation status keyed by file identity
  * @param files - Array of files to download with their output paths
  * @param options - Resolved CLI settings used for merge and lockfile behavior
@@ -256,6 +289,7 @@ export type DownloadFileBatchResult = {
  * @returns The successful, skipped, failed and retryable files
  */
 export async function downloadFileBatch(
+  project: ProjectHandle,
   fileTracker: FileStatusTracker,
   files: BatchedFiles,
   options: Settings,
@@ -292,18 +326,15 @@ export async function downloadFileBatch(
     ])
   );
 
-  let project: ProjectHandle;
   let results: QueryFilesContentResponse['results'];
   try {
-    project = requireProject(options);
     ({ results } = await project.queryFilesContent(files));
   } catch (error) {
     logger.error(
       `An unexpected error occurred while downloading files: ` + error
     );
-    // Only a read failure that may clear is worth requesting again.
-    if (isTransientApiError(error)) result.retryable = files;
-    else result.failed = files;
+    // The transport already retried a read failure that may clear.
+    result.failed = files;
     return result;
   }
 
@@ -329,10 +360,10 @@ export async function downloadFileBatch(
       if (!requestedFile) {
         continue;
       }
-      // Set when the storage request or its stream fails, not the local save.
-      let downloadBrokeOff = false;
-      const brokeOff = () => {
-        downloadBrokeOff = true;
+      // Set when the file is pending again or its stream breaks, not when the request or the local save fails.
+      let requestAgain = false;
+      const markRequestAgain = () => {
+        requestAgain = true;
       };
       try {
         const outputPath = outputPathMap.get(fileKey);
@@ -379,13 +410,15 @@ export async function downloadFileBatch(
             continue;
           }
           if (file.data === null) {
-            const download = await project
-              .fetchFileDownload(file.downloadUrl)
-              .catch((error: unknown) => {
-                brokeOff();
-                throw error;
-              });
-            await saveDownload(onReadError(download, brokeOff), outputPath);
+            const download = await openDownload(
+              project,
+              requestedFile,
+              markRequestAgain
+            );
+            await saveDownload(
+              onReadError(download, markRequestAgain),
+              outputPath
+            );
             // No metadata: hashing the output would read all of it into memory.
             recordDownloaded(outputPath);
           } else {
@@ -579,8 +612,8 @@ export async function downloadFileBatch(
           didUpdateDownloadedLock = true;
         }
       } catch (error) {
-        // A download that was rejected or cut off gets a new URL when the file is requested again.
-        if (downloadBrokeOff) {
+        // A pending or cut-off download gets a new URL when the file is requested again.
+        if (requestAgain) {
           logger.warn(
             `Download of ${fileKey} did not complete and will be requested again: ${error}`
           );

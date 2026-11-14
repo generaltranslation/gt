@@ -35,9 +35,6 @@ export { getPluralBranch } from './utils/plurals/getPluralBranch';
 export { getShouldTranslate } from './hooks/utils/getShouldTranslate';
 export { prepareT } from './utils/translation/prepareT.shared';
 export { createRenderVariable } from './utils/rendering/createRenderVariable';
-export type { RenderDefaultChildrenArgs } from './utils/rendering/renderDefaultChildren.shared';
-export type { RenderPreparedTParams } from './utils/rendering/renderPreparedT.shared';
-export type { RenderTranslatedChildrenArgs } from './utils/rendering/renderTranslatedChildren.shared';
 // Pre-instantiated RSC render pipeline: bound to the RSC renderVariable, so
 // consumers never thread a variable renderer through rendering calls.
 export {

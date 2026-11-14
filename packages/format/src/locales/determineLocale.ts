@@ -9,7 +9,7 @@ export type MatchLocale = {
 };
 
 /** The requested locale that produced a match, and the available locale it matched. */
-export type LocaleMatch<R extends MatchLocale, A extends MatchLocale> = {
+type LocaleMatch<R extends MatchLocale, A extends MatchLocale> = {
   requested: R;
   available: A;
 };
@@ -53,11 +53,12 @@ function lookupLocale<R extends MatchLocale, A extends MatchLocale>(
 /**
  * Picks the configured locale that best matches the requested locales, in
  * the user's priority order. `lookup` is RFC 4647 Lookup; `best fit` runs
- * Lookup per requested language among locales with the same maximized
- * script, then accepts any same-language locale with that script (UTS #35: a
- * region difference is acceptable, a script difference is not). Only when no
- * locale shares the script does Lookup's truncation to another script apply,
- * so `zh-TW` prefers `zh-Hant` over `zh`.
+ * Lookup per requested language and maximized script, in the order they are
+ * first requested, among locales with that script, then accepts any
+ * same-language locale with that script (UTS #35: a region difference is
+ * acceptable, a script difference is not). Only when no locale shares a
+ * requested script does Lookup's truncation to another script apply, so
+ * `zh-TW` prefers `zh-Hant` over `zh`.
  * @internal
  */
 export function _determineLocale<R extends MatchLocale, A extends MatchLocale>(
@@ -77,14 +78,20 @@ export function _determineLocale<R extends MatchLocale, A extends MatchLocale>(
     const availableLanguage = available.filter(
       (locale) => locale.language === language
     );
-    const match = lookupLocale(requestedLanguage, availableLanguage, true);
-    if (match) return match;
-    for (const requestedLocale of requestedLanguage) {
+    const scripts = Array.from(
+      new Set(requestedLanguage.map(({ script }) => script))
+    );
+    for (const script of scripts) {
+      const requestedScript = requestedLanguage.filter(
+        (locale) => locale.script === script
+      );
+      const match = lookupLocale(requestedScript, availableLanguage, true);
+      if (match) return match;
       const scriptMatch = availableLanguage.find(
-        (locale) => locale.script === requestedLocale.script
+        (locale) => locale.script === script
       );
       if (scriptMatch) {
-        return { requested: requestedLocale, available: scriptMatch };
+        return { requested: requestedScript[0], available: scriptMatch };
       }
     }
     const truncated = lookupLocale(requestedLanguage, availableLanguage, false);

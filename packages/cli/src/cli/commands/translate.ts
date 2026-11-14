@@ -1,4 +1,4 @@
-import type { EnqueueFilesResult } from '../../workflows/steps/EnqueueStep.js';
+import type { FileTranslationJob } from '../../workflows/steps/EnqueueStep.js';
 import { TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import {
@@ -28,7 +28,7 @@ export async function handleTranslate(
   options: TranslateFlags,
   settings: Settings,
   fileVersionData: FileTranslationData | undefined,
-  jobData: EnqueueFilesResult | undefined,
+  jobData: FileTranslationJob[] | undefined,
   branchData: BranchData | undefined,
   publishMap?: Map<string, boolean>,
   inlineLibrary?: InlineLibrary

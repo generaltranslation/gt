@@ -4,7 +4,6 @@ import type { Plugin } from 'vite';
 import { readConfigFile } from './configModule';
 import {
   autoJsxInjectionCompilerWarning,
-  compileTimeHashDisabledWarning,
   createCompilerUnresolvedWarning,
 } from './diagnostics';
 import type { GTTanstackStartCompilerOptions } from './types';
@@ -18,11 +17,7 @@ export function createCompilerPlugin(
   configFile: string
 ): { compilerPlugin: Plugin | undefined; warnings: string[] } {
   const warnings: string[] = [];
-  if (compilerSettings.compileTimeHash === false) {
-    warnings.push(compileTimeHashDisabledWarning);
-  }
-  const enabled =
-    type === 'babel' && compilerSettings.compileTimeHash !== false;
+  const enabled = type === 'babel';
   const gtConfig = fs.existsSync(configFile)
     ? readConfigFile(configFile)
     : undefined;

@@ -40,11 +40,7 @@ describe.each<InlineLibrary>(['gt-vue', 'gt-react'])(
         inlineLibrary,
         publishMap: new Map(),
       });
-      vi.mocked(runEnqueueWorkflow).mockResolvedValue({
-        jobData: {},
-        locales: ['es'],
-        message: 'No files need to be enqueued',
-      });
+      vi.mocked(runEnqueueWorkflow).mockResolvedValue([]);
     });
 
     it('preserves the selected inline framework through logging', async () => {

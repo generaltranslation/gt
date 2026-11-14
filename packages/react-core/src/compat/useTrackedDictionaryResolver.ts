@@ -6,7 +6,7 @@ import { useHandleMissingDictionaryEntry } from './missing-dictionary';
 import { useDictionaryContext } from './DictionaryContext';
 import { useSubscribeToTrackedLookups } from '../hooks/external-store/useSubscribeToTrackedLookups';
 
-export type TrackedDictionaryEntryResolver = (
+type TrackedDictionaryEntryResolver = (
   lookup: DictionaryLookup
 ) => DictionaryEntrySnapshot;
 

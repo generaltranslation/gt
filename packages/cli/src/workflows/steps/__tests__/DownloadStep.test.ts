@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, ErrorCode } from '@generaltranslation/api';
 import path from 'node:path';
-import type { ProjectHandle } from 'generaltranslation';
+import { GeneralTranslation, type ProjectHandle } from 'generaltranslation';
 import type { Settings } from '../../../types/index.js';
 import { downloadFileBatch } from '../../../api/downloadFileBatch.js';
 import { logger } from '../../../console/logger.js';
@@ -284,30 +284,56 @@ describe('DownloadTranslationsStep retries', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
-  it('reads the translation metadata again after a transient failure', async () => {
-    mockGt.queryFiles
-      .mockRejectedValueOnce(
-        new ApiError('Unavailable', 503, ErrorCode.UNAVAILABLE)
-      )
-      .mockResolvedValueOnce(found);
-    vi.mocked(downloadFileBatch).mockResolvedValue(
-      batchResult({ successful: [batched] })
-    );
-
-    expect(await runStep()).toBe(true);
-    expect(mockGt.queryFiles).toHaveBeenCalledTimes(2);
-    expect(downloadFileBatch).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not read the metadata again after a permanent failure', async () => {
+  it('does not read the metadata again after a failure', async () => {
     mockGt.queryFiles.mockRejectedValue(
-      new ApiError('Missing permission', 403, ErrorCode.PERMISSION_MISSING)
+      new ApiError('Unavailable', 503, ErrorCode.UNAVAILABLE)
     );
 
     expect(await runStep()).toBe(false);
     expect(mockGt.queryFiles).toHaveBeenCalledTimes(1);
+    expect(downloadFileBatch).not.toHaveBeenCalled();
+  });
+
+  it('leaves a rate-limited read to the transport budget and its Retry-After', async () => {
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ code: 'rate_limited', message: 'Slow down' }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': '2',
+            },
+          }
+        )
+    );
+    vi.stubGlobal('fetch', fetch);
+    const project = new GeneralTranslation({
+      apiKey: 'gtx-api-test',
+      projectId: 'project-1',
+    });
+    const run = new DownloadTranslationsStep(project, {} as Settings).run({
+      fileTracker: {
+        completed: new Map([['branch-1:file-1:version-1:fr', file]]),
+        inProgress: new Map(),
+        failed: new Map(),
+        skipped: new Map(),
+      },
+      resolveOutputPath: () => batched.outputPath,
+    });
+
+    // Each retry waits the 2s the last response asked for.
+    await vi.advanceTimersByTimeAsync(5_999);
+    expect(fetch).toHaveBeenCalledTimes(3);
+    await vi.runAllTimersAsync();
+
+    expect(await run).toBe(false);
+    // The first request and the transport's three retries, nothing more
+    expect(fetch).toHaveBeenCalledTimes(4);
     expect(downloadFileBatch).not.toHaveBeenCalled();
   });
 

@@ -97,11 +97,7 @@ describe('handleStage config ids', () => {
     });
     vi.mocked(runStageFilesWorkflow).mockResolvedValue({
       branchData,
-      enqueueResult: {
-        jobData: {},
-        locales: ['es'],
-        message: 'No files need to be enqueued',
-      },
+      enqueueResult: [],
       uploadedFiles: [{ ...templateFile, branchId: 'branch-1' }],
     });
   });
@@ -129,7 +125,7 @@ describe('handleStage config ids', () => {
     });
     vi.mocked(runStageFilesWorkflow).mockResolvedValue({
       branchData,
-      enqueueResult: { jobData: {}, locales: ['es'], message: 'enqueued' },
+      enqueueResult: [],
       uploadedFiles: [{ ...templateFile, branchId: 'branch-1' }],
     });
 
@@ -239,7 +235,7 @@ describe('handleStage config ids', () => {
     ])('keeps the pinned config ids when %s', async (_case, uploadedFiles) => {
       vi.mocked(runStageFilesWorkflow).mockResolvedValue({
         branchData,
-        enqueueResult: { jobData: {}, locales: ['es'], message: 'enqueued' },
+        enqueueResult: [],
         uploadedFiles,
       });
 

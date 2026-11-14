@@ -2,13 +2,15 @@ import {
   GTIntl as ResolvedGTIntl,
   type LocaleConfig,
 } from '@generaltranslation/format';
-import { defaultLocaleMatcher } from '@generaltranslation/format/internal';
+import {
+  defaultDefaultLocale,
+  defaultLocaleMatcher,
+} from '@generaltranslation/format/internal';
 import type { WithOptional } from '../formatting/formatting';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from '../logging/diagnostics';
-import { defaultDefaultLocale } from '../settings/settings';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
 type LocaleOption = ConstructorParameters<typeof ResolvedGTIntl>[1];
@@ -24,7 +26,7 @@ const knownTimeZones = new Set<string>();
  * A configured zone is kept for later formats, so a wrong name is reported
  * here, where it was set, and not at the first date that uses it.
  */
-export function checkTimeZone(timeZone: string): string {
+function checkTimeZone(timeZone: string): string {
   if (knownTimeZones.has(timeZone)) return timeZone;
   try {
     // Intl is the authority on which time zones the host supports.

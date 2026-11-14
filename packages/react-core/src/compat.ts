@@ -6,4 +6,3 @@ export { CompatStore } from './compat/CompatStore';
 export { DictionaryProvider } from './compat/DictionaryProvider';
 export type { DictionaryProviderProps } from './compat/DictionaryProvider';
 export { useTranslations } from './compat/useTranslations';
-export type { UseTranslationsFunction } from './compat/useTranslations';

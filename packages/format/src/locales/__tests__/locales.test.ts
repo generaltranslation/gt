@@ -254,10 +254,7 @@ describe('_getLocaleDirection', () => {
     ['ltr', ['invalid', 'xyz-123', '', 'not-a-locale', '123', 'root', 'und']],
   ] as const)('returns %s for %j', (direction, locales) => {
     expect(
-      locales.filter(
-        (locale) =>
-          _getLocaleDirection(locale, defaultDefaultLocale) !== direction
-      )
+      locales.filter((locale) => _getLocaleDirection(locale) !== direction)
     ).toEqual([]);
   });
 
@@ -269,7 +266,7 @@ describe('_getLocaleDirection', () => {
     } as unknown as Intl.Locale;
     vi.spyOn(intlCache, 'get').mockReturnValue(locale);
 
-    expect(_getLocaleDirection('ar-Arab', defaultDefaultLocale)).toBe('ltr');
+    expect(_getLocaleDirection('ar-Arab')).toBe('ltr');
     expect(locale.maximize).not.toHaveBeenCalled();
   });
 
@@ -289,7 +286,7 @@ describe('_getLocaleDirection', () => {
       }
     );
 
-    expect(_getLocaleDirection(code, defaultDefaultLocale)).toBe(expected);
+    expect(_getLocaleDirection(code)).toBe(expected);
   });
 
   it.each([
@@ -302,7 +299,7 @@ describe('_getLocaleDirection', () => {
         throw new Error('Intl.Locale not supported');
       });
 
-      expect(_getLocaleDirection(code, defaultDefaultLocale)).toBe(expected);
+      expect(_getLocaleDirection(code)).toBe(expected);
     }
   );
 });

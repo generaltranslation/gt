@@ -1,7 +1,9 @@
-import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
+import {
+  internalInitializeGTSRA,
+  type I18nConfigParams,
+  type ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';
 import { getParams } from './shared';
-import type { NextSetupI18nConfigParams } from './shared';
-import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
 
 /**
  * Initialize GT for Next.js client entrypoints.
@@ -9,15 +11,15 @@ import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
 export function initializeGTClient(
   {
     i18nConfigParams,
-    nextI18nCacheParams,
+    i18nCacheParams,
   }: {
-    i18nConfigParams: NextSetupI18nConfigParams;
-    nextI18nCacheParams: NextI18nCacheParams;
+    i18nConfigParams: I18nConfigParams;
+    i18nCacheParams: ReactI18nCacheParams;
   } = getParams()
 ): void {
   internalInitializeGTSRA({
     ...i18nConfigParams,
-    ...nextI18nCacheParams,
+    ...i18nCacheParams,
     /**
      * Always disable cache expiry for client-side lookups.
      * Translations are exclusively passed from server to client, so the

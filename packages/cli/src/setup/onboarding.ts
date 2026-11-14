@@ -14,8 +14,10 @@ import {
   stripAnsi,
 } from '../console/logging.js';
 import {
+  SUPPORTED_FRAMEWORKS,
   SUPPORTED_REACT_FRAMEWORKS,
   type FrameworkObject,
+  type SupportedFrameworks,
   type SupportedReactFrameworks,
 } from '../types/index.js';
 import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
@@ -496,13 +498,11 @@ export function setupConfigPath(
 
 export function getConfiguredFramework(
   config: Record<string, unknown>
-): SupportedReactFrameworks | 'mintlify' | undefined {
+): SupportedFrameworks | undefined {
   const framework = config.framework;
   return typeof framework === 'string' &&
-    [...SUPPORTED_REACT_FRAMEWORKS, 'mintlify'].includes(
-      framework as SupportedReactFrameworks
-    )
-    ? (framework as SupportedReactFrameworks | 'mintlify')
+    SUPPORTED_FRAMEWORKS.includes(framework as SupportedFrameworks)
+    ? (framework as SupportedFrameworks)
     : undefined;
 }
 

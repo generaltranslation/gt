@@ -19,9 +19,8 @@ import {
   noScopeIdProvidedError,
   noTargetLocaleProvidedError,
 } from './logging/errors';
-import { defaultDefaultLocale } from './settings/settings';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { defaultRuntimeApiUrl } from './settings/settingsUrls';
-import { validateModelProvider } from './translate/modelProvider';
 import {
   translateEntries,
   type RuntimeTranslateCall,
@@ -151,7 +150,6 @@ export class GTRuntime {
     if (!callOptions?.targetLocale) {
       throw new Error(noTargetLocaleProvidedError(functionName));
     }
-    validateModelProvider(callOptions.modelProvider);
     const { customMapping, defaultLocale } = this.localeConfig;
     return {
       apiKey: this.apiKey,

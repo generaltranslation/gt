@@ -1,6 +1,7 @@
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import type { GTConfig } from 'generaltranslation';
-import { defaultDefaultLocale, GTIntl } from 'generaltranslation/internal';
+import { GTIntl } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { formatLocaleLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';

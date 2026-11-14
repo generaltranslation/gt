@@ -1,10 +1,7 @@
 import type { MessageTree, MessageFormats } from '@generaltranslation/icu';
 import { forEachPlaceholder } from '@generaltranslation/icu/internal';
-import {
-  formatCutoff,
-  formatMessageTree,
-  defaultDefaultLocale,
-} from 'generaltranslation/internal';
+import { formatCutoff, formatMessageTree } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import {
   getI18nConfig,
   isI18nConfigInitialized,

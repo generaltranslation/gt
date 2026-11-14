@@ -6,7 +6,7 @@ import { I18nStore } from '../i18n-store/I18nStore';
 import { getI18nConfig } from '../setup/i18nConfig';
 import type { OnMissingTranslation } from '../hooks/utils/missing-translation';
 
-export type GTContextType = {
+type GTContextType = {
   /**
    * Source of truth for translations, streamed from server
    * In SPA mode, these won't be accessible and translations

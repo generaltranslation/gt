@@ -47,7 +47,7 @@ import type { CutoffFormatOptions } from '../formatting/custom-formats/CutoffFor
 import type { StringFormat } from '../types-dir/jsx/content';
 
 /** `locale` overrides the instance locale for one call. */
-export type LocaleOption = {
+type LocaleOption = {
   locale?: string;
 };
 
@@ -151,7 +151,7 @@ export class GTIntl {
 
   private getResolutionScope(): LocaleResolutionScope {
     if (this.resolutionScope) return this.resolutionScope;
-    const resolutionScope = this.buildResolutionScope(this.locales);
+    const resolutionScope = this.buildResolutionScope();
     Object.defineProperty(this, 'resolutionScope', {
       configurable: true,
       value: resolutionScope,
@@ -160,10 +160,8 @@ export class GTIntl {
     return resolutionScope;
   }
 
-  private buildResolutionScope(
-    approvedLocales: readonly string[]
-  ): LocaleResolutionScope {
-    const approvedLocalePairs = approvedLocales.map((locale) => {
+  private buildResolutionScope(): LocaleResolutionScope {
+    const approvedLocalePairs = this.locales.map((locale) => {
       const canonicalLocale = this.resolveCanonicalLocale(locale);
       return {
         locale,
@@ -455,10 +453,14 @@ export class GTIntl {
       }))
       .filter(({ canonicalLocale }) => {
         try {
-          // RFC 4647 §4.1: Lookup ignores extension and private-use subtags,
-          // so only the base tag has to be valid.
+          // RFC 4647 Lookup truncates variant, extension and private-use
+          // subtags, so only the language, script and region must be valid.
+          const { language, script, region } = intlCache.get(
+            'Locale',
+            canonicalLocale
+          );
           return _isValidLocale(
-            intlCache.get('Locale', canonicalLocale).baseName,
+            [language, script, region].filter(Boolean).join('-'),
             this.customMapping
           );
         } catch {
@@ -492,8 +494,7 @@ export class GTIntl {
   /** The text direction of `locale` (default: the target locale). */
   getLocaleDirection(locale?: string, options: LocaleOption = {}) {
     return _getLocaleDirection(
-      this.resolveCanonicalLocale(locale || this.getTargetLocale(options)),
-      defaultDefaultLocale
+      this.resolveCanonicalLocale(locale || this.getTargetLocale(options))
     );
   }
 

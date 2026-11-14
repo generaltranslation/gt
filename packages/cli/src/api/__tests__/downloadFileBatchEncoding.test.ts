@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import os from 'node:os';
+import type { ProjectHandle } from 'generaltranslation';
 import { downloadFileBatch } from '../downloadFileBatch.js';
 import { createMockSettings } from '../__mocks__/settings.js';
 import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
@@ -11,8 +12,8 @@ import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 const api = vi.hoisted(() => ({
   queryFilesContent: vi.fn(),
 }));
+const project = api as unknown as ProjectHandle;
 vi.mock('../../utils/api.js', () => ({
-  requireProject: () => api,
   resolveCanonicalLocale: (locale: string) => locale,
 }));
 
@@ -139,6 +140,7 @@ describe('downloadFileBatch - source file encodings', () => {
     } as unknown as Awaited<ReturnType<typeof api.queryFilesContent>>);
 
     const result = await downloadFileBatch(
+      project,
       fileTracker,
       [
         {

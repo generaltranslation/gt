@@ -1,7 +1,7 @@
 import { getCachedPluralRules } from '@generaltranslation/format/internal';
 
 import { pluralForms, PluralType } from '../settings/plurals';
-import { defaultDefaultLocale } from '../settings/settings';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 
 /**
  * Given a number and a list of allowed plural forms, return the plural form that best fits the number.

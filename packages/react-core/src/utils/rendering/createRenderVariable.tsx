@@ -3,7 +3,7 @@ import type { ResolvedDateTimeProps } from '../../components/variables/DateTime.
 import type { ResolvedNumProps } from '../../components/variables/Num.shared';
 import type { ResolvedRelativeTimeProps } from '../../components/variables/RelativeTime.shared';
 import type { RelativeTimeFormatOptions, RenderVariable } from '../types';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { ReactNode } from 'react';
 
 // Factory shared by the hook-based and RSC variable renderers: the branching

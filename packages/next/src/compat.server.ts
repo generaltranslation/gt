@@ -13,7 +13,7 @@ export {
   type WithGTServerSideProps,
   type WithGTStaticProps,
 } from './compat/pages';
-export { useTranslations, type UseTranslationsFunction } from 'gt-react/compat';
+export { useTranslations } from 'gt-react/compat';
 export type {
   Dictionary,
   DictionaryEntry,

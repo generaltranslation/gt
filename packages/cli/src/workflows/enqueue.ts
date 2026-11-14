@@ -6,7 +6,7 @@ import {
 import { Settings, TranslateFlags } from '../types/index.js';
 import { requireProject } from '../utils/api.js';
 import { FileToUpload } from 'generaltranslation';
-import { EnqueueStep, type EnqueueFilesResult } from './steps/EnqueueStep.js';
+import { EnqueueStep, type FileTranslationJob } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { logger } from '../console/logger.js';
 import { filterFilesForEnqueue } from './utils/filterFilesForEnqueue.js';
@@ -21,7 +21,7 @@ import type { InlineLibrary } from '../types/libraries.js';
  * @param {FileTranslationData} fileVersionData - The file version data
  * @param {TranslateFlags} options - The options for the enqueue operation
  * @param {Settings} settings - The settings for the enqueue operation
- * @returns {Promise<EnqueueFilesResult>} The enqueue result
+ * @returns {Promise<FileTranslationJob[]>} The enqueued file translation jobs
  */
 export async function runEnqueueWorkflow({
   files,
@@ -33,7 +33,7 @@ export async function runEnqueueWorkflow({
   options: TranslateFlags;
   settings: Settings;
   inlineLibrary?: InlineLibrary;
-}): Promise<EnqueueFilesResult> {
+}): Promise<FileTranslationJob[]> {
   try {
     // Log files to be enqueued
     logCollectedFiles(files, undefined, inlineLibrary);
@@ -95,18 +95,17 @@ export async function runEnqueueWorkflow({
 
 /**
  * Logs the enqueue result
- * @param enqueueResult - The enqueue result
+ * @param jobs - The enqueued file translation jobs
  * @returns void
  */
-function logEnqueueResult(
-  enqueueResult: EnqueueFilesResult,
-  fileCount: number
-): void {
-  if (Object.keys(enqueueResult.jobData).length === 0) {
+function logEnqueueResult(jobs: FileTranslationJob[], fileCount: number): void {
+  if (jobs.length === 0) {
     logger.success(
       `All ${fileCount} ${fileCount === 1 ? 'file' : 'files'} already translated. 0 files enqueued.`
     );
   } else {
-    logger.success(enqueueResult.message);
+    logger.success(
+      `Successfully enqueued ${jobs.length} file translation jobs`
+    );
   }
 }

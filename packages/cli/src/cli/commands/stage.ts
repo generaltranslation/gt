@@ -7,7 +7,7 @@ import {
 } from '../../types/index.js';
 import { runStageFilesWorkflow } from '../../workflows/stage.js';
 import { writeStagedEntries } from '../../fs/config/downloadedVersions.js';
-import type { EnqueueFilesResult } from '../../workflows/steps/EnqueueStep.js';
+import type { FileTranslationJob } from '../../workflows/steps/EnqueueStep.js';
 import updateConfig from '../../fs/config/updateConfig.js';
 import { FileTranslationData } from '../../workflows/download.js';
 import { BranchData } from '../../types/branch.js';
@@ -26,7 +26,7 @@ export async function handleStage(
   stage: boolean
 ): Promise<{
   fileVersionData: FileTranslationData | undefined;
-  jobData: EnqueueFilesResult | undefined;
+  jobData: FileTranslationJob[] | undefined;
   branchData: BranchData | undefined;
   publishMap: Map<string, boolean>;
   inlineLibrary?: InlineLibrary;
@@ -65,7 +65,7 @@ export async function handleStage(
 
   // Send translations to General Translation
   let fileVersionData: FileTranslationData | undefined;
-  let jobData: EnqueueFilesResult | undefined;
+  let jobData: FileTranslationJob[] | undefined;
   let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
     const {

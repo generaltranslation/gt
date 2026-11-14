@@ -1,4 +1,4 @@
-import type { EnqueueFilesResult } from '../../workflows/steps/EnqueueStep.js';
+import type { FileTranslationJob } from '../../workflows/steps/EnqueueStep.js';
 import {
   Settings,
   SupportedLibraries,
@@ -15,13 +15,13 @@ import { warnManualReviewSetup } from '../../translation/reviewSetupWarning.js';
  * Enqueues translations for a given set of files
  * @param options - The options for the enqueue operation
  * @param settings - The settings for the enqueue operation
- * @returns {Promise<EnqueueFilesResult>} The enqueue result
+ * @returns {Promise<FileTranslationJob[]>} The enqueued file translation jobs
  */
 export async function handleEnqueue(
   options: TranslateFlags,
   settings: Settings,
   library: SupportedLibraries
-): Promise<EnqueueFilesResult> {
+): Promise<FileTranslationJob[]> {
   if (!hasValidLocales(settings, { forApi: !options.dryRun }))
     return exitSync(1);
   // Validate credentials if not in dry run

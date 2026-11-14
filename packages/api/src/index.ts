@@ -11,7 +11,6 @@ export { API_VERSION, createApiClient } from './wrappers/client';
 export { ApiError, isTransientApiError } from './wrappers/errors';
 export { fetchFileDownload } from './wrappers/fileDownloads';
 export { putFileUpload } from './wrappers/fileUploads';
-export type { PresignedFileUpload } from './wrappers/fileUploads';
 export { paginate } from './wrappers/paginate';
 export type { ApiClientConfig, UserTokenProvider } from './wrappers/client';
 // Type-only on purpose: it shadows the generated `ApiVersion` value from `export *` below.

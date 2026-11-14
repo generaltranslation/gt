@@ -101,7 +101,8 @@ describe('syncFonts', () => {
     await expect(syncFonts(settings)).resolves.toBeUndefined();
 
     const printed = String(warn.mock.calls[0][0]);
-    expect(printed).toContain('Font sync failed; continuing');
+    expect(printed).toContain('Font sync failed');
+    expect(printed).toContain('fallback fonts');
     expect(printed).toContain('gt login');
     expect(printed).not.toContain('org:assets:write');
   });

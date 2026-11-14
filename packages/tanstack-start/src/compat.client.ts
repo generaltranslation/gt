@@ -14,7 +14,7 @@ export const getTranslations = /* @__PURE__ */ createGetTranslations(
   ensureDictionaryManager
 );
 
-export { useTranslations, type UseTranslationsFunction } from 'gt-react/compat';
+export { useTranslations } from 'gt-react/compat';
 export { setupRouterGTIntegration } from './compat/setupRouterGTIntegration.client';
 export type {
   Dictionary,

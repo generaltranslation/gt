@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  getNextI18nCache,
-  NextI18nCache,
-} from '../../i18n-cache/NextI18nCache';
-import {
   getI18nConfig,
   getReactI18nCache,
   ReactI18nCache,
@@ -55,48 +51,36 @@ describe('initializeGT', () => {
       })
     );
 
-    expect(getParams().nextI18nCacheParams).toMatchObject({
+    expect(getParams().i18nCacheParams).toMatchObject({
       projectId: 'project-id',
       apiKey: 'gtx-development-key',
     });
     initializeGTServer();
 
-    expect(getNextI18nCache()).toBeInstanceOf(NextI18nCache);
+    expect(getReactI18nCache()).toBeInstanceOf(ReactI18nCache);
     expect(getI18nConfig().isDevHotReloadEnabled()).toBe(true);
   });
 
-  it('logs and ignores a server env config that is not valid JSON', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.stubEnv('_GENERALTRANSLATION_I18N_CONFIG_PARAMS', '{');
-
-    expect(() => initializeGTServer()).not.toThrow();
-    expect(error).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '_GENERALTRANSLATION_I18N_CONFIG_PARAMS is not valid JSON'
-      )
-    );
-  });
-
-  it('does not replace an existing NextI18nCache', () => {
+  it('does not replace an existing ReactI18nCache', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const params = {
       i18nConfigParams: {
         defaultLocale: 'en',
         locales: ['en', 'fr'],
       },
-      nextI18nCacheParams: {
+      i18nCacheParams: {
         defaultLocale: 'en',
         locales: ['en', 'fr'],
       },
     };
 
     initializeGT(params);
-    const cache = getNextI18nCache();
-    expect(cache).toBeInstanceOf(NextI18nCache);
+    const cache = getReactI18nCache();
+    expect(cache).toBeInstanceOf(ReactI18nCache);
 
     initializeGT(params);
 
-    expect(getNextI18nCache()).toBe(cache);
+    expect(getReactI18nCache()).toBe(cache);
     warn.mockRestore();
   });
 
@@ -108,7 +92,7 @@ describe('initializeGT', () => {
         localeCookieName: 'custom-locale',
         enableI18nCookieName: 'custom-enable-i18n',
       },
-      nextI18nCacheParams: {
+      i18nCacheParams: {
         defaultLocale: 'en',
         locales: ['en', 'fr'],
       },
@@ -133,12 +117,11 @@ describe('initializeGTClient', () => {
         defaultLocale: 'en',
         locales: ['en', 'fr'],
       },
-      nextI18nCacheParams: {},
+      i18nCacheParams: {},
     });
 
     const cache = getReactI18nCache();
     expect(cache).toBeInstanceOf(ReactI18nCache);
-    expect(cache).not.toBeInstanceOf(NextI18nCache);
   });
 });
 
@@ -192,7 +175,7 @@ describe('getParams', () => {
     process.env.GT_PROJECT_ID = 'project-id';
     process.env.GT_API_KEY = 'api-key';
 
-    const { i18nConfigParams, nextI18nCacheParams } = getParams();
+    const { i18nConfigParams, i18nCacheParams } = getParams();
 
     expect(i18nConfigParams).toMatchObject({
       localeMatcher: 'lookup',
@@ -203,7 +186,7 @@ describe('getParams', () => {
       localeCookieName: 'custom-locale',
       enableI18nCookieName: 'custom-enable-i18n',
     });
-    expect(nextI18nCacheParams).toMatchObject({
+    expect(i18nCacheParams).toMatchObject({
       projectId: 'project-id',
       apiKey: 'api-key',
       cacheExpiryTime: 12345,
@@ -236,7 +219,7 @@ describe('getParams', () => {
 
     updateClientConfig({ projectId: 'config-project-id' });
     expect(getParams().i18nConfigParams.projectId).toBe('config-project-id');
-    expect(getParams().nextI18nCacheParams.projectId).toBe('config-project-id');
+    expect(getParams().i18nCacheParams.projectId).toBe('config-project-id');
 
     updateClientConfig({ projectId: undefined });
     process.env.GT_PROJECT_ID = 'env-project-id';
@@ -250,10 +233,10 @@ describe('getParams', () => {
       process.env.GT_PROJECT_ID = 'project-id';
       process.env.GT_API_KEY = 'api-key';
 
-      const { i18nConfigParams, nextI18nCacheParams } = getParams();
+      const { i18nConfigParams, i18nCacheParams } = getParams();
 
       expect(i18nConfigParams.apiKey).toBe('api-key');
-      expect(nextI18nCacheParams.apiKey).toBe('api-key');
+      expect(i18nCacheParams.apiKey).toBe('api-key');
     }
   );
 
@@ -263,26 +246,11 @@ describe('getParams', () => {
       cacheExpiryTime: 0,
     });
 
-    const { i18nConfigParams, nextI18nCacheParams } = getParams();
+    const { i18nConfigParams, i18nCacheParams } = getParams();
 
     expect(i18nConfigParams._disableDevHotReload).toBe(true);
-    expect(nextI18nCacheParams.cacheExpiryTime).toBe(0);
-    expect(nextI18nCacheParams._versionId).toBe('version-id');
-    expect(nextI18nCacheParams.loadTranslations).toBeUndefined();
-  });
-
-  it('logs and ignores an env config that is not valid JSON', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS = '{';
-
-    const { i18nConfigParams } = getParams();
-
-    expect(i18nConfigParams.defaultLocale).toBeUndefined();
-    expect(error).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS is not valid JSON'
-      )
-    );
-    error.mockRestore();
+    expect(i18nCacheParams.cacheExpiryTime).toBe(0);
+    expect(i18nCacheParams._versionId).toBe('version-id');
+    expect(i18nCacheParams.loadTranslations).toBeUndefined();
   });
 });

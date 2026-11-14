@@ -8,6 +8,7 @@ import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import { clearLocaleDirs } from '../../fs/clearLocaleDirs.js';
 import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { runDownloadWorkflow } from '../download.js';
+import type { FileTranslationJob } from '../steps/EnqueueStep.js';
 
 vi.mock('../../console/logger.js', () => ({
   logger: {
@@ -59,11 +60,7 @@ describe('runDownloadWorkflow', () => {
     },
   };
 
-  const jobData = {
-    jobData: {},
-    locales: ['es'],
-    message: 'No files need to be enqueued',
-  };
+  const jobData: FileTranslationJob[] = [];
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -127,7 +124,7 @@ describe('runDownloadWorkflow', () => {
     expect(exclude).toBeUndefined();
     expect(cwd).toBe('/project');
     expect(downloadFileBatch).toHaveBeenCalledTimes(1);
-    const [, , downloadSettings, , inlineLibrary] =
+    const [, , , downloadSettings, , inlineLibrary] =
       vi.mocked(downloadFileBatch).mock.calls[0];
     expect(downloadSettings).toEqual(
       expect.objectContaining({ _branchId: 'branch-1' })
@@ -142,25 +139,18 @@ describe('runDownloadWorkflow', () => {
     'Please add more usage credits to your account or configure auto-reload to reload your balance.\n' +
     '  Available: $5.99\n  Estimated: $27.86';
 
-  function enqueueLocales(locales: string[]) {
-    return {
-      jobData: Object.fromEntries(
-        locales.map((locale) => [
-          `job-${locale}`,
-          {
-            sourceFileId: 'source-1',
-            fileId: 'file-1',
-            versionId: 'version-1',
-            branchId: 'branch-1',
-            targetLocale: locale,
-            projectId: 'project-1',
-            force: false,
-          },
-        ])
-      ),
-      locales,
-      message: 'enqueued',
-    };
+  function enqueueLocales(locales: string[]): FileTranslationJob[] {
+    return locales.map((locale) => ({
+      id: `job-${locale}`,
+      status: 'queued',
+      subject: {
+        type: 'file_translation',
+        fileId: 'file-1',
+        versionId: 'version-1',
+        branchId: 'branch-1',
+        locale,
+      },
+    }));
   }
 
   it.each(['poll', 'final'] as const)(

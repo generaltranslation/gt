@@ -240,10 +240,10 @@ function handler<T>(
       return Response.json(
         {
           error: error instanceof Error ? error.message : String(error),
-          // GT's code, so the admin panel can tell a transient failure from one a retry won't fix.
           ...(error instanceof ApiError && error.code && { code: error.code }),
         },
-        { status: 502 }
+        // GT's own status, which says whether trying again can help.
+        { status: error instanceof ApiError ? error.status : 502 }
       );
     }
   };

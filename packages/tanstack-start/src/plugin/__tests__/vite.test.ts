@@ -131,19 +131,24 @@ describe('gtTanstackStart', () => {
     ]);
   });
 
-  it('omits the GT compiler plugin and warns when compileTimeHash is false', () => {
+  it('keeps the GT compiler plugin without hashes when compileTimeHash is false', async () => {
     const { plugins, root } = createPlugins({
       experimentalCompilerOptions: { type: 'babel', compileTimeHash: false },
     });
+    const compiler = findPlugin(plugins, COMPILER_PLUGIN_NAME)!;
 
     expect(plugins.map((plugin) => plugin.name)).toEqual([
       'gt-tanstack-start',
       'gt-react',
+      COMPILER_PLUGIN_NAME,
     ]);
-    const warnOnce = resolveConfig(plugins[0], root, plugins);
-    expect(warnOnce).toHaveBeenCalledWith(
-      expect.stringContaining('Compile-time hashing is disabled')
+    expect(resolveConfig(plugins[0], root, plugins)).not.toHaveBeenCalled();
+    const output = await runTransform(
+      compiler,
+      T_FIXTURE,
+      path.join(root, 'src/routes/index.tsx')
     );
+    expect(output ?? '').not.toContain('_hash');
   });
 
   it('injects _hash into <T> imported from gt-tanstack-start', async () => {

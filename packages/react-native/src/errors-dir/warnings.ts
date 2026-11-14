@@ -1,5 +1,5 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { PACKAGE_NAME } from './constants';
 
 export const resolveLocalesFailedWarning = createDiagnosticMessage({

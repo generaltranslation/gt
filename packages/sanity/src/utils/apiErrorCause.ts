@@ -1,9 +1,17 @@
 import { ApiError, ErrorCode } from '@generaltranslation/api';
 
-/** A short cause for an API failure that trying again will not fix; undefined for any other failure. */
-export function apiErrorCause(error: unknown): string | undefined {
-  if (!(error instanceof ApiError)) return undefined;
-  switch (error.code) {
+/** The API's message for a failure, then a hint for a code that trying again will not fix, or `fallback`. */
+export function apiErrorCause(error: unknown, fallback: string): string {
+  if (!(error instanceof ApiError)) return fallback;
+  // A response without a message falls back to its status text, which has no period.
+  const message = /[.!?]$/.test(error.message)
+    ? error.message
+    : `${error.message}.`;
+  return `${message} ${apiErrorHint(error.code) ?? fallback}`;
+}
+
+function apiErrorHint(code: ApiError['code']): string | undefined {
+  switch (code) {
     case ErrorCode.PAYMENT_REQUIRED:
       return 'Billing for your General Translation account needs attention in the dashboard.';
     case ErrorCode.USAGE_LIMIT_REACHED:

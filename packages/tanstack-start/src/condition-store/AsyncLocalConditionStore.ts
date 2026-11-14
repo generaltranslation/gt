@@ -58,7 +58,10 @@ export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface
     }
     let conditions = this.requestConditions.get(request);
     if (!conditions) {
-      conditions = resolveRequestConditions(request, this.config);
+      conditions = resolveRequestConditions(
+        request,
+        this.isLocaleRoutingEnabled()
+      );
       this.requestConditions.set(request, conditions);
     }
     return conditions;

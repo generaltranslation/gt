@@ -1,4 +1,4 @@
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import type { CustomMapping } from '@generaltranslation/format';
 import { promptLocale, promptLocaleList } from '../console/logging.js';
 import { validateLocale } from '../console/promptParsing.js';

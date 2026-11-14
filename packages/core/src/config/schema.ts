@@ -1,5 +1,7 @@
 import {
   type BaseIssue,
+  type GenericSchema,
+  type InferOutput,
   array,
   boolean,
   description,
@@ -15,6 +17,7 @@ import {
   pipe,
   record,
   regex,
+  safeParse,
   strictObject,
   strictTuple,
   string,
@@ -24,8 +27,8 @@ import {
   defaultLocaleMatcher,
   localeMatchers,
 } from '@generaltranslation/format/internal';
-import { defaultDefaultLocale } from '../settings/settings';
-import { supportedModelProviders } from '../translate/modelProvider';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
+import { ModelProvider } from '@generaltranslation/api';
 import {
   type DiagnosticMessageInput,
   formatDiagnosticErrorDetails,
@@ -35,6 +38,15 @@ import {
 // consumer see the key as set and break precedence between config sources.
 
 const stringArray = array(string());
+
+function optionalDescribed<
+  TSchema extends GenericSchema,
+  TDescription extends string,
+>(schema: TSchema, text: TDescription) {
+  return optional(
+    pipe(schema, description<InferOutput<TSchema>, TDescription>(text))
+  );
+}
 
 const enabledParts = union([
   boolean(),
@@ -47,32 +59,21 @@ const enabledParts = union([
 /** `files.gt.parsingFlags`: options shared by the CLI, compiler, and runtimes. */
 export const GTParsingFlagsSchema = pipe(
   looseObject({
-    autoderive: optional(
-      pipe(
-        enabledParts,
-        description(
-          'Treat interpolated and concatenated values as derive() calls. true or false applies to JSX and strings; the object form enables each separately.'
-        )
-      )
+    autoderive: optionalDescribed(
+      enabledParts,
+      'Treat interpolated and concatenated values as derive() calls. true or false applies to JSX and strings; the object form enables each separately.'
     ),
-    includeSourceCodeContext: optional(
-      pipe(
-        boolean(),
-        description(
-          'Include surrounding source code lines as context for translations'
-        )
-      )
+    includeSourceCodeContext: optionalDescribed(
+      boolean(),
+      'Include surrounding source code lines as context for translations'
     ),
-    enableAutoJsxInjection: optional(
-      pipe(boolean(), description('Automatically wrap translatable JSX'))
+    enableAutoJsxInjection: optionalDescribed(
+      boolean(),
+      'Automatically wrap translatable JSX'
     ),
-    devHotReload: optional(
-      pipe(
-        enabledParts,
-        description(
-          'Translate new content at runtime during development. true or false applies to JSX and strings; the object form enables each separately.'
-        )
-      )
+    devHotReload: optionalDescribed(
+      enabledParts,
+      'Translate new content at runtime during development. true or false applies to JSX and strings; the object form enables each separately.'
     ),
     viteConfigPath: optional(
       pipe(
@@ -81,31 +82,21 @@ export const GTParsingFlagsSchema = pipe(
         description('Vite config path relative to the project root')
       )
     ),
-    vueCompilerOptions: optional(
-      pipe(
-        strictObject({
-          whitespace: optional(
-            pipe(
-              picklist(['condense', 'preserve']),
-              description(
-                'How Vue normalizes whitespace between template children'
-              )
-            )
-          ),
-          delimiters: optional(
-            pipe(
-              strictTuple([
-                pipe(string(), minLength(1)),
-                pipe(string(), minLength(1)),
-              ]),
-              description(
-                "Replaces Vue's default {{ and }} interpolation delimiters"
-              )
-            )
-          ),
-        }),
-        description('Hash-affecting Vue template compiler options')
-      )
+    vueCompilerOptions: optionalDescribed(
+      strictObject({
+        whitespace: optionalDescribed(
+          picklist(['condense', 'preserve']),
+          'How Vue normalizes whitespace between template children'
+        ),
+        delimiters: optionalDescribed(
+          strictTuple([
+            pipe(string(), minLength(1)),
+            pipe(string(), minLength(1)),
+          ]),
+          "Replaces Vue's default {{ and }} interpolation delimiters"
+        ),
+      }),
+      'Hash-affecting Vue template compiler options'
     ),
   }),
   description('Options controlling inline source extraction')
@@ -123,8 +114,9 @@ export const GTOutputFileConfigSchema = pipe(
         examples(['public/i18n/[locale].json', 'translations/[locale].json'])
       )
     ),
-    publish: optional(
-      pipe(boolean(), description('Publish GT translation files to the CDN'))
+    publish: optionalDescribed(
+      boolean(),
+      'Publish GT translation files to the CDN'
     ),
     parsingFlags: optional(GTParsingFlagsSchema),
   }),
@@ -168,17 +160,13 @@ export const GTConfigSchema = looseObject({
       ])
     )
   ),
-  customMapping: optional(
-    pipe(
-      record(
-        string(),
-        // optional: a mapping typed Partial<LocaleProperties> may hold undefined.
-        union([string(), record(string(), optional(string()))])
-      ),
-      description(
-        'Custom locale properties by locale code. A string overrides the display name; an object overrides properties, and its code makes the locale an alias, such as { "cn": { "code": "zh" } }'
-      )
-    )
+  customMapping: optionalDescribed(
+    record(
+      string(),
+      // optional: a mapping typed Partial<LocaleProperties> may hold undefined.
+      union([string(), record(string(), optional(string()))])
+    ),
+    'Custom locale properties by locale code. A string overrides the display name; an object overrides properties, and its code makes the locale an alias, such as { "cn": { "code": "zh" } }'
   ),
   localeMatcher: optional(
     pipe(
@@ -200,116 +188,74 @@ export const GTConfigSchema = looseObject({
       })
     )
   ),
-  enableI18n: optional(
-    pipe(
-      boolean(),
-      description('Set to false to render only the default locale')
-    )
+  enableI18n: optionalDescribed(
+    boolean(),
+    'Set to false to render only the default locale'
   ),
-  localeRouting: optional(
-    pipe(
-      boolean(),
-      description(
-        'Enable framework-provided locale path routing when supported'
-      )
-    )
+  localeRouting: optionalDescribed(
+    boolean(),
+    'Enable framework-provided locale path routing when supported'
   ),
 
-  projectId: optional(
-    pipe(
-      string(),
-      description('The project ID for your General Translation project')
-    )
+  projectId: optionalDescribed(
+    string(),
+    'The project ID for your General Translation project'
   ),
-  apiKey: optional(
-    pipe(
-      string(),
-      description(
-        'Use the GT_API_KEY environment variable instead of storing an API key in this file'
-      )
-    )
+  apiKey: optionalDescribed(
+    string(),
+    'Use the GT_API_KEY environment variable instead of storing an API key in this file'
   ),
-  _versionId: optional(
-    pipe(
-      string(),
-      description('Internal version identifier for the configuration')
-    )
+  _versionId: optionalDescribed(
+    string(),
+    'Internal version identifier for the configuration'
   ),
-  _branchId: optional(
-    pipe(
-      string(),
-      description('Internal branch identifier for the configuration')
-    )
+  _branchId: optionalDescribed(
+    string(),
+    'Internal branch identifier for the configuration'
   ),
 
-  runtimeUrl: optional(
-    pipe(
-      nullable(string()),
-      description(
-        'Runtime URL for the General Translation service. Set to null or an empty string to disable runtime translation.'
-      )
-    )
+  runtimeUrl: optionalDescribed(
+    nullable(string()),
+    'Runtime URL for the General Translation service. Set to null or an empty string to disable runtime translation.'
   ),
-  cacheUrl: optional(
-    pipe(
-      nullable(string()),
-      description('URL for cached translations. Set to null to disable.')
-    )
+  cacheUrl: optionalDescribed(
+    nullable(string()),
+    'URL for cached translations. Set to null to disable.'
   ),
-  cacheExpiryTime: optional(
-    pipe(
-      number(),
-      description('How long translations are cached, in milliseconds')
-    )
+  cacheExpiryTime: optionalDescribed(
+    number(),
+    'How long translations are cached, in milliseconds'
   ),
-  modelProvider: optional(
-    pipe(
-      picklist(supportedModelProviders),
-      description('AI model provider to use for translations')
-    )
+  modelProvider: optionalDescribed(
+    picklist(Object.values(ModelProvider)),
+    'AI model provider to use for translations'
   ),
-  maxConcurrentRequests: optional(
-    pipe(
-      number(),
-      description('Maximum number of concurrent translation requests')
-    )
+  maxConcurrentRequests: optionalDescribed(
+    number(),
+    'Maximum number of concurrent translation requests'
   ),
-  maxBatchSize: optional(
-    pipe(
-      number(),
-      description('Maximum translation requests in the same batch')
-    )
+  maxBatchSize: optionalDescribed(
+    number(),
+    'Maximum translation requests in the same batch'
   ),
-  batchInterval: optional(
-    pipe(
-      number(),
-      description(
-        'Interval between batched translation requests, in milliseconds'
-      )
-    )
+  batchInterval: optionalDescribed(
+    number(),
+    'Interval between batched translation requests, in milliseconds'
   ),
-  renderSettings: optional(
-    pipe(
-      strictObject({
-        method: picklist(['skeleton', 'replace', 'default']),
-        timeout: optional(number()),
-      }),
-      description('How content renders while a translation loads')
-    )
+  renderSettings: optionalDescribed(
+    strictObject({
+      method: picklist(['skeleton', 'replace', 'default']),
+      timeout: optional(number()),
+    }),
+    'How content renders while a translation loads'
   ),
-  _disableDevHotReload: optional(
-    pipe(
-      boolean(),
-      description('Disable development hot reload of translations')
-    )
+  _disableDevHotReload: optionalDescribed(
+    boolean(),
+    'Disable development hot reload of translations'
   ),
-  _tagIds: optional(
-    pipe(
-      boolean(),
-      description(
-        "Opt-in id-tagging, off by default. When true, each <T>'s translation hash is exposed on the DOM as a data-_gt-hash attribute so tooling (localized replay, in-context QA) can map a rendered node back to its published translation. No effect on gt() string translations; DOM-only (skipped on React Native). This injects markup: a <T> that renders bare text or a fragment has no element to hold the attribute, so its output is wrapped in a layout-neutral display:contents <span>. It is never enabled implicitly."
-      )
-    )
+  _tagIds: optionalDescribed(
+    boolean(),
+    "Opt-in id-tagging, off by default. When true, each <T>'s translation hash is exposed on the DOM as a data-_gt-hash attribute so tooling (localized replay, in-context QA) can map a rendered node back to its published translation. No effect on gt() string translations; DOM-only (skipped on React Native). This injects markup: a <T> that renders bare text or a fragment has no element to hold the attribute, so its output is wrapped in a layout-neutral display:contents <span>. It is never enabled implicitly."
   ),
 
   dictionary: optional(
@@ -321,14 +267,17 @@ export const GTConfigSchema = looseObject({
       examples(['./dictionary.json', './src/dictionary.ts'])
     )
   ),
-  loadTranslationsPath: optional(
-    pipe(string(), description('Path to a custom loadTranslations file'))
+  loadTranslationsPath: optionalDescribed(
+    string(),
+    'Path to a custom loadTranslations file'
   ),
-  loadDictionaryPath: optional(
-    pipe(string(), description('Path to a custom loadDictionary file'))
+  loadDictionaryPath: optionalDescribed(
+    string(),
+    'Path to a custom loadDictionary file'
   ),
-  description: optional(
-    pipe(string(), description('Description of the project or configuration'))
+  description: optionalDescribed(
+    string(),
+    'Description of the project or configuration'
   ),
   files: optional(GTFilesConfigSchema),
 });
@@ -348,6 +297,22 @@ type ConfigDiagnosticFields = Pick<
   DiagnosticMessageInput,
   'whatHappened' | 'fix' | 'details'
 >;
+
+/** Checks a gt.config.json value against `GTConfigSchema`. */
+export function validateGTConfig(
+  config: unknown,
+  configName: string
+):
+  | { success: true; output: InferOutput<typeof GTConfigSchema> }
+  | { success: false; diagnostic: ConfigDiagnosticFields } {
+  const result = safeParse(GTConfigSchema, config);
+  return result.success
+    ? { success: true, output: result.output }
+    : {
+        success: false,
+        diagnostic: describeConfigIssues(result.issues, configName),
+      };
+}
 
 /** Diagnostic fields describing config validation issues. */
 export function describeConfigIssues(

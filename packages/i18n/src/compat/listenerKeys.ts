@@ -1,4 +1,4 @@
-export type DictionaryListenerLookup = {
+type DictionaryListenerLookup = {
   locale: string;
   id: string;
 };

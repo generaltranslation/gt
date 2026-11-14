@@ -1,6 +1,6 @@
 import type { Dictionary } from 'gt-i18n/internal/compat';
 
-export let internalDictionary: Dictionary | undefined = undefined;
+let internalDictionary: Dictionary | undefined = undefined;
 
 export function getDictionary(): Dictionary {
   // Singleton pattern

@@ -11,7 +11,8 @@ import {
   isVariableElementProps,
 } from '../variables/_getVariableProps';
 import { createRenderDefaultChildren } from './renderDefaultChildren.shared';
-import { isVariable, defaultDefaultLocale } from 'generaltranslation/internal';
+import { isVariable } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { getPluralBranch } from '../plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,

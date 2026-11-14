@@ -242,6 +242,8 @@ describe('determineLocale locale matching', () => {
     ['fr-CA', ['en-US', 'brand-fr'], 'brand-fr', brandMapping],
     ['en-gb', ['en-gb'], 'en-gb'],
     ['zh-Hant-CN-x-private1-private2', ['zh-Hant', 'zh'], 'zh-Hant'],
+    [['zh-Hant', 'zh-CN'], ['en', 'zh-CN', 'zh-TW'], 'zh-TW'],
+    ['de-DE-1996', ['en', 'de-DE'], 'de-DE'],
   ])(
     'best fit resolves %j against %j to %s',
     (requested, locales, expected, customMapping) => {
@@ -258,6 +260,7 @@ describe('determineLocale locale matching', () => {
     [['en-AU', 'en-GB'], ['en-US', 'en-GB'], 'en-GB'],
     ['en-US', ['en'], 'en'],
     [['*', 'fr'], ['en', 'fr'], 'fr'],
+    ['de-DE-1996', ['en', 'de-DE'], 'de-DE'],
   ])('lookup resolves %j against %j to %s', (requested, locales, expected) => {
     const config = createIntl({ locales, localeMatcher: 'lookup' });
     expect(config.determineLocale(requested)).toBe(expected);

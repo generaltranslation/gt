@@ -23,13 +23,10 @@ export function decode(base64: string): string {
     return Buffer.from(base64, 'base64').toString('utf8');
   }
   // Browser path.
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
   // Keep a leading BOM: it is file content, and Buffer keeps it too.
-  return new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes);
+  return new TextDecoder('utf-8', { ignoreBOM: true }).decode(
+    decodeBytes(base64)
+  );
 }
 
 /** The bytes a base64 string encodes. */

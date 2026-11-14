@@ -1,5 +1,5 @@
 import { GTIntl } from 'generaltranslation/internal';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import {
   defaultLocaleCookieName,
   defaultResetLocaleCookieName,
@@ -44,7 +44,6 @@ export function createMiddlewareRouting({
 
   // i18n config
   const i18nConfig = parseEnvConfig<MiddlewareI18nConfig>(
-    '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
     process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS
   );
 
@@ -180,7 +179,6 @@ export function createMiddlewareRouting({
     pathRegex,
     gt,
     defaultLocale,
-    locales,
     localeRoutingEnabledCookieName,
     referrerLocaleCookieName,
     localeCookieName,

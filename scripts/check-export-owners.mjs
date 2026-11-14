@@ -4,7 +4,8 @@ import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
-import { getPackageName, normalizeRepositoryPath } from './check-reexports.mjs';
+import { normalizeRepositoryPath } from './check-library-defaults.mjs';
+import { getPackageName } from './check-reexports.mjs';
 
 // The two "Imports and re-exports" rules (AGENTS.md) that `check:reexports`
 // cannot check from source: they need the built declarations to resolve a

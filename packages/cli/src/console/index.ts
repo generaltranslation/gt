@@ -1,4 +1,7 @@
-import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/diagnostics';
 import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
   colorizeFilepath,
@@ -21,10 +24,6 @@ const withDeriveComponentError = (message: string): string =>
 
 const withDeriveFunctionError = (message: string): string =>
   `derive() rules violation: ${message}`;
-export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
-  `${colorizeFilepath(
-    optionsFilepath
-  )}: Your API key is exposed! Remove it from the file and include it as an environment variable.`;
 
 export const warnVariablePropSync = (
   file: string,
@@ -584,12 +583,13 @@ export function describeApiError(error: unknown): string | undefined {
 export const workflowFailureMessage = (
   whatHappened: string,
   error: unknown
-): string => {
-  const fix =
-    describeApiError(error) ??
-    'Check the files, branch configuration, and API credentials, then try again.';
-  const message = `${whatHappened} ${fix}`;
-  return error != null
-    ? `${message} Original error: ${String(error)}`
-    : message;
-};
+): string =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened,
+    fix:
+      describeApiError(error) ??
+      'Check the files, branch configuration, and API credentials, then try again.',
+    details: formatDiagnosticErrorDetails(error),
+  });

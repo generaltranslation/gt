@@ -1,6 +1,7 @@
 import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
-import { VAR_NAME_IDENTIFIER } from './utils/constants';
 import { sanitizeVar } from './utils/sanitizeVar';
+
+const VAR_NAME_IDENTIFIER = '_gt_var_name';
 
 /**
  * Mark as a non-translatable string. Use within a derive() call to mark content as not derivable (e.g., not possible to statically analyze).

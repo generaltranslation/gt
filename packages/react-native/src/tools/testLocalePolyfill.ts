@@ -1,4 +1,4 @@
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 
 export function testLocalePolyfill(locale = defaultDefaultLocale) {
   const problems = [];

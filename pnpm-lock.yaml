@@ -1015,9 +1015,6 @@ importers:
       unplugin:
         specifier: ^2.3.10
         version: 2.3.10
-      valibot:
-        specifier: 'catalog:'
-        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@types/babel__core':
         specifier: ^7.20.0
@@ -1583,9 +1580,6 @@ importers:
       gt-i18n:
         specifier: workspace:*
         version: link:../i18n
-      valibot:
-        specifier: 'catalog:'
-        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@babel/core':
         specifier: ^7.28.4

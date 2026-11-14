@@ -56,16 +56,14 @@ describe('workflowFailureMessage', () => {
       'Files could not be uploaded. Open the dashboard'
     );
     expect(message).not.toContain('Check the files');
-    expect(message).toContain(
-      'Original error: ApiError: Locale xx is not enabled.'
-    );
+    expect(message).toContain('Details: ApiError: Locale xx is not enabled.');
   });
 
   it('keeps the generic fix for errors without one', () => {
     expect(
       workflowFailureMessage('Files could not be uploaded.', new Error('boom'))
     ).toBe(
-      'Files could not be uploaded. Check the files, branch configuration, and API credentials, then try again. Original error: Error: boom'
+      'gt Error: Files could not be uploaded. Check the files, branch configuration, and API credentials, then try again. Details: Error: boom.'
     );
   });
 });

@@ -1,7 +1,8 @@
 import type { LocaleConfig, CustomMapping } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { GTIntl, defaultDefaultLocale } from 'generaltranslation/internal';
+import { GTIntl } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import type { GTConfig } from 'generaltranslation';
 import {
   getLoadTranslationsType,

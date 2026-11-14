@@ -19,6 +19,7 @@ import {
   queryFilesContent,
   translateFiles,
   updateFiles,
+  updateProject,
   uploadSourceFiles,
   uploadTranslations,
   upsertAssets,
@@ -45,6 +46,7 @@ vi.mock('@generaltranslation/api', async (importOriginal) => ({
   queryFilesContent: vi.fn(),
   translateFiles: vi.fn(),
   updateFiles: vi.fn(),
+  updateProject: vi.fn(),
   uploadSourceFiles: vi.fn(),
   uploadTranslations: vi.fn(),
   upsertAssets: vi.fn(),
@@ -189,6 +191,161 @@ describe.sequential('GeneralTranslation project and organization operations', ()
       })
     );
     expect(listBranches).not.toHaveBeenCalled();
+  });
+
+  describe('syncDefaultLocale', () => {
+    it('sends no update when the project already has the locale', async () => {
+      vi.mocked(getProject).mockResolvedValue(result(project));
+
+      await expect(
+        configuredProject().syncDefaultLocale('source')
+      ).resolves.toEqual({
+        status: 'unchanged',
+        previousDefaultLocale: 'source',
+      });
+      expect(updateProject).not.toHaveBeenCalled();
+    });
+
+    it('sends no update when the project has the locale under another spelling', async () => {
+      vi.mocked(getProject).mockResolvedValue(result(project));
+
+      await expect(
+        configuredProject().syncDefaultLocale('en-us')
+      ).resolves.toEqual({
+        status: 'unchanged',
+        previousDefaultLocale: 'source',
+      });
+      expect(updateProject).not.toHaveBeenCalled();
+    });
+
+    it('updates a stored code that is spelled like one of the app aliases', async () => {
+      vi.mocked(getProject).mockResolvedValue(
+        result({ ...project, defaultLocale: 'en' })
+      );
+      vi.mocked(updateProject).mockResolvedValue(result(project));
+      const projectWithEnAlias = new GeneralTranslation({
+        apiKey: 'api-key',
+        localeConfig: { customMapping: { en: { code: 'en-US' } } },
+      }).project('project-id');
+
+      await expect(
+        projectWithEnAlias.syncDefaultLocale('en-US')
+      ).resolves.toMatchObject({ status: 'updated' });
+      expect(bodyOf(updateProject)).toEqual({ defaultLocale: 'en-US' });
+    });
+
+    it('updates a different default locale in its service code', async () => {
+      vi.mocked(getProject).mockResolvedValue(
+        result({ ...project, defaultLocale: 'fr-FR' })
+      );
+      vi.mocked(updateProject).mockResolvedValue(result(project));
+
+      await expect(
+        configuredProject().syncDefaultLocale('source')
+      ).resolves.toEqual({ status: 'updated', previousDefaultLocale: 'fr-FR' });
+      expect(bodyOf(updateProject)).toEqual({ defaultLocale: 'en-US' });
+    });
+
+    it('returns a missing project:write permission instead of throwing it', async () => {
+      vi.mocked(getProject).mockResolvedValue(
+        result({ ...project, defaultLocale: 'fr-FR' })
+      );
+      vi.mocked(updateProject).mockResolvedValue(
+        failure(403, 'permission_missing') as never
+      );
+
+      await expect(
+        configuredProject().syncDefaultLocale('source')
+      ).resolves.toEqual({
+        status: 'permission_missing',
+        previousDefaultLocale: 'fr-FR',
+        error: expect.objectContaining({
+          name: 'ApiError',
+          code: 'permission_missing',
+        }),
+      });
+    });
+
+    it('throws any other update failure and a failed read', async () => {
+      vi.mocked(getProject).mockResolvedValueOnce(
+        result({ ...project, defaultLocale: 'fr-FR' })
+      );
+      vi.mocked(updateProject).mockResolvedValue(
+        failure(403, 'forbidden') as never
+      );
+      const handle = configuredProject();
+
+      await expect(handle.syncDefaultLocale('source')).rejects.toMatchObject({
+        status: 403,
+        code: 'forbidden',
+      });
+      vi.mocked(getProject).mockResolvedValueOnce(
+        failure(403, 'permission_missing') as never
+      );
+      await expect(handle.syncDefaultLocale('source')).rejects.toMatchObject({
+        code: 'permission_missing',
+      });
+      expect(updateProject).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('createOrReuseBranch', () => {
+    it('creates the branch without looking it up', async () => {
+      vi.mocked(createBranch).mockResolvedValue(result(branch));
+
+      await expect(
+        configuredProject().createOrReuseBranch({
+          name: 'main',
+          isDefault: true,
+        })
+      ).resolves.toEqual(branch);
+      expect(bodyOf(createBranch)).toEqual({ name: 'main', isDefault: true });
+      expect(listBranches).not.toHaveBeenCalled();
+    });
+
+    it('returns the branch a concurrent run created', async () => {
+      const existing = { ...branch, isDefault: false };
+      vi.mocked(createBranch).mockResolvedValue(
+        failure(409, 'already_exists') as never
+      );
+      vi.mocked(listBranches).mockResolvedValue(
+        result({ items: [existing], nextCursor: null })
+      );
+
+      await expect(
+        configuredProject().createOrReuseBranch({
+          name: 'main',
+          isDefault: true,
+        })
+      ).resolves.toEqual(existing);
+      expect(vi.mocked(listBranches).mock.calls[0][0].query).toEqual({
+        name: ['main'],
+      });
+    });
+
+    it('throws the conflict when no branch has the name', async () => {
+      vi.mocked(createBranch).mockResolvedValue(
+        failure(409, 'already_exists') as never
+      );
+      vi.mocked(listBranches).mockResolvedValue(
+        result({ items: [], nextCursor: null })
+      );
+
+      await expect(
+        configuredProject().createOrReuseBranch({ name: 'main' })
+      ).rejects.toMatchObject({ status: 409, code: 'already_exists' });
+    });
+
+    it('throws any other failure without a lookup', async () => {
+      vi.mocked(createBranch).mockResolvedValue(
+        failure(403, 'plan_feature_unavailable') as never
+      );
+
+      await expect(
+        configuredProject().createOrReuseBranch({ name: 'feature' })
+      ).rejects.toMatchObject({ code: 'plan_feature_unavailable' });
+      expect(listBranches).not.toHaveBeenCalled();
+    });
   });
 
   it('aliases the project locales from getProject', async () => {
@@ -906,6 +1063,22 @@ describe.sequential('GeneralTranslation project and organization operations', ()
         status: 'failed',
         error: 'Bad request',
         code: 'invalid_request',
+      });
+    });
+
+    it('passes on an error code newer than the generated types', async () => {
+      vi.mocked(moveFiles)
+        .mockResolvedValueOnce(result(succeeded([])))
+        .mockRejectedValueOnce(
+          new ApiError('Moves are paused', 409, 'moves_paused')
+        );
+
+      const response = await account().project('project-id').moveFiles(moves);
+
+      expect(response.results.at(-1)).toMatchObject({
+        status: 'failed',
+        error: 'Moves are paused',
+        code: 'moves_paused',
       });
     });
 

@@ -1,16 +1,20 @@
-import type {
-  TranslateContentData,
-  TranslateContentResponse,
+import {
+  API_VERSION,
+  type TranslateContentData,
+  type TranslateContentResponse,
 } from '@generaltranslation/api';
 import type { Content } from '@generaltranslation/format';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { GeneralTranslation } from '../../index';
 import { GTRuntime } from '../../runtime';
+import { defaultRuntimeApiUrl } from '../../settings/settingsUrls';
 
-const runtime = new GTRuntime({
+const config = {
   baseUrl: 'https://api.test.com',
   projectId: 'test-project',
   apiKey: 'test-api-key',
-});
+};
+const runtime = new GTRuntime(config);
 const options = { targetLocale: 'es', sourceLocale: 'en' };
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -32,8 +36,41 @@ function mockTranslateResponse(
   );
 }
 
-async function requestBody(): Promise<TranslateContentData['body']> {
-  const [input, init] = fetchMock.mock.calls[0];
+// Answers every source with `<source>:<targetLocale>`.
+function echoTranslations(): void {
+  fetchMock.mockImplementation(async (input, init) => {
+    // Read a copy, so requestBody() can still read the request.
+    const request =
+      input instanceof Request ? input.clone() : new Request(input, init);
+    const { requests, targetLocale } =
+      (await request.json()) as TranslateContentData['body'];
+    return Response.json({
+      results: requests.map(({ source }) => ({
+        status: 'succeeded',
+        translation: `${source}:${targetLocale}`,
+        locale: targetLocale,
+        dataFormat: 'STRING',
+      })),
+    });
+  });
+}
+
+// Settles only when the request is aborted, by a timeout or the caller.
+function hangUntilAborted(onAbort = () => {}): void {
+  fetchMock.mockImplementation(
+    async (input, init) =>
+      new Promise((_resolve, reject) => {
+        const { signal } = new Request(input, init);
+        signal.addEventListener('abort', () => {
+          onAbort();
+          reject(signal.reason);
+        });
+      })
+  );
+}
+
+async function requestBody(call = 0): Promise<TranslateContentData['body']> {
+  const [input, init] = fetchMock.mock.calls[call];
   return new Request(input, init).json();
 }
 
@@ -72,6 +109,7 @@ describe.sequential('runtime translation requests', () => {
     );
     expect(request.method).toBe('POST');
     expect(request.headers.get('authorization')).toBe('Bearer test-api-key');
+    expect(request.headers.get('gt-api-version')).toBe(API_VERSION);
     expect(request.headers.has('gt-project-id')).toBe(false);
     expect(await request.json()).toEqual({
       requests: [sources.greeting],
@@ -81,6 +119,122 @@ describe.sequential('runtime translation requests', () => {
     });
     expect(result).toEqual({ greeting: { success: true, ...translated } });
   });
+
+  it('translates a single entry with its metadata and options', async () => {
+    const translated = {
+      translation: 'Bonjour',
+      locale: 'fr',
+      dataFormat: 'ICU',
+    } as const;
+    mockTranslateResponse([{ status: 'succeeded', ...translated }]);
+    const entry = {
+      source: 'Hello {name}',
+      metadata: { hash: 'greeting', id: 'welcome', dataFormat: 'ICU' },
+    } as const;
+
+    const result = await runtime.translate(entry, {
+      targetLocale: 'fr',
+      sourceLocale: 'en-US',
+      modelProvider: 'OPENAI',
+    });
+
+    expect(result).toEqual({ success: true, ...translated });
+    expect(await requestBody()).toEqual({
+      requests: [entry],
+      targetLocale: 'fr',
+      sourceLocale: 'en-US',
+      metadata: { modelProvider: 'OPENAI' },
+    });
+  });
+
+  it('accepts a target locale string and defaults the source locale', async () => {
+    echoTranslations();
+
+    const record = await runtime.translateMany(
+      { first: 'Hello', second: 'Goodbye' },
+      'fr'
+    );
+    const single = await runtime.translate('Hello', 'fr');
+
+    expect(record).toMatchObject({
+      first: { translation: 'Hello:fr' },
+      second: { translation: 'Goodbye:fr' },
+    });
+    expect(single).toMatchObject({ success: true, locale: 'fr' });
+    expect(await requestBody(1)).toMatchObject({
+      targetLocale: 'fr',
+      sourceLocale: 'en',
+    });
+  });
+
+  it('sends the configured source locale for single and batch translation, also from a project-scoped GeneralTranslation', async () => {
+    echoTranslations();
+    const params = {
+      ...config,
+      localeConfig: {
+        defaultLocale: 'fr-fr',
+        customMapping: { british: { code: 'en-gb' } },
+      },
+    };
+
+    for (const client of [
+      new GTRuntime(params),
+      new GeneralTranslation(params),
+    ]) {
+      await client.translate('Hello', 'british');
+      await client.translateMany(
+        { greeting: 'Hello' },
+        { targetLocale: 'british', sourceLocale: '' }
+      );
+    }
+
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    for (const call of [0, 1, 2, 3]) {
+      expect(await requestBody(call)).toMatchObject({
+        sourceLocale: 'fr-FR',
+        targetLocale: 'en-GB',
+      });
+    }
+  });
+
+  it('canonicalizes an alias through customMapping without restoring it in the result', async () => {
+    echoTranslations();
+
+    const result = await new GTRuntime({
+      ...config,
+      localeConfig: { customMapping: { british: { code: 'en-gb' } } },
+    }).translate('Hello', 'british');
+
+    expect((await requestBody()).targetLocale).toBe('en-GB');
+    expect(result).toMatchObject({ locale: 'en-GB' });
+  });
+
+  it('uses the runtime API URL when no base URL is configured', async () => {
+    await new GTRuntime({
+      projectId: 'test-project',
+      apiKey: 'test-api-key',
+    }).translateMany([], options);
+
+    const [input, init] = fetchMock.mock.calls[0];
+    expect(new URL(new Request(input, init).url).origin).toBe(
+      new URL(defaultRuntimeApiUrl).origin
+    );
+  });
+
+  it.each(['translate', 'translateMany'] as const)(
+    'names %s when the target locale is missing, before any request',
+    async (method) => {
+      const result =
+        method === 'translate'
+          ? runtime.translate('Hello', '')
+          : runtime.translateMany(['Hello'], '');
+
+      await expect(result).rejects.toThrow(
+        `GT Error: Cannot call \`${method}\` without a target locale. Pass the target locale to \`${method}()\`.`
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+  );
 
   it('returns successful translations as the service sent them', async () => {
     const jsx = {
@@ -123,19 +277,38 @@ describe.sequential('runtime translation requests', () => {
     });
   });
 
+  it('times out after the per-call timeout, else the 60 second default', async () => {
+    vi.useFakeTimers();
+    hangUntilAborted();
+
+    const perCall = expect(
+      runtime.translate('Hello', 'es', 1_000)
+    ).rejects.toThrow('Request timed out after 1000ms');
+    await vi.advanceTimersByTimeAsync(1_000);
+    await perCall;
+
+    const runtimeDefault = expect(
+      runtime.translate('Hello', 'es')
+    ).rejects.toThrow('Request timed out after 60000ms');
+    await vi.advanceTimersByTimeAsync(60_000);
+    await runtimeDefault;
+  });
+
+  it('treats a zero timeout as a literal zero', async () => {
+    vi.useFakeTimers();
+    hangUntilAborted();
+
+    const zero = expect(
+      runtime.translateMany(['Hello'], 'es', 0)
+    ).rejects.toThrow('Request timed out after 0ms');
+    await vi.advanceTimersByTimeAsync(0);
+    await zero;
+  });
+
   it('allows translation timeouts longer than the SDK default', async () => {
     vi.useFakeTimers();
     const aborted = vi.fn();
-    fetchMock.mockImplementation(
-      async (input, init) =>
-        new Promise((_resolve, reject) => {
-          const { signal } = new Request(input, init);
-          signal.addEventListener('abort', () => {
-            aborted();
-            reject(signal.reason);
-          });
-        })
-    );
+    hangUntilAborted(aborted);
     const pending = runtime.translateMany([], options, 99_999);
     const rejected = expect(pending).rejects.toThrow('99999');
 
@@ -341,18 +514,21 @@ describe.sequential('runtime translation requests', () => {
     );
   });
 
-  it('uses the user token provider when no API key is configured', async () => {
+  it('uses the user token provider when no API key is configured, asking for the token only when it sends a request', async () => {
     const userTokenProvider = {
-      getAccessToken: async () => 'user-token',
+      getAccessToken: vi.fn(async () => 'user-token'),
       refreshAccessToken: async () => 'refreshed-token',
     };
 
-    await new GTRuntime({
+    const userRuntime = new GTRuntime({
       baseUrl: 'https://api.test.com',
       projectId: 'test-project',
       userTokenProvider,
-    }).translateMany([], options);
+    });
+    expect(userTokenProvider.getAccessToken).not.toHaveBeenCalled();
+    await userRuntime.translateMany([], options);
 
+    expect(userTokenProvider.getAccessToken).toHaveBeenCalledTimes(1);
     const [input, init] = fetchMock.mock.calls[0];
     expect(new Request(input, init).headers.get('authorization')).toBe(
       'Bearer user-token'
@@ -363,17 +539,6 @@ describe.sequential('runtime translation requests', () => {
     await runtime.translateMany([], { ...options, modelProvider: 'OPENAI' });
 
     expect((await requestBody()).metadata).toEqual({ modelProvider: 'OPENAI' });
-  });
-
-  it('rejects unsupported model providers before making API requests', async () => {
-    await expect(
-      runtime.translateMany([], {
-        ...options,
-        modelProvider: 'custom-provider',
-      })
-    ).rejects.toThrow('Unsupported model provider `custom-provider`');
-
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('propagates network errors', async () => {

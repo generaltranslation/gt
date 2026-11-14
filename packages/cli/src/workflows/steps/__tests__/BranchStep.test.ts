@@ -43,7 +43,7 @@ const mockGetCheckedOutBranches = vi.mocked(getCheckedOutBranches);
 
 const mockGt = {
   listBranches: vi.fn(),
-  createBranch: vi.fn(),
+  createOrReuseBranch: vi.fn(),
   updateBranch: vi.fn(),
 };
 
@@ -246,12 +246,12 @@ describe('BranchStep', () => {
 
     it('creates the default branch by name when none exists', async () => {
       mockBranchLists({ branches: [], defaultBranch: null });
-      mockGt.createBranch.mockResolvedValue(defaultBranch);
+      mockGt.createOrReuseBranch.mockResolvedValue(defaultBranch);
 
       const step = new BranchStep(mockGt, makeSettings({ enabled: false }));
       const result = await step.run();
 
-      expect(mockGt.createBranch).toHaveBeenCalledWith({
+      expect(mockGt.createOrReuseBranch).toHaveBeenCalledWith({
         name: 'main',
         isDefault: true,
       });
@@ -271,7 +271,7 @@ describe('BranchStep', () => {
         defaultBranch,
       });
       const error = new ApiError('server failed', 500);
-      mockGt.createBranch.mockRejectedValue(error);
+      mockGt.createOrReuseBranch.mockRejectedValue(error);
 
       const step = new BranchStep(mockGt, makeSettings());
 
@@ -288,7 +288,7 @@ describe('BranchStep', () => {
         branches: [],
         defaultBranch,
       });
-      mockGt.createBranch.mockRejectedValueOnce(
+      mockGt.createOrReuseBranch.mockRejectedValueOnce(
         new ApiError(
           'branching unavailable',
           403,
@@ -300,7 +300,10 @@ describe('BranchStep', () => {
       const result = await step.run();
 
       expect(result?.currentBranch).toEqual(defaultBranch);
-      expect(mockGt.createBranch).toHaveBeenCalledTimes(1);
+      expect(mockGt.createOrReuseBranch).toHaveBeenCalledTimes(1);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('branching unavailable')
+      );
     });
 
     it('propagates a 403 that is not a plan limitation', async () => {
@@ -318,7 +321,7 @@ describe('BranchStep', () => {
         403,
         ErrorCode.PERMISSION_MISSING
       );
-      mockGt.createBranch.mockRejectedValueOnce(error);
+      mockGt.createOrReuseBranch.mockRejectedValueOnce(error);
 
       await expect(new BranchStep(mockGt, makeSettings()).run()).rejects.toBe(
         error
@@ -335,7 +338,7 @@ describe('BranchStep', () => {
         branches: [],
         defaultBranch,
       });
-      mockGt.createBranch.mockResolvedValue({
+      mockGt.createOrReuseBranch.mockResolvedValue({
         id: 'new-id',
         name: 'new-branch',
       });
@@ -343,7 +346,7 @@ describe('BranchStep', () => {
       const step = new BranchStep(mockGt, makeSettings());
       const result = await step.run();
 
-      expect(mockGt.createBranch).toHaveBeenCalledWith({
+      expect(mockGt.createOrReuseBranch).toHaveBeenCalledWith({
         name: 'new-branch',
         isDefault: false,
       });
@@ -354,104 +357,27 @@ describe('BranchStep', () => {
     });
   });
 
-  describe('concurrent branch creation', () => {
-    const conflict = new ApiError(
-      'A branch with the requested name already exists.',
-      409,
-      ErrorCode.ALREADY_EXISTS
-    );
+  it('promotes a branch it reuses for the default branch', async () => {
+    mockBranchLists({ branches: [], defaultBranch: null });
+    // Another run created `main` as a non-default branch after the lookup.
+    const created = { id: 'main-id', name: 'main', isDefault: false };
+    mockGt.createOrReuseBranch.mockResolvedValue(created);
+    const promoted = { ...created, isDefault: true };
+    mockGt.updateBranch.mockResolvedValue(promoted);
 
-    // The first name lookup is empty; another run creates `created` before ours.
-    function mockConcurrentCreation(
-      created: typeof featureBranch | null,
-      defaultBranch: typeof featureBranch | null
-    ) {
-      let nameLookups = 0;
-      mockGt.listBranches.mockImplementation(
-        async (query: { isDefault?: string; name?: string[] }) => ({
-          items:
-            query.isDefault === 'true'
-              ? defaultBranch
-                ? [defaultBranch]
-                : []
-              : nameLookups++ > 0 && created
-                ? [created]
-                : [],
-          nextCursor: null,
-        })
-      );
-      mockGt.createBranch.mockRejectedValue(conflict);
-    }
+    const result = await new BranchStep(
+      mockGt,
+      makeSettings({ enabled: false })
+    ).run();
 
-    it('reuses a branch another run created after the lookup', async () => {
-      mockGetCurrentBranch.mockResolvedValue({
-        currentBranchName: 'feature-x',
-        defaultBranch: false,
-        defaultBranchName: 'main',
-      });
-      mockConcurrentCreation(featureBranch, defaultBranch);
-
-      const result = await new BranchStep(mockGt, makeSettings()).run();
-
-      expect(mockGt.createBranch).toHaveBeenCalledWith({
-        name: 'feature-x',
-        isDefault: false,
-      });
-      expect(result?.currentBranch).toEqual(featureBranch);
+    expect(mockGt.createOrReuseBranch).toHaveBeenCalledWith({
+      name: 'main',
+      isDefault: true,
     });
-
-    it('reuses and promotes a default branch another run created after the lookup', async () => {
-      const created = { id: 'main-id', name: 'main', isDefault: false };
-      mockConcurrentCreation(created, null);
-      const promoted = { ...created, isDefault: true };
-      mockGt.updateBranch.mockResolvedValue(promoted);
-
-      const result = await new BranchStep(
-        mockGt,
-        makeSettings({ enabled: false })
-      ).run();
-
-      expect(mockGt.createBranch).toHaveBeenCalledWith({
-        name: 'main',
-        isDefault: true,
-      });
-      expect(mockGt.updateBranch).toHaveBeenCalledWith('main-id', {
-        isDefault: true,
-      });
-      expect(result?.currentBranch).toEqual(promoted);
+    expect(mockGt.updateBranch).toHaveBeenCalledWith('main-id', {
+      isDefault: true,
     });
-
-    it('propagates a 409 that is not already_exists without a lookup', async () => {
-      mockGetCurrentBranch.mockResolvedValue({
-        currentBranchName: 'feature-x',
-        defaultBranch: false,
-        defaultBranchName: 'main',
-      });
-      mockConcurrentCreation(featureBranch, defaultBranch);
-      const error = new ApiError(
-        'Default branch conflict',
-        409,
-        ErrorCode.DEFAULT_BRANCH_CONFLICT
-      );
-      mockGt.createBranch.mockRejectedValue(error);
-
-      await expect(new BranchStep(mockGt, makeSettings()).run()).rejects.toBe(
-        error
-      );
-    });
-
-    it('rethrows the conflict when the branch is still missing', async () => {
-      mockGetCurrentBranch.mockResolvedValue({
-        currentBranchName: 'feature-x',
-        defaultBranch: false,
-        defaultBranchName: 'main',
-      });
-      mockConcurrentCreation(null, defaultBranch);
-
-      await expect(new BranchStep(mockGt, makeSettings()).run()).rejects.toBe(
-        conflict
-      );
-    });
+    expect(result?.currentBranch).toEqual(promoted);
   });
 
   describe('git default branch missing from the project', () => {
@@ -473,18 +399,18 @@ describe('BranchStep', () => {
       expect(mockGt.updateBranch).toHaveBeenCalledWith('default-id', {
         name: 'master',
       });
-      expect(mockGt.createBranch).not.toHaveBeenCalled();
+      expect(mockGt.createOrReuseBranch).not.toHaveBeenCalled();
       expect(result?.currentBranch).toEqual(renamed);
     });
 
     it('creates the branch as the default when the project has no branches', async () => {
       mockBranchLists({ branches: [], defaultBranch: null });
       const created = { id: 'master-id', name: 'master', isDefault: true };
-      mockGt.createBranch.mockResolvedValue(created);
+      mockGt.createOrReuseBranch.mockResolvedValue(created);
 
       const result = await new BranchStep(mockGt, makeSettings()).run();
 
-      expect(mockGt.createBranch).toHaveBeenCalledWith({
+      expect(mockGt.createOrReuseBranch).toHaveBeenCalledWith({
         name: 'master',
         isDefault: true,
       });
@@ -503,7 +429,7 @@ describe('BranchStep', () => {
     const result = await step.run();
 
     expect(mockGt.listBranches).toHaveBeenCalledWith({ name: ['main'] });
-    expect(mockGt.createBranch).not.toHaveBeenCalled();
+    expect(mockGt.createOrReuseBranch).not.toHaveBeenCalled();
     expect(mockGt.updateBranch).toHaveBeenCalledWith('main-id', {
       isDefault: true,
     });

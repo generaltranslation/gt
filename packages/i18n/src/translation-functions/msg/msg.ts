@@ -2,10 +2,8 @@ import type {
   EncodedTranslationOptions,
   GTTranslationOptions,
 } from '../types/options';
-import {
-  formatMessage,
-  defaultDefaultLocale,
-} from 'generaltranslation/internal';
+import { formatMessage } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import { createInterpolationFailureMessage } from '../utils/messages';
 import logger from '../../logs/logger';

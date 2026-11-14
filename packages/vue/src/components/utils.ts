@@ -1,4 +1,4 @@
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import {
   type Component,
   type DefineComponent,

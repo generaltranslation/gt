@@ -17,6 +17,8 @@ import { I18nCache } from '../../i18n-cache/I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { hashContent } from '../../utils/hashContent';
 import type { LookupOptions } from '../../translation-functions/types/options';
+import type { I18nCacheConstructorParams } from '../../i18n-cache/types';
+import type { DictionaryManagerParams } from '../DictionaryManager';
 import { initializeDictionaryManager } from '../singleton-operations';
 import { createDictionaryHarness } from './dictionaryHarness';
 
@@ -48,8 +50,11 @@ function initConfig() {
   });
 }
 
-function createCache(overrides: Record<string, unknown> = {}) {
-  const { dictionary, loadDictionary, ...cacheOverrides } = overrides;
+function createCache({
+  dictionary,
+  loadDictionary,
+  ...cacheOverrides
+}: I18nCacheConstructorParams & DictionaryManagerParams = {}) {
   const cache = new I18nCache({
     loadTranslations: vi
       .fn()
@@ -107,7 +112,7 @@ describe('DictionaryManager config contract', () => {
 
   it('loads the dictionary lazily and deduplicates concurrent loads', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const cache = createCache({
+    const { manager } = createCache({
       loadTranslations: async () => ({}),
       dictionary: { greeting: 'Hello' },
       loadDictionary,
@@ -116,8 +121,8 @@ describe('DictionaryManager config contract', () => {
     expect(loadDictionary).not.toHaveBeenCalled();
 
     const [first, second] = await Promise.all([
-      cache.loadDictionary('fr'),
-      cache.loadDictionary('fr'),
+      manager.loadDictionary('fr'),
+      manager.loadDictionary('fr'),
     ]);
 
     expect(loadDictionary).toHaveBeenCalledTimes(1);
@@ -141,11 +146,11 @@ describe('DictionaryManager error contract', () => {
 
   it('development: an unknown locale reads as a miss without logging or throwing', () => {
     vi.stubEnv('NODE_ENV', 'development');
-    const cache = createCache();
+    const { manager } = createCache();
 
-    expect(cache.lookupDictionary(invalidLocale, 'greeting')).toBeUndefined();
+    expect(manager.lookupDictionary(invalidLocale, 'greeting')).toBeUndefined();
     expect(
-      cache.lookupDictionaryObj(invalidLocale, 'greeting')
+      manager.lookupDictionaryObj(invalidLocale, 'greeting')
     ).toBeUndefined();
     expect(console.error).not.toHaveBeenCalled();
   });
@@ -157,13 +162,13 @@ describe('DictionaryManager error contract', () => {
     'DictionarySourceNotFoundError propagates from lookupDictionaryWithFallback in $name',
     async ({ env }) => {
       if (env) vi.stubEnv('NODE_ENV', env);
-      const cache = createCache({
+      const { manager } = createCache({
         dictionary: { greeting: 'Hello' },
         loadDictionary: vi.fn().mockResolvedValue({}),
       });
 
       await expect(
-        cache.lookupDictionaryWithFallback('fr', 'missing')
+        manager.lookupDictionaryWithFallback('fr', 'missing')
       ).rejects.toMatchObject({
         name: 'DictionarySourceNotFoundError',
         message: 'I18nCache: source dictionary entry missing is not defined',
@@ -178,13 +183,13 @@ describe('DictionaryManager error contract', () => {
     'DictionarySourceNotFoundError propagates from lookupDictionaryObjWithFallback in $name',
     async ({ env }) => {
       if (env) vi.stubEnv('NODE_ENV', env);
-      const cache = createCache({
+      const { manager } = createCache({
         dictionary: { greeting: 'Hello' },
         loadDictionary: vi.fn().mockResolvedValue({}),
       });
 
       await expect(
-        cache.lookupDictionaryObjWithFallback('fr', 'missing')
+        manager.lookupDictionaryObjWithFallback('fr', 'missing')
       ).rejects.toMatchObject({
         name: 'DictionarySourceNotFoundError',
       });
@@ -192,7 +197,7 @@ describe('DictionaryManager error contract', () => {
   );
 
   it('lookupDictionaryObjWithFallback returns the loaded target subtree when the source is missing', async () => {
-    const cache = createCache({
+    const { manager } = createCache({
       dictionary: { greeting: 'Hello' },
       loadDictionary: vi.fn().mockResolvedValue({
         extra: { title: 'Titre' },
@@ -200,7 +205,7 @@ describe('DictionaryManager error contract', () => {
     });
 
     await expect(
-      cache.lookupDictionaryObjWithFallback('fr', 'extra')
+      manager.lookupDictionaryObjWithFallback('fr', 'extra')
     ).resolves.toEqual({ title: 'Titre' });
   });
 });
@@ -224,7 +229,7 @@ describe('DictionaryManager expiry contract', () => {
       .fn()
       .mockResolvedValue({ [expectedHash]: translatedString });
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const cache = createCache({
+    const { cache, manager } = createCache({
       cacheExpiryTime: null,
       loadTranslations,
       dictionary: { greeting: 'Hello' },
@@ -232,21 +237,21 @@ describe('DictionaryManager expiry contract', () => {
     });
 
     await cache.loadTranslations('fr');
-    await cache.loadDictionary('fr');
+    await manager.loadDictionary('fr');
 
     vi.advanceTimersByTime(999_999_999);
 
     expect(cache.lookupTranslation('fr', message, lookupOptions)).toBe(
       translatedString
     );
-    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
       entry: 'Bonjour',
       options: {},
     });
 
     // Re-loading does not hit the loaders again
     await cache.loadTranslations('fr');
-    await cache.loadDictionary('fr');
+    await manager.loadDictionary('fr');
     expect(loadTranslations).toHaveBeenCalledTimes(1);
     expect(loadDictionary).toHaveBeenCalledTimes(1);
   });
@@ -258,28 +263,28 @@ describe('DictionaryManager expiry contract', () => {
       .fn()
       .mockResolvedValueOnce({ greeting: 'Bonjour' })
       .mockResolvedValueOnce({ greeting: 'Salut' });
-    const cache = createCache({
+    const { manager } = createCache({
       dictionary: { greeting: 'Hello' },
       loadDictionary,
     });
 
     // Two loads within the TTL share one loader call
-    await cache.loadDictionary('fr');
-    await cache.loadDictionary('fr');
+    await manager.loadDictionary('fr');
+    await manager.loadDictionary('fr');
     expect(loadDictionary).toHaveBeenCalledTimes(1);
-    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
       entry: 'Bonjour',
       options: {},
     });
 
     // Past the default TTL: sync lookups miss
     vi.advanceTimersByTime(DEFAULT_TTL + 1);
-    expect(cache.lookupDictionary('fr', 'greeting')).toBeUndefined();
+    expect(manager.lookupDictionary('fr', 'greeting')).toBeUndefined();
 
-    const reloaded = await cache.loadDictionary('fr');
+    const reloaded = await manager.loadDictionary('fr');
     expect(loadDictionary).toHaveBeenCalledTimes(2);
     expect(reloaded).toEqual({ greeting: 'Salut' });
-    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
       entry: 'Salut',
       options: {},
     });
@@ -289,18 +294,18 @@ describe('DictionaryManager expiry contract', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const cache = createCache({
+    const { manager } = createCache({
       dictionary: { greeting: 'Hello' },
       loadDictionary,
     });
 
     vi.advanceTimersByTime(999_999_999);
 
-    expect(cache.lookupDictionary('en', 'greeting')).toEqual({
+    expect(manager.lookupDictionary('en', 'greeting')).toEqual({
       entry: 'Hello',
       options: {},
     });
-    await expect(cache.loadDictionary('en')).resolves.toEqual({
+    await expect(manager.loadDictionary('en')).resolves.toEqual({
       greeting: 'Hello',
     });
     expect(loadDictionary).not.toHaveBeenCalled();
@@ -311,7 +316,7 @@ describe('DictionaryManager expiry contract', () => {
       .fn()
       .mockResolvedValue({ [expectedHash]: translatedString });
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const cache = createCache({
+    const { cache, manager } = createCache({
       loadTranslations,
       dictionary: { greeting: 'Hello' },
       loadDictionary,
@@ -322,8 +327,8 @@ describe('DictionaryManager expiry contract', () => {
       cache.loadTranslations('fr'),
     ]);
     const [dictionaryA, dictionaryB] = await Promise.all([
-      cache.loadDictionary('fr'),
-      cache.loadDictionary('fr'),
+      manager.loadDictionary('fr'),
+      manager.loadDictionary('fr'),
     ]);
 
     expect(loadTranslations).toHaveBeenCalledTimes(1);
@@ -346,7 +351,7 @@ describe('DictionaryManager contract: lookup API', () => {
 
   it('getLookupDictionary() resolves the source dictionary for the default locale', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({});
-    const cache = createCache({
+    const { manager } = createCache({
       dictionary: {
         greeting: 'Hello',
         user: {
@@ -359,7 +364,7 @@ describe('DictionaryManager contract: lookup API', () => {
     });
 
     const { lookupDictionary, lookupDictionaryObj } =
-      await cache.getLookupDictionary('en');
+      await manager.getLookupDictionary('en');
 
     expect(lookupDictionary('greeting')).toEqual({
       entry: 'Hello',
@@ -372,7 +377,7 @@ describe('DictionaryManager contract: lookup API', () => {
   });
 
   it('getLookupDictionary() resolves the loaded target dictionary for a translated locale', async () => {
-    const cache = createCache({
+    const { manager } = createCache({
       dictionary: {
         greeting: 'Hello',
         user: {
@@ -392,7 +397,7 @@ describe('DictionaryManager contract: lookup API', () => {
     });
 
     const { lookupDictionary, lookupDictionaryObj } =
-      await cache.getLookupDictionary('fr');
+      await manager.getLookupDictionary('fr');
 
     expect(lookupDictionary('greeting')).toEqual({
       entry: 'Bonjour',
@@ -404,7 +409,7 @@ describe('DictionaryManager contract: lookup API', () => {
   });
 
   it('getLookupDictionary() resolvers return undefined for missing ids', async () => {
-    const cache = createCache({
+    const { manager } = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -413,8 +418,8 @@ describe('DictionaryManager contract: lookup API', () => {
       }),
     });
 
-    const defaultResolvers = await cache.getLookupDictionary('en');
-    const targetResolvers = await cache.getLookupDictionary('fr');
+    const defaultResolvers = await manager.getLookupDictionary('en');
+    const targetResolvers = await manager.getLookupDictionary('fr');
 
     expect(defaultResolvers.lookupDictionary('missing')).toBeUndefined();
     expect(defaultResolvers.lookupDictionaryObj('missing')).toBeUndefined();

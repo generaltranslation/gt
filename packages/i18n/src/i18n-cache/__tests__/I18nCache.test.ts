@@ -634,7 +634,7 @@ describe('I18nCache', () => {
         loadTranslations: async () => ({}),
         runtimeTranslation: {
           timeout: 5000,
-          metadata: { sourceLocale: 'en', modelProvider: 'test-provider' },
+          metadata: { sourceLocale: 'en', modelProvider: 'OPENAI' },
         },
       });
 
@@ -658,7 +658,7 @@ describe('I18nCache', () => {
         },
         {
           sourceLocale: 'en',
-          modelProvider: 'test-provider',
+          modelProvider: 'OPENAI',
           targetLocale: 'fr',
         },
         5000
@@ -678,16 +678,16 @@ describe('I18nCache', () => {
     });
 
     it.each([
-      ['forwards the top-level model provider', {}, 'anthropic'],
+      ['forwards the top-level model provider', {}, 'ANTHROPIC'],
       [
         'prefers runtime translation metadata over the top-level model provider',
-        { runtimeTranslation: { metadata: { modelProvider: 'openai' } } },
-        'openai',
+        { runtimeTranslation: { metadata: { modelProvider: 'OPENAI' } } },
+        'OPENAI',
       ],
     ])('%s', async (_name, params, modelProvider) => {
       const cache = createCache({
         loadTranslations: async () => ({}),
-        modelProvider: 'anthropic',
+        modelProvider: 'ANTHROPIC',
         ...params,
       });
 

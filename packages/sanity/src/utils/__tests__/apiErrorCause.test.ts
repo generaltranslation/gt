@@ -13,18 +13,35 @@ describe('apiErrorCause', () => {
     [ErrorCode.PLAN_FEATURE_UNAVAILABLE, 'plan does not include'],
     [ErrorCode.PERMISSION_MISSING, 'lacks a required permission'],
     [ErrorCode.API_KEY_INVALID, 'not valid'],
-  ])('states the cause of %s without advising a retry', (code, cause) => {
-    const text = apiErrorCause(new ApiError('message', 400, code));
-    expect(text).toContain(cause);
+  ])('adds the hint for %s to the API message', (code, hint) => {
+    const text = apiErrorCause(
+      new ApiError('Server message.', 400, code),
+      'Try again.'
+    );
+    expect(text).toMatch(/^Server message\. /);
+    expect(text).toContain(hint);
     expect(text).not.toMatch(/try again/i);
   });
 
   it.each([
-    new ApiError('m', 503, ErrorCode.UNAVAILABLE),
-    new ApiError('m', 403, 'some_future_code'),
-    new ApiError('m', 500),
-    new Error('m'),
-  ])('leaves %s to the retry advice', (error) => {
-    expect(apiErrorCause(error)).toBeUndefined();
+    new ApiError('Server message.', 503, ErrorCode.UNAVAILABLE),
+    new ApiError('Server message.', 403, 'some_future_code'),
+    new ApiError('Server message.', 500),
+  ])('adds the fallback to the API message of %s', (error) => {
+    expect(apiErrorCause(error, 'Try again.')).toBe(
+      'Server message. Try again.'
+    );
+  });
+
+  it('ends an API message that has no closing punctuation', () => {
+    expect(apiErrorCause(new ApiError('HTTP 502', 502), 'Try again.')).toBe(
+      'HTTP 502. Try again.'
+    );
+  });
+
+  it('gives only the fallback for a failure that is not from the API', () => {
+    expect(apiErrorCause(new Error('socket hang up'), 'Try again.')).toBe(
+      'Try again.'
+    );
   });
 });

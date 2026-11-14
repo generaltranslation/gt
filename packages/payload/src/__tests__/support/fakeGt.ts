@@ -1,7 +1,7 @@
 import { parse, parseFragment, serialize } from 'parse5';
 import type { DefaultTreeAdapterMap } from 'parse5';
 import { ApiError } from '@generaltranslation/api';
-import type { BillingCode, GtClient } from '../../types';
+import type { GtClient } from '../../types';
 
 type Element = DefaultTreeAdapterMap['element'];
 type ChildNode = DefaultTreeAdapterMap['childNode'];
@@ -147,7 +147,7 @@ export class FakeGt {
   // Locales the project does not have: enqueue refuses the whole request.
   unsupportedLocales = new Set<string>();
   // When set, enqueue refuses the work as GT does when billing stops it, with this code.
-  billingCode: BillingCode | undefined = undefined;
+  billingCode: string | undefined = undefined;
   // When set, every call fails as if GT were unreachable.
   unreachable = false;
   // Previous translation given as context, by fileId, locale and key.
@@ -248,14 +248,16 @@ export class FakeGt {
   readonly uploadSourceFiles: GtClient['uploadSourceFiles'] = async (files) => {
     this.check();
     this.calls.uploadSourceFiles += 1;
-    // Like GT's request validation: one over-long file ID fails the request.
-    if (files.some(({ source }) => source.fileId!.length > 64)) {
-      const message = 'File ID cannot exceed 64 characters';
-      throw new ApiError(message, 400);
-    }
     const results = files.map(({ source }) => {
       const fileId = source.fileId!;
-      if (this.failSourceUploads.has(fileId))
+      // Like GT: an over-long file ID fails its own file, not the request.
+      const error =
+        fileId.length > 64
+          ? 'fileId cannot exceed 64 characters'
+          : this.failSourceUploads.has(fileId)
+            ? 'source upload failed'
+            : undefined;
+      if (error)
         return {
           branchId: 'main',
           fileId,
@@ -263,7 +265,7 @@ export class FakeGt {
           fileName: source.fileName,
           fileFormat: source.fileFormat,
           status: 'failed' as const,
-          error: 'source upload failed',
+          error,
         };
       const versions = this.files.get(fileId) ?? [];
       this.files.set(fileId, versions);

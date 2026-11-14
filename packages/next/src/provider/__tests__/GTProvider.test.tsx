@@ -33,8 +33,8 @@ vi.mock('../../request/getRegion', () => ({
   getRegion: mockGetRegion,
 }));
 
-vi.mock('../../i18n-cache/NextI18nCache', () => ({
-  getNextI18nCache: () => ({
+vi.mock('@generaltranslation/react-core/pure', () => ({
+  getReactI18nCache: () => ({
     loadTranslations: mockLoadTranslations,
   }),
 }));

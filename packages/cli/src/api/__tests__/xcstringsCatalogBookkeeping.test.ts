@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import os from 'node:os';
-import type { FileReference } from 'generaltranslation';
+import type { FileReference, ProjectHandle } from 'generaltranslation';
 import { logger } from '../../console/logger.js';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { downloadFileBatch, type BatchedFiles } from '../downloadFileBatch.js';
@@ -285,7 +285,12 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
       outputPath: CATALOG,
       inputPath: CATALOG,
     }));
-    const result = await downloadFileBatch(fileTracker, batched, settings);
+    const result = await downloadFileBatch(
+      api as unknown as ProjectHandle,
+      fileTracker,
+      batched,
+      settings
+    );
     persistPostProcessHashes(
       settings,
       getNeedsPostprocessing(),
