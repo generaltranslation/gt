@@ -18,10 +18,13 @@ const RECORDING_COMPILER = `
 import fs from 'node:fs';
 import path from 'node:path';
 
-export async function collectContext({ root, logger }) {
+export async function collectContext({ root, cache, logger }) {
   logger.warn('an import could not be resolved');
   logger.info('2 usage(s)');
-  fs.writeFileSync(path.join(root, 'collected.json'), JSON.stringify({ root }));
+  fs.writeFileSync(
+    path.join(root, 'collected.json'),
+    JSON.stringify({ root, cache })
+  );
 }
 `;
 
@@ -72,12 +75,12 @@ describe('collectParaglideContext', () => {
   it('collects the context of the project when the package is installed', async () => {
     installParaglidePackage(projectRoot, RECORDING_COMPILER);
 
-    await collectParaglideContext(projectRoot);
+    await collectParaglideContext({ projectRoot });
 
     const collected = JSON.parse(
       fs.readFileSync(path.join(projectRoot, 'collected.json'), 'utf8')
     );
-    expect(collected).toEqual({ root: projectRoot });
+    expect(collected).toEqual({ root: projectRoot, cache: false });
     expect(spinner.start).toHaveBeenCalledOnce();
     expect(spinner.stop).toHaveBeenCalledWith(
       'Collected source code context for Paraglide messages'
@@ -87,8 +90,19 @@ describe('collectParaglideContext', () => {
     );
   });
 
+  it('turns on the cache of paraglide-js with `cache`', async () => {
+    installParaglidePackage(projectRoot, RECORDING_COMPILER);
+
+    await collectParaglideContext({ projectRoot, cache: true });
+
+    const collected = JSON.parse(
+      fs.readFileSync(path.join(projectRoot, 'collected.json'), 'utf8')
+    );
+    expect(collected).toEqual({ root: projectRoot, cache: true });
+  });
+
   it('does nothing when the package is not installed', async () => {
-    await collectParaglideContext(projectRoot);
+    await collectParaglideContext({ projectRoot });
 
     expect(spinner.start).not.toHaveBeenCalled();
     expect(logger.warn).not.toHaveBeenCalled();
@@ -97,7 +111,7 @@ describe('collectParaglideContext', () => {
   it('warns instead of throwing when the collection fails', async () => {
     installParaglidePackage(projectRoot, FAILING_COMPILER);
 
-    await collectParaglideContext(projectRoot);
+    await collectParaglideContext({ projectRoot });
 
     expect(spinner.stop).toHaveBeenCalledWith(
       'Source code context for Paraglide messages was skipped'

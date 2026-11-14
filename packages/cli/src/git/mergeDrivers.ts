@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import stringify from 'fast-json-stable-stringify';
-import type {
-  DownloadedTranslation,
-  DownloadedVersionEntry,
-  DownloadedVersions,
+import {
+  USAGE_CONTEXT_KEY,
+  type DownloadedTranslation,
+  type DownloadedVersionEntry,
+  type DownloadedVersions,
 } from '../fs/config/downloadedVersions.js';
 
 export type MergeDriverName = 'gt-lock' | 'gtjson';
@@ -23,7 +24,19 @@ type ValueState = {
   value?: unknown;
 };
 
-const LOCK_TOP_LEVEL_KEYS = new Set(['version', 'branchId', 'entries']);
+type UsageContext = {
+  version: number;
+  fingerprint: string;
+  /** By project-relative path: an encoded entry. */
+  files: Record<string, string>;
+};
+
+const LOCK_TOP_LEVEL_KEYS = new Set([
+  'version',
+  'branchId',
+  'entries',
+  USAGE_CONTEXT_KEY,
+]);
 const LOCK_ENTRY_KEYS = new Set([
   'fileId',
   'versionId',
@@ -147,10 +160,16 @@ export function mergeGtLockJson(
     if (entry) entries.push(normalizeEntry(entry));
   }
 
-  const merged: DownloadedVersions = {
+  const usageContext = mergeUsageContext(
+    usageContextOf(base.value),
+    usageContextOf(ours.value),
+    usageContextOf(theirs.value)
+  );
+  const merged: DownloadedVersions & { [USAGE_CONTEXT_KEY]?: UsageContext } = {
     version: 2,
     branchId: ours.value.branchId || theirs.value.branchId,
     entries,
+    ...(usageContext && { [USAGE_CONTEXT_KEY]: usageContext }),
   };
   // Plain stringify keeps the same key order writeLockfile produces, so the
   // next gt run does not rewrite the merged file into a noisy diff
@@ -294,6 +313,37 @@ function parseRootObject(
   }
 
   return { ok: true, value };
+}
+
+/** Undefined if the lock file has none, or one this version cannot read: it is only a cache. */
+function usageContextOf(lock: DownloadedVersions): UsageContext | undefined {
+  const context = (lock as { [USAGE_CONTEXT_KEY]?: unknown })[
+    USAGE_CONTEXT_KEY
+  ];
+  if (!isRecord(context)) return undefined;
+
+  const { version, fingerprint, files } = context;
+  const isUsageContext =
+    typeof version === 'number' &&
+    typeof fingerprint === 'string' &&
+    isRecord(files) &&
+    Object.values(files).every((entry) => typeof entry === 'string');
+
+  return isUsageContext ? (context as UsageContext) : undefined;
+}
+
+/**
+ * Keeps one side's whole section, never entries of both: a whole section
+ * describes the files of one side. paraglide-js checks every entry against
+ * the files the merge left, by their hashes, and analyzes again what the
+ * merge changed. Theirs is kept only if ours is as it was.
+ */
+function mergeUsageContext(
+  base: UsageContext | undefined,
+  ours: UsageContext | undefined,
+  theirs: UsageContext | undefined
+): UsageContext | undefined {
+  return sameJson(ours, base) ? theirs : ours;
 }
 
 function parseLockfile(

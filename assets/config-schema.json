@@ -201,6 +201,11 @@
                   "type": "boolean",
                   "description": "Collect the source code around each usage of a message as context for translations. Applies to Paraglide JS projects that have @generaltranslation/paraglide-js installed.",
                   "default": false
+                },
+                "enableParaglideContextCache": {
+                  "type": "boolean",
+                  "description": "With includeSourceCodeContext, keep what collecting the context found in gt-lock.json, so that the next run, e.g. in CI, analyzes again only the files that changed.",
+                  "default": false
                 }
               }
             },

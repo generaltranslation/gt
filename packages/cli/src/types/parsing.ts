@@ -31,9 +31,11 @@ export type BaseParsingFlags = Record<string, unknown>;
 
 /**
  * @property {boolean} includeSourceCodeContext - Collect source code context for Paraglide JS messages. Requires `@generaltranslation/paraglide-js`.
+ * @property {boolean} enableParaglideContextCache - Keep what collecting that context found in `gt-lock.json`, so that the next run skips unchanged files.
  */
 export type JsonParsingFlags = BaseParsingFlags & {
   includeSourceCodeContext?: boolean;
+  enableParaglideContextCache?: boolean;
 };
 
 export type ParsingFlagsFor<K extends SupportedFileExtension> = K extends 'json'

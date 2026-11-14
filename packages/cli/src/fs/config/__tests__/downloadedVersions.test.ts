@@ -290,6 +290,46 @@ describe('readLockfile / writeLockfile', () => {
     });
   });
 
+  describe("paraglide-js's usage context", () => {
+    it('keeps the section of a lock file that has no entries yet', () => {
+      const context = { version: 1, fingerprint: 'f', files: { 'a.ts': 'x' } };
+      writeLockFile({ 'paraglide-usage-context': context });
+
+      const { data, originalV1 } = readLockfile(settings('brc_main'));
+      writeLockfile(data, originalV1);
+
+      expect(readLockFile()['paraglide-usage-context']).toEqual(context);
+    });
+
+    it('keeps the section of a v1 lock file that staging converts to v2', () => {
+      const context = { version: 1, fingerprint: 'f', files: { 'a.ts': 'x' } };
+      writeLockFile({
+        version: 1,
+        entries: { brc_main: {} },
+        'paraglide-usage-context': context,
+      });
+
+      writeStagedEntries(settings('brc_main'), [
+        { fileId: 'f1', versionId: 'v1', fileName: 'src/page.mdx' },
+      ]);
+
+      expect(readLockFile()).toEqual({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'f1',
+            versionId: 'v1',
+            fileName: 'src/page.mdx',
+            staged: true,
+            translations: {},
+          },
+        ],
+        'paraglide-usage-context': context,
+      });
+    });
+  });
+
   describe('lookup helpers', () => {
     it('buildEntryMap provides O(1) lookup by fileId', () => {
       const entries: DownloadedVersionEntry[] = [

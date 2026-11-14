@@ -6,6 +6,12 @@ import type { Settings } from '../../types/index.js';
 
 const GT_LOCK_FILE = 'gt-lock.json';
 
+/**
+ * What @generaltranslation/paraglide-js keeps of each source file for its
+ * next run: a cache, each entry valid only for the content hash it holds.
+ */
+export const USAGE_CONTEXT_KEY = 'paraglide-usage-context';
+
 // ── V2 types (internal working format) ──────────────────────────────
 
 export type DownloadedTranslation = {
@@ -164,6 +170,11 @@ export function readLockfile(settings: Settings): {
           if (branches.length > 0) branchId = branches[0];
         }
         data = convertV1ToV2(originalV1, branchId);
+      }
+
+      // Kept for paraglide-js, whose cache it is: see `mergeUsageContext`.
+      if (raw && typeof raw === 'object' && USAGE_CONTEXT_KEY in raw) {
+        Object.assign(data, { [USAGE_CONTEXT_KEY]: raw[USAGE_CONTEXT_KEY] });
       }
     }
   } catch (error) {

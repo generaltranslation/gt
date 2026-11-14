@@ -25,8 +25,11 @@ export async function handleSetupProject(
   // Validate credentials if not in dry run
   if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
 
-  if (settings.files?.parsingFlags?.json?.includeSourceCodeContext) {
-    await collectParaglideContext();
+  const jsonParsingFlags = settings.files?.parsingFlags?.json;
+  if (jsonParsingFlags?.includeSourceCodeContext) {
+    await collectParaglideContext({
+      cache: jsonParsingFlags.enableParaglideContextCache,
+    });
   }
 
   const {

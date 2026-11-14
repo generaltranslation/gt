@@ -224,6 +224,32 @@ describe('handleStage config ids', () => {
     ).toBeLessThan(vi.mocked(collectFiles).mock.invocationCallOrder[0]);
   });
 
+  it('turns on the Paraglide context cache with enableParaglideContextCache', async () => {
+    const base = settings();
+
+    await handleStage(
+      options,
+      {
+        ...base,
+        files: {
+          ...base.files,
+          parsingFlags: {
+            json: {
+              includeSourceCodeContext: true,
+              enableParaglideContextCache: true,
+            },
+          },
+        },
+      },
+      'gt-react',
+      false
+    );
+
+    expect(collectParaglideContext).toHaveBeenCalledExactlyOnceWith({
+      cache: true,
+    });
+  });
+
   it('does not collect Paraglide context when the json flag is not set', async () => {
     await handleStage(options, settings(), 'gt-react', false);
 

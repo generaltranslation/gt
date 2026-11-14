@@ -526,6 +526,80 @@ describe('runMergeDriver', () => {
   });
 });
 
+describe('mergeGtLockJson with paraglide-js usage context', () => {
+  const context = (files: Record<string, string>, fingerprint = 'f1') => ({
+    version: 1,
+    fingerprint,
+    files,
+  });
+  const withContext = (contextValue: unknown) =>
+    json({
+      version: 2,
+      branchId: 'branch-main',
+      entries: [],
+      'paraglide-usage-context': contextValue,
+    });
+
+  it("keeps one side's whole section, never entries of both", () => {
+    const base = context({ 'a.ts': 'a0', 'b.ts': 'b0' });
+    const ours = context({ 'a.ts': 'a1', 'b.ts': 'b0' });
+    const theirs = context({ 'a.ts': 'a0', 'b.ts': 'b2' });
+    const merged = (sides: unknown[]) => {
+      const result = mergeGtLockJson(
+        withContext(sides[0]),
+        withContext(sides[1]),
+        withContext(sides[2])
+      );
+      return result.ok && JSON.parse(result.content)['paraglide-usage-context'];
+    };
+
+    // `a.ts`'s analysis may have read `b.ts` as ours has it: theirs is not mixed in.
+    expect(merged([base, ours, theirs])).toEqual(ours);
+    expect(merged([base, base, theirs])).toEqual(theirs);
+  });
+
+  it('keeps ours when the sides were written by different versions', () => {
+    const ours = context({ 'a.ts': 'a1' }, 'f2');
+    const result = mergeGtLockJson(
+      withContext(context({})),
+      withContext(ours),
+      withContext(context({ 'b.ts': 'b1' }))
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content)['paraglide-usage-context']).toEqual(ours);
+  });
+
+  it('reads a section it cannot parse as none: it is only a cache', () => {
+    const theirs = context({ 'b.ts': 'b1' });
+    const result = mergeGtLockJson(
+      lock(),
+      withContext({ version: 1 }),
+      withContext(theirs)
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content)['paraglide-usage-context']).toEqual(
+      theirs
+    );
+  });
+
+  it('keeps a section only one side has, and adds none to a lock without it', () => {
+    const only = context({ 'a.ts': 'a1' });
+    const kept = mergeGtLockJson(lock(), withContext(only), lock());
+    const none = mergeGtLockJson(lock(), lock(), lock());
+
+    expect(
+      kept.ok && JSON.parse(kept.content)['paraglide-usage-context']
+    ).toEqual(only);
+    expect(
+      none.ok && 'paraglide-usage-context' in JSON.parse(none.content)
+    ).toBe(false);
+  });
+});
+
 function lock({
   branchId = 'branch-main',
   entries = [],

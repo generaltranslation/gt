@@ -8,6 +8,7 @@ const PARAGLIDE_COMPILER = '@generaltranslation/paraglide-js/compiler';
 type ParaglideCompiler = {
   collectContext(options: {
     root: string;
+    cache: boolean;
     logger: {
       warn(message: string): void;
       info(message: string): void;
@@ -17,11 +18,12 @@ type ParaglideCompiler = {
 
 /**
  * Writes the Paraglide metadata files that file collection reads, so call it
- * first. Failures only warn.
+ * first. Failures only warn. `cache` keeps what a run found in gt-lock.json.
  */
-export async function collectParaglideContext(
-  projectRoot: string = process.cwd()
-): Promise<void> {
+export async function collectParaglideContext({
+  projectRoot = process.cwd(),
+  cache = false,
+}: { projectRoot?: string; cache?: boolean } = {}): Promise<void> {
   const compilerPath = resolveParaglideCompiler(projectRoot);
   if (!compilerPath) return;
 
@@ -36,6 +38,7 @@ export async function collectParaglideContext(
     );
     await collectContext({
       root: projectRoot,
+      cache,
       logger: {
         warn: (message) => warnings.push(message),
         info: () => {},
