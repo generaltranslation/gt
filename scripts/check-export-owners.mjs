@@ -212,8 +212,9 @@ export function validateWorkspace({
     )?.name;
   };
 
-  // One list per declaration file, and the names each import specifier
-  // resolves to: `${package}${subpath}` -> name -> { owner, declaration }.
+  // One list per declaration file, and the owners each import specifier's
+  // names resolve to across its export conditions:
+  // `${package}${subpath}` -> name -> Set<owner>.
   const exportLists = [];
   const exportsBySpecifier = new Map();
   for (const pkg of builtPackages) {
@@ -241,8 +242,10 @@ export function validateWorkspace({
         subpath === '.' ? pkg.name : `${pkg.name}${subpath.slice(1)}`;
       const merged = exportsBySpecifier.get(specifier) ?? { names: new Map() };
       exportsBySpecifier.set(specifier, merged);
-      for (const [name, exported] of names) {
-        if (!merged.names.has(name)) merged.names.set(name, exported);
+      for (const [name, { owner }] of names) {
+        if (!owner) continue;
+        const owners = merged.names.get(name) ?? new Set();
+        merged.names.set(name, owners.add(owner));
       }
     }
   }
@@ -290,23 +293,24 @@ export function validateWorkspace({
       for (const { specifier, name, line, character } of collectNamedImports(
         file
       )) {
-        const exported = exportsBySpecifier.get(specifier)?.names.get(name);
+        const owners = exportsBySpecifier.get(specifier)?.names.get(name);
         const via = getPackageName(specifier);
-        if (!exported?.owner || exported.owner === via) continue;
-        if (exported.owner === pkg.name) continue;
-        const allowed = imports.some(
-          (exception) =>
-            exception.via === via &&
-            exception.owner === exported.owner &&
-            exception.importers.includes(pkg.name)
-        );
-        if (allowed) continue;
-        const location = `${normalizeRepositoryPath(
-          path.relative(realpathSync(repositoryRoot), file)
-        )}:${line}:${character}`;
-        violations.push(
-          `${location} imports ${name} from '${specifier}', but ${exported.owner} defines it; import it from ${exported.owner}`
-        );
+        for (const owner of owners ?? []) {
+          if (owner === via || owner === pkg.name) continue;
+          const allowed = imports.some(
+            (exception) =>
+              exception.via === via &&
+              exception.owner === owner &&
+              exception.importers.includes(pkg.name)
+          );
+          if (allowed) continue;
+          const location = `${normalizeRepositoryPath(
+            path.relative(realpathSync(repositoryRoot), file)
+          )}:${line}:${character}`;
+          violations.push(
+            `${location} imports ${name} from '${specifier}', but ${owner} defines it; import it from ${owner}`
+          );
+        }
       }
     }
   }

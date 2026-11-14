@@ -184,6 +184,42 @@ export { one } from 'facade';
     ).toHaveLength(2);
   });
 
+  test('checks every owner of a name that export conditions define differently', async () => {
+    const repositoryRoot = await createWorkspace(
+      {
+        'packages/owner/package.json': manifest('owner', {
+          '.': './dist/index.d.ts',
+        }),
+        'packages/owner/dist/index.d.ts':
+          'export declare const useLocale: () => string;\n',
+        'packages/facade/package.json': JSON.stringify({
+          name: 'facade',
+          exports: {
+            '.': {
+              'react-server': { types: './dist/rsc.d.ts' },
+              default: { types: './dist/index.d.ts' },
+            },
+          },
+        }),
+        'packages/facade/dist/rsc.d.ts':
+          'export declare const useLocale: () => string;\n',
+        'packages/facade/dist/index.d.ts':
+          "export { useLocale } from 'owner';\n",
+        'packages/app/package.json': manifest('app', {}),
+        'packages/app/src/index.ts':
+          "'use client';\nimport { useLocale } from 'facade';\n",
+      },
+      { facade: ['owner'], app: ['owner', 'facade'] }
+    );
+
+    expect(
+      validateWorkspace({ repositoryRoot, duplicates: [], imports: [] })
+        .violations
+    ).toEqual([
+      "packages/app/src/index.ts:2:1 imports useLocale from 'facade', but owner defines it; import it from owner",
+    ]);
+  });
+
   test('skips packages whose declarations are not built', async () => {
     const repositoryRoot = await createWorkspace({
       'packages/unbuilt/package.json': manifest('unbuilt', {
