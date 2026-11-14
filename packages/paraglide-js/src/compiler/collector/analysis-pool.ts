@@ -2,25 +2,19 @@ import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import v8 from 'node:v8';
-import { MessageChannel, Worker, type MessagePort } from 'node:worker_threads';
+import { Worker } from 'node:worker_threads';
 import type { GlobalBinding } from '../analysis/module-graph.js';
 import type { ModuleSummary } from '../analysis/module-store.js';
 import type { ParaglideUsage } from '../analysis/types.js';
 import { MAX_CONCURRENT_READS } from '../utils/read-file.js';
-import {
-  analysisBudget,
-  type GeneratedBytes,
-  type SummaryResult,
-} from './module-reader.js';
+import { SpilledBytes, type SharedSpill } from '../utils/spill-file.js';
+import { analysisBudget, type SummaryResult } from './module-reader.js';
 
 export type AnalysisWorkerData = {
   projectRoot: string;
   /** Files the thread reads at once, at most. */
   concurrentReads: number;
 };
-
-/** Where a worker asks the main thread for a generated module, and the flag it waits on. */
-export type Bridge = { port: MessagePort; flag: Int32Array };
 
 /** What every thread analyzes with. */
 export type AnalysisIndex = {
@@ -34,14 +28,13 @@ export type AnalysisIndex = {
 
 export type IndexRequest = {
   type: 'index';
-  /** An `AnalysisIndex` and its `generatedFiles`, serialized once for every thread. */
+  /** A `SharedIndex`, serialized once for every thread. */
   index: SharedArrayBuffer;
-  bridge: Bridge;
 };
 
 export type SharedIndex = AnalysisIndex & {
-  /** The files whose modules a language generated. */
-  generatedFiles: readonly string[];
+  /** What languages generated, by file: see `GeneratedBytes`. */
+  generated: SharedSpill;
 };
 
 type WorkerTask =
@@ -152,8 +145,8 @@ export function availableMemory(): number {
 export class AnalysisPool {
   private workers: PoolWorker[];
   private readonly workerData: AnalysisWorkerData;
-  /** By file, kept from indexing: a thread that loads the file again asks for it. */
-  private readonly generated = new Map<string, GeneratedBytes>();
+  /** By file, kept from indexing in a temporary file: a thread that loads the file again reads it. */
+  private readonly generated = new SpilledBytes();
   private readonly queue: Array<{
     file: string;
     settle: (result: Promise<SummaryResult>) => void;
@@ -208,19 +201,16 @@ export class AnalysisPool {
 
     const shared: SharedIndex = {
       ...index,
-      generatedFiles: [...this.generated.keys()],
+      generated: this.generated.shared(),
     };
     const serialized = v8.serialize(shared);
     const buffer = new SharedArrayBuffer(serialized.length);
     serialized.copy(Buffer.from(buffer));
 
     await Promise.all(
-      this.workers.map((worker) => {
-        const bridge = this.openBridge();
-        return worker.request({ type: 'index', index: buffer, bridge }, [
-          bridge.port,
-        ]);
-      })
+      this.workers.map((worker) =>
+        worker.request({ type: 'index', index: buffer })
+      )
     );
 
     const added: Promise<void>[] = [];
@@ -257,6 +247,8 @@ export class AnalysisPool {
 
   async close(): Promise<void> {
     await Promise.all(this.workers.map((worker) => worker.terminate()));
+    // Once no thread reads it.
+    this.generated.close();
   }
 
   private startWorkers(size: number): PoolWorker[] {
@@ -270,21 +262,6 @@ export class AnalysisPool {
           })
         )
     );
-  }
-
-  /** A thread blocks on the flag until the main thread answers on the port. */
-  private openBridge(): Bridge {
-    const { port1, port2 } = new MessageChannel();
-    const flag = new Int32Array(new SharedArrayBuffer(4));
-
-    port1.on('message', (file: string) => {
-      port1.postMessage(this.generated.get(file));
-      Atomics.store(flag, 0, 1);
-      Atomics.notify(flag, 0);
-    });
-    port1.unref();
-
-    return { port: port2, flag };
   }
 
   private scheduleDispatch(): void {
@@ -397,7 +374,7 @@ class PoolWorker {
     return this.pending.size > 0;
   }
 
-  request(task: WorkerTask, transfer: MessagePort[] = []): Promise<unknown> {
+  request(task: WorkerTask): Promise<unknown> {
     const id = this.nextId++;
     const request: WorkerRequest = { ...task, id };
 
@@ -408,7 +385,7 @@ class PoolWorker {
       }
 
       this.pending.set(id, { resolve, reject });
-      this.worker.postMessage(request, transfer);
+      this.worker.postMessage(request);
     });
   }
 
