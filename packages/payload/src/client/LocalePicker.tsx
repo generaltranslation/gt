@@ -1,7 +1,7 @@
 'use client';
 import { Button, CheckboxInput } from '@payloadcms/ui';
 import React from 'react';
-import type { LocaleOption } from './locales';
+import type { LocaleOption } from '../locales';
 
 // Checkboxes for the locales to translate into, with select all. Locales GT
 // cannot translate into are shown but cannot be picked.

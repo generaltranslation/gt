@@ -2,8 +2,8 @@ import {
   createVueScriptAnalysis,
   createVueScriptAnalysisStats,
   parseVueScript,
-  type VueScriptAnalysisStats,
-} from '../script.js';
+} from '../script/analyze.js';
+import type { VueScriptAnalysisStats } from '../script/model.js';
 import type { TemplateBindings, VueExtractionContext } from '../types.js';
 
 /** Runs only the script analyzer and returns deterministic hot-path counters. */

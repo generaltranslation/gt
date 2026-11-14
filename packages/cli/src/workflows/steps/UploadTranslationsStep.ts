@@ -1,7 +1,7 @@
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import type { ProjectHandle } from 'generaltranslation';
-import type { UploadTranslationsResponse } from 'generaltranslation/api';
+import type { UploadTranslationsResponse } from '@generaltranslation/api';
 import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {

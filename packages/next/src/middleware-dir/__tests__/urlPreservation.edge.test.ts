@@ -4,10 +4,11 @@ import { NextRequest } from 'next/server';
 import {
   defaultLocaleCookieName,
   defaultResetLocaleCookieName,
-} from '@generaltranslation/react-core/pure';
+} from 'gt-i18n/internal/cookies';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 import { createNextMiddleware } from '../createNextMiddleware';
-import { getResponse, type PathConfig } from '../utils';
+import type { PathConfig } from '../createPathMatcher';
+import { getResponse } from '../utils';
 import { useRoutingEnv } from './routingTestUtils';
 
 const origin = 'http://localhost:3000';

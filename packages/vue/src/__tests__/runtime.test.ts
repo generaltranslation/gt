@@ -1,4 +1,4 @@
-import type { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import { hashSource } from 'generaltranslation/id';
 import { hashStringMessage } from 'gt-i18n/internal/string';
 import {

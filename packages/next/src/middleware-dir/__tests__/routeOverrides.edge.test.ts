@@ -4,12 +4,10 @@ import { NextRequest } from 'next/server';
 import {
   defaultLocaleCookieName,
   defaultResetLocaleCookieName,
-} from '@generaltranslation/react-core/pure';
-import {
-  createNextMiddleware,
-  type RouteOverrides,
-} from '../createNextMiddleware';
-import type { PathConfig } from '../utils';
+} from 'gt-i18n/internal/cookies';
+import { createNextMiddleware } from '../createNextMiddleware';
+import type { RouteOverrides } from '../types';
+import type { PathConfig } from '../createPathMatcher';
 import {
   expectRoutedResponse,
   stubRoutingEnv,

@@ -21,6 +21,8 @@ vi.mock('gt-react', () => ({
   T: mockRscT,
 }));
 
+vi.mock('../renderPipeline', () => ({ renderPreparedT: vi.fn() }));
+
 vi.mock('gt-i18n/internal', () => ({
   getGTInternal: mockGetGTInternal,
   getMessagesInternal: mockGetMessagesInternal,

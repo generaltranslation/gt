@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  initializeI18nConfig,
-  defaultLocaleCookieName as defaultLocaleStoreKey,
-} from '@generaltranslation/react-core/pure';
+import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
+import { defaultLocaleCookieName as defaultLocaleStoreKey } from 'gt-i18n/internal/cookies';
 import { getLocale } from '../getLocale';
 
 const nativeStore = vi.hoisted(() => new Map<string, string>());

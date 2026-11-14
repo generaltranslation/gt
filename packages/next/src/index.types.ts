@@ -36,27 +36,28 @@ import {
   RegionSelector as _RegionSelector,
   useSetLocale as _useSetLocale,
   useLocaleSelector as _useLocaleSelector,
-  getTranslationsSnapshot,
-  getDefaultLocale,
-  getLocaleProperties,
-  getLocales,
-  resolveCanonicalLocale,
-  getVersionId,
 } from 'gt-react';
 import { GTProvider as _GTProvider } from 'gt-react';
-import type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
+import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
+import type {
+  GTTranslationOptions,
+  RuntimeTranslationOptions,
+} from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
 import type { RegisteredMessage } from 'gt-i18n/types';
 import {
   msg,
   decodeMsg,
   decodeOptions,
-  derive,
-  declareVar,
-  decodeVars,
   mFallback,
   gtFallback,
-} from '@generaltranslation/react-core/pure';
+  getDefaultLocale,
+  getLocaleProperties,
+  getLocales,
+  resolveCanonicalLocale,
+  getVersionId,
+} from 'gt-i18n';
+import { derive, declareVar, decodeVars } from 'generaltranslation';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.

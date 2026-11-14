@@ -3,7 +3,7 @@ import {
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
 import type { ProjectHandle } from 'generaltranslation';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 
 /** Source uploads do not update the project's default locale. */
 export async function syncProjectDefaultLocale(

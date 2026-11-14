@@ -1,5 +1,5 @@
 // Calls to the plugin's endpoints from the admin panel.
-import { ApiError } from 'generaltranslation/api';
+import { ApiError } from '@generaltranslation/api';
 import type { ClientConfig } from 'payload';
 import type { CoveragePage } from '../coverage';
 import type { RunKind, RunProgress, StepResult } from '../runs';

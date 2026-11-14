@@ -1,4 +1,4 @@
-import type { UploadSourceFilesResponse } from 'generaltranslation/api';
+import type { UploadSourceFilesResponse } from '@generaltranslation/api';
 import { pluginConfig, projectFor } from '../adapter/core';
 import type { Secrets } from '../types';
 import { succeededResults } from '../utils/batchResults';

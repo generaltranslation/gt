@@ -3,8 +3,8 @@ import {
   createApiClient,
   type ApiClientConfig,
   type Client,
-} from 'generaltranslation/api';
-import openApiSpec from 'generaltranslation/api/openapi.json' with { type: 'json' };
+} from '@generaltranslation/api';
+import openApiSpec from '@generaltranslation/api/spec/openapi.json' with { type: 'json' };
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,

@@ -8,7 +8,7 @@ import {
   readVueSfcExclusionPatterns,
 } from '../../inspect.js';
 import { extractFromVueProject } from '../../project.js';
-import { isVueSfcSource } from '../project/inspectVueProject.js';
+import { isVueSfcSource } from '../project/vueSourceClassification.js';
 import {
   parseLocalDependencyPath,
   readJavaScriptPackageManifest,

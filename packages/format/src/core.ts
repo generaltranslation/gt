@@ -26,14 +26,13 @@ import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _requiresTranslation } from './locales/requiresTranslation';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
-import type { CustomMapping, FormatVariables } from './types';
+import type { CustomMapping } from './locales/customLocaleMapping';
+import type { FormatVariables } from './types';
 import type { StringFormat } from './types-dir/jsx/content';
 import {
   defaultLocaleMatcher,
   defaultDefaultLocale,
 } from './settings/settings';
-
-export { getRegionProperties } from './locales/getRegionProperties';
 
 // Every argument is passed in: these functions apply no defaults of their own
 // to them. `generaltranslation` resolves what a caller leaves out.

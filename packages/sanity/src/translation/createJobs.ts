@@ -1,7 +1,7 @@
 import type {
   TranslateFilesResponse,
   UploadSourceFilesResponse,
-} from 'generaltranslation/api';
+} from '@generaltranslation/api';
 import { gt, projectFor } from '../adapter/core';
 import type { Secrets } from '../types';
 import { succeededResults } from '../utils/batchResults';

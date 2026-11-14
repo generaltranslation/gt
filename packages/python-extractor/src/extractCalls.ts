@@ -1,4 +1,4 @@
-import type { SyntaxNode } from './parser.js';
+import type { Node as SyntaxNode } from 'web-tree-sitter';
 import type { ImportAlias } from './extractImports.js';
 import {
   PYTHON_METADATA_KWARGS,
