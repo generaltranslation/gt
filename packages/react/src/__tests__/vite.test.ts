@@ -64,6 +64,24 @@ describe('gtReact', () => {
     });
   });
 
+  it('gives dev server code the env file credentials through process.env', async () => {
+    const root = createRoot({ '.env': ENV_FILE });
+
+    await resolveCredentialDefines(root, 'serve');
+
+    expect(process.env.GT_PROJECT_ID).toBe('project-id');
+    expect(process.env.GT_API_KEY).toBe('SENTINEL_KEY');
+  });
+
+  it('leaves process.env alone for a build', async () => {
+    const root = createRoot({ '.env': ENV_FILE });
+
+    await resolveCredentialDefines(root, 'build');
+
+    expect(process.env.GT_PROJECT_ID).toBeUndefined();
+    expect(process.env.GT_API_KEY).toBeUndefined();
+  });
+
   it('exposes only the project ID to a build', async () => {
     const root = createRoot({ '.env': ENV_FILE });
 

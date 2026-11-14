@@ -15,7 +15,8 @@ const createApiKeyEnvPrefixError = (source: string, pluginName: string) =>
 /**
  * A Vite plugin that exposes `GT_PROJECT_ID` to client code, and `GT_API_KEY`
  * too while the dev server runs, so development translations hot-reload. Both
- * are read from the environment and Vite's `.env` files.
+ * are read from the environment and Vite's `.env` files. The dev server's own
+ * process also gets them in `process.env`, for SSR code.
  *
  * @param source - The framework package, named in diagnostics.
  * @param pluginName - The public plugin function, named in diagnostics.
@@ -36,6 +37,16 @@ export function createCredentialsPlugin(
           : path.resolve(root, config.envDir || '');
       // Vite 6's loadEnv() takes no `false`; without env files only the process has values.
       const env = envDir === false ? process.env : loadEnv(mode, envDir, 'GT_');
+      if (command === 'serve') {
+        // SSR may load GT packages without transforming them, so define
+        // cannot reach them; dev server code reads process.env instead. The
+        // shell keeps priority, as in Vite's loadEnv().
+        for (const name of Object.values(credentialEnvNames)) {
+          if (env[name] && process.env[name] === undefined) {
+            process.env[name] = env[name];
+          }
+        }
+      }
       // A build ships to users, and anyone can read a key in a browser bundle.
       const names =
         command === 'serve'
