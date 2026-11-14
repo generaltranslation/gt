@@ -1,11 +1,7 @@
 import { expect, test } from 'vitest';
-import { native } from '../../src/compiler/analysis/native.js';
 import { emberLanguage } from '../../src/compiler/languages/ember.js';
 import { NO_PACKAGES } from '../../src/compiler/languages/language.js';
 import { analyzeProject, skippedFile, summarize } from '../helpers/project.js';
-
-/** The analysis writes Ember's files itself, without Glint, when the addon is built with it. */
-const isNative = native.nativeLanguages().includes('ember');
 
 async function analyze(
   file: string,
@@ -187,70 +183,34 @@ test('comments, escaped mustaches, and text are not read', async () => {
   ).toEqual(['message:read:call 6:45']);
 });
 
-test.runIf(isNative)(
-  "a template that does not parse skips the file, with Glimmer's error",
-  async () => {
-    await expect(
-      analyze('/app/src/components/broken.gjs', [
-        ...imports,
-        `<template>`,
-        `  <p title={{m.broken (}}>{{m.ok}}</p>`,
-        `</template>`,
-      ])
-    ).rejects.toThrow('broken.gjs: Glimmer: Parse error on line 5:');
+test("a template that does not parse skips the file, with Glimmer's error", async () => {
+  await expect(
+    analyze('/app/src/components/broken.gjs', [
+      ...imports,
+      `<template>`,
+      `  <p title={{m.broken (}}>{{m.ok}}</p>`,
+      `</template>`,
+    ])
+  ).rejects.toThrow('broken.gjs: Glimmer: Parse error on line 5:');
 
-    await expect(
-      analyze('/app/src/components/unclosed.gjs', [
-        ...imports,
-        `<template>`,
-        `  <div><p>{{m.ok}}</div>`,
-        `</template>`,
-      ])
-    ).rejects.toThrow(
-      'unclosed.gjs: Glimmer: Closing tag </div> did not match last open tag <p> (on line 5)'
-    );
-  }
-);
+  await expect(
+    analyze('/app/src/components/unclosed.gjs', [
+      ...imports,
+      `<template>`,
+      `  <div><p>{{m.ok}}</div>`,
+      `</template>`,
+    ])
+  ).rejects.toThrow(
+    'unclosed.gjs: Glimmer: Closing tag </div> did not match last open tag <p> (on line 5)'
+  );
+});
 
-test.runIf(isNative)(
-  'the file is read without Glint in the project',
-  async () => {
-    const result = await skippedFile(
-      '/app/src/components/list.gjs',
-      `<template>{{m.x}}</template>`,
-      [emberLanguage],
-      NO_PACKAGES
-    );
-    expect(result).toBeUndefined();
-  }
-);
-
-test.skipIf(isNative)(
-  "a template Glint cannot parse skips the file, with Glint's error",
-  async () => {
-    await expect(
-      analyze('/app/src/components/broken.gjs', [
-        ...imports,
-        `<template>`,
-        `  <p title={{m.broken (}}>{{m.ok}}</p>`,
-        `</template>`,
-      ])
-    ).rejects.toThrow('broken.gjs: Glint: Parse error on line 2:');
-  }
-);
-
-test.skipIf(isNative)(
-  'without Glint in the project, the file is skipped and Glint is named',
-  async () => {
-    const result = await skippedFile(
-      '/app/src/components/list.gjs',
-      `<template>{{m.x}}</template>`,
-      [emberLanguage],
-      NO_PACKAGES
-    );
-    expect(result).toMatchObject({
-      error: 'ember files need @glint/ember-tsc in the project',
-      missing: ['@glint/ember-tsc'],
-    });
-  }
-);
+test('the file is read without Glint in the project', async () => {
+  const result = await skippedFile(
+    '/app/src/components/list.gjs',
+    `<template>{{m.x}}</template>`,
+    [emberLanguage],
+    NO_PACKAGES
+  );
+  expect(result).toBeUndefined();
+});

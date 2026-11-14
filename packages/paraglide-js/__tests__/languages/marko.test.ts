@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest';
-import { native } from '../../src/compiler/analysis/native.js';
 import { NO_PACKAGES } from '../../src/compiler/languages/language.js';
 import { markoLanguage } from '../../src/compiler/languages/marko.js';
 import {
@@ -10,9 +9,6 @@ import {
 } from '../helpers/project.js';
 
 const file = '/app/src/components/cart.marko';
-
-/** Whether the analysis reads Marko itself, rather than `@marko/language-tools`. */
-const isNative = native.nativeLanguages().includes('marko');
 
 async function analyze(lines: string[]) {
   const usages = await analyzeProject(
@@ -122,7 +118,7 @@ test('tag variables are hoisted: one named `m` shadows the import in the whole t
   ).toEqual([]);
 });
 
-describe.runIf(isNative)('read natively', () => {
+describe('read natively', () => {
   test('an expression that does not parse is left out, and the rest of the file is analyzed', async () => {
     expect(
       await analyze([
@@ -172,31 +168,5 @@ describe.runIf(isNative)('read natively', () => {
       'message:jsx_title:call 1',
       'message:card_label:call 3',
     ]);
-  });
-});
-
-describe.skipIf(isNative)("read by Marko's tooling", () => {
-  test('an expression that does not parse skips the file', async () => {
-    await expect(
-      analyze([
-        ...imports,
-        `<p title=m.broken(,)>\${m.ok()}</p>`,
-        `<p>\${m.after()}</p>`,
-      ])
-    ).rejects.toThrow('cart.marko: marko tooling produced unparsable code');
-  });
-
-  test("without Marko's tooling in the project, the file is skipped and the packages are named", async () => {
-    const result = await skippedFile(
-      file,
-      `<p>\${m.x()}</p>`,
-      [markoLanguage],
-      NO_PACKAGES
-    );
-    expect(result).toMatchObject({
-      error:
-        'marko files need @marko/language-tools and @marko/compiler in the project',
-      missing: ['@marko/language-tools', '@marko/compiler'],
-    });
   });
 });
