@@ -4,6 +4,7 @@ import type { ApiVersion } from '../generated/types.gen';
 import { ApiError } from './errors';
 import {
   callerSignal,
+  createCompressingFetch,
   createRetryingFetch,
   createTimeoutFetch,
   resolveTransportOptions,
@@ -20,6 +21,11 @@ export type UserTokenProvider = {
 export type ApiClientConfig = Partial<TransportOptions> & {
   apiKey?: string;
   baseUrl: string;
+  /**
+   * Gzips request bodies of 32 KiB or more. Defaults to true; set false
+   * when a custom fetch or proxy must read plain request bodies.
+   */
+  compression?: boolean;
   userTokenProvider?: UserTokenProvider;
 };
 
@@ -62,12 +68,18 @@ export function createApiClient(config: ApiClientConfig): Client {
     retryPolicy,
   });
 
+  const authFetch =
+    config.apiKey || !config.userTokenProvider
+      ? transportFetch
+      : createUserTokenFetch(transportFetch, config.userTokenProvider);
+
   const client = createGeneratedClient({
     baseUrl: config.baseUrl,
+    // Outermost, so retries and the 401 refresh resend the compressed bytes.
     fetch:
-      config.apiKey || !config.userTokenProvider
-        ? transportFetch
-        : createUserTokenFetch(transportFetch, config.userTokenProvider),
+      config.compression === false
+        ? authFetch
+        : createCompressingFetch(authFetch),
     headers,
   });
   // Only thrown errors change; `{ data, error }` results keep the decoded body.
