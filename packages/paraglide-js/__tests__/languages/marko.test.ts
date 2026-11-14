@@ -1,9 +1,18 @@
-import { expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
+import { native } from '../../src/compiler/analysis/native.js';
 import { NO_PACKAGES } from '../../src/compiler/languages/language.js';
 import { markoLanguage } from '../../src/compiler/languages/marko.js';
-import { analyzeProject, skippedFile, summarize } from '../helpers/project.js';
+import {
+  analyzeProject,
+  describeUsages,
+  skippedFile,
+  summarize,
+} from '../helpers/project.js';
 
 const file = '/app/src/components/cart.marko';
+
+/** Whether the analysis reads Marko itself, rather than `@marko/language-tools`. */
+const isNative = native.nativeLanguages().includes('marko');
 
 async function analyze(lines: string[]) {
   const usages = await analyzeProject(
@@ -47,14 +56,44 @@ test('placeholders, attributes, scriptlets and components', async () => {
     'message:label:call 7:29',
     'message:tip:call 11:11',
     'message:heading:call 11:42',
-    // The tooling writes `class="a ${…}"` as a plain string, so `m.css()` is not read.
+    // An attribute's string is a string, as Marko compiles it: `m.css()` is not read.
     'message:html:call 12:28',
     'message:tos:reference 14:27',
     'message:enabled:call 15:5',
     'message:inside:call 16:11',
-    // Placeholders in `<script>` are expressions to the tooling.
+    // A placeholder in `<script>` is an expression.
     'message:script:call 19:11',
   ]);
+});
+
+test('concise mode', async () => {
+  expect(
+    await analyze([
+      ...imports,
+      `div.card`,
+      `  h2 title=m.concise_title() -- \${m.concise_text()}`,
+      `  ul [`,
+      `    class=m.concise_class()`,
+      `  ]`,
+      `    for|item| of=items`,
+      `      li -- \${m.concise_item({ item })}`,
+    ])
+  ).toEqual([
+    'message:concise_title:call 5:12',
+    'message:concise_text:call 5:35',
+    'message:concise_class:call 7:11',
+    'message:concise_item:call 10:15',
+  ]);
+});
+
+test('a script of text only is code', async () => {
+  expect(
+    await analyze([
+      ...imports,
+      `<script>document.title = m.script_title();</script>`,
+      `<script type="text/plain">m.not_code();</script>`,
+    ])
+  ).toEqual(['message:script_title:call 4:26']);
 });
 
 test('tag parameters scope their names', async () => {
@@ -83,26 +122,81 @@ test('tag variables are hoisted: one named `m` shadows the import in the whole t
   ).toEqual([]);
 });
 
-test('an expression that does not parse skips the file', async () => {
-  await expect(
-    analyze([
-      ...imports,
-      `<p title=m.broken(,)>\${m.ok()}</p>`,
-      `<p>\${m.after()}</p>`,
-    ])
-  ).rejects.toThrow('cart.marko: marko tooling produced unparsable code');
+describe.runIf(isNative)('read natively', () => {
+  test('an expression that does not parse is left out, and the rest of the file is analyzed', async () => {
+    expect(
+      await analyze([
+        ...imports,
+        `<p title=m.broken(,)>\${m.ok()}</p>`,
+        `<p>\${m.after()}</p>`,
+      ])
+    ).toEqual(['message:ok:call 4:24', 'message:after:call 5:6']);
+  });
+
+  test("Marko's tooling need not be in the project", async () => {
+    expect(
+      await skippedFile(file, `<p>\${m.x()}</p>`, [markoLanguage], NO_PACKAGES)
+    ).toBeUndefined();
+  });
+
+  test('a component reads the input of each tag that renders it, and of JSX', async () => {
+    const card = '/app/src/components/card.marko';
+    const usages = await analyzeProject(
+      {
+        [card]: [
+          `<h2>\${input.title()}</h2>`,
+          `$ const { label } = input;`,
+          `<p>\${label()}</p>`,
+          `<for|item| of=input.items>\${item.text}</for>`,
+        ].join('\n'),
+        [file]: [
+          ...imports,
+          `import Card from "./card.marko";`,
+          `<Card title=m.card_title label=m.card_label/>`,
+          `<\${Card} title=m.dynamic_title>`,
+          `  <@items text=m.attribute_tag/>`,
+          `</>`,
+        ].join('\n'),
+        '/app/src/App.tsx': [
+          `import { m } from "./paraglide/messages.js";`,
+          `import Card from "./components/card.marko";`,
+          `export const App = () => <Card title={m.jsx_title} />;`,
+        ].join('\n'),
+      },
+      { entry: card, loadAll: true }
+    );
+
+    expect(describeUsages(usages)).toEqual([
+      'message:card_title:call 1',
+      'message:dynamic_title:call 1',
+      'message:jsx_title:call 1',
+      'message:card_label:call 3',
+    ]);
+  });
 });
 
-test("without Marko's tooling in the project, the file is skipped and the packages are named", async () => {
-  const result = await skippedFile(
-    file,
-    `<p>\${m.x()}</p>`,
-    [markoLanguage],
-    NO_PACKAGES
-  );
-  expect(result).toMatchObject({
-    error:
-      'marko files need @marko/language-tools and @marko/compiler in the project',
-    missing: ['@marko/language-tools', '@marko/compiler'],
+describe.skipIf(isNative)("read by Marko's tooling", () => {
+  test('an expression that does not parse skips the file', async () => {
+    await expect(
+      analyze([
+        ...imports,
+        `<p title=m.broken(,)>\${m.ok()}</p>`,
+        `<p>\${m.after()}</p>`,
+      ])
+    ).rejects.toThrow('cart.marko: marko tooling produced unparsable code');
+  });
+
+  test("without Marko's tooling in the project, the file is skipped and the packages are named", async () => {
+    const result = await skippedFile(
+      file,
+      `<p>\${m.x()}</p>`,
+      [markoLanguage],
+      NO_PACKAGES
+    );
+    expect(result).toMatchObject({
+      error:
+        'marko files need @marko/language-tools and @marko/compiler in the project',
+      missing: ['@marko/language-tools', '@marko/compiler'],
+    });
   });
 });
