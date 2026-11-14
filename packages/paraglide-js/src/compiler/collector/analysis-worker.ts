@@ -10,6 +10,12 @@ import {
   type SharedSites,
   type SitesJob,
 } from '../analysis/module-graph.js';
+import {
+  fromReadList,
+  replay,
+  toReadList,
+  tracked,
+} from '../analysis/reads.js';
 import type { TrackedSymbol } from '../analysis/types.js';
 import { defaultLanguages } from '../languages/index.js';
 import { defaultTargets } from '../paraglide/targets.js';
@@ -20,6 +26,7 @@ import { spilledReader } from '../utils/spill-file.js';
 import type {
   AnalysisWorkerData,
   ChunkMessage,
+  ChunkResult,
   IndexRequest,
   SharedChannel,
   SharedIndex,
@@ -78,7 +85,12 @@ async function handle(request: WorkerRequest): Promise<unknown> {
       return undefined;
 
     case 'analyze':
-      return request.files.map((file) => analyzeModule(graph!, file));
+      return request.files.map((file) => {
+        const { value: usages, reads } = tracked(() =>
+          analyzeModule(graph!, file)
+        );
+        return { usages, reads: toReadList(reads) };
+      });
 
     case 'help':
       return helpWith(request.job);
@@ -186,7 +198,11 @@ function waitForRanges(
       const message = received.message as ChunkMessage;
       if (message.id !== id) continue;
       if ('done' in message) return;
-      if (message.symbols) ranges[message.chunk] = message.symbols;
+      if (message.symbols) {
+        ranges[message.chunk] = message.symbols;
+        // Another thread read for this file's values.
+        replay(fromReadList(message.reads));
+      }
     }
 
     if (!isMissing()) return;
@@ -201,12 +217,9 @@ function countSet(ranges: ReadonlyArray<unknown>): number {
 }
 
 /** Evaluates ranges of another thread's shared job until none is left. */
-function helpWith(job: SharedJob): Array<{
-  chunk: number;
-  symbols: TrackedSymbol[] | null;
-}> {
+function helpWith(job: SharedJob): ChunkResult[] {
   const claims = new Int32Array(job.claims);
-  const results: Array<{ chunk: number; symbols: TrackedSymbol[] | null }> = [];
+  const results: ChunkResult[] = [];
 
   for (
     let chunk = Atomics.add(claims, 0, 1);
@@ -215,10 +228,10 @@ function helpWith(job: SharedJob): Array<{
   ) {
     const from = chunk * job.chunkSize;
     const to = Math.min(job.referrers, from + job.chunkSize);
-    results.push({
-      chunk,
-      symbols: graph!.evaluateSharedSites(job, from, to) ?? null,
-    });
+    const { value: symbols, reads } = tracked(() =>
+      graph!.evaluateSharedSites(job, from, to)
+    );
+    results.push({ chunk, symbols: symbols ?? null, reads: toReadList(reads) });
   }
 
   return results;

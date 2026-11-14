@@ -26,6 +26,13 @@ import {
   importOf,
   valueImports,
 } from './module-syntax.js';
+import {
+  emptyReads,
+  readFile,
+  readImporters,
+  tracked,
+  TrackedCache,
+} from './reads.js';
 import type { Scope } from './scope.js';
 import { PositionedSites, type SitePositions } from './site-positions.js';
 
@@ -103,10 +110,11 @@ type Dependents = {
 };
 
 /** Handles and candidates only: holding a module's sites would hold the module. */
+/** Each keeps what computing it read, for a later file that uses it: see `reads.ts`. */
 type Cache = {
   generation: number;
-  callSites: WeakMap<FunctionNode, SiteList>;
-  componentProps: WeakMap<ModuleRecord, Candidate[]>;
+  callSites: TrackedCache<FunctionNode, SiteList>;
+  componentProps: TrackedCache<ModuleRecord, Candidate[]>;
 };
 
 /**
@@ -258,23 +266,27 @@ export class ImporterIndex {
     const cached = callSites.get(fn);
     if (cached) return cached;
 
-    const scope = this.modules.scopeOf(record);
-    const sitesInOwnModule =
-      callSitesIn(record.program, scope).byDeclaration.get(fn) ?? [];
-    const own = sitesInOwnModule.map(ownSite);
+    const { value: sites, reads } = tracked(() => {
+      // Its own sites are held: they are read from its module.
+      readFile(record.file);
+      const scope = this.modules.scopeOf(record);
+      const sitesInOwnModule =
+        callSitesIn(record.program, scope).byDeclaration.get(fn) ?? [];
+      const own = sitesInOwnModule.map(ownSite);
 
-    const exportNames = exportNamesOf(record.program, fn, scope);
-    const exported = { file: record.file, names: exportNames };
-    const referrers =
-      exportNames.length === 0 ? undefined : this.referrersOf(exported);
+      const exportNames = exportNamesOf(record.program, fn, scope);
+      const exported = { file: record.file, names: exportNames };
+      const referrers =
+        exportNames.length === 0 ? undefined : this.referrersOf(exported);
 
-    const sites = new SiteList(own, referrers?.modules ?? [], (ref) => {
-      const importer = this.modules.module(ref);
-      if (!importer || importer === record) return [];
+      return new SiteList(own, referrers?.modules ?? [], (ref) => {
+        const importer = this.modules.module(ref);
+        if (!importer || importer === record) return [];
 
-      return this.sitesIn(ref, importer, exported, referrers!, 'call-sites');
+        return this.sitesIn(ref, importer, exported, referrers!, 'call-sites');
+      });
     });
-    callSites.set(fn, sites);
+    callSites.set(fn, sites, reads);
 
     return sites;
   }
@@ -288,18 +300,22 @@ export class ImporterIndex {
 
     // Cached before it is filled, so that a component rendering itself ends.
     const props: Candidate[] = [];
-    componentProps.set(record, props);
+    componentProps.set(record, props, emptyReads());
 
-    const component = { file: record.file, names: ['default'] };
-    const referrers = this.referrersOf(component);
+    const { reads } = tracked(() => {
+      readFile(record.file);
+      const component = { file: record.file, names: ['default'] };
+      const referrers = this.referrersOf(component);
 
-    for (const ref of referrers.modules) {
-      const importer = this.modules.module(ref);
-      if (!importer || importer === record) continue;
+      for (const ref of referrers.modules) {
+        const importer = this.modules.module(ref);
+        if (!importer || importer === record) continue;
 
-      props.push(...this.jsxProps(ref, importer, component, referrers));
-      props.push(...this.instanceProps(ref, importer, component, referrers));
-    }
+        props.push(...this.jsxProps(ref, importer, component, referrers));
+        props.push(...this.instanceProps(ref, importer, component, referrers));
+      }
+    });
+    componentProps.set(record, props, reads);
 
     return props;
   }
@@ -359,8 +375,8 @@ export class ImporterIndex {
     if (this.cache?.generation !== generation) {
       this.cache = {
         generation,
-        callSites: new WeakMap(),
-        componentProps: new WeakMap(),
+        callSites: new TrackedCache(),
+        componentProps: new TrackedCache(),
       };
     }
 
@@ -383,6 +399,8 @@ export class ImporterIndex {
   private referrersOf(exported: ExportedNames): Referrers {
     const dependents = this.dependents();
     const { exporters, exportedAs } = reexportsOf(exported, dependents);
+    // What it finds changes when a module that imports one of them does.
+    for (const file of exporters) readImporters(file);
 
     const globals = this.modules
       .globalExports()

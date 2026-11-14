@@ -5,6 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import zlib from 'node:zlib';
 import type { ParsedSummary } from '../analysis/module-index.js';
+import type { ReadList } from '../analysis/reads.js';
+import type { ParaglideUsage } from '../analysis/types.js';
 
 /**
  * What a run found of each file, kept for the next run to skip what did not
@@ -36,6 +38,12 @@ export type CachedFile = {
   hash: string;
   /** Unset for a file a language's tooling generates a module for: it is generated again. */
   summary?: ParsedSummary;
+  /** The files its specifiers resolved to, project-relative: whose importers it changes. */
+  imports?: string[];
+  /** The auto-imported names it mentions: whose mentions it changes. */
+  globals?: string[];
+  /** For an analyzed file: what it uses, and what finding that read, project-relative. */
+  analysis?: { usages: ParaglideUsage[]; reads: ReadList };
 };
 
 type Section = {
@@ -144,6 +152,22 @@ export class UsageCache {
     this.found.set(this.relative(file), entry);
   }
 
+  /** Adds to what this run found of `file`. */
+  update(file: string, fields: Partial<CachedFile>): void {
+    const entry = this.found.get(this.relative(file));
+    if (entry) Object.assign(entry, fields);
+  }
+
+  /** What the last run and this one found, by project-relative path. */
+  entries(): Iterable<[string, { before?: CachedFile; now?: CachedFile }]> {
+    const files = new Set([...this.cached.keys(), ...this.found.keys()]);
+
+    return [...files].map((file) => [
+      file,
+      { before: this.cached.get(file), now: this.found.get(file) },
+    ]);
+  }
+
   /**
    * Writes what this run found into the lock file, keeping everything else
    * in it, or into the fallback file if it is too large or there is no lock
@@ -182,8 +206,12 @@ export class UsageCache {
     }
   }
 
-  private relative(file: string): string {
+  relative(file: string): string {
     return path.relative(this.projectRoot, file).split(path.sep).join('/');
+  }
+
+  absolute(file: string): string {
+    return path.resolve(this.projectRoot, file);
   }
 }
 

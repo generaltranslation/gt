@@ -17,6 +17,7 @@ import {
   memberOf,
 } from './evaluate.js';
 import { ImporterIndex, type GlobalExport } from './importers.js';
+import { replay, tracked, type Reads } from './reads.js';
 import {
   declaredNames,
   exportingStatements,
@@ -168,6 +169,8 @@ export class ModuleGraph {
     string,
     ReadonlySet<string> | undefined
   >();
+  /** What listing each file's export names read: see `reads.ts`. */
+  private readonly exportNameReads = new Map<string, Reads>();
   private readonly importers = new ImporterIndex({
     record: (file) => this.records.get(file),
     module: ({ file, part }) => {
@@ -363,11 +366,17 @@ export class ModuleGraph {
 
   /** Undefined when unknown: a target or a CommonJS module is among its `export *`. */
   private exportNamesOf(file: string): ReadonlySet<string> | undefined {
-    if (!this.exportNames.has(file)) {
-      this.exportNames.set(file, this.listExportNames(file));
+    const known = this.exportNameReads.get(file);
+    if (known) {
+      replay(known);
+      return this.exportNames.get(file);
     }
 
-    return this.exportNames.get(file);
+    const { value, reads } = tracked(() => this.listExportNames(file));
+    this.exportNames.set(file, value);
+    this.exportNameReads.set(file, reads);
+
+    return value;
   }
 
   private listExportNames(file: string): ReadonlySet<string> | undefined {
@@ -657,6 +666,7 @@ export class ModuleGraph {
     );
     this.targets.clear();
     this.exportNames.clear();
+    this.exportNameReads.clear();
   }
 
   /** Whether `loadPaths` loads `file` when a loaded module loads it. */
@@ -676,6 +686,7 @@ export class ModuleGraph {
         if (record) {
           (this.records as LoadedRecords).set(record);
           this.exportNames.clear();
+          this.exportNameReads.clear();
           this.generation++;
         }
 
