@@ -12,6 +12,7 @@
 <svelte:options preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { JsxChildren } from '@generaltranslation/format';
   import { untrack, type Snippet } from 'svelte';
   import GtNodes from './GtNodes.svelte';
   import { lookupJsxTranslation } from '../runtime/lookup';
@@ -35,6 +36,8 @@
     _hash?: string;
     /** @internal Branch metadata. */
     _gtm?: GTRuntimeMetadata;
+    /** @internal Serialized children, passed in development only. */
+    _source?: JsxChildren;
     [snippet: string]: unknown;
   };
 
@@ -46,6 +49,7 @@
     requiresReview,
     _hash,
     _gtm,
+    _source,
     ...snippets
   }: Props = $props();
 
@@ -62,6 +66,7 @@
           id,
           maxChars,
           requiresReview,
+          _source,
         })
   );
 

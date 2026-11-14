@@ -30,18 +30,23 @@ npm install --save-dev gt
 These steps are for SvelteKit 3. On SvelteKit 2, see
 [SvelteKit 2](#sveltekit-2).
 
-Add the preprocessor to the `sveltekit()` plugin in `vite.config.ts`. `<T>`
-is prepared at build time:
+Add the preprocessor to the `sveltekit()` plugin in `vite.config.ts`, and
+`gtSvelte()`, which passes your project ID to the browser. `<T>` is prepared
+at build time:
 
 ```ts
 // vite.config.ts
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { gtPreprocess } from 'gt-svelte/preprocess';
+import { gtSvelte } from 'gt-svelte/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [sveltekit({ preprocess: [gtPreprocess()], adapter: adapter() })],
+  plugins: [
+    sveltekit({ preprocess: [gtPreprocess()], adapter: adapter() }),
+    gtSvelte(),
+  ],
 });
 ```
 
@@ -129,6 +134,34 @@ Whitespace inside `<T>` renders as it does anywhere else in Svelte: content
 wrapped across lines keeps a space between words, and the extracted source
 matches what Svelte renders.
 
+## Runtime translation
+
+Put your credentials in `.env.local`:
+
+```bash
+GT_PROJECT_ID=your-project-id
+GT_API_KEY=your-api-key
+```
+
+In development, `<T>` content and `useGT()` and `useMessages()` strings that
+have no translation yet are translated as you add them. `gtSvelte()` passes
+the API key to the browser only while the dev server runs; builds never
+contain it.
+
+To translate a string at runtime in production, call `tx()` from server code,
+such as a `load` function in `+page.server.ts` or an endpoint. It reads
+`GT_API_KEY` from the server's environment:
+
+```ts
+// src/routes/[lang]/+page.server.ts
+import '#lib/gt.ts';
+import { tx } from 'gt-svelte';
+
+export const load = async ({ params }) => ({
+  status: await tx('Your order has shipped', { $locale: params.lang }),
+});
+```
+
 ### SvelteKit 2
 
 SvelteKit 2 reads Svelte options from `svelte.config.js`. Add the
@@ -144,6 +177,17 @@ export default {
   preprocess: [vitePreprocess(), gtPreprocess()],
   kit: { adapter: adapter() },
 };
+```
+
+Add `gtSvelte()` after `sveltekit()` in `vite.config.ts`:
+
+```ts
+// vite.config.ts
+import { sveltekit } from '@sveltejs/kit/vite';
+import { gtSvelte } from 'gt-svelte/vite';
+import { defineConfig } from 'vite';
+
+export default defineConfig({ plugins: [sveltekit(), gtSvelte()] });
 ```
 
 Import `src/lib/gt.ts` as `$lib/gt` instead of `#lib/gt.ts`, and import hook

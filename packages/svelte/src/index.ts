@@ -14,6 +14,8 @@ export {
   resolveLocale,
 } from './runtime/config';
 export type { GTSvelteConfig, GTTranslationsData } from './runtime/config';
+export { tx } from './runtime/tx';
+export type { TxOptions } from './runtime/tx';
 export {
   useDefaultLocale,
   useGT,

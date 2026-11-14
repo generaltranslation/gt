@@ -9,7 +9,8 @@ import {
 } from '../src/runtime/config';
 import Greeting from './fixtures/Greeting.svelte';
 import Harness from './fixtures/Harness.svelte';
-import { hashesOf, setupGT, withoutComments } from './helpers';
+import LocaleOverride from './fixtures/LocaleOverride.svelte';
+import { hashesOf, setupGT, stringsOf, withoutComments } from './helpers';
 
 const [greetingHash] = hashesOf('Greeting.svelte');
 
@@ -188,6 +189,26 @@ describe('<GTProvider> translations on the server', () => {
       results[size] = median(15, () => html(gt));
     }
     expect(results[20_000]).toBeLessThan(Math.max(results[100] * 20, 5));
+  });
+});
+
+describe('nested <GTProvider>s on the server', () => {
+  it('renders a $locale override from the translations an outer provider was given', () => {
+    setupGT();
+    const [saved] = stringsOf('LocaleOverride.svelte');
+
+    const { body } = render(Harness, {
+      props: {
+        locale: 'fr',
+        translations: { [saved.hash]: 'Enregistré' },
+        component: Harness,
+        props: { locale: 'de', translations: {}, component: LocaleOverride },
+      },
+    });
+
+    expect(withoutComments(body)).toContain(
+      '<p class="override">Enregistré</p>'
+    );
   });
 });
 

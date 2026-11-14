@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { analyzeSvelteSource } from '@generaltranslation/svelte-extractor';
 import { parse } from 'svelte/compiler';
 import type { Content } from '@generaltranslation/format';
-import { initializeGT } from '../src/runtime/config';
+import { vi } from 'vitest';
+import { initializeGT, type GTSvelteConfig } from '../src/runtime/config';
 
 /** Hashes of every `<T>` in a fixture, in source order. */
 export function hashesOf(fixture: string): string[] {
@@ -40,6 +41,49 @@ export function setupGT(
     locales: ['en', 'fr', 'de', 'ar', 'he', 'fa'],
     loadTranslations,
   });
+}
+
+/** A runtime translation request entry, as gt-i18n sends it. */
+export type RuntimeTranslationRequest = {
+  source: Content;
+  metadata: { hash: string; context?: string; dataFormat: string };
+};
+
+/**
+ * Initializes GT with credentials and answers runtime translation requests
+ * with `translate`. Returns the requested entries.
+ */
+export function setupRuntimeTranslation(
+  translate: (source: Content) => Content,
+  config: GTSvelteConfig = {}
+): RuntimeTranslationRequest[] {
+  const requests: RuntimeTranslationRequest[] = [];
+  vi.stubGlobal('fetch', async (input: RequestInfo, init?: RequestInit) => {
+    const body = (await new Request(input, init).json()) as {
+      targetLocale: string;
+      requests: RuntimeTranslationRequest[];
+    };
+    requests.push(...body.requests);
+    return Response.json({
+      results: body.requests.map((request) => ({
+        status: 'succeeded',
+        translation: translate(request.source),
+        dataFormat: request.metadata.dataFormat,
+        locale: body.targetLocale,
+      })),
+    });
+  });
+  delete (globalThis as { __generaltranslation?: unknown })
+    .__generaltranslation;
+  initializeGT({
+    defaultLocale: 'en',
+    locales: ['en', 'fr'],
+    projectId: 'project-id',
+    apiKey: 'api-key',
+    loadTranslations: async () => ({}),
+    ...config,
+  });
+  return requests;
 }
 
 /** Removes Svelte's hydration comments from rendered HTML. */
