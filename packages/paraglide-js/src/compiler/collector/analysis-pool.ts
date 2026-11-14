@@ -124,7 +124,15 @@ export const THREAD_HEAP_MB = 1536;
  */
 export const LARGE_THREAD_HEAP_MB = 4096;
 
-/** What a thread takes besides its heap, about: the parser's buffers, native memory, code. */
+/**
+ * The young generation of a thread's heap, in MB: where new objects are
+ * allocated, and collected cheaply while they die young. The analysis
+ * allocates syntax trees and scopes it soon drops; with V8's default for a
+ * thread, 96 MB, it collects them about twice as often.
+ */
+export const THREAD_YOUNG_GENERATION_MB = 192;
+
+/** What a thread takes besides its old generation, about: its young generation, the parser's buffers, native memory, code. */
 const THREAD_OVERHEAD = 512 * MB;
 
 const WORKER_URL = new URL('./analysis-worker.js', import.meta.url);
@@ -490,7 +498,10 @@ export class AnalysisPool {
   private startWorker(heapMb: number): PoolWorker {
     const worker = new Worker(WORKER_URL, {
       workerData: this.workerData,
-      resourceLimits: { maxOldGenerationSizeMb: heapMb },
+      resourceLimits: {
+        maxOldGenerationSizeMb: heapMb,
+        maxYoungGenerationSizeMb: THREAD_YOUNG_GENERATION_MB,
+      },
     });
 
     const pool = new PoolWorker(worker, heapMb, (job) =>
