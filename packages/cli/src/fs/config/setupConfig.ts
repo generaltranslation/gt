@@ -33,16 +33,29 @@ export type SetupConfigUpdate = {
 
 /**
  * The installed library's JSON Schema, which lists exactly the keys that
- * library and the CLI read, or the hosted schema when it ships none.
+ * library and the CLI read, relative to the config file; or the hosted schema
+ * when the library is not installed or ships none. The library is found as
+ * Node finds it: in the nearest node_modules of the config's directory or an
+ * ancestor, so nested configs and hoisted workspace installs work.
  */
 export function configSchemaReference(
   configFilepath: string,
   library: string
 ): string {
-  const reference = `./node_modules/${library}/config-schema.json`;
-  return fs.existsSync(path.join(path.dirname(configFilepath), reference))
-    ? reference
-    : GT_CONFIG_SCHEMA_URL;
+  const configDirectory = path.dirname(path.resolve(configFilepath));
+  for (let directory = configDirectory; ; directory = path.dirname(directory)) {
+    const packageDirectory = path.join(directory, 'node_modules', library);
+    if (fs.existsSync(path.join(packageDirectory, 'package.json'))) {
+      const schemaPath = path.join(packageDirectory, 'config-schema.json');
+      if (!fs.existsSync(schemaPath)) return GT_CONFIG_SCHEMA_URL;
+      const reference = path
+        .relative(configDirectory, schemaPath)
+        .split(path.sep)
+        .join('/');
+      return reference.startsWith('.') ? reference : `./${reference}`;
+    }
+    if (path.dirname(directory) === directory) return GT_CONFIG_SCHEMA_URL;
+  }
 }
 
 function asObject(value: unknown): Record<string, unknown> {

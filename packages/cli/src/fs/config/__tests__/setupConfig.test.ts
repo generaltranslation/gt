@@ -176,6 +176,7 @@ describe('createOrUpdateConfig', () => {
       'node_modules/gt-next/config-schema.json'
     );
     fs.mkdirSync(path.dirname(schemaPath), { recursive: true });
+    fs.writeFileSync(path.join(path.dirname(schemaPath), 'package.json'), '{}');
     fs.writeFileSync(schemaPath, '{}');
     const schema = configSchemaReference(configPath, 'gt-next');
     expect(schema).toBe('./node_modules/gt-next/config-schema.json');
@@ -194,5 +195,32 @@ describe('createOrUpdateConfig', () => {
     expect(JSON.parse(fs.readFileSync(configPath, 'utf8')).$schema).toBe(
       './custom.json'
     );
+  });
+
+  it('finds the library the way Node does, from a nested config or a hoisted install', () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const installLibrary = (directory: string, withSchema: boolean) => {
+      const packageDirectory = path.join(directory, 'node_modules/gt-next');
+      fs.mkdirSync(packageDirectory, { recursive: true });
+      fs.writeFileSync(path.join(packageDirectory, 'package.json'), '{}');
+      if (withSchema)
+        fs.writeFileSync(
+          path.join(packageDirectory, 'config-schema.json'),
+          '{}'
+        );
+    };
+    installLibrary(testDirectory, true);
+    const app = path.join(testDirectory, 'apps/web');
+    fs.mkdirSync(path.join(app, '.gt'), { recursive: true });
+
+    expect(
+      configSchemaReference(path.join(app, '.gt/gt.config.json'), 'gt-next')
+    ).toBe('../../../node_modules/gt-next/config-schema.json');
+
+    // The nearest install wins, as in Node; one without a schema gets the hosted one.
+    installLibrary(app, false);
+    expect(
+      configSchemaReference(path.join(app, 'gt.config.json'), 'gt-next')
+    ).toBe(GT_CONFIG_SCHEMA_URL);
   });
 });
