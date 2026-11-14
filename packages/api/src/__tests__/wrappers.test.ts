@@ -1,12 +1,17 @@
-import { readFileSync } from 'node:fs';
+import { setFlagsFromString } from 'node:v8';
+import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
-import { createBatches, processBatches } from '../wrappers/batch';
+import { awaitJobs } from '../wrappers/awaitJobs';
+import {
+  createBatches,
+  DEFAULT_BATCH_SIZE,
+  processBatches,
+} from '../wrappers/batch';
 import { API_VERSION, createApiClient } from '../wrappers/client';
-import { ApiError } from '../wrappers/errors';
+import { ApiError, isTransientApiError } from '../wrappers/errors';
 import { paginate } from '../wrappers/paginate';
-import { listProjects } from '../generated/sdk.gen';
+import { listProjects, pluginInfo, queryJobs } from '../generated/sdk.gen';
 import { createRetryingFetch, createTimeoutFetch } from '../wrappers/transport';
 
 afterEach(() => {
@@ -309,6 +314,26 @@ describe('createRetryingFetch', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  it('stops sleeping when the caller aborts during the backoff', async () => {
+    const controller = new AbortController();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response('rate limited', { status: 429 }));
+
+    // Real timers: without the abortable sleep this would wait the 60s 429 delay.
+    const pending = createRetryingFetch({ fetch: fetchMock })(
+      'https://example.com/test',
+      { signal: controller.signal }
+    );
+    setTimeout(() => controller.abort(new Error('caller gave up')), 10);
+
+    // The caller gets the 429 it was waiting out, so it can honor the rate limit.
+    const response = await pending;
+    expect(response.status).toBe(429);
+    await expect(response.text()).resolves.toBe('rate limited');
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it('does not retry when retryPolicy is none', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
@@ -324,23 +349,52 @@ describe('createRetryingFetch', () => {
   });
 });
 
-describe('API_VERSION', () => {
-  const spec = JSON.parse(
-    readFileSync(new URL('../../spec/openapi.json', import.meta.url), 'utf8')
-  ) as { components: { schemas: { ApiVersion: { enum: string[] } } } };
-  const specVersions = spec.components.schemas.ApiVersion.enum;
-
-  it('relies on the bundled spec listing ApiVersion oldest to newest', () => {
-    // Date-prefixed versions sort lexically in release order.
-    expect(specVersions).toEqual([...specVersions].sort());
-  });
-
-  it('is the newest ApiVersion in the bundled spec', () => {
-    expect(API_VERSION).toBe(specVersions.at(-1));
-  });
-});
-
 describe('createApiClient', () => {
+  it.each([
+    ['an API key', { apiKey: 'api-key' }],
+    [
+      'a user token',
+      {
+        userTokenProvider: {
+          getAccessToken: async () => 'token',
+          refreshAccessToken: async () => undefined,
+        },
+      },
+    ],
+  ])(
+    "forwards the caller's abort after a garbage collection with %s",
+    async (_name, auth) => {
+      // Node's Request copies follow their source's signal only while the source is reachable.
+      setFlagsFromString('--expose-gc');
+      const gc = runInNewContext('gc') as () => void;
+      const client = createApiClient({
+        ...auth,
+        baseUrl: 'https://example.com',
+        fetch: async (_input, init) =>
+          new Promise((_, reject) => {
+            init?.signal?.addEventListener('abort', () =>
+              reject(init.signal?.reason)
+            );
+          }),
+        retryPolicy: 'none',
+      });
+      const controller = new AbortController();
+      const reason = new Error('caller gave up');
+
+      const request = client.get({ url: '/test', signal: controller.signal });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      gc();
+      controller.abort(reason);
+
+      await expect(
+        Promise.race([
+          request,
+          new Promise((resolve) => setTimeout(resolve, 500, 'not aborted')),
+        ])
+      ).resolves.toMatchObject({ error: reason });
+    }
+  );
+
   it('configures the generated client URL and auth headers', async () => {
     let request: Request | undefined;
     const fetchMock = vi
@@ -356,15 +410,53 @@ describe('createApiClient', () => {
       apiKey: 'api-key',
       baseUrl: 'https://example.com',
       fetch: fetchMock,
-      projectId: 'project-id',
     });
 
     await client.get({ url: '/test' });
 
     expect(request?.url).toBe('https://example.com/test');
     expect(request?.headers.get('Authorization')).toBe('Bearer api-key');
-    expect(request?.headers.get('gt-project-id')).toBe('project-id');
+    expect(request?.headers.has('gt-project-id')).toBe(false);
     expect(request?.headers.get('gt-api-version')).toBe(API_VERSION);
+  });
+
+  it('sends the per-call gt-api-version on generated calls, never gt-project-id', async () => {
+    const requests: Request[] = [];
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (input) => {
+        requests.push(new Request(input));
+        return Response.json({ results: [] });
+      });
+    const client = createApiClient({
+      apiVersion: '2026-03-06.v1',
+      baseUrl: 'https://example.com',
+      fetch: fetchMock,
+    });
+
+    await queryJobs({
+      body: { jobs: [{ id: 'one' }] },
+      client,
+      headers: { 'gt-api-version': API_VERSION },
+      path: { projectId: 'project-id' },
+    });
+    await pluginInfo({
+      body: { fileName: 'design.fig' },
+      client,
+      headers: { 'gt-api-version': API_VERSION },
+      path: { provider: 'figma' },
+    });
+
+    expect(
+      requests.map((request) => [
+        new URL(request.url).pathname,
+        request.headers.get('gt-api-version'),
+        request.headers.has('gt-project-id'),
+      ])
+    ).toEqual([
+      ['/v2/projects/project-id/jobs/query', API_VERSION, false],
+      ['/v1/integrations/plugins/figma/info', API_VERSION, false],
+    ]);
   });
 
   it('uses a user token when no explicit API key is configured', async () => {
@@ -563,17 +655,54 @@ describe('createApiClient errors', () => {
   const client = createApiClient({
     baseUrl: 'https://example.com',
     fetch: async () =>
-      Response.json({ error: 'Forbidden project' }, { status: 403 }),
+      Response.json(
+        { error: 'Forbidden project', code: 'permission_missing' },
+        { status: 403 }
+      ),
     retryPolicy: 'none',
   });
 
-  it('throws an ApiError with the status for throwOnError calls', async () => {
+  it('throws an ApiError with the status and code for throwOnError calls', async () => {
     const error = await client
       .get({ url: '/test', throwOnError: true })
       .catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(ApiError);
-    expect(error).toMatchObject({ code: 403, message: 'Forbidden project' });
+    expect(error).toMatchObject({
+      status: 403,
+      code: 'permission_missing',
+      message: 'Forbidden project',
+    });
+  });
+
+  it('keeps a code this SDK does not know yet', async () => {
+    const futureClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () =>
+        Response.json(
+          { error: 'Something new', code: 'brand_new_code' },
+          { status: 409 }
+        ),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      futureClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ status: 409, code: 'brand_new_code' });
+  });
+
+  it('leaves the code undefined for a plain-text error body', async () => {
+    const textClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () => new Response('Unauthorized!', { status: 401 }),
+      retryPolicy: 'none',
+    });
+
+    const error = await textClient
+      .get({ url: '/test', throwOnError: true })
+      .catch((caught: unknown) => caught);
+    expect(error).toMatchObject({ status: 401, message: 'Unauthorized!' });
+    expect((error as ApiError).code).toBeUndefined();
   });
 
   const htmlErrorPage = {
@@ -585,7 +714,7 @@ describe('createApiClient errors', () => {
       name: 'the status text for an empty error body',
       body: null,
       init: { status: 503, statusText: 'Service Unavailable' },
-      expected: { code: 503, message: 'Service Unavailable' },
+      expected: { status: 503, message: 'Service Unavailable' },
     },
     {
       name: 'the status text for an HTML error page',
@@ -595,19 +724,19 @@ describe('createApiClient errors', () => {
         statusText: 'Bad Gateway',
         headers: htmlErrorPage.headers,
       },
-      expected: { code: 502, message: 'Bad Gateway' },
+      expected: { status: 502, message: 'Bad Gateway' },
     },
     {
       name: 'the status code for an HTML error page without status text',
       body: htmlErrorPage.body,
       init: { status: 502, headers: htmlErrorPage.headers },
-      expected: { code: 502, message: 'HTTP 502' },
+      expected: { status: 502, message: 'HTTP 502' },
     },
     {
       name: 'the status code for an empty error body without status text',
       body: null,
       init: { status: 503 },
-      expected: { code: 503, message: 'HTTP 503' },
+      expected: { status: 503, message: 'HTTP 503' },
     },
   ])('falls back to $name', async ({ body, init, expected }) => {
     const failingClient = createApiClient({
@@ -624,14 +753,54 @@ describe('createApiClient errors', () => {
   it('keeps the decoded body in non-throwing results', async () => {
     const result = await client.get({ url: '/test' });
 
-    expect(result.error).toEqual({ error: 'Forbidden project' });
+    expect(result.error).toEqual({
+      error: 'Forbidden project',
+      code: 'permission_missing',
+    });
+  });
+});
+
+describe('isTransientApiError', () => {
+  it.each([
+    ['internal_error', 500],
+    ['upstream_error', 502],
+    ['unavailable', 503],
+    ['rate_limited', 429],
+    ['locked', 423],
+    ['not_ready', 425],
+    ['translation_not_ready', 400],
+  ])('treats %s as transient', (code, status) => {
+    expect(isTransientApiError(new ApiError('x', status, code))).toBe(true);
+  });
+
+  it('treats a known permanent code as permanent whatever its status', () => {
+    expect(
+      isTransientApiError(new ApiError('x', 500, 'upload_incomplete'))
+    ).toBe(false);
+    expect(
+      isTransientApiError(new ApiError('x', 403, 'permission_missing'))
+    ).toBe(false);
+  });
+
+  it('falls back to the status for a missing or unknown code', () => {
+    expect(isTransientApiError(new ApiError('x', 504))).toBe(true);
+    expect(isTransientApiError(new ApiError('x', 503, 'brand_new'))).toBe(true);
+    expect(isTransientApiError(new ApiError('x', 501))).toBe(false);
+    expect(isTransientApiError(new ApiError('x', 400, 'brand_new'))).toBe(
+      false
+    );
+  });
+
+  it('does not classify errors that are not ApiErrors', () => {
+    expect(isTransientApiError(new TypeError('fetch failed'))).toBe(false);
+    expect(isTransientApiError('boom')).toBe(false);
   });
 });
 
 describe('batch helpers', () => {
   it('uses chunk-100 by default and preserves item order', async () => {
     const items = Array.from({ length: 205 }, (_, index) => index);
-    const batches = createBatches(items);
+    const batches = createBatches(items, DEFAULT_BATCH_SIZE);
     const result = await processBatches(items, async (batch) => batch);
 
     expect(batches.map(({ length }) => length)).toEqual([100, 100, 5]);
@@ -661,135 +830,431 @@ describe('batch helpers', () => {
 });
 
 describe('awaitJobs', () => {
-  it('polls the jobs endpoint through a configured client', async () => {
-    let request: Request | undefined;
+  type JobsQuery = { jobs: Array<{ id: string }> };
+
+  function createJobsClient(
+    getResults: (ids: string[]) => Array<{ id: string; status: string }>,
+    config: { apiVersion?: '2026-03-06.v1' } = {}
+  ) {
+    const requests: Request[] = [];
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockImplementation(async (input) => {
-        request = new Request(input);
-        return new Response(
-          JSON.stringify([{ jobId: 'one', status: 'completed' }]),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
+        const request = new Request(input);
+        requests.push(request);
+        const body = (await request.clone().json()) as JobsQuery;
+        return Response.json({
+          results: getResults(body.jobs.map(({ id }) => id)),
+        });
       });
     const client = createApiClient({
+      ...config,
       baseUrl: 'https://example.com',
       fetch: fetchMock,
       retryPolicy: 'none',
     });
+    const readBodies = () =>
+      Promise.all(
+        requests.map(
+          async (request) => (await request.clone().json()) as JobsQuery
+        )
+      );
+    return { client, readBodies, requests };
+  }
 
-    const result = await awaitJobs(client, ['one']);
+  it('polls queryJobs for the project through a configured client', async () => {
+    const { client, readBodies, requests } = createJobsClient((ids) =>
+      ids.map((id) => ({ id, status: 'completed' }))
+    );
 
-    expect(result).toEqual({
-      complete: true,
-      jobs: [{ jobId: 'one', status: 'completed' }],
-    });
-    expect(request?.url).toBe('https://example.com/v2/project/jobs/info');
-  });
-});
-
-describe('pollJobs', () => {
-  it('polls pending jobs until they reach terminal states', async () => {
-    const getJobStatuses = vi
-      .fn()
-      .mockResolvedValueOnce([{ jobId: 'one', status: 'processing' }])
-      .mockResolvedValueOnce([{ jobId: 'one', status: 'completed' }]);
-
-    const result = await pollJobs(['one'], getJobStatuses, {
-      pollingIntervalSeconds: 0,
-    });
+    const result = await awaitJobs(client, 'project-id', ['one']);
 
     expect(result).toEqual({
       complete: true,
-      jobs: [{ jobId: 'one', status: 'completed' }],
+      jobs: [{ id: 'one', status: 'completed' }],
     });
-    expect(getJobStatuses).toHaveBeenCalledTimes(2);
+    expect(requests).toHaveLength(1);
+    expect(requests[0].url).toBe(
+      'https://example.com/v2/projects/project-id/jobs/query'
+    );
+    expect(requests[0].method).toBe('POST');
+    expect(requests[0].headers.get('gt-api-version')).toBe(API_VERSION);
+    expect(requests[0].headers.has('gt-project-id')).toBe(false);
+    expect(await readBodies()).toEqual([{ jobs: [{ id: 'one' }] }]);
   });
 
-  it('waits for each status load before starting the next poll', async () => {
-    let activeLoads = 0;
-    let maxActiveLoads = 0;
-    let pollCount = 0;
-    const getJobStatuses = vi.fn(async () => {
-      activeLoads += 1;
-      maxActiveLoads = Math.max(maxActiveLoads, activeLoads);
-      await Promise.resolve();
-      activeLoads -= 1;
-      pollCount += 1;
-      return [
-        {
-          jobId: 'one',
-          status:
-            pollCount === 1 ? ('processing' as const) : ('completed' as const),
-        },
-      ];
-    });
+  it('polls with the pinned API_VERSION even when the client has another apiVersion', async () => {
+    const { client, requests } = createJobsClient(
+      (ids) => ids.map((id) => ({ id, status: 'completed' })),
+      { apiVersion: '2026-03-06.v1' }
+    );
 
-    await pollJobs(['one'], getJobStatuses, { pollingIntervalSeconds: 0 });
+    await awaitJobs(client, 'project-id', ['one']);
 
-    expect(maxActiveLoads).toBe(1);
-    expect(getJobStatuses).toHaveBeenCalledTimes(2);
+    expect(requests[0].headers.get('gt-api-version')).toBe(API_VERSION);
   });
 
-  it('reports each successful poll through the hook', async () => {
-    const processing = [{ jobId: 'one', status: 'processing' as const }];
-    const completed = [{ jobId: 'one', status: 'completed' as const }];
-    const getJobStatuses = vi
-      .fn()
-      .mockResolvedValueOnce(processing)
-      .mockResolvedValueOnce(completed);
+  it('queries more than 100 jobs in batches of 100, in order', async () => {
+    const jobIds = Array.from({ length: 205 }, (_, index) => `job-${index}`);
+    const { client, readBodies } = createJobsClient((ids) =>
+      ids.map((id) => ({ id, status: 'completed' }))
+    );
+
+    const result = await awaitJobs(client, 'project-id', jobIds);
+
+    const bodies = await readBodies();
+    expect(bodies.map(({ jobs }) => jobs.length)).toEqual([100, 100, 5]);
+    expect(bodies.flatMap(({ jobs }) => jobs.map(({ id }) => id))).toEqual(
+      jobIds
+    );
+    expect(result.complete).toBe(true);
+    expect(result.jobs.map(({ id }) => id)).toEqual(jobIds);
+  });
+
+  it('sends each duplicated job ID once', async () => {
+    const { client, readBodies } = createJobsClient((ids) =>
+      ids.map((id) => ({ id, status: 'completed' }))
+    );
+
+    const result = await awaitJobs(client, 'project-id', ['one', 'one']);
+
+    expect(await readBodies()).toEqual([{ jobs: [{ id: 'one' }] }]);
+    expect(result.jobs).toEqual([{ id: 'one', status: 'completed' }]);
+  });
+
+  // A copied Request follows the caller's signal only weakly, so a garbage
+  // collection can drop its abort; the transport also passes the signal in init.
+  function signalOf(init: RequestInit | undefined): AbortSignal {
+    if (!init?.signal)
+      throw new Error('Expected the transport to pass a signal');
+    return init.signal;
+  }
+
+  // The first batch of 100 answers; the second (job-100) answers with `failBatch`.
+  function createMixedBatchClient(
+    failBatch: (request: Request, signal: AbortSignal) => Promise<Response>
+  ) {
+    return createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async (input, init) => {
+        const request = new Request(input);
+        const { jobs } = (await request.clone().json()) as JobsQuery;
+        if (jobs.length < 100) return failBatch(request, signalOf(init));
+        return Response.json({
+          results: jobs.map(({ id }) => ({ id, status: 'completed' })),
+        });
+      },
+      retryPolicy: 'none',
+    });
+  }
+  const jobIds101 = Array.from({ length: 101 }, (_, index) => `job-${index}`);
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // AbortSignal.timeout runs on Node's internal timers, which fake timers do
+  // not replace: the test aborts the poll itself once it has passed the deadline.
+  function controlPollTimeout() {
+    vi.useFakeTimers();
+    const poll = new AbortController();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(poll.signal);
+    return poll;
+  }
+
+  it('keeps the statuses of batches that loaded when another batch fails at the deadline', async () => {
+    const poll = controlPollTimeout();
+    const client = createMixedBatchClient(
+      (_request, signal) =>
+        new Promise((_, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason));
+        })
+    );
+
+    const onPoll = vi.fn();
+    const result = awaitJobs(client, 'project-id', jobIds101, {
+      timeoutSeconds: 0.05,
+      onPoll,
+    });
+    // The first batch loads before the deadline; the second fails after it.
+    await vi.advanceTimersByTimeAsync(50);
+    poll.abort(new DOMException('The operation timed out.', 'TimeoutError'));
+
+    expect(await result).toEqual({
+      complete: false,
+      jobs: [
+        ...jobIds101.slice(0, 100).map((id) => ({ id, status: 'completed' })),
+        { id: 'job-100', status: 'unknown' },
+      ],
+    });
+    expect(onPoll.mock.calls).toEqual([
+      [jobIds101.slice(0, 100).map((id) => ({ id, status: 'completed' }))],
+    ]);
+  });
+
+  it('throws an error from one batch while another batch runs into the deadline', async () => {
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async (input, init) => {
+        const request = new Request(input);
+        const { jobs } = (await request.clone().json()) as JobsQuery;
+        if (jobs.length < 100) {
+          return Response.json(
+            { error: 'boom', code: 'permission_missing' },
+            { status: 403 }
+          );
+        }
+        const signal = signalOf(init);
+        return new Promise((_, reject) => {
+          signal.addEventListener('abort', () =>
+            setTimeout(() => reject(signal.reason), 10)
+          );
+        });
+      },
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      awaitJobs(client, 'project-id', jobIds101, { timeoutSeconds: 0.05 })
+    ).rejects.toThrow('boom');
+  });
+
+  it('throws when a batch fails permanently before the deadline', async () => {
+    const client = createMixedBatchClient(async () =>
+      Response.json(
+        { error: 'boom', code: 'permission_missing' },
+        { status: 403 }
+      )
+    );
+
+    await expect(awaitJobs(client, 'project-id', jobIds101)).rejects.toThrow(
+      'boom'
+    );
+  });
+
+  it('reports the statuses the other batches returned before it throws', async () => {
+    const client = createMixedBatchClient(async () =>
+      Response.json(
+        { error: 'boom', code: 'permission_missing' },
+        { status: 403 }
+      )
+    );
     const onPoll = vi.fn();
 
-    await pollJobs(['one'], getJobStatuses, {
+    await expect(
+      awaitJobs(client, 'project-id', jobIds101, { onPoll })
+    ).rejects.toThrow('boom');
+    expect(onPoll).toHaveBeenCalledExactlyOnceWith(
+      jobIds101.slice(0, 100).map((id) => ({ id, status: 'completed' }))
+    );
+  });
+
+  it('keeps polling a batch through transient failures', async () => {
+    let failures = 2;
+    const client = createMixedBatchClient(async (request) => {
+      const { jobs } = (await request.clone().json()) as JobsQuery;
+      if (failures-- > 0) {
+        return Response.json(
+          { error: 'Service unavailable', code: 'unavailable' },
+          { status: 503 }
+        );
+      }
+      return Response.json({
+        results: jobs.map(({ id }) => ({ id, status: 'completed' })),
+      });
+    });
+    const onPoll = vi.fn();
+
+    const result = await awaitJobs(client, 'project-id', jobIds101, {
       onPoll,
       pollingIntervalSeconds: 0,
     });
 
-    expect(onPoll.mock.calls).toEqual([[processing], [completed]]);
+    expect(result.complete).toBe(true);
+    expect(result.jobs).toEqual(
+      jobIds101.map((id) => ({ id, status: 'completed' }))
+    );
+    expect(onPoll.mock.calls.map(([statuses]) => statuses.length)).toEqual([
+      100, 0, 1,
+    ]);
   });
 
-  it('reports incomplete unknown jobs when the deadline expires', async () => {
-    const getJobStatuses = vi.fn();
+  it('polls a rate-limited batch again only after its Retry-After', async () => {
+    const requestTimes: number[] = [];
+    let limited = true;
+    const client = createMixedBatchClient(async (request) => {
+      requestTimes.push(Date.now());
+      const { jobs } = (await request.clone().json()) as JobsQuery;
+      if (limited) {
+        limited = false;
+        return Response.json(
+          { error: 'Too many requests', code: 'rate_limited' },
+          { status: 429, headers: { 'Retry-After': '0.2' } }
+        );
+      }
+      return Response.json({
+        results: jobs.map(({ id }) => ({ id, status: 'completed' })),
+      });
+    });
 
-    const result = await pollJobs(['one'], getJobStatuses, {
+    const result = await awaitJobs(client, 'project-id', jobIds101, {
+      pollingIntervalSeconds: 0,
+    });
+
+    expect(result.complete).toBe(true);
+    expect(requestTimes).toHaveLength(2);
+    expect(requestTimes[1] - requestTimes[0]).toBeGreaterThanOrEqual(190);
+  });
+
+  it('throws a batch error that came before another batch ran into the deadline', async () => {
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async (input, init) => {
+        const { jobs } = (await new Request(input).json()) as JobsQuery;
+        // Fails at once, long before the poll times out.
+        if (jobs.length < 100) {
+          return new Response('not json', {
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        const signal = signalOf(init);
+        return new Promise((_, reject) => {
+          signal.addEventListener('abort', () =>
+            setTimeout(() => reject(signal.reason), 10)
+          );
+        });
+      },
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      awaitJobs(client, 'project-id', jobIds101, { timeoutSeconds: 0.05 })
+    ).rejects.toThrow(SyntaxError);
+  });
+
+  it("keeps sibling batches' statuses when a custom fetch rejects the poll's timeout with its own error", async () => {
+    const poll = controlPollTimeout();
+    const client = createMixedBatchClient(
+      (_request, signal) =>
+        new Promise((_, reject) => {
+          signal.addEventListener('abort', () =>
+            reject(new DOMException('The operation was aborted.', 'AbortError'))
+          );
+        })
+    );
+    const onPoll = vi.fn();
+
+    const result = awaitJobs(client, 'project-id', jobIds101, {
+      onPoll,
+      timeoutSeconds: 0.05,
+    });
+    await vi.advanceTimersByTimeAsync(50);
+    poll.abort(new DOMException('The operation timed out.', 'TimeoutError'));
+
+    expect((await result).complete).toBe(false);
+    expect(onPoll.mock.calls).toEqual([
+      [jobIds101.slice(0, 100).map((id) => ({ id, status: 'completed' }))],
+    ]);
+  });
+
+  it('reports each poll through onPoll until every job is terminal', async () => {
+    const statuses = ['processing', 'completed'];
+    const { client, requests } = createJobsClient((ids) =>
+      ids.map((id) => ({ id, status: statuses[requests.length - 1] }))
+    );
+    const onPoll = vi.fn();
+
+    const result = await awaitJobs(client, 'project-id', ['one'], {
+      onPoll,
+      pollingIntervalSeconds: 0,
+    });
+
+    expect(onPoll.mock.calls).toEqual([
+      [[{ id: 'one', status: 'processing' }]],
+      [[{ id: 'one', status: 'completed' }]],
+    ]);
+    expect(result).toEqual({
+      complete: true,
+      jobs: [{ id: 'one', status: 'completed' }],
+    });
+  });
+
+  it('treats not_found as terminal', async () => {
+    const { client, requests } = createJobsClient((ids) =>
+      ids.map((id) => ({ id, status: 'not_found' }))
+    );
+
+    const result = await awaitJobs(client, 'project-id', ['one'], {
+      pollingIntervalSeconds: 0,
+    });
+
+    expect(result).toEqual({
+      complete: true,
+      jobs: [{ id: 'one', status: 'not_found' }],
+    });
+    expect(requests).toHaveLength(1);
+  });
+
+  it('reports never-polled jobs as unknown when the deadline expires', async () => {
+    const { client, requests } = createJobsClient(() => []);
+
+    const result = await awaitJobs(client, 'project-id', ['one'], {
       timeoutSeconds: 0,
     });
 
     expect(result).toEqual({
       complete: false,
-      jobs: [{ jobId: 'one', status: 'unknown' }],
+      jobs: [{ id: 'one', status: 'unknown' }],
     });
-    expect(getJobStatuses).not.toHaveBeenCalled();
+    expect(requests).toHaveLength(0);
   });
 
-  it('marks jobs missing from the response as unknown', async () => {
-    const getJobStatuses = vi.fn().mockResolvedValue([]);
+  it('ignores a response that arrives after the deadline', async () => {
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve(
+                Response.json({ results: [{ id: 'one', status: 'completed' }] })
+              ),
+            30
+          )
+        ),
+      retryPolicy: 'none',
+    });
 
-    const result = await pollJobs(['one'], getJobStatuses, {
-      pollingIntervalSeconds: 0,
+    const result = await awaitJobs(client, 'project-id', ['one'], {
+      timeoutSeconds: 0.01,
     });
 
     expect(result).toEqual({
-      complete: true,
-      jobs: [{ jobId: 'one', status: 'unknown' }],
+      complete: false,
+      jobs: [{ id: 'one', status: 'unknown' }],
     });
-    expect(getJobStatuses).toHaveBeenCalledOnce();
   });
 
-  it('propagates status-loader errors before the deadline', async () => {
-    const getJobStatuses = vi.fn().mockRejectedValue(new Error('boom'));
+  it('throws when the response has no result for a requested job', async () => {
+    const { client } = createJobsClient(() => [
+      { id: 'one', status: 'completed' },
+    ]);
 
-    await expect(pollJobs(['one'], getJobStatuses)).rejects.toThrow('boom');
+    await expect(
+      awaitJobs(client, 'project-id', ['one', 'two'], {
+        pollingIntervalSeconds: 0,
+      })
+    ).rejects.toThrow('Job status response has no result for job IDs: two');
   });
 
-  it('completes immediately for an empty job list', async () => {
-    const getJobStatuses = vi.fn();
+  it('completes without a request for an empty job list', async () => {
+    const { client, requests } = createJobsClient(() => []);
 
-    await expect(pollJobs([], getJobStatuses)).resolves.toEqual({
+    await expect(awaitJobs(client, 'project-id', [])).resolves.toEqual({
       complete: true,
       jobs: [],
     });
-    expect(getJobStatuses).not.toHaveBeenCalled();
+    expect(requests).toHaveLength(0);
   });
 });
 
@@ -872,7 +1337,7 @@ describe('paginate', () => {
     });
 
     await expect(paginate(listProjects, { client }).next()).rejects.toEqual(
-      new ApiError('nope', 403, 'nope')
+      new ApiError('nope', 403)
     );
   });
 });

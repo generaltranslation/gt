@@ -14,6 +14,9 @@ import type {
   CreateContextGroupData,
   CreateContextGroupErrors,
   CreateContextGroupResponses,
+  CreateFileUploadsData,
+  CreateFileUploadsErrors,
+  CreateFileUploadsResponses,
   CreateOrgApiKeyData,
   CreateOrgApiKeyErrors,
   CreateOrgApiKeyResponses,
@@ -23,9 +26,6 @@ import type {
   CreateProjectData,
   CreateProjectErrors,
   CreateProjectResponses,
-  CreateTagData,
-  CreateTagErrors,
-  CreateTagResponses,
   DeleteCliWizardSessionData,
   DeleteCliWizardSessionErrors,
   DeleteCliWizardSessionResponses,
@@ -41,24 +41,15 @@ import type {
   DeleteContextGroupData,
   DeleteContextGroupErrors,
   DeleteContextGroupResponses,
-  DownloadFileData,
-  DownloadFileErrors,
-  DownloadFileResponses,
-  DownloadFilesData,
-  DownloadFilesErrors,
-  DownloadFilesResponses,
-  EnqueueFileTranslationsData,
-  EnqueueFileTranslationsErrors,
-  EnqueueFileTranslationsResponses,
+  DeleteProjectApiKeyData,
+  DeleteProjectApiKeyErrors,
+  DeleteProjectApiKeyResponses,
   ExportContextContentData,
   ExportContextContentErrors,
   ExportContextContentResponses,
   GenerateProjectContextData,
   GenerateProjectContextErrors,
   GenerateProjectContextResponses,
-  GetBranchInfoData,
-  GetBranchInfoErrors,
-  GetBranchInfoResponses,
   GetCliWizardSessionData,
   GetCliWizardSessionErrors,
   GetCliWizardSessionResponses,
@@ -68,27 +59,33 @@ import type {
   GetContextGroupData,
   GetContextGroupErrors,
   GetContextGroupResponses,
-  GetFileInfoData,
-  GetFileInfoErrors,
-  GetFileInfoResponses,
-  GetOrphanedFilesData,
-  GetOrphanedFilesErrors,
-  GetOrphanedFilesResponses,
+  GetFileContentData,
+  GetFileContentErrors,
+  GetFileContentResponses,
+  GetFileStatusData,
+  GetFileStatusErrors,
+  GetFileStatusResponses,
+  GetJobData,
+  GetJobErrors,
+  GetJobResponses,
+  GetProjectApiKeyData,
+  GetProjectApiKeyErrors,
+  GetProjectApiKeyResponses,
   GetProjectContextGroupData,
   GetProjectContextGroupErrors,
   GetProjectContextGroupResponses,
-  GetProjectInfoData,
-  GetProjectInfoErrors,
-  GetProjectInfoResponses,
-  GetTranslationJobInfoData,
-  GetTranslationJobInfoErrors,
-  GetTranslationJobInfoResponses,
-  GetTranslationStatusData,
-  GetTranslationStatusErrors,
-  GetTranslationStatusResponses,
+  GetProjectData,
+  GetProjectErrors,
+  GetProjectResponses,
   ImportContextContentData,
   ImportContextContentErrors,
   ImportContextContentResponses,
+  ListBranchesData,
+  ListBranchesErrors,
+  ListBranchesResponses,
+  ListBranchFilesData,
+  ListBranchFilesErrors,
+  ListBranchFilesResponses,
   ListContextCustomPromptsData,
   ListContextCustomPromptsErrors,
   ListContextCustomPromptsResponses,
@@ -104,12 +101,21 @@ import type {
   ListOrgsData,
   ListOrgsErrors,
   ListOrgsResponses,
+  ListProjectApiKeysData,
+  ListProjectApiKeysErrors,
+  ListProjectApiKeysResponses,
   ListProjectContextGroupsData,
   ListProjectContextGroupsErrors,
   ListProjectContextGroupsResponses,
   ListProjectsData,
   ListProjectsErrors,
   ListProjectsResponses,
+  MoveFilesData,
+  MoveFilesErrors,
+  MoveFilesResponses,
+  OverwriteTranslationsData,
+  OverwriteTranslationsErrors,
+  OverwriteTranslationsResponses,
   PluginDownloadData,
   PluginDownloadErrors,
   PluginDownloadResponses,
@@ -131,27 +137,39 @@ import type {
   PluginSyncData,
   PluginSyncErrors,
   PluginSyncResponses,
-  ProcessFileMovesData,
-  ProcessFileMovesErrors,
-  ProcessFileMovesResponses,
   PublishFilesData,
   PublishFilesErrors,
   PublishFilesResponses,
+  QueryFilesContentData,
+  QueryFilesContentErrors,
+  QueryFilesContentResponses,
+  QueryFilesData,
+  QueryFilesErrors,
+  QueryFilesResponses,
+  QueryJobsData,
+  QueryJobsErrors,
+  QueryJobsResponses,
   ReorderContextGroupData,
   ReorderContextGroupErrors,
   ReorderContextGroupResponses,
   SetContextGlossaryTranslationData,
   SetContextGlossaryTranslationErrors,
   SetContextGlossaryTranslationResponses,
-  SubmitUserEditDiffsData,
-  SubmitUserEditDiffsErrors,
-  SubmitUserEditDiffsResponses,
-  TranslateData,
-  TranslateErrors,
-  TranslateResponses,
+  SetTagData,
+  SetTagErrors,
+  SetTagResponses,
+  TranslateContentData,
+  TranslateContentErrors,
+  TranslateContentResponses,
+  TranslateFilesData,
+  TranslateFilesErrors,
+  TranslateFilesResponses,
   UnassignContextGroupData,
   UnassignContextGroupErrors,
   UnassignContextGroupResponses,
+  UpdateBranchData,
+  UpdateBranchErrors,
+  UpdateBranchResponses,
   UpdateContextCustomPromptData,
   UpdateContextCustomPromptErrors,
   UpdateContextCustomPromptResponses,
@@ -164,18 +182,18 @@ import type {
   UpdateFilesData,
   UpdateFilesErrors,
   UpdateFilesResponses,
-  UpdateProjectInfoData,
-  UpdateProjectInfoErrors,
-  UpdateProjectInfoResponses,
-  UploadAssetsData,
-  UploadAssetsErrors,
-  UploadAssetsResponses,
+  UpdateProjectData,
+  UpdateProjectErrors,
+  UpdateProjectResponses,
   UploadSourceFilesData,
   UploadSourceFilesErrors,
   UploadSourceFilesResponses,
   UploadTranslationsData,
   UploadTranslationsErrors,
   UploadTranslationsResponses,
+  UpsertAssetsData,
+  UpsertAssetsErrors,
+  UpsertAssetsResponses,
   UpsertContextCustomPromptsData,
   UpsertContextCustomPromptsErrors,
   UpsertContextCustomPromptsResponses,
@@ -436,6 +454,159 @@ export const workspacePluginInfo = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Get file status
+ *
+ * Get a source file's metadata and the translation state of each locale. Requires `project:files:read`.
+ */
+export const getFileStatus = <ThrowOnError extends boolean = false>(
+  options: Options<GetFileStatusData, ThrowOnError>
+) =>
+  options.client.get<GetFileStatusResponses, GetFileStatusErrors, ThrowOnError>(
+    {
+      security: [
+        { scheme: 'bearer', type: 'http' },
+        { scheme: 'bearer', type: 'http' },
+      ],
+      url: '/v2/projects/{projectId}/files/{fileId}/status',
+      ...options,
+    }
+  );
+
+/**
+ * Overwrite translations
+ *
+ * Replace 1–100 existing translations with full translated file content. Requires `project:files:write`.
+ */
+export const overwriteTranslations = <ThrowOnError extends boolean = false>(
+  options: Options<OverwriteTranslationsData, ThrowOnError>
+) =>
+  options.client.post<
+    OverwriteTranslationsResponses,
+    OverwriteTranslationsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/files/translations/overwrite',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Move or rename files
+ *
+ * Move or rename 1–25 files on a branch. Requires `project:files:write`.
+ */
+export const moveFiles = <ThrowOnError extends boolean = false>(
+  options: Options<MoveFilesData, ThrowOnError>
+) =>
+  options.client.post<MoveFilesResponses, MoveFilesErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/files/move',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Query file metadata
+ *
+ * Get source and translated file metadata, including approval, completion, and publication dates, for up to 100 selectors. Requires `project:files:read`.
+ */
+export const queryFiles = <ThrowOnError extends boolean = false>(
+  options: Options<QueryFilesData, ThrowOnError>
+) =>
+  options.client.post<QueryFilesResponses, QueryFilesErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/files/query',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Query file content
+ *
+ * Download up to 100 source files and translations as base64. Requires `project:files:read`.
+ */
+export const queryFilesContent = <ThrowOnError extends boolean = false>(
+  options: Options<QueryFilesContentData, ThrowOnError>
+) =>
+  options.client.post<
+    QueryFilesContentResponses,
+    QueryFilesContentErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/files/content/query',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get file content
+ *
+ * Download one source file, or its translation when `locale` is given. Requires `project:files:read`.
+ */
+export const getFileContent = <ThrowOnError extends boolean = false>(
+  options: Options<GetFileContentData, ThrowOnError>
+) =>
+  options.client.get<
+    GetFileContentResponses,
+    GetFileContentErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/files/{fileId}/content',
+    ...options,
+  });
+
+/**
+ * Publish or unpublish files
+ *
+ * Publish or unpublish the translations of 1–100 file versions on the CDN. Requires `project:files:write` and CDN delivery enabled for the project.
+ */
+export const publishFiles = <ThrowOnError extends boolean = false>(
+  options: Options<PublishFilesData, ThrowOnError>
+) =>
+  options.client.post<PublishFilesResponses, PublishFilesErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/files/publish',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
  * Update files
  *
  * Update 1–100 source files or translations in one atomic batch. Requires `project:files:write`.
@@ -457,262 +628,9 @@ export const updateFiles = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Get Project information
- *
- * Get a project's ID, name, Organization, locales, and auto-approval setting. No permission is needed beyond access to the project.
- */
-export const getProjectInfo = <ThrowOnError extends boolean = false>(
-  options: Options<GetProjectInfoData, ThrowOnError>
-) =>
-  options.client.get<
-    GetProjectInfoResponses,
-    GetProjectInfoErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/info/{projectId}',
-    ...options,
-  });
-
-/**
- * Update Project information
- *
- * Update a project's default locale or CDN delivery setting. Requires `project:write`. Omitted settings remain unchanged.
- */
-export const updateProjectInfo = <ThrowOnError extends boolean = false>(
-  options: Options<UpdateProjectInfoData, ThrowOnError>
-) =>
-  options.client.post<
-    UpdateProjectInfoResponses,
-    UpdateProjectInfoErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/info/{projectId}',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Get translation job status
- *
- * Get the status of one or more translation or context generation jobs.
- */
-export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
-  options: Options<GetTranslationJobInfoData, ThrowOnError>
-) =>
-  options.client.post<
-    GetTranslationJobInfoResponses,
-    GetTranslationJobInfoErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/jobs/info',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Get translation status for a file
- *
- * Return translation progress and availability by locale for one source file, along with its source metadata.
- */
-export const getTranslationStatus = <ThrowOnError extends boolean = false>(
-  options: Options<GetTranslationStatusData, ThrowOnError>
-) =>
-  options.client.get<
-    GetTranslationStatusResponses,
-    GetTranslationStatusErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/translations/files/status/{fileId}',
-    ...options,
-  });
-
-/**
- * Submit translation diffs
- *
- * Overwrite translations with user-provided localized content.
- */
-export const submitUserEditDiffs = <ThrowOnError extends boolean = false>(
-  options: Options<SubmitUserEditDiffsData, ThrowOnError>
-) =>
-  options.client.post<
-    SubmitUserEditDiffsResponses,
-    SubmitUserEditDiffsErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/diffs',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Move or rename files
- *
- * Clone source files and their translations under new file IDs.
- */
-export const processFileMoves = <ThrowOnError extends boolean = false>(
-  options: Options<ProcessFileMovesData, ThrowOnError>
-) =>
-  options.client.post<
-    ProcessFileMovesResponses,
-    ProcessFileMovesErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/moves',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Find orphaned files
- *
- * Return files on a branch that are not present in the provided file ID list.
- */
-export const getOrphanedFiles = <ThrowOnError extends boolean = false>(
-  options: Options<GetOrphanedFilesData, ThrowOnError>
-) =>
-  options.client.post<
-    GetOrphanedFilesResponses,
-    GetOrphanedFilesErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/orphaned',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Get file metadata
- *
- * Get detailed metadata for specific source and translated files.
- */
-export const getFileInfo = <ThrowOnError extends boolean = false>(
-  options: Options<GetFileInfoData, ThrowOnError>
-) =>
-  options.client.post<GetFileInfoResponses, GetFileInfoErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/info',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Download multiple files
- *
- * Download up to 100 source or translated files in one request.
- */
-export const downloadFiles = <ThrowOnError extends boolean = false>(
-  options: Options<DownloadFilesData, ThrowOnError>
-) =>
-  options.client.post<
-    DownloadFilesResponses,
-    DownloadFilesErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/download',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Download a single file
- *
- * Download a single source or translated file. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/files/download`.
- *
- * @deprecated
- */
-export const downloadFile = <ThrowOnError extends boolean = false>(
-  options: Options<DownloadFileData, ThrowOnError>
-) =>
-  options.client.get<DownloadFileResponses, DownloadFileErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/download/{fileId}',
-    ...options,
-  });
-
-/**
- * Publish or unpublish files
- *
- * Publish or unpublish translated files to the CDN. Requires CDN to be enabled.
- */
-export const publishFiles = <ThrowOnError extends boolean = false>(
-  options: Options<PublishFilesData, ThrowOnError>
-) =>
-  options.client.post<PublishFilesResponses, PublishFilesErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/publish',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
  * Upload source files
  *
- * Upload one or more source files to the project. Max 100 files per request.
+ * Upload 1–100 source files to the project. Requires `project:files:write`.
  */
 export const uploadSourceFiles = <ThrowOnError extends boolean = false>(
   options: Options<UploadSourceFilesData, ThrowOnError>
@@ -726,7 +644,7 @@ export const uploadSourceFiles = <ThrowOnError extends boolean = false>(
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/files/upload-files',
+    url: '/v2/projects/{projectId}/files',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -735,34 +653,9 @@ export const uploadSourceFiles = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Queue files for translation
+ * Upload translations
  *
- * Enqueue uploaded source files for background translation. Max 100 files per request. The response shape depends on the requested `gt-api-version`.
- */
-export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
-  options: Options<EnqueueFileTranslationsData, ThrowOnError>
-) =>
-  options.client.post<
-    EnqueueFileTranslationsResponses,
-    EnqueueFileTranslationsErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/translations/enqueue',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Upload translated files
- *
- * Upload translated files linked to their source files. Max 100 files per request.
+ * Upload translations of 1–100 existing source files. Requires `project:files:write`.
  */
 export const uploadTranslations = <ThrowOnError extends boolean = false>(
   options: Options<UploadTranslationsData, ThrowOnError>
@@ -776,7 +669,7 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/files/upload-translations',
+    url: '/v2/projects/{projectId}/files/translations',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -785,23 +678,23 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Get branch information
+ * Create file uploads
  *
- * Return the Project's default branch and any branches requested by name.
+ * Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.
  */
-export const getBranchInfo = <ThrowOnError extends boolean = false>(
-  options: Options<GetBranchInfoData, ThrowOnError>
+export const createFileUploads = <ThrowOnError extends boolean = false>(
+  options: Options<CreateFileUploadsData, ThrowOnError>
 ) =>
   options.client.post<
-    GetBranchInfoResponses,
-    GetBranchInfoErrors,
+    CreateFileUploadsResponses,
+    CreateFileUploadsErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/branches/info',
+    url: '/v2/projects/{projectId}/files/uploads',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -810,9 +703,26 @@ export const getBranchInfo = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * List branches
+ *
+ * List the project's branches ordered by ID, each marked with whether it is the project's default branch. Requires `project:files:read`.
+ */
+export const listBranches = <ThrowOnError extends boolean = false>(
+  options: Options<ListBranchesData, ThrowOnError>
+) =>
+  options.client.get<ListBranchesResponses, ListBranchesErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/branches',
+    ...options,
+  });
+
+/**
  * Create a branch
  *
- * Create a new branch, or rename and confirm the default branch.
+ * Create a branch. Requires `project:files:write`; free plans can only create the default branch.
  */
 export const createBranch = <ThrowOnError extends boolean = false>(
   options: Options<CreateBranchData, ThrowOnError>
@@ -822,7 +732,7 @@ export const createBranch = <ThrowOnError extends boolean = false>(
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/branches/create',
+    url: '/v2/projects/{projectId}/branches',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -831,40 +741,63 @@ export const createBranch = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Create or update a tag
+ * Update a branch
  *
- * Create or update a tag for a set of file versions.
+ * Rename a branch or make it the project's default branch, and return the branch. Requires `project:files:write`.
  */
-export const createTag = <ThrowOnError extends boolean = false>(
-  options: Options<CreateTagData, ThrowOnError>
+export const updateBranch = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateBranchData, ThrowOnError>
 ) =>
-  options.client.post<CreateTagResponses, CreateTagErrors, ThrowOnError>({
+  options.client.patch<UpdateBranchResponses, UpdateBranchErrors, ThrowOnError>(
+    {
+      security: [
+        { scheme: 'bearer', type: 'http' },
+        { scheme: 'bearer', type: 'http' },
+      ],
+      url: '/v2/projects/{projectId}/branches/{branchId}',
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    }
+  );
+
+/**
+ * List branch files
+ *
+ * Lists the files on a branch with their head version, in the order they were added to the branch. Requires `project:files:read`.
+ */
+export const listBranchFiles = <ThrowOnError extends boolean = false>(
+  options: Options<ListBranchFilesData, ThrowOnError>
+) =>
+  options.client.get<
+    ListBranchFilesResponses,
+    ListBranchFilesErrors,
+    ThrowOnError
+  >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/tags/create',
+    url: '/v2/projects/{projectId}/branches/{branchId}/files',
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
   });
 
 /**
- * Upload Project assets
+ * Set a tag
  *
- * Upload OpenType or TrueType fonts for Lottie translations across your Organization. Uploading the same font family, weight, and italic style replaces the existing font. You can safely retry the full upload after a `500` response.
+ * Create a tag pointing to a set of source file versions, or replace an existing tag whole. Requires `project:files:write`.
  */
-export const uploadAssets = <ThrowOnError extends boolean = false>(
-  options: Options<UploadAssetsData, ThrowOnError>
+export const setTag = <ThrowOnError extends boolean = false>(
+  options: Options<SetTagData, ThrowOnError>
 ) =>
-  options.client.post<UploadAssetsResponses, UploadAssetsErrors, ThrowOnError>({
+  options.client.put<SetTagResponses, SetTagErrors, ThrowOnError>({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/assets',
+    url: '/v2/projects/{projectId}/tags/{tagId}',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -873,19 +806,23 @@ export const uploadAssets = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Translate content at runtime
+ * Translate files
  *
- * Translate strings, structured content, or Markdown and MDX documents. Send documents as strings with `fileFormat` set to `MD` or `MDX`. Requires `project:translations:generate`. Existing development API keys are also accepted.
+ * Queue uploaded source files for background translation into the target locales. Requires `project:translations:enqueue`.
  */
-export const translate = <ThrowOnError extends boolean = false>(
-  options: Options<TranslateData, ThrowOnError>
+export const translateFiles = <ThrowOnError extends boolean = false>(
+  options: Options<TranslateFilesData, ThrowOnError>
 ) =>
-  options.client.post<TranslateResponses, TranslateErrors, ThrowOnError>({
+  options.client.post<
+    TranslateFilesResponses,
+    TranslateFilesErrors,
+    ThrowOnError
+  >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/translate',
+    url: '/v2/projects/{projectId}/files/translate',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -894,9 +831,122 @@ export const translate = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Create a Project API Key
+ * Generate project context
  *
- * Create a project API key. Requires `project:api_keys:write`; project keys cannot create other keys. If you cannot grant a selected permission, the request returns `403` without creating a key. Each successful request creates a new key. Store the returned secret securely.
+ * Queue generation of glossaries and translation instructions from the supplied source files. Requires `project:context:write`.
+ */
+export const generateProjectContext = <ThrowOnError extends boolean = false>(
+  options: Options<GenerateProjectContextData, ThrowOnError>
+) =>
+  options.client.post<
+    GenerateProjectContextResponses,
+    GenerateProjectContextErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/context/generate',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Translate content
+ *
+ * Translate strings, structured content, or Markdown and MDX documents. Requires `project:translations:generate`; existing development API keys are also accepted.
+ */
+export const translateContent = <ThrowOnError extends boolean = false>(
+  options: Options<TranslateContentData, ThrowOnError>
+) =>
+  options.client.post<
+    TranslateContentResponses,
+    TranslateContentErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/translate',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get a Project
+ *
+ * Get a project's ID, name, Organization, locales, auto-approval and CDN delivery settings. No permission is needed beyond access to the project.
+ */
+export const getProject = <ThrowOnError extends boolean = false>(
+  options: Options<GetProjectData, ThrowOnError>
+) =>
+  options.client.get<GetProjectResponses, GetProjectErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}',
+    ...options,
+  });
+
+/**
+ * Update a Project
+ *
+ * Update a project's default locale or CDN delivery setting and return the updated project. Requires `project:write`.
+ */
+export const updateProject = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateProjectData, ThrowOnError>
+) =>
+  options.client.patch<
+    UpdateProjectResponses,
+    UpdateProjectErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * List Project API keys
+ *
+ * List the project's API keys ordered by ID, without their secrets. Requires `project:api_keys:read`.
+ */
+export const listProjectApiKeys = <ThrowOnError extends boolean = false>(
+  options: Options<ListProjectApiKeysData, ThrowOnError>
+) =>
+  options.client.get<
+    ListProjectApiKeysResponses,
+    ListProjectApiKeysErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/api-keys',
+    ...options,
+  });
+
+/**
+ * Create a Project API key
+ *
+ * Create a project API key. Requires `project:api_keys:write`; project keys cannot create other keys.
  */
 export const createProjectApiKey = <ThrowOnError extends boolean = false>(
   options: Options<CreateProjectApiKeyData, ThrowOnError>
@@ -919,9 +969,51 @@ export const createProjectApiKey = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Delete a Project API key
+ *
+ * Delete a project API key so it can no longer authenticate. Requires `project:api_keys:write`.
+ */
+export const deleteProjectApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<DeleteProjectApiKeyData, ThrowOnError>
+) =>
+  options.client.delete<
+    DeleteProjectApiKeyResponses,
+    DeleteProjectApiKeyErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/api-keys/{apiKeyId}',
+    ...options,
+  });
+
+/**
+ * Get a Project API key
+ *
+ * Get a project API key's name, permissions and usage, without its secret. Requires `project:api_keys:read`.
+ */
+export const getProjectApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<GetProjectApiKeyData, ThrowOnError>
+) =>
+  options.client.get<
+    GetProjectApiKeyResponses,
+    GetProjectApiKeyErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/api-keys/{apiKeyId}',
+    ...options,
+  });
+
+/**
  * List Projects
  *
- * List projects you are a member of, or the projects your API key is bound to, ordered by ID. No permission or `gt-project-id` header is needed. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ * List projects you are a member of, or the projects your API key is bound to, ordered by ID. No permission or `gt-project-id` header is needed.
  */
 export const listProjects = <ThrowOnError extends boolean = false>(
   options: Options<ListProjectsData, ThrowOnError>
@@ -936,34 +1028,9 @@ export const listProjects = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Generate translation context
- *
- * Generate glossaries and translation instructions for the project.
- */
-export const generateProjectContext = <ThrowOnError extends boolean = false>(
-  options: Options<GenerateProjectContextData, ThrowOnError>
-) =>
-  options.client.post<
-    GenerateProjectContextResponses,
-    GenerateProjectContextErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/setup/generate',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
  * List project context groups
  *
- * Lists the groups assigned to the project, in priority order. Requires `org:context:read`. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ * Lists the groups assigned to the project, in priority order. Requires `org:context:read` or `project:context:read`.
  */
 export const listProjectContextGroups = <ThrowOnError extends boolean = false>(
   options: Options<ListProjectContextGroupsData, ThrowOnError>
@@ -984,7 +1051,7 @@ export const listProjectContextGroups = <ThrowOnError extends boolean = false>(
 /**
  * Unassign a context group
  *
- * Removes the assignment and keeps the group and its content. Does nothing if the group isn't assigned. Requires `org:context:write`.
+ * Removes the assignment and keeps the group and its content. Requires `org:context:write`.
  */
 export const unassignContextGroup = <ThrowOnError extends boolean = false>(
   options: Options<UnassignContextGroupData, ThrowOnError>
@@ -1005,7 +1072,7 @@ export const unassignContextGroup = <ThrowOnError extends boolean = false>(
 /**
  * Get a project context group
  *
- * Gets one assignment: the group's ID, name and priority. Requires `org:context:read`.
+ * Gets one assignment: the group's ID, name and priority. Requires `org:context:read` or `project:context:read`.
  */
 export const getProjectContextGroup = <ThrowOnError extends boolean = false>(
   options: Options<GetProjectContextGroupData, ThrowOnError>
@@ -1026,7 +1093,7 @@ export const getProjectContextGroup = <ThrowOnError extends boolean = false>(
 /**
  * Reorder a context group
  *
- * Moves the assigned group to a new zero-based position. Requires `org:context:write`.
+ * Moves the assigned group to a new zero-based position. Requires `org:context:write` or `project:context:write`.
  */
 export const reorderContextGroup = <ThrowOnError extends boolean = false>(
   options: Options<ReorderContextGroupData, ThrowOnError>
@@ -1051,7 +1118,7 @@ export const reorderContextGroup = <ThrowOnError extends boolean = false>(
 /**
  * Assign a context group
  *
- * Assigns the group to the project at the lowest priority (201). If it's already assigned, nothing changes (200), and repeating it never moves a group that was reordered. Requires `org:context:write`.
+ * Assigns the group to the project at the lowest priority. Requires `org:context:write`.
  */
 export const assignContextGroup = <ThrowOnError extends boolean = false>(
   options: Options<AssignContextGroupData, ThrowOnError>
@@ -1070,9 +1137,47 @@ export const assignContextGroup = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Get a job
+ *
+ * Get the status of a file translation or context generation job. Requires `project:files:read`.
+ */
+export const getJob = <ThrowOnError extends boolean = false>(
+  options: Options<GetJobData, ThrowOnError>
+) =>
+  options.client.get<GetJobResponses, GetJobErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/jobs/{jobId}',
+    ...options,
+  });
+
+/**
+ * Query jobs
+ *
+ * Get the status of file translation and context generation jobs by ID. Requires `project:files:read`.
+ */
+export const queryJobs = <ThrowOnError extends boolean = false>(
+  options: Options<QueryJobsData, ThrowOnError>
+) =>
+  options.client.post<QueryJobsResponses, QueryJobsErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/jobs/query',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
  * List Organizations
  *
- * List Organizations you can access, ordered by ID. Organization and Project keys each return only their own Organization; user tokens return every Organization the user belongs to. No project ID, permission, or token scope is required. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ * List Organizations you can access, ordered by ID: every Organization your user belongs to, or your API key's own Organization. No project ID, permission, or token scope is required.
  */
 export const listOrgs = <ThrowOnError extends boolean = false>(
   options: Options<ListOrgsData, ThrowOnError>
@@ -1087,9 +1192,31 @@ export const listOrgs = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Create an Organization API key
+ *
+ * Create an Organization API key. Requires `org:api_keys:write`; API keys cannot create organization API keys.
+ */
+export const createOrgApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<CreateOrgApiKeyData, ThrowOnError>
+) =>
+  options.client.post<
+    CreateOrgApiKeyResponses,
+    CreateOrgApiKeyErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v2/orgs/{orgId}/api-keys',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
  * Create a Project
  *
- * Create a project in the specified Organization. Requires `org:projects:create`. Returns `409` if your plan's project limit has been reached. Each successful request creates a new project.
+ * Create a project in the specified Organization. Requires `org:projects:create`.
  */
 export const createProject = <ThrowOnError extends boolean = false>(
   options: Options<CreateProjectData, ThrowOnError>
@@ -1114,7 +1241,7 @@ export const createProject = <ThrowOnError extends boolean = false>(
 /**
  * List context groups
  *
- * Lists the org's groups, ordered by ID. Requires `org:context:read`. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ * Lists the org's groups, ordered by ID. Requires `org:context:read`.
  */
 export const listContextGroups = <ThrowOnError extends boolean = false>(
   options: Options<ListContextGroupsData, ThrowOnError>
@@ -1135,7 +1262,7 @@ export const listContextGroups = <ThrowOnError extends boolean = false>(
 /**
  * Create a context group
  *
- * Creates an empty, unassigned group. Each call creates a new one. Requires `org:context:write`.
+ * Creates an empty, unassigned group. Requires `org:context:write`.
  */
 export const createContextGroup = <ThrowOnError extends boolean = false>(
   options: Options<CreateContextGroupData, ThrowOnError>
@@ -1181,7 +1308,7 @@ export const deleteContextGroup = <ThrowOnError extends boolean = false>(
 /**
  * Get a context group
  *
- * Gets the group's ID and name. Requires `org:context:read`.
+ * Gets the group's ID and name. Requires `org:context:read`, or `project:context:read` on a project the group is assigned to.
  */
 export const getContextGroup = <ThrowOnError extends boolean = false>(
   options: Options<GetContextGroupData, ThrowOnError>
@@ -1202,7 +1329,7 @@ export const getContextGroup = <ThrowOnError extends boolean = false>(
 /**
  * Update a context group
  *
- * Renames the group. The name is the only editable field. Requires `org:context:write`.
+ * Renames the group or turns its automatic updates on or off. Requires `org:context:write`.
  */
 export const updateContextGroup = <ThrowOnError extends boolean = false>(
   options: Options<UpdateContextGroupData, ThrowOnError>
@@ -1227,7 +1354,7 @@ export const updateContextGroup = <ThrowOnError extends boolean = false>(
 /**
  * List glossary terms
  *
- * Lists terms by ID, without translations. `keyword` is optional and matches the stored keyword exactly (case-sensitive), so it returns at most one term. Requires `org:context:read`. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ * Lists terms by ID, without translations. Requires `org:context:read`, or `project:context:read` on a project the group is assigned to.
  */
 export const listContextGlossary = <ThrowOnError extends boolean = false>(
   options: Options<ListContextGlossaryData, ThrowOnError>
@@ -1248,7 +1375,7 @@ export const listContextGlossary = <ThrowOnError extends boolean = false>(
 /**
  * Upsert glossary terms
  *
- * Creates or updates 1–100 terms (`{ entries: [...] }`; send one term as a one-item array), matched by keyword, in one atomic batch. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. Repeating a keyword within one batch rejects the whole batch (400). Requires `org:context:write`.
+ * Creates or updates 1–100 terms, matched by keyword, in one atomic batch. Requires `org:context:write`, or `project:context:write` on a project the group is assigned to.
  */
 export const upsertContextGlossary = <ThrowOnError extends boolean = false>(
   options: Options<UpsertContextGlossaryData, ThrowOnError>
@@ -1273,7 +1400,7 @@ export const upsertContextGlossary = <ThrowOnError extends boolean = false>(
 /**
  * Delete a glossary term
  *
- * Deletes a term and all of its translations. Requires `org:context:write`.
+ * Deletes a term and all of its translations. Requires `org:context:write`, or `project:context:write` on a project the group is assigned to.
  */
 export const deleteContextGlossaryEntry = <
   ThrowOnError extends boolean = false,
@@ -1296,7 +1423,7 @@ export const deleteContextGlossaryEntry = <
 /**
  * Get a glossary term
  *
- * Gets a term by ID: its keyword and definition. Translations are listed separately. Requires `org:context:read`.
+ * Gets a term by ID: its keyword and definition, without translations. Requires `org:context:read`, or `project:context:read` on a project the group is assigned to.
  */
 export const getContextGlossaryEntry = <ThrowOnError extends boolean = false>(
   options: Options<GetContextGlossaryEntryData, ThrowOnError>
@@ -1317,7 +1444,7 @@ export const getContextGlossaryEntry = <ThrowOnError extends boolean = false>(
 /**
  * Update a glossary term
  *
- * Updates the term's keyword or definition. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. The term ID and translations are kept when the keyword is renamed. Renaming to a keyword another term already has returns 409. Requires `org:context:write`.
+ * Updates the term's keyword or definition. Requires `org:context:write`, or `project:context:write` on a project the group is assigned to.
  */
 export const updateContextGlossaryEntry = <
   ThrowOnError extends boolean = false,
@@ -1344,7 +1471,7 @@ export const updateContextGlossaryEntry = <
 /**
  * List term translations
  *
- * Lists a term's translations by ID. Requires `org:context:read`. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ * Lists a term's translations by ID. Requires `org:context:read`, or `project:context:read` on a project the group is assigned to.
  */
 export const listContextGlossaryTranslations = <
   ThrowOnError extends boolean = false,
@@ -1367,7 +1494,7 @@ export const listContextGlossaryTranslations = <
 /**
  * Delete a term translation
  *
- * Deletes one locale's translation and keeps the term and its other translations. Requires `org:context:write`.
+ * Deletes one locale's translation and keeps the term and its other translations. Requires `org:context:write`, or `project:context:write` on a project the group is assigned to.
  */
 export const deleteContextGlossaryTranslation = <
   ThrowOnError extends boolean = false,
@@ -1390,7 +1517,7 @@ export const deleteContextGlossaryTranslation = <
 /**
  * Set a term translation
  *
- * Creates or replaces one locale's translation (201 when created, 200 when replaced). Keeps the term and its other translations. Requires `org:context:write`.
+ * Creates or replaces one locale's translation and keeps the term and its other translations. Requires `org:context:write`, or `project:context:write` on a project the group is assigned to.
  */
 export const setContextGlossaryTranslation = <
   ThrowOnError extends boolean = false,
@@ -1417,7 +1544,7 @@ export const setContextGlossaryTranslation = <
 /**
  * List custom prompts
  *
- * Lists prompts by ID. A null locale means the prompt applies to every locale. Requires `org:context:read`. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ * Lists prompts by ID. Requires `org:context:read`, or `project:context:read` on a project the group is assigned to.
  */
 export const listContextCustomPrompts = <ThrowOnError extends boolean = false>(
   options: Options<ListContextCustomPromptsData, ThrowOnError>
@@ -1438,7 +1565,7 @@ export const listContextCustomPrompts = <ThrowOnError extends boolean = false>(
 /**
  * Upsert custom prompts
  *
- * Creates or updates 1–100 prompts (`{ customPrompts: [...] }`), each matched by name and locale, in one atomic batch. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. Repeating a name and locale within one batch rejects the whole batch (400). Requires `org:context:write`.
+ * Creates or updates 1–100 prompts, each matched by name and locale, in one atomic batch. Requires `org:context:write`, or `project:context:write` on a project the group is assigned to.
  */
 export const upsertContextCustomPrompts = <
   ThrowOnError extends boolean = false,
@@ -1465,7 +1592,7 @@ export const upsertContextCustomPrompts = <
 /**
  * Delete a custom prompt
  *
- * Deletes a prompt. Requires `org:context:write`.
+ * Deletes a prompt. Requires `org:context:write`, or `project:context:write` on a project the group is assigned to.
  */
 export const deleteContextCustomPrompt = <ThrowOnError extends boolean = false>(
   options: Options<DeleteContextCustomPromptData, ThrowOnError>
@@ -1486,7 +1613,7 @@ export const deleteContextCustomPrompt = <ThrowOnError extends boolean = false>(
 /**
  * Update a custom prompt
  *
- * Updates a prompt by ID. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. Returns 409 if another prompt already has the resulting name and locale. Requires `org:context:write`.
+ * Updates a prompt by ID. Requires `org:context:write`, or `project:context:write` on a project the group is assigned to.
  */
 export const updateContextCustomPrompt = <ThrowOnError extends boolean = false>(
   options: Options<UpdateContextCustomPromptData, ThrowOnError>
@@ -1511,7 +1638,7 @@ export const updateContextCustomPrompt = <ThrowOnError extends boolean = false>(
 /**
  * Import context content
  *
- * Merges one JSON or CSV transfer document of terms and custom prompts into the group as one atomic batch. The whole document is validated before anything is written. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. In CSV, a blank prompt locale means every locale, and the term, prompt name and prompt text can't be blank (400). Requires `org:context:write`.
+ * Merges one JSON or CSV transfer document of terms and custom prompts into the group as one atomic batch. Requires `org:context:write`, or `project:context:write` on a project the group is assigned to.
  */
 export const importContextContent = <ThrowOnError extends boolean = false>(
   options: Options<ImportContextContentData, ThrowOnError>
@@ -1536,7 +1663,7 @@ export const importContextContent = <ThrowOnError extends boolean = false>(
 /**
  * Export context content
  *
- * Exports the group's terms and custom prompts as paged transfer documents. Each page can be re-imported as one batch. Pass `nextCursor` as `cursor` until it is `null`. Pages aren't a snapshot, so changes made mid-export may be missed or included. Requires `org:context:read`.
+ * Exports the group's terms and custom prompts as paged transfer documents. Requires `org:context:read`, or `project:context:read` on a project the group is assigned to.
  */
 export const exportContextContent = <ThrowOnError extends boolean = false>(
   options: Options<ExportContextContentData, ThrowOnError>
@@ -1552,6 +1679,27 @@ export const exportContextContent = <ThrowOnError extends boolean = false>(
     ],
     url: '/v2/context-groups/{groupId}/export',
     ...options,
+  });
+
+/**
+ * Upsert Organization assets
+ *
+ * Uploads 1–10 fonts (`assetType: FONT`, the only asset type today) for Lottie translations across the organization. Requires `org:assets:write`.
+ */
+export const upsertAssets = <ThrowOnError extends boolean = false>(
+  options: Options<UpsertAssetsData, ThrowOnError>
+) =>
+  options.client.post<UpsertAssetsResponses, UpsertAssetsErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/orgs/{orgId}/assets',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
 /**
@@ -1608,25 +1756,3 @@ export const getCliWizardSession = <ThrowOnError extends boolean = false>(
     GetCliWizardSessionErrors,
     ThrowOnError
   >({ url: '/cli/wizard/{sessionId}', ...options });
-
-/**
- * Create an Organization API key
- *
- * Create an Organization API key. Requires `org:api_keys:write`; API keys cannot create organization API keys.
- */
-export const createOrgApiKey = <ThrowOnError extends boolean = false>(
-  options: Options<CreateOrgApiKeyData, ThrowOnError>
-) =>
-  options.client.post<
-    CreateOrgApiKeyResponses,
-    CreateOrgApiKeyErrors,
-    ThrowOnError
-  >({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v2/orgs/{orgId}/api-keys',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
