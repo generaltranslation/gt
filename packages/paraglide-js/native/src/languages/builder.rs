@@ -105,16 +105,26 @@ impl<'s> CodeBuilder<'s> {
     let number = self.expressions.len() as u32;
     // Reserved before `write`, which may write skippable constructs of its own.
     self.expressions.push((0, 0));
-    let start = self.code.len() as u32;
+    let start = self.code.len();
+    let (length, mappings) = (self.length, self.mappings.len());
+
+    // Written even when skipped, so that the constructs in it keep their numbers, and every later
+    // one its own.
+    write(self);
 
     let is_written = !self.skipped.contains(&number);
-    if is_written {
-      write(self);
-    } else {
+    if !is_written {
+      self.code.truncate(start);
+      self.length = length;
+      self.mappings.truncate(mappings);
       self.glue(fallback);
+      // Gone with it: no error is ever in them.
+      for inner in &mut self.expressions[number as usize + 1..] {
+        *inner = (u32::MAX, u32::MAX);
+      }
     }
 
-    self.expressions[number as usize] = (start, self.code.len() as u32);
+    self.expressions[number as usize] = (start as u32, self.code.len() as u32);
     is_written
   }
 
@@ -207,6 +217,34 @@ mod tests {
 
     assert_eq!(built.code.code, ";(0);(m.b());");
     assert_eq!(built.expressions, vec![(2, 3), (6, 11)]);
+  }
+
+  #[test]
+  fn constructs_after_a_skipped_one_keep_their_numbers() {
+    let source = "{{ a( b( }} {{ c }}";
+    let write = |skipped: &Skipped| {
+      let mut code = CodeBuilder::new(source, skipped);
+      code.skippable("0", |code| {
+        code.copy(3, 5);
+        code.expression(5, 8);
+      });
+      code.glue(";");
+      code.expression(15, 16);
+      code.finish(Lang::Ts)
+    };
+
+    let mut skipped = Skipped::default();
+    skipped.insert(1);
+    skipped.insert(0);
+    let built = write(&skipped);
+
+    assert_eq!(built.code.code, "0;c");
+    assert_eq!(
+      built.expressions,
+      vec![(0, 1), (u32::MAX, u32::MAX), (2, 3)]
+    );
+    assert_eq!(built.code.mappings.len(), 1);
+    assert_eq!(expression_at(&built.expressions, &skipped, 2), Some(2));
   }
 
   #[test]
