@@ -1,6 +1,6 @@
 {
   "name": "generaltranslation",
-  "version": "10.0.0-samsara.7",
+  "version": "10.0.0-samsara.8",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

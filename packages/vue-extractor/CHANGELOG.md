@@ -1,5 +1,12 @@
 # @generaltranslation/vue-extractor
 
+## 0.1.27-samsara.1
+
+### Patch Changes
+
+- generaltranslation@10.0.0-samsara.8
+- @generaltranslation/format@1.0.0-samsara.8
+
 ## 0.1.27-samsara.0
 
 ### Patch Changes

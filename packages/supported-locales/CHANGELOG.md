@@ -1,5 +1,11 @@
 # @generaltranslation/supported-locales
 
+## 2.1.49-samsara.1
+
+### Patch Changes
+
+- generaltranslation@10.0.0-samsara.8
+
 ## 2.1.49-samsara.0
 
 ### Patch Changes

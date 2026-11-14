@@ -1,5 +1,16 @@
 # gt-next
 
+## 12.0.0-samsara.8
+
+### Patch Changes
+
+- @generaltranslation/compiler@1.4.0-samsara.7
+- generaltranslation@10.0.0-samsara.8
+- @generaltranslation/format@1.0.0-samsara.8
+- gt-i18n@2.0.0-samsara.8
+- gt-react@12.0.0-samsara.8
+- @generaltranslation/react-core@12.0.0-samsara.8
+
 ## 12.0.0-samsara.7
 
 ### Patch Changes

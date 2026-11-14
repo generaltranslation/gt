@@ -1,5 +1,20 @@
 # gtx-cli
 
+## 3.0.0-samsara.9
+
+### Patch Changes
+
+- Updated dependencies [fe7b0cc]
+- Updated dependencies [2a5fe85]
+- Updated dependencies [2a5fe85]
+  - @generaltranslation/icu@0.2.0-samsara.6
+  - generaltranslation@10.0.0-samsara.8
+  - @generaltranslation/format@1.0.0-samsara.8
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.9
+  - @generaltranslation/python-extractor@0.2.68-samsara.1
+  - @generaltranslation/supported-locales@2.1.49-samsara.1
+  - @generaltranslation/vue-extractor@0.1.27-samsara.1
+
 ## 3.0.0-samsara.8
 
 ### Minor Changes
