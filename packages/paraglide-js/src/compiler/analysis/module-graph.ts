@@ -1,8 +1,21 @@
 import path from 'node:path';
-import { moduleExportName, type ESTree, type Node } from './ast.js';
+import {
+  moduleExportName,
+  parsedRange,
+  walk,
+  type ESTree,
+  type FunctionNode,
+  type Node,
+} from './ast.js';
 import { commonJsExports } from './commonjs.js';
 import { componentFieldBindings } from './component-fields.js';
-import { evaluate, followCandidate, memberOf } from './evaluate.js';
+import {
+  evaluate,
+  evaluatePassed,
+  followCandidate,
+  inBinding,
+  memberOf,
+} from './evaluate.js';
 import { ImporterIndex, type GlobalExport } from './importers.js';
 import {
   declaredNames,
@@ -79,7 +92,33 @@ export type ModuleGraphOptions = {
 export type IndexedGraphOptions = Pick<
   ModuleGraphOptions,
   'targets' | 'outdirs' | 'globals'
-> & { index: IndexedRecordsOptions };
+> & { index: IndexedRecordsOptions; shared?: SharedSites };
+
+/**
+ * Evaluates the sites of a function called from many modules in several
+ * threads: each evaluates ranges of the modules that call it, and `share`
+ * returns the values of all of them, in order. Undefined to evaluate them in
+ * this thread only.
+ */
+export type SharedSites = {
+  /** Below as many referrers, a function's sites are evaluated in one thread: sharing costs more than it saves. */
+  minReferrers: number;
+  share(job: SitesJob): TrackedSymbol[] | undefined;
+};
+
+export type SitesJob = {
+  /** The file and the module of it whose function it is: see `ModuleGraph.evaluateSharedSites`. */
+  file: string;
+  part: number;
+  /** Where the identifier being evaluated starts: another thread finds the parameter by it. */
+  read: number;
+  /** The modules that call the function, besides its own. */
+  referrers: number;
+  /** The values passed in the function's own module. */
+  own(): TrackedSymbol[];
+  /** The values passed in referrers `from` to `to`. */
+  range(from: number, to: number): TrackedSymbol[];
+};
 
 export type ModuleRecord = Omit<ParsedModule, 'scripts'> & {
   file: string;
@@ -486,11 +525,73 @@ export class ModuleGraph {
 
       callSitesOf: (fn) => this.importers.callSitesOf(record, fn),
 
+      sharedSites: (fn, index, path, read) =>
+        this.shareSites(record, fn, index, path, read),
+
       props: record.props && {
         reads: record.props,
         candidates: () => this.importers.componentProps(record),
       },
     };
+  }
+
+  private shareSites(
+    record: ModuleRecord,
+    fn: FunctionNode,
+    index: number,
+    path: readonly string[],
+    read: Node
+  ): TrackedSymbol[] | undefined {
+    const shared = 'index' in this.options ? this.options.shared : undefined;
+    if (!shared) return undefined;
+
+    const sites = this.importers.callSitesOf(record, fn);
+    if (sites.referrerCount < shared.minReferrers) return undefined;
+
+    const fileRecord = this.records.get(record.file);
+    const part = fileRecord ? modulesOf(fileRecord).indexOf(record) : -1;
+    if (part === -1) return undefined;
+
+    return shared.share({
+      file: record.file,
+      part,
+      read: parsedRange(read)[0],
+      referrers: sites.referrerCount,
+      own: () => evaluatePassed(sites.own, index, path),
+      range: (from, to) =>
+        evaluatePassed(sites.sitesOfReferrers(from, to), index, path),
+    });
+  }
+
+  /**
+   * For another thread's `SitesJob`: the values referrers `from` to `to` pass
+   * to the parameter read at `read`, evaluated as that thread does, with only
+   * the parameter in progress. Undefined if they cannot be sent between
+   * threads, i.e. hold a namespace, or the parameter is not found.
+   */
+  evaluateSharedSites(
+    job: Pick<SitesJob, 'file' | 'part' | 'read'>,
+    from: number,
+    to: number
+  ): TrackedSymbol[] | undefined {
+    const fileRecord = this.records.get(job.file);
+    const record = fileRecord && modulesOf(fileRecord)[job.part];
+    if (!record) return undefined;
+
+    const scope = this.scopeOf(record);
+    const read = identifierAt(record.program, job.read);
+    const binding = read && scope.bindingAt(read);
+    if (binding?.type !== 'values' || !binding.site) return undefined;
+
+    const { fn, index, path } = binding.site;
+    const sites = this.importers.callSitesOf(record, fn);
+    const symbols = inBinding(binding, () =>
+      evaluatePassed(sites.sitesOfReferrers(from, to), index, path)
+    );
+
+    return symbols.every((symbol) => symbol.type === 'value')
+      ? symbols
+      : undefined;
   }
 
   /** Vue's template reads `message` of `defineProps(["message"])` without declaring it. */
@@ -665,4 +766,31 @@ function outdirCandidates(file: string): string[] {
   }
 
   return [];
+}
+
+/** The identifier that starts at `start`. */
+function identifierAt(
+  program: ESTree.Program,
+  start: number
+): Node | undefined {
+  const find = (prune: boolean) => {
+    let found: Node | undefined;
+
+    walk(program, {
+      enter(node) {
+        if (found) return false;
+
+        const [nodeStart, nodeEnd] = parsedRange(node);
+        if (prune && (nodeStart > start || nodeEnd < start)) return false;
+        if (node.type === 'Identifier' && nodeStart === start) found = node;
+
+        return !found;
+      },
+    });
+
+    return found;
+  };
+
+  // A child outside its parent's position, e.g. a decorator, is found without pruning.
+  return find(true) ?? find(false);
 }

@@ -38,6 +38,17 @@ export type ModuleHost = {
   exportOf(specifier: string, exportName: string): TrackedSymbol | undefined;
   /** In its module and in the modules that import it. */
   callSitesOf?(fn: FunctionNode): Iterable<SiteHandle>;
+  /**
+   * What the sites of `fn` pass as parameter `index`, followed by `path`,
+   * evaluated in other threads too when it has many; undefined when they
+   * are evaluated here. `read` is the identifier being evaluated.
+   */
+  sharedSites?(
+    fn: FunctionNode,
+    index: number,
+    path: readonly string[],
+    read: Node
+  ): TrackedSymbol[] | undefined;
   /** Where the component reads its props, and what each place that renders it passes. */
   props?: { reads: PropsReads; candidates(): Candidate[] };
 };
@@ -61,6 +72,10 @@ export type Binding = (
       at?: (read: Node) => Candidate[];
       /** Holds what call sites pass: a parameter or a prop. */
       parameter?: boolean;
+      /** Of a function's parameter: its sites' values, evaluated in other threads too. */
+      shared?: (read: Node) => TrackedSymbol[] | undefined;
+      /** Of a function's parameter: which one. */
+      site?: { fn: FunctionNode; index: number; path: readonly string[] };
     }
 ) & {
   /** The node its call sites are indexed under: a function or an import specifier. */
@@ -323,10 +338,20 @@ export class Scope {
       };
     }
 
+    const { host } = this;
+    // A default needs the calls that omit the argument: those stay here.
+    const isShared =
+      host.sharedSites !== undefined &&
+      defaultOf(fn.params[index]) === undefined;
+
     return {
       type: 'values',
       parameter: true,
       candidates: () => parameterCandidates(fn, this, index, path),
+      site: { fn, index, path },
+      shared: isShared
+        ? (read) => host.sharedSites!(fn, index, path, read)
+        : undefined,
     };
   }
 

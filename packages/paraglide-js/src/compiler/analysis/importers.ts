@@ -114,16 +114,32 @@ type Cache = {
  * from thousands of modules does not load each of them twice. Every
  * iteration sees the same sites in the same order.
  */
-class SiteList implements Iterable<SiteHandle> {
+export class SiteList implements Iterable<SiteHandle> {
   private readonly sites: SiteHandle[];
   private nextReferrer = 0;
 
   constructor(
-    own: SiteHandle[],
+    /** The sites in the function's own module. */
+    readonly own: readonly SiteHandle[],
     private readonly referrers: readonly ModuleRef[],
     private readonly sitesOf: (ref: ModuleRef) => SiteHandle[]
   ) {
-    this.sites = own;
+    this.sites = [...own];
+  }
+
+  /** The modules that refer to the function, besides its own. */
+  get referrerCount(): number {
+    return this.referrers.length;
+  }
+
+  /** The sites of referrers `from` to `to`, read for themselves: another thread can read the rest. */
+  sitesOfReferrers(from: number, to: number): SiteHandle[] {
+    const sites: SiteHandle[] = [];
+    for (let index = from; index < to; index++) {
+      sites.push(...this.sitesOf(this.referrers[index]!));
+    }
+
+    return sites;
   }
 
   *[Symbol.iterator](): Iterator<SiteHandle> {
@@ -186,7 +202,7 @@ export class ImporterIndex {
   constructor(private readonly modules: LoadedModules) {}
 
   /** Found module by module as they are read: see `SiteList`. */
-  callSitesOf(record: ModuleRecord, fn: FunctionNode): Iterable<SiteHandle> {
+  callSitesOf(record: ModuleRecord, fn: FunctionNode): SiteList {
     const { callSites } = this.currentCache();
 
     const cached = callSites.get(fn);
