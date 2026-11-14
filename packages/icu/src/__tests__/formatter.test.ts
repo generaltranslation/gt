@@ -382,59 +382,70 @@ describe('formatIcu', () => {
     expect(formatIcu('{d, time, ::hj}', 'de-DE', { d: value })).toBe('14 Uhr');
   });
 
-  it.each([
-    ['getHourCycles()', ['hourCycles'], '07'],
-    // A DateTimeFormat does not see the region override.
-    [
-      'a DateTimeFormat, once per locale',
-      ['hourCycles', 'getHourCycles'],
-      '7 a.m.',
-    ],
-  ])(
-    "reads the locale's hour cycle through %s where the engine has nothing newer",
-    (_how, missing, expected) => {
-      const prototype = Intl.Locale.prototype;
-      const saved = missing.map(
-        (key) => [key, Object.getOwnPropertyDescriptor(prototype, key)] as const
-      );
-      for (const key of missing) {
-        Object.defineProperty(prototype, key, {
-          configurable: true,
-          value: undefined,
-        });
-      }
-      const DateTimeFormat = Intl.DateTimeFormat;
-      const built = vi.fn();
-      Object.defineProperty(Intl, 'DateTimeFormat', {
-        value: new Proxy(DateTimeFormat, {
-          construct(target, args) {
-            built();
-            return Reflect.construct(target, args);
-          },
-        }),
-      });
-      try {
-        // A locale no other test uses, so none of its formatters is cached.
-        const locale = `en-CA-u-rg-gbzzzz-x-${missing.length}`;
-        const value = new Date(2020, 4, 6, 7, 3, 2);
-        for (let i = 0; i < 3; i++) {
-          expect(formatIcu('{d, time, ::j}', locale, { d: value })).toBe(
-            expected
-          );
-        }
-        // The one that formats, and the one the hour cycle is read from.
-        expect(built).toHaveBeenCalledTimes(missing.length);
-      } finally {
-        Object.defineProperty(Intl, 'DateTimeFormat', {
-          value: DateTimeFormat,
-        });
-        for (const [key, descriptor] of saved) {
-          if (descriptor) Object.defineProperty(prototype, key, descriptor);
-          else delete (prototype as unknown as Record<string, unknown>)[key];
-        }
+  // Runs with Intl.Locale's two ways to read an hour cycle replaced, as on
+  // another engine; `undefined` is an engine that lacks one.
+  const withHourCycleApis = (
+    apis: { getHourCycles: (() => string[]) | undefined },
+    run: () => void
+  ): void => {
+    const prototype = Intl.Locale.prototype;
+    const replaced = { hourCycles: undefined, ...apis };
+    const saved = Object.keys(replaced).map(
+      (key) => [key, Object.getOwnPropertyDescriptor(prototype, key)] as const
+    );
+    for (const [key, value] of Object.entries(replaced)) {
+      Object.defineProperty(prototype, key, { configurable: true, value });
+    }
+    try {
+      run();
+    } finally {
+      for (const [key, descriptor] of saved) {
+        if (descriptor) Object.defineProperty(prototype, key, descriptor);
+        else delete (prototype as unknown as Record<string, unknown>)[key];
       }
     }
-  );
+  };
+  const seven = new Date(2020, 4, 6, 7, 3, 2);
+
+  it("reads a locale's hour cycle from getHourCycles(), once per locale", () => {
+    const getHourCycles = vi.fn(() => ['h23']);
+    withHourCycleApis({ getHourCycles }, () => {
+      // A locale no other test uses, so its hour cycle is not read yet.
+      for (let i = 0; i < 3; i++) {
+        expect(formatIcu('{d, time, ::j}', 'en-x-once', { d: seven })).toBe(
+          '07'
+        );
+      }
+      expect(getHourCycles).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('reads the hour cycle from a DateTimeFormat, once per locale, where the engine has no other way', () => {
+    const DateTimeFormat = Intl.DateTimeFormat;
+    const built = vi.fn();
+    Object.defineProperty(Intl, 'DateTimeFormat', {
+      value: new Proxy(DateTimeFormat, {
+        construct(target, args) {
+          built();
+          return Reflect.construct(target, args);
+        },
+      }),
+    });
+    try {
+      withHourCycleApis({ getHourCycles: undefined }, () => {
+        // A DateTimeFormat does not see the region override.
+        for (let i = 0; i < 3; i++) {
+          expect(
+            formatIcu('{d, time, ::j}', 'en-CA-u-rg-gbzzzz-x-dtf', { d: seven })
+          ).toBe('7 a.m.');
+        }
+        // The one the hour cycle is read from, and the one that formats.
+        expect(built).toHaveBeenCalledTimes(2);
+      });
+    } finally {
+      Object.defineProperty(Intl, 'DateTimeFormat', { value: DateTimeFormat });
+    }
+  });
 
   it('honors Unicode region overrides and sparse locale fallbacks', () => {
     const value = new Date(2020, 4, 6, 7, 3, 2);

@@ -7,7 +7,6 @@
  * what differs.
  */
 
-import { intlCache } from '../cache/IntlCache';
 import {
   createDayPeriodWithoutHourError,
   createInvalidDateTimeFieldError,
@@ -192,13 +191,26 @@ export function resolveLocaleHourSkeleton(
   return resolvedSkeleton;
 }
 
+// Reading a locale's hour cycle costs as much as formatting twenty messages,
+// and a formatter resolves the same Intl.Locale for every message in a locale.
+const localeHourSymbols = new WeakMap<Intl.Locale, 'h' | 'H' | 'K' | 'k'>();
+
+function getLocaleHourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
+  let symbol = localeHourSymbols.get(locale);
+  if (!symbol) {
+    symbol = hourSymbol(locale);
+    localeHourSymbols.set(locale, symbol);
+  }
+  return symbol;
+}
+
 /**
  * The symbol of the locale's hour cycle, region override included. Engines
  * expose the cycle as `getHourCycles()`, or as the older `hourCycles` getter
  * that V8 has since removed; a DateTimeFormat, the last resort, ignores a
- * `-u-rg-` override, and resolves the same cycle in any time zone.
+ * `-u-rg-` override.
  */
-function getLocaleHourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
+function hourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
   const withHourCycles = locale as Intl.Locale & {
     getHourCycles?: () => Intl.LocaleHourCycleKey[];
     hourCycles?: Intl.LocaleHourCycleKey[];
@@ -207,12 +219,9 @@ function getLocaleHourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
     locale.hourCycle ??
     withHourCycles.getHourCycles?.()[0] ??
     withHourCycles.hourCycles?.[0] ??
-    intlCache
-      .get('DateTimeFormat', locale.toString(), {
-        hour: 'numeric',
-        timeZone: 'UTC',
-      })
-      .resolvedOptions().hourCycle;
+    new Intl.DateTimeFormat(locale.toString(), {
+      hour: 'numeric',
+    }).resolvedOptions().hourCycle;
 
   switch (hourCycle) {
     case 'h11':
