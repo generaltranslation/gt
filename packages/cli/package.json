@@ -12,8 +12,6 @@
   "type": "module",
   "scripts": {
     "generate-version": "node scripts/generate-version.js",
-    "generate:config-schema": "node scripts/generate-config-schema.js",
-    "check:config-schema": "vitest run --config=./vitest.config.ts src/types/__tests__/configSchema.test.ts",
     "transpile": "pnpm run generate-version && tsdown",
     "copy-instructions": "rm -rf dist/setup/instructions && cp -r src/setup/instructions dist/setup/instructions",
     "build": "pnpm run transpile && pnpm run copy-instructions",

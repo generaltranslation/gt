@@ -805,9 +805,9 @@ export const GTConfigFileSchema = v.pipe(
 );
 
 /**
- * The file as the CLI loads it. Unknown top-level keys pass, because the file
- * is shared with other tools, and generateSettings warns about them; editors
- * still flag them through the strict JSON Schema.
+ * The file as the CLI loads it. Unknown top-level keys pass, because a library
+ * such as gt-next reads its own keys from the same file; editors flag unknown
+ * keys through the library's strict JSON Schema.
  */
 export const GTConfigFileLoadSchema = v.looseObject(GTConfigFileSchema.entries);
 

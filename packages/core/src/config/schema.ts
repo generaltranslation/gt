@@ -127,11 +127,10 @@ export const GTFilesConfigSchema = pipe(
   )
 );
 
-const pathPatternsByLocale = record(string(), stringArray);
-
 /**
- * Every gt.config.json key read outside the gt CLI. Unknown keys pass so each
- * reader accepts the whole file; the CLI's schema extends these entries.
+ * The gt.config.json keys that more than one package reads. Unknown keys pass
+ * so each reader accepts the whole file; the CLI and gt-next extend these
+ * entries with their own.
  */
 export const GTConfigSchema = looseObject({
   defaultLocale: optional(
@@ -197,64 +196,6 @@ export const GTConfigSchema = looseObject({
       description(
         'Enable framework-provided locale path routing when supported'
       )
-    )
-  ),
-  prefixDefaultLocale: optional(
-    pipe(
-      boolean(),
-      description(
-        'Prefix the default locale to the pathname, i.e. /about -> /en/about'
-      )
-    )
-  ),
-  enableSmartRouting: optional(
-    pipe(
-      boolean(),
-      description(
-        "Keep automatic locale negotiation. Disable to treat returning visitors' unprefixed URLs as default-locale routes."
-      )
-    )
-  ),
-  ignoreSourceMaps: optional(
-    pipe(boolean(), description('Skip Next.js source map requests'))
-  ),
-  pathConfig: optional(
-    pipe(
-      record(string(), union([string(), record(string(), string())])),
-      description('Localized path aliases')
-    )
-  ),
-  routeOverrides: optional(
-    pipe(
-      pathPatternsByLocale,
-      description(
-        'Locale-relative paths to rewrite from /{locale}/{path} to /{locale}/{locale}/{path}'
-      )
-    )
-  ),
-  localeRoutes: optional(
-    pipe(
-      pathPatternsByLocale,
-      description(
-        'Shared paths available per locale; other paths fall back to the default locale'
-      )
-    )
-  ),
-  pathRegex: optional(
-    pipe(
-      string(),
-      description(
-        'Regular expression source that limits i18n middleware routing by pathname, written for paths without the locale prefix. <Link>, useLocalizeHref() and getLocalizeHref() leave non-matching paths unprefixed.'
-      )
-    )
-  ),
-  ignoreBrowserLocales: optional(
-    pipe(boolean(), description("Ignore the browser's preferred locales"))
-  ),
-  disableInvalidLocaleWarning: optional(
-    pipe(
-      boolean(),
-      description('Disable warnings about invalid request locales')
     )
   ),
 
@@ -369,12 +310,6 @@ export const GTConfigSchema = looseObject({
   ),
   loadDictionaryPath: optional(
     pipe(string(), description('Path to a custom loadDictionary file'))
-  ),
-  getLocalePath: optional(
-    pipe(string(), description('Path to a custom getLocale function'))
-  ),
-  getRegionPath: optional(
-    pipe(string(), description('Path to a custom getRegion function'))
   ),
   description: optional(
     pipe(string(), description('Description of the project or configuration'))

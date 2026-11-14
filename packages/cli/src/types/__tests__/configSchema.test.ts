@@ -1,30 +1,22 @@
 import fs from 'node:fs';
 import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
-import {
-  configJsonSchemaPath,
-  generateConfigJsonSchema,
-} from '../../../scripts/generate-config-schema.js';
-import {
-  GTConfigFileSchema,
-  GTConfigFileSchemaDefinitions,
-} from '../../config/schema.js';
+import { configJsonSchemaPath } from '../../../scripts/generate-config-schema.js';
 
-const schema = JSON.parse(fs.readFileSync(configJsonSchemaPath, 'utf8'));
-const validate = new Ajv({ strict: false, validateFormats: false }).compile(
-  schema
-);
+const compileSchema = (path: string | URL) =>
+  new Ajv({ strict: false, validateFormats: false }).compile(
+    JSON.parse(fs.readFileSync(path, 'utf8'))
+  );
+const validate = compileSchema(configJsonSchemaPath);
+const validateFor = (packageDirectory: string) =>
+  compileSchema(
+    new URL(
+      `../../../../${packageDirectory}/config-schema.json`,
+      import.meta.url
+    )
+  );
 
 describe('GT config JSON Schema', () => {
-  it('matches the schema generated from GTConfigFileSchema', () => {
-    expect(
-      generateConfigJsonSchema(
-        GTConfigFileSchema,
-        GTConfigFileSchemaDefinitions
-      )
-    ).toEqual(schema);
-  });
-
   it.each([
     ['an empty config', {}],
     ['files.html', { files: { html: { include: ['[locale]/*.html'] } } }],
@@ -156,5 +148,26 @@ describe('GT config schema static url options', () => {
     );
     expect(validate(withPattern([]))).toBe(false);
     expect(validate(withPattern([1]))).toBe(false);
+  });
+});
+
+describe('library config JSON Schemas', () => {
+  const routing = {
+    locales: ['fr'],
+    prefixDefaultLocale: true,
+    pathConfig: { '/about': { fr: '/a-propos' } },
+  };
+
+  it("accept gt-next's routing keys only in gt-next's schema", () => {
+    expect(validateFor('next')(routing)).toBe(true);
+    expect(validateFor('react')(routing)).toBe(false);
+    expect(validate(routing)).toBe(false);
+  });
+
+  it('accept the CLI keys in every library schema', () => {
+    const config = { locales: ['fr'], files: { gt: { publish: true } } };
+    for (const directory of ['next', 'react', 'tanstack-start', 'vue']) {
+      expect(validateFor(directory)(config)).toBe(true);
+    }
   });
 });

@@ -6,6 +6,7 @@
   "svelte": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
+    "config-schema.json",
     "dist",
     "README.md"
   ],

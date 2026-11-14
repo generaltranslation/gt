@@ -22,7 +22,6 @@ import path from 'node:path';
 import fs from 'node:fs';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
-import { GTConfigFileSchema } from './schema.js';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { configureCustomMapping } from '../utils/api.js';
 import { resolveApiBaseUrl } from '../utils/apiBaseUrl.js';
@@ -117,22 +116,6 @@ export async function generateSettings(
       }
       gtConfig = {};
     }
-  }
-
-  const unknownKeys = Object.keys(gtConfig).filter(
-    (key) => !(key in GTConfigFileSchema.entries)
-  );
-  if (unknownKeys.length > 0) {
-    logger.warn(
-      createDiagnosticMessage({
-        source: 'gt',
-        severity: 'Warning',
-        whatHappened: `${flags.config ?? 'gt.config.json'} has keys the CLI does not read`,
-        reassurance: 'The CLI ignores them',
-        details: unknownKeys,
-        fix: 'Fix their spelling, or remove them if no other tool reads them',
-      })
-    );
   }
 
   const projectIdEnv = resolveProjectId();

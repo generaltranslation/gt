@@ -3,10 +3,10 @@ import fs from 'fs';
 import type { NextConfig } from 'next';
 import { safeParse } from 'valibot';
 import {
-  GTConfigSchema,
   describeConfigIssues,
   describeConfigParseError,
 } from 'generaltranslation/config-schema';
+import { GTNextConfigSchema } from './config-dir/schema';
 import type { GTConfig } from 'generaltranslation/types';
 import {
   defaultWithGTConfigProps,
@@ -98,7 +98,7 @@ function isThenable(value: unknown): value is PromiseLike<NextConfig> {
 
 /** Validates the keys gt.config.json shares with withGTConfig() props. */
 function parseGTConfig(config: unknown, configName: string) {
-  const result = safeParse(GTConfigSchema, config);
+  const result = safeParse(GTNextConfigSchema, config);
   if (result.success) return result.output;
   throw new Error(
     createGtNextPluginDiagnostic({

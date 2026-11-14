@@ -64,79 +64,6 @@
       "type": "boolean",
       "description": "Enable framework-provided locale path routing when supported"
     },
-    "prefixDefaultLocale": {
-      "type": "boolean",
-      "description": "Prefix the default locale to the pathname, i.e. /about -> /en/about"
-    },
-    "enableSmartRouting": {
-      "type": "boolean",
-      "description": "Keep automatic locale negotiation. Disable to treat returning visitors' unprefixed URLs as default-locale routes."
-    },
-    "ignoreSourceMaps": {
-      "type": "boolean",
-      "description": "Skip Next.js source map requests"
-    },
-    "pathConfig": {
-      "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
-      "additionalProperties": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {
-              "type": "string"
-            }
-          }
-        ]
-      },
-      "description": "Localized path aliases"
-    },
-    "routeOverrides": {
-      "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
-      "additionalProperties": {
-        "type": "array",
-        "items": {
-          "type": "string"
-        }
-      },
-      "description": "Locale-relative paths to rewrite from /{locale}/{path} to /{locale}/{locale}/{path}"
-    },
-    "localeRoutes": {
-      "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
-      "additionalProperties": {
-        "type": "array",
-        "items": {
-          "type": "string"
-        }
-      },
-      "description": "Shared paths available per locale; other paths fall back to the default locale"
-    },
-    "pathRegex": {
-      "type": "string",
-      "description": "Regular expression source that limits i18n middleware routing by pathname, written for paths without the locale prefix. <Link>, useLocalizeHref() and getLocalizeHref() leave non-matching paths unprefixed."
-    },
-    "ignoreBrowserLocales": {
-      "type": "boolean",
-      "description": "Ignore the browser's preferred locales"
-    },
-    "disableInvalidLocaleWarning": {
-      "type": "boolean",
-      "description": "Disable warnings about invalid request locales"
-    },
     "projectId": {
       "type": "string",
       "description": "The project ID for your General Translation project"
@@ -231,14 +158,6 @@
     "loadDictionaryPath": {
       "type": "string",
       "description": "Path to a custom loadDictionary file"
-    },
-    "getLocalePath": {
-      "type": "string",
-      "description": "Path to a custom getLocale function"
-    },
-    "getRegionPath": {
-      "type": "string",
-      "description": "Path to a custom getRegion function"
     },
     "description": {
       "type": "string",

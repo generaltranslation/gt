@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import {
   displayCreatedConfigFile,
@@ -26,7 +27,23 @@ export type SetupConfigUpdate = {
   removeFiles?: string[];
   /** Drops files.gt.output after an explicit switch to CDN storage. */
   clearGtOutput?: boolean;
+  /** Replaces a missing or hosted $schema; see configSchemaReference. */
+  schema?: string;
 };
+
+/**
+ * The installed library's JSON Schema, which lists exactly the keys that
+ * library and the CLI read, or the hosted schema when it ships none.
+ */
+export function configSchemaReference(
+  configFilepath: string,
+  library: string
+): string {
+  const reference = `./node_modules/${library}/config-schema.json`;
+  return fs.existsSync(path.join(path.dirname(configFilepath), reference))
+    ? reference
+    : GT_CONFIG_SCHEMA_URL;
+}
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -50,6 +67,10 @@ export function mergeSetupConfig(
     ...(options.framework && { framework: options.framework }),
     ...(options.baseUrl && { baseUrl: options.baseUrl }),
     ...(options.publish && { publish: options.publish }),
+    ...(options.schema &&
+      (oldContent.$schema ?? GT_CONFIG_SCHEMA_URL) === GT_CONFIG_SCHEMA_URL && {
+        $schema: options.schema,
+      }),
   };
   const mergedContent: Record<string, unknown> = {
     $schema: GT_CONFIG_SCHEMA_URL,

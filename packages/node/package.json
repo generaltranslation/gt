@@ -6,6 +6,7 @@
   "module": "dist/index.mjs",
   "types": "dist/index.d.cts",
   "files": [
+    "config-schema.json",
     "dist",
     "CHANGELOG.md"
   ],

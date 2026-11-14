@@ -6,6 +6,7 @@ import {
 import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 import {
   applySetupConfig,
+  configSchemaReference,
   mergeSetupConfig,
   type SetupConfigUpdate,
 } from '../fs/config/setupConfig.js';
@@ -1705,7 +1706,14 @@ See https://www.npmjs.com/package/gt-vue`);
       }
     }
 
-    const configChange = await applySetupConfig(configFilepath, configUpdate);
+    // After the install above, so a library it adds is found.
+    const configChange = await applySetupConfig(configFilepath, {
+      ...configUpdate,
+      schema: configSchemaReference(
+        configFilepath,
+        reactSetup?.install ?? this.library
+      ),
+    });
     if (configChange !== 'unchanged') {
       session.step(`${configChange} ${configFilepath}`);
     }

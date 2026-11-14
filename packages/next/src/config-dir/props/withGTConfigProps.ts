@@ -1,5 +1,6 @@
 import type { GTCompilerOptions, GTConfig } from 'generaltranslation/types';
 import type { MiddlewareConfig } from '../../middleware-dir/types';
+import type { GTNextOptions } from '../schema';
 
 export type HeadersAndCookies = {
   localeHeaderName?: string;
@@ -26,14 +27,13 @@ export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
 } as const;
 
 // Middleware options are defaults for createNextMiddleware(), passed via env.
-// Keys gt.config.json can also set come from GTConfig, which documents them.
+// Keys gt.config.json can also set come from GTConfig and GTNextOptions,
+// which document them.
 export type BaseWithGTConfigProps = MiddlewareConfig &
   Pick<
     GTConfig,
     | 'loadTranslationsPath'
     | 'loadDictionaryPath'
-    | 'getLocalePath'
-    | 'getRegionPath'
     | 'runtimeUrl'
     | 'cacheUrl'
     | 'cacheExpiryTime'
@@ -41,15 +41,20 @@ export type BaseWithGTConfigProps = MiddlewareConfig &
     | 'defaultLocale'
     | 'localeMatcher'
     | 'timeZone'
-    | 'ignoreBrowserLocales'
-    | 'disableInvalidLocaleWarning'
-    | 'pathRegex'
     | 'renderSettings'
     | 'maxConcurrentRequests'
     | 'maxBatchSize'
     | 'batchInterval'
     | 'description'
     | '_tagIds'
+  > &
+  Pick<
+    GTNextOptions,
+    | 'getLocalePath'
+    | 'getRegionPath'
+    | 'ignoreBrowserLocales'
+    | 'disableInvalidLocaleWarning'
+    | 'pathRegex'
   > & {
     // Additional top-level keys are forwarded as runtime translation metadata.
     [key: string]: unknown;

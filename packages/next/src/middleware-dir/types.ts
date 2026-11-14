@@ -1,5 +1,6 @@
 import type { GTIntl } from '@generaltranslation/format';
 import type { GTConfig } from 'generaltranslation/types';
+import type { GTNextOptions } from '../config-dir/schema';
 import type {
   CustomMapping,
   LocaleMatcher,
@@ -14,20 +15,20 @@ export type LocaleRoutes = Record<string, readonly string[]>;
 /**
  * Locale routing options accepted by both `createNextMiddleware()` and
  * `withGTConfig()`. Options passed to `createNextMiddleware()` take precedence.
- * GTConfig documents each option.
+ * GTConfig and GTNextOptions document each option.
  */
-export type MiddlewareConfig = Pick<
-  GTConfig,
-  | 'localeRouting'
-  | 'prefixDefaultLocale'
-  | 'enableSmartRouting'
-  | 'ignoreSourceMaps'
-  | 'pathConfig'
-> & {
-  // Declared here to also accept readonly arrays, which GTConfig's do not.
-  routeOverrides?: RouteOverrides;
-  localeRoutes?: LocaleRoutes;
-};
+export type MiddlewareConfig = Pick<GTConfig, 'localeRouting'> &
+  Pick<
+    GTNextOptions,
+    | 'prefixDefaultLocale'
+    | 'enableSmartRouting'
+    | 'ignoreSourceMaps'
+    | 'pathConfig'
+  > & {
+    // Declared here to also accept readonly arrays, which GTNextOptions' do not.
+    routeOverrides?: RouteOverrides;
+    localeRoutes?: LocaleRoutes;
+  };
 
 export type ResolvedMiddlewareConfig = Required<MiddlewareConfig>;
 

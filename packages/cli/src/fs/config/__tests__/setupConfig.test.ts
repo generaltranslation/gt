@@ -3,7 +3,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { GT_CONFIG_SCHEMA_URL } from '../../../utils/constants.js';
-import { applySetupConfig, createOrUpdateConfig } from '../setupConfig.js';
+import {
+  applySetupConfig,
+  configSchemaReference,
+  createOrUpdateConfig,
+} from '../setupConfig.js';
 
 describe('createOrUpdateConfig', () => {
   let testDirectory: string;
@@ -159,5 +163,36 @@ describe('createOrUpdateConfig', () => {
       createOrUpdateConfig(configPath, { locales: ['ja'] })
     ).rejects.toThrow('does not contain a JSON object');
     expect(fs.readFileSync(configPath, 'utf8')).toBe('[]');
+  });
+
+  it("points $schema at the installed library's schema, keeping a custom one", async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+    expect(configSchemaReference(configPath, 'gt-next')).toBe(
+      GT_CONFIG_SCHEMA_URL
+    );
+    const schemaPath = path.join(
+      testDirectory,
+      'node_modules/gt-next/config-schema.json'
+    );
+    fs.mkdirSync(path.dirname(schemaPath), { recursive: true });
+    fs.writeFileSync(schemaPath, '{}');
+    const schema = configSchemaReference(configPath, 'gt-next');
+    expect(schema).toBe('./node_modules/gt-next/config-schema.json');
+
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({ $schema: GT_CONFIG_SCHEMA_URL, locales: ['fr'] })
+    );
+    await applySetupConfig(configPath, { schema });
+    expect(JSON.parse(fs.readFileSync(configPath, 'utf8')).$schema).toBe(
+      schema
+    );
+
+    fs.writeFileSync(configPath, JSON.stringify({ $schema: './custom.json' }));
+    await applySetupConfig(configPath, { schema });
+    expect(JSON.parse(fs.readFileSync(configPath, 'utf8')).$schema).toBe(
+      './custom.json'
+    );
   });
 });
