@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "3.0.0-samsara.9",
+  "version": "3.0.0-samsara.10",
   "description": "CLI tool for AI-powered i18n (wrapper for gt)",
   "main": "dist/index.js",
   "bin": "bin/main.js",

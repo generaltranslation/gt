@@ -1,5 +1,52 @@
 # @generaltranslation/compiler
 
+## 2.0.0-samsara.8
+
+### Major Changes
+
+- 13dae8a: Remove the remaining backward compatibility:
+  - The `legacyGtReactImportSource` option and `files.gt.parsingFlags.legacyGtReactImportSource` are removed; injected imports always come from `gt-react` (or `autoJsxImportSource`).
+  - `gt-react/client` and `gt-react/browser` are no longer recognized as GT import sources; import from `gt-react`.
+  - `<T>` hashing no longer reads `$context`, `$id`, `$maxChars`, `$requiresReview`, or `$_hash`; use the unprefixed props.
+
+- 63b6748: The compiler validates the `gt.config.json` it reads from the project root with the shared schema. A file with invalid values is now ignored with a warning that lists the invalid keys, as a file that is not valid JSON already was, instead of being used as is. A JSON syntax error no longer quotes the file content, which can hold credentials.
+
+  **Breaking:** `createInvalidGTConfigWarning` is no longer exported; the compiler formats its invalid-config warning itself. To format a similar message, use `createDiagnosticMessage()` from `generaltranslation/diagnostics`.
+
+### Patch Changes
+
+- ea429a2: The `enableAutoJsxInjection`, `autoderive` and `devHotReload` plugin options take their types from `generaltranslation`'s `GTParsingFlags`, and the compiler uses `resolveAutoderive()` from `generaltranslation/config-schema`. No behavior changes.
+- cf7029c: Stop tracking `useTranslations()` and `getTranslations()` as translation callbacks. The tracking only ran a validation that never reported anything, so output is unchanged; the dictionary API now lives in `/compat` entries.
+- e29f6f9: Resolve option defaults once, where the options are accepted, and pass required values to the code below. No behaviour change for apps.
+  - `@generaltranslation/api` exports `DEFAULT_TIMEOUT_MS`, the default request timeout.
+  - `gt-i18n/internal`: `I18nConfig`'s `resolveSupportedLocale(candidates)` no longer takes a config override and uses the configuration GT was initialized with. `determineSupportedLocale(candidates)` is removed; use `determineLocale(candidates)`, which matches the same way. `LocaleResolverConfig` is no longer exported.
+  - `gt-i18n/internal/compat`: `new DictionaryManager()` takes a config with `dictionary`, `loadDictionary` and `cacheExpiryTime` all set. `initializeDictionaryManager()` still accepts the optional params and fills in the defaults.
+
+- 943c094: Import types and helpers from their single owning entry now that the types-only subpaths are removed. No public API change.
+- Updated dependencies [96f428a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [82999f0]
+- Updated dependencies [96f428a]
+- Updated dependencies [3832c15]
+- Updated dependencies [943c094]
+- Updated dependencies [06ccdfd]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+  - generaltranslation@10.0.0-samsara.9
+  - @generaltranslation/format@1.0.0-samsara.9
+  - @generaltranslation/icu@0.2.0-samsara.7
+
 ## 1.4.0-samsara.7
 
 ### Patch Changes

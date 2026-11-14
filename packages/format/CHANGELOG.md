@@ -1,5 +1,58 @@
 # @generaltranslation/format
 
+## 1.0.0-samsara.9
+
+### Major Changes
+
+- ba09ee2: The `LocaleConfig` class is now `GTIntl`, and `LocaleConfig` is the plain-data type of its settings (`{ defaultLocale?, locales?, customMapping?, timeZone? }`). `GTIntl` also takes an optional target `locale`, the default for every call. Like the rest of this package, `GTIntl` here takes its settings as given: `defaultLocale` and `timeZone` are required (type `ResolvedLocaleConfig`). `GTIntl` from `generaltranslation` fills them in:
+  - `new LocaleConfig({ defaultLocale, locales, customMapping })` → `new GTIntl({ defaultLocale, locales, customMapping }, { locale })`; `LocaleConfigConstructorParams` → `LocaleConfig`.
+  - Formatters drop the positional target locale: `config.formatNum(n, 'es', options)` → `intl.formatNum(n, { ...options, locale: 'es' })`, and likewise for `formatCurrency`, `formatDateTime`, `formatList`, `formatListToParts`, `formatRelativeTime`, `formatRelativeTimeFromDate`, `formatMessage`, and `formatCutoff`.
+  - `config.requiresTranslation(target, source)` → `intl.requiresTranslation({ locale: target, sourceLocale: source })`; without a locale it checks the instance `locale`, then `defaultLocale`. It checks against the configured `locales`: omitted `locales` still mean no restriction, but `locales: []` now approves no locale. For another approved list, construct a `GTIntl` with `locales: approved`.
+  - `config.determineLocale(candidates, approved)` → `new GTIntl({ locales: approved, customMapping }).determineLocale(candidates)`; `intl.determineLocale(candidates)` matches against the configured `locales`.
+  - `getLocaleName`, `getLocaleProperties`, `getLocaleEmoji`, and `getLocaleDirection` take an optional locale (default: the target locale) and `{ locale }`; names are in the target locale, which is `defaultLocale` without an instance or per-call locale.
+  - New: `intl.getRegionProperties(region, { locale })` names the region in the target locale and reads names and emojis from the `regionCode` entries of `customMapping`.
+  - `GTIntl` copies and freezes its configuration: `locales` and `customMapping` are readonly, and later changes to the objects you passed have no effect. `LocaleConfig.locales` accepts a readonly array.
+
+- 3832c15: `determineLocale` now follows standard locale matching, selected by a new `localeMatcher` option (`'lookup' | 'best fit'`, default `'best fit'`) on `LocaleConfig`, `GTConfig`, gt-i18n's `I18nConfig` params, and gt-next's `withGTConfig` / `gt.config.json`. The `LocaleMatcher` type is exported next to `LocaleConfig` and limits the option to these values; gt-next, the gt CLI, the compiler and gt-react-native reject any other value when they load `gt.config.json` or `withGTConfig()` props.
+
+  Requested and configured locales are canonicalized the same way (`customMapping` alias → code, invalid tags skipped, standardized; a requested tag only needs a valid language-script-region base, so extension and private-use subtags are allowed), and the result is always the configured spelling. `determineLocale` never applies `defaultLocale`; callers keep owning the fallback.
+  - `'lookup'` (RFC 4647 §3.4 Lookup): for each requested locale in priority order, truncate it from the end (a single-letter subtag is removed with the subtag after it, so `zh-Hant-CN-x-private1-private2` → `zh-Hant-CN-x-private1` → `zh-Hant-CN` → `zh-Hant` → `zh`) and return the first configured locale equal to a truncation; `*` is skipped.
+  - `'best fit'`: take the requested languages in order of first appearance. For each language, run Lookup over the requested locales of that language against the configured locales of that language, accepting only a match with the same likely script (`Intl.Locale.prototype.maximize`); if nothing matches, return the first configured locale of that language (configured order) whose likely script equals the script of a requested locale of that language, trying requested locales in order. If no configured locale of that language shares a script, plain Lookup applies, so `zh-TW` resolves to `zh-Hant` when it is configured and to a bare `zh` only when it is not. Then move to the next language. A region difference is acceptable; a script difference is not (no `sr-Latn` ↔ `sr-Cyrl` exception). Tags without a derivable script, such as `qaa`, compare as an empty script.
+
+  The standalone `determineLocale(locales, approvedLocales, customMapping)` now delegates to `new GTIntl({ locales: approvedLocales, customMapping }).determineLocale(locales)`, so it resolves aliases and returns the configured spelling. It always uses `'best fit'`. gt-vue's `initializeGTSPA()` accepts `localeMatcher` too, so a `gt.config.json` object passed to it keeps its matcher.
+
+  Behavior changes (before → after, default `'best fit'`):
+
+  | Requested → configured                      | Before      | After       |
+  | ------------------------------------------- | ----------- | ----------- |
+  | ------------------------------------------- | ----------- | ----------- |
+  | `en` → `en-GB, fr-FR`                       | `undefined` | `en-GB`     |
+  | `['en', 'fr']` → `en-GB, fr-FR`             | `fr-FR`     | `en-GB`     |
+  | `en-AU` → `en-GB`                           | `undefined` | `en-GB`     |
+  | `['en-AU', 'en-GB']` → `en-US, en-GB`       | `en-US`     | `en-GB`     |
+  | `zh-TW` → `zh-CN, en`                       | `zh-CN`     | `undefined` |
+  | `sr-Latn` → `sr-Cyrl`                       | `sr-Cyrl`   | `undefined` |
+  | `en` → `en-GB, en-US`                       | `en-US`     | `en-GB`     |
+  | standalone, `brand-fr` aliased and approved | `brand-FR`  | `brand-fr`  |
+
+- 943c094: `@generaltranslation/format/types` is removed. Import its types and `HTML_CONTENT_PROPS` from `@generaltranslation/format`.
+
+### Patch Changes
+
+- 82999f0: The root entry exports `getRegionProperties` and its types from their defining modules instead of through internal pass-throughs. No public API change.
+- 96f428a: `determineLocale` fixes:
+  - A requested tag with a variant subtag, such as `de-DE-1996`, now matches like its base tag: Lookup truncates it to `de-DE`. It used to match nothing.
+  - With `localeMatcher: 'best fit'`, an earlier requested script wins over a later exact match in another script. `['zh-Hant', 'zh-CN']` against `['zh-CN', 'zh-TW']` now resolves to `zh-TW`; it used to resolve to `zh-CN`.
+
+- 2d7f9bd: Remove runtime checks that TypeScript already guarantees and duplicated locale resolution. gt-react's browser condition store now resolves the locale once on initialization and server updates, and gt-vue's `initializeGTSPA()` builds its locale matcher once instead of on every lookup. Translation hashes do not change.
+
+  Two observable changes:
+  - `generaltranslation`: runtime translation results from the General Translation API are no longer shape-checked on the client; their type comes from the generated API client. A successful result whose `translation` did not match its `dataFormat` used to become `{ success: false, error: 'Invalid translation returned', code: 500 }`; it is now returned as the service sent it. Failed requests, missing entries (`'No translation returned'`) and network errors behave as before.
+  - `gt-tanstack-start`: request locales are now resolved against the configuration that `initializeGT()` already loaded, instead of a copy rebuilt on every request. That configuration always includes `defaultLocale` among the supported locales, so with `defaultLocale: 'en'`, `locales: ['fr']` and `Accept-Language: en, fr`, the request locale is now `en` (previously `fr`), matching path-based locale detection.
+
+- Updated dependencies [06ccdfd]
+  - @generaltranslation/icu@0.2.0-samsara.7
+
 ## 1.0.0-samsara.8
 
 ### Patch Changes

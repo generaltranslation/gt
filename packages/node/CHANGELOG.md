@@ -1,5 +1,77 @@
 # gt-node
 
+## 2.0.0-samsara.9
+
+### Major Changes
+
+- 016ace7: Remove the `devApiKey` option. One `apiKey` now covers both uses: in development it enables hot reload translation, and in production it lets server code translate at runtime. Pass your key as `apiKey` wherever you passed `devApiKey`, for example `initializeGT({ apiKey })` in gt-node.
+
+  gt-react ignores an `apiKey` that reaches production browser code and logs a warning, because anyone can read a key from a browser bundle. Translate at runtime on your server instead.
+
+- cf7029c: Move the dictionary (key-based) API to `gt-node/compat`. `getTranslations()` and `TFunctionType` leave the `gt-node` root, and `initializeGT()` (`InitializeGTParams`) no longer accepts `dictionary` or `loadDictionary`. Call `initializeGT()`, then `initializeGTDictionary({ dictionary, loadDictionary })` from `gt-node/compat`, which also exports the `Dictionary*` types.
+
+  Migration:
+
+  | Before                                                          | After                                                                                                                                                                                |
+  | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | `import { getTranslations, type TFunctionType } from 'gt-node'` | `import { getTranslations, type TFunctionType } from 'gt-node/compat'`                                                                                                               |
+  | `initializeGT({ …, dictionary, loadDictionary })` (gt-node)     | `initializeGT({ … })`, then `initializeGTDictionary({ dictionary, loadDictionary, cacheExpiryTime })` from `gt-node/compat`, with the `cacheExpiryTime` you pass to `initializeGT()` |
+
+- 13dae8a: Pick up the backward-compatibility removals from generaltranslation and gt-i18n:
+  - The re-exported `GTConfig` drops `devApiKey`, `files.gt.includeSourceCodeContext` (use `files.gt.parsingFlags.includeSourceCodeContext`), and `parsingFlags.legacyGtReactImportSource`.
+  - `runtimeTranslation.metadata` accepts only `sourceLocale` and `modelProvider`.
+  - `runtimeTranslation.timeout: 0` is a zero timeout; omit `timeout` for the default.
+  - `RuntimeTranslationOptions` drops the deprecated `$_source`.
+  - `initializeGT()` still reads `GT_PROJECT_ID` and `GT_API_KEY`.
+
+- 943c094: `gt-node/types` is removed. Import its types from `gt-node`, except `TFunctionType`, which moved to `gt-node/compat` (see the dictionary API changeset).
+
+  `gt-node/internal` no longer re-exports `getI18nCache`, `setI18nCache` and `I18nCache`. Import them from `gt-i18n/internal`.
+
+- 1a5e9ae: `GT_PROJECT_ID` and `GT_API_KEY` are read once, when GT is initialized, and never after. Each option wins over its variable, and an empty string counts as unset.
+  - gt-i18n no longer reads `GT_API_KEY` when a runtime translation is requested. A variable set after initialization is not picked up: load your `.env` file before you call `initializeGT()`, or pass `apiKey`.
+  - gt-node: `initializeGT()` reads both variables when it is called.
+  - gt-payload: `gtPlugin()` reads both variables when it is called, not when the first translation runs. An empty-string `apiKey` or `projectId` option now falls back to the variable. A missing key still fails the run that needs it, not the Payload config.
+  - gt-react: `initializeGT()` from the `react-server` entry reads both variables, like the server and client entries. Before, it read neither.
+  - gt-next: a `projectId` in `gt.config.json` or `withGTConfig()` props now reaches the runtime, where it is used before `GT_PROJECT_ID`, as in every other package. Before, production read only `GT_PROJECT_ID`, so a project ID set only in `gt.config.json` loaded no translations. `withGTConfig()` accepts `projectId` again, and throws when the configured project ID and `GT_PROJECT_ID` differ. A project ID set only through `GT_PROJECT_ID` is not built into the app, so each deployment still reads its own. The API key is still read only from `GT_API_KEY`.
+  - The CLI behaves as before.
+
+### Minor Changes
+
+- 63b6748: Each package ships `config-schema.json`, the JSON Schema of a `gt.config.json` for a project that uses it: the gt CLI's keys and the package's own, and no others. Point `$schema` at it, as `gt init` does: `"$schema": "./node_modules/gt-next/config-schema.json"`.
+
+### Patch Changes
+
+- cf7029c: Move the dictionary (compat) internals to their own internal subpaths, `gt-i18n/internal/compat` and `@generaltranslation/react-core/compat`, so CommonJS builds of the native entries no longer load the dictionary runtime. `gt-i18n/internal` and `@generaltranslation/react-core/{pure,hooks,components}` no longer export it. No public API change.
+- 82999f0: Re-export `derive`, `declareVar`, and `decodeVars` from `generaltranslation`, and `GTConfig` and `TranslationsLoader` directly from the `gt-node` entry, instead of through internal modules. No public API change.
+- Updated dependencies [96f428a]
+- Updated dependencies [96f428a]
+- Updated dependencies [cf7029c]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [016ace7]
+- Updated dependencies [3832c15]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [cf7029c]
+- Updated dependencies [82999f0]
+- Updated dependencies [63b6748]
+- Updated dependencies [13dae8a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [943c094]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+  - generaltranslation@10.0.0-samsara.9
+  - gt-i18n@2.0.0-samsara.9
+
 ## 2.0.0-samsara.8
 
 ### Patch Changes

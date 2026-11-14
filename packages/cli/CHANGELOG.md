@@ -1,5 +1,124 @@
 # gtx-cli
 
+## 3.0.0-samsara.10
+
+### Major Changes
+
+- 63b6748: **Breaking:** the `gt.config.json` JSON Schemas are now generated from the valibot schemas and reject unknown keys (`additionalProperties: false`), so editors flag typos and keys the project's tools do not read. An `apiKey` in `gt.config.json` is flagged as well; the CLI already exits on it.
+
+  Each library package ships its own schema, `config-schema.json`, which lists the CLI's keys and that library's own: gt-next's lists its routing keys, and gt-react's does not. `gt init` points `$schema` at the installed library's schema, such as `./node_modules/gt-next/config-schema.json`, so editors check the file against the version you have installed; it replaces only a missing `$schema` or the hosted URL. `assets/config-schema.json` (published at https://assets.gtx.dev/config-schema.json) lists the CLI's keys alone, for projects that use only the CLI.
+
+  The schema now matches what the CLI and runtimes accept:
+  - `defaultLocale`, `locales` and `files.gt.output` are optional, and a `options.jsonSchema` entry may use only a `preset`.
+  - All supported file types are accepted under `files`, including `html`, `txt`, `pot`, `xcstrings` and the uppercase aliases such as `POT`, each with `transformationFormat`, `parsingFlags`, include patterns with `publish`, and the object form of `transform`. `exclude` patterns no longer need `[locale]`.
+  - Added `files.gt.publish`, every `files.gt.parsingFlags` flag, `publish`, `omitConfigIds`, `fonts`, `branchOptions`, `parsingOptions`, `options.excludeStaticUrls`, `options.excludeStaticImports`, `options.experimentalAddHeaderAnchorIds`, `options.experimentalCanonicalLocaleKeys`, the JSON schema `structuralTransform`, `resolveRefs`, `omitProperties` and `splitEntries` options, `customMapping`, `cacheUrl` and `cacheExpiryTime`.
+  - `runtimeUrl` and `cacheUrl` accept `null`, `framework` accepts `mintlify`, and `modelProvider` lists the providers the API supports (the values of `ModelProvider` from `generaltranslation/api`) instead of the lowercase `anthropic` and `openai`, which the CLI rejected.
+  - `sharedStaticAssets.outDir` is no longer required by the schema when `mirrorToLocales` is off; the CLI skips consolidation without it.
+
+  The CLI's config types (`FilesOptions`, `AdditionalOptions`, `JsonSchema`, `YamlSchema`, `SharedStaticAssetsConfig` and related types) are now inferred from the same schema. `files.gt.output` is optional in `FilesOptions`. Run `pnpm generate:config-schema` after changing the schema; `pnpm lint` fails when the committed JSON Schema is out of date.
+
+- ea429a2: **Breaking (types only):** the CLI's `GTParsingFlags` type in `gt/types/parsing` is renamed `ResolvedGTParsingFlags` and derives from `generaltranslation`'s `GTParsingFlags`, which keeps that name for the `gt.config.json` shape. `resolveAutoderive()` moved to `generaltranslation/config-schema`. The CLI reads its dashboard URL default (`defaultDashboardUrl`) from `generaltranslation/internal` and the `gt.config.json` search locations from `generaltranslation/config-schema`. No behavior changes.
+- 86e86b9: `gt init` saves `GT_PROJECT_ID` and `GT_API_KEY` to `.env.local` for every framework. It no longer writes framework-prefixed names such as `VITE_GT_PROJECT_ID` and `VITE_GT_DEV_API_KEY` (or the `GATSBY_`, `REACT_APP_` and `REDWOOD_ENV_` equivalents), and no longer counts a prefixed development key as existing credentials. Rename them to `GT_PROJECT_ID` and `GT_API_KEY`, or rerun `npx gt init`.
+  - The CLI no longer reads a prefixed project-ID variable such as `VITE_GT_PROJECT_ID`, `REACT_APP_GT_PROJECT_ID` or `EXPO_PUBLIC_GT_PROJECT_ID`. Rename it to `GT_PROJECT_ID`.
+  - For Vite and React Router apps, `gt init` adds `gtReact()` from `gt-react/vite` to the plugins in your Vite config. The plugin passes `GT_PROJECT_ID` to your app in every build and `GT_API_KEY` only during `vite serve`. If the installed gt-react has no Vite plugin, `gt init` leaves the config unchanged and asks you to upgrade.
+  - React Router setup needs gt-react 12 or later, which ships the plugin, and stops when `package.json` allows an older version.
+  - React Router setup for CDN translations writes `initializeGT(gtConfig)`. gt-react reads the project ID itself: `gtReact()` supplies it to code Vite bundles, and the server reads `GT_PROJECT_ID` from its environment, so set it on your production host. In a root set up by an older `gt init`, remove the `projectId: … import.meta.env.VITE_GT_PROJECT_ID` fallback.
+  - Gatsby, Create React App and RedwoodJS have no GT plugin that reads `.env.local`. In development, pass `{ projectId, apiKey }` to your GT setup yourself, and never include the API key in production builds. `gt init` reports this as a manual step, so its JSON outcome is `needs_human_action`.
+
+- 831d39f: Remove the remaining backward compatibility:
+  - Flags: `--default-language` (use `--default-locale`), `--new` (use `--locales`), `--jsconfig` (use `--tsconfig`), and the no-op `--inline` are removed.
+  - `files.gt.includeSourceCodeContext` in gt.config.json is no longer recognized or warned about; use `files.gt.parsingFlags.includeSourceCodeContext`. It is also removed from the config schema.
+  - `files.gt.parsingFlags.legacyGtReactImportSource` is removed.
+  - `<T>` extraction no longer reads `$context`, `$id`, `$maxChars`, or `$requiresReview` and no longer warns about them; use the unprefixed props.
+  - The unused `gt/updates/*` and `gt/jsx/*` exports are removed.
+  - `gt/utils/api` no longer exports `api`, `ApiClient`, or `configureApiClient`: `createClients(settings)` returns the project and account `GeneralTranslation` handles, call their methods instead, and `configureCustomMapping(customMapping)` sets the locale mapping.
+  - Deep-import internals: `determineLibrary()` (use `determineLibraryForCLI()`), `updateVersions()`/`getStagedVersions()`, `warnDeprecatedField()`, and the deprecated `DictionaryMetadata` fields `context`, `maxChars`, and `variablesOptions` are removed.
+
+- 943c094: `gt/types`, `gtx-cli/types/index` and the `gtx-cli/index` alias are removed. Import those types from `gt` (or `gtx-cli`), and replace `gtx-cli/index` with `gtx-cli`. `Updates` is no longer re-exported; import it from `generaltranslation`.
+- 63b6748: **Breaking:** the CLI validates `gt.config.json` once when it loads it, with the same schema that generates the `gt.config.json` JSON Schemas.
+  - A file that is not valid JSON now stops the command with an error naming the file and the parse error, without quoting the file content. It used to be read as an empty config.
+  - A value of the wrong type, such as `"locales": "fr"`, a string `requiresReview`, an unsupported `modelProvider`, `null` file content or an unknown key inside a nested object such as `files.gt` or `options`, stops the command with one error listing every invalid key. Before, some of these were checked one at a time and others were misread, for example `"fr"` became the locales `f` and `r`.
+  - Unknown top-level keys are still accepted and kept by `gt configure`, because a library such as gt-next reads its own keys from the same file. Editors flag unknown keys through the library's JSON Schema.
+  - An `apiKey` in the file is reported as part of the same error, which tells you to use the `GT_API_KEY` environment variable instead.
+  - `skipVersionCheck` is now part of the schema.
+
+  Locale validity (`isValidLocale`, `isSupersetLocale`) and `projectId` checks are unchanged; their errors and the `.xcstrings` configuration errors now use the standard diagnostic format.
+
+### Minor Changes
+
+- 831d39f: Migrate CLI translation workflows to the canonical General Translation API. Per-item upload, move, font, edit-save, and publish failures are reported while successful items continue; translations are uploaded only for saved sources. `gt stage`, `gt upload`, and `gt save-local` now print warning summaries, and upload/move counts reflect successes.
+
+  `gt save-local --publish` publishes every configured file and every file version an edit was saved to, except file versions with failed edits. `gt save-local` exits 1 when every edit fails or the publish request fails; partial failures still exit 0. Empty local translations are skipped with a warning. A failed template upload does not replace its pinned version. `gt project status <job-id>` reports `not_found` for missing jobs.
+
+  Preserve default-branch setup and synchronize the project's default locale with `defaultLocale` after uploading. If the API key lacks the permission to update the locale, warn and continue with the uploaded files.
+
+  Recovery follows the API error code instead of the HTTP status: branch creation falls back to the default branch only when the plan lacks branching (the warning includes the API's message) and reuses a branch only when it already exists, and other failures stop with their own error. Workflow and project/API-key creation errors print a fix for known codes (billing, sign-in, permissions, locales, plan, project limit, CDN, rate limit) and keep the server message as the detail; `gt init` explains a reached project limit. Font sync names a missing permission or a plan without font sync and stays non-fatal. Downloads request translations still pending again. Failed API reads are left to the API transport's retries, and a local save failure is not retried.
+
+  The CLI calls the API through `generaltranslation`'s public `GeneralTranslation` instead of an internal adapter. A project API key (`gtx-api-…`) can no longer list or create projects: `gt init` without a project ID and `gt project create` stop before sending a request and explain what to do. To set up credentials with a project key, pass `--project-id` (or set `GT_PROJECT_ID`) for the key's project; to list or create projects, sign in or use an Organization API key. With a project API key, font sync sends no request and prints the same "Font sync was denied" warning as before, since the organization assets endpoint rejects project keys.
+
+### Patch Changes
+
+- 96f428a: The `Settings` type no longer includes `version` or `description`, which no command reads. Both stay valid `gt.config.json` keys; read them from the config file instead of `settings.version` and `settings.description`.
+- 82999f0: Import API and format symbols from `@generaltranslation/api` and `@generaltranslation/format` instead of through `generaltranslation`, and remove internal pass-through re-exports. gt now depends directly on `@generaltranslation/api`. No public API change.
+- 2d7f9bd: `--timeout` accepts only a non-negative whole number of seconds. Values such as `12s` or `1.5` are now rejected in place of being truncated.
+- a191c9a: `gt download` saves translated media over 20MB, which the API returns as `data: null` and a signed `downloadUrl`, instead of reporting it as failed. It streams the file to disk through a temporary `.part` file, so a download that is cut off leaves the previous file in place, and requests the file again if the download broke off mid-stream; a download request the API client already retried fails the file. It asks for each file's URL when that file's turn comes, so a long queue of downloads does not outlive the 15-minute URLs: a file the API reports `pending` again is requested again, and any other status fails the file and is reported.
+
+  `project.fetchFileDownload(downloadUrl)` in `generaltranslation` opens such a URL and returns the file as a stream, so it can be saved without holding it in memory. `getFileContent()` and `queryFilesContent()` return these results as the API sends them. `fetchFileDownload(downloadUrl)` in `@generaltranslation/api` is the underlying request, sent without API credentials. Reading the stream fails when the download sends nothing for the request timeout (60 seconds), so a stalled download does not hang.
+
+- 1a5e9ae: `GT_PROJECT_ID` and `GT_API_KEY` are read once, when GT is initialized, and never after. Each option wins over its variable, and an empty string counts as unset.
+  - gt-i18n no longer reads `GT_API_KEY` when a runtime translation is requested. A variable set after initialization is not picked up: load your `.env` file before you call `initializeGT()`, or pass `apiKey`.
+  - gt-node: `initializeGT()` reads both variables when it is called.
+  - gt-payload: `gtPlugin()` reads both variables when it is called, not when the first translation runs. An empty-string `apiKey` or `projectId` option now falls back to the variable. A missing key still fails the run that needs it, not the Payload config.
+  - gt-react: `initializeGT()` from the `react-server` entry reads both variables, like the server and client entries. Before, it read neither.
+  - gt-next: a `projectId` in `gt.config.json` or `withGTConfig()` props now reaches the runtime, where it is used before `GT_PROJECT_ID`, as in every other package. Before, production read only `GT_PROJECT_ID`, so a project ID set only in `gt.config.json` loaded no translations. `withGTConfig()` accepts `projectId` again, and throws when the configured project ID and `GT_PROJECT_ID` differ. A project ID set only through `GT_PROJECT_ID` is not built into the app, so each deployment still reads its own. The API key is still read only from `GT_API_KEY`.
+  - The CLI behaves as before.
+
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [8ba23e5]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ac29d18]
+- Updated dependencies [96f428a]
+- Updated dependencies [ea429a2]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [82999f0]
+- Updated dependencies [96f428a]
+- Updated dependencies [3832c15]
+- Updated dependencies [943c094]
+- Updated dependencies [06ccdfd]
+- Updated dependencies [a191c9a]
+- Updated dependencies [82999f0]
+- Updated dependencies [943c094]
+- Updated dependencies [13dae8a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+- Updated dependencies [943c094]
+- Updated dependencies [82999f0]
+- Updated dependencies [943c094]
+  - @generaltranslation/api@0.7.0-samsara.2
+  - generaltranslation@10.0.0-samsara.9
+  - @generaltranslation/vue-extractor@1.0.0-samsara.2
+  - @generaltranslation/format@1.0.0-samsara.9
+  - @generaltranslation/icu@0.2.0-samsara.7
+  - @generaltranslation/python-extractor@1.0.0-samsara.2
+  - gt-remark@2.0.0-samsara.1
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.10
+  - @generaltranslation/supported-locales@2.1.49-samsara.2
+
 ## 3.0.0-samsara.9
 
 ### Patch Changes

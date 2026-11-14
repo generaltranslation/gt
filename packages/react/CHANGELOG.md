@@ -1,5 +1,135 @@
 # gt-react
 
+## 12.0.0-samsara.9
+
+### Major Changes
+
+- 016ace7: Remove the `devApiKey` option. One `apiKey` now covers both uses: in development it enables hot reload translation, and in production it lets server code translate at runtime. Pass your key as `apiKey` wherever you passed `devApiKey`, for example `initializeGT({ apiKey })` in gt-node.
+
+  gt-react ignores an `apiKey` that reaches production browser code and logs a warning, because anyone can read a key from a browser bundle. Translate at runtime on your server instead.
+
+- cf7029c: Move the dictionary (key-based) API to `/compat` subpaths. `useTranslations()`, `getTranslations()`, `initializeGTDictionary()` and the `Dictionary*` types now come from `gt-react/compat`, `gt-react-native/compat`, `gt-next/compat` (its export conditions mirror `gt-next`), `gt-next/compat/server` (server-only `getTranslations()`, like `gt-next/server`) and `gt-tanstack-start/compat`. The old exports are removed without stubs, the root `GTProvider` no longer accepts `dictionaries`, `onMissingDictionaryEntry` or `onMissingDictionaryObj`, and `initializeGT()`/`initializeGTSPA()` no longer accept `dictionary` or `loadDictionary`.
+
+  Each `/compat` entry exports its own `GTProvider`, which takes everything the root `GTProvider` takes plus those dictionary props, so moving the provider changes only its import. `useTranslations()` reads dictionaries only from it and, under the root `GTProvider`, throws an error that names the `/compat` entry. `initializeGTDictionary()` takes `cacheExpiryTime` like `initializeGT()` and no longer inherits it. In gt-next, the App Router `GTProvider` from `gt-next/compat` also loads the request locale's dictionaries and streams them to client components, as `GTProvider` did; in the Pages Router, `withGTServerSideProps()` and `withGTStaticProps()` from `gt-next/compat` add `dictionaries` to page props for it. In gt-tanstack-start, `setupRouterGTIntegration({ router })` from `gt-tanstack-start/compat` also loads the request locale's dictionary before render and hydrates the browser from that snapshot. Dictionary dev hot reload keeps working.
+
+  Apps that only use the native APIs no longer ship any dictionary code. gt-next requires the `gt-next/internal/_dictionary` and `_load-dictionary` aliases only from `gt-next/compat` modules, and the gt-tanstack-start Vite plugin serves the dictionary from its own `internal/_compat-config` virtual module, so your dictionary file is bundled only when you import a `/compat` entry. The webpack rule that parses gt-next's ESM dist as `javascript/auto` now detects the dist through `internal/_load-translations.mjs`. The `dictionary` and `loadDictionaryPath` options of `withGTConfig()`, `gt.config.json` and the Vite plugin are unchanged. gt-next no longer treats a `[defaultLocale].json` or `[languageCode].json` file (for example `en.json`) as the dictionary; name the file `dictionary.json` or set the `dictionary` option.
+
+  `@generaltranslation/react-core` keeps the dictionary internals behind `@generaltranslation/react-core/compat`: `InternalGTProvider` no longer accepts `dictionaries` or `onMissingDictionary*`, `internalInitializeGTSRA()` no longer accepts `dictionary` or `loadDictionary`, and the unused legacy `Dictionary` types are removed. The gt-next `GTProvider` type no longer declares the unused `id` prop.
+
+  Migration:
+
+  | Before                                                                                                              | After                                                                                                                                                                                                                                                                                                                                                                                                                      |
+  | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `import { useTranslations } from 'gt-react'`                                                                        | `import { useTranslations } from 'gt-react/compat'`                                                                                                                                                                                                                                                                                                                                                                        |
+  | `import { GTProvider } from 'gt-react'` with `dictionaries`, `onMissingDictionaryEntry` or `onMissingDictionaryObj` | `import { GTProvider } from 'gt-react/compat'`, which takes the same props                                                                                                                                                                                                                                                                                                                                                 |
+  | `initializeGT({ …, dictionary, loadDictionary })`, `initializeGTSPA({ …, dictionary, loadDictionary })` (gt-react)  | `initializeGT({ … })` / `initializeGTSPA({ … })`, then `initializeGTDictionary({ dictionary, loadDictionary, cacheExpiryTime })` from `gt-react/compat`. Pass the `cacheExpiryTime` the dictionaries used before: the one you pass to `initializeGT()`, or `null` where `initializeGT()` defaulted it to `null` (gt-react's browser `initializeGT()`); without it, loaded dictionaries expire after the default 60 seconds |
+  | `import { useTranslations } from 'gt-react-native'`                                                                 | `import { useTranslations } from 'gt-react-native/compat'`                                                                                                                                                                                                                                                                                                                                                                 |
+  | `<GTProvider dictionaries={…}>`, `initializeGT({ …, dictionary, loadDictionary })` (gt-react-native)                | `GTProvider` and `initializeGTDictionary({ dictionary, loadDictionary, cacheExpiryTime })` from `gt-react-native/compat`, with the `cacheExpiryTime` you pass to `initializeGT()`                                                                                                                                                                                                                                          |
+  | `import { useTranslations } from 'gt-next'`                                                                         | `import { useTranslations } from 'gt-next/compat'`                                                                                                                                                                                                                                                                                                                                                                         |
+  | `import { getTranslations } from 'gt-next/server'`                                                                  | `import { getTranslations } from 'gt-next/compat/server'`                                                                                                                                                                                                                                                                                                                                                                  |
+  | gt-next `GTProvider` streamed dictionaries to client components                                                     | import `GTProvider` from `gt-next/compat`. In the Pages Router, also import `withGTServerSideProps` / `withGTStaticProps` from `gt-next/compat`, which add `dictionaries` to page props                                                                                                                                                                                                                                    |
+  | `import { useTranslations, getTranslations } from 'gt-tanstack-start'`                                              | `import { useTranslations, getTranslations } from 'gt-tanstack-start/compat'`, and import `setupRouterGTIntegration` from `gt-tanstack-start/compat` instead of `gt-tanstack-start`                                                                                                                                                                                                                                        |
+
+- 943c094: `gt-react` no longer exports plumbing that only its sibling framework packages used. Every entry (including `react-server`) drops:
+  - `createRenderPipeline`, `getFormatLocales`, `getReactI18nCache`, `setReactI18nCache`, `ReactI18nCache`, and the types `RenderPipeline`, `RenderPreparedT`, `ReactI18nCacheParams`: import them from `@generaltranslation/react-core/pure`.
+  - Types `SyncResolutionFunction` and `SyncResolutionFunctionWithFallback`: import them from `gt-i18n`.
+
+  The compiler-injected `GtInternal*` exports stay.
+
+- 13dae8a: Remove the remaining backward compatibility:
+  - `<T>` no longer reads `$context`, `$id`, `$maxChars`, `$requiresReview`, `$format`, or `$_hash`; use `context`, `id`, `maxChars`, `requiresReview`.
+  - `<LocaleSelector>` drops `customNames`; use `customMapping={{ [locale]: { name } }}`.
+  - gt-next: `parseLocale()` no longer detects the locale from request headers, cookies, or `Accept-Language` when Next.js provides none; it uses Next.js `defaultLocale` (or the GT default) and warns, like `withGTStaticProps`. Configure Next.js `i18n`.
+  - gt-next and gt-tanstack-start: `experimentalCompilerOptions.compileTimeHash: false` no longer switches the compiler off; use `experimentalCompilerOptions.type: 'none'`.
+  - gt-next: runtime translation requests no longer send `projectId`, `timeout`, `publish`, `fast`, or `sourceLocale` in request `metadata`.
+  - gt-react-native: locale detection drops the fallbacks for unsupported runtimes (Android < 24 and Internet Explorer's `navigator.userLanguage`).
+
+- 016ace7: Add the `gtReact()` Vite plugin from `gt-react/vite`, which passes `GT_PROJECT_ID` and `GT_API_KEY` from the environment or `.env` files to `gt-react`. It exposes the project ID to client code in every build, and the API key only to `vite dev`, so `vite build` output never contains the key. It rejects a Vite `envPrefix` that matches `GT_API_KEY`, because Vite would inline the key into builds.
+
+  gt-react no longer reads `VITE_GT_PROJECT_ID` or `VITE_GT_DEV_API_KEY`. Vite apps add the plugin and rename the variables to `GT_PROJECT_ID` and `GT_API_KEY`:
+
+  ```ts
+  // vite.config.ts
+  import { gtReact } from 'gt-react/vite';
+
+  export default defineConfig({ plugins: [react(), gtReact()] });
+  ```
+
+  Remove `projectId: import.meta.env.VITE_GT_PROJECT_ID` and `devApiKey: import.meta.env.VITE_GT_DEV_API_KEY` from your `initializeGTSPA()` call. Server code outside Vite reads `GT_PROJECT_ID` and `GT_API_KEY` from `process.env`.
+
+### Minor Changes
+
+- 63b6748: Each package ships `config-schema.json`, the JSON Schema of a `gt.config.json` for a project that uses it: the gt CLI's keys and the package's own, and no others. Point `$schema` at it, as `gt init` does: `"$schema": "./node_modules/gt-next/config-schema.json"`.
+
+### Patch Changes
+
+- 96f428a: Remove duplicate and unused type exports.
+  - `import type { UseTranslationsFunction } from 'gt-react/compat'` (also `gt-react-native/compat` and `gt-tanstack-start/compat`): use `TFunctionType` from the same entry. From `gt-next/compat`, use `TFunctionType` from `gt-next/compat/server`; from `@generaltranslation/react-core/compat`, use `TFunctionType` from `gt-i18n/internal/compat`.
+  - `@generaltranslation/react-core/pure` no longer exports the `OnMissingTranslation` and `VariableProps` types.
+  - `@generaltranslation/react-core/components-rsc` no longer exports the `RenderDefaultChildrenArgs`, `RenderPreparedTParams` and `RenderTranslatedChildrenArgs` types.
+  - `I18nCacheConfig` from `gt-i18n/internal` no longer has `projectId`, `apiKey` and `runtimeUrl`; `I18nCache` never read them.
+
+- cf7029c: Move the dictionary (compat) internals to their own internal subpaths, `gt-i18n/internal/compat` and `@generaltranslation/react-core/compat`, so CommonJS builds of the native entries no longer load the dictionary runtime. `gt-i18n/internal` and `@generaltranslation/react-core/{pure,hooks,components}` no longer export it. No public API change.
+- ea429a2: `@generaltranslation/react-core/pure` exports the `RenderMethod` type. `RegionSelectorProps` now derives its region options from `InternalRegionSelectorOptions`; the accepted props are unchanged.
+- 82999f0: Re-export `gt-i18n` and `generaltranslation` functions from those packages instead of through `@generaltranslation/react-core/pure`, and read cookie names from `gt-i18n/internal/cookies`. gt-react now depends directly on `@generaltranslation/format`. No public API change.
+- 2d7f9bd: The development localStorage translation cache now ignores stored data that is not a JSON object and purges entries whose expiry is missing or does not compare as a number, so edited or corrupted storage no longer blocks new writes.
+- 2d7f9bd: Remove runtime checks that TypeScript already guarantees and duplicated locale resolution. gt-react's browser condition store now resolves the locale once on initialization and server updates, and gt-vue's `initializeGTSPA()` builds its locale matcher once instead of on every lookup. Translation hashes do not change.
+
+  Two observable changes:
+  - `generaltranslation`: runtime translation results from the General Translation API are no longer shape-checked on the client; their type comes from the generated API client. A successful result whose `translation` did not match its `dataFormat` used to become `{ success: false, error: 'Invalid translation returned', code: 500 }`; it is now returned as the service sent it. Failed requests, missing entries (`'No translation returned'`) and network errors behave as before.
+  - `gt-tanstack-start`: request locales are now resolved against the configuration that `initializeGT()` already loaded, instead of a copy rebuilt on every request. That configuration always includes `defaultLocale` among the supported locales, so with `defaultLocale: 'en'`, `locales: ['fr']` and `Accept-Language: en, fr`, the request locale is now `en` (previously `fr`), matching path-based locale detection.
+
+- 1a5e9ae: `GT_PROJECT_ID` and `GT_API_KEY` are read once, when GT is initialized, and never after. Each option wins over its variable, and an empty string counts as unset.
+  - gt-i18n no longer reads `GT_API_KEY` when a runtime translation is requested. A variable set after initialization is not picked up: load your `.env` file before you call `initializeGT()`, or pass `apiKey`.
+  - gt-node: `initializeGT()` reads both variables when it is called.
+  - gt-payload: `gtPlugin()` reads both variables when it is called, not when the first translation runs. An empty-string `apiKey` or `projectId` option now falls back to the variable. A missing key still fails the run that needs it, not the Payload config.
+  - gt-react: `initializeGT()` from the `react-server` entry reads both variables, like the server and client entries. Before, it read neither.
+  - gt-next: a `projectId` in `gt.config.json` or `withGTConfig()` props now reaches the runtime, where it is used before `GT_PROJECT_ID`, as in every other package. Before, production read only `GT_PROJECT_ID`, so a project ID set only in `gt.config.json` loaded no translations. `withGTConfig()` accepts `projectId` again, and throws when the configured project ID and `GT_PROJECT_ID` differ. A project ID set only through `GT_PROJECT_ID` is not built into the app, so each deployment still reads its own. The API key is still read only from `GT_API_KEY`.
+  - The CLI behaves as before.
+
+- 943c094: Import types and helpers from their single owning entry now that the types-only subpaths are removed. No public API change.
+- Updated dependencies [96f428a]
+- Updated dependencies [96f428a]
+- Updated dependencies [cf7029c]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [016ace7]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [82999f0]
+- Updated dependencies [96f428a]
+- Updated dependencies [3832c15]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [943c094]
+- Updated dependencies [cf7029c]
+- Updated dependencies [82999f0]
+- Updated dependencies [63b6748]
+- Updated dependencies [13dae8a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [943c094]
+- Updated dependencies [a191c9a]
+- Updated dependencies [63b6748]
+- Updated dependencies [cf7029c]
+- Updated dependencies [82999f0]
+- Updated dependencies [943c094]
+- Updated dependencies [ea429a2]
+- Updated dependencies [943c094]
+- Updated dependencies [13dae8a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+- Updated dependencies [44a3832]
+  - generaltranslation@10.0.0-samsara.9
+  - gt-i18n@2.0.0-samsara.9
+  - @generaltranslation/react-core@12.0.0-samsara.9
+  - @generaltranslation/format@1.0.0-samsara.9
+
 ## 12.0.0-samsara.8
 
 ### Patch Changes

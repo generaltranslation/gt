@@ -1,5 +1,174 @@
 # generaltranslation
 
+## 10.0.0-samsara.9
+
+### Major Changes
+
+- ba09ee2: `GT` is renamed to `GeneralTranslation`: `import { GT } from 'generaltranslation'` → `import { GeneralTranslation } from 'generaltranslation'`.
+
+  `GeneralTranslation` calls only the canonical `2026-10-08.v1` API, with project IDs in paths rather than `gt-project-id`. Runtime translation uses `POST /v2/projects/{projectId}/translate` and splits entries across requests that stay under its 4MB body limit. Batched methods split requests at the server caps: 25 moves, 10 fonts, and 100 for the rest; move lists require disjoint file IDs, and publish lists may name each file version once. Batched writes return `summary` and per-item `results`; a failed item is reported there instead of thrown.
+
+  Removed `GT` methods and their replacements on the project-scoped `GeneralTranslation` (below):
+  - `getProjectInfo()`, `getProjectData()` → `get()`
+  - `queryBranchData()` → `listBranches()`
+  - `getOrphanedFiles()` → `listBranchFiles()`
+  - `processFileMoves()` → `moveFiles()`
+  - `setupProject()` → `generateProjectContext()`
+  - `checkJobStatus()` → `queryJobs()` or `getJob()`
+  - `enqueueFiles()` → `translateFiles()`
+  - `createTag()` → `setTag()`, which returns the tag itself
+  - `submitUserEditDiffs()` → `overwriteTranslations()`
+  - `queryFileData()` → `queryFiles()`
+  - `querySourceFile()` → `getFileStatus()`
+  - `downloadFile()` → `getFileContent()`
+  - `downloadFileBatch()` → `queryFilesContent()`
+  - `uploadFonts()` → `account.org(orgId).upsertAssets()` on an account-scoped `GeneralTranslation`
+
+  `update()`, `updateBranch()`, `createApiKey(body)`, `listApiKeys()`, `getApiKey(apiKeyId)` and `deleteApiKey(apiKeyId)` are new. `createApiKey(body)` creates a project API key with exactly the requested permissions and returns it with its `key`, which no later call returns. `syncDefaultLocale(locale)` sets the project's default locale unless it already is, and returns a missing `project:write` permission as `{ status: 'permission_missing', previousDefaultLocale, error }` instead of throwing it. `createOrReuseBranch({ name, isDefault })` creates a branch or returns the one the project already has with that name.
+
+  Changed methods:
+  - `createBranch()` takes `{ name, isDefault }` only, returns the branch itself rather than `{ branch }`, and sends only the create request: a name the project already has throws an `ApiError` with code `already_exists`. To reuse an existing branch, call `createOrReuseBranch()`.
+  - `awaitJobs(jobIds, options)` takes job IDs only and returns jobs as `{ id, status, subject?, error? }`, with `error` a string. A job the project does not have is `not_found`; `unknown` means the job was not polled before the timeout. `options.onPoll` receives each poll's statuses.
+  - `queryJobs(jobIds, { signal, timeout })` takes an optional `signal` that aborts in-flight requests.
+  - `translate()` and `translateMany()` failures (`TranslationError`) carry the API's string error `code` (for example `plan_feature_unavailable`) instead of a number; a missing or invalid translation reads `internal_error`.
+  - `uploadSourceFiles()` and `uploadTranslations()` return `{ summary, results }`, without `uploadedFiles`, `count`, or `message`.
+  - `uploadSourceFiles(files, options?)` sends `options.sourceLocale`, else `localeConfig.defaultLocale`; with neither, the request has no `sourceLocale` and the project's default locale applies.
+  - `uploadSourceFiles()` and `uploadTranslations()` send a file over 4MB through `createFileUploads` and reference it by hash, and send further files that way once a request's inline content nears the body limit. A source's `formatMetadata` goes with its content: inline as `{ content }`, or PUT as JSON and referenced as `{ upload }`. A translation upload's source no longer takes `formatMetadata`.
+  - `FileUpload` follows the API's source file and accepts `metadata.previewUrl`; it no longer has `transformFormat`. Translations take `TranslationUpload` (`fileName`, `fileFormat`, `dataFormat`, `locale`, `content`), whose `fileFormat` is the format the translation is saved in, so `uploadTranslations()` no longer checks `transformFormat`.
+  - `generaltranslation/internal` exports `credentialScope(credentials)`: `'project'` for a project API key, otherwise `'account'`.
+  - `publishFiles()` returns one result per file version, with each translation's `locale` and `status` under `translations`, and no `success`. `PublishFileEntry` has no `fileName`.
+  - Job results from `translateFiles()`, `queryJobs()`, `getJob()`, and `awaitJobs()` report `subject.locale` as the configured locale with that code, else its `customMapping` alias, like other results.
+  - `queryFiles()` and `queryFilesContent()` send selectors that resolve to the same file, branch, version, and locale once, and return a result for every selector in order with its requested locale.
+
+  `generaltranslation/types` removes `AwaitJobsOptions`, `AwaitJobsResult`, `BranchDataResult`, `BranchQuery`, `CheckJobStatusResult`, `CreateTagOptions`, `CreateTagResult`, `DownloadedFile`, `DownloadFileBatchResult`, `EnqueueFilesOptions`, `EnqueueFilesResult`, `FileDataQuery`, `FileDataResult`, `GetOrphanedFilesResult`, `JobResult`, `JobStatus`, `MoveResult`, `OrphanedFile`, `ProcessMovesResponse`, `SetupProjectFileReference`, `SubmitUserEditDiff`, and `SubmitUserEditDiffsPayload`; job types come from `generaltranslation/api`.
+
+  `generaltranslation/api` re-exports `@generaltranslation/api`, whose canonical operations and types replace the old generated ones: `awaitJobs(client, projectId, jobIds, options)` polls `queryJobs`, and `ApiClientConfig` has no `projectId`. `generaltranslation/internal` no longer exports the API adapter (`createGtApiAdapter`, `GtApiAdapter`, `GtApiAdapterConfig`); use `GeneralTranslation`.
+
+  `GeneralTranslation`, `GTRuntime`, and the new `GTIntl` split credentials, translation, and formatting. Each takes its locales as `localeConfig`, plain data (`{ defaultLocale, locales, customMapping, timeZone }`, type `LocaleConfig`). `GTIntl` from `generaltranslation` fills in the default locale and the host's time zone; the one in `@generaltranslation/format` takes both as given:
+  - Project work: `new GT({ apiKey, projectId, sourceLocale, locales, customMapping })` → `new GeneralTranslation({ apiKey, projectId, localeConfig: { defaultLocale, locales, customMapping } })`. With `projectId`, `GeneralTranslation` is project-scoped (class `ProjectHandle`): every project and file method, plus `translate()` and `translateMany()`.
+  - Account work: `new GeneralTranslation({ apiKey })` without `projectId` is account-scoped (class `GTAccount`): `listOrgs()` and `listProjects()` (new), `account.project(projectId)` (a `ProjectHandle`), and `account.org(orgId)` (an `OrgHandle` with `upsertAssets()` and the new `createProject()` and `createApiKey()`, which return the project and the key). `upsertAssets()` no longer looks up the project's organization; with only a project: `account.org((await project.get()).orgId)`. A project key (`gtx-api-…`) without `projectId` throws.
+  - Runtime translation: `new GTRuntime({ apiKey, projectId, targetLocale: 'es' }).translate(source, 'es')` → `new GTRuntime({ apiKey, projectId, localeConfig }).translate(source, 'es')`. `GTRuntime` only translates, and `projectId` is required. The instance `targetLocale` is gone, so JavaScript calls that omitted the target and relied on it now throw; pass the target locale on each call.
+  - Formatting and locale helpers: `new GT({ targetLocale: 'es', customMapping }).formatNum(n)` → `new GTIntl({ customMapping }, { locale: 'es' }).formatNum(n)`, and `gt.formatNum(n, { locales: ['fr'] })` keeps working as `intl.formatNum(n, { locales: ['fr'] })`. `GTIntl` takes no credentials; `options.locale` overrides its locale for one call. `GeneralTranslation` and `GTRuntime` no longer format or resolve locales, and `LocaleConfig` (from `@generaltranslation/format`) is a type, not a class.
+  - `GTIntl` methods take the values they act on positionally and an options object last: `gt.requiresTranslation(source, target)` → `intl.requiresTranslation({ locale: target, sourceLocale: source })`, `gt.determineLocale(candidates, approved)` → `new GTIntl({ locales: approved, customMapping }).determineLocale(candidates)`, `gt.getRegionProperties(region)` → `intl.getRegionProperties(region, { locale })`. `getLocaleName`, `getLocaleProperties`, `getLocaleEmoji`, and `getLocaleDirection` describe the target locale when called without one, as before (`gt.getLocaleName()` → `intl.getLocaleName()`), and name locales in the target locale rather than the default locale; `{ locale }` overrides it per call. No method takes a per-call `customMapping`; `standardizeLocale` only normalizes spelling and does not resolve aliases.
+  - Credentials: `GeneralTranslation` and `GTRuntime` require exactly one of `apiKey` or `userTokenProvider` (type `GTCredentials`) and no longer read `GT_API_KEY` or `GT_PROJECT_ID`: `new GT({ projectId })` → `new GeneralTranslation({ apiKey: process.env.GT_API_KEY!, projectId })`.
+  - Configuration is fixed at construction: `setConfig()` is removed, and `GeneralTranslation`, `GTRuntime`, their handles, and `GTIntl` copy and freeze the `localeConfig` you pass, including its `locales` array and `customMapping` entries, so later changes to your objects have no effect and the exposed configuration is readonly. `GeneralTranslation`, `GTRuntime`, and handle instances are frozen. Locale codes are no longer validated at construction. A `userTokenProvider` is still asked for a token on each request.
+  - Constructor types: `GTConstructorParams` is replaced by `GTProjectConfig` (credentials, a required `projectId`, optional `localeConfig` and `baseUrl`), which the project-scoped `GeneralTranslation` and `GTRuntime` take, and `GTAccountConfig` (the same without `projectId`), which the account-scoped `GeneralTranslation` takes. The `GeneralTranslation` type is `ProjectHandle | GTAccount`, and `instanceof GeneralTranslation` is true for both. A `projectId` typed `string | undefined` is a type error: check it, then construct the project-scoped or the account-scoped client. `generaltranslation` exports `ProjectHandle` and `GTAccount` for `instanceof` checks.
+  - `projectId`, `project(id)`, and `org(id)` must be non-empty strings. The `ProjectHandle`, `OrgHandle`, `GTAccountConfig`, and `LocaleConfig` types are exported from `generaltranslation`; `generaltranslation/runtime` exports `GTRuntime` and the `GTProjectConfig` and `GTCredentials` types.
+
+  API failures throw `ApiError` with the HTTP `status` and the API's error `code` (see `@generaltranslation/api`); local validation and misconfiguration (a missing ID, a project key without `projectId`, and invalid arguments such as repeated move or publish entries) throw a plain `Error` with a diagnostic message.
+
+- 63b6748: Add the `generaltranslation/config-schema` entry point. It exports `GTConfigSchema`, a [valibot](https://valibot.dev) schema with a description for every `gt.config.json` key that more than one package reads, its `files.gt` subschema, `validateGTConfig()`, which checks a value against `GTConfigSchema` and returns the parsed config or the diagnostic fields of `describeConfigIssues()`, and `describeConfigIssues()`, which turns validation issues into the `whatHappened`, `fix` and `details` of one diagnostic message, naming the config that failed and the invalid key inside a union option, and never prints the values of `apiKey` or `devApiKey`. `describeConfigParseError()` does the same for a file that is not valid JSON and leaves out the part of the file that the JSON parser quotes, which can hold credentials. The entry point is Node-only and is the only one that loads valibot; browser bundles do not change.
+
+  `GTConfig`, `GTFilesConfig`, `GTOutputFileConfig` and `GTParsingFlags` are now inferred from these schemas, so `valibot` is a dependency of `generaltranslation`. `GTConfig` now also lists `renderSettings`. Keys only one library reads stay in that library: gt-next's routing keys are in gt-next. The schema also describes the file's `dictionary` path, but `GTConfig` leaves it out so a `GTConfig` still passes to `initializeGT()`, whose `dictionary` is the loaded dictionary. `GTConfigSchema`, `files` and `parsingFlags` accept unknown keys so every reader accepts the whole file, but the inferred types list only the known ones.
+
+  **Breaking:** `GTConfig.modelProvider` and gt-i18n's `I18nCacheConstructorParams.modelProvider` are typed as `ModelProvider` (the values of `ModelProvider` from `generaltranslation/api`) instead of `string`, and `GTConfig.renderSettings.method` as `'skeleton' | 'replace' | 'default'`. A `gt.config.json` imported in TypeScript widens these values to `string`, so cast it (`config as GTConfig`) or check it with `GTConfigSchema` where a `GTConfig` is expected; `satisfies GTConfig` only narrows object literals written in TypeScript. `I18nCacheConstructorParams` now picks the `GTConfig` keys it reads instead of omitting the ones it does not, so keys it does not read are not accepted there.
+
+- ba09ee2: Remove the remaining backward compatibility:
+  - `GeneralTranslation`/`GTRuntime` drop `devApiKey` and no longer read `GT_DEV_API_KEY`; pass `apiKey`. `GTRuntime.reverseCustomMapping` is removed.
+  - `translate()`/`translateMany()` treat `timeout: 0` as a zero timeout; omit `timeout` for the default.
+  - `TranslateOptions` no longer accepts arbitrary extra keys; `sourceLocale`, `targetLocale` and `modelProvider` remain. Only `modelProvider` is sent in request metadata.
+  - `uploadTranslations(files, options)` takes only `{ timeout }`: no `sourceLocale` and no missing-source-locale error. Upload options drop `modelProvider`.
+  - `hashSource` no longer reads `id`; IDs are metadata only.
+  - `GTConfig` drops `devApiKey`, `files.gt.includeSourceCodeContext` (use `files.gt.parsingFlags.includeSourceCodeContext`), and `parsingFlags.legacyGtReactImportSource`.
+  - `generaltranslation/internal` drops `createDiagnosticMessage`, `formatDiagnosticErrorDetails`, `DiagnosticMessageInput`, `DiagnosticSeverity` (use `generaltranslation/diagnostics`), `API_VERSION` (use `generaltranslation/api`), `derive`, `declareVar`, `decodeVars` (use `generaltranslation`), and `isErrorResult`.
+  - `generaltranslation/types` drops `CheckFileTranslationsOptions`, `DownloadFileOptions`, `DownloadFileBatchOptions`, `ProcessMovesOptions`, `PublishFilesResult` (use `PublishFilesResponse` from `generaltranslation/api`), `TranslationResultReference`, and `CreateBranchQuery` (use `CreateBranchData['body']`).
+  - The root entry no longer re-exports the standalone locale functions `determineLocale`, `getLocaleDirection`, `getLocaleEmoji`, `getLocaleName`, `getLocaleProperties`, `getRegionProperties`, `isSameDialect`, `isSameLanguage`, `isSupersetLocale`, `isValidLocale`, `requiresTranslation`, `resolveAliasLocale`, `resolveCanonicalLocale`, and `standardizeLocale`; use `GTIntl`, or import them from `@generaltranslation/format`. The formatters (`formatCurrency`, `formatCutoff`, `formatDateTime`, `formatList`, `formatListToParts`, `formatMessage`, `formatNum`, `formatRelativeTime`, `formatRelativeTimeFromDate`) stay on the root entry: these are the versions that fill in the locale, the time zone and the base date, while the ones in `@generaltranslation/format` take every argument.
+  - The `generaltranslation/errors` entry is removed; import `ApiError` from `generaltranslation/api`.
+  - `generaltranslation/types` drops `TranslateConfig`, `TranslationRequestConfig`, `BINARY_FILE_FORMATS` (use `isBinaryFileFormat`), and `Metadata`.
+  - `generaltranslation/internal` drops `pluralForms`, `encodeFileContent`, `decodeFileContent`, `unwrapApiResult`, and the `JsxChildren`, `JsxChild`, `JsxElement`, and `LocaleProperties` types (use `generaltranslation`).
+  - `generaltranslation/internal` drops `isModelProvider` and `supportedModelProviders`. To list the supported providers, use `Object.values(ModelProvider)` with `ModelProvider` from `generaltranslation/api`.
+  - `generaltranslation/internal` drops `defaultDefaultLocale`. Import it from `@generaltranslation/format/internal`.
+  - The core logger is removed: a missing target locale throws without also logging, and `_GT_LOG_LEVEL` has no effect. A runtime translation timeout rejects with `Request timed out after <ms>ms`.
+  - `TranslateOptions.modelProvider` is typed as `ModelProvider` instead of `string`. The client no longer checks the value at runtime: `translate()`, `translateMany()` and `translateFiles()` send it as given, and an unsupported provider fails with the API's error.
+
+- 943c094: Each name is now exported from one entry, and types are exported from the same entry as their values:
+  - `generaltranslation/types` is removed. Import its public types, `HTML_CONTENT_PROPS` and `isBinaryFileFormat` from `generaltranslation`. Import `Transformation`, `TransformationPrefix`, `VariableTransformationSuffix` and `InjectionType` from `generaltranslation/internal`. Import `FileFormat`, `RuntimeFileFormat`, `JsonObject` and `JsonValue` from `generaltranslation/api`.
+  - The unused `EntryActionType` alias is removed.
+  - `GTRuntime`, `GTProjectConfig` and `GTCredentials` are no longer exported from `generaltranslation`. Use `import { GTRuntime } from 'generaltranslation/runtime'`.
+  - `LocaleConfig` is no longer exported from `generaltranslation/runtime`. Import it from `generaltranslation`.
+  - `ModelProvider` is no longer exported from `generaltranslation/internal`. Import it from `generaltranslation/api`.
+  - `VAR_IDENTIFIER` is no longer exported from `generaltranslation/internal`. Import `RESERVED_NAME_PREFIX` from `@generaltranslation/icu/internal`.
+
+### Minor Changes
+
+- ba09ee2: `project.updateFiles(files)` updates source files, or their translations when a file names a locale, such as a version's `metadata.previewUrl`. It replaces the 2.x adapter's `updateFiles` (#2653), in batches of 100 that each write all or nothing. Each branch, file, version, and locale may appear once in the list; a repeated target throws before any request is sent.
+- 3832c15: `determineLocale` now follows standard locale matching, selected by a new `localeMatcher` option (`'lookup' | 'best fit'`, default `'best fit'`) on `LocaleConfig`, `GTConfig`, gt-i18n's `I18nConfig` params, and gt-next's `withGTConfig` / `gt.config.json`. The `LocaleMatcher` type is exported next to `LocaleConfig` and limits the option to these values; gt-next, the gt CLI, the compiler and gt-react-native reject any other value when they load `gt.config.json` or `withGTConfig()` props.
+
+  Requested and configured locales are canonicalized the same way (`customMapping` alias → code, invalid tags skipped, standardized; a requested tag only needs a valid language-script-region base, so extension and private-use subtags are allowed), and the result is always the configured spelling. `determineLocale` never applies `defaultLocale`; callers keep owning the fallback.
+  - `'lookup'` (RFC 4647 §3.4 Lookup): for each requested locale in priority order, truncate it from the end (a single-letter subtag is removed with the subtag after it, so `zh-Hant-CN-x-private1-private2` → `zh-Hant-CN-x-private1` → `zh-Hant-CN` → `zh-Hant` → `zh`) and return the first configured locale equal to a truncation; `*` is skipped.
+  - `'best fit'`: take the requested languages in order of first appearance. For each language, run Lookup over the requested locales of that language against the configured locales of that language, accepting only a match with the same likely script (`Intl.Locale.prototype.maximize`); if nothing matches, return the first configured locale of that language (configured order) whose likely script equals the script of a requested locale of that language, trying requested locales in order. If no configured locale of that language shares a script, plain Lookup applies, so `zh-TW` resolves to `zh-Hant` when it is configured and to a bare `zh` only when it is not. Then move to the next language. A region difference is acceptable; a script difference is not (no `sr-Latn` ↔ `sr-Cyrl` exception). Tags without a derivable script, such as `qaa`, compare as an empty script.
+
+  The standalone `determineLocale(locales, approvedLocales, customMapping)` now delegates to `new GTIntl({ locales: approvedLocales, customMapping }).determineLocale(locales)`, so it resolves aliases and returns the configured spelling. It always uses `'best fit'`. gt-vue's `initializeGTSPA()` accepts `localeMatcher` too, so a `gt.config.json` object passed to it keeps its matcher.
+
+  Behavior changes (before → after, default `'best fit'`):
+
+  | Requested → configured                      | Before      | After       |
+  | ------------------------------------------- | ----------- | ----------- |
+  | ------------------------------------------- | ----------- | ----------- |
+  | `en` → `en-GB, fr-FR`                       | `undefined` | `en-GB`     |
+  | `['en', 'fr']` → `en-GB, fr-FR`             | `fr-FR`     | `en-GB`     |
+  | `en-AU` → `en-GB`                           | `undefined` | `en-GB`     |
+  | `['en-AU', 'en-GB']` → `en-US, en-GB`       | `en-US`     | `en-GB`     |
+  | `zh-TW` → `zh-CN, en`                       | `zh-CN`     | `undefined` |
+  | `sr-Latn` → `sr-Cyrl`                       | `sr-Cyrl`   | `undefined` |
+  | `en` → `en-GB, en-US`                       | `en-US`     | `en-GB`     |
+  | standalone, `brand-fr` aliased and approved | `brand-FR`  | `brand-fr`  |
+
+- a191c9a: `gt download` saves translated media over 20MB, which the API returns as `data: null` and a signed `downloadUrl`, instead of reporting it as failed. It streams the file to disk through a temporary `.part` file, so a download that is cut off leaves the previous file in place, and requests the file again if the download broke off mid-stream; a download request the API client already retried fails the file. It asks for each file's URL when that file's turn comes, so a long queue of downloads does not outlive the 15-minute URLs: a file the API reports `pending` again is requested again, and any other status fails the file and is reported.
+
+  `project.fetchFileDownload(downloadUrl)` in `generaltranslation` opens such a URL and returns the file as a stream, so it can be saved without holding it in memory. `getFileContent()` and `queryFilesContent()` return these results as the API sends them. `fetchFileDownload(downloadUrl)` in `@generaltranslation/api` is the underlying request, sent without API credentials. Reading the stream fails when the download sends nothing for the request timeout (60 seconds), so a stalled download does not hang.
+
+### Patch Changes
+
+- 96f428a: - `generaltranslation` no longer exports the `JsonPrimitive` type; use `string | number | boolean | null`.
+  - `@generaltranslation/api`: `ApiClientConfig.timeoutMs` takes only a number; `timeoutMs: false` is removed. To let a custom `fetch` own timeouts, pass a `timeoutMs` longer than its own; any larger value works, `Infinity` included.
+  - `@generaltranslation/api` no longer exports the `PresignedFileUpload` type; use `Parameters<typeof putFileUpload>[0]`.
+- 2d7f9bd: Browsers now keep a leading byte order mark when decoding base64 file content, matching Node.js.
+- ba09ee2: Batched writes (`uploadSourceFiles`, `uploadTranslations`, `moveFiles`, `publishFiles`, `overwriteTranslations`, `upsertAssets`) no longer drop the batches the API saved when another batch fails: each item of a failed batch is reported in `results` with `status: 'failed'` and the batch's `error` and `code`, including codes newer than the generated `ErrorCode` list. The error is still thrown when every batch fails, so calls of one batch behave as before.
+- ea429a2: `generaltranslation/internal` exports `defaultDashboardUrl`, and `generaltranslation/config-schema` exports `gtConfigFilePaths` (the `gt.config.json` locations the CLI and gt-next search, in order) and `resolveAutoderive()`, so the CLI, the compiler and gt-next share one copy. The `vueCompilerOptions.whitespace` and `delimiters` options are now described in the `gt.config.json` schema. `GTConfig['customMapping']` is typed as `CustomMapping` again, so its objects name the locale properties.
+- 82999f0: Internal modules import format and API symbols from `@generaltranslation/format` and `@generaltranslation/api` instead of through pass-through modules or the package's own entries. The public entries export the same names; no public API change.
+- 2d7f9bd: Remove runtime checks that TypeScript already guarantees and duplicated locale resolution. gt-react's browser condition store now resolves the locale once on initialization and server updates, and gt-vue's `initializeGTSPA()` builds its locale matcher once instead of on every lookup. Translation hashes do not change.
+
+  Two observable changes:
+  - `generaltranslation`: runtime translation results from the General Translation API are no longer shape-checked on the client; their type comes from the generated API client. A successful result whose `translation` did not match its `dataFormat` used to become `{ success: false, error: 'Invalid translation returned', code: 500 }`; it is now returned as the service sent it. Failed requests, missing entries (`'No translation returned'`) and network errors behave as before.
+  - `gt-tanstack-start`: request locales are now resolved against the configuration that `initializeGT()` already loaded, instead of a copy rebuilt on every request. That configuration always includes `defaultLocale` among the supported locales, so with `defaultLocale: 'en'`, `locales: ['fr']` and `Accept-Language: en, fr`, the request locale is now `en` (previously `fr`), matching path-based locale detection.
+
+- 1a5e9ae: `GT_PROJECT_ID` and `GT_API_KEY` are read once, when GT is initialized, and never after. Each option wins over its variable, and an empty string counts as unset.
+  - gt-i18n no longer reads `GT_API_KEY` when a runtime translation is requested. A variable set after initialization is not picked up: load your `.env` file before you call `initializeGT()`, or pass `apiKey`.
+  - gt-node: `initializeGT()` reads both variables when it is called.
+  - gt-payload: `gtPlugin()` reads both variables when it is called, not when the first translation runs. An empty-string `apiKey` or `projectId` option now falls back to the variable. A missing key still fails the run that needs it, not the Payload config.
+  - gt-react: `initializeGT()` from the `react-server` entry reads both variables, like the server and client entries. Before, it read neither.
+  - gt-next: a `projectId` in `gt.config.json` or `withGTConfig()` props now reaches the runtime, where it is used before `GT_PROJECT_ID`, as in every other package. Before, production read only `GT_PROJECT_ID`, so a project ID set only in `gt.config.json` loaded no translations. `withGTConfig()` accepts `projectId` again, and throws when the configured project ID and `GT_PROJECT_ID` differ. A project ID set only through `GT_PROJECT_ID` is not built into the app, so each deployment still reads its own. The API key is still read only from `GT_API_KEY`.
+  - The CLI behaves as before.
+
+- e29f6f9: Resolve option defaults once, where the options are accepted, and pass required values to the code below. No behaviour change for apps.
+  - `@generaltranslation/api` exports `DEFAULT_TIMEOUT_MS`, the default request timeout.
+  - `gt-i18n/internal`: `I18nConfig`'s `resolveSupportedLocale(candidates)` no longer takes a config override and uses the configuration GT was initialized with. `determineSupportedLocale(candidates)` is removed; use `determineLocale(candidates)`, which matches the same way. `LocaleResolverConfig` is no longer exported.
+  - `gt-i18n/internal/compat`: `new DictionaryManager()` takes a config with `dictionary`, `loadDictionary` and `cacheExpiryTime` all set. `initializeDictionaryManager()` still accepts the optional params and fills in the defaults.
+
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [8ba23e5]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ac29d18]
+- Updated dependencies [96f428a]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [82999f0]
+- Updated dependencies [96f428a]
+- Updated dependencies [3832c15]
+- Updated dependencies [943c094]
+- Updated dependencies [06ccdfd]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [e29f6f9]
+  - @generaltranslation/api@0.7.0-samsara.2
+  - @generaltranslation/format@1.0.0-samsara.9
+  - @generaltranslation/icu@0.2.0-samsara.7
+
 ## 10.0.0-samsara.8
 
 ### Patch Changes

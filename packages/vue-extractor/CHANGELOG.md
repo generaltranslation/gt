@@ -1,5 +1,41 @@
 # @generaltranslation/vue-extractor
 
+## 1.0.0-samsara.2
+
+### Major Changes
+
+- 943c094: Each name is now exported from one entry:
+  - `@generaltranslation/vue-extractor/types` is removed. Import the source extraction types from `@generaltranslation/vue-extractor`, `VueProjectExtractionOptions`, `VueProjectExtractionOutput` and `VueProjectExtractionResult` from `@generaltranslation/vue-extractor/project`, and `VueProjectInspection` from `@generaltranslation/vue-extractor/inspect`.
+  - `planVueExtraction`, `PrimaryInlineExtractor`, `VueExtractionPlan`, `VueExtractionPlannerOptions` and `VueExtractionRunOptions` are no longer exported from `@generaltranslation/vue-extractor`. Import them from `@generaltranslation/vue-extractor/integration`.
+  - `InlineExtractionOutput` is exported only from `@generaltranslation/vue-extractor/project`. The root and `/integration` no longer export it.
+  - `VueProjectExtractionOptions`, `VueProjectExtractionOutput`, `VueProjectExtractionResult` and `VueProjectInspection` are no longer exported from `@generaltranslation/vue-extractor`. Import the first three from `/project` and `VueProjectInspection` from `/inspect`. `/project` no longer exports `VueProjectInspection`.
+
+### Patch Changes
+
+- ea429a2: Locale options now take their types from `GTConfig` or `LocaleConfig` instead of repeating them: `VueCompilerOptions`, gt-vue's `CreateGTOptions` and `InitializeGTSPAOptions`, gt-sanity's `GTPluginConfig`, gt-payload's `GtPluginOptions` and the gt-react-native plugin's `config` option. The accepted values are unchanged. gt-sanity links to the dashboard URL from `generaltranslation`.
+- 82999f0: Remove internal pass-through modules and re-exports; the root entry exports `InlineExtractionOutput` from its defining module. No public API change.
+- Updated dependencies [96f428a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [82999f0]
+- Updated dependencies [96f428a]
+- Updated dependencies [3832c15]
+- Updated dependencies [943c094]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+  - generaltranslation@10.0.0-samsara.9
+  - @generaltranslation/format@1.0.0-samsara.9
+
 ## 0.1.27-samsara.1
 
 ### Patch Changes
