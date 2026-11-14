@@ -23,7 +23,25 @@ type ValueState = {
   value?: unknown;
 };
 
-const LOCK_TOP_LEVEL_KEYS = new Set(['version', 'branchId', 'entries']);
+/**
+ * What @generaltranslation/paraglide-js keeps of each source file for its
+ * next run: a cache, each entry valid only for the content hash it holds.
+ */
+const USAGE_CONTEXT_KEY = 'paraglide-usage-context';
+
+type UsageContext = {
+  version: number;
+  fingerprint: string;
+  /** By project-relative path: an encoded entry. */
+  files: Record<string, string>;
+};
+
+const LOCK_TOP_LEVEL_KEYS = new Set([
+  'version',
+  'branchId',
+  'entries',
+  USAGE_CONTEXT_KEY,
+]);
 const LOCK_ENTRY_KEYS = new Set([
   'fileId',
   'versionId',
@@ -147,10 +165,16 @@ export function mergeGtLockJson(
     if (entry) entries.push(normalizeEntry(entry));
   }
 
-  const merged: DownloadedVersions = {
+  const usageContext = mergeUsageContext(
+    usageContextOf(base.value),
+    usageContextOf(ours.value),
+    usageContextOf(theirs.value)
+  );
+  const merged: DownloadedVersions & { [USAGE_CONTEXT_KEY]?: UsageContext } = {
     version: 2,
     branchId: ours.value.branchId || theirs.value.branchId,
     entries,
+    ...(usageContext && { [USAGE_CONTEXT_KEY]: usageContext }),
   };
   // Plain stringify keeps the same key order writeLockfile produces, so the
   // next gt run does not rewrite the merged file into a noisy diff
@@ -294,6 +318,56 @@ function parseRootObject(
   }
 
   return { ok: true, value };
+}
+
+function usageContextOf(lock: DownloadedVersions): UsageContext | undefined {
+  return (lock as { [USAGE_CONTEXT_KEY]?: UsageContext })[USAGE_CONTEXT_KEY];
+}
+
+/**
+ * Merges paraglide-js's cache file by file. An entry only one side changed is
+ * that side's; one both changed differently is dropped, as neither may match
+ * the merged file: the next run computes it again. Sections written for
+ * different versions of paraglide-js do not merge: ours is kept.
+ */
+export function mergeUsageContext(
+  base: UsageContext | undefined,
+  ours: UsageContext | undefined,
+  theirs: UsageContext | undefined
+): UsageContext | undefined {
+  if (!ours || !theirs) return ours ?? theirs;
+
+  const isSameCache = (context: UsageContext | undefined) =>
+    context?.version === ours.version &&
+    context.fingerprint === ours.fingerprint;
+  if (!isSameCache(theirs)) return ours;
+
+  const baseFiles = isSameCache(base) ? base!.files : {};
+  const files: Record<string, string> = {};
+  const paths = new Set([
+    ...Object.keys(ours.files),
+    ...Object.keys(theirs.files),
+  ]);
+
+  for (const file of [...paths].sort()) {
+    const [was, mine, other] = [
+      baseFiles[file],
+      ours.files[file],
+      theirs.files[file],
+    ];
+    const merged =
+      mine === other
+        ? mine
+        : mine === was
+          ? other
+          : other === was
+            ? mine
+            : undefined;
+
+    if (merged !== undefined) files[file] = merged;
+  }
+
+  return { version: ours.version, fingerprint: ours.fingerprint, files };
 }
 
 function parseLockfile(
