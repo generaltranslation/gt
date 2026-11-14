@@ -1,5 +1,9 @@
 import { ApiError } from './errors';
-import { createRetryingFetch, createTimeoutFetch } from './transport';
+import {
+  createRetryingFetch,
+  createTimeoutFetch,
+  resolveTransportOptions,
+} from './transport';
 
 /**
  * Opens the signed `downloadUrl` that a file content response returns instead
@@ -11,7 +15,11 @@ import { createRetryingFetch, createTimeoutFetch } from './transport';
 export async function fetchFileDownload(
   downloadUrl: string
 ): Promise<ReadableStream<Uint8Array>> {
-  const fetchDownload = createRetryingFetch({ fetch: createTimeoutFetch() });
+  const { fetch, retryPolicy, timeoutMs } = resolveTransportOptions({});
+  const fetchDownload = createRetryingFetch({
+    fetch: createTimeoutFetch({ fetch, timeoutMs }),
+    retryPolicy,
+  });
   const response = await fetchDownload(downloadUrl);
   if (!response.ok || !response.body) {
     // Releases the connection of a response that is not read.

@@ -1,7 +1,11 @@
 import type { CreateFileUploadsResponse } from '../generated';
 import type { ApiClientConfig } from './client';
 import { ApiError } from './errors';
-import { createRetryingFetch, createTimeoutFetch } from './transport';
+import {
+  createRetryingFetch,
+  createTimeoutFetch,
+  resolveTransportOptions,
+} from './transport';
 
 export type PresignedFileUpload = NonNullable<
   CreateFileUploadsResponse['files'][number]['upload']
@@ -17,11 +21,12 @@ export async function putFileUpload(
   bytes: Uint8Array<ArrayBuffer>,
   options: Pick<ApiClientConfig, 'fetch' | 'retryPolicy'> = {}
 ): Promise<void> {
-  const fetch = createTimeoutFetch({
-    fetch: createRetryingFetch(options),
+  const { fetch, retryPolicy } = resolveTransportOptions(options);
+  const fetchUpload = createTimeoutFetch({
+    fetch: createRetryingFetch({ fetch, retryPolicy }),
     timeoutMs: Math.max(Date.parse(upload.expiresAt) - Date.now(), 0),
   });
-  const response = await fetch(upload.url, {
+  const response = await fetchUpload(upload.url, {
     method: 'PUT',
     headers: upload.headers,
     body: bytes,

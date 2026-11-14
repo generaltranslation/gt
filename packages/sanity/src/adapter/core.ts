@@ -1,6 +1,5 @@
 import { GTIntl } from 'generaltranslation/internal';
 import { GeneralTranslation, type ProjectHandle } from 'generaltranslation';
-import type { LocaleConfig } from '@generaltranslation/format';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { Secrets } from '../types';
 import type {
@@ -18,9 +17,9 @@ import type { PreviewUrlConfig } from '../translation/previewUrls';
 /** The plugin's source locale and custom mapping; no credentials. */
 export let gt = new GTIntl();
 
-/** Replaces `gt` with one built from the plugin options. */
-export function configureGt(localeConfig: LocaleConfig) {
-  gt = new GTIntl(localeConfig);
+/** Replaces `gt` with the one the plugin built from its options. */
+export function configureGt(intl: GTIntl) {
+  gt = intl;
 }
 
 /**

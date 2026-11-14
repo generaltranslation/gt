@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { GTIntl } from 'generaltranslation/internal';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ProjectHandle } from 'generaltranslation';
@@ -12,12 +13,14 @@ describe('projectFor', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.stubGlobal('fetch', fetchMock);
-    configureGt({
-      customMapping: {
-        source: { code: 'en-US' },
-        target: { code: 'es-ES' },
-      },
-    });
+    configureGt(
+      new GTIntl({
+        customMapping: {
+          source: { code: 'en-US' },
+          target: { code: 'es-ES' },
+        },
+      })
+    );
     api = projectFor({
       organization: 'org-id',
       project: 'project-id',

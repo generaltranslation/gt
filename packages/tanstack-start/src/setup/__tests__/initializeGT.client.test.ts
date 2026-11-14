@@ -64,7 +64,7 @@ describe.sequential('client initialization', () => {
 
     const { GTProvider, getClientReload } = await initializeWith(config);
 
-    expect(mockDetermineLocaleClient).toHaveBeenCalledWith(config, 'ar');
+    expect(mockDetermineLocaleClient).toHaveBeenCalledWith('ar');
     expect(mockCreateOrUpdateBrowserConditionStore).toHaveBeenCalledWith({
       ...config,
       _reload: mockReload,
@@ -85,7 +85,7 @@ describe.sequential('client initialization', () => {
     await initializeWith(config);
 
     expect(mockInitializeReactGT).toHaveBeenCalledWith(config);
-    expect(mockDetermineLocaleClient).toHaveBeenCalledWith(config, undefined);
+    expect(mockDetermineLocaleClient).toHaveBeenCalledWith(undefined);
     expect(mockCreateOrUpdateBrowserConditionStore).toHaveBeenCalledWith({
       ...config,
       _reload: undefined,

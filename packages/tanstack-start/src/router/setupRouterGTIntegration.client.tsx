@@ -7,6 +7,10 @@ import {
 } from 'gt-tanstack-start/internal/localeRouting';
 import { ensureInitialized } from '../setup/initializeGT.client';
 import { createGTRouterWrap, readGTRouterState } from './createGTRouterWrap';
+import {
+  resolveIntegrationOptions,
+  type RouterIntegrationOptions,
+} from './resolveIntegrationOptions';
 import type {
   GTDehydratedRouterData,
   GTIntegrableRouter,
@@ -26,7 +30,7 @@ const integratedRouters = new WeakSet<GTIntegrableRouter>();
 export function setupRouterGTIntegration(
   options: SetupRouterGTIntegrationOptions
 ): void {
-  integrateRouter(options, {
+  integrateRouter(resolveIntegrationOptions(options), {
     Provider: GTProvider,
     loadState: readGTRouterState,
   });
@@ -37,7 +41,7 @@ export function setupRouterGTIntegration(
  * `/compat` entry can add dictionaries to both.
  */
 export function integrateRouter<State extends GTRouterState>(
-  { router, localeRewrite }: SetupRouterGTIntegrationOptions,
+  { router, localeRewrite }: RouterIntegrationOptions,
   {
     Provider,
     loadState,
@@ -86,12 +90,11 @@ export function integrateRouter<State extends GTRouterState>(
   };
   // Installed now rather than in hydrate: Router parses the initial location
   // through the rewrite before hydrating.
-  const rewrite =
-    localeRewrite === false
-      ? undefined
-      : getRouterLocaleRewrite(router, () =>
-          getReadonlyConditionStore().getLocale()
-        );
+  const rewrite = localeRewrite
+    ? getRouterLocaleRewrite(router, () =>
+        getReadonlyConditionStore().getLocale()
+      )
+    : undefined;
   if (rewrite) options.rewrite = rewrite;
   router.update(options);
 }

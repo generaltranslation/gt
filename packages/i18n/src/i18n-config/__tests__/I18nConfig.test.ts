@@ -25,7 +25,7 @@ describe('I18nConfig', () => {
           : { cacheUrl: null, runtimeUrl: null }),
       });
       // I18nConfig preserves supplied keys; framework configuration owns normalization.
-      expect(config.determineSupportedLocale('en-US')).toBe(expected);
+      expect(config.determineLocale('en-US')).toBe(expected);
       expect(config.resolveSupportedLocale('en-US')).toBe(expected);
     }
   );
@@ -128,74 +128,28 @@ describe('I18nConfig', () => {
       locales: ['en', 'fr'],
     });
 
-    expect(config.determineSupportedLocale('')).toBeUndefined();
+    expect(config.determineLocale('')).toBeUndefined();
     expect(config.resolveSupportedLocale('')).toBe('en');
   });
 
-  it('supports one-off locale config overrides', () => {
-    const config = new I18nConfig({
-      defaultLocale: 'en',
-      locales: ['en'],
-    });
-
-    expect(
-      config.determineSupportedLocale('brand-french', {
-        defaultLocale: 'en',
-        locales: ['en', 'fr'],
-        customMapping: {
-          'brand-french': {
-            code: 'fr',
-            name: 'Brand French',
-          },
-        },
-      })
-    ).toBe('fr');
-  });
-
-  it('supports the default locale in one-off overrides that do not list it', () => {
+  it('supports the default locale even when locales does not list it', () => {
     const config = new I18nConfig({ defaultLocale: 'en', locales: ['ja'] });
 
     // A locale cookie choosing the default must win over Accept-Language.
-    expect(
-      config.resolveSupportedLocale(['en', 'ja'], {
-        defaultLocale: 'en',
-        locales: ['ja'],
-      })
-    ).toBe('en');
+    expect(config.resolveSupportedLocale(['en', 'ja'])).toBe('en');
   });
 
-  it('resolves locales with the configured localeMatcher, including one-off overrides', () => {
+  it('resolves locales with the configured localeMatcher', () => {
     const config = new I18nConfig({
       defaultLocale: 'en-GB',
       localeMatcher: 'lookup',
     });
 
     expect(config.localeMatcher).toBe('lookup');
-    expect(config.determineSupportedLocale('en')).toBeUndefined();
-    expect(
-      config.determineSupportedLocale('fr', { locales: ['fr-FR'] })
-    ).toBeUndefined();
+    expect(config.determineLocale('en')).toBeUndefined();
+    expect(config.resolveSupportedLocale('en')).toBe('en-GB');
     expect(
       new I18nConfig({ defaultLocale: 'en-GB' }).determineLocale('en')
-    ).toBe('en-GB');
-  });
-
-  it('applies a one-off localeMatcher override on its own to the configured locales', () => {
-    const bestFit = new I18nConfig({ defaultLocale: 'fr', locales: ['en-GB'] });
-    expect(
-      bestFit.determineSupportedLocale('en', { localeMatcher: 'lookup' })
-    ).toBeUndefined();
-    expect(
-      bestFit.resolveSupportedLocale('en', { localeMatcher: 'lookup' })
-    ).toBe('fr');
-
-    const lookup = new I18nConfig({
-      defaultLocale: 'fr',
-      locales: ['en-GB'],
-      localeMatcher: 'lookup',
-    });
-    expect(
-      lookup.determineSupportedLocale('en', { localeMatcher: 'best fit' })
     ).toBe('en-GB');
   });
 

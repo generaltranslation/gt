@@ -1,5 +1,6 @@
 import {
   awaitJobs,
+  createApiClient,
   createBranch,
   createProjectApiKey,
   DEFAULT_BATCH_SIZE,
@@ -78,9 +79,10 @@ import {
 } from '@generaltranslation/format';
 import {
   apiVersionHeaders,
-  createGtApiClient,
+  resolveApiClientSettings,
   resolveServiceLocale,
   writeInBatches,
+  type ApiClientSettings,
 } from './apiClient';
 import { createDiagnosticMessage } from '../logging/diagnostics';
 import type { GTProjectConfig } from './clientConfig';
@@ -104,23 +106,24 @@ const MOVE_FILES_BATCH_SIZE = 25;
  * project-scoped `new GeneralTranslation({ projectId })` and `account.project(projectId)`.
  */
 export class ProjectHandle extends GTRuntime {
-  private readonly params: Readonly<GTProjectConfig>;
-  private readonly client: ReturnType<typeof createGtApiClient>;
+  private readonly clientSettings: ApiClientSettings;
+  private readonly client: ReturnType<typeof createApiClient>;
 
   /** @throws {Error} If `projectId` is not a non-empty string. */
   constructor(params: GTProjectConfig) {
     super(params);
-    this.params = { ...params, localeConfig: this.localeConfig };
-    this.client = createGtApiClient(this.params);
+    this.clientSettings = resolveApiClientSettings(params);
+    this.client = createApiClient(this.clientSettings);
     Object.freeze(this);
   }
 
+  /** A call without its own timeout shares the default client. */
   private request(timeoutMs?: number) {
     return {
       client:
         timeoutMs === undefined
           ? this.client
-          : createGtApiClient(this.params, timeoutMs),
+          : createApiClient({ ...this.clientSettings, timeoutMs }),
       headers: apiVersionHeaders(),
       path: { projectId: this.projectId },
     };

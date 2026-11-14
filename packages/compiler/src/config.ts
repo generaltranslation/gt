@@ -50,7 +50,7 @@ export interface PluginSettings {
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection: boolean;
   /** Package source for components inserted by Auto JSX Injection */
-  autoJsxImportSource?: string;
+  autoJsxImportSource: string;
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive: { jsx: boolean; strings: boolean };
   /** Debug: write a hash → jsxChildren manifest file on build */

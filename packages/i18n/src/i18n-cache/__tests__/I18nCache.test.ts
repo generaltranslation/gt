@@ -787,6 +787,19 @@ describe('I18nCache', () => {
   });
 
   describe('expiry', () => {
+    it.each([
+      { cacheExpiryTime: undefined, expected: DEFAULT_TTL },
+      { cacheExpiryTime: null, expected: null },
+      { cacheExpiryTime: 0, expected: 0 },
+    ])(
+      'getCacheExpiryTime() resolves $cacheExpiryTime to $expected',
+      ({ cacheExpiryTime, expected }) => {
+        expect(createCache({ cacheExpiryTime }).getCacheExpiryTime()).toBe(
+          expected
+        );
+      }
+    );
+
     it('expires translations after the default TTL and reloads on demand', async () => {
       const loadTranslations = vi
         .fn()

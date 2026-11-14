@@ -147,7 +147,7 @@ describe('locale resolution', () => {
       },
     });
 
-    expect(determineLocaleClient(localeConfig)).toBe('brand-french');
+    expect(determineLocaleClient(undefined)).toBe('brand-french');
   });
 
   it('resolves a custom locale cookie during client initialization', () => {
@@ -163,7 +163,7 @@ describe('locale resolution', () => {
       },
     });
 
-    expect(determineLocaleClient(localeConfig)).toBe('brand-french');
+    expect(determineLocaleClient(undefined)).toBe('brand-french');
   });
 
   it('falls back to the browser languages without a cookie', () => {
@@ -174,7 +174,7 @@ describe('locale resolution', () => {
     });
     vi.stubGlobal('navigator', { languages: ['de', 'es'] });
 
-    expect(determineLocaleClient(localeConfig)).toBe('es');
+    expect(determineLocaleClient(undefined)).toBe('es');
   });
 
   it('prefers the cookie over the browser languages', () => {
@@ -184,7 +184,7 @@ describe('locale resolution', () => {
     });
     vi.stubGlobal('navigator', { languages: ['fr'] });
 
-    expect(determineLocaleClient(localeConfig)).toBe('es');
+    expect(determineLocaleClient(undefined)).toBe('es');
   });
 
   it('warns and falls back to the default locale during client initialization', () => {
@@ -195,7 +195,7 @@ describe('locale resolution', () => {
     });
     vi.stubGlobal('navigator', { languages: [] });
 
-    expect(determineLocaleClient(localeConfig)).toBe('en');
+    expect(determineLocaleClient(undefined)).toBe('en');
     expect(warn).toHaveBeenCalledWith(
       'gt-tanstack-start(client): no locales could be determined for this request'
     );
@@ -206,10 +206,10 @@ describe('locale resolution', () => {
       configurable: true,
       value: { cookie: 'generaltranslation.locale=es' },
     });
-    expect(
-      determineLocaleClient(localeConfig, getLocaleFromPath('/fr/about'))
-    ).toBe('brand-french');
-    expect(determineLocaleClient(localeConfig)).toBe('es');
+    expect(determineLocaleClient(getLocaleFromPath('/fr/about'))).toBe(
+      'brand-french'
+    );
+    expect(determineLocaleClient(undefined)).toBe('es');
   });
 
   it('falls back to the cookie without a pathname locale', () => {
@@ -217,8 +217,6 @@ describe('locale resolution', () => {
       configurable: true,
       value: { cookie: 'generaltranslation.locale=es' },
     });
-    expect(
-      determineLocaleClient(localeConfig, getLocaleFromPath('/about'))
-    ).toBe('es');
+    expect(determineLocaleClient(getLocaleFromPath('/about'))).toBe('es');
   });
 });

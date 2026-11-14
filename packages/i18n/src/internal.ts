@@ -39,7 +39,6 @@ export { parseAcceptLanguage } from './utils/request';
 export type {
   I18nCacheConstructorParams,
   I18nCacheConfig,
-  LocaleResolverConfig,
   ReadonlyConditionStoreInterface,
   WritableConditionStoreInterface,
   ScopedConditionStoreInterface,

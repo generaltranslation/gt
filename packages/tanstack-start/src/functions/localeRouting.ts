@@ -42,7 +42,7 @@ export function splitLocaleSegment(pathname: string): {
     return { pathname };
   }
 
-  const locale = getI18nConfig().determineSupportedLocale(segment);
+  const locale = getI18nConfig().determineLocale(segment);
   if (!locale) return { pathname };
   return { locale, pathname: pathname.slice(match[0].length) || '/' };
 }

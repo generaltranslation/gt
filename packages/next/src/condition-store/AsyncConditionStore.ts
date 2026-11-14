@@ -138,7 +138,7 @@ function createDefaultGetLocale({
 
     const i18nConfig = getI18nConfig();
     return (
-      i18nConfig.determineSupportedLocale(preferredLocales) ||
+      i18nConfig.determineLocale(preferredLocales) ||
       i18nConfig.getDefaultLocale()
     );
   };

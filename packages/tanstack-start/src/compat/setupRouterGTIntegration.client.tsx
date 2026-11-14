@@ -4,6 +4,7 @@ import {
 } from 'gt-react/compat';
 import { readGTRouterState } from '../router/createGTRouterWrap';
 import { integrateRouter } from '../router/setupRouterGTIntegration.client';
+import { resolveIntegrationOptions } from '../router/resolveIntegrationOptions';
 import type { SetupRouterGTIntegrationOptions } from '../router/types';
 import { getClientReload } from '../setup/initializeGT.client';
 import { ensureDictionaryManager } from './dictionaryManager.client';
@@ -23,7 +24,7 @@ function GTProvider(props: GTProviderProps) {
 export function setupRouterGTIntegration(
   options: SetupRouterGTIntegrationOptions
 ): void {
-  integrateRouter(options, {
+  integrateRouter(resolveIntegrationOptions(options), {
     Provider: GTProvider,
     // The visitor's state, for client-only roots (ssr: false) and SPA shells.
     loadState: async (conditionStore) => {

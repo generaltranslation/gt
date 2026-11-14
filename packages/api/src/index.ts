@@ -18,4 +18,5 @@ export type { ApiClientConfig, UserTokenProvider } from './wrappers/client';
 export type { ApiVersion } from './generated/types.gen';
 export * from './generated';
 export type { Client } from './generated/client';
+export { DEFAULT_TIMEOUT_MS } from './wrappers/transport';
 export type { RetryPolicy } from './wrappers/transport';

@@ -102,29 +102,12 @@ export class I18nConfig extends GTIntl {
     return super.determineLocale(locales);
   }
 
-  determineSupportedLocale(
-    candidates: LocaleCandidates,
-    config?: I18nConfigParams
-  ): string | undefined {
-    return this.determineSupportedLocaleWithConfig(
-      candidates,
-      this.getLocaleConfig(config)
-    );
-  }
-
-  resolveSupportedLocale(
-    candidates?: LocaleCandidates,
-    config?: I18nConfigParams
-  ): string {
-    const localeConfig = this.getLocaleConfig(config);
-    return (
-      this.determineSupportedLocaleWithConfig(candidates, localeConfig) ||
-      localeConfig.defaultLocale
-    );
+  resolveSupportedLocale(candidates?: LocaleCandidates): string {
+    return this.determineLocale(candidates) || this.defaultLocale;
   }
 
   resolveLocale(locale: string): string {
-    const resolvedLocale = this.determineSupportedLocale(locale);
+    const resolvedLocale = this.determineLocale(locale);
     if (!this.isValidLocale(locale) || !resolvedLocale) {
       throw new Error(createInvalidLocaleError(locale));
     }
@@ -152,40 +135,6 @@ export class I18nConfig extends GTIntl {
 
   isDebugLoggingEnabled(): boolean {
     return isDebugLogLevel(this.logLevel);
-  }
-
-  private getLocaleConfig(config?: I18nConfigParams): GTIntl {
-    if (!config || !hasI18nConfigParams(config)) {
-      // A matcher-only override keeps this instance's locales.
-      return config?.localeMatcher === undefined ||
-        config.localeMatcher === this.localeMatcher
-        ? this
-        : new GTIntl({
-            defaultLocale: this.defaultLocale,
-            locales: [...this.locales],
-            customMapping: this.customMapping,
-            localeMatcher: config.localeMatcher,
-          });
-    }
-    return new GTIntl(
-      getLocaleResolverConfigParams({
-        ...config,
-        localeMatcher: config.localeMatcher ?? this.localeMatcher,
-      })
-    );
-  }
-
-  private determineSupportedLocaleWithConfig(
-    candidates: LocaleCandidates,
-    localeConfig: GTIntl
-  ): string | undefined {
-    if (
-      candidates == null ||
-      (Array.isArray(candidates) && candidates.length === 0)
-    ) {
-      return undefined;
-    }
-    return localeConfig.determineLocale(candidates);
   }
 }
 
@@ -217,29 +166,6 @@ function getLocaleConfigParams(
     timeZone: params.timeZone,
     localeMatcher,
   };
-}
-
-function getLocaleResolverConfigParams({
-  defaultLocale = defaultDefaultLocale,
-  locales = [],
-  customMapping,
-  localeMatcher,
-}: I18nConfigParams = {}): LocaleConfig {
-  return {
-    defaultLocale,
-    // As in the constructor, the default locale is always supported.
-    locales: Array.from(new Set([defaultLocale, ...(locales ?? [])])),
-    customMapping: customMapping || {},
-    localeMatcher,
-  };
-}
-
-function hasI18nConfigParams(config: I18nConfigParams): boolean {
-  return (
-    config.defaultLocale !== undefined ||
-    config.locales !== undefined ||
-    config.customMapping !== undefined
-  );
 }
 
 function resolveGTServicesEnabled(config: I18nConfigParams): boolean {

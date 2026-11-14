@@ -14,10 +14,34 @@ import { fetchFileDownload } from '../wrappers/fileDownloads';
 import { putFileUpload } from '../wrappers/fileUploads';
 import { paginate } from '../wrappers/paginate';
 import { listProjects, pluginInfo, queryJobs } from '../generated/sdk.gen';
-import { createRetryingFetch, createTimeoutFetch } from '../wrappers/transport';
+import {
+  createRetryingFetch,
+  createTimeoutFetch,
+  DEFAULT_TIMEOUT_MS,
+  resolveTransportOptions,
+} from '../wrappers/transport';
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe('resolveTransportOptions', () => {
+  it('fills in each default and keeps what is set, including false and 0', () => {
+    expect(resolveTransportOptions({})).toEqual({
+      fetch: globalThis.fetch,
+      retryPolicy: 'exponential',
+      timeoutMs: DEFAULT_TIMEOUT_MS,
+    });
+    const fetchMock = vi.fn<typeof fetch>();
+    expect(
+      resolveTransportOptions({
+        fetch: fetchMock,
+        retryPolicy: 'none',
+        timeoutMs: false,
+      })
+    ).toEqual({ fetch: fetchMock, retryPolicy: 'none', timeoutMs: false });
+    expect(resolveTransportOptions({ timeoutMs: 0 }).timeoutMs).toBe(0);
+  });
 });
 
 describe('createTimeoutFetch', () => {
@@ -109,10 +133,9 @@ describe('createTimeoutFetch', () => {
         })
     );
     const controller = new AbortController();
-    const response = createTimeoutFetch({ fetch: fetchMock })(
-      'https://example.com/test',
-      { signal: controller.signal }
-    );
+    const response = createTimeoutFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/test', { signal: controller.signal });
 
     controller.abort(new Error('caller gave up'));
 
@@ -154,10 +177,9 @@ describe('createRetryingFetch', () => {
       )
       .mockResolvedValueOnce(new Response('{}', { status: 200 }));
 
-    const response = await createRetryingFetch({ fetch: fetchMock })(
-      'https://example.com/test',
-      { method: 'POST' }
-    );
+    const response = await createRetryingFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/test', { method: 'POST' });
 
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -168,10 +190,9 @@ describe('createRetryingFetch', () => {
       .fn<typeof fetch>()
       .mockResolvedValue(new Response('failed', { status: 500 }));
 
-    const response = await createRetryingFetch({ fetch: fetchMock })(
-      'https://example.com/test',
-      { method: 'POST' }
-    );
+    const response = await createRetryingFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/test', { method: 'POST' });
 
     expect(response.status).toBe(500);
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -183,9 +204,12 @@ describe('createRetryingFetch', () => {
       .mockRejectedValue(new TypeError('fetch failed'));
 
     await expect(
-      createRetryingFetch({ fetch: fetchMock })('https://example.com/test', {
-        method: 'POST',
-      })
+      createRetryingFetch(resolveTransportOptions({ fetch: fetchMock }))(
+        'https://example.com/test',
+        {
+          method: 'POST',
+        }
+      )
     ).rejects.toThrow('fetch failed');
     expect(fetchMock).toHaveBeenCalledOnce();
   });
@@ -207,9 +231,9 @@ describe('createRetryingFetch', () => {
       )
       .mockResolvedValueOnce(new Response('{}', { status: 200 }));
 
-    const response = await createRetryingFetch({ fetch: fetchMock })(
-      'https://example.com/test'
-    );
+    const response = await createRetryingFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/test');
 
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -222,9 +246,9 @@ describe('createRetryingFetch', () => {
       .mockResolvedValueOnce(new Response('failed', { status: 500 }))
       .mockResolvedValueOnce(new Response('{}', { status: 200 }));
 
-    const pendingResponse = createRetryingFetch({ fetch: fetchMock })(
-      'https://example.com/test'
-    );
+    const pendingResponse = createRetryingFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/test');
     await vi.runAllTimersAsync();
 
     await expect(pendingResponse).resolves.toMatchObject({ status: 200 });
@@ -258,9 +282,9 @@ describe('createRetryingFetch', () => {
       .fn<typeof fetch>()
       .mockResolvedValue(new Response('failed', { status: 500 }));
 
-    const pendingResponse = createRetryingFetch({ fetch: fetchMock })(
-      'https://example.com/test'
-    );
+    const pendingResponse = createRetryingFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/test');
     await vi.runAllTimersAsync();
 
     await expect(pendingResponse).resolves.toMatchObject({ status: 500 });
@@ -273,9 +297,9 @@ describe('createRetryingFetch', () => {
       .fn<typeof fetch>()
       .mockRejectedValue(new TypeError('fetch failed'));
 
-    const pendingResponse = createRetryingFetch({ fetch: fetchMock })(
-      'https://example.com/test'
-    );
+    const pendingResponse = createRetryingFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/test');
     const expectation = expect(pendingResponse).rejects.toThrow('fetch failed');
     await vi.runAllTimersAsync();
 
@@ -292,9 +316,12 @@ describe('createRetryingFetch', () => {
 
     // Real timers: without the abort check this would sleep 500ms+ retrying.
     await expect(
-      createRetryingFetch({ fetch: fetchMock })('https://example.com/test', {
-        signal: controller.signal,
-      })
+      createRetryingFetch(resolveTransportOptions({ fetch: fetchMock }))(
+        'https://example.com/test',
+        {
+          signal: controller.signal,
+        }
+      )
     ).rejects.toThrow('caller gave up');
     expect(fetchMock).toHaveBeenCalledOnce();
   });
@@ -307,10 +334,9 @@ describe('createRetryingFetch', () => {
     });
 
     // Real timers: without the abort check this would sleep 60s on the 429.
-    const response = await createRetryingFetch({ fetch: fetchMock })(
-      'https://example.com/test',
-      { signal: controller.signal }
-    );
+    const response = await createRetryingFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/test', { signal: controller.signal });
 
     expect(response.status).toBe(429);
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -323,10 +349,9 @@ describe('createRetryingFetch', () => {
       .mockResolvedValue(new Response('rate limited', { status: 429 }));
 
     // Real timers: without the abortable sleep this would wait the 60s 429 delay.
-    const pending = createRetryingFetch({ fetch: fetchMock })(
-      'https://example.com/test',
-      { signal: controller.signal }
-    );
+    const pending = createRetryingFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/test', { signal: controller.signal });
     setTimeout(() => controller.abort(new Error('caller gave up')), 10);
 
     // The caller gets the 429 it was waiting out, so it can honor the rate limit.

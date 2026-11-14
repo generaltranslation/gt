@@ -49,7 +49,7 @@ function initialize(config: InitializeGTParams): void {
   createOrUpdateBrowserConditionStore({
     ...config,
     _reload: reload,
-    locale: determineLocaleClient(config, getPathLocale()),
+    locale: determineLocaleClient(getPathLocale()),
   });
   clientSetup.set({ reload });
 }
