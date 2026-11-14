@@ -1,7 +1,10 @@
 import { logErrorAndExit } from '../console/logging.js';
-import { branchResolutionError, withOriginalError } from '../console/index.js';
+import {
+  branchResolutionError,
+  workflowFailureMessage,
+} from '../console/index.js';
 import { Settings, TranslateFlags } from '../types/index.js';
-import { api } from '../utils/api.js';
+import { requireProject } from '../utils/api.js';
 import { FileToUpload } from 'generaltranslation/types';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
@@ -33,10 +36,12 @@ export async function runSetupProjectWorkflow(
     // Calculate timeout for setup step
     const timeoutMs = calculateTimeoutMs(options.timeout);
 
+    const project = requireProject(settings);
+
     // Create workflow with steps
-    const branchStep = new BranchStep(api, settings);
-    const uploadStep = new UploadSourcesStep(api, settings);
-    const setupStep = new SetupStep(api, settings, timeoutMs);
+    const branchStep = new BranchStep(project, settings);
+    const uploadStep = new UploadSourcesStep(project, settings);
+    const setupStep = new SetupStep(project, settings, timeoutMs);
 
     // first run the branch step
     const branchData = await branchStep.run();
@@ -54,10 +59,7 @@ export async function runSetupProjectWorkflow(
     return { branchData };
   } catch (error) {
     return logErrorAndExit(
-      withOriginalError(
-        'Project setup could not be completed. Check the files, branch configuration, and API credentials, then try again.',
-        error
-      )
+      workflowFailureMessage('Project setup could not be completed.', error)
     );
   }
 }

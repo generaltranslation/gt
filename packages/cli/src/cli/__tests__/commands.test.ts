@@ -14,14 +14,15 @@ vi.mock('../../config/generateSettings.js', () => ({
 vi.mock('../../config/resolveConfig.js', () => ({
   resolveConfig: vi.fn(),
 }));
-vi.mock('../../utils/api.js', () => ({
-  api: {
-    checkJobStatus: vi.fn(),
-    createOrgApiKey: vi.fn(),
-    createProject: vi.fn(),
-    createProjectApiKey: vi.fn(),
-  },
-  configureApiClient: vi.fn(),
+const api = vi.hoisted(() => ({
+  queryJobs: vi.fn(),
+  createOrgApiKey: vi.fn(),
+  createProject: vi.fn(),
+  createProjectApiKey: vi.fn(),
+}));
+vi.mock('generaltranslation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('generaltranslation')>()),
+  GeneralTranslation: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
 vi.mock('../../auth/oauth.js', () => ({
   login: vi.fn(),
@@ -75,6 +76,7 @@ vi.mock('../../console/displayTranslateSummary.js', () => ({
   displayTranslateSummary: vi.fn(),
 }));
 
+import { GeneralTranslation } from 'generaltranslation';
 import { UserAuthError } from '../../auth/errors.js';
 import { login } from '../../auth/oauth.js';
 import { generateSettings } from '../../config/generateSettings.js';
@@ -85,7 +87,6 @@ import {
   clearDownloaded,
   getNeedsPostprocessing,
 } from '../../state/recentDownloads.js';
-import { api, configureApiClient } from '../../utils/api.js';
 import { mirrorAssetsToLocales } from '../../utils/sharedStaticAssets.js';
 import { splitMintlifyLanguageRefs } from '../../utils/splitMintlifyLanguageRefs.js';
 import { BaseCLI } from '../base.js';
@@ -124,13 +125,12 @@ describe('api-key create', () => {
 
   beforeEach(() => {
     vi.mocked(api.createProjectApiKey).mockResolvedValue({
-      apiKey: {
-        id: 'key-id',
-        name: 'CI',
-        key: SECRET,
-        projectId: 'project-id',
-        type: 'production',
-      },
+      id: 'key-id',
+      name: 'CI',
+      key: SECRET,
+      permissions: ['project:files:read'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      lastUsedAt: null,
     });
     stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-api-key-'));
@@ -246,7 +246,12 @@ describe('api-key create', () => {
       userTokenProvider,
     } as unknown as Settings);
     vi.mocked(api.createOrgApiKey).mockResolvedValue({
-      apiKey: { id: 'key-id', name: 'CI', key: SECRET, orgId: 'org-1' },
+      id: 'key-id',
+      name: 'CI',
+      key: SECRET,
+      permissions: ['org:context:read'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      lastUsedAt: null,
     });
 
     await run([
@@ -259,9 +264,11 @@ describe('api-key create', () => {
       'project:files:read',
     ]);
 
-    expect(configureApiClient).toHaveBeenCalledWith({
+    expect(GeneralTranslation).toHaveBeenCalledTimes(1);
+    expect(GeneralTranslation).toHaveBeenCalledWith({
       baseUrl: 'https://api.example.com',
       userTokenProvider,
+      localeConfig: {},
     });
     expect(api.createOrgApiKey).toHaveBeenCalledWith('org-1', {
       name: 'CI',
@@ -318,12 +325,13 @@ describe('project commands', () => {
       apiKey: 'gtx-organization-key',
     } as Settings);
     vi.mocked(api.createProject).mockResolvedValue({
-      project: {
-        id: 'new-project-id',
-        name: 'Project',
-        orgId: 'org-id',
-        defaultLocale: 'en',
-      },
+      id: 'new-project-id',
+      name: 'Project',
+      orgId: 'org-id',
+      defaultLocale: 'en',
+      currentLocales: [],
+      autoApprove: false,
+      cdnEnabled: false,
     });
 
     await createProgram().parseAsync(
@@ -362,6 +370,31 @@ describe('project commands', () => {
     expect(api.createProject).not.toHaveBeenCalled();
   });
 
+  it('explains that a project API key cannot create projects before any request', async () => {
+    vi.mocked(generateSettings).mockResolvedValue({
+      apiKey: 'gtx-api-project-key',
+    } as Settings);
+
+    await expect(
+      createProgram().parseAsync(
+        [
+          'project',
+          'create',
+          '--org-id',
+          'org-id',
+          '--name',
+          'Project',
+          '--default-locale',
+          'en',
+        ],
+        { from: 'user' }
+      )
+    ).rejects.toThrow(
+      /project API key, which cannot create projects[\s\S]*Organization API key with org:projects:create[\s\S]*sign in/
+    );
+    expect(api.createProject).not.toHaveBeenCalled();
+  });
+
   it('formats project creation failures instead of leaking a rejection', async () => {
     // Organization keys create the project before a project ID exists.
     vi.mocked(generateSettings).mockResolvedValue({
@@ -388,10 +421,24 @@ describe('project commands', () => {
     ).rejects.toThrow(/Failed to create the project[\s\S]*upstream denied/);
   });
 
+  it.each(['processing', 'not_found'] as const)(
+    'prints the %s status of a project setup job',
+    async (status) => {
+      vi.mocked(api.queryJobs).mockResolvedValue({
+        results: [{ id: 'job-id', status }],
+      });
+
+      await createProgram().parseAsync(['project', 'status', 'job-id'], {
+        from: 'user',
+      });
+
+      expect(api.queryJobs).toHaveBeenCalledWith(['job-id']);
+      expect(logger.info).toHaveBeenCalledWith(status);
+    }
+  );
+
   it('formats project status failures instead of leaking a rejection', async () => {
-    vi.mocked(api.checkJobStatus).mockRejectedValue(
-      new Error('status unavailable')
-    );
+    vi.mocked(api.queryJobs).mockRejectedValue(new Error('status unavailable'));
 
     await expect(
       createProgram().parseAsync(['project', 'status', 'job-id'], {

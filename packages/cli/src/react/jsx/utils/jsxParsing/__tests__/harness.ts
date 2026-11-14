@@ -47,7 +47,7 @@ export const parsingOptions: ParsingConfigOptions = {
   conditionNames: ['import', 'require'],
 };
 
-const GT_SOURCES = ['gt-next', 'gt-react', 'gt-react/browser'];
+const GT_SOURCES = ['gt-next', 'gt-react'];
 const AUTO_PKGS: GTLibrary[] = [Libraries.GT_NEXT, Libraries.GT_REACT];
 
 export function parseCode(code: string) {
@@ -176,10 +176,10 @@ export function collectAliases(ast: t.File) {
 }
 
 /** Runs only the injection pass and reports what was inserted. */
-export function inject(code: string, legacyGtReactImportSource = false) {
+export function inject(code: string) {
   const ast = parseCode(code);
   const { importAliases } = collectAliases(ast);
-  ensureTAndVarImported(ast, importAliases, legacyGtReactImportSource);
+  ensureTAndVarImported(ast, importAliases);
   autoInsertJsxComponents(ast, importAliases);
   const output = generate(ast).code;
 

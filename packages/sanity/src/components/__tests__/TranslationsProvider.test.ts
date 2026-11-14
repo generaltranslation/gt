@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { SanityDocument } from 'sanity';
-import { api, pluginConfig } from '../../adapter/core';
+import { pluginConfig } from '../../adapter/core';
 import {
   createGroqClient,
   metadataDoc,
@@ -47,10 +47,14 @@ vi.mock('../../hooks/useSecrets', () => ({
   useSecrets: () => ({ loading: false, secrets: mocks.secrets }),
 }));
 vi.mock('../../adapter/getLocales', () => ({
-  getLocales: vi.fn(async () => [
+  getLocales: vi.fn(() => [
     { localeId: 'en', enabled: true },
     { localeId: 'fr', enabled: true },
   ]),
+}));
+vi.mock('../../adapter/getDefaultBranchId', () => ({
+  // No branch: nothing refreshes statuses in the background.
+  getDefaultBranchId: () => new Promise(() => {}),
 }));
 vi.mock('../../translation/strategy', () => ({
   getTranslationStrategy: () => ({
@@ -84,6 +88,26 @@ const { TranslationsProvider, useTranslations } =
   await import('../TranslationsProvider');
 
 type Context = ReturnType<typeof useTranslations>;
+
+function uploadResult(
+  documents: { info: { documentId: string; versionId?: string } }[]
+) {
+  return {
+    summary: {
+      total: documents.length,
+      succeeded: documents.length,
+      failed: 0,
+    },
+    results: documents.map(({ info }) => ({
+      branchId: 'branch',
+      fileId: info.documentId,
+      versionId: info.versionId ?? '',
+      fileName: `sanity/${info.documentId}`,
+      fileFormat: 'HTML',
+      status: 'succeeded',
+    })),
+  };
+}
 
 let container: HTMLDivElement;
 let root: Root;
@@ -138,10 +162,11 @@ beforeEach(() => {
   vi.spyOn(pluginConfig, 'getTranslateDocuments').mockReturnValue([
     { type: 'page' },
   ]);
-  // No branch: nothing refreshes statuses in the background.
-  vi.spyOn(api, 'createBranch').mockReturnValue(new Promise(() => {}));
   vi.spyOn(console, 'error').mockImplementation(() => {});
-  mocks.uploadFiles.mockResolvedValue({ uploadedFiles: [] });
+  mocks.uploadFiles.mockImplementation(
+    async (documents: { info: { documentId: string; versionId?: string } }[]) =>
+      uploadResult(documents)
+  );
   mocks.collectExistingTranslations.mockResolvedValue(new Map());
   mocks.resolvePreviewUrls.mockResolvedValue({ urls: [], failures: [] });
   mocks.updateTranslationPreviewUrls.mockResolvedValue([]);
@@ -231,7 +256,7 @@ describe('Save Local Edits', () => {
     );
   });
 
-  test('sends the preview URL of each translation it uploads', async () => {
+  test('sends the preview URL of each translation it uploads, leaving out a failed one', async () => {
     const { client } = createGroqClient([page('page-en', 'en')]);
     mocks.client = Object.assign(client, {
       config: () => ({ projectId: 'p', dataset: 'd' }),
@@ -246,10 +271,22 @@ describe('Save Local Edits', () => {
               content: 'page-fr',
               document: { id: 'page-fr', type: 'page' },
             },
+            {
+              locale: 'de',
+              content: 'page-de',
+              document: { id: 'page-de', type: 'page' },
+            },
           ],
         ],
       ])
     );
+    mocks.uploadTranslations.mockResolvedValue({
+      summary: { total: 2, succeeded: 1, failed: 1 },
+      results: [
+        { status: 'succeeded', fileId: 'page-en', locale: 'fr' },
+        { status: 'failed', fileId: 'page-en', locale: 'de' },
+      ],
+    });
 
     const context = await renderProvider(page('page-en', 'en'));
     await act(() => context.handleUploadExistingTranslations());
@@ -260,6 +297,46 @@ describe('Save Local Edits', () => {
           written: { id: 'page-fr', type: 'page' },
           file: { fileId: 'page-en', versionId: 'r1' },
           language: 'fr',
+        },
+      ],
+      mocks.client,
+      { project: 'p' }
+    );
+  });
+
+  test('sends the preview URL of a translation whose locale comes back in another spelling', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    mocks.collectExistingTranslations.mockResolvedValue(
+      new Map([
+        [
+          'page-en',
+          [
+            {
+              locale: 'pt-br',
+              content: 'page-pt',
+              document: { id: 'page-pt', type: 'page' },
+            },
+          ],
+        ],
+      ])
+    );
+    mocks.uploadTranslations.mockResolvedValue({
+      summary: { total: 1, succeeded: 1, failed: 0 },
+      results: [{ status: 'succeeded', fileId: 'page-en', locale: 'pt-BR' }],
+    });
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleUploadExistingTranslations());
+
+    expect(mocks.updateTranslationPreviewUrls).toHaveBeenCalledWith(
+      [
+        {
+          written: { id: 'page-pt', type: 'page' },
+          file: { fileId: 'page-en', versionId: 'r1' },
+          language: 'pt-br',
         },
       ],
       mocks.client,
@@ -287,7 +364,8 @@ describe('Save Local Edits', () => {
       ])
     );
     mocks.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [{ fileId: 'page-en', locale: 'fr' }],
+      summary: { total: 1, succeeded: 1, failed: 0 },
+      results: [{ status: 'succeeded', fileId: 'page-en', locale: 'fr' }],
     });
     mocks.updateTranslationPreviewUrls.mockResolvedValue([
       new Error('API unavailable'),
@@ -607,7 +685,7 @@ describe('without allowNonDefaultSourceLocales', () => {
     const frPage = page('page-fr', 'fr');
     const context = await renderProvider(frPage);
 
-    expect(getLocales).toHaveBeenCalledWith({ project: 'p' }, undefined);
+    expect(getLocales).toHaveBeenCalledWith(undefined);
     expect(context.excludedLocale).toBe('en');
     expect(context.getTargetLocales(frPage)).toBe(context.locales);
     expect(context.documentRole).toBeNull();
@@ -642,7 +720,7 @@ describe('without allowNonDefaultSourceLocales', () => {
       { documentId: 'b-en', versionId: 'r1', fileName: 'sanity/page/b-en' },
     ]);
     expect(mocks.createJobs).toHaveBeenCalledWith(
-      { uploadedFiles: [] },
+      await mocks.uploadFiles.mock.results[0].value,
       ['en', 'fr'],
       { project: 'p' },
       false

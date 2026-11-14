@@ -5,8 +5,7 @@ import fg from 'fast-glob';
 
 import type { Settings } from '../../types/index.js';
 
-// One font to upload to /v2/project/assets. Structurally matches the SDK's
-// AssetUpload; content is base64 (fonts are binary).
+// Font content is base64-encoded.
 export type FontUpload = {
   assetType: 'FONT';
   fileName: string;

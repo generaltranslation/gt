@@ -3,17 +3,18 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { devNull, tmpdir } from 'node:os';
 import path from 'node:path';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError, ErrorCode } from 'generaltranslation/api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../utils/api.js', () => ({
-  configureApiClient: vi.fn(),
-  api: {
-    createProject: vi.fn(),
-    createProjectApiKey: vi.fn(),
-    listOrgs: vi.fn(),
-    listProjects: vi.fn(),
-  },
+const api = vi.hoisted(() => ({
+  createProject: vi.fn(),
+  createProjectApiKey: vi.fn(),
+  listOrgs: vi.fn(),
+  listProjects: vi.fn(),
+}));
+vi.mock('generaltranslation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('generaltranslation')>()),
+  GeneralTranslation: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
 vi.mock('../../auth/oauth.js', () => ({
   createUserTokenProvider: vi.fn(() => ({})),
@@ -75,7 +76,6 @@ import {
   promptText,
 } from '../../console/logging.js';
 import { detectFramework } from '../../setup/detectFramework.js';
-import { api } from '../../utils/api.js';
 import { BaseCLI } from '../base.js';
 
 const projects = [
@@ -83,13 +83,12 @@ const projects = [
   { id: 'p2', name: 'App', orgId: 'o1', orgName: 'Acme' },
 ];
 const mintedKey = {
-  apiKey: {
-    id: 'key-id',
-    name: 'Development key (gt init)',
-    key: 'gtx-secret-development-key',
-    projectId: 'p2',
-    type: 'production' as const,
-  },
+  id: 'key-id',
+  name: 'Development key (gt init)',
+  key: 'gtx-secret-development-key',
+  permissions: ['project:translations:generate' as const],
+  createdAt: '2026-01-01T00:00:00.000Z',
+  lastUsedAt: null,
 };
 const GT_ENV = [
   'GT_API_KEY',
@@ -353,12 +352,13 @@ describe('init development credentials', () => {
     vi.mocked(promptSelect).mockResolvedValueOnce('o2');
     vi.mocked(promptText).mockResolvedValueOnce(' New App ');
     vi.mocked(api.createProject).mockResolvedValue({
-      project: {
-        id: 'p-new',
-        name: 'New App',
-        orgId: 'o2',
-        defaultLocale: 'en',
-      },
+      id: 'p-new',
+      name: 'New App',
+      orgId: 'o2',
+      defaultLocale: 'en',
+      currentLocales: [],
+      autoApprove: false,
+      cdnEnabled: false,
     });
 
     await runInit();
@@ -381,12 +381,13 @@ describe('init development credentials', () => {
     vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
     vi.mocked(promptText).mockResolvedValueOnce('New App');
     vi.mocked(api.createProject).mockResolvedValue({
-      project: {
-        id: 'p-new',
-        name: 'New App',
-        orgId: 'o1',
-        defaultLocale: 'en',
-      },
+      id: 'p-new',
+      name: 'New App',
+      orgId: 'o1',
+      defaultLocale: 'en',
+      currentLocales: [],
+      autoApprove: false,
+      cdnEnabled: false,
     });
 
     await runInit();
@@ -459,7 +460,7 @@ describe('init development credentials', () => {
   it('names the files already changed when project creation is denied', async () => {
     vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
     vi.mocked(api.createProject).mockRejectedValue(
-      new ApiError('Forbidden', 403, 'Forbidden')
+      new ApiError('Forbidden', 403, ErrorCode.PERMISSION_MISSING)
     );
 
     await expect(
@@ -490,6 +491,28 @@ describe('init development credentials', () => {
     expect(fs.existsSync(envPath())).toBe(false);
     expect(logger.endCommand).not.toHaveBeenCalled();
   });
+
+  it.each([[[]], [['--create-project', '--project-name', 'New App']]])(
+    'explains how to use a project API key without a project ID (%j)',
+    async (args) => {
+      vi.stubEnv('GT_API_KEY', 'gtx-api-project-key');
+
+      const error = await runInit(...args).catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(Error);
+      const { message } = error as Error;
+      expect(message).toMatch(
+        /project API key, which cannot list or create projects/
+      );
+      expect(message).toMatch(/--project-id <id> or set GT_PROJECT_ID/);
+      expect(message).toMatch(/sign in, or use an Organization API key/);
+      expect(message).not.toContain('new GeneralTranslation()');
+      expect(api.listProjects).not.toHaveBeenCalled();
+      expect(api.listOrgs).not.toHaveBeenCalled();
+      expect(api.createProjectApiKey).not.toHaveBeenCalled();
+      expect(fs.existsSync(envPath())).toBe(false);
+    }
+  );
 
   it('does not mint a key when the project prompt is cancelled', async () => {
     vi.mocked(promptSelect).mockRejectedValueOnce(new Error('exit 0'));
@@ -580,7 +603,7 @@ describe('init development credentials', () => {
     vi.stubEnv('VITE_GT_PROJECT_ID', 'configured-project');
     const details = 'Project API keys cannot create other keys';
     vi.mocked(api.createProjectApiKey).mockRejectedValue(
-      new ApiError(details, 403, details)
+      new ApiError(details, 403, ErrorCode.PERMISSION_MISSING)
     );
 
     const error = await runInit().catch((caught: unknown) => caught);
@@ -606,7 +629,7 @@ describe('init development credentials', () => {
       JSON.stringify({ projectId: 'configured-project', defaultLocale: 'en' })
     );
     vi.mocked(api.createProjectApiKey).mockRejectedValue(
-      new ApiError('Forbidden', 403, 'Forbidden')
+      new ApiError('Forbidden', 403, ErrorCode.PERMISSION_NOT_GRANTABLE)
     );
 
     const error = await runInit().catch((caught: unknown) => caught);
@@ -624,7 +647,7 @@ describe('init development credentials', () => {
     vi.stubEnv('GT_API_KEY', 'gtx-project-key');
     vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
     vi.mocked(api.createProject).mockRejectedValue(
-      new ApiError('Forbidden', 403, 'Forbidden')
+      new ApiError('Forbidden', 403, ErrorCode.PERMISSION_MISSING)
     );
 
     const error = await runInit(
@@ -641,6 +664,32 @@ describe('init development credentials', () => {
     expect(message).toMatch(/organization key with org:projects:create/);
     expect(message).not.toContain('Ask an organization admin');
     expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(fs.existsSync(envPath())).toBe(false);
+  });
+
+  it('explains the project limit without creating a key', async () => {
+    vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
+    vi.mocked(api.createProject).mockRejectedValue(
+      new ApiError(
+        'The organization reached its project limit.',
+        409,
+        ErrorCode.PROJECT_LIMIT_REACHED
+      )
+    );
+
+    const error = await runInit(
+      '--create-project',
+      '--project-name',
+      'New App'
+    ).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Error);
+    const { message } = error as Error;
+    expect(message).toMatch(
+      /organization reached its project limit[\s\S]*delete an unused project or upgrade your plan, or rerun with --project-id <id>/
+    );
+    expect(message).toContain('Details: ApiError: The organization reached');
     expect(api.createProjectApiKey).not.toHaveBeenCalled();
     expect(fs.existsSync(envPath())).toBe(false);
   });

@@ -141,7 +141,7 @@ export const callToAction = t(${JSON.stringify(callToAction)}, { $context: ${JSO
           'generate',
           '--config',
           'gt.config.json',
-          '--jsconfig',
+          '--tsconfig',
           tsconfig,
         ],
         projectRoot

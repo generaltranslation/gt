@@ -142,10 +142,10 @@ function run({ entry, format, args, envFiles, preloadExtra = '' }: RunOptions) {
       fs.appendFileSync(${JSON.stringify(requestLog)}, request.url + '\\n');
       assert.equal(request.url, 'http://gt.invalid/v2/projects/project-id/api-keys');
       assert.equal(request.method, 'POST');
-      return new Response(JSON.stringify({ apiKey: {
+      return new Response(JSON.stringify({
         id: 'fake-id', name: 'CI', key: ${JSON.stringify(SECRET)},
-        projectId: 'project-id', type: 'production',
-      } }), { status: 201, headers: { 'content-type': 'application/json' } });
+        permissions: [], createdAt: '2026-01-01T00:00:00.000Z', lastUsedAt: null,
+      }), { status: 201, headers: { 'content-type': 'application/json' } });
     };
     ${preloadExtra}
   `

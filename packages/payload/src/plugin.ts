@@ -14,6 +14,7 @@ import type {
 } from 'payload';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { APIError } from 'payload';
+import { ApiError } from 'generaltranslation/api';
 import { siteCoverage } from './coverage';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { canUpdate } from './documents';
@@ -42,7 +43,8 @@ export type GtPluginOptions = {
   // Maps Payload locale codes GT does not know to ones it does, as in
   // gt.config.json: { cn: { code: 'zh' } }.
   customMapping?: CustomMapping;
-  // A client to use instead of one built from the options above.
+  // A project to use instead of one built from the options above, such as
+  // new GeneralTranslation({ apiKey, projectId, localeConfig: { customMapping } }).
   client?: GtClient;
 };
 
@@ -57,6 +59,16 @@ type StepBody = { id?: string | number };
 type CoverageBody = { page?: number; limit?: number };
 
 const DOCUMENT_CONTROLS = 'gt-payload/client#GtDocumentControls';
+const missingApiKeyDiagnostic = createGtPayloadDiagnostic({
+  severity: 'Error',
+  whatHappened: 'Translation needs a General Translation API key',
+  fix: 'Pass `apiKey` to gtPlugin() or set the GT_API_KEY environment variable',
+});
+const missingProjectIdDiagnostic = createGtPayloadDiagnostic({
+  severity: 'Error',
+  whatHappened: 'Translation needs a General Translation project ID',
+  fix: 'Pass `projectId` to gtPlugin() or set the GT_PROJECT_ID environment variable',
+});
 const NAV_LINK = 'gt-payload/client#GtNavLink';
 const RUNS_PROVIDER = 'gt-payload/client#GtRunsProvider';
 const TRANSLATIONS_VIEW = 'gt-payload/rsc#GtTranslationsView';
@@ -227,7 +239,11 @@ function handler<T>(
         })
       );
       return Response.json(
-        { error: error instanceof Error ? error.message : String(error) },
+        {
+          error: error instanceof Error ? error.message : String(error),
+          // GT's code, so the admin panel can tell a transient failure from one a retry won't fix.
+          ...(error instanceof ApiError && error.code && { code: error.code }),
+        },
         { status: 502 }
       );
     }
@@ -270,7 +286,7 @@ function endpoints(
           );
         return stepRun({
           payload: req.payload,
-          gt: client(req.payload),
+          client: () => client(req.payload),
           id: body.id,
         });
       }),
@@ -357,15 +373,23 @@ export const gtPlugin =
   (config: Config): Config => {
     if (!config.localization) return config;
     let built: GtClient | undefined = options.client;
-    const client = (payload: Payload) =>
-      (built ??= new GeneralTranslation({
-        projectId: options.projectId ?? process.env.GT_PROJECT_ID,
-        apiKey: options.apiKey ?? process.env.GT_API_KEY,
-        sourceLocale: payload.config.localization
-          ? payload.config.localization.defaultLocale
-          : undefined,
-        customMapping: options.customMapping,
+    const client = (payload: Payload) => {
+      if (built) return built;
+      const apiKey = options.apiKey ?? process.env.GT_API_KEY;
+      if (!apiKey) throw new Error(missingApiKeyDiagnostic);
+      const projectId = options.projectId ?? process.env.GT_PROJECT_ID;
+      if (!projectId) throw new Error(missingProjectIdDiagnostic);
+      return (built = new GeneralTranslation({
+        apiKey,
+        projectId,
+        localeConfig: {
+          defaultLocale: payload.config.localization
+            ? payload.config.localization.defaultLocale
+            : undefined,
+          customMapping: options.customMapping,
+        },
       }));
+    };
     const settings: AdminSettings = { customMapping: options.customMapping };
     return {
       ...config,

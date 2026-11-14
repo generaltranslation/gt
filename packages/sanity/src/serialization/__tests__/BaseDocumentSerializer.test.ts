@@ -22,14 +22,12 @@ import {
   createCustomInnerHTML,
   docWithInlineMarks,
   documentLevelArticle,
-  fieldLevelArticle,
   findByClass,
   getHTMLNode,
   getSerialized,
   getValidFields,
   inlineDocumentLevelArticle,
   inlineSchema,
-  nestedLanguageFields,
   schema,
   toPlainText,
   type ArticleFields,
@@ -43,11 +41,6 @@ const classNames = (element: Element) =>
 const objectInArray = (content: ArticleFields['content']) =>
   content.find((block) => block._type === 'objectField')!;
 
-/*
- * The same article at both translation levels. At field level every
- * translatable field is an object keyed by language, and only the base
- * language is exported.
- */
 const levels = [
   {
     level: 'document' as const,
@@ -56,26 +49,11 @@ const levels = [
     fieldElement: (docTree: Element, name: string) =>
       findByClass(docTree.children, name),
   },
-  {
-    level: 'field' as const,
-    article: fieldLevelArticle as SanityDocument,
-    fields: {
-      title: fieldLevelArticle.title.en,
-      snippet: fieldLevelArticle.snippet.en,
-      config: fieldLevelArticle.config.en,
-      content: fieldLevelArticle.content.en,
-    } as unknown as ArticleFields,
-    fieldElement: (docTree: Element, name: string) =>
-      findByClass(
-        findByClass(docTree.children, name)!.children[0].children,
-        'en'
-      ),
-  },
 ];
 
 for (const { level, article, fields, fieldElement } of levels) {
   describe(`${level}-level serialization`, () => {
-    const serialized = getSerialized(article, level);
+    const serialized = getSerialized(article);
     const docTree = getHTMLNode(serialized).body.children[0];
     const objectField = findByClass(
       fieldElement(docTree, 'config')!.children,
@@ -147,33 +125,11 @@ for (const { level, article, fields, fieldElement } of levels) {
   });
 }
 
-test('Nested locale fields make it to serialization, but only base lang', () => {
-  const nestedLocales = { ...fieldLevelArticle, ...nestedLanguageFields };
-  const nestedSerialized = getSerialized(nestedLocales, 'field');
-  const nestedDocTree = getHTMLNode(nestedSerialized).body.children[0];
-  const slices = findByClass(nestedDocTree.children, 'slices');
-  const pageFields = findByClass(nestedDocTree.children, 'pageFields');
-  expect(slices?.innerHTML).toContain(
-    nestedLanguageFields.slices[0]!.en![0]!.children![0]!.text
-  );
-  expect(pageFields?.innerHTML).toContain(
-    nestedLanguageFields.pageFields.name.en
-  );
-  expect(slices?.innerHTML).not.toContain(
-    nestedLanguageFields.slices[0]!.fr_FR![0]!.children![0]!.text
-  );
-  expect(pageFields?.innerHTML).not.toContain(
-    nestedLanguageFields.pageFields.name.fr_FR
-  );
-});
-
 describe('document with inline marks', () => {
   // The fixture's `linkField` marks have no serializer; to-html warns for each.
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
   const serialized = BaseDocumentSerializer(schema).serializeDocument(
     docWithInlineMarks,
-    'document',
-    'en',
     defaultStopTypes,
     merge({}, customSerializers, {
       marks: {
@@ -208,7 +164,7 @@ describe('document with inline marks', () => {
 });
 
 describe('document-level article', () => {
-  const serialized = getSerialized(documentLevelArticle, 'document');
+  const serialized = getSerialized(documentLevelArticle);
   const html = getHTMLNode(serialized);
   const docTree = html.body.children[0];
   const arrayField = findByClass(docTree.children, 'content')!;
@@ -295,8 +251,6 @@ describe('custom serializers and stop types', () => {
     getHTMLNode(
       BaseDocumentSerializer(schema).serializeDocument(
         document,
-        'document',
-        'en',
         stopTypes,
         serializers
       )
@@ -345,7 +299,7 @@ describe('custom serializers and stop types', () => {
   test('Unhandled inline objects and annotations should not hinder translation flows', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const serialized = getSerialized(inlineDocument, 'document');
+    const serialized = getSerialized(inlineDocument);
     const docTree = getHTMLNode(serialized).body.children[0];
     const arrayField = findByClass(docTree.children, 'content');
 
@@ -414,8 +368,7 @@ describe('custom serializers and stop types', () => {
  */
 test('Content with anonymous inline objects serializes all fields, at any depth', () => {
   const serialized = BaseDocumentSerializer(inlineSchema).serializeDocument(
-    inlineDocumentLevelArticle,
-    'document'
+    inlineDocumentLevelArticle
   );
   const docTree = getHTMLNode(serialized).body.children[0];
   const tabs = findByClass(docTree.children, 'tabs')!.children[0];
@@ -628,10 +581,8 @@ describe('schema options exclusion', () => {
     },
   } as unknown as SanityDocument;
 
-  const serialized = BaseDocumentSerializer(optionsSchema).serializeDocument(
-    doc,
-    'document'
-  );
+  const serialized =
+    BaseDocumentSerializer(optionsSchema).serializeDocument(doc);
   const docTree = getHTMLNode(serialized).body.children[0];
 
   test.each([

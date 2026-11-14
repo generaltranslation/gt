@@ -18,7 +18,6 @@ import {
   addedCustomSerializers,
   annotationAndInlineBlocks,
   documentLevelArticle,
-  fieldLevelArticle,
   getDeserialized,
   inlineDocumentLevelArticle,
   inlineSchema,
@@ -34,29 +33,11 @@ const blockKeys = (blocks: Array<{ _key?: string }>) =>
 const objectInArray = (content: ArticleFields['content']) =>
   content.find((block) => block._type === 'objectField')!;
 
-/*
- * The same article at both translation levels. At field level every
- * translatable field is an object keyed by language.
- */
 const levels = [
   {
     level: 'document' as const,
     article: documentLevelArticle,
     fieldsOf: (article: unknown) => article as ArticleFields,
-  },
-  {
-    level: 'field' as const,
-    article: fieldLevelArticle,
-    fieldsOf: (article: unknown) => {
-      const { title, snippet, config, content } =
-        article as typeof fieldLevelArticle;
-      return {
-        title: title.en,
-        snippet: snippet.en,
-        config: config.en,
-        content: content.en,
-      } as unknown as ArticleFields;
-    },
   },
 ];
 
@@ -69,7 +50,7 @@ for (const { level, article, fieldsOf } of levels) {
     // Deserialized inside each test, where the mocked block keys restart from
     // zero, so the snapshot stays the same whichever tests run.
     beforeEach(() => {
-      deserialized = getDeserialized(article, level);
+      deserialized = getDeserialized(article);
       fields = fieldsOf(deserialized);
     });
 
@@ -120,7 +101,7 @@ for (const { level, article, fieldsOf } of levels) {
 }
 
 describe('document-level article', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
 
   test('contains the id, rev and type of the original document', () => {
     expect(deserialized._id).toEqual(documentLevelArticle._id);
@@ -171,8 +152,6 @@ describe('document-level article', () => {
 test('Custom deserialization should manifest at all levels', () => {
   const serialized = BaseDocumentSerializer(schema).serializeDocument(
     documentLevelArticle,
-    'document',
-    'en',
     defaultStopTypes,
     addedCustomSerializers
   );
@@ -202,10 +181,8 @@ test('Content with custom styles deserializes correctly and maintains style', ()
     ...customStyles,
   };
 
-  const serialized = BaseDocumentSerializer(schema).serializeDocument(
-    customStyledDocument,
-    'document'
-  );
+  const serialized =
+    BaseDocumentSerializer(schema).serializeDocument(customStyledDocument);
 
   const deserialized = BaseDocumentDeserializer.deserializeDocument<
     typeof customStyledDocument
@@ -231,8 +208,6 @@ describe('handled inline objects and annotations', () => {
 
   const serialized = BaseDocumentSerializer(schema).serializeDocument(
     inlineDocument,
-    'document',
-    'en',
     defaultStopTypes,
     addedCustomSerializers
   );
@@ -326,8 +301,7 @@ test('Content with anonymous inline objects deserializes all fields, at any dept
   vi.spyOn(console, 'debug').mockImplementation(() => {});
 
   const serialized = BaseDocumentSerializer(inlineSchema).serializeDocument(
-    inlineDocumentLevelArticle,
-    'document'
+    inlineDocumentLevelArticle
   );
 
   const deserialized = BaseDocumentDeserializer.deserializeDocument<

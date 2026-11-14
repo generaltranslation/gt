@@ -1,9 +1,13 @@
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { api, gt, overrideConfig } from '../adapter/core';
+import type {
+  TranslateFilesResponse,
+  UploadSourceFilesResponse,
+} from 'generaltranslation/api';
+import { gt, projectFor } from '../adapter/core';
 import type { Secrets } from '../types';
+import { succeededResults } from '../utils/batchResults';
 
 export async function createJobs(
-  uploadResult: Awaited<ReturnType<typeof api.uploadSourceFiles>>,
+  uploadResult: UploadSourceFilesResponse,
   localeIds: string[],
   secrets: Secrets,
   // Discard any translation GT already holds for these files and retranslate
@@ -11,12 +15,10 @@ export async function createJobs(
   // translations captured from the Studio — so a bad translation can never be
   // regenerated.
   force: boolean = false
-): Promise<Awaited<ReturnType<typeof api.enqueueFiles>>> {
-  overrideConfig(secrets);
-  const enqueueResult = await api.enqueueFiles(uploadResult.uploadedFiles, {
-    sourceLocale: gt.sourceLocale || libraryDefaultLocale,
+): Promise<TranslateFilesResponse> {
+  return projectFor(secrets).translateFiles(succeededResults(uploadResult), {
+    sourceLocale: gt.defaultLocale,
     targetLocales: localeIds,
     force,
   });
-  return enqueueResult;
 }

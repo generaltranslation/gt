@@ -6,21 +6,11 @@ import { Libraries } from '../../types/libraries.js';
 import { detectPythonLibrary } from './detectPythonLibrary.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 
-type DeterminedLibrary = {
+type DeterminedCLILibrary = {
   library: SupportedLibraries;
   additionalModules: SupportedLibraries[];
-};
-
-type DeterminedCLILibrary = DeterminedLibrary & {
   directlyDeclaresVue: boolean;
 };
-
-/** Preserves the historical public detection result shape. */
-export function determineLibrary(): DeterminedLibrary {
-  const { directlyDeclaresVue: _directlyDeclaresVue, ...selection } =
-    determineLibraryForCLI();
-  return selection;
-}
 
 /** Includes the direct Vue signal needed to select a mixed command adapter. */
 export function determineLibraryForCLI(): DeterminedCLILibrary {

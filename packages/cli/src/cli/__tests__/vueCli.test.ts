@@ -5,9 +5,13 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../utils/api.js', () => ({
-  configureApiClient: vi.fn(),
-  api: { createProject: vi.fn(), createProjectApiKey: vi.fn() },
+const api = vi.hoisted(() => ({
+  createProject: vi.fn(),
+  createProjectApiKey: vi.fn(),
+}));
+vi.mock('generaltranslation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('generaltranslation')>()),
+  GeneralTranslation: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
 vi.mock('../../auth/oauth.js', () => ({
   createUserTokenProvider: vi.fn(() => ({})),
@@ -45,7 +49,6 @@ import { main } from '../../index.js';
 import type { ConfigureOptions } from '../../setup/onboarding.js';
 import type { TranslateFlags } from '../../types/index.js';
 import { Libraries } from '../../types/libraries.js';
-import { api } from '../../utils/api.js';
 import { installPackage } from '../../utils/installPackage.js';
 import { BaseCLI } from '../base.js';
 import { InlineCLI } from '../inline.js';
@@ -202,7 +205,7 @@ describe('Vue CLI', () => {
         );
         for (const commandName of ['setup', 'stage', 'translate']) {
           expect(optionNames(routed, commandName)).toEqual(
-            expect.arrayContaining(['src', 'jsconfig'])
+            expect.arrayContaining(['src', 'tsconfig'])
           );
         }
         expect(findCommand(routed, 'init').description()).toMatch(/gt-vue/);
@@ -255,7 +258,7 @@ describe('Vue CLI', () => {
         expect(commandNames(routed)).not.toContain('generate');
         expect(commandNames(routed)).not.toContain('validate');
         expect(optionNames(routed, 'translate')).not.toContain('src');
-        expect(optionNames(routed, 'translate')).not.toContain('jsconfig');
+        expect(optionNames(routed, 'translate')).not.toContain('tsconfig');
         expect(findCommand(routed, 'init').description()).not.toMatch(/gt-vue/);
       }
     );
@@ -398,7 +401,7 @@ describe('Vue CLI', () => {
       expect(calls).toEqual([
         expect.objectContaining({
           src: ['src/**/*.vue'],
-          jsconfig: 'tsconfig.app.json',
+          tsconfig: 'tsconfig.app.json',
           dryRun: true,
         }),
       ]);

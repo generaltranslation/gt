@@ -1,9 +1,12 @@
 import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
-import { branchResolutionError, withOriginalError } from '../console/index.js';
+import {
+  branchResolutionError,
+  workflowFailureMessage,
+} from '../console/index.js';
 import { Settings, TranslateFlags } from '../types/index.js';
-import { api } from '../utils/api.js';
-import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
-import { EnqueueStep } from './steps/EnqueueStep.js';
+import { requireProject } from '../utils/api.js';
+import { FileToUpload } from 'generaltranslation/types';
+import { EnqueueStep, type EnqueueFilesResult } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { logger } from '../console/logger.js';
 import { filterFilesForEnqueue } from './utils/filterFilesForEnqueue.js';
@@ -41,10 +44,12 @@ export async function runEnqueueWorkflow({
     // layout refinement) can use them instead of fallback fonts.
     await syncFonts(settings);
 
+    const project = requireProject(settings);
+
     // Create workflow with steps
-    const branchStep = new BranchStep(api, settings);
+    const branchStep = new BranchStep(project, settings);
     // const queryFileDataStep = new QueryFileDataStep(gt);
-    const enqueueStep = new EnqueueStep(api, settings, options.force);
+    const enqueueStep = new EnqueueStep(project, settings, options.force);
 
     // (1) run the branch step
     const branchData = await branchStep.run();
@@ -59,7 +64,7 @@ export async function runEnqueueWorkflow({
       ...files,
     }));
     const { filesToEnqueue, skippedFiles } = await filterFilesForEnqueue({
-      gt: api,
+      gt: project,
       files: filesWithBranch,
       locales: settings.locales,
       force: options.force,
@@ -81,10 +86,7 @@ export async function runEnqueueWorkflow({
     return enqueueResult;
   } catch (error) {
     return logErrorAndExit(
-      withOriginalError(
-        'Translations could not be enqueued. Check the files, branch configuration, and API credentials, then try again.',
-        error
-      )
+      workflowFailureMessage('Translations could not be enqueued.', error)
     );
   }
 }

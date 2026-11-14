@@ -14,7 +14,8 @@ import {
 } from '../../fs/findFilepath.js';
 import { readFileContent } from '../../fs/fileContent.js';
 import { Settings } from '../../types/index.js';
-import type { DataFormat, FileToUpload } from '../../types/data.js';
+import type { FileToUpload } from '../../types/data.js';
+import type { FileDataFormat } from 'generaltranslation/api';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
 import {
@@ -33,9 +34,9 @@ import { validateYamlSchema } from '../yaml/utils.js';
 import { flattenJson } from '../json/flattenJson.js';
 import type { JSONObject } from '../../types/data/json.js';
 import YAML from 'yaml';
-import { determineLibrary } from '../../fs/determineFramework/index.js';
+import { determineLibraryForCLI } from '../../fs/determineFramework/index.js';
 import { hashStringSync, hashVersionId } from '../../utils/hash.js';
-import { api } from '../../utils/api.js';
+import { resolveCanonicalLocale } from '../../utils/api.js';
 import { preprocessContent } from './preprocessContent.js';
 import {
   parseKeyedMetadata,
@@ -112,10 +113,10 @@ export async function aggregateFiles(
 
   // Process JSON files
   if (filePaths.json) {
-    const { library, additionalModules } = determineLibrary();
+    const { library, additionalModules } = determineLibraryForCLI();
 
     // Determine dataFormat for JSONs
-    let dataFormat: DataFormat;
+    let dataFormat: FileDataFormat;
     if (library === 'next-intl') {
       dataFormat = 'ICU';
     } else if (library === 'i18next') {
@@ -487,8 +488,8 @@ export async function aggregateFiles(
         // rather than a skipped file. The configured locale may be a custom
         // alias, so canonical forms are compared.
         if (
-          api.resolveCanonicalLocale(catalog.sourceLanguage) !==
-          api.resolveCanonicalLocale(settings.defaultLocale)
+          resolveCanonicalLocale(catalog.sourceLanguage) !==
+          resolveCanonicalLocale(settings.defaultLocale)
         ) {
           sourceLanguageMismatches.push({
             file: relativePath,
