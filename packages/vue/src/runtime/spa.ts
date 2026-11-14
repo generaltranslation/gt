@@ -1,5 +1,5 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import { translateString } from '../messages/translation';
 import type { GTFunction, GTPlugin, InitializeGTSPAOptions } from '../types';
 import { createGTRuntime, type GTRuntime } from './state';
@@ -93,21 +93,29 @@ export function resetGTSPAForTests(): void {
 async function createSPARuntime(
   options: InitializeGTSPAOptions
 ): Promise<GTRuntime> {
-  const { customMapping, locales, ...createOptions } = options;
-  const { determineLocale, resolveCanonicalLocale } =
-    await import('@generaltranslation/format');
+  const { customMapping, locales, localeMatcher, ...createOptions } = options;
+  const [
+    { createIntl },
+    { isValidLocale, resolveCanonicalLocale, standardizeLocale },
+  ] = await Promise.all([
+    import('./intl'),
+    import('@generaltranslation/format'),
+  ]);
   const resolveFormattingLocale = (locale: string): string => {
     const canonicalLocale = resolveCanonicalLocale(locale, customMapping);
-    return (
-      determineLocale(canonicalLocale, [canonicalLocale]) ?? canonicalLocale
-    );
+    return isValidLocale(canonicalLocale)
+      ? standardizeLocale(canonicalLocale)
+      : canonicalLocale;
   };
+  const intl = createIntl({ localeMatcher });
+  const determineLocale = (locale: string, approvedLocales: string[]) =>
+    intl.determineLocale(locale, { approvedLocales });
   const runtime = createGTRuntime(createOptions, {
     pinLocale: true,
     reloadDocument: () => window.location.reload(),
     resolveFormattingLocale,
     resolveLocale: createSupportedLocaleResolver(
-      createOptions.defaultLocale ?? libraryDefaultLocale,
+      createOptions.defaultLocale ?? defaultDefaultLocale,
       locales,
       determineLocale,
       resolveFormattingLocale

@@ -1,5 +1,9 @@
 export { GTIntl } from './intl/GTIntl';
-export type { LocaleConfig, ResolvedLocaleConfig } from './intl/localeConfig';
+export type {
+  LocaleConfig,
+  LocaleMatcher,
+  ResolvedLocaleConfig,
+} from './intl/localeConfig';
 
 export {
   determineLocale,

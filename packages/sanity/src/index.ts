@@ -1,6 +1,6 @@
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import type { CustomMapping } from 'generaltranslation/types';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import { formatLocaleLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
@@ -216,7 +216,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
   }) => {
     // Resolve sourceLocale: explicit sourceLocale > defaultLocale (from gt.config.json) > library default
     const resolvedSourceLocale =
-      sourceLocale ?? defaultLocale ?? libraryDefaultLocale;
+      sourceLocale ?? defaultLocale ?? defaultDefaultLocale;
 
     // `locales` holds translation targets only. Drop duplicates and the source
     // locale before anything downstream sees them — a repeated locale reaches

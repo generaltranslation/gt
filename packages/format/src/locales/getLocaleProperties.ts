@@ -1,4 +1,4 @@
-import { libraryDefaultLocale } from '../settings/settings';
+import { defaultDefaultLocale } from '../settings/settings';
 import { defaultEmoji } from './getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import { _getLocaleEmoji } from './getLocaleEmoji';
@@ -77,7 +77,7 @@ export function createCustomLocaleProperties(
  */
 export function _getLocaleProperties(
   locale: string,
-  defaultLocale: string = libraryDefaultLocale,
+  defaultLocale: string = defaultDefaultLocale,
   customMapping?: CustomMapping
 ): LocaleProperties {
   // Check for canonical locale
@@ -85,7 +85,7 @@ export function _getLocaleProperties(
   // Override locale with canonical locale
   locale = _resolveCanonicalLocale(locale, customMapping);
 
-  defaultLocale ||= libraryDefaultLocale;
+  defaultLocale ||= defaultDefaultLocale;
 
   try {
     const standardizedLocale = _standardizeLocale(locale); // "de-AT"
@@ -118,8 +118,8 @@ export function _getLocaleProperties(
 
     // Language names (default and native)
 
-    const defaultLanguageOrder = [defaultLocale, locale, libraryDefaultLocale];
-    const nativeLanguageOrder = [locale, defaultLocale, libraryDefaultLocale];
+    const defaultLanguageOrder = [defaultLocale, locale, defaultDefaultLocale];
+    const nativeLanguageOrder = [locale, defaultLocale, defaultDefaultLocale];
 
     const languageNames = intlCache.get('DisplayNames', defaultLanguageOrder, {
       type: 'language',

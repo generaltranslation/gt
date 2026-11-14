@@ -6,7 +6,7 @@ import {
 } from '../console/logging.js';
 import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 import { FilesOptions, Settings } from '../types/index.js';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
 import {
@@ -195,7 +195,7 @@ export async function generateSettings(
 
   // Add defaultLocale if not provided
   mergedOptions.defaultLocale =
-    mergedOptions.defaultLocale || libraryDefaultLocale;
+    mergedOptions.defaultLocale || defaultDefaultLocale;
 
   // merge locales
   mergedOptions.locales = Array.from(

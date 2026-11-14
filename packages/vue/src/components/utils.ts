@@ -1,4 +1,4 @@
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import {
   type Component,
   type DefineComponent,
@@ -51,7 +51,7 @@ export function withGTMetadata<Props = {}>(
 export function getFormatLocales(
   locales: string[] | undefined,
   locale: string,
-  defaultLocale: string = libraryDefaultLocale,
+  defaultLocale: string = defaultDefaultLocale,
   resolveLocale: (locale: string) => string = identityLocale
 ): string[] {
   const resolvedLocale = resolveLocale(locale);

@@ -3,7 +3,7 @@ import { forEachPlaceholder } from '@generaltranslation/icu/internal';
 import {
   formatCutoff,
   formatMessageTree,
-  libraryDefaultLocale,
+  defaultDefaultLocale,
 } from 'generaltranslation/internal';
 import {
   getI18nConfig,
@@ -84,17 +84,17 @@ function formatSource(
   // Code paths without i18n may never initialize the config.
   const formatted = isI18nConfigInitialized()
     ? getI18nConfig().formatMessageTree(tree, {
-        locales: libraryDefaultLocale,
+        locales: defaultDefaultLocale,
         values,
         formats,
       })
-    : formatMessageTree(tree, libraryDefaultLocale, values, { formats });
+    : formatMessageTree(tree, defaultDefaultLocale, values, { formats });
   const output = Array.isArray(formatted)
     ? formatted.join('')
     : String(formatted);
   return maxChars == null
     ? output
-    : formatCutoff(output, { locales: libraryDefaultLocale, maxChars });
+    : formatCutoff(output, { locales: defaultDefaultLocale, maxChars });
 }
 
 /** Creates an m that renders like the GT createGT returns for `params`. */

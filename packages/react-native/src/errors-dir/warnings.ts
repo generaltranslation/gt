@@ -1,5 +1,5 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import { PACKAGE_NAME } from './constants';
 
 export const resolveLocalesFailedWarning = createDiagnosticMessage({
@@ -7,7 +7,7 @@ export const resolveLocalesFailedWarning = createDiagnosticMessage({
   severity: 'Warning',
   whatHappened: 'Locales for the polyfill could not be resolved',
   fix: 'Provide locales directly, pass your GT Config to the plugin, or provide the path to your GT Config file',
-  wayOut: `The library will fall back to ${libraryDefaultLocale}`,
+  wayOut: `The library will fall back to ${defaultDefaultLocale}`,
 });
 
 export const couldNotLocateConfigWarning = (filePath: string) =>

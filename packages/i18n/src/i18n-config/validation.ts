@@ -1,4 +1,8 @@
 import { isValidLocale } from '@generaltranslation/format';
+import {
+  defaultLocaleMatcher,
+  localeMatchers,
+} from '@generaltranslation/format/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import logger from '../logs/logger';
 import type { I18nConfigParams } from './I18nConfig';
@@ -7,6 +11,8 @@ export function validateI18nConfigParams(
   params: I18nConfigParams,
   gtServicesEnabled: boolean
 ): void {
+  validateLocaleMatcher(params);
+
   if (!gtServicesEnabled) {
     return;
   }
@@ -35,6 +41,21 @@ export function validateI18nConfigParams(
       })
     );
   }
+}
+
+function validateLocaleMatcher({ localeMatcher }: I18nConfigParams): void {
+  if (localeMatcher === undefined || localeMatchers.includes(localeMatcher)) {
+    return;
+  }
+  throw new Error(
+    createDiagnosticMessage({
+      source: 'gt-i18n',
+      severity: 'Error',
+      whatHappened: 'Invalid I18nConfig localeMatcher',
+      details: `localeMatcher: ${JSON.stringify(localeMatcher)}`,
+      fix: `Set localeMatcher to one of ${localeMatchers.map((matcher) => JSON.stringify(matcher)).join(', ')}, or omit it to use "${defaultLocaleMatcher}"`,
+    })
+  );
 }
 
 function getInvalidLocales({

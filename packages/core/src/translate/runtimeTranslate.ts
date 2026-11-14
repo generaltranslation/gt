@@ -22,7 +22,7 @@ import type {
 } from '../types-dir/api/entry';
 import type { GTRuntime } from '../runtime';
 import { apiVersionHeaders, resolveServiceLocale } from '../client/apiClient';
-import { libraryDefaultLocale } from '../settings/settings';
+import { defaultDefaultLocale } from '../settings/settings';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import { noTargetLocaleProvidedError } from '../logging/errors';
 import { hashSource } from '../id';
@@ -245,7 +245,7 @@ export async function translateEntries(
       customMapping
     ),
     sourceLocale: resolveServiceLocale(
-      globalMetadata.sourceLocale || defaultLocale || libraryDefaultLocale,
+      globalMetadata.sourceLocale || defaultLocale || defaultDefaultLocale,
       customMapping
     ),
     metadata: { modelProvider: globalMetadata.modelProvider },

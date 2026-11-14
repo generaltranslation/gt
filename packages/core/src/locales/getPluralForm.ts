@@ -1,7 +1,7 @@
 import { getCachedPluralRules } from '@generaltranslation/format/internal';
 
 import { pluralForms, PluralType } from '../settings/plurals';
-import { libraryDefaultLocale } from '../settings/settings';
+import { defaultDefaultLocale } from '../settings/settings';
 
 /**
  * Given a number and a list of allowed plural forms, return the plural form that best fits the number.
@@ -13,7 +13,7 @@ import { libraryDefaultLocale } from '../settings/settings';
 export function _getPluralForm(
   n: number,
   forms: readonly PluralType[] = pluralForms,
-  locales: string[] = [libraryDefaultLocale]
+  locales: string[] = [defaultDefaultLocale]
 ): PluralType | '' {
   const pluralRules = getCachedPluralRules(locales);
   const provisionalBranchName = pluralRules.select(n);

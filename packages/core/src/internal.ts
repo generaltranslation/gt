@@ -3,7 +3,7 @@ export {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
 } from './settings/settingsUrls';
-export { libraryDefaultLocale } from './settings/settings';
+export { defaultDefaultLocale } from './settings/settings';
 // What a caller leaves out is resolved in this package and nowhere else, so
 // the other General Translation packages format through these.
 export { GTIntl } from './intl/GTIntl';

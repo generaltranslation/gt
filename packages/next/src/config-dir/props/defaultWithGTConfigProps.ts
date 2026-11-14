@@ -1,5 +1,5 @@
 import {
-  libraryDefaultLocale,
+  defaultDefaultLocale,
   defaultCacheUrl,
   defaultRuntimeApiUrl,
 } from 'generaltranslation/internal';
@@ -48,8 +48,8 @@ export const defaultWithGTConfigProps: DefaultGTConfigProps = {
   config: './gt.config.json',
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
-  defaultLocale: libraryDefaultLocale,
-  getLocale: async () => libraryDefaultLocale,
+  defaultLocale: defaultDefaultLocale,
+  getLocale: async () => defaultDefaultLocale,
   locales: [] as string[],
   maxConcurrentRequests: 100,
   maxBatchSize: 25,

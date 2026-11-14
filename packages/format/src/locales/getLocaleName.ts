@@ -1,5 +1,5 @@
 import { intlCache } from '../cache/IntlCache';
-import { libraryDefaultLocale } from '../settings/settings';
+import { defaultDefaultLocale } from '../settings/settings';
 import { CustomMapping, getCustomProperty } from './customLocaleMapping';
 import { _standardizeLocale } from './isValidLocale';
 import { _resolveCanonicalLocale } from './resolveCanonicalLocale';
@@ -8,20 +8,20 @@ import { _resolveCanonicalLocale } from './resolveCanonicalLocale';
  * Retrieves the display name(s) of locale code(s) using Intl.DisplayNames.
  *
  * @param {string} locale - A BCP-47 locale code.
- * @param {string} [defaultLocale=libraryDefaultLocale] - The locale for display names.
+ * @param {string} [defaultLocale=defaultDefaultLocale] - The locale for display names.
  * @returns {string} The display name(s) corresponding to the code(s), or empty string(s) if invalid.
  * @internal
  */
 export function _getLocaleName(
   locale: string,
-  defaultLocale: string = libraryDefaultLocale,
+  defaultLocale: string = defaultDefaultLocale,
   customMapping?: CustomMapping
 ): string {
   // Check for canonical locale
   const aliasedLocale = locale;
   locale = _resolveCanonicalLocale(locale, customMapping);
 
-  defaultLocale ||= libraryDefaultLocale;
+  defaultLocale ||= defaultDefaultLocale;
   try {
     const standardizedLocale = _standardizeLocale(locale);
     if (customMapping) {
@@ -37,7 +37,7 @@ export function _getLocaleName(
     }
     const displayNames = intlCache.get(
       'DisplayNames',
-      [defaultLocale, standardizedLocale, libraryDefaultLocale], // default locale order
+      [defaultLocale, standardizedLocale, defaultDefaultLocale], // default locale order
       { type: 'language' }
     );
     return displayNames.of(standardizedLocale) || '';

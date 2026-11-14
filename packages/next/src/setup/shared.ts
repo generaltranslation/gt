@@ -25,6 +25,7 @@ export function getParams(): {
     locales: clientConfig.locales,
     customMapping: clientConfig.customMapping,
     timeZone: clientConfig.timeZone,
+    localeMatcher: clientConfig.localeMatcher,
     runtimeUrl: clientConfig.runtimeUrl,
     projectId,
     devApiKey,

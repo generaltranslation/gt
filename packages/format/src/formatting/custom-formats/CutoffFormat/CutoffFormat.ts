@@ -1,5 +1,5 @@
 import { createInvalidCutoffStyleError } from '../../../errors/formattingErrors';
-import { libraryDefaultLocale } from '../../../settings/settings';
+import { defaultDefaultLocale } from '../../../settings/settings';
 import {
   DEFAULT_CUTOFF_FORMAT_STYLE,
   DEFAULT_TERMINATOR_KEY,
@@ -22,14 +22,14 @@ export class CutoffFormatConstructor implements CutoffFormat {
     try {
       // Normalize locales to string
       const localesList = !locales
-        ? [libraryDefaultLocale]
+        ? [defaultDefaultLocale]
         : Array.isArray(locales)
           ? locales.map(String)
           : [String(locales)];
       const [canonicalLocale] = Intl.getCanonicalLocales(localesList);
-      return canonicalLocale ?? libraryDefaultLocale;
+      return canonicalLocale ?? defaultDefaultLocale;
     } catch {
-      return libraryDefaultLocale;
+      return defaultDefaultLocale;
     }
   }
 

@@ -2,12 +2,13 @@ import {
   GTIntl as ResolvedGTIntl,
   type LocaleConfig,
 } from '@generaltranslation/format';
+import { defaultLocaleMatcher } from '@generaltranslation/format/internal';
 import type { WithOptional } from '../formatting/formatting';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from '../logging/diagnostics';
-import { libraryDefaultLocale } from '../settings/settings';
+import { defaultDefaultLocale } from '../settings/settings';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
 type LocaleOption = ConstructorParameters<typeof ResolvedGTIntl>[1];
@@ -52,7 +53,8 @@ export class GTIntl extends ResolvedGTIntl {
     super(
       {
         ...localeConfig,
-        defaultLocale: localeConfig.defaultLocale ?? libraryDefaultLocale,
+        defaultLocale: localeConfig.defaultLocale ?? defaultDefaultLocale,
+        localeMatcher: localeConfig.localeMatcher ?? defaultLocaleMatcher,
         timeZone:
           localeConfig.timeZone === undefined
             ? hostTimeZone()

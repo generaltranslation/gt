@@ -1,4 +1,5 @@
 import type { GTCompilerOptions } from 'generaltranslation/types';
+import type { LocaleMatcher } from '@generaltranslation/format/types';
 import type { MiddlewareConfig } from '../../middleware-dir/types';
 
 export type HeadersAndCookies = {
@@ -41,6 +42,7 @@ export type BaseWithGTConfigProps = MiddlewareConfig & {
   // Locale info
   locales?: string[];
   defaultLocale?: string;
+  localeMatcher?: LocaleMatcher;
   ignoreBrowserLocales?: boolean;
   disableInvalidLocaleWarning?: boolean;
   /** IANA time zone for dates and times formatted without one. */

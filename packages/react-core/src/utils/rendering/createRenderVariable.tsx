@@ -3,7 +3,7 @@ import type { ResolvedDateTimeProps } from '../../components/variables/DateTime.
 import type { ResolvedNumProps } from '../../components/variables/Num.shared';
 import type { ResolvedRelativeTimeProps } from '../../components/variables/RelativeTime.shared';
 import type { RelativeTimeFormatOptions, RenderVariable } from '../types';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import { ReactNode } from 'react';
 
 // Factory shared by the hook-based and RSC variable renderers: the branching
@@ -57,7 +57,7 @@ function createRenderVariable({
     enableI18n,
     injectionType,
   }) {
-    const locale = locales[0] ?? libraryDefaultLocale;
+    const locale = locales[0] ?? defaultDefaultLocale;
     const internalProps = {
       _locale: locale,
       _enableI18n: enableI18n,

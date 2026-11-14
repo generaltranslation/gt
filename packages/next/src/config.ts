@@ -658,6 +658,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     locales: mergedConfig.locales,
     customMapping: mergedConfig.customMapping,
     timeZone: mergedConfig.timeZone,
+    localeMatcher: mergedConfig.localeMatcher,
     runtimeUrl: mergedConfig.runtimeUrl,
     cacheUrl: mergedConfig.cacheUrl,
     cacheExpiryTime: mergedConfig.cacheExpiryTime,

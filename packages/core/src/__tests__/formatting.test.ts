@@ -11,7 +11,7 @@ import {
   formatRelativeTimeFromDate,
   GTIntl,
 } from '../index';
-import { formatMessageTree, libraryDefaultLocale } from '../internal';
+import { formatMessageTree, defaultDefaultLocale } from '../internal';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
 const date = new Date('2020-05-06T14:03:02Z');
@@ -79,7 +79,7 @@ describe('what a caller leaves out', () => {
     expect(formatListToParts([1, 2])).toEqual([1, ' and ', 2]);
     expect(formatRelativeTime(-1, 'day')).toBe('yesterday');
     expect(formatCutoff('Hello, world!', { maxChars: 8 })).toBe('Hello, …');
-    expect(new GTIntl().defaultLocale).toBe(libraryDefaultLocale);
+    expect(new GTIntl().defaultLocale).toBe(defaultDefaultLocale);
     expect(new GTIntl().locales).toEqual([]);
   });
 

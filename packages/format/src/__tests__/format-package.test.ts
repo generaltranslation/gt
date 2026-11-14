@@ -59,7 +59,7 @@ describe('@generaltranslation/format package exports', () => {
     ).toBe('yesterday');
     expect(
       new format.GTIntl(
-        { defaultLocale: 'en', timeZone: 'UTC' },
+        { defaultLocale: 'en', timeZone: 'UTC', localeMatcher: 'best fit' },
         { locale: 'en-US' }
       ).formatNum(1234.5)
     ).toBe('1,234.5');
@@ -108,7 +108,7 @@ describe('@generaltranslation/format package exports', () => {
             'yesterday'
           );
           assert.equal(
-            new GTIntl({ defaultLocale: 'en', timeZone: 'UTC', customMapping: { en: 'English' } }).getLocaleName('en'),
+            new GTIntl({ defaultLocale: 'en', timeZone: 'UTC', localeMatcher: 'best fit', customMapping: { en: 'English' } }).getLocaleName('en'),
             'English'
           );
           assert.equal(getRegionProperties('419').emoji, '🌎');

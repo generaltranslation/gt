@@ -1,5 +1,5 @@
 import { intlCache } from '../cache/IntlCache';
-import { libraryDefaultLocale } from '../settings/settings';
+import { defaultDefaultLocale } from '../settings/settings';
 import { getCustomLocaleCode, type CustomMapping } from './customLocaleMapping';
 
 const scriptExceptions = new Set([
@@ -59,7 +59,7 @@ const validateLocaleCode = (locale: string): boolean => {
       return false;
     const displayLanguageNames = intlCache.get(
       'DisplayNames',
-      [libraryDefaultLocale],
+      [defaultDefaultLocale],
       {
         type: 'language',
       }
@@ -72,7 +72,7 @@ const validateLocaleCode = (locale: string): boolean => {
     if (region) {
       const displayRegionNames = intlCache.get(
         'DisplayNames',
-        [libraryDefaultLocale],
+        [defaultDefaultLocale],
         {
           type: 'region',
         }
@@ -82,7 +82,7 @@ const validateLocaleCode = (locale: string): boolean => {
     if (script) {
       const displayScriptNames = intlCache.get(
         'DisplayNames',
-        [libraryDefaultLocale],
+        [defaultDefaultLocale],
         {
           type: 'script',
         }

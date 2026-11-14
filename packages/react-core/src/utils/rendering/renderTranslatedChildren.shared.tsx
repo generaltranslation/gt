@@ -11,7 +11,7 @@ import {
   isVariableElementProps,
 } from '../variables/_getVariableProps';
 import { createRenderDefaultChildren } from './renderDefaultChildren.shared';
-import { isVariable, libraryDefaultLocale } from 'generaltranslation/internal';
+import { isVariable, defaultDefaultLocale } from 'generaltranslation/internal';
 import { getPluralBranch } from '../plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
@@ -42,7 +42,7 @@ function createRenderTranslatedChildren({
   function renderTranslatedElement({
     sourceElement,
     targetElement,
-    locales = [libraryDefaultLocale],
+    locales = [defaultDefaultLocale],
     enableI18n,
   }: {
     sourceElement: TaggedElement;
@@ -160,7 +160,7 @@ function createRenderTranslatedChildren({
   function renderTranslatedChildren({
     source,
     target,
-    locales = [libraryDefaultLocale],
+    locales = [defaultDefaultLocale],
     enableI18n,
   }: RenderTranslatedChildrenArgs): ReactNode {
     // Most straightforward case, return a valid React node

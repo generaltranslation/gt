@@ -1,6 +1,6 @@
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 
-export function testLocalePolyfill(locale = libraryDefaultLocale) {
+export function testLocalePolyfill(locale = defaultDefaultLocale) {
   const problems = [];
 
   // 1. basic presence

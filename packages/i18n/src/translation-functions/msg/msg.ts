@@ -4,7 +4,7 @@ import type {
 } from '../types/options';
 import {
   formatMessage,
-  libraryDefaultLocale,
+  defaultDefaultLocale,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
 import { createInterpolationFailureMessage } from '../utils/messages';
@@ -80,7 +80,7 @@ export function msg(
   let interpolatedString: string;
   try {
     interpolatedString = formatMessage(message, {
-      locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
+      locales: [defaultDefaultLocale], // TODO: use compiler to insert locales
       variables: {
         ...variables,
         [VAR_IDENTIFIER]: 'other',

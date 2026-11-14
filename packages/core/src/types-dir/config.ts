@@ -1,4 +1,7 @@
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type {
+  CustomMapping,
+  LocaleMatcher,
+} from '@generaltranslation/format/types';
 
 /**
  * Options shared by the CLI, compiler, and runtimes under
@@ -68,13 +71,15 @@ export type GTFilesConfig = {
  * The configuration stored in gt.config.json.
  *
  * All settings are optional. Runtimes default `defaultLocale` to
- * `libraryDefaultLocale` and `locales` to an empty list before resolving the
+ * `defaultDefaultLocale` and `locales` to an empty list before resolving the
  * effective locale set.
  */
 export type GTConfig = {
   defaultLocale?: string;
   locales?: string[];
   customMapping?: CustomMapping;
+  /** How `determineLocale` matches requested locales; defaults to `'best fit'`. */
+  localeMatcher?: LocaleMatcher;
   enableI18n?: boolean;
   /** Enable framework-provided locale path routing when supported. */
   localeRouting?: boolean;
