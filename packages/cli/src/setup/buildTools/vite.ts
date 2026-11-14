@@ -9,9 +9,10 @@ import {
   setupViteSPA,
   writeViteLoader,
 } from '../setupViteSPA.js';
+import { Libraries } from '../../types/libraries.js';
 import type { BuildToolSetup } from './index.js';
 import { getLoaderUpdateActions } from './shared/loader.js';
-import { configureGTReactPlugin } from './shared/viteConfig.js';
+import { configureGTVitePlugin } from './shared/viteConfig.js';
 
 export const VITE_LOADER_FILE = 'src/loadTranslations.ts';
 
@@ -70,11 +71,15 @@ export const viteSetup: BuildToolSetup = {
           : [],
     };
   },
-  checkCredentialsPlugin: (appDirectory) =>
-    configureGTReactPlugin(appDirectory, true),
+  checkCredentialsPlugin: (appDirectory, runtime) =>
+    configureGTVitePlugin(appDirectory, runtime, true),
   async apply(ctx) {
     const { manualAction } = await setupViteSPA(ctx);
-    const plugin = await configureGTReactPlugin(ctx.appDirectory, false);
+    const plugin = await configureGTVitePlugin(
+      ctx.appDirectory,
+      Libraries.GT_REACT,
+      false
+    );
     return manualAction
       ? {
           steps: plugin.steps,

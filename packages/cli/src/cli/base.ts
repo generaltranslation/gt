@@ -146,6 +146,7 @@ import {
   type ManualAction,
   type SetupResult,
 } from '../setup/buildTools/index.js';
+import type { ViteCredentialsRuntime } from '../setup/buildTools/shared/viteConfig.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { createClients, requireProject } from '../utils/api.js';
 import { handleApiCommand, type ApiCommandOptions } from './commands/api.js';
@@ -1154,9 +1155,9 @@ export class BaseCLI {
     return hasOtherInlineRuntime || hasVueRuntime;
   }
 
-  /** Returns whether every installed runtime can consume CDN translations. */
-  protected supportsCDNStorage(runtimeSetup: InlineRuntimeSetup): boolean {
-    return !runtimeSetup.hasVueRuntime;
+  /** The runtime whose Vite plugin passes saved credentials to the app. */
+  protected getViteCredentialsRuntime(): ViteCredentialsRuntime {
+    return Libraries.GT_REACT;
   }
 
   /** Returns whether setup should generate a local runtime loader. */
@@ -1183,7 +1184,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`);
     }
     if (runtimeSetup.hasVueRuntime) {
       guidance.push(`GT will write local translation files to ${translationsDir}.
-Configure createGT({ loadTranslations }) to load files from that directory.
+Configure initializeGT({ loadTranslations }) to load files from that directory.
 See https://www.npmjs.com/package/gt-vue`);
     }
     return guidance.length > 0 ? guidance.join('\n') : undefined;
@@ -1247,7 +1248,6 @@ See https://www.npmjs.com/package/gt-vue`);
       runtimeSetup.ranReactSetup ||
       runtimeSetup.hasOtherInlineRuntime ||
       runtimeSetup.hasVueRuntime;
-    const supportsCDN = this.supportsCDNStorage(runtimeSetup);
     const existingFiles = asRecord(existingConfig.files) ?? {};
     const existingGtOutput = asRecord(existingFiles.gt)?.output;
     const configuredOutput =
@@ -1258,30 +1258,23 @@ See https://www.npmjs.com/package/gt-vue`);
         ? 'cdn'
         : undefined;
 
-    if (isUsingGT && !supportsCDN && options.storage === 'cdn') {
-      session.reject(
-        'gt-vue cannot load translations from the CDN; use --storage local'
-      );
-    }
     // Where GT translations are stored
     const storage = !isUsingGT
       ? undefined
-      : !supportsCDN
-        ? 'local'
-        : await session.answer<'local' | 'cdn'>('--storage', {
-            explicit: options.storage,
-            configured: configuredStorage,
-            recommended: 'local',
-            ask: () =>
-              promptSelect<'local' | 'cdn'>({
-                message: `Would you like to save translation files locally or use the General Translation CDN to store them?`,
-                options: [
-                  { value: 'local', label: 'Save locally' },
-                  { value: 'cdn', label: 'Use CDN' },
-                ],
-                defaultValue: 'local',
-              }),
-          });
+      : await session.answer<'local' | 'cdn'>('--storage', {
+          explicit: options.storage,
+          configured: configuredStorage,
+          recommended: 'local',
+          ask: () =>
+            promptSelect<'local' | 'cdn'>({
+              message: `Would you like to save translation files locally or use the General Translation CDN to store them?`,
+              options: [
+                { value: 'local', label: 'Save locally' },
+                { value: 'cdn', label: 'Use CDN' },
+              ],
+              defaultValue: 'local',
+            }),
+        });
 
     const defaultTranslationsDir =
       buildTool?.defaultTranslationsDir ?? DEFAULT_TRANSLATIONS_DIR;
@@ -1441,9 +1434,7 @@ See https://www.npmjs.com/package/gt-vue`);
       // already combines local files with publishing keeps it.
       clearPublish:
         storage === 'local' &&
-        (options.storage === 'local' ||
-          configuredStorage !== 'local' ||
-          !supportsCDN),
+        (options.storage === 'local' || configuredStorage !== 'local'),
       // An explicit switch to the CDN stops later runs inferring local files.
       clearGtOutput: storage === 'cdn' && configuredOutput !== undefined,
       // An explicit format list replaces the configured selection.
@@ -1734,7 +1725,12 @@ See https://www.npmjs.com/package/gt-vue`);
       !reactSetup &&
       buildTool?.checkCredentialsPlugin
     ) {
-      reportSetupResult(await buildTool.checkCredentialsPlugin(cwd));
+      reportSetupResult(
+        await buildTool.checkCredentialsPlugin(
+          cwd,
+          this.getViteCredentialsRuntime()
+        )
+      );
     }
     if (project) {
       const guidance = manualCredentialsGuidance(envFramework);

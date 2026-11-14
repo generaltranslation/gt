@@ -50,12 +50,14 @@ import type { ConfigureOptions } from '../../setup/onboarding.js';
 import type { TranslateFlags } from '../../types/index.js';
 import { Libraries } from '../../types/libraries.js';
 import { installPackage } from '../../utils/installPackage.js';
+import { logger } from '../../console/logger.js';
 import { BaseCLI } from '../base.js';
 import { InlineCLI } from '../inline.js';
 import { NextCLI } from '../next.js';
 import { NodeCLI } from '../node.js';
 import { PythonCLI } from '../python.js';
 import { ReactCLI } from '../react.js';
+import { SvelteCLI } from '../svelte.js';
 import { VueCLI } from '../vue.js';
 
 type Manifest = Record<string, unknown>;
@@ -64,7 +66,7 @@ type CliClass = new (...args: any[]) => BaseCLI;
 
 const VUE_GUIDANCE =
   'GT will write local translation files to public/_gt.\n' +
-  'Configure createGT({ loadTranslations }) to load files from that directory.\n' +
+  'Configure initializeGT({ loadTranslations }) to load files from that directory.\n' +
   'See https://www.npmjs.com/package/gt-vue';
 const LOADER_GUIDANCE =
   `Created ${chalk.cyan('loadTranslations.js')} file for local translations.\n` +
@@ -90,15 +92,15 @@ function probe<T extends CliClass>(CLI: T) {
         }),
         installed: this.isInlineRuntimeInstalled(manifest),
         runtimeSetup,
-        supportsCDN: this.supportsCDNStorage(runtimeSetup),
       };
     }
 
-    configureWithDefaults() {
+    configureWithDefaults(options: Partial<ConfigureOptions> = {}) {
       return this.handleConfigureCommand({
         config: 'gt.config.json',
         defaults: true,
         interactive: false,
+        ...options,
       });
     }
   };
@@ -418,8 +420,8 @@ describe('Vue CLI', () => {
     };
     const mixed = { ...vueOnly, hasOtherInlineRuntime: true };
 
-    // gt-vue cannot read the CDN and owns its loader, so setup drops `publish`
-    // and only generates a loader for another runtime sharing the catalog.
+    // gt-vue owns its loader, so setup only generates one for another runtime
+    // sharing the catalog.
     it.each<
       [
         string,
@@ -504,7 +506,7 @@ describe('Vue CLI', () => {
       'configures local storage for %s',
       async (_case, CLI, args, manifest, files, runtimeSetup, loaderPath) => {
         useProject(manifest, {
-          'gt.config.json': existingConfig({ publish: true }),
+          'gt.config.json': existingConfig(),
           ...files,
         });
         const cli = new (probe(CLI))(new Command(), ...args);
@@ -516,7 +518,6 @@ describe('Vue CLI', () => {
             : VUE_GUIDANCE,
           installed: true,
           runtimeSetup,
-          supportsCDN: false,
         });
 
         await cli.configureWithDefaults();
@@ -560,7 +561,6 @@ describe('Vue CLI', () => {
           hasVueRuntime: false,
           ranReactSetup: false,
         },
-        supportsCDN: true,
       });
       // A development-only gt-react is not an installed runtime.
       expect(
@@ -572,6 +572,57 @@ describe('Vue CLI', () => {
       expect(readConfig().publish).toBe(true);
       expect(readConfig().files?.gt).toBeUndefined();
     });
+
+    it('configures CDN storage for a gt-vue root', async () => {
+      useProject(
+        {
+          dependencies: { nuxt: '*', 'gt-vue': '*' },
+          devDependencies: { gt: '*' },
+        },
+        { 'gt.config.json': existingConfig() }
+      );
+
+      await new (probe(VueCLI))(new Command()).configureWithDefaults({
+        storage: 'cdn',
+      });
+
+      expect(readConfig().publish).toBe(true);
+      expect(readConfig().files?.gt).toBeUndefined();
+    });
+
+    it.each([
+      [Libraries.GT_VUE, VueCLI, 'gtVue'],
+      [Libraries.GT_SVELTE, SvelteCLI, 'gtSvelte'],
+    ] as const)(
+      'reports the %s Vite plugin that passes saved credentials',
+      async (runtime, CLI, plugin) => {
+        const viteConfig =
+          "import { defineConfig } from 'vite'\n\nexport default defineConfig({\n  plugins: [],\n})\n";
+        useProject(
+          {
+            dependencies: { [runtime]: '*', vite: '*' },
+            devDependencies: { gt: '*' },
+          },
+          {
+            'gt.config.json': existingConfig(),
+            'vite.config.ts': viteConfig,
+            [`node_modules/${runtime}/package.json`]: JSON.stringify({
+              name: runtime,
+              exports: { './vite': './vite.js' },
+            }),
+          }
+        );
+
+        await new (probe(CLI))(new Command()).configureWithDefaults();
+
+        expect(logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining(
+            `add import { ${plugin} } from '${runtime}/vite' and add ${plugin}() to the plugins of defineConfig`
+          )
+        );
+        expect(fs.readFileSync('vite.config.ts', 'utf8')).toBe(viteConfig);
+      }
+    );
 
     it.each([
       ['a peer declaration', { peerDependencies: { 'gt-vue': '*' } }],
@@ -595,7 +646,6 @@ describe('Vue CLI', () => {
           hasVueRuntime: false,
           ranReactSetup: false,
         },
-        supportsCDN: true,
       });
     });
   });
