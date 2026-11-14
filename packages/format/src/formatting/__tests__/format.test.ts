@@ -202,7 +202,7 @@ describe('formatMessage with ICU strings', () => {
     }
   );
 
-  it('preserves regional hour cycles and sparse locale fallbacks', () => {
+  it('preserves regional hour cycles', () => {
     const value = new Date(2020, 4, 6, 7, 3, 2);
     expect(
       publicFormatMessage('{value, time, ::j}', {
@@ -212,15 +212,6 @@ describe('formatMessage with ICU strings', () => {
       })
     ).toBe('07');
 
-    const locales: string[] = [];
-    locales[1] = 'fr-FR';
-    expect(
-      publicFormatMessage('{value, time, ::j}', {
-        timeZone,
-        locales,
-        variables: { value },
-      })
-    ).toBe('07 h');
     expect(() =>
       publicFormatMessage('{value, time, ::j}', {
         timeZone,

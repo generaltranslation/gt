@@ -191,15 +191,34 @@ export function resolveLocaleHourSkeleton(
   return resolvedSkeleton;
 }
 
+// Reading a locale's hour cycle costs as much as formatting twenty messages,
+// and a formatter resolves the same Intl.Locale for every message in a locale.
+const localeHourSymbols = new WeakMap<Intl.Locale, 'h' | 'H' | 'K' | 'k'>();
+
 function getLocaleHourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
-  const localeWithHourCycles = locale as Intl.Locale & {
-    hourCycle?: Intl.LocaleHourCycleKey;
+  let symbol = localeHourSymbols.get(locale);
+  if (!symbol) {
+    symbol = hourSymbol(locale);
+    localeHourSymbols.set(locale, symbol);
+  }
+  return symbol;
+}
+
+/**
+ * The symbol of the locale's hour cycle, region override included. Engines
+ * expose the cycle as `getHourCycles()`, or as the older `hourCycles` getter
+ * that V8 has since removed; a DateTimeFormat, the last resort, ignores a
+ * `-u-rg-` override.
+ */
+function hourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
+  const withHourCycles = locale as Intl.Locale & {
+    getHourCycles?: () => Intl.LocaleHourCycleKey[];
     hourCycles?: Intl.LocaleHourCycleKey[];
   };
-  const resolvedHourCycle =
-    localeWithHourCycles.hourCycle ?? localeWithHourCycles.hourCycles?.[0];
   const hourCycle =
-    resolvedHourCycle ??
+    locale.hourCycle ??
+    withHourCycles.getHourCycles?.()[0] ??
+    withHourCycles.hourCycles?.[0] ??
     new Intl.DateTimeFormat(locale.toString(), {
       hour: 'numeric',
     }).resolvedOptions().hourCycle;

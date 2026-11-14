@@ -124,22 +124,35 @@ describe('formatMessageTree', () => {
     expect(format({ ...own, timeZone: 'Asia/Tokyo' }, 'UTC')).toBe('11:03 PM');
   });
 
-  it('resolves a locale once, not on every call', () => {
+  // Locales no other test uses, so none is resolved yet.
+  it.each([
+    ['a locale', 'se-NO', 1],
+    ['each locale of a list', ['nn-NO', 'nb-NO'], 2],
+  ])('resolves %s once, not on every call', (_name, locales, lookups) => {
     const supportedLocalesOf = vi.spyOn(
       Intl.NumberFormat,
       'supportedLocalesOf'
     );
     try {
-      // A locale no other test uses, so it is not cached yet.
       for (let i = 0; i < 3; i++) {
-        expect(formatMessageTree(['Hi ', ['n']], 'se-NO', { n: 'Ada' })).toBe(
+        expect(formatMessageTree(['Hi ', ['n']], locales, { n: 'Ada' })).toBe(
           'Hi Ada'
         );
       }
-      expect(supportedLocalesOf).toHaveBeenCalledTimes(1);
+      expect(supportedLocalesOf).toHaveBeenCalledTimes(lookups);
     } finally {
       supportedLocalesOf.mockRestore();
     }
+  });
+
+  it('formats in the first locale of a list that Intl supports', () => {
+    // Klingon has no locale data, so each list falls through to the next one.
+    expect(
+      formatMessageTree([['n', 'number']], ['tlh', 'de', 'en'], { n: 1.5 })
+    ).toBe('1,5');
+    expect(formatMessageTree([['n', 'number']], ['tlh'], { n: 1.5 })).toBe(
+      formatMessageTree([['n', 'number']], 'tlh', { n: 1.5 })
+    );
   });
 });
 
