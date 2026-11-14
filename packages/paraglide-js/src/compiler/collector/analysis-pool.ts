@@ -5,6 +5,7 @@ import v8 from 'node:v8';
 import { MessageChannel, Worker, type MessagePort } from 'node:worker_threads';
 import type { GlobalBinding } from '../analysis/module-graph.js';
 import { forThreads, type ModuleSummary } from '../analysis/module-store.js';
+import type { Reads } from '../analysis/reads.js';
 import type { ParaglideUsage, TrackedSymbol } from '../analysis/types.js';
 import type { SharedNameList } from '../utils/name-list.js';
 import { MAX_CONCURRENT_READS } from '../utils/read-file.js';
@@ -15,6 +16,8 @@ export type AnalysisWorkerData = {
   projectRoot: string;
   /** Files the thread reads at once, at most. */
   concurrentReads: number;
+  /** Whether analyses record what they read: see `trackReads`. */
+  trackReads: boolean;
 };
 
 /** What every thread analyzes with. */
@@ -61,10 +64,18 @@ export type SharedJob = {
 
 /** A range's values, null if it could not be sent between threads; or that no other thread holds a range any more. */
 export type ChunkMessage =
-  | { id: number; chunk: number; symbols: TrackedSymbol[] | null }
+  | ({ id: number } & ChunkResult)
   | { id: number; done: true };
 
-type ChunkResult = { chunk: number; symbols: TrackedSymbol[] | null };
+export type ChunkResult = {
+  chunk: number;
+  symbols: TrackedSymbol[] | null;
+  /** What evaluating the range read: see `reads.ts`. */
+  reads: Reads;
+};
+
+/** A file's usages, and what finding them read: see `reads.ts`. */
+export type AnalyzedFile = { usages: ParaglideUsage[]; reads: Reads };
 
 export type SharedIndex = Omit<AnalysisIndex, 'summaries'> & {
   summaries: readonly ModuleSummary<SharedNameList>[];
@@ -233,11 +244,18 @@ export class AnalysisPool {
   /** Slots whose task runs again: no other task is sent to them until it is done. */
   private readonly retrying = new Set<number>();
 
-  /** `heaps` are for tests: see `THREAD_HEAP_MB` and `LARGE_THREAD_HEAP_MB`. */
+  /**
+   * `trackReads` is for a run that keeps a cache. The heaps are for tests:
+   * see `THREAD_HEAP_MB` and `LARGE_THREAD_HEAP_MB`.
+   */
   constructor(
     size: number,
     projectRoot: string,
-    heaps: { heapMb?: number; largeHeapMb?: number } = {}
+    options: {
+      trackReads?: boolean;
+      heapMb?: number;
+      largeHeapMb?: number;
+    } = {}
   ) {
     // A thread reads one file at a time at least.
     const threads = Math.min(size, MAX_CONCURRENT_READS);
@@ -245,9 +263,10 @@ export class AnalysisPool {
       projectRoot,
       // The threads share the file descriptors one process has.
       concurrentReads: Math.floor(MAX_CONCURRENT_READS / threads),
+      trackReads: options.trackReads ?? false,
     };
-    this.heapMb = heaps.heapMb ?? THREAD_HEAP_MB;
-    this.largeHeapMb = heaps.largeHeapMb ?? LARGE_THREAD_HEAP_MB;
+    this.heapMb = options.heapMb ?? THREAD_HEAP_MB;
+    this.largeHeapMb = options.largeHeapMb ?? LARGE_THREAD_HEAP_MB;
     this.workers = this.startWorkers(threads);
   }
 
@@ -283,7 +302,7 @@ export class AnalysisPool {
   async analyze(
     index: AnalysisIndex,
     files: readonly string[],
-    onAnalyzed: (file: string, usages: ParaglideUsage[]) => Promise<void>
+    onAnalyzed: (file: string, analyzed: AnalyzedFile) => Promise<void>
   ): Promise<void> {
     // The threads that indexed keep what the languages' tools loaded:
     // compilers, and WebAssembly memory that never shrinks. The analysis
@@ -339,7 +358,7 @@ export class AnalysisPool {
               slot,
               { type: 'analyze', files: chunk },
               giveIndex
-            )) as ParaglideUsage[][];
+            )) as AnalyzedFile[];
             chunk.forEach((file, at) =>
               added.push(
                 // Handled as it starts: a rejection left until the threads are done is unhandled.
