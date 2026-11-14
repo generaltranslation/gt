@@ -11,11 +11,7 @@ import {
   it,
   vi,
 } from 'vitest';
-import {
-  areCredentialsSet,
-  getDevelopmentEnvNames,
-  setCredentials,
-} from '../credentials.js';
+import { areCredentialsSet, setCredentials } from '../credentials.js';
 
 // Git is only spawned by the "in a Git repository" tests (which also cover
 // running the real binary outside a repository). Everywhere else it is
@@ -57,70 +53,45 @@ describe('setCredentials', () => {
     fs.rmSync(appDirectory, { recursive: true, force: true });
   });
 
-  it('writes only the project ID and the prefixed hot-reload key', async () => {
+  it('writes only GT_PROJECT_ID and GT_API_KEY', async () => {
     await setCredentials(
       { projectId: 'project-id', apiKey: 'gtx-api-key' },
-      'vite',
       appDirectory
     );
 
     expect(readEnv()).toBe(
-      'VITE_GT_PROJECT_ID=project-id\nVITE_GT_DEV_API_KEY=gtx-api-key\n'
+      'GT_PROJECT_ID=project-id\nGT_API_KEY=gtx-api-key\n'
     );
     expect(fs.readFileSync(path.join(appDirectory, '.gitignore'), 'utf8')).toBe(
       '.env.local\n'
     );
   });
 
-  it.each([
-    ['gatsby', 'GATSBY_'],
-    ['react', 'REACT_APP_'],
-    ['redwood', 'REDWOOD_ENV_'],
-  ] as const)(
-    'prefixes variables for %s with "%s"',
-    async (framework, prefix) => {
-      await setCredentials(
-        { projectId: 'project-id', apiKey: 'gtx-api-key' },
-        framework,
-        appDirectory
-      );
-
-      expect(readEnv()).toBe(
-        `${prefix}GT_PROJECT_ID=project-id\n${prefix}GT_DEV_API_KEY=gtx-api-key\n`
-      );
-    }
-  );
-
-  it.each(['next-app', 'next-pages', undefined] as const)(
-    'writes GT_PROJECT_ID and GT_API_KEY for %s',
-    async (framework) => {
-      fs.writeFileSync(envPath(), 'GT_API_KEY=gtx-old-key\n');
-
-      await setCredentials(
-        { projectId: 'project-id', apiKey: 'gtx-api-key' },
-        framework,
-        appDirectory
-      );
-
-      expect(readEnv()).toBe(
-        'GT_API_KEY=gtx-api-key\nGT_PROJECT_ID=project-id\n'
-      );
-    }
-  );
-
-  it('preserves unrelated lines, comments, and the production key byte for byte', async () => {
-    const existing =
-      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nGATSBY_GT_PROJECT_ID=old-project\nOTHER="quoted value" # trailing comment';
-    fs.writeFileSync(envPath(), existing);
+  it('replaces an existing GT_API_KEY in place', async () => {
+    fs.writeFileSync(envPath(), 'GT_API_KEY=gtx-old-key\n');
 
     await setCredentials(
-      { projectId: 'new-project', apiKey: 'gtx-dev-key' },
-      'gatsby',
+      { projectId: 'project-id', apiKey: 'gtx-api-key' },
       appDirectory
     );
 
     expect(readEnv()).toBe(
-      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nGATSBY_GT_PROJECT_ID=new-project\nOTHER="quoted value" # trailing comment\nGATSBY_GT_DEV_API_KEY=gtx-dev-key\n'
+      'GT_API_KEY=gtx-api-key\nGT_PROJECT_ID=project-id\n'
+    );
+  });
+
+  it('preserves unrelated lines and comments byte for byte', async () => {
+    const existing =
+      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_PROJECT_ID=old-project\nOTHER="quoted value" # trailing comment';
+    fs.writeFileSync(envPath(), existing);
+
+    await setCredentials(
+      { projectId: 'new-project', apiKey: 'gtx-dev-key' },
+      appDirectory
+    );
+
+    expect(readEnv()).toBe(
+      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nGT_PROJECT_ID=new-project\nOTHER="quoted value" # trailing comment\nGT_API_KEY=gtx-dev-key\n'
     );
     // Outside a repository the existing file is seeded into .gitignore too.
     expect(fs.readFileSync(path.join(appDirectory, '.gitignore'), 'utf8')).toBe(
@@ -136,12 +107,10 @@ describe('setCredentials', () => {
 
     await setCredentials(
       { projectId: 'project-id', apiKey: 'gtx-first' },
-      undefined,
       appDirectory
     );
     await setCredentials(
       { projectId: 'project-id', apiKey: 'gtx-second' },
-      undefined,
       appDirectory
     );
 
@@ -150,20 +119,19 @@ describe('setCredentials', () => {
     );
   });
 
-  it('leaves another framework prefix and same-suffix names alone', async () => {
+  it('leaves framework-prefixed and same-suffix names alone', async () => {
     fs.writeFileSync(
       envPath(),
-      'VITE_GT_PROJECT_ID=vite-project\nMY_GT_DEV_API_KEY=not-ours\n'
+      'VITE_GT_PROJECT_ID=vite-project\nMY_GT_API_KEY=not-ours\n'
     );
 
     await setCredentials(
       { projectId: 'project-id', apiKey: 'gtx-api-key' },
-      'gatsby',
       appDirectory
     );
 
     expect(readEnv()).toBe(
-      'VITE_GT_PROJECT_ID=vite-project\nMY_GT_DEV_API_KEY=not-ours\nGATSBY_GT_PROJECT_ID=project-id\nGATSBY_GT_DEV_API_KEY=gtx-api-key\n'
+      'VITE_GT_PROJECT_ID=vite-project\nMY_GT_API_KEY=not-ours\nGT_PROJECT_ID=project-id\nGT_API_KEY=gtx-api-key\n'
     );
   });
 
@@ -184,7 +152,6 @@ describe('setCredentials', () => {
       await expect(
         setCredentials(
           { projectId: 'project-id', apiKey: 'gtx-api-key' },
-          undefined,
           appDirectory
         )
       ).rejects.toThrow('Cannot safely update .env.local');
@@ -198,7 +165,6 @@ describe('setCredentials', () => {
 
     await setCredentials(
       { projectId: 'project-id', apiKey: 'gtx-api-key' },
-      undefined,
       appDirectory
     );
 
@@ -212,7 +178,6 @@ describe('setCredentials', () => {
 
     await setCredentials(
       { projectId: 'project-id', apiKey: 'gtx-api-key' },
-      undefined,
       appDirectory
     );
 
@@ -226,7 +191,6 @@ describe('setCredentials', () => {
     const write = () =>
       setCredentials(
         { projectId: 'project-id', apiKey: 'gtx-api-key' },
-        'vite',
         appDirectory
       );
     const temporaryFiles = () =>
@@ -303,7 +267,7 @@ describe('setCredentials', () => {
       expect(fs.lstatSync(envPath()).isSymbolicLink()).toBe(true);
       expect(fs.readlinkSync(envPath())).toBe(referent);
       expect(fs.readFileSync(referent, 'utf8')).toBe(
-        `${existing}VITE_GT_PROJECT_ID=project-id\nVITE_GT_DEV_API_KEY=gtx-api-key\n`
+        `${existing}GT_PROJECT_ID=project-id\nGT_API_KEY=gtx-api-key\n`
       );
       if (process.platform !== 'win32') expect(mode(referent)).toBe(0o640);
       expect(fs.readdirSync(sharedDirectory)).toEqual(['.env']);
@@ -337,7 +301,6 @@ describe('setCredentials', () => {
     const write = () =>
       setCredentials(
         { projectId: 'project-id', apiKey: 'gtx-api-key' },
-        undefined,
         appDirectory
       );
     // The user's global excludes or hooks must not affect these repositories.
@@ -466,7 +429,6 @@ describe('setCredentials', () => {
         await expect(
           setCredentials(
             { projectId: 'project-id', apiKey: 'gtx-api-key' },
-            undefined,
             path.basename(appDirectory)
           )
         ).rejects.toThrow('.env.local is tracked by Git');
@@ -596,68 +558,16 @@ describe('areCredentialsSet', () => {
     vi.unstubAllEnvs();
   });
 
-  it('shares the writer naming for each framework', () => {
-    expect(getDevelopmentEnvNames('vite')).toEqual({
-      projectId: 'VITE_GT_PROJECT_ID',
-      devApiKey: 'VITE_GT_DEV_API_KEY',
-    });
-    expect(getDevelopmentEnvNames('tanstack-start')).toEqual({
-      projectId: 'VITE_GT_PROJECT_ID',
-      devApiKey: 'VITE_GT_DEV_API_KEY',
-    });
-    expect(getDevelopmentEnvNames('react-router')).toEqual({
-      projectId: 'VITE_GT_PROJECT_ID',
-      devApiKey: 'VITE_GT_DEV_API_KEY',
-    });
-    expect(getDevelopmentEnvNames(undefined)).toEqual({
-      projectId: 'GT_PROJECT_ID',
-      devApiKey: 'GT_API_KEY',
-    });
+  it('is complete with a project and GT_API_KEY in the environment', () => {
+    vi.stubEnv('GT_API_KEY', 'gtx-api-key');
+    expect(areCredentialsSet({ projectId: 'project-id' })).toBe(true);
   });
 
-  it('is complete with a project and the framework development key', () => {
-    vi.stubEnv('VITE_GT_DEV_API_KEY', 'gtx-dev');
-    expect(areCredentialsSet({ projectId: 'project-id' }, 'vite')).toBe(true);
-    expect(areCredentialsSet({ projectId: 'project-id' }, 'next-app')).toBe(
-      false
-    );
-  });
-
-  it.each(['next-app', 'next-pages'] as const)(
-    'recognizes GT_API_KEY as the development key for %s',
-    (framework) => {
-      vi.stubEnv('GT_API_KEY', 'gtx-api-key');
-      expect(areCredentialsSet({ projectId: 'project-id' }, framework)).toBe(
-        true
-      );
-    }
-  );
-
-  it('is complete with a project and an explicit key for a server-only runtime', () => {
+  it('is complete with a project and an explicit key', () => {
     expect(
       areCredentialsSet({ projectId: 'project-id', apiKey: 'gtx-prod' })
     ).toBe(true);
   });
-
-  // Prefixed frameworks need their own development key.
-  it.each([
-    'vite',
-    'gatsby',
-    'react',
-    'redwood',
-    'tanstack-start',
-    'react-router',
-  ] as const)(
-    'treats the tooling key as no browser runtime key for %s',
-    (framework) => {
-      expect(
-        areCredentialsSet(
-          { projectId: 'project-id', apiKey: 'gtx-tooling' },
-          framework
-        )
-      ).toBe(false);
-    }
-  );
 
   it('is incomplete without a project ID even when a key exists', () => {
     vi.stubEnv('GT_API_KEY', 'gtx-dev');

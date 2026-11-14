@@ -15,7 +15,6 @@ import { resolveCliApiKey } from '../../auth/cliApiKey.js';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { exitSync } from '../../console/logging.js';
 import { loadConfig, withJsonExtension } from '../../fs/config/loadConfig.js';
-import { resolveProjectId } from '../../fs/utils.js';
 import type { SharedFlags } from '../../types/index.js';
 
 export type ApiCommandOptions = SharedFlags & {
@@ -274,7 +273,7 @@ function resolveApiProjectId(
 ): string | undefined {
   const configProjectId =
     typeof config.projectId === 'string' ? config.projectId : undefined;
-  const environmentProjectId = resolveProjectId();
+  const environmentProjectId = process.env.GT_PROJECT_ID;
 
   if (configProjectId && flagProjectId && configProjectId !== flagProjectId) {
     fail(

@@ -62,29 +62,13 @@ import { webpack as gtCompiler } from '@generaltranslation/compiler';
 plugins: [gtCompiler({ ...gtConfig }) /* ... */];
 ```
 
-The compiler prepares your `<T>` and `t()` content at build time. When you supply a project ID and a development API key, it also enables translation hot reload in `pnpm dev`, so you can preview translated content as you edit.
+The compiler prepares your `<T>` and `t()` content at build time.
 
-### Credentials via environment
+### Credentials
 
-webpack has no `import.meta.env`, so this example reads a local env file with `dotenv` and injects the values with `DefinePlugin` (see `webpack.config.mjs`). This example is already configured (`gt.config.json`, the translations in `src/_gt`, and `src/loadTranslations.ts`), so skip `npx gt init`. Sign in and create a generate-only runtime key for your project:
+This example is already configured (`gt.config.json`, the translations in `src/_gt`, and `src/loadTranslations.ts`), so skip `npx gt init`. It needs no project ID: the app switches between the languages that have files in `src/_gt`.
 
-```bash
-npx gt login
-npx gt api-key create --project-id <your-project-id> --name "Local development" --permission project:translations:generate
-```
-
-Copy `.env.example` to `.env.local` and set the project ID and the printed key:
-
-```bash title=".env.local"
-REACT_APP_GT_PROJECT_ID="your-project-id"
-REACT_APP_GT_DEV_API_KEY="your-generate-only-runtime-key"
-```
-
-If your `.env.local` predates this version of the example, rename `GT_PROJECT_ID` to `REACT_APP_GT_PROJECT_ID` and `GT_DEV_API_KEY` to `REACT_APP_GT_DEV_API_KEY`: `webpack.config.mjs` reads only the `REACT_APP_` names.
-
-Only expose generate-only runtime keys in browser code; never expose keys with management or file permissions, and do not commit `.env.local`. Both values are optional: without them the app still runs and switches between the languages that already have files in `src/_gt`.
-
-These values are inlined only in development. A production build (`pnpm build`) always inlines empty strings, so it never embeds your credentials in the bundle.
+This example takes no API key. Translation hot reload in development needs one in browser code, and General Translation has no webpack plugin that limits a key to the development server, so the example does not inline one. If you wire it up yourself, pass both `projectId` and `apiKey` to `initializeGTSPA()` only under `webpack serve`, use a generate-only runtime key, and never include it in a build written to disk.
 
 ### Translation files
 

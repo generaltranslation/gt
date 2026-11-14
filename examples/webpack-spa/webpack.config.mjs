@@ -2,18 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { webpack as gtCompiler } from '@generaltranslation/compiler';
-import dotenv from 'dotenv';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import webpack from 'webpack';
 import gtConfig from './gt.config.json' with { type: 'json' };
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
-
-// Load credentials from a local env file. webpack has no import.meta.env, so
-// we read the file here and inject the values with DefinePlugin below.
-// .env.local wins over .env; both are optional and gitignored.
-dotenv.config({ path: path.join(appDir, '.env') });
-dotenv.config({ path: path.join(appDir, '.env.local'), override: true });
 
 // Monorepo only: gt-react is a linked workspace package, so we point React at
 // this app's copy to guarantee a single React instance. This is needed ONLY
@@ -28,7 +21,6 @@ const reactDomDir = fs.realpathSync(
 
 export default (_env, argv) => {
   const mode = argv.mode ?? 'production';
-  const isProduction = mode === 'production';
 
   return {
     mode,
@@ -69,8 +61,7 @@ export default (_env, argv) => {
     },
     plugins: [
       // The GT compiler must run first so it can transform <T> and t() before
-      // the rest of the pipeline. Passing gt.config.json enables dev-mode
-      // translation hot reload when credentials are present.
+      // the rest of the pipeline.
       gtCompiler({ ...gtConfig }),
       new HtmlWebpackPlugin({
         // Reference the template file so HtmlWebpackPlugin watches it in dev.
@@ -78,15 +69,6 @@ export default (_env, argv) => {
       }),
       new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify(mode),
-        // Dev-only credentials: inline the env values in development only.
-        // Production serves the committed translation files, so it inlines
-        // empty strings and never embeds a key in the bundle.
-        'process.env.GT_PROJECT_ID': JSON.stringify(
-          isProduction ? '' : (process.env.REACT_APP_GT_PROJECT_ID ?? '')
-        ),
-        'process.env.GT_DEV_API_KEY': JSON.stringify(
-          isProduction ? '' : (process.env.REACT_APP_GT_DEV_API_KEY ?? '')
-        ),
       }),
     ],
     devServer: {

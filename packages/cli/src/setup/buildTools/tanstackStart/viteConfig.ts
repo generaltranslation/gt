@@ -1,69 +1,33 @@
 // vite.config.*: the gtTanstackStart plugin in defineConfig's plugins.
 import * as t from '@babel/types';
 import path from 'node:path';
-import { parseModule } from '../../setupViteSPA.js';
 import type { BuildToolContext, ManualAction } from '../index.js';
 import {
-  applyEdits,
-  getCodeStyle,
-  getImportEdit,
-  getLineIndent,
-} from '../shared/edits.js';
-import {
-  getBindingAt,
   getLocalImport,
   getPropertyName,
-  usesName,
   type SourceFile,
 } from '../shared/source.js';
+import {
+  addVitePluginCall,
+  collectPluginCalls,
+  findPluginsArray,
+  findVitePluginCalls,
+  type VitePlugin,
+} from '../shared/viteConfig.js';
 import { DOCS_URL, VITE_PLUGIN_SOURCE } from './source.js';
 
 const VITE_PLUGIN = 'gtTanstackStart';
+const TANSTACK_PLUGIN: VitePlugin = {
+  name: VITE_PLUGIN,
+  source: VITE_PLUGIN_SOURCE,
+};
 const START_PLUGIN = 'tanstackStart';
 const START_PLUGIN_SOURCE = '@tanstack/react-start/plugin/vite';
 // The plugin reads this config path, relative to the working directory, by default.
 const VITE_PLUGIN_DEFAULT_CONFIG = 'gt.config.json';
 
-function getVitePluginImport(viteConfig: SourceFile): string | undefined {
-  return getLocalImport(viteConfig, VITE_PLUGIN, VITE_PLUGIN_SOURCE);
-}
-
-/**
- * Plugin calls among array elements, spread or not, including nested arrays,
- * which Vite flattens.
- */
-function collectPluginCalls(
-  elements: t.ArrayExpression['elements'],
-  local: string
-): t.CallExpression[] {
-  return elements.flatMap((element) => {
-    const plugin =
-      element?.type === 'SpreadElement' ? element.argument : element;
-    if (plugin?.type === 'ArrayExpression') {
-      return collectPluginCalls(plugin.elements, local);
-    }
-    return plugin?.type === 'CallExpression' &&
-      t.isIdentifier(plugin.callee, { name: local })
-      ? [plugin]
-      : [];
-  });
-}
-
-/**
- * The plugins elements of the exported config that are themselves the plugin
- * call; a call anywhere else, or behind a condition, may register nothing
- * with Vite.
- */
-function findVitePluginCalls(viteConfig: SourceFile): t.CallExpression[] {
-  const local = getVitePluginImport(viteConfig);
-  const plugins =
-    viteConfig.statements && findPluginsArray(viteConfig.statements);
-  if (local === undefined || plugins === undefined) return [];
-  return collectPluginCalls(plugins.elements, local);
-}
-
 export function registersVitePlugin(viteConfig: SourceFile): boolean {
-  return findVitePluginCalls(viteConfig).length > 0;
+  return findVitePluginCalls(viteConfig, TANSTACK_PLUGIN).length > 0;
 }
 
 /**
@@ -151,7 +115,7 @@ export function getVitePluginLoaderPath(
   viteConfig: SourceFile,
   appDirectory: string
 ): string | null | undefined {
-  const options = findVitePluginCalls(viteConfig).map((call) =>
+  const options = findVitePluginCalls(viteConfig, TANSTACK_PLUGIN).map((call) =>
     getStaticPluginOption(call, 'loadTranslationsPath')
   );
   const loaderPath = options.find(
@@ -209,14 +173,14 @@ export function getVitePluginConfigAction(
 ): ManualAction | undefined {
   const { appDirectory, configFilepath } = ctx;
   const expected = path.resolve(appDirectory, configFilepath);
-  const current = findVitePluginCalls(viteConfig)
+  const current = findVitePluginCalls(viteConfig, TANSTACK_PLUGIN)
     .map(getStaticPluginConfig)
     .find(
       (config) =>
         config !== undefined && path.resolve(appDirectory, config) !== expected
     );
   if (current === undefined) return undefined;
-  const local = getVitePluginImport(viteConfig)!;
+  const local = getLocalImport(viteConfig, VITE_PLUGIN, VITE_PLUGIN_SOURCE)!;
   return {
     whatHappened: `${viteConfig.path} was left unchanged, but its ${local}() call reads ${current} instead of ${getVitePluginConfig(ctx)}`,
     // Replacing the whole call would drop options such as
@@ -225,125 +189,14 @@ export function getVitePluginConfigAction(
   };
 }
 
-/**
- * The default export, followed through a top-level const as in the create
- * template's `const config = defineConfig({ ... })` / `export default config`.
- */
-function getExportedConfig(statements: t.Statement[]): t.Node | undefined {
-  const exported = statements.find(
-    (statement) => statement.type === 'ExportDefaultDeclaration'
-  )?.declaration;
-  if (exported?.type !== 'Identifier') return exported;
-  const binding = getBindingAt(statements, exported, exported.name);
-  // Any other use, such as `config.plugins = [...]`, could change what Vite
-  // reads after the declaration.
-  if (
-    binding?.kind !== 'const' ||
-    binding.referencePaths.length !== 1 ||
-    binding.constantViolations.length > 0 ||
-    binding.path.node.type !== 'VariableDeclarator'
-  ) {
-    return undefined;
-  }
-  return binding.path.node.init ?? undefined;
-}
-
-/**
- * The plugins array of the exported `defineConfig({ ... })`. Spreads or
- * computed keys could override it, so they are left for manual setup.
- */
-function findPluginsArray(
-  statements: t.Statement[]
-): t.ArrayExpression | undefined {
-  const call = getExportedConfig(statements);
-  if (
-    call?.type !== 'CallExpression' ||
-    !t.isIdentifier(call.callee, { name: 'defineConfig' })
-  ) {
-    return undefined;
-  }
-  const options = call.arguments[0];
-  if (options?.type !== 'ObjectExpression') return undefined;
-  const names = options.properties.map(getPropertyName);
-  if (
-    names.includes(undefined) ||
-    names.filter((name) => name === 'plugins').length !== 1
-  ) {
-    return undefined;
-  }
-  const plugins = options.properties[names.indexOf('plugins')];
-  return plugins.type === 'ObjectProperty' &&
-    plugins.value.type === 'ArrayExpression'
-    ? plugins.value
-    : undefined;
-}
-
 /** The config with the plugin appended, or undefined when unsupported. */
 export function configureViteConfig(
   viteConfig: SourceFile,
   ctx: BuildToolContext
 ): string | undefined {
-  const { content, statements } = viteConfig;
-  if (!statements) return undefined;
-  const local = getVitePluginImport(viteConfig);
-  // Another binding with this name would clash with the added import.
-  if (!local && usesName(statements, [VITE_PLUGIN])) {
-    return undefined;
-  }
-  const plugins = findPluginsArray(statements);
-  const last = plugins?.elements.at(-1);
-  // A trailing hole such as `[a, ,]` has no element to follow, and Babel ends
-  // a parenthesized element before its `)`, where a comma would fold the new
-  // call into the element as a comma expression.
-  if (!plugins || last === null || last?.extra?.parenthesized) {
-    return undefined;
-  }
-  // Any use of the import, such as a call behind a condition or an alias,
-  // may already register the plugin, so another call could register it twice.
-  if (
-    local &&
-    usesName(
-      statements.filter((statement) => statement.type !== 'ImportDeclaration'),
-      [local]
-    )
-  ) {
-    return undefined;
-  }
-  // The new call would take over a comment that ends the last element's line,
-  // such as an eslint-disable-line.
-  if (
-    last &&
-    /\/[/*]/.test(content.slice(last.end!, plugins.end! - 1).split('\n')[0])
-  ) {
-    return undefined;
-  }
-  const { quote, semi, eol } = getCodeStyle(content, statements);
-  const call = getVitePluginCall(local ?? VITE_PLUGIN, ctx, quote);
-  const pluginEdit = !last
-    ? { start: plugins.start! + 1, text: call }
-    : {
-        start: last.end!,
-        // A multiline array keeps one plugin per line.
-        text:
-          last.loc!.start.line === plugins.loc!.start.line
-            ? `, ${call}`
-            : `,${eol}${getLineIndent(content, last.start!)}${call}`,
-      };
-  const configured = applyEdits(content, [
-    pluginEdit,
-    ...(local
-      ? []
-      : [
-          getImportEdit(
-            statements,
-            [
-              `import { ${VITE_PLUGIN} } from ${quote}${VITE_PLUGIN_SOURCE}${quote}${semi}`,
-            ],
-            eol
-          ),
-        ]),
-  ]);
-  return parseModule(configured, viteConfig.path) ? configured : undefined;
+  return addVitePluginCall(viteConfig, TANSTACK_PLUGIN, (local, quote) =>
+    getVitePluginCall(local, ctx, quote)
+  );
 }
 
 export function getViteConfigAction(

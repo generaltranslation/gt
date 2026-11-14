@@ -1,7 +1,6 @@
 // app/root.tsx: recognizing and configuring the React Router root module.
 import * as t from '@babel/types';
 import { Libraries } from '../../../types/libraries.js';
-import { getDevelopmentEnvNames } from '../../../utils/credentials.js';
 import { parseModule, type ViteLoaderExport } from '../../setupViteSPA.js';
 import type { BuildToolContext, ManualAction } from '../index.js';
 import {
@@ -62,22 +61,15 @@ function getLoaderImport(
   return `import ${getLoaderBinding(loaderExport)} from ${quote}./loadTranslations${quote}${semi}`;
 }
 
-/** Where init saves the project ID, which Vite inlines into app code. */
-const PROJECT_ID_ENV = getDevelopmentEnvNames('react-router').projectId;
-
 /**
- * The initializeGT call. Local translations pass the loader. CDN translations
- * pass the project ID from app code, since gt-react sits outside the server
- * build and cannot read it there; a nonempty gtConfig.projectId still wins.
+ * The initializeGT call. Local translations pass the loader. For CDN
+ * translations gt-react reads the project ID itself: from gtReact() in code
+ * Vite bundles, and from GT_PROJECT_ID in the server's environment.
  */
-function getInitializeCall(
-  { quote, semi }: Style,
-  loaderExport: ViteLoaderExport
-) {
-  const configured = `${quote}projectId${quote} in gtConfig && typeof gtConfig.projectId === ${quote}string${quote} && gtConfig.projectId`;
+function getInitializeCall({ semi }: Style, loaderExport: ViteLoaderExport) {
   const options = loaderExport
     ? '{ ...gtConfig, loadTranslations }'
-    : `{ ...gtConfig, projectId: (${configured}) || import.meta.env.${PROJECT_ID_ENV} }`;
+    : 'gtConfig';
   return `initializeGT(${options})${semi}`;
 }
 

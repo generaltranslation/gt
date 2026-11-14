@@ -52,6 +52,11 @@ export type BuildToolSetup = {
   getCDNStorageAction?(
     ctx: BuildToolContext
   ): Promise<ManualAction | null | undefined>;
+  /**
+   * Reports the Vite plugin that saved credentials need, without editing any
+   * file, when the React setup is skipped.
+   */
+  checkCredentialsPlugin?(appDirectory: string): Promise<SetupResult>;
   /** Configures the app entry after gt.config.json is written. */
   apply(ctx: BuildToolContext): Promise<SetupResult>;
 };

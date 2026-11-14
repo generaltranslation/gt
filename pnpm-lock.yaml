@@ -597,9 +597,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
-      dotenv:
-        specifier: ^18.0.5
-        version: 18.0.5
       gt:
         specifier: workspace:*
         version: link:../../packages/cli
@@ -735,9 +732,6 @@ importers:
       css-loader:
         specifier: ^7.1.5
         version: 7.1.5(webpack@5.111.1)
-      dotenv:
-        specifier: ^18.0.5
-        version: 18.0.5
       html-webpack-plugin:
         specifier: ^5.6.8
         version: 5.6.8(webpack@5.111.1)

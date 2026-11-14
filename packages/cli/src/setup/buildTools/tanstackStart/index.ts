@@ -19,6 +19,7 @@ import type {
 } from '../index.js';
 import { getLoaderUpdateActions } from '../shared/loader.js';
 import { readSourceFile } from '../shared/source.js';
+import { readViteConfig } from '../shared/viteConfig.js';
 import { VITE_LOADER_FILE } from '../vite.js';
 import {
   configureRootLang,
@@ -31,12 +32,7 @@ import {
   configureRouter,
   getRouterAction,
 } from './router.js';
-import {
-  DOCS_URL,
-  hasVitePlugin,
-  inspectTanStackStart,
-  readViteConfig,
-} from './source.js';
+import { DOCS_URL, hasVitePlugin, inspectTanStackStart } from './source.js';
 import {
   configureViteConfig,
   enablesSpaMode,

@@ -4,7 +4,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { promisify } from 'node:util';
 import dotenv from 'dotenv';
-import { Settings, SupportedFrameworks } from '../types/index.js';
+import { Settings } from '../types/index.js';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
@@ -82,47 +82,20 @@ function gitCheckFailedError(file: string, stderr: string): string {
 
 export type Credentials = { apiKey: string; projectId: string };
 
-// Frameworks whose client code only sees prefixed variables; init writes the
-// development key under that prefix. Everything else, including Next.js, reads
-// GT_PROJECT_ID and GT_API_KEY (gt-next exposes them to client code in
-// development only).
-const FRAMEWORK_ENV_PREFIXES: Partial<
-  Record<NonNullable<SupportedFrameworks>, string>
-> = {
-  vite: 'VITE_',
-  gatsby: 'GATSBY_',
-  react: 'REACT_APP_',
-  redwood: 'REDWOOD_ENV_',
-  'tanstack-start': 'VITE_',
-  'react-router': 'VITE_',
-};
-
-/** Names of the runtime variables init writes for this framework. */
-export function getDevelopmentEnvNames(framework?: SupportedFrameworks) {
-  const prefix = framework && FRAMEWORK_ENV_PREFIXES[framework];
-  return prefix
-    ? {
-        projectId: `${prefix}GT_PROJECT_ID`,
-        devApiKey: `${prefix}GT_DEV_API_KEY`,
-      }
-    : { projectId: 'GT_PROJECT_ID', devApiKey: 'GT_API_KEY' };
-}
+// Every framework adapter (gt-next, the gt-react/vite and gt-tanstack-start
+// plugins) reads these and exposes the key to client code in development only.
+const ENV_NAMES = { projectId: 'GT_PROJECT_ID', apiKey: 'GT_API_KEY' };
 
 /**
- * Whether the project has the framework's development key, or GT_API_KEY
- * where that is the runtime key. A tooling key cannot enable client-side hot
- * reload in a prefixed framework. `settings.projectId` already resolves every
- * framework prefix. Login is checked separately.
+ * Whether the project has a runtime key. `settings.apiKey` drops a
+ * .env.local GT_API_KEY while the user is signed in, so the environment is
+ * checked too. Login is checked separately.
  */
 export function areCredentialsSet(
-  settings: Pick<Settings, 'projectId' | 'apiKey'>,
-  framework?: SupportedFrameworks
+  settings: Pick<Settings, 'projectId' | 'apiKey'>
 ): boolean {
-  const { devApiKey } = getDevelopmentEnvNames(framework);
-  const needsDevKey = Boolean(framework && FRAMEWORK_ENV_PREFIXES[framework]);
   return Boolean(
-    settings.projectId &&
-    (process.env[devApiKey] || (!needsDevKey && settings.apiKey))
+    settings.projectId && (process.env[ENV_NAMES.apiKey] || settings.apiKey)
   );
 }
 
@@ -267,16 +240,15 @@ type CredentialsEnvFile = {
  */
 export async function inspectCredentialsEnvFile(
   cwd: string = process.cwd(),
-  /** Also checks that the framework's credentials can be saved safely. */
-  contentCheck?: { framework?: SupportedFrameworks }
+  /** Also checks that the credentials can be saved safely. */
+  checkContent: boolean
 ): Promise<CredentialsEnvFile> {
   const envFile = path.resolve(cwd, '.env.local');
   const existing = await resolveEnvFile(envFile);
-  if (existing && contentCheck) {
+  if (existing && checkContent) {
     updateCredentialsEnvContent(
       await fs.promises.readFile(existing.target, 'utf8'),
-      { projectId: 'gt-preflight', apiKey: 'gt-preflight' },
-      contentCheck.framework
+      { projectId: 'gt-preflight', apiKey: 'gt-preflight' }
     );
   }
   const exposure = await inspectGitExposure(envFile);
@@ -338,16 +310,13 @@ async function writeEnvFileAtomically(
  * .env.local content with the runtime credentials set. Only the runtime
  * key: the CLI itself acts as the signed-in user, and CI keys are created
  * deliberately rather than dropped into .env.local. Other lines and comments
- * are left untouched, as is GT_API_KEY in frameworks that use a prefixed
- * development key. Throws when the edit could corrupt a multiline value.
+ * are left untouched. Throws when the edit could corrupt a multiline value.
  */
 function updateCredentialsEnvContent(
   envContent: string,
-  credentials: Credentials,
-  framework?: SupportedFrameworks
+  credentials: Credentials
 ): string {
-  const names = getDevelopmentEnvNames(framework);
-  const targetNames = Object.values(names);
+  const targetNames = Object.values(ENV_NAMES);
   const targetOpensMultiline = envContent
     .split('\n')
     .some(
@@ -358,17 +327,17 @@ function updateCredentialsEnvContent(
   const original = dotenv.parse(envContent);
   const expected = {
     ...original,
-    [names.projectId]: credentials.projectId,
-    [names.devApiKey]: credentials.apiKey,
+    [ENV_NAMES.projectId]: credentials.projectId,
+    [ENV_NAMES.apiKey]: credentials.apiKey,
   };
   let updatedContent = upsertEnvAssignment(
     envContent,
-    names.projectId,
+    ENV_NAMES.projectId,
     credentials.projectId
   );
   updatedContent = upsertEnvAssignment(
     updatedContent,
-    names.devApiKey,
+    ENV_NAMES.apiKey,
     credentials.apiKey
   );
 
@@ -387,21 +356,19 @@ function updateCredentialsEnvContent(
 // Sets the credentials in .env.local file
 export async function setCredentials(
   credentials: Credentials,
-  framework?: SupportedFrameworks,
   cwd: string = process.cwd()
 ) {
   const {
     envFile,
     existing: existingEnvFile,
     exposure,
-  } = await inspectCredentialsEnvFile(cwd);
+  } = await inspectCredentialsEnvFile(cwd, false);
   // Rechecked here: the file may have changed since the setup preflight.
   const envContent = updateCredentialsEnvContent(
     existingEnvFile
       ? await fs.promises.readFile(existingEnvFile.target, 'utf8')
       : '',
-    credentials,
-    framework
+    credentials
   );
 
   if (exposure === 'unignored') {

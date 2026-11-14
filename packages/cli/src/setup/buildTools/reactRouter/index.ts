@@ -10,13 +10,14 @@ import {
   writeViteLoader,
   type ViteLoaderExport,
 } from '../../setupViteSPA.js';
-import type { BuildToolSetup, ManualAction } from '../index.js';
+import type { BuildToolSetup } from '../index.js';
 import { findInitializeCall } from '../shared/initializeGT.js';
 import {
   getCustomLoaderAction,
   getLoaderUpdateActions,
 } from '../shared/loader.js';
 import { readSourceFile } from '../shared/source.js';
+import { configureGTReactPlugin } from '../shared/viteConfig.js';
 import { configureRoot, getRootFix, getStorageAction } from './root.js';
 import {
   DOCS_URL,
@@ -99,11 +100,15 @@ export const reactRouterSetup: BuildToolSetup = {
     manualActions.push(storageAction);
     return { steps, manualActions };
   },
+  checkCredentialsPlugin: (appDirectory) =>
+    configureGTReactPlugin(appDirectory, true),
   async apply(ctx) {
     const { appDirectory, configFilepath, translationsDir } = ctx;
     const root = await inspectReactRouter(appDirectory);
-    const steps: string[] = [];
-    const manualActions: ManualAction[] = [];
+    const { steps, manualActions } = await configureGTReactPlugin(
+      appDirectory,
+      false
+    );
 
     // The root imports the loader, so it is written first.
     let loaderExport: ViteLoaderExport;

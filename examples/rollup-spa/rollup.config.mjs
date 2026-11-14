@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import fs from 'node:fs';
 import commonjs from '@rollup/plugin-commonjs';
 import { rollup as gtCompiler } from '@generaltranslation/compiler';
@@ -86,16 +85,6 @@ export default {
       preventAssignment: true,
       'process.env.NODE_ENV': JSON.stringify(
         process.env.NODE_ENV ?? 'production'
-      ),
-      // GT credentials are read at build time and inlined. In this plain-Rollup
-      // setup the committed src/_gt/*.json files are what renders, so these can
-      // stay empty; see the README Credentials section for why on-the-fly dev
-      // fetching does not activate here.
-      'process.env.GT_PROJECT_ID': JSON.stringify(
-        process.env.GT_PROJECT_ID ?? ''
-      ),
-      'process.env.GT_DEV_API_KEY': JSON.stringify(
-        process.env.GT_DEV_API_KEY ?? ''
       ),
     }),
     nodeResolve({

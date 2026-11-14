@@ -52,10 +52,6 @@ vi.mock('../resolveConfig.js', () => ({
   }),
 }));
 
-vi.mock('../../fs/utils.js', () => ({
-  resolveProjectId: vi.fn().mockReturnValue('test-project-id'),
-}));
-
 vi.mock('../../utils/api.js', () => ({
   configureCustomMapping: vi.fn(),
 }));
