@@ -90,7 +90,7 @@ export function resolveBinding(binding: Binding, read?: Node): TrackedSymbol[] {
     if (binding.type === 'values') {
       const candidates =
         read && binding.at ? binding.at(read) : binding.candidates();
-      return distinct(candidates.flatMap(evaluateCandidate));
+      return distinct(evaluateCandidates(candidates));
     }
 
     const scope = aliasScope(binding);
@@ -303,9 +303,17 @@ function propsOf(scope: Scope): TrackedSymbol[] {
   const props = scope.host.props;
   if (!props) return [];
 
-  return guarded(props, () =>
-    distinct(props.candidates().flatMap(evaluateCandidate))
-  );
+  return guarded(props, () => distinct(evaluateCandidates(props.candidates())));
+}
+
+/**
+ * The values of every candidate, as they are found: a parameter of a function
+ * called from thousands of modules has that many, too many to hold at once.
+ */
+function* evaluateCandidates(
+  candidates: readonly Candidate[]
+): Generator<TrackedSymbol> {
+  for (const candidate of candidates) yield* evaluateCandidate(candidate);
 }
 
 function evaluateCandidate(candidate: Candidate): TrackedSymbol[] {
@@ -336,7 +344,7 @@ function guarded(key: object, compute: () => TrackedSymbol[]): TrackedSymbol[] {
  * One value per name and origin, the first found; namespaces as they are. Two
  * outdirs can define a message of the same name: those are two values.
  */
-function distinct(symbols: readonly TrackedSymbol[]): TrackedSymbol[] {
+function distinct(symbols: Iterable<TrackedSymbol>): TrackedSymbol[] {
   const valuesByName = new Map<string, TrackedValue>();
   const namespaces: TrackedSymbol[] = [];
 
