@@ -144,6 +144,27 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
     });
   });
 
+  test('run a task again in a thread with a larger heap when one runs out of memory', async () => {
+    const { AnalysisPool } = await builtPool();
+    // Its syntax tree takes far more than a 16 MB heap.
+    const big = Array.from(
+      { length: 60_000 },
+      (_, line) =>
+        `export const value${line} = { key: "${line}", list: [${line}] };`
+    ).join('\n');
+    const root = await writeProject('threads-out-of-memory', {
+      'src/big.ts': big,
+    });
+    const pool = new AnalysisPool(1, root, { heapMb: 16, largeHeapMb: 1024 });
+
+    try {
+      const result = await pool.summarize(path.join(root, 'src/big.ts'));
+      expect(result && 'summary' in result).toBe(true);
+    } finally {
+      await pool.close();
+    }
+  });
+
   test('fail, rather than wait, when one fails or exits', async () => {
     const { AnalysisPool } = await builtPool();
     const root = await writeProject('threads-failure', { 'src/a.ts': '' });
