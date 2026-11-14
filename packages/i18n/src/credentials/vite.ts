@@ -12,10 +12,14 @@ const createApiKeyEnvPrefixError = (source: string, pluginName: string) =>
     fix: `Remove the prefix that matches GT_ from envPrefix in your Vite config. ${pluginName}() already passes GT_PROJECT_ID to client code, and GT_API_KEY only while the dev server runs`,
   });
 
+// Module scope, because a Vite restart creates new plugin instances in the same process.
+const copiedCredentials = new Map<string, string>();
+
 /**
  * A Vite plugin that exposes `GT_PROJECT_ID` to client code, and `GT_API_KEY`
  * too while the dev server runs, so development translations hot-reload. Both
- * are read from the environment and Vite's `.env` files.
+ * are read from the environment and Vite's `.env` files. The dev server's own
+ * process also gets them in `process.env`, for SSR code.
  *
  * @param source - The framework package, named in diagnostics.
  * @param pluginName - The public plugin function, named in diagnostics.
@@ -27,6 +31,13 @@ export function createCredentialsPlugin(
   return {
     name: source,
     config(config, { command, mode }) {
+      // A copied value would otherwise outrank the edited env file on restart, as loadEnv() prefers process.env.
+      const copies: [string, string][] = [];
+      copiedCredentials.forEach((value, name) => {
+        if (process.env[name] !== value) return;
+        copies.push([name, value]);
+        delete process.env[name];
+      });
       // Vite only loads VITE_-prefixed variables for client code, so load the
       // GT_ ones from the envDir Vite would use.
       const root = config.root ? path.resolve(config.root) : process.cwd();
@@ -35,7 +46,23 @@ export function createCredentialsPlugin(
           ? false
           : path.resolve(root, config.envDir || '');
       // Vite 6's loadEnv() takes no `false`; without env files only the process has values.
-      const env = envDir === false ? process.env : loadEnv(mode, envDir, 'GT_');
+      const env =
+        envDir === false ? { ...process.env } : loadEnv(mode, envDir, 'GT_');
+      if (command === 'serve') {
+        copiedCredentials.clear();
+        // SSR may load GT packages without transforming them, so define
+        // cannot reach them; dev server code reads process.env instead. The
+        // shell keeps priority, as in Vite's loadEnv().
+        for (const name of Object.values(credentialEnvNames)) {
+          if (env[name] && process.env[name] === undefined) {
+            process.env[name] = env[name];
+            copiedCredentials.set(name, env[name]);
+          }
+        }
+      } else {
+        // A build in a dev server's process must leave the server its credentials.
+        for (const [name, value] of copies) process.env[name] = value;
+      }
       // A build ships to users, and anyone can read a key in a browser bundle.
       const names =
         command === 'serve'
