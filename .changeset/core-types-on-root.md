@@ -9,3 +9,4 @@ Each name is now exported from one entry, and types are exported from the same e
 - `GTRuntime`, `GTProjectConfig` and `GTCredentials` are no longer exported from `generaltranslation`. Use `import { GTRuntime } from 'generaltranslation/runtime'`.
 - `LocaleConfig` is no longer exported from `generaltranslation/runtime`. Import it from `generaltranslation`.
 - `ModelProvider` is no longer exported from `generaltranslation/internal`. Import it from `generaltranslation/api`.
+- `VAR_IDENTIFIER` is no longer exported from `generaltranslation/internal`. Import `RESERVED_NAME_PREFIX` from `@generaltranslation/icu/internal`.

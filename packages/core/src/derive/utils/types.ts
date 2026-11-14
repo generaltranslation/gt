@@ -1,4 +1,4 @@
-import { VAR_IDENTIFIER } from './constants';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import type {
   PluralOrSelectOption,
   LiteralElement,
@@ -10,7 +10,7 @@ interface GTIndexedSelectOption extends PluralOrSelectOption {
 }
 
 export interface GTIndexedSelectElement extends SelectElement {
-  value: `${typeof VAR_IDENTIFIER}${number}`;
+  value: `${typeof RESERVED_NAME_PREFIX}${number}`;
   options: {
     other: GTIndexedSelectOption;
     [key: string]: PluralOrSelectOption;
@@ -22,7 +22,7 @@ interface GTUnindexedSelectOption extends PluralOrSelectOption {
 }
 
 export interface GTUnindexedSelectElement extends SelectElement {
-  value: typeof VAR_IDENTIFIER;
+  value: typeof RESERVED_NAME_PREFIX;
   options: {
     other: GTUnindexedSelectOption;
     [key: string]: PluralOrSelectOption;

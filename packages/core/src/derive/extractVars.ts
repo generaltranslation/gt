@@ -1,4 +1,4 @@
-import { VAR_IDENTIFIER } from './utils/constants';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
 import { traverseIcu } from './utils/traverseIcu';
 import { GTUnindexedSelectElement } from './utils/types';
@@ -12,7 +12,7 @@ import { GTUnindexedSelectElement } from './utils/types';
  */
 export function extractVars(icu: string): Record<string, string> {
   // Check if the string contains _gt_
-  if (!icu.includes(VAR_IDENTIFIER)) {
+  if (!icu.includes(RESERVED_NAME_PREFIX)) {
     return {};
   }
 

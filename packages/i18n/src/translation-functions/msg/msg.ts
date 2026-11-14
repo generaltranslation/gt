@@ -5,8 +5,8 @@ import type {
 import {
   formatMessage,
   defaultDefaultLocale,
-  VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import { createInterpolationFailureMessage } from '../utils/messages';
 import logger from '../../logs/logger';
 import { extractVariables } from '../../utils/extractVariables';
@@ -83,7 +83,7 @@ export function msg(
       locales: [defaultDefaultLocale], // TODO: use compiler to insert locales
       variables: {
         ...variables,
-        [VAR_IDENTIFIER]: 'other',
+        [RESERVED_NAME_PREFIX]: 'other',
       },
     });
   } catch {

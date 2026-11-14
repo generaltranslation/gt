@@ -8,7 +8,6 @@ export type {
   BaseElement,
   DateElement,
   DateTimeSkeleton,
-  ExtendedNumberFormatOptions,
   LiteralElement,
   Location,
   LocationDetails,

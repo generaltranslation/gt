@@ -1,4 +1,4 @@
-import { VAR_IDENTIFIER } from './utils/constants';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import { traverseIcu } from './utils/traverseIcu';
 import { GTUnindexedSelectElement } from './utils/types';
 import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
@@ -16,7 +16,7 @@ type Location = {
  */
 export function indexVars(icu: string): string {
   // Check if the string contains _gt_
-  if (!icu.includes(VAR_IDENTIFIER)) {
+  if (!icu.includes(RESERVED_NAME_PREFIX)) {
     return icu;
   }
 
@@ -47,12 +47,12 @@ export function indexVars(icu: string): string {
     // Before the variable
     result.push(icu.slice(current, start));
     // Replace the variable with the new identifier (+1 is for the curly brace)
-    result.push(icu.slice(start, start + VAR_IDENTIFIER.length + 1));
+    result.push(icu.slice(start, start + RESERVED_NAME_PREFIX.length + 1));
 
     // Add the new identifier.
     result.push(String(i + 1));
     // After the variable
-    result.push(icu.slice(start + VAR_IDENTIFIER.length + 1, otherStart));
+    result.push(icu.slice(start + RESERVED_NAME_PREFIX.length + 1, otherStart));
     // Before the other option
     result.push('{}');
     // The other option

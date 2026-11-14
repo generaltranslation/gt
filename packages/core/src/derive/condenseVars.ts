@@ -4,14 +4,14 @@ import {
   type ArgumentElement,
 } from '@generaltranslation/icu/parser';
 import { traverseIcu } from './utils/traverseIcu';
-import { VAR_IDENTIFIER } from './utils/constants';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import { GTIndexedSelectElement } from './utils/types';
 import { isGTIndexedSelectElement } from './utils/traverseHelpers';
 interface GTIndexedArgumentElement extends ArgumentElement {
-  value: `${typeof VAR_IDENTIFIER}${number}`;
+  value: `${typeof RESERVED_NAME_PREFIX}${number}`;
 }
 
-const CONTAINS_INDEXED_GT_REGEX = new RegExp(`${VAR_IDENTIFIER}\\d+`);
+const CONTAINS_INDEXED_GT_REGEX = new RegExp(`${RESERVED_NAME_PREFIX}\\d+`);
 
 /**
  * Given an indexed ICU string, condenses any select to an argument
