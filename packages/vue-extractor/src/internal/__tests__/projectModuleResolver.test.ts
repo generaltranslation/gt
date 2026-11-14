@@ -1189,20 +1189,23 @@ describe('local Vue wrapper provenance', () => {
     expect(exposesGT(root)).toBe(true);
   });
 
-  it.each(['createGT', 'initializeGTSPA', 'useLocale', 'useSetLocale'])(
-    'recognizes the non-extraction runtime export %s',
-    (exportName) => {
-      const root = createTestProject({
-        'package.json': JSON.stringify({
-          name: '@fixture/runtime-wrapper',
-          exports: './src/index.ts',
-        }),
-        'src/index.ts': `export { ${exportName} } from 'gt-vue';\n`,
-      });
+  it.each([
+    'createGT',
+    'initializeGT',
+    'initializeGTSPA',
+    'useLocale',
+    'useSetLocale',
+  ])('recognizes the non-extraction runtime export %s', (exportName) => {
+    const root = createTestProject({
+      'package.json': JSON.stringify({
+        name: '@fixture/runtime-wrapper',
+        exports: './src/index.ts',
+      }),
+      'src/index.ts': `export { ${exportName} } from 'gt-vue';\n`,
+    });
 
-      expect(exposesGT(root)).toBe(true);
-    }
-  );
+    expect(exposesGT(root)).toBe(true);
+  });
 
   it('follows an immutable local alias exported under a wrapper name', () => {
     const root = createTestProject({

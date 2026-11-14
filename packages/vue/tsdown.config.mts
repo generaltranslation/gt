@@ -9,21 +9,24 @@ const deps = {
     /^generaltranslation\//,
     /^gt-i18n$/,
     /^gt-i18n\//,
+    /^vite$/,
   ],
 };
 
-const configs = createTsdownConfig(['src/index.ts'], deps).map((config) => ({
-  ...config,
-  // Keep declared runtime dependencies external in both formats. The shared
-  // preset only applies this policy to CJS, while modern consumers load ESM.
-  deps: { onlyBundle: false, ...deps },
-  outputOptions: {
-    comments: {
-      annotation: true,
-      jsdoc: false,
-      legal: true,
+const configs = createTsdownConfig(['src/index.ts', 'src/vite.ts'], deps).map(
+  (config) => ({
+    ...config,
+    // Keep declared runtime dependencies external in both formats. The shared
+    // preset only applies this policy to CJS, while modern consumers load ESM.
+    deps: { onlyBundle: false, ...deps },
+    outputOptions: {
+      comments: {
+        annotation: true,
+        jsdoc: false,
+        legal: true,
+      },
     },
-  },
-}));
+  })
+);
 
 export default defineConfig(withPackageChecks(configs));

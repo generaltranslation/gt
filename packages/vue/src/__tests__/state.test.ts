@@ -1,17 +1,24 @@
 import { defineComponent, h, nextTick, ref } from 'vue';
 import { hashSource } from 'generaltranslation/id';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Num, Plural, createGT, useGT, useLocale } from '../index';
+import { Num, Plural, useGT, useLocale } from '../index';
 import type { TranslationCatalog } from '../index';
-import { installCookieDocument, mount, textContent } from './testUtils';
+import {
+  createTestGT,
+  installCookieDocument,
+  mount,
+  textContent,
+} from './testUtils';
 
 describe('gt-vue runtime state', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
-  it('rejects failed locale changes, preserves the locale, and retries', async () => {
+  it('rejects failed locale changes in development, preserves the locale, and retries', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
     const cookieDocument = installCookieDocument(
       'generaltranslation.locale=en'
     );
@@ -22,7 +29,7 @@ describe('gt-vue runtime state', () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
-    const plugin = createGT({ loadTranslations });
+    const plugin = createTestGT({ loadTranslations });
 
     await expect(plugin.setLocale('fr')).rejects.toBe(error);
     expect(plugin.getLocale()).toBe('en');
@@ -36,7 +43,27 @@ describe('gt-vue runtime state', () => {
     );
   });
 
-  it('keeps the previous locale when the latest request rejects', async () => {
+  it('logs failed locale changes in production and retries the loader later', async () => {
+    const loadTranslations = vi.fn(async () => {
+      throw new Error('catalog unavailable');
+    });
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    const plugin = createTestGT({ loadTranslations });
+
+    await expect(plugin.setLocale('fr')).resolves.toBeUndefined();
+    await expect(plugin.loadTranslations('fr')).resolves.toEqual({});
+
+    expect(plugin.getLocale()).toBe('fr');
+    expect(loadTranslations).toHaveBeenCalledTimes(2);
+    expect(String(consoleError.mock.calls[0]?.[0])).toContain(
+      'catalog unavailable'
+    );
+  });
+
+  it('keeps the previous locale when the latest request rejects in development', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
     const pending = new Map<
       string,
       {
@@ -47,7 +74,7 @@ describe('gt-vue runtime state', () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: (locale) =>
         new Promise((resolve, reject) =>
           pending.set(locale, { reject, resolve })
@@ -72,18 +99,18 @@ describe('gt-vue runtime state', () => {
       'generaltranslation.locale=fr'
     );
 
-    const firstPlugin = createGT({ defaultLocale: 'en' });
+    const firstPlugin = createTestGT({ defaultLocale: 'en' });
     expect(firstPlugin.getLocale()).toBe('fr');
 
     cookieDocument.cookie = 'generaltranslation.locale=es;path=/';
-    const secondPlugin = createGT({ defaultLocale: 'en' });
+    const secondPlugin = createTestGT({ defaultLocale: 'en' });
     expect(secondPlugin.getLocale()).toBe('es');
   });
 
   it('persists the default locale when the browser has no locale cookie', () => {
     const cookieDocument = installCookieDocument();
 
-    const plugin = createGT({ defaultLocale: 'en' });
+    const plugin = createTestGT({ defaultLocale: 'en' });
 
     expect(plugin.getLocale()).toBe('en');
     expect(cookieDocument.get('generaltranslation.locale')).toBe('en');
@@ -93,7 +120,7 @@ describe('gt-vue runtime state', () => {
     const cookieDocument = installCookieDocument(
       'generaltranslation.locale=fr'
     );
-    const plugin = createGT({ defaultLocale: 'en' });
+    const plugin = createTestGT({ defaultLocale: 'en' });
 
     expect(plugin.getLocale()).toBe('fr');
     cookieDocument.delete('generaltranslation.locale');
@@ -110,7 +137,7 @@ describe('gt-vue runtime state', () => {
       'generaltranslation.locale=fr'
     );
 
-    const plugin = createGT({ defaultLocale: 'en', locale: 'de' });
+    const plugin = createTestGT({ defaultLocale: 'en', locale: 'de' });
 
     expect(plugin.getLocale()).toBe('de');
     expect(cookieDocument.get('generaltranslation.locale')).toBe('de');
@@ -120,7 +147,7 @@ describe('gt-vue runtime state', () => {
     const cookieDocument = installCookieDocument(
       'generaltranslation.locale=fr; custom-locale=es'
     );
-    const plugin = createGT({ localeCookieName: 'custom-locale' });
+    const plugin = createTestGT({ localeCookieName: 'custom-locale' });
 
     expect(plugin.getLocale()).toBe('es');
     await plugin.setLocale('de');
@@ -140,7 +167,7 @@ describe('gt-vue runtime state', () => {
           resolveCatalog = resolve;
         })
     );
-    const plugin = createGT({ loadTranslations });
+    const plugin = createTestGT({ loadTranslations });
     const Root = defineComponent({
       setup() {
         const locale = useLocale();
@@ -174,7 +201,7 @@ describe('gt-vue runtime state', () => {
   it('reactively formats custom aliases while preserving loader and cookie values', async () => {
     const cookieDocument = installCookieDocument();
     const loadTranslations = vi.fn(async () => ({}));
-    const plugin = createGT({
+    const plugin = createTestGT({
       customMapping: {
         pirate: { code: 'fr-FR' },
         source: { code: 'en-US' },
@@ -222,7 +249,7 @@ describe('gt-vue runtime state', () => {
       'generaltranslation.locale=en'
     );
     const pending = new Map<string, (catalog: TranslationCatalog) => void>();
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: (locale) =>
         new Promise((resolve) => pending.set(locale, resolve)),
     });
@@ -245,7 +272,7 @@ describe('gt-vue runtime state', () => {
     const cookieDocument = installCookieDocument(
       'generaltranslation.locale=en'
     );
-    const plugin = createGT();
+    const plugin = createTestGT();
     const Root = defineComponent({
       setup() {
         const locale = useLocale();
@@ -271,7 +298,7 @@ describe('gt-vue runtime state', () => {
       'generaltranslation.locale=en'
     );
     const source = 'Hello';
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async (locale) =>
         locale === 'fr'
           ? {
@@ -303,7 +330,7 @@ describe('gt-vue runtime state', () => {
   });
 
   it('uses the explicit locale without browser globals during SSR', async () => {
-    const plugin = createGT({
+    const plugin = createTestGT({
       locale: 'fr',
       loadTranslations: async () => ({}),
     });
@@ -315,7 +342,7 @@ describe('gt-vue runtime state', () => {
 
   it('does not rerender active consumers when another locale is preloaded', async () => {
     let renders = 0;
-    const plugin = createGT({ loadTranslations: async () => ({}) });
+    const plugin = createTestGT({ loadTranslations: async () => ({}) });
     const Root = defineComponent({
       setup() {
         const gt = useGT();
@@ -352,7 +379,7 @@ describe('gt-vue runtime state', () => {
 
   it('never calls the loader for the source locale', async () => {
     const loadTranslations = vi.fn(async () => ({ translated: 'value' }));
-    const plugin = createGT({ defaultLocale: 'en', loadTranslations });
+    const plugin = createTestGT({ defaultLocale: 'en', loadTranslations });
 
     await expect(plugin.loadTranslations('en')).resolves.toEqual({});
     expect(loadTranslations).not.toHaveBeenCalled();

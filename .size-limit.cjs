@@ -141,12 +141,7 @@ module.exports = [
   reactNode('gt-react/compat (server)', 'compat.server'),
   react('gt-react/macros', 'macros'),
 
-  // Locale matching is loaded only when initializeGTSPA() runs. Track the
-  // always-loaded runtime and complete SPA payload independently.
-  vue('gt-vue', 'index', '15 kB', {
-    ignore: ['vue', '@generaltranslation/format'],
-  }),
-  vue('gt-vue (SPA)', 'index', '24 kB'),
+  vue('gt-vue', 'index', '34 kB'),
 
   next('gt-next (client)', 'index.client', '75 kB'),
   nextNode('gt-next (rsc)', 'index.rsc', '85 kB'),

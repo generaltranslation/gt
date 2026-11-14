@@ -198,18 +198,31 @@ export function translateVueChildren(
         state.defaultLocale
       );
     } else {
-      const hash =
-        options._hash ??
-        hashSource({
-          context: options.context ?? options.$context,
-          dataFormat: 'JSX',
-          // Current React lookups accept id/$id as compatibility metadata but
-          // deliberately exclude custom IDs from content-based catalog hashes.
-          maxChars: options.$maxChars ?? options.maxChars,
-          requiresReview: options.$requiresReview ?? options.requiresReview,
-          source: serializeRootNodes(source, root),
-        });
-      const target = state.getCatalog()[hash];
+      const context = options.context ?? options.$context;
+      const id = options.id ?? options.$id;
+      const maxChars = options.$maxChars ?? options.maxChars;
+      const requiresReview = options.$requiresReview ?? options.requiresReview;
+      const target = state.lookupTranslation<JsxChildren>(
+        {
+          $format: 'JSX',
+          $_hash:
+            options._hash ??
+            hashSource({
+              context,
+              dataFormat: 'JSX',
+              // Current React lookups accept id/$id as compatibility metadata
+              // but deliberately exclude custom IDs from content-based hashes.
+              maxChars,
+              requiresReview,
+              source: serializeRootNodes(source, root),
+            }),
+          ...(context && { $context: context }),
+          ...(id && { $id: id }),
+          ...(maxChars != null && { $maxChars: maxChars }),
+          ...(requiresReview === true && { $requiresReview: true }),
+        },
+        () => serializeRootNodes(source, root)
+      );
       rendered =
         target == null
           ? renderDefaultNodes(

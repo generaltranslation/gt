@@ -13,7 +13,13 @@ export function translateString(
   message: string,
   options: InternalStringOptions = {}
 ): string {
-  const hash = hashStringMessage(message, options);
-  const translation = state.getCatalog()[hash];
+  const translation = state.lookupTranslation(
+    {
+      $format: 'STRING',
+      $_hash: hashStringMessage(message, options),
+      ...(options.$context && { $context: options.$context }),
+    },
+    () => message
+  );
   return typeof translation === 'string' ? translation : message;
 }

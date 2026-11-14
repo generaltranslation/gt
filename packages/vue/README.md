@@ -28,15 +28,16 @@ npm install gt-vue
 
 ## Quick Start
 
-Register one plugin instance with your Vue app. Translation files are loaded
-once per locale and cached for the lifetime of that instance. The
-`defaultLocale` uses source text as its catalog, so `loadTranslations` is never
-called for that locale.
+Call `initializeGT()` once with your configuration, then register a plugin
+with your Vue app. Translations are loaded once per locale into a cache that
+every plugin shares. The `defaultLocale` uses source text, so
+`loadTranslations` is never called for that locale. Without
+`loadTranslations`, translations load from the GT CDN when `projectId` is set.
 
 ```ts
 // main.ts
 import { createApp } from 'vue';
-import { createGT } from 'gt-vue';
+import { createGT, initializeGT } from 'gt-vue';
 import App from './App.vue';
 
 const loadTranslations = async (locale: string) => {
@@ -47,10 +48,31 @@ const loadTranslations = async (locale: string) => {
   }
 };
 
-createApp(App)
-  .use(createGT({ defaultLocale: 'en', loadTranslations }))
-  .mount('#app');
+initializeGT({ defaultLocale: 'en', locales: ['fr'], loadTranslations });
+
+createApp(App).use(createGT()).mount('#app');
 ```
+
+## Development translations with Vite
+
+Add `gtVue()` to your Vite config. It passes `GT_PROJECT_ID` to client code,
+and `GT_API_KEY` only while the dev server runs, both read from the
+environment or Vite's `.env` files. In development, content without a
+translation yet is translated on demand and rerenders when it arrives. Build
+output never contains the API key.
+
+```ts
+// vite.config.ts
+import vue from '@vitejs/plugin-vue';
+import { gtVue } from 'gt-vue/vite';
+import { defineConfig } from 'vite';
+
+export default defineConfig({ plugins: [vue(), gtVue()] });
+```
+
+Module-level `t()` calls run once, before a development translation can
+arrive, so they show source text until the translation is in your loaded
+files.
 
 Use `<T>` for rich content. `<Var>` values are provided as slot children, not
 through `name` or `value` props.
@@ -165,8 +187,10 @@ It does not support ICU syntax, interpolation, tagged templates, `$format`, or
 
 SPA locale changes write the locale cookie and reload the page. Reloading is
 intentional: it lets every module-level translation execute again after the new
-locale catalog is preloaded. `initializeGTSPA()` and `t()` are not valid in SSR;
-use one request-scoped `createGT({ locale })` instance there.
+locale catalog is preloaded. `initializeGTSPA()` calls `initializeGT()` with its
+configuration. `initializeGTSPA()` and `t()` are not valid in SSR; call
+`initializeGT()` once and use one request-scoped `createGT({ locale })`
+instance per request there.
 
 Statically authored default-slot content inside a custom component participates
 in the surrounding translation. The component itself, its props, and its
@@ -251,17 +275,18 @@ and then the default locale. Inside `<T>`, the rich translation pipeline owns
 formatting locales: source fallbacks use the default locale, while translated
 content uses the active locale followed by the default.
 
-Pass `customMapping` to `createGT()` when a catalog uses a locale alias that
-should format with a canonical locale. The alias remains the catalog loader,
-cache, and cookie value; only formatters and plural rules use the mapped code.
+Pass `customMapping` to `initializeGT()` when a catalog uses a locale alias
+that should format with a canonical locale. The alias remains the catalog
+loader, cache, and cookie value; only formatters and plural rules use the
+mapped code.
 
 ```ts
-const gt = createGT({
+initializeGT({
   defaultLocale: 'en-US',
-  locale: 'pirate',
   customMapping: { pirate: { code: 'fr-FR' } },
   loadTranslations,
 });
+const gt = createGT({ locale: 'pirate' });
 ```
 
 In a browser, gt-vue persists the active locale in the
@@ -271,8 +296,9 @@ from `createGT()`, that cookie wins over `defaultLocale`. Use
 integration.
 
 For plugins created with `createGT()`, `setLocale()` loads a missing catalog
-before writing the cookie and rerendering consumers. A failed or superseded
-request leaves both the cookie and rendered locale unchanged. Direct changes to
+before writing the cookie and rerendering consumers. A superseded request
+leaves both the cookie and rendered locale unchanged. A failed load rejects in
+development; in production it is logged and source content renders. Direct changes to
 `document.cookie` are reflected by `plugin.getLocale()` and the next Vue render,
 but browsers do not emit cookie change events, so they do not schedule a render
 by themselves. Use gt-vue's setter for reactive locale changes.
@@ -290,5 +316,5 @@ await `plugin.loadTranslations(locale)` or `plugin.setLocale(locale)` before
 server rendering. Create and preload the client plugin with the same locale
 before hydrating; starting hydration before its asynchronous catalog is ready
 can produce source text and a hydration mismatch. Create a fresh `createGT()`
-instance for every server request so locale and catalog state remain
-request-scoped.
+instance for every server request so the locale remains request-scoped;
+translations are shared across requests through the cache.
