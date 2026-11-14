@@ -21,6 +21,7 @@ pub mod mapping;
 pub mod metadata;
 pub mod paths;
 pub mod positions;
+pub mod project_files;
 pub mod resolve;
 pub mod scope;
 pub mod symbols;

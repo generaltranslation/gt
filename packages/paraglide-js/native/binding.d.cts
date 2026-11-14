@@ -163,6 +163,17 @@ export interface NativeGraphOptions {
   nativeLanguages?: Array<string>
 }
 
+export interface NativeListOptions {
+  /** Where `.gitignore` files apply from: the repository's or the workspace's root. */
+  base: string
+  /** The directories and files to list, absolute and within `base`. */
+  roots: Array<string>
+  /** Directory names that are never listed, wherever they are. */
+  ignoredNames: Array<string>
+  /** Directories that are never listed, absolute. */
+  ignoredPaths: Array<string>
+}
+
 export interface NativeLoadResult {
   /** Files a language may claim: JavaScript loads them. */
   needsJs: Array<string>
@@ -255,6 +266,18 @@ export interface NativeTargetFile {
  * `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
  * object.
  */
+/**
+ * The outermost directory between `base` (excluded) and `projectRoot` (included) that a `.gitignore`
+ * file ignores; none if none is.
+ */
+export declare function ignoredDirectory(base: string, projectRoot: string): string | null
+
+/**
+ * The files of a project, as git sees them: those under `roots`, not in an ignored directory nor
+ * ignored by a `.gitignore` file from `base` down. Sorted; symbolic links are left out.
+ */
+export declare function listProjectFiles(options: NativeListOptions): Promise<Array<string>>
+
 /** The built-in languages whose files the analysis writes itself, by name. */
 export declare function nativeLanguages(): Array<string>
 

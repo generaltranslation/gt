@@ -837,5 +837,7 @@ module.exports.__napiBindingTarget = __napiStampBindingTarget(nativeBinding, __n
 module.exports = nativeBinding
 module.exports.NativeGraph = nativeBinding.NativeGraph
 module.exports.debugTree = nativeBinding.debugTree
+module.exports.ignoredDirectory = nativeBinding.ignoredDirectory
+module.exports.listProjectFiles = nativeBinding.listProjectFiles
 module.exports.nativeLanguages = nativeBinding.nativeLanguages
 module.exports.renderMetadata = nativeBinding.renderMetadata

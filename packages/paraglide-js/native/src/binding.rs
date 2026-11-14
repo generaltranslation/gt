@@ -1005,6 +1005,66 @@ fn write_metadata(state: &State, input: &[u8], radius: f64) -> Result<NativeMeta
 /// For tests: a metadata file as `writeMetadata` writes it from the JSON of
 /// `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
 /// object.
+#[napi(object)]
+pub struct NativeListOptions {
+  /// Where `.gitignore` files apply from: the repository's or the workspace's root.
+  pub base: String,
+  /// The directories and files to list, absolute and within `base`.
+  pub roots: Vec<String>,
+  /// Directory names that are never listed, wherever they are.
+  pub ignored_names: Vec<String>,
+  /// Directories that are never listed, absolute.
+  pub ignored_paths: Vec<String>,
+}
+
+pub struct ListTask {
+  options: crate::project_files::ListOptions,
+}
+
+impl Task for ListTask {
+  type Output = Vec<String>;
+  type JsValue = Vec<String>;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    guarded(|| crate::project_files::list_files(&self.options))
+  }
+
+  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output)
+  }
+}
+
+/// The files of a project, as git sees them: those under `roots`, not in an ignored directory nor
+/// ignored by a `.gitignore` file from `base` down. Sorted; symbolic links are left out.
+#[napi(ts_return_type = "Promise<Array<string>>")]
+pub fn list_project_files(options: NativeListOptions) -> AsyncTask<ListTask> {
+  use std::path::PathBuf;
+
+  AsyncTask::new(ListTask {
+    options: crate::project_files::ListOptions {
+      base: PathBuf::from(options.base),
+      roots: options.roots.into_iter().map(PathBuf::from).collect(),
+      ignored_names: options.ignored_names.into_iter().collect(),
+      ignored_paths: options
+        .ignored_paths
+        .into_iter()
+        .map(PathBuf::from)
+        .collect(),
+    },
+  })
+}
+
+/// The outermost directory between `base` (excluded) and `projectRoot` (included) that a `.gitignore`
+/// file ignores; none if none is.
+#[napi]
+pub fn ignored_directory(base: String, project_root: String) -> Option<String> {
+  crate::project_files::ignored_directory(
+    std::path::Path::new(&base),
+    std::path::Path::new(&project_root),
+  )
+  .and_then(|directory| directory.to_str().map(str::to_string))
+}
+
 /// The built-in languages whose files the analysis writes itself, by name.
 #[napi]
 pub fn native_languages() -> Vec<String> {

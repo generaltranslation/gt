@@ -53,6 +53,8 @@ memchr = "2"
 ryu-js = "1"
 hashbrown = { version = "0.17", default-features = false }
 memmap2 = "0.9"
+# Lists a project's files as git does, honoring its `.gitignore` files.
+ignore = "0.4"
 
 [build-dependencies]
 napi-build = "2"

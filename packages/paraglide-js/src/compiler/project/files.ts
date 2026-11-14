@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { globby, globbyStream, isIgnoredByIgnoreFiles } from 'globby';
+import { globby, globbyStream } from 'globby';
 import picomatch from 'picomatch';
+import { native } from '../analysis/native.js';
 import { isWithin, relativePath, toPosix } from '../utils/paths.js';
 
 export type FileSelectionOptions = {
@@ -45,6 +46,8 @@ type Pattern = {
 type IncludePatterns = {
   /** Globs relative to the project root. */
   patterns: string[];
+  /** The included directories and files, absolute; none if a glob is included. */
+  roots: string[] | undefined;
   missing: string[];
 };
 
@@ -130,16 +133,18 @@ export class FileSelection {
   /** Lists the included source files, and `auto-imports.d.ts` files among them. */
   async list({ onFiles }: ListOptions = {}): Promise<SelectedFiles> {
     const { projectRoot, workspaceRoot } = this.options;
-    const { patterns, missing } = await this.includePatterns();
+    const { patterns, roots, missing } = await this.includePatterns();
 
-    const base = await ignoreBase(projectRoot, workspaceRoot);
+    const base = ignoreBase(projectRoot, workspaceRoot);
     const onFound =
       onFiles &&
       ((found: string[]) => {
         const selected = found.filter((file) => this.isSelected(file));
         if (selected.length > 0) onFiles(selected);
       });
-    const all = await findFiles(patterns, projectRoot, base, onFound);
+    const all = roots
+      ? await listFiles(roots, projectRoot, base, onFound)
+      : await findFiles(patterns, projectRoot, base, onFound);
 
     return {
       files: all.filter((file) => this.isSelected(file)).sort(),
@@ -154,11 +159,13 @@ export class FileSelection {
   private async includePatterns(): Promise<IncludePatterns> {
     const { projectRoot, include = ['.'] } = this.options;
     const patterns: string[] = [];
+    let roots: string[] | undefined = [];
     const missing: string[] = [];
 
     for (const entry of include) {
       if (picomatch.scan(entry).isGlob) {
         patterns.push(entry);
+        roots = undefined;
         continue;
       }
 
@@ -166,11 +173,15 @@ export class FileSelection {
       const stat = await fsp.stat(absolute).catch(() => undefined);
       const relative = relativePath(projectRoot, absolute);
 
-      if (!stat) missing.push(absolute);
-      else patterns.push(stat.isDirectory() ? `${relative}/**` : relative);
+      if (!stat) {
+        missing.push(absolute);
+        continue;
+      }
+      patterns.push(stat.isDirectory() ? `${relative}/**` : relative);
+      roots?.push(absolute);
     }
 
-    return { patterns, missing };
+    return { patterns, roots, missing };
   }
 
   private isSelected(file: string): boolean {
@@ -198,6 +209,31 @@ function compilePattern(entry: string, root: string): Pattern {
   const base = path.resolve(root, entry);
 
   return { base, matches: (file) => file === base || isWithin(base, file) };
+}
+
+/**
+ * The files in `roots` (absolute directories and files), as `findFiles` finds
+ * them, listed by the analysis: much faster than matching globs.
+ */
+async function listFiles(
+  roots: readonly string[],
+  projectRoot: string,
+  base: string,
+  onFound?: (files: string[]) => void
+): Promise<string[]> {
+  if (roots.length === 0) return [];
+
+  const found = await native.listProjectFiles({
+    base,
+    roots: [...roots],
+    ignoredNames: [...IGNORED_DIRECTORIES],
+    ignoredPaths: IGNORED_AT_ROOT.map((directory) =>
+      path.join(projectRoot, directory)
+    ),
+  });
+  onFound?.(found);
+
+  return found;
 }
 
 /**
@@ -258,24 +294,16 @@ async function findFiles(
  * project itself, e.g. a generated example, it is still built: then from the
  * ignored directory down, so the ignore files inside it still apply.
  */
-async function ignoreBase(
+function ignoreBase(
   projectRoot: string,
   workspaceRoot: string | undefined
-): Promise<string> {
+): string {
   const base = nearestRoot(projectRoot, [workspaceRoot, gitRoot(projectRoot)]);
   if (base === projectRoot) return base;
 
-  const isIgnored = await isIgnoredByIgnoreFiles(GITIGNORE_FILES, {
-    cwd: base,
-    ignore: IGNORED_GLOBS,
-  });
-
-  // The outermost directory between the base and the project that is ignored.
-  const ignoredDirectory = directoriesBelow(base, projectRoot).find(
-    (directory) => isIgnored(`${directory}${path.sep}`) || isIgnored(directory)
-  );
-
-  return ignoredDirectory ?? base;
+  // The outermost directory between the base and the project that is ignored,
+  // by the `.gitignore` files on the way: no other one applies to it.
+  return native.ignoredDirectory(base, projectRoot) ?? base;
 }
 
 /** The nearest of `roots` at or above the project, else the project root itself. */
@@ -292,18 +320,6 @@ function nearestRoot(
   const [nearest] = candidates.sort((a, b) => b.length - a.length);
 
   return nearest ?? projectRoot;
-}
-
-/** The directories from below `top` down to `directory`, outermost first. */
-function directoriesBelow(top: string, directory: string): string[] {
-  const directories: string[] = [];
-
-  for (let current = directory; current !== top; ) {
-    directories.unshift(current);
-    current = path.dirname(current);
-  }
-
-  return directories;
 }
 
 /** The repository root at or above `directory`: where `.git` is. */
