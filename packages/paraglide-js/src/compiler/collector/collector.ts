@@ -4,6 +4,7 @@ import path from 'node:path';
 import { analyzeModule } from '../analysis/analyze.js';
 import { ModuleGraph, type GlobalBinding } from '../analysis/module-graph.js';
 import { ModuleIndexer, type ParsedSummary } from '../analysis/module-index.js';
+import { toReadList, tracked, type ReadList } from '../analysis/reads.js';
 import type { ParaglideUsage } from '../analysis/types.js';
 import { defaultLanguages } from '../languages/index.js';
 import {
@@ -42,7 +43,12 @@ import {
   type SummaryResult,
 } from './module-reader.js';
 import { OutdirProjects } from './outdir-projects.js';
-import { cacheFingerprint, packageVersion, UsageCache } from './usage-cache.js';
+import {
+  cacheFingerprint,
+  packageVersion,
+  UsageCache,
+  type CachedFile,
+} from './usage-cache.js';
 
 /** Resolves an import like the project's bundler would: a file, or nothing. */
 export type Resolver = (
@@ -81,6 +87,20 @@ export type CollectorSettings = {
   fallbackDirectories: readonly string[];
 };
 
+type CachedAnalysis = NonNullable<CachedFile['analysis']>;
+
+function sameList(
+  a: readonly string[] | undefined,
+  b: readonly string[] | undefined
+): boolean {
+  return (
+    a !== undefined &&
+    b !== undefined &&
+    a.length === b.length &&
+    a.every((item, index) => item === b[index])
+  );
+}
+
 /** An outdir's message ids; undefined if they cannot be read. */
 type Catalog = Set<string> | undefined;
 
@@ -110,6 +130,8 @@ export class ContextCollector {
   private cache: UsageCache | undefined;
   /** Files whose summary was kept from the last run. */
   private unchangedFiles = 0;
+  /** Sources whose usages were kept from the last run. */
+  private reusedAnalyses = 0;
 
   /** The analyzed files, and how many usages each has. */
   private readonly analyzed = new Map<string, number>();
@@ -211,7 +233,10 @@ export class ContextCollector {
     await this.loadCatalogs();
 
     this.sources = sources;
-    await this.analyzeAll(sources);
+    this.recordLinks();
+    const reused = this.reusableAnalyses(sources);
+    await this.analyzeAll(sources.filter((file) => !reused.has(file)));
+    await this.addReused(sources, reused);
 
     return sources.length;
   }
@@ -243,10 +268,15 @@ export class ContextCollector {
 
     if (this.pool) {
       // The threads do not hold the files' code: it is read again.
-      await this.pool.analyze(index, sources, async (file, usages) => {
-        const code = usages.length > 0 ? await readTextFile(file) : undefined;
-        this.addUsages(file, usages, code);
-      });
+      await this.pool.analyze(
+        index,
+        sources,
+        async (file, { usages, reads }) => {
+          this.recordAnalysis(file, usages, reads);
+          const code = usages.length > 0 ? await readTextFile(file) : undefined;
+          this.addUsages(file, usages, code);
+        }
+      );
       return;
     }
 
@@ -266,11 +296,14 @@ export class ContextCollector {
     });
 
     for (const file of sources) {
-      // Held for its code: the analysis may unload it.
-      const record = graph.getRecord(file);
-      const usages = analyzeModule(graph, file);
+      const { value, reads } = tracked(() => {
+        // Held for its code: the analysis may unload it.
+        const record = graph.getRecord(file);
+        return { record, usages: analyzeModule(graph, file) };
+      });
 
-      this.addUsages(file, usages, record?.code);
+      this.recordAnalysis(file, value.usages, toReadList(reads));
+      this.addUsages(file, value.usages, value.record?.code);
     }
   }
 
@@ -324,7 +357,7 @@ export class ContextCollector {
 
     if ('unchanged' in result) {
       this.unchangedFiles++;
-      this.cache!.set(file, known!);
+      this.cache!.set(file, { hash: known!.hash, summary: known!.summary });
       return known!.summary;
     }
 
@@ -346,6 +379,135 @@ export class ContextCollector {
     return result.summary;
   }
 
+  /** Records what each indexed file links to: a change to it changes who imports those. */
+  private recordLinks(): void {
+    const cache = this.cache;
+    if (!cache) return;
+
+    for (const { file, parts } of this.indexer.modules) {
+      const imports = new Set<string>();
+      for (const { resolved } of parts) {
+        for (const [, target] of resolved) {
+          if (target) imports.add(cache.relative(target));
+        }
+      }
+
+      cache.update(file, {
+        imports: [...imports].sort(),
+        globals: [
+          ...new Set(parts.flatMap(({ globalNames }) => globalNames)),
+        ].sort(),
+      });
+    }
+  }
+
+  /**
+   * The usages the last run found of each source that nothing it read
+   * changed: neither the file, nor a module it read, nor who imports a module
+   * whose importers it looked up, nor which modules mention an auto-imported
+   * name it looked up.
+   */
+  private reusableAnalyses(
+    sources: readonly string[]
+  ): Map<string, CachedAnalysis> {
+    const reusable = new Map<string, CachedAnalysis>();
+    const cache = this.cache;
+    if (!cache) return reusable;
+
+    const changed = new Set<string>();
+    const touchedImporters = new Set<string>();
+    const touchedMentions = new Set<string>();
+
+    for (const [file, { before, now }] of cache.entries()) {
+      const isSame =
+        before !== undefined &&
+        now !== undefined &&
+        before.hash === now.hash &&
+        sameList(before.imports, now.imports) &&
+        sameList(before.globals, now.globals);
+      if (isSame) continue;
+
+      changed.add(file);
+      for (const target of [
+        ...(before?.imports ?? []),
+        ...(now?.imports ?? []),
+      ]) {
+        touchedImporters.add(target);
+      }
+      for (const name of [
+        ...(before?.globals ?? []),
+        ...(now?.globals ?? []),
+      ]) {
+        touchedMentions.add(name);
+      }
+    }
+
+    for (const source of sources) {
+      const file = cache.relative(source);
+      const analysis = cache.get(source)?.analysis;
+      if (!analysis || changed.has(file)) continue;
+
+      const { files, importers, mentions } = analysis.reads;
+      const isValid =
+        !files.some((read) => changed.has(read)) &&
+        !importers.some((read) => touchedImporters.has(read)) &&
+        !mentions.some((name) => touchedMentions.has(name));
+
+      if (isValid) reusable.set(source, analysis);
+    }
+
+    return reusable;
+  }
+
+  /** Adds the usages of the sources whose analysis was reused, as the analysis would have. */
+  private async addReused(
+    sources: readonly string[],
+    reused: ReadonlyMap<string, CachedAnalysis>
+  ): Promise<void> {
+    const cache = this.cache;
+    if (!cache) return;
+
+    for (const file of sources) {
+      const analysis = reused.get(file);
+      if (!analysis) continue;
+
+      cache.update(file, { analysis });
+      this.reusedAnalyses++;
+
+      const usages = analysis.usages.map((usage) => ({
+        ...usage,
+        targetFile: cache.absolute(usage.targetFile),
+      }));
+      const code = usages.length > 0 ? await readTextFile(file) : undefined;
+      this.addUsages(file, usages, code);
+    }
+  }
+
+  /** Keeps what a file's analysis found and read, for the next run. */
+  private recordAnalysis(
+    file: string,
+    usages: readonly ParaglideUsage[],
+    reads: ReadList
+  ): void {
+    const cache = this.cache;
+    if (!cache) return;
+
+    // Before `addUsages` adds the inlang project, which the next run adds again.
+    cache.update(file, {
+      analysis: {
+        usages: usages.map((usage) => ({
+          ...usage,
+          targetFile: cache.relative(usage.targetFile),
+        })),
+        reads: {
+          files: reads.files.map((read) => cache.relative(read)).sort(),
+          importers: reads.importers.map((read) => cache.relative(read)).sort(),
+          mentions: [...reads.mentions].sort(),
+        },
+      },
+    });
+  }
+
   /** The cache for this run's languages, targets and auto-imported names. */
   private loadCache(): UsageCache {
     const { projectRoot, languages, targets } = this.settings;
@@ -355,7 +517,13 @@ export class ContextCollector {
       settings: [
         ...languages.map(({ name }) => `language ${name}`),
         ...targets.map(({ name }) => `target ${name}`),
-        ...[...this.globalNames].sort().map((name) => `global ${name}`),
+        // What each auto-imported name stands for.
+        ...this.globals
+          .map(
+            ({ name, file, exportName }) =>
+              `global ${name} ${path.relative(projectRoot, file)} ${exportName}`
+          )
+          .sort(),
       ],
     });
 
@@ -601,6 +769,9 @@ export class ContextCollector {
         (outdirs ? `; outdirs: ${outdirs}` : '') +
         (this.unchangedFiles > 0
           ? `; ${this.unchangedFiles} file(s) indexed as in the last run`
+          : '') +
+        (this.reusedAnalyses > 0
+          ? `; ${this.reusedAnalyses} file(s) analyzed as in the last run`
           : '')
     );
   }

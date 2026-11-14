@@ -9,6 +9,7 @@ import {
   withSharedSites,
   type ModuleSummary,
 } from '../analysis/module-store.js';
+import type { ReadList } from '../analysis/reads.js';
 import type { ParaglideUsage, TrackedSymbol } from '../analysis/types.js';
 import type { SharedNameList } from '../utils/name-list.js';
 import { MAX_CONCURRENT_READS } from '../utils/read-file.js';
@@ -66,10 +67,23 @@ export type SharedJob = {
 
 /** A range's values, null if it could not be sent between threads; or that no other thread holds a range any more. */
 export type ChunkMessage =
-  | { id: number; chunk: number; symbols: TrackedSymbol[] | null }
+  | {
+      id: number;
+      chunk: number;
+      symbols: TrackedSymbol[] | null;
+      /** What evaluating the range read: see `reads.ts`. */
+      reads: ReadList;
+    }
   | { id: number; done: true };
 
-type ChunkResult = { chunk: number; symbols: TrackedSymbol[] | null };
+export type ChunkResult = {
+  chunk: number;
+  symbols: TrackedSymbol[] | null;
+  reads: ReadList;
+};
+
+/** A file's usages, and what finding them read: see `reads.ts`. */
+export type AnalyzedFile = { usages: ParaglideUsage[]; reads: ReadList };
 
 export type SharedIndex = Omit<AnalysisIndex, 'summaries'> & {
   summaries: readonly ModuleSummary<SharedNameList>[];
@@ -270,7 +284,7 @@ export class AnalysisPool {
   async analyze(
     index: AnalysisIndex,
     files: readonly string[],
-    onAnalyzed: (file: string, usages: ParaglideUsage[]) => Promise<void>
+    onAnalyzed: (file: string, analyzed: AnalyzedFile) => Promise<void>
   ): Promise<void> {
     // The threads that indexed keep what the languages' tools loaded:
     // compilers, and WebAssembly memory that never shrinks. The analysis
@@ -323,7 +337,7 @@ export class AnalysisPool {
             slot,
             { type: 'analyze', files: chunk },
             giveIndex
-          )) as ParaglideUsage[][];
+          )) as AnalyzedFile[];
           chunk.forEach((file, at) =>
             added.push(onAnalyzed(file, results[at]!))
           );
