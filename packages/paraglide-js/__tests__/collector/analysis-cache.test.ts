@@ -119,3 +119,45 @@ test('changing a file the helper does not see leaves the helper reused', async (
   // All but plain.ts.
   expect(info.join('\n')).toMatch(/4 file\(s\) analyzed as in the last run/);
 });
+
+test('a component a language generates a module for is generated only if a file is analyzed', async () => {
+  const files = {
+    'src/Card.svelte': `<script>\n  import { m } from "./paraglide/messages.js";\n  import { label } from "./label";\n</script>\n<p title={label(m.greeting)}></p>\n`,
+    'src/label.ts': PROJECT['src/label.ts']!,
+    'src/plain.ts': PROJECT['src/plain.ts']!,
+  };
+  const root = await writeProject('analysis-cache-svelte', {
+    ...files,
+    [LOCK_FILE]: LOCK,
+  });
+  const first = await collect(root);
+
+  // Only messages changed: nothing is analyzed, and the component is not generated.
+  await apply(root, {
+    'messages/en.json': JSON.stringify({ greeting: 'Hello' }),
+  });
+  const reused = await collect(root);
+  expect(reused.info.join('\n')).toMatch(
+    /3 file\(s\) indexed as in the last run/
+  );
+  expect(reused.info.join('\n')).toMatch(
+    /3 file\(s\) analyzed as in the last run/
+  );
+  expect(reused.usages).toEqual(first.usages);
+
+  // A changed file is analyzed: the component's module is generated, as the analysis may load it.
+  const change = {
+    'src/label.ts': `export function label(message: () => string) { return message() + message(); }`,
+  };
+  await apply(root, change);
+  const warm = await collect(root);
+  const cold = await writeProject('analysis-cache-svelte-cold', {
+    ...files,
+    ...change,
+  });
+  const fresh = await collect(cold);
+
+  expect(await readMetadata(root)).toEqual(await readMetadata(cold));
+  expect(warm.usages).toEqual(fresh.usages);
+  expect(warm.warnings).toEqual(fresh.warnings);
+});
