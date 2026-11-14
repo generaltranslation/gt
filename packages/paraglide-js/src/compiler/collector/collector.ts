@@ -3,6 +3,7 @@ import path from 'node:path';
 import {
   ModuleGraph,
   type AnalyzedFile,
+  type UsageKey,
   type GlobalBinding,
 } from '../analysis/module-graph.js';
 import type { ParaglideUsage } from '../analysis/types.js';
@@ -333,20 +334,23 @@ export class ContextCollector {
 
   /** Records the usages of an analyzed file, for the metadata files. */
   private record(file: string, analyzed: AnalyzedFile | undefined): void {
-    const usages = analyzed?.usages ?? [];
+    this.analyzed.set(file, analyzed?.count ?? 0);
+    if (!analyzed || analyzed.count === 0) return;
 
-    this.recordInlangProjects(usages);
-    this.checkCatalogs(file, usages);
-    this.analyzed.set(file, usages.length);
-
-    if (!analyzed || usages.length === 0) return;
+    // What the usages are of, once each, rather than every usage.
+    const { keys } = analyzed;
+    this.recordInlangProjects(keys);
+    // Only a file with an unknown message needs its usages, to name where each one is.
+    if (keys.some((key) => !this.isKnown(key))) {
+      this.checkCatalogs(file, analyzed.usages);
+    }
 
     // The analysis kept the usages, and the file's code.
     this.output.add(file);
   }
 
   /** Records the inlang project the outdir of each message usage is paired with: the usage counts for it. */
-  private recordInlangProjects(usages: readonly ParaglideUsage[]): void {
+  private recordInlangProjects(usages: readonly UsageKey[]): void {
     for (const usage of usages) {
       const outdir = this.messageOutdir(usage);
       if (!outdir) continue;
@@ -360,17 +364,23 @@ export class ContextCollector {
 
   private checkCatalogs(file: string, usages: readonly ParaglideUsage[]): void {
     for (const usage of usages) {
-      const outdir = this.messageOutdir(usage);
-      const catalog = outdir && this.catalogs.get(outdir);
-      if (!catalog || isInCatalog(usage, catalog)) continue;
+      if (this.isKnown(usage)) continue;
 
       const position = `${this.relative(file)}:${usage.line}:${usage.column}`;
       this.unknownMessages.push(`${usage.name} (${position})`);
     }
   }
 
+  /** False for a usage of a message its outdir's catalog does not have. */
+  private isKnown(usage: UsageKey): boolean {
+    const outdir = this.messageOutdir(usage);
+    const catalog = outdir && this.catalogs.get(outdir);
+
+    return !catalog || isInCatalog(usage, catalog);
+  }
+
   /** The outdir of the message a usage resolves to; undefined for other targets. */
-  private messageOutdir(usage: ParaglideUsage): string | undefined {
+  private messageOutdir(usage: UsageKey): string | undefined {
     if (usage.target !== 'message') return undefined;
 
     const { targetFile } = usage;

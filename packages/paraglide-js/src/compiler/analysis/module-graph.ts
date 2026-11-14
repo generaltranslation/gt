@@ -92,7 +92,31 @@ export type ModuleGraphOptions = {
 
 /** The usages of a file that has any. The analysis keeps them, and the file's code, for `writeMetadata`. */
 /** Its `usages` are read from the analysis each time they are asked for. */
-export type AnalyzedFile = { readonly usages: ParaglideUsage[] };
+export type AnalyzedFile = {
+  readonly usages: ParaglideUsage[];
+  /** How many usages it has. */
+  readonly count: number;
+  /** What its usages are of, once each: far fewer than its usages. */
+  readonly keys: UsageKey[];
+};
+
+/** What usages have in common: all of a file's that share one are in or not in a catalog alike. */
+export type UsageKey = Pick<
+  ParaglideUsage,
+  'target' | 'targetFile' | 'name' | 'dynamic'
+>;
+
+/** A file's usage keys from their JSON, `[target, targetFile, name, dynamic]`. */
+function parseKeys(json: string, paths: readonly string[]): UsageKey[] {
+  const keys = JSON.parse(json) as Array<[string, number, string, boolean]>;
+
+  return keys.map(([target, targetFile, name, dynamic]) => ({
+    target,
+    targetFile: paths[targetFile]!,
+    name,
+    dynamic,
+  }));
+}
 
 /** The usages of one file's JSON, with their target's file named. */
 function parseUsages(json: string, paths: readonly string[]): ParaglideUsage[] {
@@ -297,12 +321,17 @@ export class ModuleGraph {
       this.options.onSkipped?.(file, { error: CHANGED_DURING_ANALYSIS });
     }
 
+    const { graph } = this;
     analysis.files.forEach((file, index) => {
-      const json = analysis.usages[index]!;
-      // Read when asked for, one file at a time: a project's usages as objects take far more memory.
+      const keys = analysis.keys[index]!;
+      // Read when asked for, one file at a time: a project's usages are millions.
       analyzed.set(file, {
         get usages() {
-          return parseUsages(json, paths);
+          return parseUsages(graph.usagesOf(file) ?? '[]', paths);
+        },
+        count: analysis.counts[index]!,
+        get keys() {
+          return parseKeys(keys, paths);
         },
       });
     });

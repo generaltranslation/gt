@@ -166,9 +166,9 @@ pub struct NativeAnalysis {
   pub files: Vec<String>,
   /// How many usages each has.
   pub counts: Vec<u32>,
-  /// The usages of each as a JSON list, one text per file so that a project's usages are not
-  /// limited by the length of one JavaScript string.
-  pub usages: Vec<String>,
+  /// What each one's usages are of, once each, as a JSON list of `[target, targetFile, name,
+  /// dynamic]`: far fewer than the usages, which `usagesOf` gives when asked for.
+  pub keys: Vec<String>,
   /// The files that the usages' `targetFile` name by index.
   pub paths: Vec<String>,
   /// The files that changed on disk since they were loaded, whose usages are left out.
@@ -490,10 +490,36 @@ struct UsageJson<'a> {
   target_file: u32,
 }
 
+/// What usages of a file have in common: the target's name, the target's file, the name and
+/// whether it is computed.
+#[derive(Serialize, PartialEq, Eq, Hash)]
+struct UsageKey<'a>(&'a str, u32, &'a str, bool);
+
 struct WrittenFile {
   file: String,
   count: u32,
-  json: String,
+  keys: String,
+}
+
+/// The usages as a JSON list; writing to a `String` does not fail.
+fn usages_json(graph: &Graph, usages: &[Usage]) -> String {
+  let rows: Vec<UsageJson> = usages
+    .iter()
+    .map(|usage| UsageJson {
+      target: &graph.options.targets[usage.target as usize].name,
+      name: &usage.name,
+      dynamic: usage.dynamic,
+      kind: usage.kind.as_str(),
+      start: usage.start,
+      end: usage.end,
+      line: usage.line,
+      column: usage.column,
+      end_line: usage.end_line,
+      target_file: usage.target_file,
+    })
+    .collect();
+
+  serde_json::to_string(&rows).unwrap_or_default()
 }
 
 fn to_analysis(
@@ -510,29 +536,24 @@ fn to_analysis(
         return None;
       }
 
-      let rows: Vec<UsageJson> = usages
+      let mut seen: FxHashSet<UsageKey> = FxHashSet::default();
+      let keys: Vec<UsageKey> = usages
         .iter()
-        .map(|usage| UsageJson {
-          target: &graph.options.targets[usage.target as usize].name,
-          name: &usage.name,
-          dynamic: usage.dynamic,
-          kind: usage.kind.as_str(),
-          start: usage.start,
-          end: usage.end,
-          line: usage.line,
-          column: usage.column,
-          end_line: usage.end_line,
-          target_file: usage.target_file,
+        .map(|usage| {
+          UsageKey(
+            &graph.options.targets[usage.target as usize].name,
+            usage.target_file,
+            &usage.name,
+            usage.dynamic,
+          )
         })
+        .filter(|key| seen.insert(UsageKey(key.0, key.1, key.2, key.3)))
         .collect();
-
-      // Writing to a `String` does not fail.
-      let json = serde_json::to_string(&rows).unwrap_or_default();
 
       Some(WrittenFile {
         file: file.clone(),
         count: usages.len() as u32,
-        json,
+        keys: serde_json::to_string(&keys).unwrap_or_default(),
       })
     })
     .collect();
@@ -540,14 +561,14 @@ fn to_analysis(
   let mut analysis = NativeAnalysis {
     files: Vec::new(),
     counts: Vec::new(),
-    usages: Vec::new(),
+    keys: Vec::new(),
     paths: targets.paths.clone(),
     changed: Vec::new(),
   };
   for written in written.into_iter().flatten() {
     analysis.files.push(written.file);
     analysis.counts.push(written.count);
-    analysis.usages.push(written.json);
+    analysis.keys.push(written.keys);
   }
 
   analysis
@@ -1194,6 +1215,16 @@ impl NativeGraph {
   #[napi]
   pub fn queue_empty(&self, file: String, order: u32, code: String) {
     self.queue(file, order, Input::Empty { code });
+  }
+
+  /// The usages of an analyzed file, as a JSON list whose `targetFile`s index the analysis'
+  /// `paths`; none for a file without usages.
+  #[napi]
+  pub fn usages_of(&self, file: String) -> Option<String> {
+    let state = lock(&self.state);
+    let recorded = state.recorded.get(file.as_str())?;
+
+    Some(usages_json(&state.graph, &recorded.usages))
   }
 
   /// A file that JavaScript read, which is written here if a native language claims it, and is

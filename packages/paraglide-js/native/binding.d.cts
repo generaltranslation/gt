@@ -18,6 +18,11 @@ export declare class NativeGraph {
   outdirs(): Array<string>
   /** The files that are not in an outdir. */
   notGenerated(files: Array<string>): Array<string>
+  /**
+   * The usages of an analyzed file, as a JSON list whose `targetFile`s index the analysis'
+   * `paths`; none for a file without usages.
+   */
+  usagesOf(file: string): string | null
   queueScript(file: string, order: number, code: string): void
   /** A file in a format that is not analyzed. */
   queueEmpty(file: string, order: number, code: string): void
@@ -90,10 +95,10 @@ export interface NativeAnalysis {
   /** How many usages each has. */
   counts: Array<number>
   /**
-   * The usages of each as a JSON list, one text per file so that a project's usages are not
-   * limited by the length of one JavaScript string.
+   * What each one's usages are of, once each, as a JSON list of `[target, targetFile, name,
+   * dynamic]`: far fewer than the usages, which `usagesOf` gives when asked for.
    */
-  usages: Array<string>
+  keys: Array<string>
   /** The files that the usages' `targetFile` name by index. */
   paths: Array<string>
   /** The files that changed on disk since they were loaded, whose usages are left out. */
