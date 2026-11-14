@@ -25,7 +25,11 @@ import type { FileSelection } from '../project/files.js';
 import { projectPackages } from '../project/packages.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
 import { readTextFile } from '../utils/read-file.js';
-import { AnalysisPool, analysisThreads } from './analysis-pool.js';
+import {
+  AnalysisPool,
+  analysisThreads,
+  threadBudget,
+} from './analysis-pool.js';
 import { isInCatalog, unknownMessagesWarning } from './catalog-check.js';
 import { MetadataFiles } from './metadata-files.js';
 import { MissingTools } from './missing-tools.js';
@@ -165,8 +169,10 @@ export class ContextCollector {
 
     const codeSize = await sizeOf(files);
     this.averageFileSize = codeSize / Math.max(1, files.length);
-    this.budget = analysisBudget(this.averageFileSize);
     this.pool = this.startThreads(codeSize);
+    this.budget = this.pool
+      ? threadBudget(this.averageFileSize)
+      : analysisBudget(this.averageFileSize);
     try {
       sourceCount = await this.scan(files, autoImportDeclarations);
     } finally {
@@ -209,7 +215,7 @@ export class ContextCollector {
       languages === defaultLanguages && targets === defaultTargets;
     if (!isDefault) return undefined;
 
-    const threads = analysisThreads(codeSize, this.budget);
+    const threads = analysisThreads(codeSize);
 
     return threads > 0 ? new AnalysisPool(threads, projectRoot) : undefined;
   }
