@@ -150,7 +150,8 @@ export function availableMemory(): number {
 
 /** Worker threads that index and analyze the project's files with the default languages and targets. */
 export class AnalysisPool {
-  private readonly workers: PoolWorker[];
+  private workers: PoolWorker[];
+  private readonly workerData: AnalysisWorkerData;
   /** By file, kept from indexing: a thread that loads the file again asks for it. */
   private readonly generated = new Map<string, GeneratedBytes>();
   private readonly queue: Array<{
@@ -161,22 +162,12 @@ export class AnalysisPool {
   private globalNames: readonly string[] = [];
 
   constructor(size: number, projectRoot: string) {
-    const workerData: AnalysisWorkerData = {
+    this.workerData = {
       projectRoot,
       // The threads share the file descriptors one process has.
       concurrentReads: Math.floor(MAX_CONCURRENT_READS / size),
     };
-
-    this.workers = Array.from(
-      { length: size },
-      () =>
-        new PoolWorker(
-          new Worker(WORKER_URL, {
-            workerData,
-            resourceLimits: { maxOldGenerationSizeMb: THREAD_HEAP_MB },
-          })
-        )
-    );
+    this.workers = this.startWorkers(size);
   }
 
   /** The auto-imported names: see `summarizeModule`. */
@@ -208,6 +199,13 @@ export class AnalysisPool {
     files: readonly string[],
     onAnalyzed: (file: string, usages: ParaglideUsage[]) => Promise<void>
   ): Promise<void> {
+    // The threads that indexed keep what the languages' tools loaded:
+    // compilers, and WebAssembly memory that never shrinks. The analysis
+    // reads what the tools generated, so new threads do it without them.
+    const size = this.workers.length;
+    await Promise.all(this.workers.map((worker) => worker.terminate()));
+    this.workers = this.startWorkers(size);
+
     const shared: SharedIndex = {
       ...index,
       generatedFiles: [...this.generated.keys()],
@@ -255,6 +253,19 @@ export class AnalysisPool {
 
   async close(): Promise<void> {
     await Promise.all(this.workers.map((worker) => worker.terminate()));
+  }
+
+  private startWorkers(size: number): PoolWorker[] {
+    return Array.from(
+      { length: size },
+      () =>
+        new PoolWorker(
+          new Worker(WORKER_URL, {
+            workerData: this.workerData,
+            resourceLimits: { maxOldGenerationSizeMb: THREAD_HEAP_MB },
+          })
+        )
+    );
   }
 
   /** A thread blocks on the flag until the main thread answers on the port. */
