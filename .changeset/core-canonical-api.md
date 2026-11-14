@@ -23,11 +23,11 @@ Removed `GT` methods and their replacements on the project-scoped `GeneralTransl
 - `downloadFileBatch()` → `queryFilesContent()`
 - `uploadFonts()` → `account.org(orgId).upsertAssets()` on an account-scoped `GeneralTranslation`
 
-`update()`, `updateBranch()`, `createApiKey(body)`, `listApiKeys()`, `getApiKey(apiKeyId)` and `deleteApiKey(apiKeyId)` are new. `createApiKey(body)` creates a project API key with exactly the requested permissions and returns it with its `key`, which no later call returns.
+`update()`, `updateBranch()`, `createApiKey(body)`, `listApiKeys()`, `getApiKey(apiKeyId)` and `deleteApiKey(apiKeyId)` are new. `createApiKey(body)` creates a project API key with exactly the requested permissions and returns it with its `key`, which no later call returns. `syncDefaultLocale(locale)` sets the project's default locale unless it already is, and returns a missing `project:write` permission as `{ status: 'permission_missing', previousDefaultLocale, error }` instead of throwing it. `createOrReuseBranch({ name, isDefault })` creates a branch or returns the one the project already has with that name.
 
 Changed methods:
 
-- `createBranch()` takes `{ name, isDefault }` only, returns the branch itself rather than `{ branch }`, and sends only the create request: a name the project already has throws an `ApiError` with code `already_exists`. To reuse an existing branch, call `listBranches({ name: [name] })` first and create only when it returns none.
+- `createBranch()` takes `{ name, isDefault }` only, returns the branch itself rather than `{ branch }`, and sends only the create request: a name the project already has throws an `ApiError` with code `already_exists`. To reuse an existing branch, call `createOrReuseBranch()`.
 - `awaitJobs(jobIds, options)` takes job IDs only and returns jobs as `{ id, status, subject?, error? }`, with `error` a string. A job the project does not have is `not_found`; `unknown` means the job was not polled before the timeout. `options.onPoll` receives each poll's statuses.
 - `queryJobs(jobIds, { signal, timeout })` takes an optional `signal` that aborts in-flight requests.
 - `translate()` and `translateMany()` failures (`TranslationError`) carry the API's string error `code` (for example `plan_feature_unavailable`) instead of a number; a missing or invalid translation reads `internal_error`.

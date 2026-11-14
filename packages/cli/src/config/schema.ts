@@ -4,7 +4,7 @@ import {
   GTOutputFileConfigSchema,
 } from 'generaltranslation/config-schema';
 import { FileFormat } from '@generaltranslation/api';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import {
   FILE_EXT_TO_EXT_LABEL,
   SUPPORTED_FILE_EXTENSIONS,
@@ -31,15 +31,28 @@ const TransformationFormatSchema = v.pipe(
 const stringArray = v.array(v.string());
 const nonEmptyStringArray = v.pipe(stringArray, v.minLength(1));
 
+function optionalDescribed<
+  TSchema extends v.GenericSchema,
+  TDescription extends string,
+>(schema: TSchema, text: TDescription) {
+  return v.optional(
+    v.pipe(schema, v.description<v.InferOutput<TSchema>, TDescription>(text))
+  );
+}
+
+function optionalFlag(description: string) {
+  return v.optional(
+    v.pipe(v.boolean(), v.metadata({ description, default: false }))
+  );
+}
+
 export const IncludePatternSchema = v.union([
   v.string(),
   v.strictObject({ pattern: v.string(), publish: v.optional(v.boolean()) }),
 ]);
 
 export const TransformOptionSchema = v.strictObject({
-  match: v.optional(
-    v.pipe(v.string(), v.description('Regex to match strings to replace'))
-  ),
+  match: optionalDescribed(v.string(), 'Regex to match strings to replace'),
   replace: v.pipe(
     v.string(),
     v.description(
@@ -57,19 +70,13 @@ export const RequiresReviewConfigSchema = v.pipe(
   v.union([
     v.boolean(),
     v.strictObject({
-      include: v.optional(
-        v.pipe(
-          stringArray,
-          v.description('Glob patterns for files that require review approval')
-        )
+      include: optionalDescribed(
+        stringArray,
+        'Glob patterns for files that require review approval'
       ),
-      exclude: v.optional(
-        v.pipe(
-          stringArray,
-          v.description(
-            'Glob patterns for files that never require review approval (wins over include)'
-          )
-        )
+      exclude: optionalDescribed(
+        stringArray,
+        'Glob patterns for files that never require review approval (wins over include)'
       ),
     }),
   ]),
@@ -131,13 +138,9 @@ function createFileTypeSchema(
           examples: examples?.include,
         })
       ),
-      exclude: v.optional(
-        v.pipe(
-          stringArray,
-          v.description(
-            `Array of glob patterns that match the ${label} files you want to exclude from translation`
-          )
-        )
+      exclude: optionalDescribed(
+        stringArray,
+        `Array of glob patterns that match the ${label} files you want to exclude from translation`
       ),
       transform: v.optional(
         v.pipe(
@@ -221,13 +224,9 @@ export const SourceObjectOptionsSchema = v.pipe(
         'Array of relative JSONPaths to include in the translated JSON'
       )
     ),
-    key: v.optional(
-      v.pipe(
-        v.string(),
-        v.description(
-          'Relative JSONPath to the key to distinguish between source and target locales (required for array type)'
-        )
-      )
+    key: optionalDescribed(
+      v.string(),
+      'Relative JSONPath to the key to distinguish between source and target locales (required for array type)'
     ),
     localeProperty: v.optional(
       v.pipe(
@@ -239,37 +238,21 @@ export const SourceObjectOptionsSchema = v.pipe(
         })
       )
     ),
-    transform: v.optional(
-      v.pipe(
-        TransformOptionsSchema,
-        v.description(
-          'Optional config for transforming specific fields in the source item'
-        )
-      )
+    transform: optionalDescribed(
+      TransformOptionsSchema,
+      'Optional config for transforming specific fields in the source item'
     ),
-    omitProperties: v.optional(
-      v.pipe(
-        stringArray,
-        v.description(
-          'Top-level properties to remove from generated non-default-locale entries'
-        )
-      )
+    omitProperties: optionalDescribed(
+      stringArray,
+      'Top-level properties to remove from generated non-default-locale entries'
     ),
-    experimentalSort: v.optional(
-      v.pipe(
-        v.picklist(['locales', 'localesAlphabetical']),
-        v.description(
-          "Optional sorting behavior for array type. When set to 'locales', items are ordered to match your locales array. When set to 'localesAlphabetical', the default locale stays first and the remaining locales are sorted alphabetically by locale code."
-        )
-      )
+    experimentalSort: optionalDescribed(
+      v.picklist(['locales', 'localesAlphabetical']),
+      "Optional sorting behavior for array type. When set to 'locales', items are ordered to match your locales array. When set to 'localesAlphabetical', the default locale stays first and the remaining locales are sorted alphabetically by locale code."
     ),
-    splitEntries: v.optional(
-      v.pipe(
-        v.boolean(),
-        v.description(
-          'Extract non-default keyed entries into separate files and replace them with $ref pointers'
-        )
-      )
+    splitEntries: optionalDescribed(
+      v.boolean(),
+      'Extract non-default keyed entries into separate files and replace them with $ref pointers'
     ),
   }),
   v.description('Source object options for this JSONPath')
@@ -290,11 +273,9 @@ const jsonSchemaEntries = {
       })
     )
   ),
-  resolveRefs: v.optional(
-    v.pipe(
-      v.boolean(),
-      v.description('Resolve $ref entries in this file before processing')
-    )
+  resolveRefs: optionalDescribed(
+    v.boolean(),
+    'Resolve $ref entries in this file before processing'
   ),
 };
 
@@ -335,23 +316,17 @@ export const JsonSchemaSchema = v.pipe(
 
 export const YamlSchemaSchema = v.pipe(
   v.strictObject({
-    preset: v.optional(
-      v.pipe(
-        v.picklist(['mintlify', 'openapi']),
-        v.description('Preset configuration to use')
-      )
+    preset: optionalDescribed(
+      v.picklist(['mintlify', 'openapi']),
+      'Preset configuration to use'
     ),
-    include: v.optional(
-      v.pipe(
-        stringArray,
-        v.description('Array of YAML paths to include for translation')
-      )
+    include: optionalDescribed(
+      stringArray,
+      'Array of YAML paths to include for translation'
     ),
-    transform: v.optional(
-      v.pipe(
-        TransformOptionsSchema,
-        v.description('Optional config for transforming specific fields')
-      )
+    transform: optionalDescribed(
+      TransformOptionsSchema,
+      'Optional config for transforming specific fields'
     ),
   }),
   v.description('YAML schema options for files matching this glob pattern')
@@ -359,91 +334,51 @@ export const YamlSchemaSchema = v.pipe(
 
 export const MintlifyOptionsSchema = v.pipe(
   v.strictObject({
-    openapi: v.optional(
-      v.pipe(
-        v.strictObject({
-          files: v.pipe(
-            nonEmptyStringArray,
-            v.description(
-              'Ordered list of OpenAPI spec files (JSON only). Earlier entries win when resolving ambiguities.'
-            )
-          ),
-          translateFields: v.optional(
-            v.pipe(
-              stringArray,
-              v.description('JSONPaths to translate within OpenAPI specs.')
-            )
-          ),
-        }),
-        v.description(
-          'OpenAPI localization settings for Mintlify. Framework defaults to mintlify.'
-        )
-      )
+    openapi: optionalDescribed(
+      v.strictObject({
+        files: v.pipe(
+          nonEmptyStringArray,
+          v.description(
+            'Ordered list of OpenAPI spec files (JSON only). Earlier entries win when resolving ambiguities.'
+          )
+        ),
+        translateFields: optionalDescribed(
+          stringArray,
+          'JSONPaths to translate within OpenAPI specs.'
+        ),
+      }),
+      'OpenAPI localization settings for Mintlify. Framework defaults to mintlify.'
     ),
-    inferTitleFromFilename: v.optional(
-      v.pipe(
-        v.boolean(),
-        v.metadata({
-          description:
-            'Add a frontmatter title derived from the file name to MDX pages that have none.',
-          default: false,
-        })
-      )
+    inferTitleFromFilename: optionalFlag(
+      'Add a frontmatter title derived from the file name to MDX pages that have none.'
     ),
-    localizeRedirects: v.optional(
-      v.pipe(
-        v.boolean(),
-        v.metadata({
-          description:
-            'Add localized copies of English redirects for pages renamed or removed in a translate run. Uses docsUrlPattern and experimentalHideDefaultLocale to place the locale.',
-          default: false,
-        })
-      )
+    localizeRedirects: optionalFlag(
+      'Add localized copies of English redirects for pages renamed or removed in a translate run. Uses docsUrlPattern and experimentalHideDefaultLocale to place the locale.'
     ),
   }),
   v.description('Mintlify-specific options.')
 );
 
-function optionalFlag(description: string) {
-  return v.optional(
-    v.pipe(v.boolean(), v.metadata({ description, default: false }))
-  );
-}
-
 export const AdditionalOptionsSchema = v.pipe(
   v.strictObject({
-    jsonSchema: v.optional(
-      v.pipe(
-        v.record(v.string(), JsonSchemaSchema),
-        v.description('JSON schema configuration for specific file globs')
-      )
+    jsonSchema: optionalDescribed(
+      v.record(v.string(), JsonSchemaSchema),
+      'JSON schema configuration for specific file globs'
     ),
-    yamlSchema: v.optional(
-      v.pipe(
-        v.record(v.string(), YamlSchemaSchema),
-        v.description('YAML schema configuration for specific file globs')
-      )
+    yamlSchema: optionalDescribed(
+      v.record(v.string(), YamlSchemaSchema),
+      'YAML schema configuration for specific file globs'
     ),
-    skipFileValidation: v.optional(
-      v.pipe(
-        v.strictObject({
-          json: v.optional(
-            v.pipe(v.boolean(), v.description('Skip JSON parseability checks.'))
-          ),
-          yaml: v.optional(
-            v.pipe(v.boolean(), v.description('Skip YAML parseability checks.'))
-          ),
-          mdx: v.optional(
-            v.pipe(
-              v.boolean(),
-              v.description('Skip MDX AST parseability checks.')
-            )
-          ),
-        }),
-        v.description(
-          'Skip pre-parse validation for specific file types before sending content to the translation pipeline.'
-        )
-      )
+    skipFileValidation: optionalDescribed(
+      v.strictObject({
+        json: optionalDescribed(v.boolean(), 'Skip JSON parseability checks.'),
+        yaml: optionalDescribed(v.boolean(), 'Skip YAML parseability checks.'),
+        mdx: optionalDescribed(
+          v.boolean(),
+          'Skip MDX AST parseability checks.'
+        ),
+      }),
+      'Skip pre-parse validation for specific file types before sending content to the translation pipeline.'
     ),
     mintlify: v.optional(MintlifyOptionsSchema),
     docsUrlPattern: v.optional(
@@ -468,42 +403,30 @@ export const AdditionalOptionsSchema = v.pipe(
         v.examples(['/docs/[locale]/foo.md', '/[locale]/foo.md'])
       )
     ),
-    excludeStaticUrls: v.optional(
-      v.pipe(
-        stringArray,
-        v.description(
-          'Glob patterns of URLs to leave unlocalized; [locale] matches the default locale'
-        )
-      )
+    excludeStaticUrls: optionalDescribed(
+      stringArray,
+      'Glob patterns of URLs to leave unlocalized; [locale] matches the default locale'
     ),
-    excludeStaticImports: v.optional(
-      v.pipe(
-        stringArray,
-        v.description(
-          'Glob patterns of import paths to leave unlocalized; [locale] matches the default locale'
-        )
-      )
+    excludeStaticImports: optionalDescribed(
+      stringArray,
+      'Glob patterns of import paths to leave unlocalized; [locale] matches the default locale'
     ),
-    docsImportRewrites: v.optional(
-      v.pipe(
-        v.array(
-          v.strictObject({
-            match: v.pipe(
-              v.string(),
-              v.description("Prefix to match, e.g. '@site/docs'")
-            ),
-            replace: v.pipe(
-              v.string(),
-              v.description(
-                'Replacement prefix, can include [locale] or [defaultLocale]'
-              )
-            ),
-          })
-        ),
-        v.description(
-          "Explicit rewrites for import prefixes before pattern-based localization (e.g., map '@site/docs' to '@site/i18n/[locale]/docusaurus-plugin-content-docs/current')"
-        )
-      )
+    docsImportRewrites: optionalDescribed(
+      v.array(
+        v.strictObject({
+          match: v.pipe(
+            v.string(),
+            v.description("Prefix to match, e.g. '@site/docs'")
+          ),
+          replace: v.pipe(
+            v.string(),
+            v.description(
+              'Replacement prefix, can include [locale] or [defaultLocale]'
+            )
+          ),
+        })
+      ),
+      "Explicit rewrites for import prefixes before pattern-based localization (e.g., map '@site/docs' to '@site/i18n/[locale]/docusaurus-plugin-content-docs/current')"
     ),
     docsHideDefaultLocaleImport: optionalFlag(
       'If true, hide the default locale in the import path'
@@ -526,13 +449,9 @@ export const AdditionalOptionsSchema = v.pipe(
             skipUntranslatedPages: optionalFlag(
               'Keep links to source pages that have no translation on the default locale. Assumes URLs mirror source file paths and missing localized pages return a 404, as on Mintlify. Leave off for sites that serve untranslated pages at the localized URL, such as Docusaurus.'
             ),
-            attributes: v.optional(
-              v.pipe(
-                stringArray,
-                v.description(
-                  'Extra JSX attribute names or glob patterns whose URLs are localized, such as "href2" or "href*". "href" is always localized. Avoid patterns that match asset attributes like "src", since shared assets would 404 with a locale prefix.'
-                )
-              )
+            attributes: optionalDescribed(
+              stringArray,
+              'Extra JSX attribute names or glob patterns whose URLs are localized, such as "href2" or "href*". "href" is always localized. Avoid patterns that match asset attributes like "src", since shared assets would 404 with a locale prefix.'
             ),
           }),
         ]),
@@ -546,13 +465,9 @@ export const AdditionalOptionsSchema = v.pipe(
     experimentalLocalizeRelativeAssets: optionalFlag(
       'Rewrites relative image asset URLs in translated md/mdx files to valid paths'
     ),
-    experimentalAddHeaderAnchorIds: v.optional(
-      v.pipe(
-        v.picklist(['mintlify', 'default']),
-        v.description(
-          "Format for heading anchor IDs: 'mintlify' for Mintlify's native {#id} on every heading, 'default' for escaped inline \\{#id\\}. Can run without static URL localization."
-        )
-      )
+    experimentalAddHeaderAnchorIds: optionalDescribed(
+      v.picklist(['mintlify', 'default']),
+      "Format for heading anchor IDs: 'mintlify' for Mintlify's native {#id} on every heading, 'default' for escaped inline \\{#id\\}. Can run without static URL localization."
     ),
     experimentalHideDefaultLocale: optionalFlag(
       'Hides the default locale in the import path'
@@ -600,13 +515,9 @@ export const SharedStaticAssetsConfigSchema = v.pipe(
         "Glob or array of globs (repo-root relative) that match static assets to consolidate (e.g., 'docs/**/*.{png,jpg,svg}')."
       )
     ),
-    outDir: v.optional(
-      v.pipe(
-        v.string(),
-        v.description(
-          "Repo-root relative output directory where assets will be placed (on disk). Examples: 'public/shared', 'static/img', 'shared'. Required unless mirrorToLocales is true."
-        )
-      )
+    outDir: optionalDescribed(
+      v.string(),
+      "Repo-root relative output directory where assets will be placed (on disk). Examples: 'public/shared', 'static/img', 'shared'. Required unless mirrorToLocales is true."
     ),
     publicPath: v.optional(
       v.pipe(
@@ -641,11 +552,9 @@ export const FontsConfigSchema = v.pipe(
 export const GTConfigFileSchema = v.pipe(
   v.strictObject({
     ...GTConfigSchema.entries,
-    $schema: v.optional(
-      v.pipe(
-        v.string(),
-        v.description('JSON Schema reference for this configuration file')
-      )
+    $schema: optionalDescribed(
+      v.string(),
+      'JSON Schema reference for this configuration file'
     ),
     apiKey: v.optional(
       v.pipe(
@@ -677,9 +586,7 @@ export const GTConfigFileSchema = v.pipe(
     requiresReview: optionalFlag(
       'When true, translated files require approval before the CLI downloads and uses them. File-type requiresReview settings and component-level $requiresReview props override this default.'
     ),
-    publish: v.optional(
-      v.pipe(v.boolean(), v.description('Publish translations to the CDN'))
-    ),
+    publish: optionalDescribed(v.boolean(), 'Publish translations to the CDN'),
     omitConfigIds: optionalFlag(
       'Do not write _versionId or _branchId to gt.config.json'
     ),
@@ -702,78 +609,54 @@ export const GTConfigFileSchema = v.pipe(
         ])
       )
     ),
-    framework: v.optional(
-      v.pipe(
-        v.picklist(SUPPORTED_FRAMEWORKS),
-        v.description('The framework being used in the project')
-      )
+    framework: optionalDescribed(
+      v.picklist(SUPPORTED_FRAMEWORKS),
+      'The framework being used in the project'
     ),
-    version: v.optional(
-      v.pipe(
-        v.string(),
-        v.description(
-          'Custom version ID to use for translations. Should be unique'
-        )
-      )
+    version: optionalDescribed(
+      v.string(),
+      'Custom version ID to use for translations. Should be unique'
     ),
-    tag: v.optional(
-      v.pipe(
-        v.string(),
-        v.description('Tag for translation runs, as --tag <value> sets')
-      )
+    tag: optionalDescribed(
+      v.string(),
+      'Tag for translation runs, as --tag <value> sets'
     ),
-    tagMessage: v.optional(
-      v.pipe(
-        v.string(),
-        v.description('Message for the tag, as --message sets')
-      )
+    tagMessage: optionalDescribed(
+      v.string(),
+      'Message for the tag, as --message sets'
     ),
     files: v.optional(FilesOptionsSchema),
     sharedStaticAssets: v.optional(SharedStaticAssetsConfigSchema),
     fonts: v.optional(FontsConfigSchema),
     options: v.optional(AdditionalOptionsSchema),
-    branchOptions: v.optional(
-      v.pipe(
-        v.strictObject({
-          enabled: v.optional(
-            v.pipe(v.boolean(), v.description('Enable branching'))
-          ),
-          currentBranch: v.optional(
-            v.pipe(v.string(), v.description('Branch to translate'))
-          ),
-          autoDetectBranches: v.optional(
-            v.pipe(
-              v.boolean(),
-              v.metadata({
-                description: 'Detect the current branch with git',
-                default: true,
-              })
-            )
-          ),
-          remoteName: v.optional(
-            v.pipe(
-              v.string(),
-              v.description('Git remote used to detect branches')
-            )
-          ),
-        }),
-        v.description('Branch detection settings')
-      )
+    branchOptions: optionalDescribed(
+      v.strictObject({
+        enabled: optionalDescribed(v.boolean(), 'Enable branching'),
+        currentBranch: optionalDescribed(v.string(), 'Branch to translate'),
+        autoDetectBranches: v.optional(
+          v.pipe(
+            v.boolean(),
+            v.metadata({
+              description: 'Detect the current branch with git',
+              default: true,
+            })
+          )
+        ),
+        remoteName: optionalDescribed(
+          v.string(),
+          'Git remote used to detect branches'
+        ),
+      }),
+      'Branch detection settings'
     ),
-    parsingOptions: v.optional(
-      v.pipe(
-        v.strictObject({
-          conditionNames: v.optional(
-            v.pipe(
-              stringArray,
-              v.description(
-                'Export conditions to check when resolving monorepo packages'
-              )
-            )
-          ),
-        }),
-        v.description('Source parsing settings')
-      )
+    parsingOptions: optionalDescribed(
+      v.strictObject({
+        conditionNames: optionalDescribed(
+          stringArray,
+          'Export conditions to check when resolving monorepo packages'
+        ),
+      }),
+      'Source parsing settings'
     ),
   }),
   v.metadata({

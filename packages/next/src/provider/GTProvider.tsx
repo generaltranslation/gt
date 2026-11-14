@@ -2,13 +2,13 @@ import { getLocale } from '../request/getLocale';
 import { getRegion } from '../request/getRegion';
 import type { GTProviderProps } from '../utils/types';
 import { Client_GTProvider } from '../utils/client-boundary';
-import { getNextI18nCache } from '../i18n-cache/NextI18nCache';
+import { getReactI18nCache } from '@generaltranslation/react-core/pure';
 import { getI18nConfig, type Locale } from 'gt-i18n/internal';
 import { getEnableI18n } from '../request/getEnableI18n';
 
 /** The props the client GTProvider receives from the RSC GTProvider. */
 export async function getGTProviderProps(locale: Locale) {
-  const i18nCache = getNextI18nCache();
+  const i18nCache = getReactI18nCache();
   const i18nConfig = getI18nConfig();
   const region = await getRegion();
   const enableI18n = await getEnableI18n();

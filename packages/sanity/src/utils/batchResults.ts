@@ -2,10 +2,7 @@ import type {
   UploadSourceFilesResponse,
   UploadTranslationsResponse,
 } from '@generaltranslation/api';
-import {
-  createDiagnosticMessage,
-  type DiagnosticSeverity,
-} from 'generaltranslation/diagnostics';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
 // Source upload results carry no locale; translation upload results do.
 type BatchItemResult = Pick<
@@ -13,38 +10,6 @@ type BatchItemResult = Pick<
   'fileId' | 'status' | 'error'
 > &
   Partial<Pick<UploadTranslationsResponse['results'][number], 'locale'>>;
-
-// GT rejects a whole upload request that holds a longer ID.
-const MAX_FILE_ID_LENGTH = 64;
-const MAX_VERSION_ID_LENGTH = 255;
-
-export function uploadIdError(info: {
-  documentId: string;
-  versionId?: string;
-}): string | undefined {
-  if (info.documentId.length > MAX_FILE_ID_LENGTH)
-    return `The document ID is longer than ${MAX_FILE_ID_LENGTH} characters, which General Translation cannot store`;
-  if ((info.versionId?.length ?? 0) > MAX_VERSION_ID_LENGTH)
-    return `The document revision is longer than ${MAX_VERSION_ID_LENGTH} characters, which General Translation cannot store`;
-}
-
-export function withRejectedResults<
-  Response extends {
-    summary: { total: number; succeeded: number; failed: number };
-    results: BatchItemResult[];
-  },
->(response: Response, rejected: Response['results']): Response {
-  if (!rejected.length) return response;
-  return {
-    ...response,
-    summary: {
-      total: response.summary.total + rejected.length,
-      succeeded: response.summary.succeeded,
-      failed: response.summary.failed + rejected.length,
-    },
-    results: [...response.results, ...rejected],
-  };
-}
 
 /** A successful batch request can still contain per-item failures. */
 export function succeededResults<Result extends BatchItemResult>(response: {
@@ -104,12 +69,11 @@ export function existingTranslationsUploadToasts(
 
 export function failedResultsDiagnostic(
   whatHappened: string,
-  response: { results: BatchItemResult[] },
-  severity: DiagnosticSeverity
+  response: { results: BatchItemResult[] }
 ): string {
   return createDiagnosticMessage({
     source: 'gt-sanity',
-    severity,
+    severity: 'Warning',
     whatHappened,
     details: response.results
       .filter((result) => result.status === 'failed')

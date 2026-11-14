@@ -238,7 +238,7 @@ type CredentialsEnvFile = {
  * .env.local itself gets an ignore rule added, by setCredentials.
  */
 export async function inspectCredentialsEnvFile(
-  cwd: string = process.cwd(),
+  cwd: string,
   /** Also checks that the credentials can be saved safely. */
   checkContent: boolean
 ): Promise<CredentialsEnvFile> {

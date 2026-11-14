@@ -8,9 +8,9 @@ import {
 import { FilesOptions, JsonSchema, Settings } from '../types/index.js';
 import {
   defaultDashboardUrl,
-  defaultDefaultLocale,
   resolveCredentials,
 } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
 import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';

@@ -2,8 +2,8 @@ import {
   API_VERSION,
   ApiError,
   DEFAULT_TIMEOUT_MS,
-  ErrorCode,
   processBatches,
+  type ErrorCode,
   type ApiVersion,
   type BatchWriteSummary,
 } from '@generaltranslation/api';
@@ -68,12 +68,11 @@ type BatchWriteResponse<Result> = {
 /** @internal Why a whole batch failed, in the shape of a failed result. */
 export type BatchFailure = { error: string; code?: ErrorCode };
 
-const errorCodes = new Set<string>(Object.values(ErrorCode));
-
 function batchFailure(reason: unknown): BatchFailure {
+  // Like a failed result the API sends, the code may be newer than the generated ErrorCode.
   const code =
-    reason instanceof ApiError && errorCodes.has(reason.code ?? '')
-      ? (reason.code as ErrorCode)
+    reason instanceof ApiError
+      ? (reason.code as ErrorCode | undefined)
       : undefined;
   return {
     error: reason instanceof Error ? reason.message : String(reason),

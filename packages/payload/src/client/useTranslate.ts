@@ -1,10 +1,13 @@
 import { toast } from '@payloadcms/ui';
-import { ApiError, isTransientApiError } from '@generaltranslation/api';
+import {
+  ApiError,
+  isTransientApiError,
+  type TranslateFilesErrors,
+} from '@generaltranslation/api';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { useState } from 'react';
 import { createGtPayloadDiagnostic } from '../diagnostics';
 import type { RunProgress } from '../runs';
-import type { BillingCode } from '../types';
 import { followRun, startRun, type Scope } from './api';
 import type { LocaleOption } from '../locales';
 import { localeNames } from './locales';
@@ -12,17 +15,19 @@ import { localeNames } from './locales';
 const documents = (count: number) =>
   count === 1 ? 'one document' : `${count} documents`;
 
-// Each billing stop needs a different fix in the dashboard.
-const billingMessages: Record<BillingCode, string> = {
+// The API's message names the billing stop; the hint says where to fix it.
+const billingHints: Partial<Record<string, string>> = {
   usage_limit_reached:
-    "You've reached your plan's translation limit. Upgrade your plan in the General Translation dashboard to keep translating.",
+    'Upgrade your plan in the General Translation dashboard to keep translating.',
   spend_limit_reached:
-    "You've reached your General Translation spend limit. Raise it in the dashboard to keep translating.",
+    'Raise your spend limit in the General Translation dashboard to keep translating.',
   credits_insufficient:
-    'Your General Translation credit balance is too low. Add credits in the dashboard to keep translating.',
-  payment_required:
-    'General Translation billing needs attention. Update your billing details in the dashboard to keep translating.',
-};
+    'Add credits in the General Translation dashboard to keep translating.',
+} satisfies Partial<
+  Record<NonNullable<TranslateFilesErrors[402]['code']>, string>
+>;
+const defaultBillingHint =
+  'Check your billing in the General Translation dashboard to keep translating.';
 
 // Only a failure that may clear, or one that never reached the plugin, is worth trying again.
 const retryAdvice = (error: unknown) =>
@@ -56,7 +61,8 @@ export function useTranslate(options: LocaleOption[], onDone?: () => void) {
       );
       // Trying again does not help when the user may not edit the document.
       toast.error(
-        error instanceof ApiError && error.status === 403
+        // Payload's own refusal has no code; a 403 relayed from GT has one.
+        error instanceof ApiError && error.status === 403 && !error.code
           ? "You don't have permission to edit this document."
           : failure + retryAdvice(error)
       );
@@ -76,7 +82,10 @@ export function useTranslate(options: LocaleOption[], onDone?: () => void) {
       route,
       () => startRun(route, 'translate', scope, { locales, saveLocalEdits }),
       (done) => {
-        if (done.billingCode) toast.error(billingMessages[done.billingCode]);
+        if (done.billingMessage !== null)
+          toast.error(
+            `${done.billingMessage.replace(/([^.!?])$/, '$1.')} ${billingHints[done.billingCode ?? ''] ?? defaultBillingHint}`
+          );
         else if (done.failedLocales.length)
           toast.error(
             `Couldn't translate into ${localeNames(done.failedLocales, options)}. Try again.`

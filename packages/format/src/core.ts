@@ -478,7 +478,7 @@ export function determineLocale(
  * @returns {string} 'rtl' if the locale is right-to-left; otherwise 'ltr'.
  */
 export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
-  return _getLocaleDirection(locale, defaultDefaultLocale);
+  return _getLocaleDirection(locale);
 }
 
 /**

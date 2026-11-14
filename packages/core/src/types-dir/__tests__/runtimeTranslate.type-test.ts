@@ -41,3 +41,10 @@ const treeEntry: TranslateManyEntry = {
   metadata: { dataFormat: 'MESSAGE_TREE' },
 };
 void treeEntry;
+
+// Model providers are the API's values.
+void project.translate('Hello', {
+  targetLocale: 'es',
+  // @ts-expect-error `custom-provider` is not a ModelProvider.
+  modelProvider: 'custom-provider',
+});

@@ -178,7 +178,7 @@ describe('translateSite', () => {
     const gt = new FakeGt();
     const result = await translateSite({ payload, gt, locales: ['es'] });
 
-    const error = 'The file ID is longer than 64 characters.';
+    const error = 'fileId cannot exceed 64 characters';
     expect(
       result.documents.find((d) => 'id' in d.target && d.target.id === id)
         ?.result

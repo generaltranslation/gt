@@ -4,7 +4,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import type {
   CreateGTOptions,
   GTPlugin,

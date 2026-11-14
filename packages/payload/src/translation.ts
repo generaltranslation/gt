@@ -2,7 +2,7 @@
 // start (read, upload, enqueue), check (job statuses) and finish (download
 // and save into Payload). translateDocument and translateSite run all three.
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
-import { ApiError, ErrorCode } from '@generaltranslation/api';
+import { ApiError } from '@generaltranslation/api';
 import type { Payload } from 'payload';
 import type { FileReference } from 'generaltranslation';
 import {
@@ -31,14 +31,13 @@ import {
   type Access,
   type ResolvedTarget,
 } from './documents';
-import type {
-  BillingCode,
-  Data,
-  GtClient,
-  LocaleResult,
-  SkippedString,
-  TranslateResult,
-  TranslateTarget,
+import {
+  type Data,
+  type GtClient,
+  type LocaleResult,
+  type SkippedString,
+  type TranslateResult,
+  type TranslateTarget,
 } from './types';
 
 export type TranslateDocumentInput = {
@@ -125,18 +124,10 @@ const JOB_TIMEOUT_SECONDS = 60 * 60;
 const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
-const billingCodes: BillingCode[] = [
-  ErrorCode.PAYMENT_REQUIRED,
-  ErrorCode.USAGE_LIMIT_REACHED,
-  ErrorCode.SPEND_LIMIT_REACHED,
-  ErrorCode.CREDITS_INSUFFICIENT,
-];
-
-// GT answers 402 only when billing stops the work; an unknown code reads as payment_required.
-const billingCodeOf = (error: unknown): BillingCode | undefined =>
+// GT answers 402 only when billing stops the work.
+const billingErrorOf = (error: unknown): TranslateResult['billingError'] =>
   error instanceof ApiError && error.status === 402
-    ? (billingCodes.find((code) => code === error.code) ??
-      ErrorCode.PAYMENT_REQUIRED)
+    ? { message: error.message, code: error.code }
     : undefined;
 
 async function inPool<T>(
@@ -235,22 +226,12 @@ const fileReference = (
   fileFormat: FILE_FORMAT,
 });
 
-// GT rejects a whole upload request that holds a longer file ID.
-const MAX_FILE_ID_LENGTH = 64;
-
 async function uploadSources(batch: Batch, docs: Prepared[]) {
   const refs = new Map<string, FileReference>();
   const failed = new Map<string, string>();
-  for (const doc of docs)
-    if (doc.fileId.length > MAX_FILE_ID_LENGTH)
-      failed.set(
-        doc.fileId,
-        `The file ID is longer than ${MAX_FILE_ID_LENGTH} characters.`
-      );
-  const sendable = docs.filter((doc) => !failed.has(doc.fileId));
-  if (!sendable.length) return { refs, failed };
+  if (!docs.length) return { refs, failed };
   const { results } = await batch.gt.uploadSourceFiles(
-    sendable.map((doc) => ({
+    docs.map((doc) => ({
       source: {
         content: sourceFile(doc.units),
         fileName: doc.fileName,
@@ -262,7 +243,7 @@ async function uploadSources(batch: Batch, docs: Prepared[]) {
     { sourceLocale: batch.sourceLocale }
   );
   const uploads = new Map(results.map((result) => [result.fileId, result]));
-  for (const doc of sendable) {
+  for (const doc of docs) {
     const upload = uploads.get(doc.fileId);
     if (upload?.status === 'succeeded')
       refs.set(doc.fileId, fileReference(doc, upload));
@@ -671,7 +652,7 @@ export async function startTranslation({
     };
   } catch (error) {
     const message = errorMessage(error);
-    const billingCode = billingCodeOf(error);
+    const billingError = billingErrorOf(error);
     return {
       jobs: clearing,
       documents: [
@@ -680,7 +661,7 @@ export async function startTranslation({
           target: doc.target,
           result: {
             ...failedLocales(batch.locales, message),
-            ...(billingCode && { billingCode }),
+            ...(billingError && { billingError }),
           },
         })),
       ],

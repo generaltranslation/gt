@@ -15,8 +15,3 @@ export function getFormatLocales(
     ? [...localesProp, locale, defaultLocale]
     : [defaultLocale];
 }
-
-/** The GTIntl instance used for formatting. */
-export function getFormatter() {
-  return getI18nConfig();
-}

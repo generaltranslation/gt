@@ -5,7 +5,7 @@ import { createContext, useContext, type Context } from 'react';
 import type { CompatStore } from './CompatStore';
 import type { OnMissingDictionaryEntry, OnMissingDictionaryObj } from './types';
 
-export type DictionaryContextType = {
+type DictionaryContextType = {
   /**
    * Dictionaries streamed from the server, keyed by locale
    */

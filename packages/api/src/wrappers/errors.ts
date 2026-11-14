@@ -1,4 +1,4 @@
-import { ErrorCode } from '../generated/types.gen';
+import type { ErrorCode } from '../generated/types.gen';
 import { rateLimitDelayMs } from './transport';
 
 export class ApiError extends Error {
@@ -35,16 +35,7 @@ export class ApiError extends Error {
   }
 }
 
-const knownCodes = new Set<string>(Object.values(ErrorCode));
-const transientCodes = new Set<string>([
-  ErrorCode.INTERNAL_ERROR,
-  ErrorCode.UPSTREAM_ERROR,
-  ErrorCode.UNAVAILABLE,
-  ErrorCode.RATE_LIMITED,
-  ErrorCode.LOCKED,
-  ErrorCode.NOT_READY,
-  ErrorCode.TRANSLATION_NOT_READY,
-]);
+// The API answers with these only when a later attempt may succeed; gateways add 408 and 504.
 const transientStatuses = new Set([408, 423, 425, 429, 500, 502, 503, 504]);
 
 /**
@@ -52,11 +43,7 @@ const transientStatuses = new Set([408, 423, 425, 429, 500, 502, 503, 504]);
  * It does not mean the request is safe to replay: never retry a write on this alone.
  */
 export function isTransientApiError(error: unknown): boolean {
-  if (!(error instanceof ApiError)) return false;
-  if (error.code !== undefined && knownCodes.has(error.code)) {
-    return transientCodes.has(error.code);
-  }
-  return transientStatuses.has(error.status);
+  return error instanceof ApiError && transientStatuses.has(error.status);
 }
 
 // API errors are `{ error, code }`; gateways and proxies can answer in plain text.

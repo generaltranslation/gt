@@ -2,7 +2,12 @@ const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 500;
 const RATE_LIMIT_RETRY_DELAY_MS = 60_000;
 const IDEMPOTENT_METHODS = new Set(['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE']);
+// queryFiles and queryFilesContent only read, so they retry like idempotent methods.
+const READ_ONLY_POST_PATHNAME =
+  /\/v2\/projects\/[^/]+\/files(?:\/content)?\/query$/;
 export const DEFAULT_TIMEOUT_MS = 60_000;
+// setTimeout runs a longer delay, Infinity included, after 1ms.
+const MAX_TIMER_DELAY_MS = 2 ** 31 - 1;
 
 export type RetryPolicy = 'exponential' | 'linear' | 'none';
 
@@ -10,8 +15,7 @@ export type RetryPolicy = 'exponential' | 'linear' | 'none';
 export type TransportOptions = {
   fetch: typeof fetch;
   retryPolicy: RetryPolicy;
-  /** `false` when a custom fetch implementation owns request timeouts. */
-  timeoutMs: number | false;
+  timeoutMs: number;
 };
 
 /**
@@ -43,10 +47,6 @@ export function createTimeoutFetch({
   timeoutMs,
 }: Pick<TransportOptions, 'fetch' | 'timeoutMs'>): typeof fetch {
   return async (input, init) => {
-    if (timeoutMs === false) {
-      return fetchImplementation(input, init);
-    }
-
     const request = new Request(input, init);
     const signal = callerSignal(input, init);
     const controller = new AbortController();
@@ -57,7 +57,7 @@ export function createTimeoutFetch({
     const timeoutError = new Error(`Request timed out after ${timeoutMs}ms`);
     const timeoutId = setTimeout(
       () => controller.abort(timeoutError),
-      timeoutMs
+      Math.min(timeoutMs, MAX_TIMER_DELAY_MS)
     );
 
     try {
@@ -132,7 +132,11 @@ export function createRetryingFetch({
     const request = new Request(input, init);
     const signal = callerSignal(input, init) ?? request.signal;
     const maxRetries = retryPolicy === 'none' ? 0 : MAX_RETRIES;
-    const isIdempotent = IDEMPOTENT_METHODS.has(request.method);
+    const isReadOnlyPost =
+      request.method === 'POST' &&
+      READ_ONLY_POST_PATHNAME.test(new URL(request.url).pathname);
+    const isIdempotent =
+      IDEMPOTENT_METHODS.has(request.method) || isReadOnlyPost;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       let response: Response | undefined;
@@ -165,7 +169,7 @@ export function createRetryingFetch({
         if (response) return response;
         throw signal.reason;
       }
-      // Drain the discarded 429/5xx body so undici can release the socket.
+      // Drain the discarded failure's body so undici can release the socket.
       void response?.body?.cancel();
     }
 

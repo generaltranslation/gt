@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectHandle } from 'generaltranslation';
-import { ApiError, ErrorCode } from '@generaltranslation/api';
 import { getDefaultBranchId } from '../getDefaultBranchId';
 
 const api = {
   listBranches: vi.fn<ProjectHandle['listBranches']>(),
-  createBranch: vi.fn<ProjectHandle['createBranch']>(),
+  createOrReuseBranch: vi.fn<ProjectHandle['createOrReuseBranch']>(),
   updateBranch: vi.fn<ProjectHandle['updateBranch']>(),
 };
 const project = api as unknown as ProjectHandle;
@@ -29,7 +28,7 @@ describe('getDefaultBranchId', () => {
 
     await expect(getDefaultBranchId(project)).resolves.toBe('master-id');
     expect(api.listBranches).toHaveBeenCalledWith({ isDefault: 'true' });
-    expect(api.createBranch).not.toHaveBeenCalled();
+    expect(api.createOrReuseBranch).not.toHaveBeenCalled();
     expect(api.updateBranch).not.toHaveBeenCalled();
   });
 
@@ -43,7 +42,7 @@ describe('getDefaultBranchId', () => {
     }));
 
     await expect(getDefaultBranchId(project)).resolves.toBe('master-id');
-    expect(api.createBranch).not.toHaveBeenCalled();
+    expect(api.createOrReuseBranch).not.toHaveBeenCalled();
   });
 
   it('uses an existing non-default main when the project has no default branch', async () => {
@@ -56,7 +55,7 @@ describe('getDefaultBranchId', () => {
 
     await expect(getDefaultBranchId(project)).resolves.toBe('main-id');
     expect(api.listBranches).toHaveBeenCalledWith({ name: ['main'] });
-    expect(api.createBranch).not.toHaveBeenCalled();
+    expect(api.createOrReuseBranch).not.toHaveBeenCalled();
   });
 
   it('creates main as the default branch when the project has none', async () => {
@@ -64,61 +63,14 @@ describe('getDefaultBranchId', () => {
       items: [],
       nextCursor: null,
     });
-    vi.mocked(api.createBranch).mockResolvedValue(
+    vi.mocked(api.createOrReuseBranch).mockResolvedValue(
       branch('main-id', 'main', true)
     );
 
     await expect(getDefaultBranchId(project)).resolves.toBe('main-id');
-    expect(api.createBranch).toHaveBeenCalledWith({
+    expect(api.createOrReuseBranch).toHaveBeenCalledWith({
       name: 'main',
       isDefault: true,
     });
-  });
-
-  it('reuses main created concurrently after an empty lookup', async () => {
-    vi.mocked(api.listBranches)
-      .mockResolvedValueOnce({ items: [], nextCursor: null })
-      .mockResolvedValueOnce({ items: [], nextCursor: null })
-      .mockResolvedValueOnce({
-        items: [branch('main-id', 'main', true)],
-        nextCursor: null,
-      });
-    vi.mocked(api.createBranch).mockRejectedValue(
-      new ApiError(
-        'A branch with the requested name already exists.',
-        409,
-        ErrorCode.ALREADY_EXISTS
-      )
-    );
-
-    await expect(getDefaultBranchId(project)).resolves.toBe('main-id');
-    expect(api.listBranches).toHaveBeenLastCalledWith({ name: ['main'] });
-  });
-
-  it('rethrows a conflict when main is still missing', async () => {
-    vi.mocked(api.listBranches).mockResolvedValue({
-      items: [],
-      nextCursor: null,
-    });
-    const conflict = new ApiError('conflict', 409, ErrorCode.ALREADY_EXISTS);
-    vi.mocked(api.createBranch).mockRejectedValue(conflict);
-
-    await expect(getDefaultBranchId(project)).rejects.toBe(conflict);
-  });
-
-  it('rethrows a 409 that is not already_exists without looking main up again', async () => {
-    vi.mocked(api.listBranches).mockResolvedValue({
-      items: [],
-      nextCursor: null,
-    });
-    const conflict = new ApiError(
-      'default branch conflict',
-      409,
-      ErrorCode.DEFAULT_BRANCH_CONFLICT
-    );
-    vi.mocked(api.createBranch).mockRejectedValue(conflict);
-
-    await expect(getDefaultBranchId(project)).rejects.toBe(conflict);
-    expect(api.listBranches).toHaveBeenCalledTimes(2);
   });
 });

@@ -5,6 +5,7 @@ import {
   renderDictionaryObject,
   resolveDictionaryLookupOptions,
   type DictionaryObjectTranslation,
+  type TFunctionType,
 } from 'gt-i18n/internal/compat';
 import { useLocale } from '../hooks/condition-store';
 import { useGT } from '../hooks/useGT';
@@ -16,7 +17,7 @@ import { useTrackedDictionaryObjResolver } from './useTrackedDictionaryObjResolv
 
 // ===== Hook ===== //
 
-export function useTranslations(rootId?: string): UseTranslationsFunction {
+export function useTranslations(rootId?: string): TFunctionType {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
@@ -130,12 +131,5 @@ function getId(prefix: string | undefined, suffix: string): string {
 }
 
 // ===== Types ===== //
-
-export type UseTranslationsFunction = ((
-  id: string,
-  options?: TranslationVariables
-) => string) & {
-  obj: (id: string) => DictionaryObjectTranslation;
-};
 
 type UseTranslationsObjFunction = (id: string) => DictionaryObjectTranslation;

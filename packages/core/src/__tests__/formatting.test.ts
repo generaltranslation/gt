@@ -11,7 +11,8 @@ import {
   formatRelativeTimeFromDate,
   GTIntl,
 } from '../index';
-import { formatMessageTree, defaultDefaultLocale } from '../internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
+import { formatMessageTree } from '../internal';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
 const date = new Date('2020-05-06T14:03:02Z');

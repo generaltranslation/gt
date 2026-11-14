@@ -15,13 +15,11 @@ import {
   recordOrphanedFileNames,
 } from '../../state/orphanedFileNames.js';
 import type { Settings } from '../../types/index.js';
-import { resolveCanonicalLocale } from '../../utils/api.js';
 import chalk from 'chalk';
 import { BranchData } from '../../types/branch.js';
-import {
+import type {
   ApiError,
-  ErrorCode,
-  type ListBranchFilesResponse,
+  ListBranchFilesResponse,
 } from '@generaltranslation/api';
 
 function createDefaultLocaleNotUpdatedWarning(
@@ -47,8 +45,7 @@ type UploadSourcesClient = Pick<
   | 'listBranchFiles'
   | 'moveFiles'
   | 'uploadSourceFiles'
-  | 'get'
-  | 'update'
+  | 'syncDefaultLocale'
 >;
 type UploadSourcesSettings = Pick<Settings, 'defaultLocale'>;
 
@@ -272,34 +269,20 @@ export class UploadSourcesStep {
 
     // Source uploads do not update the project's default locale.
     if (result.length > 0) {
-      const project = await this.gt.get();
-      if (
-        resolveCanonicalLocale(project.defaultLocale) !==
-        resolveCanonicalLocale(this.settings.defaultLocale)
-      ) {
-        try {
-          await this.gt.update({
-            defaultLocale: this.settings.defaultLocale,
-          });
-        } catch (error) {
-          // A key without project:write can still upload and translate files.
-          if (
-            !(error instanceof ApiError) ||
-            error.code !== ErrorCode.PERMISSION_MISSING
+      const sync = await this.gt.syncDefaultLocale(this.settings.defaultLocale);
+      // A key without project:write can still upload and translate files.
+      if (sync.status === 'permission_missing') {
+        logger.warn(
+          createDefaultLocaleNotUpdatedWarning(
+            this.settings.defaultLocale,
+            sync.error
           )
-            throw error;
-          logger.warn(
-            createDefaultLocaleNotUpdatedWarning(
-              this.settings.defaultLocale,
-              error
-            )
-          );
-          recordWarning(
-            'failed_project_update',
-            'Default locale',
-            `The API key lacks project:write, so it stays ${project.defaultLocale}`
-          );
-        }
+        );
+        recordWarning(
+          'failed_project_update',
+          'Default locale',
+          `The API key lacks project:write, so it stays ${sync.previousDefaultLocale}`
+        );
       }
     }
 

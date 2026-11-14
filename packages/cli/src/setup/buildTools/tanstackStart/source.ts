@@ -2,7 +2,7 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { Libraries } from '../../../types/libraries.js';
 import { readSourceFile } from '../shared/source.js';
-import { hasPackageExport, readViteConfig } from '../shared/viteConfig.js';
+import { readViteConfig } from '../shared/viteConfig.js';
 
 export const DOCS_URL =
   'https://generaltranslation.com/docs/react/tanstack-start/setup';
@@ -20,20 +20,6 @@ function getMissingFileError(file: string): Error {
       fix: 'Run `npx gt@latest init` from the app root, or set up GT manually',
       docsUrl: DOCS_URL,
     })
-  );
-}
-
-/**
- * Whether the gt-tanstack-start the app resolves has the Vite plugin, which
- * gt-tanstack-start 12 adds; undefined when it is not installed.
- */
-export function hasVitePlugin(
-  appDirectory: string
-): Promise<boolean | undefined> {
-  return hasPackageExport(
-    appDirectory,
-    Libraries.GT_TANSTACK_START,
-    './plugin/vite'
   );
 }
 

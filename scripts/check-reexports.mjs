@@ -4,6 +4,10 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
+import {
+  collectSourceFiles,
+  normalizeRepositoryPath,
+} from './check-library-defaults.mjs';
 
 // Facade packages (AGENTS.md "Imports and re-exports") may re-export these
 // owner packages from their entry files for end users. Every other entry
@@ -23,7 +27,7 @@ const reactFrameworkTargets = [
 // framework packages re-export RSC-conditional components from gt-react.
 const reactConditionalTargets = ['gt-react', ...reactFrameworkTargets];
 
-export const facadeReexportTargets = {
+const facadeReexportTargets = {
   generaltranslation: ['@generaltranslation/format', '@generaltranslation/api'],
   'gt-i18n': coreTargets,
   'gt-node': ['gt-i18n', ...coreTargets],
@@ -80,10 +84,6 @@ const generatedDirectories = new Set([
 ]);
 const sourceFilePattern = /\.(?:[cm]?[jt]sx?)$/;
 const sourceExtensions = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs'];
-
-export function normalizeRepositoryPath(relativePath) {
-  return relativePath.split(path.win32.sep).join(path.posix.sep);
-}
 
 export function getPackageName(specifier) {
   if (specifier.startsWith('.') || specifier.startsWith('/')) return undefined;
@@ -174,25 +174,11 @@ export function readPackageEntries(repositoryRoot, packageDirectoryName) {
   };
 }
 
-function collectSourceFiles(repositoryRoot, directory, files = []) {
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (ignoredDirectories.has(entry.name)) continue;
-    const absolutePath = path.join(directory, entry.name);
-    const relativePath = normalizeRepositoryPath(
-      path.relative(repositoryRoot, absolutePath)
-    );
-    if (entry.isDirectory()) {
-      if (!generatedDirectories.has(relativePath)) {
-        collectSourceFiles(repositoryRoot, absolutePath, files);
-      }
-      continue;
-    }
-    if (!sourceFilePattern.test(entry.name)) continue;
-    if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(entry.name)) continue;
-    if (/\.d\.[cm]?ts$/.test(entry.name)) continue;
-    files.push(relativePath);
-  }
-  return files;
+function isSkippedForReexports(entry, relativePath) {
+  return (
+    ignoredDirectories.has(entry.name) ||
+    (entry.isDirectory() && generatedDirectories.has(relativePath))
+  );
 }
 
 // Maps each imported local binding to its module specifier.
@@ -380,7 +366,8 @@ export function validateRepository({
 
     for (const relativePath of collectSourceFiles(
       repositoryRoot,
-      sourceDirectory
+      sourceDirectory,
+      isSkippedForReexports
     )) {
       sourceFileCount += 1;
       const isEntry =

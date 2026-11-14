@@ -12,7 +12,7 @@ import type {
   DictionaryValue,
 } from './types';
 
-export type TranslateDictionaryEntry = (
+type TranslateDictionaryEntry = (
   key: DictionaryKey,
   sourceEntry: DictionaryEntry
 ) => Promise<DictionaryValue>;

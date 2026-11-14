@@ -84,7 +84,6 @@ export type {
   GTOutputFileConfig,
   GTParsingFlags,
 } from './types-dir/config';
-export type { JsonPrimitive } from './types-dir/api/json';
 export type { Updates } from './types-dir/api/enqueueFiles';
 export {
   isBinaryFileFormat,

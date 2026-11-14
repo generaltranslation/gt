@@ -4,7 +4,6 @@ import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { getCookieValue } from 'gt-i18n/internal/cookies';
 import { parseAcceptLanguage } from 'gt-i18n/internal';
 import type { RequestConditions } from '../condition-store/AsyncLocalConditionStore';
-import type { InitializeGTParams } from '../types/InitializeGTParams';
 import { getLocaleFromPath } from './localeRouting';
 
 export const localeCookieOptions = {
@@ -23,12 +22,12 @@ const noLocaleCandidatesWarning = createDiagnosticMessage({
 
 export function resolveRequestConditions(
   request: Request,
-  localeConfig: InitializeGTParams
+  localeRouting: boolean
 ): RequestConditions {
   const i18nConfig = getI18nConfig();
   const cookieHeader = request.headers.get('cookie');
   const localeCandidates: string[] = [];
-  if (localeConfig.localeRouting) {
+  if (localeRouting) {
     const pathLocale = getLocaleFromPath(new URL(request.url).pathname);
     if (pathLocale) localeCandidates.push(pathLocale);
   }

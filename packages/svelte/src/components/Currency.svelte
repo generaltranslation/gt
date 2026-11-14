@@ -13,7 +13,8 @@
 
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { getFormatLocales, getFormatter } from '../runtime/format';
+  import { getI18nConfig } from 'gt-i18n/internal';
+  import { getFormatLocales } from '../runtime/format';
   import { useContentLocale } from '../runtime/source';
 
   let {
@@ -41,7 +42,7 @@
   const formatted = $derived(
     value == null
       ? null
-      : getFormatter().formatCurrency(
+      : getI18nConfig().formatCurrency(
           typeof value === 'string' ? parseFloat(value) : value,
           currency,
           { locales: getFormatLocales(contentLocale.current, locales), ...options }

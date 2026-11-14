@@ -68,7 +68,6 @@ export async function queryJobsInBatches(
   );
 }
 
-/** Polls with the pinned `API_VERSION`, whatever the client's `apiVersion`, because `queryJobs` exists only on that version. */
 export async function awaitJobs(
   client: Client,
   projectId: string,

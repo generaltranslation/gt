@@ -18,8 +18,8 @@ describe('client api', () => {
       .catch((error: unknown) => error);
   };
 
-  it("carries GT's code on a failed request, so a permanent failure is not retried", async () => {
-    const error = await startWith(502, {
+  it("carries GT's status and code on a failed request, so a permanent failure is not retried", async () => {
+    const error = await startWith(403, {
       error: 'Missing permission',
       code: 'permission_missing',
     });
@@ -27,13 +27,13 @@ describe('client api', () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({
       message: 'Missing permission',
-      status: 502,
+      status: 403,
       code: 'permission_missing',
     });
     expect(isTransientApiError(error)).toBe(false);
   });
 
-  it('treats a failure without a code by its status', async () => {
+  it('treats a failure by its status', async () => {
     expect(isTransientApiError(await startWith(502, { error: 'down' }))).toBe(
       true
     );

@@ -10,10 +10,11 @@ import {
 } from '../../git/branches.js';
 import { BranchData } from '../../types/branch.js';
 import { ApiError, ErrorCode } from '@generaltranslation/api';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
 type BranchStepClient = Pick<
   ProjectHandle,
-  'listBranches' | 'createBranch' | 'updateBranch'
+  'listBranches' | 'createOrReuseBranch' | 'updateBranch'
 >;
 type BranchStepSettings = Pick<Settings, 'branchOptions'>;
 
@@ -143,7 +144,10 @@ export class BranchStep {
                 current.currentBranchName,
                 branchData.defaultBranch
               )
-            : await this.createBranch(current.currentBranchName, false);
+            : await this.gt.createOrReuseBranch({
+                name: current.currentBranchName,
+                isDefault: false,
+              });
         } catch (error) {
           if (
             !(error instanceof ApiError) ||
@@ -152,7 +156,13 @@ export class BranchStep {
             throw error;
 
           logger.warn(
-            'To enable translation branching, upgrade your plan. Falling back to default branch.'
+            createDiagnosticMessage({
+              source: 'gt',
+              severity: 'Warning',
+              whatHappened: 'Falling back to the default branch',
+              fix: 'To enable translation branching, upgrade your plan',
+              details: error.message,
+            })
           );
           if (branchData.defaultBranch) {
             this.branchData.currentBranch = branchData.defaultBranch;
@@ -219,27 +229,11 @@ export class BranchStep {
     const {
       items: [existing],
     } = await this.gt.listBranches({ name: [name] });
-    const branch = existing ?? (await this.createBranch(name, true));
+    const branch =
+      existing ??
+      (await this.gt.createOrReuseBranch({ name, isDefault: true }));
     return branch.isDefault
       ? branch
       : await this.gt.updateBranch(branch.id, { isDefault: true });
-  }
-
-  /** A concurrent run can create the branch after the lookup; `already_exists` reuses it. */
-  private async createBranch(name: string, isDefault: boolean) {
-    try {
-      return await this.gt.createBranch({ name, isDefault });
-    } catch (error) {
-      if (
-        !(error instanceof ApiError) ||
-        error.code !== ErrorCode.ALREADY_EXISTS
-      )
-        throw error;
-      const {
-        items: [existing],
-      } = await this.gt.listBranches({ name: [name] });
-      if (!existing) throw error;
-      return existing;
-    }
   }
 }

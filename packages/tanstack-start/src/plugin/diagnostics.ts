@@ -3,20 +3,12 @@ import {
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
 
-export const compileTimeHashDisabledWarning = createDiagnosticMessage({
-  source: 'gt-tanstack-start',
-  severity: 'Warning',
-  whatHappened: 'Compile-time hashing is disabled',
-  wayOut:
-    'The GT compiler will not run, so compiler optimizations are inactive',
-});
-
 export const autoJsxInjectionCompilerWarning = createDiagnosticMessage({
   source: 'gt-tanstack-start',
   severity: 'Warning',
   whatHappened: 'Automatic JSX injection requires the GT compiler',
   wayOut: 'Automatic JSX injection will be skipped',
-  fix: "Set experimentalCompilerOptions.type to 'babel' and keep compileTimeHash enabled in gtTanstackStart()",
+  fix: "Set experimentalCompilerOptions.type to 'babel' in gtTanstackStart()",
 });
 
 export function createCompilerUnresolvedWarning(error: unknown): string {

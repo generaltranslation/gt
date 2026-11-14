@@ -7,7 +7,7 @@ import {
   resolveTransportOptions,
 } from './transport';
 
-export type PresignedFileUpload = NonNullable<
+type PresignedFileUpload = NonNullable<
   CreateFileUploadsResponse['files'][number]['upload']
 >;
 

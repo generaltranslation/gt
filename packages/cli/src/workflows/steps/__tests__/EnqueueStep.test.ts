@@ -33,29 +33,27 @@ describe('EnqueueStep', () => {
 
     const result = await step.run([]);
 
-    expect(result).toEqual({
-      jobData: {},
-      message: 'No files need to be enqueued',
-    });
+    expect(result).toEqual([]);
     expect(gt.translateFiles).not.toHaveBeenCalled();
     expect(spinner.start).not.toHaveBeenCalled();
     expect(spinner.stop).not.toHaveBeenCalled();
   });
 
-  it('keys file translation jobs by job ID and ignores other job types', async () => {
+  it('returns the file translation jobs and ignores other job types', async () => {
+    const fileJob = {
+      id: 'job-1',
+      status: 'queued',
+      subject: {
+        type: 'file_translation',
+        branchId: 'branch-id',
+        fileId: 'file-id',
+        versionId: 'version-id',
+        locale: 'es',
+      },
+    };
     gt.translateFiles.mockResolvedValue({
       jobs: [
-        {
-          id: 'job-1',
-          status: 'queued',
-          subject: {
-            type: 'file_translation',
-            branchId: 'branch-id',
-            fileId: 'file-id',
-            versionId: 'version-id',
-            locale: 'es',
-          },
-        },
+        fileJob,
         { id: 'job-2', status: 'queued', subject: { type: 'search_index' } },
       ],
     });
@@ -78,16 +76,6 @@ describe('EnqueueStep', () => {
       modelProvider: undefined,
       force: true,
     });
-    expect(result.jobData).toEqual({
-      'job-1': {
-        fileId: 'file-id',
-        versionId: 'version-id',
-        branchId: 'branch-id',
-        targetLocale: 'es',
-      },
-    });
-    expect(result.message).toBe(
-      'Successfully enqueued 1 file translation jobs'
-    );
+    expect(result).toEqual([fileJob]);
   });
 });

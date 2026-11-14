@@ -1,10 +1,6 @@
 import type { CustomMapping } from '@generaltranslation/format';
 import type { InferInput } from 'valibot';
-import type {
-  FileFormat,
-  ModelProvider,
-  UserTokenProvider,
-} from '@generaltranslation/api';
+import type { FileFormat, UserTokenProvider } from '@generaltranslation/api';
 import type { Updates } from 'generaltranslation';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
@@ -27,6 +23,7 @@ import type {
   TransformOptionsSchema,
   YamlSchemaSchema,
 } from '../config/schema.js';
+import type { GTConfigFile } from '../fs/config/loadConfig.js';
 
 export type Metadata = Updates[number]['metadata'];
 
@@ -252,25 +249,25 @@ export type Settings = {
     };
   };
   stageTranslations: boolean; // if true, always stage the project during translate command
-  requiresReview?: boolean; // top-level default: translated artifacts require approval before the client uses them
-  publish?: boolean; // if true, publish the translations to the CDN; undefined means no global publish intent
-  omitConfigIds?: boolean; // if true, do not write _versionId or _branchId to gt.config.json
-  _versionId?: string; // internal use only
-  _branchId?: string; // internal use only
-  version?: string; // for specifying a custom version id to use. Should be unique
-  description?: string;
-  src?: string[]; // list of glob patterns for source file scanning
   fonts?: FontsConfig; // fonts to sync to the API before translating
-  framework?: SupportedFrameworks;
   options?: AdditionalOptions;
-  modelProvider?: ModelProvider;
-  tag?: string;
-  tagMessage?: string;
   parsingOptions: ParsingConfigOptions;
   branchOptions: BranchOptions;
   // Optional shared static assets config
   sharedStaticAssets?: SharedStaticAssetsConfig;
-};
+} & Pick<
+  GTConfigFile,
+  | 'requiresReview'
+  | 'publish'
+  | 'omitConfigIds'
+  | '_versionId'
+  | '_branchId'
+  | 'src'
+  | 'framework'
+  | 'modelProvider'
+  | 'tag'
+  | 'tagMessage'
+>;
 
 export type StaticLocalizationFiles = Pick<
   Settings['files'],
@@ -285,12 +282,10 @@ export type StaticLocalizationSettings = Pick<
   files?: StaticLocalizationFiles | null;
 };
 
-export type BranchOptions = {
-  currentBranch?: string;
-  autoDetectBranches?: boolean;
-  remoteName: string; // default 'origin'. The name of the remote to use for auto-detection.
-  enabled: boolean; // if true, branching is enabled for the project
-};
+type BranchOptionsFile = NonNullable<GTConfigFile['branchOptions']>;
+
+export type BranchOptions = BranchOptionsFile &
+  Required<Pick<BranchOptionsFile, 'enabled' | 'remoteName'>>;
 
 export type AdditionalOptions = InferInput<typeof AdditionalOptionsSchema>;
 

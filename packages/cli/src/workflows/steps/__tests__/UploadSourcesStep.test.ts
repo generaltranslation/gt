@@ -12,15 +12,13 @@ import {
 } from '../../../state/translateWarnings.js';
 import { logger } from '../../../console/logger.js';
 import { ApiError, ErrorCode } from '@generaltranslation/api';
-import { configureCustomMapping } from '../../../utils/api.js';
 
 const mockGt = {
   queryFiles: vi.fn(),
   listBranchFiles: vi.fn(),
   moveFiles: vi.fn(),
   uploadSourceFiles: vi.fn(),
-  get: vi.fn(),
-  update: vi.fn(),
+  syncDefaultLocale: vi.fn(),
 };
 
 // queryFiles answers one result per selector, in selector order
@@ -78,7 +76,10 @@ describe('UploadSourcesStep', () => {
     vi.clearAllMocks();
     clearWarnings();
     answerNotFound();
-    mockGt.get.mockResolvedValue({ defaultLocale: 'en' });
+    mockGt.syncDefaultLocale.mockResolvedValue({
+      status: 'unchanged',
+      previousDefaultLocale: 'en',
+    });
   });
 
   describe('move detection', () => {
@@ -552,8 +553,7 @@ describe('UploadSourcesStep', () => {
       mockGt.listBranchFiles.mockResolvedValue({ items: [], nextCursor: null });
     });
 
-    it('sets the project default locale when it differs from the source locale', async () => {
-      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
+    it('syncs the project default locale to the source locale', async () => {
       mockGt.uploadSourceFiles.mockResolvedValue(
         uploadResults([{ ...saved, status: 'succeeded' }])
       );
@@ -563,43 +563,10 @@ describe('UploadSourcesStep', () => {
         branchData: mockBranchData,
       });
 
-      expect(mockGt.update).toHaveBeenCalledWith({
-        defaultLocale: 'en',
-      });
-    });
-
-    it('leaves the project alone when its default locale already matches', async () => {
-      mockGt.uploadSourceFiles.mockResolvedValue(
-        uploadResults([{ ...saved, status: 'succeeded' }])
-      );
-
-      await new UploadSourcesStep(mockGt, mockSettings).run({
-        files: [file],
-        branchData: mockBranchData,
-      });
-
-      expect(mockGt.get).toHaveBeenCalledTimes(1);
-      expect(mockGt.update).not.toHaveBeenCalled();
-    });
-
-    it('leaves the project alone when it has the default locale under a custom mapping alias', async () => {
-      configureCustomMapping({ english: { code: 'en' } });
-      mockGt.get.mockResolvedValue({ defaultLocale: 'english' });
-      mockGt.uploadSourceFiles.mockResolvedValue(
-        uploadResults([{ ...saved, status: 'succeeded' }])
-      );
-
-      await new UploadSourcesStep(mockGt, mockSettings).run({
-        files: [file],
-        branchData: mockBranchData,
-      });
-      configureCustomMapping(undefined);
-
-      expect(mockGt.update).not.toHaveBeenCalled();
+      expect(mockGt.syncDefaultLocale).toHaveBeenCalledWith('en');
     });
 
     it('leaves the project alone when no source was saved', async () => {
-      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
       mockGt.uploadSourceFiles.mockResolvedValue(
         uploadResults([{ ...saved, status: 'failed', error: 'down' }])
       );
@@ -609,17 +576,18 @@ describe('UploadSourcesStep', () => {
         branchData: mockBranchData,
       });
 
-      expect(mockGt.update).not.toHaveBeenCalled();
+      expect(mockGt.syncDefaultLocale).not.toHaveBeenCalled();
     });
 
     it('warns and keeps the uploaded files when the key cannot update the project', async () => {
-      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
       mockGt.uploadSourceFiles.mockResolvedValue(
         uploadResults([{ ...saved, status: 'succeeded' }])
       );
-      mockGt.update.mockRejectedValueOnce(
-        new ApiError('Forbidden', 403, ErrorCode.PERMISSION_MISSING)
-      );
+      mockGt.syncDefaultLocale.mockResolvedValueOnce({
+        status: 'permission_missing',
+        previousDefaultLocale: 'fr',
+        error: new ApiError('Forbidden', 403, ErrorCode.PERMISSION_MISSING),
+      });
 
       const result = await new UploadSourcesStep(mockGt, mockSettings).run({
         files: [file],
@@ -637,40 +605,6 @@ describe('UploadSourcesStep', () => {
           reason: 'The API key lacks project:write, so it stays fr',
         },
       ]);
-    });
-
-    it('propagates other project update errors', async () => {
-      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
-      mockGt.uploadSourceFiles.mockResolvedValue(
-        uploadResults([{ ...saved, status: 'succeeded' }])
-      );
-      mockGt.update.mockRejectedValueOnce(new ApiError('Server error', 500));
-
-      await expect(
-        new UploadSourcesStep(mockGt, mockSettings).run({
-          files: [file],
-          branchData: mockBranchData,
-        })
-      ).rejects.toThrow('Server error');
-      expect(getWarnings()).toEqual([]);
-    });
-
-    it('propagates a 403 that is not a missing permission', async () => {
-      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
-      mockGt.uploadSourceFiles.mockResolvedValue(
-        uploadResults([{ ...saved, status: 'succeeded' }])
-      );
-      mockGt.update.mockRejectedValueOnce(
-        new ApiError('Sign in again', 403, ErrorCode.SCOPE_MISSING)
-      );
-
-      await expect(
-        new UploadSourcesStep(mockGt, mockSettings).run({
-          files: [file],
-          branchData: mockBranchData,
-        })
-      ).rejects.toThrow('Sign in again');
-      expect(getWarnings()).toEqual([]);
     });
   });
 

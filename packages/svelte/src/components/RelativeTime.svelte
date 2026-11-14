@@ -14,7 +14,8 @@
 
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { getFormatLocales, getFormatter } from '../runtime/format';
+  import { getI18nConfig } from 'gt-i18n/internal';
+  import { getFormatLocales } from '../runtime/format';
   import { useContentLocale } from '../runtime/source';
 
   let {
@@ -52,10 +53,10 @@
     };
     if (typeof value === 'number') {
       return unit
-        ? getFormatter().formatRelativeTime(value, unit, formatOptions)
+        ? getI18nConfig().formatRelativeTime(value, unit, formatOptions)
         : null;
     }
-    return getFormatter().formatRelativeTimeFromDate(value, {
+    return getI18nConfig().formatRelativeTimeFromDate(value, {
       ...formatOptions,
       baseDate: baseDate ?? new Date(),
     });

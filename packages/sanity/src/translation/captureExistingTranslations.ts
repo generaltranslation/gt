@@ -115,8 +115,7 @@ export async function captureExistingTranslations({
     console.warn(
       failedResultsDiagnostic(
         'Some existing translations could not be preserved',
-        uploadResult,
-        'Warning'
+        uploadResult
       )
     );
   }

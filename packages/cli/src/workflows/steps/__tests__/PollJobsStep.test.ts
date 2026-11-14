@@ -7,6 +7,7 @@ import {
   PollTranslationJobsStep,
   type FileStatusTracker,
 } from '../PollJobsStep.js';
+import type { FileTranslationJob } from '../EnqueueStep.js';
 
 vi.mock('../../../console/logger.js', () => ({
   logger: {
@@ -17,6 +18,21 @@ vi.mock('../../../console/logger.js', () => ({
     })),
   },
 }));
+
+const fileTranslationJob = (
+  id: string,
+  file: { branchId: string; fileId: string; versionId: string; locale: string }
+): FileTranslationJob => ({
+  id,
+  status: 'queued',
+  subject: {
+    type: 'file_translation',
+    branchId: file.branchId,
+    fileId: file.fileId,
+    versionId: file.versionId,
+    locale: file.locale,
+  },
+});
 
 type StatusFormatter = {
   generateStatusSuffixText(
@@ -96,20 +112,9 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
     const result = await step.run({
       fileTracker,
       fileQueryData: files,
-      jobData: {
-        jobData: Object.fromEntries(
-          files.map((file) => [
-            `job-${file.fileId.replace('-file', '')}`,
-            {
-              fileId: file.fileId,
-              versionId: file.versionId,
-              branchId: file.branchId,
-              targetLocale: file.locale,
-            },
-          ])
-        ),
-        message: 'enqueued',
-      },
+      jobData: files.map((file) =>
+        fileTranslationJob(`job-${file.fileId.replace('-file', '')}`, file)
+      ),
       timeoutDuration: 1,
       forceRetranslation: true,
     });
@@ -143,17 +148,7 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
     const result = await step.run({
       fileTracker,
       fileQueryData: [templateFile],
-      jobData: {
-        jobData: {
-          'job-1': {
-            fileId: templateFile.fileId,
-            versionId: templateFile.versionId,
-            branchId: templateFile.branchId,
-            targetLocale: templateFile.locale,
-          },
-        },
-        message: 'enqueued',
-      },
+      jobData: [fileTranslationJob('job-1', templateFile)],
       timeoutDuration: 0,
       forceRetranslation: true,
     });
@@ -212,20 +207,9 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
         skipped: new Map(),
       },
       fileQueryData: files,
-      jobData: {
-        jobData: Object.fromEntries(
-          files.map((file, index) => [
-            `job-${index}`,
-            {
-              fileId: file.fileId,
-              versionId: file.versionId,
-              branchId: file.branchId,
-              targetLocale: file.locale,
-            },
-          ])
-        ),
-        message: 'enqueued',
-      },
+      jobData: files.map((file, index) =>
+        fileTranslationJob(`job-${index}`, file)
+      ),
       timeoutDuration: 1,
       forceRetranslation: true,
     });

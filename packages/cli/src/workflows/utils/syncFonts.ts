@@ -1,4 +1,7 @@
-import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/diagnostics';
 import { ApiError, ErrorCode } from '@generaltranslation/api';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
@@ -33,9 +36,7 @@ export async function syncFonts(settings: Settings): Promise<void> {
     }
     for (const result of results) {
       if (result.status === 'failed') {
-        logger.warn(
-          `Font sync failed for ${result.fileName}; continuing without it: ${result.error}`
-        );
+        logger.warn(fontNotSyncedWarning(result.fileName, result.error));
         recordWarning('failed_upload', result.fileName, result.error);
       }
     }
@@ -43,12 +44,17 @@ export async function syncFonts(settings: Settings): Promise<void> {
     const reason = error instanceof Error ? error.message : String(error);
     const code = error instanceof ApiError ? error.code : undefined;
     const hint = describeApiError(error);
+    const details = formatDiagnosticErrorDetails(error);
     logger.warn(
       code === ErrorCode.PERMISSION_MISSING
-        ? fontSyncDeniedWarning(reason)
+        ? fontSyncDeniedWarning(details)
         : code === ErrorCode.PLAN_FEATURE_UNAVAILABLE
-          ? fontSyncUnavailableWarning(reason, hint)
-          : `Font sync failed; continuing without provisioned fonts: ${reason}${hint ? ` ${hint}` : ''}`
+          ? fontSyncWarning(
+              'Font sync is not included in your plan',
+              details,
+              hint
+            )
+          : fontSyncWarning('Font sync failed', details, hint)
     );
     recordWarning('failed_upload', 'Fonts', reason);
   }
@@ -56,22 +62,32 @@ export async function syncFonts(settings: Settings): Promise<void> {
 
 const projectKeyReason = 'A project API key cannot upload organization fonts';
 
-const fontSyncDeniedWarning = (reason: string) =>
+const fontSyncWarning = (
+  whatHappened: string,
+  details: string | undefined,
+  fix: string | undefined
+) =>
   createDiagnosticMessage({
     source: 'gt',
     severity: 'Warning',
-    whatHappened: 'Font sync was denied',
-    details: reason,
-    fix: 'To upload fonts, use an Organization API key with the `org:assets:write` permission',
+    whatHappened,
+    details,
+    fix,
     reassurance: 'Translation continues with fallback fonts',
   });
 
-const fontSyncUnavailableWarning = (reason: string, fix: string | undefined) =>
+const fontSyncDeniedWarning = (details: string | undefined) =>
+  fontSyncWarning(
+    'Font sync was denied',
+    details,
+    'To upload fonts, use an Organization API key with the `org:assets:write` permission'
+  );
+
+const fontNotSyncedWarning = (fileName: string, error: string | undefined) =>
   createDiagnosticMessage({
     source: 'gt',
     severity: 'Warning',
-    whatHappened: 'Font sync is not included in your plan',
-    details: reason,
-    fix,
-    reassurance: 'Translation continues with fallback fonts',
+    whatHappened: `Font sync failed for ${fileName}`,
+    details: error,
+    reassurance: 'Translation continues without this font',
   });

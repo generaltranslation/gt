@@ -19,3 +19,33 @@ export function handleCacheError(
       break;
   }
 }
+
+/**
+ * Run a lookup, routing a thrown error or rejection through the owner's
+ * handleError and returning the fallback once handled.
+ */
+export function guard<T>(
+  handleError: (error: unknown) => void,
+  fallback: T,
+  fn: () => T
+): T {
+  try {
+    return fn();
+  } catch (error) {
+    handleError(error);
+    return fallback;
+  }
+}
+
+export async function guardAsync<T>(
+  handleError: (error: unknown) => void,
+  fallback: T,
+  fn: () => Promise<T>
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    handleError(error);
+    return fallback;
+  }
+}

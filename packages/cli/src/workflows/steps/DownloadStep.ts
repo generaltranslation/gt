@@ -12,12 +12,14 @@ import { recordWarning } from '../../state/translateWarnings.js';
 import { FileStatusTracker } from './PollJobsStep.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import type { InlineLibrary } from '../../types/libraries.js';
-import {
-  retryTransientRead,
-  TRANSIENT_READ_RETRIES,
-  transientReadDelay,
-  wait,
-} from '../utils/retryTransientRead.js';
+
+/** How many times files still pending, or whose download broke off, are requested again. */
+const TRANSIENT_READ_RETRIES = 3;
+
+/** Waits 1s, 2s, then 4s before each retry. */
+const transientReadDelay = (retry: number) => 1000 * 2 ** retry;
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export type DownloadTranslationsInput = {
   fileTracker: FileStatusTracker;
@@ -61,9 +63,7 @@ export class DownloadTranslationsStep {
       }
 
       // Check for translations
-      const { results } = await retryTransientRead(() =>
-        this.api.queryFiles(currentQueryData)
-      );
+      const { results } = await this.api.queryFiles(currentQueryData);
 
       // Filter for ready translations; results follow the selector order
       const isReady = (index: number) =>
@@ -199,7 +199,7 @@ export class DownloadTranslationsStep {
     }
   }
 
-  /** Requests pending files and transient read failures again; failed files are final. */
+  /** Requests retryable files again; failed files are final. */
   private async downloadFilesWithRetry(
     fileTracker: FileStatusTracker,
     files: BatchedFiles,
@@ -211,6 +211,7 @@ export class DownloadTranslationsStep {
     let remainingFiles = files;
     for (let retry = 0; ; retry++) {
       const batchResult = await downloadFileBatch(
+        this.api,
         fileTracker,
         remainingFiles,
         this.settings,

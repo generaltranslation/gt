@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import os from 'node:os';
 import { downloadFileBatch } from '../downloadFileBatch.js';
 import { createMockSettings } from '../__mocks__/settings.js';
-import { configureCustomMapping } from '../../utils/api.js';
+import { configureCustomMapping, createClients } from '../../utils/api.js';
 import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 
 vi.mock('../../console/logger.js', () => ({
@@ -67,19 +67,21 @@ describe('downloadFileBatch - custom-mapped alias of a requested locale', () => 
       skipped: new Map(),
     } as unknown as FileStatusTracker;
 
+    const settings = createMockSettings({
+      configDirectory: tempDir,
+      config: path.join(tempDir, 'gt.config.json'),
+      defaultLocale: 'en',
+      locales: ['es', 'es-alt'],
+      apiKey: 'api-key',
+      baseUrl: 'https://api.example.com',
+      projectId: 'project-id',
+      customMapping,
+    });
     const result = await downloadFileBatch(
+      createClients(settings).project!,
       fileTracker,
       requested,
-      createMockSettings({
-        configDirectory: tempDir,
-        config: path.join(tempDir, 'gt.config.json'),
-        defaultLocale: 'en',
-        locales: ['es', 'es-alt'],
-        apiKey: 'api-key',
-        baseUrl: 'https://api.example.com',
-        projectId: 'project-id',
-        customMapping,
-      })
+      settings
     );
 
     expect(wireSelectors).toEqual([[{ ...file, locale: 'es' }]]);

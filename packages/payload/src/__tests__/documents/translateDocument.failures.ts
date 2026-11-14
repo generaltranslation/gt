@@ -104,7 +104,8 @@ describe('translateDocument: failures', () => {
     'spend_limit_reached',
     'credits_insufficient',
     'payment_required',
-  ] as const)('reports GT refusing the work for billing (%s)', async (code) => {
+    'a_code_newer_than_the_generated_types',
+  ])('reports GT refusing the work for billing (%s)', async (code) => {
     const page = await createPage(payload);
     const gt = new FakeGt();
     gt.billingCode = code;
@@ -115,7 +116,11 @@ describe('translateDocument: failures', () => {
       locales: ['es'],
     });
 
-    expect(result.billingCode).toBe(code);
+    expect(result.billingError).toEqual({
+      message:
+        'Translating 511 tokens would exceed your free usage limit for this month.',
+      code,
+    });
     expect(result.locales.es).toMatchObject({ status: 'failed' });
   });
 
@@ -130,6 +135,6 @@ describe('translateDocument: failures', () => {
       locales: ['es'],
     });
 
-    expect(result.billingCode).toBeUndefined();
+    expect(result.billingError).toBeUndefined();
   });
 });

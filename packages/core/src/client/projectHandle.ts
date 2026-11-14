@@ -1,10 +1,12 @@
 import {
+  ApiError,
   awaitJobs,
   createApiClient,
   createBranch,
   createProjectApiKey,
   DEFAULT_BATCH_SIZE,
   deleteProjectApiKey,
+  ErrorCode,
   fetchFileDownload,
   generateProjectContext,
   getFileContent,
@@ -87,7 +89,6 @@ import {
 import { createDiagnosticMessage } from '../logging/diagnostics';
 import type { GTProjectConfig } from './clientConfig';
 import { GTRuntime } from '../runtime';
-import { validateModelProvider } from '../translate/modelProvider';
 import type { MoveMapping } from '../translate/moveFiles';
 import type { PublishFileEntry } from '../translate/publishFiles';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
@@ -100,7 +101,6 @@ import { decodeFileContent } from '../utils/base64';
 
 // The server accepts at most 25 moves per request.
 const MOVE_FILES_BATCH_SIZE = 25;
-
 /**
  * Project and file operations, plus runtime translation, for one project: the
  * project-scoped `new GeneralTranslation({ projectId })` and `account.project(projectId)`.
@@ -276,6 +276,47 @@ export class ProjectHandle extends GTRuntime {
   }
 
   /**
+   * Sets the project's default locale to `defaultLocale` unless it already is,
+   * under any spelling or `customMapping` alias; source uploads do not change
+   * it. A key without `project:write` cannot update it but can still upload
+   * and translate files, so that `ApiError` is returned rather than thrown.
+   *
+   * @returns Whether the locale changed, the locale the project had, and the permission error.
+   */
+  async syncDefaultLocale(defaultLocale: string): Promise<
+    | { status: 'unchanged' | 'updated'; previousDefaultLocale: string }
+    | {
+        status: 'permission_missing';
+        previousDefaultLocale: string;
+        error: ApiError;
+      }
+  > {
+    // The stored service code, before an app alias replaces it: an alias can be
+    // spelled like a different service code.
+    const { defaultLocale: storedDefaultLocale } = unwrapApiResult(
+      await getProject(this.request())
+    );
+    const previousDefaultLocale = this.restoreLocale(storedDefaultLocale);
+    if (
+      standardizeLocale(storedDefaultLocale) ===
+      this.resolveServiceLocale(defaultLocale)
+    ) {
+      return { status: 'unchanged', previousDefaultLocale };
+    }
+    try {
+      await this.update({ defaultLocale });
+      return { status: 'updated', previousDefaultLocale };
+    } catch (error) {
+      if (
+        !(error instanceof ApiError) ||
+        error.code !== ErrorCode.PERMISSION_MISSING
+      )
+        throw error;
+      return { status: 'permission_missing', previousDefaultLocale, error };
+    }
+  }
+
+  /**
    * Creates an API key for the project with exactly the requested
    * permissions. The returned `key` is shown only once.
    *
@@ -364,7 +405,7 @@ export class ProjectHandle extends GTRuntime {
 
   /**
    * Creates a branch. A name the project already has throws an `ApiError` with code `already_exists`;
-   * to reuse an existing branch, look it up with `listBranches({ name: [name] })` first.
+   * `createOrReuseBranch()` returns the existing branch instead.
    *
    * @param query - The branch `name` and whether it `isDefault`.
    * @returns The created branch.
@@ -378,6 +419,33 @@ export class ProjectHandle extends GTRuntime {
         body: { name: query.name, isDefault: query.isDefault },
       })
     );
+  }
+
+  /**
+   * Creates a branch, or returns the branch the project already has with
+   * that name, as when a concurrent run created it after a lookup. A reused
+   * branch keeps its `isDefault`.
+   *
+   * @param query - The branch `name` and whether a created branch `isDefault`.
+   * @returns The created or existing branch.
+   */
+  async createOrReuseBranch(
+    query: CreateBranchData['body']
+  ): Promise<CreateBranchResponse> {
+    try {
+      return await this.createBranch(query);
+    } catch (error) {
+      if (
+        !(error instanceof ApiError) ||
+        error.code !== ErrorCode.ALREADY_EXISTS
+      )
+        throw error;
+      const {
+        items: [existing],
+      } = await this.listBranches({ name: [query.name] });
+      if (!existing) throw error;
+      return existing;
+    }
   }
 
   /**
@@ -586,7 +654,6 @@ export class ProjectHandle extends GTRuntime {
     } = {}
   ): Promise<TranslateFilesResponse> {
     const { modelProvider } = options;
-    validateModelProvider(modelProvider);
     const jobs = await processBatches(files, async (batch) => {
       const response = unwrapApiResult(
         await translateFiles({
@@ -917,6 +984,7 @@ export class ProjectHandle extends GTRuntime {
    * new one.
    *
    * @returns The file as a stream, so it can be saved without holding it in memory. Cancel a stream you do not read.
+   * Reading it fails when the download sends nothing for 60 seconds.
    * @throws {ApiError} If the URL is rejected, with the HTTP status.
    */
   async fetchFileDownload(

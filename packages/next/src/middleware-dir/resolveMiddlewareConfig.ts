@@ -15,7 +15,6 @@ export function resolveMiddlewareConfig(
   // Read each env var through a literal `process.env` access so Next.js can
   // inline the values from `nextConfig.env`.
   const envConfig = parseEnvConfig<MiddlewareConfig>(
-    '_GENERALTRANSLATION_MIDDLEWARE_CONFIG',
     process.env._GENERALTRANSLATION_MIDDLEWARE_CONFIG
   );
   return {

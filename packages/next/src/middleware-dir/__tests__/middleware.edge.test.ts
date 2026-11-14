@@ -537,31 +537,6 @@ describe('middleware config', () => {
 
       expect(resolveMiddlewareConfig()).not.toHaveProperty('unknown');
     });
-
-    it('falls back to the defaults when the env is malformed', () => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-      stubMiddlewareEnv('{');
-
-      expect(resolveMiddlewareConfig()).toMatchObject({
-        prefixDefaultLocale: false,
-      });
-      expect(error).toHaveBeenCalledOnce();
-      expect(error).toHaveBeenCalledWith(
-        expect.stringContaining('_GENERALTRANSLATION_MIDDLEWARE_CONFIG')
-      );
-      error.mockRestore();
-    });
-  });
-
-  describe('parseEnvConfig', () => {
-    it('treats valid non-object JSON as unset', () => {
-      const unset = resolveMiddlewareConfig();
-      stubMiddlewareEnv('null');
-      vi.stubEnv('_GENERALTRANSLATION_I18N_CONFIG_PARAMS', 'null');
-
-      expect(resolveMiddlewareConfig()).toEqual(unset);
-      expect(() => createNextMiddleware()).not.toThrow();
-    });
   });
 
   describe('createNextMiddleware config precedence', () => {

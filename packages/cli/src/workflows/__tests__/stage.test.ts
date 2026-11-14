@@ -53,7 +53,7 @@ vi.mock('../steps/SetupStep.js', () => ({
 }));
 vi.mock('../steps/EnqueueStep.js', () => ({
   EnqueueStep: vi.fn(() => ({
-    run: vi.fn(async () => ({ message: 'enqueued', jobData: {} })),
+    run: vi.fn(async () => []),
     wait: vi.fn(),
   })),
 }));
@@ -112,7 +112,7 @@ describe('runStageFilesWorkflow font sync', () => {
     expect(collectFonts).toHaveBeenCalledWith(settings);
     expect(api.org).toHaveBeenCalledWith('org-id');
     expect(api.upsertAssets).toHaveBeenCalledWith(fonts);
-    expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
+    expect(result.enqueueResult).toEqual([]);
   });
 
   it('skips the upload when no fonts are configured', async () => {
@@ -134,7 +134,7 @@ describe('runStageFilesWorkflow font sync', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Font sync failed')
     );
-    expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
+    expect(result.enqueueResult).toEqual([]);
   });
 
   it('records fonts the API failed to save and keeps the saved ones', async () => {
@@ -160,7 +160,7 @@ describe('runStageFilesWorkflow font sync', () => {
 
     expect(logger.success).toHaveBeenCalledWith('Synced 1 font(s)');
     expect(logger.warn).toHaveBeenCalledWith(
-      'Font sync failed for Broken.ttf; continuing without it: no family'
+      'gt Warning: Font sync failed for Broken.ttf. Translation continues without this font. Details: no family.'
     );
     expect(getWarnings()).toEqual([
       {
@@ -169,7 +169,7 @@ describe('runStageFilesWorkflow font sync', () => {
         reason: 'no family',
       },
     ]);
-    expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
+    expect(result.enqueueResult).toEqual([]);
   });
 });
 
@@ -199,14 +199,14 @@ describe('runStageFilesWorkflow save-local gate', () => {
 
     expect(userEditDiffsRun).not.toHaveBeenCalled();
     // The rest of the workflow still runs
-    expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
+    expect(result.enqueueResult).toEqual([]);
   });
 
   it('skips saving local edits when options.saveLocal is not set', async () => {
     const result = await runStageFilesWorkflow({ files, options, settings });
 
     expect(userEditDiffsRun).not.toHaveBeenCalled();
-    expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
+    expect(result.enqueueResult).toEqual([]);
   });
 
   it('ignores the raw flag and uses the resolved setting', async () => {
@@ -253,7 +253,7 @@ describe('runStageFilesWorkflow errors', () => {
     await expect(
       runStageFilesWorkflow({ files, options, settings })
     ).rejects.toThrow(
-      /^Files could not be sent for translation\..*Original error: Error: server down$/
+      /^gt Error: Files could not be sent for translation\..*Details: Error: server down\.$/
     );
   });
 });

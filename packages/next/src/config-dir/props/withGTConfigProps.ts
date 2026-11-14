@@ -2,7 +2,7 @@ import type { GTCompilerOptions, GTConfig } from 'generaltranslation';
 import type { MiddlewareConfig } from '../../middleware-dir/types';
 import type { GTNextOptions } from '../schema';
 
-export type HeadersAndCookies = {
+type HeadersAndCookies = {
   localeHeaderName?: string;
   localeCookieName?: string;
   enableI18nCookieName?: string;
@@ -33,10 +33,6 @@ export type BaseWithGTConfigProps = MiddlewareConfig &
     config?: string;
     // GTConfig omits the file's dictionary path; see its definition.
     dictionary?: string;
-    // ESLint integration
-    eslint?: boolean; // Enable/disable ESLint config generation (default: true)
-    eslintSeverity?: 'error' | 'warn'; // Severity level for ESLint rules (default: 'warn')
-    overwriteESLintConfig?: boolean; // Allow overwriting existing eslint.config.mjs (default: false)
     // Other
     experimentalCompilerOptions?: CompilerOptions;
     headersAndCookies?: HeadersAndCookies;
@@ -46,6 +42,4 @@ export type BaseWithGTConfigProps = MiddlewareConfig &
 export type withGTConfigProps = BaseWithGTConfigProps & {
   /** Use GT_API_KEY instead. */
   apiKey?: never;
-  /** Use GT_API_KEY instead. */
-  devApiKey?: never;
 };

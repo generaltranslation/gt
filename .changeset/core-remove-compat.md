@@ -16,5 +16,7 @@ Remove the remaining backward compatibility:
 - The `generaltranslation/errors` entry is removed; import `ApiError` from `generaltranslation/api`.
 - `generaltranslation/types` drops `TranslateConfig`, `TranslationRequestConfig`, `BINARY_FILE_FORMATS` (use `isBinaryFileFormat`), and `Metadata`.
 - `generaltranslation/internal` drops `pluralForms`, `encodeFileContent`, `decodeFileContent`, `unwrapApiResult`, and the `JsxChildren`, `JsxChild`, `JsxElement`, and `LocaleProperties` types (use `generaltranslation`).
+- `generaltranslation/internal` drops `isModelProvider` and `supportedModelProviders`. To list the supported providers, use `Object.values(ModelProvider)` with `ModelProvider` from `generaltranslation/api`.
+- `generaltranslation/internal` drops `defaultDefaultLocale`. Import it from `@generaltranslation/format/internal`.
 - The core logger is removed: a missing target locale throws without also logging, and `_GT_LOG_LEVEL` has no effect. A runtime translation timeout rejects with `Request timed out after <ms>ms`.
-- An unsupported `modelProvider` throws ``Unsupported model provider `<value>` `` from `translate()` and `translateMany()`, as it does from `translateFiles()`.
+- `TranslateOptions.modelProvider` is typed as `ModelProvider` instead of `string`. The client no longer checks the value at runtime: `translate()`, `translateMany()` and `translateFiles()` send it as given, and an unsupported provider fails with the API's error.

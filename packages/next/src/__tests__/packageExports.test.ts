@@ -391,7 +391,7 @@ describe('gt-next package exports', () => {
           defaultLocale: 'en',
           locales: ['en'],
         },
-        nextI18nCacheParams: {
+        i18nCacheParams: {
           defaultLocale: 'en',
           locales: ['en'],
         },

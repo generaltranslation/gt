@@ -1,20 +1,16 @@
 import { logger } from '../../console/logger.js';
 import type { ProjectHandle, FileReference } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
+import type { TranslateFilesResponse } from '@generaltranslation/api';
 import chalk from 'chalk';
 
 type EnqueueClient = Pick<ProjectHandle, 'translateFiles'>;
 
-export type EnqueueFilesResult = {
-  jobData: {
-    [jobId: string]: {
-      fileId: string;
-      versionId: string;
-      branchId: string;
-      targetLocale: string;
-    };
-  };
-  message: string;
+type EnqueuedJob = TranslateFilesResponse['jobs'][number];
+
+/** A queued job that translates one file version into one locale. */
+export type FileTranslationJob = EnqueuedJob & {
+  subject: Extract<EnqueuedJob['subject'], { type: 'file_translation' }>;
 };
 
 export class EnqueueStep {
@@ -26,13 +22,8 @@ export class EnqueueStep {
     private force?: boolean
   ) {}
 
-  async run(files: FileReference[]): Promise<EnqueueFilesResult> {
-    if (files.length === 0) {
-      return {
-        jobData: {},
-        message: 'No files need to be enqueued',
-      };
-    }
+  async run(files: FileReference[]): Promise<FileTranslationJob[]> {
+    if (files.length === 0) return [];
 
     this.spinner.start('Enqueuing translations...');
 
@@ -42,21 +33,10 @@ export class EnqueueStep {
       modelProvider: this.settings.modelProvider,
       force: this.force,
     });
-    // Keyed by job ID in the shape the polling and download steps read.
-    const jobData: EnqueueFilesResult['jobData'] = {};
-    for (const { id, subject } of jobs) {
-      if (subject.type !== 'file_translation') continue;
-      jobData[id] = {
-        fileId: subject.fileId,
-        versionId: subject.versionId,
-        branchId: subject.branchId,
-        targetLocale: subject.locale,
-      };
-    }
     this.spinner.stop(chalk.green('Translations enqueued successfully'));
-    return {
-      jobData,
-      message: `Successfully enqueued ${Object.keys(jobData).length} file translation jobs`,
-    };
+    return jobs.filter(
+      (job): job is FileTranslationJob =>
+        job.subject.type === 'file_translation'
+    );
   }
 }

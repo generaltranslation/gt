@@ -1,33 +1,27 @@
-import { type I18nConfigParams } from '@generaltranslation/react-core/pure';
-import { type NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
+import {
+  type I18nConfigParams,
+  type ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';
 import type { BaseWithGTConfigProps } from '../config-dir/props/withGTConfigProps';
 import { resolveTranslationLoader } from '../resolvers/resolveTranslationLoader';
 import { parseEnvConfig } from '../utils/parseEnvConfig';
 import { getRuntimeCredentials } from './runtimeCredentials';
 
-export type NextSetupI18nConfigParams = I18nConfigParams & {
-  cacheUrl?: string | null;
-  _disableDevHotReload?: boolean;
-};
-
 // TODO: better way of communicating from build to runtime
 export function getParams(): {
-  i18nConfigParams: NextSetupI18nConfigParams;
-  nextI18nCacheParams: NextI18nCacheParams;
+  i18nConfigParams: I18nConfigParams;
+  i18nCacheParams: ReactI18nCacheParams;
 } {
   // Read from build output
   const clientConfig = parseEnvConfig<
-    BaseWithGTConfigProps & NextSetupI18nConfigParams & NextI18nCacheParams
-  >(
-    'NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
-    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS
-  );
+    BaseWithGTConfigProps & I18nConfigParams & ReactI18nCacheParams
+  >(process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS);
   const { projectId, apiKey } = getRuntimeCredentials({
     projectId: clientConfig.projectId,
   });
 
   // I18nConfigParams
-  const i18nConfigParams: NextSetupI18nConfigParams = {
+  const i18nConfigParams: I18nConfigParams = {
     defaultLocale: clientConfig.defaultLocale,
     locales: clientConfig.locales,
     customMapping: clientConfig.customMapping,
@@ -43,9 +37,9 @@ export function getParams(): {
     enableI18nCookieName: clientConfig.headersAndCookies?.enableI18nCookieName,
   };
 
-  // NextI18nCacheParams
+  // ReactI18nCacheParams
   const timeout = clientConfig.renderSettings?.timeout;
-  const nextI18nCacheParams: NextI18nCacheParams = {
+  const i18nCacheParams: ReactI18nCacheParams = {
     apiKey,
     projectId,
     runtimeUrl: clientConfig.runtimeUrl,
@@ -69,7 +63,7 @@ export function getParams(): {
 
   return {
     i18nConfigParams,
-    nextI18nCacheParams,
+    i18nCacheParams,
   };
 }
 

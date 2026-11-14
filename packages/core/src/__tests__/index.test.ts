@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  GeneralTranslation,
-  GTAccount,
-  GTIntl,
-  type ProjectHandle,
-  type TranslateManyEntry,
-} from '../index';
+import { GeneralTranslation, GTAccount, GTIntl } from '../index';
 import { GTRuntime } from '../runtime';
 
 const numberValue = 1234.56;
@@ -23,98 +17,6 @@ const formatCurrencyWithIntl = (locale: string, currency = 'EUR') =>
     currency,
     numberingSystem: 'latn',
   }).format(numberValue);
-
-describe.sequential('GeneralTranslation Translation Methods', () => {
-  describe.each(['translate', 'translateMany'] as const)('%s', (method) => {
-    const fetchMock = vi.fn<typeof fetch>();
-    let project: ProjectHandle;
-
-    beforeEach(() => {
-      fetchMock.mockReset();
-      vi.stubGlobal('fetch', fetchMock);
-      project = new GeneralTranslation({
-        apiKey: 'test-api-key',
-        baseUrl: 'https://api.test.com',
-        projectId: 'test-project',
-        localeConfig: { defaultLocale: 'en' },
-      });
-    });
-
-    afterEach(() => {
-      vi.unstubAllGlobals();
-    });
-
-    it('sends instance configuration and explicit translation metadata', async () => {
-      const translated = {
-        success: true,
-        translation: 'Bonjour',
-        locale: 'fr',
-        dataFormat: 'ICU',
-      } as const;
-      const { success: _success, ...succeeded } = translated;
-      fetchMock.mockResolvedValue(
-        Response.json({ results: [{ status: 'succeeded', ...succeeded }] })
-      );
-      const entry = {
-        source: 'Hello {name}',
-        metadata: { hash: 'greeting', id: 'welcome', dataFormat: 'ICU' },
-      } satisfies TranslateManyEntry;
-      const options = {
-        targetLocale: 'fr',
-        sourceLocale: 'en-US',
-        modelProvider: 'OPENAI',
-      };
-      const result =
-        method === 'translate'
-          ? await project.translate(entry, options)
-          : await project.translateMany([entry], options);
-
-      expect(result).toEqual(
-        method === 'translate' ? translated : [translated]
-      );
-      const [input, init] = fetchMock.mock.calls[0];
-      const request = new Request(input, init);
-      expect(request.url).toBe(
-        'https://api.test.com/v2/projects/test-project/translate'
-      );
-      expect(request.headers.get('authorization')).toBe('Bearer test-api-key');
-      expect(request.headers.has('gt-project-id')).toBe(false);
-      expect(await request.json()).toMatchObject({
-        requests: [entry],
-        targetLocale: 'fr',
-        sourceLocale: 'en-US',
-        metadata: { modelProvider: 'OPENAI' },
-      });
-    });
-
-    it('names the method when the target locale is missing', async () => {
-      const withoutTarget = new GeneralTranslation({
-        apiKey: 'test-api-key',
-        projectId: 'test-project',
-      });
-      const result =
-        method === 'translate'
-          ? withoutTarget.translate('Hello', '')
-          : withoutTarget.translateMany(['Hello'], '');
-
-      await expect(result).rejects.toThrow(
-        `GT Error: Cannot call \`${method}\` without a target locale. Pass the target locale to \`${method}()\`.`
-      );
-      expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it('propagates network failures', async () => {
-      const error = new Error('Translation service unavailable');
-      fetchMock.mockRejectedValue(error);
-      const result =
-        method === 'translate'
-          ? project.translate('Hello', 'es')
-          : project.translateMany(['Hello'], 'es');
-
-      await expect(result).rejects.toBe(error);
-    });
-  });
-});
 
 describe('GTIntl', () => {
   it.each(['Mars/Olympus', ''])(

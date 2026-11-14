@@ -225,6 +225,8 @@ describe('runs', () => {
     expect(await stepUntilDone(run.id)).toMatchObject({
       status: 'done',
       billingCode: 'spend_limit_reached',
+      billingMessage:
+        'Translating 511 tokens would exceed your free usage limit for this month.',
     });
     expect(gt.calls.translateFiles - before).toBe(1);
   });

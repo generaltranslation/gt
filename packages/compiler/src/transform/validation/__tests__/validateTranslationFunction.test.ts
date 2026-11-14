@@ -2,10 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as parser from '@babel/parser';
 import traverse, { type NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import {
-  validateTranslationFunction,
-  validateUseMessagesCallback,
-} from '../validateTranslationFunction';
+import { validateTranslationFunction } from '../validateTranslationFunction';
 import { validateTranslationComponentArgs } from '../validateTranslationComponentArgs';
 import { initializeState } from '../../../state/utils/initializeState';
 
@@ -281,13 +278,6 @@ describe('validateTranslationFunction', () => {
         validate('gt(`\\xg`)', { autoderive: true }, { invalidEscapes: true })
       ).toEqual({ errors: [INVALID_ESCAPE] });
     });
-  });
-});
-
-describe('validateUseMessagesCallback', () => {
-  it('accepts any arguments, including dynamic ones', () => {
-    const { callPath } = setup('callback(someVar, `Hello, ${name}`, 123)');
-    expect(validateUseMessagesCallback(callPath.node)).toEqual({ errors: [] });
   });
 });
 

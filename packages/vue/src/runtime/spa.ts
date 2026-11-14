@@ -1,6 +1,6 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { GTIntl } from '@generaltranslation/format';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { translateString } from '../messages/translation';
 import type { GTFunction, GTPlugin, InitializeGTSPAOptions } from '../types';
 import { createGTRuntime, type GTRuntime } from './state';

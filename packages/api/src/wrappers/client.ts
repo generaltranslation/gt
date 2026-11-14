@@ -19,8 +19,6 @@ export type UserTokenProvider = {
 
 export type ApiClientConfig = Partial<TransportOptions> & {
   apiKey?: string;
-  /** Default gt-api-version header; per-call headers override it. */
-  apiVersion?: ApiVersion;
   baseUrl: string;
   userTokenProvider?: UserTokenProvider;
 };
@@ -53,7 +51,7 @@ function createUserTokenFetch(
 
 export function createApiClient(config: ApiClientConfig): Client {
   const headers = new Headers({
-    'gt-api-version': config.apiVersion ?? API_VERSION,
+    'gt-api-version': API_VERSION,
   });
   if (config.apiKey) headers.set('Authorization', `Bearer ${config.apiKey}`);
 

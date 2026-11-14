@@ -15,7 +15,11 @@ import { createUserTokenProvider } from '../../auth/oauth.js';
 import { resolveCliApiKey } from '../../auth/cliApiKey.js';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { exitSync } from '../../console/logging.js';
-import { loadConfig, withJsonExtension } from '../../fs/config/loadConfig.js';
+import {
+  loadConfig,
+  withJsonExtension,
+  type GTConfigFile,
+} from '../../fs/config/loadConfig.js';
 import type { SharedFlags } from '../../types/index.js';
 
 export type ApiCommandOptions = SharedFlags & {
@@ -268,12 +272,11 @@ function writeResponseMetadata(
 }
 
 function resolveApiProjectId(
-  config: Record<string, unknown>,
+  config: Pick<GTConfigFile, 'projectId'>,
   flagProjectId: string | undefined,
   dependencies: ApiCommandDependencies
 ): string | undefined {
-  const configProjectId =
-    typeof config.projectId === 'string' ? config.projectId : undefined;
+  const configProjectId = config.projectId;
   const environmentProjectId = process.env[credentialEnvNames.projectId];
 
   if (configProjectId && flagProjectId && configProjectId !== flagProjectId) {

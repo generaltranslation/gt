@@ -19,7 +19,7 @@ import type {
 } from '../index.js';
 import { getLoaderUpdateActions } from '../shared/loader.js';
 import { readSourceFile } from '../shared/source.js';
-import { readViteConfig } from '../shared/viteConfig.js';
+import { hasPackageExport, readViteConfig } from '../shared/viteConfig.js';
 import { VITE_LOADER_FILE } from '../vite.js';
 import {
   configureRootLang,
@@ -32,7 +32,7 @@ import {
   configureRouter,
   getRouterAction,
 } from './router.js';
-import { DOCS_URL, hasVitePlugin, inspectTanStackStart } from './source.js';
+import { DOCS_URL, inspectTanStackStart } from './source.js';
 import {
   configureViteConfig,
   enablesSpaMode,
@@ -243,7 +243,13 @@ export const tanstackStartSetup: BuildToolSetup = {
 
     // Installing gt-tanstack-start keeps an existing version, and an older one
     // has neither export the new setup imports.
-    if ((await hasVitePlugin(appDirectory)) === false) {
+    if (
+      (await hasPackageExport(
+        appDirectory,
+        Libraries.GT_TANSTACK_START,
+        './plugin/vite'
+      )) === false
+    ) {
       manualActions.push({
         whatHappened: `The installed ${Libraries.GT_TANSTACK_START} has no Vite plugin, so GT left ${viteConfig.path} and ${router.path} unchanged`,
         fix: `Upgrade ${Libraries.GT_TANSTACK_START} to 12 or later, then rerun \`npx gt@latest init\` (see ${DOCS_URL})`,

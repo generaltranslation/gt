@@ -1,10 +1,11 @@
 import type {
+  ModelProvider,
   RuntimeFileFormat,
   TranslateContentData,
 } from '@generaltranslation/api';
 import type { Content, DataFormat } from '@generaltranslation/format';
 
-export type ActionType = NonNullable<
+type ActionType = NonNullable<
   NonNullable<
     TranslateContentData['body']['requests'][number]['metadata']
   >['actionType']
@@ -31,7 +32,7 @@ export type EntryMetadata = {
 
 export type RuntimeTranslateManyOptions = {
   sourceLocale?: string;
-  modelProvider?: string;
+  modelProvider?: ModelProvider;
 };
 
 export type TranslateOptions = RuntimeTranslateManyOptions & {

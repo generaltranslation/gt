@@ -18,7 +18,7 @@ import {
   type DocumentResult,
   type TranslationJob,
 } from './translation';
-import type { BillingCode, GtClient, TranslateTarget } from './types';
+import type { GtClient, TranslateTarget } from './types';
 
 export const RUNS_SLUG = 'gt-translation-runs';
 const RUN_TASK = 'gtTranslationRun';
@@ -36,8 +36,9 @@ export type RunProgress = {
   failedLocales: string[];
   // Documents that could not be read, sent or saved at all.
   failedDocuments: number;
-  // GT refused the work for billing, with this code.
-  billingCode: BillingCode | null;
+  // GT refused the work for billing with this message, and this code when it sent one.
+  billingMessage: string | null;
+  billingCode: string | null;
   // Strings left as they were: their translation broke markup or was missing.
   skippedStrings: number;
 };
@@ -101,6 +102,7 @@ export const runsCollection: CollectionConfig = {
     { name: 'done', type: 'number', required: true },
     { name: 'failedLocales', type: 'json', required: true },
     { name: 'failedDocuments', type: 'number', required: true },
+    { name: 'billingMessage', type: 'text' },
     { name: 'billingCode', type: 'text' },
     { name: 'skippedStrings', type: 'number', defaultValue: 0 },
     { name: 'startedBy', type: 'json' },
@@ -116,6 +118,7 @@ const progressOf = (run: Run): RunProgress => ({
   done: run.done,
   failedLocales: run.failedLocales,
   failedDocuments: run.failedDocuments,
+  billingMessage: run.billingMessage ?? null,
   billingCode: run.billingCode ?? null,
   skippedStrings: run.skippedStrings ?? 0,
 });
@@ -283,15 +286,16 @@ async function startNext(
   });
   const counts = tally(payload, run, started.documents);
   // Once billing stops the work GT refuses every batch, so the rest is not tried.
-  const billingCode = started.documents.find((d) => d.result.billingCode)
-    ?.result.billingCode;
-  if (billingCode)
+  const billingError = started.documents.find((d) => d.result.billingError)
+    ?.result.billingError;
+  if (billingError)
     return {
       pending: [],
       jobs: [...run.jobs, ...started.jobs],
       ...counts,
       done: counts.done + pending.length,
-      billingCode,
+      billingMessage: billingError.message,
+      billingCode: billingError.code ?? null,
     };
   return { pending, jobs: [...run.jobs, ...started.jobs], ...counts };
 }

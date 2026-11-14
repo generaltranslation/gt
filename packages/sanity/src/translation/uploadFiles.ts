@@ -4,11 +4,7 @@ import { gt, projectFor } from '../adapter/core';
 import type { SerializedDocument } from '../serialization/types';
 import { resolveFileName } from '../utils/fileNames';
 import { allowsNonDefaultSourceLocales } from '../utils/translationSource';
-import {
-  failedResultsDiagnostic,
-  uploadIdError,
-  withRejectedResults,
-} from '../utils/batchResults';
+import { failedResultsDiagnostic } from '../utils/batchResults';
 import { syncProjectDefaultLocale } from '../adapter/syncProjectDefaultLocale';
 
 export async function uploadFiles(
@@ -22,11 +18,8 @@ export async function uploadFiles(
   // With `allowNonDefaultSourceLocales`, each file declares the language of
   // its own document, so one request can mix originals in different locales.
   const allowNonDefault = allowsNonDefaultSourceLocales();
-  // A document GT cannot store would fail the whole request, so it fails alone.
-  const rejected = documents.filter(({ info }) => uploadIdError(info));
-  const accepted = documents.filter(({ info }) => !uploadIdError(info));
-  const sent = await project.uploadSourceFiles(
-    accepted.map(({ info, serializedDocument }) => ({
+  const uploadResult = await project.uploadSourceFiles(
+    documents.map(({ info, serializedDocument }) => ({
       source: {
         content: serializedDocument.content,
         fileName: resolveFileName(info),
@@ -42,24 +35,11 @@ export async function uploadFiles(
       sourceLocale: gt.defaultLocale,
     }
   );
-  const uploadResult = withRejectedResults(
-    sent,
-    rejected.map(({ info }) => ({
-      branchId: '',
-      fileId: info.documentId,
-      versionId: info.versionId ?? '',
-      fileName: resolveFileName(info),
-      fileFormat: 'HTML' as const,
-      status: 'failed' as const,
-      error: uploadIdError(info),
-    }))
-  );
   if (uploadResult.summary.failed > 0) {
     console.warn(
       failedResultsDiagnostic(
         'Some documents could not be uploaded to General Translation and were skipped',
-        uploadResult,
-        'Warning'
+        uploadResult
       )
     );
   }

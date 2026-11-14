@@ -10,7 +10,7 @@ import { requireProject } from '../utils/api.js';
 import { FileReference, FileToUpload } from 'generaltranslation';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
-import { EnqueueStep, type EnqueueFilesResult } from './steps/EnqueueStep.js';
+import { EnqueueStep, type FileTranslationJob } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { TagStep } from './steps/TagStep.js';
 import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
@@ -39,7 +39,7 @@ export async function runStageFilesWorkflow({
   inlineLibrary?: InlineLibrary;
 }): Promise<{
   branchData: BranchData;
-  enqueueResult: EnqueueFilesResult;
+  enqueueResult: FileTranslationJob[];
   uploadedFiles: FileReference[];
 }> {
   try {

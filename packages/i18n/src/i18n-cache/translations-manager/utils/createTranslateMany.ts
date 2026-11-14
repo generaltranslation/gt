@@ -22,8 +22,8 @@ export type CreateTranslateMany = (locale: Locale) => TranslateMany;
  */
 export function createTranslateManyFactory(
   getRuntime: () => TranslateManyClient,
-  timeout?: number,
-  metadata: RuntimeTranslateManyOptions = {}
+  timeout: number,
+  metadata: RuntimeTranslateManyOptions
 ): CreateTranslateMany {
   return (locale) => async (sources) =>
     getRuntime().translateMany(

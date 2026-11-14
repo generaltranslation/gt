@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { I18nConfig } from '../I18nConfig';
 
 describe('I18nConfig', () => {

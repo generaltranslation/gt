@@ -2,7 +2,7 @@ import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { Settings } from '../types/index.js';
 import { requireProject } from '../utils/api.js';
-import type { EnqueueFilesResult } from './steps/EnqueueStep.js';
+import type { FileTranslationJob } from './steps/EnqueueStep.js';
 import { clearLocaleDirs } from '../fs/clearLocaleDirs.js';
 import {
   FileStatusTracker,
@@ -57,7 +57,7 @@ export async function runDownloadWorkflow({
   forceDownload,
 }: {
   fileVersionData: FileTranslationData;
-  jobData: EnqueueFilesResult | undefined;
+  jobData: FileTranslationJob[] | undefined;
   branchData: BranchData | undefined;
   locales: string[];
   timeoutDuration: number;

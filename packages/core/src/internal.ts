@@ -4,7 +4,6 @@ export {
   defaultDashboardUrl,
   defaultRuntimeApiUrl,
 } from './settings/settingsUrls';
-export { defaultDefaultLocale } from './settings/settings';
 // What a caller leaves out is resolved in this package and nowhere else, so
 // the other General Translation packages format through these.
 export { GTIntl } from './intl/GTIntl';
@@ -47,7 +46,6 @@ export { isVariable } from './utils/isVariable';
 export { minifyVariableType } from './utils/minify';
 export { decode, encode } from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
-export { supportedModelProviders } from './translate/modelProvider';
 
 // derive
 export { indexVars } from './derive/indexVars';

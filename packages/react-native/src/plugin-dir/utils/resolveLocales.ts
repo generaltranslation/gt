@@ -4,15 +4,13 @@ import {
   invalidLocalesWarning,
   resolveLocalesFailedWarning,
 } from '../../errors-dir/warnings';
-import { defaultDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import path from 'path';
-import { safeParse } from 'valibot';
 import {
-  GTConfigSchema,
-  describeConfigIssues,
   describeConfigParseError,
   gtConfigFilePaths,
+  validateGTConfig,
 } from 'generaltranslation/config-schema';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { PACKAGE_NAME } from '../../errors-dir/constants';
@@ -92,13 +90,13 @@ function resolveLocalesFromConfig(configFilePath: string | undefined) {
     }
 
     // An invalid config stops the build rather than polyfilling only the default locale.
-    const parsed = safeParse(GTConfigSchema, config);
+    const parsed = validateGTConfig(config, filePath);
     if (!parsed.success) {
       throw new Error(
         createDiagnosticMessage({
           source: PACKAGE_NAME,
           severity: 'Error',
-          ...describeConfigIssues(parsed.issues, filePath),
+          ...parsed.diagnostic,
         })
       );
     }

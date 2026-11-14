@@ -26,7 +26,7 @@ afterEach(() => {
 });
 
 describe('resolveTransportOptions', () => {
-  it('fills in each default and keeps what is set, including false and 0', () => {
+  it('fills in each default and keeps what is set, including 0', () => {
     expect(resolveTransportOptions({})).toEqual({
       fetch: globalThis.fetch,
       retryPolicy: 'exponential',
@@ -37,14 +37,34 @@ describe('resolveTransportOptions', () => {
       resolveTransportOptions({
         fetch: fetchMock,
         retryPolicy: 'none',
-        timeoutMs: false,
+        timeoutMs: 0,
       })
-    ).toEqual({ fetch: fetchMock, retryPolicy: 'none', timeoutMs: false });
-    expect(resolveTransportOptions({ timeoutMs: 0 }).timeoutMs).toBe(0);
+    ).toEqual({ fetch: fetchMock, retryPolicy: 'none', timeoutMs: 0 });
   });
 });
 
 describe('createTimeoutFetch', () => {
+  it('does not time out at once when the timeout is longer than a timer can hold', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>(
+      async (_input, init) =>
+        new Promise<Response>((resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(init.signal?.reason);
+          });
+          setTimeout(() => resolve(new Response('ok')), 50);
+        })
+    );
+    const response = createTimeoutFetch({
+      fetch: fetchMock,
+      timeoutMs: Infinity,
+    })('https://example.com/test');
+
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(await (await response).text()).toBe('ok');
+  });
+
   it('aborts the signal handed to fetch after the configured timeout', async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn<typeof fetch>().mockImplementation(
@@ -141,28 +161,6 @@ describe('createTimeoutFetch', () => {
 
     await expect(response).rejects.toThrow('caller gave up');
   });
-
-  it('allows a custom fetch implementation to own request timeouts', async () => {
-    vi.useFakeTimers();
-    let resolveFetch: (response: Response) => void = () => undefined;
-    const fetchMock = vi.fn<typeof fetch>().mockImplementation(
-      async () =>
-        new Promise<Response>((resolve) => {
-          resolveFetch = resolve;
-        })
-    );
-    const response = createTimeoutFetch({
-      fetch: fetchMock,
-      timeoutMs: false,
-    })('https://example.com/test');
-
-    expect(vi.getTimerCount()).toBe(0);
-    resolveFetch(new Response('ok'));
-
-    await expect(response).resolves.toEqual(
-      expect.objectContaining({ ok: true })
-    );
-  });
 });
 
 describe('createRetryingFetch', () => {
@@ -211,6 +209,88 @@ describe('createRetryingFetch', () => {
         }
       )
     ).rejects.toThrow('fetch failed');
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it.each(['files/query', 'files/content/query'])(
+    'retries the read-only POST %s like an idempotent request',
+    async (path) => {
+      vi.useFakeTimers();
+      const fetchMock = vi
+        .fn<typeof fetch>()
+        .mockRejectedValueOnce(new TypeError('fetch failed'))
+        .mockResolvedValueOnce(
+          Response.json(
+            { error: 'failed', code: 'internal_error' },
+            { status: 500 }
+          )
+        )
+        .mockResolvedValueOnce(
+          new Response('rate limited', {
+            status: 429,
+            headers: { 'Retry-After': '0' },
+          })
+        )
+        .mockResolvedValueOnce(Response.json({ results: [] }));
+
+      const pendingResponse = createRetryingFetch(
+        resolveTransportOptions({ fetch: fetchMock })
+      )(`https://example.com/v2/projects/project-id/${path}`, {
+        method: 'POST',
+        body: '{}',
+      });
+      await vi.advanceTimersByTimeAsync(3_500);
+
+      expect((await pendingResponse).status).toBe(200);
+      expect(fetchMock).toHaveBeenCalledTimes(4);
+    }
+  );
+
+  it('returns the last response once the read-only POST retries run out', async () => {
+    vi.useFakeTimers();
+    const failure = () =>
+      Response.json(
+        { error: 'failed', code: 'internal_error' },
+        { status: 500 }
+      );
+    const fetchMock = vi.fn<typeof fetch>(async () => failure());
+
+    const pendingResponse = createRetryingFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/v2/projects/project-id/files/query', {
+      method: 'POST',
+      body: '{}',
+    });
+    await vi.advanceTimersByTimeAsync(3_500);
+
+    const response = await pendingResponse;
+    expect(response.status).toBe(500);
+    expect(await response.text()).toBe(await failure().text());
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it.each([
+    ['an uncoded 408', () => new Response('timeout', { status: 408 })],
+    [
+      'a 409 locked',
+      () => Response.json({ error: 'busy', code: 'locked' }, { status: 409 }),
+    ],
+    [
+      'a 404',
+      () =>
+        Response.json({ error: 'gone', code: 'not_found' }, { status: 404 }),
+    ],
+  ])('does not retry a read-only POST after %s', async (_name, failure) => {
+    const fetchMock = vi.fn<typeof fetch>(async () => failure());
+
+    const response = await createRetryingFetch(
+      resolveTransportOptions({ fetch: fetchMock })
+    )('https://example.com/v2/projects/project-id/files/content/query', {
+      method: 'POST',
+      body: '{}',
+    });
+
+    expect(response.status).toBe(failure().status);
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
@@ -456,7 +536,6 @@ describe('createApiClient', () => {
         return Response.json({ results: [] });
       });
     const client = createApiClient({
-      apiVersion: '2026-03-06.v1',
       baseUrl: 'https://example.com',
       fetch: fetchMock,
     });
@@ -603,6 +682,43 @@ describe('createApiClient', () => {
     ]);
     expect(refreshAccessToken).toHaveBeenCalledOnce();
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('refreshes the token for a file query without reading the 401 body', async () => {
+    const pull = vi.fn();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        // A body that never finishes: reading it would hold the refresh up.
+        new Response(new ReadableStream({ pull }, { highWaterMark: 0 }), {
+          status: 401,
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response('{}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+    const refreshAccessToken = vi.fn().mockResolvedValue('refreshed-token');
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: fetchMock,
+      userTokenProvider: {
+        getAccessToken: async () => 'expired-token',
+        refreshAccessToken,
+      },
+    });
+
+    const result = await client.post({
+      url: '/v2/projects/project-1/files/content/query',
+      body: {},
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect(result.response.status).toBe(200);
+    expect(refreshAccessToken).toHaveBeenCalledOnce();
+    expect(pull).not.toHaveBeenCalled();
   });
 
   it('preserves POST method/body and stops after a second 401', async () => {
@@ -788,35 +904,29 @@ describe('createApiClient errors', () => {
 });
 
 describe('isTransientApiError', () => {
-  it.each([
-    ['internal_error', 500],
-    ['upstream_error', 502],
-    ['unavailable', 503],
-    ['rate_limited', 429],
-    ['locked', 423],
-    ['not_ready', 425],
-    ['translation_not_ready', 400],
-  ])('treats %s as transient', (code, status) => {
-    expect(isTransientApiError(new ApiError('x', status, code))).toBe(true);
-  });
+  it.each([408, 423, 425, 429, 500, 502, 503, 504])(
+    'treats status %i as transient',
+    (status) => {
+      expect(isTransientApiError(new ApiError('x', status))).toBe(true);
+    }
+  );
 
-  it('treats a known permanent code as permanent whatever its status', () => {
+  it('goes by the status, not the code', () => {
     expect(
       isTransientApiError(new ApiError('x', 500, 'upload_incomplete'))
-    ).toBe(false);
-    expect(
-      isTransientApiError(new ApiError('x', 403, 'permission_missing'))
-    ).toBe(false);
-  });
-
-  it('falls back to the status for a missing or unknown code', () => {
-    expect(isTransientApiError(new ApiError('x', 504))).toBe(true);
+    ).toBe(true);
     expect(isTransientApiError(new ApiError('x', 503, 'brand_new'))).toBe(true);
-    expect(isTransientApiError(new ApiError('x', 501))).toBe(false);
-    expect(isTransientApiError(new ApiError('x', 400, 'brand_new'))).toBe(
+    expect(isTransientApiError(new ApiError('x', 400, 'not_ready'))).toBe(
       false
     );
   });
+
+  it.each([400, 401, 402, 403, 404, 409, 413, 501])(
+    'treats status %i as permanent',
+    (status) => {
+      expect(isTransientApiError(new ApiError('x', status))).toBe(false);
+    }
+  );
 
   it('does not classify errors that are not ApiErrors', () => {
     expect(isTransientApiError(new TypeError('fetch failed'))).toBe(false);
@@ -930,6 +1040,7 @@ describe('fetchFileDownload', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it('streams the file without API credentials', async () => {
@@ -961,6 +1072,28 @@ describe('fetchFileDownload', () => {
       name: 'ApiError',
       status: 403,
     });
+  });
+
+  it('fails a download whose body sends nothing for the request timeout', async () => {
+    vi.useFakeTimers();
+    const cancel = vi.fn();
+    const body = new ReadableStream<Uint8Array>({
+      start: (controller) => controller.enqueue(new Uint8Array([1])),
+      cancel,
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(new Response(body))
+    );
+
+    const reader = (await fetchFileDownload(downloadUrl)).getReader();
+    expect((await reader.read()).value).toEqual(new Uint8Array([1]));
+    const stalled = expect(reader.read()).rejects.toThrow(
+      `File download stalled for ${DEFAULT_TIMEOUT_MS}ms`
+    );
+    await vi.advanceTimersByTimeAsync(DEFAULT_TIMEOUT_MS);
+    await stalled;
+    expect(cancel).toHaveBeenCalledOnce();
   });
 });
 
@@ -1000,8 +1133,7 @@ describe('awaitJobs', () => {
   type JobsQuery = { jobs: Array<{ id: string }> };
 
   function createJobsClient(
-    getResults: (ids: string[]) => Array<{ id: string; status: string }>,
-    config: { apiVersion?: '2026-03-06.v1' } = {}
+    getResults: (ids: string[]) => Array<{ id: string; status: string }>
   ) {
     const requests: Request[] = [];
     const fetchMock = vi
@@ -1015,7 +1147,6 @@ describe('awaitJobs', () => {
         });
       });
     const client = createApiClient({
-      ...config,
       baseUrl: 'https://example.com',
       fetch: fetchMock,
       retryPolicy: 'none',
@@ -1048,17 +1179,6 @@ describe('awaitJobs', () => {
     expect(requests[0].headers.get('gt-api-version')).toBe(API_VERSION);
     expect(requests[0].headers.has('gt-project-id')).toBe(false);
     expect(await readBodies()).toEqual([{ jobs: [{ id: 'one' }] }]);
-  });
-
-  it('polls with the pinned API_VERSION even when the client has another apiVersion', async () => {
-    const { client, requests } = createJobsClient(
-      (ids) => ids.map((id) => ({ id, status: 'completed' })),
-      { apiVersion: '2026-03-06.v1' }
-    );
-
-    await awaitJobs(client, 'project-id', ['one']);
-
-    expect(requests[0].headers.get('gt-api-version')).toBe(API_VERSION);
   });
 
   it('queries more than 100 jobs in batches of 100, in order', async () => {

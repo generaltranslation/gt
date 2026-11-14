@@ -1,5 +1,4 @@
 import type { ProjectHandle } from 'generaltranslation';
-import type { ErrorCode } from '@generaltranslation/api';
 
 // A Payload document or part of one, as the Local API returns it.
 export type Data = Record<string, unknown>;
@@ -42,19 +41,10 @@ export type LocaleResult =
     }
   | { status: 'failed'; error: string };
 
-// The codes GT refuses work with for billing, as HTTP 402.
-export type BillingCode = Extract<
-  ErrorCode,
-  | 'payment_required'
-  | 'usage_limit_reached'
-  | 'spend_limit_reached'
-  | 'credits_insufficient'
->;
-
 export type TranslateResult = {
   // Absent when the document could not be read or uploaded.
   error?: string;
-  // GT refused the work for billing, with this code.
-  billingCode?: BillingCode;
+  // GT refused the work for billing (HTTP 402), with the API's message and code.
+  billingError?: { message: string; code?: string };
   locales: Record<string, LocaleResult>;
 };

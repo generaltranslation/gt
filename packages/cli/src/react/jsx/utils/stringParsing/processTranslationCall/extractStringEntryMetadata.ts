@@ -9,7 +9,6 @@ import { warnNonStaticExpressionSync } from '../../../../../console/index.js';
 import { GT_ATTRIBUTES_WITH_SUGAR } from '../../constants.js';
 import { containsDeriveCall } from '../derivation/containsDeriveCall.js';
 import generateModule from '@babel/generator';
-import { mapAttributeName } from '../../mapAttributeName.js';
 import pathModule from 'node:path';
 import { isNumberLiteral } from '../../isNumberLiteral.js';
 import { extractSourceCode } from '../../extractSourceCode.js';
@@ -128,8 +127,8 @@ function extractInlineMetadata({
           t.isExpression(prop.value)
         ) {
           const result = isStaticExpression(prop.value);
+          const mappedKey = attribute.slice(1);
           if (!result.isStatic) {
-            const mappedKey = mapAttributeName(attribute);
             if (mappedKey === 'context' && containsDeriveCall(prop.value)) {
               contextDeriveExpr = prop.value;
             } else {
@@ -148,7 +147,6 @@ function extractInlineMetadata({
             result.value != null &&
             !config.ignoreInlineMetadata
           ) {
-            const mappedKey = mapAttributeName(attribute);
             if (mappedKey === 'maxChars') {
               // Handle maxChars attribute
               if (

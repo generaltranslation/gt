@@ -48,10 +48,7 @@ export const defaultGroups = [
   },
   {
     name: 'defaultDefaultLocale',
-    declarations: [
-      'packages/core/src/settings/settings.ts',
-      'packages/format/src/settings/settings.ts',
-    ],
+    declarations: ['packages/format/src/settings/settings.ts'],
     exceptions: [
       {
         path: 'packages/supported-locales/src/supportedLocales.ts',
@@ -247,24 +244,34 @@ function readDefaultValue(repositoryRoot, relativePath, name) {
   return value;
 }
 
-function collectSourceFiles(repositoryRoot, directory, files = []) {
+export function collectSourceFiles(
+  repositoryRoot,
+  directory,
+  isSkipped,
+  files = []
+) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name === '__tests__' || entry.name === '__mocks__') continue;
     const absolutePath = path.join(directory, entry.name);
+    const relativePath = normalizeRepositoryPath(
+      path.relative(repositoryRoot, absolutePath)
+    );
+    if (isSkipped(entry, relativePath)) continue;
     if (entry.isDirectory()) {
-      collectSourceFiles(repositoryRoot, absolutePath, files);
+      collectSourceFiles(repositoryRoot, absolutePath, isSkipped, files);
       continue;
     }
     if (!/\.(?:[cm]?[jt]sx?)$/.test(entry.name)) continue;
     if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(entry.name)) continue;
     if (/\.d\.[cm]?ts$/.test(entry.name)) continue;
-    // Generated code restates spec-derived values and cannot import constants.
-    if (/\.gen\.[cm]?[jt]sx?$/.test(entry.name)) continue;
-    files.push(
-      normalizeRepositoryPath(path.relative(repositoryRoot, absolutePath))
-    );
+    files.push(relativePath);
   }
   return files;
+}
+
+function isSkippedForDefaults(entry) {
+  if (entry.name === '__tests__' || entry.name === '__mocks__') return true;
+  // Generated code restates spec-derived values and cannot import constants.
+  return !entry.isDirectory() && /\.gen\.[cm]?[jt]sx?$/.test(entry.name);
 }
 
 function findMatchingLiterals(repositoryRoot, relativePath, expectedValue) {
@@ -332,7 +339,11 @@ export function validateRepository({
         'src'
       );
       try {
-        return collectSourceFiles(repositoryRoot, sourceDirectory);
+        return collectSourceFiles(
+          repositoryRoot,
+          sourceDirectory,
+          isSkippedForDefaults
+        );
       } catch (error) {
         if (error?.code === 'ENOENT') return [];
         throw error;

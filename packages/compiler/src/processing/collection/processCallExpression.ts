@@ -11,10 +11,7 @@ import {
   GT_CALLBACK_FUNCTIONS,
   GT_OTHER_FUNCTIONS,
 } from '../../utils/constants/gt/constants';
-import {
-  validateTranslationFunction,
-  validateUseMessagesCallback,
-} from '../../transform/validation/validateTranslationFunction';
+import { validateTranslationFunction } from '../../transform/validation/validateTranslationFunction';
 import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { isReactFunction } from '../../utils/constants/react/helpers';
@@ -108,10 +105,6 @@ function handleTranslationCallbackInvocation(
     case GT_CALLBACK_FUNCTIONS.getGT_callback:
       handleUseGTCallback(callExprPath, state, identifier);
       break;
-    case GT_CALLBACK_FUNCTIONS.useMessages_callback:
-    case GT_CALLBACK_FUNCTIONS.getMessages_callback:
-      handleUseMessagesCallback(callExprPath, state);
-      break;
     default:
       return;
   }
@@ -157,18 +150,6 @@ function handleUseGTCallback(
     hash: useGTCallbackParams.hash,
     format: useGTCallbackParams.format,
   });
-}
-
-/**
- * Handle useMessages_callback / getMessages_callback
- */
-function handleUseMessagesCallback(
-  callExprPath: NodePath<t.CallExpression>,
-  state: TransformState
-) {
-  const callExpr = callExprPath.node;
-  const useMessagesCallbackParams = validateUseMessagesCallback(callExpr);
-  state.errorTracker.addErrors(useMessagesCallbackParams.errors);
 }
 
 /**

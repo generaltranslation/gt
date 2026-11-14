@@ -13,7 +13,7 @@ vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
 }));
 
 import { parseEnableI18n } from '../parseEnableI18n';
-import { parseLocale, resolvePagesRouterLocale } from '../parseLocale';
+import { parseLocale } from '../parseLocale';
 import { withGTServerSideProps } from '../withGTServerSideProps';
 import { withGTStaticProps } from '../withGTStaticProps';
 
@@ -118,7 +118,6 @@ describe('parseLocale', () => {
       locales: ['en-us', 'en-gb'],
     });
     expect(parseLocale(createContext({ locale: 'en-gb' }))).toBe('en-gb');
-    expect(resolvePagesRouterLocale({ locale: 'en-gb' })).toBe('en-gb');
   });
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
@@ -197,7 +196,7 @@ describe('parseLocale', () => {
   });
 
   it('reports the resolved fallback when defaultLocale is unsupported', () => {
-    expect(resolvePagesRouterLocale({ defaultLocale: 'de' })).toBe('en');
+    expect(parseLocale({ defaultLocale: 'de' })).toBe('en');
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('The locale "en" will be used')
     );

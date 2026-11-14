@@ -4,12 +4,10 @@ import path from 'node:path';
 import * as parser from '@babel/parser';
 import generate from '@babel/generator';
 import traverse from '@babel/traverse';
-import { safeParse } from 'valibot';
 import {
-  GTConfigSchema,
-  describeConfigIssues,
   describeConfigParseError,
   gtConfigFilePaths,
+  validateGTConfig,
 } from 'generaltranslation/config-schema';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
@@ -79,14 +77,6 @@ export interface GTUnpluginOptions extends PluginConfig, GTConfig {}
 export const MISSING_GT_CONFIG_WARNING =
   '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
 
-export const createInvalidGTConfigWarning = (
-  configPath: string,
-  error: unknown
-) =>
-  `[@generaltranslation/compiler] Failed to load gt.config.json at ${configPath}. ` +
-  `Auto JSX injection and parsingFlags features require a valid gt.config.json. ` +
-  `${error instanceof Error ? error.message : String(error)}`;
-
 function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
   return logLevel !== 'silent' && logLevel !== 'error';
 }
@@ -100,8 +90,7 @@ type GTConfigLoadResult =
       status: 'missing';
     }
   | {
-      configPath: string;
-      error: unknown;
+      diagnostic: ReturnType<typeof describeConfigParseError>;
       status: 'invalid';
     };
 
@@ -117,22 +106,13 @@ function loadGTConfigFromCwd(): GTConfigLoadResult {
     config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
   } catch (error) {
     return {
-      configPath,
-      error: createDiagnosticMessage(
-        describeConfigParseError(error, 'gt.config.json')
-      ),
+      diagnostic: describeConfigParseError(error, configPath),
       status: 'invalid',
     };
   }
-  const result = safeParse(GTConfigSchema, config);
+  const result = validateGTConfig(config, configPath);
   if (result.success) return { gtConfig: result.output, status: 'loaded' };
-  return {
-    configPath,
-    error: createDiagnosticMessage(
-      describeConfigIssues(result.issues, 'gt.config.json')
-    ),
-    status: 'invalid',
-  };
+  return { diagnostic: result.diagnostic, status: 'invalid' };
 }
 
 function hasInlineGTConfig(options: GTUnpluginOptions): boolean {
@@ -223,10 +203,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         console.warn(MISSING_GT_CONFIG_WARNING);
       } else if (gtConfigLoadResult.status === 'invalid') {
         console.warn(
-          createInvalidGTConfigWarning(
-            gtConfigLoadResult.configPath,
-            gtConfigLoadResult.error
-          )
+          createDiagnosticMessage({
+            source: '@generaltranslation/compiler',
+            severity: 'Warning',
+            reassurance:
+              'The build continues without auto JSX injection and parsingFlags features',
+            ...gtConfigLoadResult.diagnostic,
+          })
         );
       }
     }
