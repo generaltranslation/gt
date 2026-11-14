@@ -1,5 +1,32 @@
 # @generaltranslation/react-core-linter
 
+## 0.2.0-samsara.10
+
+### Minor Changes
+
+- cf7029c: Rules accept each configured library's `/compat` entry, such as `gt-tanstack-start/compat` and `gt-next/compat/server`, as the same library. `translation-function-placement` now checks `getTranslations()` from `gt-tanstack-start/compat`, and its hint names where to import the hook from, such as `useTranslations() from 'gt-tanstack-start/compat'`.
+
+### Patch Changes
+
+- Updated dependencies [96f428a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [3832c15]
+- Updated dependencies [06ccdfd]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+  - generaltranslation@10.0.0-samsara.9
+  - @generaltranslation/icu@0.2.0-samsara.7
+
 ## 0.2.0-samsara.9
 
 ### Patch Changes

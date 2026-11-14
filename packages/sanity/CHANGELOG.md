@@ -1,5 +1,60 @@
 # gt-sanity
 
+## 5.0.0-samsara.2
+
+### Major Changes
+
+- 831d39f: Remove the remaining backward compatibility:
+  - The `internationalizedArray` plugin option is removed; use `fieldLevelLocalization`.
+  - The legacy object-keyed `'field'` translation level is removed: `BaseDocumentSerializer(schema).serializeDocument(doc, stopTypes?, serializers?)` no longer takes `translationLevel` or `baseLang`, and `BaseDocumentMerger.fieldLevelMerge` and `languageObjectFieldFilter` are removed. Use `translationLevel: 'internationalizedArray'`.
+  - The Translations Tab types `Adapter`, `ExportForTranslation`, `ImportTranslation`, and `TranslationsTabConfigOptions` are no longer exported, and the unused Translations Tab adapter and configuration modules are removed.
+  - The warning for the field-level options removed in 3.0.0 (`typePrefix`, `includeCompatibilityTypes`, `components`) is removed.
+  - `GTPluginConfig` no longer accepts `devApiKey`, `apiKey`, `userTokenProvider`, `baseUrl`, or `targetLocale`; the API key comes from the Studio secrets, and the others had no effect.
+  - `GTPluginConfig` no longer accepts `projectId`, which had no effect; the project comes from the Studio secrets. Each request builds a project-scoped `new GeneralTranslation({ apiKey: secrets.secret, projectId: secrets.project })`; a missing API key secret fails with a gt-sanity error. Locale labels use a credential-free `GTIntl`.
+
+### Patch Changes
+
+- ea429a2: Locale options now take their types from `GTConfig` or `LocaleConfig` instead of repeating them: `VueCompilerOptions`, gt-vue's `CreateGTOptions` and `InitializeGTSPAOptions`, gt-sanity's `GTPluginConfig`, gt-payload's `GtPluginOptions` and the gt-react-native plugin's `config` option. The accepted values are unchanged. gt-sanity links to the dashboard URL from `generaltranslation`.
+- e29f6f9: Resolve option defaults once, where the options are accepted, and pass required values to the code below. No behaviour change for apps.
+  - `@generaltranslation/api` exports `DEFAULT_TIMEOUT_MS`, the default request timeout.
+  - `gt-i18n/internal`: `I18nConfig`'s `resolveSupportedLocale(candidates)` no longer takes a config override and uses the configuration GT was initialized with. `determineSupportedLocale(candidates)` is removed; use `determineLocale(candidates)`, which matches the same way. `LocaleResolverConfig` is no longer exported.
+  - `gt-i18n/internal/compat`: `new DictionaryManager()` takes a config with `dictionary`, `loadDictionary` and `cacheExpiryTime` all set. `initializeDictionaryManager()` still accepts the optional params and fills in the defaults.
+
+- 831d39f: Use canonical GT operations. Report upload failures in Studio and the console, and exclude failed source uploads from translation and existing-translation uploads. Synchronize the project's default locale with the configured source locale after uploading; warn and continue if the API key lacks the permission to update it. Studio toasts show the API's error message, followed by a hint for billing, locale, plan, permission and API key errors instead of advice to retry. Checking translation status reads only failures that may clear as no translations ready yet, and downloading translations leaves retries to the API transport; both report other errors instead of showing no translations. Studio uses the project's existing default branch and no longer renames it to `main`.
+- 82999f0: Import `LocaleConfig`, format types, and API types from `@generaltranslation/format` and `@generaltranslation/api` instead of through `generaltranslation` (`GTIntl` still comes from `generaltranslation`, which fills in its defaults), and re-export the document internationalization plugin directly from `@sanity/document-internationalization`. gt-sanity now depends directly on `@generaltranslation/format` and `@generaltranslation/api`. No public API change.
+- 943c094: Import types and helpers from their single owning entry now that the types-only subpaths are removed. No public API change.
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [8ba23e5]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ac29d18]
+- Updated dependencies [96f428a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [82999f0]
+- Updated dependencies [96f428a]
+- Updated dependencies [3832c15]
+- Updated dependencies [943c094]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+  - @generaltranslation/api@0.7.0-samsara.2
+  - generaltranslation@10.0.0-samsara.9
+  - @generaltranslation/format@1.0.0-samsara.9
+
 ## 4.0.36-samsara.1
 
 ### Patch Changes

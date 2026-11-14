@@ -1,5 +1,52 @@
 # @generaltranslation/api
 
+## 0.7.0-samsara.2
+
+### Minor Changes
+
+- ac29d18: Move to `2026-10-08.v1` and replace legacy generated operations with canonical ones. `createApiClient` no longer accepts `projectId` or sends `gt-project-id`; project-scoped operations use `path.projectId`. It takes no `apiVersion`: the client always sends `API_VERSION` by default, and per-call headers override it.
+
+  `awaitJobs(client, projectId, jobIds, options)` polls `queryJobs` in batches of 100 with the pinned `API_VERSION`. Results use `{ id, status, subject?, error? }`; `not_found` is terminal and `unknown` means no status was received before the deadline. `queryJobsInBatches` is also available for batched status reads.
+
+  Wait for translation jobs before reading files: unstored translations return `not_found` (404 for single reads); stored but incomplete translations return `pending` and should be read again later.
+
+  `pollJobs` and `GetJobStatuses` are removed; use `awaitJobs`.
+
+- ac29d18: `ApiError` carries the API's error code. `status` is the HTTP status (previously `code`), and `code` is the API's machine-readable cause, such as `permission_missing`, or `undefined` when the response has none (for example a gateway error page). The constructor is `new ApiError(message, status, code?)`, replacing `new ApiError(error, code, message)`. Match on `code`, never on `message`, and fall back to `status` for codes you do not recognize; `ErrorCode` lists the known codes.
+
+  `isTransientApiError(error)` reports whether a failure may clear on a later read. It goes by the HTTP status the API chose (423, 425, 429 and 5xx, plus a gateway's 408 or 504), not by a list of error codes. It does not make a write safe to repeat.
+
+  `awaitJobs` keeps polling through transient failures until its deadline; their jobs stay pending and the next polls back off. A rate limit the transport could not wait out within one poll waits its `Retry-After` before the next poll. Permanent failures still throw, unless they arrive after the deadline. A 429 `ApiError` carries `retryAfterMs`, the wait the API asked for. Retry waits end as soon as the request's signal aborts, and the transport then returns the last 429 or 5xx response instead of the abort reason. The transport retries `queryFiles` and `queryFilesContent`, POST operations that only read, like idempotent requests: after a network error, a 429 or a 5xx, within the same retry budget.
+
+  The bundled spec now includes error codes: `ErrorResponse` is `{ error, code }`, each operation's `<Operation>Error` narrows `code` to the codes it declares, failed batch results and `translateContent` entries carry `code`, and the workspace plugin's translate result lists `failures`. `FileFormat` adds `PNG`, `JPEG` and `MP4`; `ModelProvider` no longer includes `HYPERCLOVA`.
+
+- ac29d18: Source and translation uploads type a file's `dataFormat` as `FileDataFormat`, which is `DataFormat` without `MESSAGE_TREE`: a message tree's format is set per key, in a GTJSON file's `formatMetadata`. Context Management operations document the `project:context:read` and `project:context:write` scopes, which work on a project the group is assigned to.
+- ac29d18: Sync the `2026-10-08.v1` contract's file changes. `createFileUploads` returns presigned URLs to PUT files to; an upload then sends `upload: { sha256 }` in place of `content`, which is required for files over 4MB. Source uploads accept `metadata.previewUrl`, the page that shows that version of the file. Translation uploads no longer take `transformFormat`: a translation's `fileFormat` is the format it is saved in, the source's format or a supported conversion (POT to PO). File content reads return `downloadUrl` when `data` is `null` because the file is too large to return inline, and for media files. `createOrgApiKey` creates organization API keys.
+- ac29d18: Sync the 2026-10-08.v1 contract: a source upload's `formatMetadata` is `{ content }` with the metadata, or `{ upload: { sha256 } }` for metadata PUT through `createFileUploads`; translation uploads no longer take the source's `formatMetadata`. Adds `updateFiles` for updating source files and translations, and raises the uploaded non-media file limit to 150MB.
+- 8ba23e5: `createApiClient` gzips request bodies of 32 KiB or more and sends `Content-Encoding: gzip`, so the server must accept gzip-encoded bodies. If the server rejects the encoding (415, or 400 `invalid_content_encoding`), the client resends the request uncompressed once. Set `compression: false` when a custom `fetch` or proxy must read plain request bodies. `putFileUpload` and `fetchFileDownload` are never compressed.
+- ba09ee2: `putFileUpload(upload, bytes, options?)` PUTs a file's bytes to a presigned URL from `createFileUploads`, with no API credentials. It takes the client's `fetch` and `retryPolicy`, and the whole PUT, retries included, times out when the URL expires.
+- ac29d18: Sync the 2026-10-08.v1 contract: writes return data instead of acknowledgement flags.
+  - `listProjectApiKeys`, `getProjectApiKey` and `deleteProjectApiKey` are new. A `ProjectApiKey` is `{ id, name, permissions, createdAt, lastUsedAt }`.
+  - `createProject`, `createBranch`, `createProjectApiKey`, `createOrgApiKey` and `setTag` return the resource itself: `response.project.id` → `response.id`, and likewise for `branch`, `apiKey` and `tag`. A new key is the `ProjectApiKey` fields plus `key`, without `projectId`, `type` or `orgId`.
+  - `setTag`, `assignContextGroup` and `setContextGlossaryTranslation` no longer return `created` or `outcome`. The status code says it: `201` when the request created the resource, `200` otherwise.
+  - `translateContent` takes `requests` as an array and returns `{ summary, results }`, with one result per request in request order. A result has `status: 'succeeded'` or `status: 'failed'`, replacing `success`. `generated` is removed with no replacement. `RuntimeTranslationRequest` and `RuntimeTranslationResponse` are now `TranslateContentRequest` and `TranslateContentResponse`.
+  - Context Management writes no longer return `committed`. Creates and updates return the resource (`createContextGroup().groupId` → `.id`), deletes and unassign return `{ deleted: true }`, and the Glossary and Custom Prompt upserts return `counts` with `items` (`id` and `outcome` per item).
+
+- a191c9a: `gt download` saves translated media over 20MB, which the API returns as `data: null` and a signed `downloadUrl`, instead of reporting it as failed. It streams the file to disk through a temporary `.part` file, so a download that is cut off leaves the previous file in place, and requests the file again if the download broke off mid-stream; a download request the API client already retried fails the file. It asks for each file's URL when that file's turn comes, so a long queue of downloads does not outlive the 15-minute URLs: a file the API reports `pending` again is requested again, and any other status fails the file and is reported.
+
+  `project.fetchFileDownload(downloadUrl)` in `generaltranslation` opens such a URL and returns the file as a stream, so it can be saved without holding it in memory. `getFileContent()` and `queryFilesContent()` return these results as the API sends them. `fetchFileDownload(downloadUrl)` in `@generaltranslation/api` is the underlying request, sent without API credentials. Reading the stream fails when the download sends nothing for the request timeout (60 seconds), so a stalled download does not hang.
+
+### Patch Changes
+
+- 82999f0: Import `ApiVersion` from its generated definition instead of through the client wrapper module. `ApiVersion` stays a type-only export; no public API change.
+- 96f428a: - `generaltranslation` no longer exports the `JsonPrimitive` type; use `string | number | boolean | null`.
+  - `@generaltranslation/api`: `ApiClientConfig.timeoutMs` takes only a number; `timeoutMs: false` is removed. To let a custom `fetch` own timeouts, pass a `timeoutMs` longer than its own; any larger value works, `Infinity` included.
+  - `@generaltranslation/api` no longer exports the `PresignedFileUpload` type; use `Parameters<typeof putFileUpload>[0]`.
+- e29f6f9: Resolve option defaults once, where the options are accepted, and pass required values to the code below. No behaviour change for apps.
+  - `@generaltranslation/api` exports `DEFAULT_TIMEOUT_MS`, the default request timeout.
+  - `gt-i18n/internal`: `I18nConfig`'s `resolveSupportedLocale(candidates)` no longer takes a config override and uses the configuration GT was initialized with. `determineSupportedLocale(candidates)` is removed; use `determineLocale(candidates)`, which matches the same way. `LocaleResolverConfig` is no longer exported.
+  - `gt-i18n/internal/compat`: `new DictionaryManager()` takes a config with `dictionary`, `loadDictionary` and `cacheExpiryTime` all set. `initializeDictionaryManager()` still accepts the optional params and fills in the defaults.
+
 ## 0.7.0-samsara.1
 
 ### Minor Changes

@@ -1,5 +1,121 @@
 # gt-i18n
 
+## 2.0.0-samsara.9
+
+### Major Changes
+
+- 63b6748: Add the `generaltranslation/config-schema` entry point. It exports `GTConfigSchema`, a [valibot](https://valibot.dev) schema with a description for every `gt.config.json` key that more than one package reads, its `files.gt` subschema, `validateGTConfig()`, which checks a value against `GTConfigSchema` and returns the parsed config or the diagnostic fields of `describeConfigIssues()`, and `describeConfigIssues()`, which turns validation issues into the `whatHappened`, `fix` and `details` of one diagnostic message, naming the config that failed and the invalid key inside a union option, and never prints the values of `apiKey` or `devApiKey`. `describeConfigParseError()` does the same for a file that is not valid JSON and leaves out the part of the file that the JSON parser quotes, which can hold credentials. The entry point is Node-only and is the only one that loads valibot; browser bundles do not change.
+
+  `GTConfig`, `GTFilesConfig`, `GTOutputFileConfig` and `GTParsingFlags` are now inferred from these schemas, so `valibot` is a dependency of `generaltranslation`. `GTConfig` now also lists `renderSettings`. Keys only one library reads stay in that library: gt-next's routing keys are in gt-next. The schema also describes the file's `dictionary` path, but `GTConfig` leaves it out so a `GTConfig` still passes to `initializeGT()`, whose `dictionary` is the loaded dictionary. `GTConfigSchema`, `files` and `parsingFlags` accept unknown keys so every reader accepts the whole file, but the inferred types list only the known ones.
+
+  **Breaking:** `GTConfig.modelProvider` and gt-i18n's `I18nCacheConstructorParams.modelProvider` are typed as `ModelProvider` (the values of `ModelProvider` from `generaltranslation/api`) instead of `string`, and `GTConfig.renderSettings.method` as `'skeleton' | 'replace' | 'default'`. A `gt.config.json` imported in TypeScript widens these values to `string`, so cast it (`config as GTConfig`) or check it with `GTConfigSchema` where a `GTConfig` is expected; `satisfies GTConfig` only narrows object literals written in TypeScript. `I18nCacheConstructorParams` now picks the `GTConfig` keys it reads instead of omitting the ones it does not, so keys it does not read are not accepted there.
+
+- 016ace7: Remove the `devApiKey` option. One `apiKey` now covers both uses: in development it enables hot reload translation, and in production it lets server code translate at runtime. Pass your key as `apiKey` wherever you passed `devApiKey`, for example `initializeGT({ apiKey })` in gt-node.
+
+  gt-react ignores an `apiKey` that reaches production browser code and logs a warning, because anyone can read a key from a browser bundle. Translate at runtime on your server instead.
+
+- 3832c15: `determineLocale` now follows standard locale matching, selected by a new `localeMatcher` option (`'lookup' | 'best fit'`, default `'best fit'`) on `LocaleConfig`, `GTConfig`, gt-i18n's `I18nConfig` params, and gt-next's `withGTConfig` / `gt.config.json`. The `LocaleMatcher` type is exported next to `LocaleConfig` and limits the option to these values; gt-next, the gt CLI, the compiler and gt-react-native reject any other value when they load `gt.config.json` or `withGTConfig()` props.
+
+  Requested and configured locales are canonicalized the same way (`customMapping` alias → code, invalid tags skipped, standardized; a requested tag only needs a valid language-script-region base, so extension and private-use subtags are allowed), and the result is always the configured spelling. `determineLocale` never applies `defaultLocale`; callers keep owning the fallback.
+  - `'lookup'` (RFC 4647 §3.4 Lookup): for each requested locale in priority order, truncate it from the end (a single-letter subtag is removed with the subtag after it, so `zh-Hant-CN-x-private1-private2` → `zh-Hant-CN-x-private1` → `zh-Hant-CN` → `zh-Hant` → `zh`) and return the first configured locale equal to a truncation; `*` is skipped.
+  - `'best fit'`: take the requested languages in order of first appearance. For each language, run Lookup over the requested locales of that language against the configured locales of that language, accepting only a match with the same likely script (`Intl.Locale.prototype.maximize`); if nothing matches, return the first configured locale of that language (configured order) whose likely script equals the script of a requested locale of that language, trying requested locales in order. If no configured locale of that language shares a script, plain Lookup applies, so `zh-TW` resolves to `zh-Hant` when it is configured and to a bare `zh` only when it is not. Then move to the next language. A region difference is acceptable; a script difference is not (no `sr-Latn` ↔ `sr-Cyrl` exception). Tags without a derivable script, such as `qaa`, compare as an empty script.
+
+  The standalone `determineLocale(locales, approvedLocales, customMapping)` now delegates to `new GTIntl({ locales: approvedLocales, customMapping }).determineLocale(locales)`, so it resolves aliases and returns the configured spelling. It always uses `'best fit'`. gt-vue's `initializeGTSPA()` accepts `localeMatcher` too, so a `gt.config.json` object passed to it keeps its matcher.
+
+  Behavior changes (before → after, default `'best fit'`):
+
+  | Requested → configured                      | Before      | After       |
+  | ------------------------------------------- | ----------- | ----------- |
+  | ------------------------------------------- | ----------- | ----------- |
+  | `en` → `en-GB, fr-FR`                       | `undefined` | `en-GB`     |
+  | `['en', 'fr']` → `en-GB, fr-FR`             | `fr-FR`     | `en-GB`     |
+  | `en-AU` → `en-GB`                           | `undefined` | `en-GB`     |
+  | `['en-AU', 'en-GB']` → `en-US, en-GB`       | `en-US`     | `en-GB`     |
+  | `zh-TW` → `zh-CN, en`                       | `zh-CN`     | `undefined` |
+  | `sr-Latn` → `sr-Cyrl`                       | `sr-Cyrl`   | `undefined` |
+  | `en` → `en-GB, en-US`                       | `en-US`     | `en-GB`     |
+  | standalone, `brand-fr` aliased and approved | `brand-FR`  | `brand-fr`  |
+
+- cf7029c: The dictionary (key-based) API moves to the framework `/compat` entries. The `Dictionary*` types and `TFunctionType` leave the `gt-i18n` root and are exported from `gt-i18n/internal/compat`, beside `getTranslations()` and the new `DictionaryManager` singleton (`initializeDictionaryManager()`, `getDictionaryManager()`, `setDictionaryManager()`, `isDictionaryManagerInitialized()`). `I18nCache` no longer loads or stores dictionaries: `I18nCacheConstructorParams` no longer accepts `dictionary` or `loadDictionary`.
+
+  Migration:
+
+  | Before                                                                         | After                                                                                                                                               |
+  | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `import type { Dictionary, DictionaryEntry, …, TFunctionType } from 'gt-i18n'` | import the `Dictionary*` types and `TFunctionType` from `gt-i18n/internal/compat`, or the `Dictionary*` types from your framework's `/compat` entry |
+
+- 13dae8a: Remove the remaining backward compatibility:
+  - `TranslationMetadata` (and `RuntimeTranslationOptions`) drop the deprecated `$_source`.
+  - `runtimeTranslation.metadata` accepts only `sourceLocale` and `modelProvider`.
+  - `runtimeTranslation.timeout: 0` is a zero timeout; omit `timeout` for the default.
+  - The re-exported `GTConfig` drops `devApiKey`, `files.gt.includeSourceCodeContext`, and `parsingFlags.legacyGtReactImportSource`.
+  - Runtime translation uses `generaltranslation` 10's `GTRuntime`, created per request from the configured `projectId` and `apiKey`. gt-i18n reads neither `GT_PROJECT_ID` nor `GT_API_KEY`: the framework package reads them once, when it is initialized, and passes them in. Without a `projectId` or an API key, each runtime translation request rejects with gt-i18n's configuration guidance.
+  - `gt-i18n/internal`: `getI18nConfig()` is a `GTIntl` (the one from `generaltranslation`) instead of a `LocaleConfig`, so its helpers take the target locale in the options object: `requiresTranslation(locale)` → `requiresTranslation({ locale })`, `determineLocale(candidates, approved)` → `determineLocale(candidates)`, `formatNum(n, locale, options)` → `formatNum(n, { ...options, locale })`. `I18nConfig.determineLocale(candidates)` takes no `approvedLocales` and uses the configured locales. `getGTClass()` → `getTranslationRuntime()`, which returns a `GTRuntime` and throws the missing-`projectId` or missing-API-key error otherwise.
+
+- 943c094: Each name is now exported from one entry, and types are exported from the same entry as their values:
+  - `gt-i18n/types` is removed. Import its types from `gt-i18n`, except the `Dictionary*` types, `DictionaryEntryOptions` and `TFunctionType`, which moved to `gt-i18n/internal/compat`. The `Dictionary*` types and `DictionaryEntryOptions` are also on the framework `/compat` entries (see the dictionary API changeset).
+  - `gt-i18n/internal/types` is removed. Import `TranslationVariables`, `GTTranslationOptions`, `EncodedTranslationOptions`, `JsxTranslationOptions`, `LookupOptionsFor` and `RuntimeTranslationOptions` from `gt-i18n`, and the rest (including `TranslationMetadata`, `TranslationOptions`, `LookupOptions` and `NormalizedLookupOptions`) from `gt-i18n/internal`. The dictionary types and `DictionaryEntryOptions` come from `gt-i18n/internal/compat` and the framework `/compat` entries (see the dictionary API changeset); `DictionaryLookupOptions` is no longer exported. Import `GTConfig` from `generaltranslation`.
+  - `getVersionId` is no longer exported from `gt-i18n/internal`. Import it from `gt-i18n`.
+  - `getCookieValue` is no longer exported from `gt-i18n/internal`. Import it from `gt-i18n/internal/cookies`.
+  - `isEncodedTranslationOptions` is no longer exported from `gt-i18n/internal`. Import it from `gt-i18n/internal/string`.
+  - `decodeOptions` is no longer exported from `gt-i18n/internal/string`. Import it from `gt-i18n`.
+
+- 1a5e9ae: `GT_PROJECT_ID` and `GT_API_KEY` are read once, when GT is initialized, and never after. Each option wins over its variable, and an empty string counts as unset.
+  - gt-i18n no longer reads `GT_API_KEY` when a runtime translation is requested. A variable set after initialization is not picked up: load your `.env` file before you call `initializeGT()`, or pass `apiKey`.
+  - gt-node: `initializeGT()` reads both variables when it is called.
+  - gt-payload: `gtPlugin()` reads both variables when it is called, not when the first translation runs. An empty-string `apiKey` or `projectId` option now falls back to the variable. A missing key still fails the run that needs it, not the Payload config.
+  - gt-react: `initializeGT()` from the `react-server` entry reads both variables, like the server and client entries. Before, it read neither.
+  - gt-next: a `projectId` in `gt.config.json` or `withGTConfig()` props now reaches the runtime, where it is used before `GT_PROJECT_ID`, as in every other package. Before, production read only `GT_PROJECT_ID`, so a project ID set only in `gt.config.json` loaded no translations. `withGTConfig()` accepts `projectId` again, and throws when the configured project ID and `GT_PROJECT_ID` differ. A project ID set only through `GT_PROJECT_ID` is not built into the app, so each deployment still reads its own. The API key is still read only from `GT_API_KEY`.
+  - The CLI behaves as before.
+
+- e29f6f9: Resolve option defaults once, where the options are accepted, and pass required values to the code below. No behaviour change for apps.
+  - `@generaltranslation/api` exports `DEFAULT_TIMEOUT_MS`, the default request timeout.
+  - `gt-i18n/internal`: `I18nConfig`'s `resolveSupportedLocale(candidates)` no longer takes a config override and uses the configuration GT was initialized with. `determineSupportedLocale(candidates)` is removed; use `determineLocale(candidates)`, which matches the same way. `LocaleResolverConfig` is no longer exported.
+  - `gt-i18n/internal/compat`: `new DictionaryManager()` takes a config with `dictionary`, `loadDictionary` and `cacheExpiryTime` all set. `initializeDictionaryManager()` still accepts the optional params and fills in the defaults.
+
+### Patch Changes
+
+- 96f428a: Remove duplicate and unused type exports.
+  - `import type { UseTranslationsFunction } from 'gt-react/compat'` (also `gt-react-native/compat` and `gt-tanstack-start/compat`): use `TFunctionType` from the same entry. From `gt-next/compat`, use `TFunctionType` from `gt-next/compat/server`; from `@generaltranslation/react-core/compat`, use `TFunctionType` from `gt-i18n/internal/compat`.
+  - `@generaltranslation/react-core/pure` no longer exports the `OnMissingTranslation` and `VariableProps` types.
+  - `@generaltranslation/react-core/components-rsc` no longer exports the `RenderDefaultChildrenArgs`, `RenderPreparedTParams` and `RenderTranslatedChildrenArgs` types.
+  - `I18nCacheConfig` from `gt-i18n/internal` no longer has `projectId`, `apiKey` and `runtimeUrl`; `I18nCache` never read them.
+
+- cf7029c: Move the dictionary (compat) internals to their own internal subpaths, `gt-i18n/internal/compat` and `@generaltranslation/react-core/compat`, so CommonJS builds of the native entries no longer load the dictionary runtime. `gt-i18n/internal` and `@generaltranslation/react-core/{pure,hooks,components}` no longer export it. No public API change.
+- 2d7f9bd: `parseAcceptLanguage` reads at most the first 32 entries of an Accept-Language header, bounding the work a request-controlled header can cause.
+- 82999f0: Remove internal pass-through modules: the dictionary types and `GTConfig` are imported from their defining modules. The public entries export the same names; no public API change.
+- 63b6748: `I18nConfig` reports invalid locales once, in the error it throws, instead of also logging each one with an `I18nConfig:` prefix. A `null` `customMapping` entry no longer crashes locale validation. `I18nConfig` no longer checks `localeMatcher` at runtime: the `LocaleMatcher` type and the `gt.config.json` validation in gt-next, the gt CLI, the compiler and gt-react-native cover it.
+- 2d7f9bd: `I18nConfig.resolveLocale()` throws a gt-i18n diagnostic for an invalid locale.
+- 2d7f9bd: Remove runtime checks that TypeScript already guarantees and duplicated locale resolution. gt-react's browser condition store now resolves the locale once on initialization and server updates, and gt-vue's `initializeGTSPA()` builds its locale matcher once instead of on every lookup. Translation hashes do not change.
+
+  Two observable changes:
+  - `generaltranslation`: runtime translation results from the General Translation API are no longer shape-checked on the client; their type comes from the generated API client. A successful result whose `translation` did not match its `dataFormat` used to become `{ success: false, error: 'Invalid translation returned', code: 500 }`; it is now returned as the service sent it. Failed requests, missing entries (`'No translation returned'`) and network errors behave as before.
+  - `gt-tanstack-start`: request locales are now resolved against the configuration that `initializeGT()` already loaded, instead of a copy rebuilt on every request. That configuration always includes `defaultLocale` among the supported locales, so with `defaultLocale: 'en'`, `locales: ['fr']` and `Accept-Language: en, fr`, the request locale is now `en` (previously `fr`), matching path-based locale detection.
+
+- Updated dependencies [96f428a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [82999f0]
+- Updated dependencies [96f428a]
+- Updated dependencies [3832c15]
+- Updated dependencies [943c094]
+- Updated dependencies [06ccdfd]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+  - generaltranslation@10.0.0-samsara.9
+  - @generaltranslation/format@1.0.0-samsara.9
+  - @generaltranslation/icu@0.2.0-samsara.7
+
 ## 2.0.0-samsara.8
 
 ### Patch Changes

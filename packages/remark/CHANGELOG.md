@@ -1,5 +1,11 @@
 # gt-remark
 
+## 2.0.0-samsara.1
+
+### Major Changes
+
+- 13dae8a: Remove the default export; import `escapeHtmlInTextNodes` by name.
+
 ## 1.0.13-samsara.0
 
 ### Patch Changes

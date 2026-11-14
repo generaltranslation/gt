@@ -1,5 +1,34 @@
 # @generaltranslation/svelte-extractor
 
+## 0.1.0-samsara.10
+
+### Patch Changes
+
+- 943c094: Import types and helpers from their single owning entry now that the types-only subpaths are removed. No public API change.
+- Updated dependencies [96f428a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [82999f0]
+- Updated dependencies [96f428a]
+- Updated dependencies [3832c15]
+- Updated dependencies [943c094]
+- Updated dependencies [06ccdfd]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+  - generaltranslation@10.0.0-samsara.9
+  - @generaltranslation/format@1.0.0-samsara.9
+  - @generaltranslation/icu@0.2.0-samsara.7
+
 ## 0.1.0-samsara.9
 
 ### Patch Changes

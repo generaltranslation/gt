@@ -1,5 +1,27 @@
 # gtx-cli
 
+## 3.0.0-samsara.10
+
+### Major Changes
+
+- 943c094: `gt/types`, `gtx-cli/types/index` and the `gtx-cli/index` alias are removed. Import those types from `gt` (or `gtx-cli`), and replace `gtx-cli/index` with `gtx-cli`. `Updates` is no longer re-exported; import it from `generaltranslation`.
+
+### Patch Changes
+
+- Updated dependencies [96f428a]
+- Updated dependencies [831d39f]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [86e86b9]
+- Updated dependencies [82999f0]
+- Updated dependencies [831d39f]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [943c094]
+- Updated dependencies [63b6748]
+- Updated dependencies [a191c9a]
+- Updated dependencies [1a5e9ae]
+  - gt@3.0.0-samsara.10
+
 ## 3.0.0-samsara.9
 
 ### Patch Changes

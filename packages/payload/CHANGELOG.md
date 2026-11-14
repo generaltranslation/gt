@@ -1,5 +1,62 @@
 # gt-payload
 
+## 1.0.0-samsara.10
+
+### Major Changes
+
+- 1a5e9ae: `GT_PROJECT_ID` and `GT_API_KEY` are read once, when GT is initialized, and never after. Each option wins over its variable, and an empty string counts as unset.
+  - gt-i18n no longer reads `GT_API_KEY` when a runtime translation is requested. A variable set after initialization is not picked up: load your `.env` file before you call `initializeGT()`, or pass `apiKey`.
+  - gt-node: `initializeGT()` reads both variables when it is called.
+  - gt-payload: `gtPlugin()` reads both variables when it is called, not when the first translation runs. An empty-string `apiKey` or `projectId` option now falls back to the variable. A missing key still fails the run that needs it, not the Payload config.
+  - gt-react: `initializeGT()` from the `react-server` entry reads both variables, like the server and client entries. Before, it read neither.
+  - gt-next: a `projectId` in `gt.config.json` or `withGTConfig()` props now reaches the runtime, where it is used before `GT_PROJECT_ID`, as in every other package. Before, production read only `GT_PROJECT_ID`, so a project ID set only in `gt.config.json` loaded no translations. `withGTConfig()` accepts `projectId` again, and throws when the configured project ID and `GT_PROJECT_ID` differ. A project ID set only through `GT_PROJECT_ID` is not built into the app, so each deployment still reads its own. The API key is still read only from `GT_API_KEY`.
+  - The CLI behaves as before.
+
+### Minor Changes
+
+- 831d39f: Use canonical GT methods. Report per-document source-upload failures and per-translation upload failures while continuing with saved documents.
+
+  When billing stops a translation (HTTP 402), the admin panel shows the API's message with a hint for where to fix it in the dashboard. `TranslateResult.usageLimitReached` is replaced by `billingError` (`{ message, code? }`, the API's 402 message and error code as sent), and the runs collection's `usageLimitReached` field by the text fields `billingMessage` and `billingCode`; on Postgres or SQLite run `payload migrate:create` to replace the column. Failed plugin requests return the API error `code` with `error`, and the admin panel advises trying again only for failures that may clear.
+
+  Custom `GtClient` implementations must replace `enqueueFiles`, `downloadFileBatch`, and `checkJobStatus` with `translateFiles`, `queryFilesContent`, and `queryJobs`. `awaitJobs`, `uploadSourceFiles`, and `uploadTranslations` follow `generaltranslation` 10: `awaitJobs` takes job IDs and returns `{ id, status, error? }` jobs, and uploads return `{ summary, results }`. `GtClient` is the subset of `ProjectHandle` the plugin uses, without `customMapping`: pass `client: new GeneralTranslation({ apiKey, projectId, localeConfig: { customMapping } })` instead of `client: new GT({ apiKey, projectId, customMapping })`. Without an `apiKey` option or `GT_API_KEY`, the run fails with a gt-payload error. The plugin no longer maps job locales back through `customMapping`; a project handle already reports them under the configured codes.
+
+### Patch Changes
+
+- ea429a2: Locale options now take their types from `GTConfig` or `LocaleConfig` instead of repeating them: `VueCompilerOptions`, gt-vue's `CreateGTOptions` and `InitializeGTSPAOptions`, gt-sanity's `GTPluginConfig`, gt-payload's `GtPluginOptions` and the gt-react-native plugin's `config` option. The accepted values are unchanged. gt-sanity links to the dashboard URL from `generaltranslation`.
+- 82999f0: Import format types and `ApiError` from `@generaltranslation/format` and `@generaltranslation/api` instead of through `generaltranslation`. `GTIntl` still comes from `generaltranslation`, which fills in its defaults. gt-payload now depends directly on `@generaltranslation/format` and `@generaltranslation/api`. No public API change.
+- 943c094: Import types and helpers from their single owning entry now that the types-only subpaths are removed. No public API change.
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [ac29d18]
+- Updated dependencies [8ba23e5]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ac29d18]
+- Updated dependencies [96f428a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [82999f0]
+- Updated dependencies [96f428a]
+- Updated dependencies [3832c15]
+- Updated dependencies [943c094]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+  - @generaltranslation/api@0.7.0-samsara.2
+  - generaltranslation@10.0.0-samsara.9
+  - @generaltranslation/format@1.0.0-samsara.9
+
 ## 0.2.0-samsara.9
 
 ### Patch Changes

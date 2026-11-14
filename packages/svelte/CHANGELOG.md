@@ -1,5 +1,53 @@
 # gt-svelte
 
+## 0.1.0-samsara.10
+
+### Minor Changes
+
+- 63b6748: Each package ships `config-schema.json`, the JSON Schema of a `gt.config.json` for a project that uses it: the gt CLI's keys and the package's own, and no others. Point `$schema` at it, as `gt init` does: `"$schema": "./node_modules/gt-next/config-schema.json"`.
+
+### Patch Changes
+
+- 016ace7: Remove the `devApiKey` option. One `apiKey` now covers both uses: in development it enables hot reload translation, and in production it lets server code translate at runtime. Pass your key as `apiKey` wherever you passed `devApiKey`, for example `initializeGT({ apiKey })` in gt-node.
+
+  gt-react ignores an `apiKey` that reaches production browser code and logs a warning, because anyone can read a key from a browser bundle. Translate at runtime on your server instead.
+
+- 943c094: Import types and helpers from their single owning entry now that the types-only subpaths are removed. No public API change.
+- Updated dependencies [96f428a]
+- Updated dependencies [96f428a]
+- Updated dependencies [cf7029c]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [016ace7]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [82999f0]
+- Updated dependencies [96f428a]
+- Updated dependencies [3832c15]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [943c094]
+- Updated dependencies [cf7029c]
+- Updated dependencies [82999f0]
+- Updated dependencies [63b6748]
+- Updated dependencies [13dae8a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [943c094]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+- Updated dependencies [943c094]
+  - generaltranslation@10.0.0-samsara.9
+  - gt-i18n@2.0.0-samsara.9
+  - @generaltranslation/format@1.0.0-samsara.9
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.10
+
 ## 0.1.0-samsara.9
 
 ### Patch Changes

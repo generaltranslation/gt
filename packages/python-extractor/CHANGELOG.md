@@ -1,5 +1,33 @@
 # @generaltranslation/python-extractor
 
+## 1.0.0-samsara.2
+
+### Major Changes
+
+- 943c094: Each name is now exported from one entry:
+  - `@generaltranslation/python-extractor/types` is removed. Import `ExtractionResult` and `ExtractionMetadata` from `@generaltranslation/python-extractor`.
+  - The `PYTHON_*` constants are no longer exported from `@generaltranslation/python-extractor`. Import them from `@generaltranslation/python-extractor/constants`.
+
+### Patch Changes
+
+- 82999f0: Import tree-sitter types from `web-tree-sitter` instead of through the internal parser module. No public API change.
+- Updated dependencies [96f428a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [63b6748]
+- Updated dependencies [ea429a2]
+- Updated dependencies [82999f0]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [ba09ee2]
+- Updated dependencies [943c094]
+- Updated dependencies [3832c15]
+- Updated dependencies [a191c9a]
+- Updated dependencies [2d7f9bd]
+- Updated dependencies [1a5e9ae]
+- Updated dependencies [e29f6f9]
+  - generaltranslation@10.0.0-samsara.9
+
 ## 0.2.68-samsara.1
 
 ### Patch Changes
