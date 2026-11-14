@@ -15,12 +15,21 @@ expect_used = "warn"
 todo = "warn"
 
 [features]
-default = ["node", "mimalloc"]
+default = ["node", "mimalloc", "languages"]
 # A faster allocator than the system's for many threads.
 mimalloc = ["dep:mimalloc"]
 # The Node addon. Without it, the crate is the analysis alone: for `cargo test` and the examples.
 node = ["dep:napi", "dep:napi-derive"]
 # The languages whose files the analysis writes itself, each of which can be built alone.
+languages = [
+  "lang-vue",
+  "lang-svelte",
+  "lang-angular",
+  "lang-astro",
+  "lang-mdx",
+  "lang-ember",
+  "lang-marko",
+]
 lang-vue = []
 lang-svelte = []
 lang-angular = []
