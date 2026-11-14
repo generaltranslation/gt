@@ -1,5 +1,7 @@
 //! Times the analysis on a directory of scripts, without Node.
 //!   cargo run --release --no-default-features --example bench -- <project> [outdir]
+//! `ONLY=<text>` analyzes only the files whose path contains it; `FRESH=<n>` analyzes n more times;
+//! `ALIASES=find=replacement,…` sets the import aliases.
 
 use std::{path::Path, time::Instant};
 
@@ -153,9 +155,22 @@ fn main() {
     rss()
   );
 
+  // ALIASES=find=replacement,…: the project's import aliases, e.g. its bundler's.
+  let aliases = std::env::var("ALIASES")
+    .unwrap_or_default()
+    .split(',')
+    .filter_map(|alias| alias.split_once('='))
+    .map(
+      |(find, replacement)| paraglide_context_native::resolve::ImportAlias {
+        find: find.to_string(),
+        replacement: replacement.to_string(),
+        exact: false,
+      },
+    )
+    .collect();
   let resolver = NativeResolver::new(ResolverOptions {
-    aliases: Vec::new(),
-    root_directory: None,
+    aliases,
+    root_directory: Some(project.clone()),
     conditions: ["import", "module", "browser", "default"]
       .map(String::from)
       .to_vec(),
@@ -171,8 +186,15 @@ fn main() {
     rss()
   );
 
+  // ONLY=text: only the files whose path contains it are analyzed, e.g. one file to profile.
+  let only = std::env::var("ONLY").ok();
   let ids: Vec<u32> = files
     .iter()
+    .filter(|file| {
+      only
+        .as_ref()
+        .is_none_or(|only| file.contains(only.as_str()))
+    })
     .filter_map(|file| graph.known_file(file))
     .collect();
   let started = Instant::now();

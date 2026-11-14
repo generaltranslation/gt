@@ -202,11 +202,7 @@ impl<'a, 's> Lowerer<'a, 's> {
     self.symbols_of_parents.sort_unstable();
     ast.symbols_of_parents = self.symbols_of_parents;
     ast.long_ends = self.long_ends.as_slice().to_vec();
-    ast.top_level = if ast.nodes.is_empty() {
-      Vec::new()
-    } else {
-      ast.children(0).collect()
-    };
+    ast.index_children();
     ast.set_variables(self.variables, self.definitions, self.assignments);
 
     ast

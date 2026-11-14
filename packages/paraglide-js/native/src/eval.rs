@@ -112,7 +112,8 @@ impl<'g> Cx<'g> {
     let ast = &self.module(module).ast;
     let mut child = node;
 
-    for parent in ast.ancestors(node) {
+    let mut ancestors = ast.ancestors(node);
+    while let Some(parent) = ancestors.next() {
       let kind = ast.kind(parent);
 
       if kind == Kind::ArrowFunctionExpression {
@@ -121,7 +122,7 @@ impl<'g> Cx<'g> {
       }
 
       if kind.is_function() {
-        let owner = ast.parent(parent)?;
+        let owner = ancestors.next()?;
 
         return if ast.kind(owner) == Kind::MethodDefinition {
           self.class_of(module, owner)
@@ -145,8 +146,9 @@ impl<'g> Cx<'g> {
 
   fn class_of(&mut self, module: ModuleId, member: NodeId) -> Option<Symbol> {
     let ast = &self.module(module).ast;
-    let class_body = ast.parent(member)?;
-    let class = ast.parent(class_body)?;
+    let mut ancestors = ast.ancestors(member);
+    let _class_body = ancestors.next()?;
+    let class = ancestors.next()?;
 
     ast.kind(class).is_class().then(|| {
       Symbol::namespace(Namespace::Class {

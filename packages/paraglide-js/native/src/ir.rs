@@ -366,8 +366,52 @@ pub struct Ast {
   module_level: Vec<(u32, u32)>,
   /// The variable of each identifier that has children (a parameter's decorators), by node.
   pub symbols_of_parents: Vec<(NodeId, u32)>,
-  /// The children of the root (node 0), for finding a node's parent from the root.
-  pub top_level: Vec<NodeId>,
+  /// The root, with where its children are in `wide_children`: a parent is found from the root,
+  /// by halves among them.
+  wide: Vec<(NodeId, u32, u32)>,
+  wide_children: Vec<NodeId>,
+}
+
+/// A node's ancestors, innermost first: the path from the root, kept on the stack unless deep.
+pub struct Ancestors {
+  inline: [NodeId; 48],
+  len: usize,
+  spilled: Vec<NodeId>,
+}
+
+impl Ancestors {
+  fn new() -> Self {
+    Ancestors {
+      inline: [0; 48],
+      len: 0,
+      spilled: Vec::new(),
+    }
+  }
+
+  fn push(&mut self, id: NodeId) {
+    if !self.spilled.is_empty() || self.len == self.inline.len() {
+      if self.spilled.is_empty() {
+        self.spilled.extend_from_slice(&self.inline[..self.len]);
+      }
+      self.spilled.push(id);
+    } else {
+      self.inline[self.len] = id;
+      self.len += 1;
+    }
+  }
+}
+
+impl Iterator for Ancestors {
+  type Item = NodeId;
+
+  #[inline]
+  fn next(&mut self) -> Option<NodeId> {
+    if !self.spilled.is_empty() {
+      return self.spilled.pop();
+    }
+    self.len = self.len.checked_sub(1)?;
+    Some(self.inline[self.len])
+  }
 }
 
 pub fn name_hash(name: &str) -> u32 {
@@ -488,63 +532,70 @@ impl Ast {
   /// A node's parent, found from the root, since nodes do not keep it: they are in tree order, so
   /// the parent is the deepest node that `id` is between and `next` of.
   pub fn parent(&self, id: NodeId) -> Option<NodeId> {
-    let mut path = self.top_level_ancestor(id)?;
-    if path == id {
-      return Some(0);
-    }
-
-    loop {
-      let mut child = path + 1;
-      loop {
-        if child == id {
-          return Some(path);
-        }
-        let next = self.next(child);
-        if id < next {
-          path = child;
-          break;
-        }
-        child = next;
-      }
-    }
-  }
-
-  /// The child of the root that is `id` or has it among its descendants; none for the root.
-  fn top_level_ancestor(&self, id: NodeId) -> Option<NodeId> {
     if id == 0 || id as usize >= self.nodes.len() {
       return None;
     }
 
-    let after = self.top_level.partition_point(|&child| child <= id);
-    after.checked_sub(1).map(|index| self.top_level[index])
+    let mut path = 0;
+    loop {
+      let child = self.child_toward(path, id);
+      if child == id {
+        return Some(path);
+      }
+      path = child;
+    }
   }
 
   /// A node's ancestors, innermost first, found from the root at once.
-  pub fn ancestors(&self, id: NodeId) -> std::iter::Rev<std::vec::IntoIter<NodeId>> {
-    let mut path = Vec::new();
-
-    if let Some(top) = self.top_level_ancestor(id) {
-      path.push(0);
-      let mut current = top;
-      while current != id {
-        path.push(current);
-        let mut child = current + 1;
-        loop {
-          if child == id {
-            current = id;
-            break;
-          }
-          let next = self.next(child);
-          if id < next {
-            current = child;
-            break;
-          }
-          child = next;
-        }
-      }
+  pub fn ancestors(&self, id: NodeId) -> Ancestors {
+    let mut ancestors = Ancestors::new();
+    if id == 0 || id as usize >= self.nodes.len() {
+      return ancestors;
     }
 
-    path.into_iter().rev()
+    let mut path = 0;
+    loop {
+      ancestors.push(path);
+      let child = self.child_toward(path, id);
+      if child == id {
+        return ancestors;
+      }
+      path = child;
+    }
+  }
+
+  /// The child of `ancestor` that is `id` or has it among its descendants.
+  #[inline]
+  fn child_toward(&self, ancestor: NodeId, id: NodeId) -> NodeId {
+    if let Ok(index) = self
+      .wide
+      .binary_search_by_key(&ancestor, |&(node, _, _)| node)
+    {
+      let (_, first, count) = self.wide[index];
+      let children = &self.wide_children[first as usize..(first + count) as usize];
+      let after = children.partition_point(|&child| child <= id);
+      return children[after.saturating_sub(1)];
+    }
+
+    let mut child = ancestor + 1;
+    loop {
+      let next = self.next(child);
+      if child == id || id < next {
+        return child;
+      }
+      child = next;
+    }
+  }
+
+  /// Lists the root's children, for `parent` and `ancestors`; once the nodes are written.
+  pub fn index_children(&mut self) {
+    if self.nodes.is_empty() {
+      return;
+    }
+
+    let children: Vec<NodeId> = self.children(0).collect();
+    self.wide = vec![(0, 0, children.len() as u32)];
+    self.wide_children = children;
   }
 
   #[inline]
@@ -654,7 +705,8 @@ impl Ast {
       + self.assignments.capacity() * 4
       + self.module_level.capacity() * 8
       + self.symbols_of_parents.capacity() * 8
-      + self.top_level.capacity() * 4
+      + self.wide.capacity() * 12
+      + self.wide_children.capacity() * 4
   }
 }
 
