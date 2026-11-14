@@ -1,4 +1,9 @@
-import type { LocaleConfig, JsxChildren } from '@generaltranslation/format';
+import type { Content, JsxChildren } from '@generaltranslation/format';
+import type {
+  I18nCacheConstructorParams,
+  I18nConfigParams,
+  LookupOptions,
+} from 'gt-i18n/internal';
 import type { App, Ref } from 'vue';
 
 /**
@@ -10,8 +15,9 @@ export type TranslationCatalog = Record<string, JsxChildren>;
 /**
  * Loads the complete translation catalog for one locale.
  *
- * Return an empty object when a locale has no catalog. {@link createGT}
- * caches successful results and deduplicates concurrent requests.
+ * Return an empty object when a locale has no catalog. The translation cache
+ * set up by `initializeGT()` caches results and deduplicates concurrent
+ * requests.
  *
  * @param locale - Locale code requested by the active GT plugin.
  * @returns The locale's translation catalog.
@@ -54,19 +60,22 @@ export type MessagesFunction = <T extends string | null | undefined>(
 ) => T extends string ? string : T;
 
 /**
- * Options used to create an isolated gt-vue plugin instance.
+ * Options for {@link initializeGT}: the `gt.config.json` keys gt-vue reads,
+ * plus the translation loader and cache settings.
  *
- * `defaultLocale` is the source and fallback locale, so the loader is never
- * called for it. `customMapping` aliases apply to locale-sensitive formatting
- * and plural selection; catalog loading and persisted locale values keep the
- * alias.
+ * `defaultLocale` is the source and fallback locale, so translations are
+ * never loaded for it. Without `loadTranslations`, translations load from the
+ * GT CDN when a `projectId` is configured. `customMapping` aliases apply to
+ * locale-sensitive formatting and plural selection; translation loading and
+ * persisted locale values keep the alias.
  */
-export type CreateGTOptions = Pick<
-  LocaleConfig,
-  'customMapping' | 'defaultLocale'
-> & {
-  /** Async loader called once for each uncached locale. */
-  loadTranslations?: LoadTranslations;
+export type InitializeGTOptions = I18nConfigParams & I18nCacheConstructorParams;
+
+/**
+ * Options used to create a gt-vue plugin instance. The plugin holds only the
+ * active locale; translations live in the cache set up by `initializeGT()`.
+ */
+export type CreateGTOptions = {
   /**
    * Server-provided or explicit initial locale. It wins over the browser
    * cookie during hydration. When omitted, the cookie wins over
@@ -83,19 +92,17 @@ export type CreateGTOptions = Pick<
 /**
  * Options used to initialize the browser-only SPA runtime.
  *
- * `locales` and `customMapping` are accepted so a `gt.config.json` object can
- * be passed directly. Catalog availability is still determined by
- * {@link loadTranslations}. Unsupported persisted or requested locales fall
- * back to `defaultLocale`.
+ * Unsupported persisted or requested locales fall back to `defaultLocale`.
+ * When `locales` is omitted, any locale is accepted.
  */
-export type InitializeGTSPAOptions = CreateGTOptions &
-  Pick<LocaleConfig, 'locales' | 'localeMatcher'>;
+export type InitializeGTSPAOptions = InitializeGTOptions & CreateGTOptions;
 
 /**
  * Vue plugin returned by {@link createGT} or `initializeGTSPA()`.
  *
- * Install it with `app.use(plugin)`. Its locale and catalog cache are scoped
- * to that plugin instance.
+ * Install it with `app.use(plugin)`. Its locale is scoped to that plugin
+ * instance; translations are shared through the cache set up by
+ * `initializeGT()`.
  */
 export type GTPlugin = {
   /** Returns the active locale for this plugin instance. */
@@ -121,8 +128,15 @@ export type GTPlugin = {
 /** @internal Reactive state scoped to one installed plugin instance. */
 export type GTState = {
   defaultLocale: string;
-  getCatalog(): TranslationCatalog;
   getLocale(): string;
+  /**
+   * Reactively looks up a translation in the active locale by its hash. In
+   * development hot reload, a miss requests the translation of `getSource()`.
+   */
+  lookupTranslation<T extends Content>(
+    options: LookupOptions & { $_hash: string },
+    getSource: () => T
+  ): T | undefined;
   loadTranslations(locale: string): Promise<TranslationCatalog>;
   /** @internal Resolves aliases for locale-sensitive formatting. */
   resolveFormattingLocale?: (locale: string) => string;

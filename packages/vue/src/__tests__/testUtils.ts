@@ -3,7 +3,8 @@ import type { JsxChildren } from '@generaltranslation/format';
 import { createRenderer, createSSRApp, type Component } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { vi } from 'vitest';
-import type { GTPlugin } from '../index';
+import { createGT, initializeGT } from '../index';
+import type { GTPlugin, InitializeGTSPAOptions } from '../index';
 
 export function jsxHash(source: JsxChildren, context?: string): string {
   return hashSource({ source, context, dataFormat: 'JSX' });
@@ -136,4 +137,23 @@ export function installCookieDocument(cookieHeader = ''): TestCookieDocument {
   const cookieDocument = new TestCookieDocument(cookieHeader);
   vi.stubGlobal('document', cookieDocument);
   return cookieDocument;
+}
+
+/**
+ * Initializes gt-vue with `config` and creates a plugin for `locale`, the
+ * shape of the pre-`initializeGT()` `createGT(options)` call.
+ */
+export function createTestGT(options: InitializeGTSPAOptions = {}): GTPlugin {
+  const { locale, localeCookieName, ...config } = options;
+  resetI18nSingletons();
+  initializeGT({ cacheUrl: null, ...config });
+  return createGT({ locale, localeCookieName });
+}
+
+/** Clears gt-i18n's set-once config and cache so a test can initialize anew. */
+export function resetI18nSingletons(): void {
+  const registry = (
+    globalThis as { __generaltranslation?: Record<string, unknown> }
+  ).__generaltranslation;
+  if (registry) Reflect.deleteProperty(registry, 'i18n');
 }

@@ -4,13 +4,19 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { defaultDefaultLocale } from '@generaltranslation/format/internal';
+import type { Content } from '@generaltranslation/format';
+import {
+  getI18nCache,
+  getI18nConfig,
+  type LookupOptions,
+} from 'gt-i18n/internal';
 import type {
   CreateGTOptions,
   GTPlugin,
   GTState,
   TranslationCatalog,
 } from '../types';
+import { assertGTInitialized } from './config';
 import { createCookieBackedLocale } from './localeCookie';
 
 const gtContextKey = Symbol.for(
@@ -22,8 +28,6 @@ type CreateGTRuntimeOptions = {
   pinLocale?: boolean;
   /** Reloads the document after an SPA locale cookie is updated. */
   reloadDocument?: () => void;
-  /** Resolves aliases before locale-sensitive formatting. */
-  resolveFormattingLocale?: (locale: string) => string;
   /** Resolves supported locales before they enter runtime state. */
   resolveLocale?: (locale: string) => string;
 };
@@ -35,31 +39,25 @@ export type GTRuntime = {
 };
 
 /**
- * Creates an isolated gt-vue plugin with reactive locale state and a
- * per-locale translation cache.
+ * Creates a gt-vue plugin with reactive locale state, backed by the
+ * translation cache that `initializeGT()` set up.
  *
- * Successful catalog loads are cached for the lifetime of this plugin, and
- * concurrent requests for the same locale share one promise. The plugin
- * loads an uncached locale before switching reactive consumers to it; when
- * locale requests overlap, only the latest request is applied.
+ * The plugin loads an uncached locale before switching reactive consumers to
+ * it; when locale requests overlap, only the latest request is applied.
  *
- * Client applications can render source content while the initial catalog is
- * loading. For SSR, create one plugin per request and await
+ * Client applications can render source content while the initial
+ * translations are loading. For SSR, create one plugin per request and await
  * `loadTranslations(locale)` or `setLocale(locale)` before rendering.
  *
- * @param options - Initial locale, fallback locale, and async catalog loader.
+ * @param options - Initial locale and locale cookie.
  * @returns A Vue plugin for `app.use()` plus imperative preload and locale
  * controls.
  *
  * @example
  * ```ts
- * const gt = createGT({
- *   defaultLocale: 'en',
- *   loadTranslations: async (locale) =>
- *     (await import(`./_gt/${locale}.json`)).default,
- * });
+ * initializeGT({ defaultLocale: 'en', locales: ['fr'], loadTranslations });
  *
- * createApp(App).use(gt).mount('#app');
+ * createApp(App).use(createGT()).mount('#app');
  * ```
  */
 export function createGT(options: CreateGTOptions = {}): GTPlugin {
@@ -71,23 +69,22 @@ export function createGT(options: CreateGTOptions = {}): GTPlugin {
  *
  * Ordinary {@link createGT} calls use the default reactive locale transition.
  * Browser-only runtimes can supply a transition that persists state and
- * reloads the document while retaining the same catalog and injection logic.
+ * reloads the document while retaining the same lookup and injection logic.
  *
- * @param options - Initial locale, fallback locale, and catalog loader.
+ * @param options - Initial locale and locale cookie.
  * @param runtimeOptions - Internal runtime behavior overrides.
  * @returns The plugin and the exact state it provides to Vue.
  * @internal
  */
 export function createGTRuntime(
   {
-    customMapping,
-    defaultLocale = defaultDefaultLocale,
-    loadTranslations,
     locale: explicitLocale,
     localeCookieName = defaultLocaleCookieName,
   }: CreateGTOptions = {},
   runtimeOptions: CreateGTRuntimeOptions = {}
 ): GTRuntime {
+  assertGTInitialized();
+  const defaultLocale = getI18nConfig().getDefaultLocale();
   const localeAccessor = createCookieBackedLocale({
     defaultLocale,
     locale: explicitLocale,
@@ -95,49 +92,82 @@ export function createGTRuntime(
     resolveLocale: runtimeOptions.resolveLocale,
   });
   const revision = ref(0);
-  const catalogs = new Map<string, TranslationCatalog>([[defaultLocale, {}]]);
-  const pending = new Map<string, Promise<TranslationCatalog>>();
   const initialLocale = localeAccessor.getLocale();
   const getLocale = runtimeOptions.pinLocale
     ? () => initialLocale
     : () => localeAccessor.getLocale();
-  const resolveFormattingLocale =
-    runtimeOptions.resolveFormattingLocale ??
-    createFormattingLocaleResolver(customMapping);
+  /** Development translations already requested, keyed by locale and hash. */
+  const requestedTranslations = new Set<string>();
   let localeRequest = 0;
 
   const load = async (locale: string): Promise<TranslationCatalog> => {
     const targetLocale = runtimeOptions.resolveLocale?.(locale) ?? locale;
-    const cached = catalogs.get(targetLocale);
-    if (cached) return cached;
-
-    const currentPending = pending.get(targetLocale);
-    if (currentPending) return currentPending;
-
-    const promise = Promise.resolve()
-      .then(() => loadTranslations?.(targetLocale) ?? {})
-      .then((catalog) => {
-        catalogs.set(targetLocale, catalog);
-        if (targetLocale === getLocale()) revision.value += 1;
-        return catalog;
-      })
-      .catch((error: unknown) => {
-        const diagnostic = createDiagnosticMessage({
+    if (targetLocale === defaultLocale) return {};
+    try {
+      const catalog = (await getI18nCache().loadTranslations(
+        targetLocale
+      )) as TranslationCatalog;
+      if (targetLocale === getLocale()) revision.value += 1;
+      return catalog;
+    } catch (error) {
+      console.error(
+        createDiagnosticMessage({
           source: 'gt-vue',
           severity: 'Error',
           whatHappened: `Translations could not be loaded for "${targetLocale}"`,
           fix: 'Make sure loadTranslations() resolves to a translation catalog for the requested locale',
           wayOut: 'Source content will render as a fallback',
           details: formatDiagnosticErrorDetails(error),
-        });
-        console.error(diagnostic);
-        throw error;
-      })
-      .finally(() => pending.delete(targetLocale));
-
-    pending.set(targetLocale, promise);
-    return promise;
+        })
+      );
+      throw error;
+    }
   };
+
+  const requestTranslation = <T extends Content>(
+    locale: string,
+    source: T,
+    options: LookupOptions & { $_hash: string }
+  ): void => {
+    const key = `${locale}\n${options.$_hash}`;
+    if (requestedTranslations.has(key)) return;
+    requestedTranslations.add(key);
+    getI18nCache()
+      .lookupTranslationWithFallback(locale, source, options)
+      .then(
+        (translation) => {
+          if (translation != null) revision.value += 1;
+        },
+        (error: unknown) => {
+          console.warn(
+            createDiagnosticMessage({
+              source: 'gt-vue',
+              severity: 'Warning',
+              whatHappened: `A development translation could not be loaded for "${locale}"`,
+              wayOut: 'Source content will render as a fallback',
+              details: formatDiagnosticErrorDetails(error),
+            })
+          );
+        }
+      );
+  };
+
+  function lookupTranslation<T extends Content>(
+    options: LookupOptions & { $_hash: string },
+    getSource: () => T
+  ): T | undefined {
+    const locale = state.getLocale();
+    if (locale === defaultLocale) return undefined;
+    const translation = getI18nCache().lookupTranslation(locale, null, options);
+    if (
+      translation == null &&
+      process.env.NODE_ENV !== 'production' &&
+      getI18nConfig().isDevHotReloadEnabled()
+    ) {
+      requestTranslation(locale, getSource(), options);
+    }
+    return (translation ?? undefined) as T | undefined;
+  }
 
   const setLocale = runtimeOptions.reloadDocument
     ? async (targetLocale: string): Promise<void> => {
@@ -158,20 +188,21 @@ export function createGTRuntime(
 
   const state: GTState = {
     defaultLocale,
-    getCatalog() {
-      // The Map intentionally stays non-reactive. This counter makes newly
-      // loaded catalogs invalidate any render that performed a lookup.
-      void revision.value;
-      return catalogs.get(getLocale()) ?? {};
-    },
     getLocale() {
-      // Cookie APIs have no reactive event. This counter invalidates Vue
-      // consumers after this plugin writes a successfully loaded locale.
+      // Cookie APIs and the translation cache have no reactive events. This
+      // counter invalidates Vue consumers after a locale change or a load.
       void revision.value;
       return getLocale();
     },
+    lookupTranslation,
     loadTranslations: load,
-    resolveFormattingLocale,
+    resolveFormattingLocale: (locale) => {
+      const config = getI18nConfig();
+      const canonicalLocale = config.resolveCanonicalLocale(locale);
+      return config.isValidLocale(canonicalLocale)
+        ? config.standardizeLocale(canonicalLocale)
+        : canonicalLocale;
+    },
     revision,
     setLocale,
   };
@@ -181,7 +212,7 @@ export function createGTRuntime(
     install(app) {
       app.provide(gtContextKey, state);
       // Client apps may mount immediately and render source content until the
-      // initial asynchronous catalog arrives. Its revision update rerenders.
+      // initial asynchronous translations arrive. Its revision update rerenders.
       void load(state.getLocale()).catch(() => undefined);
     },
     loadTranslations: load,
@@ -189,29 +220,6 @@ export function createGTRuntime(
   };
 
   return { plugin, state };
-}
-
-/** Creates a formatting-only alias resolver without changing catalog keys. */
-function createFormattingLocaleResolver(
-  customMapping: CreateGTOptions['customMapping']
-): ((locale: string) => string) | undefined {
-  if (customMapping === undefined) return undefined;
-
-  return (locale) => {
-    const customLocale = customMapping[locale];
-    const mappedLocale =
-      typeof customLocale === 'object' &&
-      customLocale !== null &&
-      typeof customLocale.code === 'string'
-        ? customLocale.code
-        : locale;
-
-    try {
-      return Intl.getCanonicalLocales(mappedLocale)[0] ?? locale;
-    } catch {
-      return locale;
-    }
-  };
 }
 
 /** @internal Returns the GT state provided to the current Vue component. */
@@ -224,7 +232,7 @@ export function useGTState(): GTState {
       source: 'gt-vue',
       severity: 'Error',
       whatHappened: 'The GT Vue plugin is not installed',
-      fix: 'Install the exact plugin returned by initializeGTSPA() with app.use(plugin), or install app.use(createGT(options)) for non-SPA usage',
+      fix: 'Install the exact plugin returned by initializeGTSPA() with app.use(plugin), or call initializeGT() and install app.use(createGT()) for non-SPA usage',
     })
   );
 }
