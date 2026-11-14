@@ -164,6 +164,12 @@ export function readLockfile(settings: Settings): {
           if (branches.length > 0) branchId = branches[0];
         }
         data = convertV1ToV2(originalV1, branchId);
+        // Kept for paraglide-js, whose cache it is: see `mergeUsageContext`.
+        if ('paraglide-usage-context' in raw) {
+          Object.assign(data, {
+            'paraglide-usage-context': raw['paraglide-usage-context'],
+          });
+        }
       }
     }
   } catch (error) {
