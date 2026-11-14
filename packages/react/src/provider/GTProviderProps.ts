@@ -4,7 +4,7 @@ import { BrowserConditionStoreParams } from '../condition-store/BrowserCondition
 /**
  * We force the user to pass translations so they can be synchronously accessed
  *
- * - {@link InternalGTProviderProps} - requires translations and dictionaries
+ * - {@link InternalGTProviderProps} - requires translations
  * - {@link BrowserConditionStoreParams} - requires locale
  */
 export type SharedGTProviderProps = Omit<

@@ -45,6 +45,18 @@ export function Client_GTProvider({
 }: SharedGTProviderProps & {
   supportsLocaleRefresh: boolean;
 }) {
+  const reload = useAppRouterReload(supportsLocaleRefresh, props.locale);
+  return <GTProvider {...props} _reload={reload} />;
+}
+
+/**
+ * The App Router's GTProvider `_reload`: refreshes server components, or
+ * reloads the page when the URL's locale must change.
+ */
+export function useAppRouterReload(
+  supportsLocaleRefresh: boolean,
+  locale: string
+): NonNullable<SharedGTProviderProps['_reload']> {
   const router = useRouter();
   const refreshServerComponents = useCallback(() => {
     // Older Next versions can retain a stale layout/provider after a redirect.
@@ -91,9 +103,9 @@ export function Client_GTProvider({
   usePathCheck({
     reloadBrowserPage,
     refreshServerComponents,
-    locale: props.locale,
+    locale,
   });
-  return <GTProvider {...props} _reload={syncServerContent} />;
+  return syncServerContent;
 }
 
 /**

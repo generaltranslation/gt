@@ -1,4 +1,4 @@
-import { useTranslations } from 'gt-next';
+import { useTranslations } from 'gt-next/compat';
 
 export default function Page() {
   const d = useTranslations();

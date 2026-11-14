@@ -1,10 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { I18nCache } from '../../../i18n-cache/I18nCache';
-import type {
-  Dictionary,
-  I18nCacheConstructorParams,
-} from '../../../i18n-cache/types';
+import type { I18nCacheConstructorParams } from '../../../i18n-cache/types';
 import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import { setWritableConditionStore } from '../../../condition-store/singleton-operations';
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
@@ -12,7 +9,6 @@ import type { I18nConfigParams } from '../../../i18n-config/I18nConfig';
 import { msg } from '../../msg/msg';
 import { hashContent } from '../../../utils/hashContent';
 import { getGT, getGTInternal } from '../getGT';
-import { getTranslations } from '../getTranslations';
 import { getMessages } from '../getMessages';
 import { tx, txInternal } from '../tx';
 
@@ -49,18 +45,6 @@ function setup(
 
 function setupTranslations(translations: Record<string, string>) {
   return setup({ loadTranslations: vi.fn().mockResolvedValue(translations) });
-}
-
-function setupDictionary(
-  dictionary: Dictionary,
-  loaded: Dictionary,
-  cacheConfig: I18nCacheConstructorParams = {}
-) {
-  return setup({
-    dictionary,
-    loadDictionary: vi.fn().mockResolvedValue(loaded),
-    ...cacheConfig,
-  });
 }
 
 describe('translation function locale defaults', () => {
@@ -163,124 +147,6 @@ describe('translation function locale defaults', () => {
 
       expect(gt(message, { name: 'Alice' })).toBe('Hello Alice!');
       expect(catchHandler).toHaveBeenCalledWith(expect.any(Function));
-    });
-  });
-
-  describe('getTranslations', () => {
-    it('uses the current locale for dictionary entries, scoped by root id', async () => {
-      setupDictionary(
-        { greeting: message, metadata: { greeting: 'Welcome {name}!' } },
-        {
-          greeting: 'Bonjour {name} !',
-          metadata: { greeting: 'Bienvenue {name} !' },
-        }
-      );
-
-      const t = await getTranslations();
-      const scoped = await getTranslations('metadata');
-
-      expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
-      expect(scoped('greeting', { name: 'Alice' })).toBe('Bienvenue Alice !');
-    });
-
-    it('returns source dictionary entries when no target translation exists', async () => {
-      setupDictionary({ greeting: message }, {});
-
-      const t = await getTranslations();
-
-      expect(t('greeting', { name: 'Alice' })).toBe('Hello Alice!');
-    });
-
-    it.each([
-      ['the loaded translations', undefined],
-      ['async lookup snapshots when cacheExpiryTime is 0', 0],
-    ])(
-      'falls back to %s with source dictionary options',
-      async (_name, cacheExpiryTime) => {
-        const loadTranslations = vi.fn().mockResolvedValue({
-          [icuHash(message, 'homepage')]: 'Bonjour {name} !',
-        });
-        const cache = setupDictionary(
-          { greeting: [message, { $context: 'homepage' }] },
-          {},
-          { loadTranslations, cacheExpiryTime }
-        );
-
-        const t = await getTranslations();
-
-        expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
-        expect(loadTranslations).toHaveBeenCalledWith('fr');
-        // With an expiry of 0 only the resolver's own snapshot holds the entry
-        expect(
-          cache.lookupTranslation('fr', message, {
-            $format: 'ICU',
-            $context: 'homepage',
-          })
-        ).toBe(cacheExpiryTime === 0 ? undefined : 'Bonjour {name} !');
-      }
-    );
-
-    it('throws when the source dictionary entry or object is missing', async () => {
-      setupDictionary({ greeting: 'Hello', user: { name: 'Name' } }, {});
-
-      const t = await getTranslations();
-
-      expect(() => t('missing')).toThrow(
-        'Dictionary entry missing cannot be found'
-      );
-      expect(() => t.obj('missing')).toThrow(
-        'Dictionary entry missing cannot be found'
-      );
-    });
-
-    it('obj returns translated dictionary subtrees, scoped by root id', async () => {
-      setupDictionary(
-        {
-          user: {
-            profile: {
-              name: 'Name',
-              greeting: message,
-              title: ['Title', { $context: 'profile title' }],
-            },
-          },
-        },
-        { user: { profile: { name: 'Nom', greeting: 'Bonjour {name} !' } } }
-      );
-
-      const t = await getTranslations();
-      const scoped = await getTranslations('user');
-
-      // Leaves missing from the target keep their source value
-      const profile = {
-        name: 'Nom',
-        greeting: 'Bonjour {name} !',
-        title: 'Title',
-      };
-      expect(t.obj('user.profile')).toEqual(profile);
-      expect(scoped.obj('profile')).toEqual(profile);
-    });
-
-    it('obj falls back to translations for missing target leaves', async () => {
-      const loadTranslations = vi.fn().mockResolvedValue({
-        [icuHash('Title', 'profile title')]: 'Titre',
-      });
-      setupDictionary(
-        {
-          user: {
-            profile: {
-              name: 'Name',
-              title: ['Title', { $context: 'profile title' }],
-            },
-          },
-        },
-        { user: { profile: { name: 'Nom' } } },
-        { loadTranslations }
-      );
-
-      const t = await getTranslations();
-
-      expect(t.obj('user.profile')).toEqual({ name: 'Nom', title: 'Titre' });
-      expect(loadTranslations).toHaveBeenCalledWith('fr');
     });
   });
 

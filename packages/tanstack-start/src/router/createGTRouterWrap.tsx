@@ -4,11 +4,7 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
-import {
-  getI18nConfig,
-  getReactI18nCache,
-  getTranslationsSnapshot,
-} from '@generaltranslation/react-core/pure';
+import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 import type { GTRouterState } from './types';
 
@@ -21,28 +17,16 @@ export async function readGTRouterState(
   conditionStore: GTConditionSource
 ): Promise<GTRouterState> {
   const locale = conditionStore.getLocale();
-  const [translations, dictionaries] = await Promise.all([
-    getTranslationsSnapshot(locale),
-    // Dictionary reads only use loaded dictionaries, so the translated one is
-    // loaded before render, as gt-next's GTProvider does. Both sides already
-    // bundle the source dictionary, which serves the default locale.
-    locale === getI18nConfig().getDefaultLocale()
-      ? {}
-      : getReactI18nCache()
-          .loadDictionary(locale)
-          .then((dictionary) => ({ [locale]: dictionary })),
-  ]);
   return {
     locale,
     region: conditionStore.getRegion(),
     enableI18n: conditionStore.getEnableI18n(),
-    translations,
-    dictionaries,
+    translations: await getTranslationsSnapshot(locale),
   };
 }
 
-type GTProvider = ComponentType<
-  GTRouterState & { children: ReactNode; _syncConditions?: boolean }
+type GTProvider<State extends GTRouterState> = ComponentType<
+  State & { children: ReactNode; _syncConditions?: boolean }
 >;
 
 const subscribeToNothing = () => () => {};
@@ -55,15 +39,15 @@ const subscribeToNothing = () => () => {};
  * between the two renders, so it must not save the shell's locale to the
  * visitor's cookies.
  */
-function ShellProvider({
+function ShellProvider<State extends GTRouterState>({
   Provider,
   shell,
   state,
   children,
 }: {
-  Provider: GTProvider;
-  shell: GTRouterState;
-  state: GTRouterState;
+  Provider: GTProvider<State>;
+  shell: State;
+  state: State;
   children: ReactNode;
 }) {
   const current = useSyncExternalStore(
@@ -89,19 +73,19 @@ function ShellProvider({
  * on loadState until then. Each entry passes its own provider and loader so
  * this module stays free of server- or browser-only imports.
  */
-export function createGTRouterWrap({
+export function createGTRouterWrap<State extends GTRouterState>({
   Wrap: OriginalWrap = Fragment,
   Provider,
   loadState,
 }: {
   Wrap?: ComponentType<{ children: ReactNode }>;
-  Provider: GTProvider;
-  loadState: () => Promise<GTRouterState>;
+  Provider: GTProvider<State>;
+  loadState: () => Promise<State>;
 }) {
-  let resolved: GTRouterState | undefined;
-  let shell: GTRouterState | undefined;
+  let resolved: State | undefined;
+  let shell: State | undefined;
   let failure: { error: unknown } | undefined;
-  let pending: Promise<GTRouterState> | undefined;
+  let pending: Promise<State> | undefined;
   const load = () =>
     (pending ??= loadState().then(
       (state) => (resolved = state),
@@ -113,10 +97,10 @@ export function createGTRouterWrap({
 
   return {
     load,
-    resolve(state: GTRouterState) {
+    resolve(state: State) {
       resolved = state;
     },
-    hydrateShell(state: GTRouterState) {
+    hydrateShell(state: State) {
       shell = state;
     },
     Wrap: function GTRouterWrap({ children }: { children: ReactNode }) {

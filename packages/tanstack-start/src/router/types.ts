@@ -6,11 +6,13 @@ export type GTRouterState = Pick<
   SharedGTProviderProps,
   'locale' | 'region' | 'translations'
 > &
-  Required<Pick<SharedGTProviderProps, 'enableI18n' | 'dictionaries'>>;
+  Required<Pick<SharedGTProviderProps, 'enableI18n'>>;
 
-export type GTDehydratedRouterData =
+export type GTDehydratedRouterData<
+  State extends GTRouterState = GTRouterState,
+> =
   | {
-      gt?: GTRouterState & {
+      gt?: State & {
         /** Rendered into a prerendered SPA shell served to every visitor. */
         shell?: boolean;
       };

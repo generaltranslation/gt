@@ -28,11 +28,7 @@ import {
   unresolvedLoadTranslationsBuildError,
 } from './errors/createErrors';
 import { compilePathRegex } from './utils/pathRegex';
-import {
-  getLocaleProperties,
-  isValidLocale,
-  standardizeLocale,
-} from '@generaltranslation/format';
+import { isValidLocale, standardizeLocale } from '@generaltranslation/format';
 import {
   localeRefreshSupported,
   rootParamStability,
@@ -361,31 +357,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   }
 
   // Resolve dictionary filepath
-  let resolvedDictionaryFilePath =
+  const resolvedDictionaryFilePath =
     typeof mergedConfig.dictionary === 'string'
       ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']); // fallback to dictionary
-
-  // Check [defaultLocale].json file
-  if (!resolvedDictionaryFilePath && mergedConfig.defaultLocale) {
-    resolvedDictionaryFilePath = resolveConfigFilepath(
-      mergedConfig.defaultLocale,
-      ['.json']
-    );
-
-    // Check [defaultLanguageCode].json file
-    if (!resolvedDictionaryFilePath) {
-      const defaultLanguage = getLocaleProperties(
-        mergedConfig.defaultLocale
-      )?.languageCode;
-
-      if (defaultLanguage && defaultLanguage !== mergedConfig.defaultLocale) {
-        resolvedDictionaryFilePath = resolveConfigFilepath(defaultLanguage, [
-          '.json',
-        ]);
-      }
-    }
-  }
 
   // Get the type of dictionary file
   const resolvedDictionaryFilePathType = resolvedDictionaryFilePath
@@ -861,10 +836,13 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
             // bundler that inlines this file elsewhere would otherwise widen
             // the rule to every .mjs under its output dir. The compiled
             // config always sits beside its ESM twin and the internal
-            // modules these aliases target.
+            // modules these aliases target. The sentinel is the native
+            // translation loader stub, which every gt-next build ships.
             if (
               fs.existsSync(path.join(__dirname, 'config.mjs')) &&
-              fs.existsSync(path.join(__dirname, 'internal', '_dictionary.mjs'))
+              fs.existsSync(
+                path.join(__dirname, 'internal', '_load-translations.mjs')
+              )
             ) {
               gtNextDistDirs.push(__dirname + path.sep);
             }

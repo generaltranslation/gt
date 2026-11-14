@@ -21,7 +21,6 @@ vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
   >()),
   I18nStore: class {
     updateTranslations() {}
-    updateDictionaries() {}
   },
 }));
 
@@ -82,12 +81,7 @@ describe('BrowserGTProvider server-provided conditions', () => {
   async function render(props: ServerProps) {
     await act(async () => {
       root.render(
-        <BrowserGTProvider
-          {...props}
-          _reload={reload}
-          translations={{}}
-          dictionaries={{}}
-        >
+        <BrowserGTProvider {...props} _reload={reload} translations={{}}>
           <Probe />
         </BrowserGTProvider>
       );
@@ -101,7 +95,6 @@ describe('BrowserGTProvider server-provided conditions', () => {
           <BrowserGTProvider
             locale={locale}
             translations={{}}
-            dictionaries={{}}
             _syncConditions={syncConditions}
           />
         );

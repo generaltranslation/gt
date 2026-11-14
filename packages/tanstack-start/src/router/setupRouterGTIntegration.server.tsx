@@ -10,6 +10,7 @@ import type {
   GTDehydratedRouterData,
   GTIntegrableRouter,
   GTRouterOptions,
+  GTRouterState,
   SetupRouterGTIntegrationOptions,
 } from './types';
 
@@ -21,10 +22,30 @@ const integratedRouters = new WeakSet<GTIntegrableRouter>();
  * the app in GTProvider. With localeRouting, also rewrites locale prefixes so
  * routes and links stay locale-free.
  */
-export function setupRouterGTIntegration({
-  router,
-  localeRewrite,
-}: SetupRouterGTIntegrationOptions): void {
+export function setupRouterGTIntegration(
+  options: SetupRouterGTIntegrationOptions
+): void {
+  integrateRouter(options, {
+    Provider: GTProvider,
+    loadState: readGTRouterState,
+  });
+}
+
+/**
+ * @internal Wires GT into a router with the given provider and state, so the
+ * `/compat` entry can add dictionaries to both.
+ */
+export function integrateRouter<State extends GTRouterState>(
+  { router, localeRewrite }: SetupRouterGTIntegrationOptions,
+  {
+    Provider,
+    loadState,
+  }: Pick<Parameters<typeof createGTRouterWrap<State>>[0], 'Provider'> & {
+    loadState: (
+      conditionStore: ReturnType<typeof getServerConditionStore>
+    ) => Promise<State>;
+  }
+): void {
   if (integratedRouters.has(router)) return;
   integratedRouters.add(router);
   ensureInitialized();
@@ -32,15 +53,15 @@ export function setupRouterGTIntegration({
   const { dehydrate: originalDehydrate } = router.options;
   const gt = createGTRouterWrap({
     Wrap: router.options.Wrap,
-    Provider: GTProvider,
-    loadState: () => readGTRouterState(getServerConditionStore()),
+    Provider,
+    loadState: () => loadState(getServerConditionStore()),
   });
   const options: Partial<GTRouterOptions> = {
     // Start awaits dehydrate() after loaders and before render, so
     // translations are resolved by the time Wrap renders.
     dehydrate: async () => {
       const dehydrated =
-        (await originalDehydrate?.()) as GTDehydratedRouterData;
+        (await originalDehydrate?.()) as GTDehydratedRouterData<State>;
       const state = await gt.load();
       // A prerendered SPA shell is served to every visitor in the build-time
       // locale. The client hydrates it with that state, then renders the

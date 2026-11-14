@@ -78,7 +78,6 @@ async function mount(conditions: Conditions, supportsLocaleRefresh = true) {
       <Client_GTProvider
         supportsLocaleRefresh={supportsLocaleRefresh}
         {...conditions}
-        dictionaries={{}}
         translations={{}}
       >
         content

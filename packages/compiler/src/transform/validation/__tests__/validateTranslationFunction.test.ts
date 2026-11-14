@@ -4,7 +4,6 @@ import traverse, { type NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
   validateTranslationFunction,
-  validateUseTranslationsCallback,
   validateUseMessagesCallback,
 } from '../validateTranslationFunction';
 import { validateTranslationComponentArgs } from '../validateTranslationComponentArgs';
@@ -285,12 +284,9 @@ describe('validateTranslationFunction', () => {
   });
 });
 
-describe('validateUseTranslationsCallback / validateUseMessagesCallback', () => {
-  it('accept any arguments, including dynamic ones', () => {
+describe('validateUseMessagesCallback', () => {
+  it('accepts any arguments, including dynamic ones', () => {
     const { callPath } = setup('callback(someVar, `Hello, ${name}`, 123)');
-    expect(validateUseTranslationsCallback(callPath.node)).toEqual({
-      errors: [],
-    });
     expect(validateUseMessagesCallback(callPath.node)).toEqual({ errors: [] });
   });
 });

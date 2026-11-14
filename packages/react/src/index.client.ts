@@ -45,7 +45,6 @@ export {
   useFormatLocales,
   useGT,
   useMessages,
-  useTranslations,
   useLocaleDirection,
   useLocaleProperties,
   useSetLocale,

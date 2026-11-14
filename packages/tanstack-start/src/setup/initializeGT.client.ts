@@ -7,8 +7,6 @@ import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from 'gt-i18n/internal';
 import {
   config as pluginConfig,
-  dictionary as pluginDictionary,
-  loadDictionary as pluginLoadDictionary,
   loadTranslations as pluginLoadTranslations,
 } from 'gt-tanstack-start/internal/_config';
 import {
@@ -65,7 +63,5 @@ export function ensureInitialized(): void {
   initialize({
     ...pluginConfig,
     loadTranslations: pluginLoadTranslations,
-    dictionary: pluginDictionary,
-    loadDictionary: pluginLoadDictionary,
   });
 }

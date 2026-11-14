@@ -6,7 +6,6 @@ const {
   mockGetEnableI18n,
   mockGetLocale,
   mockGetRegion,
-  mockLoadDictionaries,
   mockLoadTranslations,
   mockClientGTProvider,
 } = vi.hoisted(() => ({
@@ -14,7 +13,6 @@ const {
   mockGetEnableI18n: vi.fn(),
   mockGetLocale: vi.fn(),
   mockGetRegion: vi.fn(),
-  mockLoadDictionaries: vi.fn(),
   mockLoadTranslations: vi.fn(),
   mockClientGTProvider: vi.fn(),
 }));
@@ -37,7 +35,6 @@ vi.mock('../../request/getRegion', () => ({
 
 vi.mock('../../i18n-cache/NextI18nCache', () => ({
   getNextI18nCache: () => ({
-    loadDictionaries: mockLoadDictionaries,
     loadTranslations: mockLoadTranslations,
   }),
 }));
@@ -56,11 +53,6 @@ describe('GTProvider', () => {
     mockLoadTranslations.mockResolvedValue({
       hash: 'Salut',
     });
-    mockLoadDictionaries.mockResolvedValue({
-      fr: {
-        greeting: 'Bonjour',
-      },
-    });
     mockGetI18nConfig.mockReturnValue({
       requiresTranslation: vi.fn().mockReturnValue(true),
     });
@@ -73,17 +65,11 @@ describe('GTProvider', () => {
 
     expect(mockGetLocale).toHaveBeenCalled();
     expect(mockGetRegion).toHaveBeenCalled();
-    expect(mockLoadDictionaries).toHaveBeenCalledWith('fr');
     expect(React.isValidElement(element)).toBe(true);
     expect(element).toMatchObject({
       type: mockClientGTProvider,
       props: {
         children: 'content',
-        dictionaries: {
-          fr: {
-            greeting: 'Bonjour',
-          },
-        },
         enableI18n: true,
         locale: 'fr',
         region: undefined,
@@ -121,11 +107,6 @@ describe('GTProvider', () => {
     mockGetLocale.mockResolvedValue('en');
     mockGetRegion.mockResolvedValue('US');
     mockGetEnableI18n.mockResolvedValue(false);
-    mockLoadDictionaries.mockResolvedValue({
-      en: {
-        greeting: 'Bonjour',
-      },
-    });
 
     const { GTProvider } = await import('../GTProvider');
 
@@ -135,17 +116,11 @@ describe('GTProvider', () => {
 
     expect(mockGetLocale).toHaveBeenCalled();
     expect(mockGetRegion).toHaveBeenCalled();
-    expect(mockLoadDictionaries).toHaveBeenCalledWith('en');
     expect(mockLoadTranslations).not.toHaveBeenCalled();
     expect(React.isValidElement(element)).toBe(true);
     expect(element).toMatchObject({
       type: mockClientGTProvider,
       props: {
-        dictionaries: {
-          en: {
-            greeting: 'Bonjour',
-          },
-        },
         enableI18n: false,
         locale: 'en',
         region: 'US',

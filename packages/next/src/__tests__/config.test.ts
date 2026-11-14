@@ -10,9 +10,11 @@ import {
 import type { MockInstance } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import type { NextConfig } from 'next';
 import { BABEL_PLUGIN_SUPPORT } from '../plugin/constants';
 import { nextLocaleCookieName } from '../utils/cookies';
+import { getRequireSpecifiers } from './utils/importGraph';
 
 // ---- Mocks ---- //
 
@@ -799,16 +801,24 @@ describe('withGTConfig', () => {
       }
     );
 
-    it.each([
-      ['./dictionary.ts', '.ts'],
-      // Falls back to [defaultLocale].json
-      ['./en.json', '.json'],
-    ])('finds %s without props.dictionary', (file, extension) => {
-      mockExistingFiles(file);
+    it.each([['./dictionary.ts', '.ts']])(
+      'finds %s without props.dictionary',
+      (file, extension) => {
+        mockExistingFiles(file);
 
-      expect(buildEnv()._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe(
-        extension
-      );
+        expect(buildEnv()._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe(
+          extension
+        );
+      }
+    );
+
+    it('does not treat [defaultLocale].json as a dictionary', () => {
+      mockExistingFiles('./en.json');
+
+      expect(
+        buildEnv({ defaultLocale: 'en' })
+          ._GENERALTRANSLATION_DICTIONARY_FILE_TYPE
+      ).toBeUndefined();
     });
   });
 
@@ -1108,11 +1118,11 @@ describe('withGTConfig', () => {
 
     it('parses gt-next ESM dist as javascript/auto when a file alias is set', () => {
       // The module dir only counts as gt-next's dist when its sentinel files
-      // exist beside the compiled config (config.mjs, internal/_dictionary.mjs)
+      // exist beside the compiled config (config.mjs, internal/_load-translations.mjs)
       vi.mocked(fs.existsSync).mockImplementation(
         (p) =>
           String(p).endsWith('config.mjs') ||
-          String(p).endsWith(path.join('internal', '_dictionary.mjs'))
+          String(p).endsWith(path.join('internal', '_load-translations.mjs'))
       );
 
       const rule = findAutoRule(
@@ -1210,6 +1220,69 @@ describe('withGTConfig', () => {
         'existing-alias': '/some/path',
         'gt-next/internal/_dictionary': expect.anything(),
       });
+    });
+  });
+
+  // ==============================
+  // Internal alias specifiers
+  // ==============================
+  describe('internal alias specifiers', () => {
+    async function listRequiredInternalAliases() {
+      const realFs = await vi.importActual<typeof import('fs')>('fs');
+      const srcDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+      const required = new Map<string, string[]>();
+      const visit = (dir: string) => {
+        for (const entry of realFs.readdirSync(dir, { withFileTypes: true })) {
+          const file = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            if (entry.name !== '__tests__') visit(file);
+            continue;
+          }
+          if (!/\.tsx?$/.test(entry.name)) continue;
+          const code = realFs.readFileSync(file, 'utf8');
+          for (const specifier of getRequireSpecifiers(code)) {
+            if (!specifier.startsWith('gt-next/internal/')) continue;
+            const files = required.get(specifier) ?? [];
+            files.push(path.relative(srcDir, file).split(path.sep).join('/'));
+            required.set(specifier, files);
+          }
+        }
+      };
+      visit(srcDir);
+      return required;
+    }
+
+    it('every require()d gt-next/internal specifier is a configured alias key', async () => {
+      vi.stubEnv('TURBOPACK', '1');
+
+      const result = withGTConfig({}, {});
+      const aliasKeys = Object.keys(result.turbopack!.resolveAlias!);
+      const required = await listRequiredInternalAliases();
+
+      expect([...required.keys()].sort()).toEqual(
+        [
+          'gt-next/internal/_dictionary',
+          'gt-next/internal/_load-dictionary',
+          'gt-next/internal/_load-translations',
+        ].sort()
+      );
+      for (const specifier of required.keys()) {
+        expect(aliasKeys).toContain(specifier);
+      }
+    });
+
+    it('requires the dictionary aliases only from compat modules', async () => {
+      const required = await listRequiredInternalAliases();
+
+      for (const specifier of [
+        'gt-next/internal/_dictionary',
+        'gt-next/internal/_load-dictionary',
+      ]) {
+        expect(required.get(specifier)).toBeDefined();
+        for (const file of required.get(specifier)!) {
+          expect(file).toMatch(/^compat\//);
+        }
+      }
     });
   });
 });

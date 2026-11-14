@@ -1,11 +1,7 @@
-import {
-  getDictionaryListenerKey,
-  getI18nConfig,
-  getTranslateListenerKey,
-} from 'gt-i18n/internal';
+import { getI18nConfig, getTranslateListenerKey } from 'gt-i18n/internal';
 import { useShouldTranslate } from '../utils';
 import { useI18nStore } from '../../i18n-store/useI18nStore';
-import { DictionaryLookup, TranslateLookup } from '../../i18n-store/storeTypes';
+import { TranslateLookup } from '../../i18n-store/storeTypes';
 import { useCallback, useEffect, useRef } from 'react';
 import type { Content } from '@generaltranslation/format';
 import { useGTContext } from '../../context/context';
@@ -13,19 +9,6 @@ import { useGTContext } from '../../context/context';
 export type OnMissingTranslation = <T extends Content>(
   lookup: TranslateLookup<T>
 ) => void;
-export type OnMissingDictionaryEntry = (lookup: DictionaryLookup) => void;
-// TODO: rename to OnMissingDictionaryObject
-export type OnMissingDictionaryObj = (lookup: DictionaryLookup) => void;
-
-type PendingLookup =
-  | {
-      type: 'translation';
-      lookup: TranslateLookup;
-    }
-  | {
-      type: 'dictionaryEntry' | 'dictionaryObject';
-      lookup: DictionaryLookup;
-    };
 
 /**
  * Why have custom handleMissing functions?
@@ -39,10 +22,7 @@ type PendingLookup =
  */
 
 const noopOnMissingTranslation: OnMissingTranslation = () => {};
-const noopOnMissingDictionaryEntry: OnMissingDictionaryEntry = () => {};
-const noopOnMissingDictionaryObj: OnMissingDictionaryObj = () => {};
 
-// TODO: reduce code duplication with the three below functions
 function useHandleMissingTranslationProd(): OnMissingTranslation {
   return noopOnMissingTranslation;
 }
@@ -55,62 +35,18 @@ function useHandleMissingTranslationWithConditionsDev(
   shouldTranslate: boolean
 ): OnMissingTranslation {
   const customHandleMissing = useGTContext()?.onMissingTranslation;
-  const pureHandleMissing = useDevHotReloadQueue(shouldTranslate);
+  const i18nStore = useI18nStore();
+  const pureHandleMissing = useDevHotReloadQueue<TranslateLookup>(
+    shouldTranslate,
+    (lookup) => i18nStore.translate(lookup)
+  );
 
   return useCallback(
     (lookup: TranslateLookup) => {
       if (customHandleMissing) {
         customHandleMissing(lookup);
       } else {
-        pureHandleMissing(getTranslateListenerKey(lookup), {
-          type: 'translation',
-          lookup,
-        });
-      }
-    },
-    [customHandleMissing, pureHandleMissing]
-  );
-}
-
-function useHandleMissingDictionaryEntryProd(): OnMissingDictionaryEntry {
-  return noopOnMissingDictionaryEntry;
-}
-
-function useHandleMissingDictionaryEntryDev(): OnMissingDictionaryEntry {
-  const customHandleMissing = useGTContext()?.onMissingDictionaryEntry;
-  const pureHandleMissing = useDevHotReloadQueue(useShouldTranslate());
-
-  return useCallback(
-    (lookup: DictionaryLookup) => {
-      if (customHandleMissing) {
-        customHandleMissing(lookup);
-      } else {
-        pureHandleMissing(getDictionaryListenerKey(lookup), {
-          type: 'dictionaryEntry',
-          lookup,
-        });
-      }
-    },
-    [customHandleMissing, pureHandleMissing]
-  );
-}
-
-function useHandleMissingDictionaryObjectProd(): OnMissingDictionaryObj {
-  return noopOnMissingDictionaryObj;
-}
-
-function useHandleMissingDictionaryObjectDev(): OnMissingDictionaryObj {
-  const customHandleMissing = useGTContext()?.onMissingDictionaryObj;
-  const pureHandleMissing = useDevHotReloadQueue(useShouldTranslate());
-  return useCallback(
-    (lookup: DictionaryLookup) => {
-      if (customHandleMissing) {
-        customHandleMissing(lookup);
-      } else {
-        pureHandleMissing(getDictionaryListenerKey(lookup), {
-          type: 'dictionaryObject',
-          lookup,
-        });
+        pureHandleMissing(getTranslateListenerKey(lookup), lookup);
       }
     },
     [customHandleMissing, pureHandleMissing]
@@ -129,38 +65,32 @@ export const useHandleMissingTranslationWithConditions: (
     ? useHandleMissingTranslationProd
     : useHandleMissingTranslationWithConditionsDev;
 
-export const useHandleMissingDictionaryEntry: () => OnMissingDictionaryEntry =
-  process.env.NODE_ENV === 'production'
-    ? useHandleMissingDictionaryEntryProd
-    : useHandleMissingDictionaryEntryDev;
-
-export const useHandleMissingDictionaryObject: () => OnMissingDictionaryObj =
-  process.env.NODE_ENV === 'production'
-    ? useHandleMissingDictionaryObjectProd
-    : useHandleMissingDictionaryObjectDev;
-
 /**
- * HMR translation needs to be deferred to post-commit phase
+ * HMR translation needs to be deferred to post-commit phase. Queues one lookup
+ * per key during render and passes each to `flush` after commit.
  */
-function useDevHotReloadQueue(shouldTranslate: boolean) {
+export function useDevHotReloadQueue<T>(
+  shouldTranslate: boolean,
+  flush: (lookup: T) => void
+) {
   // Statically gated so bundlers can drop dev hot-reload work from
   // production builds.
   const devHotReloadEnabled =
     process.env.NODE_ENV !== 'production' &&
     getI18nConfig().isDevHotReloadEnabled();
-  const i18nStore = useI18nStore();
 
   // Persist the queue across renders so the enqueue callback keeps a stable
   // identity. An unstable callback would change the identity of every
   // translation function built on top of it (e.g. gt() from useGT()), which
   // re-runs user effects that depend on it after every render.
-  const pendingLookupsRef = useRef<Map<string, PendingLookup> | null>(null);
+  const pendingLookupsRef = useRef<Map<string, T> | null>(null);
   if (pendingLookupsRef.current == null) {
     pendingLookupsRef.current = new Map();
   }
 
   // Pure react: effects run after render
-  // No dependency array: flush whatever was enqueued after every commit
+  // No dependency array: flush whatever was enqueued after every commit, with
+  // this render's flush action
   useEffect(() => {
     const pendingLookups = pendingLookupsRef.current!;
     if (pendingLookups.size === 0) return;
@@ -168,22 +98,10 @@ function useDevHotReloadQueue(shouldTranslate: boolean) {
     pendingLookups.clear();
     if (!devHotReloadEnabled || !shouldTranslate) return;
 
-    lookups.forEach(({ type, lookup }) => {
-      switch (type) {
-        case 'translation':
-          i18nStore.translate(lookup);
-          break;
-        case 'dictionaryEntry':
-          i18nStore.translateDictionaryEntry(lookup);
-          break;
-        case 'dictionaryObject':
-          i18nStore.translateDictionaryObject(lookup);
-          break;
-      }
-    });
+    lookups.forEach(flush);
   });
 
-  return useCallback((key: string, pendingLookup: PendingLookup) => {
-    pendingLookupsRef.current!.set(key, pendingLookup);
+  return useCallback((key: string, lookup: T) => {
+    pendingLookupsRef.current!.set(key, lookup);
   }, []);
 }

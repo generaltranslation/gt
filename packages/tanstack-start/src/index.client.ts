@@ -4,6 +4,5 @@ export {
   getEnableI18n,
   getGT,
   getMessages,
-  getTranslations,
 } from './functions/runtime.client';
 export { setupRouterGTIntegration } from './router/setupRouterGTIntegration.client';

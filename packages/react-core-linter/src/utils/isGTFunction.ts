@@ -11,6 +11,7 @@ import {
   DERIVE_FUNCTION_NAME,
   MSG_FUNCTION_NAME,
   GT_CALLBACK_DECLARATOR_FUNCTION_NAMES,
+  isGTLibrarySource,
 } from './constants.js';
 import { RuleContext, Scope } from '@typescript-eslint/utils/ts-eslint';
 
@@ -108,7 +109,7 @@ export function isGTFunction({
   const importDecl = variable.defs[0].parent;
   if (
     importDecl.type !== AST_NODE_TYPES.ImportDeclaration ||
-    !libs.includes(importDecl.source.value as unknown as GTLibrary)
+    !isGTLibrarySource(libs, importDecl.source.value)
   ) {
     return false;
   }

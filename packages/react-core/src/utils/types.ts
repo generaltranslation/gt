@@ -49,34 +49,6 @@ export type TranslatedElement = {
 export type TranslatedChild = TranslatedElement | string | Variable;
 export type TranslatedChildren = TranslatedChild | TranslatedChild[];
 
-// ----- DICTIONARY ----- //
-
-export type Entry = string;
-export type MetaEntry = {
-  $context?: string;
-  $maxChars?: number;
-  $_hash?: string;
-  [key: string]: unknown;
-};
-export type Metadata = MetaEntry;
-export type DictionaryEntry = Entry | [Entry] | [Entry, MetaEntry];
-export type Dictionary =
-  | {
-      [key: string]: Dictionary | DictionaryEntry;
-    }
-  | (Dictionary | DictionaryEntry)[];
-export type FlattenedDictionary = {
-  [key: string]: DictionaryEntry;
-};
-export type DictionaryContent = string;
-export type DictionaryObject = {
-  [id: string]: DictionaryContent;
-};
-export type LocalesDictionary = {
-  [locale: string]: DictionaryObject;
-};
-export type CustomLoader = (locale: string) => Promise<unknown>;
-
 export type RelativeTimeFormatOptions = Intl.RelativeTimeFormatOptions & {
   unit?: Intl.RelativeTimeFormatUnit;
   baseDate?: Date;
