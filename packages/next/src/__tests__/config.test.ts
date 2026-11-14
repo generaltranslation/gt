@@ -446,12 +446,50 @@ describe('withGTConfig', () => {
       ).toBe('ko');
     });
 
-    it('falls back to the defaults when the config file is invalid JSON', () => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('throws a diagnostic naming the file for invalid JSON', () => {
       mockConfigFile('not valid json!!!');
 
-      expect(buildParams().defaultLocale).toBe('en');
-      expect(error).toHaveBeenCalled();
+      expect(() => withGTConfig()).toThrow(
+        /gt-next \(plugin\) Error: \.\/gt\.config\.json could not be read as JSON.*Details: Unexpected token/
+      );
+    });
+
+    it.each([
+      ['null file content', 'null', '(root): Invalid type'],
+      ['a null pathRegex', '{ "pathRegex": null }', 'pathRegex: Invalid type'],
+      ['string locales', '{ "locales": "fr" }', 'locales: Invalid type'],
+      [
+        'a null customMapping entry',
+        '{ "customMapping": { "cn": null } }',
+        'customMapping.cn: Invalid type',
+      ],
+      [
+        'a string ignoreBrowserLocales',
+        '{ "ignoreBrowserLocales": "false" }',
+        'ignoreBrowserLocales: Invalid type',
+      ],
+    ])('rejects %s in the config file', (_case, content, issue) => {
+      mockConfigFile(content);
+
+      expect(() => withGTConfig()).toThrow(
+        'gt-next (plugin) Error: ./gt.config.json is invalid'
+      );
+      expect(() => withGTConfig()).toThrow(issue);
+    });
+
+    it.each([
+      [
+        'a NaN render timeout',
+        { renderSettings: { method: 'default', timeout: NaN } },
+        'renderSettings.timeout: Invalid type',
+      ],
+      ['string locales', { locales: 'fr' }, 'locales: Invalid type'],
+      ['a null pathRegex', { pathRegex: null }, 'pathRegex: Invalid type'],
+    ])('rejects %s in withGTConfig() props', (_case, props, issue) => {
+      expect(() => withGTConfig({}, props as never)).toThrow(
+        'gt-next (plugin) Error: The withGTConfig() configuration is invalid'
+      );
+      expect(() => withGTConfig({}, props as never)).toThrow(issue);
     });
 
     it('merges props over the config file over the defaults', () => {

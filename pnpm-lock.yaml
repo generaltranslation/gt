@@ -33,6 +33,9 @@ catalogs:
     typescript:
       specifier: ^5.9.2
       version: 5.9.3
+    valibot:
+      specifier: ^1.5.0
+      version: 1.5.0
     vitest:
       specifier: ^3.2.4
       version: 3.2.4
@@ -804,6 +807,9 @@ importers:
       '@clack/prompts':
         specifier: 1.0.0-alpha.6
         version: 1.0.0-alpha.6
+      '@generaltranslation/api':
+        specifier: workspace:*
+        version: link:../api
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
@@ -915,6 +921,9 @@ importers:
       unist-util-visit:
         specifier: ^5.0.0
         version: 5.0.0
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@5.9.3)
       yaml:
         specifier: ^2.8.0
         version: 2.8.1
@@ -946,6 +955,9 @@ importers:
       '@types/semver':
         specifier: ^7.7.1
         version: 7.7.1
+      '@valibot/to-json-schema':
+        specifier: ^1.8.0
+        version: 1.8.0(valibot@1.5.0(typescript@5.9.3))
       ajv:
         specifier: ^8.18.0
         version: 8.18.0
@@ -1009,6 +1021,9 @@ importers:
       unplugin:
         specifier: ^2.3.10
         version: 2.3.10
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@types/babel__core':
         specifier: ^7.20.0
@@ -1046,6 +1061,9 @@ importers:
       '@noble/hashes':
         specifier: ^2.2.0
         version: 2.2.0
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1170,6 +1188,9 @@ importers:
       react-dom:
         specifier: '>=16.8.0 <20.0.0'
         version: 19.2.3(react@19.2.3)
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@edge-runtime/vm':
         specifier: ^4.0.0
@@ -1553,6 +1574,9 @@ importers:
       gt-i18n:
         specifier: workspace:*
         version: link:../i18n
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@babel/core':
         specifier: ^7.28.4
@@ -12704,6 +12728,11 @@ packages:
     resolution: {integrity: sha512-TQMCz2pFJMfpNxmSfX1VSfTjwUIFx/mL+p1bnfM1xjjdla7Z+KnGMW/EhFbpckp3LyWAH4PgOsMwOMnIN+MBFg==}
     peerDependencies:
       '@urql/core': ^5.0.0
+
+  '@valibot/to-json-schema@1.8.0':
+    resolution: {integrity: sha512-a0M+uwCuQZEPAo65NYkFSJ14O5c213KoSZmPdoCfuFvUhfULi4T2Z6Tpjv6lTVMW9RoLm74RpRAjNEa43KcN+g==}
+    peerDependencies:
+      valibot: ^1.5.0
 
   '@vanilla-extract/babel-plugin-debug-ids@1.2.2':
     resolution: {integrity: sha512-MeDWGICAF9zA/OZLOKwhoRlsUW+fiMwnfuOAqFVohL31Agj7Q/RBWAYweqjHLgFBCsdnr6XIfwjJnmb2znEWxw==}
@@ -34251,6 +34280,10 @@ snapshots:
     dependencies:
       '@urql/core': 5.2.0(graphql@16.14.2)
       wonka: 6.3.6
+
+  '@valibot/to-json-schema@1.8.0(valibot@1.5.0(typescript@5.9.3))':
+    dependencies:
+      valibot: 1.5.0(typescript@5.9.3)
 
   '@vanilla-extract/babel-plugin-debug-ids@1.2.2':
     dependencies:

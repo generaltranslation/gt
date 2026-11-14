@@ -18,7 +18,6 @@ vi.mock('../../fs/config/parseFilesConfig', () => ({
 vi.mock('../../console/logging.js', () => ({
   logErrorAndExit: vi.fn(),
   displayProjectId: vi.fn(),
-  warnApiKeyInConfig: vi.fn(),
 }));
 vi.mock('../../console/logger.js', () => ({
   logger: {
@@ -234,6 +233,17 @@ describe('generateSettings - composite patterns', () => {
     expect(mockLogWarning).toHaveBeenCalledWith(
       expect.stringContaining('Config IDs will be omitted')
     );
+  });
+
+  it('reads tag and tagMessage from the config', async () => {
+    mockResolveConfig.mockReturnValueOnce({
+      config: { locales: ['fr'], tag: 'release', tagMessage: 'Launch' },
+      path: '/test/gt.config.json',
+    });
+
+    const settings = await generateSettings({}, '/test/cwd');
+
+    expect(settings).toMatchObject({ tag: 'release', tagMessage: 'Launch' });
   });
 
   it('rejects a docsUrlPattern list entry without [locale]', async () => {

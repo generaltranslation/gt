@@ -11,7 +11,7 @@ import { logger } from '../console/logger.js';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig.js';
 import { noFilesError } from '../console/index.js';
 import { saveJSON } from '../fs/saveJSON.js';
-import loadJSON from '../fs/loadJSON.js';
+import { loadJSON } from '../fs/loadJSON.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
 import { validateProject } from '../translation/validate.js';

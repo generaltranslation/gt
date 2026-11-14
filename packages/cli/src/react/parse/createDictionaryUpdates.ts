@@ -4,7 +4,7 @@ import os from 'os';
 import { build, BuildOptions } from 'esbuild-wasm';
 import { Updates } from '../../types/index.js';
 import flattenDictionary from '../utils/flattenDictionary.js';
-import loadJSON from '../../fs/loadJSON.js';
+import { loadJSON } from '../../fs/loadJSON.js';
 import { hashSource } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata.js';
 import { logger } from '../../console/logger.js';

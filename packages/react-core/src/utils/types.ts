@@ -4,6 +4,7 @@ import type {
   VariableType,
 } from '@generaltranslation/format/types';
 import type {
+  GTConfig,
   VariableTransformationSuffix,
   TransformationPrefix,
   InjectionType,
@@ -115,4 +116,4 @@ export type RenderVariable = ({
 export type Translations = {
   [hash: string]: TranslatedChildren | null;
 };
-export type RenderMethod = 'skeleton' | 'replace' | 'default';
+export type RenderMethod = NonNullable<GTConfig['renderSettings']>['method'];

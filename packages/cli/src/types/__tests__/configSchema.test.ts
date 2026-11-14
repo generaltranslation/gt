@@ -1,133 +1,173 @@
 import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
-import { SUPPORTED_REACT_FRAMEWORKS } from '../index.js';
+import { configJsonSchemaPath } from '../../../scripts/generate-config-schema.js';
 
-type JsonSchema = {
-  additionalItems?: boolean;
-  additionalProperties?: boolean;
-  enum?: unknown[];
-  items?: JsonSchema[];
-  maxItems?: number;
-  minItems?: number;
-  oneOf?: JsonSchema[];
-  pattern?: string;
-  properties?: Record<string, JsonSchema>;
-  type?: string;
-};
+const compileSchema = (path: string | URL) =>
+  new Ajv({ strict: false, validateFormats: false }).compile(
+    JSON.parse(fs.readFileSync(path, 'utf8'))
+  );
+const validate = compileSchema(configJsonSchemaPath);
+const validateFor = (packageDirectory: string) =>
+  compileSchema(
+    new URL(
+      `../../../../${packageDirectory}/config-schema.json`,
+      import.meta.url
+    )
+  );
 
-const schemaPath = fileURLToPath(
-  new URL('../../../../../assets/config-schema.json', import.meta.url)
-);
-const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as JsonSchema;
+describe('GT config JSON Schema', () => {
+  it.each([
+    ['an empty config', {}],
+    ['files.html', { files: { html: { include: ['[locale]/*.html'] } } }],
+    ['an uppercase file type alias', { files: { POT: { include: ['a'] } } }],
+    ['files.gt.publish', { files: { gt: { publish: true } } }],
+    ['options.excludeStaticUrls', { options: { excludeStaticUrls: ['a'] } }],
+    ['runtimeUrl null', { runtimeUrl: null }],
+    ['framework mintlify', { framework: 'mintlify' }],
+    ['an API model provider', { modelProvider: 'OPENAI' }],
+    [
+      'a JSON preset without include',
+      { options: { jsonSchema: { '*.json': { preset: 'mintlify' } } } },
+    ],
+    [
+      'JSON include alone',
+      { options: { jsonSchema: { '*.json': { include: ['$.a'] } } } },
+    ],
+    [
+      'JSON composite alone',
+      {
+        options: {
+          jsonSchema: {
+            '*.json': {
+              composite: { '$.l': { type: 'array', include: ['$.t'] } },
+            },
+          },
+        },
+      },
+    ],
+    [
+      'a JSON preset with include',
+      {
+        options: {
+          jsonSchema: { '*.json': { preset: 'openapi', include: ['$.a'] } },
+        },
+      },
+    ],
+    ['skipVersionCheck', { skipVersionCheck: true }],
+    [
+      'an uppercase transformationFormat',
+      { files: { json: { include: ['a'], transformationFormat: 'PO' } } },
+    ],
+    [
+      'a lowercase transformationFormat',
+      { files: { json: { include: ['a'], transformationFormat: 'po' } } },
+    ],
+  ])('accepts %s', (_name, config) => {
+    expect(validate(config), JSON.stringify(validate.errors)).toBe(true);
+  });
 
-function getParsingFlagProperties(): Record<string, JsonSchema> {
-  const parsingFlagProperties = getParsingFlagsSchema().properties;
-
-  expect(parsingFlagProperties).toBeDefined();
-  return parsingFlagProperties ?? {};
-}
-
-function getParsingFlagsSchema(): JsonSchema {
-  const parsingFlagsSchema =
-    schema.properties?.files?.properties?.gt?.properties?.parsingFlags;
-
-  expect(parsingFlagsSchema).toBeDefined();
-  return parsingFlagsSchema ?? {};
-}
-
-describe('GT config schema framework', () => {
-  it('lists every supported React framework', () => {
-    expect(schema.properties?.framework?.enum).toEqual([
-      ...SUPPORTED_REACT_FRAMEWORKS,
-    ]);
+  it.each([
+    ['an unknown key', { unknownKey: true }],
+    ['an apiKey', { apiKey: 'secret' }],
+    ['a lowercase model provider', { modelProvider: 'openai' }],
+    ['an unknown file type', { files: { docx: { include: ['a'] } } }],
+    [
+      'JSON include with composite',
+      {
+        options: {
+          jsonSchema: {
+            '*.json': {
+              include: ['$.a'],
+              composite: { '$.l': { type: 'array', include: ['$.t'] } },
+            },
+          },
+        },
+      },
+    ],
+    [
+      'JSON options without include, composite or preset',
+      { options: { jsonSchema: { '*.json': {} } } },
+    ],
+    [
+      'an unknown transformationFormat',
+      { files: { json: { include: ['a'], transformationFormat: 'bogus' } } },
+    ],
+  ])('rejects %s', (_name, config) => {
+    expect(validate(config)).toBe(false);
   });
 });
 
 describe('GT config schema parsing flags', () => {
-  it('adds only the Vue parsing flag surface', () => {
-    expect(Object.keys(getParsingFlagProperties()).sort()).toEqual([
-      'viteConfigPath',
-      'vueCompilerOptions',
-    ]);
-  });
-
-  it('validates Vue options without rejecting existing React flags', () => {
-    const validate = new Ajv({ strict: false }).compile(
-      getParsingFlagsSchema()
-    );
+  it('validates Vue options alongside the React flags', () => {
+    const withParsingFlags = (parsingFlags: unknown) => ({
+      files: { gt: { parsingFlags } },
+    });
 
     expect(
-      validate({
-        autoderive: { jsx: true },
-        devHotReload: { strings: true },
-        vueCompilerOptions: { whitespace: 'preserve' },
-      })
+      validate(
+        withParsingFlags({
+          autoderive: { jsx: true },
+          devHotReload: { strings: true },
+          vueCompilerOptions: { whitespace: 'preserve' },
+        })
+      )
     ).toBe(true);
     expect(
-      validate({
-        devHotReload: true,
-        vueCompilerOptions: { unsupportedVueOption: true },
-      })
+      validate(
+        withParsingFlags({
+          devHotReload: true,
+          vueCompilerOptions: { unsupportedVueOption: true },
+        })
+      )
     ).toBe(false);
-  });
-
-  it('matches the exact Vue compiler option contract', () => {
-    expect(getParsingFlagProperties().vueCompilerOptions).toEqual({
-      type: 'object',
-      description: 'Hash-affecting Vue template compiler options',
-      properties: {
-        whitespace: {
-          type: 'string',
-          enum: ['condense', 'preserve'],
-        },
-        delimiters: {
-          type: 'array',
-          items: [
-            { type: 'string', minLength: 1 },
-            { type: 'string', minLength: 1 },
-          ],
-          additionalItems: false,
-          minItems: 2,
-          maxItems: 2,
-        },
-      },
-      additionalProperties: false,
-    });
-  });
-
-  it('requires a meaningful Vite config path', () => {
-    expect(getParsingFlagProperties().viteConfigPath).toEqual({
-      type: 'string',
-      minLength: 1,
-      pattern: '\\S',
-      description: 'Vite config path relative to the project root',
-    });
+    expect(validate(withParsingFlags({ viteConfigPath: ' ' }))).toBe(false);
   });
 });
 
 describe('GT config schema static url options', () => {
   it('accepts the boolean and object forms of experimentalLocalizeStaticUrls', () => {
-    const validate = new Ajv({ strict: false }).compile(
-      schema.properties?.options?.properties?.experimentalLocalizeStaticUrls ??
-        {}
-    );
+    const withOption = (experimentalLocalizeStaticUrls: unknown) => ({
+      options: { experimentalLocalizeStaticUrls },
+    });
 
-    expect(validate(true)).toBe(true);
-    expect(validate({ skipUntranslatedPages: true })).toBe(true);
-    expect(validate({ attributes: ['href*'] })).toBe(true);
-    expect(validate({ unknownOption: true })).toBe(false);
+    expect(validate(withOption(true))).toBe(true);
+    expect(validate(withOption({ skipUntranslatedPages: true }))).toBe(true);
+    expect(validate(withOption({ attributes: ['href*'] }))).toBe(true);
+    expect(validate(withOption({ unknownOption: true }))).toBe(false);
   });
 
   it('accepts docsUrlPattern as one pattern or a list', () => {
-    const validate = new Ajv({ strict: false }).compile(
-      schema.properties?.options?.properties?.docsUrlPattern ?? {}
-    );
+    const withPattern = (docsUrlPattern: unknown) => ({
+      options: { docsUrlPattern },
+    });
 
-    expect(validate('/docs/[locale]')).toBe(true);
-    expect(validate(['/docs/[locale]', '/ai/docs/[locale]'])).toBe(true);
-    expect(validate([])).toBe(false);
-    expect(validate([1])).toBe(false);
+    expect(validate(withPattern('/docs/[locale]'))).toBe(true);
+    expect(validate(withPattern(['/docs/[locale]', '/ai/docs/[locale]']))).toBe(
+      true
+    );
+    expect(validate(withPattern([]))).toBe(false);
+    expect(validate(withPattern([1]))).toBe(false);
+  });
+});
+
+describe('library config JSON Schemas', () => {
+  const routing = {
+    locales: ['fr'],
+    prefixDefaultLocale: true,
+    pathConfig: { '/about': { fr: '/a-propos' } },
+  };
+
+  it("accept gt-next's routing keys only in gt-next's schema", () => {
+    expect(validateFor('next')(routing)).toBe(true);
+    expect(validateFor('react')(routing)).toBe(false);
+    expect(validate(routing)).toBe(false);
+  });
+
+  it('accept the CLI keys in every library schema', () => {
+    const config = { locales: ['fr'], files: { gt: { publish: true } } };
+    for (const directory of ['next', 'react', 'tanstack-start', 'vue']) {
+      expect(validateFor(directory)(config)).toBe(true);
+    }
   });
 });

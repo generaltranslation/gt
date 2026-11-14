@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { logger } from '../../../console/logger.js';
 import { getRelative } from '../../../fs/findFilepath.js';
-import loadJSON from '../../../fs/loadJSON.js';
+import { loadJSON } from '../../../fs/loadJSON.js';
 import { stringifyJson } from '../../../fs/stringifyJson.js';
 import type { Settings } from '../../../types/index.js';
 import {

@@ -125,6 +125,7 @@
     "@babel/traverse": "^7.25.7",
     "@babel/types": "^7.25.7",
     "@clack/prompts": "1.0.0-alpha.6",
+    "@generaltranslation/api": "workspace:*",
     "@generaltranslation/format": "workspace:*",
     "@generaltranslation/icu": "workspace:*",
     "@generaltranslation/python-extractor": "workspace:*",
@@ -162,6 +163,7 @@
     "tsconfig-paths": "^4.2.0",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
+    "valibot": "catalog:",
     "yaml": "^2.8.0"
   },
   "peerDependencies": {
@@ -182,6 +184,7 @@
     "@types/node": "catalog:",
     "@types/resolve": "^1.20.2",
     "@types/semver": "^7.7.1",
+    "@valibot/to-json-schema": "^1.8.0",
     "ajv": "^8.18.0",
     "eslint": "^9.20.0",
     "esm": "^3.2.25",

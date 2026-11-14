@@ -1,4 +1,6 @@
 import type { GTIntl } from '@generaltranslation/format';
+import type { GTConfig } from 'generaltranslation/types';
+import type { GTNextOptions } from '../config-dir/schema';
 import type {
   CustomMapping,
   LocaleMatcher,
@@ -13,26 +15,20 @@ export type LocaleRoutes = Record<string, readonly string[]>;
 /**
  * Locale routing options accepted by both `createNextMiddleware()` and
  * `withGTConfig()`. Options passed to `createNextMiddleware()` take precedence.
+ * GTConfig and GTNextOptions document each option.
  */
-export type MiddlewareConfig = {
-  /** Enable automatic locale-based routing. */
-  localeRouting?: boolean;
-  /** Prefix the default locale to the pathname, i.e. `/about` -> `/en/about`. */
-  prefixDefaultLocale?: boolean;
-  /**
-   * Keep automatic locale negotiation. Disable to treat returning visitors'
-   * unprefixed URLs as default-locale routes.
-   */
-  enableSmartRouting?: boolean;
-  /** Skip Next.js source map requests. */
-  ignoreSourceMaps?: boolean;
-  /** Localized path aliases. */
-  pathConfig?: PathConfig;
-  /** Locale-relative paths to rewrite from /{locale}/{path} to /{locale}/{locale}/{path}. */
-  routeOverrides?: RouteOverrides;
-  /** Shared paths available per locale; other paths fall back to the default locale. */
-  localeRoutes?: LocaleRoutes;
-};
+export type MiddlewareConfig = Pick<GTConfig, 'localeRouting'> &
+  Pick<
+    GTNextOptions,
+    | 'prefixDefaultLocale'
+    | 'enableSmartRouting'
+    | 'ignoreSourceMaps'
+    | 'pathConfig'
+  > & {
+    // Declared here to also accept readonly arrays, which GTNextOptions' do not.
+    routeOverrides?: RouteOverrides;
+    localeRoutes?: LocaleRoutes;
+  };
 
 export type ResolvedMiddlewareConfig = Required<MiddlewareConfig>;
 

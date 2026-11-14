@@ -22,13 +22,21 @@ type RuntimeTranslationConfig = {
  * Parameters for the I18nCache constructor
  */
 export type I18nCacheConstructorParams = DictionaryConfig &
-  Omit<
+  // Pick, not Omit: GTConfig also lists framework keys I18nCache ignores.
+  Pick<
     GTConfig,
-    | 'cacheExpiryTime'
-    | 'defaultLocale'
-    | 'locales'
-    | 'customMapping'
-    | 'enableI18n'
+    | 'localeMatcher'
+    | 'localeRouting'
+    | 'projectId'
+    | 'apiKey'
+    | '_versionId'
+    | '_branchId'
+    | 'cacheUrl'
+    | 'runtimeUrl'
+    | 'modelProvider'
+    | '_disableDevHotReload'
+    | '_tagIds'
+    | 'files'
   > & {
     /**
      * Locale cache TTL in milliseconds. Undefined uses the default TTL, null

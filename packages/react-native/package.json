@@ -31,6 +31,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "config-schema.json",
     "src",
     "dist",
     "android",
@@ -106,7 +107,8 @@
     "@generaltranslation/react-core": "workspace:*",
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
-    "gt-i18n": "workspace:*"
+    "gt-i18n": "workspace:*",
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

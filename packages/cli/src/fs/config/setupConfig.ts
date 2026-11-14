@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import {
   displayCreatedConfigFile,
@@ -26,7 +27,36 @@ export type SetupConfigUpdate = {
   removeFiles?: string[];
   /** Drops files.gt.output after an explicit switch to CDN storage. */
   clearGtOutput?: boolean;
+  /** Replaces a missing or hosted $schema; see configSchemaReference. */
+  schema?: string;
 };
+
+/**
+ * The installed library's JSON Schema, which lists exactly the keys that
+ * library and the CLI read, relative to the config file; or the hosted schema
+ * when the library is not installed or ships none. The library is found as
+ * Node finds it: in the nearest node_modules of the config's directory or an
+ * ancestor, so nested configs and hoisted workspace installs work.
+ */
+export function configSchemaReference(
+  configFilepath: string,
+  library: string
+): string {
+  const configDirectory = path.dirname(path.resolve(configFilepath));
+  for (let directory = configDirectory; ; directory = path.dirname(directory)) {
+    const packageDirectory = path.join(directory, 'node_modules', library);
+    if (fs.existsSync(path.join(packageDirectory, 'package.json'))) {
+      const schemaPath = path.join(packageDirectory, 'config-schema.json');
+      if (!fs.existsSync(schemaPath)) return GT_CONFIG_SCHEMA_URL;
+      const reference = path
+        .relative(configDirectory, schemaPath)
+        .split(path.sep)
+        .join('/');
+      return reference.startsWith('.') ? reference : `./${reference}`;
+    }
+    if (path.dirname(directory) === directory) return GT_CONFIG_SCHEMA_URL;
+  }
+}
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -50,6 +80,10 @@ export function mergeSetupConfig(
     ...(options.framework && { framework: options.framework }),
     ...(options.baseUrl && { baseUrl: options.baseUrl }),
     ...(options.publish && { publish: options.publish }),
+    ...(options.schema &&
+      (oldContent.$schema ?? GT_CONFIG_SCHEMA_URL) === GT_CONFIG_SCHEMA_URL && {
+        $schema: options.schema,
+      }),
   };
   const mergedContent: Record<string, unknown> = {
     $schema: GT_CONFIG_SCHEMA_URL,

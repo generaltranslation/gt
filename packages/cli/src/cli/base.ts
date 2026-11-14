@@ -6,6 +6,7 @@ import {
 import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 import {
   applySetupConfig,
+  configSchemaReference,
   mergeSetupConfig,
   type SetupConfigUpdate,
 } from '../fs/config/setupConfig.js';
@@ -915,10 +916,7 @@ export class BaseCLI {
               ? loadConfig(withJsonExtension(options.config))
               : resolveConfig(process.cwd())?.config
           )?.baseUrl;
-          await loginInteractively(
-            typeof baseUrl === 'string' ? baseUrl : undefined,
-            options.browser
-          );
+          await loginInteractively(baseUrl, options.browser);
           logger.endCommand('You are now signed in.');
         } catch (error) {
           logErrorAndExit(createUserAuthError('Sign in failed', error));
@@ -1708,7 +1706,14 @@ See https://www.npmjs.com/package/gt-vue`);
       }
     }
 
-    const configChange = await applySetupConfig(configFilepath, configUpdate);
+    // After the install above, so a library it adds is found.
+    const configChange = await applySetupConfig(configFilepath, {
+      ...configUpdate,
+      schema: configSchemaReference(
+        configFilepath,
+        reactSetup?.install ?? this.library
+      ),
+    });
     if (configChange !== 'unchanged') {
       session.step(`${configChange} ${configFilepath}`);
     }
