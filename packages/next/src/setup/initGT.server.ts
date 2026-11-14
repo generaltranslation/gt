@@ -1,6 +1,8 @@
 import * as getLocaleModule from 'gt-next/internal/_getLocale';
 import * as getRegionModule from 'gt-next/internal/_getRegion';
 import { getParams } from './shared';
+import type { BaseWithGTConfigProps } from '../config-dir/props/withGTConfigProps';
+import { parseEnvConfig } from '../utils/parseEnvConfig';
 import type { NextSetupI18nConfigParams } from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
 import { initializeGT as coreInitializeGT } from './initGT';
@@ -50,8 +52,9 @@ export function initializeGTServer(
 
 function getAsyncConditionStoreParams(): AsyncConditionStoreParams {
   // TODO: we are parsing this twice, address in separate PR
-  const privateConfig = JSON.parse(
-    process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
+  const privateConfig = parseEnvConfig<BaseWithGTConfigProps>(
+    '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+    process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS
   );
   return {
     headerName: privateConfig.headersAndCookies?.localeHeaderName,

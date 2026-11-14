@@ -55,6 +55,24 @@ describe('hashContent', () => {
     ).toBe('');
   });
 
+  it('pins hashes for negative maxChars and requiresReview false', () => {
+    const hash = hashContent('Hello {name}!', {
+      $format: 'ICU',
+      $context: 'greeting',
+      $maxChars: -10,
+      $requiresReview: false,
+    });
+
+    expect(hash).toBe('bbf922aaa31b32e2');
+    expect(hash).toBe(
+      hashContent('Hello {name}!', {
+        $format: 'ICU',
+        $context: 'greeting',
+        $maxChars: 10,
+      })
+    );
+  });
+
   it('does not include custom id in calculated hashes', () => {
     const hash1 = hashContent('Hello {name}!', {
       $format: 'ICU',

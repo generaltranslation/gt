@@ -66,6 +66,18 @@ describe('initializeGT', () => {
     expect(getI18nConfig().isDevHotReloadEnabled()).toBe(true);
   });
 
+  it('logs and ignores a server env config that is not valid JSON', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubEnv('_GENERALTRANSLATION_I18N_CONFIG_PARAMS', '{');
+
+    expect(() => initializeGTServer()).not.toThrow();
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '_GENERALTRANSLATION_I18N_CONFIG_PARAMS is not valid JSON'
+      )
+    );
+  });
+
   it('does not replace an existing NextI18nCache', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const params = {
@@ -250,5 +262,20 @@ describe('getParams', () => {
     expect(nextI18nCacheParams.cacheExpiryTime).toBe(0);
     expect(nextI18nCacheParams._versionId).toBe('version-id');
     expect(nextI18nCacheParams.loadTranslations).toBeUndefined();
+  });
+
+  it('logs and ignores an env config that is not valid JSON', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS = '{';
+
+    const { i18nConfigParams } = getParams();
+
+    expect(i18nConfigParams.defaultLocale).toBeUndefined();
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS is not valid JSON'
+      )
+    );
+    error.mockRestore();
   });
 });

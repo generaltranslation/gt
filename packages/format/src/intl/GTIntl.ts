@@ -177,8 +177,8 @@ export class GTIntl {
       approvedLocalePairs.map(({ canonicalLocale }) => canonicalLocale),
       this.customMapping
     );
-    // Reuse validation from the prepared scope instead of validating the entire
-    // list again when callers supply a separate approved-locale array.
+    // Reuse validation from the prepared scope instead of validating the
+    // entire list again.
     const validCodes = new Set(
       Array.from(approved.byLanguage.values()).flatMap((codes) =>
         Array.from(codes)
@@ -387,7 +387,7 @@ export class GTIntl {
     const targetLocale = this.getTargetLocale(options);
     return _getLocaleName(
       locale || targetLocale,
-      this.resolveCanonicalLocale(targetLocale),
+      this.resolveCanonicalLocale(targetLocale) || defaultDefaultLocale,
       this.customMapping
     );
   }
@@ -408,7 +408,7 @@ export class GTIntl {
     const targetLocale = this.getTargetLocale(options);
     return _getLocaleProperties(
       locale || targetLocale,
-      this.resolveCanonicalLocale(targetLocale),
+      this.resolveCanonicalLocale(targetLocale) || defaultDefaultLocale,
       this.customMapping
     );
   }
@@ -428,55 +428,26 @@ export class GTIntl {
 
   /**
    * Whether content in `sourceLocale` (default: the default locale) needs
-   * translating for the target locale, within `approvedLocales` (default: the
-   * configured locales). Omitted locales mean no restriction; an empty list
-   * approves no locale.
+   * translating for the target locale, within the configured locales. Omitted
+   * locales mean no restriction; an empty list approves no locale.
    */
-  requiresTranslation(
-    options: LocaleOption & {
-      sourceLocale?: string;
-      approvedLocales?: readonly string[];
-    } = {}
-  ) {
-    const {
-      sourceLocale = this.defaultLocale,
-      approvedLocales = this.approvedLocales,
-    } = options;
-    // The default scope (this.locales) is prepared once per instance; a
-    // caller-provided list is prepared for that call only.
-    const approvedScope = approvedLocales
-      ? approvedLocales === this.locales
-        ? this.getResolutionScope().approved
-        : _prepareApprovedLocales(
-            approvedLocales.map((locale) =>
-              this.resolveCanonicalLocale(locale)
-            ),
-            this.customMapping
-          )
-      : undefined;
+  requiresTranslation(options: LocaleOption & { sourceLocale?: string } = {}) {
+    const { sourceLocale = this.defaultLocale } = options;
     return _requiresTranslationWithScope(
       this.resolveCanonicalLocale(sourceLocale),
       this.resolveCanonicalLocale(this.getTargetLocale(options)),
-      approvedScope,
+      this.approvedLocales && this.getResolutionScope().approved,
       this.customMapping
     );
   }
 
   /**
-   * The best match for `locales` (in preference order) among
-   * `approvedLocales` (default: the configured locales), under its approved
-   * spelling, using the configured `localeMatcher`.
+   * The best match for `locales` (in preference order) among the configured
+   * locales, under its configured spelling, using the configured
+   * `localeMatcher`.
    */
-  determineLocale(
-    locales: string | string[],
-    {
-      approvedLocales = this.locales,
-    }: { approvedLocales?: readonly string[] } = {}
-  ) {
-    const { configuredLocales } =
-      approvedLocales === this.locales
-        ? this.getResolutionScope()
-        : this.buildResolutionScope(approvedLocales);
+  determineLocale(locales: string | string[]) {
+    const { configuredLocales } = this.getResolutionScope();
     const requestedLocales = (Array.isArray(locales) ? locales : [locales])
       .map((locale) => ({
         locale,
@@ -521,7 +492,8 @@ export class GTIntl {
   /** The text direction of `locale` (default: the target locale). */
   getLocaleDirection(locale?: string, options: LocaleOption = {}) {
     return _getLocaleDirection(
-      this.resolveCanonicalLocale(locale || this.getTargetLocale(options))
+      this.resolveCanonicalLocale(locale || this.getTargetLocale(options)),
+      defaultDefaultLocale
     );
   }
 

@@ -56,4 +56,14 @@ describe('base64 utils', () => {
   it('decodes content without a file format as text', () => {
     expect(decodeFileContent(encode('hello'))).toBe('hello');
   });
+
+  it('preserves a leading BOM with and without Buffer', () => {
+    const withBom = '\uFEFFhello';
+    expect(decode(encode(withBom))).toBe(withBom);
+    expect(decodeFileContent(encodeFileContent(withBom, 'JSON'), 'JSON')).toBe(
+      withBom
+    );
+    vi.stubGlobal('Buffer', undefined);
+    expect(decode(encode(withBom))).toBe(withBom);
+  });
 });

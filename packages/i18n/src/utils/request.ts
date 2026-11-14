@@ -1,13 +1,23 @@
 type HeaderValue = string | string[] | null | undefined;
 
+// RFC 9110 sets no limit; browsers send a handful of entries, so 32 bounds
+// the work an attacker-sized header can cause without dropping real preferences.
+const maxAcceptLanguageEntries = 32;
+
 /**
  * Parse an Accept-Language header into locale candidates by preference.
  */
 export function parseAcceptLanguage(header: HeaderValue): string[] {
   const headerValues = Array.isArray(header) ? header : [header];
+  // Stops reading values once the budget is spent, however many follow.
+  const entries: string[] = [];
+  for (const value of headerValues) {
+    const remaining = maxAcceptLanguageEntries - entries.length;
+    if (remaining <= 0) break;
+    entries.push(...(value?.split(',', remaining) ?? []));
+  }
 
-  return headerValues
-    .flatMap((value) => value?.split(',') ?? [])
+  return entries
     .map((entry, index) => {
       const [locale = '', ...parameters] = entry
         .split(';')

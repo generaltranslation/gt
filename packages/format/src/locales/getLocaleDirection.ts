@@ -5,10 +5,14 @@ import { _getLocaleProperties } from './getLocaleProperties';
  * Get the text direction for a given locale code using the Intl.Locale API.
  *
  * @param {string} code - The locale code to check.
+ * @param {string} defaultLocale - The display locale for `_getLocaleProperties` in the heuristic fallback.
  * @returns {string} 'rtl' if the language is right-to-left; otherwise 'ltr'.
  * @internal
  */
-export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
+export function _getLocaleDirection(
+  code: string,
+  defaultLocale: string
+): 'ltr' | 'rtl' {
   // Extract via textInfo property
   try {
     const locale = intlCache.get('Locale', code);
@@ -21,7 +25,10 @@ export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
   }
 
   // Fallback to simple heuristics
-  const { scriptCode, languageCode } = _getLocaleProperties(code);
+  const { scriptCode, languageCode } = _getLocaleProperties(
+    code,
+    defaultLocale
+  );
 
   // Handle RTL script or language
   if (scriptCode) {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { intlCache } from '../../cache/IntlCache';
-import { getRegionProperties } from '../../core';
+import { getLocaleName, getRegionProperties } from '../../core';
+import { defaultDefaultLocale } from '../../settings/settings';
 import type { CustomMapping } from '../customLocaleMapping';
 import { _determineLocale, type MatchLocale } from '../determineLocale';
 import { _getLocaleDirection } from '../getLocaleDirection';
@@ -97,21 +98,22 @@ describe('_isValidLocale', () => {
   it('reuses validation results without growing past its cap', () => {
     const get = vi.spyOn(intlCache, 'get');
     try {
-      const localeLookups = () =>
+      const validations = () =>
         get.mock.calls.filter(
-          ([constructor, locale]) =>
-            constructor === 'Locale' && locale === 'pt-PT'
+          ([constructor, , options]) =>
+            constructor === 'DisplayNames' &&
+            (options as Intl.DisplayNamesOptions).type === 'region'
         ).length;
       expect(_isValidLocale('pt-PT')).toBe(true);
       expect(_isValidLocale('pt-PT')).toBe(true);
-      expect(localeLookups()).toBeLessThanOrEqual(1);
+      expect(validations()).toBeLessThanOrEqual(1);
 
-      const lookupsBeforeFlood = localeLookups();
+      const lookupsBeforeFlood = validations();
       for (let index = 0; index < 1000; index++) {
         expect(_isValidLocale(`zz-${index}`)).toBe(false);
       }
       expect(_isValidLocale('pt-PT')).toBe(true);
-      expect(localeLookups()).toBe(lookupsBeforeFlood + 1);
+      expect(validations()).toBe(lookupsBeforeFlood + 1);
     } finally {
       get.mockRestore();
     }
@@ -251,7 +253,10 @@ describe('_getLocaleDirection', () => {
     ['ltr', ['invalid', 'xyz-123', '', 'not-a-locale', '123', 'root', 'und']],
   ] as const)('returns %s for %j', (direction, locales) => {
     expect(
-      locales.filter((locale) => _getLocaleDirection(locale) !== direction)
+      locales.filter(
+        (locale) =>
+          _getLocaleDirection(locale, defaultDefaultLocale) !== direction
+      )
     ).toEqual([]);
   });
 
@@ -263,7 +268,7 @@ describe('_getLocaleDirection', () => {
     } as unknown as Intl.Locale;
     vi.spyOn(intlCache, 'get').mockReturnValue(locale);
 
-    expect(_getLocaleDirection('ar-Arab')).toBe('ltr');
+    expect(_getLocaleDirection('ar-Arab', defaultDefaultLocale)).toBe('ltr');
     expect(locale.maximize).not.toHaveBeenCalled();
   });
 
@@ -283,7 +288,7 @@ describe('_getLocaleDirection', () => {
       }
     );
 
-    expect(_getLocaleDirection(code)).toBe(expected);
+    expect(_getLocaleDirection(code, defaultDefaultLocale)).toBe(expected);
   });
 
   it.each([
@@ -296,13 +301,13 @@ describe('_getLocaleDirection', () => {
         throw new Error('Intl.Locale not supported');
       });
 
-      expect(_getLocaleDirection(code)).toBe(expected);
+      expect(_getLocaleDirection(code, defaultDefaultLocale)).toBe(expected);
     }
   );
 });
 
 describe('_getLocaleName', () => {
-  it.each<[string, string | undefined, string]>([
+  it.each<[string, string, string]>([
     ['en-US', 'en', 'American English'],
     ['fr-FR', 'en', 'French (France)'],
     ['fr', 'en', 'French'],
@@ -311,7 +316,6 @@ describe('_getLocaleName', () => {
     // display locale
     ['fr-FR', 'fr', 'français (France)'],
     ['ja-JP', 'de', 'Japanisch (Japan)'],
-    ['fr-FR', undefined, 'French (France)'],
     ['en-US', 'invalid-display-locale', 'American English'],
     // unknown and malformed input
     ['xyz', 'en', 'xyz'],
@@ -320,6 +324,10 @@ describe('_getLocaleName', () => {
     ['en-US', 'not a locale', ''],
   ])('names %j in %j as %j', (locale, displayLocale, expected) => {
     expect(_getLocaleName(locale, displayLocale)).toBe(expected);
+  });
+
+  it('names in the library default locale through the public helper', () => {
+    expect(getLocaleName('fr-FR')).toBe('French (France)');
   });
 
   it.each<[string, string, string]>([
@@ -338,7 +346,9 @@ describe('_getLocaleName', () => {
       'alias-locale': { code: 'en-US', name: 'Aliased American English' },
       'fr-TEST': { code: 'fr' },
     };
-    expect(_getLocaleName(locale, undefined, customMapping)).toBe(expected);
+    expect(_getLocaleName(locale, defaultDefaultLocale, customMapping)).toBe(
+      expected
+    );
   });
 });
 
@@ -472,7 +482,7 @@ describe('createCustomLocaleProperties', () => {
 
 describe('_getLocaleProperties', () => {
   it('returns every property for a locale with a region', () => {
-    expect(_getLocaleProperties('en-US')).toEqual({
+    expect(_getLocaleProperties('en-US', defaultDefaultLocale)).toEqual({
       code: 'en-US',
       name: 'American English',
       nativeName: 'American English',
@@ -498,7 +508,7 @@ describe('_getLocaleProperties', () => {
   });
 
   it('infers the region and script of a bare language', () => {
-    expect(_getLocaleProperties('en')).toMatchObject({
+    expect(_getLocaleProperties('en', defaultDefaultLocale)).toMatchObject({
       code: 'en',
       name: 'English',
       nameWithRegionCode: 'English',
@@ -511,7 +521,9 @@ describe('_getLocaleProperties', () => {
   });
 
   it('keeps an explicit script and region', () => {
-    expect(_getLocaleProperties('zh-Hans-CN')).toMatchObject({
+    expect(
+      _getLocaleProperties('zh-Hans-CN', defaultDefaultLocale)
+    ).toMatchObject({
       code: 'zh-Hans-CN',
       languageCode: 'zh',
       scriptCode: 'Hans',
@@ -614,7 +626,9 @@ describe('_getLocaleProperties', () => {
   });
 
   it('falls back to the locale code for an unparseable locale', () => {
-    expect(_getLocaleProperties('invalid-locale-xyz')).toEqual({
+    expect(
+      _getLocaleProperties('invalid-locale-xyz', defaultDefaultLocale)
+    ).toEqual({
       code: 'invalid-locale-xyz',
       name: 'invalid-locale-xyz',
       nativeName: 'invalid-locale-xyz',
@@ -643,7 +657,9 @@ describe('_getLocaleProperties', () => {
     ['x', { code: 'x', name: 'x', languageCode: 'x', regionCode: '' }],
     ['', { code: '', name: '', languageCode: '', regionCode: '' }],
   ])('falls back for the malformed locale %j', (locale, expected) => {
-    expect(_getLocaleProperties(locale)).toMatchObject(expected);
+    expect(_getLocaleProperties(locale, defaultDefaultLocale)).toMatchObject(
+      expected
+    );
   });
 
   it('applies custom properties on the fallback path', () => {

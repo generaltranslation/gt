@@ -77,15 +77,13 @@ export function createCustomLocaleProperties(
  */
 export function _getLocaleProperties(
   locale: string,
-  defaultLocale: string = defaultDefaultLocale,
+  defaultLocale: string,
   customMapping?: CustomMapping
 ): LocaleProperties {
   // Check for canonical locale
   const aliasedLocale = locale;
   // Override locale with canonical locale
   locale = _resolveCanonicalLocale(locale, customMapping);
-
-  defaultLocale ||= defaultDefaultLocale;
 
   try {
     const standardizedLocale = _standardizeLocale(locale); // "de-AT"

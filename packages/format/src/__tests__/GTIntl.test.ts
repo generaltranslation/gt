@@ -138,9 +138,6 @@ describe('determineLocale approved spelling', () => {
     (candidate, locales, expected) => {
       const config = createIntl({ locales });
       expect(config.determineLocale(candidate)).toBe(expected);
-      expect(
-        config.determineLocale(candidate, { approvedLocales: [...locales] })
-      ).toBe(expected);
     }
   );
 
@@ -158,15 +155,15 @@ describe('determineLocale approved spelling', () => {
   });
 
   it('returns an approved alias whose mapped code has noncanonical spelling', () => {
-    const config = createIntl({
-      locales: ['brand', 'other'],
-      customMapping: { brand: { code: 'en-gb' }, other: { code: 'en-gb' } },
-    });
+    const customMapping = {
+      brand: { code: 'en-gb' },
+      other: { code: 'en-gb' },
+    };
+    const config = createIntl({ locales: ['brand', 'other'], customMapping });
     expect(config.determineLocale('en-GB')).toBe('brand');
     expect(
-      config.determineLocale('en-GB', { approvedLocales: ['other'] })
+      createIntl({ locales: ['other'], customMapping }).determineLocale('en-GB')
     ).toBe('other');
-    expect(config.determineLocale('en-GB')).toBe('brand');
   });
 
   it('preserves an exact alias without changing candidate priority', () => {
@@ -307,20 +304,14 @@ describe('GTIntl locale option', () => {
   });
 
   it.each([
-    ['omitted locales: no restriction', {}, {}, true],
-    ['explicit empty locales: none approved', { locales: [] }, {}, false],
-    [
-      'per-call empty approvedLocales: none approved',
-      {},
-      { approvedLocales: [] },
-      false,
-    ],
-  ])('requiresTranslation with %s', (_label, config, options, expected) => {
+    ['omitted locales: no restriction', {}, true],
+    ['explicit empty locales: none approved', { locales: [] }, false],
+  ])('requiresTranslation with %s', (_label, config, expected) => {
     expect(
       createIntl(
         { defaultLocale: 'en', ...config },
         { locale: 'es' }
-      ).requiresTranslation(options)
+      ).requiresTranslation()
     ).toBe(expected);
   });
 
