@@ -4,7 +4,7 @@
 use oxc_allocator::Allocator;
 use oxc_ast::ast::*;
 use oxc_parser::{ParseOptions, Parser};
-use oxc_semantic::{Scoping, SemanticBuilder};
+use oxc_semantic::{Scoping, SemanticBuilder, Stats};
 use oxc_span::{GetSpan, SourceType, Span};
 use oxc_syntax::{
   operator::{AssignmentOperator, BinaryOperator, UnaryOperator},
@@ -121,8 +121,13 @@ fn lower_in(allocator: &Allocator, code: &str, lang: Lang) -> Result<Ast, Syntax
   }
 
   let program = parsed.program;
+  // What the builder sizes its tables by, estimated from the code's length rather than counted by
+  // walking the program once more: generously, as the tables are given back after lowering.
+  let length = u32::try_from(code.len()).unwrap_or(u32::MAX);
+  let stats = Stats::new(0, length / 48 + 16, length / 36 + 16, length / 18 + 16);
   let semantic = SemanticBuilder::new()
     .with_build_nodes(false)
+    .with_stats(stats)
     .build(&program)
     .semantic;
   let scoping = semantic.scoping();
