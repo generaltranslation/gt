@@ -86,11 +86,9 @@ export function useInternalRegionSelector({
     );
 
     if (sortRegionsAlphabetically) {
+      const collator = new Intl.Collator();
       regions.sort((a, b) =>
-        new Intl.Collator().compare(
-          regionData.get(a)!.name,
-          regionData.get(b)!.name
-        )
+        collator.compare(regionData.get(a)!.name, regionData.get(b)!.name)
       );
     }
 

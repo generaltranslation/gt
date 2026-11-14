@@ -879,6 +879,55 @@ describe('gt-vue formatting components', () => {
     );
   });
 
+  it('formats with Latin digits and the Gregorian calendar, as gt-react does', async () => {
+    const date = new Date(Date.UTC(2020, 4, 6, 12));
+    const Root = defineComponent({
+      setup() {
+        return () => [
+          h(Num, { value: 1234.5 }),
+          ' ',
+          h(DateTime, {
+            options: { dateStyle: 'short', timeZone: 'UTC' },
+            value: date,
+          }),
+        ];
+      },
+    });
+    // Persian has digits and a calendar of its own, so both defaults show.
+    const app = createSSRApp(Root).use(
+      createGT({ defaultLocale: 'en', locale: 'fa-IR' })
+    );
+
+    expect(stripFragmentMarkers(await renderToString(app))).toBe(
+      `${new Intl.NumberFormat('fa-IR', { numberingSystem: 'latn' }).format(1234.5)} ${new Intl.DateTimeFormat('fa-IR', { calendar: 'gregory', dateStyle: 'short', numberingSystem: 'latn', timeZone: 'UTC' }).format(date).replace(/[\u200F\u202B\u202E]/g, '')}`
+    );
+  });
+
+  it.each([
+    [{ currency: 'USD' }],
+    [{ currency: undefined }],
+    [{ style: 'percent' }],
+  ] as const)(
+    'keeps the currency prop of <Currency> over options %j',
+    async (options) => {
+      const Root = defineComponent({
+        setup() {
+          return () =>
+            h(Currency, {
+              currency: 'EUR',
+              locales: ['en-US'],
+              options,
+              value: 12,
+            });
+        },
+      });
+
+      expect(
+        stripFragmentMarkers(await renderWithPlugin(Root, createGT()))
+      ).toBe('€12.00');
+    }
+  );
+
   it('tries explicit, active, and default locales once while translating', () => {
     expect(getFormatLocales(['fr-CA', 'fr', 'en'], 'fr', 'en')).toEqual([
       'fr-CA',
