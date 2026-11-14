@@ -62,30 +62,14 @@
     "oxc-parser": "^0.157.0",
     "oxc-resolver": "^11.24.2",
     "package-manager-detector": "^1.8.0",
-    "parse5": "^8.0.1",
     "picomatch": "^4.0.5"
   },
   "devDependencies": {
-    "@angular/compiler": "^22.2.4",
-    "@astrojs/astro2tsx": "^0.1.3",
-    "@astrojs/compiler": "^4.0.0",
-    "@glint/ember-tsc": "^1.14.3",
     "@inlang/paraglide-js": "3.1.0",
-    "@marko/compiler": "^5.42.14",
-    "@marko/language-tools": "^2.7.1",
-    "@mdx-js/language-service": "^0.7.4",
     "@types/node": "catalog:",
     "@types/picomatch": "^4.0.3",
-    "@volar/language-core": "^2.4.30",
-    "@vue/compiler-dom": "^3.5.40",
-    "@vue/language-core": "^3.3.14",
-    "@vue/language-plugin-pug": "^3.3.14",
-    "content-tag": "^4.2.1",
     "paraglide-js-1": "npm:@inlang/paraglide-js@^1.11.8",
     "paraglide-js-2": "npm:@inlang/paraglide-js@^2.29.3",
-    "pug": "^3.0.4",
-    "svelte": "^5.57.3",
-    "svelte2tsx": "^0.7.63",
     "typescript": "catalog:",
     "vite": "^8.3.1",
     "vite5": "npm:vite@^5.4.21",
@@ -94,54 +78,10 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@angular/compiler": ">=17.0.0",
-    "@astrojs/astro2tsx": ">=0.1.0",
-    "@astrojs/compiler": ">=2.0.0",
-    "@glint/ember-tsc": ">=1.0.0",
-    "@marko/compiler": ">=5.0.0",
-    "@marko/language-tools": ">=2.0.0",
-    "@mdx-js/language-service": ">=0.7.0",
-    "@vue/language-core": ">=3.0.0",
-    "@vue/language-plugin-pug": ">=3.0.0",
-    "svelte2tsx": ">=0.7.0",
-    "typescript": ">=5.0.0",
     "vite": ">=5.0.0"
   },
   "peerDependenciesMeta": {
     "vite": {
-      "optional": true
-    },
-    "@vue/language-core": {
-      "optional": true
-    },
-    "@vue/language-plugin-pug": {
-      "optional": true
-    },
-    "svelte2tsx": {
-      "optional": true
-    },
-    "@astrojs/compiler": {
-      "optional": true
-    },
-    "@mdx-js/language-service": {
-      "optional": true
-    },
-    "@marko/language-tools": {
-      "optional": true
-    },
-    "@marko/compiler": {
-      "optional": true
-    },
-    "@glint/ember-tsc": {
-      "optional": true
-    },
-    "@angular/compiler": {
-      "optional": true
-    },
-    "typescript": {
-      "optional": true
-    },
-    "@astrojs/astro2tsx": {
       "optional": true
     }
   },

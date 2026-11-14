@@ -372,8 +372,8 @@ describe('targets', () => {
         const directories = importers.flatMap((importer, i) => Array(counts[i]).fill(path.posix.dirname(importer)));
         graph.setResolved(specifiers.map((specifier, i) => path.posix.join(directories[i], specifier)));
         graph.setCustomMatches(['/app/src/paraglide/messages.js'], [0]);
-        const analysis = graph.analyzeWithCustomTargets(['/app/src/app.js'], (target, file, name) => ({ kind: 'value', name }));
-        parentPort.postMessage(analysis.usages);
+        graph.analyzeWithCustomTargets(['/app/src/app.js'], (target, file, name) => ({ kind: 'value', name }));
+        parentPort.postMessage(graph.usagesOf('/app/src/app.js'));
       });
     `;
     const worker = new Worker(script, {
@@ -382,8 +382,8 @@ describe('targets', () => {
       resourceLimits: { stackSizeMb: 1 },
     });
 
-    const [usages] = (await once(worker, 'message')) as [string[]];
-    expect(JSON.parse(usages[0]!)).toMatchObject([
+    const [usages] = (await once(worker, 'message')) as [string];
+    expect(JSON.parse(usages)).toMatchObject([
       { target: 'custom', name: 'greeting', kind: 'call' },
     ]);
     await worker.terminate();
