@@ -33,7 +33,7 @@
     "generaltranslation": "workspace:*",
     "gt-react": "workspace:*",
     "gt-i18n": "workspace:*",
-    "valibot": "^1.5.0"
+    "valibot": "catalog:"
   },
   "scripts": {
     "patch": "pnpm version patch",

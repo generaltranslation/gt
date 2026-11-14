@@ -108,7 +108,7 @@
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-i18n": "workspace:*",
-    "valibot": "^1.5.0"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

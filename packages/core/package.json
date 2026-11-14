@@ -55,7 +55,7 @@
     "@generaltranslation/format": "workspace:*",
     "@generaltranslation/icu": "workspace:*",
     "@noble/hashes": "^2.2.0",
-    "valibot": "^1.5.0"
+    "valibot": "catalog:"
   },
   "exports": {
     ".": {
