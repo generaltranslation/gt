@@ -4,8 +4,12 @@ import { fileURLToPath } from 'node:url';
 import v8 from 'node:v8';
 import { MessageChannel, Worker, type MessagePort } from 'node:worker_threads';
 import type { GlobalBinding } from '../analysis/module-graph.js';
-import type { ModuleSummary } from '../analysis/module-store.js';
+import {
+  withSharedNames,
+  type ModuleSummary,
+} from '../analysis/module-store.js';
 import type { ParaglideUsage, TrackedSymbol } from '../analysis/types.js';
+import type { SharedNameList } from '../utils/name-list.js';
 import { MAX_CONCURRENT_READS } from '../utils/read-file.js';
 import { SpilledBytes, type SharedSpill } from '../utils/spill-file.js';
 import { analysisBudget, type SummaryResult } from './module-reader.js';
@@ -30,6 +34,8 @@ export type IndexRequest = {
   type: 'index';
   /** A `SharedIndex`, serialized once for every thread. */
   index: SharedArrayBuffer;
+  /** The name lists of its summaries: see `withSharedNames`. */
+  names: SharedArrayBuffer;
   /** Where the values of a `SharedJob` other threads evaluated come back. */
   channel: SharedChannel;
 };
@@ -62,7 +68,8 @@ export type ChunkMessage =
 
 type ChunkResult = { chunk: number; symbols: TrackedSymbol[] | null };
 
-export type SharedIndex = AnalysisIndex & {
+export type SharedIndex = Omit<AnalysisIndex, 'summaries'> & {
+  summaries: readonly ModuleSummary<SharedNameList>[];
   /** What languages generated, by file: see `GeneratedBytes`. */
   generated: SharedSpill;
 };
@@ -254,8 +261,10 @@ export class AnalysisPool {
     await Promise.all(this.workers.map((worker) => worker.terminate()));
     this.workers = this.startWorkers(size);
 
+    const { summaries, names } = withSharedNames(index.summaries);
     const shared: SharedIndex = {
       ...index,
+      summaries,
       generated: this.generated.shared(),
     };
     const serialized = v8.serialize(shared);
@@ -268,7 +277,12 @@ export class AnalysisPool {
       this.channels.set(worker, { port: port1, flag });
 
       return worker.request(
-        { type: 'index', index: buffer, channel: { port: port2, flag } },
+        {
+          type: 'index',
+          index: buffer,
+          names,
+          channel: { port: port2, flag },
+        },
         [port2]
       );
     };
