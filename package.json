@@ -26,6 +26,7 @@
     "bench": "turbo run bench",
     "size": "size-limit",
     "check:library-defaults": "node scripts/check-library-defaults.mjs && vitest run scripts/__tests__/check-library-defaults.test.mjs",
+    "check:export-owners": "node scripts/check-export-owners.mjs && vitest run scripts/__tests__/check-export-owners.test.mjs",
     "check:reexports": "node scripts/check-reexports.mjs && vitest run scripts/__tests__/check-reexports.test.mjs",
     "check:test-locations": "node scripts/check-test-locations.mjs && vitest run scripts/__tests__/check-test-locations.test.mjs",
     "check:config-schema": "turbo run build --filter=gt --filter=gt-next --output-logs=errors-only && node packages/cli/scripts/generate-config-schema.js --check",
