@@ -1,7 +1,7 @@
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 
 export const compileTimeHashDisabledWarning = createDiagnosticMessage({
   source: 'gt-tanstack-start',

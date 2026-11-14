@@ -71,6 +71,9 @@ function initConfig(
   initializeI18nConfig({
     defaultLocale: 'en',
     locales: ['en', 'fr', 'es'],
+    // Runtime translation rejects without a project ID and an API key.
+    projectId: 'test-project',
+    apiKey: 'test-api-key',
     ...overrides,
   });
 }
@@ -85,7 +88,6 @@ function createCache(
     ...(defaultLocale && { defaultLocale }),
     ...(locales && { locales }),
     customMapping,
-    projectId: cacheOverrides.projectId,
     devApiKey: cacheOverrides.devApiKey,
   });
   return new TestI18nCache({
@@ -1438,6 +1440,38 @@ describe('I18nCache', () => {
             expect.stringContaining('API down')
           );
         }
+      }
+    );
+
+    it.each([
+      [
+        'a projectId',
+        { projectId: undefined },
+        "gt-i18n Error: Runtime translation needs a projectId. Set `projectId` in your framework's GT configuration, or disable runtime translation.",
+      ],
+      [
+        'an API key',
+        { apiKey: undefined },
+        "gt-i18n Error: Runtime translation needs an API key. Set `apiKey` (or `devApiKey` in development) in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation.",
+      ],
+    ])(
+      'development: runtime translation without %s rejects each request with framework guidance',
+      async (_name, missing, error) => {
+        vi.stubEnv('NODE_ENV', 'development');
+        vi.stubEnv('GT_API_KEY', '');
+        const fetchSpy = mockFetchResponse({});
+        initConfig(missing);
+        const cache = new I18nCache({
+          loadTranslations: async () => ({}),
+          runtimeTranslation: {},
+        });
+
+        await expect(
+          settle(
+            cache.lookupTranslationWithFallback('fr', message, lookupOptions)
+          )
+        ).rejects.toThrow(error);
+        expect(fetchSpy).not.toHaveBeenCalled();
       }
     );
 

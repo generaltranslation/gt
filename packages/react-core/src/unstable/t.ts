@@ -1,7 +1,7 @@
 import type { GT, GTOptions } from 'gt-i18n/unstable';
 import { getRuntimeEnvironment } from 'gt-i18n/internal';
 import { createGT } from 'gt-i18n/unstable/internal';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { getReadonlyConditionStore } from '../condition-store/singleton-operations';
 import { getI18nConfig } from '../setup/i18nConfig';
 

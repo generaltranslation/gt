@@ -3,7 +3,7 @@ import type { Content } from '@generaltranslation/format/types';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 
 /**

@@ -135,8 +135,6 @@ describe('t`` tagged template extraction', () => {
     ],
     ['const name = "X";\nt`Hello ${"World"}, ${name}!`;', 'Hello World, {0}!'],
     ["import { t } from 'gt-react';\nt`Hello`;", 'Hello'],
-    ["import { t } from 'gt-react/browser';\nt`Hello`;", 'Hello'],
-    ["import { t } from 'gt-react/client';\nt`Hello`;", 'Hello'],
   ])('extracts %j', (code, message) => {
     expect(collect(code)).toEqual({
       errors: [],
@@ -152,7 +150,7 @@ describe('t`` tagged template extraction', () => {
     ],
     [
       'a template containing derive()',
-      "import { derive } from 'gt-react/browser';\nt`Hello ${derive(getName())}`;",
+      "import { derive } from 'gt-react';\nt`Hello ${derive(getName())}`;",
     ],
   ])('does not extract %s', (_name, code) => {
     expect(collect(code)).toEqual({

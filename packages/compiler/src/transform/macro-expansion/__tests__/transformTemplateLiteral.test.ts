@@ -40,7 +40,7 @@ function transformCode(code: string): {
   };
 }
 
-const DERIVE_IMPORT = `import { derive } from 'gt-react/browser';\n`;
+const DERIVE_IMPORT = `import { derive } from 'gt-react';\n`;
 
 type Case = [
   source: string,

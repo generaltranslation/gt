@@ -22,19 +22,9 @@ describe('macroExpansionPass', () => {
         `import { t } from 'gt-react';\nconst x = t("hello {0}", { "0": name });`,
       ],
       [
-        't imported from gt-react/browser',
-        "import { t } from 'gt-react/browser';\nconst x = t`hello ${name}`;",
-        `import { t } from 'gt-react/browser';\nconst x = t("hello {0}", { "0": name });`,
-      ],
-      [
-        't imported from gt-react/client',
-        "import { t } from 'gt-react/client';\nconst x = t`hello ${name}`;",
-        `import { t } from 'gt-react/client';\nconst x = t("hello {0}", { "0": name });`,
-      ],
-      [
         'derive() mixed with a dynamic expression',
-        "import { derive } from 'gt-react/browser';\nconst x = t`${name} says ${derive(greeting)}`;",
-        `${AUTO_IMPORT}import { derive } from 'gt-react/browser';\nconst x = t(\`{0} says \${derive(greeting)}\`, { "0": name });`,
+        "import { derive } from 'gt-react';\nconst x = t`${name} says ${derive(greeting)}`;",
+        `${AUTO_IMPORT}import { derive } from 'gt-react';\nconst x = t(\`{0} says \${derive(greeting)}\`, { "0": name });`,
       ],
     ])('expands %s', (_name, input, expected) => {
       expect(expand(input)).toBe(expected);
@@ -106,7 +96,7 @@ describe('macroExpansionPass', () => {
       ],
       [
         'a template literal with derive()',
-        "import { derive } from 'gt-react/browser';\nconst x = t(`Hello ${derive(getName())}`);",
+        "import { derive } from 'gt-react';\nconst x = t(`Hello ${derive(getName())}`);",
         {},
       ],
       [
@@ -156,12 +146,12 @@ describe('macroExpansionPass', () => {
         `${AUTO_IMPORT}const x = t("ABCDEF");`,
       ],
       [
-        'import { derive } from \'gt-react/browser\';\nconst x = t(`A${derive(getName())}B` + "C" + name);',
-        `${AUTO_IMPORT}import { derive } from 'gt-react/browser';\nconst x = t(\`A\${derive(getName())}BC{0}\`, { "0": name });`,
+        'import { derive } from \'gt-react\';\nconst x = t(`A${derive(getName())}B` + "C" + name);',
+        `${AUTO_IMPORT}import { derive } from 'gt-react';\nconst x = t(\`A\${derive(getName())}BC{0}\`, { "0": name });`,
       ],
       [
-        'import { derive } from \'gt-react/browser\';\nconst x = t(`A${"B"}${derive(x)}${"C"}D`);',
-        `${AUTO_IMPORT}import { derive } from 'gt-react/browser';\nconst x = t(\`AB\${derive(x)}CD\`);`,
+        'import { derive } from \'gt-react\';\nconst x = t(`A${"B"}${derive(x)}${"C"}D`);',
+        `${AUTO_IMPORT}import { derive } from 'gt-react';\nconst x = t(\`AB\${derive(x)}CD\`);`,
       ],
     ])('expands %s', (input, expected) => {
       expect(expand(input)).toBe(expected);
@@ -177,12 +167,6 @@ describe('macroExpansionPass', () => {
       ).toBe(
         `${AUTO_IMPORT}import React from 'react';\nconst a = t("hello {0}", { "0": name });\nconst b = t("goodbye {0}", { "0": name });`
       );
-    });
-
-    it('imports from gt-react/browser with legacyGtReactImportSource', () => {
-      expect(
-        expand('const x = t`hello`;', { legacyGtReactImportSource: true })
-      ).toBe('import { t } from "gt-react/browser";const x = t("hello");');
     });
 
     it('expands without importing when enableMacroImportInjection is false', () => {

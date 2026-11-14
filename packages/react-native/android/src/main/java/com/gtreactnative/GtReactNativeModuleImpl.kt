@@ -1,12 +1,10 @@
 package com.gtreactnative
 
 import android.content.Context
-import android.os.Build
 import android.os.LocaleList
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.WritableArray
-import java.util.Locale
 
 object GtReactNativeModuleImpl {
   const val NAME = "GtReactNative"
@@ -20,22 +18,14 @@ object GtReactNativeModuleImpl {
     val seenLocales = mutableSetOf<String>()
 
     try {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        // Use LocaleList for API 24+
-        val localeList = LocaleList.getDefault()
-        for (i in 0 until localeList.size()) {
-          val locale = localeList.get(i)
-          val localeString = locale.toLanguageTag()
-          if (!seenLocales.contains(localeString)) {
-            locales.pushString(localeString)
-            seenLocales.add(localeString)
-          }
+      val localeList = LocaleList.getDefault()
+      for (i in 0 until localeList.size()) {
+        val locale = localeList.get(i)
+        val localeString = locale.toLanguageTag()
+        if (!seenLocales.contains(localeString)) {
+          locales.pushString(localeString)
+          seenLocales.add(localeString)
         }
-      } else {
-        // Fallback to single default locale for older Android versions
-        val defaultLocale = Locale.getDefault()
-        val localeString = defaultLocale.toLanguageTag()
-        locales.pushString(localeString)
       }
     } catch (e: Exception) {
       // Return empty array on any error

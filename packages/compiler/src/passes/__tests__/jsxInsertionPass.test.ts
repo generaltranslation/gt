@@ -360,14 +360,14 @@ describe('jsxInsertionPass', () => {
       [
         'GtInternalTranslateJsx',
         `import { jsx } from 'react/jsx-runtime';
-         import { GtInternalTranslateJsx } from 'gt-react/browser';
+         import { GtInternalTranslateJsx } from 'gt-react';
          jsx("div", { children: jsx(GtInternalTranslateJsx, { children: "Hello" }) });`,
         { t: 1, var: 0 },
       ],
       [
         'GtInternalVar',
         `import { jsx, jsxs } from 'react/jsx-runtime';
-         import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
+         import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react';
          jsxs("div", { children: ["Hello ", jsx(GtInternalVar, { children: name })] });`,
         { t: 1, var: 1 },
       ],
@@ -595,20 +595,11 @@ describe('jsxInsertionPass', () => {
       );
     });
 
-    it.each([
-      [
-        'gt-react/browser with the legacy flag',
-        { legacyGtReactImportSource: true },
-        'gt-react/browser',
-      ],
-      [
-        'a configured autoJsxImportSource',
-        { autoJsxImportSource: 'gt-next' },
-        'gt-next',
-      ],
-    ])('imports from %s', (_name, options, source) => {
-      const sources = importSources(insert(HELLO, options).ast);
-      expect(sources.filter((s) => s === source)).toHaveLength(1);
+    it('imports from a configured autoJsxImportSource', () => {
+      const sources = importSources(
+        insert(HELLO, { autoJsxImportSource: 'gt-next' }).ast
+      );
+      expect(sources.filter((s) => s === 'gt-next')).toHaveLength(1);
     });
 
     it('does not inject an import when nothing was inserted', () => {
@@ -619,7 +610,7 @@ describe('jsxInsertionPass', () => {
     });
 
     it.each([
-      ['gt-react/browser', {}],
+      ['gt-react', {}],
       ['@acme/gt', { autoJsxImportSource: '@acme/gt' }],
     ])('does not duplicate an existing import from %s', (source, options) => {
       const { ast } = insert(

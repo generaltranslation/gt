@@ -7,10 +7,8 @@ import {
   hashSource,
   type MessageTreeHashMetadata,
 } from 'generaltranslation/id';
-import {
-  formatCutoff,
-  formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
+import { formatCutoff } from 'generaltranslation/internal';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import logger from '../logs/logger';
@@ -167,7 +165,7 @@ function formatTree(
   const config = getI18nConfig();
   // The config resolves custom aliases, which must not reach Intl as
   // language codes, and formats in its time zone.
-  const formatted = config.formatMessageTree(tree, undefined, {
+  const formatted = config.formatMessageTree(tree, {
     locales: [locale, config.getDefaultLocale()],
     values,
     formats,

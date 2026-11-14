@@ -1,6 +1,6 @@
 // @vitest-environment edge-runtime
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { GTRuntime } from 'generaltranslation/runtime';
+import { GTIntl } from 'generaltranslation/internal';
 import { NextRequest } from 'next/server';
 import {
   defaultLocaleCookieName,
@@ -622,7 +622,7 @@ describe('locale resolution during middleware initialization', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('bounds resolution work by distinct keys across aliases, overrides and availability', () => {
-    const determineLocale = vi.spyOn(GTRuntime.prototype, 'determineLocale');
+    const determineLocale = vi.spyOn(GTIntl.prototype, 'determineLocale');
     const pathConfig = Object.fromEntries(
       Array.from({ length: 120 }, (_, i) => [
         `/page-${i}`,
@@ -650,7 +650,7 @@ describe('locale resolution during middleware initialization', () => {
     'reuses string-alias locale resolutions with services=%s',
     (services) => {
       vi.stubEnv('_GENERALTRANSLATION_GT_SERVICES_ENABLED', services);
-      const determineLocale = vi.spyOn(GTRuntime.prototype, 'determineLocale');
+      const determineLocale = vi.spyOn(GTIntl.prototype, 'determineLocale');
       const pathConfig = Object.fromEntries(
         Array.from({ length: 120 }, (_, i) => [`/page-${i}`, `/alias-${i}`])
       );

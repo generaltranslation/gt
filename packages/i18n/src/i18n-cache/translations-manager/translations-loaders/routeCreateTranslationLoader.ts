@@ -3,7 +3,7 @@ import { LoadTranslationsType } from '../../utils/getLoadTranslationsType';
 import logger from '../../../logs/logger';
 import { createRemoteTranslationLoader } from './createRemoteTranslationLoader';
 import { getI18nConfig } from '../../../i18n-config/singleton-operations';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
 /**
  * Creates a translation loader function that loads translations from a remote store (CDN or other)

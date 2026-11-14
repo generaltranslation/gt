@@ -5,7 +5,7 @@
  * Content that maps to several translation variants (a <Derive> child, a
  * derive() message or $context, autoderive dynamic content) is resolved by
  * the CLI, so it must get NO compile-time hash: an injected hash (or an
- * empty one, since the runtime reads it with ??) would pin the lookup to a
+ * empty one, which is used as the lookup hash) would pin the lookup to a
  * key that matches none of the variants. Skipping a call must also never
  * shift the hashes of its siblings.
  */
@@ -63,8 +63,8 @@ describe('<T> hash injection', () => {
       `jsx(T, { children: jsx(Plural, { n: count, one: jsx(Derive, { children: getX() }), other: "many" }) })`,
     ],
     [
-      '<T $context={derive(getMeaning())}>Book</T>',
-      `jsx(T, { children: "Book", $context: derive(getMeaning()) })`,
+      '<T context={derive(getMeaning())}>Book</T>',
+      `jsx(T, { children: "Book", context: derive(getMeaning()) })`,
     ],
     // Both signals together
     [

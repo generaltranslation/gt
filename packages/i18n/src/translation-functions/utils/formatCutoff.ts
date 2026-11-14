@@ -18,5 +18,5 @@ export function formatCutoff(
   if (!isI18nConfigInitialized()) {
     return formatUnconfiguredCutoff(value, { locales, maxChars });
   }
-  return getI18nConfig().formatCutoff(value, undefined, { locales, maxChars });
+  return getI18nConfig().formatCutoff(value, { locales, maxChars });
 }

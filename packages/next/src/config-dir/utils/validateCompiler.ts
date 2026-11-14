@@ -4,7 +4,6 @@ import {
   autoJsxInjectionCompilerWarning,
   babelCompilerTurbopackUnavailableWarning,
   createGTCompilerUnavailableWarning,
-  disablingCompileTimeHashWarning,
   swcPluginCompatibilityChangeWarning,
 } from '../../errors/createErrors';
 import { swcPluginCompatible } from '../../plugin/getStableNextVersionInfo';
@@ -32,11 +31,6 @@ export function validateCompiler(mergedConfig: BaseWithGTConfigProps) {
     if (turboPackEnabled || !babelPluginCompatible) {
       mergedConfig.experimentalCompilerOptions.type = 'none';
     }
-  }
-  // Backwards compatibility, remove this condition in the future
-  if (mergedConfig.experimentalCompilerOptions.compileTimeHash === false) {
-    console.warn(disablingCompileTimeHashWarning);
-    mergedConfig.experimentalCompilerOptions.type = 'none';
   }
   if (
     mergedConfig.experimentalCompilerOptions.enableAutoJsxInjection &&

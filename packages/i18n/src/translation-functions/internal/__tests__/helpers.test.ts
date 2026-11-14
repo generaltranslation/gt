@@ -23,7 +23,13 @@ import {
 const icuHash = (message: string) => hashContent(message, { $format: 'ICU' });
 
 function setupCache(preloadedTranslations: Record<string, string> = {}) {
-  initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+  initializeI18nConfig({
+    defaultLocale: 'en',
+    locales: ['en', 'fr'],
+    // Runtime translation rejects without a project ID and an API key.
+    projectId: 'test-project',
+    apiKey: 'test-api-key',
+  });
   const cache = new I18nCache({
     loadTranslations: vi.fn().mockResolvedValue(preloadedTranslations),
   });

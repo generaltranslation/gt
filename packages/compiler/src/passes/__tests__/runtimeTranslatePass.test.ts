@@ -122,7 +122,7 @@ describe('runtimeTranslatePass', () => {
 
     it('translates a tagged template after macro expansion', () => {
       const { runtimeCalls } = transform(
-        "import { t } from 'gt-react/browser';\nconst x = t`Hello ${name}`;",
+        "import { t } from 'gt-react';\nconst x = t`Hello ${name}`;",
         {},
         ['macroExpansion', 'collection', 'runtimeTranslate']
       );
@@ -209,24 +209,19 @@ describe('runtimeTranslatePass', () => {
   describe('import handling', () => {
     const CODE = `${USE_GT}const msg = gt("Hello");`;
 
-    it.each([
-      ['gt-react', {}],
-      ['gt-react/browser', { legacyGtReactImportSource: true }],
-    ])('imports the runtime function from %s', (source, options) => {
-      expect(importedNames(transform(CODE, options).ast, source)).toContain(
+    it('imports the runtime function from gt-react', () => {
+      expect(importedNames(transform(CODE).ast, 'gt-react')).toContain(
         STRING_FN
       );
     });
 
     it('does not duplicate an existing import of the runtime function', () => {
       const { ast } = transform(
-        `import { GtInternalRuntimeTranslateString } from 'gt-react/browser';\n${CODE}`
+        `import { GtInternalRuntimeTranslateString } from 'gt-react';\n${CODE}`
       );
-      const names = [
-        ...importedNames(ast, 'gt-react'),
-        ...importedNames(ast, 'gt-react/browser'),
-      ];
-      expect(names.filter((name) => name === STRING_FN)).toHaveLength(1);
+      expect(
+        importedNames(ast, 'gt-react').filter((name) => name === STRING_FN)
+      ).toHaveLength(1);
     });
   });
 
@@ -247,7 +242,7 @@ describe('runtimeTranslatePass', () => {
   });
 });
 
-describe('devHotReload / legacyGtReactImportSource config resolution', () => {
+describe('devHotReload config resolution', () => {
   it.each([
     [true, { strings: true, jsx: false }],
     [false, { strings: false, jsx: false }],
@@ -285,19 +280,5 @@ describe('devHotReload / legacyGtReactImportSource config resolution', () => {
         'test.tsx'
       ).settings.devHotReload
     ).toEqual({ strings: true, jsx: false });
-  });
-
-  it('reads legacyGtReactImportSource from gtConfig parsingFlags, overridden by the direct option', () => {
-    const gtConfig = gtConfigWith({ legacyGtReactImportSource: true });
-    expect(
-      initializeState({ gtConfig }, 'test.tsx').settings
-        .legacyGtReactImportSource
-    ).toBe(true);
-    expect(
-      initializeState(
-        { gtConfig, legacyGtReactImportSource: false },
-        'test.tsx'
-      ).settings.legacyGtReactImportSource
-    ).toBe(false);
   });
 });

@@ -96,7 +96,12 @@ export function createConfigModule(
 ): { code: string; localeRouting: boolean; omittedApiKeys: boolean } {
   const config = readConfigFile(configFile);
   // The browser imports this module too, so credentials must never be in it.
-  const { apiKey, devApiKey, ...publicConfig } = config;
+  // GTConfig no longer declares devApiKey, but older config files can set it.
+  const {
+    apiKey,
+    devApiKey,
+    ...publicConfig
+  }: GTConfig & { devApiKey?: string } = config;
   // An explicit undefined would erase the gt.config.json value.
   const definedRuntimeOptions = Object.fromEntries(
     Object.entries(runtimeOptions).filter(([, value]) => value !== undefined)
