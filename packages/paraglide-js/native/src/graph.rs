@@ -144,7 +144,7 @@ pub struct ModuleCache {
   pub component_props: OnceLock<Vec<Candidate>>,
   pub call_sites_of: RwLock<FxHashMap<NodeId, Arc<[CallSite]>>>,
   /// The names each function of the module is exported under.
-  pub function_exports: OnceLock<FxHashMap<NodeId, Vec<Box<str>>>>,
+  pub function_exports: OnceLock<crate::importers::FunctionExports>,
 }
 
 pub struct TargetFile {
@@ -192,6 +192,8 @@ pub struct GraphCache {
   pub export_names: Vec<OnceLock<Option<FxHashSet<Box<str>>>>>,
   pub dependents: OnceLock<Dependents>,
   pub all: OnceLock<Vec<ModuleId>>,
+  /// The modules whose code names each global, by global: only they can use it without an import.
+  pub global_mentions: OnceLock<Vec<Vec<ModuleId>>>,
 }
 
 impl GraphCache {
@@ -442,6 +444,7 @@ impl Graph {
 
     self.all();
     crate::importers::prepare_dependents(self);
+    crate::importers::prepare_global_mentions(self);
   }
 
   /// The last one, so that `[...defaultTargets, custom]` overrides a built-in target.

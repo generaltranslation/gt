@@ -192,6 +192,35 @@ pub fn path_of(ast: &Ast, pattern: NodeId, identifier: NodeId) -> Option<Path> {
 }
 
 /// The names a declaration gives values to: `const { a, b } = …` → a, b.
+/// As `declared_names`, their atoms.
+pub fn declared_name_atoms(ast: &Ast, declaration: NodeId, out: &mut Vec<u32>) {
+  match ast.kind(declaration) {
+    Kind::VariableDeclaration => {
+      for declarator in ast.children_in(declaration, Slot::Declaration) {
+        let Some(id) = ast.child(declarator, Slot::Id) else {
+          continue;
+        };
+
+        let mut bindings = Vec::new();
+        pattern_bindings(ast, id, None, &mut bindings);
+        out.extend(bindings.iter().map(|binding| ast.node(binding.node).data));
+      }
+    }
+
+    // `declare function f(): void`, as in a `.d.ts` file.
+    Kind::FunctionDeclaration
+    | Kind::TSDeclareFunction
+    | Kind::ClassDeclaration
+    | Kind::TSEnumDeclaration => {
+      if let Some(id) = ast.child(declaration, Slot::Id) {
+        out.push(ast.node(id).data);
+      }
+    }
+
+    _ => {}
+  }
+}
+
 pub fn declared_names<'a>(ast: &'a Ast, declaration: NodeId, out: &mut Vec<&'a str>) {
   match ast.kind(declaration) {
     Kind::VariableDeclaration => {
@@ -242,10 +271,87 @@ pub fn require_specifier<'a>(
   static_string(ast, ast.child(call, Slot::Arg)?)
 }
 
+/// The name of `export default`, which is no atom of the module.
+pub const DEFAULT_NAME: u32 = u32::MAX - 1;
+/// An export name without an atom.
+pub const EMPTY_NAME: u32 = u32::MAX - 2;
+
+/// The text of a name that is one of a module's atoms, `DEFAULT_NAME` or `EMPTY_NAME`.
+pub fn name_text(ast: &Ast, atom: u32) -> &str {
+  match atom {
+    DEFAULT_NAME => "default",
+    EMPTY_NAME => "",
+    atom => ast.atom(atom),
+  }
+}
+
+/// As `module_export_name`, the name's atom.
+pub fn module_export_atom(ast: &Ast, name: NodeId) -> u32 {
+  match ast.node(name).data {
+    ir::NONE => EMPTY_NAME,
+    atom => atom,
+  }
+}
+
+/// The export statements of a module by exported name, as atoms rather than copies of the names
+/// and sorted rather than hashed, since a project's modules export millions of names.
+#[derive(Default)]
+pub struct ExportStatements {
+  /// The hash of the name, its atom and the statement, sorted by hash and then in order.
+  entries: Box<[(u32, u32, NodeId)]>,
+}
+
+impl ExportStatements {
+  fn new(ast: &Ast, mut entries: Vec<(u32, NodeId)>) -> Self {
+    let mut entries: Vec<(u32, u32, NodeId)> = entries
+      .drain(..)
+      .map(|(atom, statement)| (ir::name_hash(name_text(ast, atom)), atom, statement))
+      .collect();
+    // Stable: a name's statements stay in order.
+    entries.sort_by_key(|&(hash, _, _)| hash);
+
+    ExportStatements {
+      entries: entries.into_boxed_slice(),
+    }
+  }
+
+  /// The statements that export `name`, in order.
+  pub fn statements<'s>(
+    &'s self,
+    ast: &'s Ast,
+    name: &'s str,
+  ) -> impl Iterator<Item = NodeId> + 's {
+    let hash = ir::name_hash(name);
+    let first = self.entries.partition_point(|&(other, _, _)| other < hash);
+
+    self.entries[first..]
+      .iter()
+      .take_while(move |&&(other, _, _)| other == hash)
+      .filter(move |&&(_, atom, _)| name_text(ast, atom) == name)
+      .map(|&(_, _, statement)| statement)
+  }
+
+  pub fn contains(&self, ast: &Ast, name: &str) -> bool {
+    self.statements(ast, name).next().is_some()
+  }
+
+  /// Every exported name, once or more.
+  pub fn names<'s>(&'s self, ast: &'s Ast) -> impl Iterator<Item = &'s str> + 's {
+    self
+      .entries
+      .iter()
+      .map(move |&(_, atom, _)| name_text(ast, atom))
+  }
+
+  pub fn memory(&self) -> usize {
+    self.entries.len() * std::mem::size_of::<(u32, u32, NodeId)>()
+  }
+}
+
 #[derive(Default)]
 pub struct ModuleSyntax {
   /// The export statements by exported name, without the names of `export *`.
-  pub exporting: FxHashMap<Box<str>, Vec<NodeId>>,
+  pub exporting: ExportStatements,
   pub has_esm_exports: bool,
   /// The `export * from "…"` statements of values, in order.
   pub star_exports: Vec<NodeId>,
@@ -254,28 +360,30 @@ pub struct ModuleSyntax {
 impl ModuleSyntax {
   pub fn of(ast: &Ast) -> Self {
     let mut syntax = Self::default();
+    let mut exporting: Vec<(u32, NodeId)> = Vec::new();
+    let mut names: Vec<u32> = Vec::new();
 
     for statement in ast.children(0) {
-      let mut names: Vec<&str> = Vec::new();
+      names.clear();
 
       match ast.kind(statement) {
-        Kind::ExportDefaultDeclaration => names.push("default"),
+        Kind::ExportDefaultDeclaration => names.push(DEFAULT_NAME),
 
         // `export * as ns from "./a"`
         Kind::ExportAllDeclaration => match ast.child(statement, Slot::Exported) {
-          Some(exported) => names.push(module_export_name(ast, exported)),
+          Some(exported) => names.push(module_export_atom(ast, exported)),
           None if !ast.has(statement, ir::TYPE_ONLY) => syntax.star_exports.push(statement),
           None => {}
         },
 
         Kind::ExportNamedDeclaration => {
           if let Some(declaration) = ast.child(statement, Slot::Declaration) {
-            declared_names(ast, declaration, &mut names);
+            declared_name_atoms(ast, declaration, &mut names);
           }
 
           for specifier in ast.children_in(statement, Slot::Specifier) {
             if let Some(exported) = ast.child(specifier, Slot::Exported) {
-              names.push(module_export_name(ast, exported));
+              names.push(module_export_atom(ast, exported));
             }
           }
         }
@@ -284,15 +392,10 @@ impl ModuleSyntax {
       }
 
       syntax.has_esm_exports = true;
-      for name in names {
-        syntax
-          .exporting
-          .entry(name.into())
-          .or_default()
-          .push(statement);
-      }
+      exporting.extend(names.iter().map(|&name| (name, statement)));
     }
 
+    syntax.exporting = ExportStatements::new(ast, exporting);
     syntax
   }
 }

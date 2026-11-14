@@ -11,7 +11,10 @@ use crate::{
   graph::{FileId, Graph, Module, ModuleId},
   ir::{self, Ast, Kind, NodeId, Slot},
   scope::{binding_of, Declaration},
-  syntax::{declared_names, import_of, imported_name, module_export_name, unwrap_expression},
+  syntax::{
+    declared_name_atoms, import_of, imported_name, module_export_atom, module_export_name,
+    name_text, unwrap_expression, DEFAULT_NAME,
+  },
 };
 
 struct ExportedNames<'a> {
@@ -119,6 +122,10 @@ pub fn call_sites_of(graph: &Graph, record: &Module, function: NodeId) -> Arc<[C
     .clone()
 }
 
+/// From this many importers on, a function's call sites are read on the pool. It is never asked
+/// for while a lock or a value being initialized is held, which a waiting thread could ask again.
+const PARALLEL_REFERRERS: usize = 64;
+
 fn find_call_sites(graph: &Graph, record: &Module, function: NodeId) -> Vec<CallSite> {
   let own = call_sites_in(graph, record)
     .by_declaration
@@ -143,20 +150,36 @@ fn find_call_sites(graph: &Graph, record: &Module, function: NodeId) -> Vec<Call
     names,
   };
   let referrers = referrers_of(graph, &exported);
-
-  for &importer in &referrers.modules {
-    if importer == record.id {
-      continue;
+  let sites_of = |importer: ModuleId, sites: &mut Vec<CallSite>| {
+    if importer != record.id {
+      let module = graph.module(importer);
+      sites_in(
+        graph,
+        module,
+        &exported,
+        &referrers,
+        &IndexKind::CallSites,
+        sites,
+      );
     }
+  };
 
-    sites_in(
-      graph,
-      graph.module(importer),
-      &exported,
-      &referrers,
-      &IndexKind::CallSites,
-      &mut sites,
-    );
+  if referrers.modules.len() < PARALLEL_REFERRERS {
+    for &importer in &referrers.modules {
+      sites_of(importer, &mut sites);
+    }
+  } else {
+    // Each importer's sites index is built on the way, and a function is called from thousands.
+    let found: Vec<Vec<CallSite>> = referrers
+      .modules
+      .par_iter()
+      .map(|&importer| {
+        let mut found = Vec::new();
+        sites_of(importer, &mut found);
+        found
+      })
+      .collect();
+    sites.extend(found.into_iter().flatten());
   }
 
   sites
@@ -240,10 +263,30 @@ fn referrers_of(graph: &Graph, exported: &ExportedNames) -> Referrers {
     .collect();
 
   let is_usable_without_import = !globals.is_empty();
-  let modules = if is_usable_without_import {
-    graph.all().to_vec()
-  } else {
-    importers_of(&exporters, &exported_as, dependents)
+  let modules = match graph.cache.global_mentions.get() {
+    // A name is used without an import only where the module names it.
+    Some(mentions) if is_usable_without_import => {
+      let mut found: FxHashSet<ModuleId> = importers_of(&exporters, &exported_as, dependents)
+        .into_iter()
+        .collect();
+      found.extend(
+        exporters
+          .iter()
+          .filter_map(|file| graph.records.get(file).copied()),
+      );
+      for &global in &globals {
+        found.extend(&mentions[global as usize]);
+      }
+
+      graph
+        .all()
+        .iter()
+        .copied()
+        .filter(|id| found.contains(id))
+        .collect()
+    }
+    None if is_usable_without_import => graph.all().to_vec(),
+    _ => importers_of(&exporters, &exported_as, dependents),
   };
 
   Referrers {
@@ -406,6 +449,53 @@ fn dependents(graph: &Graph) -> &Dependents {
 }
 
 /// Builds who imports each file on every core, before any analysis would wait on one thread building it.
+/// Which modules name each global, read from each module's names once. Built ahead of the analysis
+/// rather than when first asked, since it runs on the pool.
+pub fn prepare_global_mentions(graph: &Graph) {
+  if graph.globals.is_empty() || graph.cache.global_mentions.get().is_some() {
+    return;
+  }
+
+  let all = graph.all();
+  let named: Vec<Vec<u32>> = crate::on_pool(|| {
+    all
+      .par_iter()
+      .map(|&id| {
+        let ast = &graph.module(id).ast;
+        let mut globals: Vec<u32> = (0..ast.atom_spans.len() as u32)
+          .filter_map(|atom| graph.globals_by_name.get(ast.atom(atom)).copied())
+          .collect();
+        globals.sort_unstable();
+        globals.dedup();
+        globals
+      })
+      .collect()
+  });
+
+  let mut mentions = vec![Vec::new(); graph.globals.len()];
+  for (&id, globals) in all.iter().zip(named) {
+    for global in globals {
+      mentions[global as usize].push(id);
+    }
+  }
+  let _ = graph.cache.global_mentions.set(mentions);
+}
+
+/// How many modules import `file` directly, by name or as a namespace.
+pub fn importer_count(graph: &Graph, file: FileId) -> usize {
+  let dependents = dependents(graph);
+  let mut importers: FxHashSet<ModuleId> = dependents
+    .namespace_importers(file)
+    .iter()
+    .copied()
+    .collect();
+  if let Some(by_name) = dependents.importers(file) {
+    importers.extend(by_name.values().flatten());
+  }
+
+  importers.len()
+}
+
 pub fn prepare_dependents(graph: &Graph) {
   if graph.cache.dependents.get().is_none() {
     let _ = graph.cache.dependents.set(build_dependents(graph, true));
@@ -658,26 +748,42 @@ fn add_named_exports(
 /// `export function f`, `export { f as g }`, `export default f`
 fn export_names_of<'g>(graph: &'g Graph, record: &'g Module, function: NodeId) -> Vec<&'g str> {
   function_exports(graph, record)
-    .get(&function)
-    .map(|names| names.iter().map(|name| &**name).collect())
-    .unwrap_or_default()
+    .names_of(function)
+    .map(|atom| name_text(&record.ast, atom))
+    .collect()
+}
+
+/// The names each function of a module is exported under, as atoms.
+#[derive(Default)]
+pub struct FunctionExports {
+  /// The function and the name's atom, sorted by function and then in the order they are
+  /// exported.
+  entries: Box<[(NodeId, u32)]>,
+}
+
+impl FunctionExports {
+  fn names_of(&self, function: NodeId) -> impl Iterator<Item = u32> + '_ {
+    let first = self.entries.partition_point(|&(other, _)| other < function);
+
+    self.entries[first..]
+      .iter()
+      .take_while(move |&&(other, _)| other == function)
+      .map(|&(_, atom)| atom)
+  }
 }
 
 /// The names each function of a module is exported under, in the order they are exported.
-fn function_exports<'g>(
-  graph: &'g Graph,
-  record: &'g Module,
-) -> &'g FxHashMap<NodeId, Vec<Box<str>>> {
+fn function_exports<'g>(graph: &'g Graph, record: &'g Module) -> &'g FunctionExports {
   record.cache.function_exports.get_or_init(|| {
     let ast = &record.ast;
-    let mut exports: FxHashMap<NodeId, Vec<Box<str>>> = FxHashMap::default();
+    let mut exports: Vec<(NodeId, u32)> = Vec::new();
     let function_of = |local: &str| match binding_of(graph, record, local, None)?.declaration {
       Some(Declaration::Node(function)) => Some(function),
       _ => None,
     };
-    let mut export = |function: Option<NodeId>, name: &str| {
+    let mut export = |function: Option<NodeId>, name: u32| {
       if let Some(function) = function {
-        exports.entry(function).or_default().push(name.into());
+        exports.push((function, name));
       }
     };
 
@@ -690,9 +796,9 @@ fn function_exports<'g>(
           let value = unwrap_expression(ast, declaration);
 
           if ast.kind(value).is_function() {
-            export(Some(value), "default");
+            export(Some(value), DEFAULT_NAME);
           } else if ast.kind(value) == Kind::Identifier {
-            export(function_of(ast.text(value)), "default");
+            export(function_of(ast.text(value)), DEFAULT_NAME);
           }
         }
 
@@ -704,9 +810,9 @@ fn function_exports<'g>(
 
           if let Some(declaration) = ast.child(statement, Slot::Declaration) {
             let mut declared = Vec::new();
-            declared_names(ast, declaration, &mut declared);
+            declared_name_atoms(ast, declaration, &mut declared);
             for name in declared {
-              export(function_of(name), name);
+              export(function_of(ast.atom(name)), name);
             }
           }
 
@@ -720,7 +826,7 @@ fn function_exports<'g>(
 
             export(
               function_of(module_export_name(ast, local)),
-              module_export_name(ast, exported),
+              module_export_atom(ast, exported),
             );
           }
         }
@@ -729,6 +835,10 @@ fn function_exports<'g>(
       }
     }
 
-    exports
+    // Stable: a function's names stay in the order they are exported.
+    exports.sort_by_key(|&(function, _)| function);
+    FunctionExports {
+      entries: exports.into_boxed_slice(),
+    }
   })
 }

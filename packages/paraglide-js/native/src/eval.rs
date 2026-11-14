@@ -1,6 +1,7 @@
 use std::{hash::BuildHasher, sync::Arc};
 
 use hashbrown::HashTable;
+use rayon::prelude::*;
 use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 
 use crate::{
@@ -41,6 +42,12 @@ pub trait CustomTargets: Sync {
     path: &[Arc<str>],
   ) -> Option<CustomSymbol>;
 }
+
+/// From this many candidates on, a binding's are evaluated in chunks on the pool: those of a
+/// function called from thousands of modules would otherwise keep one thread busy while the others
+/// are idle.
+const PARALLEL_CANDIDATES: usize = 4096;
+const CANDIDATE_CHUNK: usize = 1024;
 
 /// What one evaluation at a time is resolving, so that cycles end.
 pub struct Cx<'g> {
@@ -356,10 +363,7 @@ impl<'g> Cx<'g> {
         }
 
         let candidates = candidates_of(self.g, binding.owner, source, read);
-        let mut symbols = Vec::new();
-        for candidate in &candidates {
-          symbols.extend(self.evaluate_candidate(candidate));
-        }
+        let symbols = self.evaluate_candidates(&candidates);
 
         self.leave();
 
@@ -418,14 +422,51 @@ impl<'g> Cx<'g> {
     }
 
     let candidates = component_props(self.g, record);
-    let mut symbols = Vec::new();
-    for candidate in candidates.iter() {
-      symbols.extend(self.evaluate_candidate(candidate));
-    }
+    let symbols = self.evaluate_candidates(candidates);
 
     self.leave();
 
     distinct(symbols)
+  }
+
+  /// The values of the candidates, in order.
+  fn evaluate_candidates(&mut self, candidates: &[Candidate]) -> Vec<Symbol> {
+    if candidates.len() < PARALLEL_CANDIDATES {
+      let mut symbols = Vec::new();
+      for candidate in candidates {
+        symbols.extend(self.evaluate_candidate(candidate));
+      }
+      return symbols;
+    }
+
+    let (g, custom) = (self.g, self.custom);
+    let in_progress = &self.in_progress;
+    let members_being_read = &self.members_being_read;
+    let exports_being_resolved = &self.exports_being_resolved;
+
+    let chunks: Vec<Vec<Symbol>> = candidates
+      .par_chunks(CANDIDATE_CHUNK)
+      .map(|chunk| {
+        // Each chunk starts from what is in progress here, so that a cycle ends as it would here,
+        // and caches nothing, as nothing is cached while something is in progress.
+        let mut cx = Cx {
+          g,
+          custom,
+          in_progress: in_progress.clone(),
+          members_being_read: members_being_read.clone(),
+          exports_being_resolved: exports_being_resolved.clone(),
+          resolved: FxHashMap::default(),
+        };
+        let mut symbols = Vec::new();
+        for candidate in chunk {
+          symbols.extend(cx.evaluate_candidate(candidate));
+        }
+
+        first_occurrences(symbols)
+      })
+      .collect();
+
+    chunks.concat()
   }
 
   fn evaluate_candidate(&mut self, candidate: &Candidate) -> Vec<Symbol> {
@@ -778,11 +819,9 @@ impl<'g> Cx<'g> {
   }
 
   fn local_export(&mut self, record: &'g Module, name: &str) -> Option<Symbol> {
-    if let Some(statements) = record.syntax.exporting.get(name) {
-      for &statement in statements {
-        if let Some(found) = self.export_declared_by(record, statement, name) {
-          return found;
-        }
+    for statement in record.syntax.exporting.statements(&record.ast, name) {
+      if let Some(found) = self.export_declared_by(record, statement, name) {
+        return found;
       }
     }
 
@@ -818,7 +857,8 @@ impl<'g> Cx<'g> {
     if let Some(record) = graph.record(file) {
       let is_leaf = record.syntax.star_exports.is_empty() && graph.target_of(file).is_none();
       if is_leaf {
-        return !record.syntax.has_esm_exports || record.syntax.exporting.contains_key(name);
+        return !record.syntax.has_esm_exports
+          || record.syntax.exporting.contains(&record.ast, name);
       }
     }
 
@@ -972,7 +1012,7 @@ fn list_export_names(graph: &Graph, file: FileId) -> Option<FxHashSet<Box<str>>>
       return None;
     }
 
-    names.extend(record.syntax.exporting.keys().cloned());
+    names.extend(record.syntax.exporting.names(&record.ast).map(Box::from));
 
     for &statement in &record.syntax.star_exports {
       if let Some(reexported) = resolved_source(record, statement) {
@@ -1114,6 +1154,30 @@ fn class_element_name(ast: &ir::Ast, element: NodeId) -> Option<std::borrow::Cow
 
 /// One value per name and origin (two outdirs can define a message of the same name), the first
 /// found; namespaces stay as they are.
+/// `symbols` without repeats as `distinct` tells them apart, in the order they first occur: what
+/// `distinct` makes of a list it makes of the list's chunks' first occurrences.
+fn first_occurrences(symbols: Vec<Symbol>) -> Vec<Symbol> {
+  let mut namespaces: Vec<Arc<Namespace>> = Vec::new();
+  let mut seen: FxHashSet<(u32, FileId, Arc<str>, bool)> = FxHashSet::default();
+
+  symbols
+    .into_iter()
+    .filter(|symbol| match symbol {
+      Symbol::Namespace(namespace) => {
+        let is_new = !namespaces.iter().any(|known| Arc::ptr_eq(known, namespace));
+        if is_new {
+          namespaces.push(namespace.clone());
+        }
+        is_new
+      }
+      Symbol::Value(value) => {
+        let (target, origin) = value.origin();
+        seen.insert((target, origin, value.name.clone(), value.dynamic))
+      }
+    })
+    .collect()
+}
+
 fn distinct(symbols: Vec<Symbol>) -> Vec<Symbol> {
   if symbols.len() <= 1 {
     return symbols;
