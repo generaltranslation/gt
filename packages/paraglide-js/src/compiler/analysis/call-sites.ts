@@ -43,7 +43,6 @@ export type CallSiteIndex = {
 export type InstantiationSyntax = 'new' | 'call';
 
 type Call = Extract<CallSite, { type: 'call' }>;
-type JsxElement = Extract<CallSite, { type: 'jsx' }>;
 
 const MAX_COMPONENT_ALIASES = 8;
 
@@ -56,24 +55,9 @@ export function callSitesIn(
   return indexOnce(moduleScope, 'call-sites', (index) => {
     walk(program, {
       enter(node) {
-        if (node.type === 'CallExpression') {
-          const site: Call = {
-            type: 'call',
-            node,
-            arguments: node.arguments,
-            scope: moduleScope,
-          };
-          addSite(index, node.callee, site);
-        }
-
-        if (node.type === 'JSXOpeningElement') {
-          const site: JsxElement = {
-            type: 'jsx',
-            element: node,
-            scope: moduleScope,
-          };
-          addSite(index, node.name as Node, site);
-        }
+        // As `PositionedSites` builds them: both must give the same sites.
+        const site = siteOf(node, moduleScope);
+        if (site) addSite(index, calleeOf(site), site);
 
         return true;
       },
@@ -207,11 +191,57 @@ function indexOnce(
   return index;
 }
 
-function addSite(index: CallSiteIndex, callee: Node, site: CallSite): void {
+/**
+ * The identifier a site's callee is named by: `f` in `f()` and `<f />`, or
+ * `ns` in `ns.f()`, `ns["f"]()` and `<ns.f />`, with the member's name.
+ * Undefined for any other callee, which no site is found by.
+ */
+export type CalleeRoot = { identifier: Node; name: string; member?: string };
+
+export function calleeRoot(callee: Node): CalleeRoot | undefined {
   const node = unwrapExpression(callee);
 
-  if (node.type === 'Identifier' || node.type === 'JSXIdentifier') {
-    const declaration = site.scope.bindingAt(node)?.declaration;
+  if (node.type === 'Identifier' || node.type === 'JSXIdentifier')
+    return { identifier: node, name: node.name };
+
+  if (node.type !== 'MemberExpression' && node.type !== 'JSXMemberExpression')
+    return undefined;
+
+  const member = calleeMemberName(node);
+  if (member === undefined) return undefined;
+
+  const object = unwrapExpression(node.object as Node);
+  if (object.type !== 'Identifier' && object.type !== 'JSXIdentifier')
+    return undefined;
+
+  return { identifier: object, name: object.name, member };
+}
+
+/** The site of a call or a JSX element. */
+export function siteOf(node: Node, scope: Scope): CallSite | undefined {
+  if (node.type === 'CallExpression')
+    return { type: 'call', node, arguments: node.arguments, scope };
+
+  if (node.type === 'JSXOpeningElement')
+    return { type: 'jsx', element: node, scope };
+
+  return undefined;
+}
+
+/** The callee of a call, or the name of a JSX element. */
+export function calleeOf(site: CallSite): Node {
+  return site.type === 'call'
+    ? (site.node as ESTree.CallExpression).callee
+    : (site.element.name as Node);
+}
+
+function addSite(index: CallSiteIndex, callee: Node, site: CallSite): void {
+  const root = calleeRoot(callee);
+  if (!root) return;
+
+  const declaration = site.scope.bindingAt(root.identifier)?.declaration;
+
+  if (root.member === undefined) {
     if (!declaration) return;
 
     append(index.byDeclaration, declaration, site);
@@ -219,26 +249,16 @@ function addSite(index: CallSiteIndex, callee: Node, site: CallSite): void {
     return;
   }
 
-  if (node.type !== 'MemberExpression' && node.type !== 'JSXMemberExpression')
-    return;
+  if (declaration?.type !== 'ImportNamespaceSpecifier') return;
 
-  const member = calleeMemberName(node);
-  if (member === undefined) return;
-
-  const object = unwrapExpression(node.object as Node);
-  if (object.type !== 'Identifier' && object.type !== 'JSXIdentifier') return;
-
-  const namespace = site.scope.bindingAt(object)?.declaration;
-  if (namespace?.type !== 'ImportNamespaceSpecifier') return;
-
-  let sitesByMember = index.byNamespaceMember.get(namespace);
+  let sitesByMember = index.byNamespaceMember.get(declaration);
 
   if (!sitesByMember) {
     sitesByMember = new Map();
-    index.byNamespaceMember.set(namespace, sitesByMember);
+    index.byNamespaceMember.set(declaration, sitesByMember);
   }
 
-  append(sitesByMember, member, site);
+  append(sitesByMember, root.member, site);
   index.byPosition.set(sitePosition(site), site);
 }
 
@@ -253,7 +273,11 @@ function calleeMemberName(
     : undefined;
 }
 
-function append<K>(map: Map<K, CallSite[]>, key: K, site: CallSite): void {
+export function append<K>(
+  map: Map<K, CallSite[]>,
+  key: K,
+  site: CallSite
+): void {
   const sites = map.get(key);
 
   if (sites) sites.push(site);
