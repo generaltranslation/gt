@@ -19,7 +19,6 @@ export enum TranslationApiType {
  */
 export function getTranslationApiType(params: {
   projectId?: string;
-  devApiKey?: string;
   apiKey?: string;
   runtimeUrl?: string | null;
 }): TranslationApiType {
@@ -27,11 +26,7 @@ export function getTranslationApiType(params: {
     params.runtimeUrl === undefined ||
     params.runtimeUrl === defaultRuntimeApiUrl;
 
-  if (
-    usesDefaultRuntimeUrl &&
-    params.projectId &&
-    (params.devApiKey || params.apiKey)
-  ) {
+  if (usesDefaultRuntimeUrl && params.projectId && params.apiKey) {
     return TranslationApiType.GT;
   } else if (params.runtimeUrl && !usesDefaultRuntimeUrl) {
     return TranslationApiType.CUSTOM;

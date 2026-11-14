@@ -294,14 +294,14 @@ describe.sequential('gt-tanstack-start package exports', () => {
 
         assert.deepEqual(
           gtTanstackStart().map((plugin) => plugin.name),
-          ['gt-tanstack-start']
+          ['gt-tanstack-start', 'gt-react']
         );
         const plugins = gtTanstackStart({
           experimentalCompilerOptions: { type: 'babel', logLevel: 'silent' },
         });
         assert.deepEqual(
           plugins.map((plugin) => plugin.name),
-          ['gt-tanstack-start', '@generaltranslation/GT_PLUGIN']
+          ['gt-tanstack-start', 'gt-react', '@generaltranslation/GT_PLUGIN']
         );
       `,
     ]);

@@ -90,7 +90,10 @@ describe('gtTanstackStart', () => {
   it('omits the GT compiler plugin by default', () => {
     const { plugins } = createPlugins();
 
-    expect(plugins.map((plugin) => plugin.name)).toEqual(['gt-tanstack-start']);
+    expect(plugins.map((plugin) => plugin.name)).toEqual([
+      'gt-tanstack-start',
+      'gt-react',
+    ]);
   });
 
   it("includes the GT compiler plugin when type is 'babel'", () => {
@@ -98,6 +101,7 @@ describe('gtTanstackStart', () => {
 
     expect(plugins.map((plugin) => plugin.name)).toEqual([
       'gt-tanstack-start',
+      'gt-react',
       COMPILER_PLUGIN_NAME,
     ]);
   });
@@ -121,7 +125,10 @@ describe('gtTanstackStart', () => {
       experimentalCompilerOptions: { type: 'none' },
     });
 
-    expect(plugins.map((plugin) => plugin.name)).toEqual(['gt-tanstack-start']);
+    expect(plugins.map((plugin) => plugin.name)).toEqual([
+      'gt-tanstack-start',
+      'gt-react',
+    ]);
   });
 
   it('omits the GT compiler plugin and warns when compileTimeHash is false', () => {
@@ -129,7 +136,10 @@ describe('gtTanstackStart', () => {
       experimentalCompilerOptions: { type: 'babel', compileTimeHash: false },
     });
 
-    expect(plugins.map((plugin) => plugin.name)).toEqual(['gt-tanstack-start']);
+    expect(plugins.map((plugin) => plugin.name)).toEqual([
+      'gt-tanstack-start',
+      'gt-react',
+    ]);
     const warnOnce = resolveConfig(plugins[0], root, plugins);
     expect(warnOnce).toHaveBeenCalledWith(
       expect.stringContaining('Compile-time hashing is disabled')

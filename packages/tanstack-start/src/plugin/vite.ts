@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { gtReact } from 'gt-react/vite';
 import type { Logger, Plugin } from 'vite';
 import { createCompilerPlugin } from './compiler';
 import {
@@ -45,7 +46,9 @@ const configModules = ((
 /**
  * Supplies gt-tanstack-start with the app's gt.config.json and translation
  * loader, so the app does not write a loader, and runs
- * the experimental GT compiler on the app's source when enabled.
+ * the experimental GT compiler on the app's source when enabled. Like
+ * gtReact(), it exposes GT_PROJECT_ID, and GT_API_KEY in the dev server only,
+ * to client code.
  *
  * TanStack Start already processes gt-tanstack-start through Vite (it is
  * ssr.noExternal and excluded from dep optimization because it peer-depends on
@@ -155,5 +158,6 @@ export function gtTanstackStart(
     },
   };
 
-  return compilerPlugin ? [configPlugin, compilerPlugin] : [configPlugin];
+  const plugins = [configPlugin, gtReact()];
+  return compilerPlugin ? [...plugins, compilerPlugin] : plugins;
 }

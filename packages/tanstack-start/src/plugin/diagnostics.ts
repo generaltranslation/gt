@@ -76,7 +76,7 @@ export function createApiKeysOmittedWarning(configFileName: string): string {
     source: 'gt-tanstack-start',
     severity: 'Warning',
     whatHappened: `${configFileName} contains an API key, which gtTanstackStart() leaves out of the generated config so it is not published to the browser`,
-    fix: 'Remove apiKey and devApiKey from the file and set GT_API_KEY or VITE_GT_DEV_API_KEY in the environment instead',
+    fix: 'Remove apiKey and devApiKey from the file and set GT_API_KEY in the environment or a .env file instead; gtTanstackStart() exposes it to the browser only in the dev server',
   });
 }
 

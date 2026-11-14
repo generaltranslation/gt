@@ -32,19 +32,11 @@ export type I18nConfigParams = Pick<
   | 'runtimeUrl'
   | '_disableDevHotReload'
   | '_tagIds'
-> & {
-  /** The development API key; it enables hot reload translation in development. */
-  devApiKey?: string;
-};
+>;
 
 type RuntimeConfig = Pick<
   I18nConfigParams,
-  | 'projectId'
-  | 'devApiKey'
-  | 'apiKey'
-  | 'runtimeUrl'
-  | '_disableDevHotReload'
-  | '_tagIds'
+  'projectId' | 'apiKey' | 'runtimeUrl' | '_disableDevHotReload' | '_tagIds'
 >;
 
 export type LocaleCandidates = string | string[] | undefined;
@@ -59,7 +51,6 @@ export class I18nConfig extends GTIntl {
     super(getLocaleConfigParams(params, gtServicesEnabled));
     this.runtimeConfig = {
       projectId: params.projectId,
-      devApiKey: params.devApiKey,
       apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
       _disableDevHotReload: params._disableDevHotReload,
@@ -88,7 +79,7 @@ export class I18nConfig extends GTIntl {
 
   /**
    * The runtime for runtime translation, with the API key from `apiKey`, then
-   * the GT_API_KEY environment variable, then `devApiKey`.
+   * the GT_API_KEY environment variable.
    *
    * @throws {Error} Without a projectId or an API key.
    */
@@ -97,8 +88,7 @@ export class I18nConfig extends GTIntl {
     if (!projectId) throw new Error(missingRuntimeProjectIdError);
     const apiKey =
       this.runtimeConfig.apiKey ||
-      (typeof process !== 'undefined' && process.env?.GT_API_KEY) ||
-      this.runtimeConfig.devApiKey;
+      (typeof process !== 'undefined' && process.env?.GT_API_KEY);
     if (!apiKey) throw new Error(missingRuntimeApiKeyError);
     return new GTRuntime({
       apiKey,
@@ -145,12 +135,13 @@ export class I18nConfig extends GTIntl {
   }
 
   /**
-   * Returns true when development hot reload runtime translation requests can run.
+   * Returns true when development hot reload runtime translation requests can
+   * run: in development, with an API key and a projectId.
    */
   isDevHotReloadEnabled(): boolean {
     return (
       !this.runtimeConfig._disableDevHotReload &&
-      !!this.runtimeConfig.devApiKey &&
+      !!this.runtimeConfig.apiKey &&
       !!this.runtimeConfig.projectId &&
       this.runtimeConfig.runtimeUrl !== null &&
       this.runtimeConfig.runtimeUrl !== '' &&
@@ -280,5 +271,5 @@ const missingRuntimeApiKeyError = createDiagnosticMessage({
   source: 'gt-i18n',
   severity: 'Error',
   whatHappened: 'Runtime translation needs an API key',
-  fix: "Set `apiKey` (or `devApiKey` in development) in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation",
+  fix: "Set `apiKey` in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation",
 });

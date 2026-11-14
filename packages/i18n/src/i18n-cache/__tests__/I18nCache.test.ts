@@ -88,7 +88,7 @@ function createCache(
     ...(defaultLocale && { defaultLocale }),
     ...(locales && { locales }),
     customMapping,
-    devApiKey: cacheOverrides.devApiKey,
+    ...(cacheOverrides.apiKey && { apiKey: cacheOverrides.apiKey }),
   });
   return new TestI18nCache({
     loadTranslations: vi
@@ -171,7 +171,7 @@ describe('I18nCache', () => {
         'Runtime translation needs a projectId'
       );
       expect(String(warnings[1][0])).toContain(
-        'Runtime translation needs devApiKey or apiKey'
+        'Runtime translation needs an apiKey'
       );
     });
 
@@ -536,7 +536,7 @@ describe('I18nCache', () => {
     describe('prefetchEntries', () => {
       const devCredentials = {
         projectId: 'test-project',
-        devApiKey: 'gtx-dev-key',
+        apiKey: 'gtx-dev-key',
       };
       const prefetched = translated({ [expectedHash]: 'Préchargé {name} !' });
 
@@ -958,7 +958,7 @@ describe('I18nCache', () => {
       [
         'an API key',
         { apiKey: undefined },
-        "gt-i18n Error: Runtime translation needs an API key. Set `apiKey` (or `devApiKey` in development) in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation.",
+        "gt-i18n Error: Runtime translation needs an API key. Set `apiKey` in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation.",
       ],
     ])(
       'development: runtime translation without %s rejects each request with framework guidance',

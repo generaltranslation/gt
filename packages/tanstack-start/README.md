@@ -97,7 +97,7 @@ function RootDocument({ children }: { children: ReactNode }) {
 }
 ```
 
-The plugin reads `gt.config.json` (resolved from the current working directory; pass `gtTanstackStart({ config: 'path/to/gt.config.json' })` to change it) and loads translations from `files.gt.output` (also resolved from the working directory, as the `gt` CLI does). The router integration loads translations during SSR, hydrates them on the client, and renders `GTProvider`, so no root-route loader or `<GTProvider>` is needed. The browser loads the same config, so the plugin leaves `apiKey` and `devApiKey` out of it; keep keys in environment variables.
+The plugin reads `gt.config.json` (resolved from the current working directory; pass `gtTanstackStart({ config: 'path/to/gt.config.json' })` to change it) and loads translations from `files.gt.output` (also resolved from the working directory, as the `gt` CLI does). The router integration loads translations during SSR, hydrates them on the client, and renders `GTProvider`, so no root-route loader or `<GTProvider>` is needed. The browser loads the same config, so the plugin leaves `apiKey` out of it. Set `GT_PROJECT_ID` and `GT_API_KEY` in the environment or a `.env` file instead. The plugin exposes `GT_PROJECT_ID` to client code, and `GT_API_KEY` only during `vite dev` so translations hot-reload; `vite build` output never contains the key. Server code reads both from `process.env`. TanStack Start loads `.env` into `process.env` only while Vite runs, so set them in the production server's environment.
 
 Settings that `gt.config.json` cannot hold are plugin options, which override the file:
 

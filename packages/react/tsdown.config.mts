@@ -7,7 +7,7 @@ import {
 } from '../../tsdown.preset.mts';
 
 const deps = {
-  neverBundle: [/^react$/, /^react\//, /^react-dom$/, /^react-dom\//],
+  neverBundle: [/^react$/, /^react\//, /^react-dom$/, /^react-dom\//, /^vite$/],
   alwaysBundle: [
     /^@generaltranslation\/format\//,
     /^@generaltranslation\/react-core\//,
@@ -37,6 +37,7 @@ const entries = [
   'src/macros.ts',
   'src/unstable.ts',
   'src/unstable.rsc.ts',
+  'src/vite.ts',
 ];
 
 // src/index.types.ts only backs the exports map's "types" conditions; its
