@@ -87,6 +87,31 @@ describe('Markdown (VitePress)', () => {
     ]);
   });
 
+  test('math, snippet imports, and inline code inside tags and interpolations', async () => {
+    const usages = await analyze([
+      `<script setup>`,
+      `import { m } from "../paraglide/messages.js";`,
+      `</script>`,
+      ``,
+      `$$ {{ m.in_math() }} $$`,
+      ``,
+      `<<< @/snippets/{{ m.in_snippet() }}`,
+      ``,
+      'A <span :title="`${m.tick()}`">`{{ m.code_in_tag() }}`</span> {{ `${m.in_interpolation()}` }}',
+      ``,
+      `{{ m.multi(`,
+      `  1`,
+      `) }}`,
+      ``,
+      `<Comp><template #row="{ m }">{{ m.slot }}</template></Comp>`,
+    ]);
+    expect(describeUsages(usages)).toEqual([
+      'message:tick:call 9',
+      'message:in_interpolation:call 9',
+      'message:multi:call 11',
+    ]);
+  });
+
   test('a README without Vue is an empty module', async () => {
     const usages = await analyze([
       `# Project`,

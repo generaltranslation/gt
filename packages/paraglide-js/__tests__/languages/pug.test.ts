@@ -75,6 +75,57 @@ test("v-for and slot props shadow imports for their element's children", async (
   ).toEqual(['message:after:call 10:9', 'message:footer:call 14:8']);
 });
 
+test('tag interpolations, mixins, block expansion and inline HTML', async () => {
+  expect(
+    await analyze([
+      ...script,
+      `<template lang="pug">`,
+      `mixin row`,
+      `  p {{ m.in_mixin() }}`,
+      `+row`,
+      `  p {{ m.in_call() }}`,
+      `p #[strong(:title="m.tag_title()") {{ m.tag_text() }}] after`,
+      `p: span: b {{ m.expanded() }}`,
+      `if cond`,
+      `  p {{ m.conditional() }}`,
+      `script.`,
+      `  {{ m.script() }}`,
+      `<span :title="m.html()">{{ m.html_text() }}</span>`,
+      `List`,
+      `  template(#row="{ m }")`,
+      `    | {{ m.slot }}`,
+      `</template>`,
+    ])
+  ).toEqual([
+    'message:in_mixin:call 8:8',
+    'message:in_call:call 10:8',
+    'message:tag_title:call 11:20',
+    'message:tag_text:call 11:39',
+    'message:expanded:call 12:15',
+    'message:html:call 17:15',
+    'message:html_text:call 17:28',
+  ]);
+});
+
+test('an indented template, with tabs', async () => {
+  expect(
+    await analyze([
+      ...script,
+      `<template lang="pug">`,
+      `\tdiv`,
+      `\t\tp {{ m.a() }}`,
+      `\t\tp(:title='m.b()') {{ m.c() }}`,
+      `\tp {{ m.d() }}`,
+      `</template>`,
+    ])
+  ).toEqual([
+    'message:a:call 8:8',
+    'message:b:call 9:13',
+    'message:c:call 9:24',
+    'message:d:call 10:7',
+  ]);
+});
+
 test('an expression that does not parse is skipped, not the file', async () => {
   expect(
     await analyze([
