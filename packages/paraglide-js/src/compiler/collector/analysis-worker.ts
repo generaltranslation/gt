@@ -61,8 +61,14 @@ async function handle(request: WorkerRequest): Promise<unknown> {
     case 'summarize': {
       const globalNames = new Set(request.globalNames);
       return Promise.all(
-        request.files.map((file) =>
-          summarizeFile(file, defaultLanguages, packages, globalNames)
+        request.files.map((file, index) =>
+          summarizeFile(
+            file,
+            defaultLanguages,
+            packages,
+            globalNames,
+            request.knownHashes[index]
+          )
         )
       );
     }

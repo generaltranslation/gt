@@ -42,6 +42,7 @@ import {
   type SummaryResult,
 } from './module-reader.js';
 import { OutdirProjects } from './outdir-projects.js';
+import { cacheFingerprint, packageVersion, UsageCache } from './usage-cache.js';
 
 /** Resolves an import like the project's bundler would: a file, or nothing. */
 export type Resolver = (
@@ -105,6 +106,10 @@ export class ContextCollector {
   private readonly outdirDetector: OutdirDetector;
   private readonly outdirProjects: OutdirProjects;
   private readonly output: MetadataFiles;
+  /** What the last run found, set once the auto-imported names are known: see `UsageCache`. */
+  private cache: UsageCache | undefined;
+  /** Files whose summary was kept from the last run. */
+  private unchangedFiles = 0;
 
   /** The analyzed files, and how many usages each has. */
   private readonly analyzed = new Map<string, number>();
@@ -175,6 +180,7 @@ export class ContextCollector {
       : analysisBudget(this.averageFileSize);
     try {
       sourceCount = await this.scan(files, autoImportDeclarations);
+      this.cache?.save();
     } finally {
       await this.pool?.close();
       this.pool = undefined;
@@ -195,6 +201,7 @@ export class ContextCollector {
     // Outdirs inside `include` must be known before choosing the sources.
     await Promise.all(files.map((file) => this.moduleGraph.detectOutdir(file)));
     await this.loadGlobals(autoImportDeclarations);
+    this.cache = this.loadCache();
 
     const sources = files.filter((file) => !this.moduleGraph.isGenerated(file));
 
@@ -300,17 +307,26 @@ export class ContextCollector {
     return path.isAbsolute(file) ? path.normalize(file) : undefined;
   }
 
-  /** What a file loads, for the index. */
+  /** What a file loads, for the index: kept from the last run if the file did not change. */
   private async summarize(file: string): Promise<ParsedSummary | undefined> {
-    const result: SummaryResult = this.pool
-      ? await this.pool.summarize(file)
+    const known = this.cache?.get(file);
+    const knownHash = known?.summary ? known.hash : undefined;
+    const result: SummaryResult | undefined = this.pool
+      ? await this.pool.summarize(file, knownHash)
       : await summarizeFile(
           file,
           this.settings.languages,
           this.packages,
-          this.globalNames
+          this.globalNames,
+          knownHash
         );
     if (!result) return undefined;
+
+    if ('unchanged' in result) {
+      this.unchangedFiles++;
+      this.cache!.set(file, known!);
+      return known!.summary;
+    }
 
     if ('failure' in result) {
       this.reportSkipped(file, result.failure);
@@ -321,7 +337,29 @@ export class ContextCollector {
       this.generated.set(file, result.generated);
     }
 
+    // A generated module is not kept: the analysis may load it.
+    this.cache?.set(file, {
+      hash: result.hash,
+      summary: result.generated ? undefined : result.summary,
+    });
+
     return result.summary;
+  }
+
+  /** The cache for this run's languages, targets and auto-imported names. */
+  private loadCache(): UsageCache {
+    const { projectRoot, languages, targets } = this.settings;
+    const fingerprint = cacheFingerprint(projectRoot, {
+      packageVersion: packageVersion(),
+      tools: languages.flatMap((language) => language.requires ?? []),
+      settings: [
+        ...languages.map(({ name }) => `language ${name}`),
+        ...targets.map(({ name }) => `target ${name}`),
+        ...[...this.globalNames].sort().map((name) => `global ${name}`),
+      ],
+    });
+
+    return UsageCache.load(projectRoot, fingerprint);
   }
 
   private reportSkipped(file: string, failure: ParseFailure): void {
@@ -560,7 +598,10 @@ export class ContextCollector {
 
     this.settings.logger.info(
       `${LOG_PREFIX} ${usages} usage(s) in ${counts.length} of ${sourceCount} analyzed file(s)` +
-        (outdirs ? `; outdirs: ${outdirs}` : '')
+        (outdirs ? `; outdirs: ${outdirs}` : '') +
+        (this.unchangedFiles > 0
+          ? `; ${this.unchangedFiles} file(s) indexed as in the last run`
+          : '')
     );
   }
 

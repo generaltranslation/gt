@@ -205,6 +205,15 @@ export async function generateSource(
   return { language: language.name, source: generated };
 }
 
+/** Whether one of `languages` generates a module for the file: its tooling runs to read it. */
+export function hasLanguage(
+  file: string,
+  code: string,
+  languages: readonly SourceLanguage[]
+): boolean {
+  return languageOf(file, code, languages) !== undefined;
+}
+
 function languageOf(
   file: string,
   code: string,
