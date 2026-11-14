@@ -66,6 +66,22 @@
       }
     },
     {
+      "files": ["packages/*/src/**/*.{ts,tsx,mts,cts}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "generaltranslation/api",
+                "message": "Import API symbols from their owner, @generaltranslation/api, not the generaltranslation facade."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["packages/next/src/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
@@ -75,6 +91,10 @@
               {
                 "name": "gt-react/client",
                 "message": "Next server/RSC code must not import the gt-react client entrypoint. Use a 'use client' boundary module instead."
+              },
+              {
+                "name": "generaltranslation/api",
+                "message": "Import API symbols from their owner, @generaltranslation/api, not the generaltranslation facade."
               }
             ]
           }
@@ -91,7 +111,17 @@
         "packages/next/src/**/__tests__/**"
       ],
       "rules": {
-        "no-restricted-imports": "off"
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "generaltranslation/api",
+                "message": "Import API symbols from their owner, @generaltranslation/api, not the generaltranslation facade."
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -124,6 +154,10 @@
                   "useSyncExternalStore"
                 ],
                 "message": "RSC-safe modules must not use context- or state-backed React APIs."
+              },
+              {
+                "name": "generaltranslation/api",
+                "message": "Import API symbols from their owner, @generaltranslation/api, not the generaltranslation facade."
               }
             ],
             "patterns": [
@@ -183,7 +217,17 @@
         "packages/sanity/src/**/*.test.{ts,tsx}"
       ],
       "rules": {
-        "no-restricted-imports": "off"
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "generaltranslation/api",
+                "message": "Import API symbols from their owner, @generaltranslation/api, not the generaltranslation facade."
+              }
+            ]
+          }
+        ]
       }
     }
   ]

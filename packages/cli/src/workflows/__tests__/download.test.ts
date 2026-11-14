@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { JobResult } from 'generaltranslation/api';
+import type { JobResult } from '@generaltranslation/api';
 import type { Settings } from '../../types/index.js';
 import { logger } from '../../console/logger.js';
 import { displayTranslateSummary } from '../../console/displayTranslateSummary.js';
