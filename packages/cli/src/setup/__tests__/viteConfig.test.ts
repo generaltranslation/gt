@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { configureGTReactPlugin } from '../buildTools/shared/viteConfig.js';
+import { configureGTVitePlugin } from '../buildTools/shared/viteConfig.js';
+import { Libraries } from '../../types/libraries.js';
 
 const VITE_CONFIG = `import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -20,7 +21,7 @@ export default defineConfig({
 })
 `;
 
-describe('configureGTReactPlugin', () => {
+describe('configureGTVitePlugin', () => {
   let appDirectory: string;
   const file = (name: string) => path.join(appDirectory, name);
   const read = (name: string) => fs.readFileSync(file(name), 'utf8');
@@ -46,17 +47,43 @@ describe('configureGTReactPlugin', () => {
     installGTReact({ '.': './index.mjs', './vite': './vite.mjs' });
     write('vite.config.ts', VITE_CONFIG);
 
-    expect(await configureGTReactPlugin(appDirectory, false)).toEqual({
+    expect(
+      await configureGTVitePlugin(appDirectory, Libraries.GT_REACT, false)
+    ).toEqual({
       steps: ['configured vite.config.ts'],
       manualActions: [],
     });
     expect(read('vite.config.ts')).toBe(CONFIGURED);
 
-    expect(await configureGTReactPlugin(appDirectory, false)).toEqual({
+    expect(
+      await configureGTVitePlugin(appDirectory, Libraries.GT_REACT, false)
+    ).toEqual({
       steps: [],
       manualActions: [],
     });
     expect(read('vite.config.ts')).toBe(CONFIGURED);
+  });
+
+  it.each([
+    [Libraries.GT_VUE, 'gtVue'],
+    [Libraries.GT_SVELTE, 'gtSvelte'],
+  ] as const)('adds the %s plugin', async (runtime, name) => {
+    write(
+      `node_modules/${runtime}/package.json`,
+      JSON.stringify({ name: runtime, exports: { './vite': './vite.js' } })
+    );
+    write('vite.config.ts', VITE_CONFIG);
+
+    expect(await configureGTVitePlugin(appDirectory, runtime, false)).toEqual({
+      steps: ['configured vite.config.ts'],
+      manualActions: [],
+    });
+    expect(read('vite.config.ts')).toBe(
+      CONFIGURED.replace(
+        "import { gtReact } from 'gt-react/vite'",
+        `import { ${name} } from '${runtime}/vite'`
+      ).replace('gtReact()]', `${name}()]`)
+    );
   });
 
   it('reuses an existing import instead of adding another', async () => {
@@ -69,7 +96,7 @@ describe('configureGTReactPlugin', () => {
       )
     );
 
-    await configureGTReactPlugin(appDirectory, false);
+    await configureGTVitePlugin(appDirectory, Libraries.GT_REACT, false);
 
     expect(read('vite.config.ts')).toBe(
       CONFIGURED.replace(
@@ -86,8 +113,9 @@ describe('configureGTReactPlugin', () => {
     if (exports) installGTReact(exports);
     write('vite.config.ts', VITE_CONFIG);
 
-    const { steps, manualActions } = await configureGTReactPlugin(
+    const { steps, manualActions } = await configureGTVitePlugin(
       appDirectory,
+      Libraries.GT_REACT,
       false
     );
 
@@ -105,7 +133,9 @@ describe('configureGTReactPlugin', () => {
     installGTReact({ './vite': './vite.mjs' });
     write('vite.config.ts', VITE_CONFIG);
 
-    expect(await configureGTReactPlugin(appDirectory, true)).toEqual({
+    expect(
+      await configureGTVitePlugin(appDirectory, Libraries.GT_REACT, true)
+    ).toEqual({
       steps: [],
       manualActions: [
         {
@@ -117,7 +147,9 @@ describe('configureGTReactPlugin', () => {
     expect(read('vite.config.ts')).toBe(VITE_CONFIG);
 
     write('vite.config.ts', CONFIGURED);
-    expect(await configureGTReactPlugin(appDirectory, true)).toEqual({
+    expect(
+      await configureGTVitePlugin(appDirectory, Libraries.GT_REACT, true)
+    ).toEqual({
       steps: [],
       manualActions: [],
     });
@@ -134,7 +166,9 @@ describe('configureGTReactPlugin', () => {
     installGTReact({ './vite': './vite.mjs' });
     if (content) write('vite.config.ts', content);
 
-    expect(await configureGTReactPlugin(appDirectory, false)).toEqual({
+    expect(
+      await configureGTVitePlugin(appDirectory, Libraries.GT_REACT, false)
+    ).toEqual({
       steps: [],
       manualActions: [
         {

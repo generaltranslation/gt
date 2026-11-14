@@ -220,23 +220,41 @@ export function addVitePluginCall(
   return parseModule(configured, viteConfig.path) ? configured : undefined;
 }
 
-const GT_REACT_SUBPATH = './vite';
-const GT_REACT_PLUGIN: VitePlugin = {
-  name: 'gtReact',
-  source: `${Libraries.GT_REACT}/vite`,
+/** The GT runtimes whose `/vite` plugin passes credentials to the app. */
+export type ViteCredentialsRuntime =
+  | typeof Libraries.GT_REACT
+  | typeof Libraries.GT_VUE
+  | typeof Libraries.GT_SVELTE;
+
+const GT_VITE_PLUGINS: Record<
+  ViteCredentialsRuntime,
+  { name: string; upgradeTo: string }
+> = {
+  [Libraries.GT_REACT]: { name: 'gtReact', upgradeTo: '12 or later' },
+  [Libraries.GT_VUE]: {
+    name: 'gtVue',
+    upgradeTo: `a version that exports ${Libraries.GT_VUE}/vite`,
+  },
+  [Libraries.GT_SVELTE]: {
+    name: 'gtSvelte',
+    upgradeTo: `a version that exports ${Libraries.GT_SVELTE}/vite`,
+  },
 };
-const GT_REACT_PLUGIN_STEP = `add import { ${GT_REACT_PLUGIN.name} } from '${GT_REACT_PLUGIN.source}' and add ${GT_REACT_PLUGIN.name}() to the plugins of defineConfig`;
 
 /**
- * Registers gtReact() in the Vite config, which passes GT_PROJECT_ID to the
- * app and GT_API_KEY during `vite serve` only. A config that already
- * registers it is left as it is. `keepAppSource` reports the change instead
- * of writing it.
+ * Registers the runtime's Vite plugin, such as gtReact(), in the Vite config;
+ * it passes GT_PROJECT_ID to the app and GT_API_KEY during `vite serve` only.
+ * A config that already registers it is left as it is. `keepAppSource`
+ * reports the change instead of writing it.
  */
-export async function configureGTReactPlugin(
+export async function configureGTVitePlugin(
   appDirectory: string,
+  runtime: ViteCredentialsRuntime,
   keepAppSource: boolean
 ): Promise<SetupResult> {
+  const { name, upgradeTo } = GT_VITE_PLUGINS[runtime];
+  const plugin: VitePlugin = { name, source: `${runtime}/vite` };
+  const pluginStep = `add import { ${name} } from '${plugin.source}' and add ${name}() to the plugins of defineConfig`;
   const viteConfig = await readViteConfig(appDirectory);
   if (!viteConfig) {
     return {
@@ -244,44 +262,38 @@ export async function configureGTReactPlugin(
       manualActions: [
         {
           whatHappened: 'No vite.config was found',
-          fix: `Create vite.config.ts, then ${GT_REACT_PLUGIN_STEP}`,
+          fix: `Create vite.config.ts, then ${pluginStep}`,
         },
       ],
     };
   }
-  if (findVitePluginCalls(viteConfig, GT_REACT_PLUGIN).length > 0) {
+  if (findVitePluginCalls(viteConfig, plugin).length > 0) {
     return { steps: [], manualActions: [] };
   }
-  // Installing gt-react keeps an existing version, which may predate the
+  // Installing the runtime keeps an existing version, which may predate the
   // plugin, and a declared one may not be installed yet; importing a missing
   // export would break the build.
-  if (
-    !(await hasPackageExport(
-      appDirectory,
-      Libraries.GT_REACT,
-      GT_REACT_SUBPATH
-    ))
-  ) {
+  if (!(await hasPackageExport(appDirectory, runtime, './vite'))) {
     return {
       steps: [],
       manualActions: [
         {
-          whatHappened: `No installed ${Libraries.GT_REACT} with a Vite plugin was found, so GT left ${viteConfig.path} unchanged`,
-          fix: `Install or upgrade ${Libraries.GT_REACT} to 12 or later, then in ${viteConfig.path}, ${GT_REACT_PLUGIN_STEP}`,
+          whatHappened: `No installed ${runtime} with a Vite plugin was found, so GT left ${viteConfig.path} unchanged`,
+          fix: `Install or upgrade ${runtime} to ${upgradeTo}, then in ${viteConfig.path}, ${pluginStep}`,
         },
       ],
     };
   }
   const configured = keepAppSource
     ? undefined
-    : addVitePluginCall(viteConfig, GT_REACT_PLUGIN, (local) => `${local}()`);
+    : addVitePluginCall(viteConfig, plugin, (local) => `${local}()`);
   if (!configured) {
     return {
       steps: [],
       manualActions: [
         {
           whatHappened: `${viteConfig.path} was not configured automatically`,
-          fix: `In ${viteConfig.path}, ${GT_REACT_PLUGIN_STEP}`,
+          fix: `In ${viteConfig.path}, ${pluginStep}`,
         },
       ],
     };
