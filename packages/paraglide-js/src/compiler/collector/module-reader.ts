@@ -7,6 +7,7 @@ import {
 import type { ParsedModule } from '../analysis/module-graph.js';
 import {
   generateSource,
+  hasLanguage,
   parseSourceSync,
   type GeneratedSource,
   type LanguageContext,
@@ -15,6 +16,7 @@ import {
 } from '../languages/language.js';
 import { parseModuleCode } from '../utils/parse.js';
 import { readTextFile } from '../utils/read-file.js';
+import { contentHash } from './usage-cache.js';
 
 /** The module a language's tooling generated for a file, and the language's name. */
 export type GeneratedModule = { language: string; source: GeneratedSource };
@@ -26,31 +28,44 @@ export type GeneratedModule = { language: string; source: GeneratedSource };
  */
 export type GeneratedBytes = Uint8Array;
 
-export type SummaryResult =
+export type SummaryResult = (
   | { summary: ParsedSummary; generated?: GeneratedBytes }
+  /** The file still has the hash it was summarized with: see `UsageCache`. */
+  | { unchanged: true }
   | { failure: ParseFailure }
-  /** The file cannot be read. */
-  | undefined;
+) & { hash: string };
 
-/** Reads a file to index it: what it loads, and the module its language generates. */
+/**
+ * Reads a file to index it: what it loads, and the module its language
+ * generates. A file whose content still has `knownHash` is not read further,
+ * unless a language generates a module for it: the analysis may load it.
+ * Undefined if the file cannot be read.
+ */
 export async function summarizeFile(
   file: string,
   languages: readonly SourceLanguage[],
   packages: LanguageContext,
-  globalNames: ReadonlySet<string>
-): Promise<SummaryResult> {
+  globalNames: ReadonlySet<string>,
+  knownHash?: string
+): Promise<SummaryResult | undefined> {
   const code = await readTextFile(file);
   if (code === undefined) return undefined;
 
+  const hash = contentHash(code);
+  if (hash === knownHash && !hasLanguage(file, code, languages)) {
+    return { unchanged: true, hash };
+  }
+
   const generated = await generateSource(file, code, languages, packages);
-  if (generated && 'error' in generated) return { failure: generated };
+  if (generated && 'error' in generated) return { failure: generated, hash };
 
   const parsed = parseSourceSync(file, code, parseModuleCode, generated);
-  if (!('module' in parsed)) return { failure: parsed };
+  if (!('module' in parsed)) return { failure: parsed, hash };
 
   return {
     summary: summarizeModule(parsed.module, globalNames),
     generated: generated && v8.serialize(generated),
+    hash,
   };
 }
 

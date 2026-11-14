@@ -9,6 +9,7 @@ import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { writeProject } from '../helpers/fixture.js';
+import { FALLBACK_FILE } from '../../src/compiler/collector/usage-cache.js';
 
 const DIST = path.resolve(import.meta.dirname, '../../dist/src/compiler');
 const CLI = path.join(DIST, 'cli/index.js');
@@ -45,6 +46,8 @@ async function collectWith(
 ): Promise<{ metadata: string; log: string }> {
   const metadataFile = path.join(root, 'messages/en.metadata.json');
   await fs.rm(metadataFile, { force: true });
+  // Each run starts cold: see `UsageCache`.
+  await fs.rm(path.join(root, FALLBACK_FILE), { force: true });
 
   const { stdout, stderr } = await run(
     process.execPath,
