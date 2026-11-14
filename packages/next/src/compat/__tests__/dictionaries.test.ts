@@ -19,6 +19,7 @@ const {
 }));
 
 vi.mock('gt-i18n/internal', () => ({
+  getI18nCache: () => ({ getCacheExpiryTime: () => 1000 }),
   getI18nConfig: mockGetI18nConfig,
 }));
 
@@ -26,10 +27,6 @@ vi.mock('gt-i18n/internal/compat', () => ({
   getDictionaryManager: mockGetDictionaryManager,
   initializeDictionaryManager: mockInitializeDictionaryManager,
   isDictionaryManagerInitialized: mockIsDictionaryManagerInitialized,
-}));
-
-vi.mock('../../setup/shared', () => ({
-  getParams: () => ({ nextI18nCacheParams: { cacheExpiryTime: 1000 } }),
 }));
 
 vi.mock('../getDictionary', () => ({

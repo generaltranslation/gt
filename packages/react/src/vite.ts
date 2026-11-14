@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { credentialEnvNames } from 'generaltranslation/internal';
 import { loadEnv, type InlineConfig, type Plugin } from 'vite';
 
 const apiKeyEnvPrefixError = createDiagnosticMessage({
@@ -36,8 +37,8 @@ export function gtReact(): Plugin {
       // A build ships to users, and anyone can read a key in a browser bundle.
       const names =
         command === 'serve'
-          ? ['GT_PROJECT_ID', 'GT_API_KEY']
-          : ['GT_PROJECT_ID'];
+          ? Object.values(credentialEnvNames)
+          : [credentialEnvNames.projectId];
       return {
         define: Object.fromEntries(
           names
@@ -51,7 +52,9 @@ export function gtReact(): Plugin {
     },
     configResolved({ envPrefix = 'VITE_' }) {
       if (
-        [envPrefix].flat().some((prefix) => 'GT_API_KEY'.startsWith(prefix))
+        [envPrefix]
+          .flat()
+          .some((prefix) => credentialEnvNames.apiKey.startsWith(prefix))
       ) {
         throw new Error(apiKeyEnvPrefixError);
       }

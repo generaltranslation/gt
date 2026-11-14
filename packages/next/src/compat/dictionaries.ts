@@ -1,11 +1,10 @@
-import { getI18nConfig, type Locale } from 'gt-i18n/internal';
+import { getI18nCache, getI18nConfig, type Locale } from 'gt-i18n/internal';
 import {
   getDictionaryManager,
   initializeDictionaryManager,
   isDictionaryManagerInitialized,
   type Dictionary,
 } from 'gt-i18n/internal/compat';
-import { getParams } from '../setup/shared';
 import { getDictionary } from './getDictionary';
 import { resolveDictionaryLoader } from './resolveDictionaryLoader';
 
@@ -22,7 +21,8 @@ export function ensureNextDictionaryManager(): void {
       loadDictionary: async (locale: string) =>
         ((await loadDictionary(locale)) || {}) as Dictionary,
     }),
-    cacheExpiryTime: getParams().nextI18nCacheParams.cacheExpiryTime,
+    // Dictionaries expire with the translations cache set up at initialization.
+    cacheExpiryTime: getI18nCache().getCacheExpiryTime(),
   });
 }
 

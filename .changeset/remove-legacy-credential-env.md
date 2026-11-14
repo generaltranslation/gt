@@ -4,7 +4,7 @@
 'gt-node': major
 ---
 
-Next.js and gt-node read credentials only from `GT_PROJECT_ID` and `GT_API_KEY`. In development, `GT_API_KEY` is also the hot-reload key.
+The only credential variables Next.js and gt-node read are `GT_PROJECT_ID` and `GT_API_KEY`. In development, `GT_API_KEY` is also the hot-reload key.
 
 - gt-next no longer reads `NEXT_PUBLIC_GT_PROJECT_ID` or `NEXT_PUBLIC_GT_DEV_API_KEY`. Rename them to `GT_PROJECT_ID` and `GT_API_KEY`, or rerun `npx gt init`.
 - gt-node no longer reads `GT_DEV_API_KEY`. Rename it to `GT_API_KEY`.

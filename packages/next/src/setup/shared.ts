@@ -22,7 +22,9 @@ export function getParams(): {
     'NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
     process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS
   );
-  const { projectId, apiKey } = getRuntimeCredentials();
+  const { projectId, apiKey } = getRuntimeCredentials({
+    projectId: clientConfig.projectId,
+  });
 
   // I18nConfigParams
   const i18nConfigParams: NextSetupI18nConfigParams = {

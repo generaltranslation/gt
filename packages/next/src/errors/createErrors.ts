@@ -108,6 +108,20 @@ export const invalidCanonicalLocalesError = (locales: string[]) =>
     details: locales,
   });
 
+export const createProjectIdMismatchError = (
+  configured: string,
+  environment: string
+) =>
+  createGtNextPluginDiagnostic({
+    severity: 'Error',
+    whatHappened: 'The project IDs do not match',
+    details: [
+      `gt.config.json or withGTConfig(): ${configured}`,
+      `GT_PROJECT_ID: ${environment}`,
+    ],
+    fix: 'Use the same project ID in both, or remove one of them',
+  });
+
 // ---- WARNINGS ---- //
 
 export const createBadFilepathWarning = (filename: string, dir: string[]) =>

@@ -13,6 +13,7 @@ import type {
   Plugin,
 } from 'payload';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
+import { resolveCredentials } from 'generaltranslation/internal';
 import { APIError } from 'payload';
 import { ApiError } from '@generaltranslation/api';
 import { siteCoverage } from './coverage';
@@ -366,16 +367,16 @@ function withGlobalControls(
 // on every document with localized fields, a Translations page, the
 // endpoints they call, and Payload job runs that finish translations without
 // the browser.
-export const gtPlugin =
-  (options: GtPluginOptions = {}): Plugin =>
-  (config: Config): Config => {
+export const gtPlugin = (options: GtPluginOptions = {}): Plugin => {
+  // The only read of the environment. The client is still built on first use,
+  // so a missing key fails the run that needs it, not the Payload config.
+  const { projectId, apiKey } = resolveCredentials(options, process.env);
+  return (config: Config): Config => {
     if (!config.localization) return config;
     let built: GtClient | undefined = options.client;
     const client = (payload: Payload) => {
       if (built) return built;
-      const apiKey = options.apiKey ?? process.env.GT_API_KEY;
       if (!apiKey) throw new Error(missingApiKeyDiagnostic);
-      const projectId = options.projectId ?? process.env.GT_PROJECT_ID;
       if (!projectId) throw new Error(missingProjectIdDiagnostic);
       return (built = new GeneralTranslation({
         apiKey,
@@ -434,3 +435,4 @@ export const gtPlugin =
       },
     };
   };
+};

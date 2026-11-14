@@ -1,32 +1,31 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { getRuntimeEnvironment, type I18nConfigParams } from 'gt-i18n/internal';
+import {
+  credentialEnvNames,
+  resolveCredentials,
+  type CredentialsEnv,
+  type ResolvedCredentials,
+} from 'generaltranslation/internal';
+import { getRuntimeEnvironment } from 'gt-i18n/internal';
 
-type RuntimeCredentials = Pick<I18nConfigParams, 'projectId' | 'apiKey'>;
-type RuntimeEnv = {
-  GT_PROJECT_ID?: string;
-  GT_API_KEY?: string;
-};
-
-export function addRuntimeCredentials<T extends RuntimeCredentials>(
+/**
+ * Resolves credentials once, when gt-react is initialized, from the config and
+ * then the environment.
+ */
+export function addRuntimeCredentials<T extends Partial<ResolvedCredentials>>(
   config: T
-): Omit<T, keyof RuntimeCredentials> & RuntimeCredentials {
-  const credentials = getRuntimeCredentials();
-  let apiKey = config.apiKey || credentials.apiKey;
+): Omit<T, keyof ResolvedCredentials> & ResolvedCredentials {
+  const credentials = resolveCredentials(config, readCredentialsEnv());
   // Anyone can read a key from a production browser bundle, so production
   // browser code never uses one; runtime translation there goes through a server.
   if (
-    apiKey &&
+    credentials.apiKey &&
     typeof window !== 'undefined' &&
     getRuntimeEnvironment() === 'production'
   ) {
     console.warn(apiKeyInProductionBrowserWarning);
-    apiKey = undefined;
+    credentials.apiKey = undefined;
   }
-  return {
-    ...config,
-    projectId: config.projectId || credentials.projectId,
-    apiKey,
-  };
+  return { ...config, ...credentials };
 }
 
 const apiKeyInProductionBrowserWarning = createDiagnosticMessage({
@@ -43,16 +42,18 @@ const apiKeyInProductionBrowserWarning = createDiagnosticMessage({
 // process.env; browser code never reads the key from there, so a bundler that
 // inlines process.env cannot ship it. Plain member access is the form
 // bundlers' define matches.
-function getRuntimeCredentials(): RuntimeCredentials {
+function readCredentialsEnv(): CredentialsEnv {
   return {
-    projectId:
+    [credentialEnvNames.projectId]:
       readEnvValue(
         () =>
-          (import.meta as ImportMeta & { env: RuntimeEnv }).env.GT_PROJECT_ID
+          (import.meta as ImportMeta & { env: CredentialsEnv }).env
+            .GT_PROJECT_ID
       ) || readEnvValue(() => process.env.GT_PROJECT_ID),
-    apiKey:
+    [credentialEnvNames.apiKey]:
       readEnvValue(
-        () => (import.meta as ImportMeta & { env: RuntimeEnv }).env.GT_API_KEY
+        () =>
+          (import.meta as ImportMeta & { env: CredentialsEnv }).env.GT_API_KEY
       ) ||
       (typeof window === 'undefined'
         ? readEnvValue(() => process.env.GT_API_KEY)

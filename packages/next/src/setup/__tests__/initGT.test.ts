@@ -231,6 +231,18 @@ describe('getParams', () => {
     expect(i18nConfigParams.apiKey).toBeUndefined();
   });
 
+  it('uses the project ID withGTConfig() serialized, then GT_PROJECT_ID', () => {
+    process.env.NODE_ENV = 'production';
+
+    updateClientConfig({ projectId: 'config-project-id' });
+    expect(getParams().i18nConfigParams.projectId).toBe('config-project-id');
+    expect(getParams().nextI18nCacheParams.projectId).toBe('config-project-id');
+
+    updateClientConfig({ projectId: undefined });
+    process.env.GT_PROJECT_ID = 'env-project-id';
+    expect(getParams().i18nConfigParams.projectId).toBe('env-project-id');
+  });
+
   it.each(['production', 'test'])(
     'passes GT_API_KEY to the server runtime when NODE_ENV is %s',
     (nodeEnv) => {

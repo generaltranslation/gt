@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   createConditionStoreSingleton,
   getI18nConfig,
@@ -30,6 +30,23 @@ describe('gt-react react-server surface', () => {
       expect(useLocales()).toEqual(['en-us', 'en-gb']);
       expect(getI18nConfig().getLocales()).toEqual(['en-us', 'en-gb']);
     } finally {
+      const registry = Reflect.get(globalThis, '__generaltranslation');
+      if (registry) Reflect.deleteProperty(registry, 'i18n');
+    }
+  });
+
+  it('initializeGT resolves credentials from the environment', async () => {
+    vi.stubEnv('GT_PROJECT_ID', 'env-project-id');
+    vi.stubEnv('GT_API_KEY', 'env-api-key');
+    const { initializeGT } = await import('../index.rsc');
+    try {
+      initializeGT({ defaultLocale: 'en', loadTranslations: async () => ({}) });
+      expect(getI18nConfig().getTranslationRuntime()).toMatchObject({
+        projectId: 'env-project-id',
+        apiKey: 'env-api-key',
+      });
+    } finally {
+      vi.unstubAllEnvs();
       const registry = Reflect.get(globalThis, '__generaltranslation');
       if (registry) Reflect.deleteProperty(registry, 'i18n');
     }

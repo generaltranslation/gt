@@ -6,11 +6,13 @@ import { hasLogin } from './oauth.js';
  * runtime key (gt init saves a translate-only key there for Next.js), so a
  * stored login acts for the CLI instead. A shell or CI GT_API_KEY stays
  * authoritative.
+ *
+ * @param apiKey - GT_API_KEY as the caller read it from the environment.
  */
 export async function resolveCliApiKey(
+  apiKey: string | undefined,
   baseUrl: string
 ): Promise<string | undefined> {
-  const apiKey = process.env.GT_API_KEY;
   if (!apiKey || apiKey !== getEnvFileApiKey()) return apiKey;
   const signedIn = await hasLogin({ baseUrl }).catch(() => false);
   return signedIn ? undefined : apiKey;
