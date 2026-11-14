@@ -7,6 +7,7 @@ import {
   type SpecifierLinks,
 } from './importers.js';
 import type { ModuleRecord, ParsedModule } from './module-graph.js';
+import type { SitePositions } from './site-positions.js';
 import {
   exportingStatements,
   hasEsmExports,
@@ -41,8 +42,13 @@ export type ModuleSummary<Names extends AnyNameList = NameList> = {
     exports?: { names: Names; stars: readonly string[] };
     /** The auto-imported names it may use: see `summarizeModule`. */
     globalNames: readonly string[];
+    /** Unset when unknown: see `sitePositions`. */
+    sites?: SitePositions | SharedSitesPlace;
   }>;
 };
+
+/** Where a module's `SitePositions` are in the buffer of `withSharedSites`, in numbers. */
+export type SharedSitesPlace = { at: number; length: number };
 
 /**
  * The names a module exports, `export *` aside, and the files of its
@@ -67,6 +73,8 @@ export interface RecordStore {
   links(): Iterable<{ ref: ModuleRef; links: Links }>;
   /** The modules that may mention one of `names`; undefined if every module may. */
   mentioning(names: ReadonlySet<string>): readonly ModuleRef[] | undefined;
+  /** Where the module's sites are, if the index has them: see `sitePositions`. */
+  sitePositions(ref: ModuleRef): SitePositions | undefined;
 }
 
 /** A file's module, then its scripts. */
@@ -112,6 +120,11 @@ export class LoadedRecords implements RecordStore {
     return undefined;
   }
 
+  /** A loaded module is walked: it is in memory already. */
+  sitePositions(): undefined {
+    return undefined;
+  }
+
   loaded(): Iterable<ModuleRecord> {
     return this.records.values();
   }
@@ -139,6 +152,8 @@ export type IndexedRecordsOptions = {
   budget: number;
   /** Where the summaries' shared name lists are: see `withSharedNames`. */
   names?: SharedNames;
+  /** Where the summaries' shared site positions are: see `withSharedSites`. */
+  sites?: Int32Array;
 };
 
 type IndexedModule = {
@@ -146,6 +161,7 @@ type IndexedModule = {
   links: readonly Links[];
   untrackedExports: AnyNameList | undefined;
   exports: { names: AnyNameList; starExported: readonly string[] } | undefined;
+  sites: ReadonlyArray<SitePositions | SharedSitesPlace | undefined>;
 };
 
 /**
@@ -180,6 +196,7 @@ export class IndexedRecords implements RecordStore {
         ),
         untrackedExports: parts[0]?.untrackedExports,
         exports: indexedExports(parts[0]?.exports, resolved[0]),
+        sites: parts.map((part) => part.sites),
       });
 
       parts.forEach(({ globalNames }, part) => {
@@ -259,6 +276,13 @@ export class IndexedRecords implements RecordStore {
     return [...names].flatMap((name) => this.mentions.get(name) ?? []);
   }
 
+  sitePositions({ file, part }: ModuleRef): SitePositions | undefined {
+    const sites = this.modules.get(file)?.sites[part];
+    if (!sites || sites instanceof Int32Array) return sites;
+
+    return this.options.sites?.subarray(sites.at, sites.at + sites.length);
+  }
+
   /** Keeps the module read last, whatever its size. */
   private unloadOverBudget(): void {
     for (const [file, record] of this.records) {
@@ -299,6 +323,41 @@ export function withSharedNames(summaries: readonly ModuleSummary[]): {
   }));
 
   return { summaries: shared, names: bytes };
+}
+
+/**
+ * `summaries` with their site positions in one buffer that threads share:
+ * each reads them there (`IndexedRecordsOptions.sites`) instead of holding a
+ * copy. A large project's modules have millions of calls.
+ */
+export function withSharedSites<Names extends AnyNameList>(
+  summaries: readonly ModuleSummary<Names>[]
+): { summaries: ModuleSummary<Names>[]; sites: SharedArrayBuffer } {
+  let length = 0;
+  for (const { parts } of summaries) {
+    for (const { sites } of parts) {
+      if (sites instanceof Int32Array) length += sites.length;
+    }
+  }
+
+  const buffer = new SharedArrayBuffer(length * Int32Array.BYTES_PER_ELEMENT);
+  const shared = new Int32Array(buffer);
+
+  let at = 0;
+  const withPlaces = summaries.map(({ file, parts }) => ({
+    file,
+    parts: parts.map(({ sites, ...part }) => {
+      if (!(sites instanceof Int32Array)) return { ...part, sites };
+
+      shared.set(sites, at);
+      const place = { at, length: sites.length };
+      at += sites.length;
+
+      return { ...part, sites: place };
+    }),
+  }));
+
+  return { summaries: withPlaces, sites: buffer };
 }
 
 function indexedExports(

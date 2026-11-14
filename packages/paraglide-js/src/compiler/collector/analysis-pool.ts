@@ -6,6 +6,7 @@ import { MessageChannel, Worker, type MessagePort } from 'node:worker_threads';
 import type { GlobalBinding } from '../analysis/module-graph.js';
 import {
   withSharedNames,
+  withSharedSites,
   type ModuleSummary,
 } from '../analysis/module-store.js';
 import type { ParaglideUsage, TrackedSymbol } from '../analysis/types.js';
@@ -36,6 +37,8 @@ export type IndexRequest = {
   index: SharedArrayBuffer;
   /** The name lists of its summaries: see `withSharedNames`. */
   names: SharedArrayBuffer;
+  /** The site positions of its summaries: see `withSharedSites`. */
+  sites: SharedArrayBuffer;
   /** Where the values of a `SharedJob` other threads evaluated come back. */
   channel: SharedChannel;
 };
@@ -269,7 +272,9 @@ export class AnalysisPool {
     await Promise.all(this.workers.map((worker) => worker.terminate()));
     this.workers = this.startWorkers(size);
 
-    const { summaries, names } = withSharedNames(index.summaries);
+    const named = withSharedNames(index.summaries);
+    const { summaries, sites } = withSharedSites(named.summaries);
+    const { names } = named;
     const shared: SharedIndex = {
       ...index,
       summaries,
@@ -289,6 +294,7 @@ export class AnalysisPool {
           type: 'index',
           index: buffer,
           names,
+          sites,
           channel: { port: port2, flag },
         },
         [port2]

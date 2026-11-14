@@ -6,7 +6,10 @@ import {
   ModuleIndexer,
   summarizeModule,
 } from '../../src/compiler/analysis/module-index.js';
-import { withSharedNames } from '../../src/compiler/analysis/module-store.js';
+import {
+  withSharedNames,
+  withSharedSites,
+} from '../../src/compiler/analysis/module-store.js';
 import {
   ModuleGraph,
   type GlobalBinding,
@@ -201,8 +204,9 @@ async function analyzeIndexed(
   });
   await indexer.indexPaths(sources);
 
-  // As the threads read the index: its name lists in one shared buffer.
-  const threadIndex = withSharedNames(indexer.modules);
+  // As the threads read the index: its name lists and site positions in shared buffers.
+  const named = withSharedNames(indexer.modules);
+  const threadIndex = { ...named, ...withSharedSites(named.summaries) };
   const indexedGraph = ({
     shared,
     isCounted,
@@ -217,6 +221,7 @@ async function analyzeIndexed(
         names: asThreads
           ? new SharedNames(Buffer.from(threadIndex.names))
           : undefined,
+        sites: asThreads ? new Int32Array(threadIndex.sites) : undefined,
         budget: 0,
         load: (file) => {
           if (isCounted) onLoad?.(file);

@@ -177,6 +177,7 @@ export class ModuleGraph {
     links: () => this.records.links(),
     mentioning: (names) => this.records.mentioning(names),
     scopeOf: (record) => this.scopeOf(record),
+    sitePositions: (ref) => this.records.sitePositions(ref),
     generation: () => this.generation,
     globalExports: () => this.globalExports,
   });

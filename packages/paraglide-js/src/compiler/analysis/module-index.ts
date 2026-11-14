@@ -7,7 +7,9 @@ import {
   hasEsmExports,
   loadedSpecifiers,
   starExportSpecifiers,
+  valueImports,
 } from './module-syntax.js';
+import { sitePositions, type SitePositions } from './site-positions.js';
 import {
   completeNameList,
   nameList,
@@ -21,6 +23,7 @@ export type ParsedSummary = Array<{
   untrackedExports: NameList;
   exports?: { names: NameList; stars: string[] };
   globalNames: string[];
+  sites?: SitePositions;
 }>;
 
 export type ModuleIndexerOptions = {
@@ -49,6 +52,8 @@ export function summarizeModule(
       if (specifier !== '') specifiers.add(specifier);
     }
 
+    const usedGlobals = namesIn(part.program, globalNames);
+
     return {
       specifiers: [...specifiers],
       links: specifierLinks(part.program),
@@ -57,9 +62,21 @@ export function summarizeModule(
         part.scopeObjects ? [] : untrackedExports(part.program)
       ),
       exports: exportsOf(part.program),
-      globalNames: namesIn(part.program, globalNames),
+      globalNames: usedGlobals,
+      // Another module's functions are called through what it imports, or a global.
+      sites: sitePositions(
+        part.program,
+        new Set([...importedNames(part.program), ...usedGlobals])
+      ),
     };
   });
+}
+
+/** The names a module's value imports bind. */
+function importedNames(program: ParsedModule['program']): string[] {
+  return valueImports(program).flatMap((statement) =>
+    statement.specifiers.map((specifier) => specifier.local.name)
+  );
 }
 
 /** See `ModuleSummary`. A name that cannot be listed leaves its exports unknown. */
@@ -196,6 +213,7 @@ export class ModuleIndexer {
           untrackedExports,
           exports,
           globalNames,
+          sites,
         }) => {
           const files = await Promise.all(
             specifiers.map((specifier) => resolve(specifier, file))
@@ -204,7 +222,14 @@ export class ModuleIndexer {
             (specifier, index) => [specifier, files[index]] as const
           );
 
-          return { resolved, links, untrackedExports, exports, globalNames };
+          return {
+            resolved,
+            links,
+            untrackedExports,
+            exports,
+            globalNames,
+            sites,
+          };
         }
       )
     );
