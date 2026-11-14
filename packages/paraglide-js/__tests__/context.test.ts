@@ -21,6 +21,11 @@ import {
   writeProject,
 } from './helpers/fixture.js';
 import { writeFiles } from './helpers/files.js';
+import { defaultLanguages } from '../src/compiler/languages/index.js';
+import {
+  UnusableToolError,
+  type SourceLanguage,
+} from '../src/compiler/languages/language.js';
 
 const outside: string[] = [];
 afterAll(() =>
@@ -129,6 +134,15 @@ describe('collectContext', () => {
     ]);
   });
 
+  // The built-in languages need no tools: a language of the caller's can.
+  const flavor = (generate: SourceLanguage['generate']): SourceLanguage => ({
+    name: 'flavor',
+    extensions: ['.flavor'],
+    requires: ['flavor-compiler'],
+    installedWith: { 'flavor-compiler': 'flavor-kit' },
+    generate,
+  });
+
   test('a format whose tools are not installed: one warning with the install command', async () => {
     // Outside this repository, so none of its tools resolve.
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'paraglide-context-'));
@@ -137,32 +151,42 @@ describe('collectContext', () => {
       'package.json': `{ "name": "app", "type": "module" }`,
       'pnpm-lock.yaml': "lockfileVersion: '9.0'\n",
       'src/main.ts': 'export {};\n',
-      'src/App.vue': `<template><p>{{ m.greeting() }}</p></template>\n`,
-      'src/Card.vue': `<template><p>{{ m.card() }}</p></template>\n`,
+      'src/App.flavor': `{{ m.greeting() }}\n`,
+      'src/Card.flavor': `{{ m.card() }}\n`,
     };
     await writeFiles(root, files);
-    const { warnings } = await collect(root);
-    expect(warnings.filter((warning) => warning.includes('.vue'))).toEqual([
-      '[paraglide-context] 2 .vue file(s) were not analyzed (e.g. src/App.vue): they need ' +
-        '@vue/language-core and typescript, which are not installed. ' +
-        'Install them: pnpm add -D vue-tsc typescript (vue-tsc includes @vue/language-core)',
+    const language = flavor(async (_source, _file, context) =>
+      (await context.load('flavor-compiler'))
+        ? { code: '', lang: 'js', mappings: [] }
+        : undefined
+    );
+    const { warnings } = await collect(root, {
+      languages: [...defaultLanguages, language],
+    });
+    expect(warnings.filter((warning) => warning.includes('.flavor'))).toEqual([
+      '[paraglide-context] 2 .flavor file(s) were not analyzed (e.g. src/App.flavor): they need ' +
+        'flavor-compiler, which is not installed. ' +
+        'Install it: pnpm add -D flavor-kit (flavor-kit includes flavor-compiler)',
     ]);
   });
 
   test('a format whose tool is installed but unusable: one warning with the reason', async () => {
-    const root = await writeProject('context-typescript-7', {
+    const root = await writeProject('context-unusable-tool', {
       'src/main.ts': useGreeting('./paraglide/messages.js'),
-      'src/App.vue': `<template><p>{{ m.greeting() }}</p></template>\n`,
-      // TypeScript 7 has no JavaScript API.
-      'node_modules/typescript/package.json': `{ "name": "typescript", "main": "index.js" }`,
-      'node_modules/typescript/index.js': 'module.exports = {};\n',
+      'src/App.flavor': `{{ m.greeting() }}\n`,
     });
-    const { usages, warnings } = await collect(root);
+    const language = flavor(() => {
+      throw new UnusableToolError(
+        "the project's flavor-compiler is too old; it works from version 2"
+      );
+    });
+    const { usages, warnings } = await collect(root, {
+      languages: [...defaultLanguages, language],
+    });
     expect(usages).toEqual([greetingIn('src/main.ts')]);
     expect(warnings).toEqual([
-      '[paraglide-context] 1 .vue file(s) were not analyzed (e.g. src/App.vue): ' +
-        "the project's typescript has no JavaScript API (TypeScript 7), which @vue/language-core needs; " +
-        'it works with typescript 5 or 6.',
+      '[paraglide-context] 1 .flavor file(s) were not analyzed (e.g. src/App.flavor): ' +
+        "the project's flavor-compiler is too old; it works from version 2.",
     ]);
   });
 });

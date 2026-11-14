@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'vitest';
 import { defaultLanguages } from '../../src/compiler/languages/index.js';
-import {
-  generateSource,
-  NO_PACKAGES,
-} from '../../src/compiler/languages/language.js';
 import { markdownLanguage } from '../../src/compiler/languages/markdown.js';
 import { analyzeProject, describeUsages } from '../helpers/project.js';
 
@@ -123,18 +119,6 @@ describe('Markdown (VitePress)', () => {
       '```',
     ]);
     expect(usages).toEqual([]);
-  });
-
-  test('skipped, naming the packages, without @vue/language-core', async () => {
-    const result = await generateSource(
-      file,
-      '# Title\n',
-      [markdownLanguage],
-      NO_PACKAGES
-    );
-    expect(result).toMatchObject({
-      missing: ['@vue/language-core', 'typescript'],
-    });
   });
 
   test('an expression that does not parse is skipped, not the file', async () => {

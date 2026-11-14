@@ -424,7 +424,7 @@ describe("Angular's own tools", () => {
       ['@let x = 1', 'Incomplete @let declaration "x"'],
       ['a } b', 'Unexpected closing block'],
       ['&nope;', 'Unknown entity "nope"'],
-    ]) {
+    ] as const) {
       expect(await parse('/app/src/a.component.html', code)).toEqual({
         error: expect.stringContaining(error),
       });

@@ -1,9 +1,4 @@
 import { describe, expect, test } from 'vitest';
-import { astroLanguage } from '../../src/compiler/languages/astro.js';
-import {
-  NO_PACKAGES,
-  type LanguageContext,
-} from '../../src/compiler/languages/language.js';
 import { sourceSnippet } from '../helpers/metadata-reference.js';
 import { svelteLanguage } from '../../src/compiler/languages/svelte.js';
 import { vueLanguage } from '../../src/compiler/languages/vue.js';
@@ -216,20 +211,9 @@ describe('Svelte', () => {
   });
 });
 
-describe('without the language tools, or with a file they reject', () => {
+describe('a file its language rejects', () => {
   const vue = `<script setup>\nconst = ;\n</script>\n<template><p /></template>`;
   const svelte = `<script>\nconst = ;\n</script>\n<p></p>`;
-
-  test('skipped, naming the packages to install', async () => {
-    expect(
-      await skippedFile('/app/A.vue', vue, [vueLanguage], NO_PACKAGES)
-    ).toMatchObject({
-      missing: ['@vue/language-core', 'typescript'],
-    });
-    expect(
-      await skippedFile('/app/A.svelte', svelte, [svelteLanguage], NO_PACKAGES)
-    ).toMatchObject({ missing: ['svelte2tsx', 'svelte'] });
-  });
 
   test('a script with a syntax error is skipped with the error', async () => {
     for (const [file, code, language] of [
@@ -381,44 +365,6 @@ describe('Astro', () => {
       'message:after_a:call 4',
       'message:after_b:call 5',
     ]);
-  });
-
-  test('without @astrojs/astro2tsx, @astrojs/compiler reads the same usages', async () => {
-    const page = [
-      `---`,
-      `import { m } from "../paraglide/messages.js";`,
-      `---`,
-      `<h1 title={m.title()}>{m.greeting()}</h1>`,
-      `<Card message={m.tos} />`,
-      `<script>import { m } from "../paraglide/messages.js"; console.log(m.client());</script>`,
-    ].join('\n');
-    const withoutAstro2Tsx: LanguageContext = {
-      load: (name) =>
-        name === '@astrojs/astro2tsx'
-          ? Promise.resolve(undefined)
-          : REPO_PACKAGES.load(name),
-    };
-    const usages = await analyzeProject(
-      { [file]: page },
-      { entry: file, context: withoutAstro2Tsx }
-    );
-    expect(describeUsages(usages)).toEqual([
-      'message:title:call 4',
-      'message:greeting:call 4',
-      'message:tos:reference 5',
-      'message:client:call 6',
-    ]);
-    expect(usages).toEqual(await analyze(file, page));
-  });
-
-  test("without Astro's TSX tools in the project, files are skipped and astro2tsx is named", async () => {
-    const result = await skippedFile(
-      file,
-      `<p>{m.x()}</p>`,
-      [astroLanguage],
-      NO_PACKAGES
-    );
-    expect(result).toMatchObject({ missing: ['@astrojs/astro2tsx'] });
   });
 });
 

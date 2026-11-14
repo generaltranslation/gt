@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'vitest';
 import { defaultLanguages } from '../../src/compiler/languages/index.js';
-import {
-  generateSource,
-  NO_PACKAGES,
-} from '../../src/compiler/languages/language.js';
 import { mdxLanguage } from '../../src/compiler/languages/mdx.js';
 import { analyzeProject, describeUsages } from '../helpers/project.js';
 
@@ -207,17 +203,5 @@ describe('MDX', () => {
       { entry: file, loadAll: true }
     );
     expect(describeUsages(usages)).toEqual(['message:guide_title:call 1']);
-  });
-
-  test('without the language service in the project, files are skipped and it is named', async () => {
-    const result = await generateSource(
-      file,
-      `# {m.x()}`,
-      [mdxLanguage],
-      NO_PACKAGES
-    );
-    expect(result).toMatchObject({
-      missing: ['@mdx-js/language-service', 'typescript'],
-    });
   });
 });
