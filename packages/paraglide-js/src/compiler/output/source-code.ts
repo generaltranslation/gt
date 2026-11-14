@@ -1,6 +1,7 @@
 import type { FileUsages, ParaglideUsage } from '../analysis/types.js';
 import { matchingIds } from '../paraglide/catalog.js';
 import { StreamedJson } from '../utils/json.js';
+import { readSpilled, SpillFile } from '../utils/spill-file.js';
 import { compareText } from '../utils/sort.js';
 
 /**
@@ -36,14 +37,14 @@ export function sourceCodeByMessage(
 /** Where a snippet is in a metadata file whose message keys are not nested: the indentation it is kept with. */
 const SNIPPET_INDENT = ' '.repeat(8);
 
-/** Bytes of snippets kept in one buffer. */
+/** Bytes of snippets kept in memory, at most: those before are in a temporary file. */
 const BLOCK_SIZE = 16 * 1024 * 1024;
 
 /**
  * Collects the source code around usages one source file at a time: a file's
  * code is not held once it is added. Each file is added once. The snippets
- * are kept as JSON outside the JavaScript heap: a large project's do not fit
- * in it.
+ * are kept as JSON in a temporary file: a large project's take as much as
+ * its metadata files, gigabytes. `close()` deletes it.
  */
 export class SourceCodeCollector {
   /** Snippet numbers in `store`, by message id, then by project-relative file. */
@@ -99,6 +100,11 @@ export class SourceCodeCollector {
     }
 
     return byMessage;
+  }
+
+  /** Deletes the kept snippets, once written. */
+  close(): void {
+    this.store.close();
   }
 
   /** As `byMessage`, each message's written as JSON from the kept snippets. */
@@ -157,32 +163,49 @@ export class SourceCodeCollector {
   }
 }
 
-/** Snippets' JSON, in buffers that the JavaScript heap does not count. */
-class SnippetStore {
-  private readonly blocks: Buffer[] = [];
-  private used = BLOCK_SIZE;
-  /** Of each snippet: its block, start and end. */
-  private readonly locations: number[] = [];
+/**
+ * Snippets' JSON, outside the JavaScript heap: the block being filled in
+ * memory, the full ones in a temporary file, created once one is full.
+ */
+export class SnippetStore {
+  private block: Buffer;
+  private used = 0;
+  /** Where the block starts among every snippet's bytes: those before it are in the file. */
+  private blockStart = 0;
+  private spill: SpillFile | undefined;
+  /** Of each snippet: where its bytes start, and how many there are. */
+  private starts = new Float64Array(1024);
+  private lengths = new Uint32Array(1024);
+  private count = 0;
+
+  constructor(private readonly blockSize = BLOCK_SIZE) {
+    this.block = Buffer.allocUnsafe(blockSize);
+  }
 
   add(json: Buffer): number {
-    if (this.used + json.length > BLOCK_SIZE) {
-      this.blocks.push(Buffer.allocUnsafe(Math.max(BLOCK_SIZE, json.length)));
-      this.used = 0;
+    if (this.used + json.length > this.block.length) this.flush();
+    if (json.length > this.block.length) {
+      this.block = Buffer.allocUnsafe(json.length);
     }
 
-    const block = this.blocks.length - 1;
-    json.copy(this.blocks[block]!, this.used);
-    this.locations.push(block, this.used, this.used + json.length);
+    json.copy(this.block, this.used);
+    this.record(this.blockStart + this.used, json.length);
     this.used += json.length;
 
-    return this.locations.length / 3 - 1;
+    return this.count - 1;
   }
 
   bytes(snippet: number): Buffer {
-    const at = snippet * 3;
-    const block = this.blocks[this.locations[at]!]!;
+    const start = this.starts[snippet]!;
+    const length = this.lengths[snippet]!;
+    if (start >= this.blockStart) {
+      const offset = start - this.blockStart;
+      return this.block.subarray(offset, offset + length);
+    }
 
-    return block.subarray(this.locations[at + 1], this.locations[at + 2]);
+    // Snippets are read in the metadata's order, by message: those read one
+    // after the other are rarely near each other in the file.
+    return readSpilled(this.spill!.fd, start, length);
   }
 
   equals(snippet: number, json: Buffer): boolean {
@@ -198,11 +221,41 @@ class SnippetStore {
     const bytes = this.bytes(snippet);
     if (indent === SNIPPET_INDENT) return bytes;
 
-    const text = this.text(snippet).replaceAll(
-      `\n${SNIPPET_INDENT}`,
-      `\n${indent}`
-    );
+    const text = bytes
+      .toString('utf8')
+      .replaceAll(`\n${SNIPPET_INDENT}`, `\n${indent}`);
     return Buffer.from(text);
+  }
+
+  close(): void {
+    this.spill?.close();
+    this.spill = undefined;
+  }
+
+  private flush(): void {
+    if (this.used === 0) return;
+
+    this.spill ??= new SpillFile();
+    this.spill.append(this.block.subarray(0, this.used));
+    this.blockStart += this.used;
+    this.used = 0;
+    this.block = Buffer.allocUnsafe(this.blockSize);
+  }
+
+  private record(start: number, length: number): void {
+    if (this.count === this.starts.length) {
+      const starts = new Float64Array(this.count * 2);
+      starts.set(this.starts);
+      this.starts = starts;
+
+      const lengths = new Uint32Array(this.count * 2);
+      lengths.set(this.lengths);
+      this.lengths = lengths;
+    }
+
+    this.starts[this.count] = start;
+    this.lengths[this.count] = length;
+    this.count++;
   }
 }
 
