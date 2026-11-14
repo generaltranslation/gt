@@ -73,6 +73,7 @@ describe('findReexports', () => {
         export { req };
         export import external = require('other');
         export import Nested = ns.Nested;
+        export const aliased = a, computed = a + 1;
         export default a;
       `
     );
@@ -90,6 +91,7 @@ describe('findReexports', () => {
         ['./req', ['req']],
         ['other', ['external']],
         ['./ns', ['Nested']],
+        ['./a', ['aliased']],
         ['./a', ['default']],
       ]
     );

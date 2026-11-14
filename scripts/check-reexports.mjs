@@ -277,6 +277,27 @@ export function findReexports(relativePath, sourceText) {
         });
       }
     } else if (
+      ts.isVariableStatement(statement) &&
+      statement.modifiers?.some(
+        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+      )
+    ) {
+      // export const x = imported
+      for (const declaration of statement.declarationList.declarations) {
+        if (
+          ts.isIdentifier(declaration.name) &&
+          declaration.initializer &&
+          ts.isIdentifier(declaration.initializer) &&
+          imported.has(declaration.initializer.text)
+        ) {
+          reexports.push({
+            specifier: imported.get(declaration.initializer.text),
+            names: [declaration.name.text],
+            location: locate(declaration),
+          });
+        }
+      }
+    } else if (
       ts.isExportAssignment(statement) &&
       ts.isIdentifier(statement.expression) &&
       imported.has(statement.expression.text)
