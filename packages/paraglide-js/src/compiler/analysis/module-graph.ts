@@ -11,12 +11,6 @@ import {
   type ParseFailure,
   type SourceLanguage,
 } from '../languages/language.js';
-import {
-  startToolingThread,
-  toolingThreads,
-  toolingWorkerData,
-  ToolingPool,
-} from '../languages/tooling-pool.js';
 import { runTooling } from '../languages/tooling.js';
 import {
   isMessagesTarget,
@@ -83,11 +77,6 @@ export type ModuleGraphOptions = {
   read?(file: string): Promise<string | undefined>;
   /** Told of each file that is read but not analyzed. */
   onSkipped?(file: string, failure: ParseFailure): void;
-  /**
-   * For tests: the threads that run languages' tooling for `files` files.
-   * Default: worker threads, if the files are many enough.
-   */
-  toolingPool?(files: number): ToolingPool | undefined;
 };
 
 /** The usages of a file that has any. The analysis keeps them, and the file's code, for `writeMetadata`. */
@@ -111,9 +100,10 @@ type ReportedUsage = Omit<ParaglideUsage, 'targetFile'> & {
 
 /**
  * The project's modules, linked by resolved imports, and the usages in them.
- * The analysis is native code (`native/`); this gives it what only JavaScript
- * has: what a framework's tooling writes for a component file, what a custom
- * target matches and exports, and what a custom resolver resolves.
+ * The analysis is native code (`native/`), which also reads the built-in
+ * languages' files; this gives it what only JavaScript has: what a language
+ * of the caller's writes for a file, what a custom target matches and exports,
+ * and what a custom resolver resolves.
  */
 export class ModuleGraph {
   private readonly options: ModuleGraphOptions;
@@ -127,8 +117,6 @@ export class ModuleGraph {
   private readonly orders = new Map<string, number>();
   private aliasQueries: string[] = [];
   private readonly targetFiles = new Map<string, TargetFile>();
-  /** The threads that run languages' tooling, while files are loaded. */
-  private tooling: ToolingPool | undefined;
   /** The languages whose files the analysis writes itself. */
   private readonly nativeLanguages: ReadonlySet<SourceLanguage>;
 
@@ -275,8 +263,6 @@ export class ModuleGraph {
 
   /** The usages in each of `files` that has any. They were loaded with `loadPaths`. */
   async analyze(files: readonly string[]): Promise<Map<string, AnalyzedFile>> {
-    // Nothing is loaded anymore: the threads' memory is given back first.
-    await this.closeTooling();
     this.matchCustomTargets([]);
 
     const analysis =
@@ -316,7 +302,6 @@ export class ModuleGraph {
    * the same targets and outdirs.
    */
   release(): void {
-    void this.closeTooling();
     this.graph.release();
   }
 
@@ -379,15 +364,12 @@ export class ModuleGraph {
   }
 
   /**
-   * Reads `files` here, and hands each to the analysis as its language's
-   * tooling writes it. The files that are skipped are reported in their order,
-   * whichever is done first.
+   * Reads `files` here, and hands each to the analysis, as a language of the
+   * caller's writes it if one claims it. The files that are skipped are
+   * reported in their order, whichever is done first.
    */
   private async queueAll(files: readonly string[]): Promise<void> {
-    const pool = this.toolingPool(files.length);
-    const failures = await Promise.all(
-      files.map((file) => this.queue(file, pool))
-    );
+    const failures = await Promise.all(files.map((file) => this.queue(file)));
 
     files.forEach((file, index) => {
       const failure = failures[index];
@@ -396,10 +378,7 @@ export class ModuleGraph {
   }
 
   /** Reads a file, and queues it. Returns why it is skipped, if it is. */
-  private async queue(
-    file: string,
-    pool: ToolingPool | undefined
-  ): Promise<ParseFailure | undefined> {
+  private async queue(file: string): Promise<ParseFailure | undefined> {
     const {
       languages,
       packages = NO_PACKAGES,
@@ -421,9 +400,8 @@ export class ModuleGraph {
       return undefined;
     }
 
-    const result =
-      (await pool?.run(file, code)) ??
-      (await runTooling(file, code, languages, packages));
+    // A language of the caller's.
+    const result = await runTooling(file, code, languages, packages);
 
     switch (result.type) {
       case 'unclaimed':
@@ -436,35 +414,6 @@ export class ModuleGraph {
         this.graph.queueGenerated(file, order, code, result.source);
         return undefined;
     }
-  }
-
-  /**
-   * The threads that run the tooling, started for the first files that are
-   * many enough; none if the tooling runs only on the main thread, e.g. a
-   * language of the caller's.
-   */
-  private toolingPool(files: number): ToolingPool | undefined {
-    if (this.tooling) return this.tooling;
-    if (this.options.toolingPool) {
-      this.tooling = this.options.toolingPool(files);
-      return this.tooling;
-    }
-
-    const threads = toolingThreads(files);
-    if (threads === 0) return undefined;
-
-    const { languages, packages = NO_PACKAGES } = this.options;
-    const data = toolingWorkerData(languages, packages);
-    if (!data) return undefined;
-
-    this.tooling = new ToolingPool(threads, () => startToolingThread(data));
-    return this.tooling;
-  }
-
-  private async closeTooling(): Promise<void> {
-    const pool = this.tooling;
-    this.tooling = undefined;
-    await pool?.close();
   }
 
   private report(loaded: NativeLoadResult): void {

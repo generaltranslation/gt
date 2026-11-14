@@ -255,6 +255,12 @@ export interface NativeTargetFile {
  * `{ inlangProject, keys, existing, sources }`, or none if `existing` is not the JSON of an
  * object.
  */
+/**
+ * What the analysis writes for `file`, of the built-in language named `language`, as a language's
+ * `generate` returns it; fails when the file is not valid in the language.
+ */
+export declare function generateSource(file: string, code: string, language: string): NativeGeneratedSource
+
 /** The built-in languages whose files the analysis writes itself, by name. */
 export declare function nativeLanguages(): Array<string>
 

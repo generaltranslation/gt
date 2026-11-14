@@ -149,18 +149,19 @@ const MAX_SKIPPED_EXPRESSIONS: usize = 20;
 
 /// Writes a file of `language` and parses what is written. A template expression that does not
 /// parse (a file being edited) is written as its fallback, and the rest of the file is analyzed;
-/// a client script that does not parse is left out.
-fn prepare_native(file: &str, code: String, language: Language, keep: bool) -> Outcome {
+/// a client script that does not parse is left out, of the modules and of what is returned.
+fn generate_parsed(
+  file: &str,
+  code: &str,
+  language: Language,
+) -> Result<(GeneratedSource, Vec<PreparedModule>), String> {
   let mut skipped = Skipped::default();
 
   loop {
     let Generated {
-      source: generated,
+      source: mut generated,
       expressions,
-    } = match language.generate(file, &code, &skipped) {
-      Ok(generated) => generated,
-      Err(error) => return Outcome::Skipped(error),
-    };
+    } = language.generate(file, code, &skipped)?;
 
     let main = match prepare_generated_located(&generated.main) {
       Ok(main) => main,
@@ -176,7 +177,7 @@ fn prepare_native(file: &str, code: String, language: Language, keep: bool) -> O
             continue;
           }
           None => {
-            return Outcome::Skipped(format!(
+            return Err(format!(
               "{} code does not parse: {}",
               language.name(),
               error.message
@@ -188,22 +189,42 @@ fn prepare_native(file: &str, code: String, language: Language, keep: bool) -> O
 
     let mut modules = Vec::with_capacity(1 + generated.scripts.len());
     modules.push(main);
-    modules.extend(
-      generated
-        .scripts
-        .iter()
-        .filter_map(|script| prepare_generated(script).ok()),
-    );
+    let mut scripts = Vec::with_capacity(generated.scripts.len());
+    for script in std::mem::take(&mut generated.scripts) {
+      if let Ok(module) = prepare_generated(&script) {
+        modules.push(module);
+        scripts.push(script);
+      }
+    }
+    generated.scripts = scripts;
 
-    return Outcome::Prepared(Box::new(PreparedFile {
-      source: SourceFile::new(code, true, keep),
-      modules,
-      component_fields: generated.component_fields,
-      scope_objects: generated.scope_objects,
-      props: generated.props,
-      component_instances: generated.component_instances,
-    }));
+    return Ok((generated, modules));
   }
+}
+
+/// What the analysis writes for a file of `language`, as `generate_parsed` writes it.
+pub fn generate_source(
+  file: &str,
+  code: &str,
+  language: Language,
+) -> Result<GeneratedSource, String> {
+  generate_parsed(file, code, language).map(|(generated, _)| generated)
+}
+
+fn prepare_native(file: &str, code: String, language: Language, keep: bool) -> Outcome {
+  let (generated, modules) = match generate_parsed(file, &code, language) {
+    Ok(parsed) => parsed,
+    Err(error) => return Outcome::Skipped(error),
+  };
+
+  Outcome::Prepared(Box::new(PreparedFile {
+    source: SourceFile::new(code, true, keep),
+    modules,
+    component_fields: generated.component_fields,
+    scope_objects: generated.scope_objects,
+    props: generated.props,
+    component_instances: generated.component_instances,
+  }))
 }
 
 fn prepare_script(file: &str, code: String, keep: bool) -> Outcome {
