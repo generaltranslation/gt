@@ -38,6 +38,10 @@ export class VueCLI extends InlineCLI {
     return Libraries.GT_VUE;
   }
 
+  protected override getViteCredentialsRuntime(): typeof Libraries.GT_VUE {
+    return Libraries.GT_VUE;
+  }
+
   /** Configure Vue without entering the React application setup wizard. */
   protected override setupInitCommand(): void {
     attachConfigureFlags(

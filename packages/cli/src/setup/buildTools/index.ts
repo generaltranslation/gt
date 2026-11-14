@@ -6,6 +6,7 @@ import {
 } from '../../utils/constants.js';
 import { reactRouterSetup } from './reactRouter/index.js';
 import { tanstackStartSetup } from './tanstackStart/index.js';
+import type { ViteCredentialsRuntime } from './shared/viteConfig.js';
 import { viteSetup } from './vite.js';
 
 /** A change setup left to a person, reported as a warning. */
@@ -53,10 +54,13 @@ export type BuildToolSetup = {
     ctx: BuildToolContext
   ): Promise<ManualAction | null | undefined>;
   /**
-   * Reports the Vite plugin that saved credentials need, without editing any
-   * file, when the React setup is skipped.
+   * Reports the runtime's Vite plugin that saved credentials need, without
+   * editing any file, when the React setup is skipped.
    */
-  checkCredentialsPlugin?(appDirectory: string): Promise<SetupResult>;
+  checkCredentialsPlugin?(
+    appDirectory: string,
+    runtime: ViteCredentialsRuntime
+  ): Promise<SetupResult>;
   /** Configures the app entry after gt.config.json is written. */
   apply(ctx: BuildToolContext): Promise<SetupResult>;
 };

@@ -35,6 +35,10 @@ export class SvelteCLI extends InlineCLI {
     return Libraries.GT_SVELTE;
   }
 
+  protected override getViteCredentialsRuntime(): typeof Libraries.GT_SVELTE {
+    return Libraries.GT_SVELTE;
+  }
+
   /** Configure Svelte without entering the React application setup wizard. */
   protected override setupInitCommand(): void {
     attachConfigureFlags(
