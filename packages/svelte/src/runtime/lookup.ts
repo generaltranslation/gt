@@ -1,6 +1,7 @@
 import type { JsxChildren } from '@generaltranslation/format';
 import { getI18nCache, getI18nConfig } from 'gt-i18n/internal';
 import type { LookupOptions } from 'gt-i18n/internal';
+import { requestMissingTranslation } from './devHotReload';
 import type { GTState } from './state.svelte';
 
 /** Static `<T>` props forwarded to translation lookups. */
@@ -10,6 +11,8 @@ export type TranslationProps = {
   id?: string;
   maxChars?: number;
   requiresReview?: boolean;
+  /** The serialized children, which the preprocessor passes in development. */
+  _source?: JsxChildren;
 };
 
 /** Whether content in this locale is translated rather than shown as source. */
@@ -36,5 +39,8 @@ export function lookupJsxTranslation(
     ...(props.requiresReview === true && { $requiresReview: true }),
   } as LookupOptions;
   const translation = getI18nCache().lookupTranslation(locale, null, options);
+  if (translation == null && props._source !== undefined) {
+    requestMissingTranslation(state, locale, props._source, options);
+  }
   return (translation ?? undefined) as JsxChildren | undefined;
 }

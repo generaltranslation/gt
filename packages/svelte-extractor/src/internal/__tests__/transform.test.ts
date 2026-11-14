@@ -437,6 +437,24 @@ describe('errors', () => {
     expect(errorsFor('<T _hash="x">a</T>')).toEqual([
       'The "_hash" prop on <T> is reserved for the gt-svelte preprocessor',
     ]);
+    expect(errorsFor('<T _source="x">a</T>')).toEqual([
+      'The "_source" prop on <T> is reserved for the gt-svelte preprocessor',
+    ]);
+  });
+
+  it('passes the serialized children as _source only with includeSource', () => {
+    const [{ source }] = analyzeSvelteSource(BASIC, { parse }).translations;
+    const result = transformSvelteSource(BASIC, {
+      parse,
+      filename: 'Fixture.svelte',
+      includeSource: true,
+    });
+
+    expect(result?.code).toContain(`_source={${JSON.stringify(source)}}`);
+    expect(() =>
+      compile(result!.code, { filename: 'Fixture.svelte' })
+    ).not.toThrow();
+    expect(transform(BASIC)?.code).not.toContain('_source');
   });
 
   it('rejects snippets declared directly inside <T>', () => {

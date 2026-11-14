@@ -7,7 +7,15 @@ import {
   preprocess as svelteCompilerPreprocess,
   type PreprocessorGroup,
 } from 'svelte/compiler';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { gtPreprocess } from '../src/preprocess';
 
 const BOM = '﻿';
@@ -42,6 +50,17 @@ describe('gtPreprocess with a UTF-8 byte order mark', () => {
     const invalid = SOURCE.replace('<b>dear</b>', '{name}');
     expect(() => preprocess(invalid)).toThrow('Fixture.svelte:7:9');
     expect(() => preprocess(BOM + invalid)).toThrow('Fixture.svelte:7:9');
+  });
+});
+
+describe('gtPreprocess source for dev hot reload', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('passes <T> its source only when NODE_ENV is development', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    expect(preprocess(SOURCE)).toContain(' _source={[');
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(preprocess(SOURCE)).not.toContain('_source');
   });
 });
 
