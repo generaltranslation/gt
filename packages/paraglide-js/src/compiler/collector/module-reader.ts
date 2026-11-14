@@ -30,15 +30,18 @@ export type GeneratedBytes = Uint8Array;
 
 export type SummaryResult = (
   | { summary: ParsedSummary; generated?: GeneratedBytes }
-  /** The file still has the hash it was summarized with: see `UsageCache`. */
-  | { unchanged: true }
+  /**
+   * The file still has the hash it was summarized with: see `UsageCache`.
+   * If a language generates a module for it, it is not generated, unless a
+   * file is analyzed: see the collector's `generateDeferred`.
+   */
+  | { unchanged: true; generates: boolean }
   | { failure: ParseFailure }
 ) & { hash: string };
 
 /**
  * Reads a file to index it: what it loads, and the module its language
- * generates. A file whose content still has `knownHash` is not read further,
- * unless a language generates a module for it: the analysis may load it.
+ * generates. A file whose content still has `knownHash` is not read further.
  * Undefined if the file cannot be read.
  */
 export async function summarizeFile(
@@ -52,8 +55,12 @@ export async function summarizeFile(
   if (code === undefined) return undefined;
 
   const hash = contentHash(code);
-  if (hash === knownHash && !hasLanguage(file, code, languages)) {
-    return { unchanged: true, hash };
+  if (hash === knownHash) {
+    return {
+      unchanged: true,
+      generates: hasLanguage(file, code, languages),
+      hash,
+    };
   }
 
   const generated = await generateSource(file, code, languages, packages);

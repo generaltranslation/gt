@@ -36,7 +36,6 @@ export const FALLBACK_FILE = 'node_modules/.cache/paraglide-usage-context.json';
 export type CachedFile = {
   /** See `contentHash`. */
   hash: string;
-  /** Unset for a file a language's tooling generates a module for: it is generated again. */
   summary?: ParsedSummary;
   /** The files its specifiers resolved to, project-relative: whose importers it changes. */
   imports?: string[];
