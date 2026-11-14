@@ -61,6 +61,7 @@ export function createCollector(
       path.resolve(projectRoot, outdir)
     ),
     autoImports: options.autoImports,
+    cache: options.cache ?? false,
     fallbackDirectories: [
       root,
       projectRoot,

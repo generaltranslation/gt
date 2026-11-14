@@ -7,6 +7,7 @@ import { afterAll, describe, expect, test, vi } from 'vitest';
 import { build } from 'vite';
 import { main } from '../src/compiler/cli/index.js';
 import { createCollector } from '../src/compiler/collector/create.js';
+import { FALLBACK_FILE } from '../src/compiler/collector/usage-cache.js';
 import { nodeResolver } from '../src/compiler/resolver/node-resolver.js';
 import {
   collect,
@@ -471,6 +472,19 @@ describe('the CLI', () => {
 
     expect(await main([path.join(root, 'app'), '--alias', '@=./src'])).toBe(0);
     expect(await readSnippets(root)).toEqual([greetingIn('app/main.ts')]);
+  });
+
+  test('--cache keeps what a run found, for the next run', async () => {
+    const root = await writeProject('context-cli-cache', {
+      'src/main.ts': useGreeting('./paraglide/messages.js'),
+    });
+    const cacheFile = path.join(root, FALLBACK_FILE);
+
+    expect(await main([root])).toBe(0);
+    await expect(fs.access(cacheFile)).rejects.toThrow();
+
+    expect(await main([root, '--cache'])).toBe(0);
+    await expect(fs.access(cacheFile)).resolves.toBeUndefined();
   });
 
   test('wrong arguments print the usage and exit with 2; --help prints it', async () => {

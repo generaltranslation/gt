@@ -2,7 +2,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { LanguageContext } from '../languages/language.js';
-import { resolvePackage } from '../utils/resolve-package.js';
+import { isJsonObject, readJsonObject } from '../utils/json.js';
+import {
+  packageManifest,
+  resolvePackage,
+  versionOf,
+} from '../utils/resolve-package.js';
 
 /**
  * Imports packages installed in the project, once each; undefined if one is
@@ -14,7 +19,12 @@ import { resolvePackage } from '../utils/resolve-package.js';
  * language server. Strict installs (pnpm) hide those from the project, so they
  * are looked up two dependency levels deep too.
  */
-export function projectPackages(projectRoot: string): LanguageContext {
+export type ProjectPackages = LanguageContext & {
+  /** See `packageVersions`: of the package `name` that `load` imports. */
+  versions(name: string): Promise<string[]>;
+};
+
+export function projectPackages(projectRoot: string): ProjectPackages {
   const loaded = new Map<string, Promise<unknown>>();
   let levels: Promise<string[][]> | undefined;
 
@@ -56,7 +66,42 @@ export function projectPackages(projectRoot: string): LanguageContext {
 
       return module as Promise<T | undefined>;
     },
+
+    async versions(name: string): Promise<string[]> {
+      return packageVersions(await find(name), name);
+    },
   };
+}
+
+/**
+ * `name@version` of the package `name` that holds `file`, then of each of
+ * its dependencies as it loads them: a new version of one can change what
+ * the package does as much as its own.
+ */
+export async function packageVersions(
+  file: string | undefined,
+  name: string
+): Promise<string[]> {
+  const found = file && (await packageManifest(file, name));
+  if (!found) return [`${name}@none`];
+
+  const { directory, manifest } = found;
+  const dependencies = isJsonObject(manifest.dependencies)
+    ? Object.keys(manifest.dependencies).sort()
+    : [];
+
+  const versions = await Promise.all(
+    dependencies.map(async (dependency) => {
+      const installed = await findPackage(directory, dependency);
+      const installedManifest =
+        installed &&
+        (await readJsonObject(path.join(installed, 'package.json')));
+
+      return `${dependency}@${installedManifest ? versionOf(installedManifest) : 'none'}`;
+    })
+  );
+
+  return [`${name}@${versionOf(manifest)}`, ...versions];
 }
 
 /** A CommonJS module's exports, also as named exports: `parse`, not only `default.parse`. */
@@ -90,6 +135,9 @@ async function dependencyLevels(
     const fresh = current.filter((directory) => !seen.has(directory));
     for (const directory of fresh) seen.add(directory);
     levels.push(fresh);
+
+    // Not past the last level: it is not returned.
+    if (level + 1 === depth) break;
 
     current = (
       await Promise.all(
@@ -132,7 +180,7 @@ async function dependencyDirectories(
 }
 
 /** `node_modules/<name>` in `from` or a directory above it (pnpm's store layout too). */
-async function findPackage(
+export async function findPackage(
   from: string,
   name: string
 ): Promise<string | undefined> {

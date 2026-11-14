@@ -15,6 +15,8 @@ import { COMPONENT_INSTANCE, normalizeVueCode } from './normalize.js';
 import { templateExpressions, type ParsedTemplate } from './template.js';
 
 export const VUE_REQUIRES = ['@vue/language-core', 'typescript'] as const;
+/** Pug templates are read when it is installed. */
+export const VUE_USES = ['@vue/language-plugin-pug'];
 export const VUE_INSTALLED_WITH = { '@vue/language-core': 'vue-tsc' };
 
 type VuePlugin = VueLanguageCore.VueLanguagePlugin;

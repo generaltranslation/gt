@@ -8,7 +8,6 @@ import type { ParaglideUsage } from '../analysis/types.js';
 import { defaultLanguages } from '../languages/index.js';
 import {
   isSourceFile,
-  type LanguageContext,
   type ParseFailure,
   type SourceLanguage,
 } from '../languages/language.js';
@@ -22,7 +21,7 @@ import {
   type AutoImportOptions,
 } from '../project/auto-imports.js';
 import type { FileSelection } from '../project/files.js';
-import { projectPackages } from '../project/packages.js';
+import { projectPackages, type ProjectPackages } from '../project/packages.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
 import { readTextFile } from '../utils/read-file.js';
 import { SpilledBytes } from '../utils/spill-file.js';
@@ -42,6 +41,7 @@ import {
   type SummaryResult,
 } from './module-reader.js';
 import { OutdirProjects } from './outdir-projects.js';
+import { cacheFingerprint, UsageCache } from './usage-cache.js';
 
 /** Resolves an import like the project's bundler would: a file, or nothing. */
 export type Resolver = (
@@ -76,9 +76,39 @@ export type CollectorSettings = {
   outdirs: readonly string[];
   /** `false` disables auto-imports, including their detection. */
   autoImports: false | AutoImportOptions | undefined;
+  /** Whether a run reads and writes a `UsageCache`. */
+  cache: boolean;
   /** Where else to look for `@inlang/paraglide-js`, e.g. the project and workspace roots. */
   fallbackDirectories: readonly string[];
 };
+
+/**
+ * A default language or target by its name: this package's version tells
+ * when it changes. A custom one by its fields too, a function by its source,
+ * though not the source of what the function calls.
+ */
+function optionSetting(
+  kind: string,
+  option: { name: string },
+  defaults: readonly object[]
+): string {
+  if (defaults.includes(option)) return `${kind} ${option.name}`;
+
+  const describe = (value: unknown): string => {
+    if (typeof value === 'function') return String(value);
+
+    try {
+      return JSON.stringify(value) ?? String(value);
+    } catch {
+      return String(value);
+    }
+  };
+  const fields = Object.entries(option).map(
+    ([key, value]) => `${key}=${describe(value)}`
+  );
+
+  return `${kind} ${fields.join(' ')}`;
+}
 
 /** An outdir's message ids; undefined if they cannot be read. */
 type Catalog = Set<string> | undefined;
@@ -89,7 +119,7 @@ const IN_PARAGLIDE_DIRECTORY = /(^|[/\\])paraglide[/\\]/;
 /** Analyzes the project's source files and writes their usages to the messages' metadata files. */
 export class ContextCollector {
   private readonly settings: CollectorSettings;
-  private readonly packages: LanguageContext;
+  private readonly packages: ProjectPackages;
 
   /** Finds outdirs and targets; the modules are indexed by `indexer`. */
   private readonly moduleGraph: ModuleGraph;
@@ -105,6 +135,13 @@ export class ContextCollector {
   private readonly outdirDetector: OutdirDetector;
   private readonly outdirProjects: OutdirProjects;
   private readonly output: MetadataFiles;
+  /**
+   * What the last run found, set once the auto-imported names are known:
+   * see `UsageCache`. Undefined unless the `cache` option is set.
+   */
+  private cache: UsageCache | undefined;
+  /** Files whose summary was kept from the last run. */
+  private unchangedFiles = 0;
 
   /** The analyzed files, and how many usages each has. */
   private readonly analyzed = new Map<string, number>();
@@ -186,6 +223,7 @@ export class ContextCollector {
       : analysisBudget(this.averageFileSize);
     try {
       sourceCount = await this.scan(files, autoImportDeclarations);
+      await this.cache?.save();
     } finally {
       await this.pool?.close();
       this.pool = undefined;
@@ -205,7 +243,10 @@ export class ContextCollector {
   ): Promise<number> {
     // Outdirs inside `include` must be known before choosing the sources.
     await Promise.all(files.map((file) => this.moduleGraph.detectOutdir(file)));
-    await this.loadGlobals(autoImportDeclarations);
+    const autoImported = await this.loadGlobals(autoImportDeclarations);
+    // Before any file is indexed: an unchanged one is indexed from the cache.
+    if (this.settings.cache) this.cache = await this.loadCache();
+    await this.indexer.indexPaths(autoImported);
 
     const sources = files.filter((file) => !this.moduleGraph.isGenerated(file));
 
@@ -311,17 +352,26 @@ export class ContextCollector {
     return path.isAbsolute(file) ? path.normalize(file) : undefined;
   }
 
-  /** What a file loads, for the index. */
+  /** What a file loads, for the index: kept from the last run if the file did not change. */
   private async summarize(file: string): Promise<ParsedSummary | undefined> {
-    const result: SummaryResult = this.pool
-      ? await this.pool.summarize(file)
+    const known = this.cache?.previous(file);
+    const knownHash = known?.summary ? known.hash : undefined;
+    const result: SummaryResult | undefined = this.pool
+      ? await this.pool.summarize(file, knownHash)
       : await summarizeFile(
           file,
           this.settings.languages,
           this.packages,
-          this.globalNames
+          this.globalNames,
+          knownHash
         );
     if (!result) return undefined;
+
+    if ('unchanged' in result) {
+      this.unchangedFiles++;
+      this.cache!.set(file, known!);
+      return known!.summary;
+    }
 
     if ('failure' in result) {
       this.reportSkipped(file, result.failure);
@@ -332,7 +382,51 @@ export class ContextCollector {
       this.generated.set(file, result.generated);
     }
 
+    // A generated module is not kept: the analysis may load it.
+    this.cache?.set(file, {
+      hash: result.hash,
+      summary: result.generated ? undefined : result.summary,
+    });
+
     return result.summary;
+  }
+
+  /** The cache for this run's languages, targets and auto-imported names. */
+  private async loadCache(): Promise<UsageCache> {
+    const { projectRoot, languages, targets } = this.settings;
+    const tools = [
+      ...new Set(
+        languages.flatMap(({ requires = [], uses = [] }) => [
+          ...requires,
+          ...uses,
+        ])
+      ),
+    ].sort();
+    // As they are loaded: under pnpm, from the project's dependencies' own.
+    const toolVersions = await Promise.all(
+      tools.map((name) => this.packages.versions(name))
+    );
+
+    const fingerprint = await cacheFingerprint({
+      tools: toolVersions.flat(),
+      settings: [
+        ...languages.map((language) =>
+          optionSetting('language', language, defaultLanguages)
+        ),
+        ...targets.map((target) =>
+          optionSetting('target', target, defaultTargets)
+        ),
+        // What each auto-imported name stands for.
+        ...this.globals
+          .map(
+            ({ name, file, exportName }) =>
+              `global ${name} ${relativePath(projectRoot, file)} ${exportName}`
+          )
+          .sort(),
+      ],
+    });
+
+    return UsageCache.load(projectRoot, fingerprint);
   }
 
   private reportSkipped(file: string, failure: ParseFailure): void {
@@ -367,10 +461,10 @@ export class ContextCollector {
     return isSourceFile(file, this.settings.languages) && !isDependency(file);
   }
 
-  /** Makes auto-imported names visible in every module. */
+  /** Makes auto-imported names visible in every module. Returns the app's modules they come from, to index. */
   private async loadGlobals(
     declarationFiles: readonly string[]
-  ): Promise<void> {
+  ): Promise<string[]> {
     const globals = await this.autoImportedGlobals(declarationFiles);
     const modules = [...new Set(globals.map(({ file }) => file))];
 
@@ -388,7 +482,7 @@ export class ContextCollector {
     this.globalNames = new Set(globals.map(({ name }) => name));
     this.pool?.setGlobalNames(this.globalNames);
 
-    await this.indexer.indexPaths(sources);
+    return sources;
   }
 
   /** The auto-imports of the options, then the detected ones; none if they are disabled. */
@@ -571,7 +665,10 @@ export class ContextCollector {
 
     this.settings.logger.info(
       `${LOG_PREFIX} ${usages} usage(s) in ${counts.length} of ${sourceCount} analyzed file(s)` +
-        (outdirs ? `; outdirs: ${outdirs}` : '')
+        (outdirs ? `; outdirs: ${outdirs}` : '') +
+        (this.unchangedFiles > 0
+          ? `; ${this.unchangedFiles} file(s) indexed as in the last run`
+          : '')
     );
   }
 

@@ -96,6 +96,8 @@ export type SourceLanguage = {
   detect?(source: string, file: string): boolean;
   /** The packages it needs in the project, named when one is missing. */
   requires?: readonly string[];
+  /** The packages it uses besides, when the project has them: what it generates depends on them too. */
+  uses?: readonly string[];
   /** The package that brings a required one: `@vue/language-core` comes with `vue-tsc`. */
   installedWith?: Readonly<Record<string, string>>;
   /**
@@ -203,6 +205,15 @@ export async function generateSource(
   if (!generated) return missingToolsFailure(language);
 
   return { language: language.name, source: generated };
+}
+
+/** Whether one of `languages` generates a module for the file: its tooling runs to read it. */
+export function hasLanguage(
+  file: string,
+  code: string,
+  languages: readonly SourceLanguage[]
+): boolean {
+  return languageOf(file, code, languages) !== undefined;
 }
 
 function languageOf(

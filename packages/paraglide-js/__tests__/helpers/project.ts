@@ -37,7 +37,7 @@ import { isDependency } from '../../src/compiler/utils/paths.js';
 
 export const ROOT = '/app';
 /** The language tools installed in this repo (its devDependencies), as an app would have them. */
-export const REPO_PACKAGES = projectPackages(
+export const REPO_PACKAGES: LanguageContext = projectPackages(
   path.resolve(import.meta.dirname, '../..')
 );
 export const OUTDIR = '/app/src/paraglide';

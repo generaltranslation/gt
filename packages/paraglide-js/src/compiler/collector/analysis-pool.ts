@@ -76,6 +76,8 @@ type WorkerTask =
   | {
       type: 'summarize';
       files: readonly string[];
+      /** By file: see `summarizeFile`. */
+      knownHashes: ReadonlyArray<string | undefined>;
       globalNames: readonly string[];
     }
   | IndexRequest
@@ -218,7 +220,8 @@ export class AnalysisPool {
   private readonly generated = new SpilledBytes();
   private readonly queue: Array<{
     file: string;
-    settle: (result: Promise<SummaryResult>) => void;
+    knownHash: string | undefined;
+    settle: (result: Promise<SummaryResult | undefined>) => void;
   }> = [];
   private isDispatchScheduled = false;
   private globalNames: readonly string[] = [];
@@ -253,10 +256,13 @@ export class AnalysisPool {
     this.globalNames = [...names];
   }
 
-  /** Reads a file to index it, in whichever thread is free first. */
-  summarize(file: string): Promise<SummaryResult> {
-    return new Promise<SummaryResult>((resolve) => {
-      this.queue.push({ file, settle: resolve });
+  /** Reads a file to index it, in whichever thread is free first: see `summarizeFile`. */
+  summarize(
+    file: string,
+    knownHash?: string
+  ): Promise<SummaryResult | undefined> {
+    return new Promise<SummaryResult | undefined>((resolve) => {
+      this.queue.push({ file, knownHash, settle: resolve });
       this.scheduleDispatch();
     }).then((result) => {
       if (result && 'generated' in result && result.generated) {
@@ -535,8 +541,9 @@ export class AnalysisPool {
       const results = this.request(slot, {
         type: 'summarize',
         files: batch.map(({ file }) => file),
+        knownHashes: batch.map(({ knownHash }) => knownHash),
         globalNames: this.globalNames,
-      }) as Promise<SummaryResult[]>;
+      }) as Promise<Array<SummaryResult | undefined>>;
 
       batch.forEach(({ settle }, index) =>
         settle(results.then((all) => all[index]))

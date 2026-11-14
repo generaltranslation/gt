@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import fsp from 'node:fs/promises';
 import type { FileUsages } from '../analysis/types.js';
 import type { MessageFile } from '../inlang/message-file.js';
@@ -12,6 +11,7 @@ import {
 } from '../utils/json.js';
 import { relativePath } from '../utils/paths.js';
 import { compareText } from '../utils/sort.js';
+import { writeFileAtomically } from '../utils/write-file.js';
 
 /** A metadata file that was left as it is, and why. */
 export type SkippedFile = { file: string; reason: string };
@@ -138,7 +138,7 @@ async function writeMetadata(
   const content = () => batched(jsonChunks(metadata), '\n');
   if (isSameContent(content(), current.content)) return undefined;
 
-  await writeAtomically(file, content());
+  await writeFileAtomically(file, content());
 
   return undefined;
 }
@@ -232,32 +232,4 @@ function isSameContent(chunks: Iterable<Buffer>, current: Buffer): boolean {
   }
 
   return offset === current.length;
-}
-
-async function writeAtomically(
-  file: string,
-  chunks: Iterable<Buffer>
-): Promise<void> {
-  // A unique name: other processes may write the same file.
-  const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
-
-  try {
-    const handle = await fsp.open(temporary, 'w');
-    try {
-      for (const chunk of chunks) {
-        // A write can stop short, e.g. at a file size limit.
-        let written = 0;
-        while (written < chunk.length) {
-          written += (await handle.write(chunk, written)).bytesWritten;
-        }
-      }
-    } finally {
-      await handle.close();
-    }
-    await fsp.rename(temporary, file);
-  } catch (error) {
-    // The failed write is what is reported, not a failed cleanup.
-    await fsp.rm(temporary, { force: true }).catch(() => undefined);
-    throw error;
-  }
 }

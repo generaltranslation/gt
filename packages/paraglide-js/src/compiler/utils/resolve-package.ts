@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { ResolverFactory } from 'oxc-resolver';
+import { readJsonObject, type JsonObject } from './json.js';
 
 /**
  * Resolves packages the way Node imports them: `exports` with the `import`
@@ -25,4 +26,27 @@ export async function resolvePackage(
   const result = await resolver.resolveFileAsync(importer, specifier);
 
   return result.path;
+}
+
+/** The manifest of the package `name` that holds `file`, and its directory; undefined if none does. */
+export async function packageManifest(
+  file: string,
+  name: string
+): Promise<{ directory: string; manifest: JsonObject } | undefined> {
+  for (
+    let directory = path.dirname(file);
+    ;
+    directory = path.dirname(directory)
+  ) {
+    const manifest = await readJsonObject(path.join(directory, 'package.json'));
+    if (manifest?.name === name) return { directory, manifest };
+
+    const isFilesystemRoot = path.dirname(directory) === directory;
+    if (isFilesystemRoot) return undefined;
+  }
+}
+
+/** A manifest's `version`; `?` if it has none. */
+export function versionOf(manifest: JsonObject): string {
+  return typeof manifest.version === 'string' ? manifest.version : '?';
 }
