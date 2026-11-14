@@ -612,7 +612,7 @@ fn analyze_files(
 const WIDELY_IMPORTED: usize = 1000;
 
 /// `analyze` of each of `files`, in order, the most widely imported started first.
-fn analyze_widely_imported_first<T: Send + Sync>(
+fn analyze_widely_imported_first<T: Send>(
   graph: &Graph,
   files: &[Option<FileId>],
   analyze: impl Fn(Option<FileId>) -> T + Sync,
@@ -636,31 +636,29 @@ fn analyze_widely_imported_first<T: Send + Sync>(
     is_widely_imported[index] = true;
   }
 
-  let found: Vec<std::sync::OnceLock<T>> =
-    files.iter().map(|_| std::sync::OnceLock::new()).collect();
-  let analyze = &analyze;
-  let found_ref = &found;
+  let spawned: Mutex<Vec<(usize, T)>> = Mutex::new(Vec::with_capacity(widely_imported.len()));
+  let mut found: Vec<(usize, T)> = Vec::with_capacity(files.len());
+  let (analyze, spawned_ref) = (&analyze, &spawned);
   rayon::scope(|scope| {
     for &(_, index) in &widely_imported {
       let file = files[index];
       scope.spawn(move |_| {
-        let _ = found_ref[index].set(analyze(file));
+        let result = analyze(file);
+        crate::unpoisoned(spawned_ref.lock()).push((index, result));
       });
     }
 
-    files
+    found = files
       .par_iter()
       .enumerate()
       .filter(|(index, _)| !is_widely_imported[*index])
-      .for_each(|(index, &file)| {
-        let _ = found_ref[index].set(analyze(file));
-      });
+      .map(|(index, &file)| (index, analyze(file)))
+      .collect();
   });
 
-  found
-    .into_iter()
-    .map(|result| result.into_inner().expect("every file is analyzed"))
-    .collect()
+  found.extend(crate::unpoisoned(spawned.into_inner()));
+  found.sort_unstable_by_key(|&(index, _)| index);
+  found.into_iter().map(|(_, result)| result).collect()
 }
 
 fn finish_loading(state: &State, prefetch: &Prefetch) {

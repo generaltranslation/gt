@@ -224,7 +224,12 @@ mod tests {
     });
     let relative: Vec<String> = files
       .iter()
-      .map(|file| file.strip_prefix(&format!("{}/", root.display())).unwrap().to_string())
+      .map(|file| {
+        file
+          .strip_prefix(&format!("{}/", root.display()))
+          .unwrap()
+          .to_string()
+      })
       .collect();
 
     assert_eq!(
