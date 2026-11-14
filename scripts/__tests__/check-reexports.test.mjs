@@ -171,6 +171,31 @@ describe('validateRepository', () => {
     expect(result).toMatchObject({ entryCount: 1, sourceFileCount: 2 });
   });
 
+  test('rejects cross-package re-exports from a facade internal entry', async () => {
+    const repositoryRoot = await createRepository({
+      'packages/node/package.json': manifest('node', {
+        '.': './dist/index.js',
+        './internal': './dist/internal.js',
+      }),
+      'packages/node/src/index.ts': "export { msg } from 'i18n';",
+      'packages/node/src/internal.ts': `
+        export { own } from './own';
+        export { cache } from 'i18n/internal';
+      `,
+      'packages/node/src/own.ts': 'export const own = 1;',
+    });
+
+    const result = validateRepository({
+      repositoryRoot,
+      facades: { node: ['i18n'] },
+      exceptions: [],
+    });
+
+    expect(result.violations).toEqual([
+      "packages/node/src/internal.ts:3:9 re-exports cache from 'i18n/internal' in an internal entry; facades re-export other packages only for users, so import it from i18n",
+    ]);
+  });
+
   test('rejects internal barrels and cross-package re-exports from non-facades', async () => {
     const repositoryRoot = await createRepository({
       'packages/lib/package.json': manifest('lib', exportsMap),

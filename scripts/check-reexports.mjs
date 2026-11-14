@@ -152,13 +152,25 @@ export function readPackageEntries(repositoryRoot, packageDirectoryName) {
     const entry = resolveExportTarget(packageDirectory, target);
     if (entry) entries.add(entry);
   }
+  // Entries behind an `internal` subpath serve sibling packages, not users.
+  const internalEntries = new Set();
+  for (const [subpath, target] of Object.entries(
+    manifest.exports && typeof manifest.exports === 'object'
+      ? manifest.exports
+      : {}
+  )) {
+    if (!/(^|\/)internal(\/|$)/.test(subpath)) continue;
+    for (const internalTarget of collectStrings(target)) {
+      const entry = resolveExportTarget(packageDirectory, internalTarget);
+      if (entry) internalEntries.add(entry);
+    }
+  }
+  const toRepositoryPath = (entry) =>
+    normalizeRepositoryPath(path.join('packages', packageDirectoryName, entry));
   return {
     name: manifest.name,
-    entries: [...entries].map((entry) =>
-      normalizeRepositoryPath(
-        path.join('packages', packageDirectoryName, entry)
-      )
-    ),
+    entries: [...entries].map(toRepositoryPath),
+    internalEntries: [...internalEntries].map(toRepositoryPath),
   };
 }
 
@@ -356,11 +368,13 @@ export function validateRepository({
       'src'
     );
     if (!existsSync(sourceDirectory)) continue;
-    const { name: packageName, entries } = readPackageEntries(
-      repositoryRoot,
-      directoryName
-    );
+    const {
+      name: packageName,
+      entries,
+      internalEntries,
+    } = readPackageEntries(repositoryRoot, directoryName);
     const entryFiles = new Set(entries);
+    const internalEntryFiles = new Set(internalEntries);
     entryCount += entryFiles.size;
     const allowedTargets = new Set(facades[packageName] ?? []);
 
@@ -393,6 +407,14 @@ export function validateRepository({
         ) {
           violations.push(
             `${reexport.location} re-exports ${names} from '${reexport.specifier}', a path outside ${packageName}; re-export the owner package entry instead`
+          );
+        } else if (
+          targetPackage &&
+          targetPackage !== packageName &&
+          internalEntryFiles.has(relativePath)
+        ) {
+          violations.push(
+            `${reexport.location} re-exports ${names} from '${reexport.specifier}' in an internal entry; facades re-export other packages only for users, so import it from ${targetPackage}`
           );
         } else if (
           targetPackage &&
