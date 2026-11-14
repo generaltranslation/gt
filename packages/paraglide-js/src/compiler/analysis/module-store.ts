@@ -164,6 +164,8 @@ export class IndexedRecords implements RecordStore {
   private readonly records = new Map<string, ModuleRecord>();
   private readonly mentions = new Map<string, ModuleRef[]>();
   private readonly names: SharedNames;
+  /** The record read last, which is last in `records`. */
+  private lastRead: string | undefined;
   private size = 0;
 
   constructor(private readonly options: IndexedRecordsOptions) {
@@ -198,8 +200,13 @@ export class IndexedRecords implements RecordStore {
     const loaded = this.records.get(file);
 
     if (loaded) {
-      this.records.delete(file);
-      this.records.set(file, loaded);
+      // A module is often read many times in a row: it stays where it is.
+      if (file !== this.lastRead) {
+        this.records.delete(file);
+        this.records.set(file, loaded);
+        this.lastRead = file;
+      }
+
       return loaded;
     }
 
@@ -209,6 +216,7 @@ export class IndexedRecords implements RecordStore {
 
     const record = toRecord(file, parsed, module!.resolved);
     this.records.set(file, record);
+    this.lastRead = file;
     this.size += sizeOf(record);
     this.unloadOverBudget();
 
