@@ -4,31 +4,92 @@ export type ClientOptions = {
   baseUrl: 'https://api.gtx.dev' | (string & {});
 };
 
-export type ErrorResponse = {
-  error: string;
-};
+/**
+ * A stable, machine-readable cause of the error. New values may be added; fall back to the HTTP status for values you do not recognize.
+ */
+export const ErrorCode = {
+  INVALID_REQUEST: 'invalid_request',
+  UNAUTHENTICATED: 'unauthenticated',
+  PAYMENT_REQUIRED: 'payment_required',
+  PERMISSION_DENIED: 'permission_denied',
+  NOT_FOUND: 'not_found',
+  CONFLICT: 'conflict',
+  ROUTE_RETIRED: 'route_retired',
+  PAYLOAD_TOO_LARGE: 'payload_too_large',
+  UNSUPPORTED_MEDIA_TYPE: 'unsupported_media_type',
+  LOCKED: 'locked',
+  NOT_READY: 'not_ready',
+  RATE_LIMITED: 'rate_limited',
+  INTERNAL_ERROR: 'internal_error',
+  UPSTREAM_ERROR: 'upstream_error',
+  UNAVAILABLE: 'unavailable',
+  ALREADY_EXISTS: 'already_exists',
+  API_KEY_INVALID: 'api_key_invalid',
+  API_VERSION_TOO_OLD: 'api_version_too_old',
+  API_VERSION_UNSUPPORTED: 'api_version_unsupported',
+  BRANCH_NOT_FOUND: 'branch_not_found',
+  CDN_NOT_ENABLED: 'cdn_not_enabled',
+  CONTENT_EMPTY: 'content_empty',
+  CREDITS_INSUFFICIENT: 'credits_insufficient',
+  CURSOR_INVALID: 'cursor_invalid',
+  DEFAULT_BRANCH_CONFLICT: 'default_branch_conflict',
+  DRIVE_ACCESS_INSUFFICIENT: 'drive_access_insufficient',
+  DRIVE_ACCOUNT_NOT_CONNECTED: 'drive_account_not_connected',
+  FILE_TOO_LARGE: 'file_too_large',
+  GOOGLE_ACCOUNT_NOT_LINKED: 'google_account_not_linked',
+  INTEGRATION_MANAGED_FILE: 'integration_managed_file',
+  INTEGRATION_NOT_CONNECTED: 'integration_not_connected',
+  INVALID_CONTENT_ENCODING: 'invalid_content_encoding',
+  IP_NOT_ALLOWED: 'ip_not_allowed',
+  LAYOUT_NOT_SUPPORTED: 'layout_not_supported',
+  LOCALE_NOT_ALLOWED: 'locale_not_allowed',
+  ORG_INTEGRATION_REQUIRED: 'org_integration_required',
+  PERMISSION_MISSING: 'permission_missing',
+  PERMISSION_NOT_GRANTABLE: 'permission_not_grantable',
+  PLAN_FEATURE_UNAVAILABLE: 'plan_feature_unavailable',
+  PROJECT_LIMIT_REACHED: 'project_limit_reached',
+  RESPONSE_TOO_LARGE: 'response_too_large',
+  SCOPE_MISSING: 'scope_missing',
+  SOURCE_FILE_NOT_FOUND: 'source_file_not_found',
+  SPEND_LIMIT_REACHED: 'spend_limit_reached',
+  SUPER_USER_GRANT_REVOKED: 'super_user_grant_revoked',
+  SYNC_REQUIRED: 'sync_required',
+  TARGET_INACCESSIBLE: 'target_inaccessible',
+  TARGET_LOCALES_MISSING: 'target_locales_missing',
+  TOKEN_INVALID: 'token_invalid',
+  TRANSLATION_NOT_READY: 'translation_not_ready',
+  UNSUPPORTED_CONTENT_ENCODING: 'unsupported_content_encoding',
+  UPLOAD_INCOMPLETE: 'upload_incomplete',
+  USAGE_LIMIT_REACHED: 'usage_limit_reached',
+  USER_IP_MISSING: 'user_ip_missing',
+} as const;
 
 /**
- * API contract version. Defaults to the oldest supported version.
+ * A stable, machine-readable cause of the error. New values may be added; fall back to the HTTP status for values you do not recognize.
  */
+export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
+
+export type ErrorResponse = {
+  error: string;
+  code: ErrorCode;
+};
+
 export const ApiVersion = {
   '2025_01_01_V0': '2025-01-01.v0',
   '2025_11_03_V1': '2025-11-03.v1',
   '2026_02_18_V1': '2026-02-18.v1',
   '2026_03_06_V1': '2026-03-06.v1',
+  '2026_10_08_V1': '2026-10-08.v1',
 } as const;
 
-/**
- * API contract version. Defaults to the oldest supported version.
- */
 export type ApiVersion = (typeof ApiVersion)[keyof typeof ApiVersion];
 
 export const FileFormat = {
   GTJSON: 'GTJSON',
-  MDX: 'MDX',
   JSON: 'JSON',
   YAML: 'YAML',
   MD: 'MD',
+  MDX: 'MDX',
   TS: 'TS',
   JS: 'JS',
   HTML: 'HTML',
@@ -44,10 +105,35 @@ export const FileFormat = {
   ANDROID_STRINGS: 'ANDROID_STRINGS',
   SRT: 'SRT',
   RESX: 'RESX',
+  PNG: 'PNG',
+  JPEG: 'JPEG',
+  MP4: 'MP4',
 } as const;
 
 export type FileFormat = (typeof FileFormat)[keyof typeof FileFormat];
 
+export const DataFormat = {
+  JSX: 'JSX',
+  ICU: 'ICU',
+  I18NEXT: 'I18NEXT',
+  STRING: 'STRING',
+  MESSAGE_TREE: 'MESSAGE_TREE',
+} as const;
+
+export type DataFormat = (typeof DataFormat)[keyof typeof DataFormat];
+
+/**
+ * Number of `results` in total and by `status`.
+ */
+export type BatchWriteSummary = {
+  total: number;
+  succeeded: number;
+  failed: number;
+};
+
+/**
+ * Present when `status` is `ready`.
+ */
 export type JsonObject = {
   [key: string]: JsonValue;
 };
@@ -62,67 +148,85 @@ export type JsonValue =
       [key: string]: JsonValue | null;
     };
 
-export const DataFormat = {
+export const FileDataFormat = {
   JSX: 'JSX',
   ICU: 'ICU',
   I18NEXT: 'I18NEXT',
   STRING: 'STRING',
 } as const;
 
-export type DataFormat = (typeof DataFormat)[keyof typeof DataFormat];
+export type FileDataFormat =
+  (typeof FileDataFormat)[keyof typeof FileDataFormat];
+
+export type Branch = {
+  id: string;
+  name: string;
+  /**
+   * Whether this is the project's one default branch.
+   */
+  isDefault: boolean;
+};
+
+export type Tag = {
+  id: string;
+  tagId: string;
+  message: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export const ModelProvider = {
   ANTHROPIC: 'ANTHROPIC',
   OPENAI: 'OPENAI',
   XAI: 'XAI',
   GOOGLE: 'GOOGLE',
-  HYPERCLOVA: 'HYPERCLOVA',
 } as const;
 
 export type ModelProvider = (typeof ModelProvider)[keyof typeof ModelProvider];
 
-export type Branch = {
-  id: string;
-  name: string;
-};
-
-export type RuntimeTranslationResponse = {
-  [key: string]:
+export type TranslateContentResponse = {
+  summary: BatchWriteSummary;
+  /**
+   * One result per entry in `requests`, in request order.
+   */
+  results: Array<
     | {
-        success: true;
+        status: 'succeeded';
         translation?: JsonValue;
         dataFormat: DataFormat;
         locale: string;
       }
     | {
-        success: false;
+        status: 'failed';
         error: string;
-        code: number;
-      };
+        code: ErrorCode & unknown;
+      }
+  >;
 };
 
-export type RuntimeTranslationRequest = {
-  requests: {
-    [key: string]: {
-      source?: unknown;
-      metadata?: {
-        id?: string;
-        hash?: string;
-        context?: string;
-        maxChars?: number;
-        dataFormat?: DataFormat;
-        fileFormat?: RuntimeFileFormat;
-        actionType?: 'fast' | 'standard';
-        sourceCode?: {
-          [key: string]: Array<{
-            before: string;
-            target: string;
-            after: string;
-          }>;
-        };
+export type TranslateContentRequest = {
+  /**
+   * The content to translate. Entries with the same content are translated separately.
+   */
+  requests: Array<{
+    source?: unknown;
+    metadata?: {
+      id?: string;
+      hash?: string;
+      context?: string;
+      maxChars?: number;
+      dataFormat?: DataFormat;
+      fileFormat?: RuntimeFileFormat;
+      actionType?: 'fast' | 'standard';
+      sourceCode?: {
+        [key: string]: Array<{
+          before: string;
+          target: string;
+          after: string;
+        }>;
       };
     };
-  };
+  }>;
   targetLocale: string;
   sourceLocale: string;
   metadata: {
@@ -130,10 +234,30 @@ export type RuntimeTranslationRequest = {
   };
 };
 
+/**
+ * Marks the source as a whole document in this file format. Send the document as a string, with `dataFormat` `STRING` and without `maxChars` or `sourceCode`.
+ */
 export const RuntimeFileFormat = { MD: 'MD', MDX: 'MDX' } as const;
 
+/**
+ * Marks the source as a whole document in this file format. Send the document as a string, with `dataFormat` `STRING` and without `maxChars` or `sourceCode`.
+ */
 export type RuntimeFileFormat =
   (typeof RuntimeFileFormat)[keyof typeof RuntimeFileFormat];
+
+export type ProjectApiKey = {
+  id: string;
+  name: string;
+  /**
+   * Permissions the key holds.
+   */
+  permissions: Array<ProjectApiKeyPermission>;
+  createdAt: string;
+  /**
+   * When the key last authenticated a request; `null` when it never has.
+   */
+  lastUsedAt: string | null;
+};
 
 export const ProjectApiKeyPermission = {
   'PROJECT:WRITE': 'project:write',
@@ -148,9 +272,29 @@ export const ProjectApiKeyPermission = {
 export type ProjectApiKeyPermission =
   (typeof ProjectApiKeyPermission)[keyof typeof ProjectApiKeyPermission];
 
+export const OrgApiKeyPermission = {
+  'ORG:PROJECTS:CREATE': 'org:projects:create',
+  'PROJECT:API_KEYS:READ': 'project:api_keys:read',
+  'PROJECT:API_KEYS:WRITE': 'project:api_keys:write',
+  'ORG:CONTEXT:READ': 'org:context:read',
+  'ORG:CONTEXT:WRITE': 'org:context:write',
+  'ORG:ASSETS:WRITE': 'org:assets:write',
+  'PROJECT:WRITE': 'project:write',
+  'PROJECT:CONTEXT:READ': 'project:context:read',
+  'PROJECT:CONTEXT:WRITE': 'project:context:write',
+  'PROJECT:FILES:READ': 'project:files:read',
+  'PROJECT:FILES:WRITE': 'project:files:write',
+  'PROJECT:TRANSLATIONS:GENERATE': 'project:translations:generate',
+  'PROJECT:TRANSLATIONS:ENQUEUE': 'project:translations:enqueue',
+} as const;
+
+export type OrgApiKeyPermission =
+  (typeof OrgApiKeyPermission)[keyof typeof OrgApiKeyPermission];
+
 export type ContextGroup = {
   id: string;
   name: string;
+  autoUpdate: boolean;
 };
 
 export type CreateCliWizardSessionResponse = {
@@ -207,25 +351,6 @@ export type DeleteCliWizardSessionResponse = {
   message: string;
 };
 
-export const OrgApiKeyPermission = {
-  'ORG:PROJECTS:CREATE': 'org:projects:create',
-  'PROJECT:API_KEYS:READ': 'project:api_keys:read',
-  'PROJECT:API_KEYS:WRITE': 'project:api_keys:write',
-  'ORG:CONTEXT:READ': 'org:context:read',
-  'ORG:CONTEXT:WRITE': 'org:context:write',
-  'ORG:ASSETS:WRITE': 'org:assets:write',
-  'PROJECT:WRITE': 'project:write',
-  'PROJECT:CONTEXT:READ': 'project:context:read',
-  'PROJECT:CONTEXT:WRITE': 'project:context:write',
-  'PROJECT:FILES:READ': 'project:files:read',
-  'PROJECT:FILES:WRITE': 'project:files:write',
-  'PROJECT:TRANSLATIONS:GENERATE': 'project:translations:generate',
-  'PROJECT:TRANSLATIONS:ENQUEUE': 'project:translations:enqueue',
-} as const;
-
-export type OrgApiKeyPermission =
-  (typeof OrgApiKeyPermission)[keyof typeof OrgApiKeyPermission];
-
 export type WorkspacePluginTranslateData = {
   body?: {
     /**
@@ -233,13 +358,13 @@ export type WorkspacePluginTranslateData = {
      */
     projectId: string;
     /**
-     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy.
+     * File ID assigned by Google Drive, found in the Google Docs, Slides or Sheets URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy.
      */
     fileId: string;
     /**
-     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides.
+     * Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets.
      */
-    hostApp: 'DOCS' | 'SLIDES';
+    hostApp: 'DOCS' | 'SLIDES' | 'SHEETS';
     /**
      * One to 100 supported target locale codes, such as fr or es-MX. Must respect the project locale whitelist. For a GT-managed translated copy, only that copy’s target locale is used.
      */
@@ -262,39 +387,84 @@ export type WorkspacePluginTranslateErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'drive_account_not_connected'
+      | 'cdn_not_enabled'
+      | 'target_locales_missing'
+      | 'source_file_not_found';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'token_invalid'
+      | 'google_account_not_linked'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The organization's billing account is blocked, or its plan usage limit, monthly spend limit, or credit balance does not cover this request.
+   */
+  402: ErrorResponse & {
+    code?:
+      | 'payment_required'
+      | 'usage_limit_reached'
+      | 'spend_limit_reached'
+      | 'credits_insufficient';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'plan_feature_unavailable'
+      | 'org_integration_required'
+      | 'drive_access_insufficient'
+      | 'locale_not_allowed'
+      | 'permission_missing'
+      | 'scope_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found' | 'integration_not_connected';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
   /**
    * Translation could not be started for any of the requested locales.
    */
-  502: ErrorResponse;
+  502: ErrorResponse & {
+    code?: 'upstream_error';
+  };
 };
 
 export type WorkspacePluginTranslateError =
@@ -311,6 +481,14 @@ export type WorkspacePluginTranslateResponses = {
     enqueued: number;
     failed: number;
     errors: Array<string>;
+    /**
+     * One entry per target locale that failed to start.
+     */
+    failures: Array<{
+      targetLocale: string;
+      error: string;
+      code: ErrorCode;
+    }>;
   };
 };
 
@@ -324,13 +502,13 @@ export type WorkspacePluginStatusData = {
      */
     projectId: string;
     /**
-     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy.
+     * File ID assigned by Google Drive, found in the Google Docs, Slides or Sheets URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy.
      */
     fileId: string;
     /**
-     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides.
+     * Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets.
      */
-    hostApp: 'DOCS' | 'SLIDES';
+    hostApp: 'DOCS' | 'SLIDES' | 'SHEETS';
   };
   path?: never;
   query?: never;
@@ -341,39 +519,60 @@ export type WorkspacePluginStatusErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'invalid_content_encoding';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'token_invalid'
+      | 'google_account_not_linked'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'plan_feature_unavailable'
+      | 'org_integration_required'
+      | 'permission_missing'
+      | 'scope_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'integration_not_connected';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
-  /**
-   * An upstream service failed to complete the request.
-   */
-  502: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type WorkspacePluginStatusError =
@@ -419,7 +618,7 @@ export type PluginInfoData = {
      */
     'gt-api-version'?: ApiVersion;
     /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     * Target project ID for routes without a project ID in the path; ignored when the path names the project. Project API keys default to their bound project, and a supplied header must match it.
      */
     'gt-project-id'?: string;
   };
@@ -434,43 +633,64 @@ export type PluginInfoErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'plan_feature_unavailable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
-  /**
-   * The request conflicts with existing data or the current state of the project or organization.
-   */
-  409: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found' | 'integration_not_connected';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
-  /**
-   * The resource is locked by an operation in progress. Retry later.
-   */
-  423: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type PluginInfoError = PluginInfoErrors[keyof PluginInfoErrors];
@@ -640,7 +860,7 @@ export type PluginLayoutData = {
      */
     'gt-api-version'?: ApiVersion;
     /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     * Target project ID for routes without a project ID in the path; ignored when the path names the project. Project API keys default to their bound project, and a supplied header must match it.
      */
     'gt-project-id'?: string;
   };
@@ -655,43 +875,68 @@ export type PluginLayoutErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'plan_feature_unavailable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
-  /**
-   * The request conflicts with existing data or the current state of the project or organization.
-   */
-  409: ErrorResponse;
+  404: ErrorResponse & {
+    code?:
+      | 'not_found'
+      | 'integration_not_connected'
+      | 'sync_required'
+      | 'layout_not_supported';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
-  /**
-   * The resource is locked by an operation in progress. Retry later.
-   */
-  423: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type PluginLayoutError = PluginLayoutErrors[keyof PluginLayoutErrors];
@@ -854,7 +1099,7 @@ export type PluginSyncData = {
      */
     'gt-api-version'?: ApiVersion;
     /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     * Target project ID for routes without a project ID in the path; ignored when the path names the project. Project API keys default to their bound project, and a supplied header must match it.
      */
     'gt-project-id'?: string;
   };
@@ -869,43 +1114,65 @@ export type PluginSyncErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'content_empty';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'plan_feature_unavailable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
-  /**
-   * The request conflicts with existing data or the current state of the project or organization.
-   */
-  409: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found' | 'integration_not_connected';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
-  /**
-   * The resource is locked by an operation in progress. Retry later.
-   */
-  423: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type PluginSyncError = PluginSyncErrors[keyof PluginSyncErrors];
@@ -1008,7 +1275,7 @@ export type PluginImportTranslationsData = {
      */
     'gt-api-version'?: ApiVersion;
     /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     * Target project ID for routes without a project ID in the path; ignored when the path names the project. Project API keys default to their bound project, and a supplied header must match it.
      */
     'gt-project-id'?: string;
   };
@@ -1023,43 +1290,76 @@ export type PluginImportTranslationsErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'plan_feature_unavailable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found' | 'integration_not_connected' | 'sync_required';
+  };
   /**
    * The request conflicts with existing data or the current state of the project or organization.
    */
-  409: ErrorResponse;
+  409: ErrorResponse & {
+    code?: 'sync_required';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * A translation is still running for the requested locale. Retry once it finishes.
    */
-  423: ErrorResponse;
+  423: ErrorResponse & {
+    code?: 'locked';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type PluginImportTranslationsError =
@@ -1119,7 +1419,7 @@ export type PluginEnqueueData = {
      */
     'gt-api-version'?: ApiVersion;
     /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     * Target project ID for routes without a project ID in the path; ignored when the path names the project. Project API keys default to their bound project, and a supplied header must match it.
      */
     'gt-project-id'?: string;
   };
@@ -1134,43 +1434,84 @@ export type PluginEnqueueErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'source_file_not_found'
+      | 'target_locales_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The organization's billing account is blocked, or its plan usage limit, monthly spend limit, or credit balance does not cover this request.
+   */
+  402: ErrorResponse & {
+    code?:
+      | 'payment_required'
+      | 'usage_limit_reached'
+      | 'spend_limit_reached'
+      | 'credits_insufficient';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'plan_feature_unavailable'
+      | 'permission_denied'
+      | 'locale_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found' | 'integration_not_connected' | 'sync_required';
+  };
   /**
    * The request conflicts with existing data or the current state of the project or organization.
    */
-  409: ErrorResponse;
+  409: ErrorResponse & {
+    code?: 'sync_required';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
-  /**
-   * The resource is locked by an operation in progress. Retry later.
-   */
-  423: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type PluginEnqueueError = PluginEnqueueErrors[keyof PluginEnqueueErrors];
@@ -1213,7 +1554,7 @@ export type PluginStatusData = {
      */
     'gt-api-version'?: ApiVersion;
     /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     * Target project ID for routes without a project ID in the path; ignored when the path names the project. Project API keys default to their bound project, and a supplied header must match it.
      */
     'gt-project-id'?: string;
   };
@@ -1228,43 +1569,64 @@ export type PluginStatusErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'plan_feature_unavailable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
-  /**
-   * The request conflicts with existing data or the current state of the project or organization.
-   */
-  409: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found' | 'integration_not_connected' | 'sync_required';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
-  /**
-   * The resource is locked by an operation in progress. Retry later.
-   */
-  423: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type PluginStatusError = PluginStatusErrors[keyof PluginStatusErrors];
@@ -1321,7 +1683,7 @@ export type PluginDownloadData = {
      */
     'gt-api-version'?: ApiVersion;
     /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     * Target project ID for routes without a project ID in the path; ignored when the path names the project. Project API keys default to their bound project, and a supplied header must match it.
      */
     'gt-project-id'?: string;
   };
@@ -1336,43 +1698,68 @@ export type PluginDownloadErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'plan_feature_unavailable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
-  /**
-   * The request conflicts with existing data or the current state of the project or organization.
-   */
-  409: ErrorResponse;
+  404: ErrorResponse & {
+    code?:
+      | 'not_found'
+      | 'integration_not_connected'
+      | 'sync_required'
+      | 'translation_not_ready';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
-  /**
-   * The resource is locked by an operation in progress. Retry later.
-   */
-  423: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type PluginDownloadError =
@@ -1497,13 +1884,13 @@ export type PluginDownloadResponse =
 export type WorkspacePluginInfoData = {
   body?: {
     /**
-     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy. Supply hostApp with fileId for file-specific context; omit both to list connected projects.
+     * File ID assigned by Google Drive, found in the Google Docs, Slides or Sheets URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy. Supply hostApp with fileId for file-specific context; omit both to list connected projects.
      */
     fileId?: string;
     /**
-     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides. Supply fileId with hostApp for file-specific context.
+     * Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets. Supply fileId with hostApp for file-specific context.
      */
-    hostApp?: 'DOCS' | 'SLIDES';
+    hostApp?: 'DOCS' | 'SLIDES' | 'SHEETS';
   };
   path?: never;
   query?: never;
@@ -1514,39 +1901,49 @@ export type WorkspacePluginInfoErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'invalid_content_encoding';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'token_invalid'
+      | 'google_account_not_linked'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'permission_missing';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
-  /**
-   * An upstream service failed to complete the request.
-   */
-  502: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type WorkspacePluginInfoError =
@@ -1614,6 +2011,914 @@ export type WorkspacePluginInfoResponses = {
 export type WorkspacePluginInfoResponse =
   WorkspacePluginInfoResponses[keyof WorkspacePluginInfoResponses];
 
+export type GetFileStatusData = {
+  body?: never;
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+    /**
+     * File ID.
+     */
+    fileId: string;
+  };
+  query?: {
+    /**
+     * Branch ID. Defaults to the project default branch.
+     */
+    branchId?: string;
+    /**
+     * Source version ID. Defaults to the branch head.
+     */
+    versionId?: string;
+  };
+  url: '/v2/projects/{projectId}/files/{fileId}/status';
+};
+
+export type GetFileStatusErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'source_file_not_found';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type GetFileStatusError = GetFileStatusErrors[keyof GetFileStatusErrors];
+
+export type GetFileStatusResponses = {
+  /**
+   * File status
+   */
+  200: {
+    translations: Array<{
+      locale: string;
+      completedAt: string | null;
+      approvedAt: string | null;
+      publishedAt: string | null;
+      createdAt: string | null;
+      updatedAt: string | null;
+    }>;
+    sourceFile: {
+      id: string;
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      fileName: string;
+      sourceLocale: string;
+      fileFormat: FileFormat;
+      dataFormat: DataFormat | null;
+      createdAt: string;
+      updatedAt: string;
+      locales: Array<string>;
+    };
+  };
+};
+
+export type GetFileStatusResponse =
+  GetFileStatusResponses[keyof GetFileStatusResponses];
+
+export type OverwriteTranslationsData = {
+  body: {
+    /**
+     * 1–100 translations; each branch, file, version and locale may appear once.
+     */
+    diffs: Array<{
+      locale: string;
+      diff: string;
+      branchId?: string;
+      versionId: string;
+      fileId: string;
+      /**
+       * The full translated file content.
+       */
+      localContent: string;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files/translations/overwrite';
+};
+
+export type OverwriteTranslationsErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type OverwriteTranslationsError =
+  OverwriteTranslationsErrors[keyof OverwriteTranslationsErrors];
+
+export type OverwriteTranslationsResponses = {
+  /**
+   * Overwrite result for each translation, in request order, even when every translation fails; a translation fails when its source file or translation does not exist, the content does not apply to its format, or the save fails. Retrying with the same content is safe.
+   */
+  200: {
+    summary: BatchWriteSummary;
+    /**
+     * One result per translation, in request order.
+     */
+    results: Array<{
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      locale: string;
+      status: 'succeeded' | 'failed';
+      /**
+       * Why the item failed.
+       */
+      error?: string;
+      code?: ErrorCode & unknown;
+    }>;
+  };
+};
+
+export type OverwriteTranslationsResponse =
+  OverwriteTranslationsResponses[keyof OverwriteTranslationsResponses];
+
+export type MoveFilesData = {
+  body: {
+    /**
+     * Branch ID. Defaults to the project default branch.
+     */
+    branchId?: string;
+    /**
+     * 1–25 moves; each old and each new file ID may appear once, and no file ID may be both an old and a new file ID.
+     */
+    moves: Array<{
+      oldFileId: string;
+      newFileId: string;
+      newFileName: string;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files/move';
+};
+
+export type MoveFilesErrors = {
+  /**
+   * The request is malformed or failed validation, including a file ID that is both an `oldFileId` and a `newFileId`, as in a swap, cycle or chain; move through an unused file ID in separate requests instead. Nothing is changed.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'branch_not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type MoveFilesError = MoveFilesErrors[keyof MoveFilesErrors];
+
+export type MoveFilesResponses = {
+  /**
+   * Result for each move, in request order, even when every move fails; a failed move has `status: "failed"` and an `error`. Each move clones the latest source file and its translations under the new file ID and makes the new file ID current in place of the old one.
+   */
+  200: {
+    summary: BatchWriteSummary;
+    /**
+     * One result per move, in request order.
+     */
+    results: Array<{
+      oldFileId: string;
+      newFileId: string;
+      newSourceFileId?: string;
+      clonedTranslationsCount?: number;
+      status: 'succeeded' | 'failed';
+      /**
+       * Why the item failed.
+       */
+      error?: string;
+      code?: ErrorCode & unknown;
+    }>;
+  };
+};
+
+export type MoveFilesResponse = MoveFilesResponses[keyof MoveFilesResponses];
+
+export type QueryFilesData = {
+  body: {
+    /**
+     * Files to describe, at most 100. Each selector is a source file, or with `locale` one translation; a selector repeated field for field is rejected.
+     */
+    files: Array<{
+      fileId: string;
+      /**
+       * Branch ID. Defaults to the project default branch.
+       */
+      branchId?: string;
+      /**
+       * Source version ID. Defaults to the branch head.
+       */
+      versionId?: string;
+      /**
+       * Translation locale. Omit to read the source file.
+       */
+      locale?: string;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files/query';
+};
+
+export type QueryFilesErrors = {
+  /**
+   * The request is malformed or failed validation, including a selector repeated field for field or more than 100 selectors. No file is read.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type QueryFilesError = QueryFilesErrors[keyof QueryFilesErrors];
+
+export type QueryFilesResponses = {
+  /**
+   * One result per selector, in selector order. The request is a read: it creates and changes nothing and is safe to retry, and uses POST only to carry the selectors in the body.
+   */
+  200: {
+    /**
+     * One result per selector, in selector order.
+     */
+    results: Array<{
+      /**
+       * `found` with the metadata; `pending` when the translation is stored but not completed yet, for example during a layout pass; `not_found` when there is neither, including while its translation job has not stored the translation yet. Only completed translations are `found`.
+       */
+      status: 'found' | 'pending' | 'not_found';
+      /**
+       * Branch ID. Absent only when `status` is `not_found` and no branch resolves: the selector names no branch and the project has no default branch.
+       */
+      branchId?: string;
+      fileId: string;
+      /**
+       * Present when `status` is `found` or `pending`.
+       */
+      versionId?: string;
+      /**
+       * Present when `status` is `found` for a source file.
+       */
+      fileName?: string;
+      fileFormat?: FileFormat & unknown;
+      /**
+       * Present when `status` is `found`.
+       */
+      dataFormat?: DataFormat | null;
+      /**
+       * Present when `status` is `found`.
+       */
+      createdAt?: string;
+      /**
+       * Present when `status` is `found`.
+       */
+      updatedAt?: string;
+      /**
+       * Present when `status` is `found` for a translation.
+       */
+      approvedAt?: string | null;
+      /**
+       * Present when `status` is `found`.
+       */
+      publishedAt?: string | null;
+      /**
+       * Present when `status` is `found` for a translation.
+       */
+      completedAt?: string | null;
+      /**
+       * Present when `status` is `found` for a source file.
+       */
+      locales?: Array<string>;
+      /**
+       * Present when `status` is `found` for a source file.
+       */
+      sourceLocale?: string;
+      /**
+       * The selector's locale, as requested; present only for translations.
+       */
+      locale?: string;
+    }>;
+  };
+};
+
+export type QueryFilesResponse = QueryFilesResponses[keyof QueryFilesResponses];
+
+export type QueryFilesContentData = {
+  body: {
+    /**
+     * Files to download, at most 100. Each selector is a source file, or with `locale` one translation; a selector repeated field for field is rejected.
+     */
+    files: Array<{
+      fileId: string;
+      /**
+       * Branch ID. Defaults to the project default branch.
+       */
+      branchId?: string;
+      /**
+       * Source version ID. Defaults to the branch head.
+       */
+      versionId?: string;
+      /**
+       * Translation locale. Omit to download the source file.
+       */
+      locale?: string;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files/content/query';
+};
+
+export type QueryFilesContentErrors = {
+  /**
+   * The request is malformed or failed validation, including a selector repeated field for field or more than 100 selectors. No file is read.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type QueryFilesContentError =
+  QueryFilesContentErrors[keyof QueryFilesContentErrors];
+
+export type QueryFilesContentResponses = {
+  /**
+   * One result per selector, in selector order. The request is a read: it creates and changes nothing and is safe to retry, and uses POST only to carry the selectors in the body. A translation is not found while its translation job has not stored the translation yet, so wait for the job with `GET /v2/projects/{projectId}/jobs/{jobId}` or `POST /v2/projects/{projectId}/jobs/query` before reading it. Without `versionId`, a translation is the newest completed version on the branch, and `pending` only while none is completed; to wait for a specific version, pass its `versionId`.
+   */
+  200: {
+    /**
+     * One result per selector, in selector order.
+     */
+    results: Array<{
+      /**
+       * `ready` with the content; `pending` when the translation is stored but not completed yet, for example during a layout pass (request it again later); `not_found` when there is neither, including while its translation job has not stored the translation yet.
+       */
+      status: 'ready' | 'pending' | 'not_found';
+      /**
+       * Branch ID. Absent only when `status` is `not_found` and no branch resolves: the selector names no branch and the project has no default branch.
+       */
+      branchId?: string;
+      fileId: string;
+      /**
+       * Present when `status` is `ready` or `pending`.
+       */
+      versionId?: string;
+      /**
+       * The selector's locale, as requested; present only for translations.
+       */
+      locale?: string;
+      /**
+       * Present when `status` is `ready`. For a translation, its source file's name.
+       */
+      fileName?: string;
+      /**
+       * Base64 file content when `status` is `ready`, except `null` when the file is too large to return inline, in which case fetch it from `downloadUrl`; `null` when `pending`; absent when `not_found`.
+       */
+      data?: string | null;
+      /**
+       * Signed URL that serves the raw file for 15 minutes; present when `status` is `ready` and `data` is `null`, and for media files.
+       */
+      downloadUrl?: string;
+      metadata?: JsonObject;
+      fileFormat?: FileFormat & unknown;
+    }>;
+  };
+};
+
+export type QueryFilesContentResponse =
+  QueryFilesContentResponses[keyof QueryFilesContentResponses];
+
+export type GetFileContentData = {
+  body?: never;
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+    /**
+     * File ID.
+     */
+    fileId: string;
+  };
+  query?: {
+    /**
+     * Branch ID. Defaults to the project default branch.
+     */
+    branchId?: string;
+    /**
+     * Source version ID. Defaults to the branch head.
+     */
+    versionId?: string;
+    /**
+     * Translation locale. Omit to download the source file.
+     */
+    locale?: string;
+  };
+  url: '/v2/projects/{projectId}/files/{fileId}/content';
+};
+
+export type GetFileContentErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type GetFileContentError =
+  GetFileContentErrors[keyof GetFileContentErrors];
+
+export type GetFileContentResponses = {
+  /**
+   * File content, or a pending translation: a result of `POST /v2/projects/{projectId}/files/content/query` with `status: ready` and the content, or, when the translation is stored but not completed yet, for example during a layout pass, `status: pending` with its `fileId`, `branchId`, `versionId` and requested `locale`, and `data: null`. A translation is not found while its translation job has not stored the translation yet, so wait for the job with `GET /v2/projects/{projectId}/jobs/{jobId}` or `POST /v2/projects/{projectId}/jobs/query` before reading it. Without `versionId`, a translation is the newest completed version on the branch, and `pending` only while none is completed; to wait for a specific version, pass its `versionId`.
+   */
+  200: {
+    /**
+     * `pending` when the translation is stored but not completed yet, for example during a layout pass; request it again later.
+     */
+    status: 'ready' | 'pending';
+    branchId: string;
+    fileId: string;
+    versionId: string;
+    /**
+     * The selector's locale, as requested; present only for translations.
+     */
+    locale?: string;
+    /**
+     * Present when `status` is `ready`. For a translation, its source file's name.
+     */
+    fileName?: string;
+    /**
+     * Base64 file content; `null` when `status` is `pending`, or when the file is too large to return inline, in which case fetch it from `downloadUrl`.
+     */
+    data: string | null;
+    /**
+     * Signed URL that serves the raw file for 15 minutes; present when `status` is `ready` and `data` is `null`, and for media files.
+     */
+    downloadUrl?: string;
+    metadata?: JsonObject;
+    fileFormat?: FileFormat & unknown;
+  };
+};
+
+export type GetFileContentResponse =
+  GetFileContentResponses[keyof GetFileContentResponses];
+
+export type PublishFilesData = {
+  body: {
+    /**
+     * 1–100 file versions; each branch, file and version may appear once.
+     */
+    files: Array<{
+      fileId: string;
+      versionId: string;
+      branchId?: string;
+      publish: boolean;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files/publish';
+};
+
+export type PublishFilesErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cdn_not_enabled'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type PublishFilesError = PublishFilesErrors[keyof PublishFilesErrors];
+
+export type PublishFilesResponses = {
+  /**
+   * Publish result for each file version, in request order, with a result for each of its completed translations, even when every version fails; a version fails when it does not exist or any of its translations fails.
+   */
+  200: {
+    summary: BatchWriteSummary;
+    /**
+     * One result per file version, in request order.
+     */
+    results: Array<{
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      status: 'succeeded' | 'failed';
+      /**
+       * Why the item failed.
+       */
+      error?: string;
+      code?: ErrorCode & unknown;
+      /**
+       * Result for each completed translation of the version.
+       */
+      translations: Array<{
+        locale: string;
+        status: 'succeeded' | 'failed';
+        /**
+         * Why the item failed.
+         */
+        error?: string;
+        code?: ErrorCode & unknown;
+      }>;
+    }>;
+  };
+};
+
+export type PublishFilesResponse =
+  PublishFilesResponses[keyof PublishFilesResponses];
+
 export type UpdateFilesData = {
   /**
    * An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
@@ -1662,7 +2967,11 @@ export type UpdateFilesErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -1703,10 +3012,10 @@ export type UpdateFilesErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -1753,58 +3062,1566 @@ export type UpdateFilesResponses = {
 export type UpdateFilesResponse =
   UpdateFilesResponses[keyof UpdateFilesResponses];
 
-export type GetProjectInfoData = {
-  body?: never;
-  headers?: {
+export type UploadSourceFilesData = {
+  body: {
     /**
-     * API contract version. Defaults to the oldest supported version.
+     * 1–100 source files; each branch and file may appear once.
      */
-    'gt-api-version'?: ApiVersion;
+    data: Array<{
+      source: {
+        fileName: string;
+        fileFormat: FileFormat;
+        dataFormat?: FileDataFormat;
+        locale: string;
+        fileId?: string;
+        versionId?: string;
+        branchId?: string;
+        checkedOutBranchId?: string;
+        incomingBranchId?: string;
+        metadata?: {
+          /**
+           * Page that shows this version of the file.
+           */
+          previewUrl?: string | null;
+        };
+        formatMetadata?:
+          | {
+              /**
+               * The metadata as a JSON object.
+               */
+              content: {
+                [key: string]: unknown;
+              };
+            }
+          | {
+              /**
+               * A JSON object file already PUT to the URL from Create file uploads, for metadata too large to send in the request.
+               */
+              upload: {
+                /**
+                 * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+                 */
+                sha256: string;
+              };
+            };
+      } & (
+        | {
+            /**
+             * Base64-encoded file content.
+             */
+            content: string;
+          }
+        | {
+            /**
+             * A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB.
+             */
+            upload: {
+              /**
+               * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+               */
+              sha256: string;
+            };
+          }
+      );
+    }>;
     /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     * Default locale for files in this request; each file's own locale takes precedence. Defaults to the project's default locale, which the upload does not change.
      */
-    'gt-project-id'?: string;
+    sourceLocale?: string;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
   };
   path: {
     projectId: string;
   };
   query?: never;
-  url: '/v2/project/info/{projectId}';
+  url: '/v2/projects/{projectId}/files';
 };
 
-export type GetProjectInfoErrors = {
+export type UploadSourceFilesErrors = {
   /**
-   * The request is malformed or failed validation.
+   * The request is malformed or failed validation, including a file whose content is not valid base64 or does not parse in its `fileFormat`. Nothing is saved, and the error names each such file by its index and fileName.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'file_too_large'
+      | 'api_version_too_old';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_denied'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
-   * The requested resource was not found.
+   * A named branch does not exist. Nothing is saved.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found' | 'branch_not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+  /**
+   * The server is too busy to process the uploaded files. Retry later.
+   */
+  503: ErrorResponse & {
+    code?: 'unavailable';
+  };
 };
 
-export type GetProjectInfoError =
-  GetProjectInfoErrors[keyof GetProjectInfoErrors];
+export type UploadSourceFilesError =
+  UploadSourceFilesErrors[keyof UploadSourceFilesErrors];
 
-export type GetProjectInfoResponses = {
+export type UploadSourceFilesResponses = {
   /**
-   * Project information
+   * Upload result for each source file, in request order, even when every file fails to save: a failed file has `status: "failed"` and an `error` while the other files are saved. Retrying with the same content and identifiers is safe.
+   */
+  200: {
+    summary: BatchWriteSummary;
+    /**
+     * One result per uploaded source file, in request order.
+     */
+    results: Array<{
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      fileName: string;
+      fileFormat: FileFormat;
+      dataFormat?: DataFormat;
+      status: 'succeeded' | 'failed';
+      /**
+       * Why the item failed.
+       */
+      error?: string;
+      code?: ErrorCode & unknown;
+    }>;
+  };
+};
+
+export type UploadSourceFilesResponse =
+  UploadSourceFilesResponses[keyof UploadSourceFilesResponses];
+
+export type UploadTranslationsData = {
+  body: {
+    /**
+     * 1–100 source files with their translations; each file and locale may appear once.
+     */
+    data: Array<{
+      source: {
+        fileName: string;
+        fileFormat: FileFormat;
+        dataFormat?: FileDataFormat;
+        locale: string;
+        fileId?: string;
+        versionId?: string;
+        branchId?: string;
+        checkedOutBranchId?: string;
+        incomingBranchId?: string;
+      } & (
+        | {
+            /**
+             * Base64-encoded file content.
+             */
+            content: string;
+          }
+        | {
+            /**
+             * A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB.
+             */
+            upload: {
+              /**
+               * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+               */
+              sha256: string;
+            };
+          }
+      );
+      translations: Array<
+        {
+          fileName: string;
+          fileFormat: FileFormat & unknown;
+          dataFormat?: FileDataFormat;
+          locale: string;
+        } & (
+          | {
+              /**
+               * Base64-encoded translation content.
+               */
+              content: string;
+            }
+          | {
+              /**
+               * A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB.
+               */
+              upload: {
+                /**
+                 * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+                 */
+                sha256: string;
+              };
+            }
+        )
+      >;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files/translations';
+};
+
+export type UploadTranslationsErrors = {
+  /**
+   * The request is malformed or failed validation, including a translation whose content is not valid base64 or does not parse in its format. Nothing is saved, and the error names each such translation by its index, fileName and locale.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'file_too_large'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_denied'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * A source file does not exist. Nothing is saved.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found' | 'source_file_not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred, or translations were saved but the source files' locale list could not be updated; the error then lists saved and failed files.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error' | 'upload_incomplete';
+  };
+  /**
+   * The server is too busy to process the uploaded files. Retry later.
+   */
+  503: ErrorResponse & {
+    code?: 'unavailable';
+  };
+};
+
+export type UploadTranslationsError =
+  UploadTranslationsErrors[keyof UploadTranslationsErrors];
+
+export type UploadTranslationsResponses = {
+  /**
+   * Upload result for each translation, in request order, even when every translation fails to save: a failed translation has `status: "failed"` and an `error` while the others are saved. Retrying with the same content is safe; translations that were already saved are saved again, which can repeat completed webhooks and revisions.
+   */
+  200: {
+    summary: BatchWriteSummary;
+    /**
+     * One result per uploaded translation, in request order.
+     */
+    results: Array<{
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      fileName: string;
+      fileFormat: FileFormat;
+      dataFormat?: DataFormat;
+      locale: string;
+      status: 'succeeded' | 'failed';
+      /**
+       * Why the item failed.
+       */
+      error?: string;
+      code?: ErrorCode & unknown;
+    }>;
+  };
+};
+
+export type UploadTranslationsResponse =
+  UploadTranslationsResponses[keyof UploadTranslationsResponses];
+
+export type CreateFileUploadsData = {
+  body: {
+    /**
+     * 1–100 files; each sha256 may appear once.
+     */
+    files: Array<{
+      fileFormat: FileFormat;
+      /**
+       * File size in bytes: at most 2000000000 for PNG, JPEG and MP4, and 150000000 for other formats.
+       */
+      size: number;
+      /**
+       * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+       */
+      sha256: string;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files/uploads';
+};
+
+export type CreateFileUploadsErrors = {
+  /**
+   * The request is malformed or failed validation, including a repeated sha256 or a size over the limit. No URL is issued.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type CreateFileUploadsError =
+  CreateFileUploadsErrors[keyof CreateFileUploadsErrors];
+
+export type CreateFileUploadsResponses = {
+  /**
+   * Upload target for each file, in request order.
+   */
+  200: {
+    /**
+     * One result per file, in order.
+     */
+    files: Array<{
+      /**
+       * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+       */
+      sha256: string;
+      /**
+       * `exists` when the project already stores these bytes, so the PUT is skipped; `upload_required` otherwise.
+       */
+      status: 'exists' | 'upload_required';
+      /**
+       * Present when `status` is `upload_required`. Register the file through Upload source files or Upload translations within 24 hours; later, the upload may be deleted.
+       */
+      upload?: {
+        /**
+         * Presigned URL to PUT the file bytes to.
+         */
+        url: string;
+        /**
+         * Headers the PUT must send exactly as given.
+         */
+        headers: {
+          'x-amz-checksum-sha256': string;
+        };
+        /**
+         * The PUT must start before this ISO 8601 time.
+         */
+        expiresAt: string;
+      };
+    }>;
+  };
+};
+
+export type CreateFileUploadsResponse =
+  CreateFileUploadsResponses[keyof CreateFileUploadsResponses];
+
+export type ListBranchesData = {
+  body?: never;
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+    /**
+     * Branch names to match exactly (case-sensitive); repeat the parameter for up to 20 names. Omit to list every branch. Characters that need percent-encoding cost 3–12 bytes each in the URL, so send fewer such names per request to keep the URL under 8 KB.
+     */
+    name?: Array<string>;
+    /**
+     * With `true`, list only the project's default branch; with `false`, every other branch. With `name`, a branch must match both.
+     */
+    isDefault?: 'true' | 'false';
+  };
+  url: '/v2/projects/{projectId}/branches';
+};
+
+export type ListBranchesErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type ListBranchesError = ListBranchesErrors[keyof ListBranchesErrors];
+
+export type ListBranchesResponses = {
+  /**
+   * Page of branches
+   */
+  200: {
+    items: Array<Branch>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListBranchesResponse =
+  ListBranchesResponses[keyof ListBranchesResponses];
+
+export type CreateBranchData = {
+  body: {
+    /**
+     * Branch name, unique within the project.
+     */
+    name: string;
+    /**
+     * Create the project's default branch. Rejected with 409 when the project already has one; change the default by updating a branch instead.
+     */
+    isDefault?: boolean;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/branches';
+};
+
+export type CreateBranchErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'plan_feature_unavailable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The project already has a branch with this name, or `isDefault` is set and the project already has a default branch.
+   */
+  409: ErrorResponse & {
+    code?: 'already_exists' | 'default_branch_conflict';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type CreateBranchError = CreateBranchErrors[keyof CreateBranchErrors];
+
+export type CreateBranchResponses = {
+  /**
+   * Branch created
+   */
+  201: Branch;
+};
+
+export type CreateBranchResponse =
+  CreateBranchResponses[keyof CreateBranchResponses];
+
+export type UpdateBranchData = {
+  /**
+   * Omitted fields remain unchanged.
+   */
+  body: {
+    /**
+     * New branch name.
+     */
+    name?: string;
+    /**
+     * Make this the default branch; the previous default branch stops being the default.
+     */
+    isDefault?: true;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    projectId: string;
+    branchId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/branches/{branchId}';
+};
+
+export type UpdateBranchErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'branch_not_found';
+  };
+  /**
+   * Another branch uses this name, or another request is changing the default branch at the same time.
+   */
+  409: ErrorResponse & {
+    code?: 'already_exists' | 'default_branch_conflict';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type UpdateBranchError = UpdateBranchErrors[keyof UpdateBranchErrors];
+
+export type UpdateBranchResponses = {
+  /**
+   * Updated branch
+   */
+  200: Branch;
+};
+
+export type UpdateBranchResponse =
+  UpdateBranchResponses[keyof UpdateBranchResponses];
+
+export type ListBranchFilesData = {
+  body?: never;
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+    /**
+     * Branch ID.
+     */
+    branchId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+  };
+  url: '/v2/projects/{projectId}/branches/{branchId}/files';
+};
+
+export type ListBranchFilesErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'branch_not_found';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type ListBranchFilesError =
+  ListBranchFilesErrors[keyof ListBranchFilesErrors];
+
+export type ListBranchFilesResponses = {
+  /**
+   * Page of branch files
+   */
+  200: {
+    items: Array<{
+      /**
+       * Source file ID. To find files removed locally, compare the listed file IDs with your own.
+       */
+      fileId: string;
+      /**
+       * Source version ID at the branch head.
+       */
+      versionId: string;
+      fileName: string;
+    }>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListBranchFilesResponse =
+  ListBranchFilesResponses[keyof ListBranchFilesResponses];
+
+export type SetTagData = {
+  body: {
+    /**
+     * The 1–5000 source file versions the tag points to, each named once. Replaces every file the tag pointed to before.
+     */
+    files: Array<{
+      fileId: string;
+      versionId: string;
+      branchId: string;
+    }>;
+    /**
+     * Tag message. Omitting it clears the tag's message.
+     */
+    message?: string;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+    /**
+     * Tag name, unique within the project.
+     */
+    tagId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/tags/{tagId}';
+};
+
+export type SetTagErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * A file reference names no existing source file version in the project. Nothing is written.
+   */
+  404: ErrorResponse & {
+    code?: 'source_file_not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type SetTagError = SetTagErrors[keyof SetTagErrors];
+
+export type SetTagResponses = {
+  /**
+   * Tag replaced. Repeating the request is safe: it writes the same files and message again and advances `updatedAt`.
+   */
+  200: Tag;
+  /**
+   * Tag created
+   */
+  201: Tag;
+};
+
+export type SetTagResponse = SetTagResponses[keyof SetTagResponses];
+
+export type TranslateFilesData = {
+  body: {
+    /**
+     * 1–100 files; each branch, file and version may appear once. Omitting `branchId` selects the default branch.
+     */
+    files: Array<{
+      branchId?: string;
+      fileId: string;
+      versionId: string;
+      fileName?: string;
+      transformFormat?: FileFormat;
+    }>;
+    /**
+     * Locales to translate into; the project's current locales when omitted. They are added to the project's current locales; the project default locale is unchanged.
+     */
+    targetLocales?: Array<string>;
+    sourceLocale?: string;
+    /**
+     * Queue files already translated into a locale; without it they get no job for that locale.
+     */
+    force?: boolean;
+    modelProvider?: ModelProvider;
+    publish?: boolean;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files/translate';
+};
+
+export type TranslateFilesErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cdn_not_enabled'
+      | 'target_locales_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The organization's billing account is blocked, or its plan usage limit, monthly spend limit, or credit balance does not cover this request.
+   */
+  402: ErrorResponse & {
+    code?:
+      | 'payment_required'
+      | 'usage_limit_reached'
+      | 'spend_limit_reached'
+      | 'credits_insufficient';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_denied'
+      | 'locale_not_allowed'
+      | 'plan_feature_unavailable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * A file version does not exist on its branch. Nothing is queued.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found' | 'source_file_not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type TranslateFilesError =
+  TranslateFilesErrors[keyof TranslateFilesErrors];
+
+export type TranslateFilesResponses = {
+  /**
+   * Queued translation jobs, one per file and locale that needs translating, so `jobs` may be empty. Poll jobs with `POST /v2/projects/{projectId}/jobs/query`.
+   */
+  202: {
+    /**
+     * One job per file and target locale that needs translating; empty when every file is already translated into every target locale.
+     */
+    jobs: Array<{
+      id: string;
+      /**
+       * `queued`: accepted and waiting to run. `processing`: running, or waiting to retry after a failed attempt. `completed` and `failed` are final.
+       */
+      status: 'queued' | 'processing' | 'completed' | 'failed';
+      /**
+       * What the job works on, by `type`. A file translation names its source file version and target locale.
+       */
+      subject:
+        | {
+            type: 'file_translation';
+            /**
+             * Branch of the translated source file.
+             */
+            branchId: string;
+            /**
+             * Translated source file.
+             */
+            fileId: string;
+            /**
+             * Translated source file version.
+             */
+            versionId: string;
+            /**
+             * Locale the file is translated into.
+             */
+            locale: string;
+          }
+        | {
+            type: 'context_generation';
+          }
+        | {
+            type: 'search_index';
+          };
+    }>;
+  };
+};
+
+export type TranslateFilesResponse =
+  TranslateFilesResponses[keyof TranslateFilesResponses];
+
+export type GenerateProjectContextData = {
+  body: {
+    files: Array<{
+      branchId?: string;
+      fileId: string;
+      versionId: string;
+    }>;
+    locales?: Array<string>;
+    force?: boolean;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/context/generate';
+};
+
+export type GenerateProjectContextErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * A supplied file does not exist in the project. Nothing is queued.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found' | 'source_file_not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type GenerateProjectContextError =
+  GenerateProjectContextErrors[keyof GenerateProjectContextErrors];
+
+export type GenerateProjectContextResponses = {
+  /**
+   * The project's context is already current and `force` is not set, so nothing was queued and `job` is `null`.
+   */
+  200: {
+    /**
+     * The queued context generation job; `null` when the project's context is already current and nothing was queued.
+     */
+    job: {
+      id: string;
+      /**
+       * `queued`: accepted and waiting to run. `processing`: running, or waiting to retry after a failed attempt. `completed` and `failed` are final.
+       */
+      status: 'queued' | 'processing' | 'completed' | 'failed';
+      /**
+       * What the job works on, by `type`. A file translation names its source file version and target locale.
+       */
+      subject:
+        | {
+            type: 'file_translation';
+            /**
+             * Branch of the translated source file.
+             */
+            branchId: string;
+            /**
+             * Translated source file.
+             */
+            fileId: string;
+            /**
+             * Translated source file version.
+             */
+            versionId: string;
+            /**
+             * Locale the file is translated into.
+             */
+            locale: string;
+          }
+        | {
+            type: 'context_generation';
+          }
+        | {
+            type: 'search_index';
+          };
+    } | null;
+  };
+  /**
+   * Queued context generation job. The target locales are added to the project's current locales. Poll the job with `GET /v2/projects/{projectId}/jobs/{jobId}`.
+   */
+  202: {
+    /**
+     * The queued context generation job; `null` when the project's context is already current and nothing was queued.
+     */
+    job: {
+      id: string;
+      /**
+       * `queued`: accepted and waiting to run. `processing`: running, or waiting to retry after a failed attempt. `completed` and `failed` are final.
+       */
+      status: 'queued' | 'processing' | 'completed' | 'failed';
+      /**
+       * What the job works on, by `type`. A file translation names its source file version and target locale.
+       */
+      subject:
+        | {
+            type: 'file_translation';
+            /**
+             * Branch of the translated source file.
+             */
+            branchId: string;
+            /**
+             * Translated source file.
+             */
+            fileId: string;
+            /**
+             * Translated source file version.
+             */
+            versionId: string;
+            /**
+             * Locale the file is translated into.
+             */
+            locale: string;
+          }
+        | {
+            type: 'context_generation';
+          }
+        | {
+            type: 'search_index';
+          };
+    } | null;
+  };
+};
+
+export type GenerateProjectContextResponse =
+  GenerateProjectContextResponses[keyof GenerateProjectContextResponses];
+
+export type TranslateContentData = {
+  body: TranslateContentRequest;
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/translate';
+};
+
+export type TranslateContentErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The organization's billing account is blocked, or its plan usage limit, monthly spend limit, or credit balance does not cover this request.
+   */
+  402: ErrorResponse & {
+    code?:
+      | 'payment_required'
+      | 'usage_limit_reached'
+      | 'spend_limit_reached'
+      | 'credits_insufficient';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_denied'
+      | 'locale_not_allowed'
+      | 'plan_feature_unavailable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type TranslateContentError =
+  TranslateContentErrors[keyof TranslateContentErrors];
+
+export type TranslateContentResponses = {
+  /**
+   * Translation results: one result per entry in `requests`, in request order. An entry that could not be translated has `status: "failed"` with its `error` message and error `code`, so inspect every result.
+   */
+  200: TranslateContentResponse;
+};
+
+export type TranslateContentResponse2 =
+  TranslateContentResponses[keyof TranslateContentResponses];
+
+export type GetProjectData = {
+  body?: never;
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}';
+};
+
+export type GetProjectErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type GetProjectError = GetProjectErrors[keyof GetProjectErrors];
+
+export type GetProjectResponses = {
+  /**
+   * Project
    */
   200: {
     id: string;
@@ -1813,1644 +4630,213 @@ export type GetProjectInfoResponses = {
     defaultLocale: string;
     currentLocales: Array<string>;
     autoApprove: boolean;
+    cdnEnabled: boolean;
   };
 };
 
-export type GetProjectInfoResponse =
-  GetProjectInfoResponses[keyof GetProjectInfoResponses];
+export type GetProjectResponse = GetProjectResponses[keyof GetProjectResponses];
 
-export type UpdateProjectInfoData = {
+export type UpdateProjectData = {
+  /**
+   * Omitted settings remain unchanged.
+   */
   body: {
+    /**
+     * Source locale for the project.
+     */
     defaultLocale?: string;
+    /**
+     * Enable or disable CDN publishing for subsequent operations. Changing this setting does not publish or unpublish existing files.
+     */
     cdnEnabled?: boolean;
   };
-  headers?: {
+  headers: {
     /**
-     * API contract version. Defaults to the oldest supported version.
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
      */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
+    'gt-api-version': ApiVersion;
   };
   path: {
     projectId: string;
   };
   query?: never;
-  url: '/v2/project/info/{projectId}';
+  url: '/v2/projects/{projectId}';
 };
 
-export type UpdateProjectInfoErrors = {
+export type UpdateProjectErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
-export type UpdateProjectInfoError =
-  UpdateProjectInfoErrors[keyof UpdateProjectInfoErrors];
+export type UpdateProjectError = UpdateProjectErrors[keyof UpdateProjectErrors];
 
-export type UpdateProjectInfoResponses = {
+export type UpdateProjectResponses = {
   /**
-   * Project settings updated
+   * Updated project
    */
   200: {
-    success: true;
+    id: string;
+    name: string;
+    orgId: string;
+    defaultLocale: string;
+    currentLocales: Array<string>;
+    autoApprove: boolean;
+    cdnEnabled: boolean;
   };
 };
 
-export type UpdateProjectInfoResponse =
-  UpdateProjectInfoResponses[keyof UpdateProjectInfoResponses];
+export type UpdateProjectResponse =
+  UpdateProjectResponses[keyof UpdateProjectResponses];
 
-export type GetTranslationJobInfoData = {
-  body: {
-    jobIds: Array<string>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/jobs/info';
-};
-
-export type GetTranslationJobInfoErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type GetTranslationJobInfoError =
-  GetTranslationJobInfoErrors[keyof GetTranslationJobInfoErrors];
-
-export type GetTranslationJobInfoResponses = {
-  /**
-   * Translation job statuses
-   */
-  200: Array<
-    | {
-        status: 'queued';
-        jobId: string;
-      }
-    | {
-        status: 'processing';
-        jobId: string;
-      }
-    | {
-        status: 'failed';
-        jobId: string;
-        error: {
-          message: string | null;
-        };
-      }
-    | {
-        status: 'completed';
-        jobId: string;
-      }
-    | {
-        status: 'unknown';
-        jobId: string;
-      }
-  >;
-};
-
-export type GetTranslationJobInfoResponse =
-  GetTranslationJobInfoResponses[keyof GetTranslationJobInfoResponses];
-
-export type GetTranslationStatusData = {
+export type ListProjectApiKeysData = {
   body?: never;
   headers?: {
     /**
      * API contract version. Defaults to the oldest supported version.
      */
     'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
   };
   path: {
-    fileId: string;
+    /**
+     * Project ID.
+     */
+    projectId: string;
   };
   query?: {
-    versionId?: string;
-    branchId?: string;
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
   };
-  url: '/v2/project/translations/files/status/{fileId}';
+  url: '/v2/projects/{projectId}/api-keys';
 };
 
-export type GetTranslationStatusErrors = {
+export type ListProjectApiKeysErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
-export type GetTranslationStatusError =
-  GetTranslationStatusErrors[keyof GetTranslationStatusErrors];
+export type ListProjectApiKeysError =
+  ListProjectApiKeysErrors[keyof ListProjectApiKeysErrors];
 
-export type GetTranslationStatusResponses = {
+export type ListProjectApiKeysResponses = {
   /**
-   * Translation status
+   * Page of Project API keys
    */
   200: {
-    translations: Array<{
-      locale: string;
-      completedAt: string | null;
-      approvedAt: string | null;
-      publishedAt: string | null;
-      createdAt: string | null;
-      updatedAt: string | null;
-    }>;
-    sourceFile: {
-      id: string;
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      fileName: string;
-      sourceLocale: string;
-      fileFormat: FileFormat;
-      dataFormat: string | null;
-      createdAt: string;
-      updatedAt: string;
-      locales: Array<string>;
-    };
-  };
-};
-
-export type GetTranslationStatusResponse =
-  GetTranslationStatusResponses[keyof GetTranslationStatusResponses];
-
-export type SubmitUserEditDiffsData = {
-  body: {
-    projectId?: string;
-    diffs: Array<{
-      locale: string;
-      diff: string;
-      branchId?: string;
-      versionId: string;
-      fileId: string;
-      localContent: string;
-    }>;
-  };
-  headers?: {
+    items: Array<ProjectApiKey>;
     /**
-     * API contract version. Defaults to the oldest supported version.
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
      */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/diffs';
-};
-
-export type SubmitUserEditDiffsErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type SubmitUserEditDiffsError =
-  SubmitUserEditDiffsErrors[keyof SubmitUserEditDiffsErrors];
-
-export type SubmitUserEditDiffsResponses = {
-  /**
-   * Processed user translation edits
-   */
-  200: {
-    filesProcessed: number;
-    entriesReceived: number;
-    message: string;
+    nextCursor: string | null;
   };
 };
 
-export type SubmitUserEditDiffsResponse =
-  SubmitUserEditDiffsResponses[keyof SubmitUserEditDiffsResponses];
-
-export type ProcessFileMovesData = {
-  body: {
-    branchId?: string;
-    moves: Array<{
-      oldFileId: string;
-      newFileId: string;
-      newFileName: string;
-    }>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/moves';
-};
-
-export type ProcessFileMovesErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type ProcessFileMovesError =
-  ProcessFileMovesErrors[keyof ProcessFileMovesErrors];
-
-export type ProcessFileMovesResponses = {
-  /**
-   * File move results
-   */
-  200: {
-    results: Array<{
-      oldFileId: string;
-      newFileId: string;
-      success: boolean;
-      newSourceFileId?: string;
-      clonedTranslationsCount?: number;
-      error?: string;
-    }>;
-    summary?: {
-      total: number;
-      succeeded: number;
-      failed: number;
-    };
-  };
-};
-
-export type ProcessFileMovesResponse =
-  ProcessFileMovesResponses[keyof ProcessFileMovesResponses];
-
-export type GetOrphanedFilesData = {
-  body: {
-    branchId: string;
-    fileIds?: Array<string>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/orphaned';
-};
-
-export type GetOrphanedFilesErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type GetOrphanedFilesError =
-  GetOrphanedFilesErrors[keyof GetOrphanedFilesErrors];
-
-export type GetOrphanedFilesResponses = {
-  /**
-   * Files present on the branch but absent from the request
-   */
-  200: {
-    orphanedFiles: Array<{
-      fileId: string;
-      versionId: string;
-      fileName: string;
-    }>;
-  };
-};
-
-export type GetOrphanedFilesResponse =
-  GetOrphanedFilesResponses[keyof GetOrphanedFilesResponses];
-
-export type GetFileInfoData = {
-  body: {
-    sourceFiles?: Array<{
-      fileId: string;
-      versionId: string;
-      branchId: string;
-    }>;
-    translatedFiles?: Array<{
-      fileId: string;
-      versionId: string;
-      branchId: string;
-      locale: string;
-    }>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/info';
-};
-
-export type GetFileInfoErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type GetFileInfoError = GetFileInfoErrors[keyof GetFileInfoErrors];
-
-export type GetFileInfoResponses = {
-  /**
-   * File information
-   */
-  200: {
-    sourceFiles: Array<{
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      fileName: string;
-      fileFormat: FileFormat;
-      dataFormat: string | null;
-      createdAt: string;
-      updatedAt: string;
-      publishedAt: string | null;
-      locales: Array<string>;
-      sourceLocale: string;
-    }>;
-    translatedFiles: Array<{
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      fileFormat: FileFormat;
-      dataFormat: string | null;
-      createdAt: string;
-      updatedAt: string;
-      approvedAt: string | null;
-      publishedAt: string | null;
-      completedAt: string | null;
-      locale: string;
-    }>;
-  };
-};
-
-export type GetFileInfoResponse =
-  GetFileInfoResponses[keyof GetFileInfoResponses];
-
-export type DownloadFilesData = {
-  body: Array<{
-    fileId: string;
-    branchId?: string;
-    versionId?: string;
-    locale?: string;
-    useLatestAvailableVersion?: boolean;
-  }>;
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/download';
-};
-
-export type DownloadFilesErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type DownloadFilesError = DownloadFilesErrors[keyof DownloadFilesErrors];
-
-export type DownloadFilesResponses = {
-  /**
-   * Downloaded files
-   */
-  200: {
-    files: Array<{
-      id: string;
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      locale?: string;
-      fileName?: string;
-      data: string;
-      metadata: JsonObject;
-      fileFormat: FileFormat;
-    }>;
-    count: number;
-    pending?: Array<{
-      branchId: string;
-      fileId: string;
-      locale: string;
-      versionId: string;
-    }>;
-  };
-};
-
-export type DownloadFilesResponse =
-  DownloadFilesResponses[keyof DownloadFilesResponses];
-
-export type DownloadFileData = {
-  body?: never;
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path: {
-    fileId: string;
-  };
-  query?: {
-    branchId?: string;
-    versionId?: string;
-    locale?: string;
-  };
-  url: '/v2/project/files/download/{fileId}';
-};
-
-export type DownloadFileErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The requested translation has not finished yet. Retry later.
-   */
-  425: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type DownloadFileError = DownloadFileErrors[keyof DownloadFileErrors];
-
-export type DownloadFileResponses = {
-  /**
-   * Downloaded file
-   */
-  200: {
-    data: string;
-  };
-};
-
-export type DownloadFileResponse =
-  DownloadFileResponses[keyof DownloadFileResponses];
-
-export type PublishFilesData = {
-  body: {
-    files: Array<{
-      fileId: string;
-      versionId: string;
-      branchId?: string;
-      publish: boolean;
-    }>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/publish';
-};
-
-export type PublishFilesErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type PublishFilesError = PublishFilesErrors[keyof PublishFilesErrors];
-
-export type PublishFilesResponses = {
-  /**
-   * File publish results
-   */
-  200: {
-    results: Array<{
-      fileId: string;
-      versionId: string;
-      locale?: string;
-      branchId: string;
-      success: boolean;
-      error?: string;
-    }>;
-  };
-};
-
-export type PublishFilesResponse =
-  PublishFilesResponses[keyof PublishFilesResponses];
-
-export type UploadSourceFilesData = {
-  body: {
-    data: Array<{
-      source: {
-        content: string;
-        fileName: string;
-        fileFormat:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'SRT'
-          | 'RESX';
-        dataFormat?: string;
-        locale: string;
-        fileId?: string;
-        versionId?: string;
-        branchId?: string;
-        checkedOutBranchId?: string;
-        incomingBranchId?: string;
-        formatMetadata?: {
-          [key: string]: unknown;
-        };
-        metadata?: {
-          /**
-           * Page that shows this version of the file.
-           */
-          previewUrl?: string;
-        };
-      };
-    }>;
-    sourceLocale?: string;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/upload-files';
-};
-
-export type UploadSourceFilesErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-  /**
-   * The server is too busy to process the uploaded files. Retry later.
-   */
-  503: ErrorResponse;
-};
-
-export type UploadSourceFilesError =
-  UploadSourceFilesErrors[keyof UploadSourceFilesErrors];
-
-export type UploadSourceFilesResponses = {
-  /**
-   * Uploaded source files
-   */
-  201: {
-    uploadedFiles: Array<{
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      fileName: string;
-      fileFormat: FileFormat;
-      dataFormat?: DataFormat;
-      locale?: string;
-    }>;
-    count: number;
-    message: string;
-  };
-};
-
-export type UploadSourceFilesResponse =
-  UploadSourceFilesResponses[keyof UploadSourceFilesResponses];
-
-export type EnqueueFileTranslationsData = {
-  body: {
-    files: Array<{
-      branchId?: string;
-      fileId: string;
-      versionId: string;
-      fileName?: string;
-      transformFormat?:
-        | 'GTJSON'
-        | 'MDX'
-        | 'JSON'
-        | 'YAML'
-        | 'MD'
-        | 'TS'
-        | 'JS'
-        | 'HTML'
-        | 'TXT'
-        | 'PO'
-        | 'POT'
-        | 'TWILIO_CONTENT_JSON'
-        | 'LOTTIE'
-        | 'SVG'
-        | 'XCSTRINGS'
-        | 'DOT_STRINGS'
-        | 'DOT_STRINGSDICT'
-        | 'ANDROID_STRINGS'
-        | 'SRT'
-        | 'RESX';
-    }>;
-    targetLocales?: Array<string>;
-    sourceLocale?: string;
-    force?: boolean;
-    modelProvider?: ModelProvider;
-    publish?: boolean;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/translations/enqueue';
-};
-
-export type EnqueueFileTranslationsErrors = {
-  /**
-   * Invalid request or missing source files
-   */
-  400:
-    | ErrorResponse
-    | {
-        error: string;
-        missing: Array<{
-          fileId: string;
-          versionId: string;
-        }>;
-        count: number;
-      };
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The organization's billing account is blocked, or its plan usage limit, monthly spend limit, or credit balance does not cover this request.
-   */
-  402: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type EnqueueFileTranslationsError =
-  EnqueueFileTranslationsErrors[keyof EnqueueFileTranslationsErrors];
-
-export type EnqueueFileTranslationsResponses = {
-  /**
-   * Enqueued translations. Shape depends on gt-api-version (legacy before 2025-11-03.v1).
-   */
-  200:
-    | {
-        jobData: {
-          [key: string]: {
-            kind?: 'file_translation';
-            sourceFileId: string;
-            fileId: string;
-            versionId: string;
-            branchId: string;
-            targetLocale: string;
-            projectId: string;
-            orgId: string;
-            force: boolean;
-            outputFileFormat?: FileFormat;
-            modelProvider?: ModelProvider;
-            glossaryRetranslate?: boolean;
-            changedGlossaryTerms?: Array<string>;
-            onComplete?: {
-              kind: 'google_drive_apply';
-              userId?: string;
-            };
-          };
-        };
-        locales: Array<string>;
-        message: string;
-      }
-    | {
-        translations: Array<{
-          locale: string;
-          metadata?: unknown;
-          fileId: string;
-          fileName: string;
-          versionId: string;
-          branchId: string;
-          id: string;
-          isReady: boolean;
-          downloadUrl: string;
-        }>;
-        data: {
-          [key: string]: {
-            fileName: string;
-            versionId: string;
-          };
-        };
-        locales: Array<string>;
-        message: string;
-      };
-};
-
-export type EnqueueFileTranslationsResponse =
-  EnqueueFileTranslationsResponses[keyof EnqueueFileTranslationsResponses];
-
-export type UploadTranslationsData = {
-  body: {
-    data: Array<{
-      source: {
-        content: string;
-        fileName: string;
-        fileFormat:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'SRT'
-          | 'RESX';
-        dataFormat?: string;
-        locale: string;
-        fileId?: string;
-        versionId?: string;
-        branchId?: string;
-        checkedOutBranchId?: string;
-        incomingBranchId?: string;
-        formatMetadata?: {
-          [key: string]: unknown;
-        };
-        metadata?: {
-          /**
-           * Page that shows this version of the file.
-           */
-          previewUrl?: string;
-        };
-      };
-      translations: Array<{
-        content: string;
-        fileName: string;
-        fileFormat:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'SRT'
-          | 'RESX';
-        dataFormat?: string;
-        locale: string;
-        transformFormat?:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'SRT'
-          | 'RESX';
-      }>;
-    }>;
-    sourceLocale?: string;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/upload-translations';
-};
-
-export type UploadTranslationsErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-  /**
-   * The server is too busy to process the uploaded files. Retry later.
-   */
-  503: ErrorResponse;
-};
-
-export type UploadTranslationsError =
-  UploadTranslationsErrors[keyof UploadTranslationsErrors];
-
-export type UploadTranslationsResponses = {
-  /**
-   * Uploaded translation files
-   */
-  201: {
-    uploadedFiles: Array<{
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      fileName: string;
-      fileFormat: FileFormat;
-      dataFormat?: DataFormat;
-      locale?: string;
-    }>;
-    count: number;
-    message: string;
-  };
-};
-
-export type UploadTranslationsResponse =
-  UploadTranslationsResponses[keyof UploadTranslationsResponses];
-
-export type GetBranchInfoData = {
-  body: {
-    branchNames?: Array<string>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/branches/info';
-};
-
-export type GetBranchInfoErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type GetBranchInfoError = GetBranchInfoErrors[keyof GetBranchInfoErrors];
-
-export type GetBranchInfoResponses = {
-  /**
-   * Branch information
-   */
-  200: {
-    branches: Array<Branch>;
-    defaultBranch: Branch &
-      ({
-        [key: string]: unknown;
-      } | null);
-  };
-};
-
-export type GetBranchInfoResponse =
-  GetBranchInfoResponses[keyof GetBranchInfoResponses];
-
-export type CreateBranchData = {
-  body: {
-    branchName: string;
-    defaultBranch?: boolean;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/branches/create';
-};
-
-export type CreateBranchErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The request conflicts with existing data or the current state of the project or organization.
-   */
-  409: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type CreateBranchError = CreateBranchErrors[keyof CreateBranchErrors];
-
-export type CreateBranchResponses = {
-  /**
-   * Created or existing branch
-   */
-  200: {
-    branch: Branch;
-  };
-};
-
-export type CreateBranchResponse =
-  CreateBranchResponses[keyof CreateBranchResponses];
-
-export type CreateTagData = {
-  body: {
-    tagId: string;
-    files: Array<{
-      fileId: string;
-      versionId: string;
-      branchId: string;
-    }>;
-    message?: string;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/tags/create';
-};
-
-export type CreateTagErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type CreateTagError = CreateTagErrors[keyof CreateTagErrors];
-
-export type CreateTagResponses = {
-  /**
-   * Created or updated file tag
-   */
-  200: {
-    tag: {
-      id: string;
-      tagId: string;
-      message: string | null;
-      createdAt: string;
-      updatedAt: string;
-    };
-  };
-};
-
-export type CreateTagResponse = CreateTagResponses[keyof CreateTagResponses];
-
-export type UploadAssetsData = {
-  body: {
-    assets: Array<{
-      assetType: 'FONT';
-      content: string;
-      fileName: string;
-      family?: string;
-      style?: string;
-    }>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/assets';
-};
-
-export type UploadAssetsErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type UploadAssetsError = UploadAssetsErrors[keyof UploadAssetsErrors];
-
-export type UploadAssetsResponses = {
-  /**
-   * Uploaded assets
-   */
-  201: {
-    assets: Array<{
-      id: string;
-      assetKey: string;
-      fileName: string;
-    }>;
-    count: number;
-  };
-};
-
-export type UploadAssetsResponse =
-  UploadAssetsResponses[keyof UploadAssetsResponses];
-
-export type TranslateData = {
-  body: RuntimeTranslationRequest;
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/translate';
-};
-
-export type TranslateErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The organization's billing account is blocked, or its plan usage limit, monthly spend limit, or credit balance does not cover this request.
-   */
-  402: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type TranslateError = TranslateErrors[keyof TranslateErrors];
-
-export type TranslateResponses = {
-  /**
-   * All translations were served from cache
-   */
-  200: RuntimeTranslationResponse;
-  /**
-   * Translations completed
-   */
-  201: RuntimeTranslationResponse;
-};
-
-export type TranslateResponse = TranslateResponses[keyof TranslateResponses];
+export type ListProjectApiKeysResponse =
+  ListProjectApiKeysResponses[keyof ListProjectApiKeysResponses];
 
 export type CreateProjectApiKeyData = {
   body: {
@@ -3486,35 +4872,65 @@ export type CreateProjectApiKeyErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource, or cannot grant a selected permission. No key is created.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_denied'
+      | 'permission_not_grantable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type CreateProjectApiKeyError =
@@ -3522,26 +4938,178 @@ export type CreateProjectApiKeyError =
 
 export type CreateProjectApiKeyResponses = {
   /**
-   * Project API key created
+   * Project API key created. Each successful request creates a new key. Store the returned secret securely.
    */
-  201: {
-    apiKey: {
-      id: string;
-      name: string;
-      key: string;
-      projectId: string;
-      /**
-       * Compatibility field. All project API keys work in any environment.
-       *
-       * @deprecated
-       */
-      type: 'production';
-    };
+  201: ProjectApiKey & {
+    /**
+     * The key itself. Returned only on creation; store it securely.
+     */
+    key: string;
   };
 };
 
 export type CreateProjectApiKeyResponse =
   CreateProjectApiKeyResponses[keyof CreateProjectApiKeyResponses];
+
+export type DeleteProjectApiKeyData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    projectId: string;
+    /**
+     * API key ID.
+     */
+    apiKeyId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/api-keys/{apiKeyId}';
+};
+
+export type DeleteProjectApiKeyErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type DeleteProjectApiKeyError =
+  DeleteProjectApiKeyErrors[keyof DeleteProjectApiKeyErrors];
+
+export type DeleteProjectApiKeyResponses = {
+  /**
+   * Project API key deleted. The key usually stops authenticating at once, and always within 10 minutes. Repeating the request returns 404.
+   */
+  200: {
+    deleted: true;
+  };
+};
+
+export type DeleteProjectApiKeyResponse =
+  DeleteProjectApiKeyResponses[keyof DeleteProjectApiKeyResponses];
+
+export type GetProjectApiKeyData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    projectId: string;
+    /**
+     * API key ID.
+     */
+    apiKeyId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/api-keys/{apiKeyId}';
+};
+
+export type GetProjectApiKeyErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type GetProjectApiKeyError =
+  GetProjectApiKeyErrors[keyof GetProjectApiKeyErrors];
+
+export type GetProjectApiKeyResponses = {
+  /**
+   * Project API key
+   */
+  200: ProjectApiKey;
+};
+
+export type GetProjectApiKeyResponse =
+  GetProjectApiKeyResponses[keyof GetProjectApiKeyResponses];
 
 export type ListProjectsData = {
   body?: never;
@@ -3569,23 +5137,41 @@ export type ListProjectsErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type ListProjectsError = ListProjectsErrors[keyof ListProjectsErrors];
@@ -3610,86 +5196,6 @@ export type ListProjectsResponses = {
 
 export type ListProjectsResponse =
   ListProjectsResponses[keyof ListProjectsResponses];
-
-export type GenerateProjectContextData = {
-  body: {
-    files: Array<{
-      branchId?: string;
-      fileId: string;
-      versionId: string;
-    }>;
-    locales?: Array<string>;
-    force?: boolean;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/setup/generate';
-};
-
-export type GenerateProjectContextErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse;
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse;
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
-   */
-  403: ErrorResponse;
-  /**
-   * The requested resource was not found.
-   */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse;
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse;
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse;
-};
-
-export type GenerateProjectContextError =
-  GenerateProjectContextErrors[keyof GenerateProjectContextErrors];
-
-export type GenerateProjectContextResponses = {
-  /**
-   * Context generation status
-   */
-  200:
-    | {
-        status: 'completed';
-      }
-    | {
-        setupJobId: string;
-        status: 'queued';
-      };
-};
-
-export type GenerateProjectContextResponse =
-  GenerateProjectContextResponses[keyof GenerateProjectContextResponses];
 
 export type ListProjectContextGroupsData = {
   body?: never;
@@ -3722,27 +5228,57 @@ export type ListProjectContextGroupsErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type ListProjectContextGroupsError =
@@ -3797,27 +5333,53 @@ export type UnassignContextGroupErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type UnassignContextGroupError =
@@ -3825,10 +5387,10 @@ export type UnassignContextGroupError =
 
 export type UnassignContextGroupResponses = {
   /**
-   * Assignment removed
+   * Assignment removed. Does nothing if the group isn't assigned.
    */
   200: {
-    committed: true;
+    deleted: true;
   };
 };
 
@@ -3861,27 +5423,53 @@ export type GetProjectContextGroupErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type GetProjectContextGroupError =
@@ -3935,35 +5523,63 @@ export type ReorderContextGroupErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type ReorderContextGroupError =
@@ -3974,7 +5590,12 @@ export type ReorderContextGroupResponses = {
    * Assignments reordered
    */
   200: {
-    committed: true;
+    groupId: string;
+    groupName: string;
+    /**
+     * Lower values take precedence for duplicate terms.
+     */
+    priority: number;
   };
 };
 
@@ -4007,27 +5628,53 @@ export type AssignContextGroupErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type AssignContextGroupError =
@@ -4035,29 +5682,285 @@ export type AssignContextGroupError =
 
 export type AssignContextGroupResponses = {
   /**
-   * Already assigned
+   * Already assigned; nothing changes, and repeating it never moves a group that was reordered.
    */
   200: {
-    committed: true;
+    groupId: string;
+    groupName: string;
     /**
-     * False when the group was already assigned; nothing changed.
+     * Lower values take precedence for duplicate terms.
      */
-    created: boolean;
+    priority: number;
   };
   /**
    * Context group assigned
    */
   201: {
-    committed: true;
+    groupId: string;
+    groupName: string;
     /**
-     * False when the group was already assigned; nothing changed.
+     * Lower values take precedence for duplicate terms.
      */
-    created: boolean;
+    priority: number;
   };
 };
 
 export type AssignContextGroupResponse =
   AssignContextGroupResponses[keyof AssignContextGroupResponses];
+
+export type GetJobData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    projectId: string;
+    /**
+     * Job ID returned when the job was queued.
+     */
+    jobId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/jobs/{jobId}';
+};
+
+export type GetJobErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type GetJobError = GetJobErrors[keyof GetJobErrors];
+
+export type GetJobResponses = {
+  /**
+   * Job
+   */
+  200: {
+    id: string;
+    /**
+     * `queued`: accepted and waiting to run. `processing`: running, or waiting to retry after a failed attempt. `completed` and `failed` are final.
+     */
+    status: 'queued' | 'processing' | 'completed' | 'failed';
+    /**
+     * What the job works on, by `type`. A file translation names its source file version and target locale.
+     */
+    subject:
+      | {
+          type: 'file_translation';
+          /**
+           * Branch of the translated source file.
+           */
+          branchId: string;
+          /**
+           * Translated source file.
+           */
+          fileId: string;
+          /**
+           * Translated source file version.
+           */
+          versionId: string;
+          /**
+           * Locale the file is translated into.
+           */
+          locale: string;
+        }
+      | {
+          type: 'context_generation';
+        }
+      | {
+          type: 'search_index';
+        };
+    /**
+     * A message for a failed job; `null` otherwise.
+     */
+    error: string | null;
+  };
+};
+
+export type GetJobResponse = GetJobResponses[keyof GetJobResponses];
+
+export type QueryJobsData = {
+  body: {
+    /**
+     * Jobs to read, 1–100; a job ID repeated is rejected.
+     */
+    jobs: Array<{
+      /**
+       * Job ID returned when the job was queued.
+       */
+      id: string;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/jobs/query';
+};
+
+export type QueryJobsErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type QueryJobsError = QueryJobsErrors[keyof QueryJobsErrors];
+
+export type QueryJobsResponses = {
+  /**
+   * One result per selector, in selector order; a job the project does not have is `not_found`.
+   */
+  200: {
+    /**
+     * One result per selector, in selector order.
+     */
+    results: Array<{
+      id: string;
+      /**
+       * The job status, or `not_found` when the project has no such job.
+       */
+      status: 'queued' | 'processing' | 'completed' | 'failed' | 'not_found';
+      /**
+       * Absent when `status` is `not_found`.
+       */
+      subject?:
+        | {
+            type: 'file_translation';
+            /**
+             * Branch of the translated source file.
+             */
+            branchId: string;
+            /**
+             * Translated source file.
+             */
+            fileId: string;
+            /**
+             * Translated source file version.
+             */
+            versionId: string;
+            /**
+             * Locale the file is translated into.
+             */
+            locale: string;
+          }
+        | {
+            type: 'context_generation';
+          }
+        | {
+            type: 'search_index';
+          };
+      /**
+       * Absent when `status` is `not_found`.
+       */
+      error?: string | null;
+    }>;
+  };
+};
+
+export type QueryJobsResponse = QueryJobsResponses[keyof QueryJobsResponses];
 
 export type ListOrgsData = {
   body?: never;
@@ -4085,23 +5988,41 @@ export type ListOrgsErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'permission_denied';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type ListOrgsError = ListOrgsErrors[keyof ListOrgsErrors];
@@ -4124,10 +6045,122 @@ export type ListOrgsResponses = {
 
 export type ListOrgsResponse = ListOrgsResponses[keyof ListOrgsResponses];
 
+export type CreateOrgApiKeyData = {
+  body: {
+    /**
+     * Key name, 1–255 characters after trimming.
+     */
+    name: string;
+    /**
+     * Organization and project permissions to grant. Select at least one, or omit to grant all organization API key permissions you can delegate. You must hold every selected permission. Duplicates are ignored. Write permissions do not include Read.
+     */
+    permissions?: Array<OrgApiKeyPermission>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    orgId: string;
+  };
+  query?: never;
+  url: '/v2/orgs/{orgId}/api-keys';
+};
+
+export type CreateOrgApiKeyErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource, or cannot grant a selected permission. No key is created.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_denied'
+      | 'permission_not_grantable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type CreateOrgApiKeyError =
+  CreateOrgApiKeyErrors[keyof CreateOrgApiKeyErrors];
+
+export type CreateOrgApiKeyResponses = {
+  /**
+   * Organization API key created. Each successful request creates a new key. Store the returned secret securely.
+   */
+  201: {
+    id: string;
+    name: string;
+    /**
+     * Permissions the key holds.
+     */
+    permissions: Array<OrgApiKeyPermission>;
+    createdAt: string;
+    /**
+     * When the key last authenticated a request; `null` when it never has.
+     */
+    lastUsedAt: string | null;
+    /**
+     * The key itself. Returned only on creation; store it securely.
+     */
+    key: string;
+  };
+};
+
+export type CreateOrgApiKeyResponse =
+  CreateOrgApiKeyResponses[keyof CreateOrgApiKeyResponses];
+
 export type CreateProjectData = {
   body: {
     /**
-     * Trimmed Project name, 1–64 characters. Accepts ASCII letters, digits, spaces, dashes, underscores, apostrophes, parentheses, and periods.
+     * Trimmed Project name, 1–64 UTF-16 code units. Accepts letters, numbers, punctuation, symbols, emoji, and spaces in any script, but no control characters.
      */
     name: string;
     /**
@@ -4156,50 +6189,79 @@ export type CreateProjectErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
-   * The request conflicts with existing data or the current state of the project or organization.
+   * Your plan's project limit has been reached.
    */
-  409: ErrorResponse;
+  409: ErrorResponse & {
+    code?: 'project_limit_reached';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type CreateProjectError = CreateProjectErrors[keyof CreateProjectErrors];
 
 export type CreateProjectResponses = {
   /**
-   * Project created
+   * Project created. Each successful request creates a new project.
    */
   201: {
-    project: {
-      id: string;
-      name: string;
-      orgId: string;
-      defaultLocale: string;
-    };
+    id: string;
+    name: string;
+    orgId: string;
+    defaultLocale: string;
+    currentLocales: Array<string>;
+    autoApprove: boolean;
+    cdnEnabled: boolean;
   };
 };
 
@@ -4237,27 +6299,57 @@ export type ListContextGroupsErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type ListContextGroupsError =
@@ -4306,35 +6398,63 @@ export type CreateContextGroupErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type CreateContextGroupError =
@@ -4342,12 +6462,9 @@ export type CreateContextGroupError =
 
 export type CreateContextGroupResponses = {
   /**
-   * Context group created
+   * Context group created. Each call creates a new one.
    */
-  201: {
-    committed: true;
-    groupId: string;
-  };
+  201: ContextGroup;
 };
 
 export type CreateContextGroupResponse =
@@ -4375,27 +6492,49 @@ export type DeleteContextGroupErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type DeleteContextGroupError =
@@ -4406,7 +6545,7 @@ export type DeleteContextGroupResponses = {
    * Context group deleted
    */
   200: {
-    committed: true;
+    deleted: true;
   };
 };
 
@@ -4435,27 +6574,49 @@ export type GetContextGroupErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type GetContextGroupError =
@@ -4476,7 +6637,11 @@ export type UpdateContextGroupData = {
     /**
      * New group name, 1–255 characters.
      */
-    name: string;
+    name?: string;
+    /**
+     * Whether translation runs may add terms and context to this group automatically.
+     */
+    autoUpdate?: boolean;
   };
   headers?: {
     /**
@@ -4498,35 +6663,59 @@ export type UpdateContextGroupErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type UpdateContextGroupError =
@@ -4536,9 +6725,7 @@ export type UpdateContextGroupResponses = {
   /**
    * Context group updated
    */
-  200: {
-    committed: true;
-  };
+  200: ContextGroup;
 };
 
 export type UpdateContextGroupResponse =
@@ -4579,27 +6766,53 @@ export type ListContextGlossaryErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type ListContextGlossaryError =
@@ -4627,6 +6840,9 @@ export type ListContextGlossaryResponse =
   ListContextGlossaryResponses[keyof ListContextGlossaryResponses];
 
 export type UpsertContextGlossaryData = {
+  /**
+   * An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
+   */
   body: {
     /**
      * 1–100 terms, matched by keyword; a keyword may appear once.
@@ -4667,37 +6883,61 @@ export type UpsertContextGlossaryData = {
 
 export type UpsertContextGlossaryErrors = {
   /**
-   * The request is malformed or failed validation.
+   * The request is malformed or failed validation, including a keyword repeated within the batch. The whole batch is rejected.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type UpsertContextGlossaryError =
@@ -4705,15 +6945,30 @@ export type UpsertContextGlossaryError =
 
 export type UpsertContextGlossaryResponses = {
   /**
-   * Glossary terms written
+   * Glossary terms written. `items` has one entry per term sent, in request order, with its ID and what the write did to it.
    */
   200: {
-    committed: true;
+    /**
+     * How many of the items were created, changed, or already identical.
+     */
     counts: {
       created: number;
       updated: number;
       unchanged: number;
     };
+    /**
+     * One per item sent, in request order.
+     */
+    items: Array<{
+      /**
+       * ID of the stored item.
+       */
+      id: string;
+      /**
+       * Whether the write created the resource, changed an existing one, or left it as it was.
+       */
+      outcome: 'created' | 'updated' | 'unchanged';
+    }>;
   };
 };
 
@@ -4746,27 +7001,49 @@ export type DeleteContextGlossaryEntryErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type DeleteContextGlossaryEntryError =
@@ -4777,7 +7054,7 @@ export type DeleteContextGlossaryEntryResponses = {
    * Glossary term deleted
    */
   200: {
-    committed: true;
+    deleted: true;
   };
 };
 
@@ -4810,27 +7087,49 @@ export type GetContextGlossaryEntryErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type GetContextGlossaryEntryError =
@@ -4851,6 +7150,9 @@ export type GetContextGlossaryEntryResponse =
   GetContextGlossaryEntryResponses[keyof GetContextGlossaryEntryResponses];
 
 export type UpdateContextGlossaryEntryData = {
+  /**
+   * An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
+   */
   body: {
     keyword?: string;
     /**
@@ -4882,39 +7184,65 @@ export type UpdateContextGlossaryEntryErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
-   * The request conflicts with existing data or the current state of the project or organization.
+   * Another term already has the new keyword.
    */
-  409: ErrorResponse;
+  409: ErrorResponse & {
+    code?: 'already_exists';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type UpdateContextGlossaryEntryError =
@@ -4922,10 +7250,12 @@ export type UpdateContextGlossaryEntryError =
 
 export type UpdateContextGlossaryEntryResponses = {
   /**
-   * Glossary term updated
+   * Glossary term updated. The term ID and translations are kept when the keyword is renamed.
    */
   200: {
-    committed: true;
+    id: string;
+    keyword: string;
+    definition: string | null;
   };
 };
 
@@ -4967,27 +7297,53 @@ export type ListContextGlossaryTranslationsErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type ListContextGlossaryTranslationsError =
@@ -5044,27 +7400,49 @@ export type DeleteContextGlossaryTranslationErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type DeleteContextGlossaryTranslationError =
@@ -5075,7 +7453,7 @@ export type DeleteContextGlossaryTranslationResponses = {
    * Translation deleted
    */
   200: {
-    committed: true;
+    deleted: true;
   };
 };
 
@@ -5117,35 +7495,59 @@ export type SetContextGlossaryTranslationErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type SetContextGlossaryTranslationError =
@@ -5156,15 +7558,19 @@ export type SetContextGlossaryTranslationResponses = {
    * Translation replaced
    */
   200: {
-    committed: true;
-    outcome: 'created' | 'updated' | 'unchanged';
+    id: string;
+    locale: string;
+    translation: string;
+    userDefined: boolean;
   };
   /**
    * Translation created
    */
   201: {
-    committed: true;
-    outcome: 'created' | 'updated' | 'unchanged';
+    id: string;
+    locale: string;
+    translation: string;
+    userDefined: boolean;
   };
 };
 
@@ -5202,27 +7608,53 @@ export type ListContextCustomPromptsErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type ListContextCustomPromptsError =
@@ -5254,6 +7686,9 @@ export type ListContextCustomPromptsResponse =
   ListContextCustomPromptsResponses[keyof ListContextCustomPromptsResponses];
 
 export type UpsertContextCustomPromptsData = {
+  /**
+   * An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
+   */
   body: {
     /**
      * 1–100 prompts, matched by name and locale; a name and locale may appear once.
@@ -5289,37 +7724,61 @@ export type UpsertContextCustomPromptsData = {
 
 export type UpsertContextCustomPromptsErrors = {
   /**
-   * The request is malformed or failed validation.
+   * The request is malformed or failed validation, including a name and locale repeated within the batch. The whole batch is rejected.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type UpsertContextCustomPromptsError =
@@ -5327,15 +7786,30 @@ export type UpsertContextCustomPromptsError =
 
 export type UpsertContextCustomPromptsResponses = {
   /**
-   * Custom prompts written
+   * Custom prompts written. `items` has one entry per prompt sent, in request order, with its ID and what the write did to it.
    */
   200: {
-    committed: true;
+    /**
+     * How many of the items were created, changed, or already identical.
+     */
     counts: {
       created: number;
       updated: number;
       unchanged: number;
     };
+    /**
+     * One per item sent, in request order.
+     */
+    items: Array<{
+      /**
+       * ID of the stored item.
+       */
+      id: string;
+      /**
+       * Whether the write created the resource, changed an existing one, or left it as it was.
+       */
+      outcome: 'created' | 'updated' | 'unchanged';
+    }>;
   };
 };
 
@@ -5368,27 +7842,49 @@ export type DeleteContextCustomPromptErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type DeleteContextCustomPromptError =
@@ -5399,7 +7895,7 @@ export type DeleteContextCustomPromptResponses = {
    * Custom prompt deleted
    */
   200: {
-    committed: true;
+    deleted: true;
   };
 };
 
@@ -5407,6 +7903,9 @@ export type DeleteContextCustomPromptResponse =
   DeleteContextCustomPromptResponses[keyof DeleteContextCustomPromptResponses];
 
 export type UpdateContextCustomPromptData = {
+  /**
+   * An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
+   */
   body: {
     name?: string;
     /**
@@ -5443,39 +7942,65 @@ export type UpdateContextCustomPromptErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
-   * The request conflicts with existing data or the current state of the project or organization.
+   * Another prompt already has the resulting name and locale.
    */
-  409: ErrorResponse;
+  409: ErrorResponse & {
+    code?: 'already_exists';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type UpdateContextCustomPromptError =
@@ -5486,7 +8011,14 @@ export type UpdateContextCustomPromptResponses = {
    * Custom prompt updated
    */
   200: {
-    committed: true;
+    id: string;
+    name: string;
+    description: string | null;
+    /**
+     * Locale the prompt applies to; null applies to all locales.
+     */
+    locale: string | null;
+    value: string;
   };
 };
 
@@ -5500,7 +8032,7 @@ export type ImportContextContentData = {
      */
     format: 'json' | 'csv';
     /**
-     * One JSON or CSV transfer document, up to 1 MiB as a JSON string, so escaped quotes and line breaks count toward the limit. An exported page always fits. It is validated in full before anything is written. A JSON document has the shape `{ glossary: [{ keyword, definition?, translations?: { <locale>: { translation } | null } }], customPrompts: [{ name, locale, value, description? }] }`; definition, locale and description may be null. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
+     * One JSON or CSV transfer document, up to 1 MiB as a JSON string, so escaped quotes and line breaks count toward the limit. An exported page always fits. It is validated in full before anything is written. A JSON document has the shape `{ glossary: [{ keyword, definition?, translations?: { <locale>: { translation } | null } }], customPrompts: [{ name, locale, value, description? }] }`; definition, locale and description may be null. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. In CSV, a blank prompt locale means every locale, and the term, prompt name and prompt text can't be blank.
      */
     content: string;
   };
@@ -5524,35 +8056,59 @@ export type ImportContextContentErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type ImportContextContentError =
@@ -5563,7 +8119,6 @@ export type ImportContextContentResponses = {
    * Content imported
    */
   200: {
-    committed: true;
     glossary: {
       created: number;
       updated: number;
@@ -5615,27 +8170,53 @@ export type ExportContextContentErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid';
+  };
   /**
    * Authentication is missing or invalid.
    */
-  401: ErrorResponse;
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
   /**
    * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: ErrorResponse;
+  403: ErrorResponse & {
+    code?: 'scope_missing' | 'ip_not_allowed' | 'target_inaccessible';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large' | 'response_too_large';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type ExportContextContentError =
@@ -5643,7 +8224,7 @@ export type ExportContextContentError =
 
 export type ExportContextContentResponses = {
   /**
-   * Page of exported content
+   * Page of exported content. Pages aren't a snapshot, so changes made mid-export may be missed or included.
    */
   200: {
     /**
@@ -5664,6 +8245,133 @@ export type ExportContextContentResponses = {
 export type ExportContextContentResponse =
   ExportContextContentResponses[keyof ExportContextContentResponses];
 
+export type UpsertAssetsData = {
+  body: {
+    /**
+     * 1–10 assets; OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font is matched by family, weight and italic style, and an identity may appear once. Uploading a matching font replaces it for the whole organization.
+     */
+    assets: Array<{
+      assetType: 'FONT';
+      content: string;
+      fileName: string;
+      /**
+       * Family that Lottie files reference the font by. When set, `family` and `style` alone set the font's identity. When absent, the family, weight and italic style come from the font's own tables, then its file name, and `style` is ignored.
+       */
+      family?: string;
+      /**
+       * Weight and italic style, such as `Bold Italic` or `350`. Read only with `family`; a `family` without `style` is regular weight (400), not italic.
+       */
+      style?: string;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    /**
+     * Organization ID.
+     */
+    orgId: string;
+  };
+  query?: never;
+  url: '/v2/orgs/{orgId}/assets';
+};
+
+export type UpsertAssetsErrors = {
+  /**
+   * The request is malformed or failed validation, including an empty or oversized font, a font with no derivable family, or two fonts with the same identity. The batch is checked before any font is written.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type UpsertAssetsError = UpsertAssetsErrors[keyof UpsertAssetsErrors];
+
+export type UpsertAssetsResponses = {
+  /**
+   * Result of each font, in request order, as `succeeded` or as `failed` with an `error`, even when every font fails. Fonts are stored independently, and retrying a failed font is safe.
+   */
+  200: {
+    summary: BatchWriteSummary;
+    /**
+     * One result per requested font, in request order.
+     */
+    results: Array<
+      | {
+          fileName: string;
+          status: 'succeeded';
+          id: string;
+          /**
+           * Normalized family, weight and italic style of the font.
+           */
+          assetKey: string;
+        }
+      | {
+          fileName: string;
+          status: 'failed';
+          error: string;
+          code: ErrorCode & unknown;
+        }
+    >;
+  };
+};
+
+export type UpsertAssetsResponse =
+  UpsertAssetsResponses[keyof UpsertAssetsResponses];
+
 export type CreateCliWizardSessionData = {
   body: CreateCliWizardSessionRequest;
   headers?: {
@@ -5681,23 +8389,33 @@ export type CreateCliWizardSessionErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'invalid_content_encoding';
+  };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: ErrorResponse;
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
-  415: ErrorResponse;
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type CreateCliWizardSessionError =
@@ -5732,23 +8450,27 @@ export type DeleteCliWizardSessionErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type DeleteCliWizardSessionError =
@@ -5783,23 +8505,27 @@ export type GetCliWizardSessionErrors = {
   /**
    * The request is malformed or failed validation.
    */
-  400: ErrorResponse;
+  400: ErrorResponse & {
+    code?: 'invalid_request';
+  };
   /**
    * The requested resource was not found.
    */
-  404: ErrorResponse;
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse;
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
   /**
    * Too many requests. The rate limit was exceeded.
    */
-  429: ErrorResponse;
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
   /**
    * An unexpected server error occurred.
    */
-  500: ErrorResponse;
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
 };
 
 export type GetCliWizardSessionError =
@@ -5818,102 +8544,3 @@ export type GetCliWizardSessionResponses = {
 
 export type GetCliWizardSessionResponse =
   GetCliWizardSessionResponses[keyof GetCliWizardSessionResponses];
-
-export type CreateOrgApiKeyData = {
-  body: {
-    /**
-     * Key name, 1–255 characters after trimming.
-     */
-    name: string;
-    /**
-     * Organization and project permissions to grant. Select at least one, or omit to grant all organization API key permissions you can delegate. You must hold every selected permission. Duplicates are ignored. Write permissions do not include Read.
-     */
-    permissions?: Array<OrgApiKeyPermission>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-  };
-  path: {
-    orgId: string;
-  };
-  query?: never;
-  url: '/v2/orgs/{orgId}/api-keys';
-};
-
-export type CreateOrgApiKeyErrors = {
-  /**
-   * The request is malformed or failed validation.
-   */
-  400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
-  };
-  /**
-   * Authentication is missing or invalid.
-   */
-  401: ErrorResponse & {
-    code?:
-      | 'unauthenticated'
-      | 'api_key_invalid'
-      | 'token_invalid'
-      | 'super_user_grant_revoked';
-  };
-  /**
-   * The caller is authenticated but not allowed to perform this operation or access the requested resource, or cannot grant a selected permission. No key is created.
-   */
-  403: ErrorResponse & {
-    code?:
-      | 'scope_missing'
-      | 'ip_not_allowed'
-      | 'permission_denied'
-      | 'permission_not_grantable'
-      | 'permission_missing'
-      | 'target_inaccessible';
-  };
-  /**
-   * The request, or the data it would return, exceeds a size or item limit.
-   */
-  413: ErrorResponse & {
-    code?: 'payload_too_large';
-  };
-  /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
-   */
-  415: ErrorResponse & {
-    code?: 'unsupported_media_type';
-  };
-  /**
-   * Too many requests. The rate limit was exceeded.
-   */
-  429: ErrorResponse & {
-    code?: 'rate_limited';
-  };
-  /**
-   * An unexpected server error occurred.
-   */
-  500: ErrorResponse & {
-    code?: 'internal_error';
-  };
-};
-
-export type CreateOrgApiKeyError =
-  CreateOrgApiKeyErrors[keyof CreateOrgApiKeyErrors];
-
-export type CreateOrgApiKeyResponses = {
-  /**
-   * Organization API key created. Each successful request creates a new key. Store the returned secret securely.
-   */
-  201: {
-    apiKey: {
-      id: string;
-      name: string;
-      key: string;
-      orgId: string;
-    };
-  };
-};
-
-export type CreateOrgApiKeyResponse =
-  CreateOrgApiKeyResponses[keyof CreateOrgApiKeyResponses];
