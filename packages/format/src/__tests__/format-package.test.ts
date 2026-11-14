@@ -58,11 +58,10 @@ describe('@generaltranslation/format package exports', () => {
       })
     ).toBe('yesterday');
     expect(
-      new format.LocaleConfig({
-        defaultLocale: 'en',
-        locales: [],
-        timeZone: 'UTC',
-      }).formatNum(1234.5, 'en-US')
+      new format.GTIntl(
+        { defaultLocale: 'en', timeZone: 'UTC' },
+        { locale: 'en-US' }
+      ).formatNum(1234.5)
     ).toBe('1,234.5');
     expect(format.getRegionProperties('US').name).toBe('United States');
     expect(format.standardizeLocale('en-us')).toBe('en-US');
@@ -79,7 +78,7 @@ describe('@generaltranslation/format package exports', () => {
         `
           import assert from 'node:assert/strict';
           import {
-            LocaleConfig,
+            GTIntl,
             formatCurrency,
             formatCutoff,
             formatList,
@@ -109,7 +108,7 @@ describe('@generaltranslation/format package exports', () => {
             'yesterday'
           );
           assert.equal(
-            new LocaleConfig({ defaultLocale: 'en', locales: [], customMapping: { en: 'English' }, timeZone: 'UTC' }).getLocaleName('en'),
+            new GTIntl({ defaultLocale: 'en', timeZone: 'UTC', customMapping: { en: 'English' } }).getLocaleName('en'),
             'English'
           );
           assert.equal(getRegionProperties('419').emoji, '🌎');

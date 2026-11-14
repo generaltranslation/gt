@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { formatIcu, parse } from '@generaltranslation/icu/parser';
-import { GT } from '../../index';
+import { GTIntl } from '../../index';
 import { declareVar } from '../declareVar';
 import { decodeVars } from '../decodeVars';
 import { extractVars } from '../extractVars';
@@ -149,7 +149,7 @@ describe('extractVars', () => {
     const target = 'Je joue avec mon ami {_gt_1} au {_gt_2}';
 
     expect(
-      new GT().formatMessage(target, {
+      new GTIntl().formatMessage(target, {
         locales: ['fr'],
         variables: extractVars(source),
       })

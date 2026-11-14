@@ -9,7 +9,7 @@ import {
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,
-  LocaleConfig,
+  GTIntl,
 } from '../index';
 import { formatMessageTree, libraryDefaultLocale } from '../internal';
 import { hostTimeZone } from '../utils/hostTimeZone';
@@ -33,11 +33,10 @@ describe('the time zone of dates and times', () => {
       })
     ).toBe('11:03 PM');
     expect(
-      new LocaleConfig({ timeZone: 'Asia/Tokyo' }).formatDateTime(
-        date,
-        'en-US',
-        { timeStyle: 'short' }
-      )
+      new GTIntl({ timeZone: 'Asia/Tokyo' }).formatDateTime(date, {
+        locale: 'en-US',
+        timeStyle: 'short',
+      })
     ).toBe('11:03 PM');
   });
 
@@ -54,7 +53,7 @@ describe('the time zone of dates and times', () => {
         variables: { at: date },
       })
     ).toBe(expected);
-    expect(new LocaleConfig().timeZone).toBe(hostTimeZone());
+    expect(new GTIntl().timeZone).toBe(hostTimeZone());
   });
 
   it("reads the host's time zone once", () => {
@@ -80,8 +79,8 @@ describe('what a caller leaves out', () => {
     expect(formatListToParts([1, 2])).toEqual([1, ' and ', 2]);
     expect(formatRelativeTime(-1, 'day')).toBe('yesterday');
     expect(formatCutoff('Hello, world!', { maxChars: 8 })).toBe('Hello, …');
-    expect(new LocaleConfig().defaultLocale).toBe(libraryDefaultLocale);
-    expect(new LocaleConfig().locales).toEqual([]);
+    expect(new GTIntl().defaultLocale).toBe(libraryDefaultLocale);
+    expect(new GTIntl().locales).toEqual([]);
   });
 
   it('formats in the locales given', () => {
@@ -116,13 +115,14 @@ describe('what a caller leaves out', () => {
     );
   });
 
-  it('formats relative time from a locale config without a base date', () => {
+  it('formats relative time from a GTIntl without a base date', () => {
     const hour = 60 * 60 * 1000;
     expect(
-      new LocaleConfig().formatRelativeTimeFromDate(new Date(Date.now() - hour))
+      new GTIntl().formatRelativeTimeFromDate(new Date(Date.now() - hour))
     ).toBe('1 hour ago');
     expect(
-      new LocaleConfig().formatRelativeTimeFromDate(new Date(3 * hour), 'en', {
+      new GTIntl().formatRelativeTimeFromDate(new Date(3 * hour), {
+        locale: 'en',
         baseDate: new Date(0),
       })
     ).toBe('in 3 hours');

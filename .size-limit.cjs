@@ -104,7 +104,6 @@ module.exports = [
     '1 kB'
   ),
   core('generaltranslation/types', 'types'),
-  core('generaltranslation/errors', 'errors'),
 
   format('@generaltranslation/format', 'index'),
   format('@generaltranslation/format/types', 'types'),

@@ -1,20 +1,20 @@
 import {
-  LocaleConfig as ResolvedLocaleConfig,
-  type LocaleConfigConstructorParams as ResolvedLocaleConfigParams,
+  GTIntl as ResolvedGTIntl,
+  type LocaleConfig,
 } from '@generaltranslation/format';
-import type { WithOptional } from './formatting/formatting';
+import type { WithOptional } from '../formatting/formatting';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from './logging/diagnostics';
-import { libraryDefaultLocale } from './settings/settings';
-import { hostTimeZone } from './utils/hostTimeZone';
+} from '../logging/diagnostics';
+import { libraryDefaultLocale } from '../settings/settings';
+import { hostTimeZone } from '../utils/hostTimeZone';
 
-export type LocaleConfigConstructorParams = Partial<ResolvedLocaleConfigParams>;
+type LocaleOption = ConstructorParameters<typeof ResolvedGTIntl>[1];
 
 type RelativeTimeFromDateOptions = Parameters<
-  ResolvedLocaleConfig['formatRelativeTimeFromDate']
->[2];
+  ResolvedGTIntl['formatRelativeTimeFromDate']
+>[1];
 
 // A config is built far more often than it names a new zone.
 const knownTimeZones = new Set<string>();
@@ -44,29 +44,30 @@ export function checkTimeZone(timeZone: string): string {
 }
 
 /**
- * The locale and formatting primitives of `@generaltranslation/format`, with
+ * The locale and formatting helpers of `@generaltranslation/format`, with
  * what a caller leaves out resolved: that package takes every argument.
  */
-export class LocaleConfig extends ResolvedLocaleConfig {
-  constructor(params: LocaleConfigConstructorParams = {}) {
-    super({
-      ...params,
-      defaultLocale: params.defaultLocale ?? libraryDefaultLocale,
-      locales: params.locales ?? [],
-      timeZone:
-        params.timeZone === undefined
-          ? hostTimeZone()
-          : checkTimeZone(params.timeZone),
-    });
+export class GTIntl extends ResolvedGTIntl {
+  constructor(localeConfig: LocaleConfig = {}, options?: LocaleOption) {
+    super(
+      {
+        ...localeConfig,
+        defaultLocale: localeConfig.defaultLocale ?? libraryDefaultLocale,
+        timeZone:
+          localeConfig.timeZone === undefined
+            ? hostTimeZone()
+            : checkTimeZone(localeConfig.timeZone),
+      },
+      options
+    );
   }
 
   /** Compares the date with now when no `baseDate` is given. */
   override formatRelativeTimeFromDate(
     date: Date,
-    targetLocale?: string,
     options?: WithOptional<RelativeTimeFromDateOptions, 'baseDate'>
   ): string {
-    return super.formatRelativeTimeFromDate(date, targetLocale, {
+    return super.formatRelativeTimeFromDate(date, {
       ...options,
       baseDate: options?.baseDate ?? new Date(),
     });

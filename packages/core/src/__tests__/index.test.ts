@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GT, LocaleConfig } from '../index';
-import { GTRuntime } from '../runtime';
+import {
+  GeneralTranslation,
+  GTAccount,
+  GTIntl,
+  GTRuntime,
+  type ProjectHandle,
+} from '../index';
 import type { TranslateManyEntry } from '../types';
 
 const numberValue = 1234.56;
@@ -19,27 +24,24 @@ const formatCurrencyWithIntl = (locale: string, currency = 'EUR') =>
     numberingSystem: 'latn',
   }).format(numberValue);
 
-describe('GT translation methods', () => {
+describe.sequential('GeneralTranslation Translation Methods', () => {
   describe.each(['translate', 'translateMany'] as const)('%s', (method) => {
     const fetchMock = vi.fn<typeof fetch>();
-    let gt: GT;
+    let project: ProjectHandle;
 
     beforeEach(() => {
       fetchMock.mockReset();
       vi.stubGlobal('fetch', fetchMock);
-      vi.stubEnv('GT_PROJECT_ID', '');
-      gt = new GT({
+      project = new GeneralTranslation({
         apiKey: 'test-api-key',
-        projectId: 'test-project',
         baseUrl: 'https://api.test.com',
-        sourceLocale: 'en',
-        targetLocale: 'es',
+        projectId: 'test-project',
+        localeConfig: { defaultLocale: 'en' },
       });
     });
 
     afterEach(() => {
       vi.unstubAllGlobals();
-      vi.unstubAllEnvs();
     });
 
     it('sends instance configuration and explicit translation metadata', async () => {
@@ -49,7 +51,10 @@ describe('GT translation methods', () => {
         locale: 'fr',
         dataFormat: 'ICU',
       } as const;
-      fetchMock.mockResolvedValue(Response.json({ greeting: translated }));
+      const { success: _success, ...succeeded } = translated;
+      fetchMock.mockResolvedValue(
+        Response.json({ results: [{ status: 'succeeded', ...succeeded }] })
+      );
       const entry = {
         source: 'Hello {name}',
         metadata: { hash: 'greeting', id: 'welcome', dataFormat: 'ICU' },
@@ -57,32 +62,33 @@ describe('GT translation methods', () => {
       const options = {
         targetLocale: 'fr',
         sourceLocale: 'en-US',
-        context: 'dashboard',
-        actionType: 'standard',
+        modelProvider: 'OPENAI',
       };
       const result =
         method === 'translate'
-          ? await gt.translate(entry, options)
-          : await gt.translateMany([entry], options);
+          ? await project.translate(entry, options)
+          : await project.translateMany([entry], options);
 
       expect(result).toEqual(
         method === 'translate' ? translated : [translated]
       );
       const [input, init] = fetchMock.mock.calls[0];
       const request = new Request(input, init);
-      expect(request.url).toBe('https://api.test.com/v2/translate');
+      expect(request.url).toBe(
+        'https://api.test.com/v2/projects/test-project/translate'
+      );
       expect(request.headers.get('authorization')).toBe('Bearer test-api-key');
-      expect(request.headers.get('gt-project-id')).toBe('test-project');
+      expect(request.headers.has('gt-project-id')).toBe(false);
       expect(await request.json()).toMatchObject({
-        requests: { greeting: entry },
+        requests: [entry],
         targetLocale: 'fr',
         sourceLocale: 'en-US',
-        metadata: options,
+        metadata: { modelProvider: 'OPENAI' },
       });
     });
 
     it('names the method when the target locale is missing', async () => {
-      const withoutTarget = new GT({
+      const withoutTarget = new GeneralTranslation({
         apiKey: 'test-api-key',
         projectId: 'test-project',
       });
@@ -92,20 +98,7 @@ describe('GT translation methods', () => {
           : withoutTarget.translateMany(['Hello'], '');
 
       await expect(result).rejects.toThrow(
-        `GT Error: Cannot call \`${method}\` without a specified locale. Pass a locale to \`${method}\` or specify targetLocale in the GT constructor.`
-      );
-      expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it('names the method when the project ID is missing', async () => {
-      const withoutProject = new GT({ apiKey: 'test-api-key' });
-      const result =
-        method === 'translate'
-          ? withoutProject.translate('Hello', 'es')
-          : withoutProject.translateMany(['Hello'], 'es');
-
-      await expect(result).rejects.toThrow(
-        `GT Error: Cannot call \`${method}\` without a specified project ID. Pass a project ID to \`${method}\` or specify projectId in the GT constructor.`
+        `GT Error: Cannot call \`${method}\` without a target locale. Pass the target locale to \`${method}()\`.`
       );
       expect(fetchMock).not.toHaveBeenCalled();
     });
@@ -115,244 +108,351 @@ describe('GT translation methods', () => {
       fetchMock.mockRejectedValue(error);
       const result =
         method === 'translate'
-          ? gt.translate('Hello', 'es')
-          : gt.translateMany(['Hello'], 'es');
+          ? project.translate('Hello', 'es')
+          : project.translateMany(['Hello'], 'es');
 
       await expect(result).rejects.toBe(error);
     });
   });
-
-  it('exposes the configured credentials, base URL and target locale', () => {
-    const gt = new GT({
-      apiKey: 'test-key',
-      devApiKey: 'dev-key',
-      projectId: 'test-project',
-      baseUrl: 'https://api.test.com',
-      targetLocale: 'es',
-    });
-
-    expect(gt).toMatchObject({
-      apiKey: 'test-key',
-      devApiKey: 'dev-key',
-      projectId: 'test-project',
-      baseUrl: 'https://api.test.com',
-      targetLocale: 'es',
-    });
-  });
 });
 
-describe('GT locale resolution', () => {
-  const customMapping = {
-    'custom-locale': { code: 'en-US', name: 'Custom English' },
-    'name-only': 'Name Only',
-  };
-
-  it.each([
-    ['an alias with a canonical code', 'custom-locale', 'en-US'],
-    ['an alias without a canonical code', 'name-only', 'name-only'],
-    ['a locale outside the mapping', 'fr-FR', 'fr-FR'],
-    ['the instance target locale', undefined, 'en-US'],
-  ])('resolves %s to its canonical locale', (_name, locale, expected) => {
-    const gt = new GT({ customMapping, targetLocale: 'custom-locale' });
-
-    expect(gt.resolveCanonicalLocale(locale)).toBe(expected);
-  });
-
-  it('resolves canonical locales without a custom mapping', () => {
-    expect(new GT().resolveCanonicalLocale('fr-FR')).toBe('fr-FR');
-  });
-
-  it('requires a locale to resolve when no target locale is configured', () => {
-    expect(() => new GT().resolveCanonicalLocale()).toThrow(
-      'GT Error: Cannot call `resolveCanonicalLocale` without a specified locale. Pass a locale to `resolveCanonicalLocale` or specify targetLocale in the GT constructor.'
-    );
-  });
-
-  it.each([
-    ['a canonical code with an alias', 'en-US', 'custom-locale'],
-    ['a canonical code without an alias', 'es-ES', 'es-ES'],
-  ])('resolves %s to its alias locale', (_name, locale, expected) => {
-    expect(new GT({ customMapping }).resolveAliasLocale(locale)).toBe(expected);
-  });
-
-  it('resolves alias locales from a per-call mapping or none at all', () => {
-    const gt = new GT();
-
-    expect(gt.resolveAliasLocale('en-US', customMapping)).toBe('custom-locale');
-    expect(gt.resolveAliasLocale('zh-CN')).toBe('zh-CN');
-    expect(gt.resolveAliasLocale('en-US', { 'name-only': 'Name Only' })).toBe(
-      'en-US'
-    );
-  });
-});
-
-describe('GTRuntime.determineLocale approved identifiers', () => {
-  it.each([
-    ['sh', 'sr-Latn'],
-    ['cnr', 'sr-ME'],
-  ])('preserves accepted legacy code %s', (locale, canonical) => {
-    const gt = new GTRuntime({ sourceLocale: locale, locales: [locale] });
-    expect(gt.sourceLocale).toBe(locale);
-    expect(gt.determineLocale(locale)).toBe(locale);
-    expect(gt.determineLocale(canonical)).toBe(locale);
-  });
-
-  it('preserves explicit approved spelling with configured and per-call mappings', () => {
-    const gt = new GTRuntime({ locales: ['en-us', 'fr'] });
-    // Constructor locales and explicit approved lists retain configured spelling.
-    expect(gt.determineLocale('en-US')).toBe('en-us');
-    expect(gt.determineLocale('en-US', ['en-us'])).toBe('en-us');
-    expect(gt.determineLocale('en-US', ['en-us'], {})).toBe('en-us');
-  });
-
-  it('resolves per-call aliases back to the approved identifier', () => {
-    const gt = new GTRuntime();
-    expect(
-      gt.determineLocale('en-GB', ['brand'], { brand: { code: 'en-gb' } })
-    ).toBe('brand');
-    expect(
-      gt.determineLocale('de', ['brand'], { brand: { code: 'en-gb' } })
-    ).toBeUndefined();
-  });
-});
-
-describe('LocaleConfig', () => {
+describe('GTIntl', () => {
   it.each(['Mars/Olympus', ''])(
     'rejects the time zone %j, which Intl does not know',
     (timeZone) => {
-      const message = `Invalid time zone ${JSON.stringify(timeZone)}`;
-      expect(() => new LocaleConfig({ timeZone })).toThrow(message);
-      expect(() => new GT({ timeZone })).toThrow(message);
+      expect(() => new GTIntl({ timeZone })).toThrow(
+        `Invalid time zone ${JSON.stringify(timeZone)}`
+      );
     }
   );
-
-  it('formats with a custom alias by resolving to the canonical locale', () => {
-    const localeConfig = new LocaleConfig({
-      defaultLocale: 'en-US',
-      customMapping: {
-        'brand-fr': {
-          code: 'fr-FR',
-          name: 'Brand French',
-        },
-      },
-    });
-
-    const result = localeConfig.formatCurrency(numberValue, 'EUR', 'brand-fr');
-
-    expect(result).toBe(formatCurrencyWithIntl('fr-FR'));
-  });
-});
-
-describe('GT LocaleConfig delegation', () => {
-  it.each(['sourceLocale', 'targetLocale', 'locales'] as const)(
-    'validates a partial %s update with the retained custom mapping',
-    (field) => {
-      const gt = new GT({ customMapping: brandFrenchMapping });
-      const value = field === 'locales' ? ['brand-french'] : 'brand-french';
-
-      expect(() => gt.setConfig({ [field]: value })).not.toThrow();
-      expect(gt[field]).toEqual(value);
-      expect(gt.resolveCanonicalLocale('brand-french')).toBe('fr-FR');
-      expect(
-        gt.localeConfig.formatCurrency(numberValue, 'EUR', 'brand-french')
-      ).toBe(formatCurrencyWithIntl('fr-FR'));
-    }
-  );
-
-  it('uses a replacement mapping when validating and resolving a locale update', () => {
-    const gt = new GT({ customMapping: brandFrenchMapping });
-    gt.setConfig({
-      targetLocale: 'brand-german',
-      customMapping: { 'brand-german': { code: 'de-DE' } },
-    });
-
-    expect(gt.resolveCanonicalLocale('brand-german')).toBe('de-DE');
-    expect(gt.isValidLocale('brand-french')).toBe(false);
-  });
-
-  it('does not validate against the retained mapping when it is explicitly cleared', () => {
-    const gt = new GT({ customMapping: brandFrenchMapping });
-
-    expect(() =>
-      gt.setConfig({ targetLocale: 'brand-french', customMapping: {} })
-    ).toThrow();
-  });
 
   it('formats dates and times in its time zone unless the call names one', () => {
-    const gt = new GT({ sourceLocale: 'en-US', timeZone: 'Asia/Tokyo' });
+    const intl = new GTIntl({ defaultLocale: 'en-US', timeZone: 'Asia/Tokyo' });
     const date = new Date('2020-05-06T14:03:02Z');
     const format = (timeZone: string) =>
       new Intl.DateTimeFormat('en-US', { timeStyle: 'short', timeZone }).format(
         date
       );
 
-    expect(gt.formatDateTime(date, { timeStyle: 'short' })).toBe(
+    expect(intl.formatDateTime(date, { timeStyle: 'short' })).toBe(
       format('Asia/Tokyo')
     );
     expect(
-      gt.formatDateTime(date, { timeStyle: 'short', timeZone: 'UTC' })
+      intl.formatDateTime(date, { timeStyle: 'short', timeZone: 'UTC' })
     ).toBe(format('UTC'));
   });
 
-  it('changes nothing when an update names a time zone Intl does not know', () => {
-    const customMapping = { brand: { code: 'fr' } };
-    const gt = new GT({
-      sourceLocale: 'en-US',
-      locales: ['en-US', 'brand'],
-      customMapping,
-      timeZone: 'Asia/Tokyo',
+  it('resolves canonical and alias locales through customMapping', () => {
+    const intl = new GTIntl({
+      customMapping: {
+        'custom-locale': { code: 'en-US', name: 'Custom English' },
+        named: 'Named',
+      },
     });
 
-    expect(() =>
-      gt.setConfig({
-        sourceLocale: 'de-DE',
-        customMapping: { brand: { code: 'de' } },
-        timeZone: 'Mars/Olympus',
+    expect(intl.resolveCanonicalLocale('custom-locale')).toBe('en-US');
+    expect(intl.resolveCanonicalLocale('named')).toBe('named');
+    expect(intl.resolveCanonicalLocale('fr-FR')).toBe('fr-FR');
+    expect(intl.resolveAliasLocale('en-US')).toBe('custom-locale');
+    expect(intl.resolveAliasLocale('zh-CN')).toBe('zh-CN');
+  });
+
+  it('formats a custom alias, as the instance locale or per call, in its canonical locale', () => {
+    const localeConfig = {
+      defaultLocale: 'en-US',
+      customMapping: brandFrenchMapping,
+    };
+
+    expect(
+      new GTIntl(localeConfig, { locale: 'brand-french' }).formatCurrency(
+        numberValue,
+        'EUR'
+      )
+    ).toBe(formatCurrencyWithIntl('fr-FR'));
+    expect(
+      new GTIntl(localeConfig).formatCurrency(numberValue, 'EUR', {
+        locale: 'brand-french',
       })
-    ).toThrow('Invalid time zone "Mars/Olympus"');
-    expect(gt.sourceLocale).toBe('en-US');
-    expect(gt.customMapping).toBe(customMapping);
-    expect(gt.resolveCanonicalLocale('brand')).toBe('fr');
-    expect(() => gt.setConfig({ targetLocale: 'fr-FR' })).not.toThrow();
-    expect(gt.localeConfig.timeZone).toBe('Asia/Tokyo');
+    ).toBe(formatCurrencyWithIntl('fr-FR'));
+  });
+});
+
+describe.sequential('GeneralTranslation scopes', () => {
+  const fetchMock = vi.fn<typeof fetch>();
+  const userTokenProvider = {
+    getAccessToken: async () => 'token',
+    refreshAccessToken: async () => undefined,
+  };
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
   });
 
-  it('formats with a custom target locale alias through LocaleConfig', () => {
-    const gt = new GT({
-      sourceLocale: 'en-US',
-      targetLocale: 'brand-french',
-      customMapping: brandFrenchMapping,
-    });
-
-    const result = gt.formatCurrency(numberValue, 'EUR');
-
-    expect(result).toBe(formatCurrencyWithIntl('fr-FR'));
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
-  it('exposes core localeConfig and refreshes it from setConfig', () => {
-    const gt = new GT({
-      apiKey: 'test-api-key',
-      devApiKey: 'test-dev-key',
-      projectId: 'test-project',
-      sourceLocale: 'en-US',
-      targetLocale: 'es-ES',
-    });
-    const initialLocaleConfig = gt.localeConfig;
+  it.each([
+    [
+      'GeneralTranslation projectId',
+      (id: unknown) =>
+        new GeneralTranslation({
+          apiKey: 'key',
+          projectId: id as string,
+        }) as unknown,
+    ],
+    [
+      'GeneralTranslation project',
+      (id: unknown) =>
+        new GeneralTranslation({ apiKey: 'key' }).project(id as string),
+    ],
+    [
+      'GTRuntime projectId',
+      (id: unknown) =>
+        new GTRuntime({ apiKey: 'key', projectId: id as string }),
+    ],
+  ])('%s rejects empty, blank and non-string IDs', (_label, create) => {
+    for (const id of ['', '   ', 123, null]) {
+      expect(() => create(id)).toThrow(
+        'GT Error: The project ID must be a non-empty string. Pass the project ID.'
+      );
+    }
+  });
 
-    expect(gt.localeConfig).toBeInstanceOf(LocaleConfig);
-    expect('apiKey' in gt.localeConfig).toBe(false);
-    expect('devApiKey' in gt.localeConfig).toBe(false);
-    expect('projectId' in gt.localeConfig).toBe(false);
+  it('GeneralTranslation org rejects empty, blank and non-string IDs', () => {
+    for (const id of ['', '   ', 123, undefined, null]) {
+      expect(() =>
+        new GeneralTranslation({ apiKey: 'key' }).org(id as string)
+      ).toThrow(
+        'GT Error: The organization ID must be a non-empty string. Pass the organization ID.'
+      );
+    }
+  });
 
-    gt.setConfig({
-      targetLocale: 'brand-french',
-      customMapping: brandFrenchMapping,
-    });
+  it('requires projectId with a project API key', () => {
+    expect(() => new GeneralTranslation({ apiKey: 'gtx-api-123' })).toThrow(
+      'GT Error: A project API key needs a project ID. Pass `projectId` to `new GeneralTranslation()` with this key, or use an organization key or user token for account operations.'
+    );
+    expect(
+      new GeneralTranslation({ apiKey: 'gtx-api-123', projectId: 'prj' })
+        .projectId
+    ).toBe('prj');
+  });
 
-    expect(gt.localeConfig).not.toBe(initialLocaleConfig);
-    expect(gt.resolveCanonicalLocale('brand-french')).toBe('fr-FR');
-    expect(gt.formatCurrency(numberValue, 'EUR')).toBe(
-      formatCurrencyWithIntl('fr-FR')
+  it('accepts organization keys, unknown keys and user tokens without projectId, sending no request', () => {
+    for (const account of [
+      new GeneralTranslation({ apiKey: 'gtx-org-123' }),
+      new GeneralTranslation({ apiKey: 'key' }),
+      new GeneralTranslation({ userTokenProvider }),
+    ]) {
+      account.project('prj');
+      account.org('org');
+    }
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('does not read GT_API_KEY', () => {
+    vi.stubEnv('GT_API_KEY', 'env-key');
+
+    expect(
+      new GTRuntime({ userTokenProvider, projectId: 'prj' }).apiKey
+    ).toBeUndefined();
+  });
+
+  it('constructs a project-scoped GeneralTranslation with every project method', () => {
+    const gt = new GeneralTranslation({ apiKey: 'key', projectId: 'prj' });
+
+    expect(gt.projectId).toBe('prj');
+    expect(gt).toBeInstanceOf(GTRuntime);
+    expect(typeof gt.uploadSourceFiles).toBe('function');
+    expect('project' in gt).toBe(false);
+    expect('listOrgs' in gt).toBe(false);
+  });
+
+  it('is an instance of GeneralTranslation in either scope', () => {
+    expect(
+      new GeneralTranslation({ apiKey: 'key', projectId: 'prj' })
+    ).toBeInstanceOf(GeneralTranslation);
+    expect(new GeneralTranslation({ apiKey: 'key' })).toBeInstanceOf(
+      GeneralTranslation
+    );
+    expect({}).not.toBeInstanceOf(GeneralTranslation);
+  });
+
+  it('is account-scoped when projectId is undefined', () => {
+    const projectId: string | undefined = undefined;
+
+    expect(new GeneralTranslation({ apiKey: 'key', projectId })).toBeInstanceOf(
+      GTAccount
     );
   });
+
+  it('returns created projects under the requested locale identity', async () => {
+    const requests: Request[] = [];
+    fetchMock.mockImplementation(async (input, init) => {
+      requests.push(new Request(input, init));
+      return Response.json({
+        id: 'prj',
+        name: 'Project',
+        orgId: 'org',
+        defaultLocale: 'en-US',
+      });
+    });
+    const org = new GeneralTranslation({
+      apiKey: 'key',
+      localeConfig: { customMapping: { source: { code: 'en-US' } } },
+    }).org('org');
+
+    await expect(
+      org.createProject({ name: 'Project', defaultLocale: 'source' })
+    ).resolves.toEqual({
+      id: 'prj',
+      name: 'Project',
+      orgId: 'org',
+      defaultLocale: 'source',
+    });
+    expect(requests).toHaveLength(1);
+    expect(await requests[0].json()).toMatchObject({
+      defaultLocale: 'en-US',
+    });
+  });
+
+  it('creates a project API key in one request', async () => {
+    const requests: Request[] = [];
+    const apiKey = {
+      id: 'key-id',
+      name: 'Dev',
+      key: 'gtx-api-secret',
+      permissions: ['project:translations:generate'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      lastUsedAt: null,
+    };
+    fetchMock.mockImplementation(async (input, init) => {
+      requests.push(new Request(input, init));
+      return Response.json(apiKey, { status: 201 });
+    });
+    const body = {
+      name: 'Dev',
+      permissions: ['project:translations:generate' as const],
+    };
+
+    await expect(
+      new GeneralTranslation({
+        apiKey: 'gtx-org-key',
+        baseUrl: 'https://api.example.com',
+        projectId: 'prj',
+      }).createApiKey(body)
+    ).resolves.toEqual(apiKey);
+    expect(requests).toHaveLength(1);
+    expect(requests[0].method).toBe('POST');
+    expect(new URL(requests[0].url).pathname).toBe('/v2/projects/prj/api-keys');
+    expect(await requests[0].json()).toEqual(body);
+  });
+
+  it('creates an organization API key in one request', async () => {
+    const requests: Request[] = [];
+    const apiKey = {
+      id: 'key-id',
+      name: 'CI',
+      key: 'gtx-org-secret',
+      permissions: ['org:context:read'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      lastUsedAt: null,
+    };
+    fetchMock.mockImplementation(async (input, init) => {
+      requests.push(new Request(input, init));
+      return Response.json(apiKey, { status: 201 });
+    });
+    const body = {
+      name: 'CI',
+      permissions: ['org:context:read' as const],
+    };
+
+    await expect(
+      new GeneralTranslation({
+        userTokenProvider: { getAccessToken: async () => 'token' },
+        baseUrl: 'https://api.example.com',
+      })
+        .org('org')
+        .createApiKey(body)
+    ).resolves.toEqual(apiKey);
+    expect(requests).toHaveLength(1);
+    expect(requests[0].method).toBe('POST');
+    expect(new URL(requests[0].url).pathname).toBe('/v2/orgs/org/api-keys');
+    expect(await requests[0].json()).toEqual(body);
+  });
+
+  it('returns frozen instances and handles', () => {
+    const account = new GeneralTranslation({ apiKey: 'key' });
+
+    expect(Object.isFrozen(account)).toBe(true);
+    expect(Object.isFrozen(account.project('prj'))).toBe(true);
+    expect(Object.isFrozen(account.org('org'))).toBe(true);
+    expect(
+      Object.isFrozen(
+        new GeneralTranslation({ apiKey: 'key', projectId: 'prj' })
+      )
+    ).toBe(true);
+    expect(
+      Object.isFrozen(new GTRuntime({ apiKey: 'key', projectId: 'prj' }))
+    ).toBe(true);
+  });
+
+  it.each([
+    [
+      'GTRuntime',
+      (localeConfig: object) =>
+        new GTRuntime({ apiKey: 'key', projectId: 'prj', localeConfig }),
+    ],
+    [
+      'project-scoped GeneralTranslation',
+      (localeConfig: object) =>
+        new GeneralTranslation({
+          apiKey: 'key',
+          projectId: 'prj',
+          localeConfig,
+        }),
+    ],
+    [
+      'account project',
+      (localeConfig: object) =>
+        new GeneralTranslation({ apiKey: 'key', localeConfig }).project('prj'),
+    ],
+  ])(
+    '%s keeps a deeply frozen copy of its locale configuration',
+    (_label, create) => {
+      const input = {
+        defaultLocale: 'en',
+        locales: ['en', 'spanish'],
+        customMapping: { spanish: { code: 'es' } },
+      };
+      const instance = create(input);
+      const { localeConfig } = instance;
+      input.locales.push('fr');
+      input.customMapping.spanish.code = 'de';
+
+      expect(() => {
+        (instance as { apiKey?: string }).apiKey = 'other';
+      }).toThrow(TypeError);
+      expect(() => (localeConfig.locales as string[]).push('fr')).toThrow(
+        TypeError
+      );
+      expect(() => {
+        (localeConfig.customMapping as Record<string, unknown>).spanish = {
+          code: 'de',
+        };
+      }).toThrow(TypeError);
+      expect(() => {
+        (localeConfig.customMapping!.spanish as { code: string }).code = 'de';
+      }).toThrow(TypeError);
+      expect(localeConfig).toEqual({
+        defaultLocale: 'en',
+        locales: ['en', 'spanish'],
+        customMapping: { spanish: { code: 'es' } },
+      });
+    }
+  );
 });

@@ -1,54 +1,25 @@
-import type { DataFormat } from '@generaltranslation/format/types';
-import { FileFormat, FileReference, type FormatMetadata } from './file';
+import type {
+  UploadSourceFilesData,
+  UploadTranslationsData,
+} from '@generaltranslation/api';
 
-/**
- * Metadata stored alongside GTJSON file entries.
- * Keys correspond to the entry id/hash in the GTJSON body.
- */
-export type GTJsonFormatMetadata = Record<
-  string,
-  {
-    context?: string;
-    id?: string;
-    domain?: string;
-    maxChars?: number;
-    dataFormat?: Exclude<DataFormat, 'STRING'>;
-    requestVersion?: number;
-    approved_at?: string | null;
-    approved_by?: string | null;
-    hash?: string;
-    staticId?: string;
-    filePaths?: string[];
-  }
->;
-
-export type FileUpload = {
-  branchId?: string; // optional branch id. If not provided, will use the default branch.
-  incomingBranchId?: string; // optional branch id to use for incoming translations
-  checkedOutBranchId?: string; // optional branch id to use for checked out translations
+type WithContent<File> = Omit<File, 'content' | 'upload'> & {
+  /** Text, or base64 for binary formats; files over 4MB are uploaded through `createFileUploads`. */
   content: string;
-  fileName: string;
-  fileFormat: FileFormat;
-  // Optional output format requested for generated translations.
-  transformFormat?: FileFormat;
-  dataFormat?: DataFormat;
-  locale: string;
-  formatMetadata?: GTJsonFormatMetadata | FormatMetadata;
-  versionId?: string; // Optional versionId. Only use this if you know what you are doing.
-  fileId?: string; // Optional fileId. Only use this if you know what you are doing.
 };
 
-export type UploadFilesOptions = {
-  sourceLocale: string;
-  modelProvider?: string;
-  timeout?: number;
+type SourceFile = UploadSourceFilesData['body']['data'][number]['source'];
+
+/** A source file to upload. */
+export type FileUpload = WithContent<Omit<SourceFile, 'formatMetadata'>> & {
+  /** Format-specific metadata; uploaded through `createFileUploads` along with content too large to send inline. */
+  formatMetadata?: Extract<
+    NonNullable<SourceFile['formatMetadata']>,
+    { content: object }
+  >['content'];
 };
 
-export type UploadFilesResponse = {
-  uploadedFiles: FileReference[];
-  count: number;
-  message: string;
-};
-
-export type RequiredUploadFilesOptions = UploadFilesOptions &
-  Required<Pick<UploadFilesOptions, 'sourceLocale'>>;
+/** A translation of an uploaded source file, in the format it is saved in. */
+export type TranslationUpload = WithContent<
+  UploadTranslationsData['body']['data'][number]['translations'][number]
+>;

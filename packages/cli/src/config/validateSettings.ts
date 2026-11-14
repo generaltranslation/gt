@@ -1,8 +1,8 @@
 import { isValidLocale, isSupersetLocale } from '@generaltranslation/format';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
-  isModelProvider,
   supportedModelProviders,
+  type ModelProvider,
 } from 'generaltranslation/internal';
 import type { Settings } from '../types/index.js';
 import { logErrorAndExit } from '../console/logging.js';
@@ -14,7 +14,7 @@ export function validateSettings(
 ): asserts settings is Settings {
   if (
     settings.modelProvider !== undefined &&
-    !isModelProvider(settings.modelProvider)
+    !supportedModelProviders.includes(settings.modelProvider as ModelProvider)
   ) {
     return logErrorAndExit(
       createDiagnosticMessage({
