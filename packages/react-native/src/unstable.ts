@@ -2,6 +2,7 @@
 // except `t`: like the root entry, React Native registers no global locale
 // store for it to read (the provider keeps it in context). Use useGT().
 
+export { useGT, useMessages } from '@generaltranslation/react-core/unstable';
 export {
   date,
   derive,
@@ -14,12 +15,10 @@ export {
   select,
   selectordinal,
   time,
-  useGT,
-  useMessages,
   type Fragment,
   type GT,
   type GTOptions,
   type M,
   type Msg,
   type Placeholder,
-} from '@generaltranslation/react-core/unstable';
+} from 'gt-i18n/unstable';

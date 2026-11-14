@@ -6,10 +6,10 @@ import {
 import {
   resolveCanonicalLocale as resolveCanonicalCode,
   standardizeLocale,
+  type CustomMapping,
 } from '@generaltranslation/format';
 import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
 import { credentialScope } from 'generaltranslation/internal';
-import type { CustomMapping } from '@generaltranslation/format/types';
 import type { Settings } from '../types/index.js';
 import { noProjectIdError } from '../console/index.js';
 

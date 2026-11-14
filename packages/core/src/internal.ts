@@ -23,6 +23,12 @@ export {
 export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { credentialScope } from './client/clientConfig';
 export { isAcceptedPluralForm } from './settings/plurals';
+export type {
+  InjectionType,
+  Transformation,
+  TransformationPrefix,
+  VariableTransformationSuffix,
+} from './types-dir/transformations';
 export {
   isUnstableGTHelperName,
   isUnstableGTImportSource,
@@ -30,16 +36,14 @@ export {
   type UnstableGTHelperName,
 } from './settings/unstableImportSources';
 
-export { _getPluralForm as getPluralForm } from './locales/getPluralForm';
+export { getPluralForm } from './locales/getPluralForm';
 export { isVariable } from './utils/isVariable';
 export { minifyVariableType } from './utils/minify';
 export { decode, encode } from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
 export { supportedModelProviders } from './translate/modelProvider';
-export type { ModelProvider } from '@generaltranslation/api';
 
 // derive
 export { indexVars } from './derive/indexVars';
 export { extractVars } from './derive/extractVars';
 export { condenseVars } from './derive/condenseVars';
-export { VAR_IDENTIFIER } from './derive/utils/constants';

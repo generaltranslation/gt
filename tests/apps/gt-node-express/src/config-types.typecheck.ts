@@ -1,5 +1,4 @@
-import { initializeGT } from 'gt-node';
-import type { GTConfig } from 'gt-node/types';
+import { initializeGT, type GTConfig } from 'gt-node';
 
 const partialConfig: GTConfig = { projectId: 'test-project' };
 

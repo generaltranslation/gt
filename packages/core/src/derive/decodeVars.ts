@@ -1,5 +1,5 @@
 import { traverseIcu } from './utils/traverseIcu';
-import { VAR_IDENTIFIER } from './utils/constants';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import { GTUnindexedSelectElement } from './utils/types';
 import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
 
@@ -19,7 +19,7 @@ type Location = {
  */
 export function decodeVars(icu: string): string {
   // Check if the string contains _gt_
-  if (!icu.includes(VAR_IDENTIFIER)) {
+  if (!icu.includes(RESERVED_NAME_PREFIX)) {
     return icu;
   }
 

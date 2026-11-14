@@ -1,7 +1,9 @@
-import { VariableTransformationSuffix } from 'generaltranslation/types';
+import {
+  VariableTransformationSuffix,
+  minifyVariableType,
+} from 'generaltranslation/internal';
 import { GTTag, VariableProps } from '../types';
 import { getVariableName } from './getVariableName';
-import { minifyVariableType } from 'generaltranslation/internal';
 
 type VariableElementProps = {
   'data-_gt': GTTag & {

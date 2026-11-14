@@ -1,12 +1,12 @@
 import { LookupOptions } from '../../translation-functions/types/options';
 import { hashContent } from '../../utils/hashContent';
 import { dedupePending } from './utils/dedupePending';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import type {
   EntryMetadata,
   TranslateManyEntry,
   TranslationResult,
-} from 'generaltranslation/types';
+} from 'generaltranslation';
 
 export type TranslationBatchConfig = {
   maxConcurrentRequests?: number;

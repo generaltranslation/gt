@@ -2,7 +2,7 @@ import logger from '../logs/logger';
 import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { defaultRuntimeApiUrl } from 'generaltranslation/internal';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import { LookupOptions } from '../translation-functions/types/options';
 import { SafeTranslationsLoader } from './translations-manager/translations-loaders/types';
 import {

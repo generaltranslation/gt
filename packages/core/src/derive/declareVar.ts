@@ -1,4 +1,5 @@
-import { VAR_IDENTIFIER, VAR_NAME_IDENTIFIER } from './utils/constants';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
+import { VAR_NAME_IDENTIFIER } from './utils/constants';
 import { sanitizeVar } from './utils/sanitizeVar';
 
 /**
@@ -40,5 +41,5 @@ export function declareVar(
   }
 
   // interpolate
-  return `{${VAR_IDENTIFIER}, select,${variableSection}${nameSection}}`;
+  return `{${RESERVED_NAME_PREFIX}, select,${variableSection}${nameSection}}`;
 }

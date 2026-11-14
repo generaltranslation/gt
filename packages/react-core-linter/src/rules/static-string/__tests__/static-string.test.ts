@@ -283,6 +283,17 @@ ruleTester.run('static-string: derive', staticString, {
       name: 'msg() with derive',
       code: msg('msg("Hello " + derive(x))', 'msg, derive'),
     },
+    {
+      name: 'derive from generaltranslation with the default libs',
+      code: `
+        import { useGT } from '@generaltranslation/react-core/hooks';
+        import { derive } from 'generaltranslation';
+        function Component() {
+          const gt = useGT();
+          return gt("Hello " + derive("world"));
+        }
+      `,
+    },
   ],
   invalid: [
     // With derive() present the fix emits a template literal.

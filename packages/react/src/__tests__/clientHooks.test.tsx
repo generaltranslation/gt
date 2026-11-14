@@ -16,7 +16,7 @@ import {
   useGT,
   useTranslations,
 } from '../index.client';
-import type { GTFunctionType } from 'gt-i18n/types';
+import type { GTFunctionType } from 'gt-i18n';
 
 type TestGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 

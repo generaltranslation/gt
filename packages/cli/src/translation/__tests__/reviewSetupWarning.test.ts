@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import path from 'node:path';
-import type { FileToUpload } from 'generaltranslation/types';
+import type { FileToUpload } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
 import { warnManualReviewSetup } from '../reviewSetupWarning.js';
 import { logger } from '../../console/logger.js';

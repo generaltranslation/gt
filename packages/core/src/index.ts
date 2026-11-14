@@ -24,13 +24,8 @@ import {
   projectKeyWithoutProjectIdError,
 } from './logging/errors';
 
-export { GTRuntime } from './runtime';
 export type { LocaleConfig } from '@generaltranslation/format';
-export type {
-  GTAccountConfig,
-  GTCredentials,
-  GTProjectConfig,
-} from './client/clientConfig';
+export type { GTAccountConfig } from './client/clientConfig';
 export { decodeVars } from './derive/decodeVars';
 export { declareVar } from './derive/declareVar';
 export { derive } from './derive/derive';
@@ -49,6 +44,60 @@ export {
   formatRelativeTime,
   formatRelativeTimeFromDate,
 } from './formatting/formatting';
+export { HTML_CONTENT_PROPS } from '@generaltranslation/format';
+export type {
+  Content,
+  ContentByFormat,
+  ContentFor,
+  CustomMapping,
+  CustomRegionMapping,
+  CutoffFormatOptions,
+  DataFormat,
+  FormatVariables,
+  GTProp,
+  HtmlContentPropKeysRecord,
+  HtmlContentPropValuesRecord,
+  JsxChild,
+  JsxChildren,
+  JsxElement,
+  LocaleProperties,
+  StringContent,
+  StringFormat,
+  Variable,
+  VariableType,
+} from '@generaltranslation/format';
+export type {
+  EntryMetadata,
+  TranslateManyEntry,
+  TranslateOptions,
+} from './types-dir/api/entry';
+export type { HashMetadata } from './id/types';
+export type { PluralType } from './settings/plurals';
+export type {
+  GTCompilerOptions,
+  GTConfig,
+  GTFilesConfig,
+  GTOutputFileConfig,
+  GTParsingFlags,
+} from './types-dir/config';
+export type { JsonPrimitive } from './types-dir/api/json';
+export type { Updates } from './types-dir/api/enqueueFiles';
+export {
+  isBinaryFileFormat,
+  type FileReference,
+  type FileToUpload,
+} from './types-dir/api/file';
+export type {
+  FileUpload,
+  TranslationUpload,
+} from './types-dir/api/uploadFiles';
+export type { PublishFileEntry } from './translate/publishFiles';
+export type { TranslateManyResult } from './types-dir/api/translateMany';
+export type {
+  TranslationError,
+  TranslationResult,
+} from './types-dir/api/translate';
+export type { MoveMapping } from './translate/moveFiles';
 
 /**
  * The account-scoped General Translation client: lists organizations and

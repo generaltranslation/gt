@@ -28,7 +28,6 @@ describe('@generaltranslation/format package exports', () => {
   it('loads and formats from the built CJS entrypoints', () => {
     const require = createRequire(import.meta.url);
     const format = require('@generaltranslation/format');
-    const { HTML_CONTENT_PROPS } = require('@generaltranslation/format/types');
     const {
       getCachedPluralRules,
     } = require('@generaltranslation/format/internal');
@@ -65,7 +64,7 @@ describe('@generaltranslation/format package exports', () => {
     ).toBe('1,234.5');
     expect(format.getRegionProperties('US').name).toBe('United States');
     expect(format.standardizeLocale('en-us')).toBe('en-US');
-    expect(HTML_CONTENT_PROPS.pl).toBe('placeholder');
+    expect(format.HTML_CONTENT_PROPS.pl).toBe('placeholder');
     expect(getCachedPluralRules(['en'])).toBe(getCachedPluralRules(['en']));
   });
 
@@ -79,6 +78,7 @@ describe('@generaltranslation/format package exports', () => {
           import assert from 'node:assert/strict';
           import {
             GTIntl,
+            HTML_CONTENT_PROPS,
             formatCurrency,
             formatCutoff,
             formatList,
@@ -90,7 +90,6 @@ describe('@generaltranslation/format package exports', () => {
             isValidLocale,
             resolveCanonicalLocale,
           } from '@generaltranslation/format';
-          import { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
           import { getCachedPluralRules } from '@generaltranslation/format/internal';
 
           const now = Date.now();

@@ -1,4 +1,4 @@
-import { type Dictionary } from 'gt-i18n/types';
+import type { Dictionary } from 'gt-i18n';
 
 export let internalDictionary: Dictionary | undefined = undefined;
 

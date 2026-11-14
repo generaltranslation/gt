@@ -49,7 +49,6 @@ describe('@generaltranslation/vue-extractor package layout', () => {
       './inspect',
       './integration',
       './project',
-      './types',
     ]);
   });
 

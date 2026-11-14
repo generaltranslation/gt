@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import type {
   TranslateLookup,
   TranslateSnapshot,

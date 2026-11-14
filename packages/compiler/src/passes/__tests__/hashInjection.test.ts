@@ -10,7 +10,7 @@
  * shift the hashes of its siblings.
  */
 import { describe, it, expect } from 'vitest';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { runPasses, findCalls, literalValue } from './testHelpers';
 import hashSource from '../../utils/calculateHash';
 

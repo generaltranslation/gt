@@ -4,7 +4,7 @@ import {
   initializeI18nConfig,
   setI18nCache,
 } from 'gt-i18n/internal';
-import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
+import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { msg } from 'gt-i18n/unstable';
 import { createUnstableGetGT, createUnstableGetMessages } from '../getGT';

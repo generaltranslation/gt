@@ -101,6 +101,10 @@ jobs:
       - name: Build packages
         run: pnpm exec turbo build --filter="...[$CHANGE_BASE]" --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
+      # Needs the built declarations; packages the build skipped are skipped here too.
+      - name: Check export owners
+        run: pnpm check:export-owners
+
       # The build does not type-check source: tsdown emits declarations without semantic checks.
       - name: Typecheck
         run: pnpm exec turbo typecheck --filter="...[$CHANGE_BASE]" --filter='!gt-next-middleware-e2e' --filter='!./examples/*'

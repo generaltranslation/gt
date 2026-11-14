@@ -1,6 +1,6 @@
 import { getReactI18nCache } from '@generaltranslation/react-core/pure';
-import type { Hash } from 'gt-i18n/internal/types';
-import type { Content } from '@generaltranslation/format/types';
+import type { Hash } from 'gt-i18n/internal';
+import type { Content } from '@generaltranslation/format';
 
 export type LocaleTranslations = Record<Hash, Content>;
 

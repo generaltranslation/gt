@@ -1,8 +1,7 @@
 import type { SetTagResponse } from '@generaltranslation/api';
 import { logger } from '../../console/logger.js';
-import type { ProjectHandle } from 'generaltranslation';
+import type { ProjectHandle, FileReference } from 'generaltranslation';
 import { Settings } from '../../types/index.js';
-import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
 
 export class TagStep {

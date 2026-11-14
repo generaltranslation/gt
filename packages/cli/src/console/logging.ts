@@ -14,8 +14,8 @@ import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { getCLIVersion } from '../utils/packageJson.js';
 import { logger } from './logger.js';
 import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
-import type { CustomMapping } from '@generaltranslation/format/types';
-import type { FileToUpload } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format';
+import type { FileToUpload } from 'generaltranslation';
 import { parseTypedLocale } from './promptParsing.js';
 import { getFilteredLocaleOptions } from './localeOptions.js';
 import {

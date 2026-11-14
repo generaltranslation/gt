@@ -1,4 +1,4 @@
-import { getCookieValue as getCookieValueFromString } from 'gt-i18n/internal';
+import { getCookieValue as getCookieValueFromString } from 'gt-i18n/internal/cookies';
 
 /**
  * Minimally parses a cookie value for a given cookie name

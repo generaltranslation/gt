@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { isBinaryFileFormat } from 'generaltranslation/types';
+import { isBinaryFileFormat } from 'generaltranslation';
 import {
   isTransientApiError,
   type QueryFilesContentResponse,

@@ -1,5 +1,5 @@
 import type { ErrorCode } from '@generaltranslation/api';
-import type { ContentFor, DataFormat } from '@generaltranslation/format/types';
+import type { ContentFor, DataFormat } from '@generaltranslation/format';
 
 /**
  * TypedResult is a union type that represents the different types of translations that can be returned.

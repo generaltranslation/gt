@@ -15,18 +15,15 @@ import { getCookieValue } from '../../condition-store/cookies';
 import { BrowserGTProvider } from '../BrowserGTProvider';
 
 // Keep the real provider/context, isolating only translation-cache work.
-vi.mock(
-  '@generaltranslation/react-core/components',
-  async (importOriginal) => ({
-    ...(await importOriginal<
-      typeof import('@generaltranslation/react-core/components')
-    >()),
-    I18nStore: class {
-      updateTranslations() {}
-      updateDictionaries() {}
-    },
-  })
-);
+vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@generaltranslation/react-core/pure')
+  >()),
+  I18nStore: class {
+    updateTranslations() {}
+    updateDictionaries() {}
+  },
+}));
 
 type ServerProps = { locale: string; region?: string; enableI18n: boolean };
 

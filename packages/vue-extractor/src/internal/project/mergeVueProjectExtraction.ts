@@ -1,4 +1,4 @@
-import type { Updates } from 'generaltranslation/types';
+import type { Updates } from 'generaltranslation';
 import type {
   VueProjectExtractionOutput,
   VueProjectExtractionResult,

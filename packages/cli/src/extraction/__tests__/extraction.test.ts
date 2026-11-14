@@ -6,7 +6,7 @@ import {
   dedupeUpdates,
   linkDeriveUpdates,
 } from '../postProcess.js';
-import type { Updates } from 'generaltranslation/types';
+import type { Updates } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 
 const update = (

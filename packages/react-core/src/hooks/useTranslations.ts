@@ -10,7 +10,7 @@ import { useGT } from './useGT';
 import type {
   DictionaryObjectTranslation,
   TranslationVariables,
-} from 'gt-i18n/types';
+} from 'gt-i18n';
 import { useDefaultLocale } from './i18n-config';
 import { useShouldTranslate } from './utils';
 import { useTrackedDictionaryResolver } from './external-store/useTrackedDictionaryResolver';

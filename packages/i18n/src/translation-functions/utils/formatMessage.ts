@@ -1,4 +1,4 @@
-import type { StringFormat } from '@generaltranslation/format/types';
+import type { StringFormat } from '@generaltranslation/format';
 import logger from '../../logs/logger';
 import { createInterpolationFailureMessage } from './messages';
 import {

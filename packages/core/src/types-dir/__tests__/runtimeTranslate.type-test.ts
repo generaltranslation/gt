@@ -1,10 +1,10 @@
-import type { GTRuntime } from '../../index.js';
+import type { ContentFor } from '@generaltranslation/format';
+import type { GTRuntime } from '../../runtime.js';
 import type {
-  ContentFor,
   TranslateManyEntry,
   TranslateManyResult,
   TranslationResult,
-} from '../../types.js';
+} from '../../index.js';
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends <

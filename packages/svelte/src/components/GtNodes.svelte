@@ -7,7 +7,7 @@
 <svelte:options preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { JsxChildren } from '@generaltranslation/format/types';
+  import type { JsxChildren } from '@generaltranslation/format';
   import GtNodes from './GtNodes.svelte';
   import {
     selectBranch,

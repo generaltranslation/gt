@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import os from 'node:os';
-import type { FileReference } from 'generaltranslation/types';
+import type { FileReference } from 'generaltranslation';
 import { logger } from '../../console/logger.js';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { downloadFileBatch, type BatchedFiles } from '../downloadFileBatch.js';

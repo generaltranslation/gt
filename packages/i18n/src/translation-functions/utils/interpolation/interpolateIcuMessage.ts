@@ -1,11 +1,8 @@
 import { extractVariables } from '../../../utils/extractVariables';
 import { formatCutoff } from '../formatCutoff';
 import { formatMessage } from '../formatMessage';
-import {
-  VAR_IDENTIFIER,
-  extractVars,
-  condenseVars,
-} from 'generaltranslation/internal';
+import { extractVars, condenseVars } from 'generaltranslation/internal';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import logger from '../../../logs/logger';
 import { createInterpolationFailureMessage } from '../messages';
 import type { TranslationOptions } from '../../types/options';
@@ -44,7 +41,7 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
       {
         ...variables,
         ...declaredVars,
-        [VAR_IDENTIFIER]: 'other',
+        [RESERVED_NAME_PREFIX]: 'other',
       },
       options.$locale,
       options.$format

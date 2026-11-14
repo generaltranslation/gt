@@ -12,5 +12,6 @@ paths:
 - `@generaltranslation/supported-locales` provides locale metadata.
 - These packages must remain framework-agnostic — no React, Next.js, or Node.js-specific imports. Engine agnostic as well.
 - Run `pnpm build` from root after making changes here to verify downstream packages still compile.
-- Exports use subpath exports (e.g., `/internal`, `/types`). Internal subpaths are not public API but are used across packages.
+- Exports use subpath exports (e.g., `/internal`, `/runtime`). Types are exported from the same entry as their values; there are no types-only subpaths. Internal subpaths are not public API but are used across packages.
 - Be careful with breaking changes to `/internal` subpaths — other packages in the monorepo depend on them.
+- Follow "Imports and re-exports" in `AGENTS.md`: only entry files re-export, and first-party packages import format- and api-owned symbols from `@generaltranslation/format` and `@generaltranslation/api`, not from `generaltranslation`. `GTIntl` and the formatters are the exception: `generaltranslation` owns their resolving versions.
