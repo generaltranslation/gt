@@ -87,6 +87,8 @@ export class ContextCollector {
   /** The analyzed files, and how many usages each has. */
   private readonly analyzed = new Map<string, number>();
   private readonly catalogs = new Map<string, Catalog>();
+  /** Each outdir's catalog, read from when the outdir is known, while files are loaded. */
+  private readonly catalogReads = new Map<string, Promise<Catalog>>();
   /** By message file, absolute. */
   private readonly messageOutdirs = new Map<string, string | undefined>();
   /** The outdirs, longest first. */
@@ -138,6 +140,8 @@ export class ContextCollector {
   /** Analyzes the files `include` selects. `write()` writes what they use. */
   async scanAll(): Promise<void> {
     const graph = (this.moduleGraph ??= await this.createGraph());
+    // The outdirs of the options are known already.
+    for (const outdir of graph.outdirs) void this.readCatalogOf(outdir);
 
     const { files, missing, autoImportDeclarations } =
       await this.settings.selection.list({
@@ -219,9 +223,13 @@ export class ContextCollector {
   }
 
   private async isOutdir(directory: string): Promise<boolean> {
-    if (this.settings.outdirs.includes(directory)) return true;
+    if (this.settings.outdirs.includes(directory)) {
+      void this.readCatalogOf(directory);
+      return true;
+    }
 
     const verdict = await this.outdirDetector.check(directory);
+    if (verdict.outdir) void this.readCatalogOf(directory);
 
     if (!verdict.outdir && verdict.reason) {
       this.warn(
@@ -301,12 +309,24 @@ export class ContextCollector {
 
     await Promise.all(
       this.knownOutdirs.map(async (outdir) => {
-        const catalog = await readCatalog(outdir).catch(() => undefined);
+        const catalog = await this.readCatalogOf(outdir);
 
         this.catalogs.set(outdir, catalog);
         await this.pairProject(outdir, catalog);
       })
     );
+  }
+
+  /** Reads `outdir`'s catalog once, from the first time it is asked for. */
+  private readCatalogOf(outdir: string): Promise<Catalog> {
+    let read = this.catalogReads.get(outdir);
+
+    if (!read) {
+      read = readCatalog(outdir).catch(() => undefined);
+      this.catalogReads.set(outdir, read);
+    }
+
+    return read;
   }
 
   /** Pairs `outdir` with its inlang project, whose messages get metadata files. */
