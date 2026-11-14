@@ -4,6 +4,7 @@ import path from 'node:path';
 import { analyzeModule } from '../analysis/analyze.js';
 import { ModuleGraph, type GlobalBinding } from '../analysis/module-graph.js';
 import { ModuleIndexer, type ParsedSummary } from '../analysis/module-index.js';
+import { trackReads, tracked } from '../analysis/reads.js';
 import type { ParaglideUsage } from '../analysis/types.js';
 import { defaultLanguages } from '../languages/index.js';
 import {
@@ -110,6 +111,9 @@ function optionSetting(
   return `${kind} ${fields.join(' ')}`;
 }
 
+/** Files whose code a run reading reused usages holds at once. */
+const REUSED_READS = 64;
+
 /** An outdir's message ids; undefined if they cannot be read. */
 type Catalog = Set<string> | undefined;
 
@@ -142,6 +146,8 @@ export class ContextCollector {
   private cache: UsageCache | undefined;
   /** Files whose summary was kept from the last run. */
   private unchangedFiles = 0;
+  /** Sources whose usages were kept from the last run. */
+  private reusedAnalyses = 0;
 
   /** The analyzed files, and how many usages each has. */
   private readonly analyzed = new Map<string, number>();
@@ -221,10 +227,12 @@ export class ContextCollector {
     this.budget = this.pool
       ? threadBudget(this.averageFileSize)
       : analysisBudget(this.averageFileSize);
+    const stopTracking = this.settings.cache ? trackReads() : undefined;
     try {
       sourceCount = await this.scan(files, autoImportDeclarations);
       await this.cache?.save();
     } finally {
+      stopTracking?.();
       await this.pool?.close();
       this.pool = undefined;
       this.generated.close();
@@ -256,21 +264,26 @@ export class ContextCollector {
     await this.loadCatalogs();
 
     this.sources = sources;
-    await this.analyzeAll(sources);
+    this.recordLinks();
+    const reused = this.reusableAnalyses(sources);
+    await this.analyzeAll(sources.filter((file) => !reused.has(file)));
+    await this.addReused(reused);
 
     return sources.length;
   }
 
   /** Threads that analyze the files, if the project is large enough, and its languages and targets can be given to them. */
   private startThreads(codeSize: number): AnalysisPool | undefined {
-    const { languages, targets, projectRoot } = this.settings;
+    const { languages, targets, projectRoot, cache } = this.settings;
     const isDefault =
       languages === defaultLanguages && targets === defaultTargets;
     if (!isDefault) return undefined;
 
     const threads = analysisThreads(codeSize);
 
-    return threads > 0 ? new AnalysisPool(threads, projectRoot) : undefined;
+    return threads > 0
+      ? new AnalysisPool(threads, projectRoot, { trackReads: cache })
+      : undefined;
   }
 
   /**
@@ -288,10 +301,15 @@ export class ContextCollector {
 
     if (this.pool) {
       // The threads do not hold the files' code: it is read again.
-      await this.pool.analyze(index, sources, async (file, usages) => {
-        const code = usages.length > 0 ? await readTextFile(file) : undefined;
-        this.addUsages(file, usages, code);
-      });
+      await this.pool.analyze(
+        index,
+        sources,
+        async (file, { usages, reads }) => {
+          // Before `addUsages` adds the inlang project, which the next run adds again.
+          this.cache?.recordAnalysis(file, usages, reads);
+          await this.addAnalyzed(file, usages);
+        }
+      );
       return;
     }
 
@@ -311,11 +329,14 @@ export class ContextCollector {
     });
 
     for (const file of sources) {
-      // Held for its code: the analysis may unload it.
-      const record = graph.getRecord(file);
-      const usages = analyzeModule(graph, file);
+      const { value, reads } = tracked(() => {
+        // Held for its code: the analysis may unload it.
+        const record = graph.getRecord(file);
+        return { record, usages: analyzeModule(graph, file) };
+      });
 
-      this.addUsages(file, usages, record?.code);
+      this.cache?.recordAnalysis(file, value.usages, reads);
+      this.addUsages(file, value.usages, value.record?.code);
     }
   }
 
@@ -369,7 +390,7 @@ export class ContextCollector {
 
     if ('unchanged' in result) {
       this.unchangedFiles++;
-      this.cache!.set(file, known!);
+      this.cache!.set(file, { hash: known!.hash, summary: known!.summary });
       return known!.summary;
     }
 
@@ -389,6 +410,61 @@ export class ContextCollector {
     });
 
     return result.summary;
+  }
+
+  /** Records what each indexed file links to: a change to it changes who imports those. */
+  private recordLinks(): void {
+    const cache = this.cache;
+    if (!cache) return;
+
+    for (const { file, parts } of this.indexer.modules) {
+      cache.link(file, {
+        imports: parts.flatMap(({ resolved }) => resolved),
+        globals: parts.flatMap(({ globalNames }) => globalNames),
+      });
+    }
+
+    // As indexing found them: an outdir may be found, or rejected, in an import.
+    const { projectRoot } = this.settings;
+    cache.linked(
+      this.moduleGraph.outdirs
+        .map((outdir) => `outdir ${relativePath(projectRoot, outdir)}`)
+        .sort()
+    );
+  }
+
+  /** The usages the last run found of each source whose analysis read nothing that changed since. */
+  private reusableAnalyses(
+    sources: readonly string[]
+  ): Map<string, ParaglideUsage[]> {
+    const reusable = new Map<string, ParaglideUsage[]>();
+
+    for (const source of sources) {
+      const usages = this.cache?.reuseAnalysis(source);
+      if (usages) reusable.set(source, usages);
+    }
+
+    return reusable;
+  }
+
+  /** Adds the usages of the sources whose analysis was reused, as the analysis would have. */
+  private async addReused(
+    reused: ReadonlyMap<string, ParaglideUsage[]>
+  ): Promise<void> {
+    this.reusedAnalyses += reused.size;
+
+    await Promise.all(
+      [...reused].map(([file, usages]) => this.addAnalyzed(file, usages))
+    );
+  }
+
+  /** Adds the usages of a file whose code is not held: it is read again, for the code around them. */
+  private async addAnalyzed(
+    file: string,
+    usages: ParaglideUsage[]
+  ): Promise<void> {
+    const code = usages.length > 0 ? await readTextFile(file) : undefined;
+    this.addUsages(file, usages, code);
   }
 
   /** The cache for this run's languages, targets and auto-imported names. */
@@ -668,6 +744,9 @@ export class ContextCollector {
         (outdirs ? `; outdirs: ${outdirs}` : '') +
         (this.unchangedFiles > 0
           ? `; ${this.unchangedFiles} file(s) indexed as in the last run`
+          : '') +
+        (this.reusedAnalyses > 0
+          ? `; ${this.reusedAnalyses} file(s) analyzed as in the last run`
           : '')
     );
   }

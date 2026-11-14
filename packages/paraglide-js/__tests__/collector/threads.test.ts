@@ -27,16 +27,25 @@ import {
   type WorkerRequest,
 } from '../../src/compiler/collector/analysis-pool.js';
 import { nameList } from '../../src/compiler/utils/name-list.js';
-import { writeProject } from '../helpers/fixture.js';
+import { readMetadata, writeProject } from '../helpers/fixture.js';
+import {
+  LOCK_FILE,
+  SECTION,
+} from '../../src/compiler/collector/usage-cache.js';
 
 const DIST = path.resolve(import.meta.dirname, '../../dist/src/compiler');
 const CLI = path.join(DIST, 'cli/index.js');
 
 type Pool = typeof import('../../src/compiler/collector/analysis-pool.js');
+type Context = typeof import('../../src/compiler/context.js');
 
 /** The built pool, whose threads run the built analysis. */
 const builtPool = (): Promise<Pool> =>
   import(pathToFileURL(path.join(DIST, 'collector/analysis-pool.js')).href);
+
+/** The built `collectContext`, whose pool runs the built analysis. */
+const builtContext = (): Promise<Context> =>
+  import(pathToFileURL(path.join(DIST, 'context.js')).href);
 
 const run = promisify(execFile);
 
@@ -83,6 +92,41 @@ const summary = (
   ],
 });
 
+/**
+ * Enough pages for a thread to share the sites of `show` and `label`: each
+ * page calls `show` many times, `label` once. The thread done with `label`
+ * helps with `show`. Only main.ts, which imports the pages, and the two
+ * functions are analyzed.
+ */
+function sharedSites(fn: string, text: string): Record<string, string> {
+  const pages = Array.from({ length: 1000 }, (_, index) => index);
+
+  return {
+    'src/show.ts': `export function show${fn}\n`,
+    'src/label.ts': `export function label${fn}\n`,
+    'src/text.ts': text,
+    'src/main.ts': [
+      `import { m } from "./paraglide/messages.js";`,
+      ...pages.map((index) => `import "./pages/page${index}.js";`),
+      `export const main = m.greeting();`,
+    ].join('\n'),
+    ...Object.fromEntries(
+      pages.map((index) => [
+        `src/pages/page${index}.ts`,
+        [
+          `import { show } from "../show.js";`,
+          `import { label } from "../label.js";`,
+          `import { text } from "../text.js";`,
+          `label(text);`,
+          ...Array<string>(20).fill(`show(text);`),
+        ].join('\n'),
+      ])
+    ),
+  };
+}
+
+const LOCK = `${JSON.stringify({ version: 2, branchId: '', entries: [] }, null, 2)}\n`;
+
 async function collectWith(
   root: string,
   threads: number
@@ -121,6 +165,80 @@ describe.skipIf(!existsSync(CLI))('analysis threads', () => {
     expect(inMainThread.metadata).toContain('src/Card.vue');
     expect(inMainThread.metadata).toContain('src/show.ts');
     expect(inThreads).toEqual(inMainThread);
+  });
+
+  describe('the usage cache', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    test.each([
+      [
+        'what another thread read for the values it sent',
+        {
+          fn: `(text: () => string) { return text(); }`,
+          text: `import { m } from "./paraglide/messages.js";\nexport const text = m.greeting;\n`,
+          edited: `export const text = () => "plain";\n`,
+        },
+      ],
+      [
+        'what this thread read for the values another could not send',
+        {
+          fn: `(t: { greeting(): string }) { return t.greeting(); }`,
+          text: `export { m as text } from "./paraglide/messages.js";\n`,
+          edited: `export const text = { greeting: () => "plain" };\n`,
+        },
+      ],
+    ])('keeps %s', async (_, { fn, text, edited }) => {
+      const { collectContext } = await builtContext();
+      const files = sharedSites(fn, text);
+      const collectIn = async (root: string, threads: number) => {
+        vi.stubEnv('PARAGLIDE_CONTEXT_THREADS', String(threads));
+        await collectContext({
+          root,
+          include: ['src/main.ts', 'src/label.ts', 'src/show.ts'],
+          cache: true,
+          logger: { warn: () => {}, info: () => {} },
+        });
+      };
+      const sectionIn = async (root: string) =>
+        JSON.parse(await fs.readFile(path.join(root, LOCK_FILE), 'utf8'))[
+          SECTION
+        ];
+      const sources = async (root: string) =>
+        Object.keys((await readMetadata(root)).greeting?.sourceCode ?? {});
+
+      const root = await writeProject('threads-cache', {
+        ...files,
+        [LOCK_FILE]: LOCK,
+      });
+      const inMainThread = await writeProject('threads-cache-main', {
+        ...files,
+        [LOCK_FILE]: LOCK,
+      });
+      await collectIn(root, 2);
+      await collectIn(inMainThread, 0);
+
+      // Each analysis keeps what it read, whichever thread read it.
+      expect(await sectionIn(root)).toEqual(await sectionIn(inMainThread));
+      expect(await sources(root)).toEqual([
+        'src/label.ts',
+        'src/main.ts',
+        'src/show.ts',
+      ]);
+
+      // Read by whichever thread evaluated a page's sites.
+      await fs.writeFile(path.join(root, 'src/text.ts'), edited);
+      await collectIn(root, 2);
+      const cold = await writeProject('threads-cache-cold', {
+        ...files,
+        'src/text.ts': edited,
+      });
+      await collectIn(cold, 0);
+
+      expect(await readMetadata(root)).toEqual(await readMetadata(cold));
+      expect(await sources(root)).toEqual(['src/main.ts']);
+    });
   });
 
   describe('how many', () => {
@@ -819,9 +937,15 @@ describe("sharing a function's sites in a thread", () => {
       claims,
     };
 
+    // Nothing was read: the graph is a stand-in.
+    const reads = {
+      files: new Set(),
+      importers: new Set(),
+      mentions: new Set(),
+    };
     expect(await send({ id: 1, type: 'help', job })).toEqual([
-      { chunk: 1, symbols: [value('greeting')] },
-      { chunk: 2, symbols: null },
+      { chunk: 1, symbols: [value('greeting')], reads },
+      { chunk: 2, symbols: null, reads },
     ]);
     expect(evaluateSharedSites.mock.calls).toEqual([
       [job, 16, 32],

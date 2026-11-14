@@ -7,6 +7,7 @@ import {
   type SpecifierLinks,
 } from './importers.js';
 import type { ModuleRecord, ParsedModule } from './module-graph.js';
+import { readFile, readMentions } from './reads.js';
 import type { SitePositions } from './site-positions.js';
 import {
   exportingStatements,
@@ -211,10 +212,12 @@ export class IndexedRecords implements RecordStore {
   }
 
   has(file: string): boolean {
+    readFile(file);
     return this.modules.has(file);
   }
 
   get(file: string): ModuleRecord | undefined {
+    readFile(file);
     const loaded = this.records.get(file);
 
     if (loaded) {
@@ -242,6 +245,7 @@ export class IndexedRecords implements RecordStore {
   }
 
   isUntrackedExport(file: string, name: string): boolean {
+    readFile(file);
     const untracked = this.modules.get(file)?.untrackedExports;
 
     return untracked !== undefined && this.names.has(untracked, name);
@@ -249,6 +253,7 @@ export class IndexedRecords implements RecordStore {
 
   /** Read from the index: listing a module's exports parses none. */
   exportsOf(file: string): ModuleExports | undefined {
+    readFile(file);
     const module = this.modules.get(file);
     if (!module) return undefined;
 
@@ -274,10 +279,12 @@ export class IndexedRecords implements RecordStore {
   }
 
   mentioning(names: ReadonlySet<string>): readonly ModuleRef[] {
+    readMentions(names);
     return [...names].flatMap((name) => this.mentions.get(name) ?? []);
   }
 
   sitePositions({ file, part }: ModuleRef): SitePositions | undefined {
+    readFile(file);
     const sites = this.modules.get(file)?.sites[part];
     if (!sites || sites instanceof Int32Array) return sites;
 

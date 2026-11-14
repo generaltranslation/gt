@@ -22,6 +22,13 @@ import {
   type SiteList,
 } from './importers.js';
 import {
+  emptyReads,
+  mergeReads,
+  replay,
+  tracked,
+  type Reads,
+} from './reads.js';
+import {
   declaredNames,
   exportingStatements,
   hasEsmExports,
@@ -130,7 +137,8 @@ export type ModuleRecord = Omit<ParsedModule, 'scripts'> & {
   part: number;
   /** The file of each specifier the module loads. */
   resolved: Map<string, string | undefined>;
-  scope?: Scope;
+  /** With what building it read: see `reads.ts`. */
+  scope?: { value: Scope; reads: Reads };
   /** The file's other modules: each has the file's path, and its own imports and scope. */
   scripts?: readonly ModuleRecord[];
 };
@@ -170,9 +178,10 @@ export class ModuleGraph {
   private globalExports: GlobalExport[] = [];
 
   private readonly exportsBeingResolved = new Set<string>();
+  /** By file, with what listing them read: see `reads.ts`. */
   private readonly exportNames = new Map<
     string,
-    ReadonlySet<string> | undefined
+    { value: ReadonlySet<string> | undefined; reads: Reads }
   >();
   /**
    * What sharing a function's sites found, by parameter: a parameter is often
@@ -180,7 +189,7 @@ export class ModuleGraph {
    */
   private readonly sharedValues = new WeakMap<
     SiteList,
-    Map<string, TrackedSymbol[]>
+    Map<string, { value: TrackedSymbol[]; reads: Reads }>
   >();
   private readonly importers = new ImporterIndex({
     record: (file) => this.records.get(file),
@@ -281,9 +290,14 @@ export class ModuleGraph {
   }
 
   scopeOf(record: ModuleRecord): Scope {
-    record.scope ??= this.createScope(record);
+    // A file that uses it reads what building it read, e.g. a template's component.
+    if (record.scope) {
+      replay(record.scope.reads);
+      return record.scope.value;
+    }
 
-    return record.scope;
+    record.scope = tracked(() => this.createScope(record));
+    return record.scope.value;
   }
 
   targetOf(file: string): TargetMatch | undefined {
@@ -377,9 +391,14 @@ export class ModuleGraph {
 
   /** Undefined when unknown: a target or a CommonJS module is among its `export *`. */
   private exportNamesOf(file: string): ReadonlySet<string> | undefined {
-    if (!this.exportNames.has(file)) this.listExportNames(file, new Map(), []);
+    const listed = this.exportNames.get(file);
+    if (listed) {
+      replay(listed.reads);
+      return listed.value;
+    }
 
-    return this.exportNames.get(file);
+    this.listExportNames(file, new Map(), []);
+    return this.exportNames.get(file)!.value;
   }
 
   /**
@@ -395,15 +414,16 @@ export class ModuleGraph {
   ): number {
     const index = order.size;
     const depth = listing.length;
-    const own: NamesListing = { file, parts: [] };
+    const own: NamesListing = { file, parts: [], reads: emptyReads() };
     let first = index;
 
     order.set(file, index);
     listing.push(own);
 
-    const exports = this.targetOf(file)
-      ? 'unknown'
-      : this.records.exportsOf(file);
+    const { value: exports, reads } = tracked(() =>
+      this.targetOf(file) ? 'unknown' : this.records.exportsOf(file)
+    );
+    own.reads = reads;
     if (exports === 'unknown') {
       own.parts = undefined;
     } else if (exports) {
@@ -419,10 +439,12 @@ export class ModuleGraph {
         }
 
         // Still not listed when in a cycle with `file`: the cycle's list has its names.
-        if (!this.exportNames.has(reexported)) continue;
-
         const listed = this.exportNames.get(reexported);
-        if (listed) own.parts?.push(listed);
+        if (!listed) continue;
+
+        replay(listed.reads);
+        mergeReads(own.reads, listed.reads);
+        if (listed.value) own.parts?.push(listed.value);
         else own.parts = undefined;
       }
     }
@@ -430,8 +452,8 @@ export class ModuleGraph {
     if (first === index) {
       // `file` is the first module of its cycle, if it is in one.
       const cycle = listing.splice(depth);
-      const names = joinedNames(cycle);
-      for (const module of cycle) this.exportNames.set(module.file, names);
+      const listed = { value: joinedNames(cycle), reads: joinedReads(cycle) };
+      for (const module of cycle) this.exportNames.set(module.file, listed);
     }
 
     return first;
@@ -609,7 +631,10 @@ export class ModuleGraph {
 
     const key = JSON.stringify([index, ...path]);
     const known = byParameter.get(key);
-    if (known) return known;
+    if (known) {
+      replay(known.reads);
+      return known.value;
+    }
 
     const fileRecord = this.records.get(record.file);
     const part = fileRecord ? modulesOf(fileRecord).indexOf(record) : -1;
@@ -622,16 +647,18 @@ export class ModuleGraph {
       return undefined;
     }
 
-    const value = shared.share({
-      file: record.file,
-      part,
-      read: range,
-      referrers: sites.referrerCount,
-      own: () => evaluatePassed(sites.own, index, path),
-      range: (from, to) =>
-        evaluatePassed(sites.sitesOfReferrers(from, to), index, path),
-    });
-    if (value) byParameter.set(key, value);
+    const { value, reads } = tracked(() =>
+      shared.share({
+        file: record.file,
+        part,
+        read: range,
+        referrers: sites.referrerCount,
+        own: () => evaluatePassed(sites.own, index, path),
+        range: (from, to) =>
+          evaluatePassed(sites.sitesOfReferrers(from, to), index, path),
+      })
+    );
+    if (value) byParameter.set(key, { value, reads });
 
     return value;
   }
@@ -832,7 +859,12 @@ function starExportedFiles(record: ModuleRecord): string[] {
 }
 
 /** Its own names and the lists below it; undefined when unknown. */
-type NamesListing = { file: string; parts: ReadonlySet<string>[] | undefined };
+type NamesListing = {
+  file: string;
+  parts: ReadonlySet<string>[] | undefined;
+  /** What listing its own names, and the lists below it, read. */
+  reads: Reads;
+};
 
 /** The list of a cycle's modules. A list that is its only part is shared. */
 function joinedNames(
@@ -848,6 +880,15 @@ function joinedNames(
   if (parts.length === 1) return parts[0];
 
   return new Set(parts.flatMap((part) => [...part]));
+}
+
+/** What listing a cycle's modules read. */
+function joinedReads(cycle: readonly NamesListing[]): Reads {
+  if (cycle.length === 1) return cycle[0]!.reads;
+
+  const reads = emptyReads();
+  for (const module of cycle) mergeReads(reads, module.reads);
+  return reads;
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   type SharedSites,
   type SitesJob,
 } from '../analysis/module-graph.js';
+import { replay, trackReads, tracked } from '../analysis/reads.js';
 import type { TrackedSymbol } from '../analysis/types.js';
 import { defaultLanguages } from '../languages/index.js';
 import { defaultTargets } from '../paraglide/targets.js';
@@ -21,6 +22,7 @@ import { spilledReader } from '../utils/spill-file.js';
 import type {
   AnalysisWorkerData,
   ChunkMessage,
+  ChunkResult,
   IndexRequest,
   SharedChannel,
   SharedIndex,
@@ -29,8 +31,14 @@ import type {
 } from './analysis-pool.js';
 import { loadIndexedFile, summarizeFile } from './module-reader.js';
 
-const { projectRoot, concurrentReads } = workerData as AnalysisWorkerData;
+const {
+  projectRoot,
+  concurrentReads,
+  trackReads: isTracking,
+} = workerData as AnalysisWorkerData;
 limitConcurrentReads(concurrentReads);
+// For the thread's life: it serves one run.
+if (isTracking) trackReads();
 const packages = projectPackages(projectRoot);
 const port = parentPort!;
 let graph: ModuleGraph | undefined;
@@ -79,7 +87,12 @@ async function handle(request: WorkerRequest): Promise<unknown> {
       return undefined;
 
     case 'analyze':
-      return request.files.map((file) => analyzeModule(graph!, file));
+      return request.files.map((file) => {
+        const { value: usages, reads } = tracked(() =>
+          analyzeModule(graph!, file)
+        );
+        return { usages, reads };
+      });
 
     case 'help':
       return helpWith(request.job);
@@ -186,7 +199,11 @@ function waitForRanges(
       const message = received.message as ChunkMessage;
       if (message.id !== id) continue;
       if ('done' in message) return;
-      if (message.symbols) ranges[message.chunk] = message.symbols;
+      if (message.symbols) {
+        ranges[message.chunk] = message.symbols;
+        // Another thread read for this file's values.
+        replay(message.reads);
+      }
     }
 
     if (!isMissing()) return;
@@ -213,19 +230,16 @@ function* claimed(claims: Int32Array, chunks: number): Generator<number> {
 }
 
 /** Evaluates ranges of another thread's shared job until none is left. */
-function helpWith(job: SharedJob): Array<{
-  chunk: number;
-  symbols: TrackedSymbol[] | null;
-}> {
+function helpWith(job: SharedJob): ChunkResult[] {
   const claims = new Int32Array(job.claims);
-  const results: Array<{ chunk: number; symbols: TrackedSymbol[] | null }> = [];
+  const results: ChunkResult[] = [];
 
   for (const chunk of claimed(claims, job.chunks)) {
     const [from, to] = chunkRange(chunk, job.referrers);
-    results.push({
-      chunk,
-      symbols: graph!.evaluateSharedSites(job, from, to) ?? null,
-    });
+    const { value: symbols, reads } = tracked(() =>
+      graph!.evaluateSharedSites(job, from, to)
+    );
+    results.push({ chunk, symbols: symbols ?? null, reads });
   }
 
   return results;
