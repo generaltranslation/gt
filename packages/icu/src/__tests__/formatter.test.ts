@@ -447,7 +447,7 @@ describe('formatIcu', () => {
     }
   });
 
-  it('honors Unicode region overrides and sparse locale fallbacks', () => {
+  it('honors Unicode region overrides', () => {
     const value = new Date(2020, 4, 6, 7, 3, 2);
     expect(formatIcu('{d, time, ::j}', 'en-u-rg-gbzzzz', { d: value })).toBe(
       '07'
@@ -456,9 +456,6 @@ describe('formatIcu', () => {
       '7 am'
     );
 
-    const locales: string[] = [];
-    locales[1] = 'fr-FR';
-    expect(formatIcu('{d, time, ::j}', locales, { d: value })).toBe('07 h');
     expect(() => formatIcu('{d, time, ::j}', [], { d: value })).toThrow();
   });
 

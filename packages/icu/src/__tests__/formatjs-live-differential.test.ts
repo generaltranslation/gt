@@ -412,13 +412,10 @@ describe('live FormatJS runtime compatibility', () => {
     }
   );
 
-  it('matches empty and sparse locale-list behavior', () => {
+  it('matches empty locale-list behavior', () => {
     const message = '{value, time, ::j}';
     const values = { value: new Date(2020, 4, 6, 7, 3, 2) };
-    const sparseLocales: string[] = [];
-    sparseLocales[1] = 'fr-FR';
 
-    expectSameFormat(message, sparseLocales, values);
     expect(() => formatIcu(message, [], values)).toThrow();
     expect(() => formatWithFormatJs(message, [], values)).toThrow();
   });

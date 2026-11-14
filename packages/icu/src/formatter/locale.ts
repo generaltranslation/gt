@@ -26,8 +26,6 @@ export function resolveLocale(
 function firstSupported(locales: string[]): Intl.Locale {
   let first: Intl.Locale | undefined;
   for (const locale of locales) {
-    // A sparse list has holes, which Intl skips too.
-    if (locale === undefined) continue;
     const resolved = resolvedLocales.get(locale) ?? resolve(locale);
     if (resolved.supported) first ??= resolved.locale;
   }
