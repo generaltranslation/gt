@@ -47,6 +47,7 @@ export type {
   GeneratedSource,
   LanguageContext,
   ParseLang,
+  SkippedPart,
   SourceLanguage,
 } from './compiler/languages/language.js';
 export {

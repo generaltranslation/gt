@@ -10,9 +10,14 @@ import { handleStage } from '../stage.js';
 import { collectFiles } from '../../../formats/files/collectFiles.js';
 import { runStageFilesWorkflow } from '../../../workflows/stage.js';
 import updateConfig from '../../../fs/config/updateConfig.js';
+import { collectParaglideContext } from '../../../paraglide/collectParaglideContext.js';
 
 vi.mock('../../../formats/files/collectFiles.js', () => ({
   collectFiles: vi.fn(),
+}));
+
+vi.mock('../../../paraglide/collectParaglideContext.js', () => ({
+  collectParaglideContext: vi.fn(),
 }));
 
 vi.mock('../../../workflows/stage.js', () => ({
@@ -195,5 +200,33 @@ describe('handleStage config ids', () => {
     );
 
     expect(updateConfig).not.toHaveBeenCalled();
+  });
+
+  it('collects Paraglide context before the files when the json flag is set', async () => {
+    const base = settings();
+
+    await handleStage(
+      options,
+      {
+        ...base,
+        files: {
+          ...base.files,
+          parsingFlags: { json: { includeSourceCodeContext: true } },
+        },
+      },
+      'gt-react',
+      false
+    );
+
+    expect(collectParaglideContext).toHaveBeenCalledOnce();
+    expect(
+      vi.mocked(collectParaglideContext).mock.invocationCallOrder[0]
+    ).toBeLessThan(vi.mocked(collectFiles).mock.invocationCallOrder[0]);
+  });
+
+  it('does not collect Paraglide context when the json flag is not set', async () => {
+    await handleStage(options, settings(), 'gt-react', false);
+
+    expect(collectParaglideContext).not.toHaveBeenCalled();
   });
 });

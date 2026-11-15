@@ -1,0 +1,188 @@
+import path from 'node:path';
+import { parseArgs } from 'node:util';
+import { defaultLanguages } from '../languages/index.js';
+import type { SourceLanguage } from '../languages/language.js';
+import {
+  commandLine,
+  devDependencyCommand,
+  runCommand,
+} from '../project/package-manager.js';
+import { projectPackages } from '../project/packages.js';
+import { findProjectRoot } from '../project/roots.js';
+import { errorMessage } from '../utils/diagnostics.js';
+import { print, printUsageError } from './print.js';
+
+/** Version ranges for packages whose latest version does not work. */
+const VERSION_RANGES: Readonly<Record<string, string>> = {
+  // TypeScript 7 has no JavaScript API.
+  typescript: '^6',
+};
+
+/** `angular` stands for `angular-component` and `angular-template`. */
+const LANGUAGE_NAMES = [...new Set(defaultLanguages.map(familyName))];
+
+export const INSTALL_USAGE = `Usage: paraglide-context install <language...> [options]
+
+Installs the packages that the languages' files need, as dev dependencies, with
+the project's package manager. Packages already installed are skipped.
+
+Languages: ${LANGUAGE_NAMES.join(', ')}
+
+Options:
+  --root <dir>  directory in the project (default: the working directory)
+  -h, --help    show this help`;
+
+/** Runs `paraglide-context install`. Returns the exit code. */
+export async function install(argv: string[]): Promise<number> {
+  let parsed;
+
+  try {
+    parsed = parseInstallArguments(argv);
+  } catch (error) {
+    printUsageError({ whatHappened: (error as Error).message }, INSTALL_USAGE);
+    return 2;
+  }
+
+  const { values, positionals } = parsed;
+
+  if (values.help) {
+    print(INSTALL_USAGE);
+    return 0;
+  }
+
+  if (positionals.length === 0) {
+    printUsageError({ whatHappened: 'No language was given' }, INSTALL_USAGE);
+    return 2;
+  }
+
+  const unknown = positionals.filter((name) => !LANGUAGE_NAMES.includes(name));
+  if (unknown.length > 0) {
+    const isOne = unknown.length === 1;
+    console.error(
+      errorMessage({
+        whatHappened: `${unknown.join(', ')} ${isOne ? 'is not a known language' : 'are not known languages'}`,
+        fix: `Choose from ${LANGUAGE_NAMES.join(', ')}`,
+      })
+    );
+    return 2;
+  }
+
+  const root = path.resolve(values.root ?? process.cwd());
+
+  return installTools(findProjectRoot(root), positionals);
+}
+
+/** Throws on an unknown option or a missing value. */
+function parseInstallArguments(argv: string[]) {
+  return parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: {
+      root: { type: 'string' },
+      help: { type: 'boolean', short: 'h' },
+    },
+  });
+}
+
+async function installTools(
+  projectRoot: string,
+  names: readonly string[]
+): Promise<number> {
+  const required = requiredPackages(names);
+  const loaded = await loadPackages(projectRoot, required);
+
+  const typescript = loaded.get('typescript');
+  if (typescript && !hasJavaScriptApi(typescript)) {
+    return reportTypescriptWithoutApi(projectRoot, names);
+  }
+
+  const missing = required.filter((name) => !loaded.get(name));
+  if (missing.length === 0) {
+    print(`Already installed: ${required.join(', ')}`);
+    return 0;
+  }
+
+  return addPackages(projectRoot, missing);
+}
+
+async function addPackages(
+  projectRoot: string,
+  packages: readonly string[]
+): Promise<number> {
+  const specifiers = packages.map(withVersionRange);
+  const command = await devDependencyCommand(projectRoot, specifiers);
+  print(`Running ${commandLine(command)}`);
+
+  try {
+    return await runCommand(command, projectRoot);
+  } catch (error) {
+    console.error(
+      errorMessage({
+        whatHappened: `${command.command} could not be run`,
+        fix: `Install the packages yourself with \`${commandLine(command)}\``,
+        details: (error as Error).message,
+      })
+    );
+    return 1;
+  }
+}
+
+async function reportTypescriptWithoutApi(
+  projectRoot: string,
+  names: readonly string[]
+): Promise<number> {
+  const needing = names.filter((name) =>
+    requiredPackages([name]).includes('typescript')
+  );
+  const command = await devDependencyCommand(projectRoot, [
+    withVersionRange('typescript'),
+  ]);
+
+  console.error(
+    errorMessage({
+      whatHappened: `The project's typescript cannot be used for ${needing.join(' and ')} files`,
+      why: 'TypeScript 7 has no JavaScript API',
+      fix: `Install typescript 6 with \`${commandLine(command)}\``,
+    })
+  );
+  return 1;
+}
+
+/** The packages the languages load, in the order they are named. */
+function requiredPackages(names: readonly string[]): string[] {
+  const languages = names.flatMap((name) =>
+    defaultLanguages.filter((language) => familyName(language) === name)
+  );
+
+  return [...new Set(languages.flatMap(({ requires }) => requires ?? []))];
+}
+
+/** Each package's module; undefined if the project cannot load it, the way languages load them. */
+async function loadPackages(
+  projectRoot: string,
+  packages: readonly string[]
+): Promise<Map<string, unknown>> {
+  const project = projectPackages(projectRoot);
+  const modules = await Promise.all(packages.map((name) => project.load(name)));
+
+  return new Map(packages.map((name, index) => [name, modules[index]]));
+}
+
+function hasJavaScriptApi(typescript: unknown): boolean {
+  const module = typescript as {
+    ScriptSnapshot?: unknown;
+    default?: { ScriptSnapshot?: unknown };
+  };
+
+  return Boolean(module.ScriptSnapshot ?? module.default?.ScriptSnapshot);
+}
+
+function withVersionRange(name: string): string {
+  const range = VERSION_RANGES[name];
+
+  return range ? `${name}@${range}` : name;
+}
+
+function familyName({ name }: SourceLanguage): string {
+  return name.split('-')[0]!;
+}

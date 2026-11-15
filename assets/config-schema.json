@@ -193,6 +193,17 @@
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
               "examples": ["*.[locale].json", "*-[locale].json"]
             },
+            "parsingFlags": {
+              "type": "object",
+              "description": "Options controlling how JSON files are parsed",
+              "properties": {
+                "includeSourceCodeContext": {
+                  "type": "boolean",
+                  "description": "Collect the source code around each usage of a message as context for translations. Applies to Paraglide JS projects that have @generaltranslation/paraglide-js installed.",
+                  "default": false
+                }
+              }
+            },
             "requiresReview": {
               "oneOf": [
                 { "type": "boolean" },

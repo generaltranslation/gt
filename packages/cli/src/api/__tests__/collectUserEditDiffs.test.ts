@@ -573,4 +573,189 @@ describe('collectAndSendUserEditDiffs', () => {
       expect(diffs[0].localContent).toBe(slice(JSON.stringify(edited), 'fr'));
     });
   });
+
+  describe('Mintlify docs.json with languages split into $ref files', () => {
+    const served = (tab: string, group: string) =>
+      JSON.stringify(
+        {
+          '/navigation/languages': {
+            '/0': { '/tabs/0/pages/0/group': group, '/tabs/0/tab': tab },
+          },
+        },
+        null,
+        2
+      );
+
+    const nav = (tab: string, group: string) => ({
+      tabs: [{ tab, pages: [{ group, pages: ['docs/start'] }] }],
+    });
+
+    // The fr $ref file never exists: another locale's unreadable ref must
+    // not affect what happens to ja.
+    const run = async (
+      jaNav: object | undefined,
+      serverData: string,
+      extraLanguages: object[] = [],
+      extraRoot: object = {}
+    ) => {
+      const docsPath = path.join(tempDir, 'docs.json');
+      fs.mkdirSync(path.join(tempDir, 'config', 'ja'), { recursive: true });
+      fs.writeFileSync(
+        docsPath,
+        JSON.stringify({
+          ...extraRoot,
+          navigation: {
+            languages: [
+              { language: 'en', $ref: './config/nav.json' },
+              { language: 'ja', $ref: './config/ja/nav.json' },
+              { language: 'fr', $ref: './config/fr/nav.json' },
+              ...extraLanguages,
+            ],
+          },
+        })
+      );
+      fs.writeFileSync(
+        path.join(tempDir, 'config', 'nav.json'),
+        JSON.stringify(nav('Get Started', 'Basics'))
+      );
+      if (jaNav) {
+        fs.writeFileSync(
+          path.join(tempDir, 'config', 'ja', 'nav.json'),
+          JSON.stringify(jaNav)
+        );
+      }
+      writeLockFile({
+        version: 1,
+        entries: {
+          branch1: {
+            file1: {
+              version1: {
+                ja: {
+                  updatedAt: new Date().toISOString(),
+                  postProcessHash: hashStringSync('downloaded'),
+                },
+              },
+            },
+          },
+        },
+      });
+      const translation = {
+        branchId: 'branch1',
+        fileId: 'file1',
+        versionId: 'version1',
+        locale: 'ja',
+      };
+      vi.mocked(api.queryFileData).mockResolvedValue({
+        translatedFiles: [
+          { ...translation, completedAt: new Date().toISOString() },
+        ],
+      });
+      vi.mocked(api.downloadFileBatch).mockResolvedValue({
+        files: [{ ...translation, data: serverData, fileFormat: 'JSON' }],
+      });
+      vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
+
+      const settings = createMockSettings({
+        configDirectory: tempDir,
+        config: path.join(tempDir, 'gt.config.json'),
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        _branchId: 'branch1',
+        files: {
+          resolvedPaths: { json: [docsPath] },
+          placeholderPaths: { json: [docsPath] },
+          transformPaths: {},
+        },
+        options: {
+          jsonSchema: {
+            './docs.json': {
+              resolveRefs: true,
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  key: '$.language',
+                  splitEntries: true,
+                  include: ['$..group', '$..tab'],
+                },
+              },
+            },
+          },
+        },
+      });
+      await collectAndSendUserEditDiffs(
+        [
+          {
+            fileName: 'docs.json',
+            fileFormat: 'JSON',
+            branchId: 'branch1',
+            fileId: 'file1',
+            versionId: 'version1',
+          },
+        ],
+        settings
+      );
+    };
+
+    it('submits the values read through the locale $ref when the nav was edited', async () => {
+      await run(nav('はじめに', '基礎'), served('はじめに', '基本'));
+
+      expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+      const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+      expect(diffs).toHaveLength(1);
+      expect(JSON.parse(diffs[0].localContent)).toEqual(
+        JSON.parse(served('はじめに', '基礎'))
+      );
+    });
+
+    it('submits nothing when the nav behind the $ref matches the stored translation', async () => {
+      await run(nav('はじめに', '基本'), served('はじめに', '基本'));
+
+      expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+      expect(getWarnings()).toEqual([]);
+    });
+
+    it.each([
+      {
+        name: 'the locale $ref file is missing',
+        jaNav: undefined,
+        reason: 'these $ref files could not be read: ./config/ja/nav.json',
+      },
+      {
+        name: 'a nested $ref is missing beside values that can be read',
+        jaNav: { tabs: [{ tab: 'はじめに', $ref: './missing.json' }] },
+        reason: 'these $ref files could not be read: ./missing.json',
+      },
+      {
+        name: 'an entry keeps its locale key inside a missing $ref',
+        jaNav: nav('はじめに', '基礎'),
+        extraLanguages: [{ $ref: './config/ja/api.json' }],
+        reason: 'these $ref files could not be read: ./config/ja/api.json',
+      },
+      {
+        name: 'a $ref outside the language entries is missing',
+        jaNav: nav('はじめに', '基礎'),
+        extraRoot: { footer: { $ref: './config/footer.json' } },
+        reason: 'these $ref files could not be read: ./config/footer.json',
+      },
+      {
+        name: 'the locale has no translated values',
+        jaNav: { tabs: [] },
+        reason:
+          'no translated values for that locale could be read from the file',
+      },
+    ])('keeps the stored translation when $name', async (row) => {
+      const { jaNav, reason } = row;
+      await run(
+        jaNav,
+        served('はじめに', '基本'),
+        row.extraLanguages,
+        row.extraRoot
+      );
+
+      expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+      expect(getWarnings()).toEqual([
+        { category: 'skipped_file', fileName: 'docs.json', reason },
+      ]);
+    });
+  });
 });

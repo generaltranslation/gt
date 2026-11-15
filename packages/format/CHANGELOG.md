@@ -1,5 +1,11 @@
 # @generaltranslation/format
 
+## 0.1.10
+
+### Patch Changes
+
+- [#2718](https://github.com/generaltranslation/gt/pull/2718) [`7aae545`](https://github.com/generaltranslation/gt/commit/7aae545bd9e65148b8cbf98a4df3ce750ab1cdbf) Thanks [@eoinest](https://github.com/eoinest)! - fix(format): stop revalidating configured locales on every `requiresTranslation` and `determineLocale` call when `customMapping` uses object entries with a `code`, which slowed server renders that look up many messages
+
 ## 0.1.9
 
 ### Patch Changes

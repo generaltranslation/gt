@@ -56,6 +56,7 @@
     "gt-test-vite-vue",
     "gt-test-webpack-react",
     "cli-vue-binary-test",
+    "cli-paraglide-binary-test",
     "gt-bundle-analysis",
     "gt-bundle-example-next",
     "gt-bundle-example-tanstack-start",

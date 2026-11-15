@@ -28,6 +28,135 @@ import { extractYaml } from '../formats/yaml/extractYaml.js';
 import { logger } from '../console/logger.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import { getRelative } from '../fs/findFilepath.js';
+import {
+  resolveMintlifyRefs,
+  shouldResolveRefs,
+  type UnreadableRef,
+} from '../utils/resolveMintlifyRefs.js';
+import {
+  findMatchingItemArray,
+  findMatchingItemObject,
+  generateSourceObjectPointers,
+  validateJsonSchema,
+} from '../formats/json/utils.js';
+import type { JSONObject, JSONValue } from '../types/data/json.js';
+import { getJSONPathMatches } from '../formats/json/jsonPath.js';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { isDeepStrictEqual } from 'node:util';
+
+const unsavedJsonEditsWarning = (
+  relativePath: string,
+  locale: string,
+  reason: string
+) =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Warning',
+    whatHappened: `Local edits to ${relativePath} were not saved for ${locale}`,
+    why: reason,
+    reassurance: 'The stored translation was left unchanged',
+  });
+
+const resolveLocalRefs = (
+  content: string,
+  outputPath: string,
+  settings: Settings
+): { content: string; unreadableRefs: UnreadableRef[] } => {
+  if (!shouldResolveRefs(outputPath, settings.options)) {
+    return { content, unreadableRefs: [] };
+  }
+  try {
+    const { resolved, unreadableRefs } = resolveMintlifyRefs(
+      JSON.parse(content),
+      outputPath
+    );
+    return { content: JSON.stringify(resolved, null, 2), unreadableRefs };
+  } catch {
+    return { content, unreadableRefs: [] };
+  }
+};
+
+/**
+ * The unreadable refs that could hold values of the locale: all of them,
+ * except those inside an entry of a composite file known to belong to another
+ * locale.
+ */
+const unreadableRefsForLocale = (
+  unreadableRefs: UnreadableRef[],
+  resolvedContent: string,
+  fileName: string,
+  locale: string,
+  settings: Settings
+): UnreadableRef[] => {
+  if (unreadableRefs.length === 0) return [];
+  const composite = validateJsonSchema(
+    settings.options ?? {},
+    fileName
+  )?.composite;
+  const json = parseJson(resolvedContent) as JSONValue | undefined;
+  if (!composite || json === undefined) return unreadableRefs;
+
+  const localeKey = settings.options?.experimentalCanonicalLocaleKeys
+    ? api.resolveCanonicalLocale(locale)
+    : locale;
+  const otherLocalePointers: string[] = [];
+  for (const [
+    pointer,
+    { sourceObjectValue, sourceObjectOptions },
+  ] of Object.entries(generateSourceObjectPointers(composite, json))) {
+    if (sourceObjectOptions.type === 'array') {
+      if (!Array.isArray(sourceObjectValue)) continue;
+      const ownItems = findMatchingItemArray(
+        localeKey,
+        sourceObjectOptions,
+        pointer,
+        sourceObjectValue
+      );
+      sourceObjectValue.forEach((item, index) => {
+        // An entry whose locale key sat in the unreadable file has no key
+        // left, so it may be the locale's own.
+        const hasLocaleKey =
+          !!sourceObjectOptions.key &&
+          (getJSONPathMatches(item, sourceObjectOptions.key)?.length ?? 0) > 0;
+        if (hasLocaleKey && !(`/${index}` in ownItems)) {
+          otherLocalePointers.push(`${pointer}/${index}`);
+        }
+      });
+    } else if (sourceObjectValue && typeof sourceObjectValue === 'object') {
+      const { keyParentProperty } = findMatchingItemObject(
+        localeKey,
+        pointer,
+        sourceObjectOptions,
+        sourceObjectValue as JSONObject
+      );
+      for (const key of Object.keys(sourceObjectValue)) {
+        if (key !== keyParentProperty) {
+          otherLocalePointers.push(`${pointer}/${key}`);
+        }
+      }
+    }
+  }
+  return unreadableRefs.filter(
+    (ref) =>
+      !otherLocalePointers.some(
+        (pointer) =>
+          ref.pointer === pointer || ref.pointer.startsWith(`${pointer}/`)
+      )
+  );
+};
+
+const hasLeafValue = (value: unknown): boolean =>
+  value !== null && typeof value === 'object'
+    ? Object.values(value).some(hasLeafValue)
+    : value !== undefined;
+
+const parseJson = (content: string): unknown => {
+  try {
+    return JSON.parse(content);
+  } catch {
+    return undefined;
+  }
+};
 
 type LatestDownloadedVersion = {
   versionId: string;
@@ -281,14 +410,46 @@ export async function collectAndSendUserEditDiffs(
             settings.options?.jsonSchema &&
             c.locale !== settings.defaultLocale
           ) {
-            const extractedContent = extractJson(
+            const resolvedLocal = resolveLocalRefs(
               rawLocalContent,
+              c.outputPath,
+              settings
+            );
+            const extractedContent = extractJson(
+              resolvedLocal.content,
               c.fileName,
               settings.options,
               c.locale,
               settings.defaultLocale
             );
             if (extractedContent) {
+              const extracted = parseJson(extractedContent);
+              // The submitted content replaces the stored translation, so
+              // values missing from it would be erased.
+              const unreadableRefs = unreadableRefsForLocale(
+                resolvedLocal.unreadableRefs,
+                resolvedLocal.content,
+                c.fileName,
+                c.locale,
+                settings
+              );
+              const reason =
+                unreadableRefs.length > 0
+                  ? `these $ref files could not be read: ${unreadableRefs.map((ref) => ref.refPath).join(', ')}`
+                  : !hasLeafValue(extracted)
+                    ? 'no translated values for that locale could be read from the file'
+                    : undefined;
+              if (reason) {
+                const relativePath = getRelative(c.outputPath);
+                logger.warn(
+                  unsavedJsonEditsWarning(relativePath, c.locale, reason)
+                );
+                recordWarning('skipped_file', relativePath, reason);
+                continue;
+              }
+              if (isDeepStrictEqual(extracted, parseJson(serverContent))) {
+                continue;
+              }
               localContent = extractedContent;
             }
           } else if (

@@ -1245,9 +1245,21 @@ importers:
       '@typescript-eslint/scope-manager':
         specifier: ^8.72.1
         version: 8.72.1
+      generaltranslation:
+        specifier: workspace:*
+        version: link:../core
       globby:
         specifier: ^16.2.0
         version: 16.2.0
+      mdast-util-from-markdown:
+        specifier: ^2.0.2
+        version: 2.0.2
+      mdast-util-frontmatter:
+        specifier: ^2.0.1
+        version: 2.0.1
+      micromark-extension-frontmatter:
+        specifier: ^2.0.0
+        version: 2.0.0
       oxc-parser:
         specifier: ^0.157.0
         version: 0.157.0
@@ -1949,6 +1961,12 @@ importers:
       vue:
         specifier: ^3.5.0
         version: 3.5.40(typescript@5.9.3)
+
+  tests/apps/cli-paraglide-binary-test:
+    devDependencies:
+      '@generaltranslation/paraglide-js':
+        specifier: workspace:*
+        version: link:../../../packages/paraglide-js
 
   tests/apps/cli-test-app:
     dependencies:

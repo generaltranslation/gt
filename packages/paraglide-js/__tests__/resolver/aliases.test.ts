@@ -168,10 +168,10 @@ describe('aliases no config declares', () => {
     // Nor are a generated file's imports.
     '.nuxt/imports.d.ts': `export { useHead } from "#app/composables/head";\n`,
   };
-  const unresolved =
-    '3 import(s) could not be resolved, so usages through them are missed: ' +
-    '"/src/paraglide/messages.js" (src/from-root.ts), "@/paraglide/messages.js" (src/direct.ts), "@i18n" (src/reexport.ts). ' +
-    'If they are aliases, declare them in tsconfig.json "paths" or pass them with --alias: ';
+  const unresolved = (reason: string) =>
+    'paraglide-context Warning: 3 import(s) could not be resolved, so usages through them are missed. ' +
+    `If they are aliases, declare them in tsconfig.json "paths" or pass them with --alias, since ${reason}. ` +
+    'Details: "/src/paraglide/messages.js" (src/from-root.ts), "@/paraglide/messages.js" (src/direct.ts), "@i18n" (src/reexport.ts)';
 
   test('without a bundler config: the rest is analyzed, the imports are reported', async () => {
     const root = await writeProject('alias-unknown', files);
@@ -180,13 +180,15 @@ describe('aliases no config declares', () => {
     expect(warnings).toHaveLength(3);
     // The collector's own warning, for imports whose path names Paraglide.
     expect(warnings).toContain(
-      '[paraglide-context] could not resolve "@/paraglide/messages.js" from src/direct.ts; usages through it are not recorded'
+      'paraglide-context Warning: Usages through "@/paraglide/messages.js" are not recorded because it could not be resolved from src/direct.ts.'
     );
     expect(warnings).toContain(
-      '[paraglide-context] could not resolve "/src/paraglide/messages.js" from src/from-root.ts; usages through it are not recorded'
+      'paraglide-context Warning: Usages through "/src/paraglide/messages.js" are not recorded because it could not be resolved from src/from-root.ts.'
     );
     expect(warnings.at(-1)).toBe(
-      `[paraglide-context] ${unresolved}no vite, webpack, or rspack config was found to read them from.`
+      unresolved(
+        'no vite, webpack, or rspack config was found to read them from'
+      )
     );
   });
 
@@ -217,12 +219,10 @@ describe('aliases no config declares', () => {
     expect(usages).toEqual([greetingIn('src/found.ts')]);
     expect(warnings).toContainEqual(
       expect.stringMatching(
-        /^\[paraglide-context\] vite\.config\.mjs could not be read, so its aliases are unknown: .*NO_ENV is not set/s
+        /^paraglide-context Warning: vite\.config\.mjs could not be read, so its aliases are unknown\. Details: .*NO_ENV is not set/s
       )
     );
-    expect(warnings).toContain(
-      `[paraglide-context] ${unresolved}vite.config.mjs could not be read.`
-    );
+    expect(warnings).toContain(unresolved('vite.config.mjs could not be read'));
   });
 
   test('a bundler config that is not read: `bundlerConfigs: []`, --no-bundler-config', async () => {
@@ -233,14 +233,14 @@ describe('aliases no config declares', () => {
     const { usages, warnings } = await collect(root, { bundlerConfigs: [] });
     expect(usages).toEqual([]);
     expect(warnings).toContainEqual(
-      expect.stringContaining('--alias: no bundler config is read.')
+      expect.stringContaining('--alias, since no bundler config is read.')
     );
 
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(await main([root, '--no-bundler-config'])).toBe(0);
     expect(await readSnippets(root)).toEqual([]);
     expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('--alias: no bundler config is read.')
+      expect.stringContaining('--alias, since no bundler config is read.')
     );
     expect(await main([root])).toBe(0);
     expect(await readSnippets(root)).toEqual([greetingIn('src/a.ts')]);
@@ -269,7 +269,7 @@ test('a long list of unresolved imports is cut', async () => {
   const { warnings } = await collect(root);
   expect(warnings).toContainEqual(
     expect.stringMatching(
-      /^\[paraglide-context\] 8 import\(s\) could not be resolved.*"@alias4\/a\.js" \(src\/a\.ts\), and 3 more\. /
+      /^paraglide-context Warning: 8 import\(s\) could not be resolved.*"@alias4\/a\.js" \(src\/a\.ts\), and 3 more\.$/
     )
   );
 });

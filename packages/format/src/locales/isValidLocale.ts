@@ -16,6 +16,10 @@ const isCustomLanguage = (language: string) => {
   return language >= 'qaa' && language <= 'qtz';
 };
 
+// Locale strings can come from requests (headers, cookies, paths), so the memo is capped.
+const maxValidityCacheSize = 1000;
+const validityCache = new Map<string, boolean>();
+
 /**
  * Checks if a given BCP 47 language code is valid.
  * @param {string} code - The BCP 47 language code to validate.
@@ -30,6 +34,18 @@ export const _isValidLocale = (
   // Use the canonical code from custom mappings when one is configured.
   locale = getCustomLocaleCode(customMapping, locale) || locale;
 
+  let isValid = validityCache.get(locale);
+  if (isValid === undefined) {
+    isValid = validateLocaleCode(locale);
+    if (validityCache.size >= maxValidityCacheSize) {
+      validityCache.delete(validityCache.keys().next().value!);
+    }
+    validityCache.set(locale, isValid);
+  }
+  return isValid;
+};
+
+const validateLocaleCode = (locale: string): boolean => {
   try {
     const localeObject = intlCache.get('Locale', locale);
     const { language, region, script } = localeObject;

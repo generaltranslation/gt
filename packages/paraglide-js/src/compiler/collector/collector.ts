@@ -12,7 +12,6 @@ import type { ParaglideUsage } from '../analysis/types.js';
 import {
   isSourceFile,
   parseSource,
-  type LanguageContext,
   type ParseFailure,
   type ParseFunction,
   type SourceLanguage,
@@ -27,7 +26,8 @@ import {
   type AutoImportOptions,
 } from '../project/auto-imports.js';
 import type { FileSelection } from '../project/files.js';
-import { projectPackages } from '../project/packages.js';
+import { projectPackages, type ProjectPackages } from '../project/packages.js';
+import { warningMessage, type Diagnostic } from '../utils/diagnostics.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
 import { checkCatalog, unknownMessagesWarning } from './catalog-check.js';
 import { MetadataFiles } from './metadata-files.js';
@@ -45,7 +45,7 @@ export type CollectorLogger = {
   info(message: string): void;
 };
 
-/** Starts every logged message. */
+/** Starts every info message. */
 export const LOG_PREFIX = '[paraglide-context]';
 
 export type CollectorSettings = {
@@ -87,7 +87,7 @@ const parse: ParseFunction = (file, code, lang) =>
 /** Analyzes the project's source files and writes their usages to the messages' metadata files. */
 export class ContextCollector {
   private readonly settings: CollectorSettings;
-  private readonly packages: LanguageContext;
+  private readonly packages: ProjectPackages;
 
   private readonly moduleGraph: ModuleGraph;
   private readonly outdirDetector: OutdirDetector;
@@ -164,8 +164,12 @@ export class ContextCollector {
   }
 
   async write(): Promise<void> {
-    for (const { file, reason } of await this.output.write()) {
-      this.warn(`${this.relative(file)} was not updated: ${reason}`);
+    for (const { file, why, fix } of await this.output.write()) {
+      this.warn({
+        whatHappened: `${this.relative(file)} was not updated`,
+        why,
+        fix,
+      });
     }
   }
 
@@ -213,23 +217,29 @@ export class ContextCollector {
       this.settings.languages,
       this.packages
     );
-    if ('module' in parsed) return parsed.module;
+    if (!('module' in parsed)) {
+      this.reportSkipped(file, parsed);
+      return undefined;
+    }
 
-    this.reportSkipped(file, parsed);
+    if (parsed.skipped) this.reportSkipped(file, parsed.skipped);
 
-    return undefined;
+    return parsed.module;
   }
 
   private reportSkipped(file: string, failure: ParseFailure): void {
-    const { language, missing: requires, reason } = failure;
+    const { language, missing: requires, reason, part } = failure;
 
     // Unavailable tools get one warning per language, after the scan.
     if (language && requires) {
-      this.missingTools.add(file, { language, requires, reason });
+      this.missingTools.add(file, { language, requires, reason, part });
       return;
     }
 
-    this.warn(`skipped ${this.relative(file)}: ${failure.error}`);
+    this.warn({
+      whatHappened: `${this.relative(file)} was not analyzed`,
+      details: failure.error,
+    });
   }
 
   private async isOutdir(directory: string): Promise<boolean> {
@@ -238,10 +248,11 @@ export class ContextCollector {
     const verdict = await this.outdirDetector.check(directory);
 
     if (!verdict.outdir && verdict.reason) {
-      this.warn(
-        `${this.relative(directory)} is not used as a Paraglide outdir: ${verdict.reason}. ` +
-          'If it is one, add it to the `outdirs` option.'
-      );
+      this.warn({
+        whatHappened: `${this.relative(directory)} is not used as a Paraglide outdir`,
+        why: verdict.reason,
+        fix: 'If it is one, add it to the `outdirs` option',
+      });
     }
 
     return verdict.outdir;
@@ -330,10 +341,11 @@ export class ContextCollector {
     const project = await this.outdirProjects.pair(outdir, catalog);
 
     if (!project) {
-      this.warn(
-        `no inlang project found for ${this.relative(outdir)}; its messages get no metadata file. ` +
-          'List its project in the `inlangProjects` option.'
-      );
+      this.warn({
+        whatHappened: `The messages of ${this.relative(outdir)} get no metadata file`,
+        why: 'no inlang project was found for it',
+        fix: 'List its project in the `inlangProjects` option',
+      });
       return;
     }
 
@@ -342,10 +354,12 @@ export class ContextCollector {
     const hasMessageFiles = project.messageFiles.length > 0;
     if (hasMessageFiles) return;
 
-    this.warn(
-      `${this.relative(project.directory)} has no base-locale message files in the inlang message format ` +
-        '(`plugin.inlang.messageFormat`); its messages get no metadata file'
-    );
+    this.warn({
+      whatHappened: `The messages of ${this.relative(project.directory)} get no metadata file`,
+      why:
+        'it has no base-locale message files in the inlang message format ' +
+        '(`plugin.inlang.messageFormat`)',
+    });
   }
 
   private analyzeLoaded(file: string): void {
@@ -419,7 +433,9 @@ export class ContextCollector {
     if (!this.settings.explicitInclude) return;
 
     for (const entry of missing) {
-      this.warn(`include entry ${this.relative(entry)} does not exist`);
+      this.warn({
+        whatHappened: `The include entry ${this.relative(entry)} does not exist`,
+      });
     }
   }
 
@@ -429,9 +445,10 @@ export class ContextCollector {
       !specifier.startsWith('@inlang/');
     if (!mayBeParaglide) return;
 
-    this.warn(
-      `could not resolve "${specifier}" from ${this.relative(importer)}; usages through it are not recorded`
-    );
+    this.warn({
+      whatHappened: `Usages through "${specifier}" are not recorded`,
+      why: `it could not be resolved from ${this.relative(importer)}`,
+    });
   }
 
   private warnNoOutdir(): void {
@@ -440,16 +457,17 @@ export class ContextCollector {
     // Custom targets (components, packages) can still have usages.
     const hasUsages = this.usageCounts().length > 0;
 
-    this.warn(
-      hasUsages
-        ? 'no Paraglide outdir found; messages and runtime functions are not recorded, only other targets'
-        : 'no Paraglide outdir found; no usages can be recorded'
-    );
+    this.warn({
+      whatHappened: hasUsages
+        ? 'Messages and runtime functions are not recorded, only other targets'
+        : 'No usages can be recorded',
+      why: 'no Paraglide outdir was found',
+    });
   }
 
   private async warnMissingTools(): Promise<void> {
     for (const warning of await this.missingTools.warnings()) {
-      this.warn(warning);
+      this.warn({ whatHappened: warning });
     }
   }
 
@@ -477,11 +495,12 @@ export class ContextCollector {
     return [...this.analyzed.values()].filter((count) => count > 0);
   }
 
-  private warn(message: string): void {
+  private warn(diagnostic: Diagnostic): void {
+    const message = warningMessage(diagnostic);
     if (this.warned.has(message)) return;
 
     this.warned.add(message);
-    this.settings.logger.warn(`${LOG_PREFIX} ${message}`);
+    this.settings.logger.warn(message);
   }
 
   private relative(file: string): string {

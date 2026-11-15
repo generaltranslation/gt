@@ -13,6 +13,7 @@ import {
 import { isInIgnoredDirectory } from '../project/files.js';
 import { projectPackages } from '../project/packages.js';
 import { findProjectRoot } from '../project/roots.js';
+import { warningMessage } from '../utils/diagnostics.js';
 import { relativePath } from '../utils/paths.js';
 import { nodeResolver, type NodeResolverOptions } from './node-resolver.js';
 import { mayBeAlias, unresolvedWarning } from './unresolved-imports.js';
@@ -79,10 +80,13 @@ export class ProjectResolver {
 
     const { projectRoot } = this;
     const warning = unresolvedWarning(this.unresolved, { projectRoot, reason });
-    if (!warning || warning === this.lastWarning) return;
+    if (!warning) return;
 
-    this.lastWarning = warning;
-    this.environment.logger.warn(`${LOG_PREFIX} ${warning}`);
+    const message = warningMessage(warning);
+    if (message === this.lastWarning) return;
+
+    this.lastWarning = message;
+    this.environment.logger.warn(message);
   }
 
   private unknownAliasesReason(probed: ProbedConfig): string | undefined {
@@ -114,7 +118,10 @@ export class ProjectResolver {
         return;
       case 'unreadable':
         logger.warn(
-          `${LOG_PREFIX} ${this.relative(probed.file)} could not be read, so its aliases are unknown: ${probed.reason}`
+          warningMessage({
+            whatHappened: `${this.relative(probed.file)} could not be read, so its aliases are unknown`,
+            details: probed.reason,
+          })
         );
     }
   }
