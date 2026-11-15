@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.28.3
+
+### Patch Changes
+
+- [#2824](https://github.com/generaltranslation/gt/pull/2824) [`903fb03`](https://github.com/generaltranslation/gt/commit/903fb0384f1a13778e769cd9b5bd60142b7c398f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - fix(cli): scan only declared workspaces in the monorepo version check
+
 ## 2.28.2
 
 ### Patch Changes

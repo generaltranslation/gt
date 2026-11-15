@@ -1,5 +1,11 @@
 # gt-i18n
 
+## 1.0.44
+
+### Patch Changes
+
+- [#2727](https://github.com/generaltranslation/gt/pull/2727) [`25a88c9`](https://github.com/generaltranslation/gt/commit/25a88c9ffd6c8b6c68adc871e8b572ce590c0d9c) Thanks [@eoinest](https://github.com/eoinest)! - perf(i18n): `I18nCache` uses the locale it is given as the translation and dictionary cache key, without negotiating, validating or aliasing it on every lookup. Pass the configured locale string. A canonical spelling of an aliased locale (for example `en-GB` when `en-gb` is configured), an unconfigured dialect (`fr-FR` when only `fr` is configured) and an invalid locale are no longer mapped to a configured locale or reported as errors; they read as cache misses and fall back to source content. Request locale detection (`Accept-Language`, cookies, browser preferences) is unchanged.
+
 ## 1.0.43
 
 ### Patch Changes
