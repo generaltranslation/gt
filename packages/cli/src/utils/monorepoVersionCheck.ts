@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import fg from 'fast-glob';
+import YAML from 'yaml';
 import chalk from 'chalk';
 import { logErrorAndExit } from '../console/logging.js';
 import { Libraries, type GTLibrary } from '../types/libraries.js';
@@ -12,6 +13,7 @@ interface PackageJson {
   version?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
+  workspaces?: unknown;
 }
 
 interface VersionInfo {
@@ -63,11 +65,52 @@ function findMonorepoRoot(startDir: string): string | null {
   }
 }
 
+function readPnpmWorkspacePackages(rootDir: string): unknown {
+  const pnpmWorkspace = path.join(rootDir, 'pnpm-workspace.yaml');
+  if (!fs.existsSync(pnpmWorkspace)) return undefined;
+  try {
+    return YAML.parse(fs.readFileSync(pnpmWorkspace, 'utf8'))?.packages;
+  } catch {
+    return undefined;
+  }
+}
+
+function readPackageJsonWorkspaces(rootPkg: PackageJson | null): unknown {
+  const workspaces = rootPkg?.workspaces;
+  if (Array.isArray(workspaces) || !workspaces) return workspaces;
+  return typeof workspaces === 'object' && 'packages' in workspaces
+    ? workspaces.packages
+    : undefined;
+}
+
 /**
- * Scan for all directories containing package.json under the root.
+ * Globs for the package.json of every package the root declares as a workspace.
+ * Falls back to every package.json under the root when nothing is declared.
  */
-function scanForPackageDirs(rootDir: string): string[] {
-  const matches = fg.sync('**/package.json', {
+function getPackageJsonPatterns(
+  rootDir: string,
+  readPkgJson: PackageJsonReader
+): string[] {
+  const declared =
+    readPnpmWorkspacePackages(rootDir) ??
+    readPackageJsonWorkspaces(readPkgJson(rootDir));
+  const patterns = Array.isArray(declared)
+    ? declared.filter((pattern) => typeof pattern === 'string')
+    : [];
+  if (patterns.length === 0) return ['**/package.json'];
+  return patterns.map(
+    (pattern) => `${pattern.trim().replace(/\/+$/, '')}/package.json`
+  );
+}
+
+/**
+ * Scan for the directories of the monorepo's packages, excluding the root.
+ */
+function scanForPackageDirs(
+  rootDir: string,
+  readPkgJson: PackageJsonReader
+): string[] {
+  const matches = fg.sync(getPackageJsonPatterns(rootDir, readPkgJson), {
     cwd: rootDir,
     absolute: true,
     onlyFiles: true,
@@ -344,10 +387,10 @@ export function checkMonorepoVersionConsistency(
   const rootDir = findMonorepoRoot(cwd);
   if (!rootDir) return; // No lockfile found — nothing to check
 
-  const workspaceDirs = scanForPackageDirs(rootDir);
+  const readPkgJson = createPackageJsonReader();
+  const workspaceDirs = scanForPackageDirs(rootDir, readPkgJson);
   if (workspaceDirs.length <= 1) return; // Single package — no mismatches possible
 
-  const readPkgJson = createPackageJsonReader();
   const mismatches = findVersionMismatches(
     workspaceDirs,
     readPkgJson,
