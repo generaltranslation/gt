@@ -218,8 +218,11 @@ describe('checkMonorepoVersionConsistency', () => {
 
     checkMonorepoVersionConsistency(REACT_LIBRARIES);
 
+    expect(mockFgSync.mock.calls.flatMap(([scanned]) => scanned)).toEqual(
+      patterns
+    );
     expect(mockFgSync).toHaveBeenCalledWith(
-      patterns,
+      expect.anything(),
       expect.objectContaining({ cwd: '/repo' })
     );
   });

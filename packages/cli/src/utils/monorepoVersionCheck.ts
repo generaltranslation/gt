@@ -83,38 +83,62 @@ function readPackageJsonWorkspaces(rootPkg: PackageJson | null): unknown {
     : undefined;
 }
 
-/**
- * Globs for the package.json of every package the root declares as a workspace.
- * Falls back to every package.json under the root when nothing is declared.
- */
-function getPackageJsonPatterns(
-  rootDir: string,
-  readPkgJson: PackageJsonReader
-): string[] {
-  const declared =
-    readPnpmWorkspacePackages(rootDir) ??
-    readPackageJsonWorkspaces(readPkgJson(rootDir));
-  if (!Array.isArray(declared)) return ['**/package.json'];
-  return declared
-    .filter((pattern) => typeof pattern === 'string')
-    .map((pattern) => `${pattern.trim().replace(/\/+$/, '')}/package.json`);
-}
-
-/**
- * Scan for the directories of the monorepo's packages, excluding the root.
- */
-function scanForPackageDirs(
-  rootDir: string,
-  readPkgJson: PackageJsonReader
-): string[] {
-  const patterns = getPackageJsonPatterns(rootDir, readPkgJson);
+function globPackageJsons(rootDir: string, patterns: string[]): string[] {
   if (patterns.length === 0) return [];
-  const matches = fg.sync(patterns, {
+  return fg.sync(patterns, {
     cwd: rootDir,
     absolute: true,
     onlyFiles: true,
     ignore: ['**/node_modules/**'],
   });
+}
+
+/**
+ * Applies package.json workspace patterns in order, so a later pattern can
+ * re-include a package that an earlier negation excluded.
+ */
+function globPackageJsonsInOrder(
+  rootDir: string,
+  patterns: string[]
+): string[] {
+  const matches = new Set<string>();
+  for (const pattern of patterns) {
+    if (pattern.startsWith('!')) {
+      for (const match of globPackageJsons(rootDir, [pattern.slice(1)])) {
+        matches.delete(match);
+      }
+    } else {
+      for (const match of globPackageJsons(rootDir, [pattern])) {
+        matches.add(match);
+      }
+    }
+  }
+  return [...matches];
+}
+
+/**
+ * Scan for the directories of the packages the root declares as workspaces,
+ * or of every package under the root when it declares none.
+ */
+function scanForPackageDirs(
+  rootDir: string,
+  readPkgJson: PackageJsonReader
+): string[] {
+  const pnpmPackages = readPnpmWorkspacePackages(rootDir);
+  const declared =
+    pnpmPackages ?? readPackageJsonWorkspaces(readPkgJson(rootDir));
+  let matches: string[];
+  if (!Array.isArray(declared)) {
+    matches = globPackageJsons(rootDir, ['**/package.json']);
+  } else {
+    const patterns = declared
+      .filter((pattern) => typeof pattern === 'string')
+      .map((pattern) => `${pattern.trim().replace(/\/+$/, '')}/package.json`);
+    matches =
+      pnpmPackages == null
+        ? globPackageJsonsInOrder(rootDir, patterns)
+        : globPackageJsons(rootDir, patterns);
+  }
 
   return matches.map((m) => path.dirname(m)).filter((dir) => dir !== rootDir);
 }
