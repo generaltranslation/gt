@@ -83,36 +83,43 @@ function readPackageJsonWorkspaces(rootPkg: PackageJson | null): unknown {
     : undefined;
 }
 
-function globPackageJsons(rootDir: string, patterns: string[]): string[] {
+function globPackageJsons(
+  rootDir: string,
+  patterns: string[],
+  excluded: string[] = []
+): string[] {
   if (patterns.length === 0) return [];
   return fg.sync(patterns, {
     cwd: rootDir,
     absolute: true,
     onlyFiles: true,
-    ignore: ['**/node_modules/**'],
+    ignore: ['**/node_modules/**', ...excluded],
   });
 }
 
 /**
- * Applies package.json workspace patterns in order, so a later pattern can
- * re-include a package that an earlier negation excluded.
+ * Resolves package.json workspace patterns the way npm and bun agree on: a
+ * negation excludes its matches from every glob, and a package named without
+ * a glob stays included unless a later negation excludes it.
  */
-function globPackageJsonsInOrder(
+function globPackageJsonWorkspaces(
   rootDir: string,
   patterns: string[]
 ): string[] {
   const matches = new Set<string>();
-  for (const pattern of patterns) {
-    if (pattern.startsWith('!')) {
-      for (const match of globPackageJsons(rootDir, [pattern.slice(1)])) {
-        matches.delete(match);
-      }
-    } else {
-      for (const match of globPackageJsons(rootDir, [pattern])) {
-        matches.add(match);
-      }
+  patterns.forEach((pattern, index) => {
+    if (pattern.startsWith('!')) return;
+    const isGlob = fg.isDynamicPattern(pattern);
+    const excluded = patterns
+      .filter(
+        (other, otherIndex) =>
+          other.startsWith('!') && (isGlob || otherIndex > index)
+      )
+      .map((other) => other.slice(1));
+    for (const match of globPackageJsons(rootDir, [pattern], excluded)) {
+      matches.add(match);
     }
-  }
+  });
   return [...matches];
 }
 
@@ -136,7 +143,7 @@ function scanForPackageDirs(
       .map((pattern) => `${pattern.trim().replace(/\/+$/, '')}/package.json`);
     matches =
       pnpmPackages == null
-        ? globPackageJsonsInOrder(rootDir, patterns)
+        ? globPackageJsonWorkspaces(rootDir, patterns)
         : globPackageJsons(rootDir, patterns);
   }
 

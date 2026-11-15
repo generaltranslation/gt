@@ -10,8 +10,9 @@ vi.mock('node:fs', () => ({
   },
 }));
 
-vi.mock('fast-glob', () => ({
+vi.mock('fast-glob', async (importOriginal) => ({
   default: {
+    ...(await importOriginal<{ default: object }>()).default,
     sync: vi.fn(),
   },
 }));
