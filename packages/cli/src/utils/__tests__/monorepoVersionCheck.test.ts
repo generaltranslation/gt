@@ -223,6 +223,17 @@ describe('checkMonorepoVersionConsistency', () => {
       expect.objectContaining({ cwd: '/repo' })
     );
   });
+
+  it.each<[string, Partial<Parameters<typeof setupMocks>[0]>]>([
+    ['package.json workspaces', { rootPackageJson: { workspaces: [] } }],
+    ['pnpm-workspace.yaml', { pnpmWorkspaceYaml: 'packages: []\n' }],
+  ])('scans nothing when %s is empty', (_name, declaration) => {
+    setupMocks({ packageDirs: [], packages: {}, ...declaration });
+
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
+
+    expect(mockFgSync).not.toHaveBeenCalled();
+  });
 });
 
 // Helper to set up common mock patterns
