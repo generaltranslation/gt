@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   collectHashNodes,
+  collectMarkedTextIds,
   collectRecordedText,
   flattenEntry,
   harvestHash,
@@ -43,7 +44,7 @@ const fullSnapshot = (node: Ser): eventWithTime =>
     timestamp: 0,
   }) as unknown as eventWithTime;
 const mutation = (
-  adds: { node: Ser }[] = [],
+  adds: { node: Ser; parentId?: number }[] = [],
   texts: { id: number; value: string }[] = []
 ): eventWithTime =>
   ({
@@ -392,6 +393,34 @@ describe('harvestHash', () => {
         5: ' !',
         13: 'Projets',
       });
+    });
+  });
+
+  it('keeps text added later under an existing marked <T> off the string fallback', () => {
+    const events = [
+      fullSnapshot(
+        el(1, 'MAIN', [
+          hashSpan(2, 'greet', [text(3, 'Hello '), el(4, 'B')]),
+          el(5, 'NAV', [text(6, 'Projects')]),
+        ])
+      ),
+      // A child component fills in the name after the snapshot (rrweb adds it by parentId).
+      mutation([{ node: text(7, 'Ada'), parentId: 4 }]),
+      // New bare text outside any <T> still gets the fallback.
+      mutation([{ node: text(8, 'Projects'), parentId: 5 }]),
+    ];
+    const dict: TranslationDict = {
+      greet: null,
+      Ada: 'Adele',
+      Projects: 'Projets',
+    };
+    expect([...collectMarkedTextIds(events)].sort()).toEqual([3, 7]);
+    return harvestHash(events, ['en', 'fr'], {
+      source: 'en',
+      loadTranslations: async () => dict,
+      hashMessage: (m: string) => m,
+    }).then((overlay) => {
+      expect(overlay.fr).toEqual({ 6: 'Projets', 8: 'Projets' });
     });
   });
 
