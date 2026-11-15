@@ -300,8 +300,8 @@ export function overlayFromDict(
 /**
  * Cover text NOT wrapped in a `<T>` — `gt()`/`useGT()` strings and other bare recorded
  * text — by hashing each recorded SOURCE string to its GT message hash and looking that
- * up in the dict. Nodes already translated by the `<T>` path (`covered`) are skipped so
- * it wins. Only STRING dict entries apply (a JSX entry belongs to a `<T>`, not bare
+ * up in the dict. Nodes owned by a marked `<T>` (`covered`) are skipped so the hash
+ * path wins. Only STRING dict entries apply (a JSX entry belongs to a `<T>`, not bare
  * text); a translation equal to source, blank, or absent is left on source. An
  * interpolated string (e.g. `gt('Hello {name}')` rendered as "Hello Ann") won't match its
  * template's hash, so it simply stays on source. Pure.
@@ -361,7 +361,10 @@ export async function harvestHash(
     // `<T>` content first (precise, wins), then fill bare `gt()` text.
     const bag = overlayFromDict(hashNodes, dict);
     if (recorded && opts.hashMessage) {
-      const covered = new Set(Object.keys(bag).map(Number));
+      // Include variables, unchanged leaves, and skipped marked entries, not just bag keys.
+      const covered = new Set(
+        hashNodes.flatMap((node) => node.textNodes.map((t) => t.id))
+      );
       Object.assign(
         bag,
         stringOverlay(recorded, covered, dict, opts.hashMessage)

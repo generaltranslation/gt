@@ -351,6 +351,50 @@ describe('harvestHash', () => {
     expect(overlay.fr).toEqual({ 3: 'Utilisation' });
   });
 
+  it('does not let the bare-string fallback rewrite text owned by a marked message', () => {
+    const events = [
+      fullSnapshot(
+        el(1, 'MAIN', [
+          el(2, 'span', [text(3, 'Hello '), text(4, 'Ada'), text(5, '!')], {
+            'data-_gt-hash': 'greeting',
+          }),
+          hashSpan(6, 'missing', [text(7, 'Keep me')]),
+          hashSpan(8, 'plural', [text(9, '1 item')]),
+          hashSpan(10, 'same', [text(11, 'Welcome')]),
+          el(12, 'NAV', [text(13, 'Projects')]),
+        ])
+      ),
+    ];
+    const dict: TranslationDict = {
+      greeting: ['Bonjour ', { k: 'name' }, ' !'],
+      Ada: 'Adele',
+      missing: null,
+      'Keep me': 'Garde-moi',
+      plural: [
+        {
+          t: 'span',
+          i: 1,
+          d: { t: 'p', b: { one: ['1 article'], other: ['n articles'] } },
+        },
+      ],
+      '1 item': '1 article',
+      same: 'Welcome',
+      Welcome: 'Bienvenue',
+      Projects: 'Projets',
+    };
+    return harvestHash(events, ['en', 'fr'], {
+      source: 'en',
+      loadTranslations: async () => dict,
+      hashMessage: (m: string) => m,
+    }).then((overlay) => {
+      expect(overlay.fr).toEqual({
+        3: 'Bonjour ',
+        5: ' !',
+        13: 'Projets',
+      });
+    });
+  });
+
   it('combines <T> content with bare gt() strings when hashMessage is given', () => {
     const mixed = [
       fullSnapshot(
