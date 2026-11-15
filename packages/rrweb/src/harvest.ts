@@ -281,12 +281,17 @@ export function collectHashNodes(events: eventWithTime[]): HashNode[] {
  * errs toward leaving text on source. Pure.
  */
 export function collectMarkedTextIds(events: eventWithTime[]): Set<number> {
-  const parentOf = new Map<number, number>();
+  const parentsOf = new Map<number, number[]>();
   const marked = new Set<number>();
   const textIds: number[] = [];
   const walk = (n: SerializedNode | undefined, parentId?: number) => {
     if (!n) return;
-    if (parentId !== undefined) parentOf.set(n.id, parentId);
+    if (parentId !== undefined) {
+      // keep every parent a node has had, so a move out of a marked message doesn't unprotect it
+      const seen = parentsOf.get(n.id);
+      if (!seen) parentsOf.set(n.id, [parentId]);
+      else if (!seen.includes(parentId)) seen.push(parentId);
+    }
     if (hashOf(n)) marked.add(n.id);
     if (n.type === TEXT_NODE) textIds.push(n.id);
     n.childNodes?.forEach((c) => walk(c, n.id));
@@ -302,27 +307,17 @@ export function collectMarkedTextIds(events: eventWithTime[]): Set<number> {
         walk(add.node as SerializedNode, add.parentId);
     }
   }
-  const owned = new Map<number, boolean>();
   const isOwned = (id: number): boolean => {
-    const chain: number[] = [];
-    let cur: number | undefined = id;
-    let result = false;
-    while (cur !== undefined) {
-      const known = owned.get(cur);
-      if (known !== undefined) {
-        result = known;
-        break;
-      }
-      if (marked.has(cur)) {
-        result = true;
-        break;
-      }
-      if (chain.includes(cur)) break; // defensive: malformed cycle
-      chain.push(cur);
-      cur = parentOf.get(cur);
+    const stack = [id];
+    const visited = new Set<number>();
+    while (stack.length) {
+      const cur = stack.pop() as number;
+      if (marked.has(cur)) return true;
+      if (visited.has(cur)) continue; // defensive: malformed cycle
+      visited.add(cur);
+      stack.push(...(parentsOf.get(cur) ?? []));
     }
-    for (const c of chain) owned.set(c, result);
-    return result;
+    return false;
   };
   const covered = new Set<number>();
   for (const id of textIds) if (isOwned(id)) covered.add(id);

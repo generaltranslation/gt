@@ -424,6 +424,21 @@ describe('harvestHash', () => {
     });
   });
 
+  it('keeps a text node protected after it is moved out of a marked <T>', () => {
+    const events = [
+      fullSnapshot(
+        el(1, 'MAIN', [
+          hashSpan(2, 'greet', [text(3, 'Hello '), el(4, 'B')]),
+          el(5, 'NAV', []),
+        ])
+      ),
+      mutation([{ node: text(7, 'Ada'), parentId: 4 }]),
+      // the same node gets re-added under a plain element
+      mutation([{ node: text(7, 'Ada'), parentId: 5 }]),
+    ];
+    expect([...collectMarkedTextIds(events)].sort()).toEqual([3, 7]);
+  });
+
   it('combines <T> content with bare gt() strings when hashMessage is given', () => {
     const mixed = [
       fullSnapshot(
