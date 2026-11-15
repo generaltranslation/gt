@@ -190,6 +190,39 @@ describe('checkMonorepoVersionConsistency', () => {
       expect(process.exit).toHaveBeenCalledWith(1);
     }
   );
+
+  it.each<[string, Partial<Parameters<typeof setupMocks>[0]>, string[]]>([
+    [
+      'package.json workspaces',
+      { rootPackageJson: { workspaces: ['apps/*', 'packages/*/'] } },
+      ['apps/*/package.json', 'packages/*/package.json'],
+    ],
+    [
+      'package.json workspaces.packages',
+      { rootPackageJson: { workspaces: { packages: ['apps/*'] } } },
+      ['apps/*/package.json'],
+    ],
+    [
+      'pnpm-workspace.yaml',
+      { pnpmWorkspaceYaml: 'packages:\n  - packages/**\n  - "!**/test/**"\n' },
+      ['packages/**/package.json', '!**/test/**/package.json'],
+    ],
+    ['no workspace declaration', {}, ['**/package.json']],
+    [
+      'an unreadable pnpm-workspace.yaml',
+      { pnpmWorkspaceYaml: 'packages: [' },
+      ['**/package.json'],
+    ],
+  ])('scans only the packages named by %s', (_name, declaration, patterns) => {
+    setupMocks({ packageDirs: [], packages: {}, ...declaration });
+
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
+
+    expect(mockFgSync).toHaveBeenCalledWith(
+      patterns,
+      expect.objectContaining({ cwd: '/repo' })
+    );
+  });
 });
 
 // Helper to set up common mock patterns
@@ -204,14 +237,28 @@ function setupMocks(config: {
       devDependencies?: Record<string, string>;
     }
   >;
+  rootPackageJson?: { workspaces: string[] | { packages: string[] } };
+  pnpmWorkspaceYaml?: string;
 }) {
-  const { lockfile = 'pnpm-lock.yaml', packageDirs, packages } = config;
+  const {
+    lockfile = 'pnpm-lock.yaml',
+    packageDirs,
+    packages,
+    rootPackageJson,
+    pnpmWorkspaceYaml,
+  } = config;
+  const rootFiles: Record<string, string | undefined> = {
+    [path.join('/repo', 'package.json')]:
+      rootPackageJson && JSON.stringify(rootPackageJson),
+    [path.join('/repo', 'pnpm-workspace.yaml')]: pnpmWorkspaceYaml,
+  };
 
   mockExistsSync.mockImplementation((p: unknown) => {
     const pStr = String(p);
 
     // Lockfile detection at monorepo root
     if (pStr === path.join('/repo', lockfile)) return true;
+    if (rootFiles[pStr] !== undefined) return true;
 
     // Package directory package.json files
     for (const dir of packageDirs) {
@@ -223,6 +270,8 @@ function setupMocks(config: {
 
   mockReadFileSync.mockImplementation((p: unknown) => {
     const pStr = String(p);
+    const rootFile = rootFiles[pStr];
+    if (rootFile !== undefined) return rootFile;
 
     for (const [dir, pkgJson] of Object.entries(packages)) {
       if (pStr === path.join(dir, 'package.json')) {
