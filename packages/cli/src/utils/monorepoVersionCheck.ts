@@ -94,13 +94,10 @@ function getPackageJsonPatterns(
   const declared =
     readPnpmWorkspacePackages(rootDir) ??
     readPackageJsonWorkspaces(readPkgJson(rootDir));
-  const patterns = Array.isArray(declared)
-    ? declared.filter((pattern) => typeof pattern === 'string')
-    : [];
-  if (patterns.length === 0) return ['**/package.json'];
-  return patterns.map(
-    (pattern) => `${pattern.trim().replace(/\/+$/, '')}/package.json`
-  );
+  if (!Array.isArray(declared)) return ['**/package.json'];
+  return declared
+    .filter((pattern) => typeof pattern === 'string')
+    .map((pattern) => `${pattern.trim().replace(/\/+$/, '')}/package.json`);
 }
 
 /**
@@ -110,7 +107,9 @@ function scanForPackageDirs(
   rootDir: string,
   readPkgJson: PackageJsonReader
 ): string[] {
-  const matches = fg.sync(getPackageJsonPatterns(rootDir, readPkgJson), {
+  const patterns = getPackageJsonPatterns(rootDir, readPkgJson);
+  if (patterns.length === 0) return [];
+  const matches = fg.sync(patterns, {
     cwd: rootDir,
     absolute: true,
     onlyFiles: true,
