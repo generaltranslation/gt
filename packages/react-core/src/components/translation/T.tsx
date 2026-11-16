@@ -1,5 +1,5 @@
 import { useTranslate } from '../../hooks/external-store';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig, lookupInlineTranslation } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline';
 import type { TProps } from '../../utils/translation/prepareT.shared';
@@ -60,7 +60,8 @@ function useComputeT({
 
   // Translations embedded at the call site win over loaded translations
   const targetJsxChildren =
-    (shouldTranslate ? inline?.(locale) : undefined) ?? storeJsxChildren;
+    (shouldTranslate ? lookupInlineTranslation(inline, locale) : undefined) ??
+    storeJsxChildren;
 
   // Tx hot reload: render previous translation while loading new one
   // TODO: account for success vs loading vs failed request states

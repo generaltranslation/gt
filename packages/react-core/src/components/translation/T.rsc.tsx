@@ -1,4 +1,4 @@
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig, lookupInlineTranslation } from 'gt-i18n/internal';
 import type { ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
@@ -46,7 +46,7 @@ async function RscT({
 
   // Translations embedded at the call site win over loaded translations
   const targetJsxChildren =
-    inline?.(locale) ??
+    lookupInlineTranslation(inline, locale) ??
     (await lookupTargetJsxChildren(
       locale,
       prepared.sourceJsxChildren,
