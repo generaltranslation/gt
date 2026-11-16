@@ -4,6 +4,7 @@ import { useTranslationConditions } from './utils';
 import type {
   GTFunctionType,
   GTTranslationOptions,
+  InlineTranslations,
   RegisteredMessage,
 } from 'gt-i18n';
 import type { StringFormat } from '@generaltranslation/format';
@@ -25,7 +26,11 @@ export function useGT(_messages?: RegisteredMessage[]): GTFunctionType {
    * gt() string translation callback
    */
   return useCallback(
-    (message: string, options: GTTranslationOptions = {}) => {
+    (
+      message: string,
+      options: GTTranslationOptions = {},
+      inline?: InlineTranslations<string>
+    ) => {
       const lookupOptions = createLookupOptions<StringFormat>(
         options.$locale ?? locale,
         options,
@@ -40,11 +45,14 @@ export function useGT(_messages?: RegisteredMessage[]): GTFunctionType {
         });
       }
 
-      const translation = resolveTranslation({
-        locale: lookupOptions.$locale,
-        content: message,
-        options: lookupOptions,
-      });
+      // Translations embedded at the call site win over loaded translations
+      const translation =
+        inline?.(lookupOptions.$locale) ??
+        resolveTranslation({
+          locale: lookupOptions.$locale,
+          content: message,
+          options: lookupOptions,
+        });
 
       return interpolateMessage({
         source: message,
