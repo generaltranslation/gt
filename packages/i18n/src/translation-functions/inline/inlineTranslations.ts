@@ -4,8 +4,8 @@ import { getI18nConfig } from '../../i18n-config/singleton-operations';
 /**
  * Callback that returns a translation embedded at the call site for a locale.
  *
- * The callback is passed as an extra argument to translation functions such as
- * `gt()`, `t()`, and `<T>` (the `inline` prop). Because the translations live
+ * The callback is passed to `<T>` as the `inline` prop, and to the `gt` and
+ * `t` from `/unstable` as the `$_inline` option. Because the translations live
  * inline at the call site, bundlers drop them along with any unused call
  * site, and a build step can choose which locales to embed. When the callback
  * returns `undefined`, resolution falls back to the loaded translations for
@@ -15,9 +15,7 @@ import { getI18nConfig } from '../../i18n-config/singleton-operations';
  * @returns The translation for the locale, or undefined if it was not embedded
  *
  * @example
- * gt('Hello', { $_hash: 'abc' }, (locale) =>
- *   locale === 'fr' ? 'Bonjour' : locale === 'es' ? 'Hola' : undefined
- * );
+ * gt({ $_inline: (locale) => (locale === 'fr' ? 'Bonjour' : undefined) })`Hello`;
  */
 export type InlineTranslations<T extends Content = Content> = (
   locale: string

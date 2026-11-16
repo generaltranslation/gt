@@ -5,7 +5,7 @@ import {
   setI18nCache,
 } from 'gt-i18n/internal';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { msg } from 'gt-i18n/unstable';
+import { msg, type GTOptions } from 'gt-i18n/unstable';
 import { getGT, getMessages, useGT, useMessages } from '../getGT';
 
 const { mockGetRequestConditions } = vi.hoisted(() => ({
@@ -69,5 +69,18 @@ describe('gt-next unstable getGT', () => {
     const gt = await getGT();
 
     expect(gt`Save`).toBe('Save');
+  });
+
+  it('uses translations embedded at the call site', async () => {
+    const gt = await getGT();
+    // The options the compiler injects for an embedded call site
+    const embedded = {
+      $_inline: (locale: string) => (locale === 'fr' ? 'Valider' : undefined),
+    } as GTOptions;
+
+    expect(gt(embedded)`Save`).toBe('Valider');
+    expect(gt({ $_inline: () => undefined } as GTOptions)`Save`).toBe(
+      'Enregistrer'
+    );
   });
 });

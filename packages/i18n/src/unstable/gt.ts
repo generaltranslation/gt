@@ -3,6 +3,10 @@ import type { MessageTreeHashMetadata } from 'generaltranslation/id';
 import { getWritableConditionStore } from '../condition-store/singleton-operations';
 import { getI18nCache } from '../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import {
+  lookupInlineTranslation,
+  type InlineTranslations,
+} from '../translation-functions/inline/inlineTranslations';
 import { buildMessage } from './buildMessage';
 import type { CheckHoles } from './placeholders';
 import {
@@ -26,6 +30,20 @@ type GTTag = <const H extends readonly unknown[]>(
 /** gt`...` or gt({ context })`...` */
 export type GT = GTTag & ((options: GTOptions) => GTTag);
 
+/**
+ * Options a GT reads at runtime: the user's, plus the keys a compiler
+ * injects.
+ */
+type GTRenderOptions = GTOptions &
+  Pick<MessageTreeMetadata, '$_hash'> & {
+    /**
+     * Translations embedded at the call site, usually injected at build time.
+     * Only called when the locale needs translation; returning undefined
+     * falls back to loaded translations.
+     */
+    $_inline?: InlineTranslations<MessageTree>;
+  };
+
 export type CreateGTParams = {
   getLocale: () => string;
   getEnableI18n?: () => boolean;
@@ -37,12 +55,16 @@ export type CreateGTParams = {
   lookupTranslation?: LookupTreeTranslation;
 };
 
-/** Renders a built tree, as a GT or an m does. */
+/**
+ * Renders a built tree, as a GT or an m does. `inline` holds translations
+ * embedded at the call site, checked before loaded translations.
+ */
 export type RenderTree = (
   tree: MessageTree,
   values: Record<string, unknown>,
   formats: MessageFormats,
-  options: MessageTreeMetadata
+  options: MessageTreeMetadata,
+  inline?: InlineTranslations<MessageTree>
 ) => string;
 
 /**
@@ -56,11 +78,18 @@ export function createRenderTree({
     getI18nCache().lookupTranslation(options.$locale, tree, options)
   ),
 }: CreateGTParams): RenderTree {
-  return (tree, values, formats, options) => {
+  return (tree, values, formats, options, inline) => {
     const enabled = getEnableI18n?.() ?? true;
     const locale = enabled ? getLocale() : getI18nConfig().getDefaultLocale();
     // Disabled skips every lookup, including custom ones with default-locale entries.
-    const lookup = enabled ? lookupTranslation : () => undefined;
+    const lookup: LookupTreeTranslation = !enabled
+      ? () => undefined
+      : inline
+        ? // Translations embedded at the call site win over loaded translations
+          (tree, lookupOptions) =>
+            lookupInlineTranslation(inline, lookupOptions.$locale) ??
+            lookupTranslation(tree, lookupOptions)
+        : lookupTranslation;
     return renderMessage(tree, values, formats, locale, options, lookup);
   };
 }
@@ -72,12 +101,12 @@ export function createRenderTree({
 export function createGT(params: CreateGTParams): GT {
   const renderTree = createRenderTree(params);
   const render = (
-    options: GTOptions & Pick<MessageTreeMetadata, '$_hash'>,
+    { $_inline, ...options }: GTRenderOptions,
     strings: TemplateStringsArray,
     holes: unknown[]
   ): string => {
     const { tree, values, formats } = buildMessage(strings, holes);
-    return renderTree(tree, values, formats, options);
+    return renderTree(tree, values, formats, options, $_inline);
   };
   const gt = (first: TemplateStringsArray | GTOptions, ...holes: unknown[]) =>
     isTemplateStringsArray(first)

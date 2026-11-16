@@ -49,7 +49,6 @@ import {
   getLocales,
   resolveCanonicalLocale,
   getVersionId,
-  type GTFunctionType,
   type GTTranslationOptions,
   type RegisteredMessage,
   type RuntimeTranslationOptions,
@@ -413,7 +412,7 @@ export function isLocaleSupported(_: unknown): boolean {
  */
 export const useGT: (
   _messages?: RegisteredMessage[]
-) => GTFunctionType = () => {
+) => (message: string, options?: GTTranslationOptions) => string = () => {
   throw new Error(typesFileError);
 };
 

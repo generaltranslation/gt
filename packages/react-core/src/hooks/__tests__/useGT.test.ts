@@ -3,7 +3,6 @@ import { useTrackedTranslationResolver } from '../external-store/useTrackedTrans
 import { useDefaultLocale } from '../i18n-config';
 import { useTranslationConditions } from '../utils';
 import { useGT } from '../useGT';
-import { initializeI18nConfig } from '../../setup/i18nConfig';
 
 vi.mock('react', () => ({
   useCallback: <T extends (...args: unknown[]) => unknown>(callback: T) =>
@@ -52,35 +51,5 @@ describe('useGT', () => {
       'fr',
       true
     );
-  });
-
-  describe('inline translations', () => {
-    beforeEach(() => {
-      initializeI18nConfig(
-        { defaultLocale: 'en', locales: ['en', 'fr'] },
-        'SPA'
-      );
-      vi.mocked(useTranslationConditions).mockReturnValue({
-        locale: 'fr',
-        shouldTranslate: true,
-      });
-      vi.mocked(useTrackedTranslationResolver).mockReturnValue(
-        vi.fn(({ message }: { message: string }) => message)
-      );
-    });
-
-    it('uses the translation embedded at the call site', () => {
-      const gt = useGT();
-      expect(
-        gt('Hello', {}, (locale) => (locale === 'fr' ? 'Bonjour' : undefined))
-      ).toBe('Bonjour');
-    });
-
-    it('ignores the callback for a $locale that does not need translation', () => {
-      const inline = vi.fn(() => 'Bonjour');
-      const gt = useGT();
-      expect(gt('Hello', { $locale: 'en' }, inline)).toBe('Hello');
-      expect(inline).not.toHaveBeenCalled();
-    });
   });
 });
