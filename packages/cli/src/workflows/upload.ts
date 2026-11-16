@@ -67,8 +67,8 @@ export async function runUploadFilesWorkflow({
       branchData,
     });
 
-    // Step 3: Upload translations (if any exist). The API rejects the whole
-    // batch when one source is missing, so skip sources that were not saved.
+    // Step 3: Upload translations (if any exist). A translation of a source
+    // that was not saved would fail too, so skip it.
     const uploadedSources = new Set(
       uploadedFiles.map((f) => `${f.fileId}:${f.versionId}`)
     );

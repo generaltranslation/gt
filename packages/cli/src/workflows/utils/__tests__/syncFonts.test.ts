@@ -70,7 +70,7 @@ describe('syncFonts', () => {
     expect(printed).toContain('org:assets:write');
     expect(printed).toContain('fallback fonts');
     expect(getWarnings()).toEqual([
-      { category: 'failed_upload', fileName: 'Fonts', reason: message },
+      { category: 'failed_font_sync', fileName: 'Fonts', reason: message },
     ]);
   });
 
@@ -121,7 +121,7 @@ describe('syncFonts', () => {
     expect(printed).toContain('fallback fonts');
     expect(getWarnings()).toEqual([
       {
-        category: 'failed_upload',
+        category: 'failed_font_sync',
         fileName: 'Fonts',
         reason: 'A project API key cannot upload organization fonts',
       },

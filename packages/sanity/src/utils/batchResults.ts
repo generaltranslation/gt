@@ -18,7 +18,7 @@ export function succeededResults<Result extends BatchItemResult>(response: {
   return response.results.filter((result) => result.status === 'succeeded');
 }
 
-/** A missing source fails the whole translation upload. */
+/** Only documents General Translation saved can have translations uploaded; the others would fail too. */
 export function filterUploadedDocuments<
   Document extends { info: { documentId: string } },
 >(

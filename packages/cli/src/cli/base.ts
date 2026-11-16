@@ -103,7 +103,11 @@ import {
   getNeedsPostprocessing,
   clearDownloaded,
 } from '../state/recentDownloads.js';
-import { clearWarnings, getWarnings } from '../state/translateWarnings.js';
+import {
+  clearWarnings,
+  getWarnings,
+  setExitCodeForFailedUploads,
+} from '../state/translateWarnings.js';
 import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import {
@@ -754,6 +758,9 @@ export class BaseCLI {
     await processSharedStaticAssets(settings);
 
     await handleSetupProject(initOptions, settings, this.library);
+    displayTranslateSummary();
+    setExitCodeForFailedUploads();
+    clearWarnings();
   }
 
   protected async handleStage(initOptions: TranslateFlags): Promise<void> {
@@ -773,6 +780,7 @@ export class BaseCLI {
     }
     await handleStage(initOptions, settings, this.library, true);
     displayTranslateSummary();
+    setExitCodeForFailedUploads();
     clearWarnings();
   }
 
@@ -871,6 +879,7 @@ export class BaseCLI {
     await mirrorAssetsToLocales(settings);
     clearDownloaded();
     displayTranslateSummary();
+    setExitCodeForFailedUploads();
     clearWarnings();
   }
 
@@ -1127,6 +1136,7 @@ export class BaseCLI {
     // Process all file types at once with a single call
     await upload(settings);
     displayTranslateSummary();
+    setExitCodeForFailedUploads();
     clearWarnings();
   }
 
