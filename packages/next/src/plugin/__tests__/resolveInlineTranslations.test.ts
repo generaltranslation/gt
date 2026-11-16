@@ -182,3 +182,123 @@ describe('resolveInlineTranslations', () => {
     expect(resolveInlineTranslations(gtFiles)).toBeUndefined();
   });
 });
+
+describe('resolveInlineTranslations with message modules', () => {
+  const modulesFiles = {
+    ...gtFiles,
+    inlineTranslations: {
+      locales: ['fr', 'es'],
+      modules: 'physical' as const,
+    },
+  };
+
+  const readModule = (file: string) =>
+    fs.readFileSync(path.join(cwd, '.gt/messages', file), 'utf8');
+
+  it('writes a module per message and returns the modules options', () => {
+    writeLocale('fr', { '05aa': 'Bonjour', ff00: 'Au revoir' });
+    writeLocale('es', { '05aa': 'Hola' });
+
+    const result = resolveInlineTranslations(modulesFiles)!;
+
+    expect(result).toMatchObject({
+      locales: ['fr', 'es'],
+      modules: {
+        dir: '.gt/messages',
+        importDir: 'gt-next/internal/_inline-messages',
+      },
+    });
+    expect(result.dir).toBeUndefined();
+    expect(fs.readdirSync(path.join(cwd, '.gt/messages')).sort()).toEqual([
+      '05aa.js',
+      'ff00.js',
+    ]);
+    expect(readModule('05aa.js')).toBe(
+      'export default (locale) => locale === "fr" ? "Bonjour" : locale === "es" ? "Hola" : undefined;\n'
+    );
+    // No shards in modules mode
+    expect(fs.existsSync(path.join(cwd, '.next'))).toBe(false);
+  });
+
+  it('uses the configured modulesDir', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const result = resolveInlineTranslations({
+      ...modulesFiles,
+      inlineTranslations: {
+        ...modulesFiles.inlineTranslations,
+        modulesDir: 'src/generated/messages',
+      },
+    })!;
+    expect(result.modules?.dir).toBe('src/generated/messages');
+    expect(
+      fs.existsSync(path.join(cwd, 'src/generated/messages/05aa.js'))
+    ).toBe(true);
+  });
+
+  it('falls back to physical modules for virtual with a warning', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = resolveInlineTranslations({
+      ...gtFiles,
+      inlineTranslations: { locales: ['fr'], modules: 'virtual' },
+    })!;
+    expect(result.modules?.dir).toBe('.gt/messages');
+    expect(readModule('05aa.js')).toContain('"Bonjour"');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('does not support')
+    );
+  });
+
+  it('removes modules for messages that lost their translations', () => {
+    writeLocale('fr', { '05aa': 'Bonjour', ff00: 'Au revoir' });
+    resolveInlineTranslations(modulesFiles);
+    writeLocale('fr', { '05aa': 'Bonjour' });
+
+    resolveInlineTranslations(modulesFiles);
+
+    expect(fs.readdirSync(path.join(cwd, '.gt/messages'))).toEqual(['05aa.js']);
+  });
+
+  it('keeps the content hash when only translation text changes', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const first = resolveInlineTranslations(modulesFiles)!;
+    writeLocale('fr', { '05aa': 'Bonjour !' });
+    const second = resolveInlineTranslations(modulesFiles)!;
+    writeLocale('fr', { '05aa': 'Bonjour !', ff00: 'Au revoir' });
+    const third = resolveInlineTranslations(modulesFiles)!;
+
+    expect(second.contentHash).toBe(first.contentHash);
+    expect(third.contentHash).not.toBe(first.contentHash);
+    expect(readModule('05aa.js')).toContain('"Bonjour !"');
+  });
+
+  it('warns and still returns the options when modules cannot be written', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fs.mkdirSync(path.join(cwd, '.gt'));
+    fs.chmodSync(path.join(cwd, '.gt'), 0o555);
+    try {
+      const result = resolveInlineTranslations(modulesFiles);
+      expect(result?.modules?.dir).toBe('.gt/messages');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('could not be written')
+      );
+    } finally {
+      fs.chmodSync(path.join(cwd, '.gt'), 0o755);
+    }
+  });
+
+  it('rejects a modulesDir outside the working directory', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    expect(() =>
+      resolveInlineTranslations({
+        ...gtFiles,
+        inlineTranslations: {
+          locales: ['fr'],
+          modules: 'physical',
+          modulesDir: '../elsewhere',
+        },
+      })
+    ).toThrow('only read inside the working directory');
+  });
+});

@@ -8,7 +8,7 @@ extern crate swc_core_v49 as swc_core;
 #[cfg(feature = "swc-v79")]
 extern crate swc_core_v79 as swc_core;
 
-use crate::inline_shards::ShardedTranslations;
+use crate::inline_source::InlineSource;
 use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,
@@ -419,7 +419,7 @@ pub fn transform_program_in(
     );
   }
 
-  let inline_translations = config.inline_translations.map(|inline| ShardedTranslations::open(cwd, inline));
+  let inline_translations = config.inline_translations.map(|inline| InlineSource::open(cwd, inline));
   let collected_data = visitor.string_collector;
   let mut visitor = TransformVisitor::new(
     config.log_level,
@@ -431,13 +431,19 @@ pub fn transform_program_in(
     collected_data,
   )
   .with_inline_translations(inline_translations);
-  program.fold_with(&mut visitor)
+  let mut program = program.fold_with(&mut visitor);
+  if let Some(InlineSource::Modules(modules)) = &visitor.settings.inline_translations {
+    modules.inject_imports(&mut program);
+  }
+  program
 }
 
 pub mod ast;
 pub mod config;
 pub mod hash;
+pub mod inline_modules;
 pub mod inline_shards;
+pub mod inline_source;
 pub mod logging;
 pub mod visitor;
 pub mod whitespace;

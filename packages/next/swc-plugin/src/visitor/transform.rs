@@ -15,9 +15,8 @@ use crate::visitor::analysis::{
   is_branch_name, is_derive_name, is_translation_component_name,
   is_translation_function_name, is_variable_component_name,
 };
-use crate::inline_shards::ShardedTranslations;
+use crate::inline_source::InlineSource;
 use crate::visitor::jsx_utils::extract_attribute_from_jsx_attr;
-use crate::visitor::inline_translations::build_inline_translations_fn;
 
 /// Main transformation visitor for the SWC plugin
 pub struct TransformVisitor {
@@ -64,7 +63,7 @@ impl TransformVisitor {
   }
 
   /// Experimental: set the translations to embed at call sites
-  pub fn with_inline_translations(mut self, inline_translations: Option<ShardedTranslations>) -> Self {
+  pub fn with_inline_translations(mut self, inline_translations: Option<InlineSource>) -> Self {
     self.settings.inline_translations = inline_translations;
     self
   }
@@ -817,8 +816,7 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
   }
 
   fn build_inline_translations(&self, hash: &str, span: Span) -> Option<Expr> {
-    let source = self.settings.inline_translations.as_ref()?;
-    build_inline_translations_fn(&source.table_for(hash), hash, span)
+    self.settings.inline_translations.as_ref()?.callback_for(hash, span)
   }
 
   /// Check whether a JSX element has an attribute

@@ -16,6 +16,15 @@ export const SWC_PLUGIN_WASM_FILES = {
   legacy: { fileName: 'gt_swc_plugin_legacy.wasm' },
 } as const;
 
+// Default files.gt.inlineTranslations.modulesDir, relative to the project root
+export const DEFAULT_MESSAGE_MODULES_DIR = '.gt/messages';
+
+// Import specifier prefix for message modules, aliased to modulesDir.
+// Turbopack does not resolve absolute import paths, and SWC plugins see
+// importer paths relative to an unknown Turbopack root, so call sites import
+// `<alias>/<hash>.js` and gt-next aliases it for both bundlers.
+export const MESSAGE_MODULES_ALIAS = 'gt-next/internal/_inline-messages';
+
 // Minimum Next versions for feature-specific plugin behavior.
 export const ROOT_PARAM_STABILITY = {
   unsupported: '0.0.0',

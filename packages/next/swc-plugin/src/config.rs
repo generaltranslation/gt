@@ -1,4 +1,4 @@
-use crate::inline_shards::ShardedTranslations;
+use crate::inline_source::InlineSource;
 use crate::logging::LogLevel;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -7,18 +7,35 @@ use std::collections::HashMap;
 pub type LocaleTranslations = HashMap<String, serde_json::Value>;
 
 /// Experimental: translations to embed at each translation call site, read
-/// from the shard files gt-next writes under the working directory.
+/// from the shard files gt-next writes under the working directory, or
+/// imported from one module per message when `modules` is set.
 #[derive(Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct InlineTranslationsConfig {
   /// Locales to embed, in output order
   #[serde(default)]
   pub locales: Vec<String>,
-  /// Shard directory, relative to the working directory
+  /// Shard directory, relative to the working directory. Unused with `modules`.
+  #[serde(default)]
   pub dir: String,
   /// Hash of the translations, so bundler caches keyed on plugin options invalidate
   #[serde(default)]
   pub content_hash: String,
+  /// Import a module per message instead of embedding translations
+  #[serde(default)]
+  pub modules: Option<InlineModulesConfig>,
+}
+
+/// Experimental: gt-next writes `<dir>/<hash>.js` for every message with an
+/// embedded translation, and call sites import it.
+#[derive(Deserialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct InlineModulesConfig {
+  /// Module directory, relative to the working directory, to check which
+  /// hashes have a module
+  pub dir: String,
+  /// Import specifier prefix for the modules: `<importDir>/<hash>.js`
+  pub import_dir: String,
 }
 
 // For plugin configuration and settings
@@ -36,7 +53,7 @@ pub struct PluginSettings {
   /// When true, bare variables/calls in template literals and concatenations are allowed
   pub autoderive_strings: bool,
   /// Experimental: translations to embed at call sites
-  pub inline_translations: Option<ShardedTranslations>,
+  pub inline_translations: Option<InlineSource>,
 }
 
 impl PluginSettings {

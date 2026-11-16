@@ -3,7 +3,20 @@ import fs from 'fs';
 import path from 'path';
 import type { GTOutputFileConfig } from 'generaltranslation';
 import { nodeRequire } from './nodeCompat';
-import { createInlineTranslationsShardsWarning } from '../errors/createErrors';
+import {
+  createInlineTranslationsShardsWarning,
+  createMessageModulesDirOutsideCwdError,
+  createMessageModulesWarning,
+  virtualMessageModulesUnsupportedWarning,
+} from '../errors/createErrors';
+import {
+  DEFAULT_MESSAGE_MODULES_DIR,
+  MESSAGE_MODULES_ALIAS,
+} from './constants';
+import {
+  collectMessageTranslations,
+  writeMessageModules,
+} from './messageModules';
 
 type CompilerFileHelpers = Pick<
   typeof import('@generaltranslation/compiler'),
@@ -25,13 +38,26 @@ const SHARD_KEYS = [
 
 /**
  * Plugin options pointing the SWC plugin at the shard files holding the
- * translations to embed. `dir` is relative to the working directory, which
- * the plugin reads through the WASI `/cwd` mount.
+ * translations to embed, or at the message modules to import. Directories are
+ * relative to the working directory, which the plugin reads through the WASI
+ * `/cwd` mount.
  */
 export type ResolvedInlineTranslations = {
   locales: string[];
-  dir: string;
   contentHash: string;
+} & (
+  | { dir: string; modules?: undefined }
+  | { modules: ResolvedMessageModules; dir?: undefined }
+);
+
+export type ResolvedMessageModules = {
+  /** Module directory, relative to the working directory */
+  dir: string;
+  /**
+   * Import specifier prefix, `<importDir>/<hash>.js`: an alias for `dir`
+   * that gt-next/config adds for webpack and Turbopack
+   */
+  importDir: string;
 };
 
 /**
@@ -63,6 +89,13 @@ export function resolveInlineTranslations(
   const files = compiler.resolveInlineTranslationsFiles(gtFiles);
   if (files.length === 0) return undefined;
 
+  if (gtFiles.inlineTranslations.modules) {
+    return resolveMessageModules(
+      files,
+      gtFiles.inlineTranslations,
+      compiler.readTranslationsFile
+    );
+  }
   const cwd = process.cwd();
   const shardsRoot = path.resolve(cwd, distDir, SHARDS_DIR);
   const contentHash = hashContent(files);
@@ -90,6 +123,63 @@ export function resolveInlineTranslations(
     locales: files.map(({ locale }) => locale),
     dir: dir.split(path.sep).join('/'),
     contentHash,
+  };
+}
+
+/**
+ * Write one module per embedded message under `modulesDir` and return the
+ * plugin options. SWC cannot serve virtual modules, so `'virtual'` falls back
+ * to physical files.
+ */
+function resolveMessageModules(
+  files: { locale: string; filePath: string }[],
+  options: NonNullable<GTOutputFileConfig['inlineTranslations']>,
+  readTranslationsFile: CompilerFileHelpers['readTranslationsFile']
+): ResolvedInlineTranslations {
+  if (options.modules === 'virtual') {
+    console.warn(virtualMessageModulesUnsupportedWarning);
+  }
+  const cwd = process.cwd();
+  const target = path.resolve(
+    cwd,
+    options.modulesDir ?? DEFAULT_MESSAGE_MODULES_DIR
+  );
+  const dir = path.relative(cwd, target);
+  // The plugin can only check for modules inside the working directory
+  if (dir.startsWith('..') || path.isAbsolute(dir)) {
+    throw new Error(createMessageModulesDirOutsideCwdError(target, cwd));
+  }
+
+  const messages = collectMessageTranslations(
+    files.map(({ locale, filePath }) => ({
+      locale,
+      translations: readTranslationsFile(filePath) ?? {},
+    }))
+  );
+  // next start also loads the config, possibly on a read-only filesystem, and
+  // needs no modules; a build fails in the SWC plugin when they are missing
+  try {
+    writeMessageModules(target, messages);
+  } catch (error) {
+    console.warn(createMessageModulesWarning(dir, error));
+  }
+
+  const modules: ResolvedMessageModules = {
+    dir: dir.split(path.sep).join('/'),
+    importDir: MESSAGE_MODULES_ALIAS,
+  };
+  // Plugin output only depends on which hashes have a module, so translation
+  // edits update the modules without invalidating transformed files
+  const contentHash = crypto
+    .createHash('sha256')
+    .update(`${SHARD_FORMAT_VERSION}\0${JSON.stringify(modules)}`)
+    .update(Array.from(messages.keys()).sort().join('\0'))
+    .digest('hex')
+    .slice(0, 16);
+  return {
+    locales: files.map(({ locale }) => locale),
+    contentHash,
+    modules,
   };
 }
 

@@ -119,6 +119,23 @@ export const GTInlineTranslationsSchema = pipe(
         examples(['public/i18n/[locale].msg.json'])
       )
     ),
+    modules: optional(
+      pipe(
+        picklist(['physical', 'virtual']),
+        description(
+          "Emit one module per embedded message, <modulesDir>/<hash>.js, and import it at each call site, so bundlers ship only the translations a chunk uses. 'virtual' serves them as virtual modules where the build plugin supports it. Unset embeds each translation at its call site"
+        )
+      )
+    ),
+    modulesDir: optional(
+      pipe(
+        string(),
+        description(
+          'Directory for physical message modules, relative to the project root. Defaults to .gt/messages'
+        ),
+        examples(['.gt/messages'])
+      )
+    ),
   }),
   description(
     'Experimental: embed translations for the given locales at build time'

@@ -588,3 +588,137 @@ fn reads_hashes_from_different_shards() {
   assert!(output.contains(r#"locale === "fr" ? "Bonjour le monde""#), "{output}");
   assert!(output.contains(r#"locale === "fr" ? "Bonjour""#), "{output}");
 }
+
+// ===== message modules ===== //
+
+const MODULES_DIR: &str = ".gt/messages";
+const MODULES_IMPORT_DIR: &str = "/app/.gt/messages";
+
+/// Write an (unread) module for each hash and transform `code` in modules mode
+fn transform_with_modules(code: &str, hashes: &[&str]) -> String {
+  let cwd = TempCwd::new();
+  let dir = cwd.0.join(MODULES_DIR);
+  std::fs::create_dir_all(&dir).expect("modules dir");
+  for hash in hashes {
+    std::fs::write(dir.join(format!("{hash}.js")), "export default () => undefined;").expect("module");
+  }
+  transform_with_option(
+    code,
+    serde_json::json!({
+      "locales": ["fr"],
+      "contentHash": "test",
+      "modules": { "dir": MODULES_DIR, "importDir": MODULES_IMPORT_DIR },
+    }),
+    &cwd.0,
+  )
+}
+
+fn module_import(hash: &str) -> String {
+  format!("import __gt_inline_{hash} from \"{MODULES_IMPORT_DIR}/{hash}.js\";")
+}
+
+#[test]
+fn imports_the_message_module_for_gt_calls() {
+  let output = transform_with_modules(USEGT_CODE, &[HELLO_WORLD]);
+  assert!(output.contains(&module_import(HELLO_WORLD)), "{output}");
+  assert!(output.contains(&format!("}}, __gt_inline_{HELLO_WORLD})")), "{output}");
+  assert!(!output.contains("(locale)=>"), "{output}");
+}
+
+#[test]
+fn passes_the_message_module_as_the_inline_prop_of_t() {
+  let output = transform_with_modules(T_CODE, &[JSX_HELLO_WORLD]);
+  assert!(output.contains(&module_import(JSX_HELLO_WORLD)), "{output}");
+  assert!(output.contains(&format!("inline={{__gt_inline_{JSX_HELLO_WORLD}}}")), "{output}");
+}
+
+#[test]
+fn imports_a_shared_message_module_once() {
+  let output = transform_with_modules(
+    r#"
+      import { useGT, T } from 'gt-next';
+      const gt = useGT();
+      gt("Hello world");
+      gt("Hello");
+      gt("Hello world");
+      export const el = <T>Hello world</T>;
+    "#,
+    &[HELLO_WORLD, HELLO, JSX_HELLO_WORLD],
+  );
+  assert_eq!(output.matches(&module_import(HELLO_WORLD)).count(), 1, "{output}");
+  assert_eq!(output.matches(&format!("}}, __gt_inline_{HELLO_WORLD})")).count(), 2, "{output}");
+  assert!(output.contains(&module_import(HELLO)), "{output}");
+  assert!(output.contains(&module_import(JSX_HELLO_WORLD)), "{output}");
+}
+
+#[test]
+fn skips_call_sites_without_a_message_module() {
+  let output = transform_with_modules(
+    r#"
+      import { useGT } from 'gt-next';
+      const gt = useGT();
+      gt("Hello world");
+      gt("Hello");
+    "#,
+    &[HELLO],
+  );
+  assert!(output.contains(&module_import(HELLO)), "{output}");
+  assert!(!output.contains(&format!("__gt_inline_{HELLO_WORLD}")), "{output}");
+  assert_eq!(output.matches("__gt_inline_").count(), 2, "{output}");
+}
+
+#[test]
+fn leaves_files_without_translation_calls_untouched() {
+  let code = "export const value = 1;\n";
+  assert_eq!(transform_with_modules(code, &[HELLO_WORLD]), code);
+}
+
+#[test]
+fn imports_message_modules_after_directives() {
+  let output = transform_with_modules(&format!("'use client';\n{USEGT_CODE}"), &[HELLO_WORLD]);
+  assert!(output.starts_with(&format!("'use client';\n{}", module_import(HELLO_WORLD))), "{output}");
+}
+
+#[test]
+fn imports_message_modules_for_user_supplied_hashes() {
+  let output = transform_with_modules(
+    r#"
+      import { useGT } from 'gt-next';
+      const gt = useGT();
+      gt("Hello world", { $_hash: "my-hash" });
+    "#,
+    &["my-hash"],
+  );
+  assert!(
+    output.contains(&format!("import __gt_inline_my$hash from \"{MODULES_IMPORT_DIR}/my-hash.js\";")),
+    "{output}"
+  );
+  assert!(output.contains("}, __gt_inline_my$hash)"), "{output}");
+}
+
+#[test]
+fn never_imports_modules_for_hashes_unsafe_as_file_names() {
+  let output = transform_with_modules(
+    r#"
+      import { useGT } from 'gt-next';
+      const gt = useGT();
+      gt("Hello world", { $_hash: "../escape" });
+    "#,
+    &[],
+  );
+  assert!(!output.contains("__gt_inline_"), "{output}");
+}
+
+#[test]
+#[should_panic(expected = "cannot read embedded translation modules")]
+fn fails_the_build_when_the_modules_dir_is_missing() {
+  let cwd = TempCwd::new();
+  transform_with_option(
+    USEGT_CODE,
+    serde_json::json!({
+      "locales": ["fr"],
+      "modules": { "dir": "missing", "importDir": "/missing" },
+    }),
+    &cwd.0,
+  );
+}
