@@ -46,7 +46,7 @@ async function RscT({
 
   // Translations embedded at the call site win over loaded translations
   const targetJsxChildren =
-    lookupInlineTranslation(inline, locale) ??
+    (inline && lookupInlineTranslation(inline, locale)) ??
     (await lookupTargetJsxChildren(
       locale,
       prepared.sourceJsxChildren,

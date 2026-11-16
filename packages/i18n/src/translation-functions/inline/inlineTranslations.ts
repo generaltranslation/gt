@@ -8,10 +8,9 @@ import type { InlineTranslations } from '../../types-dir/inline';
  * configured spelling of the locale, which is what the compiler embeds under.
  */
 export function lookupInlineTranslation<T extends Content>(
-  inline: InlineTranslations<T> | undefined,
+  inline: InlineTranslations<T>,
   locale: string
 ): T | undefined {
-  if (!inline) return undefined;
   const i18nConfig = getI18nConfig();
   // Invalid or unconfigured locales fall through to the cache lookup
   const translationLocale = i18nConfig.determineLocale(locale);

@@ -78,14 +78,9 @@ export function createRenderTree({
     const enabled = getEnableI18n?.() ?? true;
     const locale = enabled ? getLocale() : getI18nConfig().getDefaultLocale();
     // Disabled skips every lookup, including custom ones with default-locale entries.
-    const lookup: LookupTreeTranslation = !enabled
-      ? () => undefined
-      : inline
-        ? // Translations embedded at the call site win over loaded translations
-          (tree, lookupOptions) =>
-            lookupInlineTranslation(inline, lookupOptions.$locale) ??
-            lookupTranslation(tree, lookupOptions)
-        : lookupTranslation;
+    const lookup = enabled
+      ? withInlineTranslations(lookupTranslation, inline)
+      : () => undefined;
     return renderMessage(tree, values, formats, locale, options, lookup);
   };
 }
@@ -179,6 +174,20 @@ function withDevHotReload(
     }
     return translation;
   };
+}
+
+/**
+ * Translations embedded at the call site win over loaded translations; when
+ * the callback returns undefined, the loaded translation is used.
+ */
+function withInlineTranslations(
+  lookupTranslation: LookupTreeTranslation,
+  inline: InlineTranslations<MessageTree> | undefined
+): LookupTreeTranslation {
+  if (!inline) return lookupTranslation;
+  return (tree, options) =>
+    lookupInlineTranslation(inline, options.$locale) ??
+    lookupTranslation(tree, options);
 }
 
 /** Global GT reading the current locale from the condition store. */
