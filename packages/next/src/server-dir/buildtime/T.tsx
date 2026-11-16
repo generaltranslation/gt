@@ -2,6 +2,8 @@ import { getRequestConditions } from '../../request/getRequestConditions';
 import { T as RscT } from 'gt-react';
 import { renderPreparedT } from './renderPipeline';
 import type { ReactNode } from 'react';
+import type { InlineTranslations } from 'gt-i18n';
+import type { JsxChildren } from '@generaltranslation/format';
 
 type TProps = {
   children: ReactNode;
@@ -9,7 +11,12 @@ type TProps = {
   context?: string;
   _hash?: string;
   requiresReview?: boolean;
-  [key: string]: ReactNode;
+  /**
+   * Translations embedded at the call site, checked before loaded
+   * translations. Usually injected at build time.
+   */
+  inline?: InlineTranslations<JsxChildren>;
+  [key: string]: ReactNode | InlineTranslations<JsxChildren>;
 };
 
 /**

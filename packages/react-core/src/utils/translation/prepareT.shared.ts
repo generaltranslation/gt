@@ -1,7 +1,10 @@
 import { addGTIdentifier } from '../internal/addGTIdentifier';
 import { removeInjectedT } from '../internal/removeInjectedT';
 import { writeChildrenAsObjects } from '../internal/writeChildrenAsObjects';
-import type { JsxTranslationOptions as JsxLookupOptions } from 'gt-i18n';
+import type {
+  InlineTranslations,
+  JsxTranslationOptions as JsxLookupOptions,
+} from 'gt-i18n';
 import type { JsxChildren } from '@generaltranslation/format';
 import type { ReactNode } from 'react';
 import type { RenderPreparedTParams } from '../rendering/renderPreparedT.shared';
@@ -34,6 +37,11 @@ type TProps = {
   _locale?: string;
   _enableI18n?: boolean;
   _renderPreparedT?: RenderPreparedT;
+  /**
+   * Translations embedded at the call site, checked before loaded
+   * translations. Usually injected at build time.
+   */
+  inline?: InlineTranslations<JsxChildren>;
 } & JsxTranslationOptions;
 
 type ResolvedTProps = TProps & {
