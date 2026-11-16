@@ -1,0 +1,14 @@
+{
+  "defaultLocale": "en",
+  "locales": ["fr"],
+  "files": {
+    "gt": {
+      "output": "translations/[locale].json",
+      "inlineTranslations": {
+        "locales": ["fr"],
+        "msgOutput": "translations/[locale].msg.json",
+        "modules": "virtual"
+      }
+    }
+  }
+}
