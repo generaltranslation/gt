@@ -636,22 +636,19 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     _tagIds: mergedConfig._tagIds,
   };
 
-  // The SWC plugin cannot read locale files, so inline translations are
-  // resolved here and passed as data
-  const {
-    type: _type,
-    inlineTranslations,
-    ...compilerOptions
-  } = mergedConfig.experimentalCompilerOptions || {};
+  const { type: _type, ...compilerOptions } =
+    mergedConfig.experimentalCompilerOptions || {};
 
   // The SWC plugin reads autoderive only from gt.config.json parsingFlags.
   const autoderive = resolveAutoderive(
     loadedConfig.files?.gt?.parsingFlags?.autoderive
   );
 
+  // The SWC plugin cannot read locale files, so inline translations are
+  // resolved here and passed as data
   const swcInlineTranslations =
     mergedConfig.experimentalCompilerOptions?.type === 'swc'
-      ? resolveInlineTranslations(inlineTranslations)
+      ? resolveInlineTranslations(loadedConfig.files?.gt)
       : undefined;
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
