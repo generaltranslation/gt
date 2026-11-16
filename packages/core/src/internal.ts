@@ -28,6 +28,7 @@ export {
   type ResolvedCredentials,
 } from './config/credentials';
 export { isAcceptedPluralForm } from './settings/plurals';
+export { defaultInlineTranslationsModulesDir } from './settings/inlineTranslations';
 export type {
   InjectionType,
   Transformation,

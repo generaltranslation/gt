@@ -30,6 +30,10 @@ import {
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { ModelProvider } from '@generaltranslation/api';
 import {
+  defaultInlineTranslationsModulesDir,
+  inlineTranslationsModuleModes,
+} from '../settings/inlineTranslations';
+import {
   type DiagnosticMessageInput,
   formatDiagnosticErrorDetails,
 } from '../logging/diagnostics';
@@ -117,6 +121,21 @@ export const GTInlineTranslationsSchema = pipe(
           "Output path pattern with [locale] placeholder for a copy of each embedded locale's translations file without the entries the compiler embeds, for loading those locales"
         ),
         examples(['public/i18n/[locale].msg.json'])
+      )
+    ),
+    modules: optionalDescribed(
+      picklist(inlineTranslationsModuleModes),
+      "Experimental: emit each embedded message as its own module, <modulesDir>/<hash>.js, imported by the call sites that use it instead of inlining the translations at every call site, so a message shared by several call sites ships once and bundlers include only the messages in use. 'physical' writes the modules when the build starts. 'virtual' serves them from memory where the build plugin can, and otherwise falls back to 'physical' with a warning, as gt-next's SWC plugin does. Unset inlines the translations at each call site"
+    ),
+    modulesDir: optional(
+      pipe(
+        string(),
+        metadata({
+          description:
+            "Directory, relative to the project root, that modules: 'physical' writes message modules to. The build rewrites and deletes the generated files there, so add it to .gitignore",
+          default: defaultInlineTranslationsModulesDir,
+          examples: [defaultInlineTranslationsModulesDir],
+        })
       )
     ),
   }),
