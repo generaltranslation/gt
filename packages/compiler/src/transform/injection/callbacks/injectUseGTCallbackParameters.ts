@@ -3,6 +3,7 @@ import * as t from '@babel/types';
 import { validateTranslationFunction } from '../../validation/validateTranslationFunction';
 import { injectHashIntoTranslationOptions } from '../injectHashIntoTranslationOptions';
 import { NodePath } from '@babel/traverse';
+import { injectInlineTranslationsArgument } from '../inline-translations/injectInlineTranslations';
 
 /**
  * Injects parameters into invocation of useGT_callback(..., { $_hash })
@@ -23,6 +24,7 @@ export function injectUseGTCallbackParameters(
     return;
   }
   if (useGTCallbackParams.hash !== undefined) {
+    injectInlineTranslationsArgument(callExpr, useGTCallbackParams.hash, state);
     return;
   }
 
@@ -34,4 +36,5 @@ export function injectUseGTCallbackParameters(
 
   // Inject parameters into invocation
   injectHashIntoTranslationOptions(callExpr, translationHash.hash);
+  injectInlineTranslationsArgument(callExpr, translationHash.hash, state);
 }

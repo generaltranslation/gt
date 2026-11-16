@@ -10,6 +10,7 @@ import {
   GT_IMPORT_SOURCES,
   GT_OTHER_FUNCTIONS,
 } from '../../utils/constants/gt/constants';
+import { loadInlineTranslations } from '../../transform/injection/inline-translations/loadInlineTranslations';
 
 const DEFAULT_SETTINGS: PluginSettings = {
   logLevel: 'warn',
@@ -56,7 +57,19 @@ export function initializeState(
 
   // Spread options but exclude already-resolved fields
   // eslint-disable-next-line no-unused-vars
-  const { autoderive: _a, devHotReload: _b, ...restOptions } = options;
+  const {
+    autoderive: _a,
+    devHotReload: _b,
+    inlineTranslations,
+    ...restOptions
+  } = options;
+
+  // Embedded translations are a production optimization; dev builds keep
+  // loading (and hot reloading) translations at runtime
+  const inlineTranslationsTable =
+    process.env.NODE_ENV === 'production'
+      ? loadInlineTranslations(inlineTranslations)
+      : undefined;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
@@ -67,6 +80,7 @@ export function initializeState(
     // An explicit undefined in the options must not erase the default.
     autoJsxImportSource:
       options.autoJsxImportSource ?? DEFAULT_SETTINGS.autoJsxImportSource,
+    inlineTranslationsTable,
     filename,
   };
 

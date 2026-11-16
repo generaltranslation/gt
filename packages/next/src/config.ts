@@ -635,8 +635,12 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     _tagIds: mergedConfig._tagIds,
   };
 
-  const { type: _type, ...compilerOptions } =
-    mergedConfig.experimentalCompilerOptions || {};
+  // inlineTranslations is babel-only for now; keep it out of the SWC options
+  const {
+    type: _type,
+    inlineTranslations: _inlineTranslations,
+    ...compilerOptions
+  } = mergedConfig.experimentalCompilerOptions || {};
 
   // The SWC plugin reads autoderive only from gt.config.json parsingFlags.
   const autoderive = resolveAutoderive(
