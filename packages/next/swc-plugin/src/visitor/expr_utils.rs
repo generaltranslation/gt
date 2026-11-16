@@ -191,6 +191,33 @@ pub fn create_string_prop(key: &str, value: &str, span: Span) -> PropOrSpread {
   })))
 }
 
+/// Get a string literal property from an object expression: { key: "value" }
+pub fn get_string_prop_from_expr(expr: &Expr, key: &str) -> Option<String> {
+  let Expr::Object(obj) = expr else {
+    return None;
+  };
+  obj.props.iter().find_map(|prop| {
+    let PropOrSpread::Prop(prop) = prop else {
+      return None;
+    };
+    let Prop::KeyValue(kv) = prop.as_ref() else {
+      return None;
+    };
+    let matches_key = match &kv.key {
+      PropName::Ident(ident) => ident.sym.as_ref() == key,
+      PropName::Str(str_lit) => str_lit.value.to_string_lossy() == key,
+      _ => false,
+    };
+    if !matches_key {
+      return None;
+    }
+    match kv.value.as_ref() {
+      Expr::Lit(Lit::Str(str_lit)) => Some(str_lit.value.to_string_lossy().into_owned()),
+      _ => None,
+    }
+  })
+}
+
 pub fn has_prop(props: &[PropOrSpread], key: &str) -> bool {
   props.iter().any(|prop| {
     if let PropOrSpread::Prop(p) = prop {

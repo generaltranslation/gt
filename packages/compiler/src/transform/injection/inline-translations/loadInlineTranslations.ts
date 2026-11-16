@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { GTInlineTranslationsOptions } from 'generaltranslation/types';
+import type { GTInlineTranslationsOptions } from 'generaltranslation';
 
 /**
  * Translations to embed, keyed by locale, then by translation hash.

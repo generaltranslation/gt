@@ -12,7 +12,7 @@ use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,
   visitor::{
-    analysis::{is_translation_function_callback, is_translation_function_name},
+    analysis::{is_msg_name, is_translation_function_callback, is_translation_function_name},
     errors::create_dynamic_content_warning,
     expr_utils::{get_callee_expr_function_name, is_allowed_dynamic_content},
   },
@@ -313,6 +313,12 @@ impl Fold for TransformVisitor {
             return modified_call_expr.fold_children_with(self);
           }
         }
+        // Detect msg() calls (inline translations only)
+        else if is_msg_name(&original_name) {
+          if let Some(modified_call_expr) = self.inject_inline_translations_on_msg_call(&call_expr) {
+            return modified_call_expr.fold_children_with(self);
+          }
+        }
       }
     }
     call_expr.fold_children_with(self)
@@ -376,6 +382,11 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     .get_context(&TransformPluginMetadataContextKind::Filename)
     .map(|f| f.to_string());
 
+  transform_program(program, config, filename)
+}
+
+/// Run both plugin passes (collection, then injection) on a program
+pub fn transform_program(program: Program, config: PluginConfig, filename: Option<String>) -> Program {
   // Create StringCollector for the two-pass system
   let string_collector = crate::ast::StringCollector::new();
 
@@ -412,6 +423,12 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     config.autoderive_jsx,
     config.autoderive_strings,
     collected_data,
+  )
+  .with_inline_translations(
+    config
+      .inline_translations
+      .map(|inline| inline.into_table())
+      .unwrap_or_default(),
   );
   program.fold_with(&mut visitor)
 }
@@ -422,3 +439,6 @@ pub mod hash;
 pub mod logging;
 pub mod visitor;
 pub mod whitespace;
+
+#[cfg(test)]
+mod inline_translations_tests;

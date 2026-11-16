@@ -4,7 +4,7 @@ use crate::config::PluginSettings;
 use crate::logging::{LogLevel, Logger};
 use crate::visitor::errors::create_dynamic_function_warning;
 use crate::visitor::expr_utils::{
-  create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, has_prop, inject_new_args, validate_derive,
+  create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, get_string_prop_from_expr, has_prop, inject_new_args, validate_derive,
 };
 use swc_core::{
   common::SyntaxContext,
@@ -12,8 +12,13 @@ use swc_core::{
 };
 
 use crate::visitor::analysis::{
-  is_branch_name, is_derive_name, is_translation_component_name,
+  is_branch_name, is_derive_name, is_msg_name, is_translation_component_name,
   is_translation_function_name, is_variable_component_name,
+};
+use crate::config::LocaleTranslations;
+use crate::visitor::expr_utils::contains_derive_call;
+use crate::visitor::inline_translations::{
+  build_inline_array_translations_fn, build_inline_translations_fn, undefined_expr,
 };
 
 /// Main transformation visitor for the SWC plugin
@@ -60,6 +65,12 @@ impl TransformVisitor {
     }
   }
 
+  /// Experimental: set the translations to embed at call sites
+  pub fn with_inline_translations(mut self, table: Vec<(String, LocaleTranslations)>) -> Self {
+    self.settings.inline_translations = table;
+    self
+  }
+
   /// Single helper method - handles scope enter/exit only
   pub fn with_scope<T, F>(&mut self, operation: F) -> T
   where
@@ -86,6 +97,22 @@ impl TransformVisitor {
         let hash_value = translation_jsx.hash.clone();
         let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
         element.opening.attrs.push(hash_attr);
+
+        // Embed translations for the configured locales. An empty hash means
+        // derive content (or <Static>), which is not supported.
+        if !hash_value.is_empty() && !TransformVisitor::determine_has_attr(&element, "_translations") {
+          if let Some(inline) = build_inline_translations_fn(
+            &self.settings.inline_translations,
+            &hash_value,
+            element.opening.span,
+          ) {
+            element.opening.attrs.push(TransformVisitor::create_expr_attr(
+              &element,
+              inline,
+              "_translations",
+            ));
+          }
+        }
       }
     }
 
@@ -124,14 +151,21 @@ impl TransformVisitor {
       let counter_id = self.string_collector.increment_counter();
       let translation_hash = self.string_collector.get_translation_hash(counter_id);
 
-      if let Some(translation_hash) = translation_hash {
+      if let Some(translation_hash) = translation_hash.map(|translation_hash| translation_hash.hash.clone()) {
         // Inject hash attribute on the call expression
-        let modified_call_expr = self.inject_hash_attribute_on_call_expr(
+        let mut modified_call_expr = self.inject_hash_attribute_on_call_expr(
           call_expr,
           options,
-          translation_hash.hash.clone(),
+          translation_hash.clone(),
           None,
         );
+
+        // Embed translations for the configured locales. A user-supplied
+        // $_hash wins over the computed one, matching the runtime lookup.
+        let hash = options
+          .and_then(|options| get_string_prop_from_expr(options.expr.as_ref(), "$_hash"))
+          .unwrap_or(translation_hash);
+        self.append_inline_translations_arg(&mut modified_call_expr, &hash);
 
         return Some(modified_call_expr);
       }
@@ -288,6 +322,7 @@ impl TransformVisitor {
                 || is_branch_name(&original_name)
                 || is_translation_function_name(&original_name)
                 || is_derive_name(&original_name)
+                || is_msg_name(&original_name)
               {
                 self
                   .import_tracker
@@ -429,8 +464,17 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
     string: &ExprOrSpread,
     options: Option<&ExprOrSpread>,
   ) -> (Option<String>, Option<String>) {
+    self.calculate_string_hash(&string.expr, options)
+  }
+
+  /// Hash a string message expression with its options
+  pub fn calculate_string_hash(
+    &self,
+    expr: &Expr,
+    options: Option<&ExprOrSpread>,
+  ) -> (Option<String>, Option<String>) {
     // Extract the string content
-    let string_content = extract_string_from_expr(&string.expr);
+    let string_content = extract_string_from_expr(expr);
     if string_content.is_none() {
       return (None, None);
     }
@@ -739,6 +783,130 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
         }
       }
       false
+    })
+  }
+
+  /// Append the inline translations callback as the third argument of a
+  /// string translation call: gt(message, options, (locale) => …).
+  /// Expects the options argument to be present.
+  pub fn append_inline_translations_arg(&self, call_expr: &mut CallExpr, hash: &str) {
+    if hash.is_empty() || call_expr.args.len() != 2 || call_expr.args[1].spread.is_some() {
+      return;
+    }
+    if let Some(inline) =
+      build_inline_translations_fn(&self.settings.inline_translations, hash, call_expr.span)
+    {
+      call_expr.args.push(ExprOrSpread {
+        spread: None,
+        expr: Box::new(inline),
+      });
+    }
+  }
+
+  /// Inject the inline translations callback into msg() invocations:
+  /// msg(message, options, (locale) => …).
+  ///
+  /// msg() does not take part in the injection counter, so hashes are computed
+  /// here. Derive content (derive(), autoderive, derive $context) is not
+  /// supported: its hash is only known per resolved variant at runtime, so
+  /// those calls are left untouched. Mirrors
+  /// @generaltranslation/compiler's injectMsgParameters.
+  pub fn inject_inline_translations_on_msg_call(&self, call_expr: &CallExpr) -> Option<CallExpr> {
+    if self.settings.inline_translations.is_empty() || call_expr.args.is_empty() || call_expr.args.len() > 2 {
+      return None;
+    }
+    if call_expr.args.iter().any(|arg| arg.spread.is_some()) {
+      return None;
+    }
+
+    let message = call_expr.args[0].expr.as_ref();
+    let options = call_expr.args.get(1);
+    let (_, _, _, _, has_derive_context) = extract_id_and_context_from_options(options);
+    if has_derive_context {
+      return None;
+    }
+    let user_hash = options.and_then(|options| get_string_prop_from_expr(options.expr.as_ref(), "$_hash"));
+
+    let inline = match message {
+      Expr::Array(array) => {
+        // A user-supplied $_hash would be shared by every element, so skip it
+        if user_hash.is_some() {
+          return None;
+        }
+        let mut hashes = Vec::with_capacity(array.elems.len());
+        for element in &array.elems {
+          let element = element.as_ref()?;
+          if element.spread.is_some() {
+            return None;
+          }
+          hashes.push(self.calculate_msg_hash(element.expr.as_ref(), options)?);
+        }
+        build_inline_array_translations_fn(&self.settings.inline_translations, &hashes, call_expr.span)?
+      }
+      _ => {
+        let hash = match user_hash {
+          Some(hash) => hash,
+          None => self.calculate_msg_hash(message, options)?,
+        };
+        build_inline_translations_fn(&self.settings.inline_translations, &hash, call_expr.span)?
+      }
+    };
+
+    let mut args = call_expr.args.clone();
+    if args.len() == 1 {
+      args.push(ExprOrSpread {
+        spread: None,
+        expr: Box::new(undefined_expr(call_expr.span)),
+      });
+    }
+    args.push(ExprOrSpread {
+      spread: None,
+      expr: Box::new(inline),
+    });
+    Some(CallExpr {
+      args,
+      ..call_expr.clone()
+    })
+  }
+
+  /// Hash a static msg() message (string literal or template literal without
+  /// expressions). None for derive or any other dynamic content.
+  fn calculate_msg_hash(&self, message: &Expr, options: Option<&ExprOrSpread>) -> Option<String> {
+    let is_static = match message {
+      Expr::Lit(Lit::Str(_)) => true,
+      Expr::Tpl(tpl) => tpl.exprs.is_empty(),
+      _ => false,
+    };
+    if !is_static || contains_derive_call(message) {
+      return None;
+    }
+    let (hash, _) = self.calculate_string_hash(message, options);
+    hash.filter(|hash| !hash.is_empty())
+  }
+
+  /// Check whether a JSX element has an attribute
+  pub fn determine_has_attr(element: &JSXElement, attribute_name: &str) -> bool {
+    element.opening.attrs.iter().any(|attr| {
+      matches!(attr, JSXAttrOrSpread::JSXAttr(JSXAttr { name: JSXAttrName::Ident(name), .. }) if name.sym.as_ref() == attribute_name)
+    })
+  }
+
+  /// Create a JSX attribute with an expression value: name={expr}
+  pub fn create_expr_attr(element: &JSXElement, expr: Expr, attribute_name: &str) -> JSXAttrOrSpread {
+    JSXAttrOrSpread::JSXAttr(JSXAttr {
+      span: element.opening.span,
+      name: JSXAttrName::Ident(
+        Ident::new(
+          attribute_name.into(),
+          element.opening.span,
+          SyntaxContext::empty(),
+        )
+        .into(),
+      ),
+      value: Some(JSXAttrValue::JSXExprContainer(JSXExprContainer {
+        span: element.opening.span,
+        expr: JSXExpr::Expr(Box::new(expr)),
+      })),
     })
   }
 

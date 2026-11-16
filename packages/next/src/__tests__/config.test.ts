@@ -1120,6 +1120,95 @@ describe('withGTConfig', () => {
         }
       );
     });
+
+    describe('swc inlineTranslations', () => {
+      function getSwcOptions(result: NextConfig) {
+        const plugins = result.experimental!.swcPlugins as [
+          string,
+          Record<string, unknown>,
+        ][];
+        expect(plugins).toHaveLength(1);
+        return plugins[0][1];
+      }
+
+      it('passes explicit translations to the SWC plugin in production', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              inlineTranslations: {
+                locales: ['fr', 'es', 'de'],
+                translations: { fr: { a: 'Bonjour' }, es: { a: 'Hola' } },
+              },
+            },
+          }
+        );
+        expect(getSwcOptions(result).inlineTranslations).toEqual({
+          locales: ['fr', 'es'],
+          translations: { fr: { a: 'Bonjour' }, es: { a: 'Hola' } },
+        });
+      });
+
+      it('reads locale files from a [locale] path template', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        vi.mocked(fs.existsSync).mockImplementation((filepath) =>
+          String(filepath).endsWith(path.join('_gt', 'fr.json'))
+        );
+        vi.mocked(fs.readFileSync).mockImplementation((filepath) =>
+          String(filepath).endsWith(path.join('_gt', 'fr.json'))
+            ? JSON.stringify({ a: 'Bonjour' })
+            : '{}'
+        );
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              inlineTranslations: {
+                locales: ['fr', 'es'],
+                path: './public/_gt/[locale].json',
+              },
+            },
+          }
+        );
+        expect(getSwcOptions(result).inlineTranslations).toEqual({
+          locales: ['fr'],
+          translations: { fr: { a: 'Bonjour' } },
+        });
+      });
+
+      it('does not pass inline translations outside production builds', () => {
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              inlineTranslations: {
+                locales: ['fr'],
+                translations: { fr: { a: 'Bonjour' } },
+              },
+            },
+          }
+        );
+        expect(getSwcOptions(result)).not.toHaveProperty('inlineTranslations');
+      });
+
+      it('omits inline translations when no locale has translations', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              inlineTranslations: { locales: ['fr'] },
+            },
+          }
+        );
+        expect(getSwcOptions(result)).not.toHaveProperty('inlineTranslations');
+      });
+    });
   });
 
   describe('webpack', () => {
