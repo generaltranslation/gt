@@ -65,6 +65,17 @@ describe('interpolateMessage', () => {
     ).toBe('Value 1,234.5');
   });
 
+  it('renders the source with the source locale when the ICU translation cannot be formatted', () => {
+    expect(
+      interpolateMessage({
+        source: '{n, plural, one {# card} other {# cards}}',
+        target: '{n, plural, other {# 枚}',
+        options: { $format: 'ICU', $locale: 'ja', n: 1 },
+        sourceLocale: 'en',
+      })
+    ).toBe('1 card');
+  });
+
   it('cuts an ICU message with the terminator of its locale, like a string', () => {
     const cut = ($format: 'ICU' | 'STRING') =>
       interpolateMessage({

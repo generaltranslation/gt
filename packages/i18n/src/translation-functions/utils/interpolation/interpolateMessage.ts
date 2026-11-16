@@ -30,6 +30,7 @@ export function interpolateMessage({
   if (target != null) {
     return routeInterpolation(target, {
       $_fallback: source,
+      $_fallbackLocale: sourceLocale,
       ...options,
     });
   }

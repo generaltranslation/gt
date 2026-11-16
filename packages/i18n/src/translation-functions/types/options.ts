@@ -18,6 +18,8 @@ export type TranslationMetadata = {
   $requiresReview?: boolean;
   /** @internal Used to carry the original source when rendering a translation */
   $_fallback?: string;
+  /** @internal The locale to format `$_fallback` with */
+  $_fallbackLocale?: string;
   $maxChars?: number;
 };
 

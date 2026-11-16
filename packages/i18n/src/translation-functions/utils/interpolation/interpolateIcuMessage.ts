@@ -61,6 +61,7 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
       return interpolateIcuMessage(options.$_fallback, {
         ...options,
         $_fallback: undefined,
+        $locale: options.$_fallbackLocale ?? options.$locale,
       }) as T extends string ? string : T;
     }
 
