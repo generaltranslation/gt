@@ -53,6 +53,8 @@ import { getRuntimeCredentials } from './setup/runtimeCredentials';
 import { nextLocaleCookieName } from './utils/cookies';
 import { splitMiddlewareConfig } from './middleware-dir/defaultMiddlewareConfig';
 import { createGtNextPluginDiagnostic } from './errors/diagnostics';
+import { resolveInlineTranslations } from './plugin/resolveInlineTranslations';
+import { MESSAGE_MODULES_ALIAS } from './plugin/constants';
 
 type RuntimeCredentialProps = {
   apiKey?: string;
@@ -643,10 +645,19 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     loadedConfig.files?.gt?.parsingFlags?.autoderive
   );
 
+  const swcInlineTranslations =
+    mergedConfig.experimentalCompilerOptions?.type === 'swc'
+      ? resolveInlineTranslations(loadedConfig.files?.gt, {
+          distDir: internalNextConfig.distDir,
+        })
+      : undefined;
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
     autoderiveJsx: autoderive.jsx,
     autoderiveStrings: autoderive.strings,
+    ...(swcInlineTranslations && {
+      inlineTranslations: swcInlineTranslations,
+    }),
   };
 
   const swcPluginEntry: [string, Record<string, unknown>] | null =
@@ -654,7 +665,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ? [resolvedWasmFilePath, swcPluginOptions]
       : null;
 
+  const messageModulesDir = swcInlineTranslations?.modules?.dir;
   const turboAliases = {
+    ...(messageModulesDir && {
+      [`${MESSAGE_MODULES_ALIAS}/*`]: `./${messageModulesDir}/*`,
+    }),
     'gt-next/internal/_dictionary': resolvedDictionaryFilePath || '',
     'gt-next/internal/_load-translations': customLoadTranslationsPath || '',
     'gt-next/internal/_load-dictionary': customLoadDictionaryPath || '',
@@ -795,6 +810,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         // Disable cache in dev bc people might move around loadTranslations() and loadDictionary() files
         if (process.env.NODE_ENV === 'development') {
           webpackConfig.cache = false;
+        }
+        if (messageModulesDir) {
+          webpackConfig.resolve.alias[MESSAGE_MODULES_ALIAS] =
+            path.resolve(messageModulesDir);
         }
         if (resolvedDictionaryFilePath) {
           webpackConfig.resolve.alias['gt-next/internal/_dictionary'] =

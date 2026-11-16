@@ -7,13 +7,19 @@ use crate::visitor::expr_utils::{
   create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, has_prop, inject_new_args, validate_derive,
 };
 use swc_core::{
-  common::SyntaxContext,
+  common::{Span, SyntaxContext},
   ecma::{ast::*, atoms::Atom},
 };
 
 use crate::visitor::analysis::{
   is_branch_name, is_derive_name, is_translation_component_name,
   is_translation_function_name, is_variable_component_name,
+};
+use crate::inline_source::InlineSource;
+use crate::visitor::jsx_utils::extract_attribute_from_jsx_attr;
+use crate::visitor::unstable_messages::{
+  hash_unstable_message, is_unstable_import_source, unstable_tracked_name, UNSTABLE_GET_GT, UNSTABLE_GT_CALLBACK, UNSTABLE_T,
+  UNSTABLE_USE_GT,
 };
 
 /// Main transformation visitor for the SWC plugin
@@ -60,6 +66,12 @@ impl TransformVisitor {
     }
   }
 
+  /// Experimental: set the translations to embed at call sites
+  pub fn with_inline_translations(mut self, inline_translations: Option<InlineSource>) -> Self {
+    self.settings.inline_translations = inline_translations;
+    self
+  }
+
   /// Single helper method - handles scope enter/exit only
   pub fn with_scope<T, F>(&mut self, operation: F) -> T
   where
@@ -75,6 +87,14 @@ impl TransformVisitor {
   pub fn inject_hash_attributes(&mut self, mut element: JSXElement) -> JSXElement {
     // Check if hash attribute already exists
     let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
+    // A spread or `$_hash` prop can change the hash the runtime uses, so an
+    // embedded translation could belong to another entry
+    let hash_may_change = TransformVisitor::determine_has_attr(&element, "$_hash")
+      || element
+        .opening
+        .attrs
+        .iter()
+        .any(|attr| matches!(attr, JSXAttrOrSpread::SpreadElement(_)));
 
     if !has_hash_attr {
       // Get the hash from the aggregator
@@ -86,10 +106,32 @@ impl TransformVisitor {
         let hash_value = translation_jsx.hash.clone();
         let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
         element.opening.attrs.push(hash_attr);
+        if !hash_may_change {
+          self.inject_inline_attr(&mut element, &hash_value);
+        }
+      }
+    } else if let Some(hash_value) = extract_attribute_from_jsx_attr(&element, "_hash") {
+      // A static user-supplied _hash is what the runtime looks up. It takes no
+      // part in the counter, so it is read here instead.
+      if !hash_may_change {
+        self.inject_inline_attr(&mut element, &hash_value);
       }
     }
 
     element
+  }
+
+  /// Embed translations for the configured locales as an `inline` prop.
+  /// An empty hash means derive content (or <Static>), which is not supported.
+  /// An existing `inline` prop is kept.
+  fn inject_inline_attr(&self, element: &mut JSXElement, hash_value: &str) {
+    if hash_value.is_empty() || TransformVisitor::determine_has_attr(element, "inline") {
+      return;
+    }
+    if let Some(inline) = self.build_inline_translations(hash_value, element.opening.span) {
+      let attr = TransformVisitor::create_expr_attr(element, inline, "inline");
+      element.opening.attrs.push(attr);
+    }
   }
 
   /// Inject content array on translation function call
@@ -307,6 +349,24 @@ impl TransformVisitor {
                 .insert(local.sym.clone());
             }
             _ => {}
+          }
+        }
+      }
+      source if is_unstable_import_source(source) => {
+        // Track the unstable t, useGT and getGT, whose templates can embed translations
+        for specifier in &import_decl.specifiers {
+          if let ImportSpecifier::Named(ImportNamedSpecifier { local, imported, .. }) = specifier {
+            let imported_name = match imported {
+              Some(ModuleExportName::Ident(ident)) => ident.sym.to_string(),
+              Some(ModuleExportName::Str(str_lit)) => str_lit.value.to_string_lossy().into_owned(),
+              None => local.sym.to_string(),
+            };
+            if let Some(tracked_name) = unstable_tracked_name(&imported_name) {
+              self
+                .import_tracker
+                .scope_tracker
+                .track_translation_variable(local.sym.clone(), tracked_name.into(), 0);
+            }
           }
         }
       }
@@ -640,8 +700,16 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
         // This will be either useGT or getGT, not the alias
         let original_name = translation_variable.original_name.clone();
 
+        // const gt = useGT() from an unstable source: its templates are
+        // hashed in one visit, so no string collector entry
+        if original_name.as_ref() == UNSTABLE_USE_GT || original_name.as_ref() == UNSTABLE_GET_GT {
+          self
+            .import_tracker
+            .scope_tracker
+            .track_translation_variable(variable_name.clone(), UNSTABLE_GT_CALLBACK.into(), 0);
+        }
         // Check if its getGT or useGT
-        if is_translation_function_name(&original_name) {
+        else if is_translation_function_name(&original_name) {
           // Get counter_id
           let counter_id = self.string_collector.increment_counter();
           // Create a new entry in the string collector for this call
@@ -739,6 +807,102 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
         }
       }
       false
+    })
+  }
+
+  /// Embed translations for the configured locales in an unstable template:
+  /// gt`...` -> gt({ inline })`...` and gt({ context })`...` ->
+  /// gt({ context, inline })`...`, for an imported `t` and for the result
+  /// of `const gt = useGT()` / `const gt = await getGT()`. The runtime still
+  /// hashes the template, so a template outside the subset the plugin hashes
+  /// is left as is.
+  pub fn inject_inline_translations_on_tagged_tpl(&self, tagged_tpl: &mut TaggedTpl) {
+    if self.settings.inline_translations.is_none() {
+      return;
+    }
+    let (tag, options) = match tagged_tpl.tag.as_ref() {
+      Expr::Ident(ident) => (ident, None),
+      Expr::Call(CallExpr {
+        callee: Callee::Expr(callee),
+        args,
+        ..
+      }) => match (callee.as_ref(), args.as_slice()) {
+        (Expr::Ident(ident), [ExprOrSpread { spread: None, expr }]) => match expr.as_ref() {
+          Expr::Object(options) => (ident, Some(options)),
+          _ => return,
+        },
+        _ => return,
+      },
+      _ => return,
+    };
+    let is_unstable_gt = self
+      .import_tracker
+      .scope_tracker
+      .get_translation_variable(&tag.sym)
+      .is_some_and(|variable| matches!(variable.original_name.as_ref(), UNSTABLE_T | UNSTABLE_GT_CALLBACK));
+    if !is_unstable_gt {
+      return;
+    }
+    let Some(hash) = hash_unstable_message(&tagged_tpl.tpl, options) else {
+      return;
+    };
+    let span = tagged_tpl.span;
+    let Some(inline) = self.build_inline_translations(&hash, span) else {
+      return;
+    };
+    let prop = PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+      key: PropName::Ident(Ident::new("inline".into(), span, SyntaxContext::empty()).into()),
+      value: Box::new(inline),
+    })));
+    match tagged_tpl.tag.as_mut() {
+      Expr::Call(call) => {
+        if let Some(Expr::Object(options)) = call.args.first_mut().map(|arg| arg.expr.as_mut()) {
+          options.props.push(prop);
+        }
+      }
+      tag => {
+        let callee = std::mem::replace(tag, Expr::Invalid(Invalid { span }));
+        *tag = Expr::Call(CallExpr {
+          span,
+          ctxt: SyntaxContext::empty(),
+          callee: Callee::Expr(Box::new(callee)),
+          args: vec![ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Object(ObjectLit { span, props: vec![prop] })),
+          }],
+          type_args: None,
+        });
+      }
+    }
+  }
+
+  fn build_inline_translations(&self, hash: &str, span: Span) -> Option<Expr> {
+    self.settings.inline_translations.as_ref()?.callback_for(hash, span)
+  }
+
+  /// Check whether a JSX element has an attribute
+  pub fn determine_has_attr(element: &JSXElement, attribute_name: &str) -> bool {
+    element.opening.attrs.iter().any(|attr| {
+      matches!(attr, JSXAttrOrSpread::JSXAttr(JSXAttr { name: JSXAttrName::Ident(name), .. }) if name.sym.as_ref() == attribute_name)
+    })
+  }
+
+  /// Create a JSX attribute with an expression value: name={expr}
+  pub fn create_expr_attr(element: &JSXElement, expr: Expr, attribute_name: &str) -> JSXAttrOrSpread {
+    JSXAttrOrSpread::JSXAttr(JSXAttr {
+      span: element.opening.span,
+      name: JSXAttrName::Ident(
+        Ident::new(
+          attribute_name.into(),
+          element.opening.span,
+          SyntaxContext::empty(),
+        )
+        .into(),
+      ),
+      value: Some(JSXAttrValue::JSXExprContainer(JSXExprContainer {
+        span: element.opening.span,
+        expr: JSXExpr::Expr(Box::new(expr)),
+      })),
     })
   }
 

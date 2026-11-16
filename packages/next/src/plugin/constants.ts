@@ -16,6 +16,10 @@ export const SWC_PLUGIN_WASM_FILES = {
   legacy: { fileName: 'gt_swc_plugin_legacy.wasm' },
 } as const;
 
+// Turbopack rejects absolute imports and resolves relative ones from its own
+// root, so SWC call sites import message modules through this alias of modulesDir.
+export const MESSAGE_MODULES_ALIAS = 'gt-next/internal/_inline-messages';
+
 // Minimum Next versions for feature-specific plugin behavior.
 export const ROOT_PARAM_STABILITY = {
   unsupported: '0.0.0',

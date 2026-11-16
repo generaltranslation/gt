@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 import type { NextConfig } from 'next';
 import { BABEL_PLUGIN_SUPPORT } from '../plugin/constants';
 import { nextLocaleCookieName } from '../utils/cookies';
+import { resolveInlineTranslations } from '../plugin/resolveInlineTranslations';
 import { getRequireSpecifiers } from './utils/importGraph';
 
 // ---- Mocks ---- //
@@ -35,6 +36,17 @@ const mockVersionInfo = vi.hoisted(() => ({
 }));
 
 vi.mock('../plugin/getStableNextVersionInfo', () => mockVersionInfo);
+
+vi.mock('../plugin/resolveInlineTranslations', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('../plugin/resolveInlineTranslations')
+    >();
+  return {
+    ...actual,
+    resolveInlineTranslations: vi.fn(actual.resolveInlineTranslations),
+  };
+});
 
 // The default render settings are derived from NODE_ENV when the config
 // module loads, so it is imported once the development env is in place.
@@ -1119,6 +1131,119 @@ describe('withGTConfig', () => {
           expect(pluginPath.endsWith(`/${fileName}`)).toBe(true);
         }
       );
+    });
+
+    describe('swc inlineTranslations', () => {
+      function getSwcOptions(result: NextConfig) {
+        const plugins = result.experimental!.swcPlugins as [
+          string,
+          Record<string, unknown>,
+        ][];
+        expect(plugins).toHaveLength(1);
+        return plugins[0][1];
+      }
+
+      function mockConfigFiles(
+        localeFiles: Record<string, Record<string, unknown>>
+      ) {
+        const gtConfig = {
+          files: {
+            gt: {
+              output: './translations/[locale].json',
+              inlineTranslations: { locales: ['fr', 'es', 'de'] },
+            },
+          },
+        };
+        const contents = (filepath: unknown): string | undefined => {
+          const file = String(filepath);
+          if (file === './gt.config.json') return JSON.stringify(gtConfig);
+          const locale = Object.keys(localeFiles).find((name) =>
+            file.endsWith(path.join('translations', `${name}.json`))
+          );
+          return locale && JSON.stringify(localeFiles[locale]);
+        };
+        vi.mocked(fs.existsSync).mockImplementation(
+          (filepath) => contents(filepath) !== undefined
+        );
+        vi.mocked(fs.readFileSync).mockImplementation(
+          (filepath) => contents(filepath) ?? '{}'
+        );
+      }
+
+      it('passes the shard options for files.gt in production', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        mockConfigFiles({});
+        const shards = {
+          locales: ['fr'],
+          dir: 'out/cache/gt/inline/h',
+          contentHash: 'h',
+        };
+        vi.mocked(resolveInlineTranslations).mockReturnValueOnce(shards);
+        const result = withGTConfig(
+          { distDir: 'out' },
+          { experimentalCompilerOptions: { type: 'swc' } }
+        );
+        expect(resolveInlineTranslations).toHaveBeenCalledWith(
+          expect.objectContaining({
+            inlineTranslations: { locales: ['fr', 'es', 'de'] },
+          }),
+          { distDir: 'out' }
+        );
+        expect(getSwcOptions(result).inlineTranslations).toEqual(shards);
+      });
+
+      it('aliases message module imports to modulesDir', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        mockConfigFiles({});
+        const shards = {
+          locales: ['fr'],
+          contentHash: 'h',
+          modules: {
+            dir: '.gt/messages',
+            importDir: 'gt-next/internal/_inline-messages',
+          },
+        };
+        vi.mocked(resolveInlineTranslations)
+          .mockReturnValueOnce(shards)
+          .mockReturnValueOnce(shards);
+        const webpackResult = withGTConfig(
+          {},
+          { experimentalCompilerOptions: { type: 'swc' } }
+        );
+        expect(
+          runWebpack(webpackResult).config.resolve.alias[
+            'gt-next/internal/_inline-messages'
+          ]
+        ).toBe(path.resolve('.gt/messages'));
+
+        vi.stubEnv('TURBOPACK', '1');
+        const turbopackResult = withGTConfig(
+          {},
+          { experimentalCompilerOptions: { type: 'swc' } }
+        );
+        expect(turbopackResult.turbopack!.resolveAlias).toMatchObject({
+          'gt-next/internal/_inline-messages/*': './.gt/messages/*',
+        });
+      });
+
+      it('does not pass inline translations outside production builds', () => {
+        mockConfigFiles({ fr: { a: 'Bonjour' } });
+        const result = withGTConfig(
+          {},
+          { experimentalCompilerOptions: { type: 'swc' } }
+        );
+        expect(getSwcOptions(result)).not.toHaveProperty('inlineTranslations');
+      });
+
+      it('omits inline translations when no locale has a translations file', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        mockConfigFiles({});
+        const result = withGTConfig(
+          {},
+          { experimentalCompilerOptions: { type: 'swc' } }
+        );
+        expect(getSwcOptions(result)).not.toHaveProperty('inlineTranslations');
+      });
     });
   });
 

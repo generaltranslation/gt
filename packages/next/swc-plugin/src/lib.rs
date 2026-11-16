@@ -8,6 +8,7 @@ extern crate swc_core_v49 as swc_core;
 #[cfg(feature = "swc-v79")]
 extern crate swc_core_v79 as swc_core;
 
+use crate::inline_source::InlineSource;
 use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,
@@ -285,6 +286,13 @@ impl Fold for TransformVisitor {
     self.with_scope(|visitor| switch.fold_children_with(visitor))
   }
 
+  /// Embed translations in unstable gt`...` templates
+  fn fold_tagged_tpl(&mut self, tagged_tpl: TaggedTpl) -> TaggedTpl {
+    let mut tagged_tpl = tagged_tpl.fold_children_with(self);
+    self.inject_inline_translations_on_tagged_tpl(&mut tagged_tpl);
+    tagged_tpl
+  }
+
   /// Process function calls to detect invalid usage of translation functions
   /// Inject hash attributes on translation components
   fn fold_call_expr(&mut self, call_expr: CallExpr) -> CallExpr {
@@ -376,6 +384,21 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     .get_context(&TransformPluginMetadataContextKind::Filename)
     .map(|f| f.to_string());
 
+  transform_program(program, config, filename)
+}
+
+/// Run both plugin passes (collection, then injection) on a program
+pub fn transform_program(program: Program, config: PluginConfig, filename: Option<String>) -> Program {
+  transform_program_in(program, config, filename, std::path::Path::new(crate::inline_shards::PLUGIN_CWD))
+}
+
+/// `transform_program` reading inline translation shards relative to `cwd`
+pub fn transform_program_in(
+  program: Program,
+  config: PluginConfig,
+  filename: Option<String>,
+  cwd: &std::path::Path,
+) -> Program {
   // Create StringCollector for the two-pass system
   let string_collector = crate::ast::StringCollector::new();
 
@@ -403,6 +426,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     );
   }
 
+  let inline_translations = config.inline_translations.map(|inline| InlineSource::open(cwd, inline));
   let collected_data = visitor.string_collector;
   let mut visitor = TransformVisitor::new(
     config.log_level,
@@ -412,13 +436,24 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     config.autoderive_jsx,
     config.autoderive_strings,
     collected_data,
-  );
-  program.fold_with(&mut visitor)
+  )
+  .with_inline_translations(inline_translations);
+  let mut program = program.fold_with(&mut visitor);
+  if let Some(InlineSource::Modules(modules)) = &visitor.settings.inline_translations {
+    modules.inject_imports(&mut program);
+  }
+  program
 }
 
 pub mod ast;
 pub mod config;
 pub mod hash;
+pub mod inline_modules;
+pub mod inline_shards;
+pub mod inline_source;
 pub mod logging;
 pub mod visitor;
 pub mod whitespace;
+
+#[cfg(test)]
+mod inline_translations_tests;
