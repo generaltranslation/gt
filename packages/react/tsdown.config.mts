@@ -38,6 +38,7 @@ const entries = [
   'src/unstable.ts',
   'src/unstable.rsc.ts',
   'src/vite.ts',
+  'src/static-locale.ts',
 ];
 
 // src/index.types.ts only backs the exports map's "types" conditions; its
@@ -50,9 +51,13 @@ export default defineConfig(
     entries.flatMap((entry, index) => {
       // Entries that share React context and singletons keep react-core and
       // gt-i18n external; unstable entries import them like the index entries.
-      const entryDeps = /^src\/(?:index|compat|unstable)\./.test(entry)
-        ? contextDeps
-        : deps;
+      // static-locale is server-only and imports gt-i18n as a dependency
+      // rather than bundling a second copy.
+      const entryDeps =
+        /^src\/(?:index|compat|unstable)\./.test(entry) ||
+        entry === 'src/static-locale.ts'
+          ? contextDeps
+          : deps;
       const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
       return [
