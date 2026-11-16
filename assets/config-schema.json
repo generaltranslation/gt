@@ -179,11 +179,12 @@
             },
             "inlineTranslations": {
               "type": "object",
-              "description": "Experimental: embed translations for the given locales at build time",
               "properties": {
                 "locales": {
                   "type": "array",
-                  "items": { "type": "string" },
+                  "items": {
+                    "type": "string"
+                  },
                   "description": "Locales to embed, usually the most visited ones"
                 },
                 "msgOutput": {
@@ -193,7 +194,8 @@
                 }
               },
               "required": ["locales"],
-              "additionalProperties": false
+              "additionalProperties": false,
+              "description": "Experimental: embed translations for the given locales at build time"
             },
             "publish": {
               "type": "boolean",
