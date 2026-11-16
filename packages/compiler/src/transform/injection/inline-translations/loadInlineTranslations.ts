@@ -66,14 +66,14 @@ export function getInlineTranslationsFiles(
 
 /**
  * The `files.gt.output` file of each embedded locale that exists, in
- * `files.gt.inlineTranslations.locales` order. Paths resolve from the working
+ * `files.gt.inlineTranslations.locales` order without repeats. Paths resolve from the working
  * directory.
  */
 export function resolveInlineTranslationsFiles(
   gtFiles: GTOutputFileConfig | undefined
 ): { locale: string; filePath: string }[] {
-  const locales = gtFiles?.inlineTranslations?.locales ?? [];
-  return locales.flatMap((locale) => {
+  const locales = new Set(gtFiles?.inlineTranslations?.locales);
+  return [...locales].flatMap((locale) => {
     const filePath = resolveLocaleFilePath(gtFiles?.output, locale);
     return filePath && fs.existsSync(filePath) ? [{ locale, filePath }] : [];
   });

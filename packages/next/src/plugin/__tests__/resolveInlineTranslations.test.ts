@@ -88,6 +88,40 @@ describe('resolveInlineTranslations', () => {
     expect(keys).toContain('_.json');
   });
 
+  it('writes each repeated locale once', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const result = resolveInlineTranslations({
+      ...gtFiles,
+      inlineTranslations: { locales: ['fr', 'fr'] },
+    })!;
+    expect(result.locales).toEqual(['fr']);
+    expect(readShard(result.dir, 'fr', '05')).toEqual({ '05aa': 'Bonjour' });
+  });
+
+  it('keeps a __proto__ hash', () => {
+    writeLocale('fr', JSON.parse('{"__proto__": "Perso"}'));
+    const result = resolveInlineTranslations(gtFiles)!;
+    expect(
+      fs.readFileSync(path.join(cwd, result.dir, 'fr', '_.json'), 'utf8')
+    ).toBe('{"__proto__":"Perso"}');
+  });
+
+  it('warns and still returns the options when shards cannot be written', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fs.mkdirSync(path.join(cwd, '.next'));
+    fs.chmodSync(path.join(cwd, '.next'), 0o555);
+    try {
+      const result = resolveInlineTranslations(gtFiles);
+      expect(result?.locales).toEqual(['fr']);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('could not be written')
+      );
+    } finally {
+      fs.chmodSync(path.join(cwd, '.next'), 0o755);
+    }
+  });
+
   it('rejects a distDir outside the working directory', () => {
     writeLocale('fr', { '05aa': 'Bonjour' });
     expect(() =>

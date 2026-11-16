@@ -189,3 +189,15 @@ export const babelCompilerTurbopackUnavailableWarning =
   `To use compiler optimizations with Turbopack, set experimentalCompilerOptions: { type: 'swc' }.`;
 
 export const swcPluginCompatibilityChangeWarning = `gt-next (plugin): The GT swc compiler requires next@${SWC_PLUGIN_SUPPORT} or newer. Update to the latest version of Next.js.`;
+
+export const createInlineTranslationsShardsWarning = (
+  dir: string,
+  error: unknown
+) =>
+  createGtNextPluginDiagnostic({
+    severity: 'Warning',
+    whatHappened: `Embedded translations could not be written to ${dir}`,
+    why: 'Builds read them from there, so a build will fail; servers do not need them',
+    fix: 'Make the Next.js distDir writable during next build',
+    details: String(error),
+  });

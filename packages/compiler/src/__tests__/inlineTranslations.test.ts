@@ -139,6 +139,17 @@ describe('inlineTranslations in gt.config.json', () => {
     expect(output).not.toContain('(locale) =>');
   });
 
+  it('embeds a repeated locale once', async () => {
+    const hash = await getGtHash();
+    const output = await transformWithPlugin(
+      inlineOptions(['fr', 'fr'], { fr: { [hash]: 'Bonjour le monde' } }),
+      USEGT_CODE
+    );
+    expect(output).toContain(
+      '(locale) => locale === "fr" ? "Bonjour le monde" : undefined'
+    );
+  });
+
   it('skips locales without a translations file', async () => {
     const hash = await getGtHash();
     const output = await transformWithPlugin(
