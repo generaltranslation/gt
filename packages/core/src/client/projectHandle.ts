@@ -85,6 +85,7 @@ import {
   resolveServiceLocale,
   writeInBatches,
   type ApiClientSettings,
+  type BatchWriteResponse,
 } from './apiClient';
 import { createDiagnosticMessage } from '../logging/diagnostics';
 import type { GTProjectConfig } from './clientConfig';
@@ -95,12 +96,39 @@ import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
 import { uploadFileContents } from '../translate/uploadFileContents';
 import type {
   FileUpload,
+  TranslationSourceUpload,
   TranslationUpload,
 } from '../types-dir/api/uploadFiles';
 import { decodeFileContent } from '../utils/base64';
 
 // The server accepts at most 25 moves per request.
 const MOVE_FILES_BATCH_SIZE = 25;
+
+// Every field required, so a literal that builds one fails to compile when it misses or adds a field.
+type EveryField<Type> = { [Key in keyof Required<Type>]: Type[Key] };
+
+function translationSourceFields({
+  fileName,
+  fileFormat,
+  dataFormat,
+  fileId,
+  versionId,
+  branchId,
+}: TranslationSourceUpload): EveryField<
+  Omit<TranslationSourceUpload, 'content'>
+> {
+  return { fileName, fileFormat, dataFormat, fileId, versionId, branchId };
+}
+
+function translationFields({
+  fileName,
+  fileFormat,
+  dataFormat,
+  locale,
+}: TranslationUpload): EveryField<Omit<TranslationUpload, 'content'>> {
+  return { fileName, fileFormat, dataFormat, locale };
+}
+
 /**
  * Project and file operations, plus runtime translation, for one project: the
  * project-scoped `new GeneralTranslation({ projectId })` and `account.project(projectId)`.
@@ -503,7 +531,7 @@ export class ProjectHandle extends GTRuntime {
   async moveFiles(
     moves: MoveMapping[],
     options: { branchId?: string; timeout?: number } = {}
-  ): Promise<MoveFilesResponse> {
+  ): Promise<BatchWriteResponse<MoveFilesResponse>> {
     // The server checks this per request; a list split into batches must hold it
     // as a whole, or a later batch could move onto a file an earlier one created.
     const oldFileIds = new Set(moves.map(({ oldFileId }) => oldFileId));
@@ -711,9 +739,11 @@ export class ProjectHandle extends GTRuntime {
    * result's `status` and `translations`.
    *
    * @param {PublishFileEntry[]} files - File versions with publish flags; each branch, file, and version may appear once.
-   * @returns {Promise<PublishFilesResponse>} The summary and one result per file version, in request order.
+   * @returns {Promise<BatchWriteResponse<PublishFilesResponse>>} The summary and one result per file version, in request order.
    */
-  async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResponse> {
+  async publishFiles(
+    files: PublishFileEntry[]
+  ): Promise<BatchWriteResponse<PublishFilesResponse>> {
     // Publishing and unpublishing one version in separate concurrent batches
     // would leave its CDN state to whichever request finishes last.
     const versions = new Set(
@@ -784,7 +814,7 @@ export class ProjectHandle extends GTRuntime {
   async overwriteTranslations(
     diffs: OverwriteTranslationsData['body']['diffs'],
     options: { timeout?: number } = {}
-  ): Promise<OverwriteTranslationsResponse> {
+  ): Promise<BatchWriteResponse<OverwriteTranslationsResponse>> {
     const response = await writeInBatches(
       diffs,
       DEFAULT_BATCH_SIZE,
@@ -1054,7 +1084,7 @@ export class ProjectHandle extends GTRuntime {
   async uploadSourceFiles(
     files: { source: FileUpload }[],
     options: { sourceLocale?: string; timeout?: number } = {}
-  ): Promise<UploadSourceFilesResponse> {
+  ): Promise<BatchWriteResponse<UploadSourceFilesResponse>> {
     const sourceLocale =
       options.sourceLocale ?? this.localeConfig.defaultLocale;
     return writeInBatches(
@@ -1120,22 +1150,25 @@ export class ProjectHandle extends GTRuntime {
    * @returns The summary and one result per translation, in request order.
    */
   async uploadTranslations(
-    files: { source: FileUpload; translations: TranslationUpload[] }[],
+    files: {
+      source: TranslationSourceUpload;
+      translations: TranslationUpload[];
+    }[],
     options: { timeout?: number } = {}
-  ): Promise<UploadTranslationsResponse> {
+  ): Promise<BatchWriteResponse<UploadTranslationsResponse>> {
     const response = await writeInBatches(
       files,
       DEFAULT_BATCH_SIZE,
       async (batch) => {
         const request = this.request(options.timeout);
-        // A translation upload never takes its source's formatMetadata.
+        // Only the content is uploaded: a wider object's formatMetadata has no place in this request.
         const contents = await uploadFileContents(
           request,
-          batch.flatMap(
-            ({ source: { formatMetadata: _, ...source }, translations }) => [
-              source,
-              ...translations,
-            ]
+          batch.flatMap(({ source, translations }) =>
+            [source, ...translations].map(({ content, fileFormat }) => ({
+              content,
+              fileFormat,
+            }))
           )
         );
         let next = 0;
@@ -1143,25 +1176,17 @@ export class ProjectHandle extends GTRuntime {
           await uploadTranslations({
             ...request,
             body: {
-              data: batch.map(
-                ({
-                  source: { content: _, formatMetadata: _metadata, ...source },
-                  translations,
-                }) => ({
-                  source: {
-                    ...source,
-                    ...contents[next++],
-                    locale: this.resolveServiceLocale(source.locale),
-                  },
-                  translations: translations.map(
-                    ({ content: _, ...translation }) => ({
-                      ...translation,
-                      ...contents[next++],
-                      locale: this.resolveServiceLocale(translation.locale),
-                    })
-                  ),
-                })
-              ),
+              data: batch.map(({ source, translations }) => ({
+                source: {
+                  ...translationSourceFields(source),
+                  ...contents[next++],
+                },
+                translations: translations.map((translation) => ({
+                  ...translationFields(translation),
+                  ...contents[next++],
+                  locale: this.resolveServiceLocale(translation.locale),
+                })),
+              })),
             },
           })
         );

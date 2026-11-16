@@ -312,20 +312,14 @@ async function sendTranslations(
     }
     if (translations.length)
       uploads.push({
-        source: {
-          ...version,
-          locale: batch.sourceLocale,
-          content: sourceContent,
-        },
+        source: { ...version, content: sourceContent },
         translations,
       });
   }
   if (!uploads.length) return sent;
   const { results } = await batch.gt.uploadTranslations(uploads);
   results.forEach((result, index) => {
-    if (result.status === 'failed')
-      uploaded[index].error =
-        result.error ?? 'GT could not save the translation.';
+    if (result.status === 'failed') uploaded[index].error = result.error;
   });
   return sent;
 }

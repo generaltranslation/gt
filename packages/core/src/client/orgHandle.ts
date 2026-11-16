@@ -16,6 +16,7 @@ import {
   resolveServiceLocale,
   writeInBatches,
   type ApiClientSettings,
+  type BatchWriteResponse,
 } from './apiClient';
 import type { CustomMapping } from '@generaltranslation/format';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
@@ -46,7 +47,7 @@ export class OrgHandle {
   async upsertAssets(
     assets: UpsertAssetsData['body']['assets'],
     options: { timeout?: number } = {}
-  ): Promise<UpsertAssetsResponse> {
+  ): Promise<BatchWriteResponse<UpsertAssetsResponse>> {
     const request = {
       client: createApiClient({
         ...this.clientSettings,

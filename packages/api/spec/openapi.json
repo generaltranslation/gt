@@ -344,7 +344,8 @@
                       "type": "string"
                     }
                   },
-                  "required": ["status", "dataFormat", "locale"]
+                  "required": ["status", "dataFormat", "locale"],
+                  "title": "Succeeded"
                 },
                 {
                   "type": "object",
@@ -354,20 +355,23 @@
                       "enum": ["failed"]
                     },
                     "error": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Why the item failed."
                     },
                     "code": {
-                      "allOf": [
-                        {
-                          "$ref": "#/components/schemas/ErrorCode"
-                        },
-                        {
-                          "description": "Machine-readable cause of the failure. Present when `error` is."
-                        }
-                      ]
+                      "type": "string",
+                      "enum": [
+                        "invalid_request",
+                        "not_found",
+                        "plan_feature_unavailable",
+                        "upstream_error",
+                        "internal_error"
+                      ],
+                      "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
                     }
                   },
-                  "required": ["status", "error", "code"]
+                  "required": ["status", "error", "code"],
+                  "title": "Failed"
                 }
               ]
             },
@@ -7431,13 +7435,6 @@
                       "error": "The content has not been synced, or changed since its last sync. Sync it again, then retry.",
                       "code": "sync_required"
                     }
-                  },
-                  "translation_not_ready": {
-                    "summary": "translation_not_ready",
-                    "value": {
-                      "error": "The translation for this locale is not available yet. Retry later.",
-                      "code": "translation_not_ready"
-                    }
                   }
                 },
                 "schema": {
@@ -7453,8 +7450,7 @@
                           "enum": [
                             "not_found",
                             "integration_not_connected",
-                            "sync_required",
-                            "translation_not_ready"
+                            "sync_required"
                           ]
                         }
                       }
@@ -7540,6 +7536,43 @@
                             "unsupported_media_type",
                             "unsupported_content_encoding"
                           ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "425": {
+            "description": "The requested translation has not finished yet. Retry later.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "translation_not_ready": {
+                    "summary": "translation_not_ready",
+                    "value": {
+                      "error": "The translation for this locale is not available yet. Retry later.",
+                      "code": "translation_not_ready"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["translation_not_ready"]
                         }
                       }
                     }
@@ -8765,45 +8798,81 @@
                     "results": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "branchId": {
-                            "type": "string"
-                          },
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "versionId": {
-                            "type": "string"
-                          },
-                          "locale": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": ["succeeded", "failed"]
-                          },
-                          "error": {
-                            "type": "string",
-                            "description": "Why the item failed."
-                          },
-                          "code": {
-                            "allOf": [
-                              {
-                                "$ref": "#/components/schemas/ErrorCode"
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string"
                               },
-                              {
-                                "description": "Machine-readable cause of the failure. Present when `error` is."
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              },
+                              "locale": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["succeeded"]
                               }
-                            ]
+                            },
+                            "required": [
+                              "branchId",
+                              "fileId",
+                              "versionId",
+                              "locale",
+                              "status"
+                            ],
+                            "title": "Succeeded"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string"
+                              },
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              },
+                              "locale": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["failed"]
+                              },
+                              "error": {
+                                "type": "string",
+                                "description": "Why the item failed."
+                              },
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "source_file_not_found",
+                                  "not_found",
+                                  "invalid_request",
+                                  "internal_error"
+                                ],
+                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "fileId",
+                              "versionId",
+                              "locale",
+                              "status",
+                              "error",
+                              "code"
+                            ],
+                            "title": "Failed"
                           }
-                        },
-                        "required": [
-                          "branchId",
-                          "fileId",
-                          "versionId",
-                          "locale",
-                          "status"
                         ]
                       },
                       "description": "One result per translation, in request order."
@@ -9230,7 +9299,7 @@
                         "newFileId": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 64
+                          "description": "New file ID, at most 64 characters. A longer ID fails only this move, with code `invalid_request`."
                         },
                         "newFileName": {
                           "type": "string",
@@ -9252,7 +9321,7 @@
         },
         "responses": {
           "200": {
-            "description": "Result for each move, in request order, even when every move fails; a failed move has `status: \"failed\"` and an `error`. Each move clones the latest source file and its translations under the new file ID and makes the new file ID current in place of the old one.",
+            "description": "Result for each move, in request order, even when every move fails; a failed move has `status: \"failed\"`, an `error` and a `code`. A move whose `newFileId` is longer than 64 characters fails with `invalid_request`, and one whose old file does not exist with `source_file_not_found`. Each move clones the latest source file and its translations under the new file ID and makes the new file ID current in place of the old one.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9264,40 +9333,68 @@
                     "results": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "oldFileId": {
-                            "type": "string"
-                          },
-                          "newFileId": {
-                            "type": "string"
-                          },
-                          "newSourceFileId": {
-                            "type": "string"
-                          },
-                          "clonedTranslationsCount": {
-                            "type": "integer"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": ["succeeded", "failed"]
-                          },
-                          "error": {
-                            "type": "string",
-                            "description": "Why the item failed."
-                          },
-                          "code": {
-                            "allOf": [
-                              {
-                                "$ref": "#/components/schemas/ErrorCode"
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "oldFileId": {
+                                "type": "string"
                               },
-                              {
-                                "description": "Machine-readable cause of the failure. Present when `error` is."
+                              "newFileId": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["succeeded"]
+                              },
+                              "newSourceFileId": {
+                                "type": "string"
+                              },
+                              "clonedTranslationsCount": {
+                                "type": "integer"
                               }
-                            ]
+                            },
+                            "required": ["oldFileId", "newFileId", "status"],
+                            "title": "Succeeded"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "oldFileId": {
+                                "type": "string"
+                              },
+                              "newFileId": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["failed"]
+                              },
+                              "error": {
+                                "type": "string",
+                                "description": "Why the item failed."
+                              },
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "invalid_request",
+                                  "source_file_not_found",
+                                  "conflict",
+                                  "internal_error"
+                                ],
+                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                              }
+                            },
+                            "required": [
+                              "oldFileId",
+                              "newFileId",
+                              "status",
+                              "error",
+                              "code"
+                            ],
+                            "title": "Failed"
                           }
-                        },
-                        "required": ["oldFileId", "newFileId", "status"]
+                        ]
                       },
                       "description": "One result per move, in request order."
                     }
@@ -11282,73 +11379,186 @@
                     "results": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "branchId": {
-                            "type": "string"
-                          },
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "versionId": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": ["succeeded", "failed"]
-                          },
-                          "error": {
-                            "type": "string",
-                            "description": "Why the item failed."
-                          },
-                          "code": {
-                            "allOf": [
-                              {
-                                "$ref": "#/components/schemas/ErrorCode"
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string"
                               },
-                              {
-                                "description": "Machine-readable cause of the failure. Present when `error` is."
-                              }
-                            ]
-                          },
-                          "translations": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "locale": {
-                                  "type": "string"
-                                },
-                                "status": {
-                                  "type": "string",
-                                  "enum": ["succeeded", "failed"]
-                                },
-                                "error": {
-                                  "type": "string",
-                                  "description": "Why the item failed."
-                                },
-                                "code": {
-                                  "allOf": [
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              },
+                              "translations": {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
                                     {
-                                      "$ref": "#/components/schemas/ErrorCode"
+                                      "type": "object",
+                                      "properties": {
+                                        "locale": {
+                                          "type": "string"
+                                        },
+                                        "status": {
+                                          "type": "string",
+                                          "enum": ["succeeded"]
+                                        }
+                                      },
+                                      "required": ["locale", "status"],
+                                      "title": "Succeeded"
                                     },
                                     {
-                                      "description": "Machine-readable cause of the failure. Present when `error` is."
+                                      "type": "object",
+                                      "properties": {
+                                        "locale": {
+                                          "type": "string"
+                                        },
+                                        "status": {
+                                          "type": "string",
+                                          "enum": ["failed"]
+                                        },
+                                        "error": {
+                                          "type": "string",
+                                          "description": "Why the item failed."
+                                        },
+                                        "code": {
+                                          "type": "string",
+                                          "enum": [
+                                            "not_found",
+                                            "file_too_large",
+                                            "upstream_error",
+                                            "internal_error"
+                                          ],
+                                          "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                                        }
+                                      },
+                                      "required": [
+                                        "locale",
+                                        "status",
+                                        "error",
+                                        "code"
+                                      ],
+                                      "title": "Failed"
                                     }
                                   ]
-                                }
+                                },
+                                "description": "Result for each completed translation of the version."
                               },
-                              "required": ["locale", "status"]
+                              "status": {
+                                "type": "string",
+                                "enum": ["succeeded"]
+                              }
                             },
-                            "description": "Result for each completed translation of the version."
+                            "required": [
+                              "branchId",
+                              "fileId",
+                              "versionId",
+                              "translations",
+                              "status"
+                            ],
+                            "title": "Succeeded"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string"
+                              },
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              },
+                              "translations": {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "locale": {
+                                          "type": "string"
+                                        },
+                                        "status": {
+                                          "type": "string",
+                                          "enum": ["succeeded"]
+                                        }
+                                      },
+                                      "required": ["locale", "status"],
+                                      "title": "Succeeded"
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "locale": {
+                                          "type": "string"
+                                        },
+                                        "status": {
+                                          "type": "string",
+                                          "enum": ["failed"]
+                                        },
+                                        "error": {
+                                          "type": "string",
+                                          "description": "Why the item failed."
+                                        },
+                                        "code": {
+                                          "type": "string",
+                                          "enum": [
+                                            "not_found",
+                                            "file_too_large",
+                                            "upstream_error",
+                                            "internal_error"
+                                          ],
+                                          "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                                        }
+                                      },
+                                      "required": [
+                                        "locale",
+                                        "status",
+                                        "error",
+                                        "code"
+                                      ],
+                                      "title": "Failed"
+                                    }
+                                  ]
+                                },
+                                "description": "Result for each completed translation of the version."
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["failed"]
+                              },
+                              "error": {
+                                "type": "string",
+                                "description": "Why the item failed."
+                              },
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "source_file_not_found",
+                                  "not_found",
+                                  "file_too_large",
+                                  "upstream_error",
+                                  "internal_error"
+                                ],
+                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "fileId",
+                              "versionId",
+                              "translations",
+                              "status",
+                              "error",
+                              "code"
+                            ],
+                            "title": "Failed"
                           }
-                        },
-                        "required": [
-                          "branchId",
-                          "fileId",
-                          "versionId",
-                          "status",
-                          "translations"
                         ]
                       },
                       "description": "One result per file version, in request order."
@@ -11833,12 +12043,12 @@
                                 "fileId": {
                                   "type": "string",
                                   "minLength": 1,
-                                  "maxLength": 64
+                                  "description": "File ID, at most 64 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved."
                                 },
                                 "versionId": {
                                   "type": "string",
                                   "minLength": 1,
-                                  "maxLength": 255
+                                  "description": "Version ID, at most 255 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved."
                                 },
                                 "branchId": {
                                   "type": "string",
@@ -11846,11 +12056,13 @@
                                 },
                                 "checkedOutBranchId": {
                                   "type": "string",
-                                  "minLength": 1
+                                  "minLength": 1,
+                                  "description": "Branch this file's branch was created from. When the file has no version on its own branch yet, it continues from that branch's current version, so its translations are reused. A branch that does not exist fails this file with `branch_not_found`."
                                 },
                                 "incomingBranchId": {
                                   "type": "string",
-                                  "minLength": 1
+                                  "minLength": 1,
+                                  "description": "Branch that was merged into this file's branch. The file is linked to that branch's current version, so translations made there are reused. A branch that does not exist fails this file with `branch_not_found`."
                                 },
                                 "metadata": {
                                   "type": "object",
@@ -11955,7 +12167,7 @@
         },
         "responses": {
           "200": {
-            "description": "Upload result for each source file, in request order, even when every file fails to save: a failed file has `status: \"failed\"` and an `error` while the other files are saved. Retrying with the same content and identifiers is safe.",
+            "description": "Upload result for each source file, in request order, even when every file fails: a failed file has `status: \"failed\"`, an `error` and a `code` while the other files are saved. A file whose content is not valid base64 or does not parse in its `fileFormat`, or whose upload is missing or not that format, fails with `invalid_request`; a file larger than the API reads per file, as content or as an upload, fails with `file_too_large`; a file that names a branch that does not exist, in `branchId`, `checkedOutBranchId` or `incomingBranchId`, fails with `branch_not_found`. Retrying with the same content and identifiers is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11967,52 +12179,97 @@
                     "results": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "branchId": {
-                            "type": "string"
-                          },
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "versionId": {
-                            "type": "string"
-                          },
-                          "fileName": {
-                            "type": "string"
-                          },
-                          "fileFormat": {
-                            "$ref": "#/components/schemas/FileFormat"
-                          },
-                          "dataFormat": {
-                            "$ref": "#/components/schemas/DataFormat"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": ["succeeded", "failed"]
-                          },
-                          "error": {
-                            "type": "string",
-                            "description": "Why the item failed."
-                          },
-                          "code": {
-                            "allOf": [
-                              {
-                                "$ref": "#/components/schemas/ErrorCode"
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string"
                               },
-                              {
-                                "description": "Machine-readable cause of the failure. Present when `error` is."
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string",
+                                "description": "Version ID; empty when the item failed before its version could be derived."
+                              },
+                              "fileName": {
+                                "type": "string"
+                              },
+                              "fileFormat": {
+                                "$ref": "#/components/schemas/FileFormat"
+                              },
+                              "dataFormat": {
+                                "$ref": "#/components/schemas/DataFormat"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["succeeded"]
                               }
-                            ]
+                            },
+                            "required": [
+                              "branchId",
+                              "fileId",
+                              "versionId",
+                              "fileName",
+                              "fileFormat",
+                              "status"
+                            ],
+                            "title": "Succeeded"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string"
+                              },
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string",
+                                "description": "Version ID; empty when the item failed before its version could be derived."
+                              },
+                              "fileName": {
+                                "type": "string"
+                              },
+                              "fileFormat": {
+                                "$ref": "#/components/schemas/FileFormat"
+                              },
+                              "dataFormat": {
+                                "$ref": "#/components/schemas/DataFormat"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["failed"]
+                              },
+                              "error": {
+                                "type": "string",
+                                "description": "Why the item failed."
+                              },
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "invalid_request",
+                                  "file_too_large",
+                                  "branch_not_found",
+                                  "internal_error"
+                                ],
+                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "fileId",
+                              "versionId",
+                              "fileName",
+                              "fileFormat",
+                              "status",
+                              "error",
+                              "code"
+                            ],
+                            "title": "Failed"
                           }
-                        },
-                        "required": [
-                          "branchId",
-                          "fileId",
-                          "versionId",
-                          "fileName",
-                          "fileFormat",
-                          "status"
                         ]
                       },
                       "description": "One result per uploaded source file, in request order."
@@ -12024,14 +12281,14 @@
             }
           },
           "400": {
-            "description": "The request is malformed or failed validation, including a file whose content is not valid base64 or does not parse in its `fileFormat`. Nothing is saved, and the error names each such file by its index and fileName.",
+            "description": "The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.",
             "content": {
               "application/json": {
                 "examples": {
                   "invalid_request": {
                     "summary": "invalid_request",
                     "value": {
-                      "error": "The request is malformed or failed validation, including a file whose content is not valid base64 or does not parse in its `fileFormat`. Nothing is saved, and the error names each such file by its index and fileName.",
+                      "error": "The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.",
                       "code": "invalid_request"
                     }
                   },
@@ -12237,22 +12494,15 @@
             }
           },
           "404": {
-            "description": "A named branch does not exist. Nothing is saved.",
+            "description": "The requested resource was not found.",
             "content": {
               "application/json": {
                 "examples": {
                   "not_found": {
                     "summary": "not_found",
                     "value": {
-                      "error": "A named branch does not exist. Nothing is saved.",
+                      "error": "The requested resource was not found.",
                       "code": "not_found"
-                    }
-                  },
-                  "branch_not_found": {
-                    "summary": "branch_not_found",
-                    "value": {
-                      "error": "The branch ID or name does not exist in this project.",
-                      "code": "branch_not_found"
                     }
                   }
                 },
@@ -12266,7 +12516,7 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["not_found", "branch_not_found"]
+                          "enum": ["not_found"]
                         }
                       }
                     }
@@ -13113,35 +13363,22 @@
                                 "dataFormat": {
                                   "$ref": "#/components/schemas/FileDataFormat"
                                 },
-                                "locale": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "examples": ["en"]
-                                },
                                 "fileId": {
                                   "type": "string",
                                   "minLength": 1,
-                                  "maxLength": 64
+                                  "description": "File ID, at most 64 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved."
                                 },
                                 "versionId": {
                                   "type": "string",
                                   "minLength": 1,
-                                  "maxLength": 255
+                                  "description": "Version ID, at most 255 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved."
                                 },
                                 "branchId": {
                                   "type": "string",
                                   "minLength": 1
-                                },
-                                "checkedOutBranchId": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "incomingBranchId": {
-                                  "type": "string",
-                                  "minLength": 1
                                 }
                               },
-                              "required": ["fileName", "fileFormat", "locale"]
+                              "required": ["fileName", "fileFormat"]
                             },
                             {
                               "oneOf": [
@@ -13267,7 +13504,7 @@
         },
         "responses": {
           "200": {
-            "description": "Upload result for each translation, in request order, even when every translation fails to save: a failed translation has `status: \"failed\"` and an `error` while the others are saved. Retrying with the same content is safe; translations that were already saved are saved again, which can repeat completed webhooks and revisions.",
+            "description": "Upload result for each translation, in request order, even when every translation fails: a failed translation has `status: \"failed\"`, an `error` and a `code` while the others are saved. A translation fails with `invalid_request` when its content or its source's content is not valid base64 or does not decode or parse, when its or its source's upload is missing or not that format, or when its MESSAGE_TREE keys do not match the source; it fails with `file_too_large` when it or its source is larger than the API reads per file, as content or as an upload, and with `source_file_not_found` when its source file does not exist. Retrying with the same content is safe; translations that were already saved are saved again, which can repeat completed webhooks and revisions.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13279,56 +13516,105 @@
                     "results": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "branchId": {
-                            "type": "string"
-                          },
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "versionId": {
-                            "type": "string"
-                          },
-                          "fileName": {
-                            "type": "string"
-                          },
-                          "fileFormat": {
-                            "$ref": "#/components/schemas/FileFormat"
-                          },
-                          "dataFormat": {
-                            "$ref": "#/components/schemas/DataFormat"
-                          },
-                          "locale": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": ["succeeded", "failed"]
-                          },
-                          "error": {
-                            "type": "string",
-                            "description": "Why the item failed."
-                          },
-                          "code": {
-                            "allOf": [
-                              {
-                                "$ref": "#/components/schemas/ErrorCode"
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string"
                               },
-                              {
-                                "description": "Machine-readable cause of the failure. Present when `error` is."
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string",
+                                "description": "Version ID; empty when the item failed before its version could be derived."
+                              },
+                              "fileName": {
+                                "type": "string"
+                              },
+                              "fileFormat": {
+                                "$ref": "#/components/schemas/FileFormat"
+                              },
+                              "dataFormat": {
+                                "$ref": "#/components/schemas/DataFormat"
+                              },
+                              "locale": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["succeeded"]
                               }
-                            ]
+                            },
+                            "required": [
+                              "branchId",
+                              "fileId",
+                              "versionId",
+                              "fileName",
+                              "fileFormat",
+                              "locale",
+                              "status"
+                            ],
+                            "title": "Succeeded"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string"
+                              },
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string",
+                                "description": "Version ID; empty when the item failed before its version could be derived."
+                              },
+                              "fileName": {
+                                "type": "string"
+                              },
+                              "fileFormat": {
+                                "$ref": "#/components/schemas/FileFormat"
+                              },
+                              "dataFormat": {
+                                "$ref": "#/components/schemas/DataFormat"
+                              },
+                              "locale": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["failed"]
+                              },
+                              "error": {
+                                "type": "string",
+                                "description": "Why the item failed."
+                              },
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "invalid_request",
+                                  "file_too_large",
+                                  "source_file_not_found",
+                                  "internal_error"
+                                ],
+                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "fileId",
+                              "versionId",
+                              "fileName",
+                              "fileFormat",
+                              "locale",
+                              "status",
+                              "error",
+                              "code"
+                            ],
+                            "title": "Failed"
                           }
-                        },
-                        "required": [
-                          "branchId",
-                          "fileId",
-                          "versionId",
-                          "fileName",
-                          "fileFormat",
-                          "locale",
-                          "status"
                         ]
                       },
                       "description": "One result per uploaded translation, in request order."
@@ -13340,14 +13626,14 @@
             }
           },
           "400": {
-            "description": "The request is malformed or failed validation, including a translation whose content is not valid base64 or does not parse in its format. Nothing is saved, and the error names each such translation by its index, fileName and locale.",
+            "description": "The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.",
             "content": {
               "application/json": {
                 "examples": {
                   "invalid_request": {
                     "summary": "invalid_request",
                     "value": {
-                      "error": "The request is malformed or failed validation, including a translation whose content is not valid base64 or does not parse in its format. Nothing is saved, and the error names each such translation by its index, fileName and locale.",
+                      "error": "The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.",
                       "code": "invalid_request"
                     }
                   },
@@ -13553,22 +13839,15 @@
             }
           },
           "404": {
-            "description": "A source file does not exist. Nothing is saved.",
+            "description": "The requested resource was not found.",
             "content": {
               "application/json": {
                 "examples": {
                   "not_found": {
                     "summary": "not_found",
                     "value": {
-                      "error": "A source file does not exist. Nothing is saved.",
+                      "error": "The requested resource was not found.",
                       "code": "not_found"
-                    }
-                  },
-                  "source_file_not_found": {
-                    "summary": "source_file_not_found",
-                    "value": {
-                      "error": "A referenced source file or version does not exist in this project.",
-                      "code": "source_file_not_found"
                     }
                   }
                 },
@@ -13582,7 +13861,7 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["not_found", "source_file_not_found"]
+                          "enum": ["not_found"]
                         }
                       }
                     }
@@ -18009,7 +18288,7 @@
         },
         "responses": {
           "200": {
-            "description": "Translation results: one result per entry in `requests`, in request order. An entry that could not be translated has `status: \"failed\"` with its `error` message and error `code`, so inspect every result.",
+            "description": "Translation results: one result per entry in `requests`, in request order, even when every entry fails. An entry that could not be translated has `status: \"failed\"` with its `error` message and error `code`, so inspect every result. An entry whose `source` is not valid for its `dataFormat` fails with `invalid_request` and is not translated or billed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -34331,7 +34610,7 @@
       "post": {
         "operationId": "upsertAssets",
         "summary": "Upsert Organization assets",
-        "description": "Uploads 1–10 fonts (`assetType: FONT`, the only asset type today) for Lottie translations across the organization. Requires `org:assets:write`.",
+        "description": "Uploads 1–10 assets for the organization; fonts for Lottie translations (`assetType: FONT`) are the only asset type today. Requires `org:assets:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -34407,7 +34686,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 10,
-                    "description": "1–10 assets; OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font is matched by family, weight and italic style, and an identity may appear once. Uploading a matching font replaces it for the whole organization."
+                    "description": "1–10 assets. OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today, and a font's identity is its family, weight and italic style. Two assets with the same identity reject the request, counting each asset whose identity is known from `family` and `style` or, within the size limit, from the font itself. Uploading an asset with a stored identity replaces it for the whole organization."
                   }
                 },
                 "required": ["assets"],
@@ -34418,7 +34697,7 @@
         },
         "responses": {
           "200": {
-            "description": "Result of each font, in request order, as `succeeded` or as `failed` with an `error`, even when every font fails. Fonts are stored independently, and retrying a failed font is safe.",
+            "description": "Result of each asset, in request order, as `succeeded` or as `failed` with an `error` and a `code`, even when every asset fails: an oversized asset fails with `file_too_large`, and a font with no derivable family with `invalid_request`. Assets are stored independently, and retrying a failed asset is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -34446,10 +34725,16 @@
                               },
                               "assetKey": {
                                 "type": "string",
-                                "description": "Normalized family, weight and italic style of the font."
+                                "description": "The asset's identity within its type: for a font, its normalized family, weight and italic style."
                               }
                             },
-                            "required": ["fileName", "status", "id", "assetKey"]
+                            "required": [
+                              "fileName",
+                              "status",
+                              "id",
+                              "assetKey"
+                            ],
+                            "title": "Succeeded"
                           },
                           {
                             "type": "object",
@@ -34462,24 +34747,25 @@
                                 "enum": ["failed"]
                               },
                               "error": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Why the item failed."
                               },
                               "code": {
-                                "allOf": [
-                                  {
-                                    "$ref": "#/components/schemas/ErrorCode"
-                                  },
-                                  {
-                                    "description": "Machine-readable cause of the failure. Present when `error` is."
-                                  }
-                                ]
+                                "type": "string",
+                                "enum": [
+                                  "file_too_large",
+                                  "invalid_request",
+                                  "internal_error"
+                                ],
+                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
                               }
                             },
-                            "required": ["fileName", "status", "error", "code"]
+                            "required": ["fileName", "status", "error", "code"],
+                            "title": "Failed"
                           }
                         ]
                       },
-                      "description": "One result per requested font, in request order."
+                      "description": "One result per requested asset, in request order."
                     }
                   },
                   "required": ["summary", "results"]
@@ -34488,14 +34774,14 @@
             }
           },
           "400": {
-            "description": "The request is malformed or failed validation, including an empty or oversized font, a font with no derivable family, or two fonts with the same identity. The batch is checked before any font is written.",
+            "description": "The request is malformed or failed validation, or two assets have the same identity, known from `family` and `style` or, for an asset within the size limit, from the font itself; no asset is written.",
             "content": {
               "application/json": {
                 "examples": {
                   "invalid_request": {
                     "summary": "invalid_request",
                     "value": {
-                      "error": "The request is malformed or failed validation, including an empty or oversized font, a font with no derivable family, or two fonts with the same identity. The batch is checked before any font is written.",
+                      "error": "The request is malformed or failed validation, or two assets have the same identity, known from `family` and `style` or, for an asset within the size limit, from the font itself; no asset is written.",
                       "code": "invalid_request"
                     }
                   },

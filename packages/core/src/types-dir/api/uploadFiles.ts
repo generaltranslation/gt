@@ -19,6 +19,11 @@ export type FileUpload = WithContent<Omit<SourceFile, 'formatMetadata'>> & {
   >['content'];
 };
 
+/** An uploaded source file, named to upload its translations. */
+export type TranslationSourceUpload = WithContent<
+  UploadTranslationsData['body']['data'][number]['source']
+>;
+
 /** A translation of an uploaded source file, in the format it is saved in. */
 export type TranslationUpload = WithContent<
   UploadTranslationsData['body']['data'][number]['translations'][number]

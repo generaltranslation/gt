@@ -26,7 +26,7 @@ import {
 } from '@generaltranslation/api';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
-import { GeneralTranslation } from '../index';
+import { GeneralTranslation, type FileUpload } from '../index';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
@@ -436,7 +436,6 @@ describe.sequential('GeneralTranslation project and organization operations', ()
               content: 'source',
               fileName: 'document.html',
               fileFormat: 'HTML',
-              locale: sourceLocale,
             },
             translations: [
               {
@@ -454,7 +453,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
       expect(bodyOf(uploadTranslations)).toEqual({
         data: [
           expect.objectContaining({
-            source: expect.objectContaining({ locale: 'en-US' }),
+            source: expect.not.objectContaining({ locale: expect.anything() }),
             translations: [expect.objectContaining({ locale: 'es-ES' })],
           }),
         ],
@@ -1426,24 +1425,48 @@ describe.sequential('GeneralTranslation project and organization operations', ()
       });
     });
 
-    it("leaves a translation upload's source without formatMetadata", async () => {
+    it('uploads and sends only the request fields of a wider translation source and translation', async () => {
+      const formatMetadata = { a: {} };
+      const wideSource: FileUpload = {
+        ...source(large),
+        formatMetadata,
+        checkedOutBranchId: 'checked-out',
+      };
+      const wideTranslation = {
+        ...source('{"a":"B"}'),
+        locale: 'fr',
+        fileId: 'file-id',
+        versionId: 'version-id',
+        formatMetadata,
+      };
+
       await configuredProject().uploadTranslations([
+        { source: wideSource, translations: [wideTranslation] },
+      ]);
+
+      expect(bodyOf(createFileUploads)).toEqual({
+        files: [
+          { sha256: hashOf(large), fileFormat: 'JSON', size: large.length },
+        ],
+      });
+      expect(putFileUpload).toHaveBeenCalledOnce();
+      expect(bodyOf(uploadTranslations).data).toEqual([
         {
-          source: { ...source('{"a":"A"}'), formatMetadata: { a: {} } },
+          source: {
+            fileName: 'messages.json',
+            fileFormat: 'JSON',
+            upload: { sha256: hashOf(large) },
+          },
           translations: [
             {
-              content: '{"a":"B"}',
               fileName: 'messages.json',
               fileFormat: 'JSON',
               locale: 'fr',
+              content: btoa('{"a":"B"}'),
             },
           ],
         },
       ]);
-
-      expect(bodyOf(uploadTranslations).data[0].source).not.toHaveProperty(
-        'formatMetadata'
-      );
     });
 
     it('PUTs at most four files at a time, across batches and after a failed PUT', async () => {

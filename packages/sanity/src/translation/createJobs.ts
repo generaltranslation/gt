@@ -2,12 +2,13 @@ import type {
   TranslateFilesResponse,
   UploadSourceFilesResponse,
 } from '@generaltranslation/api';
+import type { BatchWriteResponse } from 'generaltranslation';
 import { gt, projectFor } from '../adapter/core';
 import type { Secrets } from '../types';
 import { succeededResults } from '../utils/batchResults';
 
 export async function createJobs(
-  uploadResult: UploadSourceFilesResponse,
+  uploadResult: BatchWriteResponse<UploadSourceFilesResponse>,
   localeIds: string[],
   secrets: Secrets,
   // Discard any translation GT already holds for these files and retranslate
