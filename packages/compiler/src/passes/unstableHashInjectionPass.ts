@@ -6,15 +6,22 @@ import { injectUnstableTaggedTemplateHash } from '../transform/injection/injectU
 
 /**
  * Unstable hash injection pass — injects `$_hash` into statically analyzable
- * unstable tagged templates (gt`...`). Each template is hashed and rewritten
- * in the same visit, so this pass needs no collection counters.
+ * unstable tagged templates (gt`...`), and in production builds with
+ * `files.gt.inlineTranslations` the translations embedded at the call site.
+ * Each template is hashed and rewritten in the same visit, so this pass needs
+ * no collection counters.
  */
 export function unstableHashInjectionPass(
   state: TransformState
 ): TraverseOptions {
   return {
     TaggedTemplateExpression(path) {
-      if (injectUnstableTaggedTemplateHash(path)) {
+      if (
+        injectUnstableTaggedTemplateHash(
+          path,
+          state.settings.inlineTranslationsTable
+        )
+      ) {
         state.statistics.unstableHashInjectionsCount += 1;
       }
     },

@@ -20,6 +20,7 @@ import { injectionPass } from './passes/injectionPass';
 import { macroExpansionPass } from './passes/macroExpansionPass';
 import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
+import { getInlineTranslationsFiles } from './transform/injection/inline-translations/loadInlineTranslations';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
@@ -234,6 +235,14 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         // Initialize processing state
         const state = initializeState(resolvedOptions, id);
         if (debugManifest) state.debugManifest = debugManifest;
+        // webpack does not track files read outside the loader
+        if (state.settings.inlineTranslationsTable) {
+          for (const file of getInlineTranslationsFiles(
+            resolvedOptions.gtConfig?.files?.gt
+          )) {
+            this.addWatchFile(file);
+          }
+        }
         try {
           // Skip transformation if not needed
           if (

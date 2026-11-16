@@ -56,7 +56,7 @@ export type GTCompilerOptions = {
  * read from `files.gt.output`. Other locales keep loading at runtime. Only
  * applied to production builds.
  *
- * Embedded call sites, with gt-next's SWC plugin:
+ * Embedded call sites, with either the babel compiler or gt-next's SWC plugin:
  * - `<T>`, except derive content.
  * - The `t` from `/unstable`, and the `gt` from `const gt = useGT()` or
  *   `const gt = await getGT()` from `/unstable`, when every value in the

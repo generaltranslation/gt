@@ -18,6 +18,11 @@ import {
   type UnstableGTHelperName,
 } from 'generaltranslation/internal';
 import { USEGT_CALLBACK_OPTIONS } from '../../utils/constants/gt/constants';
+import { buildInlineTranslationsFunction } from './inline-translations/buildInlineTranslationsFunction';
+import type { InlineTranslationsTable } from './inline-translations/loadInlineTranslations';
+
+// Option the runtime reads translations embedded at the call site from
+const INLINE_TRANSLATIONS_OPTION = 'inline';
 
 type OptionKey = keyof MessageTreeHashMetadata;
 
@@ -35,17 +40,29 @@ function nonStatic(): never {
  * skips hashing: gt`...` -> gt({ $_hash })`...` and
  * gt({ context })`...` -> gt({ context, $_hash })`...`, for an imported `t`
  * or `msg` and for the result of `const gt = useGT()` / `const gt = await getGT()`.
+ *
+ * With `inlineTranslationsTable`, a `t` or `gt` template whose holes are all
+ * named variables (`${{ name }}`) also gets the translations embedded for the
+ * table's locales as `inline`. That is the subset the gt-next SWC plugin
+ * embeds too, and the CLI leaves out of `msgOutput` files
+ * (packages/cli/src/react/jsx/utils/stringParsing/extractMessageTrees/isEmbeddedMessage.ts).
+ * `msg` templates are rendered by `m()` away from their call site, so they are
+ * never embedded.
+ *
  * Returns whether the template was rewritten.
  */
 export function injectUnstableTaggedTemplateHash(
-  path: NodePath<t.TaggedTemplateExpression>
+  path: NodePath<t.TaggedTemplateExpression>,
+  inlineTranslationsTable?: InlineTranslationsTable
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
-  if (!t.isIdentifier(callee) || !isUnstableGT(callee.name, path.scope)) {
-    return false;
-  }
+  const kind = t.isIdentifier(callee)
+    ? getUnstableTagKind(callee.name, path.scope)
+    : undefined;
+  if (!kind) return false;
   let hash: string;
+  let onlyNamedVariables: boolean;
   try {
     const metadata = t.isCallExpression(tag)
       ? parseMessageOptions(tag.arguments)
@@ -56,43 +73,59 @@ export function injectUnstableTaggedTemplateHash(
       dataFormat: 'MESSAGE_TREE',
       ...metadata,
     });
+    onlyNamedVariables = holes.every((hole) => hole.kind === 'argument');
   } catch {
     // Non-static or invalid (e.g. a reserved `_gt_` name): skip only this
     // template; the runtime hashes it and reports any error.
     return false;
   }
-  const hashProperty = t.objectProperty(
-    t.identifier(USEGT_CALLBACK_OPTIONS.$_hash),
-    t.stringLiteral(hash)
-  );
+  const properties = [
+    t.objectProperty(
+      t.identifier(USEGT_CALLBACK_OPTIONS.$_hash),
+      t.stringLiteral(hash)
+    ),
+  ];
+  const inline =
+    inlineTranslationsTable && kind === 'gt' && onlyNamedVariables
+      ? buildInlineTranslationsFunction(inlineTranslationsTable, hash)
+      : undefined;
+  if (inline) {
+    properties.push(
+      t.objectProperty(t.identifier(INLINE_TRANSLATIONS_OPTION), inline)
+    );
+  }
   if (t.isCallExpression(tag)) {
-    (tag.arguments[0] as t.ObjectExpression).properties.push(hashProperty);
+    (tag.arguments[0] as t.ObjectExpression).properties.push(...properties);
   } else {
-    path.node.tag = t.callExpression(tag, [t.objectExpression([hashProperty])]);
+    path.node.tag = t.callExpression(tag, [t.objectExpression(properties)]);
   }
   return true;
 }
 
 /**
- * `t` or `msg` imported from an unstable source, or
- * `const gt = [await] useGT/getGT()`.
+ * `gt` for `t` imported from an unstable source or
+ * `const gt = [await] useGT/getGT()`, and `msg` for an imported `msg`.
  */
-function isUnstableGT(name: string, scope: Scope): boolean {
+function getUnstableTagKind(
+  name: string,
+  scope: Scope
+): 'gt' | 'msg' | undefined {
   const helper = getHelperName(name, scope);
-  if (helper === 't' || helper === 'msg') return true;
+  if (helper === 't') return 'gt';
+  if (helper === 'msg') return 'msg';
   const binding = scope.getBinding(name);
   if (
     !binding?.constant ||
     !binding.path.isVariableDeclarator() ||
     !t.isIdentifier(binding.path.node.id)
   ) {
-    return false;
+    return;
   }
   let init = binding.path.node.init;
   if (t.isAwaitExpression(init)) init = init.argument;
-  if (!t.isCallExpression(init) || !t.isIdentifier(init.callee)) return false;
+  if (!t.isCallExpression(init) || !t.isIdentifier(init.callee)) return;
   const hook = getHelperName(init.callee.name, binding.path.scope);
-  return hook === 'useGT' || hook === 'getGT';
+  return hook === 'useGT' || hook === 'getGT' ? 'gt' : undefined;
 }
 
 /** Original name of a helper imported from an unstable source. */
