@@ -12,6 +12,14 @@ const nextConfig: NextConfig = {
 // GT_TEST_COMPILER=babel next build --webpack
 const compilerType = process.env.GT_TEST_COMPILER === 'babel' ? 'babel' : 'swc';
 
+// GT_TEST_INLINE_MODULES=1 imports each embedded translation from its own
+// module in .gt/messages instead of embedding it at the call site
+const config =
+  process.env.GT_TEST_INLINE_MODULES === '1'
+    ? './gt.modules.config.json'
+    : undefined;
+
 export default withGTConfig(nextConfig, {
+  config,
   experimentalCompilerOptions: { type: compilerType },
 });
