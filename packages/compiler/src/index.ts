@@ -20,7 +20,25 @@ import { injectionPass } from './passes/injectionPass';
 import { macroExpansionPass } from './passes/macroExpansionPass';
 import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
-import { getInlineTranslationsFiles } from './transform/injection/inline-translations/loadInlineTranslations';
+import {
+  getInlineTranslationsFiles,
+  loadInlineTranslations,
+} from './transform/injection/inline-translations/loadInlineTranslations';
+import {
+  INLINE_TRANSLATIONS_VIRTUAL_MODULE_PREFIX,
+  parseInlineTranslationsVirtualModuleId,
+  renderInlineTranslationsModule,
+  renderInlineTranslationsModules,
+  writeInlineTranslationsModules,
+} from './transform/injection/inline-translations/inlineTranslationsModules';
+import {
+  createInlineTranslationsModulesWriteError,
+  resolveInlineTranslationsModules,
+} from './transform/injection/inline-translations/resolveInlineTranslationsModules';
+import {
+  addInlineTranslationsImports,
+  isEsModule,
+} from './transform/injection/inline-translations/addInlineTranslationsImports';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
@@ -188,7 +206,7 @@ function resolveGTConfig(options: GTUnpluginOptions): GTConfigLoadResult {
  * that works across webpack, Vite, Rollup, and other bundlers.
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
-  (options = {}) => {
+  (options = {}, meta) => {
     const gtConfigLoadResult = resolveGTConfig(options);
     const loadedGTConfig =
       gtConfigLoadResult.status === 'loaded'
@@ -220,9 +238,80 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       ? new Map<string, unknown>()
       : undefined;
 
+    const gtFiles = resolvedOptions.gtConfig?.files?.gt;
+    const isProduction = process.env.NODE_ENV === 'production';
+    const inlineTranslationsModules = resolveInlineTranslationsModules(
+      gtFiles,
+      {
+        framework: meta.framework,
+        warn: isProduction && shouldWarn(options.logLevel),
+      }
+    );
+    const modulesDirPrefix =
+      inlineTranslationsModules?.mode === 'physical'
+        ? inlineTranslationsModules.dir + path.sep
+        : undefined;
+    const loadModulesTable = () =>
+      isProduction ? loadInlineTranslations(gtFiles) : undefined;
+
     return {
       name: '@generaltranslation/GT_PLUGIN',
+      buildStart() {
+        if (inlineTranslationsModules?.mode !== 'physical' || !isProduction) {
+          return;
+        }
+        try {
+          writeInlineTranslationsModules(
+            inlineTranslationsModules.dir,
+            renderInlineTranslationsModules(loadModulesTable())
+          );
+        } catch (error) {
+          throw new Error(
+            createInlineTranslationsModulesWriteError(
+              inlineTranslationsModules.dir,
+              error
+            )
+          );
+        }
+      },
+      resolveId(id: string) {
+        if (
+          inlineTranslationsModules?.mode !== 'virtual' ||
+          id.startsWith('\0') ||
+          parseInlineTranslationsVirtualModuleId(id) === undefined
+        ) {
+          return null;
+        }
+        return `\0${id}`;
+      },
+      loadInclude(id: string) {
+        return (
+          inlineTranslationsModules?.mode === 'virtual' &&
+          parseInlineTranslationsVirtualModuleId(id) !== undefined
+        );
+      },
+      load(id: string) {
+        if (inlineTranslationsModules?.mode !== 'virtual') return null;
+        const hash = parseInlineTranslationsVirtualModuleId(id);
+        if (hash === undefined) return null;
+        for (const file of getInlineTranslationsFiles(gtFiles)) {
+          this.addWatchFile(file);
+        }
+        const table = loadModulesTable();
+        return {
+          code:
+            (table && renderInlineTranslationsModule(table, hash)) ??
+            'export default () => undefined;\n',
+          moduleSideEffects: false,
+        };
+      },
       transformInclude(id: string) {
+        if (
+          id.includes(INLINE_TRANSLATIONS_VIRTUAL_MODULE_PREFIX) ||
+          (modulesDirPrefix !== undefined && id.startsWith(modulesDirPrefix))
+        ) {
+          return false;
+        }
         // Only transform TSX and JSX files
         return (
           id.endsWith('.tsx') ||
@@ -284,6 +373,14 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           const injectionRan =
             hasCollectionContent && state.settings.compileTimeHash;
 
+          if (
+            inlineTranslationsModules &&
+            state.settings.inlineTranslationsTable &&
+            isEsModule(ast.program)
+          ) {
+            state.inlineTranslationsImports = new Map();
+          }
+
           if (injectionRan) {
             traverse(ast, injectionPass(state));
           }
@@ -291,6 +388,18 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           // Pass 4b: $_hash injection for unstable tagged templates
           if (state.settings.compileTimeHash && importsUnstableSource(ast)) {
             traverse(ast, unstableHashInjectionPass(state));
+          }
+
+          if (
+            inlineTranslationsModules &&
+            state.inlineTranslationsImports?.size
+          ) {
+            addInlineTranslationsImports(
+              ast.program,
+              state.inlineTranslationsImports,
+              inlineTranslationsModules,
+              id
+            );
           }
 
           // Pass 5: Runtime translate (dev hot reload)

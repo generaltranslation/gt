@@ -1,8 +1,19 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it, onTestFinished } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from 'vitest';
+import type { UnpluginBuildContext, UnpluginContext } from 'unplugin';
 import { defaultInlineTranslationsModulesDir } from 'generaltranslation/internal';
+import gtUnplugin, { type GTUnpluginOptions } from '../index';
+import { clearInlineTranslationsCache } from '../transform/injection/inline-translations/loadInlineTranslations';
 import {
   INLINE_TRANSLATIONS_MODULE_HEADER,
   isInlineTranslationsModuleHash,
@@ -225,5 +236,368 @@ describe('writeInlineTranslationsModules', () => {
       'index.mjs.tmp-1-x',
       'index.mjs.tmp-backup',
     ]);
+  });
+});
+// Same hashes as inlineTranslations.test.ts
+const HELLO_WORLD = '8ffa9649730810de';
+const JSX_HELLO_WORLD = 'ebc5c5a5022c5050';
+const OTHER_HASH = 'a0469ebdf8a22a0c';
+
+const USEGT_CODE = `
+  import { useGT } from 'gt-react/unstable';
+  const gt = useGT();
+  gt\`Hello world\`;
+`;
+
+const T_COMPONENT_CODE = `
+  import { jsx } from 'react/jsx-runtime';
+  import { T } from 'gt-react';
+  export const el = jsx(T, { children: "Hello world" });
+`;
+
+type Plugin = ReturnType<typeof gtUnplugin.raw> & {
+  buildStart(this: unknown): void;
+  resolveId(this: unknown, id: string): string | null;
+  loadInclude(id: string): boolean;
+  load(
+    this: unknown,
+    id: string
+  ): { code: string; moduleSideEffects: boolean } | null;
+  transform(this: unknown, code: string, id: string): unknown;
+  transformInclude(id: string): boolean;
+};
+
+function createContext(watched: string[] = []) {
+  return {
+    addWatchFile: (file: string) => watched.push(file),
+    emitFile() {},
+    getWatchFiles: () => [],
+    parse() {
+      throw new Error('not implemented');
+    },
+    warn() {},
+    error(message: unknown) {
+      throw new Error(String(message));
+    },
+  } as unknown as UnpluginBuildContext & UnpluginContext;
+}
+
+function createProject(
+  translations: Record<string, Record<string, unknown>>
+): string {
+  const root = fs.realpathSync(
+    fs.mkdtempSync(path.join(os.tmpdir(), 'gt-modules-'))
+  );
+  onTestFinished(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, 'translations'));
+  for (const [locale, entries] of Object.entries(translations)) {
+    fs.writeFileSync(
+      path.join(root, 'translations', `${locale}.json`),
+      JSON.stringify(entries)
+    );
+  }
+  return root;
+}
+
+function moduleOptions(
+  root: string,
+  locales: string[],
+  inline: { modules?: 'physical' | 'virtual'; modulesDir?: string }
+): GTUnpluginOptions {
+  return {
+    gtConfig: {
+      files: {
+        gt: {
+          output: path.join(root, 'translations', '[locale].json'),
+          inlineTranslations: { locales, ...inline },
+        },
+      },
+    },
+  };
+}
+
+function createPlugin(
+  root: string,
+  options: GTUnpluginOptions,
+  framework: 'vite' | 'webpack' = 'vite'
+): Plugin {
+  vi.spyOn(process, 'cwd').mockReturnValue(root);
+  return gtUnplugin.raw(options, { framework } as never) as Plugin;
+}
+
+async function transform(
+  plugin: Plugin,
+  root: string,
+  code: string,
+  file = 'src/App.tsx'
+): Promise<string> {
+  const result = (await plugin.transform.call(
+    createContext(),
+    code,
+    path.join(root, file)
+  )) as { code: string } | string | null;
+  if (!result) return '';
+  return typeof result === 'string' ? result : result.code;
+}
+
+describe('inlineTranslations.modules', () => {
+  beforeEach(() => {
+    vi.stubEnv('NODE_ENV', 'production');
+    clearInlineTranslationsCache();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  describe('call sites', () => {
+    it('imports the physical module for unstable gt templates', async () => {
+      const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical' })
+      );
+      const output = await transform(plugin, root, USEGT_CODE);
+      expect(output).toContain(
+        `import __gt_inline_${HELLO_WORLD} from "../.gt/messages/${HELLO_WORLD}.js";`
+      );
+      expect(output).toMatch(
+        new RegExp(
+          `\\$_hash: "${HELLO_WORLD}",\\s*inline: __gt_inline_${HELLO_WORLD}\\s*}\\)\`Hello world\``
+        )
+      );
+      expect(output).not.toContain('locale =>');
+    });
+
+    it('imports the virtual module for <T>', async () => {
+      const root = createProject({ fr: { [JSX_HELLO_WORLD]: 'Bonjour' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'virtual' })
+      );
+      const output = await transform(plugin, root, T_COMPONENT_CODE);
+      expect(output).toContain(
+        `import __gt_inline_${JSX_HELLO_WORLD} from "virtual:gt/messages/${JSX_HELLO_WORLD}.js";`
+      );
+      expect(output).toContain(`inline: __gt_inline_${JSX_HELLO_WORLD}`);
+    });
+
+    it('imports physical modules relative to a custom modulesDir', async () => {
+      const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], {
+          modules: 'physical',
+          modulesDir: 'generated/messages',
+        })
+      );
+      const output = await transform(
+        plugin,
+        root,
+        USEGT_CODE,
+        'src/pages/deep/Page.tsx'
+      );
+      expect(output).toContain(
+        `from "../../../generated/messages/${HELLO_WORLD}.js"`
+      );
+    });
+
+    it('imports a module once for call sites sharing a hash', async () => {
+      const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical' })
+      );
+      const output = await transform(
+        plugin,
+        root,
+        `${USEGT_CODE}\n  gt\`Hello world\`;\n`
+      );
+      expect(output.match(/^import __gt_inline_/gm)).toHaveLength(1);
+      expect(output.match(/inline: __gt_inline_/g)).toHaveLength(2);
+    });
+
+    it('inlines the callback for hashes that cannot name a module', async () => {
+      const root = createProject({ fr: { Custom: 'Perso' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical' })
+      );
+      const output = await transform(
+        plugin,
+        root,
+        `
+          import { jsx } from 'react/jsx-runtime';
+          import { T } from 'gt-react';
+          export const el = jsx(T, { _hash: "Custom", children: "Hello world" });
+        `
+      );
+      expect(output).not.toContain('__gt_inline_');
+      expect(output).toContain('locale === "fr" ? "Perso" : undefined');
+    });
+
+    it('inlines the callback in CommonJS files', async () => {
+      const root = createProject({ fr: { [JSX_HELLO_WORLD]: 'Bonjour' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical' })
+      );
+      const output = await transform(
+        plugin,
+        root,
+        `
+          const { jsx } = require('react/jsx-runtime');
+          const { T } = require('gt-react');
+          module.exports = jsx(T, { children: "Hello world" });
+        `,
+        'src/legacy.js'
+      );
+      expect(output).not.toContain('import __gt_inline_');
+    });
+
+    it('does nothing outside production builds', async () => {
+      vi.stubEnv('NODE_ENV', 'development');
+      const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical' })
+      );
+      plugin.buildStart.call(createContext());
+      const output = await transform(plugin, root, USEGT_CODE);
+      expect(output).not.toContain('__gt_inline_');
+      expect(fs.existsSync(path.join(root, '.gt'))).toBe(false);
+    });
+
+    it('does not transform message modules', () => {
+      const root = createProject({});
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical' })
+      );
+      expect(
+        plugin.transformInclude(path.join(root, '.gt/messages/abc.js'))
+      ).toBe(false);
+      expect(
+        plugin.transformInclude(`\0virtual:gt/messages/${HELLO_WORLD}.js`)
+      ).toBe(false);
+      expect(plugin.transformInclude(path.join(root, 'src/abc.js'))).toBe(true);
+    });
+  });
+
+  describe('physical modules', () => {
+    it('writes one module per hash at build start', () => {
+      const root = createProject({
+        fr: { [HELLO_WORLD]: 'Bonjour', [OTHER_HASH]: 'Étape' },
+        es: { [HELLO_WORLD]: 'Hola' },
+      });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr', 'es'], { modules: 'physical' })
+      );
+      plugin.buildStart.call(createContext());
+      const dir = path.join(root, '.gt/messages');
+      expect(fs.readdirSync(dir).sort()).toEqual(
+        [`${HELLO_WORLD}.js`, `${OTHER_HASH}.js`].sort()
+      );
+      expect(
+        fs.readFileSync(path.join(dir, `${HELLO_WORLD}.js`), 'utf8')
+      ).toContain('locale === "fr" ? "Bonjour" : locale === "es" ? "Hola"');
+    });
+
+    it('falls back to physical modules with a warning where virtual modules are unsupported', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'virtual' }),
+        'webpack'
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Virtual modules for embedded translations are not supported with webpack'
+        )
+      );
+      plugin.buildStart.call(createContext());
+      expect(
+        fs.existsSync(path.join(root, '.gt/messages', `${HELLO_WORLD}.js`))
+      ).toBe(true);
+      const output = await transform(plugin, root, USEGT_CODE);
+      expect(output).toContain(`from "../.gt/messages/${HELLO_WORLD}.js"`);
+    });
+  });
+
+  describe('virtual modules', () => {
+    it('resolves message ids to \\0-prefixed ids', () => {
+      const root = createProject({});
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'virtual' })
+      );
+      const id = `virtual:gt/messages/${HELLO_WORLD}.js`;
+      expect(plugin.resolveId.call(createContext(), id)).toBe(`\0${id}`);
+      expect(plugin.resolveId.call(createContext(), `\0${id}`)).toBeNull();
+      expect(
+        plugin.resolveId.call(createContext(), 'virtual:gt/messages/../x.js')
+      ).toBeNull();
+      expect(plugin.resolveId.call(createContext(), './App.tsx')).toBeNull();
+    });
+
+    it('loads a message module from the translation files', () => {
+      const root = createProject({
+        fr: { [HELLO_WORLD]: 'Bonjour' },
+        es: { [HELLO_WORLD]: 'Hola' },
+      });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr', 'es'], { modules: 'virtual' })
+      );
+      const watched: string[] = [];
+      const id = `\0virtual:gt/messages/${HELLO_WORLD}.js`;
+      expect(plugin.loadInclude(id)).toBe(true);
+      const result = plugin.load.call(createContext(watched), id);
+      expect(result).toEqual({
+        code: renderInlineTranslationsModule(
+          { fr: { [HELLO_WORLD]: 'Bonjour' }, es: { [HELLO_WORLD]: 'Hola' } },
+          HELLO_WORLD
+        ),
+        moduleSideEffects: false,
+      });
+      expect(watched.sort()).toEqual(
+        [
+          path.join(root, 'translations', 'es.json'),
+          path.join(root, 'translations', 'fr.json'),
+        ].sort()
+      );
+    });
+
+    it('loads a module returning undefined for an unknown hash', () => {
+      const root = createProject({ fr: {} });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'virtual' })
+      );
+      expect(
+        plugin.load.call(
+          createContext(),
+          `\0virtual:gt/messages/${OTHER_HASH}.js`
+        )
+      ).toEqual({
+        code: 'export default () => undefined;\n',
+        moduleSideEffects: false,
+      });
+    });
+
+    it('ignores other ids and physical mode', () => {
+      const root = createProject({});
+      const physical = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical' })
+      );
+      const id = `\0virtual:gt/messages/${HELLO_WORLD}.js`;
+      expect(physical.loadInclude(id)).toBe(false);
+      expect(physical.load.call(createContext(), id)).toBeNull();
+      expect(physical.resolveId.call(createContext(), id.slice(1))).toBeNull();
+    });
   });
 });

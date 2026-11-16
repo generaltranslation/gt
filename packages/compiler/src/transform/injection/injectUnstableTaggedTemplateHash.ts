@@ -18,8 +18,6 @@ import {
   type UnstableGTHelperName,
 } from 'generaltranslation/internal';
 import { USEGT_CALLBACK_OPTIONS } from '../../utils/constants/gt/constants';
-import { buildInlineTranslationsFunction } from './inline-translations/buildInlineTranslationsFunction';
-import type { InlineTranslationsTable } from './inline-translations/loadInlineTranslations';
 
 // Option the runtime reads translations embedded at the call site from
 const INLINE_TRANSLATIONS_OPTION = 'inline';
@@ -41,9 +39,9 @@ function nonStatic(): never {
  * gt({ context })`...` -> gt({ context, $_hash })`...`, for an imported `t`
  * or `msg` and for the result of `const gt = useGT()` / `const gt = await getGT()`.
  *
- * With `inlineTranslationsTable`, a `t` or `gt` template whose holes are all
- * named variables (`${{ name }}`) also gets the translations embedded for the
- * table's locales as `inline`. That is the subset the gt-next SWC plugin
+ * With `buildInline`, a `t` or `gt` template whose holes are all named
+ * variables (`${{ name }}`) also gets the translations embedded for the
+ * configured locales as `inline`. That is the subset the gt-next SWC plugin
  * embeds too, and the CLI leaves out of `msgOutput` files
  * (packages/cli/src/react/jsx/utils/stringParsing/extractMessageTrees/isEmbeddedMessage.ts).
  * `msg` templates are rendered by `m()` away from their call site, so they are
@@ -53,7 +51,7 @@ function nonStatic(): never {
  */
 export function injectUnstableTaggedTemplateHash(
   path: NodePath<t.TaggedTemplateExpression>,
-  inlineTranslationsTable?: InlineTranslationsTable
+  buildInline?: (hash: string) => t.Expression | undefined
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
@@ -86,8 +84,8 @@ export function injectUnstableTaggedTemplateHash(
     ),
   ];
   const inline =
-    inlineTranslationsTable && kind === 'gt' && onlyNamedVariables
-      ? buildInlineTranslationsFunction(inlineTranslationsTable, hash)
+    buildInline && kind === 'gt' && onlyNamedVariables
+      ? buildInline(hash)
       : undefined;
   if (inline) {
     properties.push(

@@ -3,6 +3,7 @@ import * as t from '@babel/types';
 import { isUnstableGTImportSource } from 'generaltranslation/internal';
 import { TransformState } from '../state/types';
 import { injectUnstableTaggedTemplateHash } from '../transform/injection/injectUnstableTaggedTemplateHash';
+import { buildInlineTranslations } from '../transform/injection/inline-translations/injectInlineTranslations';
 
 /**
  * Unstable hash injection pass — injects `$_hash` into statically analyzable
@@ -14,14 +15,12 @@ import { injectUnstableTaggedTemplateHash } from '../transform/injection/injectU
 export function unstableHashInjectionPass(
   state: TransformState
 ): TraverseOptions {
+  const buildInline = state.settings.inlineTranslationsTable
+    ? (hash: string) => buildInlineTranslations(hash, state)
+    : undefined;
   return {
     TaggedTemplateExpression(path) {
-      if (
-        injectUnstableTaggedTemplateHash(
-          path,
-          state.settings.inlineTranslationsTable
-        )
-      ) {
+      if (injectUnstableTaggedTemplateHash(path, buildInline)) {
         state.statistics.unstableHashInjectionsCount += 1;
       }
     },

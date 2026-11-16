@@ -22,6 +22,8 @@ export interface TransformState {
     runtimeTranslateCount: number;
     unstableHashInjectionsCount: number;
   };
+  /** Hash to local import name; set only when this file imports message modules. */
+  inlineTranslationsImports?: Map<string, string>;
   /** Debug: shared manifest map for hash → jsxChildren mapping (accumulated across files) */
   debugManifest?: Map<string, unknown>;
 }
