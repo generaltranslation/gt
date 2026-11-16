@@ -114,7 +114,7 @@ export const GTInlineTranslationsSchema = pipe(
       pipe(
         string(),
         description(
-          "Output path pattern with [locale] placeholder for a copy of each embedded locale's translations file that keeps only msg() and useMessages()/getMessages() entries, which are never embedded"
+          "Output path pattern with [locale] placeholder for a copy of each embedded locale's translations file without the entries the compiler embeds, for loading those locales"
         ),
         examples(['public/i18n/[locale].msg.json'])
       )

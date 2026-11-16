@@ -5,10 +5,25 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Settings } from '../../types/index.js';
 import { writeMessageTranslations } from '../writeMessageTranslations.js';
 import { logger } from '../../console/logger.js';
+import type { Updates } from 'generaltranslation';
 import {
-  clearMessageHashes,
-  recordMessageHashes,
-} from '../../state/messageHashes.js';
+  clearEmbeddedHashes,
+  markEmbeddedUpdate,
+  recordEmbeddedHashes,
+} from '../../state/embeddedHashes.js';
+
+/** Records hashes as extracted, with `embedded` ones embedded by the compiler. */
+function recordHashes(embedded: string[], loaded: string[] = []) {
+  const update = (hash: string) =>
+    ({
+      dataFormat: 'ICU',
+      source: hash,
+      metadata: { hash },
+    }) as Updates[number];
+  const embeddedUpdates = embedded.map(update);
+  embeddedUpdates.forEach(markEmbeddedUpdate);
+  recordEmbeddedHashes([...embeddedUpdates, ...loaded.map(update)]);
+}
 
 let dir: string;
 
@@ -30,7 +45,7 @@ const readJson = (file: string) =>
 
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-msg-output-'));
-  clearMessageHashes();
+  clearEmbeddedHashes();
   fs.writeFileSync(
     path.join(dir, 'fr.json'),
     JSON.stringify({ a: 'Bonjour', b: 'Au revoir', c: 'Merci' })
@@ -43,18 +58,45 @@ afterEach(() => {
 });
 
 describe('writeMessageTranslations', () => {
-  test('keeps only message entries for each locale', async () => {
-    recordMessageHashes(['a', 'c', 'missing']);
+  test('leaves out embedded entries for each locale', async () => {
+    recordHashes(['b', 'missing'], ['a']);
     await writeMessageTranslations(
       settings(path.join(dir, 'msg', '[locale].msg.json'))
     );
+    // c was not extracted this run (for example a dictionary entry), so it stays
     expect(readJson('msg/fr.msg.json')).toEqual({ a: 'Bonjour', c: 'Merci' });
     // No translations file for es yet
     expect(fs.existsSync(path.join(dir, 'msg', 'es.msg.json'))).toBe(false);
   });
 
-  test('writes an empty file when there are no message entries', async () => {
-    recordMessageHashes([]);
+  test('keeps an entry an embedded and a loaded call site share', async () => {
+    recordHashes(['a', 'b'], ['a']);
+    await writeMessageTranslations(
+      settings(path.join(dir, '[locale].msg.json'))
+    );
+    expect(readJson('fr.msg.json')).toEqual({ a: 'Bonjour', c: 'Merci' });
+  });
+
+  test('never treats derive entries as embedded', async () => {
+    const derived = {
+      dataFormat: 'ICU',
+      source: 'b',
+      metadata: { hash: 'b', staticId: 'derive-id' },
+    } as Updates[number];
+    markEmbeddedUpdate(derived);
+    recordEmbeddedHashes([derived]);
+    await writeMessageTranslations(
+      settings(path.join(dir, '[locale].msg.json'))
+    );
+    expect(readJson('fr.msg.json')).toEqual({
+      a: 'Bonjour',
+      b: 'Au revoir',
+      c: 'Merci',
+    });
+  });
+
+  test('writes an empty file when every entry is embedded', async () => {
+    recordHashes(['a', 'b', 'c']);
     await writeMessageTranslations(
       settings(path.join(dir, '[locale].msg.json'))
     );
@@ -71,7 +113,7 @@ describe('writeMessageTranslations', () => {
 
   test('skips locales that are not embedded', async () => {
     fs.writeFileSync(path.join(dir, 'de.json'), '{"a":"Hallo"}');
-    recordMessageHashes(['a']);
+    recordHashes(['b', 'c']);
     await writeMessageTranslations(
       settings(path.join(dir, '[locale].msg.json'), ['fr'])
     );
@@ -84,7 +126,7 @@ describe('writeMessageTranslations', () => {
     fs.writeFileSync(path.join(dir, 'fr.json'), '{ not json');
     fs.writeFileSync(path.join(dir, 'fr.msg.json'), '{"a":"Ancien"}');
     fs.writeFileSync(path.join(dir, 'es.json'), '{"a":"Hola"}');
-    recordMessageHashes(['a']);
+    recordHashes(['b']);
     const msgOutput = path.join(dir, '[locale].msg.json');
 
     await writeMessageTranslations(settings(msgOutput));
@@ -102,7 +144,7 @@ describe('writeMessageTranslations', () => {
     ['equal to files.gt.output', '[locale].json'],
   ])('does not write a msgOutput %s', async (_, fileName) => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
-    recordMessageHashes(['a']);
+    recordHashes(['b']);
     await writeMessageTranslations(settings(path.join(dir, fileName)));
     expect(warn).toHaveBeenCalledOnce();
     expect(readJson('fr.json')).toEqual({
@@ -114,7 +156,7 @@ describe('writeMessageTranslations', () => {
   });
 
   test('does nothing without files.gt.inlineTranslations.msgOutput', async () => {
-    recordMessageHashes(['a']);
+    recordHashes(['b']);
     await writeMessageTranslations(settings(undefined));
     expect(fs.readdirSync(dir)).toEqual(['fr.json']);
   });

@@ -65,7 +65,7 @@ export async function handleTranslate(
       forceDownload: options.forceDownload || options.force, // if force is true should also force download
     });
 
-    // Translations for msg() and m(), for apps that embed the rest at build time
+    // For embedded locales, the translations the compiler does not embed
     await writeMessageTranslations(settings);
 
     // Publish/unpublish files after translations are downloaded

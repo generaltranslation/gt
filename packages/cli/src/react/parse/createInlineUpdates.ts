@@ -30,24 +30,14 @@ import {
   ensureTAndVarImported,
   autoInsertJsxComponents,
 } from '../jsx/utils/jsxParsing/autoInsertion.js';
-import {
-  INLINE_MESSAGE_HOOK,
-  INLINE_MESSAGE_HOOK_ASYNC,
-  INTERNAL_TRANSLATION_COMPONENT,
-  MSG_REGISTRATION_FUNCTION,
-} from '../jsx/utils/constants.js';
+import { INTERNAL_TRANSLATION_COMPONENT } from '../jsx/utils/constants.js';
 import { resetTypeCheckers } from '../jsx/utils/typeChecker.js';
-import { recordMessageHashes } from '../../state/messageHashes.js';
+import {
+  markEmbeddedUpdate,
+  recordEmbeddedHashes,
+} from '../../state/embeddedHashes.js';
 import traverseModule from '@babel/traverse';
 const traverse = traverseModule.default || traverseModule;
-
-// Entries these return are resolved away from their call site, so the
-// compiler can't embed them (see state/messageHashes.ts)
-const MESSAGE_FUNCTIONS = new Set([
-  MSG_REGISTRATION_FUNCTION,
-  INLINE_MESSAGE_HOOK,
-  INLINE_MESSAGE_HOOK_ASYNC,
-]);
 
 export async function createInlineUpdates(
   pkg: GTLibrary,
@@ -58,7 +48,6 @@ export async function createInlineUpdates(
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   resetTypeCheckers();
   const updates: Updates = [];
-  const messageUpdates: Updates = [];
 
   const errors: string[] = [];
   const warnings: Set<string> = new Set();
@@ -107,15 +96,11 @@ export async function createInlineUpdates(
       originalName,
       path,
     } of inlineTranslationPaths) {
-      const firstUpdate = updates.length;
       parseStrings(name, originalName, path, stringParsingConfig, {
         updates,
         errors,
         warnings,
       });
-      if (MESSAGE_FUNCTIONS.has(originalName)) {
-        messageUpdates.push(...updates.slice(firstUpdate));
-      }
     }
 
     // Unstable tagged-template messages, extracted as message trees
@@ -127,6 +112,8 @@ export async function createInlineUpdates(
 
     // Parse <T> components — PASS 1: user-written T
     if (REACT_LIBRARIES.includes(pkg as ReactLibrary)) {
+      // The compiler embeds <T>, user-written or auto-inserted (not derive)
+      const firstJsxUpdate = updates.length;
       for (const { localName, path } of translationComponentPaths) {
         parseTranslationComponent({
           originalName: localName,
@@ -211,20 +198,17 @@ export async function createInlineUpdates(
           });
         }
       }
+      for (const update of updates.slice(firstJsxUpdate)) {
+        markEmbeddedUpdate(update);
+      }
     }
   }
 
   // Post processing steps:
   await calculateHashes(updates);
   // Before dedupe, which keeps one update per hash regardless of its source.
-  // A scan that found nothing leaves the state unset so message files are kept.
-  if (updates.length > 0) {
-    recordMessageHashes(
-      messageUpdates.flatMap((update) =>
-        update.metadata.hash ? [update.metadata.hash] : []
-      )
-    );
-  }
+  // A scan that found nothing leaves the state unset so msgOutput files are kept.
+  if (updates.length > 0) recordEmbeddedHashes(updates);
   dedupeUpdates(updates);
   linkDeriveUpdates(updates);
 

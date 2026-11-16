@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import type { Settings } from '../types/index.js';
-import { getMessageHashes } from '../state/messageHashes.js';
+import { getEmbeddedHashes } from '../state/embeddedHashes.js';
 import { resolveLocaleFiles } from './config/parseFilesConfig.js';
 import { saveJSON } from './saveJSON.js';
 import { logger } from '../console/logger.js';
@@ -11,18 +11,18 @@ import {
 
 /**
  * Write `files.gt.inlineTranslations.msgOutput` for each embedded locale: a
- * copy of the locale's translations file that keeps only entries extracted
- * from msg() and useMessages()/getMessages(). Reads the translations file from
- * disk, so it also covers locales whose download was skipped because nothing
- * changed.
+ * copy of the locale's translations file without the entries the compiler
+ * embeds at their call sites (see state/embeddedHashes.ts). Reads the
+ * translations file from disk, so it also covers locales whose download was
+ * skipped because nothing changed.
  */
 export async function writeMessageTranslations(
   settings: Settings
 ): Promise<void> {
   const inlineTranslations = settings.files.gtJson.inlineTranslations;
   const gtOutput = settings.files.placeholderPaths.gt;
-  const messageHashes = getMessageHashes();
-  if (!inlineTranslations?.msgOutput || !gtOutput || !messageHashes) return;
+  const embeddedHashes = getEmbeddedHashes();
+  if (!inlineTranslations?.msgOutput || !gtOutput || !embeddedHashes) return;
   const { locales, msgOutput } = inlineTranslations;
   const invalidReason = getInvalidMsgOutputReason(msgOutput, gtOutput);
   if (invalidReason) {
@@ -63,7 +63,7 @@ export async function writeMessageTranslations(
 
     const messages: Record<string, unknown> = {};
     for (const hash of Object.keys(translations).sort()) {
-      if (messageHashes.has(hash)) messages[hash] = translations[hash];
+      if (!embeddedHashes.has(hash)) messages[hash] = translations[hash];
     }
     await saveJSON(messagesPath, messages);
   }
