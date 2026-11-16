@@ -165,6 +165,7 @@ beforeEach(() => {
     turboConfigStable: true,
     localeRefreshSupported: true,
     swcPluginCompatible: true,
+    swcPluginWasmFileName: 'gt_swc_plugin.wasm',
     babelPluginCompatible: true,
   });
   // Restores the fs mocks to "no files exist".
@@ -1081,6 +1082,43 @@ describe('withGTConfig', () => {
       ]) {
         expect(warn).toHaveBeenCalledWith(expect.stringContaining(text));
       }
+    });
+
+    describe('SWC plugin wasm selection', () => {
+      function getSwcPluginPath(result: NextConfig) {
+        const plugins = result.experimental!.swcPlugins as [string, unknown][];
+        expect(plugins).toHaveLength(1);
+        return plugins[0][0];
+      }
+
+      it.each(['gt_swc_plugin.wasm', 'gt_swc_plugin_legacy.wasm'])(
+        'passes %s to webpack builds as an absolute path',
+        (fileName) => {
+          mockVersionInfo.swcPluginWasmFileName = fileName;
+          const result = withGTConfig(
+            {},
+            { experimentalCompilerOptions: { type: 'swc' } }
+          );
+          const pluginPath = getSwcPluginPath(result);
+          expect(path.isAbsolute(pluginPath)).toBe(true);
+          expect(path.basename(pluginPath)).toBe(fileName);
+        }
+      );
+
+      it.each(['gt_swc_plugin.wasm', 'gt_swc_plugin_legacy.wasm'])(
+        'passes %s to Turbopack builds as a relative path',
+        (fileName) => {
+          vi.stubEnv('TURBOPACK', '1');
+          mockVersionInfo.swcPluginWasmFileName = fileName;
+          const result = withGTConfig(
+            {},
+            { experimentalCompilerOptions: { type: 'swc' } }
+          );
+          const pluginPath = getSwcPluginPath(result);
+          expect(pluginPath.startsWith('./')).toBe(true);
+          expect(pluginPath.endsWith(`/${fileName}`)).toBe(true);
+        }
+      );
     });
   });
 
