@@ -3,10 +3,11 @@ import type { MessageTreeHashMetadata } from 'generaltranslation/id';
 import { getWritableConditionStore } from '../condition-store/singleton-operations';
 import { getI18nCache } from '../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
-import {
-  lookupInlineTranslation,
-  type InlineTranslations,
-} from '../translation-functions/inline/inlineTranslations';
+import { lookupInlineTranslation } from '../translation-functions/inline/inlineTranslations';
+import type {
+  InlineTranslations,
+  InlineTranslationsOption,
+} from '../types-dir/inline';
 import { buildMessage } from './buildMessage';
 import type { CheckHoles } from './placeholders';
 import {
@@ -28,21 +29,16 @@ type GTTag = <const H extends readonly unknown[]>(
 ) => string;
 
 /** gt`...` or gt({ context })`...` */
-export type GT = GTTag & ((options: GTOptions) => GTTag);
+export type GT = GTTag &
+  ((options: GTOptions & InlineTranslationsOption<MessageTree>) => GTTag);
 
 /**
  * Options a GT reads at runtime: the user's, plus the keys a compiler
  * injects.
  */
 type GTRenderOptions = GTOptions &
-  Pick<MessageTreeMetadata, '$_hash'> & {
-    /**
-     * Translations embedded at the call site, usually injected at build time.
-     * Only called when the locale needs translation; returning undefined
-     * falls back to loaded translations.
-     */
-    $_inline?: InlineTranslations<MessageTree>;
-  };
+  Pick<MessageTreeMetadata, '$_hash'> &
+  InlineTranslationsOption<MessageTree>;
 
 export type CreateGTParams = {
   getLocale: () => string;
@@ -101,14 +97,17 @@ export function createRenderTree({
 export function createGT(params: CreateGTParams): GT {
   const renderTree = createRenderTree(params);
   const render = (
-    { $_inline, ...options }: GTRenderOptions,
+    { inline, ...options }: GTRenderOptions,
     strings: TemplateStringsArray,
     holes: unknown[]
   ): string => {
     const { tree, values, formats } = buildMessage(strings, holes);
-    return renderTree(tree, values, formats, options, $_inline);
+    return renderTree(tree, values, formats, options, inline);
   };
-  const gt = (first: TemplateStringsArray | GTOptions, ...holes: unknown[]) =>
+  const gt = (
+    first: TemplateStringsArray | GTRenderOptions,
+    ...holes: unknown[]
+  ) =>
     isTemplateStringsArray(first)
       ? render({}, first, holes)
       : (strings: TemplateStringsArray, ...nested: unknown[]) =>

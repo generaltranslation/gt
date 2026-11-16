@@ -5,10 +5,10 @@ import { setWritableConditionStore } from '../../condition-store/singleton-opera
 import { I18nCache } from '../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
-import type { InlineTranslations } from '../../translation-functions/inline/inlineTranslations';
+import type { InlineTranslations } from '../../types-dir/inline';
 import { t } from '../../unstable';
 import { buildMessage } from '../buildMessage';
-import { getGT, type GTOptions } from '../gt';
+import { getGT } from '../gt';
 import { hashSource } from 'generaltranslation/id';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
@@ -24,8 +24,9 @@ const keyOf = (strings: TemplateStringsArray) =>
   });
 
 /** Options with the callback the compiler injects. */
-const inline = (callback: InlineTranslations<MessageTree>) =>
-  ({ $_inline: callback }) as GTOptions;
+const inline = (callback: InlineTranslations<MessageTree>) => ({
+  inline: callback,
+});
 
 const embedded =
   (translations: Record<string, MessageTree>) => (locale: string) =>

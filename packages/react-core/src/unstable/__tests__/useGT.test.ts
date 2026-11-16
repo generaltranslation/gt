@@ -98,7 +98,7 @@ describe('react-core/unstable useGT', () => {
   describe('inline translations', () => {
     // The options the compiler injects for an embedded call site
     const inline = (callback: (locale: string) => unknown) =>
-      ({ $_inline: callback }) as GTOptions;
+      ({ inline: callback }) as GTOptions;
 
     it('uses the translation embedded at the call site', () => {
       const gt = useGT();

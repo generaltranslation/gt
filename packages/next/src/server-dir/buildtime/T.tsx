@@ -2,7 +2,7 @@ import { getRequestConditions } from '../../request/getRequestConditions';
 import { T as RscT } from 'gt-react';
 import { renderPreparedT } from './renderPipeline';
 import type { ReactNode } from 'react';
-import type { InlineTranslations } from 'gt-i18n';
+import type { InlineTranslationsOption } from 'gt-i18n/internal';
 import type { JsxChildren } from '@generaltranslation/format';
 
 type TProps = {
@@ -11,13 +11,8 @@ type TProps = {
   context?: string;
   _hash?: string;
   requiresReview?: boolean;
-  /**
-   * Translations embedded at the call site, checked before loaded
-   * translations. Usually injected at build time.
-   */
-  inline?: InlineTranslations<JsxChildren>;
-  [key: string]: ReactNode | InlineTranslations<JsxChildren>;
-};
+  [key: string]: ReactNode;
+} & InlineTranslationsOption<JsxChildren>;
 
 /**
  * Build-time translation component that renders its children in the user's given locale.

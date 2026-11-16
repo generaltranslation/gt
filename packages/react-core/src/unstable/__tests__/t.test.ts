@@ -1,5 +1,4 @@
 import { hashSource } from 'generaltranslation/id';
-import type { GTOptions } from 'gt-i18n/unstable';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
 import type { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
@@ -117,21 +116,19 @@ describe('react-core/unstable t', () => {
     // The options the compiler injects for an embedded call site
     const options = {
       context: 'button',
-      $_inline: (locale: string) => (locale === 'fr' ? 'Valider' : undefined),
-    } as GTOptions;
+      inline: (locale: string) => (locale === 'fr' ? 'Valider' : undefined),
+    };
 
     expect(t(options)`Save`).toBe('Valider');
-    expect(t({ $_inline: () => undefined } as GTOptions)`Save`).toBe(
-      'Enregistrer'
-    );
+    expect(t({ inline: () => undefined })`Save`).toBe('Enregistrer');
   });
 
   it('does not call the callback for a locale that needs no translation', () => {
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
     setConditions('en');
-    const $_inline = vi.fn(() => 'Valider');
+    const inline = vi.fn(() => 'Valider');
 
-    expect(t({ $_inline } as GTOptions)`Save`).toBe('Save');
-    expect($_inline).not.toHaveBeenCalled();
+    expect(t({ inline })`Save`).toBe('Save');
+    expect(inline).not.toHaveBeenCalled();
   });
 });
