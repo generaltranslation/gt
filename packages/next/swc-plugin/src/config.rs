@@ -1,3 +1,4 @@
+use crate::inline_shards::ShardedTranslations;
 use crate::logging::LogLevel;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -5,35 +6,22 @@ use std::collections::HashMap;
 /// Translations to embed for one locale, keyed by translation hash
 pub type LocaleTranslations = HashMap<String, serde_json::Value>;
 
-/// Experimental: translations to embed at each translation call site.
-/// gt-next resolves the locale files before passing them to the plugin, since
-/// the wasm plugin cannot reliably read from disk.
+/// Experimental: translations to embed at each translation call site, read
+/// from the shard files gt-next writes under the working directory.
 #[derive(Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct InlineTranslationsConfig {
   /// Locales to embed, in output order
   #[serde(default)]
   pub locales: Vec<String>,
-  /// Translations keyed by locale, then by translation hash
+  /// Shard directory, relative to the working directory
+  pub dir: String,
+  /// Hash of the translations, so bundler caches keyed on plugin options invalidate
   #[serde(default)]
-  pub translations: HashMap<String, LocaleTranslations>,
-}
-
-impl InlineTranslationsConfig {
-  /// Resolve to (locale, translations) pairs in `locales` order, dropping
-  /// locales without translations
-  pub fn into_table(self) -> Vec<(String, LocaleTranslations)> {
-    let mut translations = self.translations;
-    self
-      .locales
-      .into_iter()
-      .filter_map(|locale| translations.remove(&locale).map(|entries| (locale, entries)))
-      .collect()
-  }
+  pub content_hash: String,
 }
 
 // For plugin configuration and settings
-#[derive(Debug)]
 pub struct PluginSettings {
   /// Log level for the plugin
   pub log_level: LogLevel,
@@ -47,8 +35,8 @@ pub struct PluginSettings {
   pub autoderive_jsx: bool,
   /// When true, bare variables/calls in template literals and concatenations are allowed
   pub autoderive_strings: bool,
-  /// Experimental: translations to embed at call sites, as (locale, translations) pairs
-  pub inline_translations: Vec<(String, LocaleTranslations)>,
+  /// Experimental: translations to embed at call sites
+  pub inline_translations: Option<ShardedTranslations>,
 }
 
 impl PluginSettings {
@@ -60,7 +48,7 @@ impl PluginSettings {
       disable_build_checks,
       autoderive_jsx,
       autoderive_strings,
-      inline_translations: Vec::new(),
+      inline_translations: None,
     }
   }
 }
