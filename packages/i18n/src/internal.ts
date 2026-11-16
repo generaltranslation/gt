@@ -9,6 +9,7 @@ export {
   GtInternalRuntimeTranslateJsx,
 } from './translation-functions/internal/runtime-translate';
 export { createLookupOptions } from './translation-functions/internal/helpers';
+export { lookupInlineTranslation } from './translation-functions/inline/inlineTranslations';
 export { I18nCache } from './i18n-cache/I18nCache';
 export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';

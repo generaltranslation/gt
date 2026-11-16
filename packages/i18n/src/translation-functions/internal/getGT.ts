@@ -6,7 +6,10 @@ import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
 import type { StringFormat } from '@generaltranslation/format';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
-import type { InlineTranslations } from '../inline/inlineTranslations';
+import {
+  lookupInlineTranslation,
+  type InlineTranslations,
+} from '../inline/inlineTranslations';
 
 export type RegisteredMessage = TranslationMetadata & {
   message: string;
@@ -100,9 +103,8 @@ export async function getGTInternal(
 
     // Translations embedded at the call site win over loaded translations
     const translation =
-      (getI18nConfig().requiresTranslation({ locale: targetLocale })
-        ? inline?.(targetLocale)
-        : undefined) ?? lookupTranslation(message, lookupOptions);
+      lookupInlineTranslation(inline, targetLocale) ??
+      lookupTranslation(message, lookupOptions);
 
     // Dev hot reload (fire and forget, will be available in a later lookup)
     if (devHotReloadEnabled && translation == null) {
