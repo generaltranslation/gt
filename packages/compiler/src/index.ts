@@ -21,6 +21,12 @@ import { macroExpansionPass } from './passes/macroExpansionPass';
 import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { getInlineTranslationsFiles } from './transform/injection/inline-translations/loadInlineTranslations';
+import {
+  applyStaticLocale,
+  getStaticLocale,
+  getStaticLocaleWarning,
+  resolveStaticLocale,
+} from './transform/injection/inline-translations/resolveStaticLocale';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
@@ -194,9 +200,18 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
         : undefined;
+    // A static locale narrows the embedded locales to itself, so this build
+    // carries only that locale's translations
+    const staticLocale = getStaticLocale(options.experimentalStaticLocale);
+    const staticLocaleResolution = staticLocale
+      ? resolveStaticLocale(staticLocale, loadedGTConfig)
+      : undefined;
+    const gtConfig = staticLocaleResolution
+      ? applyStaticLocale(loadedGTConfig, staticLocaleResolution)
+      : loadedGTConfig;
     const resolvedOptions: GTUnpluginOptions = {
       ...options,
-      ...(loadedGTConfig ? { gtConfig: loadedGTConfig } : {}),
+      ...(gtConfig ? { gtConfig } : {}),
     };
 
     if (shouldWarn(options.logLevel)) {
@@ -213,6 +228,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           })
         );
       }
+      const staticLocaleWarning =
+        staticLocale && staticLocaleResolution
+          ? getStaticLocaleWarning(
+              staticLocale,
+              staticLocaleResolution,
+              loadedGTConfig
+            )
+          : undefined;
+      if (staticLocaleWarning) console.warn(staticLocaleWarning);
     }
 
     // Debug manifest: accumulates hash → jsxChildren across all files

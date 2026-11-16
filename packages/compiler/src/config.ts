@@ -32,6 +32,15 @@ export interface PluginConfig
   autoJsxImportSource?: string;
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest?: boolean;
+  /**
+   * Experimental: build for a single locale. Embedded translations
+   * (`files.gt.inlineTranslations`) keep only this locale's strings, so each
+   * per-locale build ships one language and a server picks the build per
+   * request (see `gt-react/static-locale`). Defaults to the `GT_STATIC_LOCALE`
+   * environment variable. A source locale, or a locale that is not embedded,
+   * embeds no translations. Unset embeds every configured locale.
+   */
+  experimentalStaticLocale?: string;
 }
 
 /**
