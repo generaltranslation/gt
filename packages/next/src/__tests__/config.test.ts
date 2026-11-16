@@ -70,7 +70,7 @@ type WebpackConfig = {
   context: string;
   resolve: { alias: Record<string, unknown> };
   plugins: unknown[];
-  cache: boolean;
+  cache: boolean | { type: string; version?: string };
   module?: { rules?: Rule[] };
 };
 
@@ -124,13 +124,14 @@ function stubCredentials(env: Record<string, string>) {
 
 function runWebpack(
   result: NextConfig,
-  options: Partial<WebpackOptions> = { isServer: true }
+  options: Partial<WebpackOptions> = { isServer: true },
+  cache: WebpackConfig['cache'] = true
 ) {
   const config: WebpackConfig = {
     context: '/fake/project',
     resolve: { alias: {} },
     plugins: [],
-    cache: true,
+    cache,
   };
   const returned = result.webpack!(
     config as WebpackConfigArg,
@@ -1190,6 +1191,32 @@ describe('withGTConfig', () => {
           { distDir: 'out' }
         );
         expect(getSwcOptions(result).inlineTranslations).toEqual(shards);
+      });
+
+      it('keys the webpack cache on the embedded translations', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        mockConfigFiles({});
+        vi.mocked(resolveInlineTranslations).mockReturnValueOnce({
+          locales: ['fr'],
+          dir: 'out/cache/gt/inline/h',
+          contentHash: 'h',
+        });
+        const result = withGTConfig(
+          {},
+          { experimentalCompilerOptions: { type: 'swc' } }
+        );
+        const { config } = runWebpack(
+          result,
+          { isServer: true },
+          {
+            type: 'filesystem',
+            version: 'next',
+          }
+        );
+        expect(config.cache).toEqual({
+          type: 'filesystem',
+          version: 'next|gt-inline-translations:h',
+        });
       });
 
       it('aliases message module imports to modulesDir', () => {

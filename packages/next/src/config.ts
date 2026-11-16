@@ -811,6 +811,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         if (process.env.NODE_ENV === 'development') {
           webpackConfig.cache = false;
         }
+        // Next.js keys its webpack cache without SWC plugin options, so cached
+        // modules would keep translations embedded by an earlier build
+        if (swcInlineTranslations && typeof webpackConfig.cache === 'object') {
+          webpackConfig.cache.version = `${webpackConfig.cache.version ?? ''}|gt-inline-translations:${swcInlineTranslations.contentHash}`;
+        }
         if (messageModulesDir) {
           webpackConfig.resolve.alias[MESSAGE_MODULES_ALIAS] =
             path.resolve(messageModulesDir);
