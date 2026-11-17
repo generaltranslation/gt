@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { I18nConfig } from '../I18nConfig';
+import { initializeI18nConfig } from '../singleton-operations';
 
 describe('I18nConfig', () => {
   beforeEach(() => {
@@ -255,5 +256,34 @@ describe('I18nConfig', () => {
     vi.stubEnv('NODE_ENV', environment);
 
     expect(new I18nConfig(config).isDevHotReloadEnabled()).toBe(false);
+  });
+
+  it('warns once in development about configured locales Intl has no data for', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Klingon and Latin have no locale data in Node; French does.
+    const config = (locales: string[]) => ({
+      defaultLocale: 'en',
+      locales,
+      customMapping: { brand: { code: 'fr' } },
+      cacheUrl: null,
+      runtimeUrl: null,
+    });
+    try {
+      vi.stubEnv('NODE_ENV', 'production');
+      initializeI18nConfig(config(['en', 'la']));
+      expect(warn).not.toHaveBeenCalled();
+
+      vi.stubEnv('NODE_ENV', 'development');
+      initializeI18nConfig(config(['en', 'fr', 'brand']));
+      expect(warn).not.toHaveBeenCalled();
+      initializeI18nConfig(config(['en', 'brand', 'tlh', 'la']));
+      // The same locales again, as a hot reload initializes them.
+      initializeI18nConfig(config(['en', 'brand', 'tlh', 'la']));
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toMatch(/tlh[\s\S]*la/);
+      expect(warn.mock.calls[0][0]).not.toMatch(/brand|fr\b/);
+    } finally {
+      Reflect.deleteProperty(globalThis, '__generaltranslation');
+    }
   });
 });

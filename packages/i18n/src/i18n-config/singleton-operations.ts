@@ -1,6 +1,8 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from '../globals/createGlobalSingleton';
+import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { I18nConfig, type I18nConfigParams } from './I18nConfig';
+import { warnAboutLocalesWithoutIntlData } from './validation';
 
 const i18nConfigSingleton = createGlobalSingleton<I18nConfig>({
   namespace: 'i18n',
@@ -25,5 +27,8 @@ export function initializeI18nConfig(
 ): I18nConfig {
   const nextI18nConfig = new I18nConfig(params);
   setI18nConfig(nextI18nConfig);
+  if (getRuntimeEnvironment() === 'development') {
+    warnAboutLocalesWithoutIntlData(nextI18nConfig);
+  }
   return nextI18nConfig;
 }
