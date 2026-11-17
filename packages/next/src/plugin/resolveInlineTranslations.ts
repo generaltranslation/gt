@@ -84,11 +84,11 @@ export function resolveInlineTranslations(
   const files = compiler.resolveInlineTranslationsFiles(gtFiles);
   if (files.length === 0) return undefined;
 
+  const cwd = process.cwd();
   if (gtFiles.inlineTranslations.modules) {
-    return resolveMessageModules(gtFiles, files, compiler);
+    return resolveMessageModules(gtFiles, files, compiler, distDir);
   }
 
-  const cwd = process.cwd();
   const shardsRoot = path.resolve(cwd, distDir, SHARDS_DIR);
   const contentHash = hashContent(files);
   const target = path.join(shardsRoot, contentHash);
@@ -119,21 +119,31 @@ export function resolveInlineTranslations(
 }
 
 /**
- * Writes one module per embedded message to `modulesDir` and returns the
- * plugin options. SWC plugins cannot serve virtual modules, so `'virtual'`
- * falls back to physical files.
+ * Writes one module per embedded message to a subdirectory of `modulesDir`
+ * for `distDir` and returns the plugin options. SWC plugins cannot serve
+ * virtual modules, so `'virtual'` falls back to physical files.
  */
 function resolveMessageModules(
   gtFiles: Pick<GTOutputFileConfig, 'output' | 'inlineTranslations'>,
   files: { locale: string }[],
-  compiler: CompilerFileHelpers
+  compiler: CompilerFileHelpers,
+  distDir: string
 ): ResolvedInlineTranslations {
   if (gtFiles.inlineTranslations?.modules === 'virtual') {
     console.warn(virtualMessageModulesUnsupportedWarning);
   }
   const cwd = process.cwd();
-  const target = compiler.resolveInlineTranslationsModulesDir(gtFiles, cwd);
-  const dir = path.relative(cwd, target) || '.';
+  // Builds into different distDirs can run at once, and the writer deletes modules it did not just write
+  const distDirKey = crypto
+    .createHash('sha256')
+    .update(path.relative(cwd, path.resolve(cwd, distDir)))
+    .digest('hex')
+    .slice(0, 8);
+  const target = path.join(
+    compiler.resolveInlineTranslationsModulesDir(gtFiles, cwd),
+    distDirKey
+  );
+  const dir = path.relative(cwd, target);
   // The plugin can only read inside the working directory
   if (dir.startsWith('..') || path.isAbsolute(dir)) {
     throw new Error(createMessageModulesDirOutsideCwdError(target, cwd));

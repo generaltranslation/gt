@@ -3,6 +3,7 @@
 // loadTranslations.ts). `next dev` doesn't embed, so this has to run against
 // `next build` output.
 import { spawn } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -83,9 +84,16 @@ async function waitForServer() {
 let failed = false;
 try {
   if (modulesMode) {
+    // gt-next writes the modules for each distDir to its own subdirectory
+    const distDirKey = crypto
+      .createHash('sha256')
+      .update('.next')
+      .digest('hex')
+      .slice(0, 8);
     const modulePath = path.join(
       appDir,
       '.gt/messages',
+      distDirKey,
       `${EMBEDDED_HASH}.mjs`
     );
     const source = fs.existsSync(modulePath)

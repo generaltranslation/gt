@@ -191,9 +191,11 @@ describe('resolveInlineTranslations with message modules', () => {
       modules: 'physical' as const,
     },
   };
+  // Subdirectory for the default distDir, .next
+  const modulesDir = '.gt/messages/503faf65';
 
   const readModule = (file: string) =>
-    fs.readFileSync(path.join(cwd, '.gt/messages', file), 'utf8');
+    fs.readFileSync(path.join(cwd, modulesDir, file), 'utf8');
 
   it('writes a module per message and returns the modules options', () => {
     writeLocale('fr', { '05aa': 'Bonjour', ff00: 'Au revoir' });
@@ -204,13 +206,13 @@ describe('resolveInlineTranslations with message modules', () => {
     expect(result).toMatchObject({
       locales: ['fr', 'es'],
       modules: {
-        dir: '.gt/messages',
+        dir: modulesDir,
         importDir: 'gt-next/internal/_inline-messages',
         hashes: ['05aa', 'ff00'],
       },
     });
     expect(result.dir).toBeUndefined();
-    expect(fs.readdirSync(path.join(cwd, '.gt/messages')).sort()).toEqual([
+    expect(fs.readdirSync(path.join(cwd, modulesDir)).sort()).toEqual([
       '05aa.mjs',
       'ff00.mjs',
     ]);
@@ -231,13 +233,13 @@ describe('resolveInlineTranslations with message modules', () => {
         modulesDir: 'src/generated/messages',
       },
     })!;
-    expect(result.modules?.dir).toBe('src/generated/messages');
+    expect(result.modules?.dir).toBe('src/generated/messages/503faf65');
     expect(
-      fs.existsSync(path.join(cwd, 'src/generated/messages/05aa.mjs'))
+      fs.existsSync(path.join(cwd, 'src/generated/messages/503faf65/05aa.mjs'))
     ).toBe(true);
   });
 
-  it('keeps a modulesDir of the working directory non-empty', () => {
+  it('writes into a subdirectory when modulesDir is the working directory', () => {
     writeLocale('fr', { '05aa': 'Bonjour' });
     const result = resolveInlineTranslations({
       ...modulesFiles,
@@ -246,8 +248,25 @@ describe('resolveInlineTranslations with message modules', () => {
         modulesDir: '.',
       },
     })!;
-    expect(result.modules?.dir).toBe('.');
-    expect(fs.existsSync(path.join(cwd, '05aa.mjs'))).toBe(true);
+    expect(result.modules?.dir).toBe('503faf65');
+    expect(fs.existsSync(path.join(cwd, '503faf65/05aa.mjs'))).toBe(true);
+  });
+
+  it('keeps the modules of a build into another distDir', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const next = resolveInlineTranslations(modulesFiles)!;
+    writeLocale('fr', { ff00: 'Au revoir' });
+    const other = resolveInlineTranslations(modulesFiles, {
+      distDir: 'build',
+    })!;
+
+    expect(other.modules?.dir).toBe('.gt/messages/44575cf5');
+    expect(fs.readdirSync(path.join(cwd, next.modules!.dir))).toEqual([
+      '05aa.mjs',
+    ]);
+    expect(fs.readdirSync(path.join(cwd, other.modules!.dir))).toEqual([
+      'ff00.mjs',
+    ]);
   });
 
   it('falls back to physical modules for virtual with a warning', () => {
@@ -257,7 +276,7 @@ describe('resolveInlineTranslations with message modules', () => {
       ...gtFiles,
       inlineTranslations: { locales: ['fr'], modules: 'virtual' },
     })!;
-    expect(result.modules?.dir).toBe('.gt/messages');
+    expect(result.modules?.dir).toBe(modulesDir);
     expect(readModule('05aa.mjs')).toContain('"Bonjour"');
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('does not support')
@@ -267,12 +286,12 @@ describe('resolveInlineTranslations with message modules', () => {
   it('removes modules for messages that lost their translations', () => {
     writeLocale('fr', { '05aa': 'Bonjour', ff00: 'Au revoir' });
     resolveInlineTranslations(modulesFiles);
-    fs.writeFileSync(path.join(cwd, '.gt/messages/abcd.mjs'), 'mine');
+    fs.writeFileSync(path.join(cwd, modulesDir, 'abcd.mjs'), 'mine');
     writeLocale('fr', { '05aa': 'Bonjour' });
 
     resolveInlineTranslations(modulesFiles);
 
-    expect(fs.readdirSync(path.join(cwd, '.gt/messages')).sort()).toEqual([
+    expect(fs.readdirSync(path.join(cwd, modulesDir)).sort()).toEqual([
       '05aa.mjs',
       'abcd.mjs',
     ]);
@@ -282,13 +301,11 @@ describe('resolveInlineTranslations with message modules', () => {
     writeLocale('fr', { '05aa': 'Bonjour', Custom: 'Perso' });
     const result = resolveInlineTranslations(modulesFiles)!;
     expect(result.modules).toEqual({
-      dir: '.gt/messages',
+      dir: modulesDir,
       importDir: 'gt-next/internal/_inline-messages',
       hashes: ['05aa'],
     });
-    expect(fs.readdirSync(path.join(cwd, '.gt/messages'))).toEqual([
-      '05aa.mjs',
-    ]);
+    expect(fs.readdirSync(path.join(cwd, modulesDir))).toEqual(['05aa.mjs']);
   });
 
   it('keeps the content hash when only translation text changes', () => {
@@ -311,7 +328,7 @@ describe('resolveInlineTranslations with message modules', () => {
     fs.chmodSync(path.join(cwd, '.gt'), 0o555);
     try {
       const result = resolveInlineTranslations(modulesFiles);
-      expect(result?.modules?.dir).toBe('.gt/messages');
+      expect(result?.modules?.dir).toBe(modulesDir);
       expect(result?.modules?.writeError).toContain('EACCES');
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('could not be written')
@@ -326,13 +343,13 @@ describe('resolveInlineTranslations with message modules', () => {
     resolveInlineTranslations(modulesFiles);
     writeLocale('fr', { '05aa': 'Bonjour !' });
     vi.spyOn(console, 'warn').mockImplementation(() => {});
-    fs.chmodSync(path.join(cwd, '.gt/messages'), 0o555);
+    fs.chmodSync(path.join(cwd, modulesDir), 0o555);
     try {
       const result = resolveInlineTranslations(modulesFiles);
       expect(result?.modules?.writeError).toContain('EACCES');
       expect(readModule('05aa.mjs')).toContain('"Bonjour"');
     } finally {
-      fs.chmodSync(path.join(cwd, '.gt/messages'), 0o755);
+      fs.chmodSync(path.join(cwd, modulesDir), 0o755);
     }
   });
 
