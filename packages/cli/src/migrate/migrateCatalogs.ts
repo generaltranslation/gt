@@ -70,6 +70,8 @@ type OldSource = {
   tree: MessageTree;
   treeFormats: MessageFormats;
   treeFormat: LegacyDataFormat;
+  /** The dictionary entry this key belongs to, which may also be keyed by hash and by id. */
+  entry?: string;
 };
 
 type Match = {
@@ -142,7 +144,8 @@ function convertOldSource(
   key: string,
   value: unknown,
   knownFormat: LegacyDataFormat | undefined,
-  defaultLocale: string
+  defaultLocale: string,
+  entry: string | undefined
 ): OldSource[] {
   const formats: LegacyDataFormat[] = knownFormat
     ? [knownFormat]
@@ -179,6 +182,7 @@ function convertOldSource(
       tree: result.tree,
       treeFormats: result.formats,
       treeFormat,
+      ...(entry !== undefined && { entry }),
     });
   }
   return converted;
@@ -195,7 +199,8 @@ class SourceIndex {
         key,
         value,
         sources?.formats.get(key),
-        defaultLocale
+        defaultLocale,
+        sources?.entries.get(key)
       )) {
         pushTo(this.exact, sortedJson(old.tree), old);
         pushTo(this.alpha, treeShape(old.tree).shape, old);
@@ -236,6 +241,24 @@ function hashMeta(message: NewMessage): HashMeta {
   };
 }
 
+/** Keeps one key per dictionary entry, unless the entry's keys have different translations. */
+function dedupeAliases(
+  candidates: OldSource[],
+  catalogs: Record<string, Catalog>
+): OldSource[] {
+  const kept: OldSource[] = [];
+  for (const candidate of candidates) {
+    const alias = kept.find(
+      (other) =>
+        other.entry !== undefined &&
+        other.entry === candidate.entry &&
+        sameTranslations([other.key, candidate.key], catalogs)
+    );
+    if (!alias) kept.push(candidate);
+  }
+  return kept;
+}
+
 function pickSourceMatch(
   message: NewMessage,
   tree: MessageTree,
@@ -246,7 +269,11 @@ function pickSourceMatch(
   for (const candidate of found.candidates) {
     if (!byKey.has(candidate.key)) byKey.set(candidate.key, candidate);
   }
-  const candidates = [...byKey.values()];
+  const translated = [...byKey.values()].filter((candidate) =>
+    Object.values(catalogs).some((catalog) => catalog[candidate.key] != null)
+  );
+  if (translated.length === 0) return { ambiguous: '' };
+  const candidates = dedupeAliases(translated, catalogs);
   const notes: string[] = [];
   let chosen: OldSource | undefined;
   let oldDataFormat: LegacyDataFormat | undefined;
@@ -364,7 +391,7 @@ export function migrateCatalogs({
   fill,
   loose,
 }: MigrateCatalogsInput): MigrateCatalogsResult {
-  const oldKeys = new Set<string>(sources?.values.keys() ?? []);
+  const oldKeys = new Set<string>();
   for (const catalog of Object.values(catalogs)) {
     for (const key of Object.keys(catalog)) oldKeys.add(key);
   }
@@ -411,8 +438,8 @@ export function migrateCatalogs({
       const found = index.find(tree, loose);
       if (found) {
         const picked = pickSourceMatch(message, tree, found, catalogs);
-        if ('ambiguous' in picked) decision.notes.push(picked.ambiguous);
-        else fallback = picked;
+        if (!('ambiguous' in picked)) fallback = picked;
+        else if (picked.ambiguous) decision.notes.push(picked.ambiguous);
       }
     }
 

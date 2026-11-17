@@ -42,6 +42,15 @@ const realVersionExistsWarning = createDiagnosticMessage({
     'Otherwise gt translate translates the partly migrated locales in full',
 });
 
+const seedFailedWarning = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Warning',
+  whatHappened:
+    'The source was not uploaded, because the partly migrated locales could not be uploaded',
+  why: 'once the source version exists, the platform can no longer link it to those translations',
+  fix: 'Run gt migrate again before gt translate',
+});
+
 export async function uploadMigration({
   client,
   settings,
@@ -141,6 +150,10 @@ export async function uploadMigration({
           }
         }
         result.seedVersionId = seed;
+      }
+      if (result.failed) {
+        logger.warn(seedFailedWarning);
+        return result;
       }
     }
   }

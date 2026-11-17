@@ -13,6 +13,8 @@ export type LegacySources = {
   values: Map<string, unknown>;
   /** Formats known for certain, such as ICU for dictionary entries. */
   formats: Map<string, LegacyDataFormat>;
+  /** The dictionary id each key of a dictionary entry belongs to. */
+  entries: Map<string, string>;
   kind: 'hashes' | 'dictionary';
 };
 
@@ -68,11 +70,13 @@ export function parseLegacySource(json: Catalog): LegacySources {
     return {
       values: new Map(Object.entries(json)),
       formats: new Map(),
+      entries: new Map(),
       kind: 'hashes',
     };
   }
   const values = new Map<string, unknown>();
   const formats = new Map<string, LegacyDataFormat>();
+  const entries = new Map<string, string>();
   const dictionary = flattenDictionary(json as Dictionary);
   for (const [id, value] of Object.entries(dictionary)) {
     const { entry, metadata } = getEntryAndMetadata(value as DictionaryEntry);
@@ -87,7 +91,8 @@ export function parseLegacySource(json: Catalog): LegacySources {
     for (const key of [hashSource({ source: entry, ...meta }), id]) {
       values.set(key, entry);
       formats.set(key, 'ICU');
+      entries.set(key, id);
     }
   }
-  return { values, formats, kind: 'dictionary' };
+  return { values, formats, entries, kind: 'dictionary' };
 }
