@@ -7,6 +7,35 @@ export type SideEffectOptions = {
   sameIdentity?: boolean;
 };
 
+/** A source expression, at its source position, that a replacement evaluates any number of times. */
+export type Evaluation = { start: number; free: boolean };
+
+/**
+ * Whether evaluating `uses` in order sees the values evaluating `sources` in
+ * source order does: each expression with side effects runs once, in source
+ * order, and each free one stays on the same side of every one of them.
+ */
+export function keepsEvaluationOrder(
+  sources: Evaluation[],
+  uses: Evaluation[]
+): boolean {
+  const effects = sources
+    .filter((source) => !source.free)
+    .sort((a, b) => a.start - b.start);
+  let seen = 0;
+  for (const use of uses) {
+    if (!use.free) {
+      if (effects[seen] !== use) return false;
+      seen += 1;
+    } else if (
+      effects.filter((effect) => effect.start < use.start).length !== seen
+    ) {
+      return false;
+    }
+  }
+  return seen === effects.length;
+}
+
 /**
  * Whether evaluating `node` has no side effects, so a replacement may drop,
  * repeat or reorder it. Property reads count as free; calls do not, except

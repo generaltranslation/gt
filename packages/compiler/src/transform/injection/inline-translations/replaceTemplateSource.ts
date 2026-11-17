@@ -1,5 +1,9 @@
 import * as t from '@babel/types';
-import { isSideEffectFree } from './isSideEffectFree';
+import {
+  type Evaluation,
+  isSideEffectFree,
+  keepsEvaluationOrder,
+} from './isSideEffectFree';
 
 export type TemplateReplacement =
   | { quasi: t.TemplateLiteral }
@@ -10,8 +14,9 @@ type Hole = { name: string; expression: t.Expression; start: number };
 /**
  * The translation as a template literal that reuses the source's `${{ name }}`
  * holes, for translations of text and `{name}` only; a hole dropped, repeated
- * or reordered must be free of side effects, and a repeated one must bind the
- * same value, as the runtime rejects one name bound to two values.
+ * or reordered must be free of side effects and must not move across one that
+ * is not, and a repeated one must bind the same value, as the runtime rejects
+ * one name bound to two values.
  */
 export function replaceTemplateSource(
   quasi: t.TemplateLiteral,
@@ -78,27 +83,31 @@ function checkHoleUses(
   holesByName: Map<string, Hole[]>,
   uses: Hole[]
 ): string | undefined {
-  const isStable = (hole: Hole) =>
-    isSideEffectFree(getHoleValue(hole.expression), {
-      isPureCall: () => false,
-      sameIdentity: true,
-    });
+  const evaluations = new Map<Hole, Evaluation>();
   for (const [name, sourceHoles] of holesByName) {
-    const useCount = uses.filter((hole) => hole.name === name).length;
+    for (const hole of sourceHoles) {
+      evaluations.set(hole, {
+        start: hole.start,
+        free: isSideEffectFree(getHoleValue(hole.expression), {
+          isPureCall: () => false,
+          sameIdentity: true,
+        }),
+      });
+    }
     if (
-      (sourceHoles.length !== 1 || useCount !== 1) &&
-      !sourceHoles.every(isStable)
+      sourceHoles.length > 1 &&
+      !sourceHoles.every((hole) => evaluations.get(hole)!.free)
     ) {
-      return `{${name}} would be dropped or repeated, and its value has side effects`;
+      return `{${name}} is bound more than once, and its value has side effects`;
     }
   }
-  const ordered = uses.filter((hole) => !isStable(hole));
   if (
-    ordered.some(
-      (hole, index) => index > 0 && ordered[index - 1].start > hole.start
+    !keepsEvaluationOrder(
+      [...evaluations.values()],
+      uses.map((hole) => evaluations.get(hole)!)
     )
   ) {
-    return 'the translation reorders variables whose values have side effects';
+    return 'the translation drops, repeats or reorders a variable whose value has side effects, or moves another across one';
   }
   return undefined;
 }

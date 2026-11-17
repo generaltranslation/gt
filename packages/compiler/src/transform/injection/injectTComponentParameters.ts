@@ -54,29 +54,44 @@ export function injectTComponentParameters(
     callExpr.arguments[1],
     translationJsx.hash
   );
-  if (
-    runtimeHash &&
-    !getObjectPropertyFromObjectExpression(callExpr.arguments[1], 'inline')
-  ) {
-    if (
-      replaceSource(callExprPath, translationJsx.children, runtimeHash, state)
-    ) {
+  const props = callExpr.arguments[1];
+  const { hash } = translationJsx;
+  if (runtimeHash && !getObjectPropertyFromObjectExpression(props, 'inline')) {
+    const translation = getReplacementTranslation(runtimeHash, state);
+    if (translation !== undefined) {
+      // On exit, once translation calls in the children have taken their hashes in source order
+      state.sourceReplacementsOnExit ??= new Map();
+      state.sourceReplacementsOnExit.set(callExpr, () => {
+        if (
+          replaceSource(
+            callExprPath,
+            translationJsx.children,
+            runtimeHash,
+            translation,
+            state
+          )
+        ) {
+          return;
+        }
+        injectInlineTranslationsProp(props, runtimeHash, state);
+        injectHash(props, hash);
+      });
       return;
     }
-    injectInlineTranslationsProp(callExpr.arguments[1], runtimeHash, state);
+    injectInlineTranslationsProp(props, runtimeHash, state);
   }
+  injectHash(props, hash);
+}
 
+function injectHash(props: t.ObjectExpression, hash: string): void {
   // If already has hash set then skip
-  if (getObjectPropertyFromObjectExpression(callExpr.arguments[1], '_hash')) {
+  if (getObjectPropertyFromObjectExpression(props, '_hash')) {
     return;
   }
 
   // Inject the parameters into the call expression
-  callExpr.arguments[1].properties.push(
-    t.objectProperty(
-      t.identifier('_hash'),
-      t.stringLiteral(translationJsx.hash)
-    )
+  props.properties.push(
+    t.objectProperty(t.identifier('_hash'), t.stringLiteral(hash))
   );
 }
 
@@ -101,21 +116,27 @@ function getRuntimeHash(
     : undefined;
 }
 
+/** The translation a per-locale build replaces a <T> with, if it replaces <T>. */
+function getReplacementTranslation(
+  hash: string,
+  state: TransformState
+): unknown {
+  const { sourceReplacement, inlineTranslationsTable } = state.settings;
+  if (!sourceReplacement?.jsx) return undefined;
+  return inlineTranslationsTable?.[sourceReplacement.locale]?.[hash];
+}
+
 /**
- * In a per-locale build that replaces source content, swaps the <T> call for
- * the JSX its translation renders. Returns whether it did.
+ * Swaps the <T> call for the JSX its translation renders. Returns whether it
+ * did.
  */
 function replaceSource(
   callExprPath: NodePath<t.CallExpression>,
   sourceChildren: unknown,
   hash: string,
+  translation: unknown,
   state: TransformState
 ): boolean {
-  const { sourceReplacement, inlineTranslationsTable } = state.settings;
-  if (!sourceReplacement?.jsx) return false;
-  const translation =
-    inlineTranslationsTable?.[sourceReplacement.locale]?.[hash];
-  if (translation === undefined) return false;
   const reason = replaceJsxSource(
     callExprPath,
     sourceChildren,

@@ -21,6 +21,20 @@ import { injectStandaloneTFunctionParameters } from '../../transform/injection/i
 export function processCallExpression(
   state: TransformState
 ): VisitNode<t.Node, t.CallExpression> {
+  return {
+    enter: enterCallExpression(state),
+    exit(callExprPath) {
+      const replace = state.sourceReplacementsOnExit?.get(callExprPath.node);
+      if (!replace) return;
+      state.sourceReplacementsOnExit!.delete(callExprPath.node);
+      replace();
+    },
+  };
+}
+
+function enterCallExpression(
+  state: TransformState
+): (callExprPath: NodePath<t.CallExpression>) => void {
   return (callExprPath) => {
     // Get the call expression
     const callExpr = callExprPath.node;

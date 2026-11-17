@@ -515,6 +515,67 @@ const JSX_CASES: Case[] = [
     renders: [{}],
     expected: 'kept',
   },
+  {
+    name: 'a variable the translation moves across one with side effects',
+    source: `${IMPORTS}
+      export function App() {
+        let x = 0;
+        return <T><Var name="a">{x}</Var> then <Var name="b">{x++}</Var></T>;
+      }`,
+    translation: [{ k: 'b', i: 2, v: 'v' }, ' puis ', { k: 'a', i: 1, v: 'v' }],
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'a <Branch> whose branch prop with side effects follows a branch',
+    source: `${IMPORTS}
+      export function App() {
+        let i = 0;
+        const next = () => String(++i);
+        return <T><Branch yes={<Var>{next()}</Var>} branch={next() === '2' ? 'yes' : 'no'}>Other</Branch></T>;
+      }`,
+    translation: {
+      t: 'Branch',
+      i: 1,
+      d: { t: 'b', b: { yes: { k: '_gt_value_2', i: 2, v: 'v' } } },
+      c: 'Autre',
+    },
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'a translated title, then the same element without its title',
+    source: app('<T><abbr title="World Health Organization">WHO</abbr></T>'),
+    translation: [
+      { t: 'abbr', i: 1, d: { ti: 'Organisation mondiale' }, c: 'OMS' },
+      ' ',
+      { t: 'abbr', i: 1, c: 'encore' },
+    ],
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'a variable the translation formats as another type',
+    source: app('<T>Count: <Num>{n}</Num></T>', '{ n }'),
+    translation: ['Total : ', { k: '_gt_n_1', i: 1, v: 'v' }],
+    renders: [{ n: 1234.5 }],
+    expected: 'kept',
+  },
+  {
+    name: 'sibling variables that share a name',
+    source: app(
+      '<T><Var name="who">{a}</Var> / <Var name="who">{b}</Var></T>',
+      '{ a, b }'
+    ),
+    translation: [
+      { k: 'who', i: 1, v: 'v' },
+      ' et ',
+      { k: 'who', i: 2, v: 'v' },
+    ],
+    renders: [{ a: 'Alice', b: 'Bob' }],
+    expected: 'replaced',
+    sourceText: [' / '],
+  },
 ];
 
 const TEMPLATE_CASES: Case[] = [
@@ -615,6 +676,17 @@ const TEMPLATE_CASES: Case[] = [
       export const App = ({ a, b }) => t\`\${{ a: up(a) }} then \${{ b: up(b) }}\`;`,
     translation: [['b'], ' puis ', ['a']],
     renders: [{ a: 'x', b: 'y' }],
+    expected: 'kept',
+  },
+  {
+    name: 'a variable the translation moves across one with side effects',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = () => {
+        let x = 0;
+        return t\`\${{ a: x }} then \${{ b: x++ }}\`;
+      };`,
+    translation: [['b'], ' puis ', ['a']],
+    renders: [{}],
     expected: 'kept',
   },
 ];
@@ -812,6 +884,36 @@ describe('experimentalReplaceSource', () => {
     );
   });
 
+  it('keeps the hashes of translation calls inside a <T> the translation reorders', async () => {
+    const code = compileJsx(`import { T, useGT } from 'gt-react';
+      export function App() {
+        const gt = useGT();
+        return <T><button onClick={() => gt('First')}>A</button> <button onClick={() => gt('Second')}>B</button></T>;
+      }`);
+    const output = (await transformWithPlugin(undefined, code))!;
+    const [, hash] = output.match(/[^$]_hash: "([^"]+)"/)!;
+    const replaced = (await transformWithPlugin(
+      buildOptions(
+        {
+          [hash]: [
+            { t: 'button', i: 2, c: 'Deux' },
+            ' ',
+            { t: 'button', i: 1, c: 'Un' },
+          ],
+        },
+        { replaceSource: true }
+      ),
+      code
+    ))!;
+    const calls = (text: string) =>
+      [...text.matchAll(/gt\("(\w+)", \{ "\$_hash": "(\w+)" \}\)/g)]
+        .map(([, message, messageHash]) => `${message} ${messageHash}`)
+        .sort();
+    expect(replaced).toContain('"Deux"');
+    expect(calls(output)).toHaveLength(2);
+    expect(calls(replaced)).toEqual(calls(output));
+  });
+
   it('imports Fragment where the file lacks it', async () => {
     const code = `
       import { jsx as _jsx } from 'react/jsx-runtime';
@@ -1001,22 +1103,29 @@ describe('experimentalReplaceSource', () => {
         { replaceSource: true, logLevel: 'debug' }
       );
       const plugin = createPlugin(options);
-      await (plugin.transform as (code: string, id: string) => unknown).call(
-        { addWatchFile() {} },
-        code,
-        '/app/App.tsx'
-      );
-      (plugin.buildEnd as () => void).call({});
+      const build = async () => {
+        (plugin.buildStart as () => void).call({});
+        await (plugin.transform as (code: string, id: string) => unknown).call(
+          { addWatchFile() {} },
+          code,
+          '/app/App.tsx'
+        );
+        (plugin.buildEnd as () => void).call({});
+      };
+      await build();
+      // A watch rebuild reports its own call sites
+      await build();
       const messages = log.mock.calls.map(([message]) => String(message));
       log.mockRestore();
-      expect(messages).toEqual([
+      expect(messages.slice(2)).toEqual(messages.slice(0, 2));
+      expect(messages.slice(0, 2)).toEqual([
         expect.stringMatching(
           new RegExp(
             `Kept the source of <T> ${hash}, with its embedded translation: the translation does not match the source children /app/App.tsx:\\d+:\\d+$`
           )
         ),
         expect.stringContaining(
-          'Replaced the source content of 0 call sites with their "fr" translations; 1 call sites kept their source and embedded translation'
+          'In the modules this build transformed, replaced the source content of 0 call sites with their "fr" translations; 1 call sites kept their source and embedded translation'
         ),
       ]);
     });

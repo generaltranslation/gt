@@ -1,4 +1,5 @@
 // Core modules
+import type * as t from '@babel/types';
 import { StringCollector } from './StringCollector';
 import { PluginSettings } from '../config';
 import { Logger } from './Logger';
@@ -26,6 +27,8 @@ export interface TransformState {
     /** Call sites with a translation that kept their source content */
     sourceReplacementFallbacksCount: number;
   };
+  /** <T> calls to replace with their translations once their children are injected */
+  sourceReplacementsOnExit?: Map<t.CallExpression, () => void>;
   /** JSX runtime source to the local name source replacement imports its Fragment as */
   sourceReplacementImports?: Map<string, string>;
   /** Hash to local import name; set only when this file imports message modules. */
