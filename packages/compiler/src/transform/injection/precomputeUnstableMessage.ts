@@ -51,7 +51,8 @@ export function buildPrecomputedCall({
   inline?: t.Expression;
   /** The locale of a tree that source replacement wrote. */
   locale?: string;
-  hoist: HoistMessage;
+  /** Undefined to write the message at its call. */
+  hoist: HoistMessage | undefined;
 }): t.CallExpression | undefined {
   const variables = toVariables(bindings);
   if (!variables) return undefined;
@@ -113,7 +114,7 @@ export function buildPrecomputedCall({
   }
 
   const args: t.Expression[] = [
-    typeof tree === 'string' ? message : hoist(message),
+    typeof tree === 'string' || !hoist ? message : hoist(message),
   ];
   if (variables.length) {
     args.push(
