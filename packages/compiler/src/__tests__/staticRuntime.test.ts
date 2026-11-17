@@ -20,7 +20,14 @@ import {
 } from 'vitest';
 import gtUnplugin from '../index';
 import type { GTUnpluginOptions } from '../index';
+import { formatMessageTree } from '@generaltranslation/icu';
 import { clearInlineTranslationsCache } from '../transform/injection/inline-translations/loadInlineTranslations';
+import {
+  encodePluralCategories,
+  encodeStaticCounts,
+  formatsPlainIntegers,
+  resolveStaticRuntime,
+} from '../transform/static-runtime/resolveStaticRuntime';
 import { compileJsx, evaluateModule } from './sourceReplacementHarness';
 import { transformWithPlugin } from './transformWithPlugin';
 
@@ -574,7 +581,7 @@ describe('experimentalStaticRuntime', () => {
         ];
       }`;
     expect(await build(source, staticOptions('en'))).toMatchInlineSnapshot(`
-      "import { createStaticValue as _createStaticValue, createStaticFormatter as _createStaticFormatter } from "gt-react/static-runtime";const _gtValue = /* @__PURE__ */_createStaticValue(["en"]);const _gtFormat = /* @__PURE__ */_createStaticFormatter(["en"]);const _gtTree = [["count", "plural", { one: [0, " invoice"], other: [0, " invoices"] }]];
+      "import { createStaticValue as _createStaticValue, createStaticFormatter as _createStaticFormatter } from "gt-react/static-runtime";const _gtValue = /* @__PURE__ */_createStaticValue(["en"]);const _gtFormat = /* @__PURE__ */_createStaticFormatter(["en"], "1;xo|x");const _gtTree = [["count", "plural", { one: [0, " invoice"], other: [0, " invoices"] }]];
       function App({ name, count }) {
         return ["Account settings", \`Welcome back, \${_gtValue(
 
@@ -888,6 +895,121 @@ describe('experimentalStaticRuntime', () => {
     });
   });
 
+  describe('small counts, which the build asks Intl about', () => {
+    const COUNT_LOCALES = [
+      'en',
+      'fr',
+      'de',
+      'ar',
+      'ar-EG',
+      'fa',
+      'hi',
+      'bn',
+      'ja',
+      'sv',
+      'ru',
+      'pl',
+      'cy',
+    ];
+    const CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'];
+    const branches = Object.fromEntries(
+      CATEGORIES.map((category) => [category, [category, ' ', 0]])
+    );
+    const tree = [
+      ['count', 'plural', { '=5': 'five', ...branches }],
+      ' / ',
+      ['count', 'selectordinal', branches],
+      ' / ',
+      ['count', 'plural', { other: [0] }, 1],
+    ];
+    const counts: unknown[] = [
+      ...Array.from({ length: 1101 }, (_, count) => count),
+      -1,
+      -0,
+      0.5,
+      1.5,
+      2.0,
+      999.5,
+      1e21,
+      '3',
+      ' 21 ',
+      '1e2',
+      7n,
+      1000n,
+      -3n,
+    ];
+
+    it.each(COUNT_LOCALES)(
+      'formats a count in %s as the runtime does',
+      (locale) => {
+        const runtime = resolveStaticRuntime(
+          true,
+          { locale, jsx: true },
+          { defaultLocale: 'en' }
+        )!;
+        const createStaticFormatter = staticModules['gt-react/static-runtime']
+          .createStaticFormatter as (
+          locales: string[],
+          counts: string
+        ) => (tree: unknown, values: object) => string;
+        const format = createStaticFormatter(
+          runtime.locales,
+          encodeStaticCounts(
+            runtime.counts,
+            new Set(['plural', 'selectordinal'] as const)
+          )
+        );
+        expect(counts.map((count) => format(tree, { count }))).toEqual(
+          counts.map((count) =>
+            formatMessageTree(
+              tree as never,
+              runtime.locales,
+              { count } as never,
+              { formats: {}, timeZone: 'UTC' }
+            )
+          )
+        );
+      }
+    );
+
+    it('knows which locales print integers as their digits', () => {
+      expect(
+        COUNT_LOCALES.filter((locale) => !formatsPlainIntegers([locale, 'en']))
+      ).toEqual(['ar-EG', 'fa', 'bn']);
+    });
+
+    it('encodes the categories of the first integers, then the ones that repeat', () => {
+      expect(encodePluralCategories(['en'], 'cardinal')).toBe('xo|x');
+      expect(encodePluralCategories(['fr', 'en'], 'cardinal')).toBe('oo|x');
+      expect(encodePluralCategories(['cy', 'en'], 'cardinal')).toBe(
+        'zotfxxm|x'
+      );
+      // Russian repeats every hundred
+      expect(encodePluralCategories(['ru', 'en'], 'cardinal')).toMatch(
+        /^\|[ofm]{100}$/
+      );
+    });
+
+    it('tells a formatter only about the plurals its file has', async () => {
+      const cardinal = await build(
+        app(
+          't`${plural({ count }, { one: "one", other: "other" })}`',
+          '{ count }'
+        ),
+        staticOptions('en')
+      );
+      expect(cardinal).toContain('(["en"], "1;xo|x")');
+      const ordinal = await build(
+        app(
+          't`${selectordinal({ count }, { one: "st", other: "th" })} ${plural({ count }, { other: part`${n} left` })}`',
+          '{ count }'
+        ),
+        staticOptions('en')
+      );
+      expect(ordinal).toMatch(/\(\["en"\], "1;;[xotf|]{101}"\)/);
+    });
+  });
+
   it('bundles the static entry without the GT runtime', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-static-bundle-'));
     onTestFinished(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -931,6 +1053,6 @@ describe('experimentalStaticRuntime', () => {
         .filter((file) => !file.endsWith('app.js'))
         .map((file) => path.basename(file))
     ).toEqual(['static-runtime.mjs']);
-    expect(outputFiles[0].text.length).toBeLessThan(2_500);
+    expect(outputFiles[0].text.length).toBeLessThan(3_000);
   });
 });

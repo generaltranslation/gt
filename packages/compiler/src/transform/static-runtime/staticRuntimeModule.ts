@@ -1,10 +1,12 @@
 import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import type { MessageTree } from '@generaltranslation/icu';
+import { forEachPlaceholder } from '@generaltranslation/icu/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { TransformState } from '../../state/types';
 import { createErrorLocation } from '../../utils/errors';
 import {
+  encodeStaticCounts,
   STATIC_FORMATTERS,
   STATIC_RUNTIME_SOURCE,
   type StaticFormatterKind,
@@ -16,6 +18,8 @@ export type StaticRuntimeFile = {
   errors: string[];
   /** Local name of each formatter a call site formats with */
   formatters: Partial<Record<StaticFormatterKind, string>>;
+  /** The kinds of plural this file's trees select a category for */
+  plurals: Set<'plural' | 'selectordinal'>;
   /** Module-scope declarations of message trees, by the tree's JSON */
   trees: Map<string, t.VariableDeclaration>;
   /** Whether the file was changed */
@@ -39,6 +43,7 @@ function getFile(state: TransformState): StaticRuntimeFile {
   return (state.staticRuntime ??= {
     errors: [],
     formatters: {},
+    plurals: new Set(),
     trees: new Map(),
     changed: false,
   });
@@ -87,6 +92,15 @@ export function hoistStaticTree(
   tree: MessageTree
 ): t.Identifier {
   const file = getFile(state);
+  forEachPlaceholder(tree, (node) => {
+    if (
+      (node[1] === 'plural' || node[1] === 'selectordinal') &&
+      // Only a branch named for a category has one selected
+      Object.keys(node[2]).some((key) => key !== 'other' && key[0] !== '=')
+    ) {
+      file.plurals.add(node[1]);
+    }
+  });
   const key = JSON.stringify(tree);
   let declaration = file.trees.get(key);
   if (!declaration) {
@@ -274,11 +288,17 @@ export function finishStaticRuntimeFile(
       ...(imports.get(source) ?? []),
       t.importSpecifier(t.identifier(createLocal), t.identifier(create)),
     ]);
+    const timeZone =
+      runtime.timeZone === undefined ? [] : [t.stringLiteral(runtime.timeZone)];
+    // Only the tree formatter formats plurals
+    const counts =
+      kind === 'tree' ? encodeStaticCounts(runtime.counts, file.plurals) : '';
     const call = t.callExpression(t.identifier(createLocal), [
       t.valueToNode(runtime.locales),
-      ...(runtime.timeZone === undefined
-        ? []
-        : [t.stringLiteral(runtime.timeZone)]),
+      ...(kind === 'tree' && (counts !== '' || timeZone.length > 0)
+        ? [t.stringLiteral(counts)]
+        : []),
+      ...timeZone,
     ]);
     // So a bundler drops the formatter of a module whose call sites it drops
     t.addComment(call, 'leading', ' @__PURE__ ');

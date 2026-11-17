@@ -42,7 +42,110 @@ const ENV_FALSE_VALUES = new Set(['false', '0', '']);
  * and then its default locale, as Intl reads them, and the configured time
  * zone, if any.
  */
-export type StaticRuntime = { locales: string[]; timeZone?: string };
+export type StaticRuntime = {
+  locales: string[];
+  timeZone?: string;
+  /**
+   * What the build's Intl says about each integer from 0 up to 1,000 in
+   * these locales, so the static formatter can format a plural of such a
+   * count without building an Intl object.
+   */
+  counts: StaticCounts;
+};
+
+export type StaticCounts = {
+  /** Whether Intl formats each as its digits */
+  digits: boolean;
+  /** The plural categories of each, encoded, or undefined when they do not encode compactly */
+  plural?: string;
+  /** The same for ordinals */
+  selectordinal?: string;
+};
+
+// The range the static formatter knows, SMALL_COUNT_LIMIT in gt-react's static-runtime.ts
+const SMALL_COUNT_LIMIT = 1000;
+
+// A table longer than this costs more bytes than the Intl.PluralRules it saves is worth
+const MAX_PLURAL_TABLE_LENGTH = 250;
+
+// One letter per plural category, PLURAL_CATEGORIES in gt-react's static-runtime.ts
+const CATEGORY_LETTERS: Record<Intl.LDMLPluralRule, string> = {
+  zero: 'z',
+  one: 'o',
+  two: 't',
+  few: 'f',
+  many: 'm',
+  other: 'x',
+};
+
+/**
+ * The plural categories Intl gives each integer from 0 up to 1,000 in
+ * `locales`, one letter each: those of the first integers, then after a `|`
+ * the ones that repeat from there on, which is how every language's rules
+ * read on integers. Undefined when that is not compact. Asked of the build's
+ * Intl with the arguments the static formatter passes, and assumed to agree
+ * with the browser's.
+ */
+export function encodePluralCategories(
+  locales: string[],
+  type: Intl.PluralRuleType
+): string | undefined {
+  const rules = new Intl.PluralRules(locales, { type });
+  const letters = Array.from(
+    { length: SMALL_COUNT_LIMIT },
+    (_, integer) => CATEGORY_LETTERS[rules.select(integer)]
+  ).join('');
+  let best: string | undefined;
+  for (let period = 1; period <= MAX_PLURAL_TABLE_LENGTH; period++) {
+    // The integers before the first one from which every category repeats
+    let first = 0;
+    for (let index = SMALL_COUNT_LIMIT - 1; index >= period; index--) {
+      if (letters[index] !== letters[index - period]) {
+        first = index - period + 1;
+        break;
+      }
+    }
+    const table = `${letters.slice(0, first)}|${letters.slice(first, first + period)}`;
+    if (
+      first + period < SMALL_COUNT_LIMIT &&
+      (best === undefined || table.length < best.length)
+    ) {
+      best = table;
+    }
+  }
+  return best !== undefined && best.length <= MAX_PLURAL_TABLE_LENGTH
+    ? best
+    : undefined;
+}
+
+/** What the static formatter is told about small counts, as its `counts` argument. */
+export function encodeStaticCounts(
+  counts: StaticCounts,
+  kinds: ReadonlySet<'plural' | 'selectordinal'>
+): string {
+  return [
+    counts.digits ? '1' : '',
+    (kinds.has('plural') && counts.plural) || '',
+    (kinds.has('selectordinal') && counts.selectordinal) || '',
+  ]
+    .join(';')
+    .replace(/;+$/, '');
+}
+
+/**
+ * Whether the formatter of a plural's count in `locales`, an
+ * `Intl.NumberFormat` without options, formats every integer from 0 up to
+ * 1,000 as `String` does: no other digits, as in Arabic or Bengali, and no
+ * grouping. Asked of the build's Intl, which is assumed to agree with the
+ * browser's on these digits.
+ */
+export function formatsPlainIntegers(locales: string[]): boolean {
+  const format = new Intl.NumberFormat(locales);
+  for (let integer = 0; integer < SMALL_COUNT_LIMIT; integer++) {
+    if (format.format(integer) !== String(integer)) return false;
+  }
+  return true;
+}
 
 const createInvalidStaticRuntimeEnvError = (value: string) =>
   createDiagnosticMessage({
@@ -106,16 +209,21 @@ export function resolveStaticRuntime(
 ): StaticRuntime | undefined {
   if (!staticRuntime || !sourceReplacement?.jsx) return undefined;
   const defaultLocale = gtConfig?.defaultLocale ?? defaultDefaultLocale;
-  const locales = [sourceReplacement.locale ?? defaultLocale, defaultLocale];
-  return {
-    // As the runtime resolves the locales it formats in
-    locales: Array.from(
-      new Set(
-        locales.map((locale) =>
-          resolveCanonicalLocale(locale, gtConfig?.customMapping)
-        )
+  // As the runtime resolves the locales it formats in
+  const locales = Array.from(
+    new Set(
+      [sourceReplacement.locale ?? defaultLocale, defaultLocale].map((locale) =>
+        resolveCanonicalLocale(locale, gtConfig?.customMapping)
       )
-    ),
+    )
+  );
+  return {
+    locales,
+    counts: {
+      digits: formatsPlainIntegers(locales),
+      plural: encodePluralCategories(locales, 'cardinal'),
+      selectordinal: encodePluralCategories(locales, 'ordinal'),
+    },
     ...(gtConfig?.timeZone !== undefined && { timeZone: gtConfig.timeZone }),
   };
 }
