@@ -1,0 +1,406 @@
+{
+  "summary": {
+    "oldMessages": 58,
+    "newMessages": 59,
+    "expectMatch": 49,
+    "expectOptional": 3,
+    "expectNoMatch": 7,
+    "sameKey": 16,
+    "kinds": {
+      "dictionary": 6,
+      "edited-must-not-match": 5,
+      "unchanged-T": 8,
+      "unchanged-gt": 2,
+      "msg": 5,
+      "T-to-t": 8,
+      "gt-to-t": 23,
+      "new": 2
+    }
+  },
+  "messages": {
+    "001f9b710eadc5a9": {
+      "intent": "b3baf49bdf422cc0",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "context kept; another old \"Save\" with a different context exists, predicted hash disambiguates"
+    },
+    "0079aeb4fb3872a8": {
+      "intent": null,
+      "kind": "edited-must-not-match",
+      "expect": "no-match",
+      "note": "text edited \"Mark all as read\" -> \"Mark all notifications as read\"",
+      "editedFrom": "b78a7929feb88b2c"
+    },
+    "06505a35a712feb6": {
+      "intent": null,
+      "kind": "new",
+      "expect": "no-match",
+      "note": "new message"
+    },
+    "0ab9fbbc81f6f785": {
+      "intent": null,
+      "kind": "new",
+      "expect": "no-match",
+      "note": "new message with ${{ viewers }}"
+    },
+    "1089420314519f6b": {
+      "intent": null,
+      "kind": "edited-must-not-match",
+      "expect": "no-match",
+      "note": "context edited \"Discount label, as in save 20%\" -> \"Discount label\"; two old \"Save\" messages share the text with different contexts and translations, and neither hash verifies with the new context, so the text match is ambiguous",
+      "editedFrom": "fe691435bd365176"
+    },
+    "111a44209dc6e701": {
+      "intent": "ed183e39532cd793",
+      "kind": "unchanged-T",
+      "expect": "match",
+      "note": "source unchanged, but samsara ignores $context/$maxChars, so the key changed; extraction keeps $context and $maxChars (as the string \"20\") as unhashed metadata, from which the main-era hash is recomputable"
+    },
+    "1461aa43db735a5c": {
+      "intent": "7f3ce5caa875dc3c",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "context \"Security tip\" + {days}"
+    },
+    "1495d7bdb3df9600": {
+      "intent": "1495d7bdb3df9600",
+      "kind": "unchanged-T",
+      "expect": "match",
+      "note": "<Branch> with <p>/<strong>; same key"
+    },
+    "184c9605dde81513": {
+      "intent": "64e9647d8379767b",
+      "kind": "msg",
+      "expect": "match",
+      "note": "msg('Orders') from /unstable"
+    },
+    "1be0fe3f76bfe080": {
+      "intent": "a8da5a187a382177",
+      "kind": "T-to-t",
+      "expect": "match",
+      "note": "<Var name=\"code\"> + <Currency EUR> -> ${{ code }} + number(x, currency) (_gt_1)"
+    },
+    "1be1a03645c15943": {
+      "intent": "ab2fc4dec0d71762",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "{usage, number, percent} -> number({ usage }, { style: percent })"
+    },
+    "22b5898b2c89aa60": {
+      "intent": "f4a2003d0d205248",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "plural with =0 and string branches"
+    },
+    "23e11cb27f14eb19": {
+      "intent": "66a6905db9c3ad9b",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "named plural with part/n; ru has full categories"
+    },
+    "2548ab3bd542bc7e": {
+      "intent": "2548ab3bd542bc7e",
+      "kind": "msg",
+      "expect": "match",
+      "note": "legacy msg() from gt-next kept; same key"
+    },
+    "2cded0afec74560f": {
+      "intent": "d218025620554381",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "$maxChars 24 -> maxChars 24"
+    },
+    "2f0a33c8008918a9": {
+      "intent": "03ac2a0cebc8841a",
+      "kind": "T-to-t",
+      "expect": "match",
+      "note": "<DateTime> (_gt_date_1) -> date(x) (_gt_1)"
+    },
+    "31105b18ab21aeb4": {
+      "intent": "31105b18ab21aeb4",
+      "kind": "dictionary",
+      "expect": "match",
+      "note": "footer.newsletter.subscribers ICU plural; same key"
+    },
+    "3188bc3b3c4508bc": {
+      "intent": "3188bc3b3c4508bc",
+      "kind": "dictionary",
+      "expect": "match",
+      "note": "footer.privacy; same key"
+    },
+    "31de7e9926310506": {
+      "intent": "11d78c9b26584682",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "{date, date, long} -> date({ date }, { style: long })"
+    },
+    "348f70b8949635e4": {
+      "intent": "66bb6ae37d74db50",
+      "kind": "T-to-t",
+      "expect": "match",
+      "note": "plain-text <T> -> t``; predicted JSX hash"
+    },
+    "35d87bbc180d1e5d": {
+      "intent": "b0717a26ba687fd1",
+      "kind": "T-to-t",
+      "expect": "match",
+      "note": "<Num>/<Currency USD> (_gt_n_1/_gt_cost_2) -> number(x)/number(x, currency) (_gt_1/_gt_2); en.json alpha-equivalence; de translation is broken"
+    },
+    "397acff1597e5c65": {
+      "intent": "273902a55b863099",
+      "kind": "msg",
+      "expect": "match",
+      "note": "msg({ context })`Out of stock`"
+    },
+    "3d7a6a7751c7e284": {
+      "intent": "e96c0a48cc8b47f2",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "plain text from getGT (server); predicted ICU hash"
+    },
+    "3ff9747088ed5aeb": {
+      "intent": "8ee56e8868ed1a21",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "named select with string branches"
+    },
+    "459fd02379259631": {
+      "intent": null,
+      "kind": "edited-must-not-match",
+      "expect": "no-match",
+      "note": "footer.careers text edited \"Careers\" -> \"Jobs\"",
+      "editedFrom": "f7ff9265a69905f1"
+    },
+    "4a6c11b6b152ec84": {
+      "intent": "f9bb05030fd9e2ec",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "selectordinal; tree branch order (few, one, other, two) differs from the source ICU order"
+    },
+    "4ed2aa55d6691d99": {
+      "intent": "4ed2aa55d6691d99",
+      "kind": "dictionary",
+      "expect": "match",
+      "note": "footer.newsletter.subscribe with $context; same key"
+    },
+    "53223d6dc71cbbac": {
+      "intent": "53223d6dc71cbbac",
+      "kind": "unchanged-T",
+      "expect": "match",
+      "note": "plain-text <T>; same key (JSX)"
+    },
+    "5934b492bf309802": {
+      "intent": "5934b492bf309802",
+      "kind": "unchanged-T",
+      "expect": "match",
+      "note": "<a> + <Num>; same key"
+    },
+    "5b409e6b3e3d741a": {
+      "intent": "87ad24956d2ad354",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "named plural {days} -> anonymous plural(x) (_gt_1); needs the rename map; ja translation is broken"
+    },
+    "619a8db474acd4fd": {
+      "intent": "619a8db474acd4fd",
+      "kind": "unchanged-T",
+      "expect": "match",
+      "note": "plain-text <T>; same key"
+    },
+    "642a713bc3b12d8c": {
+      "intent": "642a713bc3b12d8c",
+      "kind": "dictionary",
+      "expect": "match",
+      "note": "footer.copyright with {year}; same key"
+    },
+    "6c22bbb27a88235a": {
+      "intent": "5d8981b5c0f0c9f0",
+      "kind": "T-to-t",
+      "expect": "optional",
+      "note": "same as above, \"member\" variant"
+    },
+    "724272c571c9aa01": {
+      "intent": "4e242a20613f72f6",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "derive() variant Team; predicted ICU hash"
+    },
+    "79f3d898c44c9db1": {
+      "intent": "454c39b739038471",
+      "kind": "T-to-t",
+      "expect": "optional",
+      "note": "<Derive> inside <T> -> derive(); legacy JSX keeps Derive as an element {t: \"Derive\", c: \"admin\"}, the tree inlines the text"
+    },
+    "7cce1a1f3b623342": {
+      "intent": "47efa82426cfae24",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "declareVar(name, { $name: \"username\" }) ({_gt_1, select, other {} _gt_var_name {username}}) -> ${{ username }}; the old derive() variant \"Good to see you, there!\" (39959a3829477f74) has no new counterpart"
+    },
+    "83aa329716569865": {
+      "intent": null,
+      "kind": "edited-must-not-match",
+      "expect": "no-match",
+      "note": "text edited \"Last login: {when, date, medium}\" -> \"Last signed in ${date(...)}\"",
+      "editedFrom": "ba8daa74a1c6bdc5"
+    },
+    "875d2963662f2b1b": {
+      "intent": "a10b666b99e5cbd3",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "derive(declareVar(email)) ({_gt_1, select, other {}}) -> anonymous ${email}"
+    },
+    "884b53222572b725": {
+      "intent": "249219a6f40ac113",
+      "kind": "T-to-t",
+      "expect": "match",
+      "note": "<T $maxChars={40}> -> t({ maxChars: 40 }); predicted JSX hash with maxChars"
+    },
+    "894b5f58be761c1a": {
+      "intent": "f5683e647a65e15c",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "whole-message plural; ru has full categories"
+    },
+    "9564e3123aec3de1": {
+      "intent": "9564e3123aec3de1",
+      "kind": "dictionary",
+      "expect": "match",
+      "note": "footer.about; same key"
+    },
+    "95740571c1dcbdd5": {
+      "intent": "95740571c1dcbdd5",
+      "kind": "unchanged-T",
+      "expect": "match",
+      "note": "Var + nested b/a/em elements; same key"
+    },
+    "9b1206b9d64ce5eb": {
+      "intent": "9b1206b9d64ce5eb",
+      "kind": "unchanged-T",
+      "expect": "match",
+      "note": "$context renamed to context, which main hashed identically; same key"
+    },
+    "a3db809f06210b76": {
+      "intent": "7a94e62ddf761bf9",
+      "kind": "T-to-t",
+      "expect": "optional",
+      "note": "<Plural> whose branches are fragments (t: \"C2\") holding <Num> (_gt_n_3) -> plural(x, part`${n} …`); old shape has a fragment element and a Num where the new tree has #, so not structurally equivalent"
+    },
+    "a5cae848b9cc5a76": {
+      "intent": "6df57099a35b36bb",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "plain text; predicted ICU hash"
+    },
+    "bbf9419b8e6f5802": {
+      "intent": "2ecf88ef9e8e4259",
+      "kind": "msg",
+      "expect": "match",
+      "note": "msg('Home') from /unstable"
+    },
+    "bd3deac54c2c3113": {
+      "intent": "bd3deac54c2c3113",
+      "kind": "unchanged-gt",
+      "expect": "match",
+      "note": "legacy useGT gt() kept; same key"
+    },
+    "bd66675a608bd0b8": {
+      "intent": "37643cc0e5584808",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "{time, time, short} -> time({ time }, { style: short })"
+    },
+    "c3a8fa5391cc5681": {
+      "intent": "b4791b20bdc34eba",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "derive() variant Pro; predicted ICU hash"
+    },
+    "c4fc26b3dd0a3630": {
+      "intent": "244a55b2d97e54a3",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "derive() variant Free; predicted ICU hash"
+    },
+    "cd2f8827bcc97321": {
+      "intent": "8732b45d6a9de0b3",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "{name} -> ${{ name }}; fr translation is broken"
+    },
+    "d2c60c72dce56502": {
+      "intent": "4681c4c9541539a4",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "plain text; predicted ICU hash"
+    },
+    "db2f6b2dfab743e3": {
+      "intent": "db2f6b2dfab743e3",
+      "kind": "unchanged-gt",
+      "expect": "match",
+      "note": "legacy getGT gt() kept in a server component; same key"
+    },
+    "eb973c194940e6da": {
+      "intent": "eb973c194940e6da",
+      "kind": "dictionary",
+      "expect": "match",
+      "note": "footer.newsletter.title; same key"
+    },
+    "ebc69c8c97aeff98": {
+      "intent": "30e543e2f17f02a0",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "{amount, number, ::currency/USD} -> number({ amount }, { style: currency, currency: USD }); USD lives in formats"
+    },
+    "f0cf73dca93a0a97": {
+      "intent": "f0cf73dca93a0a97",
+      "kind": "unchanged-T",
+      "expect": "match",
+      "note": "<T context> with <h2>; same key"
+    },
+    "f2e973382c8e5a89": {
+      "intent": "e4d2a41d27c49ad0",
+      "kind": "msg",
+      "expect": "match",
+      "note": "msg`Shop` from /unstable"
+    },
+    "f3b30421ef501566": {
+      "intent": "434a14a0bd17690c",
+      "kind": "gt-to-t",
+      "expect": "match",
+      "note": "literal # outside plural + {orderId} -> ${{ orderId }}"
+    },
+    "f7cdb7902cbcc65b": {
+      "intent": null,
+      "kind": "edited-must-not-match",
+      "expect": "no-match",
+      "note": "msg text edited \"Help center\" -> \"Help & support\"",
+      "editedFrom": "0df20c4461cf42ab"
+    }
+  },
+  "brokenTranslations": [
+    {
+      "hash": "8732b45d6a9de0b3",
+      "locale": "fr",
+      "reason": "ICU argument {name} renamed to {nom}"
+    },
+    {
+      "hash": "b0717a26ba687fd1",
+      "locale": "de",
+      "reason": "GTJSX Currency variable _gt_cost_2 dropped"
+    },
+    {
+      "hash": "87ad24956d2ad354",
+      "locale": "ja",
+      "reason": "ICU plural without an other branch"
+    }
+  ],
+  "oldMessagesWithoutNewCounterpart": [
+    "0df20c4461cf42ab",
+    "39959a3829477f74",
+    "b78a7929feb88b2c",
+    "ba8daa74a1c6bdc5",
+    "f7ff9265a69905f1",
+    "fe691435bd365176"
+  ]
+}

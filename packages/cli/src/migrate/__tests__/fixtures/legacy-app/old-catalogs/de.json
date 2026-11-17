@@ -1,0 +1,231 @@
+{
+  "03ac2a0cebc8841a": [
+    "[de] Estimated delivery: ",
+    {
+      "i": 1,
+      "k": "_gt_date_1",
+      "v": "d"
+    }
+  ],
+  "0df20c4461cf42ab": "[de] Hilfe Center",
+  "11d78c9b26584682": "[de] Placed am {date, date, long}",
+  "1495d7bdb3df9600": {
+    "c": {
+      "c": "[de] We are checking der status von Ihr Bestellung.",
+      "i": 2,
+      "t": "p"
+    },
+    "d": {
+      "b": {
+        "pending": {
+          "c": [
+            "[de] Ihr Bestellung ist ",
+            {
+              "c": "ausstehend",
+              "i": 3,
+              "t": "strong"
+            },
+            "."
+          ],
+          "i": 2,
+          "t": "p"
+        },
+        "shipped": {
+          "c": [
+            "[de] Ihr Bestellung has ",
+            {
+              "c": "versandt",
+              "i": 3,
+              "t": "strong"
+            },
+            "!"
+          ],
+          "i": 2,
+          "t": "p"
+        }
+      },
+      "t": "b"
+    },
+    "i": 1,
+    "t": "Branch"
+  },
+  "244a55b2d97e54a3": "[de] Sie are am der Free Tarif",
+  "249219a6f40ac113": "[de] Changes are saved automatically.",
+  "2548ab3bd542bc7e": "[de] Almost gone",
+  "273902a55b863099": "[de] Out von stock",
+  "2ecf88ef9e8e4259": "[de] Startseite",
+  "30e543e2f17f02a0": "[de] Ihr balance ist {amount, number, ::currency/USD}",
+  "31105b18ab21aeb4": "{count, plural, one {[de] Join # other subscriber} other {[de] Join # other subscribers}}",
+  "3188bc3b3c4508bc": "[de] Privacy policy",
+  "37643cc0e5584808": "[de] Bestellung versandt at {time, time, short}",
+  "39959a3829477f74": "[de] Good to see Sie, there!",
+  "434a14a0bd17690c": "[de] Bestellung #{orderId}",
+  "454c39b739038471": [
+    "[de] Ihr ",
+    {
+      "c": "admin",
+      "i": 1,
+      "t": "Derive"
+    },
+    " dashboard ist ready."
+  ],
+  "4681c4c9541539a4": "[de] Sign im",
+  "47efa82426cfae24": "[de] Good to see Sie, {_gt_1, select, other {} _gt_var_name {username}}!",
+  "4e242a20613f72f6": "[de] Sie are am der Team Tarif",
+  "4ed2aa55d6691d99": "[de] Subscribe",
+  "53223d6dc71cbbac": "[de] Free shipping am all Bestellungen over $50",
+  "5934b492bf309802": [
+    "[de] Need Hilfe mit an Bestellung? ",
+    {
+      "c": "Contact support",
+      "i": 1,
+      "t": "a"
+    },
+    " und we will get zurück to Sie within ",
+    {
+      "i": 2,
+      "k": "_gt_n_2",
+      "v": "n"
+    },
+    " hours."
+  ],
+  "5d8981b5c0f0c9f0": [
+    "[de] Ihr ",
+    {
+      "c": "member",
+      "i": 1,
+      "t": "Derive"
+    },
+    " dashboard ist ready."
+  ],
+  "619a8db474acd4fd": "[de] Continue shopping",
+  "642a713bc3b12d8c": "[de] © {year} Acme Outfitters. All rights reserved.",
+  "64e9647d8379767b": "[de] Bestellungen",
+  "66a6905db9c3ad9b": "[de] Sie haben {count, plural, one {# neue Benachrichtigung} other {# neue Benachrichtigungen}}",
+  "66bb6ae37d74db50": "[de] Proceed to checkout",
+  "6df57099a35b36bb": "[de] Suchen Produkte",
+  "7a94e62ddf761bf9": {
+    "d": {
+      "b": {
+        "one": {
+          "c": [
+            "[de] Sie haben ",
+            {
+              "i": 3,
+              "k": "_gt_n_3",
+              "v": "n"
+            },
+            " Artikel im Ihr Warenkorb."
+          ],
+          "i": 2,
+          "t": "C2"
+        },
+        "other": {
+          "c": [
+            "[de] Sie haben ",
+            {
+              "i": 3,
+              "k": "_gt_n_3",
+              "v": "n"
+            },
+            " Artikel im Ihr Warenkorb."
+          ],
+          "i": 2,
+          "t": "C2"
+        }
+      },
+      "t": "p"
+    },
+    "i": 1,
+    "t": "Plural"
+  },
+  "7f3ce5caa875dc3c": "[de] Update Ihr password every {days} Tage",
+  "8732b45d6a9de0b3": "[de] {name} commented am Ihr post",
+  "87ad24956d2ad354": "[de] {days, plural, one {# Tag} other {# Tage}} left im Ihr free trial",
+  "8ee56e8868ed1a21": "[de] {gender, select, female {She} male {He} other {They}} liked Ihr photo",
+  "9564e3123aec3de1": "[de] About uns",
+  "95740571c1dcbdd5": [
+    "[de] Hallo ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ", ",
+    {
+      "c": "willkommen zurück",
+      "i": 2,
+      "t": "b"
+    },
+    "! Check out",
+    " ",
+    {
+      "c": [
+        "heute's ",
+        {
+          "c": "Angebote",
+          "i": 4,
+          "t": "em"
+        }
+      ],
+      "i": 3,
+      "t": "a"
+    },
+    "."
+  ],
+  "9b1206b9d64ce5eb": {
+    "c": "[de] Einstellungen",
+    "i": 1,
+    "t": "h2"
+  },
+  "a10b666b99e5cbd3": "[de] Signed im as {_gt_1, select, other {}}",
+  "a8da5a187a382177": [
+    "[de] Promo code ",
+    {
+      "i": 1,
+      "k": "code",
+      "v": "v"
+    },
+    " saves Sie",
+    " ",
+    {
+      "i": 2,
+      "k": "_gt_cost_2",
+      "v": "c"
+    },
+    " am this Bestellung."
+  ],
+  "ab2fc4dec0d71762": "[de] Sie are using {usage, number, percent} von Ihr storage",
+  "b0717a26ba687fd1": [
+    "[de] Ihr Warenkorb has ",
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " Artikel totaling",
+    " ",
+    "."
+  ],
+  "b3baf49bdf422cc0": "[de] Speichern",
+  "b4791b20bdc34eba": "[de] Sie are am der Pro Tarif",
+  "b78a7929feb88b2c": "[de] Mark all as read",
+  "ba8daa74a1c6bdc5": "[de] Last login: {when, date, medium}",
+  "bd3deac54c2c3113": "[de] Email address",
+  "d218025620554381": "[de] Delete account",
+  "db2f6b2dfab743e3": "[de] Track package",
+  "e4d2a41d27c49ad0": "[de] Shop",
+  "e96c0a48cc8b47f2": "[de] Ihr Bestellungen",
+  "eb973c194940e6da": "[de] Join our newsletter",
+  "ed183e39532cd793": "[de] Entfernen",
+  "f0cf73dca93a0a97": {
+    "c": "[de] Warenkorb",
+    "i": 1,
+    "t": "h2"
+  },
+  "f4a2003d0d205248": "{count, plural, =0 {[de] No ungelesene Nachrichten} one {[de] One ungelesene Nachricht} other {[de] # ungelesene Nachrichten}}",
+  "f5683e647a65e15c": "{count, plural, one {[de] # Artikel} other {[de] # Artikel}}",
+  "f7ff9265a69905f1": "[de] Careers",
+  "f9bb05030fd9e2ec": "[de] This ist Ihr {place, selectordinal, other {#th}} Bestellung mit uns",
+  "fe691435bd365176": "[de] Sparen"
+}

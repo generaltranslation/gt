@@ -1,0 +1,21 @@
+{
+  "name": "legacy-after",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build"
+  },
+  "dependencies": {
+    "gt-next": "12.0.0-samsara.9",
+    "next": "15.5.4",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "gt": "3.0.0-samsara.10",
+    "typescript": "5.9.3",
+    "@types/react": "19.1.13",
+    "@types/node": "22.18.6"
+  }
+}
