@@ -81,8 +81,9 @@ impl TransformVisitor {
       let counter_id = self.string_collector.increment_counter();
       let translation_jsx = self.string_collector.get_translation_jsx(counter_id);
 
-      // Inject hash
-      if let Some(translation_jsx) = translation_jsx {
+      // Inject hash. An empty one means the runtime hashes the content, and
+      // the runtime would look up an injected empty string as it is.
+      if let Some(translation_jsx) = translation_jsx.filter(|jsx| !jsx.hash.is_empty()) {
         let hash_value = translation_jsx.hash.clone();
         let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
         element.opening.attrs.push(hash_attr);
