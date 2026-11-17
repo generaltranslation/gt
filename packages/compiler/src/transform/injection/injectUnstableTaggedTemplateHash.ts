@@ -1,5 +1,6 @@
 import type { NodePath, Scope } from '@babel/traverse';
 import * as t from '@babel/types';
+import type { MessageTree } from '@generaltranslation/icu';
 import {
   templateToMessage,
   DATE_TIME_CONTEXT_OPTIONS,
@@ -24,6 +25,25 @@ const INLINE_TRANSLATIONS_OPTION = 'inline';
 
 type OptionKey = keyof MessageTreeHashMetadata;
 
+/** How a per-locale build replaces the source content of templates. */
+export type TemplateSourceReplacer = {
+  /**
+   * The text a `t` template without holes, whose text is `source`, always
+   * renders in the build's locale; undefined when the runtime decides it.
+   */
+  getText: (
+    hash: string,
+    source: string,
+    metadata: MessageTreeHashMetadata,
+    quasi: t.TemplateLiteral
+  ) => string | undefined;
+  /** The translated template that replaces an embedded template's text. */
+  replaceTemplate?: (
+    hash: string,
+    quasi: t.TemplateLiteral
+  ) => t.TemplateLiteral | undefined;
+};
+
 // Derive-free mirror of the CLI walker in
 // packages/cli/src/react/jsx/utils/stringParsing/extractMessageTrees/templateVariants.ts;
 // test-fixtures/message-tree-wire-format.json keeps both on the same hashes.
@@ -47,19 +67,18 @@ function nonStatic(): never {
  * `msg` templates are rendered by `m()` away from their call site, so they are
  * never embedded.
  *
- * With `replaceSource`, an embedded template's text is replaced by its
- * translation (see replaceTemplateSource). The `inline` option stays, so the
- * runtime renders the translation in the target locale without a lookup.
+ * With `replaceSource`, a `t` template without holes becomes the text it
+ * renders in the build's locale, and any other embedded template has its text
+ * replaced by its translation (see replaceTemplateSource). There the `inline`
+ * option stays, so the runtime renders the translation in the target locale
+ * without a lookup.
  *
  * Returns whether the template was rewritten.
  */
 export function injectUnstableTaggedTemplateHash(
   path: NodePath<t.TaggedTemplateExpression>,
   buildInline?: (hash: string) => t.Expression | undefined,
-  replaceSource?: (
-    hash: string,
-    quasi: t.TemplateLiteral
-  ) => t.TemplateLiteral | undefined
+  replaceSource?: TemplateSourceReplacer
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
@@ -69,13 +88,16 @@ export function injectUnstableTaggedTemplateHash(
   if (!kind) return false;
   let hash: string;
   let onlyNamedVariables: boolean;
+  let metadata: MessageTreeHashMetadata;
+  let tree: MessageTree;
   try {
-    const metadata = t.isCallExpression(tag)
+    metadata = t.isCallExpression(tag)
       ? parseMessageOptions(tag.arguments)
       : {};
     const { strings, holes } = templateFragment(quasi, path.scope);
+    ({ tree } = templateToMessage(strings, holes));
     hash = hashSource({
-      source: templateToMessage(strings, holes).tree,
+      source: tree,
       dataFormat: 'MESSAGE_TREE',
       ...metadata,
     });
@@ -84,6 +106,20 @@ export function injectUnstableTaggedTemplateHash(
     // Non-static or invalid (e.g. a reserved `_gt_` name): skip only this
     // template; the runtime hashes it and reports any error.
     return false;
+  }
+  if (
+    kind === 'gt' &&
+    quasi.expressions.length === 0 &&
+    typeof tree === 'string'
+  ) {
+    const text = replaceSource?.getText(hash, tree, metadata, quasi);
+    if (text !== undefined) {
+      const literal = t.stringLiteral(text);
+      // Printed as written, where the generator would escape non-ASCII text
+      literal.extra = { rawValue: text, raw: JSON.stringify(text) };
+      path.replaceWith(literal);
+      return true;
+    }
   }
   const properties = [
     t.objectProperty(
@@ -99,7 +135,7 @@ export function injectUnstableTaggedTemplateHash(
     properties.push(
       t.objectProperty(t.identifier(INLINE_TRANSLATIONS_OPTION), inline)
     );
-    const replaced = replaceSource?.(hash, quasi);
+    const replaced = replaceSource?.replaceTemplate?.(hash, quasi);
     if (replaced) path.node.quasi = replaced;
   }
   if (t.isCallExpression(tag)) {
