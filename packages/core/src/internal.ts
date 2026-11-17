@@ -28,7 +28,10 @@ export {
   type ResolvedCredentials,
 } from './config/credentials';
 export { isAcceptedPluralForm } from './settings/plurals';
-export { defaultInlineTranslationsModulesDir } from './settings/inlineTranslations';
+export {
+  defaultInlineTranslationsHelpers,
+  defaultInlineTranslationsModulesDir,
+} from './settings/inlineTranslations';
 export type {
   InjectionType,
   Transformation,
@@ -36,6 +39,7 @@ export type {
   VariableTransformationSuffix,
 } from './types-dir/transformations';
 export {
+  embedsUnstableGTHelperTemplates,
   isUnstableGTHelperName,
   isUnstableGTImportSource,
   UNSTABLE_GT_HELPER_NAMES,

@@ -24,3 +24,17 @@ context, such as a `currency`, a `timeZone` or digit options, may be dynamic
 and is neither in the tree nor hashed: `number-intl-options` and
 `number-currency-dynamic`, and `date` and `date-style-dynamic-time-zone`, are
 pairs that differ only in context and share their tree and hash.
+
+`embedded-message-templates.json` pins which tagged-template messages have
+their translations embedded at the call site (`files.gt.inlineTranslations`).
+Each case is a `template`, with `setup` statements when it needs them, and who
+embeds it (`embeddedBy`): `every-compiler`, `@generaltranslation/compiler` only
+(for the entry points that only it builds, see
+`embedsUnstableGTHelperTemplates`, and only with
+`files.gt.inlineTranslations.helpers`), or `none`. The compiler's tests embed each
+template and the CLI's tests mark it, both against this file: the CLI's
+`msgOutput` files leave out exactly the messages the CLI marks, so a message
+the CLI marked and no compiler embedded would have no translation at runtime.
+A case with `buildable: false` is a template no tool can build into a message,
+such as a count outside a plural: the compiler gives it no hash, and the CLI
+reports it and extracts no entry, so there is no translation to leave out.

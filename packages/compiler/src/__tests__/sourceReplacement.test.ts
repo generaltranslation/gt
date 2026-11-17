@@ -955,6 +955,87 @@ describe('experimentalReplaceSource', () => {
       });
     });
 
+    // The runtime loads nothing here, so a translation can only come from
+    // the call site.
+    it.each([
+      [
+        'plural() with parts and the count',
+        'plural({ count }, { one: part`${n} file`, other: part`${n} files` })',
+        [
+          [
+            'count',
+            'plural',
+            { one: [0, ' fichier'], other: [0, ' fichiers'] },
+          ],
+        ],
+        [{ count: 1 }, { count: 2 }, { count: 1234.5 }],
+        ['1 fichier', '2 fichiers', '1\u202f234,5 fichiers'],
+      ],
+      [
+        'select() inside text',
+        "`Signed in as ${select({ role }, { admin: 'an admin', other: 'a member' })}`",
+        [
+          'Connecté en tant que ',
+          ['role', 'select', { admin: 'administrateur', other: 'membre' }],
+        ],
+        [{ role: 'admin' }, { role: 'guest' }],
+        ['Connecté en tant que administrateur', 'Connecté en tant que membre'],
+      ],
+      [
+        'selectordinal() and a named variable in a part',
+        'selectordinal({ place }, { one: part`${n}st for ${{ name }}`, other: part`${n}th for ${{ name }}` })',
+        [
+          [
+            'place',
+            'selectordinal',
+            {
+              one: [0, 'er pour ', ['name']],
+              other: [0, 'e pour ', ['name']],
+            },
+          ],
+        ],
+        [
+          { place: 1, name: 'Ada' },
+          { place: 3, name: 'Ada' },
+        ],
+        ['1er pour Ada', '3e pour Ada'],
+      ],
+      [
+        'number() with a style and a currency',
+        "`Total: ${number({ price }, { style: 'currency', currency })}`",
+        ['Total : ', ['price', 'number', 'currency']],
+        [{ price: 1234.5, currency: 'EUR' }],
+        ['Total : 1\u202f234,50\u00a0€'],
+      ],
+      [
+        'date() with a style and a time zone',
+        "`Due ${date({ due }, { style: 'long', timeZone: 'UTC' })}`",
+        ['Échéance le ', ['due', 'date', 'long']],
+        [{ due: DATE }],
+        ['Échéance le 15 janvier 2024'],
+      ],
+    ])(
+      'renders a template with %s from the translation embedded at its call',
+      async (_name, hole, translation, renders, expected) => {
+        const code =
+          compileJsx(`import { t, plural, select, selectordinal, number, date, part, n } from 'gt-react/unstable';
+          export const App = ({ count, role, place, name, price, currency, due }) =>
+            ${hole.startsWith('`') ? `t${hole}` : `t\`\${${hole}}\``};`);
+        const { embedded, replaced } = await buildBothWays(code, translation, {
+          gtConfig: {
+            files: {
+              gt: {
+                inlineTranslations: { locales: [STATIC_LOCALE], helpers: true },
+              },
+            },
+          },
+        });
+        expect(embedded).toContain('inline: (locale) => locale === "fr" ?');
+        expect(await renderAll(embedded, renders, true)).toEqual(expected);
+        expect(await renderAll(replaced, renders, true)).toEqual(expected);
+      }
+    );
+
     it('useGT()', async () => {
       const code = compileJsx(`import { useGT } from 'gt-react/unstable';
         export function App({ name }) {

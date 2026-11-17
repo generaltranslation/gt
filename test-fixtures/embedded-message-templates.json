@@ -1,0 +1,188 @@
+[
+  {
+    "name": "text",
+    "template": "t`Save`",
+    "embeddedBy": "every-compiler"
+  },
+  {
+    "name": "options",
+    "template": "t({ context: 'button', maxChars: 12, requiresReview: true })`Save`",
+    "embeddedBy": "every-compiler"
+  },
+  {
+    "name": "named-variable",
+    "template": "t`Hello, ${{ name }}!`",
+    "embeddedBy": "every-compiler"
+  },
+  {
+    "name": "named-variable-with-a-value",
+    "template": "t`Hello, ${{ name: user.name }} and ${{ 'guest': role }}!`",
+    "embeddedBy": "every-compiler"
+  },
+  {
+    "name": "plural-with-parts-and-count",
+    "template": "t`${plural({ count }, { one: part`${n} file`, other: part`${n} files` })}`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "plural-with-text-branches",
+    "template": "t`${plural({ count }, { '=0': 'No files', one: `One file`, 2: \"A pair\", other: 'Many files' })}`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "plural-with-options",
+    "template": "t({ context: 'inbox' })`${plural({ count }, { one: 'One message', other: 'Many messages' })}`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "plural-with-a-typed-variable",
+    "template": "t`${plural(({ count }) as { count: number }, { one: 'One file', other: 'Many files' })}`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "selectordinal",
+    "template": "t`You finished ${selectordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "select-in-text",
+    "template": "t`Signed in as ${select({ role }, { admin: 'an admin', other: 'a member' })}`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "nested-plural-and-select",
+    "template": "t`${plural({ count }, { one: part`${n} new message for ${select({ role }, { admin: 'admins', other: 'everyone' })}`, other: part`${n} new messages for ${{ name }}` })}`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "part",
+    "template": "t`${part`Hello ${{ name }}`}!`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "number",
+    "template": "t`Total: ${number({ price })}`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "number-with-options-and-context",
+    "template": "t`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code', maximumFractionDigits: 1 })}`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "date",
+    "template": "t`Due ${date({ due }, { style: 'medium', timeZone })}`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "time",
+    "template": "t`Starts at ${time({ due }, { hour: 'numeric', minute: '2-digit', hour12: false })}`",
+    "embeddedBy": "@generaltranslation/compiler"
+  },
+  {
+    "name": "anonymous-value",
+    "template": "t`Hi ${name}!`",
+    "embeddedBy": "none"
+  },
+  {
+    "name": "anonymous-plural-count",
+    "template": "t`${plural(count, { one: 'One file', other: part`${n} files` })}`",
+    "embeddedBy": "none"
+  },
+  {
+    "name": "anonymous-number",
+    "template": "t`Total: ${number(price, { style: 'percent' })}`",
+    "embeddedBy": "none"
+  },
+  {
+    "name": "anonymous-value-inside-a-part",
+    "template": "t`${plural({ count }, { one: 'One file', other: part`${n} files for ${name}` })}`",
+    "embeddedBy": "none"
+  },
+  {
+    "name": "derive",
+    "template": "t`Welcome ${derive('back')}, ${{ name }}!`",
+    "embeddedBy": "none"
+  },
+  {
+    "name": "part-behind-a-constant",
+    "setup": "const tail = part` files`;",
+    "template": "t`${plural({ count }, { one: 'One file', other: tail })}`",
+    "embeddedBy": "none"
+  },
+  {
+    "name": "part-behind-a-constant-in-the-template",
+    "setup": "const tail = part` files`;",
+    "template": "t`Many${tail}`",
+    "embeddedBy": "none"
+  },
+  {
+    "name": "computed-branch-key",
+    "template": "t`${plural({ count }, { ['one']: 'One file', other: 'Many files' })}`",
+    "embeddedBy": "none"
+  },
+  {
+    "name": "branch-with-a-type-assertion",
+    "template": "t`${plural({ count }, { one: 'One file' as string, other: 'Many files' })}`",
+    "embeddedBy": "none"
+  },
+  {
+    "name": "option-with-a-prototype-setter",
+    "template": "t`Total: ${number({ price }, { __proto__: null, style: 'percent' })}`",
+    "embeddedBy": "none"
+  },
+  {
+    "name": "unbuildable-plural-branch-key",
+    "template": "t`${plural({ count }, { 'a-b': 'One file', other: 'Many files' })}`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-count-outside-a-plural",
+    "template": "t`${n} files`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-count-in-a-select-branch",
+    "template": "t`${select({ role }, { admin: part`${n} files`, other: 'No files' })}`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-number-option",
+    "template": "t`Total: ${number({ price }, { rounding: 'up' })}`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-unit-without-its-style",
+    "template": "t`Length: ${number({ price }, { unit: 'meter' })}`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-date-style-with-fields",
+    "template": "t`Due ${date({ due }, { style: 'medium', year: 'numeric' })}`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-reserved-variable-name",
+    "template": "t`Hello, ${{ _gt_name: name }}!`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-variable-name",
+    "template": "t`Hello, ${{ 'first-name': name }}!`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-escape",
+    "template": "t`\\u{110000}${{ name }}`",
+    "embeddedBy": "none",
+    "buildable": false
+  }
+]

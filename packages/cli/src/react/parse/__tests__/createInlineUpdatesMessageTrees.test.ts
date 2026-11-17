@@ -9,6 +9,11 @@ import { Libraries, type GTLibrary } from '../../../types/libraries.js';
 import type { GTParsingFlags } from '../../../types/parsing.js';
 import { matchFiles } from '../../../fs/matchFiles.js';
 import wireFormatCases from '../../../../../../test-fixtures/message-tree-wire-format.json' with { type: 'json' };
+import embeddedTemplateCases from '../../../../../../test-fixtures/embedded-message-templates.json' with { type: 'json' };
+import {
+  clearEmbeddedHashes,
+  getEmbeddedHashes,
+} from '../../../state/embeddedHashes.js';
 
 vi.mock('../../../fs/matchFiles.js', () => ({ matchFiles: vi.fn() }));
 
@@ -131,6 +136,61 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       }
     );
   });
+
+  // msgOutput files leave out what the compilers embed, so this must say
+  // "embedded" exactly where they embed: the compiler's tests read the same
+  // fixture (packages/compiler/src/__tests__/inlineTranslations.test.ts).
+  describe.each([
+    ['gt-react/unstable', 't', true],
+    ['gt-react/unstable', 'useGT()', true],
+    ['gt-tanstack-start/unstable', 'useGT()', true],
+    ['gt-next/unstable', 'useGT()', false],
+    ['gt-i18n/unstable', 'useGT()', false],
+  ] as const)(
+    'marks the templates of %s %s embedded as test-fixtures/embedded-message-templates.json says',
+    (source, tag, embedsHelpers) => {
+      const prelude = `import { ${tag === 't' ? 't' : 'useGT'}, plural, selectordinal, select, number, date, time, part, derive, n } from '${source}';
+        declare const name: string, count: number, role: string, price: number, place: number, currency: string, timeZone: string, user: { name: string }, due: Date;
+        ${tag === 't' ? '' : 'const t = useGT();'}`;
+
+      it.each(
+        embeddedTemplateCases.map((testCase) => [testCase.name, testCase])
+      )('%s', async (_name, testCase) => {
+        clearEmbeddedHashes();
+        const { template, embeddedBy } = testCase;
+        const setup = 'setup' in testCase ? testCase.setup : '';
+        const result = await extract(
+          `${prelude}\n${setup}\nexport const message = () => ${template};\n`,
+          source.startsWith(Libraries.GT_TANSTACK_START)
+            ? Libraries.GT_TANSTACK_START
+            : Libraries.GT_NEXT
+        );
+        expect(result.errors).toEqual([]);
+        const hashes = treeUpdates(result).map(
+          (update) => update.metadata.hash!
+        );
+        // With and without files.gt.inlineTranslations.helpers
+        const withHelpers = getEmbeddedHashes(true) ?? new Set();
+        const withoutHelpers = getEmbeddedHashes(false) ?? new Set();
+        if ('buildable' in testCase) {
+          // Reported and not extracted, so there is no translation to leave out
+          expect(result.updates).toEqual([]);
+          expect(result.warnings).toHaveLength(1);
+          expect(withHelpers.size).toBe(0);
+          return;
+        }
+        // Every other case is extracted, so one that is not embedded stays in msgOutput
+        expect(hashes).toHaveLength(1);
+        expect(withoutHelpers.has(hashes[0])).toBe(
+          embeddedBy === 'every-compiler'
+        );
+        expect(withHelpers.has(hashes[0])).toBe(
+          embeddedBy === 'every-compiler' ||
+            (embeddedBy === '@generaltranslation/compiler' && embedsHelpers)
+        );
+      });
+    }
+  );
 
   it('routes gt-react/unstable t and useGT to the tree path only', async () => {
     const result = await extract(`

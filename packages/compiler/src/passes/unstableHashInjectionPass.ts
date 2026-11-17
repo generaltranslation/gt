@@ -26,7 +26,14 @@ export function unstableHashInjectionPass(
   const replaceSource = getTemplateSourceReplacer(state);
   return {
     TaggedTemplateExpression(path) {
-      if (injectUnstableTaggedTemplateHash(path, buildInline, replaceSource)) {
+      if (
+        injectUnstableTaggedTemplateHash(
+          path,
+          buildInline,
+          replaceSource,
+          state.settings.inlineTranslationsHelpers
+        )
+      ) {
         state.statistics.unstableHashInjectionsCount += 1;
       }
     },

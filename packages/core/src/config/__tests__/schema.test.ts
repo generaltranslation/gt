@@ -80,6 +80,25 @@ describe('validateGTConfig', () => {
     });
   });
 
+  it('takes files.gt.inlineTranslations.helpers as a boolean', () => {
+    const config = (helpers: unknown) => ({
+      files: { gt: { inlineTranslations: { locales: ['fr'], helpers } } },
+    });
+
+    expect(validateGTConfig(config(true), 'gt.config.json')).toEqual({
+      success: true,
+      output: config(true),
+    });
+    expect(validateGTConfig(config('yes'), 'gt.config.json')).toMatchObject({
+      success: false,
+      diagnostic: {
+        details: [
+          'files.gt.inlineTranslations.helpers: Invalid type: Expected boolean but received "yes"',
+        ],
+      },
+    });
+  });
+
   it('returns the diagnostic fields naming the invalid keys', () => {
     const result = validateGTConfig({ locales: 'fr' }, 'gt.config.json');
 

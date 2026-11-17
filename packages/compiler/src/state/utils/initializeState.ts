@@ -1,6 +1,7 @@
 import { GTUnpluginOptions } from '../..';
 import { TransformState } from '../types';
 import { resolveAutoderive } from 'generaltranslation/config-schema';
+import { defaultInlineTranslationsHelpers } from 'generaltranslation/internal';
 import { PluginSettings, resolveDevHotReload } from '../../config';
 import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   autoderive: { jsx: false, strings: false },
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
+  inlineTranslationsHelpers: defaultInlineTranslationsHelpers,
 };
 
 /**
@@ -85,6 +87,9 @@ export function initializeState(
     autoJsxImportSource:
       options.autoJsxImportSource ?? DEFAULT_SETTINGS.autoJsxImportSource,
     inlineTranslationsTable,
+    inlineTranslationsHelpers:
+      gtConfig?.files?.gt?.inlineTranslations?.helpers ??
+      DEFAULT_SETTINGS.inlineTranslationsHelpers,
     sourceReplacement:
       isProduction &&
       (inlineTranslationsTable || sourceReplacement?.locale === undefined)

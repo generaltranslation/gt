@@ -18,6 +18,24 @@ export function isUnstableGTImportSource(source: string): boolean {
   return (UNSTABLE_GT_IMPORT_SOURCES as readonly string[]).includes(source);
 }
 
+// Entries of apps that only @generaltranslation/compiler builds
+const HELPER_EMBEDDING_GT_IMPORT_SOURCES: readonly string[] = [
+  'gt-react/unstable',
+  'gt-tanstack-start/unstable',
+] satisfies (typeof UNSTABLE_GT_IMPORT_SOURCES)[number][];
+
+/**
+ * Whether build tools can embed the translations of an entry's templates that
+ * use helpers, such as `plural()`, besides those whose holes are all named
+ * variables. The gt-next SWC plugin embeds only the latter, so this holds for
+ * the entries only @generaltranslation/compiler builds. They embed them when
+ * `files.gt.inlineTranslations.helpers` is on; the compiler and the CLI's
+ * `msgOutput` must agree on both.
+ */
+export function embedsUnstableGTHelperTemplates(source: string): boolean {
+  return HELPER_EMBEDDING_GT_IMPORT_SOURCES.includes(source);
+}
+
 /**
  * Exports of those entries that build tools recognize by their imported name.
  * Not every entry exports every name: `t` is SPA-only, and frameworks provide
