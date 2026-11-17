@@ -32,7 +32,7 @@ const WORDS =
   );
 
 // mulberry32: the app must be identical on every run and machine.
-function createRandom(seed) {
+export function createRandom(seed) {
   let state = seed;
   return () => {
     state = (state + 0x6d2b79f5) | 0;
@@ -135,7 +135,7 @@ function translate(message, locale) {
 
 // ===== Message trees (gt-react/unstable) ===== //
 
-function toTree(message) {
+export function toTree(message) {
   switch (message.kind) {
     case 'plain':
       return templateToMessage([message.text], []).tree;
@@ -198,7 +198,7 @@ const js = (text) => JSON.stringify(text);
 // Generated text has no backtick, backslash or `${`.
 const tpl = (text) => text;
 
-const writers = {
+export const writers = {
   unstable: {
     imports:
       "import { T } from 'gt-react';\nimport { n, part, plural, select, t } from 'gt-react/unstable';\n",

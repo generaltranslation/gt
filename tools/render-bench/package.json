@@ -6,6 +6,11 @@
   "scripts": {
     "bench": "node scripts/run.mjs",
     "bench:install": "playwright-core install chromium-headless-shell",
+    "load:generate": "node scripts/load/generate.mjs",
+    "load:build": "node scripts/load/build.mjs",
+    "load:measure": "node scripts/load/measure.mjs",
+    "load:distribution": "node scripts/load/distribution.mjs",
+    "load:report": "node scripts/load/report.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
