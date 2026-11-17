@@ -20,6 +20,8 @@ export {
   Branch,
   Plural,
   Derive,
+  GtInternalPrecomputedJsx,
+  GtInternalPrecomputedText,
   GtInternalTranslateJsx,
   GtInternalVar,
   T,

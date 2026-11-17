@@ -5,6 +5,10 @@ export { Branch, GtInternalBranch } from './components/branches/Branch';
 export { GtInternalPlural, Plural } from './components/branches/Plural';
 export { Derive, GtInternalDerive } from './components/derivation/Derive';
 export { GtInternalTranslateJsx, T } from './components/translation/T';
+export {
+  GtInternalPrecomputedJsx,
+  GtInternalPrecomputedText,
+} from './components/translation/PrecomputedT';
 export { Currency, GtInternalCurrency } from './components/variables/Currency';
 export { DateTime, GtInternalDateTime } from './components/variables/DateTime';
 export { GtInternalNum, Num } from './components/variables/Num';
