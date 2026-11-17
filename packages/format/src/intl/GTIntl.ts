@@ -98,6 +98,8 @@ type LocaleResolutionScope = {
     canonicalLocale: string;
   })[];
   approved: ApprovedLocales;
+  /** Whether each configured locale needs translating from the default locale. */
+  translationRequired: Map<string, boolean>;
 };
 
 /**
@@ -191,6 +193,7 @@ export class GTIntl {
           ...getMatchLocale(standardizedLocale),
         })),
       approved,
+      translationRequired: new Map(),
     };
   }
 
@@ -431,12 +434,29 @@ export class GTIntl {
    */
   requiresTranslation(options: LocaleOption & { sourceLocale?: string } = {}) {
     const { sourceLocale = this.defaultLocale } = options;
-    return _requiresTranslationWithScope(
-      this.resolveCanonicalLocale(sourceLocale),
-      this.resolveCanonicalLocale(this.getTargetLocale(options)),
-      this.approvedLocales && this.getResolutionScope().approved,
-      this.customMapping
-    );
+    const targetLocale = this.getTargetLocale(options);
+    const { approved, translationRequired } = this.getResolutionScope();
+    const fromDefault = sourceLocale === this.defaultLocale;
+    let required = fromDefault
+      ? translationRequired.get(targetLocale)
+      : undefined;
+    if (required === undefined) {
+      required = _requiresTranslationWithScope(
+        this.resolveCanonicalLocale(sourceLocale),
+        this.resolveCanonicalLocale(targetLocale),
+        this.approvedLocales && approved,
+        this.customMapping
+      );
+      // Kept for configured locales only: a request's locale is not a cache key.
+      if (
+        fromDefault &&
+        (targetLocale === this.defaultLocale ||
+          this.locales.includes(targetLocale))
+      ) {
+        translationRequired.set(targetLocale, required);
+      }
+    }
+    return required;
   }
 
   /**

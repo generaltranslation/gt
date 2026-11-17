@@ -306,6 +306,31 @@ describe('GTIntl locale option', () => {
     );
   });
 
+  it('decides translation once for a configured locale, and on every call for another', () => {
+    const config = createIntl({
+      defaultLocale: 'en-US',
+      locales: ['en-US', 'es', 'brand'],
+      customMapping: { brand: { code: 'fr-FR' } },
+    });
+    const decisions = () =>
+      ['es', 'en-US', 'brand', 'de'].map((locale) =>
+        config.requiresTranslation({ locale })
+      );
+    expect(decisions()).toEqual([true, false, true, false]);
+
+    const canonicalize = vi.spyOn(Intl, 'getCanonicalLocales');
+    try {
+      expect(decisions()).toEqual([true, false, true, false]);
+      // Only `de`, which is not configured, is compared with the default again.
+      expect(canonicalize.mock.calls).toEqual([['en-US'], ['de']]);
+      expect(
+        config.requiresTranslation({ locale: 'es', sourceLocale: 'es' })
+      ).toBe(false);
+    } finally {
+      canonicalize.mockRestore();
+    }
+  });
+
   it.each([
     ['omitted locales: no restriction', {}, true],
     ['explicit empty locales: none approved', { locales: [] }, false],
