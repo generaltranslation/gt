@@ -81,6 +81,7 @@ import {
   createUncompiledCallSitesError,
   findUncompiledCallSites,
 } from './transform/validation/uncompiledCallSites';
+import { createUncompiledStaticCallSitesError } from './transform/static-runtime/uncompiledStaticCallSites';
 import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import {
@@ -699,8 +700,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
               },
             });
             if (state.staticRuntime?.errors.length) {
+              const { errors, uncompiled } = state.staticRuntime;
               throw new InvalidLibraryUsageError(
-                createStaticRuntimeError(state.staticRuntime.errors)
+                uncompiled.length > 0
+                  ? createUncompiledStaticCallSitesError(
+                      uncompiled,
+                      id,
+                      meta.framework
+                    )
+                  : createStaticRuntimeError(errors)
               );
             }
           }
