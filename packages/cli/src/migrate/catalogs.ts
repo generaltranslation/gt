@@ -21,6 +21,16 @@ export type CatalogEra =
   | { era: 'current'; idKeys: number }
   | { era: 'pre-2025'; reason: string };
 
+/** Keys are message hashes, legacy ids and variable names, so inherited properties like `constructor` must not count. */
+export function ownValue<T>(
+  record: Readonly<Record<string, T>> | undefined,
+  key: string
+): T | undefined {
+  return record && Object.prototype.hasOwnProperty.call(record, key)
+    ? record[key]
+    : undefined;
+}
+
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

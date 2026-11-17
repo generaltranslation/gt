@@ -22,6 +22,7 @@ import {
   renameVariables,
 } from './tree.js';
 import { stringifySortedJson } from '../../fs/sortedJson.js';
+import { ownValue } from '../catalogs.js';
 
 type PluralRulesByType = (
   type: Intl.PluralRuleType
@@ -162,8 +163,8 @@ function formatsMismatch(
   });
   return [...names].filter(
     (name) =>
-      stringifySortedJson(formats[name], 0) !==
-      stringifySortedJson(sourceFormats[name], 0)
+      stringifySortedJson(ownValue(formats, name), 0) !==
+      stringifySortedJson(ownValue(sourceFormats, name), 0)
   );
 }
 

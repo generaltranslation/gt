@@ -894,6 +894,23 @@ describe('legacy plural and percent semantics', () => {
     });
   });
 
+  it('does not read inherited properties as formats', () => {
+    expect(
+      legacyIcuToMessage(
+        '{constructor, number, ::percent} ({constructor, number})'
+      )
+    ).toEqual({
+      ok: true,
+      tree: [
+        ['constructor', 'number', 'percent'],
+        ' (',
+        ['constructor', 'number'],
+        ')',
+      ],
+      formats: {},
+    });
+  });
+
   it('renames a variable named __proto__', () => {
     const map = alphaRenameMap(['Hi ', ['__proto__']], ['Hi ', ['name']]);
     expect(map && Object.entries(map)).toEqual([['__proto__', 'name']]);

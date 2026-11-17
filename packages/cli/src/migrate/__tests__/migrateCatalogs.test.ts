@@ -398,6 +398,15 @@ const only = (result: ReturnType<typeof migrateCatalogs>): MessageDecision =>
   result.report.messages[0];
 
 describe('migrateCatalogs', () => {
+  it('does not read an inherited property as a translation', () => {
+    const result = migrate({
+      messages: [treeMessage('Hello')],
+      sources: parseLegacySource({ constructor: 'Hello' }),
+      catalogs: { fr: {} },
+    });
+    expect(only(result).locales).toEqual({ fr: { status: 'missing' } });
+  });
+
   it.each([
     {
       name: 'renames the arguments of an ICU translation',

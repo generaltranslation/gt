@@ -5,7 +5,7 @@ import {
   type MessageTreeHashMetadata,
 } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
-import type { Catalog, LegacySources } from './catalogs.js';
+import { ownValue, type Catalog, type LegacySources } from './catalogs.js';
 import { legacySourceCandidates } from './convert/candidates.js';
 import { gtjsxToMessage, legacyIcuToMessage } from './convert/legacy.js';
 import { migrateTranslation } from './convert/translation.js';
@@ -229,7 +229,7 @@ function sameTranslations(
 ): boolean {
   return Object.values(catalogs).every((catalog) => {
     const values = new Set(
-      keys.map((key) => stringifySortedJson(catalog[key], 0))
+      keys.map((key) => stringifySortedJson(ownValue(catalog, key), 0))
     );
     return values.size === 1;
   });
@@ -290,7 +290,9 @@ function pickSourceMatch(
     if (!byKey.has(candidate.key)) byKey.set(candidate.key, candidate);
   }
   const translated = [...byKey.values()].filter((candidate) =>
-    Object.values(catalogs).some((catalog) => catalog[candidate.key] != null)
+    Object.values(catalogs).some(
+      (catalog) => ownValue(catalog, candidate.key) != null
+    )
   );
   const readable = translated.filter(
     (candidate) => !hashedAsAnotherReading(candidate, message)
@@ -478,7 +480,9 @@ export function migrateCatalogs({
     }
     const needsFallback =
       !plan.sameKey ||
-      locales.some((locale) => catalogs[locale]?.[message.hash] == null);
+      locales.some(
+        (locale) => ownValue(catalogs[locale], message.hash) == null
+      );
     if (!needsFallback) return plan;
     if (message.dataFormat === 'JSX') {
       plan.fallback = predictJsxMatch(message, oldKeys);
@@ -556,14 +560,14 @@ export function migrateCatalogs({
 
     for (const locale of locales) {
       const localeMatch =
-        sameKey && catalogs[locale]?.[message.hash] != null
+        sameKey && ownValue(catalogs[locale], message.hash) != null
           ? sameKey
           : (fallback ?? match);
       const outcome = migrateValue(
         message,
         tree,
         localeMatch,
-        catalogs[locale]?.[localeMatch.oldKey],
+        ownValue(catalogs[locale], localeMatch.oldKey),
         { locale: validationLocale(locale), fill }
       );
       decision.locales[locale] =

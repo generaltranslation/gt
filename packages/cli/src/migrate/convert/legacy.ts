@@ -15,7 +15,7 @@ import {
 } from '@generaltranslation/icu/parser';
 import { indexVars, isVariable } from 'generaltranslation/internal';
 import { stringifySortedJson } from '../../fs/sortedJson.js';
-import { isRecord } from '../catalogs.js';
+import { isRecord, ownValue } from '../catalogs.js';
 import type { ConversionResult, LegacyDataFormat } from '../types.js';
 import { canonicalizeTree, mapBranches, mapTree } from './tree.js';
 
@@ -175,7 +175,7 @@ function unmarkFormats(
       return;
     }
     const original = PERCENT_MARK.exec(node[0])?.[1] ?? node[0];
-    const context = formats[node[0]];
+    const context = ownValue(formats, node[0]);
     const key = stringifySortedJson(context ?? {}, 0);
     const known = contexts.get(original);
     if (known !== undefined && known !== key) {
