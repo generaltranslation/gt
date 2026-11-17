@@ -21,19 +21,24 @@ import {
 } from './isSideEffectFree';
 import { PLURAL_SCENARIOS, selectPluralForm } from './pluralScenarios';
 
+/** What a `<T>` renders in the build's locale: a translation, or its own source. */
+export type JsxReplacementTarget = { translation: unknown } | 'source';
+
 /**
- * Replaces a `<T>` call with the JSX react-core's renderTranslatedChildren
- * renders for `translation`, so no source text or lookup ships; returns why
- * the call was left alone when the output could differ from that render.
+ * Replaces a `<T>` call with the JSX react-core renders for it in the build's
+ * locale, so no lookup ships: what renderTranslatedChildren renders for a
+ * translation, or the source children, which renderDefaultChildren renders as
+ * they are. Returns why the call was left alone when the output could differ
+ * from that render.
  */
 export function replaceJsxSource(
   callExprPath: NodePath<t.CallExpression>,
   sourceChildren: unknown,
-  translation: unknown,
+  target: JsxReplacementTarget,
   state: TransformState
 ): string | undefined {
   try {
-    replace(callExprPath, sourceChildren, translation, state);
+    replace(callExprPath, sourceChildren, target, state);
     return undefined;
   } catch (error) {
     if (error instanceof Fallback) return error.message;
@@ -138,7 +143,7 @@ const RESERVED_BRANCH_KEYS = new Set([
 function replace(
   callExprPath: NodePath<t.CallExpression>,
   sourceChildren: unknown,
-  translation: unknown,
+  target: JsxReplacementTarget,
   state: TransformState
 ): void {
   const callExpr = callExprPath.node;
@@ -182,7 +187,20 @@ function replace(
   const childrenPath =
     validateChildrenPropertyFromObjectExpression(propsPath).value;
   const slot = buildSlot(childrenPath, sourceChildren, ctx);
-  const rendered = renderSlot(slot, translation, ctx);
+  if (target === 'source') {
+    // The children stay where they are, so their expressions run as before
+    callExpr.arguments = [
+      getFragment(runtime, callExprPath, state),
+      t.objectExpression(
+        propsArg.properties.filter((property) =>
+          objectPropertyMatchesName(property, 'children')
+        )
+      ),
+      ...(keyArg ? [keyArg] : []),
+    ];
+    return;
+  }
+  const rendered = renderSlot(slot, target.translation, ctx);
   checkUses(ctx);
 
   const fragment = getFragment(runtime, callExprPath, state);

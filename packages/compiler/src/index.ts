@@ -318,7 +318,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       cache?: unknown;
       experiments?: { cache?: unknown };
     }) => {
-      if (isProduction() && loadedGTConfig?.files?.gt?.inlineTranslations) {
+      if (
+        isProduction() &&
+        (loadedGTConfig?.files?.gt?.inlineTranslations || sourceReplacement)
+      ) {
         addInlineTranslationsCacheVersion(
           options,
           gtFiles,
@@ -552,7 +555,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       buildEnd() {
         if (sourceReplacement && options.logLevel === 'debug') {
           new Logger(options.logLevel).logDebug(
-            `In the modules this build transformed, replaced the source content of ${sourceReplacementTotals.replaced} call sites with their "${sourceReplacement.locale}" translations; ${sourceReplacementTotals.kept} call sites kept their source and embedded translation`
+            sourceReplacement.locale === undefined
+              ? `In the modules this build transformed, replaced ${sourceReplacementTotals.replaced} call sites with the source content they render; ${sourceReplacementTotals.kept} call sites were kept as they are`
+              : `In the modules this build transformed, replaced the source content of ${sourceReplacementTotals.replaced} call sites with their "${sourceReplacement.locale}" translations; ${sourceReplacementTotals.kept} call sites kept their source and embedded translation`
           );
         }
         if (debugManifest && debugManifest.size > 0) {

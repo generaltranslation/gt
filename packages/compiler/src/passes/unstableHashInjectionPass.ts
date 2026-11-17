@@ -22,7 +22,8 @@ export function unstableHashInjectionPass(
     : undefined;
   const { sourceReplacement, inlineTranslationsTable } = state.settings;
   const translations =
-    sourceReplacement && inlineTranslationsTable?.[sourceReplacement.locale];
+    sourceReplacement?.locale !== undefined &&
+    inlineTranslationsTable?.[sourceReplacement.locale];
   const replaceSource = translations
     ? (hash: string, quasi: t.TemplateLiteral) => {
         if (translations[hash] === undefined) return undefined;

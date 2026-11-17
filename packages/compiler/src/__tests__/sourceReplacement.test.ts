@@ -5,7 +5,15 @@
  * build with and without replacement in gt-react, and the HTML must match.
  */
 import { getPluralForm } from 'generaltranslation/internal';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import gtUnplugin from '../index';
 import type { GTUnpluginOptions } from '../index';
 import { clearInlineTranslationsCache } from '../transform/injection/inline-translations/loadInlineTranslations';
@@ -37,6 +45,8 @@ type Case = {
   expected: 'replaced' | 'kept';
   /** Source strings a replaced build must not ship */
   sourceText?: string[];
+  /** Set when a build for the source locale keeps the <T> too */
+  sourceLocale?: 'kept';
   gtConfig?: GTConfig;
 };
 
@@ -464,6 +474,7 @@ const JSX_CASES: Case[] = [
     translation: ['Total : ', { k: '_gt_n_1', i: 1, v: 'n' }],
     renders: [{ n: 1234.5 }],
     expected: 'kept',
+    sourceLocale: 'kept',
   },
   {
     name: '<Plural> with a locales prop',
@@ -478,6 +489,7 @@ const JSX_CASES: Case[] = [
     },
     renders: [{ n: 1 }],
     expected: 'kept',
+    sourceLocale: 'kept',
   },
   {
     name: '<RelativeTime>',
@@ -485,6 +497,7 @@ const JSX_CASES: Case[] = [
     translation: ['Publié ', { k: '_gt_time_1', i: 1, v: 'rt' }],
     renders: [{}],
     expected: 'kept',
+    sourceLocale: 'kept',
   },
   {
     name: 'a repeated variable with side effects',
@@ -702,6 +715,23 @@ const TEMPLATE_CASES: Case[] = [
   },
 ];
 
+/** A build for a locale that renders the source: `en`, or its dialect `en-GB`. */
+function sourceLocaleOptions(
+  locale: string,
+  options: { replaceSource: boolean; gtConfig?: GTConfig }
+): GTUnpluginOptions {
+  return {
+    ...buildOptions(
+      {},
+      {
+        ...options,
+        gtConfig: { locales: ['en-GB', STATIC_LOCALE], ...options.gtConfig },
+      }
+    ),
+    experimentalStaticLocale: locale,
+  };
+}
+
 describe('experimentalReplaceSource', () => {
   let runtime: GTRuntime;
 
@@ -821,6 +851,43 @@ describe('experimentalReplaceSource', () => {
       expect(after).toEqual(before);
     });
   });
+
+  describe.each(['en', 'en-GB'])(
+    'renders <T> as it renders its source in a build for %s',
+    (locale) => {
+      beforeAll(() => runtime.setLocale(locale));
+      afterAll(() => runtime.setLocale(STATIC_LOCALE));
+
+      const sources = new Map(
+        JSX_CASES.map((testCase) => [testCase.source, testCase] as const)
+      );
+      it.each(
+        [...sources.values()].map((testCase) => [testCase.name, testCase])
+      )('%s', async (_name, { source, renders, gtConfig, sourceLocale }) => {
+        const code = compileJsx(source);
+        const [kept, replaced] = await Promise.all(
+          [false, true].map((replaceSource) =>
+            transformWithPlugin(
+              sourceLocaleOptions(locale, { replaceSource, gtConfig }),
+              code
+            )
+          )
+        );
+        if (sourceLocale === 'kept') {
+          expect(replaced).toBe(kept);
+        } else {
+          expect(kept).toMatch(/[^$]_hash:/);
+          expect(replaced).not.toMatch(/[^$]_hash:|jsxs?\(T,/);
+        }
+        const [before, after] = await Promise.all([
+          renderAll(kept!, renders),
+          renderAll(replaced!, renders),
+        ]);
+        expect(after).toEqual(before);
+        for (const html of after) expect(html).not.toBe('');
+      });
+    }
+  );
 
   it('rewrites <T> as the JSX its translation renders', async () => {
     const { replaced } = await checkCase(
@@ -1053,12 +1120,66 @@ describe('experimentalReplaceSource', () => {
     }
   );
 
-  it('changes nothing in a build for the source locale', async () => {
+  it('rewrites <T> as the JSX of its children in a build for the source locale', async () => {
+    const code = compileJsx(
+      app(
+        '<T id="inbox">You have <Plural n={n} one={<><b>one</b> message</>} other={<><Num>{n}</Num> messages</>} /></T>',
+        '{ n }'
+      )
+    );
+    // Without translations to embed, as the source locale needs none
+    const replaced = await transformWithPlugin(
+      {
+        experimentalStaticLocale: 'en',
+        experimentalReplaceSource: true,
+        gtConfig: { defaultLocale: 'en', locales: ['fr'] },
+      },
+      code
+    );
+    expect(replaced).toMatchInlineSnapshot(`
+      "import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+      import { T, Num, Plural } from "gt-react";
+      function App({ n }) {
+        return /* @__PURE__ */jsxs(Fragment, { children: [
+          "You have ",
+          /* @__PURE__ */jsx(Plural, { n, one: /* @__PURE__ */jsxs(Fragment, { children: [
+              /* @__PURE__ */jsx("b", { children: "one" }),
+              " message"]
+            }), other: /* @__PURE__ */jsxs(Fragment, { children: [
+              /* @__PURE__ */jsx(Num, { children: n }),
+              " messages"]
+            }) })] }
+        );
+      }
+      export {
+        App };"
+    `);
+  });
+
+  it('leaves templates and <T> with _tagIds alone in a build for the source locale', async () => {
+    const code = compileJsx(`${IMPORTS}
+      import { t } from 'gt-react/unstable';
+      export const App = () => <T>Hello</T>;
+      export const label = () => t\`Hello\`;`);
+    const options = (replaceSource: boolean, gtConfig?: GTConfig) =>
+      sourceLocaleOptions('en', { replaceSource, gtConfig });
+    const kept = await transformWithPlugin(options(false), code);
+    const replaced = await transformWithPlugin(options(true), code);
+    expect(replaced).toContain('jsx(_Fragment, { children: "Hello" })');
+    expect(replaced).toContain('t({ $_hash: "');
+    expect(
+      await transformWithPlugin(options(true, { _tagIds: true }), code)
+    ).toBe(kept);
+  });
+
+  it('changes nothing for a static locale that is not embedded', async () => {
     const code = compileJsx(app('<T>Hello</T>'));
-    const hash = await getInjectedHash(code);
     const options = (replaceSource: boolean) => ({
-      ...buildOptions({ [hash]: 'Bonjour' }, { replaceSource }),
-      experimentalStaticLocale: 'en',
+      ...buildOptions(
+        {},
+        { replaceSource, gtConfig: { locales: ['fr', 'de'] } }
+      ),
+      experimentalStaticLocale: 'de',
     });
     expect(await transformWithPlugin(options(true), code)).toBe(
       await transformWithPlugin(options(false), code)
@@ -1075,6 +1196,12 @@ describe('experimentalReplaceSource', () => {
     );
     expect(replaced).toContain('"Hello"');
     expect(replaced).not.toContain('Bonjour');
+    expect(
+      await transformWithPlugin(
+        sourceLocaleOptions('en', { replaceSource: true }),
+        code
+      )
+    ).toMatch(/jsx\(T, \{ children: "Hello", _hash:/);
   });
 
   describe('options', () => {
@@ -1179,6 +1306,36 @@ describe('experimentalReplaceSource', () => {
         ),
         expect.stringContaining(
           'In the modules this build transformed, replaced the source content of 0 call sites with their "fr" translations; 1 call sites kept their source and embedded translation'
+        ),
+      ]);
+    });
+
+    it('reports a <T> a build for the source locale keeps at debug level', async () => {
+      const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const code = compileJsx(
+        app(
+          '<><T>Hello</T><T>Posted <RelativeTime>{date}</RelativeTime></T></>'
+        )
+      );
+      const plugin = createPlugin({
+        ...sourceLocaleOptions('en', { replaceSource: true }),
+        logLevel: 'debug',
+      });
+      (plugin.buildStart as () => void).call({});
+      await (plugin.transform as (code: string, id: string) => unknown).call(
+        { addWatchFile() {} },
+        code,
+        '/app/App.tsx'
+      );
+      (plugin.buildEnd as () => void).call({});
+      const messages = log.mock.calls.map(([message]) => String(message));
+      log.mockRestore();
+      expect(messages).toEqual([
+        expect.stringMatching(
+          /Kept <T> [0-9a-f]+ as a component: <RelativeTime> has props it formats differently outside <T> \/app\/App.tsx:\d+:\d+$/
+        ),
+        expect.stringContaining(
+          'In the modules this build transformed, replaced 1 call sites with the source content they render; 1 call sites were kept as they are'
         ),
       ]);
     });
