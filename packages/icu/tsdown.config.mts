@@ -6,6 +6,7 @@ export default defineConfig(
     createTsdownConfig([
       'src/index.ts',
       'src/parser.ts',
+      'src/parser.omitted.ts',
       'src/convert.ts',
       'src/internal.ts',
     ])

@@ -54,6 +54,13 @@ import {
   resolveSourceReplacement,
 } from './transform/injection/inline-translations/resolveSourceReplacement';
 import { addFragmentImports } from './transform/injection/inline-translations/replaceJsxSource';
+import {
+  getIcuStringImportError,
+  getOmitIcuParser,
+  ICU_PARSER_SPECIFIER,
+  OMITTED_ICU_PARSER_UNAVAILABLE_WARNING,
+  resolveOmittedIcuParser,
+} from './transform/icu-parser/omitIcuParser';
 import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
@@ -121,6 +128,11 @@ const INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR =
     why: 'translations are only embedded where hashes are computed at build time, and msgOutput files leave out the translations that would be embedded',
     fix: 'Remove compileTimeHash: false, or remove files.gt.inlineTranslations from gt.config.json',
   });
+
+/** Installed packages are built already; their own imports are not the app's. */
+function isDependency(id: string): boolean {
+  return /[\\/]node_modules[\\/]/.test(id);
+}
 
 function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
   return logLevel !== 'silent' && logLevel !== 'error';
@@ -260,6 +272,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       loadedGTConfig
     );
     const sourceReplacementTotals = { replaced: 0, kept: 0 };
+    const omitIcuParser = getOmitIcuParser(options.experimentalOmitIcuParser);
     const resolvedOptions: GTUnpluginOptions = {
       ...options,
       ...(gtConfig ? { gtConfig } : {}),
@@ -314,19 +327,38 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const loadModulesTable = () =>
       isProduction() ? loadInlineTranslations(gtFiles) : undefined;
 
+    let warnedOmittedIcuParserUnavailable = false;
+    /** Where a production build that leaves the ICU parser out resolves it. */
+    const getOmittedIcuParser = (importer?: string): string | undefined => {
+      if (!omitIcuParser || !isProduction()) return undefined;
+      const omitted = resolveOmittedIcuParser(importer);
+      if (
+        !omitted &&
+        !warnedOmittedIcuParserUnavailable &&
+        shouldWarn(options.logLevel)
+      ) {
+        warnedOmittedIcuParserUnavailable = true;
+        console.warn(OMITTED_ICU_PARSER_UNAVAILABLE_WARNING);
+      }
+      return omitted;
+    };
+
     const keyCacheOnInlineTranslations = (options: {
       cache?: unknown;
       experiments?: { cache?: unknown };
     }) => {
       if (
         isProduction() &&
-        (loadedGTConfig?.files?.gt?.inlineTranslations || sourceReplacement)
+        (loadedGTConfig?.files?.gt?.inlineTranslations ||
+          sourceReplacement ||
+          omitIcuParser)
       ) {
         addInlineTranslationsCacheVersion(
           options,
           gtFiles,
           inlineTranslationsModules,
-          sourceReplacement
+          sourceReplacement,
+          omitIcuParser
         );
       }
     };
@@ -338,6 +370,37 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
       rspack(compiler) {
         keyCacheOnInlineTranslations(compiler.options);
+      },
+      vite: {
+        // Vite resolves package imports before a plugin's resolveId sees them
+        config(_config: unknown, { command }: { command: 'build' | 'serve' }) {
+          const omitted =
+            command === 'build' ? getOmittedIcuParser() : undefined;
+          return omitted
+            ? {
+                resolve: {
+                  alias: [
+                    {
+                      find: new RegExp(`^${ICU_PARSER_SPECIFIER}$`),
+                      replacement: omitted,
+                    },
+                  ],
+                },
+              }
+            : undefined;
+        },
+      },
+      esbuild: {
+        // esbuild loads what a plugin's resolveId returns through the plugin
+        config(initialOptions) {
+          const omitted = getOmittedIcuParser();
+          if (omitted) {
+            initialOptions.alias = {
+              ...initialOptions.alias,
+              [ICU_PARSER_SPECIFIER]: omitted,
+            };
+          }
+        },
       },
       buildStart() {
         sourceReplacementTotals.replaced = 0;
@@ -380,7 +443,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           )
         );
       },
-      resolveId(id: string) {
+      resolveId(id: string, importer: string | undefined) {
+        if (id === ICU_PARSER_SPECIFIER && meta.framework !== 'esbuild') {
+          return getOmittedIcuParser(importer) ?? null;
+        }
         if (
           inlineTranslationsModules?.mode !== 'virtual' ||
           id.startsWith('\0') ||
@@ -454,6 +520,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             allowImportExportEverywhere: true,
             allowReturnOutsideFunction: true,
           });
+
+          if (omitIcuParser && isProduction() && !isDependency(id)) {
+            const error = getIcuStringImportError(ast.program, id);
+            if (error) throw new InvalidLibraryUsageError(error);
+          }
 
           // Pass 1: Jsx insertion
           if (state.settings.enableAutoJsxInjection) {

@@ -1,5 +1,6 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { GTConfig } from '../../../config';
+import { readBooleanEnv } from '../../../utils/readBooleanEnv';
 import {
   STATIC_LOCALE_ENV_VAR,
   type StaticLocaleResolution,
@@ -11,9 +12,6 @@ import {
  */
 export const REPLACE_SOURCE_ENV_VAR = 'GT_REPLACE_SOURCE';
 
-const ENV_TRUE_VALUES = new Set(['true', '1']);
-const ENV_FALSE_VALUES = new Set(['false', '0', '']);
-
 /**
  * How a per-locale build replaces source content at its call sites: `locale`
  * is the embedded spelling translations are read under, or undefined when the
@@ -21,14 +19,6 @@ const ENV_FALSE_VALUES = new Set(['false', '0', '']);
  * component (id-tagging with `_tagIds`).
  */
 export type SourceReplacement = { locale: string | undefined; jsx: boolean };
-
-const createInvalidReplaceSourceEnvError = (value: string) =>
-  createDiagnosticMessage({
-    source: '@generaltranslation/compiler',
-    severity: 'Error',
-    whatHappened: `${REPLACE_SOURCE_ENV_VAR} is set to "${value}", which is not a boolean`,
-    fix: `Set ${REPLACE_SOURCE_ENV_VAR} to true or false`,
-  });
 
 export const REPLACE_SOURCE_WITHOUT_STATIC_LOCALE_ERROR =
   createDiagnosticMessage({
@@ -45,13 +35,7 @@ export const REPLACE_SOURCE_WITHOUT_STATIC_LOCALE_ERROR =
  * option, else the `GT_REPLACE_SOURCE` environment variable.
  */
 export function getReplaceSource(option: boolean | undefined): boolean {
-  if (option !== undefined) return option;
-  const raw = process.env[REPLACE_SOURCE_ENV_VAR];
-  if (raw === undefined) return false;
-  const value = raw.trim().toLowerCase();
-  if (ENV_TRUE_VALUES.has(value)) return true;
-  if (ENV_FALSE_VALUES.has(value)) return false;
-  throw new Error(createInvalidReplaceSourceEnvError(raw));
+  return option ?? readBooleanEnv(REPLACE_SOURCE_ENV_VAR) ?? false;
 }
 
 /**
