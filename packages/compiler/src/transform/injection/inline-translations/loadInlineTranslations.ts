@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { GTOutputFileConfig } from 'generaltranslation';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/diagnostics';
 
 /**
  * Translations to embed, keyed by locale, then by translation hash.
@@ -40,7 +44,12 @@ export function loadInlineTranslations(
 
   const table: InlineTranslationsTable = {};
   for (const { locale, filePath } of resolveInlineTranslationsFiles(gtFiles)) {
-    const translations = readTranslationsFile(filePath);
+    let translations: Record<string, unknown> | undefined;
+    try {
+      translations = readTranslationsFile(filePath);
+    } catch (error) {
+      throw new Error(createTranslationsFileReadError(filePath, error));
+    }
     if (translations) table[locale] = translations;
   }
 
@@ -52,15 +61,26 @@ export function loadInlineTranslations(
   return table;
 }
 
+const createTranslationsFileReadError = (filePath: string, error: unknown) =>
+  createDiagnosticMessage({
+    source: '@generaltranslation/compiler',
+    severity: 'Error',
+    whatHappened: `Could not read the embedded translations in ${filePath}`,
+    fix: 'Make sure the file contains valid JSON',
+    details: formatDiagnosticErrorDetails(error),
+  });
+
 /**
- * Locale files embedded translations are read from, for registering them as
- * build dependencies so watch rebuilds pick up edited translations.
+ * The `files.gt.output` file of each embedded locale, including files that do
+ * not exist yet, for registering them as build dependencies so rebuilds pick
+ * up created and edited translations.
  */
 export function getInlineTranslationsFiles(
   gtFiles: GTOutputFileConfig | undefined
 ): string[] {
-  return resolveInlineTranslationsFiles(gtFiles).map(
-    ({ filePath }) => filePath
+  const locales = new Set(gtFiles?.inlineTranslations?.locales);
+  return [...locales].flatMap(
+    (locale) => resolveLocaleFilePath(gtFiles?.output, locale) ?? []
   );
 }
 

@@ -20,6 +20,28 @@ import { injectionPass } from './passes/injectionPass';
 import { macroExpansionPass } from './passes/macroExpansionPass';
 import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
+import {
+  getInlineTranslationsFiles,
+  loadInlineTranslations,
+} from './transform/injection/inline-translations/loadInlineTranslations';
+import {
+  INLINE_TRANSLATIONS_MODULE_IMPORT_PREFIX,
+  INLINE_TRANSLATIONS_VIRTUAL_MODULE_PREFIX,
+  getInlineTranslationsModuleFile,
+  parseInlineTranslationsVirtualModuleId,
+  renderInlineTranslationsModule,
+  renderInlineTranslationsModules,
+  writeInlineTranslationsModules,
+} from './transform/injection/inline-translations/inlineTranslationsModules';
+import {
+  createInlineTranslationsModulesWriteError,
+  resolveInlineTranslationsModules,
+} from './transform/injection/inline-translations/resolveInlineTranslationsModules';
+import {
+  addInlineTranslationsImports,
+  isEsModule,
+} from './transform/injection/inline-translations/addInlineTranslationsImports';
+import { addInlineTranslationsCacheVersion } from './transform/injection/inline-translations/inlineTranslationsCacheVersion';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
@@ -76,6 +98,16 @@ export interface GTUnpluginOptions extends PluginConfig, GTConfig {}
 
 export const MISSING_GT_CONFIG_WARNING =
   '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
+
+const INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR =
+  createDiagnosticMessage({
+    source: '@generaltranslation/compiler',
+    severity: 'Error',
+    whatHappened:
+      'files.gt.inlineTranslations is set, but compileTimeHash is false',
+    why: 'translations are only embedded where hashes are computed at build time, and msgOutput files leave out the translations that would be embedded',
+    fix: 'Remove compileTimeHash: false, or remove files.gt.inlineTranslations from gt.config.json',
+  });
 
 function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
   return logLevel !== 'silent' && logLevel !== 'error';
@@ -187,7 +219,7 @@ function resolveGTConfig(options: GTUnpluginOptions): GTConfigLoadResult {
  * that works across webpack, Vite, Rollup, and other bundlers.
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
-  (options = {}) => {
+  (options = {}, meta) => {
     const gtConfigLoadResult = resolveGTConfig(options);
     const loadedGTConfig =
       gtConfigLoadResult.status === 'loaded'
@@ -219,9 +251,111 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       ? new Map<string, unknown>()
       : undefined;
 
+    const gtFiles = resolvedOptions.gtConfig?.files?.gt;
+    // Vite's build() sets NODE_ENV after plugins are created, so read it when each hook runs, as transforms do
+    const isProduction = () => process.env.NODE_ENV === 'production';
+    const inlineTranslationsModules = resolveInlineTranslationsModules(
+      gtFiles,
+      {
+        framework: meta.framework,
+        warn: isProduction() && shouldWarn(options.logLevel),
+      }
+    );
+    // Only the modules buildStart wrote, so source files inside modulesDir are still transformed
+    let messageModuleFiles = new Set<string>();
+    const loadModulesTable = () =>
+      isProduction() ? loadInlineTranslations(gtFiles) : undefined;
+
+    const keyCacheOnInlineTranslations = (options: {
+      cache?: unknown;
+      experiments?: { cache?: unknown };
+    }) => {
+      if (isProduction() && loadedGTConfig?.files?.gt?.inlineTranslations) {
+        addInlineTranslationsCacheVersion(
+          options,
+          gtFiles,
+          inlineTranslationsModules
+        );
+      }
+    };
+
     return {
       name: '@generaltranslation/GT_PLUGIN',
+      webpack(compiler) {
+        keyCacheOnInlineTranslations(compiler.options);
+      },
+      rspack(compiler) {
+        keyCacheOnInlineTranslations(compiler.options);
+      },
+      buildStart() {
+        if (
+          isProduction() &&
+          resolvedOptions.compileTimeHash === false &&
+          gtFiles?.inlineTranslations?.locales.length
+        ) {
+          throw new Error(INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR);
+        }
+        if (inlineTranslationsModules?.mode !== 'physical' || !isProduction()) {
+          return;
+        }
+        const modules = renderInlineTranslationsModules(loadModulesTable());
+        try {
+          writeInlineTranslationsModules(
+            inlineTranslationsModules.dir,
+            modules
+          );
+        } catch (error) {
+          throw new Error(
+            createInlineTranslationsModulesWriteError(
+              inlineTranslationsModules.dir,
+              error
+            )
+          );
+        }
+        messageModuleFiles = new Set(
+          Array.from(modules.keys(), (hash) =>
+            getInlineTranslationsModuleFile(inlineTranslationsModules.dir, hash)
+          )
+        );
+      },
+      resolveId(id: string) {
+        if (
+          inlineTranslationsModules?.mode !== 'virtual' ||
+          id.startsWith('\0') ||
+          parseInlineTranslationsVirtualModuleId(id) === undefined
+        ) {
+          return null;
+        }
+        return `\0${id}`;
+      },
+      loadInclude(id: string) {
+        return (
+          inlineTranslationsModules?.mode === 'virtual' &&
+          parseInlineTranslationsVirtualModuleId(id) !== undefined
+        );
+      },
+      load(id: string) {
+        if (inlineTranslationsModules?.mode !== 'virtual') return null;
+        const hash = parseInlineTranslationsVirtualModuleId(id);
+        if (hash === undefined) return null;
+        for (const file of getInlineTranslationsFiles(gtFiles)) {
+          this.addWatchFile(file);
+        }
+        const table = loadModulesTable();
+        return {
+          code:
+            (table && renderInlineTranslationsModule(table, hash)) ??
+            'export default () => undefined;\n',
+          moduleSideEffects: false,
+        };
+      },
       transformInclude(id: string) {
+        if (
+          id.includes(INLINE_TRANSLATIONS_VIRTUAL_MODULE_PREFIX) ||
+          messageModuleFiles.has(id.split('?')[0])
+        ) {
+          return false;
+        }
         // Only transform TSX and JSX files
         return (
           id.endsWith('.tsx') ||
@@ -234,6 +368,14 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         // Initialize processing state
         const state = initializeState(resolvedOptions, id);
         if (debugManifest) state.debugManifest = debugManifest;
+        // webpack does not track files read outside the loader
+        if (isProduction()) {
+          for (const file of getInlineTranslationsFiles(
+            resolvedOptions.gtConfig?.files?.gt
+          )) {
+            this.addWatchFile(file);
+          }
+        }
         try {
           // Skip transformation if not needed
           if (
@@ -275,6 +417,16 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           const injectionRan =
             hasCollectionContent && state.settings.compileTimeHash;
 
+          if (
+            inlineTranslationsModules &&
+            state.settings.inlineTranslationsTable &&
+            isEsModule(ast.program) &&
+            // Generated import names could clash with the file's own bindings
+            !code.includes(INLINE_TRANSLATIONS_MODULE_IMPORT_PREFIX)
+          ) {
+            state.inlineTranslationsImports = new Map();
+          }
+
           if (injectionRan) {
             traverse(ast, injectionPass(state));
           }
@@ -282,6 +434,18 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           // Pass 4b: $_hash injection for unstable tagged templates
           if (state.settings.compileTimeHash && importsUnstableSource(ast)) {
             traverse(ast, unstableHashInjectionPass(state));
+          }
+
+          if (
+            inlineTranslationsModules &&
+            state.inlineTranslationsImports?.size
+          ) {
+            addInlineTranslationsImports(
+              ast.program,
+              state.inlineTranslationsImports,
+              inlineTranslationsModules,
+              id
+            );
           }
 
           // Pass 5: Runtime translate (dev hot reload)

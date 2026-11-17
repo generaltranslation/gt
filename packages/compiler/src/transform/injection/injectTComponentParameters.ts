@@ -1,7 +1,11 @@
 import * as t from '@babel/types';
-import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
+import {
+  getObjectPropertyFromObjectExpression,
+  objectPropertyMatchesName,
+} from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { TransformState } from '../../state/types';
 import { createErrorLocation } from '../../utils/errors';
+import { injectInlineTranslationsProp } from './inline-translations/injectInlineTranslations';
 
 /**
  * Inject parameters into a T component
@@ -42,6 +46,18 @@ export function injectTComponentParameters(
     return;
   }
 
+  // Embed translations for the configured locales
+  const runtimeHash = getRuntimeHash(
+    callExpr.arguments[1],
+    translationJsx.hash
+  );
+  if (
+    runtimeHash &&
+    !getObjectPropertyFromObjectExpression(callExpr.arguments[1], 'inline')
+  ) {
+    injectInlineTranslationsProp(callExpr.arguments[1], runtimeHash, state);
+  }
+
   // If already has hash set then skip
   if (getObjectPropertyFromObjectExpression(callExpr.arguments[1], '_hash')) {
     return;
@@ -54,4 +70,25 @@ export function injectTComponentParameters(
       t.stringLiteral(translationJsx.hash)
     )
   );
+}
+
+/**
+ * The hash the runtime looks up ($_hash, then _hash, then the computed hash),
+ * or undefined when it can't be known at build time.
+ */
+function getRuntimeHash(
+  props: t.ObjectExpression,
+  computedHash: string
+): string | undefined {
+  if (getObjectPropertyFromObjectExpression(props, '$_hash')) return undefined;
+  const hashProps = props.properties.filter((prop) =>
+    objectPropertyMatchesName(prop, '_hash')
+  );
+  if (hashProps.length === 0) return computedHash;
+  const [hashProp] = hashProps;
+  return hashProps.length === 1 &&
+    t.isObjectProperty(hashProp) &&
+    t.isStringLiteral(hashProp.value)
+    ? hashProp.value.value
+    : undefined;
 }
