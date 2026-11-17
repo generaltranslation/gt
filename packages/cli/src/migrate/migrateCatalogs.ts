@@ -1,4 +1,5 @@
 import type { MessageFormats, MessageTree } from '@generaltranslation/icu';
+import { messageTreeToIcu } from '@generaltranslation/icu/convert';
 import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
 import type { Catalog, LegacySources } from './catalogs.js';
@@ -333,7 +334,13 @@ function pickSourceMatch(
     oldKey: chosen.key,
     oldDataFormat: oldDataFormat ?? chosen.treeFormat,
     sourceFormats: chosen.treeFormats,
-    renameMap: alphaRenameMap(chosen.tree, tree) ?? {},
+    renameMap:
+      (found.tier === 'source-loose'
+        ? alphaRenameMap(
+            normalizeWhitespace(chosen.tree),
+            normalizeWhitespace(tree)
+          )
+        : alphaRenameMap(chosen.tree, tree)) ?? {},
     notes,
     verified,
   };
@@ -395,7 +402,10 @@ function sourceTree(message: NewMessage): MessageTree | undefined {
   if (message.dataFormat === 'MESSAGE_TREE') {
     return message.source as MessageTree;
   }
-  return typeof message.source === 'string' ? message.source : undefined;
+  if (typeof message.source !== 'string') return undefined;
+  if (message.dataFormat !== 'ICU') return message.source;
+  const parsed = legacyIcuToMessage(message.source);
+  return parsed.ok ? parsed.tree : undefined;
 }
 
 export function migrateCatalogs({
@@ -585,6 +595,12 @@ function migrateValue(
   });
   if (!result.ok) {
     return { outcome: { status: 'rejected', reason: result.reason } };
+  }
+  if (message.dataFormat === 'ICU') {
+    return {
+      outcome: { status: 'migrated' },
+      value: messageTreeToIcu(result.tree),
+    };
   }
   if (!isTree) {
     return typeof result.tree === 'string'

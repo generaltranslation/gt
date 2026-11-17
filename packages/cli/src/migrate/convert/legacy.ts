@@ -250,9 +250,12 @@ function pluralBranches(
 ): Record<string, MessageTree> {
   const trees: Record<string, MessageTree> = {};
   const aliased: [string, unknown][] = [];
+  let fallback: MessageTree | undefined;
   for (const [key, branch] of Object.entries(branches)) {
-    if (key === 'plural' || key in LEGACY_PLURAL_ALIASES) {
-      aliased.push([LEGACY_PLURAL_ALIASES[key] ?? 'other', branch]);
+    if (key === 'plural') {
+      fallback = jsxNodes(branch, options);
+    } else if (key in LEGACY_PLURAL_ALIASES) {
+      aliased.push([LEGACY_PLURAL_ALIASES[key], branch]);
     } else if (PLURAL_CATEGORIES.has(key)) {
       trees[key] = jsxNodes(branch, options);
     } else {
@@ -264,15 +267,34 @@ function pluralBranches(
   for (const [category, branch] of aliased) {
     trees[category] = jsxNodes(branch, options);
   }
-  if (!options.locale || !options.exactValues) return trees;
-  const rules = pluralRulesFor(options.locale);
+  const rules = options.locale ? pluralRulesFor(options.locale) : undefined;
+  if (fallback !== undefined) {
+    if (!has(trees, 'other')) trees.other = fallback;
+    for (const category of rules?.resolvedOptions().pluralCategories ?? []) {
+      if (!has(trees, category)) trees[category] = fallback;
+    }
+  }
+  if (!rules || !options.exactValues) return trees;
   for (const [category, value] of EXACT_VALUE_CATEGORIES) {
-    if (!Object.prototype.hasOwnProperty.call(trees, category)) continue;
-    if (rules?.select(value) === category) continue;
-    trees[`=${value}`] ??= trees[category];
-    if (options.exactValues === 'replace') delete trees[category];
+    if (!has(trees, category)) continue;
+    const branch = trees[category];
+    if (rules.select(value) !== category) trees[`=${value}`] ??= branch;
+    if (
+      options.exactValues === 'add' &&
+      value > 0 &&
+      rules.select(-value) !== category
+    ) {
+      trees[`=-${value}`] ??= branch;
+    }
+    if (options.exactValues === 'replace' && rules.select(value) !== category) {
+      delete trees[category];
+    }
   }
   return trees;
+}
+
+function has(record: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, key);
 }
 
 function pluralRulesFor(locale: string): Intl.PluralRules | undefined {

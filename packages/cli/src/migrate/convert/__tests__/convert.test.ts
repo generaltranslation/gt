@@ -597,8 +597,14 @@ describe('validateMigratedTranslation', () => {
   });
 
   it('reports an invalid locale instead of throwing', () => {
+    let engineMessage: string | undefined;
+    try {
+      new Intl.PluralRules('not a locale!');
+    } catch (error) {
+      engineMessage = (error as Error).message;
+    }
     expect(validateMigratedTranslation('x', 'y', 'not a locale!')).toBe(
-      'Invalid language tag: not a locale!'
+      engineMessage
     );
   });
 });
@@ -812,15 +818,40 @@ describe('legacy plural and percent semantics', () => {
     d: { t: 'p', b },
   });
 
-  it.each<[string, Record<string, unknown>, Record<string, unknown>]>([
+  it.each<
     [
-      'singular wins over one, plural over other',
+      string,
+      Record<string, unknown>,
+      string | undefined,
+      Record<string, unknown>,
+    ]
+  >([
+    [
+      'singular wins over one, and other stays other',
       { singular: 'S', one: 'O', plural: 'P', other: 'X' },
-      { one: 'S', other: 'P' },
+      undefined,
+      { one: 'S', other: 'X' },
     ],
-    ['dual becomes two', { dual: 'D', other: 'X' }, { two: 'D', other: 'X' }],
-  ])('maps legacy aliases: %s', (_name, b, expected) => {
-    expect(gtjsxToMessage(plural(b))).toEqual({
+    [
+      'plural fills the categories ru lacks, before other',
+      { one: 'O', plural: 'P', other: 'X' },
+      'ru',
+      { one: 'O', few: 'P', many: 'P', other: 'X' },
+    ],
+    [
+      'plural becomes other when there is none',
+      { one: 'O', plural: 'P' },
+      undefined,
+      { one: 'O', other: 'P' },
+    ],
+    [
+      'dual becomes two',
+      { dual: 'D', other: 'X' },
+      undefined,
+      { two: 'D', other: 'X' },
+    ],
+  ])('maps legacy aliases: %s', (_name, b, locale, expected) => {
+    expect(gtjsxToMessage(plural(b), { locale })).toEqual({
       ok: true,
       tree: [['_gt_plural_1', 'plural', expected]],
       formats: {},
@@ -829,7 +860,11 @@ describe('legacy plural and percent semantics', () => {
 
   it.each<[string, 'add' | 'replace', Record<string, unknown>]>([
     ['fr', 'add', { zero: 'Z', '=0': 'Z', one: 'O', other: 'X' }],
-    ['ja', 'add', { zero: 'Z', '=0': 'Z', one: 'O', '=1': 'O', other: 'X' }],
+    [
+      'ja',
+      'add',
+      { zero: 'Z', '=0': 'Z', one: 'O', '=1': 'O', '=-1': 'O', other: 'X' },
+    ],
     ['en', 'replace', { '=0': 'Z', one: 'O', other: 'X' }],
   ])(
     'keeps exact-value branches for %s (%s)',

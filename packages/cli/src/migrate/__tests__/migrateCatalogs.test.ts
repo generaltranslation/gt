@@ -398,6 +398,40 @@ const only = (result: ReturnType<typeof migrateCatalogs>): MessageDecision =>
   result.report.messages[0];
 
 describe('migrateCatalogs', () => {
+  it('renames variables for a loose match by the normalized text', () => {
+    const oldKey = legacyIcuHash('From {sender} to {recipient}');
+    const result = migrate({
+      messages: [treeMessage(['From  ', ['recipient'], ' to ', ['sender']])],
+      sources: parseLegacySource({ [oldKey]: 'From {sender} to {recipient}' }),
+      catalogs: { de: { [oldKey]: 'Von {sender} an {recipient}' } },
+      loose: true,
+    });
+    expect(only(result)).toMatchObject({
+      tier: 'source-loose',
+      renameMap: { sender: 'recipient', recipient: 'sender' },
+    });
+    expect(result.catalogs).toEqual({
+      de: { [NEW_HASH]: ['Von ', ['recipient'], ' an ', ['sender']] },
+    });
+  });
+
+  it('carries an unchanged ICU dictionary entry keyed by id', () => {
+    const source = 'Hello {name}';
+    const result = migrate({
+      messages: [
+        {
+          hash: hashSource({ source, dataFormat: 'ICU' }),
+          dataFormat: 'ICU',
+          source,
+        },
+      ],
+      sources: parseLegacySource({ greeting: source }),
+      catalogs: { de: { greeting: 'Hallo {name}' } },
+    });
+    expect(Object.values(result.catalogs.de)).toEqual(['Hallo {name}']);
+    expect(only(result).locales.de).toEqual({ status: 'carried' });
+  });
+
   it('does not reuse an old key another message proved has other metadata', () => {
     const NOUN = 'bbbbbbbbbbbbbbbb';
     const nounKey = legacyIcuHash('Book', { context: 'noun' });
