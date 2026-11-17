@@ -469,6 +469,89 @@ describe('I18nCache', () => {
       );
     });
 
+    it('updateTranslations() keeps runtime translations and reaches every lookup path', async () => {
+      const [runtimeMessage, laterMessage, updatedMessage] = [
+        'Runtime {name}',
+        'Later {name}',
+        'Updated {name}',
+      ];
+      translateMany.mockImplementation(async (sources) =>
+        translated(
+          Object.fromEntries(
+            Object.keys(sources).map((hash) => [hash, `tx:${hash}`])
+          )
+        )
+      );
+      const cache = createCache();
+      const savedLookup = await cache.getLookupTranslation('fr');
+      await settle(
+        cache.lookupTranslationWithFallback('fr', runtimeMessage, icu)
+      );
+
+      cache.updateTranslations({
+        fr: { [icuHash(updatedMessage)]: 'Mis à jour {name}' },
+      });
+      await settle(
+        cache.lookupTranslationWithFallback('fr', laterMessage, icu)
+      );
+
+      const expected = [
+        [message, lookupOptions, translatedString],
+        [runtimeMessage, icu, `tx:${icuHash(runtimeMessage)}`],
+        [updatedMessage, icu, 'Mis à jour {name}'],
+        [laterMessage, icu, `tx:${icuHash(laterMessage)}`],
+      ] as const;
+      for (const [source, options, translation] of expected) {
+        expect(cache.lookupTranslation('fr', source, options)).toBe(
+          translation
+        );
+        expect(savedLookup(source, options)).toBe(translation);
+        await expect(
+          cache.lookupTranslationWithFallback('fr', source, options)
+        ).resolves.toBe(translation);
+      }
+      expect(translateMany).toHaveBeenCalledTimes(2);
+    });
+
+    it('updateTranslations() changes no table a caller passed in or loaded earlier', async () => {
+      const otherHash = icuHash('Goodbye {name}!');
+      const loaded = { [expectedHash]: translatedString };
+      const seeded = { [expectedHash]: 'Hola {name}!' };
+      const cache = createCache({
+        loadTranslations: vi.fn().mockResolvedValue(loaded),
+      });
+      const french = await cache.loadTranslations('fr');
+      cache.updateTranslations({ es: seeded });
+      const spanish = await cache.loadTranslations('es');
+
+      cache.updateTranslations({
+        fr: { [otherHash]: 'Au revoir {name} !' },
+        es: { [otherHash]: '¡Adiós {name}!' },
+      });
+
+      expect(loaded).toEqual({ [expectedHash]: translatedString });
+      expect(french).toEqual({ [expectedHash]: translatedString });
+      expect(seeded).toEqual({ [expectedHash]: 'Hola {name}!' });
+      expect(spanish).toEqual({ [expectedHash]: 'Hola {name}!' });
+      await expect(cache.loadTranslations('es')).resolves.toEqual({
+        [expectedHash]: 'Hola {name}!',
+        [otherHash]: '¡Adiós {name}!',
+      });
+    });
+
+    it('updateTranslations() seeds a locale whose loader resolved nothing', async () => {
+      const cache = createCache({
+        loadTranslations: vi.fn().mockResolvedValue(undefined),
+      });
+      await cache.loadTranslations('fr');
+
+      cache.updateTranslations({ fr: { [expectedHash]: translatedString } });
+
+      expect(cache.lookupTranslation('fr', message, lookupOptions)).toBe(
+        translatedString
+      );
+    });
+
     it('updateTranslations() does not fire onTranslationsCacheMiss', async () => {
       const cache = createCache();
       const onTranslationsCacheMiss = vi.fn();
