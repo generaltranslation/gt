@@ -459,9 +459,17 @@ function getTranslatedProps(
   ctx: Context
 ): t.ObjectExpression['properties'] {
   const translated = isRecord(target.d) ? target.d : {};
-  const properties = element.props.properties
-    .filter((property) => !objectPropertyMatchesName(property, 'children'))
-    .map(own);
+  const sourceProperties = element.props.properties;
+  // The rebuilt element passes its children last
+  if (
+    sourceProperties.findIndex((property) =>
+      objectPropertyMatchesName(property, 'children')
+    ) <
+    sourceProperties.length - 1
+  ) {
+    fail('an element passes its children before other props');
+  }
+  const properties = sourceProperties.slice(0, -1).map(own);
   for (const [min, name] of Object.entries(HTML_CONTENT_PROPS)) {
     const value = translated[min];
     if (!value) {

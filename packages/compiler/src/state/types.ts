@@ -27,6 +27,8 @@ export interface TransformState {
     /** Call sites with a translation that kept their source content */
     sourceReplacementFallbacksCount: number;
   };
+  /** Translation component calls the injection pass is inside of */
+  openTranslationCalls?: Set<t.CallExpression>;
   /** <T> calls to replace with their translations once their children are injected */
   sourceReplacementsOnExit?: Map<t.CallExpression, () => void>;
   /** JSX runtime source to the local name source replacement imports its Fragment as */
