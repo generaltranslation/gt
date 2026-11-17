@@ -48,6 +48,22 @@ describe('variable formatting with a custom locale alias', () => {
     );
   });
 
+  it('formats in the currency prop, not in options.currency', () => {
+    expect(
+      computeCurrency({
+        ...props,
+        children: 5,
+        currency: 'USD',
+        options: { currency: 'EUR' },
+      })
+    ).toBe(
+      new Intl.NumberFormat(['fr', 'en'], {
+        style: 'currency',
+        currency: 'USD',
+      }).format(5)
+    );
+  });
+
   it('formats dates in the canonical locale', () => {
     const options = { dateStyle: 'long', timeZone: 'UTC' } as const;
     expect(computeDateTime({ ...props, children: date, options })).toBe(

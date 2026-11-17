@@ -88,16 +88,16 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
       <Num value={count} /> items since <DateTime value={date} />
       (<RelativeTime value={date} />).
     </T>`,
-    tsx: `<T>Hi <Var>{name}</Var>, <Var name="user">{name}</Var> you owe <Currency currency="EUR">{price}</Currency> for <Num>{count}</Num> items since <DateTime>{date}</DateTime> (<RelativeTime>{date}</RelativeTime>).</T>`,
+    tsx: `<T>Hi <Var>{name}</Var>, <Var name="user">{name}</Var> you owe <Currency currency="EUR">{price}</Currency> for <Num>{count}</Num> items since <DateTime>{date}</DateTime> (<RelativeTime date={date} />).</T>`,
   },
   {
     name: 'variables whose value is their only child',
     svelte: `<T>
       You owe <Currency currency="EUR">{price}</Currency> for
       <Num name="items">{count}</Num> items since <DateTime>{date}</DateTime>
-      (<RelativeTime>{date}</RelativeTime>), <Num> {5} </Num> today.
+      (<RelativeTime value={date} />), <Num> {5} </Num> today.
     </T>`,
-    tsx: `<T>You owe <Currency currency="EUR">{price}</Currency> for <Num name="items">{count}</Num> items since <DateTime>{date}</DateTime> (<RelativeTime>{date}</RelativeTime>), <Num> {5} </Num> today.</T>`,
+    tsx: `<T>You owe <Currency currency="EUR">{price}</Currency> for <Num name="items">{count}</Num> items since <DateTime>{date}</DateTime> (<RelativeTime date={date} />), <Num> {5} </Num> today.</T>`,
   },
   {
     name: 'component elements',
