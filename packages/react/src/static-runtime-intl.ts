@@ -8,29 +8,23 @@ import { formatMessageTree } from 'generaltranslation/internal';
 
 type FormatMessageTree = typeof formatMessageTree;
 
-/** Formats any message tree in the locale its build was made for. */
-export type StaticIntlFormatter = (
-  tree: Parameters<FormatMessageTree>[0],
-  values: Readonly<Record<string, unknown>>,
-  formats?: NonNullable<Parameters<FormatMessageTree>[3]>['formats']
-) => string;
-
 /**
- * A formatter for the message trees of one build that hold a number, a date
- * or a time.
- * @param locales The build's locale, then its default locale, as Intl reads them.
+ * Formats any message tree in the locales of its build.
+ * @param locales The locale to format in, then the build's default locale, with a comma between them.
+ * @param formats The formatting context of each formatted variable, such as a currency.
  * @param timeZone The configured time zone; without one, dates format in the host's.
  * @internal
  */
-export function createStaticIntlFormatter(
-  locales: string[],
+export function formatStaticIntl(
+  tree: Parameters<FormatMessageTree>[0],
+  values: Readonly<Record<string, unknown>>,
+  locales: string,
+  formats?: NonNullable<Parameters<FormatMessageTree>[3]>['formats'],
   timeZone?: string
-): StaticIntlFormatter {
-  return (tree, values, formats) => {
-    const formatted = formatMessageTree(tree, locales, values, {
-      formats,
-      timeZone,
-    });
-    return Array.isArray(formatted) ? formatted.join('') : String(formatted);
-  };
+): string {
+  const formatted = formatMessageTree(tree, locales.split(','), values, {
+    formats,
+    timeZone,
+  });
+  return Array.isArray(formatted) ? formatted.join('') : String(formatted);
 }

@@ -1,3 +1,5 @@
+import type { MessageTree } from '@generaltranslation/icu';
+import { forEachPlaceholder } from '@generaltranslation/icu/internal';
 import { resolveCanonicalLocale } from '@generaltranslation/format';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
@@ -23,16 +25,13 @@ export const STATIC_RUNTIME_SOURCE = 'gt-react/static-runtime';
  * message with selects and plurals; and `intl` for the tree of one that also
  * formats a number, a date or a time, which needs the runtime's own formatter.
  */
-export const STATIC_FORMATTERS = {
-  value: { create: 'createStaticValue', source: STATIC_RUNTIME_SOURCE },
-  tree: { create: 'createStaticFormatter', source: STATIC_RUNTIME_SOURCE },
-  intl: {
-    create: 'createStaticIntlFormatter',
-    source: `${STATIC_RUNTIME_SOURCE}/intl`,
-  },
+export const STATIC_HELPERS = {
+  value: { name: 'staticValue', source: STATIC_RUNTIME_SOURCE },
+  tree: { name: 'formatStatic', source: STATIC_RUNTIME_SOURCE },
+  intl: { name: 'formatStaticIntl', source: `${STATIC_RUNTIME_SOURCE}/intl` },
 } as const;
 
-export type StaticFormatterKind = keyof typeof STATIC_FORMATTERS;
+export type StaticHelperKind = keyof typeof STATIC_HELPERS;
 
 const ENV_TRUE_VALUES = new Set(['true', '1']);
 const ENV_FALSE_VALUES = new Set(['false', '0', '']);
@@ -62,7 +61,7 @@ export type StaticCounts = {
   selectordinal?: string;
 };
 
-// The range the static formatter knows, SMALL_COUNT_LIMIT in gt-react's static-runtime.ts
+// The range the static formatter is told about, SMALL_COUNT_LIMIT in gt-react's static-runtime.ts
 const SMALL_COUNT_LIMIT = 1000;
 
 // A table longer than this costs more bytes than the Intl.PluralRules it saves is worth
@@ -118,18 +117,30 @@ export function encodePluralCategories(
     : undefined;
 }
 
-/** What the static formatter is told about small counts, as its `counts` argument. */
-export function encodeStaticCounts(
+/**
+ * What the static formatter is told about small counts to format one tree,
+ * as its `digits`, `plural` and `selectordinal` arguments: only what the
+ * tree's plurals read, and nothing in place of the rest.
+ */
+export function getStaticCountArguments(
   counts: StaticCounts,
-  kinds: ReadonlySet<'plural' | 'selectordinal'>
-): string {
+  tree: MessageTree
+): [digits: 0 | 1, plural: string, selectordinal: string] {
+  let counted = false;
+  const kinds = new Set<string>();
+  forEachPlaceholder(tree, (node) => {
+    if (node[1] !== 'plural' && node[1] !== 'selectordinal') return;
+    counted = true;
+    // Only a branch named for a category has one selected
+    if (Object.keys(node[2]).some((key) => key !== 'other' && key[0] !== '=')) {
+      kinds.add(node[1]);
+    }
+  });
   return [
-    counts.digits ? '1' : '',
+    counted && counts.digits ? 1 : 0,
     (kinds.has('plural') && counts.plural) || '',
     (kinds.has('selectordinal') && counts.selectordinal) || '',
-  ]
-    .join(';')
-    .replace(/;+$/, '');
+  ];
 }
 
 /**
