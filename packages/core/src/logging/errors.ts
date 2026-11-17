@@ -1,4 +1,7 @@
-import { createDiagnosticMessage } from './diagnostics';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from './diagnostics';
 
 const GT_SOURCE = 'GT';
 
@@ -8,6 +11,15 @@ export const noTargetLocaleProvidedError = (functionName: string) =>
     severity: 'Error',
     whatHappened: `Cannot call \`${functionName}\` without a target locale`,
     fix: `Pass the target locale to \`${functionName}()\``,
+  });
+
+export const translationClientLoadError = (reason: unknown) =>
+  createDiagnosticMessage({
+    source: GT_SOURCE,
+    severity: 'Error',
+    whatHappened: 'The translation client could not be loaded',
+    fix: 'Check that the app serves every file of its build',
+    details: formatDiagnosticErrorDetails(reason),
   });
 
 export const noScopeIdProvidedError = (scope: 'project' | 'org') =>
