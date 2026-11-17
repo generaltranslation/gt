@@ -3,7 +3,7 @@ import type { MessageTreeHashMetadata } from 'generaltranslation/id';
 import { getWritableConditionStore } from '../condition-store/singleton-operations';
 import { getI18nCache } from '../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
-import { buildMessage } from './buildMessage';
+import { buildSiteMessage } from './buildMessage';
 import type { CheckHoles } from './placeholders';
 import {
   type LookupTreeTranslation,
@@ -76,8 +76,12 @@ export function createGT(params: CreateGTParams): GT {
     strings: TemplateStringsArray,
     holes: unknown[]
   ): string => {
-    const { tree, values, formats } = buildMessage(strings, holes);
-    return renderTree(tree, values, formats, options);
+    const { tree, values, formats, metadata } = buildSiteMessage(
+      strings,
+      holes,
+      options
+    );
+    return renderTree(tree, values, formats, metadata);
   };
   const gt = (first: TemplateStringsArray | GTOptions, ...holes: unknown[]) =>
     isTemplateStringsArray(first)
