@@ -19,6 +19,7 @@ import {
   type UnstableGTHelperName,
 } from 'generaltranslation/internal';
 import { USEGT_CALLBACK_OPTIONS } from '../../utils/constants/gt/constants';
+import { buildNativeTemplate } from './inline-translations/buildNativeTemplate';
 import {
   buildPrecomputedCall,
   type Binding,
@@ -47,6 +48,11 @@ export type TemplateSourceReplacer = {
     hash: string,
     quasi: t.TemplateLiteral
   ) => t.TemplateLiteral | undefined;
+  /**
+   * Set in a build whose locale renders the source: counts a template with
+   * values that becomes a template literal of its own text.
+   */
+  countSourceTemplate?: () => void;
 };
 
 // Derive-free mirror of the CLI walker in
@@ -76,7 +82,9 @@ function nonStatic(): never {
  * renders in the build's locale, and any other embedded template has its text
  * replaced by its translation (see replaceTemplateSource). There the `inline`
  * option stays, so the runtime renders the translation in the target locale
- * without a lookup.
+ * without a lookup. A template of text and `${{ name }}` values becomes a
+ * template literal of that text, which renders without the runtime unless a
+ * value is an object (see buildNativeTemplate).
  *
  * With `precompute`, a `t` template becomes a call that passes its message,
  * built here (see buildPrecomputedCall): t`Hello, ${{ name }}!` ->
@@ -151,6 +159,25 @@ export function injectUnstableTaggedTemplateHash(
     // The replaced template's holes are the source's, so it builds too.
     message = buildStaticMessage(replaced, path.scope);
   }
+  // What the template renders in the build's locale: its translation, or its
+  // own text. maxChars cuts the text off at runtime.
+  const rendered =
+    replaced ?? (replaceSource?.countSourceTemplate ? quasi : undefined);
+  const buildNative =
+    rendered &&
+    kind === 'gt' &&
+    onlyNamedVariables &&
+    metadata.maxChars === undefined
+      ? (fallback: t.Expression) => buildNativeTemplate(rendered, fallback)
+      : undefined;
+  // Whether it compiles does not depend on the call it keeps for objects.
+  const isNative = buildNative?.(t.nullLiteral()) !== undefined;
+  const replaceWithNative = (fallback: t.Expression) => {
+    if (!replaced) replaceSource?.countSourceTemplate?.();
+    path.replaceWith(buildNative!(fallback)!);
+    // The call inside is already rewritten.
+    path.skip();
+  };
   // msg templates are rendered by m() away from their call site.
   if (precompute && kind === 'gt') {
     const call = buildPrecomputedCall({
@@ -163,10 +190,13 @@ export function injectUnstableTaggedTemplateHash(
       ...(replaced
         ? { locale: precompute.replacedLocale }
         : { inline: embeds ? buildInline(hash) : undefined }),
-      hoist: precompute.hoist,
+      // The call a template literal keeps for objects runs for no typed
+      // value, so its message is written there and nothing is declared.
+      hoist: isNative ? undefined : precompute.hoist,
     });
     if (call) {
-      path.replaceWith(call);
+      if (isNative) replaceWithNative(call);
+      else path.replaceWith(call);
       return true;
     }
   }
@@ -181,6 +211,7 @@ export function injectUnstableTaggedTemplateHash(
   } else {
     path.node.tag = t.callExpression(tag, [t.objectExpression(properties)]);
   }
+  if (isNative) replaceWithNative(path.node);
   return true;
 }
 

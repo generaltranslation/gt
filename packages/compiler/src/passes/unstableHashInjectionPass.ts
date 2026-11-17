@@ -122,6 +122,11 @@ function getTemplateSourceReplacer(
       state.statistics.sourceReplacementsCount += 1;
       return text;
     },
+    countSourceTemplate: translations
+      ? undefined
+      : () => {
+          state.statistics.sourceReplacementsCount += 1;
+        },
     replaceTemplate: translations
       ? (hash, quasi) => {
           if (translations[hash] === undefined) return undefined;
