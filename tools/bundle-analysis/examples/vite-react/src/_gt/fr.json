@@ -65,7 +65,7 @@
       "c": "Choisissez une finition et une quantité."
     }
   ],
-  "329b0ffb2be64f39": {
+  "d8ae221ac1986012": {
     "t": "p",
     "i": 1,
     "c": {
@@ -82,11 +82,11 @@
             "t": "C3",
             "i": 3,
             "c": "Aluminium argent brossé, usiné dans un seul bloc."
-          }
+          },
+          "other": "Aluminium anodisé."
         },
         "t": "b"
-      },
-      "c": "Aluminium anodisé."
+      }
     }
   },
   "eda6de344fac9922": {
