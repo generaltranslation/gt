@@ -33,10 +33,25 @@ const HASH_PROPS = ['_hash', 'id', 'context', 'maxChars', 'requiresReview'];
 
 const SOURCE_MISMATCH = 'the children do not match the collected source';
 
+const MISREAD_CHILD =
+  'a child is an expression that React does not render as the collected source reads it';
+
+/**
+ * Whether the collected source, which is what <T> is hashed by, reads a
+ * child as text that React does not render: it reads `void 0` as the number
+ * 0, and a unary expression other than a negative number by its argument.
+ */
+function isMisreadChild(node: t.Node | null): boolean {
+  return (
+    t.isUnaryExpression(node) && node.operator !== '-' && node.operator !== '+'
+  );
+}
+
 /** A variable or element of the source children, as the runtime reads it. */
 type PrecomputedNode = {
   i?: number;
   k?: string;
+  v?: string;
   x?: number;
   t?: 'p' | 'b' | 'f';
   c?: PrecomputedChildren;
@@ -182,6 +197,7 @@ function buildChildren(
   }
   if (path.isArrayExpression()) {
     if (!Array.isArray(entry)) fail(SOURCE_MISMATCH);
+    if (path.node.elements.some(isMisreadChild)) fail(MISREAD_CHILD);
     const calls = path
       .get('elements')
       .filter((element): element is NodePath<t.CallExpression> =>
@@ -201,6 +217,7 @@ function buildChildren(
     if (!isRecord(entry)) fail(SOURCE_MISMATCH);
     return buildChild(path, entry, ctx);
   }
+  if (isMisreadChild(path.node)) fail(MISREAD_CHILD);
   if (
     entry !== undefined &&
     entry !== null &&
@@ -252,7 +269,12 @@ function buildChild(
       fail(`<${canonicalName}> has props it formats differently outside <T>`);
     }
     if (!isVariable(entry)) fail(SOURCE_MISMATCH);
-    return { k: entry.k, x: ctx.slots.push(path.node) - 1 };
+    return {
+      k: entry.k,
+      // The type a variable formats as, which a translation can change
+      ...(entry.v && entry.v !== 'v' && { v: entry.v }),
+      x: ctx.slots.push(path.node) - 1,
+    };
   }
 
   if (typeof entry.i !== 'number' || isVariable(entry)) fail(SOURCE_MISMATCH);
@@ -472,23 +494,32 @@ function getComponent(
   return t.identifier(local);
 }
 
-/** Declares the static source children once at module scope, so a render allocates none of them. */
+/**
+ * The static source children, built when the call site first renders and
+ * kept in a module-scope variable, so a render allocates none of them:
+ *
+ *   _gtSource || (_gtSource = [...])
+ *
+ * The variable is a `var` that the call site fills, since a `const` cannot
+ * be read before its module has run, and a function can be called that
+ * early: through an import cycle, or from a statement above an import.
+ */
 function hoistSource(
   source: PrecomputedChildren,
   path: NodePath,
   state: TransformState
-): t.Identifier {
+): t.Expression {
   const local = path.scope.getProgramParent().generateUid('gtSource');
   state.precomputedJsxSources ??= [];
-  state.precomputedJsxSources.push(
-    t.variableDeclaration('const', [
-      t.variableDeclarator(t.identifier(local), t.valueToNode(source)),
-    ])
+  state.precomputedJsxSources.push(local);
+  return t.logicalExpression(
+    '||',
+    t.identifier(local),
+    t.assignmentExpression('=', t.identifier(local), t.valueToNode(source))
   );
-  return t.identifier(local);
 }
 
-/** Adds the imports and module-scope declarations of a file's precomputed calls, ahead of the code that reads them. */
+/** Adds the imports and module-scope variables of a file's precomputed calls. */
 export function addPrecomputedJsxDeclarations(
   program: t.Program,
   state: TransformState
@@ -504,6 +535,7 @@ export function addPrecomputedJsxDeclarations(
   const imports = Array.from(specifiers, ([source, names]) =>
     t.importDeclaration(names, t.stringLiteral(source))
   );
+  const sources = state.precomputedJsxSources ?? [];
   let afterImports = 0;
   program.body.forEach((statement, index) => {
     if (t.isImportDeclaration(statement)) afterImports = index + 1;
@@ -512,6 +544,13 @@ export function addPrecomputedJsxDeclarations(
     afterImports,
     0,
     ...imports,
-    ...(state.precomputedJsxSources ?? [])
+    ...(sources.length > 0
+      ? [
+          t.variableDeclaration(
+            'var',
+            sources.map((local) => t.variableDeclarator(t.identifier(local)))
+          ),
+        ]
+      : [])
   );
 }
