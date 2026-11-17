@@ -263,6 +263,7 @@ describe('inlineTranslations in gt.config.json', () => {
           const hash = (await transformWithPlugin(undefined, code))?.match(
             /\$_hash: "([^"]+)"/
           )?.[1];
+          if ('buildable' in testCase) expect(hash).toBeUndefined();
           // A template the compiler cannot hash is left to the runtime
           const output = hash
             ? await transformWithPlugin(
