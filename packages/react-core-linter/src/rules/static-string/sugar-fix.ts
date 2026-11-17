@@ -1,5 +1,5 @@
 /**
- * Sugar variable validation for gt()/msg() options objects.
+ * Sugar variable validation for t()/msg() options objects.
  *
  * Validates that metadata keys ($context, $id, $format, $maxChars) are static:
  * - $context: static string or derive() in concatenation

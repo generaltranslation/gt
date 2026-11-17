@@ -198,8 +198,19 @@ export type TranslateContentResponse = {
       }
     | {
         status: 'failed';
+        /**
+         * Why the item failed.
+         */
         error: string;
-        code: ErrorCode & unknown;
+        /**
+         * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+         */
+        code:
+          | 'invalid_request'
+          | 'not_found'
+          | 'plan_feature_unavailable'
+          | 'upstream_error'
+          | 'internal_error';
       }
   >;
 };
@@ -1730,11 +1741,7 @@ export type PluginDownloadErrors = {
    * The requested resource was not found.
    */
   404: ErrorResponse & {
-    code?:
-      | 'not_found'
-      | 'integration_not_connected'
-      | 'sync_required'
-      | 'translation_not_ready';
+    code?: 'not_found' | 'integration_not_connected' | 'sync_required';
   };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
@@ -1747,6 +1754,12 @@ export type PluginDownloadErrors = {
    */
   415: ErrorResponse & {
     code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * The requested translation has not finished yet. Retry later.
+   */
+  425: ErrorResponse & {
+    code?: 'translation_not_ready';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -2224,18 +2237,34 @@ export type OverwriteTranslationsResponses = {
     /**
      * One result per translation, in request order.
      */
-    results: Array<{
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      locale: string;
-      status: 'succeeded' | 'failed';
-      /**
-       * Why the item failed.
-       */
-      error?: string;
-      code?: ErrorCode & unknown;
-    }>;
+    results: Array<
+      | {
+          branchId: string;
+          fileId: string;
+          versionId: string;
+          locale: string;
+          status: 'succeeded';
+        }
+      | {
+          branchId: string;
+          fileId: string;
+          versionId: string;
+          locale: string;
+          status: 'failed';
+          /**
+           * Why the item failed.
+           */
+          error: string;
+          /**
+           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           */
+          code:
+            | 'source_file_not_found'
+            | 'not_found'
+            | 'invalid_request'
+            | 'internal_error';
+        }
+    >;
   };
 };
 
@@ -2253,6 +2282,9 @@ export type MoveFilesData = {
      */
     moves: Array<{
       oldFileId: string;
+      /**
+       * New file ID, at most 64 characters. A longer ID fails only this move, with code `invalid_request`.
+       */
       newFileId: string;
       newFileName: string;
     }>;
@@ -2338,25 +2370,39 @@ export type MoveFilesError = MoveFilesErrors[keyof MoveFilesErrors];
 
 export type MoveFilesResponses = {
   /**
-   * Result for each move, in request order, even when every move fails; a failed move has `status: "failed"` and an `error`. Each move clones the latest source file and its translations under the new file ID and makes the new file ID current in place of the old one.
+   * Result for each move, in request order, even when every move fails; a failed move has `status: "failed"`, an `error` and a `code`. A move whose `newFileId` is longer than 64 characters fails with `invalid_request`, and one whose old file does not exist with `source_file_not_found`. Each move clones the latest source file and its translations under the new file ID and makes the new file ID current in place of the old one.
    */
   200: {
     summary: BatchWriteSummary;
     /**
      * One result per move, in request order.
      */
-    results: Array<{
-      oldFileId: string;
-      newFileId: string;
-      newSourceFileId?: string;
-      clonedTranslationsCount?: number;
-      status: 'succeeded' | 'failed';
-      /**
-       * Why the item failed.
-       */
-      error?: string;
-      code?: ErrorCode & unknown;
-    }>;
+    results: Array<
+      | {
+          oldFileId: string;
+          newFileId: string;
+          status: 'succeeded';
+          newSourceFileId?: string;
+          clonedTranslationsCount?: number;
+        }
+      | {
+          oldFileId: string;
+          newFileId: string;
+          status: 'failed';
+          /**
+           * Why the item failed.
+           */
+          error: string;
+          /**
+           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           */
+          code:
+            | 'invalid_request'
+            | 'source_file_not_found'
+            | 'conflict'
+            | 'internal_error';
+        }
+    >;
   };
 };
 
@@ -2890,29 +2936,83 @@ export type PublishFilesResponses = {
     /**
      * One result per file version, in request order.
      */
-    results: Array<{
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      status: 'succeeded' | 'failed';
-      /**
-       * Why the item failed.
-       */
-      error?: string;
-      code?: ErrorCode & unknown;
-      /**
-       * Result for each completed translation of the version.
-       */
-      translations: Array<{
-        locale: string;
-        status: 'succeeded' | 'failed';
-        /**
-         * Why the item failed.
-         */
-        error?: string;
-        code?: ErrorCode & unknown;
-      }>;
-    }>;
+    results: Array<
+      | {
+          branchId: string;
+          fileId: string;
+          versionId: string;
+          /**
+           * Result for each completed translation of the version.
+           */
+          translations: Array<
+            | {
+                locale: string;
+                status: 'succeeded';
+              }
+            | {
+                locale: string;
+                status: 'failed';
+                /**
+                 * Why the item failed.
+                 */
+                error: string;
+                /**
+                 * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+                 */
+                code:
+                  | 'not_found'
+                  | 'file_too_large'
+                  | 'upstream_error'
+                  | 'internal_error';
+              }
+          >;
+          status: 'succeeded';
+        }
+      | {
+          branchId: string;
+          fileId: string;
+          versionId: string;
+          /**
+           * Result for each completed translation of the version.
+           */
+          translations: Array<
+            | {
+                locale: string;
+                status: 'succeeded';
+              }
+            | {
+                locale: string;
+                status: 'failed';
+                /**
+                 * Why the item failed.
+                 */
+                error: string;
+                /**
+                 * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+                 */
+                code:
+                  | 'not_found'
+                  | 'file_too_large'
+                  | 'upstream_error'
+                  | 'internal_error';
+              }
+          >;
+          status: 'failed';
+          /**
+           * Why the item failed.
+           */
+          error: string;
+          /**
+           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           */
+          code:
+            | 'source_file_not_found'
+            | 'not_found'
+            | 'file_too_large'
+            | 'upstream_error'
+            | 'internal_error';
+        }
+    >;
   };
 };
 
@@ -3073,10 +3173,22 @@ export type UploadSourceFilesData = {
         fileFormat: FileFormat;
         dataFormat?: FileDataFormat;
         locale: string;
+        /**
+         * File ID, at most 64 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved.
+         */
         fileId?: string;
+        /**
+         * Version ID, at most 255 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved.
+         */
         versionId?: string;
         branchId?: string;
+        /**
+         * Branch this file's branch was created from. When the file has no version on its own branch yet, it continues from that branch's current version, so its translations are reused. A branch that does not exist fails this file with `branch_not_found`.
+         */
         checkedOutBranchId?: string;
+        /**
+         * Branch that was merged into this file's branch. The file is linked to that branch's current version, so translations made there are reused. A branch that does not exist fails this file with `branch_not_found`.
+         */
         incomingBranchId?: string;
         metadata?: {
           /**
@@ -3144,7 +3256,7 @@ export type UploadSourceFilesData = {
 
 export type UploadSourceFilesErrors = {
   /**
-   * The request is malformed or failed validation, including a file whose content is not valid base64 or does not parse in its `fileFormat`. Nothing is saved, and the error names each such file by its index and fileName.
+   * The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.
    */
   400: ErrorResponse & {
     code?:
@@ -3177,10 +3289,10 @@ export type UploadSourceFilesErrors = {
       | 'target_inaccessible';
   };
   /**
-   * A named branch does not exist. Nothing is saved.
+   * The requested resource was not found.
    */
   404: ErrorResponse & {
-    code?: 'not_found' | 'branch_not_found';
+    code?: 'not_found';
   };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
@@ -3219,27 +3331,51 @@ export type UploadSourceFilesError =
 
 export type UploadSourceFilesResponses = {
   /**
-   * Upload result for each source file, in request order, even when every file fails to save: a failed file has `status: "failed"` and an `error` while the other files are saved. Retrying with the same content and identifiers is safe.
+   * Upload result for each source file, in request order, even when every file fails: a failed file has `status: "failed"`, an `error` and a `code` while the other files are saved. A file whose content is not valid base64 or does not parse in its `fileFormat`, or whose upload is missing or not that format, fails with `invalid_request`; a file larger than the API reads per file, as content or as an upload, fails with `file_too_large`; a file that names a branch that does not exist, in `branchId`, `checkedOutBranchId` or `incomingBranchId`, fails with `branch_not_found`. Retrying with the same content and identifiers is safe.
    */
   200: {
     summary: BatchWriteSummary;
     /**
      * One result per uploaded source file, in request order.
      */
-    results: Array<{
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      fileName: string;
-      fileFormat: FileFormat;
-      dataFormat?: DataFormat;
-      status: 'succeeded' | 'failed';
-      /**
-       * Why the item failed.
-       */
-      error?: string;
-      code?: ErrorCode & unknown;
-    }>;
+    results: Array<
+      | {
+          branchId: string;
+          fileId: string;
+          /**
+           * Version ID; empty when the item failed before its version could be derived.
+           */
+          versionId: string;
+          fileName: string;
+          fileFormat: FileFormat;
+          dataFormat?: DataFormat;
+          status: 'succeeded';
+        }
+      | {
+          branchId: string;
+          fileId: string;
+          /**
+           * Version ID; empty when the item failed before its version could be derived.
+           */
+          versionId: string;
+          fileName: string;
+          fileFormat: FileFormat;
+          dataFormat?: DataFormat;
+          status: 'failed';
+          /**
+           * Why the item failed.
+           */
+          error: string;
+          /**
+           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           */
+          code:
+            | 'invalid_request'
+            | 'file_too_large'
+            | 'branch_not_found'
+            | 'internal_error';
+        }
+    >;
   };
 };
 
@@ -3256,12 +3392,15 @@ export type UploadTranslationsData = {
         fileName: string;
         fileFormat: FileFormat;
         dataFormat?: FileDataFormat;
-        locale: string;
+        /**
+         * File ID, at most 64 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved.
+         */
         fileId?: string;
+        /**
+         * Version ID, at most 255 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved.
+         */
         versionId?: string;
         branchId?: string;
-        checkedOutBranchId?: string;
-        incomingBranchId?: string;
       } & (
         | {
             /**
@@ -3324,7 +3463,7 @@ export type UploadTranslationsData = {
 
 export type UploadTranslationsErrors = {
   /**
-   * The request is malformed or failed validation, including a translation whose content is not valid base64 or does not parse in its format. Nothing is saved, and the error names each such translation by its index, fileName and locale.
+   * The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.
    */
   400: ErrorResponse & {
     code?:
@@ -3357,10 +3496,10 @@ export type UploadTranslationsErrors = {
       | 'target_inaccessible';
   };
   /**
-   * A source file does not exist. Nothing is saved.
+   * The requested resource was not found.
    */
   404: ErrorResponse & {
-    code?: 'not_found' | 'source_file_not_found';
+    code?: 'not_found';
   };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
@@ -3399,28 +3538,53 @@ export type UploadTranslationsError =
 
 export type UploadTranslationsResponses = {
   /**
-   * Upload result for each translation, in request order, even when every translation fails to save: a failed translation has `status: "failed"` and an `error` while the others are saved. Retrying with the same content is safe; translations that were already saved are saved again, which can repeat completed webhooks and revisions.
+   * Upload result for each translation, in request order, even when every translation fails: a failed translation has `status: "failed"`, an `error` and a `code` while the others are saved. A translation fails with `invalid_request` when its content or its source's content is not valid base64 or does not decode or parse, when its or its source's upload is missing or not that format, or when its MESSAGE_TREE keys do not match the source; it fails with `file_too_large` when it or its source is larger than the API reads per file, as content or as an upload, and with `source_file_not_found` when its source file does not exist. Retrying with the same content is safe; translations that were already saved are saved again, which can repeat completed webhooks and revisions.
    */
   200: {
     summary: BatchWriteSummary;
     /**
      * One result per uploaded translation, in request order.
      */
-    results: Array<{
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      fileName: string;
-      fileFormat: FileFormat;
-      dataFormat?: DataFormat;
-      locale: string;
-      status: 'succeeded' | 'failed';
-      /**
-       * Why the item failed.
-       */
-      error?: string;
-      code?: ErrorCode & unknown;
-    }>;
+    results: Array<
+      | {
+          branchId: string;
+          fileId: string;
+          /**
+           * Version ID; empty when the item failed before its version could be derived.
+           */
+          versionId: string;
+          fileName: string;
+          fileFormat: FileFormat;
+          dataFormat?: DataFormat;
+          locale: string;
+          status: 'succeeded';
+        }
+      | {
+          branchId: string;
+          fileId: string;
+          /**
+           * Version ID; empty when the item failed before its version could be derived.
+           */
+          versionId: string;
+          fileName: string;
+          fileFormat: FileFormat;
+          dataFormat?: DataFormat;
+          locale: string;
+          status: 'failed';
+          /**
+           * Why the item failed.
+           */
+          error: string;
+          /**
+           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           */
+          code:
+            | 'invalid_request'
+            | 'file_too_large'
+            | 'source_file_not_found'
+            | 'internal_error';
+        }
+    >;
   };
 };
 
@@ -4543,7 +4707,7 @@ export type TranslateContentError =
 
 export type TranslateContentResponses = {
   /**
-   * Translation results: one result per entry in `requests`, in request order. An entry that could not be translated has `status: "failed"` with its `error` message and error `code`, so inspect every result.
+   * Translation results: one result per entry in `requests`, in request order, even when every entry fails. An entry that could not be translated has `status: "failed"` with its `error` message and error `code`, so inspect every result. An entry whose `source` is not valid for its `dataFormat` fails with `invalid_request` and is not translated or billed.
    */
   200: TranslateContentResponse;
 };
@@ -8248,7 +8412,7 @@ export type ExportContextContentResponse =
 export type UpsertAssetsData = {
   body: {
     /**
-     * 1–10 assets; OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font is matched by family, weight and italic style, and an identity may appear once. Uploading a matching font replaces it for the whole organization.
+     * 1–10 assets. OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today, and a font's identity is its family, weight and italic style. Two assets with the same identity reject the request, counting each asset whose identity is known from `family` and `style` or, within the size limit, from the font itself. Uploading an asset with a stored identity replaces it for the whole organization.
      */
     assets: Array<{
       assetType: 'FONT';
@@ -8282,7 +8446,7 @@ export type UpsertAssetsData = {
 
 export type UpsertAssetsErrors = {
   /**
-   * The request is malformed or failed validation, including an empty or oversized font, a font with no derivable family, or two fonts with the same identity. The batch is checked before any font is written.
+   * The request is malformed or failed validation, or two assets have the same identity, known from `family` and `style` or, for an asset within the size limit, from the font itself; no asset is written.
    */
   400: ErrorResponse & {
     code?:
@@ -8342,12 +8506,12 @@ export type UpsertAssetsError = UpsertAssetsErrors[keyof UpsertAssetsErrors];
 
 export type UpsertAssetsResponses = {
   /**
-   * Result of each font, in request order, as `succeeded` or as `failed` with an `error`, even when every font fails. Fonts are stored independently, and retrying a failed font is safe.
+   * Result of each asset, in request order, as `succeeded` or as `failed` with an `error` and a `code`, even when every asset fails: an oversized asset fails with `file_too_large`, and a font with no derivable family with `invalid_request`. Assets are stored independently, and retrying a failed asset is safe.
    */
   200: {
     summary: BatchWriteSummary;
     /**
-     * One result per requested font, in request order.
+     * One result per requested asset, in request order.
      */
     results: Array<
       | {
@@ -8355,15 +8519,21 @@ export type UpsertAssetsResponses = {
           status: 'succeeded';
           id: string;
           /**
-           * Normalized family, weight and italic style of the font.
+           * The asset's identity within its type: for a font, its normalized family, weight and italic style.
            */
           assetKey: string;
         }
       | {
           fileName: string;
           status: 'failed';
+          /**
+           * Why the item failed.
+           */
           error: string;
-          code: ErrorCode & unknown;
+          /**
+           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           */
+          code: 'file_too_large' | 'invalid_request' | 'internal_error';
         }
     >;
   };

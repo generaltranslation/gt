@@ -38,25 +38,25 @@ import { T } from 'gt-next';
 
 ## Translating simple strings
 
-Use the `gt` function returned by the `useGT()` hook to translate strings directly. Invoke `useGT()` in synchronous components or `await getGT()` in async components only.
+Use the `t` function returned by the `useGT()` hook to translate strings directly. Invoke `useGT()` in synchronous components or `await getGT()` in async components only.
 
 ```js
 import { useGT } from 'gt-next';
-const gt = useGT();
-gt('Hello, world!'); // returns "Hola, mundo"
+const t = useGT();
+t('Hello, world!'); // returns "Hola, mundo"
 ```
 
 ```js
 import { getGT } from 'gt-next/server';
-const gt = await getGT(); // use await version in async components only
-gt('Hello, world!');
+const t = await getGT(); // use await version in async components only
+t('Hello, world!');
 ```
 
-- Just like with the children of the `<T>` component, all strings passed to `gt()` must be static string literals. No variables or template literals.
+- Just like with the children of the `<T>` component, all strings passed to `t()` must be static string literals. No variables or template literals.
 
 ## Translating shared or out-of-scope strings
 
-Use `msg()` to register strings for translation, and `useMessages()` to translate them. `const m = useMessages()` should be used equivalently to `const gt = useGT()`.
+Use `msg()` to register strings for translation, and `useMessages()` to translate them. `const m = useMessages()` should be used equivalently to `const t = useGT()`.
 
 ```js
 import { msg, useMessages } from 'gt-next';

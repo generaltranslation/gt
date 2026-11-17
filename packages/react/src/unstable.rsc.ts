@@ -1,5 +1,5 @@
-// React Server Component tagged-template translation surface. No t: it is
-// client-rendered (SPA) only, and a server component's useGT() and
+// React Server Component tagged-template translation surface. No t or m:
+// they are client-rendered (SPA) only, and a server component's useGT() and
 // useMessages() load the request locale first.
 
 import { getReadonlyConditionStore } from '@generaltranslation/react-core/pure';

@@ -35,14 +35,14 @@ function nonStatic(): never {
 
 /**
  * Rewrites a statically analyzable unstable tagged template so the runtime
- * skips hashing: gt`...` -> gt({ $_hash })`...` and
- * gt({ context })`...` -> gt({ context, $_hash })`...`, for an imported `t`
- * or `msg` and for the result of `const gt = useGT()` / `const gt = await getGT()`.
+ * skips hashing: t`...` -> t({ $_hash })`...` and
+ * t({ context })`...` -> t({ context, $_hash })`...`, for an imported `t`
+ * or `msg` and for the result of `const t = useGT()` / `const t = await getGT()`.
  *
- * With `buildInline`, a `t` or `gt` template whose holes are all named
- * variables (`${{ name }}`) also gets the translations embedded for the
- * configured locales as `inline`. That is the subset the gt-next SWC plugin
- * embeds too, and the CLI leaves out of `msgOutput` files
+ * With `buildInline`, a `t` template whose holes are all named variables
+ * (`${{ name }}`) also gets the translations embedded for the configured
+ * locales as `inline`. That is the subset the gt-next SWC plugin embeds too,
+ * and the CLI leaves out of `msgOutput` files
  * (packages/cli/src/react/jsx/utils/stringParsing/extractMessageTrees/isEmbeddedMessage.ts).
  * `msg` templates are rendered by `m()` away from their call site, so they are
  * never embedded.
@@ -112,7 +112,7 @@ export function injectUnstableTaggedTemplateHash(
 
 /**
  * `gt` for `t` imported from an unstable source or
- * `const gt = [await] useGT/getGT()`, and `msg` for an imported `msg`.
+ * `const t = [await] useGT/getGT()`, and `msg` for an imported `msg`.
  */
 function getUnstableTagKind(
   name: string,

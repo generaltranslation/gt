@@ -3,6 +3,7 @@ export type WarningCategory =
   | 'pending_review'
   | 'failed_move'
   | 'failed_upload'
+  | 'failed_font_sync'
   | 'failed_translation'
   | 'failed_download'
   | 'failed_edit_save'
@@ -31,6 +32,12 @@ export function getWarnings(): TranslateWarning[] {
 
 export function hasWarnings(): boolean {
   return warnings.length > 0;
+}
+
+/** A file that failed to upload fails the command, so CI notices; the rest of the run still finishes. */
+export function setExitCodeForFailedUploads() {
+  if (warnings.some((w) => w.category === 'failed_upload'))
+    process.exitCode = 1;
 }
 
 export function clearWarnings() {

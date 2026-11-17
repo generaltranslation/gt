@@ -80,8 +80,8 @@ describe('local module identity resolution', () => {
       `<script setup lang="ts">
         import DefaultT, { Branch, msg, useGT } from './index';
         import * as Local from './index';
-        const gt = useGT();
-        gt('Default alias function');
+        const t = useGT();
+        t('Default alias function');
         msg('Named alias message');
         Local.msg('Namespace alias message');
       </script>
@@ -143,10 +143,10 @@ describe('local module identity resolution', () => {
     const output = await extract(
       'consumer.tsx',
       `import { GT, Vue, Translate, createTranslator, defineMessage, invoke, render } from './barrel';
-       const gt = createTranslator();
-       gt('TSX function');
+       const t = createTranslator();
+       t('TSX function');
        defineMessage('TSX message');
-       invoke(gt);
+       invoke(t);
        export const first = <Translate><Vue.Fragment>TSX rich</Vue.Fragment></Translate>;
        export const namespace = <GT.T>TSX namespace rich</GT.T>;
        export const second = render(Translate, null, 'Render rich');`
@@ -556,9 +556,9 @@ describe('translator forwarding through local functions', () => {
       'CapturedCallback.vue',
       `<script setup>
         import { useGT } from 'gt-vue';
-        const gt = useGT();
+        const t = useGT();
         function run(callback) { callback(); }
-        run(() => gt('Captured once'));
+        run(() => t('Captured once'));
       </script><template><div /></template>`,
       { includeSourceCodeContext: true }
     );
@@ -570,7 +570,7 @@ describe('translator forwarding through local functions', () => {
     expect(
       output.results[0]?.metadata.sourceCode?.['CapturedCallback.vue']?.[0]
         ?.target
-    ).toContain(`gt('Captured once')`);
+    ).toContain(`t('Captured once')`);
   });
 
   it('tracks positions, aliases, callback arrows, destructuring, rest, and cycles', async () => {
@@ -578,22 +578,22 @@ describe('translator forwarding through local functions', () => {
       'Callbacks.vue',
       `<script setup lang="ts">
         import { msg, useGT, useMessages } from 'gt-vue';
-        const gt = useGT();
+        const t = useGT();
         const m = useMessages();
-        function positioned(_ordinary: unknown, translate: typeof gt) { translate('Positioned'); }
+        function positioned(_ordinary: unknown, translate: typeof t) { translate('Positioned'); }
         const alias = positioned;
-        alias(null, gt);
-        function invoke(callback: (translate: typeof gt) => void, translate: typeof gt) { callback(translate); }
+        alias(null, t);
+        function invoke(callback: (translate: typeof t) => void, translate: typeof t) { callback(translate); }
         invoke((translate) => translate('Callback arrow'), m);
-        function destructured({ translate }: { translate: typeof gt }) { translate('Destructured'); }
-        destructured({ translate: gt });
-        function contextual(translate: typeof gt, context: string) { translate('Contextual', { $context: context }); }
-        contextual(gt, 'Forwarded context');
-        function rest(...values: unknown[]) { (values[1] as typeof gt)('Rest'); }
+        function destructured({ translate }: { translate: typeof t }) { translate('Destructured'); }
+        destructured({ translate: t });
+        function contextual(translate: typeof t, context: string) { translate('Contextual', { $context: context }); }
+        contextual(t, 'Forwarded context');
+        function rest(...values: unknown[]) { (values[1] as typeof t)('Rest'); }
         rest(null, msg);
-        function first(translate: typeof gt) { second(translate); }
-        function second(translate: typeof gt) { translate('Chained'); if (false) first(translate); }
-        first(gt);
+        function first(translate: typeof t) { second(translate); }
+        function second(translate: typeof t) { translate('Chained'); if (false) first(translate); }
+        first(t);
       </script><template><div /></template>`
     );
 
@@ -627,13 +627,13 @@ describe('translator forwarding through local functions', () => {
         function sameFile(translate, source, context) {
           translate(source, { $context: context });
         }
-        const gt = useGT();
+        const t = useGT();
         const sameSource = 'Same-file source';
         const sameContext = 'Same-file context';
         const crossSource = 'Cross-file source';
         const crossContext = 'Cross-file context';
-        sameFile(gt, sameSource, sameContext);
-        crossFile(gt, crossSource, crossContext);
+        sameFile(t, sameSource, sameContext);
+        crossFile(t, crossSource, crossContext);
       </script><template><div /></template>`
     );
 
@@ -651,10 +651,10 @@ describe('translator forwarding through local functions', () => {
       'DeferredCallbacks.vue',
       `<script setup>
         import { useGT } from 'gt-vue';
-        const gt = useGT();
-        const directlyInvoked = () => gt('Direct callback');
-        const returned = () => gt('Returned callback');
-        const externallyRegistered = () => gt('External callback');
+        const t = useGT();
+        const directlyInvoked = () => t('Direct callback');
+        const returned = () => t('Returned callback');
+        const externallyRegistered = () => t('External callback');
         function keep(callback) { return callback; }
         function ignore(_callback) {}
         ignore(directlyInvoked);
@@ -678,8 +678,8 @@ describe('translator forwarding through local functions', () => {
       'ConsumedCallback.vue',
       `<script setup>
         import { useGT } from 'gt-vue';
-        const gt = useGT();
-        const callback = () => gt('Consumed callback');
+        const t = useGT();
+        const callback = () => t('Consumed callback');
         function invoke(callback) { callback(); }
         invoke(callback);
       </script><template><div /></template>`,
@@ -693,7 +693,7 @@ describe('translator forwarding through local functions', () => {
     expect(
       output.results[0]?.metadata.sourceCode?.['ConsumedCallback.vue']?.[0]
         ?.target
-    ).toContain(`gt('Consumed callback')`);
+    ).toContain(`t('Consumed callback')`);
   });
 
   it('tracks cross-file helpers and attributes metadata to the consuming call', async () => {
@@ -724,15 +724,15 @@ describe('translator forwarding through local functions', () => {
       `<script setup>
         import { useGT, useMessages } from 'gt-vue';
         import { run, runArrow, runDefault, invokeCallback, invokeChain, invokeObject, invokeRest } from './helpers';
-        const gt = useGT();
+        const t = useGT();
         const m = useMessages();
-        run(gt);
+        run(t);
         runArrow(m);
-        runDefault(gt);
-        invokeCallback((translate) => translate('Cross-file callback'), gt);
-        invokeObject({ translate: gt });
+        runDefault(t);
+        invokeCallback((translate) => translate('Cross-file callback'), t);
+        invokeObject({ translate: t });
         invokeRest(null, m);
-        invokeChain(gt);
+        invokeChain(t);
       </script><template><div /></template>`,
       { includeSourceCodeContext: true }
     );
@@ -769,8 +769,8 @@ describe('translator forwarding through local functions', () => {
       `<script setup>
         import { useGT } from 'gt-vue';
         import invoke from './default-helper';
-        const gt = useGT();
-        invoke(gt);
+        const t = useGT();
+        invoke(t);
       </script><template><div /></template>`
     );
 
@@ -791,8 +791,8 @@ describe('translator forwarding through local functions', () => {
       `<script setup>
         import { useGT } from 'gt-vue';
         import { invoke } from './mutated-helper';
-        const gt = useGT();
-        invoke(gt);
+        const t = useGT();
+        invoke(t);
       </script><template><div /></template>`
     );
 
@@ -835,11 +835,11 @@ describe('translator forwarding through local functions', () => {
         import { invoke as packageInvoke } from 'unresolved-helper-package';
         import vueInvoke from './unsupported-helper.vue';
         import * as MissingHelpers from './missing-namespace';
-        const gt = useGT();
-        missingInvoke(gt);
-        packageInvoke(gt);
-        vueInvoke(gt);
-        MissingHelpers.invoke(gt);
+        const t = useGT();
+        missingInvoke(t);
+        packageInvoke(t);
+        vueInvoke(t);
+        MissingHelpers.invoke(t);
       </script><template><div /></template>`
     );
 
@@ -857,16 +857,16 @@ describe('translator forwarding through local functions', () => {
         import { useGT } from 'gt-vue';
         import { invoke } from './missing-helper';
         import * as Missing from './missing-namespace';
-        const gt = useGT();
+        const t = useGT();
         const run = invoke;
         const typedRun = invoke as typeof invoke;
         const Helpers = Missing;
         const { invoke: destructuredRun } = Missing;
-        run(gt);
-        typedRun(gt);
-        Helpers.invoke(gt);
-        destructuredRun(gt);
-        run({ translate: gt });
+        run(t);
+        typedRun(t);
+        Helpers.invoke(t);
+        destructuredRun(t);
+        run({ translate: t });
       </script><template><div /></template>`
     );
 
@@ -884,16 +884,16 @@ describe('translator forwarding through local functions', () => {
         import { useGT } from 'gt-vue';
         import { invoke } from './missing-helper';
         import * as Missing from './missing-namespace';
-        const gt = useGT();
-        function withParameter(invoke) { invoke(gt); }
-        function withNamespaceParameter(Missing) { Missing.invoke(gt); }
+        const t = useGT();
+        function withParameter(invoke) { invoke(t); }
+        function withNamespaceParameter(Missing) { Missing.invoke(t); }
         withParameter(() => undefined);
         withNamespaceParameter({ invoke: () => undefined });
         {
           const invoke = () => undefined;
           const Missing = { invoke: () => undefined };
-          invoke(gt);
-          Missing.invoke(gt);
+          invoke(t);
+          Missing.invoke(t);
         }
       </script><template><div /></template>`
     );
@@ -919,8 +919,8 @@ describe('translator forwarding through local functions', () => {
       `<script setup>
         import { useGT } from 'gt-vue';
         import { invoke } from './invalid-helper-barrel';
-        const gt = useGT();
-        invoke(gt);
+        const t = useGT();
+        invoke(t);
       </script><template><div /></template>`
     );
     expect(translator.results).toEqual([]);
@@ -1417,9 +1417,9 @@ describe('module-level t() extraction', () => {
 function componentSource(moduleClause: string): string {
   return `<script setup lang="ts">
     import { Branch, Currency, DateTime, Num, T, Var, msg, useGT, useMessages } ${moduleClause};
-    const gt = useGT();
+    const t = useGT();
     const m = useMessages();
-    gt('Function text', { $context: 'function' });
+    t('Function text', { $context: 'function' });
     m(msg('Message text', { $context: 'message' }));
   </script>
   <template>

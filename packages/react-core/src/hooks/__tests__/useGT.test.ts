@@ -32,9 +32,9 @@ describe('useGT', () => {
   });
 
   it('interpolates source strings when translation is not required', () => {
-    const gt = useGT();
+    const t = useGT();
 
-    expect(gt('hello, {name}', { name: 'brian' })).toBe('hello, brian');
+    expect(t('hello, {name}', { name: 'brian' })).toBe('hello, brian');
   });
 
   it('reuses the resolved translation conditions in the tracked resolver', () => {

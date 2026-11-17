@@ -119,13 +119,13 @@ describe('Vue template extraction', () => {
       const output = await extractVue(`
       <script setup>
       import { useGT } from 'gt-vue';
-      const gt = useGT();
+      const t = useGT();
       const rows = [{}];
       const value = 'attribute';
       </script>
       <template>
-        <div :[gt('DirectiveArgument')]="value" />
-        <div v-for="gt in rows" :[gt('ShadowedDirectiveArgument')]="value" />
+        <div :[t('DirectiveArgument')]="value" />
+        <div v-for="t in rows" :[t('ShadowedDirectiveArgument')]="value" />
       </template>
     `);
 
@@ -563,44 +563,44 @@ describe('Vue template audit cases', () => {
     },
     {
       name: 'optional translator call',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT();`,
-      template: `{{ gt?.('Optional translator') }}`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT();`,
+      template: `{{ t?.('Optional translator') }}`,
       sources: ['Optional translator'],
     },
     {
       name: 'non-null translator call',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT();`,
-      template: `{{ gt!('Non-null translator') }}`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT();`,
+      template: `{{ t!('Non-null translator') }}`,
       sources: ['Non-null translator'],
     },
     {
       name: 'type-cast translator call',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT();`,
-      template: `{{ (gt as typeof gt)('Type-cast translator') }}`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT();`,
+      template: `{{ (t as typeof t)('Type-cast translator') }}`,
       sources: ['Type-cast translator'],
     },
     {
       name: 'satisfies-wrapped translator call',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT();`,
-      template: `{{ (gt satisfies typeof gt)('Satisfies translator') }}`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT();`,
+      template: `{{ (t satisfies typeof t)('Satisfies translator') }}`,
       sources: ['Satisfies translator'],
     },
     {
       name: 'script-exposed source identifier',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const title = 'Static title';`,
-      template: `{{ gt(title) }}`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); const title = 'Static title';`,
+      template: `{{ t(title) }}`,
       sources: ['Static title'],
     },
     {
       name: 'script-exposed concatenation',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const first = 'Static '; const second = 'concat';`,
-      template: `{{ gt(first + second) }}`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); const first = 'Static '; const second = 'concat';`,
+      template: `{{ t(first + second) }}`,
       sources: ['Static concat'],
     },
     {
       name: 'script-exposed context identifier',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const context = 'audit';`,
-      template: `{{ gt('Context source', { $context: context }) }}`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); const context = 'audit';`,
+      template: `{{ t('Context source', { $context: context }) }}`,
       sources: ['Context source'],
     },
     {
@@ -611,32 +611,32 @@ describe('Vue template audit cases', () => {
     },
     {
       name: 'outer translator in a v-for default',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const rows = [{}];`,
-      template: `<div v-for="{ value = gt('VFor outer') } in rows" />`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); const rows = [{}];`,
+      template: `<div v-for="{ value = t('VFor outer') } in rows" />`,
       sources: ['VFor outer'],
     },
     {
       name: 'same-pattern v-for shadow',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const rows = [{}];`,
-      template: `<div v-for="{ gt, value = gt('VFor shadow') } in rows" />`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); const rows = [{}];`,
+      template: `<div v-for="{ t, value = t('VFor shadow') } in rows" />`,
       sources: [],
     },
     {
       name: 'outer translator in a slot default',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT();`,
-      template: `<Card v-slot="{ value = gt('Slot outer') }" />`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT();`,
+      template: `<Card v-slot="{ value = t('Slot outer') }" />`,
       sources: ['Slot outer'],
     },
     {
       name: 'same-pattern slot shadow',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT();`,
-      template: `<Card v-slot="{ gt, value = gt('Slot shadow') }" />`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT();`,
+      template: `<Card v-slot="{ t, value = t('Slot shadow') }" />`,
       sources: [],
     },
     {
       name: 'nested expression callback shadow',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const rows = [String];`,
-      template: `{{ rows.map((gt) => gt('Callback shadow')) }}`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); const rows = [String];`,
+      template: `{{ rows.map((t) => t('Callback shadow')) }}`,
       sources: [],
     },
     {
@@ -962,7 +962,7 @@ describe('Vue template audit cases', () => {
     });
 
     it('captures exact source context for script, rich, and template calls', async () => {
-      const source = `<script setup>\nimport { T, useGT } from 'gt-vue';\nconst gt = useGT();\ngt('Script source');\n</script>\n<template>\n  <T>Template source</T>\n  {{ gt('Template call') }}\n</template>`;
+      const source = `<script setup>\nimport { T, useGT } from 'gt-vue';\nconst t = useGT();\nt('Script source');\n</script>\n<template>\n  <T>Template source</T>\n  {{ t('Template call') }}\n</template>`;
       const output = await extractFromVueSource(
         source,
         '/project/src/Context.vue',
@@ -979,8 +979,8 @@ describe('Vue template audit cases', () => {
           {
             'src/Context.vue': [
               {
-                before: 'const gt = useGT();',
-                target: `gt('Script source');`,
+                before: 'const t = useGT();',
+                target: `t('Script source');`,
                 after: '</script>',
               },
             ],
@@ -990,7 +990,7 @@ describe('Vue template audit cases', () => {
               {
                 before: '<template>',
                 target: '  <T>Template source</T>',
-                after: `  {{ gt('Template call') }}`,
+                after: `  {{ t('Template call') }}`,
               },
             ],
           },
@@ -998,7 +998,7 @@ describe('Vue template audit cases', () => {
             'src/Context.vue': [
               {
                 before: '  <T>Template source</T>',
-                target: `  {{ gt('Template call') }}`,
+                target: `  {{ t('Template call') }}`,
                 after: '</template>',
               },
             ],
@@ -1342,16 +1342,16 @@ describe('consumer Vue template compiler parity', () => {
         <script setup>
           import { T, Var, useGT } from 'gt-vue';
           import { Fragment } from 'vue';
-          const gt = useGT();
+          const t = useGT();
           const selectorArgument = 'ignored selector argument';
         </script>
         <template>
-          <div v-is="gt('Vue 3.3 selector')">Ignored selector</div>
+          <div v-is="t('Vue 3.3 selector')">Ignored selector</div>
           <div v-is:legacy="T">Vue 3.3 argument target</div>
-          <div v-is:[gt(selectorArgument)]="T">Vue 3.3 dynamic argument target</div>
-          <component v-is="gt('ignored component selector')">Ignored component</component>
-          <slot v-is="gt('ignored slot selector')" />
-          <template v-is="gt('ignored template selector')">Ignored template</template>
+          <div v-is:[t(selectorArgument)]="T">Vue 3.3 dynamic argument target</div>
+          <component v-is="t('ignored component selector')">Ignored component</component>
+          <slot v-is="t('ignored slot selector')" />
+          <template v-is="t('ignored template selector')">Ignored template</template>
           <Suspense v-is="T">Vue 3.3 Suspense target</Suspense>
           <Fragment v-is="T">Vue 3.3 Fragment target</Fragment>
           <T v-is="Var">Vue 3.4+ source</T>

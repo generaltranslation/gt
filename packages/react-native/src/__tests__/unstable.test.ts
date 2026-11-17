@@ -6,10 +6,10 @@ import * as unstable from '../unstable';
 describe('gt-react-native/unstable', () => {
   // gt-react/unstable re-exports the same react-core and gt-i18n surface (see
   // its react-package test), so matching it here keeps the two packages in parity.
-  it('exports the react-core/unstable hooks and gt-i18n/unstable helpers except t', () => {
+  it('exports the react-core/unstable hooks and gt-i18n/unstable helpers except t and m', () => {
     expect(Object.keys(unstable).sort()).toEqual(
       [...Object.keys(reactCoreUnstable), ...Object.keys(i18nUnstable)]
-        .filter((name) => name !== 't')
+        .filter((name) => name !== 't' && name !== 'm')
         .sort()
     );
     expect(unstable.useGT).toBe(reactCoreUnstable.useGT);

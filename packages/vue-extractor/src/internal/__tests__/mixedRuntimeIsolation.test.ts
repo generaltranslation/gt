@@ -16,9 +16,9 @@ const OTHER_NON_VUE_GT_RUNTIMES = [
     importNames: 'useGT, useMessages',
     source: '@generaltranslation/react-core/hooks',
     usage: `
-      const gt = useGT();
+      const t = useGT();
       const m = useMessages();
-      gt('React core function');
+      t('React core function');
       m('React core message');
     `,
   },
@@ -133,8 +133,8 @@ describe('mixed-runtime isolation', () => {
       );
       const output = await extractFromVueSource(
         `import { useGT } from './ordinary.${extension}';
-         const gt = useGT();
-         gt('Ordinary CommonJS string');`,
+         const t = useGT();
+         t('Ordinary CommonJS string');`,
         path.join(fixtureRoot, 'ReactView.tsx'),
         {
           projectRoot: fixtureRoot,
@@ -152,8 +152,8 @@ describe('mixed-runtime isolation', () => {
       entry: `import { ordinary } from './mixed';
         import { useGT } from '@missing/gt';
         ordinary();
-        const gt = useGT();
-        gt('Ordinary named import');`,
+        const t = useGT();
+        t('Ordinary named import');`,
       filename: 'NamedConsumer.tsx',
       module: `import { msg } from 'gt-vue';
         void msg;
@@ -163,8 +163,8 @@ describe('mixed-runtime isolation', () => {
       entry: `import * as mixed from './mixed';
         import { useGT } from '@missing/gt';
         mixed.ordinary();
-        const gt = useGT();
-        gt('Ordinary namespace import');`,
+        const t = useGT();
+        t('Ordinary namespace import');`,
       filename: 'NamespaceConsumer.tsx',
       module: `export { msg } from 'gt-vue';
         export function ordinary() { return 'ordinary'; }`,
@@ -173,8 +173,8 @@ describe('mixed-runtime isolation', () => {
       entry: `import { ordinary } from './mixed';
         import { useGT } from '@missing/gt';
         const label: string = ordinary();
-        const gt = useGT();
-        gt(label);`,
+        const t = useGT();
+        t(label);`,
       filename: 'TypedConsumer.js',
       module: `import { msg } from 'gt-vue';
         void msg;
@@ -241,8 +241,8 @@ describe('mixed-runtime isolation', () => {
         import { msg } from 'gt-vue';
         import { useGT } from '@missing/gt';
         void msg;
-        const gt = useGT();
-        gt('Unresolved message');
+        const t = useGT();
+        t('Unresolved message');
       `,
       path.join(fixtureRoot, 'OwnedUnresolved.ts'),
       {
@@ -263,8 +263,8 @@ describe('mixed-runtime isolation', () => {
       `
         import { type GTFunction } from 'gt-vue';
         import { useGT } from '@theme/gt';
-        const gt: GTFunction = useGT();
-        gt('Ordinary theme string');
+        const t: GTFunction = useGT();
+        t('Ordinary theme string');
       `,
       path.join(fixtureRoot, 'TypeOnly.tsx'),
       {
@@ -283,8 +283,8 @@ describe('mixed-runtime isolation', () => {
       `
         import typeof { GTFunction } from 'gt-vue';
         import { useGT } from '@theme/gt';
-        const gt: GTFunction = useGT();
-        gt('Ordinary Flow theme string');
+        const t: GTFunction = useGT();
+        t('Ordinary Flow theme string');
       `,
       path.join(fixtureRoot, 'TypeOnlyFlow.js'),
       {
@@ -302,8 +302,8 @@ describe('mixed-runtime isolation', () => {
     const output = await extractFromVueSource(
       `import type GT = require('gt-vue');
        import { useGT } from '@theme/gt';
-       const gt = useGT();
-       gt('Ordinary import-equals theme string');
+       const t = useGT();
+       t('Ordinary import-equals theme string');
        void (0 as unknown as GT.GTFunction);`,
       path.join(fixtureRoot, 'TypeOnlyImportEquals.ts'),
       {
@@ -686,8 +686,8 @@ describe('standalone script provenance gating', () => {
   it('does not let a React-family call opt TypeScript-in-JavaScript into Vue parsing', async () => {
     const output = await extractFromVueSource(
       `import { useGT } from 'gt-react';
-        const gt = useGT();
-        const label: string = gt('React typed JavaScript');
+        const t = useGT();
+        const label: string = t('React typed JavaScript');
         void label;`,
       path.join(fixtureRoot, 'typed.js'),
       {
@@ -1197,8 +1197,8 @@ describe('standalone script provenance gating', () => {
     const source = `import * as mixed from './malformed-mixed-barrel';
       import { useGT } from '@ordinary/hooks';
       mixed.ordinary();
-      const gt = useGT();
-      gt('Ordinary unresolved message');`;
+      const t = useGT();
+      t('Ordinary unresolved message');`;
     const output = await extractFromVueSource(
       source,
       path.join(fixtureRoot, 'malformed-mixed-consumer.ts'),
@@ -1405,8 +1405,8 @@ describe('standalone script provenance gating', () => {
     const output = await extractFromVueSource(
       `import { useGT } from 'gt-vue';
        import { pass } from './malformed-identity-helper';
-       const gt = useGT();
-       [gt].map(pass)[0]('Recovered identity callback');`,
+       const t = useGT();
+       [t].map(pass)[0]('Recovered identity callback');`,
       path.join(fixtureRoot, 'malformed-identity-helper-consumer.ts'),
       {
         projectRoot: fixtureRoot,

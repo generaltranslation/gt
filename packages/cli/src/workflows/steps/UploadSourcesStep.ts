@@ -182,7 +182,7 @@ export class UploadSourcesStep {
           if (r.status === 'failed') {
             const move = moves.find((m) => m.newFileId === r.newFileId);
             const name = move?.newFileName ?? r.newFileId;
-            const reason = r.error ?? 'Unknown error';
+            const reason = r.error;
             logger.warn(`Failed to migrate moved file ${name}: ${reason}`);
             recordWarning('failed_move', name, reason);
           }
@@ -230,7 +230,7 @@ export class UploadSourcesStep {
         `Failed to upload ${failedUploads.length} file${failedUploads.length !== 1 ? 's' : ''}`
       );
       for (const r of failedUploads) {
-        const reason = r.error ?? 'Unknown error';
+        const reason = r.error;
         logger.warn(`Failed to upload ${r.fileName}: ${reason}`);
         recordWarning('failed_upload', r.fileName, reason);
       }

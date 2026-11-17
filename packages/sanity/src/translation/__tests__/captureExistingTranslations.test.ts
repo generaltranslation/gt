@@ -115,11 +115,11 @@ describe('captureExistingTranslations', () => {
     const [files, ...rest] = uploadTranslations.mock.calls[0];
     expect(rest).toEqual([]);
     expect(files[0].source).toMatchObject({
-      locale: 'en',
       fileId: 'a',
       versionId: 'rev-old',
       branchId: 'branch-1',
     });
+    expect(files[0].source).not.toHaveProperty('locale');
     expect(files[0].translations[0]).toMatchObject({
       locale: 'es',
       fileId: 'a',

@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { Branch, Plural, T, T as T2, useGT } from 'gt-vue';
 
-const gt = useGT();
+const t = useGT();
 const rows = [{ value: 'row' }];
 const value = 'attribute';
 </script>
 
 <template>
-  <div v-for="gt in rows" v-if="gt('Outer v-if')" />
-  <div v-for="{ value = gt('v-for default') } in rows" />
-  <div :[gt('Directive')]="value" />
-  <Card v-slot="{ value = gt('slot default') }" />
+  <div v-for="t in rows" v-if="t('Outer v-if')" />
+  <div v-for="{ value = t('v-for default') } in rows" />
+  <div :[t('Directive')]="value" />
+  <Card v-slot="{ value = t('slot default') }" />
 
   <t-2>Digit-normalized component</t-2>
   <component :is="T">Dynamic component</component>

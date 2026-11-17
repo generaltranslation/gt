@@ -30,6 +30,7 @@ import {
 
 export type { LocaleConfig } from '@generaltranslation/format';
 export type { GTAccountConfig } from './client/clientConfig';
+export type { BatchWriteResponse, BatchWriteResult } from './client/apiClient';
 export { decodeVars } from './derive/decodeVars';
 export { declareVar } from './derive/declareVar';
 export { derive } from './derive/derive';
@@ -93,6 +94,7 @@ export {
 } from './types-dir/api/file';
 export type {
   FileUpload,
+  TranslationSourceUpload,
   TranslationUpload,
 } from './types-dir/api/uploadFiles';
 export type { PublishFileEntry } from './translate/publishFiles';

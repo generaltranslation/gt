@@ -17,6 +17,13 @@ paths:
 - Use React Server Components patterns in `gt-next`: separate `index.client.ts`, `index.server.ts` and `index.rsc.ts` entry points.
 - Run tests with `pnpm --filter <package-name> test`.
 
+## `t()` is client-rendered (SPA) only
+
+`t()` works only in client-rendered (SPA) apps, the ones set up with gt-react's `initializeGTSPA()`. This covers the root `t` from `gt-react`, and `t` and `m` from `/unstable`. A server-rendered app (gt-next, gt-tanstack-start, gt-react with `initializeGT()`) does not support `t()` anywhere: module level, server rendering, and its client-side code (components after hydration, effects, event handlers) alike. Server-rendered code uses `useGT()` in components, `getGT()` in loaders and server functions, or `msg()` with `m()` from `useMessages()` or `getMessages()`. The function that `useGT()` and `getGT()` return is also named `t` (`const t = useGT()`), but it is a local binding, not the exported `t`, and works in server-rendered apps.
+
+- Exports: only gt-react's browser entry (`index.client.ts`) exports `t`. Its server and `react-server` entries, gt-tanstack-start, gt-next and gt-react-native do not, and no package sets a global `t`.
+- Runtime: `reportServerRenderedUse()` in `packages/react-core/src/unstable/spaOnly.ts` reports every call of all three. Outside an SPA it throws in development and logs in production, where `t()` renders the source.
+
 ## Feature Parity: gt-react ↔ gt-react-native
 
 `gt-react` and `gt-react-native` are fixed-version siblings (see `.changeset/config.json`). Both re-export most of their API from `@generaltranslation/react-core`, with platform-specific wrappers (e.g., GTProvider, locale detection, storage). Names that `gt-i18n` or `generaltranslation` own are re-exported straight from that owner, because `react-core` does not re-export them. Plumbing that only sibling packages use (render pipeline, React i18n cache, format-locale helpers) is not re-exported; siblings import it from `@generaltranslation/react-core/pure`.

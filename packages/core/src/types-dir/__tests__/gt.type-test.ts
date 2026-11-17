@@ -11,10 +11,57 @@ import {
   type GTCredentials,
   type GTProjectConfig,
 } from '../../runtime.js';
-import type { UserTokenProvider } from '@generaltranslation/api';
+import type {
+  MoveFilesResponse,
+  UserTokenProvider,
+} from '@generaltranslation/api';
+import type { BatchWriteResult } from '../../index.js';
 
 declare const userTokenProvider: UserTokenProvider;
 const localeConfig = { defaultLocale: 'en', locales: ['en', 'es'] };
+
+// A batch result narrows on status; a whole failed request fails each item with any API error code, or none.
+type MoveResult = BatchWriteResult<MoveFilesResponse['results'][number]>;
+const rateLimited: MoveResult = {
+  oldFileId: 'old',
+  newFileId: 'new',
+  status: 'failed',
+  error: 'Too many requests',
+  code: 'rate_limited',
+};
+const networkFailure: MoveResult = {
+  oldFileId: 'old',
+  newFileId: 'new',
+  status: 'failed',
+  error: 'fetch failed',
+};
+const unknownCode: MoveResult = {
+  oldFileId: 'old',
+  newFileId: 'new',
+  status: 'failed',
+  error: 'Unknown',
+  // @ts-expect-error a failed result's code is an API error code.
+  code: 'not_an_error_code',
+};
+// @ts-expect-error a failed result always has an error.
+const missingError: MoveResult = {
+  oldFileId: 'old',
+  newFileId: 'new',
+  status: 'failed',
+};
+void rateLimited;
+void networkFailure;
+void unknownCode;
+void missingError;
+declare const moveResult: MoveResult;
+if (moveResult.status === 'failed') {
+  const reason: string = moveResult.error;
+  void reason;
+} else {
+  const clonedTranslationsCount: number | undefined =
+    moveResult.clonedTranslationsCount;
+  void clonedTranslationsCount;
+}
 
 // With projectId, GeneralTranslation is project-scoped: a ProjectHandle.
 const gt = new GeneralTranslation({

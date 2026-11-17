@@ -1,15 +1,20 @@
 import { Command } from 'commander';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const mockSettings = vi.hoisted(() => ({ stageTranslations: true }));
 vi.mock('../../config/generateSettings.js', () => ({
   generateSettings: vi.fn(async () => ({
     config: 'gt.config.json',
-    files: {},
-    stageTranslations: true,
+    files: { resolvedPaths: {} },
+    stageTranslations: mockSettings.stageTranslations,
   })),
 }));
 vi.mock('../commands/stage.js', () => ({ handleStage: vi.fn() }));
 vi.mock('../commands/upload.js', () => ({ upload: vi.fn() }));
+vi.mock('../commands/setupProject.js', () => ({
+  handleSetupProject: vi.fn(),
+}));
+vi.mock('../commands/download.js', () => ({ handleDownload: vi.fn() }));
 vi.mock('../../api/saveLocalEdits.js', () => ({
   saveLocalEdits: vi.fn(async () => true),
 }));
@@ -60,9 +65,14 @@ describe('standalone command warnings summary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearWarnings();
+    mockSettings.stageTranslations = true;
   });
 
-  it.each([['stage'], ['upload'], ['save-local']])(
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
+  it.each([['stage'], ['upload'], ['save-local'], ['setup']])(
     '%s prints the warnings summary and clears it',
     async (command) => {
       recordWarning('failed_upload', 'a.json', 'storage unavailable');
@@ -73,6 +83,36 @@ describe('standalone command warnings summary', () => {
       expect(getWarnings()).toEqual([]);
     }
   );
+
+  it.each([
+    ['stage', true],
+    ['upload', true],
+    ['setup', true],
+    ['translate', true],
+    ['translate', false],
+  ])(
+    '%s exits with code 1 when a file failed to upload (stageTranslations: %s)',
+    async (command, stageTranslations) => {
+      mockSettings.stageTranslations = stageTranslations;
+      recordWarning('failed_upload', 'a.json', 'storage unavailable');
+
+      await run([command]);
+
+      expect(process.exitCode).toBe(1);
+    }
+  );
+
+  it('does not fail the command when only fonts did not sync', async () => {
+    recordWarning(
+      'failed_font_sync',
+      'Fonts',
+      'A project API key cannot upload organization fonts'
+    );
+
+    await run(['upload']);
+
+    expect(process.exitCode).toBeUndefined();
+  });
 
   it('save-local reports failed edits in its final message', async () => {
     vi.mocked(saveLocalEdits).mockImplementationOnce(async () => {

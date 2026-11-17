@@ -1,10 +1,11 @@
 import type { UploadSourceFilesResponse } from '@generaltranslation/api';
+import type { BatchWriteResponse } from 'generaltranslation';
 import { pluginConfig, projectFor } from '../adapter/core';
 import type { Secrets } from '../types';
 import { succeededResults } from '../utils/batchResults';
 
 export async function initProject(
-  uploadResult: UploadSourceFilesResponse,
+  uploadResult: BatchWriteResponse<UploadSourceFilesResponse>,
   options: { timeout?: number },
   secrets: Secrets
 ): Promise<boolean> {

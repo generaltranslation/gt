@@ -12,12 +12,12 @@ export type RegisteredMessage = TranslationMetadata & {
 };
 
 /**
- * Returns the gt function that registers a string at build time and resolves its translation at runtime.
- * @returns A promise of the gt function
+ * Returns the t function that registers a string at build time and resolves its translation at runtime.
+ * @returns A promise of the t function
  *
  * @example
- * const gt = await getGT();
- * const greeting = gt('Hello, world!');
+ * const t = await getGT();
+ * const greeting = t('Hello, world!');
  */
 export async function getGT(
   _messages?: RegisteredMessage[]
@@ -74,15 +74,15 @@ export async function getGTInternal(
    *
    * @example
    * // Simple translation without interpolation
-   * const gt = await getGT();
-   * const greeting = gt('Hello, world!');
+   * const t = await getGT();
+   * const greeting = t('Hello, world!');
    *
    * @example
    * // Translation with interpolation
-   * const gt = await getGT();
-   * const welcome = gt('Hello, {name}!', { name: 'Alice' });
+   * const t = await getGT();
+   * const welcome = t('Hello, {name}!', { name: 'Alice' });
    */
-  const gt: GTFunctionType = (
+  const t: GTFunctionType = (
     message: string,
     options: GTTranslationOptions = {}
   ) => {
@@ -118,5 +118,5 @@ export async function getGTInternal(
     });
   };
 
-  return gt;
+  return t;
 }

@@ -9,9 +9,12 @@ import {
   initializeI18nConfig,
 } from '../../i18n-config/singleton-operations';
 import { t } from '../../unstable';
-import { buildMessage } from '../buildMessage';
+import { buildMessage, buildSiteMessage } from '../buildMessage';
 import { createGT, getGT } from '../gt';
-import type { LookupTreeTranslation } from '../renderMessage';
+import type {
+  LookupTreeTranslation,
+  MessageTreeMetadata,
+} from '../renderMessage';
 import {
   date,
   derive,
@@ -182,6 +185,44 @@ describe('gt-i18n/unstable rendering', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it('renders the source when Intl rejects the locale of a translation without placeholders', async () => {
+    await setup();
+    const gt = createGT({
+      getLocale: () => 'fr_FR',
+      lookupTranslation: () => 'Enregistrer',
+    });
+    expect(gt`Save`).toBe('Save');
+    expect(gt`Save`).toBe('Save');
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain(
+      'Formatting the "fr_FR" translation'
+    );
+  });
+
+  it('validates a translated tree once', async () => {
+    let reads = 0;
+    const tree = new Proxy([literal('Bonjour, '), argument('name')], {
+      get(target, key, receiver) {
+        reads++;
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    await setup();
+    const gt = createGT({
+      getLocale: () => 'fr',
+      lookupTranslation: () => tree,
+    });
+    const render = () => {
+      reads = 0;
+      expect(gt`Hello, ${{ name }}`).toBe('Bonjour, Ada');
+      return reads;
+    };
+    const first = render();
+    const second = render();
+    expect(second).toBeLessThan(first);
+    expect(render()).toBe(second);
+  });
+
   it('treats a malformed nested branch as a miss', async () => {
     const tree = [['role', 'select', { other: [[['x']]] }]];
     const gt = await setup({ fr: { [keyOf()`Invalid`]: tree } });
@@ -260,7 +301,7 @@ describe('gt-i18n/unstable rendering', () => {
   it('throws when a placeholder name is bound to different values', async () => {
     const gt = await setup({ locale: 'en' });
     expect(() => gt`${{ name: 'Ada' }} / ${{ name: 'Grace' }}`).toThrow(
-      'gt-i18n Error: The gt template placeholder "name" is bound to different values'
+      'gt-i18n Error: The t template placeholder "name" is bound to different values'
     );
     expect(
       () =>
@@ -464,7 +505,7 @@ describe('gt-i18n/unstable rendering', () => {
   it('throws a diagnostic for objects that are not named variables', async () => {
     const gt = await setup({ locale: 'en' });
     expect(() => gt`Hello, ${{ name, who: 'Grace' } as never}`).toThrow(
-      'gt-i18n Error: A gt template placeholder is not a value, a named variable, or a helper'
+      'gt-i18n Error: A t template placeholder is not a value, a named variable, or a helper'
     );
   });
 
@@ -476,5 +517,65 @@ describe('gt-i18n/unstable rendering', () => {
       'Object keys: count, total'
     );
     expect(() => number(empty)).toThrow('Object keys: none');
+  });
+});
+
+describe('gt-i18n/unstable call sites', () => {
+  // One template, so every call is the same call site.
+  const greet = (hole: unknown, metadata: MessageTreeMetadata = {}) =>
+    ((strings: TemplateStringsArray, ...holes: unknown[]) => ({
+      site: buildSiteMessage(strings, holes, metadata),
+      built: buildMessage(strings, holes),
+    }))`Hello, ${hole}!`;
+
+  it('builds the tree once while the holes keep their names', () => {
+    const { site: first } = greet({ name: 'Ada' });
+    const { site: second } = greet({ name: 'Grace' });
+    expect(first.tree).toEqual(['Hello, ', ['name'], '!']);
+    expect(second.tree).toBe(first.tree);
+    expect({ ...second.values }).toEqual({ name: 'Grace' });
+  });
+
+  it.each([
+    ['another name', { user: 'Grace' }],
+    ['a value without a name', 'Grace'],
+    ['a helper', plural({ count: 2 }, { one: 'one', other: 'more' })],
+    ['a helper with other branches', plural({ count: 2 }, { other: 'any' })],
+    ['the first name again', { name: 'Grace' }],
+  ])('builds the tree again for %s', (_, hole) => {
+    greet({ name: 'Ada' });
+    const { site, built } = greet(hole);
+    expect(site.tree).toEqual(built.tree);
+    expect(site.values).toEqual(built.values);
+    expect(site.formats).toEqual(built.formats);
+  });
+
+  it('checks the values of a tree it reuses', () => {
+    const pair = (first: unknown, second: unknown) =>
+      ((strings: TemplateStringsArray, ...holes: unknown[]) =>
+        buildSiteMessage(strings, holes, {}))`${first} and ${second}`;
+    pair({ name: 'Ada' }, { name: 'Ada' });
+    expect(() => pair({ name: 'Ada' }, { name: 'Grace' })).toThrow(
+      '"name" is bound to different values'
+    );
+  });
+
+  it('hashes the tree once per metadata', () => {
+    const { site: first } = greet({ name: 'Ada' });
+    const { site: second } = greet({ name: 'Grace' });
+    const { site: button } = greet({ name: 'Ada' }, { context: 'button' });
+    const { site: compiled } = greet({ name: 'Ada' }, { $_hash: 'compiled' });
+    expect(first.metadata.$_hash).toBe(keyOf()`Hello, ${{ name }}!`);
+    expect(second.metadata).toBe(first.metadata);
+    expect(button.metadata).toEqual({
+      context: 'button',
+      $_hash: keyOf({ context: 'button' })`Hello, ${{ name }}!`,
+    });
+    expect(compiled.metadata).toEqual({ $_hash: 'compiled' });
+  });
+
+  it('hashes a template with a helper when it renders', () => {
+    const { site } = greet(plural({ count: 2 }, { other: 'any' }));
+    expect(site.metadata).toEqual({});
   });
 });

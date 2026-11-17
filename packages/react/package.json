@@ -10,9 +10,7 @@
     "dist",
     "CHANGELOG.md"
   ],
-  "sideEffects": [
-    "./dist/macros.*"
-  ],
+  "sideEffects": false,
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0",
@@ -172,16 +170,6 @@
         "default": "./dist/compat.server.mjs"
       },
       "default": "./dist/compat.server.mjs"
-    },
-    "./macros": {
-      "require": {
-        "types": "./dist/macros.d.cts",
-        "default": "./dist/macros.cjs"
-      },
-      "import": {
-        "types": "./dist/macros.d.mts",
-        "default": "./dist/macros.mjs"
-      }
     },
     "./vite": {
       "require": {

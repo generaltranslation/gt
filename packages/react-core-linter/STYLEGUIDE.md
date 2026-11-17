@@ -57,7 +57,7 @@ Use `isGTFunction()` or its wrappers (`isMsgFunction`, `isGTCallbackFunction`, e
 
 - `messageId`-based. All messages defined in `meta.messages`.
 - Messages should guide the user toward the fix: state what's wrong AND show the correct pattern.
-- Format: `"Registration functions (gt, msg) can only accept static strings. Use ICU-style variable interpolation instead (e.g. gt(\"Hello {name}!\"), { name: value })."`
+- Format: `"Registration functions (the t returned by useGT() or getGT(), and msg) can only accept static strings. Use ICU-style variable interpolation instead (e.g. t(\"Hello {name}!\", { name: value }))."`
 
 ### Auto-Fix Rules
 
@@ -111,7 +111,7 @@ const ruleTester = new RuleTester({
 ### Test Quality
 
 - **Exact output matching**: every `invalid` case with a fix must have an `output` field showing the complete transformed source.
-- **Both functions**: test with both `gt()` (via `useGT()`) and `msg()` where applicable.
+- **Both functions**: test with both `t()` (via `const t = useGT()`) and `msg()` where applicable.
 - **Both libraries**: test with at least `gt-react` and `@generaltranslation/react-core`.
 - **Aliasing**: include at least one test with aliased imports.
 

@@ -1,7 +1,7 @@
 // Replayer e2e: serve the harness + built dist, drive a real Chromium, and assert
 // the player's behaviors against e2e/fixture.json (regenerate with `pnpm e2e:fixture`).
 // Scenarios: mount/reveal + capture-frame crop, per-locale text overlay (both the
-// <T>-hash and gt()-string harvest paths), live locale switching, initialLocale,
+// <T>-hash and t()-string harvest paths), live locale switching, initialLocale,
 // switchLocalesAllowed:false, the events-only embedded-overlay fallback, the
 // synthesized cursor, the dark toggle, and debug drag-drop (graceful failure +
 // hot-swap). Exits non-zero on any failure.
@@ -13,7 +13,7 @@ const BASE = `http://localhost:${PORT}`;
 
 const SOURCE_TEXT = 'Welcome to the fixture';
 const ES_T = ['Bienvenido al fixture', 'Ejecutar la demo']; // <T> hash path
-const ES_STR = 'Los ajustes y proyectos viven aquí'; // gt()-string path
+const ES_STR = 'Los ajustes y proyectos viven aquí'; // t()-string path
 
 const results = [];
 function check(name, ok, detail = '') {
@@ -123,7 +123,7 @@ try {
       'es: <T> hash-path text swapped',
       ES_T.every((s) => text.includes(s))
     );
-    check('es: gt()-string-path text swapped', text.includes(ES_STR));
+    check('es: t()-string-path text swapped', text.includes(ES_STR));
     check('es: source text gone', !text.includes(SOURCE_TEXT));
 
     await page.click('#app #flags button[data-loc="en"]');

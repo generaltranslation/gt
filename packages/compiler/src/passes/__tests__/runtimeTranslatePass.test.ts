@@ -14,7 +14,7 @@ import hashSource from '../../utils/calculateHash';
 const STRING_FN = 'GtInternalRuntimeTranslateString';
 const JSX_FN = 'GtInternalRuntimeTranslateJsx';
 
-const USE_GT = `import { useGT } from 'gt-react';\nconst gt = useGT();\n`;
+const USE_GT = `import { useGT } from 'gt-react';\nconst t = useGT();\n`;
 
 const icuHash = (source: string) => hashSource({ source, dataFormat: 'ICU' });
 
@@ -50,7 +50,7 @@ describe('runtimeTranslatePass', () => {
   describe('strings', () => {
     it('injects a runtime translate call with the message and its hash', () => {
       const { runtimeCalls, promiseAllCount } = transform(
-        `${USE_GT}const msg = gt("Hello world");`
+        `${USE_GT}const msg = t("Hello world");`
       );
       expect(runtimeCalls).toEqual([
         [STRING_FN, 'Hello world', { $_hash: icuHash('Hello world') }],
@@ -60,9 +60,9 @@ describe('runtimeTranslatePass', () => {
 
     it('batches multiple strings into a single Promise.all', () => {
       const { runtimeCalls, promiseAllCount } = transform(`${USE_GT}
-        const a = gt("Hello");
-        const b = gt("Goodbye");
-        const c = gt("Submit");
+        const a = t("Hello");
+        const b = t("Goodbye");
+        const c = t("Submit");
       `);
       expect(runtimeCalls.map(([, message]) => message)).toEqual([
         'Hello',
@@ -73,7 +73,7 @@ describe('runtimeTranslatePass', () => {
     });
 
     it.each([
-      ['a useGT() callback', USE_GT, 'gt'],
+      ['a useGT() callback', USE_GT, 't'],
       ['t()', `import { t } from 'gt-react';\n`, 't'],
       ['msg()', `import { msg } from 'gt-react';\n`, 'msg'],
     ])('passes the options of %s through', (_name, setup, fn) => {
@@ -103,7 +103,7 @@ describe('runtimeTranslatePass', () => {
     it.each([
       [
         'a useGT() callback',
-        `import { useGT, derive } from 'gt-react';\nconst gt = useGT();\ngt(derive(getName()));`,
+        `import { useGT, derive } from 'gt-react';\nconst t = useGT();\nt(derive(getName()));`,
       ],
       ['t()', `import { t, derive } from 'gt-react';\nt(derive(getName()));`],
     ])('skips derive content in %s', (_name, code) => {
@@ -161,8 +161,8 @@ describe('runtimeTranslatePass', () => {
     const T_CODE = `
       import { jsx as _jsx } from 'react/jsx-runtime';
       import { useGT, T } from 'gt-react';
-      const gt = useGT();
-      const msg = gt("Hello");
+      const t = useGT();
+      const msg = t("Hello");
       const el = _jsx(T, { context: "nav", id: "greeting", children: "World" });
     `;
 
@@ -207,7 +207,7 @@ describe('runtimeTranslatePass', () => {
   });
 
   describe('import handling', () => {
-    const CODE = `${USE_GT}const msg = gt("Hello");`;
+    const CODE = `${USE_GT}const msg = t("Hello");`;
 
     it('imports the runtime function from gt-react', () => {
       expect(importedNames(transform(CODE).ast, 'gt-react')).toContain(
@@ -227,7 +227,7 @@ describe('runtimeTranslatePass', () => {
 
   it('keeps hash injection working when run after the injection pass', () => {
     const { output, runtimeCalls } = transform(
-      `${USE_GT}const msg = gt("Hello world");`,
+      `${USE_GT}const msg = t("Hello world");`,
       {},
       ['collection', 'injection', 'runtimeTranslate']
     );
@@ -238,7 +238,7 @@ describe('runtimeTranslatePass', () => {
     expect(output).toContain(
       `useGT([{ $_hash: "${hash}", message: "Hello world" }])`
     );
-    expect(output).toContain(`gt("Hello world", { "$_hash": "${hash}" })`);
+    expect(output).toContain(`t("Hello world", { "$_hash": "${hash}" })`);
   });
 });
 

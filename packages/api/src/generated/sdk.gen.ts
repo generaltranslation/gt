@@ -1684,7 +1684,7 @@ export const exportContextContent = <ThrowOnError extends boolean = false>(
 /**
  * Upsert Organization assets
  *
- * Uploads 1–10 fonts (`assetType: FONT`, the only asset type today) for Lottie translations across the organization. Requires `org:assets:write`.
+ * Uploads 1–10 assets for the organization; fonts for Lottie translations (`assetType: FONT`) are the only asset type today. Requires `org:assets:write`.
  */
 export const upsertAssets = <ThrowOnError extends boolean = false>(
   options: Options<UpsertAssetsData, ThrowOnError>

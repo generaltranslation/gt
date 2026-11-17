@@ -301,8 +301,9 @@ describe('gt-next package exports', () => {
 
             const unstable = await import(${JSON.stringify(unstableEntry)});
 
-            // No global sync locale store backs a t tag in gt-next.
+            // No global sync locale store backs a t tag or m in gt-next.
             assert.equal(unstable.t, undefined);
+            assert.equal(unstable.m, undefined);
             assert.equal(typeof unstable[${JSON.stringify(messagesExport)}], 'function');
             // tx, and dyn for its runtime text, are server-only.
             assert.equal(typeof unstable.tx, ${JSON.stringify(

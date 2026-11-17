@@ -20,7 +20,7 @@ const LOCALES = ['en', 'es']; // source first
 
 // The fixture page's translations. `fx-*` entries are <T> content (matched by the
 // data-_gt-hash attributes in fixture-page.html); the `str:` entry is a bare
-// gt()-style string (matched by hashing the recorded source text, below).
+// t()-style string (matched by hashing the recorded source text, below).
 const DICT_ES = {
   'fx-welcome': 'Bienvenido al fixture',
   'fx-run': 'Ejecutar la demo',

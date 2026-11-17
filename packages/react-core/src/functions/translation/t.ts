@@ -1,21 +1,18 @@
-import {
-  createLookupOptions,
-  getRuntimeEnvironment,
-  interpolateMessage,
-} from 'gt-i18n/internal';
+import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
 import type { GTTranslationOptions, LookupOptionsFor } from 'gt-i18n';
 import { getI18nConfig } from '../../setup/i18nConfig';
-import {
-  getReadonlyConditionStore,
-  isReadonlyConditionStoreInitialized,
-} from '../../condition-store/singleton-operations';
+import { getReadonlyConditionStore } from '../../condition-store/singleton-operations';
 import type { StringContent, StringFormat } from '@generaltranslation/format';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
-import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { isSpa, reportServerRenderedUse } from '../../unstable/spaOnly';
 
 /**
  * Translate a message
+ *
+ * Only available in client-rendered (SPA) apps, where it also works at module
+ * level. Server-rendered apps, client-side code included, use useGT() in
+ * components, getGT() in loaders and server functions, or msg() with m().
  * @param {string} message - The message to translate.
  * @param {GTTranslationOptions} [options] - The options for the translation.
  * @returns {string} The translated message.
@@ -34,12 +31,17 @@ export const t: StringOrTemplateSyncResolutionFunction = (
   messageOrStrings: string | TemplateStringsArray,
   ...values: unknown[]
 ) => {
-  // Warnings and errors
-  enforceSSRRules(messageOrStrings);
+  const outsideSpa = reportOutsideSpa(
+    typeof messageOrStrings === 'string'
+      ? messageOrStrings
+      : messageOrStrings.join('')
+  );
 
   //  t("Hello, {name}!", { name: "John" })
   if (typeof messageOrStrings === 'string') {
-    const options = values.at(0) as GTTranslationOptions | undefined;
+    const [first] = values;
+    const options = isTranslationOptions(first) ? first : undefined;
+    if (outsideSpa) return renderSource(messageOrStrings, options ?? {});
     const locale = options?.$locale ?? getLocale();
     return resolveStringContent(
       locale,
@@ -49,8 +51,36 @@ export const t: StringOrTemplateSyncResolutionFunction = (
   }
 
   // t`Hello, ${name}`
-  return handleTaggedTemplateLiteralTranslation(messageOrStrings, values);
+  return outsideSpa
+    ? interpolateTemplateLiteral(messageOrStrings, values)
+    : handleTaggedTemplateLiteralTranslation(messageOrStrings, values);
 };
+
+function isTranslationOptions(value: unknown): value is GTTranslationOptions {
+  return typeof value === 'object' && value !== null;
+}
+
+function reportOutsideSpa(message: string): boolean {
+  if (isSpa()) return false;
+  reportServerRenderedUse({
+    name: 't',
+    fix: 'In a server-rendered app, client-side code included, register the string with msg() and render it with m() from useMessages() or getMessages(), or use useGT() in components and getGT() in loaders and server functions',
+    message,
+  });
+  return true;
+}
+
+function renderSource(
+  message: string,
+  options: LookupOptionsFor<StringFormat>
+): string {
+  const defaultLocale = getI18nConfig().getDefaultLocale();
+  return interpolateMessage({
+    options: createLookupOptions(defaultLocale, options, 'ICU'),
+    source: message,
+    sourceLocale: defaultLocale,
+  });
+}
 
 // ----- Helper Functions ----- //
 
@@ -174,41 +204,6 @@ function interpolateTemplateLiteral(
       return string + (values[index] ?? '');
     })
     .join('');
-}
-
-/**
- * Module-level t() only works for SPA.
- * We have to error or fallback in SSR.
- */
-export function enforceSSRRules(
-  messageOrStrings: string | TemplateStringsArray
-) {
-  const ssrEnabled = getI18nConfig().getRenderStrategy() === 'server-render';
-  const moduleLevel = !isReadonlyConditionStoreInitialized();
-  if (!ssrEnabled || !moduleLevel) return;
-
-  const message =
-    typeof messageOrStrings === 'string'
-      ? messageOrStrings
-      : messageOrStrings.join('');
-  const runtimeEnvironment = getRuntimeEnvironment();
-  const errorMessage = createDiagnosticMessage({
-    source: '@generaltranslation/react-core',
-    severity: 'Error',
-    whatHappened:
-      'Using the t() function at the module level is forbidden in server-rendered applications.',
-    fix: 'Either move the t() invocation into a request-time scope or register the string with the msg() function and translate with an m() function. Ensure that you have added the <GTProvider> at the root of your component tree.',
-    wayOut:
-      runtimeEnvironment === 'development'
-        ? undefined
-        : 'Falling back to defaultLocale value.',
-    details: `Message: "${message}"`,
-  });
-  if (getRuntimeEnvironment() === 'development') {
-    throw new Error(errorMessage);
-  } else {
-    console.error(errorMessage);
-  }
 }
 
 function getLocale(): string {

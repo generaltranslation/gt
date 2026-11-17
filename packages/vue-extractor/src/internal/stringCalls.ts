@@ -95,7 +95,7 @@ export function processVueStringCall(
 
 /** Returns the public callable name represented by one extraction identity. */
 function stringFunctionName(kind: Exclude<StringFunctionKind, 'messages'>) {
-  return kind === 'gt' ? 'gt()' : kind === 'msg' ? 'msg()' : 't()';
+  return kind === 'msg' ? 'msg()' : 't()';
 }
 
 function addStringUpdate(

@@ -54,7 +54,7 @@ export function injectCallbackDeclaratorFunctionParameters(
     return;
   }
 
-  // There can only be one callback defined for const gt = useGT()
+  // There can only be one callback defined for const t = useGT()
   if (identifiers.length !== 1) {
     state.logger.logError(
       `Multiple identifiers found for GT function with callbacks: ${canonicalName}. Parameter injection failed.` +

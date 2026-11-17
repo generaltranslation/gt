@@ -59,7 +59,7 @@ function extractParameterName(param: t.Node): string | null {
   if (t.isIdentifier(param)) {
     return param.name;
   }
-  // Handle parameters with default values: (gt = () => {})
+  // Handle parameters with default values: (t = () => {})
   if (t.isAssignmentPattern(param) && t.isIdentifier(param.left)) {
     return param.left.name;
   }
@@ -118,8 +118,8 @@ export function resolveVariableAliases(
 
 /**
  * Handles how translation callbacks are used within code.
- * This covers both direct translation calls (gt('hello')) and prop drilling
- * where the translation callback is passed to other functions (getData(gt)).
+ * This covers both direct translation calls (t('hello')) and prop drilling
+ * where the translation callback is passed to other functions (getData(t)).
  */
 function handleFunctionCall(
   tPath: NodePath,
@@ -452,13 +452,13 @@ function processFunctionInFile(
  * Main entry point for parsing translation strings from useGT() and getGT() calls.
  *
  * Supports complex patterns including:
- * 1. Direct calls: const gt = useGT(); gt('hello');
- * 2. Translation callback prop drilling: const gt = useGT(); getInfo(gt); where getInfo uses gt() internally
+ * 1. Direct calls: const t = useGT(); t('hello');
+ * 2. Translation callback prop drilling: const t = useGT(); getInfo(t); where getInfo uses t() internally
  * 3. Cross-file function calls: imported functions that receive the translation callback as a parameter
  *
  * Example flow:
- * - const gt = useGT();
- * - const { home } = getInfo(gt); // getInfo is imported from './constants'
+ * - const t = useGT();
+ * - const { home } = getInfo(t); // getInfo is imported from './constants'
  * - This will parse constants.ts to find translation calls within getInfo function
  */
 export function parseStrings(
@@ -603,7 +603,7 @@ export function parseStrings(
         ignoreInlineMetadata: isMessageHook,
         ignoreDynamicContent: isMessageHook,
         ignoreInvalidIcu: isMessageHook,
-        // TODO: when we add support for array content in gt function, this should just always be false
+        // TODO: when we add support for array content in t function, this should just always be false
         ignoreInlineListContent: isInlineGT,
         includeSourceCodeContext: config.includeSourceCodeContext,
         ignoreTaggedTemplates: false,

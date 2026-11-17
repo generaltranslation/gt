@@ -18,8 +18,8 @@ const VAR_NAME_IDENTIFIER = '_gt_var_name';
  *   return 'John Doe';
  * }
  *
- * const gt = useGT();
- * gt(`My name is ${derive(derivableFunction())}`);
+ * const t = useGT();
+ * t(`My name is ${derive(derivableFunction())}`);
  *
  * @param {string | number | boolean | null | undefined} variable - The variable to sanitize.
  * @param {Object} [options] - The options for the sanitization.

@@ -13,6 +13,7 @@ import {
   isPlaceholder,
   PLACEHOLDER,
 } from './placeholders';
+import { hashMessageTree, type MessageTreeMetadata } from './renderMessage';
 
 type BuiltMessage = {
   tree: MessageTree;
@@ -35,6 +36,124 @@ export function buildMessage(
   );
   for (const [name, value] of built.values) bindValue(values, name, value);
   return { tree: built.tree, values, formats: built.formats };
+}
+
+/** What a call site keeps between renders. */
+type Site = {
+  tree: MessageTree;
+  formats: MessageFormats;
+  /** The variable each hole binds, and whether the hole names it. */
+  slots: { name: string; named: boolean }[];
+  /** The metadata the tree was last hashed with, with that hash. */
+  hashed?: MessageTreeMetadata & { $_hash: string };
+};
+
+// A tagged template's strings are one array per call site.
+const sites = new WeakMap<readonly string[], Site>();
+
+const NO_VALUES: Record<string, unknown> = Object.freeze(Object.create(null));
+
+/**
+ * Like buildMessage, for a call site that renders again and again. While
+ * every hole is a value, the tree depends only on the holes' names, so the
+ * site's tree and hash are reused and only the values are bound. The metadata
+ * is returned with that hash unless it has a `$_hash`.
+ */
+export function buildSiteMessage(
+  strings: readonly string[],
+  holes: readonly unknown[],
+  metadata: MessageTreeMetadata
+): BuiltMessage & { metadata: MessageTreeMetadata } {
+  let site = sites.get(strings);
+  let values = site && bindSlots(site.slots, holes);
+  if (!site || !values) {
+    const built = buildMessage(strings, holes);
+    const slots = toSlots(built.tree, holes);
+    if (!slots) return { ...built, metadata };
+    ({ values } = built);
+    site = { tree: built.tree, formats: built.formats, slots };
+    sites.set(strings, site);
+  }
+  return {
+    tree: site.tree,
+    values,
+    formats: site.formats,
+    metadata: withSiteHash(site, metadata),
+  };
+}
+
+/** The values of a site's holes, or undefined when a hole changed its name. */
+function bindSlots(
+  slots: Site['slots'],
+  holes: readonly unknown[]
+): Record<string, unknown> | undefined {
+  if (slots.length !== holes.length) return undefined;
+  if (slots.length === 0) return NO_VALUES;
+  // Null prototype so names like `__proto__` stay own entries.
+  const values: Record<string, unknown> = Object.create(null);
+  for (let i = 0; i < slots.length; i++) {
+    const hole = holes[i];
+    const { name, named } = slots[i];
+    if (hole === n) return undefined;
+    if (isAnonymousValue(hole)) {
+      if (named) return undefined;
+      values[name] = hole;
+      continue;
+    }
+    const keys = Object.keys(hole as object);
+    if (
+      !named ||
+      isPlaceholder(hole) ||
+      keys.length !== 1 ||
+      keys[0] !== name
+    ) {
+      return undefined;
+    }
+    bindValue(values, name, (hole as Record<string, unknown>)[name]);
+  }
+  return values;
+}
+
+/** The slots of a built template whose holes are all values. */
+function toSlots(
+  tree: MessageTree,
+  holes: readonly unknown[]
+): Site['slots'] | undefined {
+  // shortcut: a template with a helper, like plural(), is built on every
+  // render; key it by the shape of its holes when a profile shows one hot.
+  if (holes.some(isPlaceholder)) return undefined;
+  // Such a tree is text and one argument per hole, in the holes' order.
+  const names =
+    typeof tree === 'string'
+      ? []
+      : tree.flatMap((node) => (typeof node === 'object' ? [node[0]] : []));
+  return holes.map((hole, i) => ({
+    name: names[i],
+    named: !isAnonymousValue(hole),
+  }));
+}
+
+function withSiteHash(
+  site: Site,
+  metadata: MessageTreeMetadata
+): MessageTreeMetadata {
+  if (metadata.$_hash !== undefined) return metadata;
+  const { context, maxChars, requiresReview } = metadata;
+  const { hashed } = site;
+  if (
+    hashed &&
+    hashed.context === context &&
+    hashed.maxChars === maxChars &&
+    hashed.requiresReview === requiresReview
+  ) {
+    return hashed;
+  }
+  return (site.hashed = {
+    context,
+    maxChars,
+    requiresReview,
+    $_hash: hashMessageTree(site.tree, metadata),
+  });
 }
 
 function toTreeHole(
@@ -114,7 +233,7 @@ function toTreeBranch(
 function createConflictingPlaceholderError(name: string): string {
   return createGtI18nDiagnostic({
     severity: 'Error',
-    whatHappened: `The gt template placeholder "${name}" is bound to different values`,
+    whatHappened: `The t template placeholder "${name}" is bound to different values`,
     fix: 'Give each distinct value its own placeholder name',
   });
 }

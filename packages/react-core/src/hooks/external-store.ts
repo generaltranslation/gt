@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import type { Content } from '@generaltranslation/format';
 import type {
   TranslateLookup,
@@ -28,14 +28,30 @@ export function useTranslate<T extends Content>(
   const translationsSnapshot = useTranslationsSnapshot();
   const onMissingTranslation = useHandleMissingTranslation();
 
+  // React subscribes again whenever these change, so they change only with
+  // the lookup.
+  const { locale, content, options } = lookup;
+  const subscribe = useCallback(
+    (listener: () => void) =>
+      i18nStore.subscribeToTranslate({ locale, content, options }, listener),
+    [i18nStore, locale, content, options]
+  );
   /**
    * TODO: for snapshot lookup, we can use the translation snapshot
    * to avoid the adapter.resolveTranslation call.
    */
+  const getSnapshot = useCallback(
+    () =>
+      i18nStore.getTranslateSnapshot(
+        { locale, content, options },
+        translationsSnapshot
+      ),
+    [i18nStore, locale, content, options, translationsSnapshot]
+  );
   const storeTranslation = useSyncExternalStore(
-    (listener) => i18nStore.subscribeToTranslate(lookup, listener),
-    () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot),
-    () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot)
+    subscribe,
+    getSnapshot,
+    getSnapshot
   );
 
   if (

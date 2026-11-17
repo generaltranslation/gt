@@ -72,7 +72,7 @@ function DockDrawing() {
 }
 
 export default function App() {
-  const gt = useGT();
+  const t = useGT();
   const m = useMessages();
   const locale = useLocale();
   const [finish, setFinish] = useState<Finish>('graphite');
@@ -83,7 +83,7 @@ export default function App() {
   const total = UNIT_PRICE * quantity;
   const [lastAdded, setLastAdded] = useState<Finish | null>(null);
   const finishName = (value: Finish) =>
-    value === 'graphite' ? gt('Graphite') : gt('Silver');
+    value === 'graphite' ? t('Graphite') : t('Silver');
 
   return (
     <div className='gt-frame'>
@@ -95,7 +95,7 @@ export default function App() {
         </a>
         <div className='nav-actions'>
           <span className='cart gt-mono'>
-            {gt('Cart ({count})', { count: cartCount })}
+            {t('Cart ({count})', { count: cartCount })}
           </span>
           <LocaleSelector />
         </div>
@@ -115,10 +115,10 @@ export default function App() {
             </T>
             <div className='actions'>
               <a className='gt-button' href='#order'>
-                {gt('Configure Yours')}
+                {t('Configure Yours')}
               </a>
               <a className='gt-button outline' href='#specs'>
-                {gt('Read The Specs')}
+                {t('Read The Specs')}
               </a>
             </div>
             <T>
@@ -163,7 +163,7 @@ export default function App() {
             </T>
 
             <fieldset className='field'>
-              <legend className='gt-label'>{gt('Finish')}</legend>
+              <legend className='gt-label'>{t('Finish')}</legend>
               <div className='segmented'>
                 <button
                   type='button'
@@ -198,11 +198,11 @@ export default function App() {
             </fieldset>
 
             <fieldset className='field'>
-              <legend className='gt-label'>{gt('Quantity')}</legend>
+              <legend className='gt-label'>{t('Quantity')}</legend>
               <div className='stepper'>
                 <button
                   type='button'
-                  aria-label={gt('Decrease quantity')}
+                  aria-label={t('Decrease quantity')}
                   disabled={quantity <= 1}
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 >
@@ -213,7 +213,7 @@ export default function App() {
                 </output>
                 <button
                   type='button'
-                  aria-label={gt('Increase quantity')}
+                  aria-label={t('Increase quantity')}
                   disabled={quantity >= 9}
                   onClick={() => setQuantity((q) => Math.min(9, q + 1))}
                 >
@@ -229,7 +229,7 @@ export default function App() {
             </T>
             <dl className='summary-list'>
               <div>
-                <dt>{gt('Items')}</dt>
+                <dt>{t('Items')}</dt>
                 <dd>
                   <T>
                     <Plural
@@ -245,13 +245,13 @@ export default function App() {
                 </dd>
               </div>
               <div>
-                <dt>{gt('Subtotal')}</dt>
+                <dt>{t('Subtotal')}</dt>
                 <dd>
                   <Currency currency='USD'>{total}</Currency>
                 </dd>
               </div>
               <div>
-                <dt>{gt('Ships')}</dt>
+                <dt>{t('Ships')}</dt>
                 <dd>
                   <DateTime options={{ dateStyle: 'long' }}>
                     {SHIP_DATE}
@@ -280,7 +280,7 @@ export default function App() {
                 setLastAdded(finish);
               }}
             >
-              {gt('Add To Cart')}
+              {t('Add To Cart')}
             </button>
             {lastAdded && (
               <T>

@@ -1,0 +1,5 @@
+---
+'generaltranslation': major
+---
+
+Batched writes (`uploadSourceFiles`, `uploadTranslations`, `moveFiles`, `overwriteTranslations`, `publishFiles`, `upsertAssets`) return `BatchWriteResponse<Response>`, where `Response` is the API's response type, such as `UploadSourceFilesResponse` from `@generaltranslation/api`, in place of `Response` itself. Each result is a `BatchWriteResult`: succeeded as the API describes it, or failed with an `error` and a `code` that may be any API `ErrorCode`, or `undefined` when its whole request failed without one, such as after a network error. Narrow on `status` before reading `error` or `code`; after `result.status === 'failed'`, `error` is a `string`. Code that annotated these results with the generated types moves to the new ones: `UploadSourceFilesResponse` → `BatchWriteResponse<UploadSourceFilesResponse>`, and `UploadSourceFilesResponse['results'][number]` → `BatchWriteResult<UploadSourceFilesResponse['results'][number]>`, both imported from `generaltranslation`. Runtime behavior is unchanged.

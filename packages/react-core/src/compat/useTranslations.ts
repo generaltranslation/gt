@@ -21,7 +21,7 @@ export function useTranslations(rootId?: string): TFunctionType {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const gt = useGT();
+  const t = useGT();
   const resolveDictionaryEntry = useTrackedDictionaryResolver();
   const translateObject = useTranslationsObj(rootId);
 
@@ -38,7 +38,7 @@ export function useTranslations(rootId?: string): TFunctionType {
       }
       const sourceOptions = resolveDictionaryLookupOptions(sourceEntry.options);
       if (!shouldTranslate) {
-        return gt(sourceEntry.entry, {
+        return t(sourceEntry.entry, {
           ...sourceOptions,
           ...extractVariables(options),
           $locale: defaultLocale,
@@ -57,13 +57,13 @@ export function useTranslations(rootId?: string): TFunctionType {
         });
       }
 
-      return gt(sourceEntry.entry, {
+      return t(sourceEntry.entry, {
         ...sourceOptions,
         ...extractVariables(options),
         $locale: locale,
       });
     },
-    [defaultLocale, gt, rootId, locale, resolveDictionaryEntry, shouldTranslate]
+    [defaultLocale, t, rootId, locale, resolveDictionaryEntry, shouldTranslate]
   );
 
   // Wrap instead of mutating translateEntry, so the returned function changes
@@ -83,7 +83,7 @@ function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const gt = useGT();
+  const t = useGT();
   const resolveDictionaryObject = useTrackedDictionaryObjResolver();
 
   return useCallback(
@@ -107,20 +107,13 @@ function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
         sourceObject,
         targetObject,
         translate: (sourceEntry, dictionaryOptions) =>
-          gt(sourceEntry.entry, {
+          t(sourceEntry.entry, {
             ...dictionaryOptions,
             $locale: shouldTranslate ? locale : defaultLocale,
           }),
       });
     },
-    [
-      defaultLocale,
-      rootId,
-      locale,
-      resolveDictionaryObject,
-      shouldTranslate,
-      gt,
-    ]
+    [defaultLocale, rootId, locale, resolveDictionaryObject, shouldTranslate, t]
   );
 }
 

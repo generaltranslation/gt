@@ -1,0 +1,7 @@
+---
+'@generaltranslation/api': minor
+---
+
+Batch results are typed as one of two exact shapes. In the results of `uploadSourceFiles`, `uploadTranslations`, `moveFiles`, `overwriteTranslations`, `publishFiles`, `upsertAssets` and `translateContent`, a result is `{ status: 'succeeded', … }` or `{ status: 'failed', error, code, … }`, replacing one object with an optional `error` and `code`. Narrow on `status` before reading `error` or `code`: a failed result always has both, and `code` lists only the codes that operation puts on an item (for example `'invalid_request' | 'file_too_large' | 'branch_not_found' | 'internal_error'` for `uploadSourceFiles`). Response bodies are unchanged.
+
+The bundled spec also syncs other API changes: `pluginDownload` reports `translation_not_ready` as a `425` instead of a `404`; `uploadSourceFiles` and `uploadTranslations` fail a file whose content does not decode or parse on its own, with `invalid_request`, instead of rejecting the request with a `400`; `uploadTranslations` fails a translation whose source file does not exist with `source_file_not_found` instead of rejecting the request with a `404`; `uploadSourceFiles` fails a file that names a branch that does not exist, in `branchId`, `checkedOutBranchId` or `incomingBranchId`, with `branch_not_found`, instead of rejecting the request with a `404` or ignoring the branch; and the `source` of an `uploadTranslations` item no longer has `locale`, `checkedOutBranchId` or `incomingBranchId`, which the API never read there.

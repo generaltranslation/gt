@@ -22,8 +22,8 @@ describe('extractSourceCode', () => {
       'import { useGT } from "gt-next";',
       '',
       'function Page() {',
-      '  const gt = useGT();',
-      '  const greeting = gt("Hello, world!");',
+      '  const t = useGT();',
+      '  const greeting = t("Hello, world!");',
       '  return <div>{greeting}</div>;',
       '}',
     ]);
@@ -33,8 +33,8 @@ describe('extractSourceCode', () => {
     const result = extractSourceCode('/test/single-line.tsx', 6, 6, 3);
 
     expect(result).toEqual({
-      before: '\nfunction Page() {\n  const gt = useGT();',
-      target: '  const greeting = gt("Hello, world!");',
+      before: '\nfunction Page() {\n  const t = useGT();',
+      target: '  const greeting = t("Hello, world!");',
       after: '  return <div>{greeting}</div>;\n}',
     });
   });
@@ -68,8 +68,8 @@ describe('extractSourceCode', () => {
 
   it('should handle target at the top of the file', () => {
     const fileContent = makeFile([
-      'const greeting = gt("Hello!");',
-      'const farewell = gt("Goodbye!");',
+      'const greeting = t("Hello!");',
+      'const farewell = t("Goodbye!");',
       'export { greeting, farewell };',
     ]);
 
@@ -79,8 +79,8 @@ describe('extractSourceCode', () => {
 
     expect(result).toEqual({
       before: '',
-      target: 'const greeting = gt("Hello!");',
-      after: 'const farewell = gt("Goodbye!");\nexport { greeting, farewell };',
+      target: 'const greeting = t("Hello!");',
+      after: 'const farewell = t("Goodbye!");\nexport { greeting, farewell };',
     });
   });
 
@@ -88,8 +88,8 @@ describe('extractSourceCode', () => {
     const fileContent = makeFile([
       'import { useGT } from "gt-next";',
       '',
-      'const gt = useGT();',
-      'const msg = gt("Last line");',
+      'const t = useGT();',
+      'const msg = t("Last line");',
     ]);
 
     mockFs.readFileSync.mockReturnValue(fileContent);
@@ -97,8 +97,8 @@ describe('extractSourceCode', () => {
     const result = extractSourceCode('/test/bottom.tsx', 4, 4, 5);
 
     expect(result).toEqual({
-      before: 'import { useGT } from "gt-next";\n\nconst gt = useGT();',
-      target: 'const msg = gt("Last line");',
+      before: 'import { useGT } from "gt-next";\n\nconst t = useGT();',
+      target: 'const msg = t("Last line");',
       after: '',
     });
   });
@@ -150,13 +150,13 @@ describe('extractSourceCode', () => {
   });
 
   it('should handle a single-line file', () => {
-    mockFs.readFileSync.mockReturnValue('const x = gt("only line");');
+    mockFs.readFileSync.mockReturnValue('const x = t("only line");');
 
     const result = extractSourceCode('/test/single-line-file.tsx', 1, 1, 5);
 
     expect(result).toEqual({
       before: '',
-      target: 'const x = gt("only line");',
+      target: 'const x = t("only line");',
       after: '',
     });
   });

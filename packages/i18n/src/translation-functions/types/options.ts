@@ -27,7 +27,7 @@ export type TranslationMetadata = {
 export type TranslationOptions = TranslationVariables & TranslationMetadata;
 
 /**
- * User-provided options accepted by gt().
+ * User-provided options accepted by t().
  *
  * interp vars + $context, $id, $format, $locale, $_hash, $maxChars
  */

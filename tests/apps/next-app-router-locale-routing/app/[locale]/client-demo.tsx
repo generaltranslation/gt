@@ -3,7 +3,7 @@
 import { LocaleSelector, T, useGT, useLocale } from 'gt-next';
 
 export function ClientDemo() {
-  const gt = useGT();
+  const t = useGT();
   const locale = useLocale();
 
   return (
@@ -16,7 +16,7 @@ export function ClientDemo() {
       <T>
         <p>This paragraph is translated in a client component.</p>
       </T>
-      <p>{gt('A client-translated string from useGT.')}</p>
+      <p>{t('A client-translated string from useGT.')}</p>
     </section>
   );
 }

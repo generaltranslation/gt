@@ -1886,8 +1886,8 @@ const stringFactoryProbes: StringFactoryProbe[] = [
     script: `
       import { useGT } from 'gt-vue';
       const make = () => useGT();
-      const gt = make();
-      gt('Arrow factory');
+      const t = make();
+      t('Arrow factory');
     `,
     source: 'Arrow factory',
     possibleGT: true,
@@ -1908,8 +1908,8 @@ const stringFactoryProbes: StringFactoryProbe[] = [
     script: `
       import { useGT } from 'gt-vue';
       const identity = (value) => value;
-      const gt = identity(useGT());
-      gt('Identity factory');
+      const t = identity(useGT());
+      t('Identity factory');
     `,
     source: 'Identity factory',
     possibleGT: true,
@@ -1930,8 +1930,8 @@ const stringFactoryProbes: StringFactoryProbe[] = [
     script: `
       import { useGT } from 'gt-vue';
       function select(value) { return value; }
-      const gt = select(useGT());
-      gt('Argument selector');
+      const t = select(useGT());
+      t('Argument selector');
     `,
     source: 'Argument selector',
     possibleGT: true,
@@ -1940,8 +1940,8 @@ const stringFactoryProbes: StringFactoryProbe[] = [
     name: 'a conditional binding may be a useGT result',
     script: `
       import { useGT } from 'gt-vue';
-      const gt = flag ? useGT() : String;
-      gt('Conditional binding');
+      const t = flag ? useGT() : String;
+      t('Conditional binding');
     `,
     source: 'Conditional binding',
     possibleGT: true,
@@ -1951,8 +1951,8 @@ const stringFactoryProbes: StringFactoryProbe[] = [
     script: `
       import { useGT } from 'gt-vue';
       const make = () => flag ? useGT() : String;
-      const gt = make();
-      gt('Conditional factory');
+      const t = make();
+      t('Conditional factory');
     `,
     source: 'Conditional factory',
     possibleGT: true,

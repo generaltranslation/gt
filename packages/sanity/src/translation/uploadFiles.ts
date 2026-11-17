@@ -1,5 +1,6 @@
 import type { GTFile, Secrets } from '../types';
 import type { UploadSourceFilesResponse } from '@generaltranslation/api';
+import type { BatchWriteResponse } from 'generaltranslation';
 import { gt, projectFor } from '../adapter/core';
 import type { SerializedDocument } from '../serialization/types';
 import { resolveFileName } from '../utils/fileNames';
@@ -13,7 +14,7 @@ export async function uploadFiles(
     serializedDocument: SerializedDocument;
   }[],
   secrets: Secrets | null
-): Promise<UploadSourceFilesResponse> {
+): Promise<BatchWriteResponse<UploadSourceFilesResponse>> {
   const project = projectFor(secrets);
   // With `allowNonDefaultSourceLocales`, each file declares the language of
   // its own document, so one request can mix originals in different locales.

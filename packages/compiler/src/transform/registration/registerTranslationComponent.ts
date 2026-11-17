@@ -1,7 +1,7 @@
 import { TransformState } from '../../state/types';
 
 /**
- * Track gt() function invocations
+ * Track t() function invocations
  * - Adds the translation content to the string collector
  */
 export function registerTranslationComponent(

@@ -4,22 +4,22 @@ import { T, T as T2, msg, useGT, useMessages } from 'gt-vue';
 type GTFunction = ReturnType<typeof useGT>;
 const first = 'A';
 const second = 'B' as const;
-const gt = useGT() as GTFunction;
+const t = useGT() as GTFunction;
 const m = useMessages();
 const title = 'Static message';
 const LocalT = T as typeof T;
 
-gt(first + second);
-gt(`BigInt ${1n}`);
-gt('Typed context', { $context: 'typed' } as const);
-gt('Satisfies context', {
+t(first + second);
+t(`BigInt ${1n}`);
+t('Typed context', { $context: 'typed' } as const);
+t('Satisfies context', {
   $context: 'satisfies',
 } satisfies { $context: string });
-gt('Static satisfies' satisfies string);
+t('Static satisfies' satisfies string);
 m(title);
 useGT()('Direct hook call');
-gt?.('Optional call');
-gt!('Non-null call');
+t?.('Optional call');
+t!('Non-null call');
 
 // oxlint-disable-next-line prefer-const -- exercises a post-declaration assignment flow
 let assigned;

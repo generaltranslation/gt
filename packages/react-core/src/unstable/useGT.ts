@@ -12,8 +12,8 @@ import { useTranslationConditions } from '../hooks/utils';
  * arrive. Other misses render the source.
  *
  * @example
- * const gt = useGT();
- * gt`Hello, ${{ name }}!`;
+ * const t = useGT();
+ * t`Hello, ${{ name }}!`;
  */
 export function useGT(): GT {
   const { locale, shouldTranslate } = useTranslationConditions();

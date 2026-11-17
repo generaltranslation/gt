@@ -35,8 +35,8 @@ const T_COMPONENT_CODE = `
 
 const USEGT_CODE = `
   import { useGT } from 'gt-react';
-  const gt = useGT();
-  gt("Hello world");
+  const t = useGT();
+  t("Hello world");
 `;
 
 const TAGGED_TEMPLATE_CODE = `

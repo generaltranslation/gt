@@ -67,9 +67,9 @@ describe('translation function locale defaults', () => {
     it('uses the current locale without accepting a locale parameter', async () => {
       setupTranslations({ [icuHash(message)]: 'Bonjour {name} !' });
 
-      const gt = await getGT();
+      const t = await getGT();
 
-      expect(gt(message, { name: 'Alice' })).toBe('Bonjour Alice !');
+      expect(t(message, { name: 'Alice' })).toBe('Bonjour Alice !');
     });
 
     it('allows $locale to select another loaded locale', async () => {
@@ -83,10 +83,10 @@ describe('translation function locale defaults', () => {
         { locales: ['en', 'fr', 'es'] }
       );
 
-      const gt = await getGT();
+      const t = await getGT();
       await cache.loadTranslations('es');
 
-      expect(gt(message, { $locale: 'es', name: 'Alice' })).toBe('Hola Alice!');
+      expect(t(message, { $locale: 'es', name: 'Alice' })).toBe('Hola Alice!');
     });
 
     it('preloads compiler messages when dev hot reload is enabled', async () => {
@@ -124,7 +124,7 @@ describe('translation function locale defaults', () => {
       ]);
       // Flush the runtime-translation batch that the preload waits on
       await vi.advanceTimersByTimeAsync(50);
-      const gt = await pending;
+      const t = await pending;
 
       expect(translateMany).toHaveBeenCalledTimes(1);
       // The fire-and-forget lookup of a still-missing message rejects too; an
@@ -132,7 +132,7 @@ describe('translation function locale defaults', () => {
       vi.spyOn(cache, 'lookupTranslationWithFallback').mockRejectedValue(
         new Error('offline')
       );
-      expect(gt(message, { name: 'Alice' })).toBe('Hello Alice!');
+      expect(t(message, { name: 'Alice' })).toBe('Hello Alice!');
     });
 
     it('catches fire-and-forget dev hot reload lookup rejections', async () => {
@@ -143,9 +143,9 @@ describe('translation function locale defaults', () => {
         catch: catchHandler,
       } as unknown as ReturnType<typeof cache.lookupTranslationWithFallback>);
 
-      const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
+      const t = await getGTInternal({ locale: 'fr', enableI18n: true });
 
-      expect(gt(message, { name: 'Alice' })).toBe('Hello Alice!');
+      expect(t(message, { name: 'Alice' })).toBe('Hello Alice!');
       expect(catchHandler).toHaveBeenCalledWith(expect.any(Function));
     });
   });

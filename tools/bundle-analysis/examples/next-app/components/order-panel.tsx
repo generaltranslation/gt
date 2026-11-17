@@ -11,15 +11,15 @@ const FINISHES = ['graphite', 'paper', 'titanium'] as const;
 type Finish = (typeof FINISHES)[number];
 
 export function OrderPanel() {
-  const gt = useGT();
+  const t = useGT();
   const [finish, setFinish] = useState<Finish>('graphite');
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(0);
 
   const finishNames: Record<Finish, string> = {
-    graphite: gt('Graphite'),
-    paper: gt('Paper'),
-    titanium: gt('Titanium'),
+    graphite: t('Graphite'),
+    paper: t('Paper'),
+    titanium: t('Titanium'),
   };
   const shipping = quantity >= FREE_SHIPPING_FROM ? 0 : SHIPPING;
   const total = quantity * UNIT_PRICE + shipping;
@@ -28,7 +28,7 @@ export function OrderPanel() {
     <div className='order'>
       <div className='order-group' role='group' aria-labelledby='finish-label'>
         <p className='gt-label' id='finish-label'>
-          {gt('Finish')}
+          {t('Finish')}
         </p>
         <div className='finishes'>
           {FINISHES.map((option) => (
@@ -74,12 +74,12 @@ export function OrderPanel() {
         aria-labelledby='quantity-label'
       >
         <p className='gt-label' id='quantity-label'>
-          {gt('Quantity')}
+          {t('Quantity')}
         </p>
         <div className='stepper'>
           <button
             type='button'
-            aria-label={gt('Remove one lamp')}
+            aria-label={t('Remove one lamp')}
             disabled={quantity <= 1}
             onClick={() => setQuantity(quantity - 1)}
           >
@@ -88,7 +88,7 @@ export function OrderPanel() {
           <output aria-live='polite'>{quantity}</output>
           <button
             type='button'
-            aria-label={gt('Add one lamp')}
+            aria-label={t('Add one lamp')}
             disabled={quantity >= 9}
             onClick={() => setQuantity(quantity + 1)}
           >
@@ -129,15 +129,14 @@ export function OrderPanel() {
           className='gt-button'
           onClick={() => setAdded(added + quantity)}
         >
-          {gt('Add To Cart')}
+          {t('Add To Cart')}
         </button>
         <p className='gt-label' aria-live='polite'>
           {added > 0
-            ? gt(
-                '{count, plural, one {# lamp} other {# lamps}} in your cart.',
-                { count: added }
-              )
-            : gt('Ships from Rotterdam and Shenzhen.')}
+            ? t('{count, plural, one {# lamp} other {# lamps}} in your cart.', {
+                count: added,
+              })
+            : t('Ships from Rotterdam and Shenzhen.')}
         </p>
       </div>
     </div>

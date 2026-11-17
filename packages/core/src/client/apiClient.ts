@@ -4,6 +4,7 @@ import {
   DEFAULT_TIMEOUT_MS,
   processBatches,
   type ErrorCode,
+  type ErrorResponse,
   type ApiVersion,
   type BatchWriteSummary,
 } from '@generaltranslation/api';
@@ -60,13 +61,35 @@ export function resolveServiceLocale(
   return standardizeLocale(resolveCanonicalLocale(locale, customMapping));
 }
 
-type BatchWriteResponse<Result> = {
+type BatchResults<Result> = {
   summary: BatchWriteSummary;
   results: Result[];
 };
 
-/** @internal Why a whole batch failed, in the shape of a failed result. */
-export type BatchFailure = { error: string; code?: ErrorCode };
+/** Why a whole batch failed, in the shape of a failed result; a network failure has no code. */
+export type BatchFailure = Pick<ErrorResponse, 'error'> &
+  Partial<Pick<ErrorResponse, 'code'>>;
+
+type FailedBatchResult<Result> = Omit<
+  Extract<Result, { status: 'failed' }>,
+  keyof BatchFailure
+> &
+  BatchFailure;
+
+/**
+ * One result of a batch write: succeeded as the API describes it, or failed
+ * with any API error code, or none, because a failed request fails each of its
+ * items with the request's error.
+ */
+export type BatchWriteResult<Result> =
+  | Extract<Result, { status: 'succeeded' }>
+  | FailedBatchResult<Result>;
+
+/** The API's response to a batch write, with its results as `BatchWriteResult`. */
+export type BatchWriteResponse<Response extends { results: unknown[] }> = Omit<
+  Response,
+  'results'
+> & { results: BatchWriteResult<Response['results'][number]>[] };
 
 function batchFailure(reason: unknown): BatchFailure {
   // Like a failed result the API sends, the code may be newer than the generated ErrorCode.
@@ -91,10 +114,10 @@ function batchFailure(reason: unknown): BatchFailure {
 export async function writeInBatches<Item, Result>(
   items: readonly Item[],
   batchSize: number,
-  write: (batch: Item[]) => Promise<BatchWriteResponse<Result>>,
-  failed: (item: Item, failure: BatchFailure) => Result[],
+  write: (batch: Item[]) => Promise<BatchResults<Result>>,
+  failed: (item: Item, failure: BatchFailure) => FailedBatchResult<Result>[],
   { parallel }: { parallel?: boolean } = {}
-): Promise<BatchWriteResponse<Result>> {
+): Promise<BatchResults<Result | FailedBatchResult<Result>>> {
   const settled = await processBatches(
     items,
     async (batch) => [
@@ -111,15 +134,21 @@ export async function writeInBatches<Item, Result>(
   if (rejected.length > 0 && rejected.length === settled.length) {
     throw rejected[0].reason;
   }
-  const responses = settled.map((outcome): BatchWriteResponse<Result> => {
-    if ('response' in outcome) return outcome.response;
-    const failure = batchFailure(outcome.reason);
-    const results = outcome.batch.flatMap((item) => failed(item, failure));
-    return {
-      summary: { total: results.length, succeeded: 0, failed: results.length },
-      results,
-    };
-  });
+  const responses = settled.map(
+    (outcome): BatchResults<Result | FailedBatchResult<Result>> => {
+      if ('response' in outcome) return outcome.response;
+      const failure = batchFailure(outcome.reason);
+      const results = outcome.batch.flatMap((item) => failed(item, failure));
+      return {
+        summary: {
+          total: results.length,
+          succeeded: 0,
+          failed: results.length,
+        },
+        results,
+      };
+    }
+  );
   const total = (key: keyof BatchWriteSummary) =>
     responses.reduce((sum, response) => sum + response.summary[key], 0);
   return {

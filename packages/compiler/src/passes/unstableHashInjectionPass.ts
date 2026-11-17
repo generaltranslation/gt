@@ -9,7 +9,7 @@ import { createErrorLocation } from '../utils/errors';
 
 /**
  * Unstable hash injection pass — injects `$_hash` into statically analyzable
- * unstable tagged templates (gt`...`), and in production builds with
+ * unstable tagged templates (t`...`), and in production builds with
  * `files.gt.inlineTranslations` the translations embedded at the call site.
  * Each template is hashed and rewritten in the same visit, so this pass needs
  * no collection counters.

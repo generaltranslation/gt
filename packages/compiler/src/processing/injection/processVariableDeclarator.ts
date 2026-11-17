@@ -10,11 +10,11 @@ import { injectCallbackDeclaratorFunctionParameters } from '../../transform/inje
  * - Track overriding variables
  *
  * GT callbacks:
- * - const gt = useGT()
+ * - const t = useGT()
  *
  * Overriding variables:
- * - const gt = msg("hello");
- * - const gt = "Hello"
+ * - const t = msg("hello");
+ * - const t = "Hello"
  */
 export function processVariableDeclarator(
   state: TransformState

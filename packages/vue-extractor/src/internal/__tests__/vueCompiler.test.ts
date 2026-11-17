@@ -358,7 +358,7 @@ describe('Vue compiler option parity', () => {
       ...testVueCompiler,
       parseTemplate: parseTemplateWithoutForMetadata,
     } as unknown as VueCompiler;
-    const source = `<script setup>import { useGT } from 'gt-vue'; const gt = useGT(); const rows = [];</script><template><div v-for="{ value = gt('VFor default') } in gt('VFor source')" :title="value" /><div v-for="(value, gt, index) in rows" :title="gt('Shadowed iterator')" /></template>`;
+    const source = `<script setup>import { useGT } from 'gt-vue'; const t = useGT(); const rows = [];</script><template><div v-for="{ value = t('VFor default') } in t('VFor source')" :title="value" /><div v-for="(value, t, index) in rows" :title="t('Shadowed iterator')" /></template>`;
 
     const output = await extractFromVueSource(
       source,

@@ -8,7 +8,7 @@ import type {
   InlineTranslations,
   InlineTranslationsOption,
 } from '../types-dir/inline';
-import { buildMessage } from './buildMessage';
+import { buildSiteMessage } from './buildMessage';
 import type { CheckHoles } from './placeholders';
 import {
   type LookupTreeTranslation,
@@ -28,7 +28,7 @@ type GTTag = <const H extends readonly unknown[]>(
   ...holes: CheckHoles<H>
 ) => string;
 
-/** gt`...` or gt({ context })`...` */
+/** t`...` or t({ context })`...` */
 export type GT = GTTag &
   ((options: GTOptions & InlineTranslationsOption<MessageTree>) => GTTag);
 
@@ -96,8 +96,12 @@ export function createGT(params: CreateGTParams): GT {
     strings: TemplateStringsArray,
     holes: unknown[]
   ): string => {
-    const { tree, values, formats } = buildMessage(strings, holes);
-    return renderTree(tree, values, formats, options, inline);
+    const { tree, values, formats, metadata } = buildSiteMessage(
+      strings,
+      holes,
+      options
+    );
+    return renderTree(tree, values, formats, metadata, inline);
   };
   const gt = (
     first: TemplateStringsArray | GTRenderOptions,

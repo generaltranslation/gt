@@ -2,13 +2,24 @@ import type {
   UploadSourceFilesResponse,
   UploadTranslationsResponse,
 } from '@generaltranslation/api';
+import type { BatchWriteResult } from 'generaltranslation';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
+type SourceUploadResult = BatchWriteResult<
+  UploadSourceFilesResponse['results'][number]
+>;
+
 // Source upload results carry no locale; translation upload results do.
-type BatchItemResult = Pick<
-  UploadSourceFilesResponse['results'][number],
-  'fileId' | 'status' | 'error'
-> &
+type BatchItemResult = (
+  | Pick<
+      Extract<SourceUploadResult, { status: 'succeeded' }>,
+      'fileId' | 'status'
+    >
+  | Pick<
+      Extract<SourceUploadResult, { status: 'failed' }>,
+      'fileId' | 'status' | 'error'
+    >
+) &
   Partial<Pick<UploadTranslationsResponse['results'][number], 'locale'>>;
 
 /** A successful batch request can still contain per-item failures. */
@@ -18,7 +29,7 @@ export function succeededResults<Result extends BatchItemResult>(response: {
   return response.results.filter((result) => result.status === 'succeeded');
 }
 
-/** A missing source fails the whole translation upload. */
+/** Only documents General Translation saved can have translations uploaded; the others would fail too. */
 export function filterUploadedDocuments<
   Document extends { info: { documentId: string } },
 >(
@@ -79,7 +90,7 @@ export function failedResultsDiagnostic(
       .filter((result) => result.status === 'failed')
       .map(
         ({ fileId, locale, error }) =>
-          `${fileId}${locale ? ` (${locale})` : ''}: ${error ?? 'no reason given'}`
+          `${fileId}${locale ? ` (${locale})` : ''}: ${error}`
       ),
   });
 }

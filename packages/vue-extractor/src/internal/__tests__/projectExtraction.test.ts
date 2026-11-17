@@ -192,9 +192,9 @@ ${translatableSfc('Message after custom block')}`,
       `,
       'packages/docs/src/App.vue': `<script setup>
 import { useGT } from 'gt-vue';
-const gt = useGT();
+const t = useGT();
 </script>
-<template><p>[[ gt('Nested package message') ]]</p></template>
+<template><p>[[ t('Nested package message') ]]</p></template>
 `,
     });
 
@@ -223,9 +223,9 @@ const gt = useGT();
       }),
       'packages/docs/src/App.vue': `<script setup>
 import { useGT } from 'gt-vue';
-const gt = useGT();
+const t = useGT();
 </script>
-<template><p>[[ gt('Inherited root compiler options') ]]</p></template>
+<template><p>[[ t('Inherited root compiler options') ]]</p></template>
 `,
     });
 
@@ -251,9 +251,9 @@ const gt = useGT();
       'packages/docs/package.json': vuePackage('@fixture/docs'),
       'packages/docs/src/App.vue': `<script setup>
 import { useGT } from 'gt-vue';
-const gt = useGT();
+const t = useGT();
 </script>
-<template><p>{{ gt('Independent nested compiler options') }}</p></template>
+<template><p>{{ t('Independent nested compiler options') }}</p></template>
 `,
     });
 
@@ -272,8 +272,8 @@ const gt = useGT();
     const root = createVueFixture({
       'src/messages.ts': `
         import { useGT } from 'gt-vue';
-        const gt = useGT();
-        export const title = gt('Welcome to San Francisco', {
+        const t = useGT();
+        export const title = t('Welcome to San Francisco', {
           $context: 'homepage hero',
         });
       `,
@@ -373,8 +373,8 @@ const gt = useGT();
           import React from 'react';
           import { T, msg, useGT } from 'gt-react';
           export function App() {
-            const gt = useGT();
-            return <T>{gt('React call')} {msg('React message')}</T>;
+            const t = useGT();
+            return <T>{t('React call')} {msg('React message')}</T>;
           }
         `,
         'src/Next.tsx': `
@@ -500,9 +500,9 @@ const context = ref('dynamic');
       'apps/selected/package.json': vuePackage('selected-app'),
       'apps/selected/src/App.vue': `<script setup>
 import { useGT } from 'gt-vue';
-const gt = useGT();
+const t = useGT();
 </script>
-<template>[[ gt('Selected central config') ]]</template>
+<template>[[ t('Selected central config') ]]</template>
 `,
       'apps/other/package.json': vuePackage('other-app'),
       'apps/other/src/App.vue': translatableSfc('Unselected app'),
@@ -1426,9 +1426,9 @@ describe('project extraction orchestration parity', () => {
   function vueCall(open: string, close: string, source: string): string {
     return `<script setup>
 import { useGT } from 'gt-vue';
-const gt = useGT();
+const t = useGT();
 </script>
-<template>${open} gt(${JSON.stringify(source)}) ${close}</template>`;
+<template>${open} t(${JSON.stringify(source)}) ${close}</template>`;
   }
 });
 
@@ -1438,8 +1438,8 @@ describe('project alias provenance', () => {
       'src/App.tsx': `
         import { useGT } from 'gt-react';
         export function App() {
-          const gt = useGT();
-          return <h1>{gt('React-owned message')}</h1>;
+          const t = useGT();
+          return <h1>{t('React-owned message')}</h1>;
         }
       `,
     });
@@ -1470,8 +1470,8 @@ describe('project alias provenance', () => {
       'src/App.tsx': `
         import { useGT } from '#i18n';
         export function App() {
-          const gt = useGT();
-          return <h1>{gt('Ordinary aliased message')}</h1>;
+          const t = useGT();
+          return <h1>{t('Ordinary aliased message')}</h1>;
         }
       `,
     });
@@ -1513,8 +1513,8 @@ describe('project alias provenance', () => {
       'src/App.tsx': `
         import { useGT } from '@app';
         export function App() {
-          const gt = useGT();
-          return <h1>{gt('React-owned aliased message')}</h1>;
+          const t = useGT();
+          return <h1>{t('React-owned aliased message')}</h1>;
         }
       `,
     });

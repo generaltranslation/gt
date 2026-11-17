@@ -25,10 +25,10 @@ export default function App() {
 
 function LocaleDemo() {
   const locale = useLocale();
-  const gt = useGT();
+  const t = useGT();
   const setLocale = useSetLocale();
   const locales = [gtConfig.defaultLocale, ...gtConfig.locales];
-  const gtMessage = gt('This line is translated with gt().', {
+  const gtMessage = t('This line is translated with t().', {
     $_hash: 'tMessage',
   });
 

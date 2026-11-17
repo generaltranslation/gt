@@ -227,22 +227,22 @@ describe('Vue script extraction', () => {
     },
     {
       name: 'useGT result',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); gt('Hook result');`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); t('Hook result');`,
       sources: ['Hook result'],
     },
     {
       name: 'aliased useGT import',
-      script: `import { useGT as createTranslator } from 'gt-vue'; const gt = createTranslator(); gt('Hook import alias');`,
+      script: `import { useGT as createTranslator } from 'gt-vue'; const t = createTranslator(); t('Hook import alias');`,
       sources: ['Hook import alias'],
     },
     {
       name: 'hook function alias',
-      script: `import { useGT } from 'gt-vue'; const hook = useGT; const gt = hook(); gt('Hook function alias');`,
+      script: `import { useGT } from 'gt-vue'; const hook = useGT; const t = hook(); t('Hook function alias');`,
       sources: ['Hook function alias'],
     },
     {
       name: 'deep translator aliases',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const a = gt; const b = a; const c = b; c('Deep alias');`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); const a = t; const b = a; const c = b; c('Deep alias');`,
       sources: ['Deep alias'],
     },
     {
@@ -277,22 +277,22 @@ describe('Vue script extraction', () => {
     },
     {
       name: 'optional translator call',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); gt?.('Optional translator');`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); t?.('Optional translator');`,
       sources: ['Optional translator'],
     },
     {
       name: 'non-null translator call',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); gt!('Non-null translator');`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); t!('Non-null translator');`,
       sources: ['Non-null translator'],
     },
     {
       name: 'type-cast translator call',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); (gt as typeof gt)('Type-cast translator');`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); (t as typeof t)('Type-cast translator');`,
       sources: ['Type-cast translator'],
     },
     {
       name: 'satisfies-wrapped translator call',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); (gt satisfies typeof gt)('Satisfies translator');`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); (t satisfies typeof t)('Satisfies translator');`,
       sources: ['Satisfies translator'],
     },
     {
@@ -333,45 +333,45 @@ describe('Vue script extraction', () => {
     },
     {
       name: 'as-const options wrapper',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); gt('Context cast', { $context: 'cast' } as const);`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); t('Context cast', { $context: 'cast' } as const);`,
       sources: ['Context cast'],
       contexts: { 'Context cast': 'cast' },
     },
     {
       name: 'satisfies options wrapper',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); gt('Context satisfies', { $context: 'satisfies' } satisfies { $context: string });`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); t('Context satisfies', { $context: 'satisfies' } satisfies { $context: string });`,
       sources: ['Context satisfies'],
       contexts: { 'Context satisfies': 'satisfies' },
     },
     {
       name: 'const context value',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const context = 'identifier'; gt('Context identifier', { $context: context });`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); const context = 'identifier'; t('Context identifier', { $context: context });`,
       sources: ['Context identifier'],
       contexts: { 'Context identifier': 'identifier' },
     },
     {
       name: 'single late assignment',
-      script: `import { useGT } from 'gt-vue'; let gt; gt = useGT(); gt('Late assignment');`,
+      script: `import { useGT } from 'gt-vue'; let t; t = useGT(); t('Late assignment');`,
       sources: ['Late assignment'],
     },
     {
       name: 'object destructuring declaration',
-      script: `import { useGT } from 'gt-vue'; const { gt } = { gt: useGT() }; gt('Object declaration');`,
+      script: `import { useGT } from 'gt-vue'; const { t } = { t: useGT() }; t('Object declaration');`,
       sources: ['Object declaration'],
     },
     {
       name: 'array destructuring declaration',
-      script: `import { useGT } from 'gt-vue'; const [gt] = [useGT()]; gt('Array declaration');`,
+      script: `import { useGT } from 'gt-vue'; const [t] = [useGT()]; t('Array declaration');`,
       sources: ['Array declaration'],
     },
     {
       name: 'object destructuring assignment',
-      script: `import { useGT } from 'gt-vue'; let gt; ({ gt } = { gt: useGT() }); gt('Object assignment');`,
+      script: `import { useGT } from 'gt-vue'; let t; ({ t } = { t: useGT() }); t('Object assignment');`,
       sources: ['Object assignment'],
     },
     {
       name: 'array destructuring assignment',
-      script: `import { useGT } from 'gt-vue'; let gt; [gt] = [useGT()]; gt('Array assignment');`,
+      script: `import { useGT } from 'gt-vue'; let t; [t] = [useGT()]; t('Array assignment');`,
       sources: ['Array assignment'],
     },
     {
@@ -423,12 +423,12 @@ describe('Vue script extraction', () => {
     },
     {
       name: 'type-only import',
-      script: `import type { GTFunction } from 'gt-vue'; const gt = null as unknown as GTFunction; gt('Type-only import');`,
+      script: `import type { GTFunction } from 'gt-vue'; const t = null as unknown as GTFunction; t('Type-only import');`,
       sources: [],
     },
     {
       name: 'translator passed as callback',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); function helper(translator: typeof gt) { translator('Passed callback'); } helper(gt);`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); function helper(translator: typeof t) { translator('Passed callback'); } helper(t);`,
       sources: ['Passed callback'],
     },
     {
@@ -447,10 +447,10 @@ describe('Vue script extraction', () => {
     ScriptMatrixCase & { diagnostic: string }
   > = [
     {
-      name: 'dynamic gt source',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const value = String(Date.now()); gt(value);`,
+      name: 'dynamic t source',
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); const value = String(Date.now()); t(value);`,
       sources: [],
-      diagnostic: 'dynamic content',
+      diagnostic: 'Found dynamic content in a gt-vue t() call',
     },
     {
       name: 'dynamic msg source',
@@ -461,31 +461,31 @@ describe('Vue script extraction', () => {
     {
       name: 'dynamic template expression',
       script:
-        "import { useGT } from 'gt-vue'; const gt = useGT(); gt(`Now ${String(Date.now())}`);",
+        "import { useGT } from 'gt-vue'; const t = useGT(); t(`Now ${String(Date.now())}`);",
       sources: [],
       diagnostic: 'dynamic content',
     },
     {
       name: 'dynamic options object',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const options = { $context: 'named' }; gt('Named options', options);`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); const options = { $context: 'named' }; t('Named options', options);`,
       sources: [],
       diagnostic: 'dynamic options',
     },
     {
       name: 'dynamic context value',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); gt('Dynamic context', { $context: String(Date.now()) });`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); t('Dynamic context', { $context: String(Date.now()) });`,
       sources: [],
       diagnostic: 'dynamic $context',
     },
     {
       name: 'unsupported option',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); gt('Unsupported option', { $id: 'id' });`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); t('Unsupported option', { $id: 'id' });`,
       sources: [],
       diagnostic: 'unsupported gt-vue string option',
     },
     {
       name: 'excess call argument',
-      script: `import { useGT } from 'gt-vue'; const gt = useGT(); gt('Excess argument', {}, 'extra');`,
+      script: `import { useGT } from 'gt-vue'; const t = useGT(); t('Excess argument', {}, 'extra');`,
       sources: [],
       diagnostic: 'unsupported arguments',
     },
@@ -542,7 +542,7 @@ describe('Vue script extraction', () => {
     it('diagnoses a call before a late assignment and extracts the later call', async () => {
       const result = await extractInlineScript({
         name: 'call before a late assignment',
-        script: `import { useGT } from 'gt-vue'; let gt; gt('Before assignment'); gt = useGT(); gt('After unsafe assignment');`,
+        script: `import { useGT } from 'gt-vue'; let t; t('Before assignment'); t = useGT(); t('After unsafe assignment');`,
         sources: [],
       });
 
@@ -562,7 +562,7 @@ describe('Vue script extraction', () => {
     it('fails closed for a conditional translator selection', async () => {
       const result = await extractInlineScript({
         name: 'conditional translator selection',
-        script: `import { useGT } from 'gt-vue'; const gt = useGT(); const callback = Date.now() > 0 ? gt : String; callback('Conditional callback');`,
+        script: `import { useGT } from 'gt-vue'; const t = useGT(); const callback = Date.now() > 0 ? t : String; callback('Conditional callback');`,
         sources: [],
       });
 
@@ -737,8 +737,8 @@ describe('Vue script extraction audit cases', () => {
       name: 'static computed context key',
       source: setup(
         `import { useGT } from 'gt-vue';
-       const gt = useGT();
-       gt('Computed context key', { ['$context']: 'computed' });`
+       const t = useGT();
+       t('Computed context key', { ['$context']: 'computed' });`
       ),
       sources: ['Computed context key'],
       contexts: { 'Computed context key': 'computed' },
@@ -747,9 +747,9 @@ describe('Vue script extraction audit cases', () => {
       name: 'shorthand static context value',
       source: setup(
         `import { useGT } from 'gt-vue';
-       const gt = useGT();
+       const t = useGT();
        const $context = 'shorthand';
-       gt('Shorthand context', { $context });`
+       t('Shorthand context', { $context });`
       ),
       sources: ['Shorthand context'],
       contexts: { 'Shorthand context': 'shorthand' },
@@ -819,8 +819,8 @@ describe('Vue script extraction audit cases', () => {
     {
       name: 'reverse cross-block import visibility',
       source: `<script>
-      const gt = useGT();
-      gt('Reverse cross-block import');
+      const t = useGT();
+      t('Reverse cross-block import');
       export default {};
     </script>
     <script setup>import { useGT } from 'gt-vue';</script>
@@ -835,8 +835,8 @@ describe('Vue script extraction audit cases', () => {
       export { createTranslator };
     </script>
     <script setup>
-      const gt = createTranslator();
-      gt('Cross-block hook alias');
+      const t = createTranslator();
+      t('Cross-block hook alias');
     </script>`,
       sources: ['Cross-block hook alias'],
     },
@@ -861,16 +861,16 @@ describe('Vue script extraction audit cases', () => {
       sources: ['Template static messages'],
     },
     {
-      name: 'static setup source and context passed to gt in template',
+      name: 'static setup source and context passed to t in template',
       source: setup(
         `import { useGT } from 'gt-vue';
-       const gt = useGT();
-       const source = 'Template static gt';
+       const t = useGT();
+       const source = 'Template static t';
        const context = 'template-static';`,
-        `{{ gt(source, { $context: context }) }}`
+        `{{ t(source, { $context: context }) }}`
       ),
-      sources: ['Template static gt'],
-      contexts: { 'Template static gt': 'template-static' },
+      sources: ['Template static t'],
+      contexts: { 'Template static t': 'template-static' },
     },
     {
       name: 'computed Options API component registration',
@@ -912,26 +912,26 @@ describe('Vue script extraction audit cases', () => {
       sources: ['Options static messages'],
     },
     {
-      name: 'Options API returned static gt source and context',
+      name: 'Options API returned static t source and context',
       source: options(
         `import { useGT } from 'gt-vue';
        export default {
          setup() {
-           const gt = useGT();
-           return { gt, source: 'Options static gt', context: 'options-static' };
+           const t = useGT();
+           return { t, source: 'Options static t', context: 'options-static' };
          },
        };`,
-        `{{ gt(source, { $context: context }) }}`
+        `{{ t(source, { $context: context }) }}`
       ),
-      sources: ['Options static gt'],
-      contexts: { 'Options static gt': 'options-static' },
+      sources: ['Options static t'],
+      contexts: { 'Options static t': 'options-static' },
     },
     {
       name: 'async concise Options API setup',
       source: options(
         `import { useGT } from 'gt-vue';
-       export default { setup: async () => ({ gt: useGT() }) };`,
-        `{{ gt('Async concise setup') }}`
+       export default { setup: async () => ({ t: useGT() }) };`,
+        `{{ t('Async concise setup') }}`
       ),
       sources: ['Async concise setup'],
     },
@@ -939,8 +939,8 @@ describe('Vue script extraction audit cases', () => {
       name: 'computed Options API setup key',
       source: options(
         `import { useGT } from 'gt-vue';
-       export default { ['setup']: () => ({ gt: useGT() }) };`,
-        `{{ gt('Computed setup key') }}`
+       export default { ['setup']: () => ({ t: useGT() }) };`,
+        `{{ t('Computed setup key') }}`
       ),
       sources: ['Computed setup key'],
     },
@@ -977,36 +977,36 @@ describe('Vue script extraction audit cases', () => {
       name: 'unquoted TypeScript SFC language',
       source: `<script setup lang=ts>
       import { useGT } from 'gt-vue';
-      const gt = useGT();
+      const t = useGT();
     </script>
-    <template><Card v-slot="{ value = gt!('Unquoted TypeScript') }" /></template>`,
+    <template><Card v-slot="{ value = t!('Unquoted TypeScript') }" /></template>`,
       sources: ['Unquoted TypeScript'],
     },
     {
       name: 'unquoted TSX SFC language',
       source: `<script setup lang=tsx>
       import { useGT } from 'gt-vue';
-      const gt = useGT();
+      const t = useGT();
     </script>
-    <template><Card v-slot="{ value = gt!('Unquoted TSX') }" /></template>`,
+    <template><Card v-slot="{ value = t!('Unquoted TSX') }" /></template>`,
       sources: ['Unquoted TSX'],
     },
     {
       name: 'uppercase unquoted TypeScript language value',
       source: `<script setup lang = TS>
       import { useGT } from 'gt-vue';
-      const gt = useGT();
+      const t = useGT();
     </script>
-    <template><Card v-slot="{ value = gt!('Uppercase TypeScript') }" /></template>`,
+    <template><Card v-slot="{ value = t!('Uppercase TypeScript') }" /></template>`,
       sources: ['Uppercase TypeScript'],
     },
     {
       name: 'mixed-case quoted TSX language value',
       source: `<script setup lang = 'TsX'>
       import { useGT } from 'gt-vue';
-      const gt = useGT();
+      const t = useGT();
     </script>
-    <template><Card v-slot="{ value = gt!('Mixed-case TSX') }" /></template>`,
+    <template><Card v-slot="{ value = t!('Mixed-case TSX') }" /></template>`,
       sources: ['Mixed-case TSX'],
     },
   ];
@@ -1152,10 +1152,8 @@ describe('Vue script extraction audit cases', () => {
       diagnostic: 'dynamic content',
     },
     {
-      name: 'gt without arguments',
-      source: setup(
-        `import { useGT } from 'gt-vue'; const gt = useGT(); gt();`
-      ),
+      name: 't without arguments',
+      source: setup(`import { useGT } from 'gt-vue'; const t = useGT(); t();`),
       sources: [],
       diagnostic: 'dynamic content',
     },
@@ -1177,9 +1175,9 @@ describe('Vue script extraction audit cases', () => {
       name: 'dynamic computed context key',
       source: setup(
         `import { useGT } from 'gt-vue';
-       const gt = useGT();
+       const t = useGT();
        const key = '$context';
-       gt('Dynamic context key', { [key]: 'context' });`
+       t('Dynamic context key', { [key]: 'context' });`
       ),
       sources: [],
       diagnostic: 'unsupported options',
@@ -1188,8 +1186,8 @@ describe('Vue script extraction audit cases', () => {
       name: 'spread context options',
       source: setup(
         `import { useGT } from 'gt-vue';
-       const gt = useGT();
-       gt('Spread options', { ...{ $context: 'spread' } });`
+       const t = useGT();
+       t('Spread options', { ...{ $context: 'spread' } });`
       ),
       sources: [],
       diagnostic: 'unsupported options',

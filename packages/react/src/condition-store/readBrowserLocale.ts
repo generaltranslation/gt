@@ -1,4 +1,9 @@
 import { getCookieValue } from './cookies';
+import { oncePerTask } from './oncePerTask';
+
+const navigatorLocales = oncePerTask<readonly string[]>(
+  () => navigator?.languages || []
+);
 
 export function readBrowserLocale(localeCookieName: string): string[] {
   const candidates = [];
@@ -10,8 +15,7 @@ export function readBrowserLocale(localeCookieName: string): string[] {
   if (cookieLocale) candidates.push(cookieLocale);
 
   // (2) Check navigator locales
-  const navigatorLocales = navigator?.languages || [];
-  candidates.push(...navigatorLocales);
+  candidates.push(...navigatorLocales.get());
 
   return candidates;
 }

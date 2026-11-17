@@ -3,7 +3,7 @@ import { GTFunctionType } from '../types/functions';
 import { interpolateIcuMessage } from '../utils/interpolation/interpolateIcuMessage';
 
 /**
- * A fallback function for the gt() function that decodes and interpolates.
+ * A fallback function for the t() function returned by useGT() that decodes and interpolates.
  * @param {string | null | undefined} message - The ICU formatted message to interpolate.
  * @param {GTTranslationOptions} options - The options to interpolate.
  * @returns - The decoded and interpolated message.
@@ -11,14 +11,14 @@ import { interpolateIcuMessage } from '../utils/interpolation/interpolateIcuMess
  * @note This function is useful as a placeholder when for incrementally migrating to the m() function.
  * @example
  * // A backwards compatible translation function
- * function getMessage(gt: GTFunctionType = gtFallback) {
- *   return gt('Hello, world!');
+ * function getMessage(t: GTFunctionType = gtFallback) {
+ *   return t('Hello, world!');
  * }
  *
  * // Here i18n has been implemented
  * function WithTranslation() {
- *   const gt = useGT();
- *   return <>{getMessage(gt)}</>;
+ *   const t = useGT();
+ *   return <>{getMessage(t)}</>;
  * }
  *
  *

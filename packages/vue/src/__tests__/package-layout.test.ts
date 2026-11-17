@@ -234,8 +234,8 @@ describe('gt-vue package layout', () => {
               if (commonjs.t('Shared source') !== 'Shared source') process.exit(1);
               const Root = {
                 setup() {
-                  const gt = commonjs.useGT();
-                  return () => h('p', gt('Shared component source'));
+                  const t = commonjs.useGT();
+                  return () => h('p', t('Shared component source'));
                 },
               };
               const html = await renderToString(createSSRApp(Root).use(esmPlugin));

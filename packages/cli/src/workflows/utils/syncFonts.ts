@@ -24,7 +24,7 @@ export async function syncFonts(settings: Settings): Promise<void> {
   // Without an account-scoped client the credentials are a project key, which the organization assets endpoint rejects.
   if (!account) {
     logger.warn(fontSyncDeniedWarning(projectKeyReason));
-    recordWarning('failed_upload', 'Fonts', projectKeyReason);
+    recordWarning('failed_font_sync', 'Fonts', projectKeyReason);
     return;
   }
   try {
@@ -37,7 +37,7 @@ export async function syncFonts(settings: Settings): Promise<void> {
     for (const result of results) {
       if (result.status === 'failed') {
         logger.warn(fontNotSyncedWarning(result.fileName, result.error));
-        recordWarning('failed_upload', result.fileName, result.error);
+        recordWarning('failed_font_sync', result.fileName, result.error);
       }
     }
   } catch (error) {
@@ -56,7 +56,7 @@ export async function syncFonts(settings: Settings): Promise<void> {
             )
           : fontSyncWarning('Font sync failed', details, hint)
     );
-    recordWarning('failed_upload', 'Fonts', reason);
+    recordWarning('failed_font_sync', 'Fonts', reason);
   }
 }
 

@@ -14,7 +14,7 @@ async function CachedServerPanel({ locale }: { locale: string }) {
   cacheLife('minutes');
   cacheTag(`gt-cache-server-panel-${locale}`);
 
-  const gt = await getGT();
+  const t = await getGT();
 
   return (
     <section className='panel'>
@@ -25,7 +25,7 @@ async function CachedServerPanel({ locale }: { locale: string }) {
           a cached locale value: <Var>{locale}</Var>
         </p>
       </T>
-      <p>{gt('A server-translated string from a cached component.')}</p>
+      <p>{t('A server-translated string from a cached component.')}</p>
     </section>
   );
 }

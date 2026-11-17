@@ -1,8 +1,8 @@
 <script>
 import { useGT } from 'gt-vue';
 
-const setup = () => ({ gt: useGT() });
+const setup = () => ({ t: useGT() });
 export default { setup };
 </script>
 
-<template>{{ gt('Concise setup return') }}</template>
+<template>{{ t('Concise setup return') }}</template>
