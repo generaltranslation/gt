@@ -19,13 +19,19 @@ import { getReadonlyConditionStore } from '../../condition-store/singleton-opera
 import { useGTContext } from '../../context/context';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getPluralBranch } from '../../utils/plurals/getPluralBranch';
+import { computeCurrency } from '../variables/Currency.shared';
+import { computeDateTime } from '../variables/DateTime.shared';
+import { computeNum } from '../variables/Num.shared';
 
 // The compiler builds these from a `<T>` call site, so nothing here walks,
 // tags or hashes the children. Each component renders what `<T>` renders for
 // the same children and translation.
 
-/** A variable: its name in the translation and the slot of its element. */
-type PrecomputedVariable = { k: string; x: number };
+/**
+ * A variable: its name in the translation, the slot of its element, and the
+ * type it formats as (`n`, `c`, `d` or `rt`) unless it prints its value.
+ */
+type PrecomputedVariable = { k: string; x: number; v?: string };
 
 /**
  * An element by its id among its siblings. `x` is its slot: the element
@@ -80,6 +86,15 @@ type RenderState = {
   slots: readonly unknown[];
   locales: string[];
   enableI18n: boolean;
+};
+
+const PLAIN_VARIABLE = 'v';
+
+/** The props a variable the compiler precomputes can have. */
+type VariableElementProps = {
+  children?: unknown;
+  currency?: string;
+  options?: Record<string, unknown>;
 };
 
 /**
@@ -193,17 +208,42 @@ function renderSourceChild(
     : (slot as ReactElement);
 }
 
+/**
+ * A variable in the locale of the render. `type` is the type its translation
+ * gives it. Where that is not the type of its component, <T> formats the
+ * value and options of the component as the translation's type, through
+ * the function that type's component formats with. A relative time, which
+ * no precomputed variable is, is left as its component formats it.
+ */
 function renderVariable(
   variable: PrecomputedVariable,
-  { slots, locales, enableI18n }: RenderState
+  { slots, locales, enableI18n }: RenderState,
+  type?: string
 ): ReactNode {
-  return cloneElement(
-    slots[variable.x] as ReactElement,
-    {
+  const element = slots[variable.x] as ReactElement<VariableElementProps>;
+  if (type !== undefined && type !== (variable.v || PLAIN_VARIABLE)) {
+    const { children, currency, options } = element.props;
+    const props = {
       _locale: locales[0],
       _enableI18n: enableI18n,
-    } as object
-  );
+      children: children as never,
+      options: currency === undefined ? options : { currency, ...options },
+    };
+    switch (type) {
+      case PLAIN_VARIABLE:
+        return children as ReactNode;
+      case 'n':
+        return computeNum(props);
+      case 'c':
+        return computeCurrency(props);
+      case 'd':
+        return computeDateTime(props);
+    }
+  }
+  return cloneElement(element, {
+    _locale: locales[0],
+    _enableI18n: enableI18n,
+  } as object);
 }
 
 function getBranchKey(branch: unknown): string | undefined {
@@ -248,7 +288,9 @@ function renderTranslated(
             variable = sibling;
           }
         }
-        return variable ? renderVariable(variable, state) : null;
+        return variable
+          ? renderVariable(variable, state, child.v || PLAIN_VARIABLE)
+          : null;
       }
       elements ??= siblings.filter(isSourceElement);
       // Without its id, an element takes the first one left
@@ -264,7 +306,11 @@ function renderTranslated(
 
   if (target && typeof target === 'object' && !Array.isArray(target)) {
     if (source && typeof source === 'object' && !Array.isArray(source)) {
-      if ('k' in source) return renderVariable(source, state);
+      if ('k' in source) {
+        return isVariable(target)
+          ? renderVariable(source, state)
+          : renderVariableAsElement(source, target as TranslatedElement, state);
+      }
       if (!isVariable(target)) {
         return renderTranslatedElement(
           source,
@@ -276,6 +322,29 @@ function renderTranslated(
   }
 
   return renderSource(source, state);
+}
+
+/**
+ * A variable whose translation is an element. <T> reads the variable as the
+ * element, so the text of the translation takes the place of its value.
+ */
+function renderVariableAsElement(
+  variable: PrecomputedVariable,
+  target: TranslatedElement,
+  state: RenderState
+): ReactNode {
+  const element = state.slots[variable.x] as ReactElement<{
+    children?: ReactNode;
+  }>;
+  const text =
+    typeof target.c === 'string'
+      ? target.c
+      : Array.isArray(target.c)
+        ? target.c.filter((child) => typeof child === 'string')
+        : undefined;
+  return element.props.children && text !== undefined && target.c
+    ? cloneElement(element, undefined, text)
+    : renderVariable(variable, state);
 }
 
 function renderTranslatedElement(
