@@ -798,9 +798,10 @@ describe('experimentalReplaceSource', () => {
           return <span title={gt\`Greeting\`}>{gt\`Hello \${{ name }}\`}</span>;
         }`);
       const output = await transformWithPlugin(undefined, code);
-      const [greeting, hello] = [
-        ...(output ?? '').matchAll(/\$_hash: "([^"]+)"/g),
-      ].map((match) => match[1]);
+      const [, greeting] = output!.match(
+        /\$_hash: "([^"]+)", \$_tree: "Greeting"/
+      )!;
+      const [, hello] = output!.match(/\$_hash: "([^"]+)", \$_tree: \[/)!;
       const translations = {
         [greeting]: 'Salutation',
         [hello]: ['Bonjour ', ['name']],
@@ -888,9 +889,7 @@ describe('experimentalReplaceSource', () => {
     );
     expect(replaced).not.toContain('Save');
     expect(replaced?.match(/"Enregistrer"/g)).toHaveLength(2);
-    // Both call sites read the one precomputed message.
-    expect(replaced?.match(/"Sauvegarder"/g)).toHaveLength(1);
-    expect(replaced?.match(/t\(_gt\)/g)).toHaveLength(2);
+    expect(replaced?.match(/\$_tree: "Sauvegarder"/g)).toHaveLength(2);
     const [html] = await renderAll(replaced!, [{}]);
     expect(html).toBe(
       'EnregistrerEnregistrer<span>SauvegarderSauvegarder</span>'

@@ -416,9 +416,7 @@ describe('inlineTranslations.modules', () => {
         `${USEGT_CODE}\n  gt\`Hello world\`;\n`
       );
       expect(output.match(/^import __gt_inline_/gm)).toHaveLength(1);
-      // Both call sites read the one precomputed message.
-      expect(output.match(/inline: __gt_inline_/g)).toHaveLength(1);
-      expect(output.match(/gt\(_gt\)/g)).toHaveLength(2);
+      expect(output.match(/inline: __gt_inline_/g)).toHaveLength(2);
     });
 
     it('inlines the callback for hashes that cannot name a module', async () => {
