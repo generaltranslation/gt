@@ -12,6 +12,7 @@ import {
 } from '../../utils/constants/gt/constants';
 import { loadInlineTranslations } from '../../transform/injection/inline-translations/loadInlineTranslations';
 import type { SourceReplacement } from '../../transform/injection/inline-translations/resolveSourceReplacement';
+import type { StaticRuntime } from '../../transform/static-runtime/resolveStaticRuntime';
 
 const DEFAULT_SETTINGS: PluginSettings = {
   logLevel: 'warn',
@@ -39,7 +40,8 @@ const DEFAULT_SETTINGS: PluginSettings = {
 export function initializeState(
   options: GTUnpluginOptions,
   filename: string,
-  sourceReplacement?: SourceReplacement
+  sourceReplacement?: SourceReplacement,
+  staticRuntime?: StaticRuntime
 ): TransformState {
   // Pull enableAutoJsxInjection from gtConfig if provided
   const gtConfig = options.gtConfig;
@@ -64,6 +66,7 @@ export function initializeState(
     devHotReload: _b,
     experimentalStaticLocale: _c,
     experimentalReplaceSource: _d,
+    experimentalStaticRuntime: _e,
     ...restOptions
   } = options;
 
@@ -73,6 +76,12 @@ export function initializeState(
   const inlineTranslationsTable = isProduction
     ? loadInlineTranslations(gtConfig?.files?.gt)
     : undefined;
+
+  const activeSourceReplacement =
+    isProduction &&
+    (inlineTranslationsTable || sourceReplacement?.locale === undefined)
+      ? sourceReplacement
+      : undefined;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
@@ -84,11 +93,8 @@ export function initializeState(
     autoJsxImportSource:
       options.autoJsxImportSource ?? DEFAULT_SETTINGS.autoJsxImportSource,
     inlineTranslationsTable,
-    sourceReplacement:
-      isProduction &&
-      (inlineTranslationsTable || sourceReplacement?.locale === undefined)
-        ? sourceReplacement
-        : undefined,
+    sourceReplacement: activeSourceReplacement,
+    staticRuntime: activeSourceReplacement ? staticRuntime : undefined,
     filename,
   };
 

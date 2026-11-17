@@ -5,6 +5,7 @@ import { PluginSettings } from '../config';
 import { Logger } from './Logger';
 import { ErrorTracker } from './ErrorTracker';
 import { ScopeTracker } from './ScopeTracker';
+import type { StaticRuntimeFile } from '../transform/static-runtime/staticRuntimeModule';
 /**
  * Plugin state for processing files
  * Matches the Rust TransformVisitor structure
@@ -33,6 +34,8 @@ export interface TransformState {
   sourceReplacementsOnExit?: Map<t.CallExpression, () => void>;
   /** JSX runtime source to the local name source replacement imports its Fragment as */
   sourceReplacementImports?: Map<string, string>;
+  /** What this file needs from the static runtime; set in static-runtime builds. */
+  staticRuntime?: StaticRuntimeFile;
   /** Hash to local import name; set only when this file imports message modules. */
   inlineTranslationsImports?: Map<string, string>;
   /** Debug: shared manifest map for hash → jsxChildren mapping (accumulated across files) */

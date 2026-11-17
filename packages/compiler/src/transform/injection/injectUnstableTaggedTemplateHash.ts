@@ -173,7 +173,7 @@ function getUnstableTagKind(
 }
 
 /** Original name of a helper imported from an unstable source. */
-function getHelperName(
+export function getHelperName(
   name: string,
   scope: Scope
 ): UnstableGTHelperName | undefined {
@@ -192,7 +192,7 @@ function getHelperName(
   return isUnstableGTHelperName(importedName) ? importedName : undefined;
 }
 
-function parseMessageOptions(
+export function parseMessageOptions(
   args: t.CallExpression['arguments']
 ): MessageTreeHashMetadata {
   const [options] = args;
@@ -229,7 +229,7 @@ function parseMessageOptions(
   return metadata;
 }
 
-function templateFragment(
+export function templateFragment(
   quasi: t.TemplateLiteral,
   scope: Scope
 ): TemplateFragment {
@@ -309,7 +309,7 @@ function newWalk(): Walk {
 }
 
 /** Strips TypeScript-only wrappers (as, satisfies, !, <Type>) and parentheses. */
-function unwrapTypeScript(node: t.Node): t.Node {
+export function unwrapTypeScript(node: t.Node): t.Node {
   while (
     t.isTSAsExpression(node) ||
     t.isTSSatisfiesExpression(node) ||
