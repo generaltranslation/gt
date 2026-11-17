@@ -60,7 +60,9 @@ function nonStatic(): never {
  * With `precompute`, a `t` template becomes a call that passes its message,
  * built here (see buildPrecomputedCall): t`Hello, ${{ name }}!` ->
  * t(_gt, { name }), with `_gt` declared at module scope. A replaced template's message
- * holds the translation's tree and its locale in place of `inline`. `msg`
+ * holds the translation's tree and its locale in place of `inline`; with
+ * `replaceTree` that also covers a translation no template can be written
+ * from, since the message is passed every value of the source. `msg`
  * templates, and templates whose values the call could evaluate differently,
  * keep the form above.
  *
@@ -73,7 +75,18 @@ export function injectUnstableTaggedTemplateHash(
     hash: string,
     quasi: t.TemplateLiteral
   ) => t.TemplateLiteral | undefined,
-  precompute?: { hoist: HoistMessage; replacedLocale: string | undefined }
+  precompute?: {
+    hoist: HoistMessage;
+    replacedLocale: string | undefined;
+    /**
+     * The translation of an embedded template whose text could not be
+     * replaced, when it can be the message's tree as it is.
+     */
+    replaceTree?: (
+      hash: string,
+      source: MessageTree
+    ) => MessageTree | undefined;
+  }
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
@@ -119,14 +132,20 @@ export function injectUnstableTaggedTemplateHash(
   }
   // msg templates are rendered by m() away from their call site.
   if (precompute && kind === 'gt') {
+    // The message takes every value of the source, so a translation that
+    // drops, repeats or reorders them, or branches on them, still replaces it.
+    const translated =
+      embeds && !replaced
+        ? precompute.replaceTree?.(hash, message.tree)
+        : undefined;
     const call = buildPrecomputedCall({
       callee: callee as t.Identifier,
       hash,
       metadata,
-      tree: message.tree,
+      tree: translated ?? message.tree,
       bindings: message.bindings,
       // A replaced tree is the translation, so it embeds no other copy.
-      ...(replaced
+      ...(replaced || translated !== undefined
         ? { locale: precompute.replacedLocale }
         : { inline: embeds ? buildInline(hash) : undefined }),
       hoist: precompute.hoist,

@@ -1,4 +1,5 @@
 import generate from '@babel/generator';
+import type { MessageTree } from '@generaltranslation/icu';
 import { TraverseOptions } from '@babel/traverse';
 import * as t from '@babel/types';
 import { isUnstableGTImportSource } from 'generaltranslation/internal';
@@ -7,6 +8,7 @@ import { injectUnstableTaggedTemplateHash } from '../transform/injection/injectU
 import { buildInlineTranslations } from '../transform/injection/inline-translations/injectInlineTranslations';
 import { replaceTemplateSource } from '../transform/injection/inline-translations/replaceTemplateSource';
 import type { HoistMessage } from '../transform/injection/precomputeUnstableMessage';
+import { canReplaceMessageTree } from '../transform/injection/replaceMessageTree';
 import { createErrorLocation } from '../utils/errors';
 
 // Name of the module-scope constants that hold precomputed messages
@@ -50,6 +52,19 @@ export function unstableHashInjectionPass(
         return undefined;
       }
     : undefined;
+  const replaceTree = translations
+    ? (hash: string, source: MessageTree) => {
+        const translation = translations[hash];
+        if (!canReplaceMessageTree(source, translation)) return undefined;
+        // replaceSource counted this template as kept.
+        state.statistics.sourceReplacementsCount += 1;
+        state.statistics.sourceReplacementFallbacksCount -= 1;
+        state.logger.logDebug(
+          `Replaced template ${hash} with its translation's message tree`
+        );
+        return translation;
+      }
+    : undefined;
   const declarations: t.VariableDeclaration[] = [];
   // Call sites with the same message share one, by its code.
   const hoisted = new Map<string, t.Identifier>();
@@ -75,7 +90,7 @@ export function unstableHashInjectionPass(
           buildInline,
           replaceSource,
           state.settings.precomputeMessages
-            ? { hoist, replacedLocale: sourceReplacement?.locale }
+            ? { hoist, replacedLocale: sourceReplacement?.locale, replaceTree }
             : undefined
         )
       ) {
