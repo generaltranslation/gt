@@ -1,5 +1,5 @@
 import type { MessageFormats, MessageTree } from '@generaltranslation/icu';
-import { messageTreeToIcu } from '@generaltranslation/icu/convert';
+import { messageToIcu } from '@generaltranslation/icu/convert';
 import {
   hashSource,
   type MessageTreeHashMetadata,
@@ -599,7 +599,7 @@ function migrateValue(
   }
   const isTree = message.dataFormat === 'MESSAGE_TREE';
   const unchangedFormat = match.oldDataFormat === message.dataFormat;
-  if (!isTree && unchangedFormat) {
+  if (!isTree && unchangedFormat && !Object.keys(match.renameMap).length) {
     return { outcome: { status: 'carried' }, value: oldValue };
   }
   if (tree === undefined) {
@@ -623,10 +623,19 @@ function migrateValue(
     return { outcome: { status: 'rejected', reason: result.reason } };
   }
   if (message.dataFormat === 'ICU') {
-    return {
-      outcome: { status: 'migrated' },
-      value: messageTreeToIcu(result.tree),
-    };
+    const source = legacyIcuToMessage(message.source as string);
+    const { icu, formats } = messageToIcu({
+      tree: result.tree,
+      formats: source.ok ? source.formats : {},
+    });
+    return Object.keys(formats).length
+      ? {
+          outcome: {
+            status: 'rejected',
+            reason: `ICU cannot spell the formatting of ${Object.keys(formats).join(', ')}`,
+          },
+        }
+      : { outcome: { status: 'migrated' }, value: icu };
   }
   if (!isTree) {
     return typeof result.tree === 'string'

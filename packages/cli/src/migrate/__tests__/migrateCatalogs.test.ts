@@ -398,6 +398,32 @@ const only = (result: ReturnType<typeof migrateCatalogs>): MessageDecision =>
   result.report.messages[0];
 
 describe('migrateCatalogs', () => {
+  it.each([
+    {
+      name: 'renames the arguments of an ICU translation',
+      oldSource: 'From {sender} to {recipient}',
+      newSource: 'From {recipient} to {sender}',
+      translation: 'Von {sender} an {recipient}',
+      expected: 'Von {recipient} an {sender}',
+    },
+    {
+      name: 'keeps the currency of an ICU translation it rewrites',
+      oldSource: 'Total: {sum, number, ::currency/EUR}',
+      newSource: 'Total: {amount, number, ::currency/EUR}',
+      translation: 'Gesamt: {sum, number, ::currency/EUR}',
+      expected: 'Gesamt: {amount, number, ::currency/EUR}',
+    },
+  ])('$name', ({ oldSource, newSource, translation, expected }) => {
+    const oldKey = legacyIcuHash(oldSource);
+    const hash = hashSource({ source: newSource, dataFormat: 'ICU' });
+    const result = migrate({
+      messages: [{ hash, dataFormat: 'ICU', source: newSource }],
+      sources: parseLegacySource({ [oldKey]: oldSource }),
+      catalogs: { de: { [oldKey]: translation } },
+    });
+    expect(result.catalogs).toEqual({ de: { [hash]: expected } });
+  });
+
   it('does not match a reading of an old source its hash rules out', () => {
     const oldKey = legacyIcuHash("Use '{name}'");
     const result = migrate({
