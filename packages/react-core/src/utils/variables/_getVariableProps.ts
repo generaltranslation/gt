@@ -44,9 +44,6 @@ export function getVariableProps(props: VariableElementProps): VariableProps {
     })(),
     variableOptions: (() => {
       const variableOptions = {
-        ...(typeof props.currency !== 'undefined' && {
-          currency: props.currency,
-        }),
         ...(typeof props.unit !== 'undefined' && {
           unit: props.unit,
         }),
@@ -54,6 +51,9 @@ export function getVariableProps(props: VariableElementProps): VariableProps {
           baseDate: props.baseDate,
         }),
         ...(typeof props.options !== 'undefined' && props.options),
+        ...(typeof props.currency !== 'undefined' && {
+          currency: props.currency,
+        }),
       };
       if (Object.keys(variableOptions).length) return variableOptions;
       if (typeof props['data-_gt-variable-options'] === 'string')

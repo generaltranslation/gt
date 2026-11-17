@@ -12,7 +12,7 @@ import {
   GTIntl,
 } from '../index';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
-import { formatMessageTree } from '../internal';
+import { formatMessageTree, withDefaultDateStyle } from '../internal';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
 const date = new Date('2020-05-06T14:03:02Z');
@@ -137,5 +137,19 @@ describe('what a caller leaves out', () => {
     expect(
       formatRelativeTimeFromDate(new Date(3 * hour), { baseDate: new Date(0) })
     ).toBe('in 3 hours');
+  });
+});
+
+describe('the default style of a <DateTime>', () => {
+  it.each<[string, Intl.DateTimeFormatOptions, boolean]>([
+    ['no options', {}, true],
+    ['a time zone only', { timeZone: 'UTC' }, true],
+    ['a date style', { dateStyle: 'short' }, false],
+    ['a time style only', { timeStyle: 'short' }, false],
+    ['one field', { hour: 'numeric' }, false],
+  ])('with %s', (_name, options, defaulted) => {
+    expect(withDefaultDateStyle(options)).toEqual(
+      defaulted ? { ...options, dateStyle: 'medium' } : options
+    );
   });
 });
