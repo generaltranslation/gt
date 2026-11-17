@@ -1134,8 +1134,8 @@ describe('Vue JSX rich extraction', () => {
               />
               <Plural
                 n={1}
-                singular="Single 'quotes' inside"
-                plural={'Double "quotes" inside'}
+                _0="Single 'quotes' inside"
+                _12={'Double "quotes" inside'}
                 other={\`Template with 'both' "types"\`}
               />
             </T>
@@ -1177,9 +1177,9 @@ describe('Vue JSX rich extraction', () => {
         {
           d: {
             b: {
+              '=0': "Single 'quotes' inside",
+              '=12': 'Double "quotes" inside',
               other: 'Template with \'both\' "types"',
-              plural: 'Double "quotes" inside',
-              singular: "Single 'quotes' inside",
             },
             t: 'p',
           },
@@ -1192,7 +1192,7 @@ describe('Vue JSX rich extraction', () => {
           dataFormat: 'JSX',
           source: output.results[0]!.source,
         })
-      ).toBe('4d68f22fc6e97b8f');
+      ).toBe('a100a94c819867a1');
     }
   );
 

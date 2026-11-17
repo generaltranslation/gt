@@ -13,8 +13,8 @@
 <div><T>x<b> </b>y</T></div>
 <div><T>Run <code>  npm  i  </code> now</T></div>
 <div><T><Num value={count} /><Plural n={count}>{#snippet one()} item{/snippet}{#snippet other()} items{/snippet}</Plural></T></div>
-<div><T>Status:<Branch branch={status}>{#snippet active()} <i>active</i>{/snippet}unknown</Branch></T></div>
-<div><T><Branch branch={status}>Hello </Branch>world</T></div>
+<div><T>Status:<Branch branch={status}>{#snippet active()} <i>active</i>{/snippet}{#snippet other()}unknown{/snippet}</Branch></T></div>
+<div><T><Branch branch={status}>{#snippet other()}Hello {/snippet}</Branch>world</T></div>
 <div><T>&#32;Hello&#32;</T></div>
 <div><T>a&#13;<b>b</b></T></div>
 <div><T>foo&#9;bar&#32;

@@ -28,9 +28,8 @@ export default function SocialNotificationDropdown() {
               like={<span><strong>{n.actor}</strong> liked {n.target}</span>}
               follow={<span><strong>{n.actor}</strong> started following you</span>}
               mention={<span><strong>{n.actor}</strong> mentioned you in {n.target}</span>}
-            >
-              <span>New notification</span>
-            </Branch>
+              other={<span>New notification</span>}
+            />
             <time>{n.time}</time>
           </li>
         ))}

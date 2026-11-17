@@ -62,9 +62,8 @@ export function OrderPanel() {
                 Bead-blasted titanium arm with a graphite base.
               </p>
             }
-          >
-            <p className='order-note'>Steel arm and aluminum head.</p>
-          </Branch>
+            other={<p className='order-note'>Steel arm and aluminum head.</p>}
+          />
         </T>
       </div>
 

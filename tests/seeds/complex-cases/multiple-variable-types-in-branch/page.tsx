@@ -8,14 +8,14 @@ export default function Home() {
     <T>
       <Plural
         n={count}
-        singular={
+        _1={
           <>
             Transaction: <Currency currency="USD">{amount}</Currency> on{" "}
             <DateTime>{date}</DateTime> for <Num>{0.15}</Num> tax with{" "}
             <Var name="reference">REF-123</Var>
           </>
         }
-        plural={
+        _2={
           <div>
             <Currency currency="EUR">{amount * count}</Currency> total from{" "}
             <Num>{count}</Num> transactions on <DateTime>{date}</DateTime>

@@ -11,8 +11,8 @@
 </p>
 <p class="branch">
   <T
-    ><Branch branch={status}
-      >{#snippet constructor()}Builder{/snippet}Other</Branch
+    ><Branch branch={status} other="Other"
+      >{#snippet constructor()}Builder{/snippet}</Branch
     ></T
   >
 </p>

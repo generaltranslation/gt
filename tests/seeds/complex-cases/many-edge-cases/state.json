@@ -181,9 +181,9 @@
                       "column": 24,
                       "index": 430
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -377,9 +377,9 @@
                       "column": 22,
                       "index": 540
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -730,9 +730,9 @@
                       "column": 24,
                       "index": 730
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -926,9 +926,9 @@
                       "column": 22,
                       "index": 842
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -2434,9 +2434,9 @@
                       "column": 24,
                       "index": 1755
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -3035,9 +3035,9 @@
                       "column": 22,
                       "index": 2176
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -7413,9 +7413,9 @@
                       "column": 24,
                       "index": 5286
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -7474,9 +7474,9 @@
                       "column": 22,
                       "index": 5330
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -9594,9 +9594,9 @@
                       "column": 24,
                       "index": 6700
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -9675,9 +9675,9 @@
                       "column": 22,
                       "index": 6771
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -10737,9 +10737,9 @@
                       "column": 24,
                       "index": 7523
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -10798,9 +10798,9 @@
                       "column": 22,
                       "index": 7555
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -16949,9 +16949,9 @@
                                 "column": 28,
                                 "index": 10887
                               },
-                              "identifierName": "singular"
+                              "identifierName": "_1"
                             },
-                            "name": "singular"
+                            "name": "_1"
                           },
                           "computed": false,
                           "shorthand": false,
@@ -17291,9 +17291,9 @@
                                                     "column": 36,
                                                     "index": 11088
                                                   },
-                                                  "identifierName": "singular"
+                                                  "identifierName": "_1"
                                                 },
-                                                "name": "singular"
+                                                "name": "_1"
                                               },
                                               "computed": false,
                                               "shorthand": false,
@@ -17633,9 +17633,9 @@
                                                                         "column": 44,
                                                                         "index": 11321
                                                                       },
-                                                                      "identifierName": "singular"
+                                                                      "identifierName": "_1"
                                                                     },
-                                                                    "name": "singular"
+                                                                    "name": "_1"
                                                                   },
                                                                   "computed": false,
                                                                   "shorthand": false,
@@ -17975,9 +17975,9 @@
                                                                                             "column": 52,
                                                                                             "index": 11586
                                                                                           },
-                                                                                          "identifierName": "singular"
+                                                                                          "identifierName": "_1"
                                                                                         },
-                                                                                        "name": "singular"
+                                                                                        "name": "_1"
                                                                                       },
                                                                                       "computed": false,
                                                                                       "shorthand": false,
@@ -18317,9 +18317,9 @@
                                                                                                                 "column": 60,
                                                                                                                 "index": 11883
                                                                                                               },
-                                                                                                              "identifierName": "singular"
+                                                                                                              "identifierName": "_1"
                                                                                                             },
-                                                                                                            "name": "singular"
+                                                                                                            "name": "_1"
                                                                                                           },
                                                                                                           "computed": false,
                                                                                                           "shorthand": false,
@@ -18831,9 +18831,9 @@
                                                                                                                 "column": 58,
                                                                                                                 "index": 12484
                                                                                                               },
-                                                                                                              "identifierName": "plural"
+                                                                                                              "identifierName": "_2"
                                                                                                             },
-                                                                                                            "name": "plural"
+                                                                                                            "name": "_2"
                                                                                                           },
                                                                                                           "computed": false,
                                                                                                           "shorthand": false,
@@ -19003,9 +19003,9 @@
                                                                                             "column": 50,
                                                                                             "index": 12714
                                                                                           },
-                                                                                          "identifierName": "plural"
+                                                                                          "identifierName": "_2"
                                                                                         },
-                                                                                        "name": "plural"
+                                                                                        "name": "_2"
                                                                                       },
                                                                                       "computed": false,
                                                                                       "shorthand": false,
@@ -19175,9 +19175,9 @@
                                                                         "column": 42,
                                                                         "index": 12912
                                                                       },
-                                                                      "identifierName": "plural"
+                                                                      "identifierName": "_2"
                                                                     },
-                                                                    "name": "plural"
+                                                                    "name": "_2"
                                                                   },
                                                                   "computed": false,
                                                                   "shorthand": false,
@@ -19347,9 +19347,9 @@
                                                     "column": 34,
                                                     "index": 13078
                                                   },
-                                                  "identifierName": "plural"
+                                                  "identifierName": "_2"
                                                 },
-                                                "name": "plural"
+                                                "name": "_2"
                                               },
                                               "computed": false,
                                               "shorthand": false,
@@ -19519,9 +19519,9 @@
                                 "column": 26,
                                 "index": 13212
                               },
-                              "identifierName": "plural"
+                              "identifierName": "_2"
                             },
-                            "name": "plural"
+                            "name": "_2"
                           },
                           "computed": false,
                           "shorthand": false,
@@ -20452,9 +20452,9 @@
                                                         "column": 40,
                                                         "index": 13850
                                                       },
-                                                      "identifierName": "singular"
+                                                      "identifierName": "_1"
                                                     },
-                                                    "name": "singular"
+                                                    "name": "_1"
                                                   },
                                                   "computed": false,
                                                   "shorthand": false,
@@ -22137,9 +22137,9 @@
                                                         "column": 38,
                                                         "index": 15947
                                                       },
-                                                      "identifierName": "plural"
+                                                      "identifierName": "_2"
                                                     },
-                                                    "name": "plural"
+                                                    "name": "_2"
                                                   },
                                                   "computed": false,
                                                   "shorthand": false,
@@ -24945,9 +24945,9 @@
                       "column": 24,
                       "index": 18665
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -25006,9 +25006,9 @@
                       "column": 22,
                       "index": 18714
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -25489,9 +25489,9 @@
                       "column": 24,
                       "index": 19059
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -25685,9 +25685,9 @@
                       "column": 22,
                       "index": 19169
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,

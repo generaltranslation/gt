@@ -35,16 +35,15 @@ const sources = {
   'independent-branch-numbering': [
     <Branch
       key='branch'
-      branch='formal'
+      branch={'formal' as string}
       formal={[
         <strong key='strong'>Hello</strong>,
         ' ',
         <Var key='name'>Ada</Var>,
       ]}
       casual={[<em key='em'>Hi</em>, ' ', <Var key='name'>Ada</Var>]}
-    >
-      Fallback
-    </Branch>,
+      other='Fallback'
+    />,
     <span key='after'>After</span>,
   ],
   'independent-plural-numbering': [
@@ -53,9 +52,7 @@ const sources = {
       n={2}
       one={['One ', <Num key='count'>{1}</Num>]}
       other={['Many ', <Num key='count'>{2}</Num>]}
-    >
-      Fallback
-    </Plural>,
+    />,
     <span key='after'>After</span>,
   ],
 } satisfies Record<string, ReactNode>;

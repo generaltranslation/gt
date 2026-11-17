@@ -7,6 +7,7 @@ import type {
 } from '@generaltranslation/format';
 import { HTML_CONTENT_PROPS } from '@generaltranslation/format';
 import {
+  getPluralBranchKey,
   isAcceptedPluralForm,
   minifyVariableType,
 } from 'generaltranslation/internal';
@@ -569,10 +570,13 @@ class TranslationBuilder {
     const id = ++counter.index;
     // No inherited keys, so names like "constructor" are ordinary branches.
     const branches: Record<string, JsxChildren> = Object.create(null);
-    // Branch names in declaration order. A branch's scope is named after its
+    // Branch keys in declaration order. A branch's scope is named after its
     // position here, because joining raw names, which may contain `$`, could
     // give two different branches the same scope.
     const branchNames: string[] = [];
+    // Plural branches are stored under ICU keys: `_0` is `=0`.
+    const keyOf = (name: string) =>
+      kind === 'Plural' ? getPluralBranchKey(name) : name;
 
     // Attribute branches: static strings, like React string props.
     for (const attribute of node.attributes) {
@@ -598,8 +602,8 @@ class TranslationBuilder {
         );
         continue;
       }
-      branches[name] = value;
-      branchNames.push(name);
+      branches[keyOf(name)] = value;
+      branchNames.push(keyOf(name));
     }
 
     // Snippet branches: each body is a fragment numbered from the branch id.
@@ -630,7 +634,7 @@ class TranslationBuilder {
         this.problem(child.start, PROTO_BRANCH_PROBLEM);
         continue;
       }
-      if (Object.hasOwn(branches, name)) {
+      if (Object.hasOwn(branches, keyOf(name))) {
         this.problem(
           child.start,
           `The "${name}" branch of <${node.name}> is declared twice`
@@ -638,7 +642,7 @@ class TranslationBuilder {
         continue;
       }
       const branchScope = `${scope}b${id}_${branchNames.length}$`;
-      branchNames.push(name);
+      branchNames.push(keyOf(name));
       const branchCounter = { index: id };
       const fragmentId = ++branchCounter.index;
       const body = child.body as { nodes: SvelteNode[] };
@@ -656,7 +660,7 @@ class TranslationBuilder {
       this.snippets.push(
         `{#snippet ${RESERVED_PREFIX}e_${branchScope}${fragmentId}(${RESERVED_PREFIX}kids)}{@render ${RESERVED_PREFIX}kids()}{/snippet}`
       );
-      branches[name] = fragment;
+      branches[keyOf(name)] = fragment;
     }
 
     const element: JsxElement = { t: getTagName(node), i: id };

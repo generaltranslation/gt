@@ -748,9 +748,9 @@
                       "column": 24,
                       "index": 729
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,

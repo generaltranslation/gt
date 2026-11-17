@@ -8,7 +8,7 @@
         "i": 2,
         "d": {
           "b": {
-            "singular": {
+            "=1": {
               "t": "f",
               "i": 3,
               "d": {
@@ -18,7 +18,7 @@
                     "i": 4,
                     "d": {
                       "b": {
-                        "singular": {
+                        "=1": {
                           "t": "f",
                           "i": 5,
                           "d": {
@@ -28,12 +28,12 @@
                                 "i": 6,
                                 "d": {
                                   "b": {
-                                    "singular": {
+                                    "=1": {
                                       "i": 7,
                                       "k": "deep_var",
                                       "v": "v"
                                     },
-                                    "plural": "deep files"
+                                    "=2": "deep files"
                                   },
                                   "t": "p"
                                 }
@@ -43,7 +43,7 @@
                             "t": "b"
                           }
                         },
-                        "plural": "level2 plurals"
+                        "=2": "level2 plurals"
                       },
                       "t": "p"
                     }
@@ -53,7 +53,7 @@
                 "t": "b"
               }
             },
-            "plural": "level1 plurals"
+            "=2": "level1 plurals"
           },
           "t": "p"
         }

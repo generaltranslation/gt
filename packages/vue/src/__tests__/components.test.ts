@@ -306,37 +306,37 @@ describe('Branch and Plural attributes', () => {
   it.each([
     [
       'class',
-      '<Branch branch="class" class="secret">Class fallback</Branch>',
+      '<Branch branch="class" class="secret" other="Class fallback" />',
       'Class fallback',
     ],
     [
       'style',
-      '<Branch branch="style" :style="{ color: \'red\' }">Style fallback</Branch>',
+      '<Branch branch="style" :style="{ color: \'red\' }" other="Style fallback" />',
       'Style fallback',
     ],
     [
       'listener',
-      '<Branch branch="onClick" @click="handler">Listener fallback</Branch>',
+      '<Branch branch="onClick" @click="handler" other="Listener fallback" />',
       'Listener fallback',
     ],
     [
       'object',
-      '<Branch branch="formal" :formal="payload">Object fallback</Branch>',
+      '<Branch branch="formal" :formal="payload" other="Object fallback" />',
       'Object fallback',
     ],
     [
       'function',
-      '<Branch branch="callback" :callback="handler">Function fallback</Branch>',
+      '<Branch branch="callback" :callback="handler" other="Function fallback" />',
       'Function fallback',
     ],
     [
       'data attribute',
-      '<Branch branch="data-note" data-note="secret">Data fallback</Branch>',
+      '<Branch branch="data-note" data-note="secret" other="Data fallback" />',
       'Data fallback',
     ],
     [
       'ARIA attribute',
-      '<Branch branch="aria-label" aria-label="secret">ARIA fallback</Branch>',
+      '<Branch branch="aria-label" aria-label="secret" other="ARIA fallback" />',
       'ARIA fallback',
     ],
   ])(
@@ -396,7 +396,7 @@ describe('Branch and Plural attributes', () => {
     expect(html).not.toContain('Fallback');
   });
 
-  it('keeps empty Branch slots selected and lets null Plural slots fall back', async () => {
+  it('keeps empty Branch slots and null Plural slots selected', async () => {
     const Root = defineComponent({
       setup() {
         return () =>
@@ -406,13 +406,13 @@ describe('Branch and Plural attributes', () => {
               h(
                 Branch,
                 { branch: 'empty' },
-                { default: () => ['Branch fallback'], empty: () => [] }
+                { other: () => ['Branch fallback'], empty: () => [] }
               ),
               'after|',
               h(
                 Plural,
                 { n: 1 },
-                { default: () => ['Plural fallback'], one: () => [null] }
+                { other: () => ['Plural fallback'], one: () => [null] }
               ),
             ],
           });
@@ -420,7 +420,7 @@ describe('Branch and Plural attributes', () => {
     });
 
     expect(stripFragmentMarkers(await renderWithPlugin(Root, createGT()))).toBe(
-      'beforeafter|Plural fallback'
+      'beforeafter|'
     );
   });
 
@@ -528,7 +528,7 @@ describe('Branch and Plural attributes', () => {
 
   it('filters standalone Plural attributes and keeps primitive forms', async () => {
     const html = await renderTemplate(
-      '<div><Plural :n="1" :one="payload">Object fallback</Plural>|<Plural :n="1" one="One">Fallback</Plural>|<Plural :n="1" :one="1">Fallback</Plural></div>',
+      '<div><Plural :n="1" :one="payload" other="Object fallback" />|<Plural :n="1" one="One" other="Fallback" />|<Plural :n="1" :one="1" other="Fallback" /></div>',
       () => ({ payload: { label: 'secret object' } })
     );
 
@@ -546,14 +546,32 @@ describe('Branch and Plural attributes', () => {
     expect(html).not.toContain('>false<');
   });
 
-  it('uses the standalone Plural default for a null form', async () => {
+  it('treats a standalone Plural null form as present and empty', async () => {
     const html = await renderTemplate(
-      '<div>before<Plural :n="1" :one="null">Fallback</Plural>after</div>'
+      '<div>before<Plural :n="1" :one="null" other="Fallback" />after</div>'
     );
 
-    expect(html).toContain('beforeFallbackafter');
+    expect(html).toContain('beforeafter');
     expect(html).not.toContain('>null<');
   });
+
+  it.each([
+    [0, 'None'],
+    [1, 'Exactly one'],
+    [5, 'Fallback'],
+    ['guest', 'Someone'],
+  ])(
+    'renders standalone exact and other branches for %s',
+    async (value, expected) => {
+      const html = await renderTemplate(
+        typeof value === 'number'
+          ? `<Plural :n="${value}" _0="None" one="One" other="Fallback"><template #_1>Exactly one</template></Plural>`
+          : `<Branch branch="${value}" admin="Admin"><template #other>Someone</template></Branch>`
+      );
+
+      expect(html).toContain(expected);
+    }
+  );
 
   it('prefers a named Plural slot over an attribute with the same name', async () => {
     const html = await renderTemplate(
@@ -567,7 +585,7 @@ describe('Branch and Plural attributes', () => {
 
   it('uses the default plural rules when the default locale is active', async () => {
     const html = await renderTemplate(
-      '<Plural :n="0" :locales="[\'fr\']"><template #one>French one</template><template #other>English other</template></Plural>',
+      '<Plural :n="0"><template #one>French one</template><template #other>English other</template></Plural>',
       () => ({}),
       createGT({ defaultLocale: 'en' })
     );

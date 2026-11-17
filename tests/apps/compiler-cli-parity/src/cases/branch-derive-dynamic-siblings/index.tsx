@@ -8,7 +8,7 @@ export default function BranchDeriveDynamicSiblings() {
   const z = 'dynamic';
   return (
     <div>
-      Hello <Derive>{getX()}</Derive>, <Branch branch="y">fallback</Branch> and {z}
+      Hello <Derive>{getX()}</Derive>, <Branch branch="y" other="fallback" /> and {z}
     </div>
   );
 }

@@ -4,8 +4,8 @@ export default function Home() {
     <T>
     <Plural
       n={1}
-      singular="Line1\nLine2\tTabbed"
-      plural="Special: !@#$%^&*()_+-=[]{}|;:,.<>?"
+      _1="Line1\nLine2\tTabbed"
+      _2="Special: !@#$%^&*()_+-=[]{}|;:,.<>?"
       other={`Template with \${variable} and \`backticks\``}
     />
 
@@ -20,8 +20,8 @@ export default function Home() {
         /> 
         <Plural
           n={1}
-          singular={`simple template`}
-          plural={`another simple template`}
+          _1={`simple template`}
+          _2={`another simple template`}
         />
         <Branch
           branch="format"

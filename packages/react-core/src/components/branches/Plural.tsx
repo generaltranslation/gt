@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
-import { renderPlural, type PluralProps } from './Plural.shared';
+import {
+  renderPlural,
+  type PluralConditions,
+  type PluralProps,
+} from './Plural.shared';
 
 // ===== Component ===== //
 
@@ -8,7 +12,7 @@ function GtInternalPlural({
   _enableI18n,
   _locale,
   ...props
-}: PluralProps): ReactNode {
+}: PluralProps & Partial<PluralConditions>): ReactNode {
   return renderPlural({
     ...props,
     _locale: _locale ?? useLocale(),

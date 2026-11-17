@@ -4,11 +4,7 @@ import type {
   JsxElement,
   Variable,
 } from '@generaltranslation/format';
-import {
-  getPluralForm,
-  isAcceptedPluralForm,
-  isVariable,
-} from 'generaltranslation/internal';
+import { getPluralForm, isVariable } from 'generaltranslation/internal';
 import type { GTRuntimeMetadata } from '@generaltranslation/svelte-extractor';
 import type { Snippet } from 'svelte';
 
@@ -128,32 +124,23 @@ export function selectBranch(
   const { node, scopes, scopedId } = item;
   const info = context.meta.b?.[scopedId];
   const targetBranches = getBranches(node) ?? {};
-  const fallback = { nodes: node.c, scopes };
-  if (!info) return fallback;
+  const none = { nodes: undefined, scopes };
+  if (!info) return none;
 
-  let sourceBranch: string | undefined;
-  let targetBranch: string | undefined;
-  if (info.t === 'p') {
-    if (typeof value !== 'number') return fallback;
-    targetBranch = pickPluralForm(
-      value,
-      Object.keys(targetBranches),
-      context.locales
-    );
-    // Pair the form with its same-named source form, as validateTarget()
-    // does, and only fall back to the source form for `n` when the source
-    // has no such form.
-    sourceBranch =
-      targetBranch !== undefined && info.b.includes(targetBranch)
-        ? targetBranch
-        : pickPluralForm(value, info.b, context.locales);
-  } else {
-    const key = value == null || value === '' ? undefined : String(value);
-    sourceBranch = key && info.b.includes(key) ? key : undefined;
-    targetBranch = key && Object.hasOwn(targetBranches, key) ? key : undefined;
-  }
+  const pick = (branches: string[]) =>
+    info.t === 'p'
+      ? pickPluralForm(value, branches, context.locales)
+      : pickBranch(value, branches);
+  const targetBranch = pick(Object.keys(targetBranches));
+  // Pair the branch with its same-named source branch, as validateTarget()
+  // does, and only fall back to the source branch for the value when the
+  // source has no such branch.
+  const sourceBranch =
+    targetBranch !== undefined && info.b.includes(targetBranch)
+      ? targetBranch
+      : pick(info.b);
 
-  if (targetBranch === undefined) return fallback;
+  if (targetBranch === undefined) return none;
   const ownerScope = scopedId.slice(0, scopedId.length - String(node.i).length);
   return {
     nodes: targetBranches[targetBranch],
@@ -229,15 +216,14 @@ function getBranches(
 
 /**
  * Returns the source branches selectBranch() can pair a translated branch
- * with: its same-named source branch, or for a plural form the source does
- * not have, any source form `n` can select. `undefined` pairs with none.
+ * with: its same-named source branch, or for a branch the source does not
+ * have, any source branch the value can select. `undefined` pairs with none.
  */
 function getPairedSourceBranches(
   info: { t: 'p' | 'b'; b: string[] },
   name: string
 ): (string | undefined)[] {
-  if (info.b.includes(name)) return [name];
-  return info.t === 'p' ? [...info.b, undefined] : [undefined];
+  return info.b.includes(name) ? [name] : [...info.b, undefined];
 }
 
 /**
@@ -266,14 +252,23 @@ function getBranchScopes(
   ];
 }
 
+/** The branch ICU picks for `n`; anything but a number only fits `other`. */
 function pickPluralForm(
-  n: number,
+  n: unknown,
   branches: string[],
   locales: string[]
 ): string | undefined {
-  const forms = branches.filter(isAcceptedPluralForm);
-  if (forms.length === 0) return undefined;
-  return getPluralForm(n, forms, locales) || undefined;
+  if (typeof n !== 'number' && typeof n !== 'bigint') {
+    return pickBranch(undefined, branches);
+  }
+  return getPluralForm(n, branches, locales) || undefined;
+}
+
+/** The branch named by the value, then `other`. */
+function pickBranch(value: unknown, branches: string[]): string | undefined {
+  const key = value == null ? 'other' : String(value);
+  if (branches.includes(key)) return key;
+  return branches.includes('other') ? 'other' : undefined;
 }
 
 function resolveElement(

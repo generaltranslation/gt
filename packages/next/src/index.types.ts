@@ -85,9 +85,11 @@ export function GTProvider(
  * ```jsx
  * // Translating a plural
  * <T id="item_count">
- *  <Plural n={3} singular={<>You have <Num children={n}/> item.</>}>
- *      You have <Num children={n}/> items.
- *  </Plural>
+ *  <Plural
+ *    n={n}
+ *    one={<>You have <Num>{n}</Num> item.</>}
+ *    other={<>You have <Num>{n}</Num> items.</>}
+ *  />
  * </T>
  * ```
  *
@@ -271,20 +273,18 @@ Derive._gtt = 'derive';
  * @example
  * ```jsx
  * <Branch
- *  branch="summary"
- * summary={<p>This is a summary</p>}
- * details={<p>Details here</p>}
- * >
- *   <p>Fallback content</p>
- * </Branch>
+ *  branch={view}
+ *  summary={<p>This is a summary</p>}
+ *  details={<p>Details here</p>}
+ *  other={<p>Fallback content</p>}
+ * />
  * ```
- * If the `branch` prop is set to `"summary"`, it will render `<p>This is a summary</p>`. If the `branch` is not set or does not match any keys in the branches object, it renders the fallback content `<p>Fallback content</p>`.
+ * If `view` is `"summary"`, it renders `<p>This is a summary</p>`. If `view` matches none of the branches, it renders the `other` branch, `<p>Fallback content</p>`.
  *
- * @param {any} [children] - Fallback content to render if no matching branch is found.
- * @param {string} [name="branch"] - Optional name for the component, used for metadata or tracking purposes.
- * @param {string} [branch] - The name of the branch to render. The component looks for this key in the `...branches` object.
- * @param {...{[key: string]: any}} [branches] - A spread object containing possible branches as keys and their corresponding content as values.
- * @returns {React.JSX.Element} The rendered branch or fallback content.
+ * @param {string | number | boolean} branch - The value that names the branch to render.
+ * @param {any} [other] - The branch to render when no other branch matches. Required unless the branches cover every value `branch` can have.
+ * @param {...{[key: string]: any}} [branches] - The possible branches as keys and their content as values.
+ * @returns {React.JSX.Element} The rendered branch.
  */
 export const Branch: typeof _Branch = () => {
   throw new Error(typesFileError);
@@ -293,29 +293,27 @@ export const Branch: typeof _Branch = () => {
 Branch._gtt = 'branch';
 
 /**
- * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
- * It determines which content to display by matching the value of `n` to the appropriate pluralization branch,
- * based on the current locale or a default locale. If no matching plural branch is found, the component renders
- * the fallback `children` content.
+ * The `<Plural>` component renders the branch that fits the number `n`, chosen as ICU does: an exact
+ * branch such as `_0` first, then the plural category of `n` in the current locale (`zero`, `one`, `two`,
+ * `few`, `many`), then `other`.
  *
  * @example
  * ```jsx
  * <Plural
- *  n={1}
+ *  n={count}
+ *  _0="There are no items"
  *  one="There is 1 item"
- *  other="There are {n} items"
+ *  other="There are many items"
  * />
  * ```
- * In this example, if `n` is 1, it renders `"There is 1 item"`. If `n` is a different number, it renders
- * `"There are {n} items"`.
+ * In this example, if `count` is 0, it renders `"There are no items"`. In English, if `count` is 1, it renders
+ * `"There is 1 item"`, and for any other number `"There are many items"`.
  *
- * @param {any} [children] - Fallback content to render if no matching plural branch is found.
- * @param {number} [n] - The number used to determine the plural form. This is required for pluralization to work.
- * @param {string} [locale] - Optional parameter, the locale to use for pluralization format.
- * @param {...{[key: string]: any}} [branches] - A spread object containing possible plural branches, typically including `one` for singular
- * and `other` for plural forms, but it may vary depending on the locale.
- * @returns {React.JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
- * @throws {Error} If `n` is not provided or not a valid number.
+ * @param {number | bigint} n - The number that picks the branch.
+ * @param {any} other - The branch to render when no other branch fits.
+ * @param {...{[key: string]: any}} [branches] - Branches for the plural categories `zero`, `one`, `two`, `few` and `many`,
+ * and for exact numbers, written `_0`, `_1` and so on.
+ * @returns {React.JSX.Element} The rendered content of the branch that fits `n`.
  */
 export const Plural: typeof _Plural = () => {
   throw new Error(typesFileError);

@@ -74,11 +74,11 @@
                 "k": "_gt_value_3",
                 "v": "v"
               }
-            ]
+            ],
+            "other": "Fallback"
           },
           "t": "b"
-        },
-        "c": "Fallback"
+        }
       },
       {
         "t": "span",
@@ -86,7 +86,7 @@
         "c": "After"
       }
     ],
-    "hash": "b2a3f3f7f2bdac6f"
+    "hash": "c633b9606cfea00b"
   },
   {
     "id": "independent-plural-numbering",
@@ -115,8 +115,7 @@
             ]
           },
           "t": "p"
-        },
-        "c": "Fallback"
+        }
       },
       {
         "t": "span",
@@ -124,6 +123,6 @@
         "c": "After"
       }
     ],
-    "hash": "6155c9e9b46b73ad"
+    "hash": "e4520fd2e65fe6f3"
   }
 ]

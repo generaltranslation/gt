@@ -4,12 +4,12 @@
     "i": 1,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "t": "C2",
           "i": 2,
           "c": " "
         },
-        "plural": {
+        "=2": {
           "t": "C2",
           "i": 2,
           "c": " "
@@ -23,12 +23,12 @@
     "i": 2,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "t": "C3",
           "i": 3,
           "c": "\\t"
         },
-        "plural": {
+        "=2": {
           "t": "C3",
           "i": 3,
           "c": "\\n"
@@ -79,7 +79,7 @@
     "i": 10,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "t": "C11",
           "i": 11,
           "c": {
@@ -96,7 +96,7 @@
             }
           }
         },
-        "plural": "files"
+        "=2": "files"
       },
       "t": "p"
     }
@@ -243,8 +243,8 @@
     "i": 19,
     "d": {
       "b": {
-        "singular": "Quotes: \" and '",
-        "plural": "Backslashes: \\\\ and \\\\n and \\\\t",
+        "=1": "Quotes: \" and '",
+        "=2": "Backslashes: \\\\ and \\\\n and \\\\t",
         "other": "Unicode: \\u0041 and \\x41"
       },
       "t": "p"
@@ -310,8 +310,8 @@
     "i": 24,
     "d": {
       "b": {
-        "singular": "Template with ${escaped} and `backticks`",
-        "plural": "Multi\n            line\n            template\n            literal",
+        "=1": "Template with ${escaped} and `backticks`",
+        "=2": "Multi\n            line\n            template\n            literal",
         "other": "Mixed \"quotes\" and 'apostrophes' in template"
       },
       "t": "p"
@@ -340,8 +340,8 @@
         "few": "few",
         "many": "many",
         "other": "other",
-        "singular": "sing",
-        "plural": "plur"
+        "=1": "sing",
+        "=2": "plur"
       },
       "t": "p"
     }
@@ -483,7 +483,7 @@
           "i": 49,
           "d": {
             "b": {
-              "singular": {
+              "=1": {
                 "t": "f",
                 "i": 50,
                 "d": {
@@ -493,7 +493,7 @@
                       "i": 51,
                       "d": {
                         "b": {
-                          "singular": {
+                          "=1": {
                             "t": "f",
                             "i": 52,
                             "d": {
@@ -503,7 +503,7 @@
                                   "i": 53,
                                   "d": {
                                     "b": {
-                                      "singular": {
+                                      "=1": {
                                         "t": "f",
                                         "i": 54,
                                         "d": {
@@ -513,7 +513,7 @@
                                               "i": 55,
                                               "d": {
                                                 "b": {
-                                                  "singular": {
+                                                  "=1": {
                                                     "t": "f",
                                                     "i": 56,
                                                     "d": {
@@ -523,7 +523,7 @@
                                                           "i": 57,
                                                           "d": {
                                                             "b": {
-                                                              "singular": {
+                                                              "=1": {
                                                                 "t": "f",
                                                                 "i": 58,
                                                                 "d": {
@@ -538,7 +538,7 @@
                                                                   "t": "b"
                                                                 }
                                                               },
-                                                              "plural": "l5 plural"
+                                                              "=2": "l5 plural"
                                                             },
                                                             "t": "p"
                                                           }
@@ -548,7 +548,7 @@
                                                       "t": "b"
                                                     }
                                                   },
-                                                  "plural": "l4 plural"
+                                                  "=2": "l4 plural"
                                                 },
                                                 "t": "p"
                                               }
@@ -558,7 +558,7 @@
                                           "t": "b"
                                         }
                                       },
-                                      "plural": "l3 plural"
+                                      "=2": "l3 plural"
                                     },
                                     "t": "p"
                                   }
@@ -568,7 +568,7 @@
                               "t": "b"
                             }
                           },
-                          "plural": "l2 plural"
+                          "=2": "l2 plural"
                         },
                         "t": "p"
                       }
@@ -578,7 +578,7 @@
                   "t": "b"
                 }
               },
-              "plural": "l1 plural"
+              "=2": "l1 plural"
             },
             "t": "p"
           }
@@ -610,7 +610,7 @@
                 "i": 53,
                 "d": {
                   "b": {
-                    "singular": {
+                    "=1": {
                       "t": "div",
                       "i": 54,
                       "c": [
@@ -659,7 +659,7 @@
                         }
                       ]
                     },
-                    "plural": {
+                    "=2": {
                       "t": "div",
                       "i": 54,
                       "c": [
@@ -748,8 +748,8 @@
     "i": 54,
     "d": {
       "b": {
-        "singular": "English left-to-right",
-        "plural": "العربية من اليمين إلى اليسار",
+        "=1": "English left-to-right",
+        "=2": "العربية من اليمين إلى اليسار",
         "other": "עברית מימין לשמאל"
       },
       "t": "p"
@@ -767,12 +767,12 @@
     "i": 56,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "t": "C57",
           "i": 57,
           "c": " "
         },
-        "plural": {
+        "=2": {
           "t": "C57",
           "i": 57
         }

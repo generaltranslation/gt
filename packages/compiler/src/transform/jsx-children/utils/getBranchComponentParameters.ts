@@ -1,13 +1,17 @@
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import {
+  getPluralBranchKey,
+  isAcceptedPluralForm,
+} from 'generaltranslation/internal';
 import {
   BRANCH_CONTROL_PROPS,
   GT_COMPONENT_TYPES,
 } from '../../../utils/constants/gt/constants';
 
 /**
- * Given an object expression path, get branch component argument paths.
+ * Given an object expression path, get branch component argument paths,
+ * each with the key its branch is stored under.
  */
 export function getBranchComponentParameters(
   parametersPath: NodePath<t.ObjectExpression>,
@@ -64,7 +68,12 @@ export function getBranchComponentParameters(
         return null;
       }
 
-      return [propertyName, valuePath as NodePath<t.Expression>];
+      return [
+        canonicalName === GT_COMPONENT_TYPES.Plural
+          ? getPluralBranchKey(propertyName)
+          : propertyName,
+        valuePath as NodePath<t.Expression>,
+      ];
     })
     .filter((arg) => arg !== null) as [string, NodePath<t.Expression>][];
 }

@@ -3,27 +3,27 @@ export default function Home() {
   const variable = "test";
   return (
     <T>
-        <Plural n={1} singular="File" plural={"Files"} />
+        <Plural n={1} _1="File" _2={"Files"} />
         <Branch branch="file" file={"file.svg"} directory={"public"} />
-        <Plural n={1} singular="File" plural={42} />
-        <Plural n={1} singular={true} plural={false} />
-        <Plural n={1} singular={null} plural="Files" />
-        <Plural n={1} singular={`File`} plural={`Files`} />
-        <Plural n={1} singular="File" plural={42} />
+        <Plural n={1} _1="File" _2={42} />
+        <Plural n={1} _1={true} _2={false} />
+        <Plural n={1} _1={null} _2="Files" />
+        <Plural n={1} _1={`File`} _2={`Files`} />
+        <Plural n={1} _1="File" _2={42} />
         <Plural
           n={1}
-          singular={<>Single file</>}
-          plural={<>Multiple files</>}
+          _1={<>Single file</>}
+          _2={<>Multiple files</>}
         />
         <Plural
           n={1}
-          singular={<span>Single file</span>}
-          plural={<span>Multiple files</span>}
+          _1={<span>Single file</span>}
+          _2={<span>Multiple files</span>}
         />
         <Plural
           n={1}
-          singular={<Var>{variable}</Var>}
-          plural={
+          _1={<Var>{variable}</Var>}
+          _2={
             <>
               Multiple <Var>{variable}</Var>s
             </>
@@ -35,8 +35,8 @@ export default function Home() {
         </div>
         <Plural
           n={1}
-          singular={<Var>{variable}</Var>}
-          plural={
+          _1={<Var>{variable}</Var>}
+          _2={
             <div>
               <>
                 Multiple <Var>{variable}</Var>s
@@ -46,36 +46,36 @@ export default function Home() {
         />
         <Plural
           n={1}
-          singular={
+          _1={
             <Branch
               branch="type"
               file={
                 <Plural
                   n={1}
-                  singular={<>Single nested file</>}
-                  plural={"Multiple nested files"}
+                  _1={<>Single nested file</>}
+                  _2={"Multiple nested files"}
                 />
               }
               directory={<>Public directory</>}
             />
           }
-          plural={"Multiple top-level items"}
+          _2={"Multiple top-level items"}
         />
-        <Plural n={1} singular="" plural="Files" />
-        <Plural n={1} singular="File" plural={""} />
-        <Plural n={1} singular="   File   " plural={"   Files   "} />
+        <Plural n={1} _1="" _2="Files" />
+        <Plural n={1} _1="File" _2={""} />
+        <Plural n={1} _1="   File   " _2={"   Files   "} />
         <Plural
           n={1}
-          singular={`
+          _1={`
             Multiline
             File
           `}
-          plural="Files"
+          _2="Files"
         />
         <Plural
           n={1}
-          singular="File with emoji 📁"
-          plural={"Files with emoji 📁📂"}
+          _1="File with emoji 📁"
+          _2={"Files with emoji 📁📂"}
         />
         <Branch
           branch="file"
@@ -91,14 +91,14 @@ export default function Home() {
               option1={
                 <Plural
                   n={1}
-                  singular={
+                  _1={
                     <Branch
                       branch="level3"
                       option1={<>Deep option 1</>}
                       option2={<Var>{variable}</Var>}
                     />
                   }
-                  plural={
+                  _2={
                     <Branch
                       branch="level3"
                       option1={<Currency currency="USD">100</Currency>}

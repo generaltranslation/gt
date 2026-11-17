@@ -1100,14 +1100,13 @@ const catalogCases = {
     source: (alternate = false) => [
       h(
         Branch,
-        { branch: alternate ? 'casual' : 'formal' },
+        { branch: alternate ? 'casual' : 'formal', other: 'Fallback' },
         {
           casual: () => [
             h('em', null, 'Hi'),
             ' ',
             h(Var, null, { default: () => 'Ada' }),
           ],
-          default: () => 'Fallback',
           formal: () => [
             h('strong', null, 'Hello'),
             ' ',
@@ -1138,9 +1137,9 @@ const catalogCases = {
               ' et ',
               { t: 'x', i: 2, c: 'salut' },
             ],
+            other: 'Secours',
           },
         },
-        c: 'Secours',
       },
       ' | ',
       { t: 'x', i: 2, c: 'Après' },
@@ -1156,7 +1155,6 @@ const catalogCases = {
         Plural,
         { n: alternate ? 1 : 2 },
         {
-          default: () => 'Fallback',
           one: () => ['One ', h(Num, { value: 1 })],
           other: () => ['Many ', h(Num, { value: 2 })],
         }
@@ -1180,7 +1178,6 @@ const catalogCases = {
             ],
           },
         },
-        c: 'Secours',
       },
       ' | ',
       { t: 'x', i: 2, c: 'Fin' },

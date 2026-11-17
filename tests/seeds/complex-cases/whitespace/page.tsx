@@ -22,10 +22,10 @@ export default function WhitespaceTestCases() {
         World    with   spaces
 
       {/* Case 5: Empty string attributes - should be preserved */}
-        <Plural n={1} singular="" plural="Files" />
+        <Plural n={1} _1="" _2="Files" />
 
       {/* Case 6: Padded string attributes - should preserve exact whitespace */}
-        <Plural n={1} singular="   File   " plural={"   Files   "} />
+        <Plural n={1} _1="   File   " _2={"   Files   "} />
 
       {/* Case 7: Branch with empty and padded attributes */}
         <Branch 
@@ -64,15 +64,15 @@ export default function WhitespaceTestCases() {
       {/* Case 13: Plural with complex whitespace in branches */}
         You have <Plural 
           n={5} 
-          singular="  1 item  " 
-          plural={`  2 items  `}
+          _1="  1 item  " 
+          _2={`  2 items  `}
         />
 
       {/* Case 14: Expression containers with whitespace */}
         Total: <Currency currency="USD">{amount}</Currency> available
 
       {/* Case 15: Boolean and null literals with whitespace context */}
-        Status: <Plural n={1} singular={true} plural={false} /> - <Plural n={0} singular={null} plural="Active" />
+        Status: <Plural n={1} _1={true} _2={false} /> - <Plural n={0} _1={null} _2="Active" />
 
       {/* Case 16: Edge case - only whitespace text */}
         <div>Content</div>   <div>More content</div>
@@ -86,8 +86,8 @@ export default function WhitespaceTestCases() {
       {/* Case 19: Template literals in attributes */}
         <Plural 
           n={count} 
-          singular="1 file" 
-          plural={`2 files`}
+          _1="1 file" 
+          _2={`2 files`}
         />
 
       {/* Case 20: Complex nesting with whitespace preservation */}
@@ -141,10 +141,10 @@ export default function WhitespaceTestCases() {
 
          {true}
       
-        <Plural n={1} singular={true} dual={<>{false}{true}</>} />
+        <Plural n={1} _1={true} _3={<>{false}{true}</>} />
       
 
-        <Plural n={1} singular={true} dual={<>{true}</>} />
+        <Plural n={1} _1={true} _3={<>{true}</>} />
       
       
         &nbsp;yo&nbsp; 
@@ -179,13 +179,13 @@ yo
 
         <Plural
           n={count}
-          singular={
+          _1={
             <>
               Text{}
               <></>More text
             </>
           }
-          plural={
+          _2={
             <>
               <>
                 {}Fragment{}

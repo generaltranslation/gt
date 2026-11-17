@@ -6,7 +6,7 @@ import {
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../types';
 import { getGTTag } from './getGTTag';
-import { getPluralBranch } from '../plurals/getPluralBranch';
+import { getBranch, getPluralBranch } from '../plurals/getPluralBranch';
 import type { RenderVariable } from '../types';
 
 // Shared implementation: the variable renderer is dependency-injected by a
@@ -51,34 +51,19 @@ function createRenderDefaultChildren({
 
       // Plural
       if (generaltranslation?.transformation === 'plural') {
-        const branches = generaltranslation.branches || {};
-        if (typeof child.props.n !== 'number') {
-          return child.props.children != null
-            ? handleChildren(child.props.children)
-            : null;
-        }
-        const resolvedBranch = getPluralBranch(
-          child.props.n,
-          [defaultLocale],
-          branches
-        );
         return handleChildren(
-          (resolvedBranch != null
-            ? resolvedBranch
-            : child.props.children) as TaggedChildren
+          getPluralBranch(
+            child.props.n,
+            [defaultLocale],
+            generaltranslation.branches || {}
+          )
         );
       }
 
       // Branch
       if (generaltranslation?.transformation === 'branch') {
-        const { children, branch } = child.props;
-        const branches = generaltranslation.branches || {};
-        const branchKey =
-          branch == null || branch === '' ? undefined : branch.toString();
         return handleChildren(
-          branchKey && branches[branchKey] !== undefined
-            ? branches[branchKey]
-            : children
+          getBranch(child.props.branch, generaltranslation.branches || {})
         );
       }
 

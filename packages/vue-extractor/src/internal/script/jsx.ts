@@ -7,7 +7,10 @@ import {
   type JsxChildren,
 } from '@generaltranslation/format';
 import { isHTMLTag, isSVGTag } from '@vue/shared';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import {
+  getPluralBranchKey,
+  isAcceptedPluralForm,
+} from 'generaltranslation/internal';
 import type {
   ExtractionLocation,
   GTComponentName,
@@ -1276,8 +1279,9 @@ function serializeBranchElement(
       };
   const branches: Record<string, JsxChildren> = {};
   for (const [name, slot] of slots.namedSlots) {
-    if (name.startsWith('_')) continue;
-    if (component === 'Plural' && !isAcceptedPluralForm(name)) continue;
+    // Vue's own slot flags start with `_`; an exact plural form is `_0`.
+    if (component === 'Plural' ? !isAcceptedPluralForm(name) : name[0] === '_')
+      continue;
     const result = serializeSlotFunction(
       slot,
       { value: id },
@@ -1303,7 +1307,16 @@ function serializeBranchElement(
     analysis
   );
   if (Object.keys(branches).length > 0) {
-    data.b = branches;
+    // Plural branches are stored under ICU keys: `_0` is `=0`.
+    data.b =
+      component === 'Plural'
+        ? Object.fromEntries(
+            Object.entries(branches).map(([name, branch]) => [
+              getPluralBranchKey(name),
+              branch,
+            ])
+          )
+        : branches;
     data.t = component === 'Plural' ? 'p' : 'b';
   }
   return {

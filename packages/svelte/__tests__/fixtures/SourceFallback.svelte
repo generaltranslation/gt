@@ -5,6 +5,6 @@
 </script>
 
 <p class="plural">
-  <T><Plural {n} one="one item" other="many items" /></T>
+  <T><Plural {n} _2="a pair" one="one item" other="many items" /></T>
 </p>
 <p class="num"><T>Total: <Num value={1234.5} /></T></p>

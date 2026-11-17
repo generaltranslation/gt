@@ -190,9 +190,8 @@ export default function App() {
                     silver={
                       <>Brushed silver aluminum, milled from one block.</>
                     }
-                  >
-                    Anodized aluminum.
-                  </Branch>
+                    other='Anodized aluminum.'
+                  />
                 </p>
               </T>
             </fieldset>

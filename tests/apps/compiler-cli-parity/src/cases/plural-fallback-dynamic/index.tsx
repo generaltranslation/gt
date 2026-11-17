@@ -4,9 +4,9 @@ export default function PluralFallbackDynamic() {
   const count = 5;
   return (
     <div>
-      <Plural n={count}>
+      <Plural n={count} other={<>
         You have {count} items
-      </Plural>
+      </>} />
     </div>
   );
 }

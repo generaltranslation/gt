@@ -32,8 +32,8 @@
     "i": 3,
     "d": {
       "b": {
-        "singular": "Single 'quotes' inside",
-        "plural": "Double \"quotes\" inside",
+        "=1": "Single 'quotes' inside",
+        "=2": "Double \"quotes\" inside",
         "other": "Template with 'both' \"types\""
       },
       "t": "p"

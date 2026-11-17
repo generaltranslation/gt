@@ -12,7 +12,7 @@ export default function Home() {
       few="Few files"
       many="Many files"
       other="Other files"
-      singular={<>Single file</>}
+      _1={<>Single file</>}
     />
     <Branch
       branch="context"

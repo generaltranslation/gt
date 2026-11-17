@@ -1,4 +1,4 @@
-use crate::ast::constants::PLURAL_FORMS;
+use crate::ast::constants::plural_branch_key;
 use crate::ast::utilities::{
   build_sanitized_text_content, extract_html_content_props, filter_jsx_children, get_tag_name,
   get_variable_type, js_number_to_string,
@@ -566,11 +566,11 @@ impl<'a> JsxTraversal<'a> {
         if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
           let prop_name = name_ident.sym.as_ref();
 
-          // Only include valid plural forms
-          if PLURAL_FORMS.contains(prop_name) {
+          // Only include plural branches
+          if let Some(key) = plural_branch_key(prop_name) {
             if let Some(value) = &jsx_attr.value {
               if let Some(sanitized_children) = self.build_sanitized_child_from_attr_value(value) {
-                branches.insert(prop_name.to_string(), Box::new(sanitized_children));
+                branches.insert(key, Box::new(sanitized_children));
               }
             }
           }

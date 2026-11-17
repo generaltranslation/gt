@@ -69,12 +69,11 @@ export default function CommerceProductPage() {
           </div>
 
           <Branch
-            branch="stock"
+            branch={'stock' as string}
             inStock={<button>Add to Cart</button>}
             lowStock={<button>Add to Cart — Only a few left!</button>}
-          >
-            <button disabled>Out of Stock</button>
-          </Branch>
+            other={<button disabled>Out of Stock</button>}
+          />
 
           <p>
             <Plural

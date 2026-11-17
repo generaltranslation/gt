@@ -57,7 +57,7 @@ function handleSingleChildElement(
 
     // (2) If the element is a branching component, explore respective branches
     else if (componentType === 'branch') {
-      // Traverse into each branch (this also includes the children property)
+      // Traverse into each branch
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
       >((acc, [branchName, branch]) => {
@@ -74,11 +74,11 @@ function handleSingleChildElement(
         ...newProps,
       });
     } else if (componentType === 'plural') {
-      // Traverse into each branch (this also includes the children property)
+      // Traverse into each branch
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
       >((acc, [branchName, branch]) => {
-        if (isAcceptedPluralForm(branchName) || branchName === 'children') {
+        if (isAcceptedPluralForm(branchName)) {
           acc[branchName] = handleSingleChild(branch, derivationDepth);
         } else {
           // Skip Recursion on non-translated branches

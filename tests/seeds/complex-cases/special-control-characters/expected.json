@@ -4,8 +4,8 @@
     "i": 1,
     "d": {
       "b": {
-        "singular": "Line1\\nLine2\\tTabbed",
-        "plural": "Special: !@#$%^&*()_+-=[]{}|;:,.<>?",
+        "=1": "Line1\\nLine2\\tTabbed",
+        "=2": "Special: !@#$%^&*()_+-=[]{}|;:,.<>?",
         "other": "Template with ${variable} and `backticks`"
       },
       "t": "p"
@@ -31,8 +31,8 @@
     "i": 3,
     "d": {
       "b": {
-        "singular": "simple template",
-        "plural": "another simple template"
+        "=1": "simple template",
+        "=2": "another simple template"
       },
       "t": "p"
     }
