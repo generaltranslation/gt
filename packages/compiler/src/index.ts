@@ -56,6 +56,10 @@ import {
 import { addFragmentImports } from './transform/injection/inline-translations/replaceJsxSource';
 import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
+import {
+  findPrecomputedMessageSupport,
+  PRECOMPUTED_MESSAGES_UNSUPPORTED_WARNING,
+} from './transform/injection/precomputedMessageSupport';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
   importsUnstableSource,
@@ -264,6 +268,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       ...options,
       ...(gtConfig ? { gtConfig } : {}),
     };
+    if (
+      resolvedOptions.precomputeMessages === undefined &&
+      findPrecomputedMessageSupport(process.cwd()) === false
+    ) {
+      resolvedOptions.precomputeMessages = false;
+      if (shouldWarn(options.logLevel)) {
+        console.warn(PRECOMPUTED_MESSAGES_UNSUPPORTED_WARNING);
+      }
+    }
 
     if (shouldWarn(options.logLevel)) {
       if (gtConfigLoadResult.status === 'missing') {
