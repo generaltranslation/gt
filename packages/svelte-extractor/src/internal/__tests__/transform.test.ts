@@ -35,7 +35,7 @@ describe('transformSvelteSource', () => {
         let name = $state('Ada');
       </script>
 
-      <Translate _hash="8eab79643759a9cf" _gtm={{"v":{"":{"_gt_value_2":2}}}} context="greeting">Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!{#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
+      <Translate _hash="8b941a8eeebdc213" _gtm={{"v":{"":{"_gt_2":2}}}} context="greeting">Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!{#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
       "
     `);
     expect(() =>
@@ -86,7 +86,7 @@ describe('transformSvelteSource', () => {
     expect(result?.errors).toEqual([]);
     const code = result!.code;
     expect(code).toContain(
-      '_gtm={{"v":{"b1_1$":{"_gt_n_2":2}},"b":{"1":{"t":"p","b":["one","other"]}}}}'
+      '_gtm={{"v":{"b1_1$":{"_gt_2":2}},"b":{"1":{"t":"p","b":["one","other"]}}}}'
     );
     expect(code).toContain(
       '{#snippet __gt_e_b1_0$2(__gt_kids)}{@render __gt_kids()}{/snippet}'
@@ -111,7 +111,7 @@ describe('transformSvelteSource', () => {
 <T><b><Var name="who">{first}</Var></b> and <Var name="who">{second}</Var> <Var>{first}</Var></T>`);
     expect(result?.errors).toEqual([]);
     expect(result?.code).toContain(
-      '_gtm={{"v":{"":{"who":3,"_gt_value_4":4}},"s":{"1":{"who":2},"":{"who":3}}}}'
+      '_gtm={{"v":{"":{"who":3,"_gt_4":4}},"s":{"1":{"who":2},"":{"who":3}}}}'
     );
   });
 
@@ -133,9 +133,9 @@ describe('transformSvelteSource', () => {
 </T>`)
     ).toEqual([
       'You can make ',
-      { i: 1, k: '_gt_n_1', v: 'n' },
+      { i: 1, k: '_gt_1', v: 'n' },
       ' of ',
-      { i: 2, k: '_gt_n_2', v: 'n' },
+      { i: 2, k: '_gt_2', v: 'n' },
       ' recipes',
     ]);
     // Whitespace at the edges of a fragment is removed.

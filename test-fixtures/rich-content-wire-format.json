@@ -27,18 +27,18 @@
       "Hello ",
       {
         "i": 1,
-        "k": "_gt_value_1",
+        "k": "_gt_1",
         "v": "v"
       },
       ", you have ",
       {
         "i": 2,
-        "k": "_gt_n_2",
+        "k": "_gt_2",
         "v": "n"
       },
       " messages."
     ],
-    "hash": "d7e2eed57565bcd8"
+    "hash": "0fd5883fa4d997b6"
   },
   {
     "id": "independent-branch-numbering",
@@ -58,7 +58,7 @@
               " ",
               {
                 "i": 3,
-                "k": "_gt_value_3",
+                "k": "_gt_3",
                 "v": "v"
               }
             ],
@@ -71,7 +71,7 @@
               " ",
               {
                 "i": 3,
-                "k": "_gt_value_3",
+                "k": "_gt_3",
                 "v": "v"
               }
             ],
@@ -86,7 +86,7 @@
         "c": "After"
       }
     ],
-    "hash": "c633b9606cfea00b"
+    "hash": "1b6091ff9597ec25"
   },
   {
     "id": "independent-plural-numbering",
@@ -101,7 +101,7 @@
               "One ",
               {
                 "i": 2,
-                "k": "_gt_n_2",
+                "k": "_gt_2",
                 "v": "n"
               }
             ],
@@ -109,7 +109,7 @@
               "Many ",
               {
                 "i": 2,
-                "k": "_gt_n_2",
+                "k": "_gt_2",
                 "v": "n"
               }
             ]
@@ -123,6 +123,6 @@
         "c": "After"
       }
     ],
-    "hash": "e4520fd2e65fe6f3"
+    "hash": "634a0a7a71151f55"
   }
 ]

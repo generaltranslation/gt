@@ -60,7 +60,7 @@ describe('<T> source content in a translated locale', () => {
       component: SourceFallback,
       locale: 'fr',
       translations: {
-        [numHash]: ['Total : ', { i: 1, k: '_gt_n_1', v: 'n' }],
+        [numHash]: ['Total : ', { i: 1, k: '_gt_1', v: 'n' }],
       },
     });
     expect(translated).toMatch(/<p class="num">Total : 1\s234,5<\/p>/u);

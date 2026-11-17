@@ -360,7 +360,7 @@ impl<'a> JsxTraversal<'a> {
 
     if let Some(var_type) = component_info.variable_type {
       // Extract variable name from children or attributes with proper prefix
-      let variable_key = self.extract_variable_key(element, &var_type);
+      let variable_key = self.extract_variable_key(element);
 
       Some(SanitizedVariable {
         k: Some(variable_key),
@@ -373,7 +373,7 @@ impl<'a> JsxTraversal<'a> {
   }
 
   /// Extract variable key from JSX element (from children or name attribute)
-  fn extract_variable_key(&mut self, element: &JSXElement, var_type: &VariableType) -> String {
+  fn extract_variable_key(&mut self, element: &JSXElement) -> String {
     // First, check for a 'name' attribute
     for attr in &element.opening.attrs {
       if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
@@ -389,15 +389,8 @@ impl<'a> JsxTraversal<'a> {
       }
     }
 
-    // Fallback: generate proper key based on variable type with current counter
-    match var_type {
-      VariableType::Number => format!("_gt_n_{}", self.id_counter),
-      VariableType::Currency => format!("_gt_cost_{}", self.id_counter),
-      VariableType::Date => format!("_gt_date_{}", self.id_counter),
-      VariableType::RelativeTime => format!("_gt_time_{}", self.id_counter),
-      VariableType::Variable => format!("_gt_value_{}", self.id_counter),
-      VariableType::Static => format!("_gt_static_{}", self.id_counter),
-    }
+    // Fallback: the key of an unnamed variable is its id, as in a message tree
+    format!("_gt_{}", self.id_counter)
   }
 
   /// Check if this is a Branch component
@@ -998,21 +991,8 @@ mod tests {
       let mut traversal = JsxTraversal::new(&visitor);
       let element = create_jsx_element("Var");
 
-      // Test different variable types generate different keys
-      let number_key = traversal.extract_variable_key(&element, &VariableType::Number);
-      assert!(number_key.starts_with("_gt_n_"));
-
-      let currency_key = traversal.extract_variable_key(&element, &VariableType::Currency);
-      assert!(currency_key.starts_with("_gt_cost_"));
-
-      let date_key = traversal.extract_variable_key(&element, &VariableType::Date);
-      assert!(date_key.starts_with("_gt_date_"));
-
-      let var_key = traversal.extract_variable_key(&element, &VariableType::Variable);
-      assert!(var_key.starts_with("_gt_value_"));
-
-      let static_key = traversal.extract_variable_key(&element, &VariableType::Static);
-      assert!(static_key.starts_with("_gt_static_"));
+      traversal.id_counter = 3;
+      assert_eq!(traversal.extract_variable_key(&element), "_gt_3");
     }
   }
 

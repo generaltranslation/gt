@@ -72,7 +72,7 @@ const BRANCH_TARGET_CASES = [
   },
   {
     label: 'single variable',
-    value: { i: 3, k: '_gt_value_3', v: 'v' },
+    value: { i: 3, k: '_gt_3', v: 'v' },
   },
 ] as const satisfies ReadonlyArray<{
   label: string;

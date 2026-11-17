@@ -1084,13 +1084,13 @@ const catalogCases = {
       ' messages.',
     ],
     target: [
-      { k: '_gt_n_2', v: 'n' },
+      { k: '_gt_2', v: 'n' },
       ' messages pour ',
-      { k: '_gt_value_1', v: 'v' },
+      { k: '_gt_1', v: 'v' },
       '; encore ',
-      { k: '_gt_n_2', v: 'n' },
+      { k: '_gt_2', v: 'n' },
       ' pour ',
-      { k: '_gt_value_1', v: 'v' },
+      { k: '_gt_1', v: 'v' },
       '.',
     ],
     expectedHtml: '<main>3 messages pour Ada; encore 3 pour Ada.</main>',
@@ -1126,12 +1126,12 @@ const catalogCases = {
           t: 'b',
           b: {
             casual: [
-              { k: '_gt_value_3', v: 'v' },
+              { k: '_gt_3', v: 'v' },
               ' dit ',
               { t: 'x', i: 2, c: 'Salut' },
             ],
             formal: [
-              { k: '_gt_value_3', v: 'v' },
+              { k: '_gt_3', v: 'v' },
               ' dit ',
               { t: 'x', i: 2, c: 'Bonjour' },
               ' et ',
@@ -1170,11 +1170,11 @@ const catalogCases = {
         d: {
           t: 'p',
           b: {
-            one: ['Un: ', { k: '_gt_n_2', v: 'n' }],
+            one: ['Un: ', { k: '_gt_2', v: 'n' }],
             other: [
-              { k: '_gt_n_2', v: 'n' },
+              { k: '_gt_2', v: 'n' },
               ' éléments + ',
-              { k: '_gt_n_2', v: 'n' },
+              { k: '_gt_2', v: 'n' },
             ],
           },
         },

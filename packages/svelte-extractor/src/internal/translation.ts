@@ -6,6 +6,7 @@ import type {
   Variable,
 } from '@generaltranslation/format';
 import { HTML_CONTENT_PROPS } from '@generaltranslation/format';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import {
   getPluralBranchKey,
   isAcceptedPluralForm,
@@ -36,15 +37,6 @@ const VARIABLE_TYPES = {
   Currency: 'currency',
   DateTime: 'datetime',
   RelativeTime: 'relativetime',
-} as const;
-
-/** Default variable key bases, matching React's `getVariableName`. */
-const DEFAULT_VARIABLE_NAMES = {
-  variable: 'value',
-  number: 'n',
-  datetime: 'date',
-  currency: 'cost',
-  relativetime: 'time',
 } as const;
 
 /** Elements whose contents are code rather than text. */
@@ -533,7 +525,7 @@ class TranslationBuilder {
   ): Variable | undefined {
     const id = ++counter.index;
     const variableType = VARIABLE_TYPES[kind as keyof typeof VARIABLE_TYPES];
-    let key = `_gt_${DEFAULT_VARIABLE_NAMES[variableType]}_${id}`;
+    let key = `${RESERVED_NAME_PREFIX}${id}`;
     const nameAttribute = findAttribute(node, 'name');
     if (nameAttribute) {
       const name = getStaticString(nameAttribute);

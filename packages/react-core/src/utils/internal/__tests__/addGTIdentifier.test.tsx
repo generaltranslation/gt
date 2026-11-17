@@ -54,7 +54,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
 
     expect(writeChildrenAsObjects(tagged)).toEqual([
       'Posted ',
-      { i: 1, k: '_gt_time_1', v: 'rt' },
+      { i: 1, k: '_gt_1', v: 'rt' },
     ]);
   });
 

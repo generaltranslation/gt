@@ -40,7 +40,7 @@ const DYNAMIC_CHILDREN =
   '<T> component has children that could change at runtime';
 
 /** The variable an auto-injected (or user) Var produces at GT id `i`. */
-const variable = (i: number) => ({ i, k: `_gt_value_${i}`, v: 'v' });
+const variable = (i: number) => ({ i, k: `_gt_${i}`, v: 'v' });
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -509,12 +509,12 @@ describe('injection and extraction', () => {
     [
       'a user Num',
       page('<div>Price: <Num>{price}</Num></div>'),
-      [['Price: ', { i: 1, k: '_gt_n_1', v: 'n' }]],
+      [['Price: ', { i: 1, k: '_gt_1', v: 'n' }]],
     ],
     [
       'a user RelativeTime',
       page('<div>Updated: <RelativeTime>{date}</RelativeTime></div>'),
-      [['Updated: ', { i: 1, k: '_gt_time_1', v: 'rt' }]],
+      [['Updated: ', { i: 1, k: '_gt_1', v: 'rt' }]],
     ],
     [
       'a user Currency and DateTime',
@@ -524,9 +524,9 @@ describe('injection and extraction', () => {
       [
         [
           'Paid ',
-          { i: 1, k: '_gt_cost_1', v: 'c' },
+          { i: 1, k: '_gt_1', v: 'c' },
           ' on ',
-          { i: 2, k: '_gt_date_2', v: 'd' },
+          { i: 2, k: '_gt_2', v: 'd' },
         ],
       ],
     ],

@@ -15,7 +15,7 @@
               "Nested fragment with ",
               {
                 "i": 4,
-                "k": "_gt_value_4",
+                "k": "_gt_4",
                 "v": "v"
               },
               {
@@ -25,7 +25,7 @@
                   "Deep nested with ",
                   {
                     "i": 6,
-                    "k": "_gt_n_6",
+                    "k": "_gt_6",
                     "v": "n"
                   },
                   {
@@ -60,7 +60,7 @@
                 " ",
                 {
                   "i": 6,
-                  "k": "_gt_cost_6",
+                  "k": "_gt_6",
                   "v": "c"
                 }
               ]

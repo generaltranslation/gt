@@ -4,12 +4,12 @@
     "i": 1,
     "t": "h1"
   },
-  "8133ca3ae17cba04": {
+  "3830a8ab27162a4c": {
     "c": [
       "Ce paragraphe est traduit dans le navigateur au moment de l’exécution. Il porte même une valeur en direct : la locale actuelle est ",
       {
         "i": 2,
-        "k": "_gt_value_2",
+        "k": "_gt_2",
         "v": "v"
       },
       ", résolue sans la moindre requête réseau."

@@ -1,10 +1,10 @@
 {
-  "1dfeb0fac52e2147": {
+  "54603f5984bdafa6": {
     "c": [
       "Ce paragraphe est traduit côté client, avec une valeur au moment de l’exécution : ",
       {
         "i": 2,
-        "k": "_gt_value_2",
+        "k": "_gt_2",
         "v": "v"
       }
     ],

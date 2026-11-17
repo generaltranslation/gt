@@ -172,10 +172,10 @@ describe('Vue JSX rich extraction', () => {
             i: 1,
             t: 'C1',
           },
-          { i: 3, k: '_gt_value_3', v: 'v' },
-          { i: 4, k: '_gt_n_4', v: 'n' },
-          { i: 5, k: '_gt_cost_5', v: 'c' },
-          { i: 6, k: '_gt_date_6', v: 'd' },
+          { i: 3, k: '_gt_3', v: 'v' },
+          { i: 4, k: '_gt_4', v: 'n' },
+          { i: 5, k: '_gt_5', v: 'c' },
+          { i: 6, k: '_gt_6', v: 'd' },
         ],
         metadata: {
           context: 'hero',
@@ -194,7 +194,7 @@ describe('Vue JSX rich extraction', () => {
         dataFormat: 'JSX',
         source: output.results[0]!.source,
       })
-    ).toBe('93725f15b60d40ce');
+    ).toBe('3afda466b29212e5');
   });
 
   it.each([
@@ -689,7 +689,7 @@ describe('Vue JSX rich extraction', () => {
       {
         c: [
           { c: 'Visible', i: 2, t: 'span' },
-          { i: 3, k: '_gt_value_3', v: 'v' },
+          { i: 3, k: '_gt_3', v: 'v' },
         ],
         d: { ti: 'Card' },
         i: 1,
@@ -834,7 +834,7 @@ describe('Vue JSX rich extraction', () => {
         c: [
           { c: 'Hello', i: 2, t: 'strong' },
           ' ',
-          { i: 3, k: '_gt_value_3', v: 'v' },
+          { i: 3, k: '_gt_3', v: 'v' },
         ],
         i: 1,
         t: 'Card',
@@ -1057,12 +1057,12 @@ describe('Vue JSX rich extraction', () => {
             casual: [
               { c: 'Hi', i: 2, t: 'em' },
               ' ',
-              { i: 3, k: '_gt_value_3', v: 'v' },
+              { i: 3, k: '_gt_3', v: 'v' },
             ],
             formal: [
               { c: 'Hello', i: 2, t: 'strong' },
               ' ',
-              { i: 3, k: '_gt_value_3', v: 'v' },
+              { i: 3, k: '_gt_3', v: 'v' },
             ],
             other: 'Fallback',
           },
@@ -1096,8 +1096,8 @@ describe('Vue JSX rich extraction', () => {
       {
         d: {
           b: {
-            one: ['One ', { i: 2, k: '_gt_n_2', v: 'n' }],
-            other: ['Many ', { i: 2, k: '_gt_n_2', v: 'n' }],
+            one: ['One ', { i: 2, k: '_gt_2', v: 'n' }],
+            other: ['Many ', { i: 2, k: '_gt_2', v: 'n' }],
             zero: 'None',
           },
           t: 'p',

@@ -6,9 +6,9 @@ import {
   JsxChildren,
 } from '@generaltranslation/format';
 import {
-  defaultVariableNames,
   getVariableName,
   minifyVariableType,
+  minifyVariableTypeMap,
 } from '../../../utils/getVariableName.js';
 import {
   getPluralBranchKey,
@@ -153,16 +153,12 @@ export default function addGTIdentifierToSyntaxTree(
       // Variables — only treat as GT variable if confirmed as GT import
       const isGTVariable = gtVariableNames
         ? gtVariableNames.has(type)
-        : Object.keys(defaultVariableNames).includes(type);
+        : Object.keys(minifyVariableTypeMap).includes(type);
       if (isGTVariable) {
         const variableType = minifyVariableType(
-          type as keyof typeof defaultVariableNames
+          type as keyof typeof minifyVariableTypeMap
         );
-        const variableName = getVariableName(
-          props,
-          type as keyof typeof defaultVariableNames,
-          indexObject.index
-        );
+        const variableName = getVariableName(props, indexObject.index);
         return {
           i: indexObject.index,
           k: variableName,

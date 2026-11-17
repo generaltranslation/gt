@@ -9,7 +9,7 @@ const [greetingHash] = hashesOf('Greeting.svelte');
 
 const greeting = (hello: string, dear: string): Content => [
   `${hello} `,
-  { t: 'b', i: 1, c: [`${dear} `, { i: 2, k: '_gt_value_2', v: 'v' }] },
+  { t: 'b', i: 1, c: [`${dear} `, { i: 2, k: '_gt_2', v: 'v' }] },
 ];
 const catalog: Record<string, Record<string, Content>> = {
   fr: { [greetingHash]: greeting('Bonjour', 'cher') },

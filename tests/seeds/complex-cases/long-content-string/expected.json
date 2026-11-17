@@ -12,13 +12,13 @@
           "Very long text with ",
           {
             "i": 3,
-            "k": "_gt_value_3",
+            "k": "_gt_3",
             "v": "v"
           },
           " that continues for a very long time and includes multiple ",
           {
             "i": 4,
-            "k": "_gt_n_4",
+            "k": "_gt_4",
             "v": "n"
           },
           " ",
@@ -26,7 +26,7 @@
           " ",
           {
             "i": 5,
-            "k": "_gt_cost_5",
+            "k": "_gt_5",
             "v": "c"
           },
           " monetary amounts spread throughout the content to test how the algorithm handles very large content blocks with mixed variable types."

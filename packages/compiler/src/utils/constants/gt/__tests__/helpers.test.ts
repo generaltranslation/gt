@@ -50,16 +50,16 @@ describe('GT component helpers', () => {
   // Minified names and default variable keys are part of the hashed wire
   // format shared with the CLI and the runtime.
   it.each([
-    [GT_COMPONENT_TYPES.Var, 'v', '_gt_value_1'],
-    [GT_COMPONENT_TYPES.Num, 'n', '_gt_n_1'],
-    [GT_COMPONENT_TYPES.Currency, 'c', '_gt_cost_1'],
-    [GT_COMPONENT_TYPES.DateTime, 'd', '_gt_date_1'],
-    [GT_COMPONENT_TYPES.RelativeTime, 'rt', '_gt_time_1'],
+    [GT_COMPONENT_TYPES.Var, 'v', '_gt_1'],
+    [GT_COMPONENT_TYPES.Num, 'n', '_gt_1'],
+    [GT_COMPONENT_TYPES.Currency, 'c', '_gt_1'],
+    [GT_COMPONENT_TYPES.DateTime, 'd', '_gt_1'],
+    [GT_COMPONENT_TYPES.RelativeTime, 'rt', '_gt_1'],
   ] as const)(
     '%s minifies to %s and defaults to the key %s',
     (component, minified, key) => {
       expect(MINIFY_CANONICAL_NAME_MAP[component]).toBe(minified);
-      expect(getVariableName(component, 1)).toBe(key);
+      expect(getVariableName(1)).toBe(key);
     }
   );
 });

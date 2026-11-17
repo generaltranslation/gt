@@ -203,7 +203,7 @@ describe('<T> with dynamic content (autoderive)', () => {
  * JSX ids must match the runtime's addGTIdentifier numbering, which keeps a
  * shared counter through Branch/Plural children. Branch props start their own
  * counter from the branching element's id. Element ids are not hashed, but
- * variable keys (_gt_value_<id>) are, so these cases end in a variable.
+ * variable keys (_gt_<id>) are, so these cases end in a variable.
  *
  * https://github.com/generaltranslation/gt/issues/2449
  */
@@ -215,7 +215,7 @@ describe('JSX ids of Branch/Plural children, which are the other branch', () => 
     d: {
       b: {
         one: 'one bottle',
-        other: [{ i: 2, k: '_gt_n_2', v: 'n' as const }, ' bottles'],
+        other: [{ i: 2, k: '_gt_2', v: 'n' as const }, ' bottles'],
       },
       t: 'p' as const,
     },
@@ -225,7 +225,7 @@ describe('JSX ids of Branch/Plural children, which are the other branch', () => 
     [
       '<T><Plural n={2} one="one bottle"><Num>{2}</Num> bottles</Plural><Var>{name}</Var></T>',
       `jsxs(T, { children: [${PLURAL}, jsx(Var, { children: name })] })`,
-      [pluralChildren, { i: 2, k: '_gt_value_2', v: 'v' }],
+      [pluralChildren, { i: 2, k: '_gt_2', v: 'v' }],
     ],
     [
       '<T><Branch branch="open" open="Open"><span>Closed</span></Branch><Var>{name}</Var></T>',
@@ -242,7 +242,7 @@ describe('JSX ids of Branch/Plural children, which are the other branch', () => 
             t: 'b',
           },
         },
-        { i: 2, k: '_gt_value_2', v: 'v' },
+        { i: 2, k: '_gt_2', v: 'v' },
       ],
     ],
     [
@@ -257,7 +257,7 @@ describe('JSX ids of Branch/Plural children, which are the other branch', () => 
           t: 'Branch',
           i: 2,
           d: {
-            b: { open: { i: 3, k: '_gt_value_3', v: 'v' }, other: 'Closed' },
+            b: { open: { i: 3, k: '_gt_3', v: 'v' }, other: 'Closed' },
             t: 'b',
           },
         },

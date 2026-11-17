@@ -10,7 +10,7 @@
           "Good morning ",
           {
             "i": 3,
-            "k": "_gt_value_3",
+            "k": "_gt_3",
             "v": "v"
           }
         ]
@@ -22,7 +22,7 @@
           "Good evening ",
           {
             "i": 3,
-            "k": "_gt_value_3",
+            "k": "_gt_3",
             "v": "v"
           }
         ]

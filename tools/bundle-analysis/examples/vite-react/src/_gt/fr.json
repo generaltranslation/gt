@@ -33,21 +33,21 @@
       "c": "Halyard est une station d’accueil USB-C à quatre ports. Elle transmet 100 W à votre ordinateur portable et tient dans une poche de veste."
     }
   ],
-  "c0d5c237727811ad": {
+  "af350406739fda06": {
     "t": "p",
     "i": 1,
     "c": [
       "À partir de ",
       {
         "i": 2,
-        "k": "_gt_cost_2",
+        "k": "_gt_2",
         "v": "c"
       },
       ". Prochain lot expédié le",
       " ",
       {
         "i": 3,
-        "k": "_gt_date_3",
+        "k": "_gt_3",
         "v": "d"
       },
       "."
@@ -94,7 +94,7 @@
     "i": 1,
     "c": "Votre commande"
   },
-  "f10ce9489f97836f": {
+  "9e57545347c88c1b": {
     "t": "Plural",
     "i": 1,
     "d": {
@@ -110,7 +110,7 @@
           "c": [
             {
               "i": 3,
-              "k": "_gt_n_3",
+              "k": "_gt_3",
               "v": "n"
             },
             " stations d’accueil"
@@ -120,7 +120,7 @@
       "t": "p"
     }
   },
-  "c380115429f46f8d": {
+  "94ae92aacad2fd8c": {
     "t": "p",
     "i": 1,
     "c": {
@@ -139,7 +139,7 @@
             "c": [
               {
                 "i": 4,
-                "k": "_gt_n_4",
+                "k": "_gt_4",
                 "v": "n"
               },
               " unités restantes dans cette finition."
@@ -150,14 +150,14 @@
       }
     }
   },
-  "43b9dc23dbbdd692": {
+  "7205e4087be547b6": {
     "t": "p",
     "i": 1,
     "c": [
       "Finition ",
       {
         "i": 2,
-        "k": "_gt_value_2",
+        "k": "_gt_2",
         "v": "v"
       },
       " ajoutée à votre panier. Le paiement est désactivé dans cet exemple."

@@ -1768,18 +1768,17 @@ function serializeElement(
     originalName === 'Currency'
   ) {
     validateVariableComponentShape(element, originalName, context);
-    const variable =
-      originalName === 'Num'
-        ? { name: 'n', type: 'n' as const }
-        : originalName === 'DateTime'
-          ? { name: 'date', type: 'd' as const }
-          : originalName === 'Currency'
-            ? { name: 'cost', type: 'c' as const }
-            : { name: 'value', type: 'v' as const };
     return {
       i: id,
-      k: `_gt_${variable.name}_${id}`,
-      v: variable.type,
+      k: `_gt_${id}`,
+      v:
+        originalName === 'Num'
+          ? 'n'
+          : originalName === 'DateTime'
+            ? 'd'
+            : originalName === 'Currency'
+              ? 'c'
+              : 'v',
     };
   }
 
