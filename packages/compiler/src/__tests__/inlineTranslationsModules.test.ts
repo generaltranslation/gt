@@ -361,7 +361,7 @@ describe('inlineTranslations.modules', () => {
       );
       const output = await transform(plugin, root, USEGT_CODE);
       expect(output).toContain(
-        `import __gt_inline_${HELLO_WORLD} from "../.gt/messages/${HELLO_WORLD}.js";`
+        `import __gt_inline_${HELLO_WORLD} from "../.gt/messages/${HELLO_WORLD}.mjs";`
       );
       expect(output).toMatch(
         new RegExp(
@@ -379,7 +379,7 @@ describe('inlineTranslations.modules', () => {
       );
       const output = await transform(plugin, root, T_COMPONENT_CODE);
       expect(output).toContain(
-        `import __gt_inline_${JSX_HELLO_WORLD} from "virtual:gt/messages/${JSX_HELLO_WORLD}.js";`
+        `import __gt_inline_${JSX_HELLO_WORLD} from "virtual:gt/messages/${JSX_HELLO_WORLD}.mjs";`
       );
       expect(output).toContain(`inline: __gt_inline_${JSX_HELLO_WORLD}`);
     });
@@ -400,7 +400,7 @@ describe('inlineTranslations.modules', () => {
         'src/pages/deep/Page.tsx'
       );
       expect(output).toContain(
-        `from "../../../generated/messages/${HELLO_WORLD}.js"`
+        `from "../../../generated/messages/${HELLO_WORLD}.mjs"`
       );
     });
 
@@ -486,12 +486,12 @@ describe('inlineTranslations.modules', () => {
         const source =
           modules === 'physical'
             ? fs.readFileSync(
-                path.join(root, '.gt/messages', `${HELLO_WORLD}.js`),
+                path.join(root, '.gt/messages', `${HELLO_WORLD}.mjs`),
                 'utf8'
               )
             : plugin.load.call(
                 createContext(),
-                `\0virtual:gt/messages/${HELLO_WORLD}.js`
+                `\0virtual:gt/messages/${HELLO_WORLD}.mjs`
               )?.code;
         expect(source).toBe(
           renderInlineTranslationsModule(
@@ -528,10 +528,10 @@ describe('inlineTranslations.modules', () => {
         return (program.body[0] as t.ImportDeclaration).source.value;
       };
       expect(sources('D:\\src\\App.tsx')).toBe(
-        `C:/app/.gt/messages/${HELLO_WORLD}.js`
+        `C:/app/.gt/messages/${HELLO_WORLD}.mjs`
       );
       expect(sources('C:\\app\\src\\App.tsx')).toBe(
-        `../.gt/messages/${HELLO_WORLD}.js`
+        `../.gt/messages/${HELLO_WORLD}.mjs`
       );
     });
 
@@ -544,11 +544,11 @@ describe('inlineTranslations.modules', () => {
       plugin.buildStart.call(createContext());
       expect(
         plugin.transformInclude(
-          path.join(root, '.gt/messages', `${HELLO_WORLD}.js`)
+          path.join(root, '.gt/messages', `${HELLO_WORLD}.mjs`)
         )
       ).toBe(false);
       expect(
-        plugin.transformInclude(`\0virtual:gt/messages/${HELLO_WORLD}.js`)
+        plugin.transformInclude(`\0virtual:gt/messages/${HELLO_WORLD}.mjs`)
       ).toBe(false);
       expect(plugin.transformInclude(path.join(root, 'src/abc.js'))).toBe(true);
     });
@@ -561,7 +561,7 @@ describe('inlineTranslations.modules', () => {
       );
       plugin.buildStart.call(createContext());
       expect(
-        plugin.transformInclude(path.join(root, `${HELLO_WORLD}.js`))
+        plugin.transformInclude(path.join(root, `${HELLO_WORLD}.mjs`))
       ).toBe(false);
       expect(plugin.transformInclude(path.join(root, 'index.js'))).toBe(true);
       expect(plugin.transformInclude(path.join(root, 'App.tsx'))).toBe(true);
@@ -602,24 +602,6 @@ describe('inlineTranslations.modules', () => {
   });
 
   describe('physical modules', () => {
-    it('has webpack parse the written modules as ESM', () => {
-      const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
-      const plugin = createPlugin(
-        root,
-        moduleOptions(root, ['fr'], { modules: 'physical' }),
-        'webpack'
-      ) as Plugin & { webpack(compiler: unknown): void };
-      const rules: { resource(file: string): boolean; type: string }[] = [];
-      plugin.webpack({ options: { module: { rules } } });
-      plugin.buildStart.call(createContext());
-      expect(rules).toHaveLength(1);
-      expect(rules[0].type).toBe('javascript/esm');
-      expect(
-        rules[0].resource(path.join(root, '.gt/messages', `${HELLO_WORLD}.js`))
-      ).toBe(true);
-      expect(rules[0].resource(path.join(root, 'src/App.js'))).toBe(false);
-    });
-
     it('writes one module per hash at build start', () => {
       const root = createProject({
         fr: { [HELLO_WORLD]: 'Bonjour', [OTHER_HASH]: 'Étape' },
@@ -632,10 +614,10 @@ describe('inlineTranslations.modules', () => {
       plugin.buildStart.call(createContext());
       const dir = path.join(root, '.gt/messages');
       expect(fs.readdirSync(dir).sort()).toEqual(
-        [`${HELLO_WORLD}.js`, `${OTHER_HASH}.js`].sort()
+        [`${HELLO_WORLD}.mjs`, `${OTHER_HASH}.mjs`].sort()
       );
       expect(
-        fs.readFileSync(path.join(dir, `${HELLO_WORLD}.js`), 'utf8')
+        fs.readFileSync(path.join(dir, `${HELLO_WORLD}.mjs`), 'utf8')
       ).toContain('locale === "fr" ? "Bonjour" : locale === "es" ? "Hola"');
     });
 
@@ -667,10 +649,10 @@ describe('inlineTranslations.modules', () => {
       );
       plugin.buildStart.call(createContext());
       expect(
-        fs.existsSync(path.join(root, '.gt/messages', `${HELLO_WORLD}.js`))
+        fs.existsSync(path.join(root, '.gt/messages', `${HELLO_WORLD}.mjs`))
       ).toBe(true);
       const output = await transform(plugin, root, USEGT_CODE);
-      expect(output).toContain(`from "../.gt/messages/${HELLO_WORLD}.js"`);
+      expect(output).toContain(`from "../.gt/messages/${HELLO_WORLD}.mjs"`);
     });
   });
 
@@ -681,7 +663,7 @@ describe('inlineTranslations.modules', () => {
         root,
         moduleOptions(root, ['fr'], { modules: 'virtual' })
       );
-      const id = `virtual:gt/messages/${HELLO_WORLD}.js`;
+      const id = `virtual:gt/messages/${HELLO_WORLD}.mjs`;
       expect(plugin.resolveId.call(createContext(), id)).toBe(`\0${id}`);
       expect(plugin.resolveId.call(createContext(), `\0${id}`)).toBeNull();
       expect(
@@ -700,7 +682,7 @@ describe('inlineTranslations.modules', () => {
         moduleOptions(root, ['fr', 'es'], { modules: 'virtual' })
       );
       const watched: string[] = [];
-      const id = `\0virtual:gt/messages/${HELLO_WORLD}.js`;
+      const id = `\0virtual:gt/messages/${HELLO_WORLD}.mjs`;
       expect(plugin.loadInclude(id)).toBe(true);
       const result = plugin.load.call(createContext(watched), id);
       expect(result).toEqual({
@@ -727,7 +709,7 @@ describe('inlineTranslations.modules', () => {
       expect(
         plugin.load.call(
           createContext(),
-          `\0virtual:gt/messages/${OTHER_HASH}.js`
+          `\0virtual:gt/messages/${OTHER_HASH}.mjs`
         )
       ).toEqual({
         code: 'export default () => undefined;\n',
@@ -741,7 +723,7 @@ describe('inlineTranslations.modules', () => {
         root,
         moduleOptions(root, ['fr'], { modules: 'physical' })
       );
-      const id = `\0virtual:gt/messages/${HELLO_WORLD}.js`;
+      const id = `\0virtual:gt/messages/${HELLO_WORLD}.mjs`;
       expect(physical.loadInclude(id)).toBe(false);
       expect(physical.load.call(createContext(), id)).toBeNull();
       expect(physical.resolveId.call(createContext(), id.slice(1))).toBeNull();
