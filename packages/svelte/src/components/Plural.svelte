@@ -35,8 +35,10 @@
 
   const contentLocale = useContentLocale();
   const selected = $derived.by(() => {
-    // Untyped callers can still pass other props, which match no key.
-    const names = Object.keys(branches);
+    // Untyped callers can still pass other props, which match no key. A
+    // branch passed as undefined counts as absent, as in gt-react.
+    const all: Record<string, unknown> = branches;
+    const names = Object.keys(all).filter((name) => all[name] !== undefined);
     const keys = names.map(getPluralBranchKey);
     const key =
       typeof n === 'number' || typeof n === 'bigint'
@@ -45,7 +47,7 @@
             getI18nConfig().getDefaultLocale(),
           ])
         : 'other';
-    return (branches as Record<string, unknown>)[names[keys.indexOf(key)]];
+    return all[names[keys.indexOf(key)]];
   });
 </script>
 

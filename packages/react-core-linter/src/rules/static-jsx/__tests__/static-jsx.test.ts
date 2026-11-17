@@ -470,6 +470,11 @@ ruleTester.run('static-jsx: ternary to Branch', staticJsx, {
         String.raw`<Branch branch={cond} true={"say \"hi\""} other="a & b < c" />`,
       ],
       [
+        'an entity is braced, so it stays text',
+        '{cond ? "yes" : "&amp;"}',
+        '<Branch branch={cond} true="yes" other={"&amp;"} />',
+      ],
+      [
         'curly braces are kept',
         '{cond ? "{value}" : "{braces}"}',
         '<Branch branch={cond} true="{value}" other="{braces}" />',

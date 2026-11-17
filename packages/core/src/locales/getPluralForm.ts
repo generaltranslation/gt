@@ -1,4 +1,5 @@
 import { getCachedPluralRules } from '@generaltranslation/format/internal';
+import { toPluralRulesNumber } from '@generaltranslation/icu/internal';
 
 import { pluralForms } from '../settings/plurals';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
@@ -18,9 +19,16 @@ export function getPluralForm(
 ): string {
   const exact = `=${n}`;
   if (forms.includes(exact)) return exact;
-  // Intl.PluralRules does not take a bigint.
-  const category = getCachedPluralRules(locales).select(Number(n));
-  if (forms.includes(category)) return category;
-  if (forms.includes('other')) return 'other';
-  return '';
+  // As in ICU, only a category branch needs the number's category, and a
+  // bigint too large to have one throws.
+  const categories = forms.filter(
+    (form) => form !== 'other' && form[0] !== '='
+  );
+  if (categories.length) {
+    const category = getCachedPluralRules(locales).select(
+      toPluralRulesNumber(n)
+    );
+    if (categories.includes(category)) return category;
+  }
+  return forms.includes('other') ? 'other' : '';
 }

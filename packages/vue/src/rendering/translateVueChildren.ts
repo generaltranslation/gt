@@ -1154,19 +1154,21 @@ function renderElement(
     source.transformation === 'plural'
   ) {
     const targetBranches = target.d?.b ?? {};
-    const targetBranch =
+    const selectKey = (branches: object) =>
       source.transformation === 'branch'
-        ? getBranchKey(source.vnode.props?.branch, targetBranches)
-        : getPluralKey(
-            source.vnode.props?.n,
-            Object.keys(targetBranches),
-            state
-          );
+        ? getBranchKey(source.vnode.props?.branch, branches)
+        : getPluralKey(source.vnode.props?.n, Object.keys(branches), state);
+    const targetBranch = selectKey(targetBranches);
     // The translation picks the branch. The source pairs with it by key, or
-    // with `other` when it has no branch of that name.
+    // with `other` when it has no branch of that name. A translation with no
+    // branch for the value leaves the choice to the source.
     const selectedSource = getSelectedSourceBranch(
       source,
-      Object.hasOwn(source.branches, targetBranch) ? targetBranch : 'other'
+      !Object.hasOwn(targetBranches, targetBranch)
+        ? selectKey(source.branches)
+        : Object.hasOwn(source.branches, targetBranch)
+          ? targetBranch
+          : 'other'
     );
     return renderNodes(
       selectedSource.nodes,

@@ -23,8 +23,11 @@
     [branch: string]: unknown;
   } = $props();
 
+  // A branch passed as undefined counts as absent, as in gt-react.
   const selected = $derived(
-    branch != null && Object.keys(branches).includes(String(branch))
+    branch != null &&
+      Object.hasOwn(branches, String(branch)) &&
+      branches[String(branch)] !== undefined
       ? branches[String(branch)]
       : branches.other
   );

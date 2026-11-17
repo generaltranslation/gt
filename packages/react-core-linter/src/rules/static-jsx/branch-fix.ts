@@ -92,7 +92,9 @@ export function formatAsPropValue(
 ): string {
   const str = staticStringValue(expr);
   if (str !== null) {
-    if (str.includes('"')) return `{${JSON.stringify(str)}}`;
+    // A JSX attribute string cannot escape a quote, and decodes entities.
+    if (str.includes('"') || /&[#\w]+;/.test(str))
+      return `{${JSON.stringify(str)}}`;
     return `"${str}"`;
   }
   if (isBranchableConditional(expr))

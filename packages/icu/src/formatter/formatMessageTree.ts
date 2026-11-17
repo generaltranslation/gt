@@ -515,7 +515,7 @@ function getPluralRules<R>(
   return intlCache.get('PluralRules', context.locales, { type });
 }
 
-function toPluralRulesNumber(value: PluralValue): number {
+export function toPluralRulesNumber(value: PluralValue): number {
   const numberValue = Number(value);
   if (typeof value === 'bigint' && Math.abs(numberValue) > 0x1fffffffffffff) {
     throw new RangeError(

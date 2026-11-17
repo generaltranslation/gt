@@ -642,6 +642,31 @@ describe('Branch and Plural attributes', () => {
     ).toBe('<b>элементов</b>');
   });
 
+  it('lets the source pick when the translation has no branch for the value', async () => {
+    const source: JsxChildren = {
+      t: 'Branch',
+      i: 1,
+      d: { b: { a: 'A', b: 'B', other: 'Other' }, t: 'b' },
+    };
+    const target: JsxChildren = {
+      t: 'Branch',
+      i: 1,
+      d: { b: { b: 'B traduit' }, t: 'b' },
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({ [jsxHash(source)]: target }),
+    });
+    await plugin.setLocale('fr');
+
+    expect(
+      await renderTemplate(
+        '<T><Branch branch="a" a="A" b="B" other="Other" /></T>',
+        undefined,
+        plugin
+      )
+    ).toBe('A');
+  });
+
   it('uses the same filtered inputs for a rich Plural hash', async () => {
     const source: JsxChildren = {
       t: 'Plural',
