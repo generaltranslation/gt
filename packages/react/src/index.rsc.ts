@@ -30,6 +30,27 @@ export function RegionSelector() {
   return failClientComponent('RegionSelector');
 }
 
+// ===== Error for precomputed <T> ===== //
+function failPrecomputedT() {
+  throw new Error(
+    createDiagnosticMessage({
+      source: 'gt-react',
+      severity: 'Error',
+      whatHappened:
+        'A precomputed <T> cannot render in a React Server Component',
+      why: 'the compiler option experimentalPrecomputeJsx rewrote this <T> for client and server-rendered React',
+      fix: 'Turn off experimentalPrecomputeJsx, or render this <T> from a client component.',
+    })
+  );
+}
+
+export function GtInternalPrecomputedJsx() {
+  return failPrecomputedT();
+}
+export function GtInternalPrecomputedText() {
+  return failPrecomputedT();
+}
+
 // ===== Components ===== //
 export {
   Branch,

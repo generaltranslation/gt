@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   autoderive: { jsx: false, strings: false },
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
+  precomputeJsx: false,
 };
 
 /**
@@ -64,6 +65,7 @@ export function initializeState(
     devHotReload: _b,
     experimentalStaticLocale: _c,
     experimentalReplaceSource: _d,
+    experimentalPrecomputeJsx: precomputeJsx,
     ...restOptions
   } = options;
 
@@ -85,6 +87,11 @@ export function initializeState(
       options.autoJsxImportSource ?? DEFAULT_SETTINGS.autoJsxImportSource,
     inlineTranslationsTable,
     sourceReplacement: inlineTranslationsTable ? sourceReplacement : undefined,
+    // Dev builds keep <T>, which hot reloads; id-tagging needs <T> to tag the DOM
+    precomputeJsx:
+      precomputeJsx === true &&
+      process.env.NODE_ENV === 'production' &&
+      gtConfig?._tagIds !== true,
     filename,
   };
 

@@ -31,6 +31,12 @@ export interface TransformState {
   openTranslationCalls?: Set<t.CallExpression>;
   /** <T> calls to replace with their translations once their children are injected */
   sourceReplacementsOnExit?: Map<t.CallExpression, () => void>;
+  /** <T> calls to precompute once their children are injected */
+  precomputedJsxOnExit?: Map<t.CallExpression, () => void>;
+  /** Source and name of a precomputed component, as JSON, to its local name */
+  precomputedJsxImports?: Map<string, string>;
+  /** Module-scope variables that hold the source children of precomputed <T> calls */
+  precomputedJsxSources?: string[];
   /** JSX runtime source to the local name source replacement imports its Fragment as */
   sourceReplacementImports?: Map<string, string>;
   /** Hash to local import name; set only when this file imports message modules. */
