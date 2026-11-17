@@ -38,13 +38,9 @@ export function withGTMetadata<Props = {}>(
 }
 
 /**
- * Builds the locale fallback list used by formatters and plural selection.
- *
- * When the active locale equals the configured default locale, explicit
- * preferences are intentionally ignored and only the default locale is used,
- * matching the React runtime. Otherwise, explicit preferences are tried first,
- * then the active locale, and finally the default locale. Duplicate entries
- * are removed without changing that order.
+ * The locales a variable formats in and a plural is selected in: the
+ * `locales` it is given, as they are, or the active locale. When the active
+ * locale is the default locale, that locale alone, as in the React runtime.
  *
  * @internal
  */
@@ -55,11 +51,8 @@ export function getFormatLocales(
   resolveLocale: (locale: string) => string = identityLocale
 ): string[] {
   const resolvedLocale = resolveLocale(locale);
-  const resolvedDefaultLocale = resolveLocale(defaultLocale);
-  if (resolvedLocale === resolvedDefaultLocale) return [resolvedDefaultLocale];
-  return [
-    ...new Set([...(locales ?? []), locale, defaultLocale].map(resolveLocale)),
-  ];
+  if (resolvedLocale === resolveLocale(defaultLocale)) return [resolvedLocale];
+  return locales?.length ? locales.map(resolveLocale) : [resolvedLocale];
 }
 
 function identityLocale(locale: string): string {

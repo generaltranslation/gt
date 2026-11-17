@@ -1,17 +1,17 @@
 import { getI18nConfig } from 'gt-i18n/internal';
 
 /**
- * Locales used to format variables in content that renders in `locale`:
- * explicit `locales`, then `locale`, then the default locale. Source content
- * formats in the default locale only.
+ * The locales a variable formats in: the `locales` prop as it is given, or
+ * the locale its content renders in. Source content formats in the default
+ * locale.
  */
 export function getFormatLocales(
   locale: string,
   localesProp: string[] = []
 ): string[] {
   const config = getI18nConfig();
-  const defaultLocale = config.getDefaultLocale();
-  return config.requiresTranslation({ locale })
-    ? [...localesProp, locale, defaultLocale]
-    : [defaultLocale];
+  if (!config.requiresTranslation({ locale })) {
+    return [config.getDefaultLocale()];
+  }
+  return localesProp.length ? localesProp : [locale];
 }

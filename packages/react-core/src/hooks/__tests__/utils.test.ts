@@ -76,7 +76,7 @@ describe('getFormatLocales', () => {
   beforeEach(resetGTGlobals);
   afterEach(resetGTGlobals);
 
-  it('uses an explicit locale when translation is required', () => {
+  it('uses the explicit locales as they are, or the locale alone, when translation is required', () => {
     setup({ locale: 'en' });
 
     expect(
@@ -85,7 +85,10 @@ describe('getFormatLocales', () => {
         enableI18n: true,
         localesProp: ['fr-CA'],
       })
-    ).toEqual(['fr-CA', 'fr', 'en']);
+    ).toEqual(['fr-CA']);
+    expect(getFormatLocales({ locale: 'fr', enableI18n: true })).toEqual([
+      'fr',
+    ]);
   });
 
   it('returns only the default locale when explicit locale does not require translation', () => {
