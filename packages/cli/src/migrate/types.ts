@@ -30,10 +30,11 @@ export type BranchFillCounts = {
   dropped: number;
 };
 
+/** `oldKey` is set when a locale's value came from another old key than the message's. */
 export type LocaleOutcome =
-  | { status: 'carried' }
-  | { status: 'migrated'; filled?: BranchFillCounts }
-  | { status: 'rejected'; reason: string }
+  | { status: 'carried'; oldKey?: string }
+  | { status: 'migrated'; filled?: BranchFillCounts; oldKey?: string }
+  | { status: 'rejected'; reason: string; oldKey?: string }
   | { status: 'missing' };
 
 export type MessageDecision = {

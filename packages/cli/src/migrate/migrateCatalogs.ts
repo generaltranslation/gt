@@ -387,31 +387,36 @@ export function migrateCatalogs({
     const tree = sourceTree(message);
     const isTree = message.dataFormat === 'MESSAGE_TREE';
 
-    let match: Match | undefined;
-    if (oldKeys.has(message.hash)) {
-      match = {
-        tier: 'same-key',
-        oldKey: message.hash,
-        oldDataFormat: message.dataFormat,
-        sourceFormats: {},
-        renameMap: {},
-        notes: [],
-      };
-    } else if (message.dataFormat === 'JSX') {
-      match = predictJsxMatch(message, oldKeys);
+    const sameKey: Match | undefined = oldKeys.has(message.hash)
+      ? {
+          tier: 'same-key',
+          oldKey: message.hash,
+          oldDataFormat: message.dataFormat,
+          sourceFormats: {},
+          renameMap: {},
+          notes: [],
+        }
+      : undefined;
+    const needsFallback =
+      !sameKey ||
+      locales.some((locale) => catalogs[locale]?.[message.hash] == null);
+    let fallback: Match | undefined;
+    if (needsFallback && message.dataFormat === 'JSX') {
+      fallback = predictJsxMatch(message, oldKeys);
     }
-    if (!match && isTree && tree !== undefined) {
-      match = predictTreeMatch(message, tree, oldKeys);
+    if (needsFallback && !fallback && isTree && tree !== undefined) {
+      fallback = predictTreeMatch(message, tree, oldKeys);
     }
-    if (!match && tree !== undefined) {
+    if (needsFallback && !fallback && tree !== undefined) {
       const found = index.find(tree, loose);
       if (found) {
         const picked = pickSourceMatch(message, tree, found, catalogs);
         if ('ambiguous' in picked) decision.notes.push(picked.ambiguous);
-        else match = picked;
+        else fallback = picked;
       }
     }
 
+    const match = sameKey ?? fallback;
     if (!match) {
       for (const locale of locales) {
         decision.locales[locale] = { status: 'missing' };
@@ -425,14 +430,28 @@ export function migrateCatalogs({
       decision.renameMap = match.renameMap;
     }
     decision.notes.push(...match.notes);
+    if (sameKey && fallback) {
+      decision.notes.push(
+        `Locales without the key fall back to ${fallback.oldKey} (${fallback.tier})`
+      );
+    }
 
     for (const locale of locales) {
-      const oldValue = catalogs[locale]?.[match.oldKey];
-      const outcome = migrateValue(message, tree, match, oldValue, {
-        locale: validationLocale(locale),
-        fill,
-      });
-      decision.locales[locale] = outcome.outcome;
+      const localeMatch =
+        sameKey && catalogs[locale]?.[message.hash] != null
+          ? sameKey
+          : (fallback ?? match);
+      const outcome = migrateValue(
+        message,
+        tree,
+        localeMatch,
+        catalogs[locale]?.[localeMatch.oldKey],
+        { locale: validationLocale(locale), fill }
+      );
+      decision.locales[locale] =
+        localeMatch === match || outcome.outcome.status === 'missing'
+          ? outcome.outcome
+          : { ...outcome.outcome, oldKey: localeMatch.oldKey };
       if (outcome.value !== undefined) {
         output[locale][message.hash] = outcome.value;
       }

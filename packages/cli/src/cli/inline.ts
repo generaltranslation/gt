@@ -16,6 +16,7 @@ import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
 import { validateProject } from '../translation/validate.js';
 import { Libraries, InlineLibrary } from '../types/libraries.js';
+import { handleMigrate, type MigrateFlags } from './commands/migrate.js';
 
 /**
  * Stand in for a CLI tool that does any sort of inline content translations
@@ -35,6 +36,7 @@ export class InlineCLI extends BaseCLI {
     this.setupValidateCommand();
     this.setupDownloadCommand();
     this.setupEnqueueCommand();
+    this.setupMigrateCommand();
   }
 
   /** Allows framework adapters to describe their own default source scope. */
@@ -115,6 +117,57 @@ export class InlineCLI extends BaseCLI {
       await this.handleGenerateSourceCommand(initOptions);
       logger.endCommand('Done!');
     });
+  }
+
+  protected setupMigrateCommand(): void {
+    attachInlineTranslateFlags(
+      attachTranslateFlags(
+        this.program
+          .command('migrate')
+          .description(
+            'Carries translations from the legacy APIs over to the messages you rewrote, so gt translate does not translate them again.'
+          )
+      ),
+      this.getInlineSourceHelp()
+    )
+      .option(
+        '--from <dir>',
+        'Directory holding the legacy translation files. Defaults to the files.gt.output path'
+      )
+      .option(
+        '--legacy-source <path>',
+        'The legacy default locale file, written by gt generate. Defaults to the files.gt.output path for the default locale'
+      )
+      .option(
+        '--backup-dir <dir>',
+        'Where the legacy translation files are kept before they are overwritten, relative to gt.config.json',
+        '.gt/migrate-backup'
+      )
+      .option(
+        '--report <file>',
+        'Write every migration decision to a JSON file'
+      )
+      .option(
+        '--no-upload',
+        'Only write the migrated files; gt translate then translates these messages again'
+      )
+      .option(
+        '--no-fill',
+        'Do not add plural categories and select keys a translation lacks'
+      )
+      .option(
+        '--loose',
+        'Also match messages whose text differs only in whitespace',
+        false
+      )
+      .action(async (options: MigrateFlags) => {
+        displayHeader('Migrating legacy translations...');
+        const settings = await generateSettings(options, undefined, {
+          requireConfig: true,
+        });
+        await handleMigrate(options, settings, this.library);
+        logger.endCommand('Done!');
+      });
   }
 
   protected async handleGenerateSourceCommand(
