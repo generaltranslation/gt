@@ -289,6 +289,35 @@ describe('GTIntl locale option', () => {
     expect(intl.formatList(['a', 'b'], { locales: ['en'] })).toBe('a and b');
   });
 
+  it('gives Intl one locale, or the locales of the call as they are', () => {
+    // Klingon has no locale data, and Intl formats it in the host's locale:
+    // the default locale is not tried for it unless the call lists it.
+    const klingon = createIntl({ defaultLocale: 'de' }, { locale: 'tlh' });
+    expect(klingon.formatNum(1234.5)).toBe(
+      new Intl.NumberFormat('tlh').format(1234.5)
+    );
+    expect(klingon.formatNum(1234.5, { locales: ['tlh', 'de'] })).toBe(
+      '1.234,5'
+    );
+    expect(
+      klingon.formatMessageTree([['n', 'number']], {
+        values: { n: 1234.5 },
+        formats: {},
+      })
+    ).toBe(new Intl.NumberFormat('tlh').format(1234.5));
+    // An alias never reaches Intl: its code does.
+    const brand = createIntl(
+      { customMapping: { brand: { code: 'fr' } } },
+      { locale: 'brand' }
+    );
+    expect(brand.formatNum(1234.5)).toBe(
+      new Intl.NumberFormat('fr').format(1234.5)
+    );
+    expect(brand.formatNum(1234.5, { locales: ['brand'] })).toBe(
+      new Intl.NumberFormat('fr').format(1234.5)
+    );
+  });
+
   it('falls back to the default locale without an instance locale', () => {
     expect(createIntl({ defaultLocale: 'de' }).formatNum(1234.5)).toBe(
       new Intl.NumberFormat('de').format(1234.5)
