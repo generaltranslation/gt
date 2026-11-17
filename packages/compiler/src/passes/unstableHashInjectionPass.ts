@@ -83,7 +83,16 @@ export function unstableHashInjectionPass(
           buildInline,
           replaceSource,
           state.settings.precomputeMessages
-            ? { hoist, replacedLocale: sourceReplacement?.locale, replaceTree }
+            ? {
+                hoist,
+                replacedLocale: sourceReplacement?.locale,
+                replaceTree,
+                // A build for the source locale renders every source in it
+                sourceLocale:
+                  sourceReplacement && sourceReplacement.locale === undefined
+                    ? sourceReplacement.defaultLocale
+                    : undefined,
+              }
             : undefined
         )
       ) {
