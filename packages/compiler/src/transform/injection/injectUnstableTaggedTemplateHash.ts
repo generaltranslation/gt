@@ -195,7 +195,7 @@ function isEmbeddedFragment(fragment: TemplateFragment): boolean {
  * `const t = [await] useGT/getGT()`, and `msg` for an imported `msg`, with
  * the source `t`, `msg` or the hook is imported from.
  */
-function getUnstableTag(
+export function getUnstableTag(
   name: string,
   scope: Scope
 ): { kind: 'gt' | 'msg'; source: string } | undefined {

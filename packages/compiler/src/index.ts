@@ -61,6 +61,10 @@ import {
   OMITTED_ICU_PARSER_UNAVAILABLE_WARNING,
   resolveOmittedIcuParser,
 } from './transform/icu-parser/omitIcuParser';
+import {
+  createUncompiledCallSitesError,
+  findUncompiledCallSites,
+} from './transform/validation/uncompiledCallSites';
 import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
@@ -128,6 +132,11 @@ const INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR =
     why: 'translations are only embedded where hashes are computed at build time, and msgOutput files leave out the translations that would be embedded',
     fix: 'Remove compileTimeHash: false, or remove files.gt.inlineTranslations from gt.config.json',
   });
+
+/** The CLI extracts no messages from installed packages, so none of theirs is left out of msgOutput. */
+function isDependency(id: string): boolean {
+  return /[\\/]node_modules[\\/]/.test(id);
+}
 
 function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
   return logLevel !== 'silent' && logLevel !== 'error';
@@ -519,6 +528,19 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           if (omitIcuParser && isProduction()) {
             const error = getIcuStringImportError(ast.program, id);
             if (error) throw new InvalidLibraryUsageError(error);
+          }
+
+          if (
+            isProduction() &&
+            gtFiles?.inlineTranslations?.locales.length &&
+            !isDependency(id)
+          ) {
+            const uncompiled = findUncompiledCallSites(ast);
+            if (uncompiled.length) {
+              throw new InvalidLibraryUsageError(
+                createUncompiledCallSitesError(uncompiled, id, meta.framework)
+              );
+            }
           }
 
           // Pass 1: Jsx insertion
