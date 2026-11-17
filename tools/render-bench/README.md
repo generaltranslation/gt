@@ -10,12 +10,13 @@ and pseudo-translations for the ten locales in `gt.config.json`. The app is the
 same on every run. Each variant in `scripts/variants.mjs` builds it with a
 different API:
 
-| Variant           | Messages                                                |
-| ----------------- | ------------------------------------------------------- |
-| `unstable`        | `t` from `gt-react/unstable`, hashes from the compiler  |
-| `unstable-nohash` | the same without the compiler: `t` hashes as it renders |
-| `stable`          | `useGT()` and `<T>` from the published `gt-react`       |
-| `floor`           | precomputed strings and functions per locale            |
+| Variant           | Messages                                                 |
+| ----------------- | -------------------------------------------------------- |
+| `unstable`        | `t` from `gt-react/unstable`, hashes from the compiler   |
+| `static`          | `unstable` built per locale with the GT runtime left out |
+| `unstable-nohash` | the same without the compiler: `t` hashes as it renders  |
+| `stable`          | `useGT()` and `<T>` from the published `gt-react`        |
+| `floor`           | precomputed strings and functions per locale             |
 
 ## Running
 
@@ -34,6 +35,9 @@ to `results/<label>.json`; the label defaults to the commit:
 - **One kind per route:** the same for 100 messages of a single kind.
 - **Outside React:** nanoseconds per call for each kind, for the first call
   of each call site and once warm.
+
+The `static` variant has one build per locale (`dist/static-fr`,
+`dist/static-en`), and each task loads the build of its locale.
 
 Every number is the median of `--n` page loads, each in a new browser context,
 so every sample imports and renders cold. The libraries load with the entry,
