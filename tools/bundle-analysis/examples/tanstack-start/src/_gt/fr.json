@@ -14,7 +14,7 @@
   "dba25d3fe774a633": "Ajouter Au Panier",
   "c7a9185f5681092b": "Ajouté. Votre préréglage est enregistré dans la bouilloire au premier démarrage.",
   "d0a14530e91df22b": "Chaque bouilloire est livrée avec une garantie de 2 ans.",
-  "2b530c2812a31b0d": {
+  "9d9eeba49801c21c": {
     "t": "Branch",
     "i": 1,
     "d": {
@@ -33,14 +33,14 @@
           "t": "p",
           "i": 2,
           "c": "Chauffe à 96 °C et maintient la température 60 minutes. Laissez pré-infuser 30 secondes."
+        },
+        "other": {
+          "t": "p",
+          "i": 2,
+          "c": "Chauffe à la température réglée."
         }
       },
       "t": "b"
-    },
-    "c": {
-      "t": "p",
-      "i": 2,
-      "c": "Chauffe à la température réglée."
     }
   },
   "ae0eb0c9a5f33e40": {

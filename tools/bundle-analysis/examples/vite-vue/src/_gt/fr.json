@@ -53,7 +53,7 @@
   "5eb6d2a3dcdaad22": "Facturation",
   "6032f166f1b33374": "Mensuel",
   "f29fe14e025576f8": "Annuel",
-  "76b3367e58ceaf9a": {
+  "616bb700cf51e977": {
     "t": "p",
     "i": 1,
     "c": {
@@ -62,11 +62,11 @@
       "d": {
         "b": {
           "monthly": " Facturé chaque mois. Résiliable à tout moment. ",
-          "yearly": " Facturé une fois par an. Deux mois sont offerts. "
+          "yearly": " Facturé une fois par an. Deux mois sont offerts. ",
+          "other": "Facturé par utilisateur."
         },
         "t": "b"
-      },
-      "c": " Facturé par utilisateur. "
+      }
     }
   },
   "29b8fb9be365cd8c": "Utilisateurs",
