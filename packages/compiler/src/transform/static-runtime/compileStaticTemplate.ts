@@ -87,7 +87,7 @@ export function compileStaticTemplate(
       addStaticRuntimeError(
         state,
         path.node,
-        'this t template is not static, so its message cannot be resolved at build time'
+        'this t template is not static or not valid, so its message cannot be resolved at build time'
       );
     } else {
       addStaticRuntimeError(state, path.node, error.message);
@@ -162,6 +162,12 @@ function compile(
     ) {
       unsupported(
         `this t template formats the variable "${name}" in more than one way`
+      );
+    }
+    // They are evaluated after the values, wherever the template has them
+    if (!properties.every((property) => isFree(property.value))) {
+      unsupported(
+        `this t template formats the variable "${name}" with an option that has side effects`
       );
     }
     formats.set(name, properties);

@@ -709,7 +709,7 @@ describe('experimentalStaticRuntime', () => {
         'a template that is not static',
         `${IMPORTS}
          export function App({ value }) { return t\`Hello \${value}\`; }`,
-        /this t template is not static/,
+        /this t template is not static or not valid/,
       ],
       [
         'a template with maxChars',
@@ -722,6 +722,12 @@ describe('experimentalStaticRuntime', () => {
         `${IMPORTS}
          export function App({ a, b }) { return t\`\${{ name: a }} and \${{ name: b }}\`; }`,
         /gives the variable "name" more than one value/,
+      ],
+      [
+        'a formatting option with side effects',
+        `${IMPORTS}
+         export function App({ total, pick }) { return t\`Total \${number({ total }, { style: 'currency', currency: pick() })}\`; }`,
+        /formats the variable "total" with an option that has side effects/,
       ],
       [
         'a re-export',
