@@ -1020,7 +1020,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
   describe('select branches', () => {
     const extractSelect = (call: string, dir?: string) =>
       extract(
-        `import { t, select } from 'gt-react/unstable';\ndeclare const role: 'admin' | 'member' | 'guest';\ndeclare const blank: 'admin' | '';\ndeclare const name: string;\nt\`\${${call}}\`;\n`,
+        `import { t, select } from 'gt-react/unstable';\ndeclare const role: 'admin' | 'member' | 'guest';\ndeclare const blank: 'admin' | '';\ndeclare const maybe: 'admin' | 'member' | undefined;\ndeclare const name: string;\nt\`\${${call}}\`;\n`,
         undefined,
         undefined,
         dir
@@ -1035,6 +1035,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
         "'guest', 'member'",
       ],
       ["select({ role }!, { admin: 'Admins' })", "'guest', 'member'"],
+      ["select({ maybe }, { admin: 'Admins' })", "'member'"],
       // ICU cannot write an empty key, so this one needs other.
       ["select({ blank }, { admin: 'Admins' })", "''"],
     ])(

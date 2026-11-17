@@ -98,7 +98,7 @@ export function assertSelectCovered(
     context.config.file,
     value.start!,
     value.end!,
-    // A hidden undefined is no value to write a branch for.
+    // undefined is no value to write a branch for.
     { undefinedAsEmpty: false }
   );
   if (!('variants' in result)) return;

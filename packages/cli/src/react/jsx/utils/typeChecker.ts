@@ -63,7 +63,8 @@ type TypeFlagName =
  * Every string the expression at `[start, end)` of `file` can be, read from
  * its TypeScript type: a string literal or a union of them. Offsets are those
  * of a Babel node parsed from the same file text. `undefinedAsEmpty` adds `''`
- * for the undefined that a project without strictNullChecks hides.
+ * for the undefined that a project without strictNullChecks hides; without
+ * it, undefined and null are no variant, hidden or written in the type.
  */
 export function getStringVariants(
   file: string,
@@ -77,7 +78,7 @@ export function getStringVariants(
   for (const member of type.unionTypes() ?? [type]) {
     if (member.stringValue !== undefined) {
       variants.add(member.stringValue);
-    } else {
+    } else if (undefinedAsEmpty || !member.is('Null', 'Undefined')) {
       const open = member.is(
         'String',
         'TemplateLiteral',
