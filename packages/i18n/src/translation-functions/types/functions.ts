@@ -31,7 +31,7 @@ export type SyncResolutionFunctionWithFallback = (
 ) => string;
 
 /**
- * Type for the gt() function
+ * Type for the t() function returned by useGT() and getGT()
  * @param {string} message - The message to translate
  * @param {GTTranslationOptions} options - The options for the translation
  * @returns {string} The translated message

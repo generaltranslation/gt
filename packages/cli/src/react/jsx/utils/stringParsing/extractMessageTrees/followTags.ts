@@ -7,7 +7,7 @@ import { processMessage } from './processMessage.js';
 import { processMsgCall } from './processMsgCall.js';
 import type { TagOptions } from './types.js';
 
-/** Follows `const gt = useGT()` / `const gt = await getGT()` to the gt binding. */
+/** Follows `const t = useGT()` / `const t = await getGT()` to the t binding. */
 export function processHookReference(
   hookRef: NodePath,
   config: ParsingConfig,
@@ -15,7 +15,7 @@ export function processHookReference(
 ): void {
   const call = hookRef.parentPath;
   if (call?.isTSTypeQuery()) return;
-  // An alias, re-export or argument hides the gt it creates.
+  // An alias, re-export or argument hides the t it creates.
   if (!call?.isCallExpression() || call.node.callee !== hookRef.node) {
     warnUntrackedTag(hookRef.node, config, output);
     return;
@@ -35,8 +35,8 @@ export function processHookReference(
 }
 
 /**
- * Processes every use of a t/gt/msg binding. `options` is set when the binding
- * is a configured tag, as in `const save = gt({ context })`. `isMsg` also
+ * Processes every use of a t/msg binding. `options` is set when the binding
+ * is a configured tag, as in `const save = t({ context })`. `isMsg` also
  * extracts literal calls, as in `msg('Save')`.
  */
 export function processTagBinding(
@@ -63,10 +63,10 @@ function processTagReference(
   isMsg: boolean
 ): void {
   const parent = ref.parentPath;
-  // `typeof gt` in a type has no runtime use.
+  // `typeof t` in a type has no runtime use.
   if (parent?.isTSTypeQuery()) return;
   if (parent?.isTaggedTemplateExpression() && parent.node.tag === ref.node) {
-    // gt`...`
+    // t`...`
     processMessage(parent, configuredOptions, config, output);
     return;
   }
@@ -77,20 +77,20 @@ function processTagReference(
   ) {
     const outer = parent.parentPath;
     if (outer?.isTaggedTemplateExpression() && outer.node.tag === parent.node) {
-      // gt({ ...options })`...`
+      // t({ ...options })`...`
       processMessage(outer, parent.node.arguments, config, output);
       return;
     }
     // msg('Save')
     if (isMsg && processMsgCall(parent, config, output)) return;
-    // const save = gt({ ...options })
+    // const save = t({ ...options })
     const alias = getConstAliasBinding(outer, parent.node);
     if (alias) {
       processTagBinding(alias, parent.node.arguments, config, output, isMsg);
       return;
     }
   }
-  // const translate = gt
+  // const translate = t
   const alias = getConstAliasBinding(parent, ref.node);
   if (alias) {
     processTagBinding(alias, configuredOptions, config, output, isMsg);

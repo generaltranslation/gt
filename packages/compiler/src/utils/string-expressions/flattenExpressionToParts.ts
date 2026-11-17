@@ -74,12 +74,12 @@ export function flattenExpressionToParts(
   const expr = exprPath.node;
   const scope = exprPath.scope;
 
-  // gt('Hello, World!')
+  // t('Hello, World!')
   if (t.isStringLiteral(expr)) {
     return { parts: [{ type: 'static', value: expr.value }], errors: [] };
   }
 
-  // gt(123)
+  // t(123)
   if (t.isNumericLiteral(expr)) {
     return {
       parts: [{ type: 'static', value: String(expr.value) }],
@@ -87,7 +87,7 @@ export function flattenExpressionToParts(
     };
   }
 
-  // gt(true)
+  // t(true)
   if (t.isBooleanLiteral(expr)) {
     return {
       parts: [{ type: 'static', value: String(expr.value) }],
@@ -95,17 +95,17 @@ export function flattenExpressionToParts(
     };
   }
 
-  // gt(null)
+  // t(null)
   if (t.isNullLiteral(expr)) {
     return { parts: [{ type: 'static', value: 'null' }], errors: [] };
   }
 
-  // gt(void 0)
+  // t(void 0)
   if (t.isUnaryExpression(expr) && expr.operator === 'void') {
     return { parts: [{ type: 'dynamic', node: expr }], errors: [] };
   }
 
-  // gt(`Hello, ${name}!`)
+  // t(`Hello, ${name}!`)
   if (t.isTemplateLiteral(expr)) {
     const result: FlattenExpressionResult = { parts: [], errors: [] };
     for (let i = 0; i < expr.quasis.length; i++) {
@@ -130,7 +130,7 @@ export function flattenExpressionToParts(
     return result;
   }
 
-  // gt('Hello, ' + name + '!')
+  // t('Hello, ' + name + '!')
   if (t.isBinaryExpression(expr) && expr.operator === '+') {
     const leftPath = exprPath.get('left');
     if (!leftPath.isExpression()) {
@@ -153,11 +153,11 @@ export function flattenExpressionToParts(
     };
   }
 
-  // gt(derive(() => 'Hello, World!'))
+  // t(derive(() => 'Hello, World!'))
   if (isDeriveInvocation(expr, scope)) {
     return { parts: [{ type: 'derive', node: expr }], errors: [] };
   }
 
-  // gt(name)
+  // t(name)
   return { parts: [{ type: 'dynamic', node: expr }], errors: [] };
 }

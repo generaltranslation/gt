@@ -3,9 +3,9 @@ import { useGT } from 'gt-vue';
 
 export default {
   setup() {
-    return { gt: useGT() };
+    return { t: useGT() };
   },
 };
 </script>
 
-<template>{{ gt('Direct setup return') }}</template>
+<template>{{ t('Direct setup return') }}</template>

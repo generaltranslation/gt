@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { T, Var, msg, useGT } from 'gt-vue';
-const gt = useGT();
+const t = useGT();
 const name = String(Date.now());
 const dynamic = String(Date.now());
-gt(`Dynamic ${name}`);
-gt('Too long', { $maxChars: 12 });
-gt('Formatted', { $format: 'ICU' });
-gt('Interpolated', { name });
+t(`Dynamic ${name}`);
+t('Too long', { $maxChars: 12 });
+t('Formatted', { $format: 'ICU' });
+t('Interpolated', { name });
 msg('Registered', { $id: 'custom' });
 const visible = true;
 </script>

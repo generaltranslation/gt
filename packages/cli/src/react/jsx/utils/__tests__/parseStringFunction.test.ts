@@ -114,48 +114,48 @@ describe('parseStrings', () => {
       '$id, $context and $maxChars together',
       'useGT',
       `import { useGT } from 'generaltranslation';
-       const gt = useGT();
-       gt("hello world", { $id: 'greeting', $context: 'homepage', $maxChars: 25 });`,
+       const t = useGT();
+       t("hello world", { $id: 'greeting', $context: 'homepage', $maxChars: 25 });`,
       [['hello world', { id: 'greeting', context: 'homepage', maxChars: 25 }]],
     ],
     [
       '$maxChars next to an ICU variable',
       'useGT',
       `import { useGT } from 'generaltranslation';
-       const gt = useGT();
-       gt("hello, {name}", { name: "John", $maxChars: 10 });`,
+       const t = useGT();
+       t("hello, {name}", { name: "John", $maxChars: 10 });`,
       [['hello, {name}', { maxChars: 10 }]],
     ],
     [
       '$maxChars of zero',
       'useGT',
       `import { useGT } from 'generaltranslation';
-       const gt = useGT();
-       gt("hello world", { $maxChars: 0 });`,
+       const t = useGT();
+       t("hello world", { $maxChars: 0 });`,
       [['hello world', { maxChars: 0 }]],
     ],
     [
       'a negative $maxChars as its absolute value',
       'useGT',
       `import { useGT } from 'generaltranslation';
-       const gt = useGT();
-       gt("hello world", { $maxChars: -5 });`,
+       const t = useGT();
+       t("hello world", { $maxChars: -5 });`,
       [['hello world', { maxChars: 5 }]],
     ],
     [
       '$requiresReview: true',
       'useGT',
       `import { useGT } from 'gt-react';
-       const gt = useGT();
-       gt('hello world', { $requiresReview: true });`,
+       const t = useGT();
+       t('hello world', { $requiresReview: true });`,
       [['hello world', { requiresReview: true }]],
     ],
     [
       '$requiresReview: false',
       'useGT',
       `import { useGT } from 'gt-react';
-       const gt = useGT();
-       gt('hello world', { $requiresReview: false });`,
+       const t = useGT();
+       t('hello world', { $requiresReview: false });`,
       [['hello world', { requiresReview: false }]],
     ],
     [
@@ -303,15 +303,15 @@ describe('parseStrings', () => {
       'a function that passes the callback to itself',
       'useGT',
       `import { useGT } from 'generaltranslation';
-       function renderTree(gt, nodes) {
-         gt('leaf node', { $id: 'leaf' });
-         gt('branch node', { $id: 'branch' });
+       function renderTree(t, nodes) {
+         t('leaf node', { $id: 'leaf' });
+         t('branch node', { $id: 'branch' });
          for (const child of nodes) {
-           renderTree(gt, child.children);
+           renderTree(t, child.children);
          }
        }
-       const gt = useGT();
-       renderTree(gt, tree);`,
+       const t = useGT();
+       renderTree(t, tree);`,
       [
         ['leaf node', { id: 'leaf' }],
         ['branch node', { id: 'branch' }],
@@ -321,16 +321,16 @@ describe('parseStrings', () => {
       'functions that pass the callback to each other',
       'useGT',
       `import { useGT } from 'generaltranslation';
-       function processEven(gt, n) {
-         gt('even case', { $id: 'even' });
-         if (n > 0) processOdd(gt, n - 1);
+       function processEven(t, n) {
+         t('even case', { $id: 'even' });
+         if (n > 0) processOdd(t, n - 1);
        }
-       function processOdd(gt, n) {
-         gt('odd case', { $id: 'odd' });
-         if (n > 0) processEven(gt, n - 1);
+       function processOdd(t, n) {
+         t('odd case', { $id: 'odd' });
+         if (n > 0) processEven(t, n - 1);
        }
-       const gt = useGT();
-       processEven(gt, 10);`,
+       const t = useGT();
+       processEven(t, 10);`,
       [
         ['even case', { id: 'even' }],
         ['odd case', { id: 'odd' }],
@@ -340,29 +340,29 @@ describe('parseStrings', () => {
       'an arrow function that passes the callback to itself in a closure',
       'useGT',
       `import { useGT } from 'generaltranslation';
-       const traverse = (gt, node) => {
-         gt('visiting node', { $id: 'visit' });
-         node.children.forEach(child => traverse(gt, child));
+       const traverse = (t, node) => {
+         t('visiting node', { $id: 'visit' });
+         node.children.forEach(child => traverse(t, child));
        };
-       const gt = useGT();
-       traverse(gt, root);`,
+       const t = useGT();
+       traverse(t, root);`,
       [['visiting node', { id: 'visit' }]],
     ],
     [
       'a recursive function that also calls a helper',
       'useGT',
       `import { useGT } from 'generaltranslation';
-       function formatLabel(gt) {
-         return gt('label text', { $id: 'label' });
+       function formatLabel(t) {
+         return t('label text', { $id: 'label' });
        }
-       function walkTree(gt, node) {
-         gt('tree node', { $id: 'node' });
-         formatLabel(gt);
-         if (node.left) walkTree(gt, node.left);
-         if (node.right) walkTree(gt, node.right);
+       function walkTree(t, node) {
+         t('tree node', { $id: 'node' });
+         formatLabel(t);
+         if (node.left) walkTree(t, node.left);
+         if (node.right) walkTree(t, node.right);
        }
-       const gt = useGT();
-       walkTree(gt, binaryTree);`,
+       const t = useGT();
+       walkTree(t, binaryTree);`,
       [
         ['tree node', { id: 'node' }],
         ['label text', { id: 'label' }],
@@ -568,9 +568,9 @@ describe('parseStrings', () => {
       'import { useGT } from "gt-next";',
       '',
       'function Page() {',
-      '  const gt = useGT();',
+      '  const t = useGT();',
       '  const name = "world";',
-      '  const greeting = gt("Hello, {name}!");',
+      '  const greeting = t("Hello, {name}!");',
       '  return greeting;',
       '}',
     ];
@@ -679,8 +679,8 @@ describe('parseStrings', () => {
       'a string $maxChars',
       'useGT',
       `import { useGT } from 'generaltranslation';
-       const gt = useGT();
-       gt("hello world", { $maxChars: "invalid" });`,
+       const t = useGT();
+       t("hello world", { $maxChars: "invalid" });`,
       ['Found invalid maxChars value: $maxChars: "invalid"'],
       [['hello world', {}]],
     ],
@@ -688,8 +688,8 @@ describe('parseStrings', () => {
       'a boolean $maxChars',
       'useGT',
       `import { useGT } from 'generaltranslation';
-       const gt = useGT();
-       gt("hello world", { $maxChars: true });`,
+       const t = useGT();
+       t("hello world", { $maxChars: true });`,
       ['Found invalid maxChars value: $maxChars: true'],
       [['hello world', {}]],
     ],
@@ -697,8 +697,8 @@ describe('parseStrings', () => {
       'a string $requiresReview',
       'useGT',
       `import { useGT } from 'gt-react';
-       const gt = useGT();
-       gt('hello world', { $requiresReview: 'true' });`,
+       const t = useGT();
+       t('hello world', { $requiresReview: 'true' });`,
       ["Found invalid requiresReview value: $requiresReview: 'true'"],
       [['hello world', {}]],
     ],
@@ -707,8 +707,8 @@ describe('parseStrings', () => {
       'useGT',
       `import { useGT } from 'gt-react';
        const flag = Math.random() > 0.5;
-       const gt = useGT();
-       gt('hello world', { $requiresReview: flag });`,
+       const t = useGT();
+       t('hello world', { $requiresReview: flag });`,
       ['Found non-static expression for attribute $requiresReview: flag'],
       [['hello world', {}]],
     ],
@@ -785,16 +785,16 @@ describe('parseStrings', () => {
       'useGT',
       `import { useGT } from 'gt-react';
        const name = "John";
-       const gt = useGT();
-       gt(\`Hello, \${name}\`);`,
+       const t = useGT();
+       t(\`Hello, \${name}\`);`,
     ],
     [
       'useGT() with a concatenation',
       'useGT',
       `import { useGT } from 'gt-react';
        const name = "John";
-       const gt = useGT();
-       gt("Hello, " + name);`,
+       const t = useGT();
+       t("Hello, " + name);`,
     ],
     [
       'getGT() with a template literal',
@@ -802,8 +802,8 @@ describe('parseStrings', () => {
       `import { getGT } from 'gt-react';
        const name = "John";
        async function test() {
-         const gt = await getGT();
-         gt(\`Hello, \${name}\`);
+         const t = await getGT();
+         t(\`Hello, \${name}\`);
        }`,
     ],
   ])('autoderives %s', (_name, functionName, code) => {
@@ -839,13 +839,13 @@ describe('parseStrings across files', () => {
     );
   }
 
-  /** A component that passes gt to `fn`, imported from `from`. */
+  /** A component that passes t to `fn`, imported from `from`. */
   const component = (fn: string, from: string) => `
     import { useGT } from 'gt-react';
     import { ${fn} } from '${from}';
     function Component() {
-      const gt = useGT();
-      ${fn}(gt);
+      const t = useGT();
+      ${fn}(t);
     }
   `;
   const extract = (code: string) =>
@@ -859,13 +859,13 @@ describe('parseStrings across files', () => {
       {
         '/lib/src/utils.ts': `
           import { getLabel } from './helpers';
-          export function getDetails(gt) {
-            gt('detail string', { $id: 'detail' });
-            getLabel(gt);
+          export function getDetails(t) {
+            t('detail string', { $id: 'detail' });
+            getLabel(t);
           }`,
         '/lib/src/helpers.ts': `
-          export function getLabel(gt) {
-            gt('label string', { $id: 'label' });
+          export function getLabel(t) {
+            t('label string', { $id: 'label' });
           }`,
       },
       [
@@ -879,8 +879,8 @@ describe('parseStrings across files', () => {
       {
         '/lib/src/utils.ts': `export { process } from './processor';`,
         '/lib/src/processor.ts': `
-          export function process(gt) {
-            gt('processed', { $id: 'processed' });
+          export function process(t) {
+            t('processed', { $id: 'processed' });
           }`,
       },
       [['processed', { id: 'processed' }]],
@@ -891,13 +891,13 @@ describe('parseStrings across files', () => {
       {
         '/lib/src/utils.ts': `
           import { formatCopy } from './format';
-          export function getCopy(gt = fallback) {
-            gt('direct copy', { $id: 'direct' });
-            formatCopy(gt);
+          export function getCopy(t = fallback) {
+            t('direct copy', { $id: 'direct' });
+            formatCopy(t);
           }`,
         '/lib/src/format.ts': `
-          export function formatCopy(gt = fallback) {
-            gt('formatted copy', { $id: 'formatted' });
+          export function formatCopy(t = fallback) {
+            t('formatted copy', { $id: 'formatted' });
           }`,
       },
       [
@@ -905,7 +905,7 @@ describe('parseStrings across files', () => {
         ['formatted copy', { id: 'formatted' }],
       ],
     ],
-  ])('follows gt through %s', (_name, code, files, expected) => {
+  ])('follows t through %s', (_name, code, files, expected) => {
     mockProject(files, { '@lib/utils': '/lib/src/utils.ts' });
 
     const result = extract(code);
@@ -921,12 +921,12 @@ describe('parseStrings across files', () => {
       {
         '/pkg/src/outer.ts': `
           import { inner } from './inner';
-          export function outer(gt) {
-            inner(gt);
+          export function outer(t) {
+            inner(t);
           }`,
         '/pkg/src/inner.ts': `
-          export function inner(gt) {
-            gt('inner string', { $id: 'inner' });
+          export function inner(t) {
+            t('inner string', { $id: 'inner' });
           }`,
       },
       { '@pkg/outer': '/pkg/src/outer.ts' }
@@ -962,9 +962,9 @@ describe('parseStrings across files', () => {
       {
         '/pkg/src/outer.ts': `
           import { inner } from './missing-file';
-          export function outer(gt) {
-            gt('found', { $id: 'found' });
-            inner(gt);
+          export function outer(t) {
+            t('found', { $id: 'found' });
+            inner(t);
           }`,
       },
       { '@pkg/outer': '/pkg/src/outer.ts' }

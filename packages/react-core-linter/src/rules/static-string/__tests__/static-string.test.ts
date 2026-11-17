@@ -16,17 +16,17 @@ type MessageId = keyof typeof staticString.meta.messages;
 const errors = (...messageIds: MessageId[]) =>
   messageIds.map((messageId) => ({ messageId }));
 
-/** A component that evaluates `expression` with `gt` bound to useGT(). */
-const gt = (expression: string, specifiers = 'useGT') => `
+/** A component that evaluates `expression` with `t` bound to useGT(). */
+const t = (expression: string, specifiers = 'useGT') => `
 import { ${specifiers} } from 'gt-react';
 function Component() {
-  const gt = useGT();
+  const t = useGT();
   return ${expression};
 }
 `;
 
-/** Same as gt(), with derive imported. */
-const gtDerive = (expression: string) => gt(expression, 'useGT, derive');
+/** Same as t(), with derive imported. */
+const tDerive = (expression: string) => t(expression, 'useGT, derive');
 
 /** A module-level statement with msg (and optionally derive) imported. */
 const msg = (expression: string, specifiers = 'msg') => `
@@ -38,11 +38,11 @@ type Wrap = (expression: string) => string;
 type Row = [name: string, expression: string];
 type FixRow = [name: string, expression: string, fixedExpression: string];
 
-const valid = (rows: Row[], wrap: Wrap = gt) =>
+const valid = (rows: Row[], wrap: Wrap = t) =>
   rows.map(([name, expression]) => ({ name, code: wrap(expression) }));
 
 /** Cases that report `messageId` once and offer no fix. */
-const reports = (messageId: MessageId, rows: Row[], wrap: Wrap = gt) =>
+const reports = (messageId: MessageId, rows: Row[], wrap: Wrap = t) =>
   rows.map(([name, expression]) => ({
     name,
     code: wrap(expression),
@@ -50,7 +50,7 @@ const reports = (messageId: MessageId, rows: Row[], wrap: Wrap = gt) =>
   }));
 
 /** Cases that report variableInterpolationRequired once and are fixed. */
-const fixes = (rows: FixRow[], wrap: Wrap = gt) =>
+const fixes = (rows: FixRow[], wrap: Wrap = t) =>
   rows.map(([name, expression, fixedExpression]) => ({
     name,
     code: wrap(expression),
@@ -61,8 +61,8 @@ const fixes = (rows: FixRow[], wrap: Wrap = gt) =>
 ruleTester.run('static-string: detection', staticString, {
   valid: [
     ...valid([
-      ['static string', 'gt("Hello world")'],
-      ['no arguments', 'gt()'],
+      ['static string', 't("Hello world")'],
+      ['no arguments', 't()'],
     ]),
     ...valid(
       [['msg() with an array of static strings', 'msg(["Hello", `World`])']],
@@ -77,8 +77,8 @@ ruleTester.run('static-string: detection', staticString, {
       code: `
         import { useGT } from 'some-other-lib';
         function Component() {
-          const gt = useGT();
-          return gt("hi" + name);
+          const t = useGT();
+          return t("hi" + name);
         }
       `,
     },
@@ -87,8 +87,8 @@ ruleTester.run('static-string: detection', staticString, {
       code: `
         import { getGT } from 'gt-next';
         async function handler() {
-          const gt = await getGT();
-          return gt("hi" + name);
+          const t = await getGT();
+          return t("hi" + name);
         }
       `,
       options: [{ libs: ['gt-react'] }],
@@ -101,10 +101,10 @@ ruleTester.run('static-string: detection', staticString, {
       `,
     },
     {
-      name: 'locally declared function named gt',
+      name: 'locally declared function named t',
       code: `
-        function gt(s) { return s; }
-        gt("hi" + name);
+        function t(s) { return s; }
+        t("hi" + name);
       `,
     },
     {
@@ -169,15 +169,15 @@ ruleTester.run('static-string: detection', staticString, {
       code: `
         import { getGT } from 'gt-next';
         async function ServerComponent() {
-          const gt = await getGT();
-          return gt("hi" + name);
+          const t = await getGT();
+          return t("hi" + name);
         }
       `,
       output: `
         import { getGT } from 'gt-next';
         async function ServerComponent() {
-          const gt = await getGT();
-          return gt("hi{var0}", { var0: name });
+          const t = await getGT();
+          return t("hi{var0}", { var0: name });
         }
       `,
       options: [{ libs: ['gt-next'] }],
@@ -188,15 +188,15 @@ ruleTester.run('static-string: detection', staticString, {
       code: `
         import { getGT } from 'gt-next';
         async function ServerComponent() {
-          const gt = getGT();
-          return gt("hi" + name);
+          const t = getGT();
+          return t("hi" + name);
         }
       `,
       output: `
         import { getGT } from 'gt-next';
         async function ServerComponent() {
-          const gt = getGT();
-          return gt("hi{var0}", { var0: name });
+          const t = getGT();
+          return t("hi{var0}", { var0: name });
         }
       `,
       errors: errors('variableInterpolationRequired'),
@@ -206,27 +206,27 @@ ruleTester.run('static-string: detection', staticString, {
       code: `
         import { useGT } from '@generaltranslation/react-core/hooks';
         function Component() {
-          const gt = useGT();
-          return gt("Hello " + name);
+          const t = useGT();
+          return t("Hello " + name);
         }
       `,
       output: `
         import { useGT } from '@generaltranslation/react-core/hooks';
         function Component() {
-          const gt = useGT();
-          return gt("Hello {var0}", { var0: name });
+          const t = useGT();
+          return t("Hello {var0}", { var0: name });
         }
       `,
       errors: errors('variableInterpolationRequired'),
     },
     {
-      name: 'gt and msg from different configured libs',
+      name: 't and msg from different configured libs',
       code: `
         import { useGT } from 'gt-react';
         import { msg } from 'gt-next';
         function Component() {
-          const gt = useGT();
-          const a = gt("hi" + name);
+          const t = useGT();
+          const a = t("hi" + name);
           const b = msg(\`bye \${name}\`);
         }
       `,
@@ -234,8 +234,8 @@ ruleTester.run('static-string: detection', staticString, {
         import { useGT } from 'gt-react';
         import { msg } from 'gt-next';
         function Component() {
-          const gt = useGT();
-          const a = gt("hi{var0}", { var0: name });
+          const t = useGT();
+          const a = t("hi{var0}", { var0: name });
           const b = msg("bye {var0}", { var0: name });
         }
       `,
@@ -246,11 +246,11 @@ ruleTester.run('static-string: detection', staticString, {
       ),
     },
     ...reports('variableInterpolationRequired', [
-      ['spread argument', 'gt(...args)'],
+      ['spread argument', 't(...args)'],
     ]),
     ...reports('staticStringRequired', [
-      ['identifier argument', 'gt(name)'],
-      ['gt() does not accept arrays', 'gt(["Hello", "World"])'],
+      ['identifier argument', 't(name)'],
+      ['t() does not accept arrays', 't(["Hello", "World"])'],
     ]),
     ...reports(
       'staticStringRequired',
@@ -267,17 +267,17 @@ ruleTester.run('static-string: derive', staticString, {
   valid: [
     ...valid(
       [
-        ['standalone derive()', 'gt(derive(getValue()))'],
-        ['static + derive', 'gt("Hello " + derive(x))'],
-        ['derive + static', 'gt(derive(x) + " world")'],
-        ['derive + derive', 'gt(derive(a) + derive(b))'],
-        ['derive in a template literal', 'gt(`Hello ${derive(x)}!`)'],
+        ['standalone derive()', 't(derive(getValue()))'],
+        ['static + derive', 't("Hello " + derive(x))'],
+        ['derive + static', 't(derive(x) + " world")'],
+        ['derive + derive', 't(derive(a) + derive(b))'],
+        ['derive in a template literal', 't(`Hello ${derive(x)}!`)'],
       ],
-      gtDerive
+      tDerive
     ),
     {
       name: 'aliased derive',
-      code: gt('gt("Hello " + deriveValue(x))', 'useGT, derive as deriveValue'),
+      code: t('t("Hello " + deriveValue(x))', 'useGT, derive as deriveValue'),
     },
     {
       name: 'msg() with derive',
@@ -289,8 +289,8 @@ ruleTester.run('static-string: derive', staticString, {
         import { useGT } from '@generaltranslation/react-core/hooks';
         import { derive } from 'generaltranslation';
         function Component() {
-          const gt = useGT();
-          return gt("Hello " + derive("world"));
+          const t = useGT();
+          return t("Hello " + derive("world"));
         }
       `,
     },
@@ -301,47 +301,47 @@ ruleTester.run('static-string: derive', staticString, {
       [
         [
           'static + derive + dynamic',
-          'gt("Hello " + derive(x) + " " + name)',
-          'gt(`Hello ${derive(x)} {var0}`, { var0: name })',
+          't("Hello " + derive(x) + " " + name)',
+          't(`Hello ${derive(x)} {var0}`, { var0: name })',
         ],
         [
           'dynamic + derive',
-          'gt(name + " " + derive(x))',
-          'gt(`{var0} ${derive(x)}`, { var0: name })',
+          't(name + " " + derive(x))',
+          't(`{var0} ${derive(x)}`, { var0: name })',
         ],
         [
           'template literal with derive and a dynamic value',
-          'gt(`${derive(x)} ${name}`)',
-          'gt(`${derive(x)} {var0}`, { var0: name })',
+          't(`${derive(x)} ${name}`)',
+          't(`${derive(x)} {var0}`, { var0: name })',
         ],
         [
           'concatenation with derive inside a template expression',
-          'gt(`Hello ${name + derive(variable) + lastname}.`)',
-          'gt(`Hello {var0}${derive(variable)}{var1}.`, { var0: name, var1: lastname })',
+          't(`Hello ${name + derive(variable) + lastname}.`)',
+          't(`Hello {var0}${derive(variable)}{var1}.`, { var0: name, var1: lastname })',
         ],
         [
           'ternary next to derive',
-          'gt(derive(x) + (c ? "a" : "b"))',
-          'gt(`${derive(x)}{var0, select, true {a} other {b}}`, { var0: c })',
+          't(derive(x) + (c ? "a" : "b"))',
+          't(`${derive(x)}{var0, select, true {a} other {b}}`, { var0: c })',
         ],
         [
           'backtick and ${ in static text',
-          'gt("a`b" + derive(x) + "c${d}" + derive(y) + name)',
-          "gt(`a\\`b${derive(x)}c$'{'d'}'${derive(y)}{var0}`, { var0: name })",
+          't("a`b" + derive(x) + "c${d}" + derive(y) + name)',
+          "t(`a\\`b${derive(x)}c$'{'d'}'${derive(y)}{var0}`, { var0: name })",
         ],
         [
           'braces in static text',
-          'gt("a{b}" + derive(x) + name)',
-          "gt(`a'{'b'}'${derive(x)}{var0}`, { var0: name })",
+          't("a{b}" + derive(x) + name)',
+          "t(`a'{'b'}'${derive(x)}{var0}`, { var0: name })",
         ],
       ],
-      gtDerive
+      tDerive
     ),
     ...fixes([
       [
         'concatenation without derive inside a template expression is one variable',
-        'gt(`Hello ${first + last}.`)',
-        'gt("Hello {var0}.", { var0: first + last })',
+        't(`Hello ${first + last}.`)',
+        't("Hello {var0}.", { var0: first + last })',
       ],
     ]),
     {
@@ -350,16 +350,16 @@ ruleTester.run('static-string: derive', staticString, {
         import { useGT } from 'gt-react';
         import { derive } from 'other-lib';
         function Component() {
-          const gt = useGT();
-          return gt("val: " + derive(x));
+          const t = useGT();
+          return t("val: " + derive(x));
         }
       `,
       output: `
         import { useGT } from 'gt-react';
         import { derive } from 'other-lib';
         function Component() {
-          const gt = useGT();
-          return gt("val: {var0}", { var0: derive(x) });
+          const t = useGT();
+          return t("val: {var0}", { var0: derive(x) });
         }
       `,
       errors: errors('variableInterpolationRequired'),
@@ -370,59 +370,59 @@ ruleTester.run('static-string: derive', staticString, {
 ruleTester.run('static-string: ICU validation', staticString, {
   valid: [
     ...valid([
-      ['placeholder', 'gt("Hello {name}!")'],
-      ['select', 'gt("{gender, select, male {He} female {She} other {They}}")'],
+      ['placeholder', 't("Hello {name}!")'],
+      ['select', 't("{gender, select, male {He} female {She} other {They}}")'],
       [
         'plural with a nested placeholder',
-        'gt("{count, plural, =0 {none} one {one item} other {{count} items}}")',
+        't("{count, plural, =0 {none} one {one item} other {{count} items}}")',
       ],
       [
         'plural nested in select',
-        'gt("{gender, select, male {{count, plural, one {He has # item} other {He has # items}}} other {They have items}}")',
+        't("{gender, select, male {{count, plural, one {He has # item} other {He has # items}}} other {They have items}}")',
       ],
-      ['number skeleton', 'gt("{price, number, ::currency/USD}")'],
-      ['number style containing braces', 'gt("{n, number, foo{bar}baz}")'],
-      ['unmatched closing brace is literal text', 'gt("Hello }")'],
-      ['static concatenation', 'gt("Hello " + "{name}!")'],
-      ['static template literal', 'gt(`Hello {name}!`)'],
+      ['number skeleton', 't("{price, number, ::currency/USD}")'],
+      ['number style containing braces', 't("{n, number, foo{bar}baz}")'],
+      ['unmatched closing brace is literal text', 't("Hello }")'],
+      ['static concatenation', 't("Hello " + "{name}!")'],
+      ['static template literal', 't(`Hello {name}!`)'],
       [
         'template literal with only static expressions',
-        'gt(`${"Hello "} ${"world"}`)',
+        't(`${"Hello "} ${"world"}`)',
       ],
       [
         '$format STRING skips validation',
-        'gt("Hello {unclosed", { $format: "STRING" })',
+        't("Hello {unclosed", { $format: "STRING" })',
       ],
     ]),
     ...valid(
       [
         [
           'derive in a concatenation skips validation',
-          'gt("Hello {unclosed" + derive(x))',
+          't("Hello {unclosed" + derive(x))',
         ],
       ],
-      gtDerive
+      tDerive
     ),
     ...valid([['msg()', 'msg("Hello {name}!")']], msg),
   ],
   invalid: [
     ...reports('invalidICUFormat', [
-      ['unclosed placeholder', 'gt("Hello {name")'],
-      ['empty placeholder', 'gt("Hello {}")'],
-      ['static concatenation', 'gt("Hello " + "{name")'],
-      ['static template literal', 'gt(`Hello {name`)'],
+      ['unclosed placeholder', 't("Hello {name")'],
+      ['empty placeholder', 't("Hello {}")'],
+      ['static concatenation', 't("Hello " + "{name")'],
+      ['static template literal', 't(`Hello {name`)'],
       [
         'template literal with a static expression',
-        'gt(`${"hello {unclosed"}`)',
+        't(`${"hello {unclosed"}`)',
       ],
-      ['explicit $format ICU', 'gt("Hello {unclosed", { $format: "ICU" })'],
+      ['explicit $format ICU', 't("Hello {unclosed", { $format: "ICU" })'],
       // ICU rejects a token that is not its own, and Intl cannot format some.
       [
         'number skeleton with a malformed token',
-        'gt("{n, number, ::integer-width/x*00}")',
+        't("{n, number, ::integer-width/x*00}")',
       ],
-      ['currency skeleton without a currency', 'gt("{n, number, ::currency}")'],
-      ['number skeleton Intl cannot format', 'gt("{n, number, ::permille}")'],
+      ['currency skeleton without a currency', 't("{n, number, ::currency}")'],
+      ['number skeleton Intl cannot format', 't("{n, number, ::permille}")'],
     ]),
     ...reports(
       'invalidICUFormat',
@@ -441,43 +441,43 @@ ruleTester.run('static-string: ICU validation', staticString, {
 ruleTester.run('static-string: sugar variables', staticString, {
   valid: [
     ...valid([
-      ['$context: string', 'gt("Hello", { $context: "greeting" })'],
+      ['$context: string', 't("Hello", { $context: "greeting" })'],
       [
         '$context: static template literal',
-        'gt("Hello", { $context: `greeting` })',
+        't("Hello", { $context: `greeting` })',
       ],
       [
         '$context: static concatenation',
-        'gt("Hello", { $context: "formal " + "greeting" })',
+        't("Hello", { $context: "formal " + "greeting" })',
       ],
-      ['$id: string', 'gt("Hello", { $id: "greeting-1" })'],
-      ['$id: static template literal', 'gt("Hello", { $id: `my-id` })'],
-      ['$format: string', 'gt("Hello", { $format: "ICU" })'],
-      ['$format: static template literal', 'gt("Hello", { $format: `ICU` })'],
-      ['$maxChars: number', 'gt("Hello", { $maxChars: 50 })'],
-      ['$maxChars: negative number', 'gt("Hello", { $maxChars: -5 })'],
-      ['$requiresReview: true', 'gt("Hello", { $requiresReview: true })'],
-      ['$requiresReview: false', 'gt("Hello", { $requiresReview: false })'],
+      ['$id: string', 't("Hello", { $id: "greeting-1" })'],
+      ['$id: static template literal', 't("Hello", { $id: `my-id` })'],
+      ['$format: string', 't("Hello", { $format: "ICU" })'],
+      ['$format: static template literal', 't("Hello", { $format: `ICU` })'],
+      ['$maxChars: number', 't("Hello", { $maxChars: 50 })'],
+      ['$maxChars: negative number', 't("Hello", { $maxChars: -5 })'],
+      ['$requiresReview: true', 't("Hello", { $requiresReview: true })'],
+      ['$requiresReview: false', 't("Hello", { $requiresReview: false })'],
       [
         'string-literal keys',
-        'gt("Hello", { "$context": "ctx", "$id": "id", "$format": "ICU", "$maxChars": 100 })',
+        't("Hello", { "$context": "ctx", "$id": "id", "$format": "ICU", "$maxChars": 100 })',
       ],
       [
         'other keys are not checked',
-        'gt("Hello {name}!", { name: userName, $custom: dynamicValue })',
+        't("Hello {name}!", { name: userName, $custom: dynamicValue })',
       ],
-      ['spread in options', 'gt("Hello {name}!", { ...opts })'],
-      ['computed key', 'gt("Hello", { [key]: "value" })'],
+      ['spread in options', 't("Hello {name}!", { ...opts })'],
+      ['computed key', 't("Hello", { [key]: "value" })'],
     ]),
     ...valid(
       [
-        ['$context: derive()', 'gt("Hello", { $context: derive(x) })'],
+        ['$context: derive()', 't("Hello", { $context: derive(x) })'],
         [
           '$context: concatenation with derive()',
-          'gt("Hello", { $context: "a" + derive(x) + "b" + derive(y) })',
+          't("Hello", { $context: "a" + derive(x) + "b" + derive(y) })',
         ],
       ],
-      gtDerive
+      tDerive
     ),
     ...valid(
       [
@@ -491,47 +491,47 @@ ruleTester.run('static-string: sugar variables', staticString, {
   ],
   invalid: [
     ...reports('sugarVariableMustBeStatic', [
-      ['$context: identifier', 'gt("Hello", { $context: someVar })'],
+      ['$context: identifier', 't("Hello", { $context: someVar })'],
       [
         '$context: interpolated template literal',
-        'gt("Hello", { $context: `ctx ${value}` })',
+        't("Hello", { $context: `ctx ${value}` })',
       ],
       [
         '$context: concatenation with a dynamic value',
-        'gt("Hello", { $context: "prefix " + dynamicValue })',
+        't("Hello", { $context: "prefix " + dynamicValue })',
       ],
-      ['$context: shorthand property', 'gt("Hello", { $context })'],
+      ['$context: shorthand property', 't("Hello", { $context })'],
       [
         '$context: string-literal key',
-        'gt("Hello", { "$context": dynamicVar })',
+        't("Hello", { "$context": dynamicVar })',
       ],
-      ['$id: identifier', 'gt("Hello", { $id: someVar })'],
-      ['$id: concatenation', 'gt("Hello", { $id: "hello" + "-world" })'],
-      ['$id: string-literal key', 'gt("Hello", { "$id": computedId })'],
+      ['$id: identifier', 't("Hello", { $id: someVar })'],
+      ['$id: concatenation', 't("Hello", { $id: "hello" + "-world" })'],
+      ['$id: string-literal key', 't("Hello", { "$id": computedId })'],
       [
         '$format: identifier, and the content is not ICU-validated',
-        'gt("Hello {}", { $format: dynamicVar })',
+        't("Hello {}", { $format: dynamicVar })',
       ],
-      ['$maxChars: identifier', 'gt("Hello", { $maxChars: charLimit })'],
-      ['$maxChars: arithmetic', 'gt("Hello", { $maxChars: 10 + 5 })'],
+      ['$maxChars: identifier', 't("Hello", { $maxChars: charLimit })'],
+      ['$maxChars: arithmetic', 't("Hello", { $maxChars: 10 + 5 })'],
       [
         '$maxChars: string under a string-literal key',
-        'gt("Hello", { "$maxChars": "50" })',
+        't("Hello", { "$maxChars": "50" })',
       ],
-      ['$requiresReview: string', 'gt("Hello", { $requiresReview: "true" })'],
-      ['$requiresReview: identifier', 'gt("Hello", { $requiresReview: flag })'],
+      ['$requiresReview: string', 't("Hello", { $requiresReview: "true" })'],
+      ['$requiresReview: identifier', 't("Hello", { $requiresReview: flag })'],
       [
         'only the dynamic sugar variable is reported',
-        'gt("Hello", { $context: "valid", $id: someVar })',
+        't("Hello", { $context: "valid", $id: someVar })',
       ],
     ]),
     ...reports(
       'sugarVariableMustBeStatic',
       [
-        ['$id: derive()', 'gt("Hello", { $id: derive(getId()) })'],
-        ['$format: derive()', 'gt("Hello", { $format: derive(getFormat()) })'],
+        ['$id: derive()', 't("Hello", { $id: derive(getId()) })'],
+        ['$format: derive()', 't("Hello", { $format: derive(getFormat()) })'],
       ],
-      gtDerive
+      tDerive
     ),
     ...reports(
       'sugarVariableMustBeStatic',
@@ -540,13 +540,13 @@ ruleTester.run('static-string: sugar variables', staticString, {
     ),
     {
       name: 'each dynamic sugar variable is reported',
-      code: gt('gt("Hello", { $context: ctx, $id: id })'),
+      code: t('t("Hello", { $context: ctx, $id: id })'),
       errors: errors('sugarVariableMustBeStatic', 'sugarVariableMustBeStatic'),
     },
     {
       name: 'dynamic content and dynamic sugar variable: both reported, content fixed',
-      code: gt('gt("Hello " + name, { $context: ctx })'),
-      output: gt('gt("Hello {var0}", { $context: ctx, var0: name })'),
+      code: t('t("Hello " + name, { $context: ctx })'),
+      output: t('t("Hello {var0}", { $context: ctx, var0: name })'),
       errors: errors(
         'variableInterpolationRequired',
         'sugarVariableMustBeStatic'
@@ -561,29 +561,29 @@ ruleTester.run('static-string: $format and the auto-fix', staticString, {
     ...fixes([
       [
         'explicit $format ICU',
-        'gt("Hello " + name, { $format: "ICU" })',
-        'gt("Hello {var0}", { $format: "ICU", var0: name })',
+        't("Hello " + name, { $format: "ICU" })',
+        't("Hello {var0}", { $format: "ICU", var0: name })',
       ],
       [
         '$format ICU as a template literal',
-        'gt("Hello " + name, { $format: `ICU` })',
-        'gt("Hello {var0}", { $format: `ICU`, var0: name })',
+        't("Hello " + name, { $format: `ICU` })',
+        't("Hello {var0}", { $format: `ICU`, var0: name })',
       ],
     ]),
     // Any other format is reported without a fix.
     ...reports('staticStringRequired', [
-      ['$format STRING', 'gt("Hello " + name, { $format: "STRING" })'],
+      ['$format STRING', 't("Hello " + name, { $format: "STRING" })'],
       [
         '$format STRING as a template literal',
-        'gt("Hello " + name, { $format: `STRING` })',
+        't("Hello " + name, { $format: `STRING` })',
       ],
       [
         '$format under a string-literal key',
-        'gt("Hello " + name, { "$format": "STRING" })',
+        't("Hello " + name, { "$format": "STRING" })',
       ],
       [
         '$format I18NEXT with a template literal',
-        'gt(`Hello ${name}!`, { $format: "I18NEXT" })',
+        't(`Hello ${name}!`, { $format: "I18NEXT" })',
       ],
     ]),
     ...reports(
@@ -598,7 +598,7 @@ ruleTester.run('static-string: $format and the auto-fix', staticString, {
     ),
     {
       name: 'dynamic $format: no fix, and $format is reported too',
-      code: gt('gt("Hello " + name, { $format: dynamicVar })'),
+      code: t('t("Hello " + name, { $format: dynamicVar })'),
       errors: errors('staticStringRequired', 'sugarVariableMustBeStatic'),
     },
   ],
@@ -611,145 +611,145 @@ ruleTester.run('static-string: ICU auto-fix', staticString, {
       // Variables
       [
         'concatenation',
-        'gt("Hello " + name + "!")',
-        'gt("Hello {var0}!", { var0: name })',
+        't("Hello " + name + "!")',
+        't("Hello {var0}!", { var0: name })',
       ],
       [
         'several variables',
-        'gt("Welcome, " + user.name + "! You have " + count + " new messages.")',
-        'gt("Welcome, {var0}! You have {var1} new messages.", { var0: user.name, var1: count })',
+        't("Welcome, " + user.name + "! You have " + count + " new messages.")',
+        't("Welcome, {var0}! You have {var1} new messages.", { var0: user.name, var1: count })',
       ],
       [
         'dynamic value first',
-        'gt(count + " items remaining")',
-        'gt("{var0} items remaining", { var0: count })',
+        't(count + " items remaining")',
+        't("{var0} items remaining", { var0: count })',
       ],
       [
         'template literal',
-        'gt(`${name} is ${age} years old`)',
-        'gt("{var0} is {var1} years old", { var0: name, var1: age })',
+        't(`${name} is ${age} years old`)',
+        't("{var0} is {var1} years old", { var0: name, var1: age })',
       ],
       [
         'template literal with only an expression',
-        'gt(`${greeting}`)',
-        'gt("{var0}", { var0: greeting })',
+        't(`${greeting}`)',
+        't("{var0}", { var0: greeting })',
       ],
       [
         'method call',
-        'gt("My number is " + Math.random())',
-        'gt("My number is {var0}", { var0: Math.random() })',
+        't("My number is " + Math.random())',
+        't("My number is {var0}", { var0: Math.random() })',
       ],
       [
         'call to an undeclared function',
-        'gt("val: " + foo())',
-        'gt("val: {var0}", { var0: foo() })',
+        't("val: " + foo())',
+        't("val: {var0}", { var0: foo() })',
       ],
       [
         'non-string literal is a variable',
-        'gt("count: " + 42)',
-        'gt("count: {var0}", { var0: 42 })',
+        't("count: " + 42)',
+        't("count: {var0}", { var0: 42 })',
       ],
       [
         'parenthesized expression loses its parentheses',
-        'gt("name: " + (name ?? "default"))',
-        'gt("name: {var0}", { var0: name ?? "default" })',
+        't("name: " + (name ?? "default"))',
+        't("name: {var0}", { var0: name ?? "default" })',
       ],
       [
         'parenthesized + is flattened into separate variables',
-        'gt("val: " + (a + b))',
-        'gt("val: {var0}{var1}", { var0: a, var1: b })',
+        't("val: " + (a + b))',
+        't("val: {var0}{var1}", { var0: a, var1: b })',
       ],
       [
         'empty static parts',
-        'gt("" + name + "")',
-        'gt("{var0}", { var0: name })',
+        't("" + name + "")',
+        't("{var0}", { var0: name })',
       ],
       [
         'repeated expressions reuse their variable',
-        'gt(a + " " + b + " " + a + " " + b)',
-        'gt("{var0} {var1} {var0} {var1}", { var0: a, var1: b })',
+        't(a + " " + b + " " + a + " " + b)',
+        't("{var0} {var1} {var0} {var1}", { var0: a, var1: b })',
       ],
       [
         'repeated expression in a template literal',
-        'gt(`${name} and ${name}`)',
-        'gt("{var0} and {var0}", { var0: name })',
+        't(`${name} and ${name}`)',
+        't("{var0} and {var0}", { var0: name })',
       ],
       // Escaping
       [
         'apostrophes are doubled and double quotes escaped',
-        String.raw`gt('The user\'s profile says "Hello, world!" and it\'s ' + status)`,
-        String.raw`gt("The user''s profile says \"Hello, world!\" and it''s {var0}", { var0: status })`,
+        String.raw`t('The user\'s profile says "Hello, world!" and it\'s ' + status)`,
+        String.raw`t("The user''s profile says \"Hello, world!\" and it''s {var0}", { var0: status })`,
       ],
       [
         'double quotes in a template literal',
-        'gt(`He said "hello" ${name}`)',
-        String.raw`gt("He said \"hello\" {var0}", { var0: name })`,
+        't(`He said "hello" ${name}`)',
+        String.raw`t("He said \"hello\" {var0}", { var0: name })`,
       ],
       [
         'backslash',
-        String.raw`gt("a\\b" + name)`,
-        String.raw`gt("a\\b{var0}", { var0: name })`,
+        String.raw`t("a\\b" + name)`,
+        String.raw`t("a\\b{var0}", { var0: name })`,
       ],
       [
         'newline, tab and carriage return',
-        String.raw`gt("a\n\tb\r" + name)`,
-        String.raw`gt("a\n\tb\r{var0}", { var0: name })`,
+        String.raw`t("a\n\tb\r" + name)`,
+        String.raw`t("a\n\tb\r{var0}", { var0: name })`,
       ],
       [
         'braces are quoted',
-        'gt("a{b}c" + name)',
-        `gt("a'{'b'}'c{var0}", { var0: name })`,
+        't("a{b}c" + name)',
+        `t("a'{'b'}'c{var0}", { var0: name })`,
       ],
       [
         '} before { are quoted independently',
-        'gt("} { " + name)',
-        `gt("'}' '{' {var0}", { var0: name })`,
+        't("} { " + name)',
+        `t("'}' '{' {var0}", { var0: name })`,
       ],
       [
         'adjacent }{ are quoted independently',
-        'gt("}{ " + name)',
-        `gt("'}''{' {var0}", { var0: name })`,
+        't("}{ " + name)',
+        `t("'}''{' {var0}", { var0: name })`,
       ],
       [
         'lone }',
-        'gt("solo } here " + name)',
-        `gt("solo '}' here {var0}", { var0: name })`,
+        't("solo } here " + name)',
+        `t("solo '}' here {var0}", { var0: name })`,
       ],
       [
         'lone {',
-        'gt("solo { here " + name)',
-        `gt("solo '{' here {var0}", { var0: name })`,
+        't("solo { here " + name)',
+        `t("solo '{' here {var0}", { var0: name })`,
       ],
       [
         'apostrophes next to braces',
-        `gt("a'{b}'c" + name)`,
-        `gt("a'''{'b'}'''c{var0}", { var0: name })`,
+        `t("a'{b}'c" + name)`,
+        `t("a'''{'b'}'''c{var0}", { var0: name })`,
       ],
       // Options merging
       [
         'appended to existing options',
-        'gt("Hi " + name, { $context: "informal", $id: "greeting" })',
-        'gt("Hi {var0}", { $context: "informal", $id: "greeting", var0: name })',
+        't("Hi " + name, { $context: "informal", $id: "greeting" })',
+        't("Hi {var0}", { $context: "informal", $id: "greeting", var0: name })',
       ],
       [
         'empty options object is replaced',
-        'gt("Hello " + name, {})',
-        'gt("Hello {var0}", { var0: name })',
+        't("Hello " + name, {})',
+        't("Hello {var0}", { var0: name })',
       ],
       [
         'existing var0 is skipped',
-        'gt("Hello " + name, { var0: existing })',
-        'gt("Hello {var1}", { var0: existing, var1: name })',
+        't("Hello " + name, { var0: existing })',
+        't("Hello {var1}", { var0: existing, var1: name })',
       ],
       [
         'several reserved names are skipped',
-        'gt(a + " " + b, { var0: x, var1: y })',
-        'gt("{var2} {var3}", { var0: x, var1: y, var2: a, var3: b })',
+        't(a + " " + b, { var0: x, var1: y })',
+        't("{var2} {var3}", { var0: x, var1: y, var2: a, var3: b })',
       ],
       [
         'a free name below a reserved one is used',
-        'gt("Hello " + name, { var1: existing })',
-        'gt("Hello {var0}", { var1: existing, var0: name })',
+        't("Hello " + name, { var1: existing })',
+        't("Hello {var0}", { var1: existing, var0: name })',
       ],
     ]),
     ...fixes(
@@ -764,8 +764,8 @@ ruleTester.run('static-string: ICU auto-fix', staticString, {
     ),
     // A second argument that is not an object literal cannot be merged into.
     ...reports('variableInterpolationRequired', [
-      ['identifier as second argument: no fix', 'gt("Hello " + name, opts)'],
-      ['spread as second argument: no fix', 'gt("Hi " + name, ...spread)'],
+      ['identifier as second argument: no fix', 't("Hello " + name, opts)'],
+      ['spread as second argument: no fix', 't("Hi " + name, ...spread)'],
     ]),
   ],
 });
@@ -775,147 +775,147 @@ ruleTester.run('static-string: ternary to ICU select', staticString, {
   invalid: fixes([
     [
       'boolean test',
-      'gt("My name is " + (cond ? "Ernest" : "Brian"))',
-      'gt("My name is {var0, select, true {Ernest} other {Brian}}", { var0: cond })',
+      't("My name is " + (cond ? "Ernest" : "Brian"))',
+      't("My name is {var0, select, true {Ernest} other {Brian}}", { var0: cond })',
     ],
     [
       'in a template literal next to a variable',
-      'gt(`Hello ${name}, you are ${isAdmin ? "admin" : "user"}`)',
-      'gt("Hello {var0}, you are {var1, select, true {admin} other {user}}", { var0: name, var1: isAdmin })',
+      't(`Hello ${name}, you are ${isAdmin ? "admin" : "user"}`)',
+      't("Hello {var0}, you are {var1, select, true {admin} other {user}}", { var0: name, var1: isAdmin })',
     ],
     [
       '=== uses the literal as the key',
-      'gt("The user is a " + (gender === "male" ? "boy" : "girl"))',
-      'gt("The user is a {var0, select, male {boy} other {girl}}", { var0: gender })',
+      't("The user is a " + (gender === "male" ? "boy" : "girl"))',
+      't("The user is a {var0, select, male {boy} other {girl}}", { var0: gender })',
     ],
     [
       '==',
-      'gt("val: " + (x == "a" ? "A" : "B"))',
-      'gt("val: {var0, select, a {A} other {B}}", { var0: x })',
+      't("val: " + (x == "a" ? "A" : "B"))',
+      't("val: {var0, select, a {A} other {B}}", { var0: x })',
     ],
     [
       'literal on the left',
-      'gt("val: " + ("admin" === role ? "Admin" : "User"))',
-      'gt("val: {var0, select, admin {Admin} other {User}}", { var0: role })',
+      't("val: " + ("admin" === role ? "Admin" : "User"))',
+      't("val: {var0, select, admin {Admin} other {User}}", { var0: role })',
     ],
     [
       'key with hyphens, underscores and digits',
-      'gt("val: " + (x === "valid-key_123" ? "A" : "B"))',
-      'gt("val: {var0, select, valid-key_123 {A} other {B}}", { var0: x })',
+      't("val: " + (x === "valid-key_123" ? "A" : "B"))',
+      't("val: {var0, select, valid-key_123 {A} other {B}}", { var0: x })',
     ],
     // Literals that are not valid select keys keep the whole test.
     [
       'key with a space',
-      'gt("val: " + (x === "hello world" ? "A" : "B"))',
-      'gt("val: {var0, select, true {A} other {B}}", { var0: x === "hello world" })',
+      't("val: " + (x === "hello world" ? "A" : "B"))',
+      't("val: {var0, select, true {A} other {B}}", { var0: x === "hello world" })',
     ],
     [
       'key with a comma',
-      'gt("val: " + (x === "done,failed" ? "A" : "B"))',
-      'gt("val: {var0, select, true {A} other {B}}", { var0: x === "done,failed" })',
+      't("val: " + (x === "done,failed" ? "A" : "B"))',
+      't("val: {var0, select, true {A} other {B}}", { var0: x === "done,failed" })',
     ],
     [
       'key with braces',
-      'gt("val: " + (x === "a{b}" ? "A" : "B"))',
-      'gt("val: {var0, select, true {A} other {B}}", { var0: x === "a{b}" })',
+      't("val: " + (x === "a{b}" ? "A" : "B"))',
+      't("val: {var0, select, true {A} other {B}}", { var0: x === "a{b}" })',
     ],
     [
       'key with an apostrophe',
-      `gt("val: " + (x === "it's" ? "A" : "B"))`,
-      `gt("val: {var0, select, true {A} other {B}}", { var0: x === "it's" })`,
+      `t("val: " + (x === "it's" ? "A" : "B"))`,
+      `t("val: {var0, select, true {A} other {B}}", { var0: x === "it's" })`,
     ],
     [
       'key with a hash',
-      'gt("val: " + (x === "a#b" ? "A" : "B"))',
-      'gt("val: {var0, select, true {A} other {B}}", { var0: x === "a#b" })',
+      't("val: " + (x === "a#b" ? "A" : "B"))',
+      't("val: {var0, select, true {A} other {B}}", { var0: x === "a#b" })',
     ],
     [
       'number literal',
-      'gt("val: " + (x === 1 ? "one" : "other"))',
-      'gt("val: {var0, select, true {one} other {other}}", { var0: x === 1 })',
+      't("val: " + (x === 1 ? "one" : "other"))',
+      't("val: {var0, select, true {one} other {other}}", { var0: x === 1 })',
     ],
     // Branch values
     [
       'empty string branch',
-      'gt("prefix" + (cond ? "" : "suffix"))',
-      'gt("prefix{var0, select, true {} other {suffix}}", { var0: cond })',
+      't("prefix" + (cond ? "" : "suffix"))',
+      't("prefix{var0, select, true {} other {suffix}}", { var0: cond })',
     ],
     [
       'static template literal branches',
-      'gt("val: " + (cond ? `yes` : `no`))',
-      'gt("val: {var0, select, true {yes} other {no}}", { var0: cond })',
+      't("val: " + (cond ? `yes` : `no`))',
+      't("val: {var0, select, true {yes} other {no}}", { var0: cond })',
     ],
     [
       '} in a branch value is quoted',
-      'gt("" + (x === "a" ? "val}" : "ok"))',
-      `gt("{var0, select, a {val'}'} other {ok}}", { var0: x })`,
+      't("" + (x === "a" ? "val}" : "ok"))',
+      `t("{var0, select, a {val'}'} other {ok}}", { var0: x })`,
     ],
     [
       '{ in the other value is quoted',
-      'gt("" + (x === "a" ? "ok" : "val{"))',
-      `gt("{var0, select, a {ok} other {val'{'}}", { var0: x })`,
+      't("" + (x === "a" ? "ok" : "val{"))',
+      `t("{var0, select, a {ok} other {val'{'}}", { var0: x })`,
     ],
     [
       'apostrophe in a branch value is doubled',
-      `gt("" + (x === "a" ? "it's" : "ok"))`,
-      `gt("{var0, select, a {it''s} other {ok}}", { var0: x })`,
+      `t("" + (x === "a" ? "it's" : "ok"))`,
+      `t("{var0, select, a {it''s} other {ok}}", { var0: x })`,
     ],
     [
       'dynamic consequent is a plain variable',
-      'gt("val: " + (cond ? getName() : "default"))',
-      'gt("val: {var0}", { var0: cond ? getName() : "default" })',
+      't("val: " + (cond ? getName() : "default"))',
+      't("val: {var0}", { var0: cond ? getName() : "default" })',
     ],
     [
       'dynamic alternate is a plain variable',
-      'gt("val: " + (cond ? "yes" : getNo()))',
-      'gt("val: {var0}", { var0: cond ? "yes" : getNo() })',
+      't("val: " + (cond ? "yes" : getNo()))',
+      't("val: {var0}", { var0: cond ? "yes" : getNo() })',
     ],
     // Chains
     [
       'chain on one variable collapses',
-      'gt("" + (s === "a" ? "A" : s === "b" ? "B" : s === "c" ? "C" : "D"))',
-      'gt("{var0, select, a {A} b {B} c {C} other {D}}", { var0: s })',
+      't("" + (s === "a" ? "A" : s === "b" ? "B" : s === "c" ? "C" : "D"))',
+      't("{var0, select, a {A} b {B} c {C} other {D}}", { var0: s })',
     ],
     [
       'chain with a dynamic middle branch is a plain variable',
-      'gt("" + (s === "a" ? "A" : s === "b" ? getB() : "C"))',
-      'gt("{var0}", { var0: s === "a" ? "A" : s === "b" ? getB() : "C" })',
+      't("" + (s === "a" ? "A" : s === "b" ? getB() : "C"))',
+      't("{var0}", { var0: s === "a" ? "A" : s === "b" ? getB() : "C" })',
     ],
     [
       'chain ending on another variable nests',
-      'gt("" + (x === "a" ? "A" : x === "b" ? "B" : cond ? "C" : "D"))',
-      'gt("{var0, select, a {A} b {B} other {{var1, select, true {C} other {D}}}}", { var0: x, var1: cond })',
+      't("" + (x === "a" ? "A" : x === "b" ? "B" : cond ? "C" : "D"))',
+      't("{var0, select, a {A} b {B} other {{var1, select, true {C} other {D}}}}", { var0: x, var1: cond })',
     ],
     [
       'three variables nest three selects',
-      'gt("" + (a === "x" ? "X" : b === "y" ? "Y" : c === "z" ? "Z" : "other"))',
-      'gt("{var0, select, x {X} other {{var1, select, y {Y} other {{var2, select, z {Z} other {other}}}}}}", { var0: a, var1: b, var2: c })',
+      't("" + (a === "x" ? "X" : b === "y" ? "Y" : c === "z" ? "Z" : "other"))',
+      't("{var0, select, x {X} other {{var1, select, y {Y} other {{var2, select, z {Z} other {other}}}}}}", { var0: a, var1: b, var2: c })',
     ],
     [
       'variable reused in a nested select',
-      'gt("" + (x === "a" ? "A" : y === "b" ? "B" : x === "c" ? "C" : "D"))',
-      'gt("{var0, select, a {A} other {{var1, select, b {B} other {{var0, select, c {C} other {D}}}}}}", { var0: x, var1: y })',
+      't("" + (x === "a" ? "A" : y === "b" ? "B" : x === "c" ? "C" : "D"))',
+      't("{var0, select, a {A} other {{var1, select, b {B} other {{var0, select, c {C} other {D}}}}}}", { var0: x, var1: y })',
     ],
     [
       'invalid first key nests a select on the same variable',
-      'gt("" + (x === "a b" ? "A" : x === "c" ? "C" : "D"))',
-      'gt("{var0, select, true {A} other {{var1, select, c {C} other {D}}}}", { var0: x === "a b", var1: x })',
+      't("" + (x === "a b" ? "A" : x === "c" ? "C" : "D"))',
+      't("{var0, select, true {A} other {{var1, select, c {C} other {D}}}}", { var0: x === "a b", var1: x })',
     ],
     // Several selects
     [
       'two selects on different variables',
-      'gt("" + (a === "x" ? "X" : "Y") + " " + (b === "p" ? "P" : "Q"))',
-      'gt("{var0, select, x {X} other {Y}} {var1, select, p {P} other {Q}}", { var0: a, var1: b })',
+      't("" + (a === "x" ? "X" : "Y") + " " + (b === "p" ? "P" : "Q"))',
+      't("{var0, select, x {X} other {Y}} {var1, select, p {P} other {Q}}", { var0: a, var1: b })',
     ],
     [
       'two selects on the same variable',
-      'gt("" + (x === "a" ? "A" : "B") + " and " + (x === "c" ? "C" : "D"))',
-      'gt("{var0, select, a {A} other {B}} and {var0, select, c {C} other {D}}", { var0: x })',
+      't("" + (x === "a" ? "A" : "B") + " and " + (x === "c" ? "C" : "D"))',
+      't("{var0, select, a {A} other {B}} and {var0, select, c {C} other {D}}", { var0: x })',
     ],
     [
       'select variable reused as a plain variable',
-      'gt("" + (x === "a" ? "A" : "B") + " " + x)',
-      'gt("{var0, select, a {A} other {B}} {var0}", { var0: x })',
+      't("" + (x === "a" ? "A" : "B") + " " + x)',
+      't("{var0, select, a {A} other {B}} {var0}", { var0: x })',
     ],
   ]),
 });

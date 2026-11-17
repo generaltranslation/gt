@@ -17,7 +17,7 @@ import type {
 //   • `<T>` content: every `<T>` (with tag-ids enabled) is wrapped in a node carrying its
 //     message HASH (see hashOf); its text nodes align to the flattened translation for
 //     that hash. Handles JSX structure + variables. (overlayFromDict)
-//   • `gt()` / `useGT()` strings: these render as bare text with NO hash marker, so we
+//   • `t()` / `useGT()` strings: these render as bare text with NO hash marker, so we
 //     hash each recorded SOURCE string (via the caller's `hashMessage`) and look that up
 //     in the same dict. (stringOverlay)
 
@@ -298,12 +298,12 @@ export function overlayFromDict(
 }
 
 /**
- * Cover text NOT wrapped in a `<T>` — `gt()`/`useGT()` strings and other bare recorded
+ * Cover text NOT wrapped in a `<T>` — `t()`/`useGT()` strings and other bare recorded
  * text — by hashing each recorded SOURCE string to its GT message hash and looking that
  * up in the dict. Nodes already translated by the `<T>` path (`covered`) are skipped so
  * it wins. Only STRING dict entries apply (a JSX entry belongs to a `<T>`, not bare
  * text); a translation equal to source, blank, or absent is left on source. An
- * interpolated string (e.g. `gt('Hello {name}')` rendered as "Hello Ann") won't match its
+ * interpolated string (e.g. `t('Hello {name}')` rendered as "Hello Ann") won't match its
  * template's hash, so it simply stays on source. Pure.
  */
 export function stringOverlay(
@@ -344,7 +344,7 @@ export async function harvestHash(
 ): Promise<LocaleTextOverlay> {
   const targets = locales.filter((l) => l && l !== opts.source);
   const hashNodes = collectHashNodes(events);
-  // Recorded text is only needed for the `gt()`-string lookup (hashMessage path).
+  // Recorded text is only needed for the `t()`-string lookup (hashMessage path).
   const recorded = opts.hashMessage ? collectRecordedText(events) : null;
   const overlay: LocaleTextOverlay = {};
   for (const target of targets) {
@@ -358,7 +358,7 @@ export async function harvestHash(
       overlay[target] = {};
       continue;
     }
-    // `<T>` content first (precise, wins), then fill bare `gt()` text.
+    // `<T>` content first (precise, wins), then fill bare `t()` text.
     const bag = overlayFromDict(hashNodes, dict);
     if (recorded && opts.hashMessage) {
       const covered = new Set(Object.keys(bag).map(Number));
@@ -391,7 +391,7 @@ function readCookie(name: string): string | undefined {
  * Harvest the per-locale overlay for a recording using ONLY the app's `loadTranslations`
  * (the hash strategy). Without a loader there is nothing to read, so the overlay is empty
  * and the replay renders source. `<T>` content is mapped by the DOM message hash; passing
- * `hashMessage` additionally covers `gt()`/`useGT()` strings.
+ * `hashMessage` additionally covers `t()`/`useGT()` strings.
  */
 export async function harvestLocales(
   events: eventWithTime[],

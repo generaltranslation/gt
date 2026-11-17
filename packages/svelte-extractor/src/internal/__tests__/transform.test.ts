@@ -644,10 +644,10 @@ describe('string extraction', () => {
     const { strings, errors } = analyzeSvelteSource(
       `<script>
   import { useGT, msg as m } from 'gt-svelte';
-  const gt = useGT();
+  const t = useGT();
   const label = m('Saved', { $context: 'toast' });
 </script>
-<p title={gt('Hello, {name}!', { name: 'Ada', $maxChars: 20 })}>{gt('Bye')}</p>`,
+<p title={t('Hello, {name}!', { name: 'Ada', $maxChars: 20 })}>{t('Bye')}</p>`,
       { parse }
     );
     expect(errors).toEqual([]);
@@ -664,7 +664,7 @@ describe('string extraction', () => {
     analyzeSvelteSource(
       `<script>
   import { T, useGT, msg } from 'gt-svelte';
-  const gt = useGT();
+  const t = useGT();
   ${script}
 </script>
 ${markup}`,
@@ -689,7 +689,7 @@ ${markup}`,
 
   it('extracts concatenated string literals', () => {
     const { strings, errors } = analyzeStrings(
-      "const a = gt('Hello ' + 'world');\n  const b = gt(`Item ` + 2 + 1);"
+      "const a = t('Hello ' + 'world');\n  const b = t(`Item ` + 2 + 1);"
     );
     expect(errors).toEqual([]);
     expect(strings.map(({ source, hash }) => ({ source, hash }))).toEqual(
@@ -702,7 +702,7 @@ ${markup}`,
 
   it('rejects concatenations with dynamic parts or that are not strings', () => {
     const { strings, errors } = analyzeStrings(
-      "let x = '';\n  gt('Hello ' + x);\n  gt(1 + 2);"
+      "let x = '';\n  t('Hello ' + x);\n  t(1 + 2);"
     );
     expect(strings).toEqual([]);
     expect(errors.map((error) => error.whatHappened)).toEqual([
@@ -713,9 +713,9 @@ ${markup}`,
 
   it('leaves out invalid ICU messages with a warning', () => {
     const { strings, errors, warnings } = analyzeStrings(
-      `gt('Hello {name', { name: 'x' });
+      `t('Hello {name', { name: 'x' });
   msg(['Fine', '{n, plural, one {# x}}']);
-  gt('Literal {braces', { $format: 'STRING' });`
+  t('Literal {braces', { $format: 'STRING' });`
     );
     expect(errors).toEqual([]);
     expect(warnings).toEqual([
@@ -723,7 +723,7 @@ ${markup}`,
         whatHappened: expect.stringContaining(
           'Found invalid ICU string "Hello {name"'
         ),
-        location: expect.objectContaining({ line: 4, column: 5 }),
+        location: expect.objectContaining({ line: 4, column: 4 }),
       }),
       expect.objectContaining({
         whatHappened: expect.stringContaining(
@@ -742,7 +742,7 @@ ${markup}`,
     const { translations, strings, errors } = analyzeStrings(
       '',
       `<T maxChars={-40}>Hello</T>
-<p>{gt('Short', { $maxChars: -12 })}</p>`
+<p>{t('Short', { $maxChars: -12 })}</p>`
     );
     expect(errors).toEqual([]);
     expect(translations[0].metadata).toEqual({ maxChars: 40 });
@@ -757,10 +757,10 @@ ${markup}`,
 
   it('hashes strings with the $format they select', () => {
     const { strings, errors } = analyzeStrings(
-      `const a = gt('Literal {braces}', { $format: 'STRING' });
+      `const a = t('Literal {braces}', { $format: 'STRING' });
   const b = msg('Hi {{name}}', { $format: 'I18NEXT', $context: 'greeting' });
-  const c = gt('Hello {name}', { name: 'Ada', $format: 'ICU' });
-  const d = gt('Bye');`
+  const c = t('Hello {name}', { name: 'Ada', $format: 'ICU' });
+  const d = t('Bye');`
     );
     expect(errors).toEqual([]);
     expect(
@@ -800,8 +800,8 @@ ${markup}`,
   it('rejects a $format that is not a static, supported format', () => {
     const { strings, errors } = analyzeStrings(
       `let format = 'STRING';
-  gt('A', { $format: format });
-  gt('B', { $format: 'JSX' });`
+  t('A', { $format: format });
+  t('B', { $format: 'JSX' });`
     );
     expect(strings).toEqual([]);
     expect(errors.map((error) => error.whatHappened)).toEqual([
@@ -814,7 +814,7 @@ ${markup}`,
     const { translations, strings, errors } = analyzeStrings(
       '',
       `<T maxChars={1.5}>Hello</T>
-<p>{gt('Short', { $maxChars: 1.5 })}</p>`
+<p>{t('Short', { $maxChars: 1.5 })}</p>`
     );
     expect(translations).toEqual([]);
     expect(strings).toEqual([]);
@@ -827,13 +827,13 @@ ${markup}`,
   it('includes source code context when asked', () => {
     const source = `<script>
   import { T, useGT } from 'gt-svelte';
-  const gt = useGT();
+  const t = useGT();
 </script>
 <p>before</p>
 <T>
   Hello
 </T>
-<p>{gt('Bye')}</p>
+<p>{t('Bye')}</p>
 <p>after</p>`;
     const { translations, strings } = analyzeSvelteSource(source, {
       parse,
@@ -842,11 +842,11 @@ ${markup}`,
     expect(translations[0].sourceCode).toEqual({
       before: '<p>before</p>',
       target: '<T>\n  Hello\n</T>',
-      after: "<p>{gt('Bye')}</p>",
+      after: "<p>{t('Bye')}</p>",
     });
     expect(strings[0].sourceCode).toEqual({
       before: '</T>',
-      target: "<p>{gt('Bye')}</p>",
+      target: "<p>{t('Bye')}</p>",
       after: '<p>after</p>',
     });
     expect(
@@ -856,7 +856,7 @@ ${markup}`,
 
   it('reports non-literal messages', () => {
     const { errors } = analyzeSvelteSource(
-      `<script>import { useGT } from 'gt-svelte'; const gt = useGT(); let x = '';</script>{gt(x)}`,
+      `<script>import { useGT } from 'gt-svelte'; const t = useGT(); let x = '';</script>{t(x)}`,
       { parse }
     );
     expect(errors.map((error) => error.whatHappened)).toEqual([

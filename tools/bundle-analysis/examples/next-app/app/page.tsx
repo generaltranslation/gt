@@ -19,12 +19,12 @@ function Crosses() {
 }
 
 export default async function Home() {
-  const gt = await getGT();
+  const t = await getGT();
 
   const regions = [
-    { name: gt('United States and Canada'), days: 4, cost: 12, from: 'RTM' },
-    { name: gt('European Union and UK'), days: 2, cost: 9, from: 'RTM' },
-    { name: gt('China and Singapore'), days: 3, cost: 9, from: 'SZX' },
+    { name: t('United States and Canada'), days: 4, cost: 12, from: 'RTM' },
+    { name: t('European Union and UK'), days: 2, cost: 9, from: 'RTM' },
+    { name: t('China and Singapore'), days: 3, cost: 9, from: 'SZX' },
   ];
 
   return (
@@ -61,10 +61,10 @@ export default async function Home() {
             </div>
             <div className='actions'>
               <a className='gt-button' href='#order'>
-                {gt('Configure Your Lamp')}
+                {t('Configure Your Lamp')}
               </a>
               <a className='gt-button outline' href='#specs'>
-                {gt('Read The Specs')}
+                {t('Read The Specs')}
               </a>
             </div>
           </div>
@@ -156,7 +156,7 @@ export default async function Home() {
               <li key={region.name} className='region'>
                 <span className='region-name'>{region.name}</span>
                 <span className='gt-label'>
-                  {gt(
+                  {t(
                     '{days, plural, one {# business day} other {# business days}}',
                     { days: region.days }
                   )}

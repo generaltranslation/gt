@@ -34,8 +34,8 @@ export async function getMessagesInternal({
   locale: string;
   enableI18n: boolean;
 }): Promise<MFunctionType> {
-  // Get the gt function
-  const gt = await getGTInternal({ locale, enableI18n });
+  // Get the t function
+  const t = await getGTInternal({ locale, enableI18n });
 
   /**
    * Resolves a registered message to its translation.
@@ -65,14 +65,14 @@ export async function getMessagesInternal({
 
     // Return early if string already interpolated eg: mFallback(msg('Hello, {name}!', { name: 'Brian' }))
     if (isEncodedTranslationOptions(decodedOptions)) {
-      return gt(decodedOptions.$_source, decodedOptions) as T extends string
+      return t(decodedOptions.$_source, decodedOptions) as T extends string
         ? string
         : T;
     }
 
-    // Use gt to interpolate
+    // Use t to interpolate
     // Separate from decoded options to match behavior in @gt/react-core
-    return gt(encodedMsg, options) as T extends string ? string : T;
+    return t(encodedMsg, options) as T extends string ? string : T;
   };
 
   return m;

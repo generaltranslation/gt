@@ -24,7 +24,7 @@ export type StringProblem = {
 const SKIPPED_KEYS = new Set(['metadata', 'loc', 'name_loc', 'parent']);
 
 /**
- * Finds `gt('...')` calls (where `gt` comes from `useGT()`) and `msg('...')`
+ * Finds `t('...')` calls (where `t` comes from `useGT()`) and `msg('...')`
  * calls in a component's scripts and template expressions.
  */
 export function collectStringCalls(
@@ -44,7 +44,7 @@ export function collectStringCalls(
     (kind === 'msg' ? msgNames : useGTNames).add(local);
   }
 
-  // gt functions are the variables initialized from useGT()
+  // t functions are the variables initialized from useGT()
   const gtNames = new Set<string>();
   walk(root, (node) => {
     if (node.type !== 'VariableDeclarator') return;

@@ -11,11 +11,11 @@ export const Route = createFileRoute('/specs')({
 });
 
 function Specs() {
-  const gt = useGT();
+  const t = useGT();
 
   const rows = [
     {
-      label: gt('Capacity'),
+      label: t('Capacity'),
       value: (
         <T>
           <Num>{0.9}</Num> L to the fill line, <Num>{0.25}</Num> L minimum
@@ -23,7 +23,7 @@ function Specs() {
       ),
     },
     {
-      label: gt('Body'),
+      label: t('Body'),
       value: (
         <T>
           304 stainless steel, <Num>{1.1}</Num> mm wall
@@ -31,7 +31,7 @@ function Specs() {
       ),
     },
     {
-      label: gt('Heating base'),
+      label: t('Heating base'),
       value: (
         <T>
           <Num>{1200}</Num> W at 120 V or 230 V, <Num>{0.75}</Num> m cable
@@ -39,7 +39,7 @@ function Specs() {
       ),
     },
     {
-      label: gt('Temperature range'),
+      label: t('Temperature range'),
       value: (
         <T>
           <Num>{40}</Num> °C to <Num>{100}</Num> °C in <Num>{1}</Num> °C steps
@@ -47,7 +47,7 @@ function Specs() {
       ),
     },
     {
-      label: gt('Hold'),
+      label: t('Hold'),
       value: (
         <T>
           Up to <Num>{60}</Num> minutes, then the base switches off
@@ -55,7 +55,7 @@ function Specs() {
       ),
     },
     {
-      label: gt('Dimensions'),
+      label: t('Dimensions'),
       value: (
         <T>
           <Num>{216}</Num> × <Num>{148}</Num> × <Num>{148}</Num> mm
@@ -63,7 +63,7 @@ function Specs() {
       ),
     },
     {
-      label: gt('Weight'),
+      label: t('Weight'),
       value: (
         <T>
           <Num>{1.1}</Num> kg kettle, <Num>{0.4}</Num> kg base

@@ -11,8 +11,8 @@ import { getAsyncConditionStore } from '../async-i18n-cache/singleton-operations
  *
  * @example
  * await withGT('fr', async () => {
- *   const gt = await getGT();
- *   gt`Hello, ${{ name }}!`;
+ *   const t = await getGT();
+ *   t`Hello, ${{ name }}!`;
  * });
  */
 export function getGT(): Promise<GT> {

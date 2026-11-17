@@ -86,7 +86,7 @@ export class StringCollector {
   }
 
   /**
-   * Pass 1: Add translation content from a gt() call to a specific useGT/getGT aggregator
+   * Pass 1: Add translation content from a t() call to a specific useGT/getGT aggregator
    * Multiple content items can be added to the same call
    */
   pushTranslationContent(counterId: number, content: TranslationContent): void {

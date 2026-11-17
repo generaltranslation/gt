@@ -496,8 +496,8 @@ describe('Vue selector and container provenance', () => {
          const outer = { ...config };
          config.context = 'new';
          const { context } = outer;
-         const gt = useGT();
-         gt('Copied', { $context: context });`
+         const t = useGT();
+         t('Copied', { $context: context });`
       )
     );
     const retained = await extract(
@@ -507,8 +507,8 @@ describe('Vue selector and container provenance', () => {
          const outer = { config };
          config.context = 'new';
          const { config: { context } } = outer;
-         const gt = useGT();
-         gt('Retained', { $context: context });`
+         const t = useGT();
+         t('Retained', { $context: context });`
       )
     );
 

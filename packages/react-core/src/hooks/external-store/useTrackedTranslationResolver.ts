@@ -28,7 +28,7 @@ export type TrackedTranslationResolver = <T extends Content>(
 
 /**
  * NOTE:
- * gt() may be called during render, so tracking intentionally only mutates
+ * t() may be called during render, so tracking intentionally only mutates
  * hook-local refs. This widens the event filter used by our existing
  * useSyncExternalStore subscription, but does not update React state or mutate
  * the translation cache during render.

@@ -75,7 +75,7 @@ describe('client hooks', () => {
 
   describe('useGT identity', () => {
     it.each(['en', 'fr'])(
-      'keeps gt stable across renders for locale %s',
+      'keeps t stable across renders for locale %s',
       async (locale) => {
         initializeGT({ defaultLocale: 'en', locales: ['en', 'fr'] });
         const identities = new Set<unknown>();
@@ -83,15 +83,15 @@ describe('client hooks', () => {
         let rerender!: () => void;
 
         function Loader() {
-          const gt = useGT();
-          identities.add(gt);
+          const t = useGT();
+          identities.add(t);
           const [, setTick] = useState(0);
           rerender = () => setTick((tick) => tick + 1);
           const [label, setLabel] = useState('');
           useEffect(() => {
             effectRuns++;
-            setLabel(gt('Loaded'));
-          }, [gt]);
+            setLabel(t('Loaded'));
+          }, [t]);
           return <span>{label}</span>;
         }
 
@@ -136,16 +136,16 @@ describe('client hooks', () => {
       );
 
       function Greeting() {
-        const gt = useGT();
-        const direct = gt('Hello');
-        const memoized = useMemo(() => gt('Hello'), [gt]);
+        const t = useGT();
+        const direct = t('Hello');
+        const memoized = useMemo(() => t('Hello'), [t]);
         const [fromEffect, setFromEffect] = useState('');
         const [effectOnly, setEffectOnly] = useState('');
         useEffect(() => {
-          setFromEffect(gt('Hello'));
+          setFromEffect(t('Hello'));
           // Only ever looked up outside of render
-          setEffectOnly(gt('Goodbye'));
-        }, [gt]);
+          setEffectOnly(t('Goodbye'));
+        }, [t]);
         return (
           <span>{[direct, memoized, fromEffect, effectOnly].join('|')}</span>
         );
@@ -179,9 +179,9 @@ describe('client hooks', () => {
       const requestedSources = stubRuntimeApi();
 
       function Greeting() {
-        const gt = useGT();
+        const t = useGT();
         // Strict mode reuses this result in its second render
-        const label = useMemo(() => gt('Memoized'), [gt]);
+        const label = useMemo(() => t('Memoized'), [t]);
         return <span>{label}</span>;
       }
 
@@ -206,7 +206,7 @@ describe('client hooks', () => {
       const events: string[] = [];
 
       function Parent() {
-        const gt = useGT();
+        const t = useGT();
         events.push('parent');
         void Promise.resolve().then(() => events.push('microtask'));
         // Use up the scheduler's time slice so React yields before the child
@@ -214,12 +214,12 @@ describe('client hooks', () => {
         while (performance.now() - start < 20) {
           // busy wait
         }
-        return <Child gt={gt} />;
+        return <Child t={t} />;
       }
 
-      function Child({ gt }: { gt: GTFunctionType }) {
+      function Child({ t }: { t: GTFunctionType }) {
         events.push('child');
-        return <span>{gt('Child-only')}</span>;
+        return <span>{t('Child-only')}</span>;
       }
 
       startTransition(() => {

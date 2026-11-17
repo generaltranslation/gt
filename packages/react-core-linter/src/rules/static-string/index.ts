@@ -1,5 +1,6 @@
 /**
- * Static string rule for translation functions (gt, msg).
+ * Static string rule for translation functions (the `t` returned by useGT()
+ * or getGT(), and msg).
  *
  * Enforces that the content string (first argument) is static, with auto-fix
  * to convert dynamic expressions into ICU-formatted strings when possible.
@@ -59,13 +60,13 @@ export const staticString = createRule({
     hasSuggestions: false,
     messages: {
       staticStringRequired:
-        'Registration functions (gt, msg) can only accept static strings. For example: msg("This is a static string!").',
+        'Registration functions (the t returned by useGT() or getGT(), and msg) can only accept static strings. For example: msg("This is a static string!").',
       variableInterpolationRequired:
-        'Registration functions (gt, msg) can only accept static strings. Use ICU-style variable interpolation instead (e.g. gt("Hello {name}!"), { name: value }).',
+        'Registration functions (the t returned by useGT() or getGT(), and msg) can only accept static strings. Use ICU-style variable interpolation instead (e.g. t("Hello {name}!", { name: value })).',
       missingVariableInInterpolation:
         'Missing a variable in interpolation. Any variable supplied to the ICU-string, must be provided as a key in the options object.',
       sugarVariableMustBeStatic:
-        'Sugar variables must be static strings. For example: gt("Hello!", { $context: "A greeting" }).',
+        'Sugar variables must be static strings. For example: t("Hello!", { $context: "A greeting" }).',
       invalidICUFormat: 'Invalid ICU message format: {{ error }}',
     },
   },
@@ -90,7 +91,7 @@ export const staticString = createRule({
       }
     }
 
-    // Validates the first argument (content string) of a gt()/msg() call.
+    // Validates the first argument (content string) of a t()/msg() call.
     // Attempts ICU auto-fix for fixable dynamic expressions.
     function validateContentString(
       expression: TSESTree.Expression,

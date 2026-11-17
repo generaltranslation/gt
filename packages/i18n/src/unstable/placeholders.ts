@@ -65,8 +65,8 @@ type ChoicePlaceholder<UsesDyn extends boolean = boolean> = {
 // shortcut: a value annotated as plain `Fragment` loses the flag and is checked
 // only at runtime; infer the type from part`...` to keep the check.
 declare const USES_PLURAL_COUNT: unique symbol;
-// Type-only, the same way: whether a part or branch holds dyn() text, so gt,
-// t and msg can reject it wherever it is nested.
+// Type-only, the same way: whether a part or branch holds dyn() text, so t
+// and msg can reject it wherever it is nested.
 declare const USES_DYN: unique symbol;
 export type Fragment<
   UsesPluralCount extends boolean = boolean,
@@ -515,7 +515,7 @@ function dateTime(
   return { [PLACEHOLDER]: kind, name, value: v, options };
 }
 
-/** Branch text that contains placeholders, written like a gt message. */
+/** Branch text that contains placeholders, written like a t message. */
 export function part<const H extends readonly unknown[]>(
   strings: TemplateStringsArray,
   ...holes: CheckHoles<H, true, true>
@@ -544,8 +544,8 @@ export function derive<const T extends string>(
 /**
  * Text known only at runtime, like a database value, which tx translates as
  * part of the message in one request: `` tx`${dyn(greeting)}, ${{ name }}!` ``.
- * gt, t and msg render from the catalog, which has no translation for such
- * text, so their types reject it. Each distinct text is its own message, and
+ * t and msg render from the catalog, which has no translation for such text,
+ * so their types reject it. Each distinct text is its own message, and
  * it is sent for translation.
  */
 export function dyn(text: string): DynPlaceholder {
@@ -558,7 +558,7 @@ export function isPlaceholder(
   return typeof value === 'object' && value !== null && PLACEHOLDER in value;
 }
 
-/** A value gt formats as is, rather than a `{ name: value }` binding. */
+/** A value t formats as is, rather than a `{ name: value }` binding. */
 export function isAnonymousValue(value: unknown): boolean {
   return typeof value !== 'object' || value === null || value instanceof Date;
 }
@@ -573,7 +573,7 @@ function createInvalidPlaceholderError(hole: unknown, keys: string[]): string {
   return createGtI18nDiagnostic({
     severity: 'Error',
     whatHappened:
-      'A gt template placeholder is not a value, a named variable, or a helper',
+      'A t template placeholder is not a value, a named variable, or a helper',
     fix: 'Write named variables as ${{ name }} with exactly one key',
     details:
       typeof hole === 'object' && hole !== null

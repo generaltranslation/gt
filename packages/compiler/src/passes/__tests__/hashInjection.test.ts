@@ -264,34 +264,31 @@ describe('JSX ids after Branch/Plural element children', () => {
 /**
  * Two regressions covered here:
  *
- * 1. Counter misalignment: collection skipped gt() calls whose message could
- *    not be statically resolved WITHOUT reserving a counter slot, while the
- *    injection pass increments the counter for every gt() call. Every gt()
+ * 1. Counter misalignment: collection skipped useGT() t() calls whose message
+ *    could not be statically resolved WITHOUT reserving a counter slot, while the
+ *    injection pass increments the counter for every t() call. Every t()
  *    call after a derive call was injected with the hash of the PREVIOUS call.
  *
- * 2. Empty-hash injection: gt() calls with $context: derive(...) registered
+ * 2. Empty-hash injection: t() calls with $context: derive(...) registered
  *    an empty hash which was injected as $_hash: "".
  */
-describe('gt() callback hash injection', () => {
+describe('useGT() callback hash injection', () => {
   const USE_GT = `
     import { useGT, derive } from 'gt-react';
-    const gt = useGT();
+    const t = useGT();
   `;
   const injectedHashes = (code: string) =>
     code.match(/"\$_hash": "[^"]*"/g) ?? [];
 
-  it('injects $_hash into a static gt() call', () => {
-    const { errors, code } = transform(`${USE_GT}gt("Hello world");`);
+  it('injects $_hash into a static t() call', () => {
+    const { errors, code } = transform(`${USE_GT}t("Hello world");`);
     expect(errors).toEqual([]);
     expect(code).toContain(`"$_hash": "${icuHash('Hello world')}"`);
   });
 
   it.each([
-    ['derive() in the message', 'gt(`Hello ${derive(getName())}`);'],
-    [
-      '$context: derive(...)',
-      `gt("Book", { $context: derive(getMeaning()) });`,
-    ],
+    ['derive() in the message', 't(`Hello ${derive(getName())}`);'],
+    ['$context: derive(...)', `t("Book", { $context: derive(getMeaning()) });`],
   ])('injects no $_hash for %s', (_name, call) => {
     const { errors, code } = transform(`${USE_GT}${call}`);
     expect(errors).toEqual([]);
@@ -299,10 +296,10 @@ describe('gt() callback hash injection', () => {
   });
 
   it.each([
-    ['a derive() message', 'gt(`Hello ${derive(getName())}`);', 'derive(', {}],
+    ['a derive() message', 't(`Hello ${derive(getName())}`);', 'derive(', {}],
     [
       'autoderive dynamic content',
-      'gt(`Hello ${name}`);',
+      't(`Hello ${name}`);',
       '${name}',
       { autoderive: true },
     ],
@@ -310,7 +307,7 @@ describe('gt() callback hash injection', () => {
     '%s does not shift hashes onto sibling calls',
     (_name, call, marker, options) => {
       const { errors, code } = transform(
-        `${USE_GT}${call}\ngt("Static message");`,
+        `${USE_GT}${call}\nt("Static message");`,
         options
       );
       expect(errors).toEqual([]);
@@ -326,8 +323,8 @@ describe('gt() callback hash injection', () => {
 
   it('excludes derive entries from the useGT() prefetch array', () => {
     const { errors, code } = transform(`${USE_GT}
-      gt("Book", { $context: derive(getMeaning()) });
-      gt("Static message");
+      t("Book", { $context: derive(getMeaning()) });
+      t("Static message");
     `);
     expect(errors).toEqual([]);
     expect(code).toContain('useGT([');
@@ -338,7 +335,7 @@ describe('gt() callback hash injection', () => {
 
   it('leaves useGT() without arguments when every call is derived', () => {
     const { errors, code } = transform(
-      USE_GT + 'gt(`Hello ${derive(getName())}`);'
+      USE_GT + 't(`Hello ${derive(getName())}`);'
     );
     expect(errors).toEqual([]);
     expect(code).toContain('useGT()');
@@ -360,6 +357,22 @@ describe('gt() callback hash injection', () => {
     expect(literalValue(gtCall.arguments[1])).toEqual({
       $_hash: icuHash('Callback string'),
     });
+  });
+
+  it('resolves a local t = useGT() that shadows an imported t to the callback', () => {
+    const { errors, code } = transform(`
+      import { useGT, t } from 'gt-react';
+      const standalone = t("Standalone string");
+      function Component() {
+        const t = useGT();
+        return t("Callback string");
+      }
+    `);
+    expect(errors).toEqual([]);
+    expect(code).toContain('useGT([');
+    expect(code).toContain('message: "Callback string"');
+    expect(code).not.toContain('message: "Standalone string"');
+    expect(code).toContain(`"$_hash": "${icuHash('Callback string')}"`);
   });
 });
 
@@ -395,8 +408,8 @@ describe('standalone string function hash injection', () => {
     const { ast } = transform(`
       import { getGT } from 'gt-next/server';
       async function Page() {
-        const gt = await getGT();
-        return gt("Hello", { $context: "nav", $id: "greet", $maxChars: 50, $format: "STRING" });
+        const t = await getGT();
+        return t("Hello", { $context: "nav", $id: "greet", $maxChars: 50, $format: "STRING" });
       }
     `);
     const getGTCalls = findCalls(ast, 'getGT');

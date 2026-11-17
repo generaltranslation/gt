@@ -65,11 +65,11 @@ describe('buildtime translation helpers', () => {
       [{ message: 'A server-translated string from getGT.' }],
     ],
   ])('getGT passes request conditions to gt-i18n %s', async (_, messages) => {
-    const gt = vi.fn();
-    mockGetGTInternal.mockReturnValue(gt);
+    const t = vi.fn();
+    mockGetGTInternal.mockReturnValue(t);
     const { getGT } = await import('../strings');
 
-    await expect(getGT(messages)).resolves.toBe(gt);
+    await expect(getGT(messages)).resolves.toBe(t);
 
     expect(mockGetGTInternal).toHaveBeenCalledWith(
       { locale: 'fr', enableI18n: false },

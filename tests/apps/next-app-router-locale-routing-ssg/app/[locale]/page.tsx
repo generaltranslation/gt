@@ -7,7 +7,7 @@ export function generateStaticParams() {
 }
 
 export default async function Home() {
-  const gt = await getGT();
+  const t = await getGT();
   const locale = await getLocale();
   const generatedAt = new Date().toISOString();
 
@@ -30,7 +30,7 @@ export default async function Home() {
             generated value: <Var>{generatedAt}</Var>
           </p>
         </T>
-        <p>{gt('A server-translated string from getGT.')}</p>
+        <p>{t('A server-translated string from getGT.')}</p>
       </section>
 
       <ClientDemo />

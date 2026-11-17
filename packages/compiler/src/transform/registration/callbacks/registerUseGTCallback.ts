@@ -3,7 +3,7 @@ import hashSource from '../../../utils/calculateHash';
 import type { DataFormat } from '@generaltranslation/format';
 
 /**
- * Track gt() function invocations
+ * Track t() function invocations
  * - Adds the translation content to the string collector
  */
 export function registerUseGTCallback({

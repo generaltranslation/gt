@@ -18,17 +18,17 @@ ruleTester.run('static-string', staticString, {
       code: `
         import { useGT } from 'gt-tanstack-start';
         function Component() {
-          const gt = useGT();
+          const t = useGT();
           const name = 'World';
-          return gt('Hello ' + name);
+          return t('Hello ' + name);
         }
       `,
       output: `
         import { useGT } from 'gt-tanstack-start';
         function Component() {
-          const gt = useGT();
+          const t = useGT();
           const name = 'World';
-          return gt("Hello {var0}", { var0: name });
+          return t("Hello {var0}", { var0: name });
         }
       `,
       errors: [{ messageId: 'variableInterpolationRequired' }],

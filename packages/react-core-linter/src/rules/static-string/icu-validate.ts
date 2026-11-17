@@ -1,5 +1,5 @@
 /**
- * ICU format validation for static strings in gt()/msg() calls.
+ * ICU format validation for static strings in t()/msg() calls.
  *
  * Only validates strings that are fully static (no derive)
  * and use ICU format (the default, or explicit $format: "ICU").

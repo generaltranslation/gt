@@ -286,9 +286,9 @@ describe('gt-vue runtime state', () => {
     const counter = ref(0);
     const Root = defineComponent({
       setup() {
-        const gt = useGT();
+        const t = useGT();
         const locale = useLocale();
-        return () => h('p', `${locale.value}|${gt(source)}|${counter.value}`);
+        return () => h('p', `${locale.value}|${t(source)}|${counter.value}`);
       },
     });
     const mounted = mount(Root, plugin);
@@ -318,11 +318,11 @@ describe('gt-vue runtime state', () => {
     const plugin = createGT({ loadTranslations: async () => ({}) });
     const Root = defineComponent({
       setup() {
-        const gt = useGT();
+        const t = useGT();
         const locale = useLocale();
         return () => {
           renders += 1;
-          return h('p', `${locale.value}:${gt('Hello')}`);
+          return h('p', `${locale.value}:${t('Hello')}`);
         };
       },
     });

@@ -141,7 +141,7 @@ export const warnNonStaticMessageTreeSync = (
   reason: string,
   location?: string,
   details?: string,
-  fix = 'Use static text, ${{ name }} variables, unstable helpers with literal arguments, and literal gt({ ... }) options so the message can be extracted and translated'
+  fix = 'Use static text, ${{ name }} variables, unstable helpers with literal arguments, and literal t({ ... }) options so the message can be extracted and translated'
 ): string =>
   withLocation(
     file,
@@ -162,9 +162,9 @@ export const warnUntrackedMessageTagSync = (
     file,
     createDiagnosticMessage({
       whatHappened:
-        'Could not follow this use of an unstable translation function (t, msg, gt, useGT, or getGT)',
+        'Could not follow this use of an unstable translation function (t, msg, useGT, or getGT)',
       why: 'it is passed, exported, reassigned, or accessed as an object, so the messages it translates cannot be found statically',
-      fix: 'Call it directly (as a tagged template for t and gt), or alias a gt with const',
+      fix: 'Call it directly (as a tagged template for t), or alias it with const',
     }),
     location
   );
@@ -207,8 +207,8 @@ export const warnUnstableHelperInLegacyMessageSync = (
     file,
     createDiagnosticMessage({
       whatHappened: `Could not resolve ${helper}() in this message`,
-      why: `${helper}() is imported from an unstable entry, which only works inside tagged gt\`...\` messages`,
-      fix: `Import ${helper}() from the same entry as the translation function, or write the message as an unstable tagged gt\`...\``,
+      why: `${helper}() is imported from an unstable entry, which only works inside tagged t\`...\` messages`,
+      fix: `Import ${helper}() from the same entry as the translation function, or write the message as an unstable tagged t\`...\``,
     }),
     location
   );

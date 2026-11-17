@@ -13,7 +13,7 @@ export function parseMessageOptions(
   const [options] = args;
   if (args.length !== 1 || !t.isObjectExpression(options)) {
     throw new NonStaticMessageError(
-      'the gt() options are not a single object literal',
+      'the t() options are not a single object literal',
       options ?? tagged
     );
   }
@@ -43,7 +43,7 @@ export function parseMessageOptions(
       metadata.requiresReview = value.value;
     } else {
       throw new NonStaticMessageError(
-        `the gt() option "${key}" is not supported`,
+        `the t() option "${key}" is not supported`,
         property
       );
     }

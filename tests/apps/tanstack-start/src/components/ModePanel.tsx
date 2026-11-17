@@ -13,7 +13,7 @@ export function ModePanel({
   loaderValue,
   description,
 }: ModePanelProps) {
-  const gt = useGT();
+  const t = useGT();
   const locale = useLocale();
 
   return (
@@ -46,7 +46,7 @@ export function ModePanel({
         <p>
           <T>Hello from the root provider.</T>
         </p>
-        <p>{gt('A runtime gt() string call.')}</p>
+        <p>{t('A runtime t() string call.')}</p>
       </section>
     </main>
   );

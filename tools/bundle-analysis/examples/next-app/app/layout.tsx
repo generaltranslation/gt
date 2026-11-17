@@ -8,10 +8,10 @@ const INTER_STYLESHEET =
   'https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..600&display=swap';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const gt = await getGT();
+  const t = await getGT();
   return {
-    title: gt('Halden H2 desk lamp'),
-    description: gt(
+    title: t('Halden H2 desk lamp'),
+    description: t(
       'A desk lamp tuned from 2700 K to 6500 K. 96 LEDs, one diffuser, 9 watts.'
     ),
   };
@@ -23,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = useLocale();
-  const gt = useGT();
+  const t = useGT();
 
   return (
     <html lang={locale}>
@@ -46,11 +46,11 @@ export default function RootLayout({
                   <GtMark />
                   <span>Halden</span>
                 </a>
-                <nav className='nav-links' aria-label={gt('Sections')}>
-                  <a href='#specs'>{gt('Specs')}</a>
-                  <a href='#order'>{gt('Order')}</a>
-                  <a href='#shipping'>{gt('Shipping')}</a>
-                  <a href='#reviews'>{gt('Reviews')}</a>
+                <nav className='nav-links' aria-label={t('Sections')}>
+                  <a href='#specs'>{t('Specs')}</a>
+                  <a href='#order'>{t('Order')}</a>
+                  <a href='#shipping'>{t('Shipping')}</a>
+                  <a href='#reviews'>{t('Reviews')}</a>
                 </nav>
               </div>
               <LocaleSelector className='locale-select' />

@@ -3,11 +3,11 @@ import { useGT } from 'gt-vue';
 
 export default {
   setup() {
-    const gt = useGT();
-    const exposed = { gt };
+    const t = useGT();
+    const exposed = { t };
     return { ...exposed };
   },
 };
 </script>
 
-<template>{{ gt('Spread setup return') }}</template>
+<template>{{ t('Spread setup return') }}</template>

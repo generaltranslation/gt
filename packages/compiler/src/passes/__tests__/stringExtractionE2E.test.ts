@@ -1,7 +1,7 @@
 /**
  * String extraction through the collection pass: source code -> collection
- * pass -> StringCollector, for gt() (the useGT callback), msg(), t() and
- * t`` tagged templates.
+ * pass -> StringCollector, for the useGT() callback t(), msg(), the imported
+ * t() and t`` tagged templates.
  *
  * Every extracted entry is checked against the shared hasher, so the same
  * message hashes identically whichever function or expression form it came
@@ -12,7 +12,7 @@ import { runPasses } from './testHelpers';
 import hashSource from '../../utils/calculateHash';
 
 /**
- * The entries in each collection. gt() callbacks register in the callback
+ * The entries in each collection. useGT() callbacks register in the callback
  * collection; standalone msg(), t() and t`` register as runtime-only. Which
  * collection an entry lands in decides whether it is preloaded.
  */
@@ -38,11 +38,11 @@ const entry = (
   }),
 });
 
-const GT = `import { useGT } from 'gt-next';\nconst gt = useGT();\n`;
+const GT = `import { useGT } from 'gt-next';\nconst t = useGT();\n`;
 const MSG = `import { msg } from 'gt-next';\n`;
 const T = `import { t } from 'gt-next';\n`;
 
-describe('gt() callback extraction', () => {
+describe('useGT() callback extraction', () => {
   it.each([
     ['"Hello"', 'Hello'],
     ['"Hello" + " World"', 'Hello World'],
@@ -51,8 +51,8 @@ describe('gt() callback extraction', () => {
     ['`Count: ${5}`', 'Count: 5'],
     ['"value: " + true', 'value: true'],
     ['"value: " + null', 'value: null'],
-  ])('resolves gt(%s)', (expression, message) => {
-    expect(collect(`${GT}gt(${expression});`)).toEqual({
+  ])('resolves t(%s)', (expression, message) => {
+    expect(collect(`${GT}t(${expression});`)).toEqual({
       errors: [],
       callback: [entry(message)],
       runtimeOnly: [],
@@ -64,21 +64,21 @@ describe('gt() callback extraction', () => {
     ['`section.title`', 'section.title'],
   ])('resolves a static $context: %s', (expression, context) => {
     expect(
-      collect(`${GT}gt("Hello", { $context: ${expression} });`).callback
+      collect(`${GT}t("Hello", { $context: ${expression} });`).callback
     ).toEqual([entry('Hello', { context })]);
   });
 
   it('extracts multiple calls independently, in order', () => {
     expect(
-      collect(`${GT}gt("Hello" + " World");\ngt(\`Foo \${"Bar"}\`);`).callback
+      collect(`${GT}t("Hello" + " World");\nt(\`Foo \${"Bar"}\`);`).callback
     ).toEqual([entry('Hello World'), entry('Foo Bar')]);
   });
 
   it.each([
-    'gt(name);',
-    'gt(variable + ".title");',
-    'gt(`Hello ${name}`);',
-    'gt("Hello", { $context: contextVar });',
+    't(name);',
+    't(variable + ".title");',
+    't(`Hello ${name}`);',
+    't("Hello", { $context: contextVar });',
   ])('rejects dynamic content: %s', (call) => {
     const { errors, callback, runtimeOnly } = collect(GT + call);
     expect([...callback, ...runtimeOnly]).toEqual([]);
@@ -87,7 +87,7 @@ describe('gt() callback extraction', () => {
 });
 
 describe.each([
-  ['gt() callback', GT, 'gt', 'callback'],
+  ['useGT() callback', GT, 't', 'callback'],
   ['msg()', MSG, 'msg', 'runtimeOnly'],
   ['t()', T, 't', 'runtimeOnly'],
 ])('%s', (_name, setup, fn, collection) => {
@@ -123,7 +123,7 @@ describe('t() extraction', () => {
   });
 });
 
-// Unlike gt()/msg()/t(), tagged templates turn dynamic expressions into ICU
+// Unlike useGT() callbacks, msg() and t(), tagged templates turn dynamic expressions into ICU
 // {n} placeholders instead of rejecting them.
 describe('t`` tagged template extraction', () => {
   it.each([

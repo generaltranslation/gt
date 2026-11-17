@@ -23,7 +23,7 @@ type GTTag = <const H extends readonly unknown[]>(
   ...holes: CheckHoles<H>
 ) => string;
 
-/** gt`...` or gt({ context })`...` */
+/** t`...` or t({ context })`...` */
 export type GT = GTTag & ((options: GTOptions) => GTTag);
 
 export type CreateGTParams = {

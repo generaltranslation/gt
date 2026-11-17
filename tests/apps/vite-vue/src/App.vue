@@ -2,7 +2,7 @@
 import { useGT, useLocale, useSetLocale } from 'gt-vue';
 import { moduleEvaluationCount, moduleGreeting } from './moduleMessages';
 
-const gt = useGT();
+const t = useGT();
 const locale = useLocale();
 const setLocale = useSetLocale();
 
@@ -16,7 +16,7 @@ async function selectLocale(event: Event) {
 <template>
   <main>
     <h1>{{ moduleGreeting }}</h1>
-    <p>{{ gt('Component translation shares the SPA runtime.') }}</p>
+    <p>{{ t('Component translation shares the SPA runtime.') }}</p>
     <p>Locale: {{ locale }}</p>
     <p>Module evaluations: {{ moduleEvaluationCount }}</p>
     <p>Bootstrap: ready</p>

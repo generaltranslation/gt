@@ -81,7 +81,7 @@ export function useDevHotReloadQueue<T>(
 
   // Persist the queue across renders so the enqueue callback keeps a stable
   // identity. An unstable callback would change the identity of every
-  // translation function built on top of it (e.g. gt() from useGT()), which
+  // translation function built on top of it (e.g. t() from useGT()), which
   // re-runs user effects that depend on it after every render.
   const pendingLookupsRef = useRef<Map<string, T> | null>(null);
   if (pendingLookupsRef.current == null) {

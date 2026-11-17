@@ -4,9 +4,9 @@ import { T, msg, useGT, useMessages } from 'gt-vue';
 export default {
   components: { T },
   setup() {
-    const gt = useGT();
+    const t = useGT();
     const m = useMessages();
-    return { gt, LocalT: T, m, register: msg };
+    return { t, LocalT: T, m, register: msg };
   },
 };
 </script>
@@ -14,7 +14,7 @@ export default {
 <template>
   <T>Composition API</T>
   <component :is="LocalT">Setup component</component>
-  {{ gt('Setup string') }}
+  {{ t('Setup string') }}
   {{ m('Setup message') }}
   {{ register('Setup msg', { $context: 'classic' }) }}
 </template>
