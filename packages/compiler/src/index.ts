@@ -42,6 +42,12 @@ import {
   isEsModule,
 } from './transform/injection/inline-translations/addInlineTranslationsImports';
 import { addInlineTranslationsCacheVersion } from './transform/injection/inline-translations/inlineTranslationsCacheVersion';
+import {
+  applyStaticLocale,
+  getStaticLocale,
+  getStaticLocaleWarning,
+  resolveStaticLocale,
+} from './transform/injection/inline-translations/resolveStaticLocale';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
@@ -225,9 +231,16 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
         : undefined;
+    const staticLocale = getStaticLocale(options.experimentalStaticLocale);
+    const staticLocaleResolution = staticLocale
+      ? resolveStaticLocale(staticLocale, loadedGTConfig)
+      : undefined;
+    const gtConfig = staticLocaleResolution
+      ? applyStaticLocale(loadedGTConfig, staticLocaleResolution)
+      : loadedGTConfig;
     const resolvedOptions: GTUnpluginOptions = {
       ...options,
-      ...(loadedGTConfig ? { gtConfig: loadedGTConfig } : {}),
+      ...(gtConfig ? { gtConfig } : {}),
     };
 
     if (shouldWarn(options.logLevel)) {
@@ -244,6 +257,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           })
         );
       }
+      const staticLocaleWarning =
+        staticLocale && staticLocaleResolution
+          ? getStaticLocaleWarning(
+              staticLocale,
+              staticLocaleResolution,
+              loadedGTConfig
+            )
+          : undefined;
+      if (staticLocaleWarning) console.warn(staticLocaleWarning);
     }
 
     // Debug manifest: accumulates hash → jsxChildren across all files
@@ -259,6 +281,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       {
         framework: meta.framework,
         warn: isProduction() && shouldWarn(options.logLevel),
+        staticLocale:
+          staticLocaleResolution?.kind === 'embedded'
+            ? staticLocaleResolution.locale
+            : undefined,
       }
     );
     // Only the modules buildStart wrote, so source files inside modulesDir are still transformed

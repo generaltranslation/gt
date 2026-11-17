@@ -735,11 +735,16 @@ describe('webpack cache version', () => {
   type WebpackPlugin = { webpack(compiler: unknown): void };
 
   function cacheVersion(
-    gtConfig: GTUnpluginOptions['gtConfig']
+    gtConfig: GTUnpluginOptions['gtConfig'],
+    staticLocale?: string
   ): string | undefined {
-    const plugin = gtUnplugin.raw({ gtConfig }, {
-      framework: 'webpack',
-    } as never) as unknown as WebpackPlugin;
+    const plugin = gtUnplugin.raw(
+      {
+        gtConfig,
+        ...(staticLocale && { experimentalStaticLocale: staticLocale }),
+      },
+      { framework: 'webpack' } as never
+    ) as unknown as WebpackPlugin;
     const options = {
       cache: { type: 'filesystem', version: 'next' },
       module: { rules: [] },
@@ -792,6 +797,33 @@ describe('webpack cache version', () => {
     fs.writeFileSync(file, '{"abc":"Bonjour"}');
     versions.push(cacheVersion(config));
     expect(new Set(versions).size).toBe(3);
+  });
+
+  it('changes with the static locale', () => {
+    const versions = new Set([
+      cacheVersion(embedding()),
+      cacheVersion(embedding(), 'fr'),
+      cacheVersion(embedding(), 'es'),
+      cacheVersion(embedding(), 'en'),
+    ]);
+    expect(versions.size).toBe(4);
+  });
+
+  it('changes when a per-locale build moves physical modules', () => {
+    const singleLocale = {
+      files: {
+        gt: {
+          output: 'translations/[locale].json',
+          inlineTranslations: {
+            locales: ['fr'],
+            modules: 'physical' as const,
+          },
+        },
+      },
+    };
+    expect(cacheVersion(singleLocale, 'fr')).not.toBe(
+      cacheVersion(singleLocale)
+    );
   });
 
   it('is left alone without embedded translations or outside production', () => {

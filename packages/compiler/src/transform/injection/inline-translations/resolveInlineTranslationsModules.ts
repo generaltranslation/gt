@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type { GTOutputFileConfig } from 'generaltranslation';
 import {
   createDiagnosticMessage,
@@ -46,11 +47,16 @@ export const createInlineTranslationsModulesWriteError = (
  * How call sites import message modules with `files.gt.inlineTranslations.modules`,
  * or undefined when translations are inlined. `'virtual'` falls back to
  * physical modules with a warning where the bundler cannot serve virtual
- * modules.
+ * modules. A per-locale build writes its physical modules to
+ * `<modulesDir>/<locale>`, so builds for different locales never share files.
  */
 export function resolveInlineTranslationsModules(
   gtFiles: GTOutputFileConfig | undefined,
-  { framework, warn }: { framework: string; warn: boolean }
+  {
+    framework,
+    staticLocale,
+    warn,
+  }: { framework: string; staticLocale: string | undefined; warn: boolean }
 ): InlineTranslationsModules | undefined {
   const mode = gtFiles?.inlineTranslations?.modules;
   if (mode === 'virtual') {
@@ -62,8 +68,9 @@ export function resolveInlineTranslationsModules(
   } else if (mode !== 'physical') {
     return undefined;
   }
+  const dir = resolveInlineTranslationsModulesDir(gtFiles);
   return {
     mode: 'physical',
-    dir: resolveInlineTranslationsModulesDir(gtFiles),
+    dir: staticLocale ? path.join(dir, staticLocale) : dir,
   };
 }
