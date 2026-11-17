@@ -279,13 +279,25 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       }
     };
 
+    // A "type": "commonjs" package.json would make webpack and rspack parse the generated .js modules as CommonJS
+    const messageModulesRule = {
+      resource: (file: string) => messageModuleFiles.has(file),
+      type: 'javascript/esm' as const,
+    };
+
     return {
       name: '@generaltranslation/GT_PLUGIN',
       webpack(compiler) {
         keyCacheOnInlineTranslations(compiler.options);
+        if (inlineTranslationsModules?.mode === 'physical') {
+          compiler.options.module.rules.push(messageModulesRule);
+        }
       },
       rspack(compiler) {
         keyCacheOnInlineTranslations(compiler.options);
+        if (inlineTranslationsModules?.mode === 'physical') {
+          compiler.options.module.rules.push(messageModulesRule);
+        }
       },
       buildStart() {
         if (

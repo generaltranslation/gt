@@ -602,6 +602,24 @@ describe('inlineTranslations.modules', () => {
   });
 
   describe('physical modules', () => {
+    it('has webpack parse the written modules as ESM', () => {
+      const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical' }),
+        'webpack'
+      ) as Plugin & { webpack(compiler: unknown): void };
+      const rules: { resource(file: string): boolean; type: string }[] = [];
+      plugin.webpack({ options: { module: { rules } } });
+      plugin.buildStart.call(createContext());
+      expect(rules).toHaveLength(1);
+      expect(rules[0].type).toBe('javascript/esm');
+      expect(
+        rules[0].resource(path.join(root, '.gt/messages', `${HELLO_WORLD}.js`))
+      ).toBe(true);
+      expect(rules[0].resource(path.join(root, 'src/App.js'))).toBe(false);
+    });
+
     it('writes one module per hash at build start', () => {
       const root = createProject({
         fr: { [HELLO_WORLD]: 'Bonjour', [OTHER_HASH]: 'Étape' },
@@ -740,7 +758,10 @@ describe('webpack cache version', () => {
     const plugin = gtUnplugin.raw({ gtConfig }, {
       framework: 'webpack',
     } as never) as unknown as WebpackPlugin;
-    const options = { cache: { type: 'filesystem', version: 'next' } };
+    const options = {
+      cache: { type: 'filesystem', version: 'next' },
+      module: { rules: [] },
+    };
     plugin.webpack({ options });
     return options.cache.version;
   }
