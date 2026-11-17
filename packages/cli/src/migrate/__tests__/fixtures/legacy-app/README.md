@@ -1,6 +1,6 @@
 # legacy-app fixture
 
-A small Next.js App Router storefront translated with the legacy APIs (`before/`), and the same app rewritten in the samsara `/unstable` tagged-template syntax (`after/`). It is the real-hash fixture for `gt migrate`.
+A small Next.js App Router storefront translated with the legacy APIs (`before/`), and the same app rewritten in the samsara `/unstable` tagged-template syntax (`after/`). It is the real-hash fixture for `gt migrate`. Each app's `package.json` is stored as `package.fixture.json`, because the CLI's monorepo version check would otherwise read the two apps' different `gt-next` versions as a mismatched workspace.
 
 | Path                | What it is                                                                                                                                                                                                                  |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -56,7 +56,7 @@ These steps never call the GT API. `generate` needs no credentials; unset `GT_AP
 ```sh
 # before: legacy toolchain
 mkdir -p ~/gt-migrate-work/legacy-before && cd ~/gt-migrate-work/legacy-before
-cp -R <fixture>/before/. . && cp -R <fixture>/scripts .
+cp -R <fixture>/before/. . && cp -R <fixture>/scripts . && mv package.fixture.json package.json
 npm install --ignore-scripts          # gt-next@11.4.23, gt@2.28.3
 env -u GT_API_KEY npx --no-install gt generate          # public/_gt/en.json (+ placeholder locale files)
 env -u GT_API_KEY node scripts/dump-legacy-updates.mjs legacy-metadata.json
@@ -64,7 +64,7 @@ node scripts/fake-translate.mjs                          # overwrites public/_gt
 cp public/_gt/*.json <fixture>/old-catalogs/ && cp legacy-metadata.json <fixture>/old-metadata.json
 
 # after: samsara CLI from this repo (pnpm --filter gt build), run on a throwaway copy
-cp -R <fixture>/after /tmp/legacy-after && cd /tmp/legacy-after
+cp -R <fixture>/after /tmp/legacy-after && cd /tmp/legacy-after && mv package.fixture.json package.json
 env -u GT_API_KEY node <repo>/packages/cli/dist/main.js generate
 env -u GT_API_KEY node <fixture>/scripts/dump-samsara-updates.mjs <repo>/packages/cli/dist . <fixture>/new-source.json
 
