@@ -18,6 +18,18 @@ const translations: Record<string, unknown> = {
   })]: 'Sauvegarder',
 };
 
+// The calls a compiler emits for t`Save` and t`Hello, ${{ name }}!`, which
+// the GT type leaves out.
+const precomputed = t as unknown as (
+  site: { $_hash: string; $_tree: unknown },
+  values?: Record<string, unknown>
+) => string;
+const save = {
+  $_hash: hashSource({ source: saveTree, dataFormat: 'MESSAGE_TREE' }),
+  $_tree: saveTree,
+};
+const greeting = { $_hash: 'greeting', $_tree: ['Hello, ', ['name'], '!'] };
+
 function setConditions(locale: string, enableI18n = true) {
   setReadonlyConditionStore({
     getLocale: () => locale,
@@ -54,6 +66,8 @@ describe('react-core/unstable t', () => {
 
     expect(t`Save`).toBe('Enregistrer');
     expect(t({ context: 'button' })`Save`).toBe('Sauvegarder');
+    expect(precomputed(save)).toBe('Enregistrer');
+    expect(precomputed(greeting, { name: 'Ada' })).toBe('Hello, Ada!');
   });
 
   it('renders the source when i18n is disabled', () => {
@@ -61,6 +75,7 @@ describe('react-core/unstable t', () => {
     setConditions('fr', false);
 
     expect(t`Save`).toBe('Save');
+    expect(precomputed(save)).toBe('Save');
   });
 
   it('works at module level in an SPA, before any request scope', () => {
@@ -83,6 +98,9 @@ describe('react-core/unstable t', () => {
     try {
       expect(() => t`Save`).toThrow(/only available in client-rendered/);
       expect(() => t({ context: 'button' })`Save`).toThrow(/Message: "Save"/);
+      expect(() => precomputed(greeting, { name: 'Ada' })).toThrow(
+        /only available in client-rendered[^]*Message: "Hello, !"/
+      );
     } finally {
       vi.unstubAllEnvs();
     }
@@ -100,7 +118,8 @@ describe('react-core/unstable t', () => {
     try {
       expect(t`Save`).toBe('Save');
       expect(t({ context: 'button' })`Save`).toBe('Save');
-      expect(error).toHaveBeenCalledTimes(2);
+      expect(precomputed(save)).toBe('Save');
+      expect(error).toHaveBeenCalledTimes(3);
       expect(error).toHaveBeenCalledWith(
         expect.stringContaining('use useGT()')
       );

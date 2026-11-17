@@ -1,15 +1,29 @@
 import type { GT, GTOptions } from 'gt-i18n/unstable';
-import { createGT } from 'gt-i18n/unstable/internal';
+import {
+  createGT,
+  isPrecomputedMessage,
+  type PrecomputedMessage,
+} from 'gt-i18n/unstable/internal';
 import { getReadonlyConditionStore } from '../condition-store/singleton-operations';
 import { isSpa, reportServerRenderedUse } from './spaOnly';
 
 type LooseTag = (strings: TemplateStringsArray, ...holes: unknown[]) => string;
+type PrecomputedTag = (
+  site: PrecomputedMessage,
+  values: unknown,
+  formats: unknown
+) => string;
 
 const gt = /* @__PURE__ */ createGT({
   getLocale: () => getReadonlyConditionStore().getLocale(),
   // Outside an SPA, t renders the source once the misuse is reported.
   getEnableI18n: () => isSpa() && getReadonlyConditionStore().getEnableI18n(),
 }) as unknown as LooseTag & ((options: GTOptions) => LooseTag);
+
+function sourceText(tree: PrecomputedMessage['$_tree']): string {
+  if (!Array.isArray(tree)) return tree;
+  return tree.filter((node) => typeof node === 'string').join('');
+}
 
 function translate(
   tag: LooseTag,
@@ -36,9 +50,20 @@ function translate(
  * t({ context: 'button' })`Save`;
  */
 export const t = ((
-  first: TemplateStringsArray | GTOptions,
+  first: TemplateStringsArray | GTOptions | PrecomputedMessage,
   ...holes: unknown[]
 ) => {
+  // A compiler passes the call site's precomputed message with its values.
+  if (isPrecomputedMessage(first)) {
+    if (!isSpa()) {
+      reportServerRenderedUse({
+        name: 't',
+        fix: 'In components, use useGT(); on the server, use getGT()',
+        message: sourceText(first.$_tree),
+      });
+    }
+    return (gt as unknown as PrecomputedTag)(first, holes[0], holes[1]);
+  }
   if (Array.isArray(first)) {
     return translate(gt, first as unknown as TemplateStringsArray, holes);
   }
