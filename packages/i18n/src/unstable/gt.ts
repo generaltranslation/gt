@@ -18,6 +18,7 @@ import {
   type PrecomputedMessage,
   renderMessage,
   renderPrecomputedMessage,
+  renderReplacedMessage,
 } from './renderMessage';
 
 /**
@@ -115,6 +116,14 @@ export function createGT(params: CreateGTParams): GT {
   ) => {
     // A compiler passes the call site's precomputed message with its values.
     if (isPrecomputedMessage(first)) {
+      if (first.$_locale !== undefined) {
+        return renderReplacedMessage(
+          first,
+          first.$_locale,
+          holes[0] as Record<string, unknown> | undefined,
+          holes[1] as MessageFormats | undefined
+        );
+      }
       const enabled = getEnableI18n?.() ?? true;
       return renderPrecomputedMessage(
         first,
