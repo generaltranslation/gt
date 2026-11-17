@@ -188,7 +188,14 @@ function replace(
     validateChildrenPropertyFromObjectExpression(propsPath).value;
   const slot = buildSlot(childrenPath, sourceChildren, ctx);
   if (target === 'source') {
-    // The children stay where they are, so their expressions run as before
+    // The children stay as they are, so their expressions run as before
+    if (
+      !keyArg &&
+      childrenPath &&
+      spliceIntoParent(callExprPath, getSourceChildren(childrenPath.node), ctx)
+    ) {
+      return;
+    }
     callExpr.arguments = [
       getFragment(runtime, callExprPath, state),
       t.objectExpression(
@@ -202,6 +209,13 @@ function replace(
   }
   const rendered = renderSlot(slot, target.translation, ctx);
   checkUses(ctx);
+  if (
+    !keyArg &&
+    rendered !== null &&
+    spliceIntoParent(callExprPath, rendered, ctx)
+  ) {
+    return;
+  }
 
   const fragment = getFragment(runtime, callExprPath, state);
   callExpr.callee = getJsxCallee(runtime, Array.isArray(rendered));
@@ -210,6 +224,93 @@ function replace(
     t.objectExpression(rendered === null ? [] : [childrenProperty(rendered)]),
     ...(keyArg ? [keyArg] : []),
   ];
+}
+
+// ===== Placement ===== //
+
+/** Static children as the nodes they render: an array's elements, or the one child. */
+function getSourceChildren(
+  children: t.Expression
+): t.Expression | t.Expression[] {
+  return t.isArrayExpression(children)
+    ? (children.elements as t.Expression[])
+    : children;
+}
+
+/**
+ * Puts what a replaced `<T>` renders in its place among the children of the
+ * host element or fragment it is a child of, where React renders it as it
+ * renders it inside a Fragment, without the Fragment. Returns whether it did;
+ * anywhere else, such as a component's children, the value itself is read.
+ */
+function spliceIntoParent(
+  path: NodePath<t.CallExpression>,
+  rendered: t.Expression | t.Expression[],
+  ctx: Context
+): boolean {
+  // A condition passes the value of its branches on to the children
+  let child: NodePath = path;
+  while (child.parentPath && passesValueOn(child.parentPath, child)) {
+    child = child.parentPath;
+  }
+  // From a condition, several nodes would be a nested array, which React keys
+  if (Array.isArray(rendered) && child !== path) return false;
+
+  const array = child.parentPath?.isArrayExpression()
+    ? child.parentPath
+    : undefined;
+  const property = (array ?? child).parentPath;
+  const parentCall = property?.parentPath?.parentPath;
+  if (
+    !property?.isObjectProperty() ||
+    property.node.computed ||
+    !objectPropertyMatchesName(property.node, 'children') ||
+    property.node.value !== (array ?? child).node ||
+    !parentCall?.isCallExpression() ||
+    parentCall.node.arguments[1] !== property.parentPath?.node ||
+    !isJsxCall(parentCall.node, ctx) ||
+    !rendersChildrenOnly(parentCall.node.arguments[0], ctx)
+  ) {
+    return false;
+  }
+
+  if (!Array.isArray(rendered)) {
+    const container = path.container as unknown as Record<
+      string | number,
+      t.Node
+    >;
+    container[path.key!] = rendered;
+  } else if (array) {
+    array.node.elements.splice(path.key as number, 1, ...rendered);
+  } else {
+    property.node.value = t.arrayExpression(rendered);
+    parentCall.node.callee = getJsxCallee(ctx.runtime, true);
+  }
+  return true;
+}
+
+/** Whether `parent` evaluates to `child` when it evaluates it. */
+function passesValueOn(parent: NodePath, child: NodePath): boolean {
+  if (parent.isConditionalExpression()) return child.key !== 'test';
+  if (parent.isLogicalExpression()) return child.key === 'right';
+  return (
+    parent.isParenthesizedExpression() ||
+    parent.isTSAsExpression() ||
+    parent.isTSSatisfiesExpression() ||
+    parent.isTSNonNullExpression()
+  );
+}
+
+/** A host element or a Fragment, which only render their children; a component can read them. */
+function rendersChildrenOnly(
+  type: t.CallExpression['arguments'][number] | undefined,
+  ctx: Context
+): boolean {
+  return (
+    t.isStringLiteral(type) ||
+    (ctx.runtime.fragment !== undefined &&
+      t.isIdentifier(type, { name: ctx.runtime.fragment }))
+  );
 }
 
 // ===== Source model ===== //
