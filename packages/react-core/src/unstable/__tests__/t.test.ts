@@ -78,6 +78,34 @@ describe('react-core/unstable t', () => {
     expect(precomputed(save)).toBe('Save');
   });
 
+  it('reads the conditions once per task, and sees new ones in the next', async () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    const getLocale = vi.fn(() => 'fr');
+    const getEnableI18n = vi.fn(() => true);
+    setReadonlyConditionStore({
+      getLocale,
+      getRegion: () => undefined,
+      getEnableI18n,
+      setLocale: () => {},
+      setRegion: () => {},
+      setEnableI18n: () => {},
+    });
+
+    expect([t`Save`, t`Save`, precomputed(save)]).toEqual([
+      'Enregistrer',
+      'Enregistrer',
+      'Enregistrer',
+    ]);
+    expect(getLocale).toHaveBeenCalledTimes(1);
+    expect(getEnableI18n).toHaveBeenCalledTimes(1);
+
+    getLocale.mockReturnValue('en');
+    expect(t`Save`).toBe('Enregistrer');
+    await Promise.resolve();
+    expect(t`Save`).toBe('Save');
+    expect(getLocale).toHaveBeenCalledTimes(2);
+  });
+
   it('works at module level in an SPA, before any request scope', () => {
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
     setConditions('fr');

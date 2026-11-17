@@ -4,8 +4,7 @@ import {
   isPrecomputedMessage,
   type PrecomputedMessage,
 } from 'gt-i18n/unstable/internal';
-import { getReadonlyConditionStore } from '../condition-store/singleton-operations';
-import { isSpa, reportServerRenderedUse } from './spaOnly';
+import { reportServerRenderedUse, taskConditions } from './spaOnly';
 
 type LooseTag = (strings: TemplateStringsArray, ...holes: unknown[]) => string;
 type PrecomputedTag = (
@@ -14,11 +13,8 @@ type PrecomputedTag = (
   formats: unknown
 ) => string;
 
-const gt = /* @__PURE__ */ createGT({
-  getLocale: () => getReadonlyConditionStore().getLocale(),
-  // Outside an SPA, t renders the source once the misuse is reported.
-  getEnableI18n: () => isSpa() && getReadonlyConditionStore().getEnableI18n(),
-}) as unknown as LooseTag & ((options: GTOptions) => LooseTag);
+const gt = /* @__PURE__ */ createGT(taskConditions) as unknown as LooseTag &
+  ((options: GTOptions) => LooseTag);
 
 function sourceText(tree: PrecomputedMessage['$_tree']): string {
   if (!Array.isArray(tree)) return tree;
@@ -30,7 +26,7 @@ function translate(
   strings: TemplateStringsArray,
   holes: unknown[]
 ): string {
-  if (!isSpa()) {
+  if (!taskConditions.isSpa()) {
     reportServerRenderedUse({
       name: 't',
       fix: 'In components, use useGT(); on the server, use getGT()',
@@ -55,7 +51,7 @@ export const t = ((
 ) => {
   // A compiler passes the call site's precomputed message with its values.
   if (isPrecomputedMessage(first)) {
-    if (!isSpa()) {
+    if (!taskConditions.isSpa()) {
       reportServerRenderedUse({
         name: 't',
         fix: 'In components, use useGT(); on the server, use getGT()',
