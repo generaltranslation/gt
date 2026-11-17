@@ -4,6 +4,7 @@
  * case renders the build with and without precomputing in gt-react, in every
  * locale, and the HTML must match.
  */
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -669,6 +670,81 @@ const CASES: Case[] = [
     renders: [{ mode: 'x' }],
     expected: 'kept',
   },
+  // The collected source reads these children as the text "0"; React renders nothing
+  {
+    name: 'an undefined child',
+    source: app('<T>before{undefined}after</T>'),
+    translations: { fr: 'avant après' },
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'a void child',
+    source: app('<T>before{void 0}<b>after</b></T>'),
+    translations: {},
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'a void child that is the only one',
+    source: app('<T><b>{void 0}</b> after</T>'),
+    translations: {},
+    renders: [{}],
+    expected: 'kept',
+  },
+  // A translation that gives a variable another type than its source
+  {
+    name: 'a <Num> its translation prints as a plain value',
+    source: app('<T>Count <Num>{n}</Num></T>', '{ n }'),
+    translations: {
+      fr: ['Total ', { k: '_gt_n_1', i: 1 }],
+      ja: ['合計 ', { k: '_gt_n_1', i: 1, v: 'v' }],
+    },
+    renders: [{ n: 1234.5 }, { n: '12' }, { n: null }],
+    expected: 'jsx',
+  },
+  {
+    name: 'a <Var> its translation formats as a number',
+    source: app('<T>Count <Var>{n}</Var></T>', '{ n }'),
+    translations: {
+      fr: ['Total ', { k: '_gt_value_1', i: 1, v: 'n' }],
+      ja: ['合計 ', { k: '_gt_value_1', i: 1, v: 'c' }],
+    },
+    renders: [{ n: 1234.5 }, { n: '7' }],
+    expected: 'jsx',
+  },
+  {
+    name: 'a <Currency> its translation formats as a number or a date',
+    source: app(
+      '<T>Cost <Currency currency="EUR">{n}</Currency> on <DateTime options={{ timeZone: "UTC" }}>{date}</DateTime></T>',
+      '{ n, date }'
+    ),
+    translations: {
+      fr: [
+        'Prix ',
+        { k: '_gt_cost_1', i: 1, v: 'n' },
+        ' le ',
+        { k: '_gt_date_2', i: 2, v: 'c' },
+      ],
+      ja: [
+        { k: '_gt_date_2', i: 2, v: 'd' },
+        ' ',
+        { k: '_gt_cost_1', i: 1, v: 'c' },
+      ],
+    },
+    renders: [{ n: 1234.5, date: DATE }],
+    expected: 'jsx',
+  },
+  {
+    name: 'a variable its translation writes as an element',
+    source: app('<T><Var>{name}</Var></T>', '{ name }'),
+    translations: {
+      fr: { t: 'b', i: 1, c: 'x' },
+      ja: { t: 'b', i: 1, c: ['y', { k: 'other' }, 'z'] },
+    },
+    renders: [{ name: 'Ada' }, { name: '' }],
+    expected: 'jsx',
+  },
 ];
 
 const COMPONENTS = {
@@ -871,9 +947,9 @@ describe('experimentalPrecomputeJsx', () => {
     );
     expect(precomputed).toMatchInlineSnapshot(`
       "import { Fragment, jsx, jsxs } from "react/jsx-runtime";
-      import { T, Var, Num, Plural, Branch } from "gt-react";import { GtInternalPrecomputedJsx as _GtInternalPrecomputedJsx } from "gt-react";const _gtSource = ["Hi ", { i: 1, x: 0, c: ["there ", { k: "_gt_value_2", x: 1 }] }, ", ", { i: 3, t: "p", x: 2, b: { one: { i: 4, x: 3, c: "one" }, other: { i: 4, t: "f", c: [{ k: "_gt_n_5", x: 4 }, " more"] } }, c: "none" }, " for ", { i: 4, t: "b", x: 5, b: { dark: "dark" }, c: "light" }];
+      import { T, Var, Num, Plural, Branch } from "gt-react";import { GtInternalPrecomputedJsx as _GtInternalPrecomputedJsx } from "gt-react";var _gtSource;
       function App({ cls, name, n, mode }) {
-        return /* @__PURE__ */jsxs(_GtInternalPrecomputedJsx, { h: "a00152d12db35528", s: _gtSource, v: [
+        return /* @__PURE__ */jsxs(_GtInternalPrecomputedJsx, { h: "a00152d12db35528", s: _gtSource || (_gtSource = ["Hi ", { i: 1, x: 0, c: ["there ", { k: "_gt_value_2", x: 1 }] }, ", ", { i: 3, t: "p", x: 2, b: { one: { i: 4, x: 3, c: "one" }, other: { i: 4, t: "f", c: [{ k: "_gt_n_5", v: "n", x: 4 }, " more"] } }, c: "none" }, " for ", { i: 4, t: "b", x: 5, b: { dark: "dark" }, c: "light" }]), v: [
 
           /* @__PURE__ */jsxs("b", { className: cls
 
@@ -907,13 +983,9 @@ describe('experimentalPrecomputeJsx', () => {
       precomputed.match(/jsxs?\(_GtInternalPrecomputed(Text|Jsx),/g)
     ).toHaveLength(2);
     expect(precomputed.match(/jsxs?\(T,/g)).toHaveLength(2);
-    // The static children are declared before the module's own code reads them
-    expect(precomputed.indexOf('const _gtSource =')).toBeLessThan(
-      precomputed.indexOf('const heading')
-    );
-    expect(precomputed.indexOf('const _gtSource =')).toBeGreaterThan(
-      precomputed.lastIndexOf('import ')
-    );
+    // Each call site builds its static children when it first renders
+    expect(precomputed).toContain('var _gtSource;');
+    expect(precomputed).toContain('s: _gtSource || (_gtSource = ["First ", ');
   });
 
   it('leaves a <T> inside another <T> alone', async () => {
@@ -1004,6 +1076,106 @@ describe('experimentalPrecomputeJsx', () => {
         )
       ).toBe(true);
       log.mockRestore();
+    });
+  });
+
+  describe('renders before its module has run', () => {
+    // What a call site needs of gt-react and React, to run it in Node as it is
+    const STUBS = {
+      'gt.mjs': `export const T = 'T';
+        export const GtInternalPrecomputedJsx = 'Jsx';
+        export const GtInternalPrecomputedText = 'Text';`,
+      'jsx.mjs': `export const jsx = (type, props) => ({ type, props });
+        export const jsxs = jsx;
+        export const Fragment = 'Fragment';`,
+    };
+    const EXPECTED = [
+      {
+        type: 'Jsx',
+        props: {
+          h: expect.any(String),
+          s: ['Hello ', { i: 1, x: 0, c: 'world' }],
+          v: [{ type: 'b', props: {} }],
+        },
+      },
+    ];
+
+    const run = async (
+      modules: Record<string, string>,
+      bundle: boolean
+    ): Promise<unknown> => {
+      const dir = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'gt-precompute-order-')
+      );
+      onTestFinished(() => fs.rmSync(dir, { recursive: true, force: true }));
+      for (const [name, code] of Object.entries({ ...STUBS, ...modules })) {
+        fs.writeFileSync(
+          path.join(dir, name),
+          code
+            .replaceAll('"gt-react"', '"./gt.mjs"')
+            .replaceAll('"react/jsx-runtime"', '"./jsx.mjs"')
+        );
+      }
+      let entry = path.join(dir, 'entry.mjs');
+      if (bundle) {
+        buildSync({
+          entryPoints: [entry],
+          outfile: path.join(dir, 'bundle.mjs'),
+          bundle: true,
+          format: 'esm',
+          platform: 'node',
+          minify: true,
+          logLevel: 'silent',
+        });
+        entry = path.join(dir, 'bundle.mjs');
+      }
+      return JSON.parse(
+        execFileSync(process.execPath, [entry], { encoding: 'utf8' })
+      );
+    };
+
+    it.each([
+      ['as modules', false],
+      ['as a minified bundle', true],
+    ])('through an import cycle, %s', async (_name, bundle) => {
+      // b's function is called by a, which b imports, before b's body runs
+      const { precomputed } = await build(
+        compileJsx(`import { T } from 'gt-react';
+            import './a.mjs';
+            export function label() { return <T>Hello <b>world</b></T>; }`)
+      );
+      expect(
+        await run(
+          {
+            'b.mjs': precomputed,
+            'a.mjs': `import { label } from './b.mjs';
+                export const elements = [label()];`,
+            'entry.mjs': `import './b.mjs';
+                import { elements } from './a.mjs';
+                console.log(JSON.stringify(elements));`,
+          },
+          bundle
+        )
+      ).toEqual(EXPECTED);
+    });
+
+    it('above an import', async () => {
+      const { precomputed } = await build(
+        `${compileJsx(`import { T } from 'gt-react';
+          export const elements = [<T>Hello <b>world</b></T>];`)}
+        import { sep } from 'node:path';
+        export const separator = sep;`
+      );
+      expect(
+        await run(
+          {
+            'early.mjs': precomputed,
+            'entry.mjs': `import { elements } from './early.mjs';
+              console.log(JSON.stringify(elements));`,
+          },
+          false
+        )
+      ).toEqual(EXPECTED);
     });
   });
 

@@ -36,8 +36,8 @@ export interface TransformState {
   precomputedJsxOnExit?: Map<t.CallExpression, () => void>;
   /** Source and name of a precomputed component, as JSON, to its local name */
   precomputedJsxImports?: Map<string, string>;
-  /** Module-scope declarations of the source children of precomputed <T> calls */
-  precomputedJsxSources?: t.VariableDeclaration[];
+  /** Module-scope variables that hold the source children of precomputed <T> calls */
+  precomputedJsxSources?: string[];
   /** JSX runtime source to the local name source replacement imports its Fragment as */
   sourceReplacementImports?: Map<string, string>;
   /** What this file needs from the static runtime; set in static-runtime builds. */
