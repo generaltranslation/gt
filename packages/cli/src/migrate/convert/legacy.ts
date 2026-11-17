@@ -6,6 +6,7 @@ import {
   type MessageTreeValidationError,
 } from '@generaltranslation/icu';
 import { icuToMessage } from '@generaltranslation/icu/convert';
+import { forEachPlaceholder } from '@generaltranslation/icu/internal';
 import {
   parse,
   printAST,
@@ -162,21 +163,29 @@ function unmarkPercentSkeletons(tree: MessageTree): MessageTree {
   });
 }
 
-function unmarkFormats(formats: MessageFormats): MessageFormats {
+/** A variable's formatted occurrences must share one formatting context, an absent one counting as empty, as `icuToMessage` requires. */
+function unmarkFormats(
+  markedTree: MessageTree,
+  formats: MessageFormats
+): MessageFormats {
+  const contexts = new Map<string, string>();
   const merged: Record<string, MessageFormats[string]> = {};
-  for (const [name, context] of Object.entries(formats)) {
-    const original = PERCENT_MARK.exec(name)?.[1] ?? name;
-    if (
-      original in merged &&
-      stringifySortedJson(merged[original], 0) !==
-        stringifySortedJson(context, 0)
-    ) {
+  forEachPlaceholder(markedTree, (node) => {
+    if (node[1] !== 'number' && node[1] !== 'date' && node[1] !== 'time') {
+      return;
+    }
+    const original = PERCENT_MARK.exec(node[0])?.[1] ?? node[0];
+    const context = formats[node[0]];
+    const key = stringifySortedJson(context ?? {}, 0);
+    const known = contexts.get(original);
+    if (known !== undefined && known !== key) {
       throw new Error(
         `Message variable "${original}" is formatted with different formatting context in one message; give each its own variable name.`
       );
     }
-    merged[original] = context;
-  }
+    contexts.set(original, key);
+    if (context) merged[original] = context;
+  });
   return merged;
 }
 
@@ -188,7 +197,7 @@ export function legacyIcuToMessage(icu: string): ConversionResult {
     );
     return converted(
       unmarkPercentSkeletons(rewriteDeclaredVariables(tree)),
-      unmarkFormats(formats)
+      unmarkFormats(tree, formats)
     );
   } catch (error) {
     return { ok: false, reason: errorText(error) };

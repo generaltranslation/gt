@@ -882,13 +882,25 @@ describe('legacy plural and percent semantics', () => {
     }
   );
 
-  it('rejects one variable formatted with two contexts across percent occurrences', () => {
-    expect(
-      legacyIcuToMessage('{n, number, ::.00} ({n, number, ::percent .0})')
-    ).toEqual({
+  it.each([
+    '{n, number, ::.00} ({n, number, ::percent .0})',
+    '{n, number} ({n, number, ::percent .0})',
+    '{n, number, ::.00} ({n, number, ::percent})',
+  ])('rejects %s, which formats one variable two ways', (icu) => {
+    expect(legacyIcuToMessage(icu)).toEqual({
       ok: false,
       reason:
         'Message variable "n" is formatted with different formatting context in one message; give each its own variable name.',
+    });
+  });
+
+  it('keeps one variable formatted alike across percent occurrences', () => {
+    expect(
+      legacyIcuToMessage('{n, number, ::.0} ({n, number, ::percent .0})')
+    ).toEqual({
+      ok: true,
+      tree: [['n', 'number'], ' (', ['n', 'number', 'percent'], ')'],
+      formats: { n: { maximumFractionDigits: 1, minimumFractionDigits: 1 } },
     });
   });
 
