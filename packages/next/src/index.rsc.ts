@@ -19,7 +19,6 @@ import type {
 initializeGTServer();
 
 // ===== Components ===== //
-export { Branch } from './branches/Branch';
 export { Currency } from './variables/Currency';
 export { DateTime } from './variables/DateTime';
 export { GTProvider } from './provider/GTProvider';
@@ -87,7 +86,7 @@ export const withGTStaticProps: WithGTStaticPropsFunction = () => {
 };
 
 // ===== gt-react Components ===== //
-export { Derive } from 'gt-react';
+export { Branch, Derive } from 'gt-react';
 
 // ===== gt-react Hooks ===== //
 export { useDefaultLocale, useLocaleProperties, useLocales } from 'gt-react';

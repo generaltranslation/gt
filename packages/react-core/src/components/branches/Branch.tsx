@@ -23,8 +23,6 @@ type BranchProps<V extends BranchValue = BranchValue> = {
 
 type InternalBranchProps = {
   branch?: BranchValue;
-  _locale?: string;
-  _enableI18n?: boolean;
   [branch: string]: ReactNode;
 };
 
@@ -35,13 +33,8 @@ type InternalBranchProps = {
  */
 function GtInternalBranch({
   branch,
-  _locale,
-  _enableI18n,
   ...props
 }: InternalBranchProps): ReactNode {
-  void _locale;
-  void _enableI18n;
-
   // Build tools inject data-* attributes, which are not branches.
   const branches = Object.fromEntries(
     Object.entries(props).filter(([prop]) => !prop.startsWith('data-'))
