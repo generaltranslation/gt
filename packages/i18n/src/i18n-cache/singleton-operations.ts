@@ -1,5 +1,8 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { createGlobalSingleton } from '../globals/createGlobalSingleton';
+import {
+  createGlobalSingleton,
+  type SingletonSetOptions,
+} from '../globals/createGlobalSingleton';
 import { I18nCache } from './I18nCache';
 import type { Content } from '@generaltranslation/format';
 
@@ -32,14 +35,16 @@ export function getI18nCache<U extends Content = Content>():
 
 /**
  * Configure the singleton instance of I18nCache
- * @param config - The configuration for the I18nCache
+ * @param i18nCacheInstance - The cache to register
+ * @param options - Pass `replace: true` to install a fresh cache on reinitialization
  *
  * Wrapper libraries will export a configure function that will call this function.
  *
  * Note: should not be consumed by gt-react, consumers should use a wrapper
  */
 export function setI18nCache<TranslationValue extends Content>(
-  i18nCacheInstance: I18nCache<TranslationValue>
+  i18nCacheInstance: I18nCache<TranslationValue>,
+  options?: SingletonSetOptions
 ): void {
-  i18nCacheSingleton.set(i18nCacheInstance as unknown as I18nCache);
+  i18nCacheSingleton.set(i18nCacheInstance as unknown as I18nCache, options);
 }

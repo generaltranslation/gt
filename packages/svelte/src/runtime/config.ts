@@ -24,6 +24,7 @@ export type GTTranslationsData = {
 /**
  * Initializes General Translation. Call it once, from a module shared by the
  * server and the browser, before rendering or loading translations.
+ * Calling it again replaces the configuration and clears cached translations.
  *
  * @example
  * ```ts
@@ -39,7 +40,7 @@ export type GTTranslationsData = {
  * ```
  */
 export function initializeGT(config: GTSvelteConfig = {}): void {
-  initializeI18nConfig(config);
+  initializeI18nConfig(config, { replace: true });
   setI18nCache(
     new I18nCache<Content>({
       ...config,
@@ -51,7 +52,8 @@ export function initializeGT(config: GTSvelteConfig = {}): void {
         config.cacheExpiryTime === undefined && typeof window !== 'undefined'
           ? null
           : config.cacheExpiryTime,
-    })
+    }),
+    { replace: true }
   );
 }
 

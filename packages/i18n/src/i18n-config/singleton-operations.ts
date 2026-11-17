@@ -1,5 +1,8 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { createGlobalSingleton } from '../globals/createGlobalSingleton';
+import {
+  createGlobalSingleton,
+  type SingletonSetOptions,
+} from '../globals/createGlobalSingleton';
 import { I18nConfig, type I18nConfigParams } from './I18nConfig';
 
 const i18nConfigSingleton = createGlobalSingleton<I18nConfig>({
@@ -21,9 +24,10 @@ export const setI18nConfig = i18nConfigSingleton.set;
 export const isI18nConfigInitialized = i18nConfigSingleton.isInitialized;
 
 export function initializeI18nConfig(
-  params: I18nConfigParams = {}
+  params: I18nConfigParams = {},
+  options?: SingletonSetOptions
 ): I18nConfig {
   const nextI18nConfig = new I18nConfig(params);
-  setI18nConfig(nextI18nConfig);
+  setI18nConfig(nextI18nConfig, options);
   return nextI18nConfig;
 }

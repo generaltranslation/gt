@@ -33,9 +33,11 @@ function getExistingNamespace(
   return globalObj.__generaltranslation?.[namespace];
 }
 
+export type SingletonSetOptions = { replace?: boolean };
+
 export type GlobalSingleton<T> = {
   get: () => T;
-  set: (next: T) => void;
+  set: (next: T, options?: SingletonSetOptions) => void;
   isInitialized: () => boolean;
 };
 
@@ -70,9 +72,9 @@ export function createGlobalSingleton<T>({
     return value as T;
   }
 
-  function set(next: T): void {
+  function set(next: T, { replace = false }: SingletonSetOptions = {}): void {
     const ns = getNamespace(namespace);
-    if (ns[key] !== undefined && ns[key] !== next) {
+    if (!replace && ns[key] !== undefined && ns[key] !== next) {
       if (shouldLogDebugWarnings()) {
         console.warn(
           createDiagnosticMessage({
