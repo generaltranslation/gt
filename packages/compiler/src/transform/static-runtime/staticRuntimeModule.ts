@@ -6,22 +6,20 @@ import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { TransformState } from '../../state/types';
 import { createErrorLocation } from '../../utils/errors';
 import {
-  encodeStaticCounts,
-  STATIC_FORMATTERS,
+  getStaticCountArguments,
+  STATIC_HELPERS,
   STATIC_RUNTIME_SOURCE,
-  type StaticFormatterKind,
+  type StaticHelperKind,
 } from './resolveStaticRuntime';
 
 /** What a file needs from the static runtime, and what it could not compile. */
 export type StaticRuntimeFile = {
   /** Why the file still needs the GT runtime, each with its location */
   errors: string[];
-  /** Local name of each formatter a call site formats with */
-  formatters: Partial<Record<StaticFormatterKind, string>>;
-  /** The kinds of plural this file's trees select a category for */
-  plurals: Set<'plural' | 'selectordinal'>;
-  /** Module-scope declarations of message trees, by the tree's JSON */
-  trees: Map<string, t.VariableDeclaration>;
+  /** Local name of each function of the static runtime a call site calls */
+  helpers: Partial<Record<StaticHelperKind, string>>;
+  /** The module-scope variable that holds each message tree, by the tree's JSON */
+  trees: Map<string, string>;
   /** Whether the file was changed */
   changed: boolean;
 };
@@ -33,7 +31,7 @@ const RUNTIME_SOURCES =
 // What the static entry provides under the name gt-react exports it by
 const STATIC_EXPORTS = new Set(['initializeGTSPA']);
 
-const FORMATTER_NAMES: Record<StaticFormatterKind, string> = {
+const HELPER_NAMES: Record<StaticHelperKind, string> = {
   value: 'gtValue',
   tree: 'gtFormat',
   intl: 'gtFormatIntl',
@@ -42,8 +40,7 @@ const FORMATTER_NAMES: Record<StaticFormatterKind, string> = {
 function getFile(state: TransformState): StaticRuntimeFile {
   return (state.staticRuntime ??= {
     errors: [],
-    formatters: {},
-    plurals: new Set(),
+    helpers: {},
     trees: new Map(),
     changed: false,
   });
@@ -72,47 +69,92 @@ export function addStaticRuntimeWarning(
   state.logger.logWarning(`${locate(state, node)}: ${reason}`);
 }
 
-/** The local name of one of this file's formatters, declared once the file is done. */
-export function getStaticFormatter(
+/** The local name of a function of the static runtime, imported once the file is done. */
+export function getStaticHelper(
   state: TransformState,
   path: NodePath,
-  kind: StaticFormatterKind
+  kind: StaticHelperKind
 ): t.Identifier {
-  const { formatters } = getFile(state);
-  formatters[kind] ??= path.scope
+  const { helpers } = getFile(state);
+  helpers[kind] ??= path.scope
     .getProgramParent()
-    .generateUid(FORMATTER_NAMES[kind]);
-  return t.identifier(formatters[kind]);
+    .generateUid(HELPER_NAMES[kind]);
+  return t.identifier(helpers[kind]);
 }
 
-/** Declares a message tree once per file at module scope, so a render allocates none. */
+/**
+ * What a call site passes a function of the static runtime after its own
+ * arguments: the build's locales, then what else formats `tree`. A call site
+ * passes these itself, where a module-scope constant would hold them once,
+ * because a function can be called before its module has run: through an
+ * import cycle, or from a statement above an import.
+ */
+export function getStaticArguments(
+  state: TransformState,
+  kind: StaticHelperKind,
+  tree?: MessageTree,
+  formats?: t.Expression
+): t.Expression[] {
+  const runtime = state.settings.staticRuntime!;
+  const timeZone =
+    runtime.timeZone === undefined ? [] : [t.stringLiteral(runtime.timeZone)];
+  const locales = t.stringLiteral(runtime.locales.join(','));
+  if (kind === 'value') return [locales, ...timeZone];
+  if (kind === 'intl') {
+    return [
+      locales,
+      ...(formats || timeZone.length > 0
+        ? [formats ?? t.unaryExpression('void', t.numericLiteral(0))]
+        : []),
+      ...timeZone,
+    ];
+  }
+  const counts: (string | number)[] = getStaticCountArguments(
+    runtime.counts,
+    tree!
+  );
+  let readsTimeZone = false;
+  forEachPlaceholder(tree!, (node) => {
+    // A value may be a Date
+    if (node[1] === undefined) readsTimeZone = true;
+  });
+  if (!readsTimeZone || timeZone.length === 0) {
+    timeZone.length = 0;
+    while (counts.length > 0 && !counts[counts.length - 1]) counts.pop();
+  }
+  return [
+    locales,
+    ...counts.map((count) => t.valueToNode(count) as t.Expression),
+    ...timeZone,
+  ];
+}
+
+/**
+ * A message tree, built when a call site first formats it and kept in a
+ * module-scope variable, so a render allocates none:
+ *
+ *   _gtTree || (_gtTree = [...])
+ *
+ * The variable is a `var` that each call site fills, since a `const` cannot
+ * be read before its module has run; see `getStaticArguments`.
+ */
 export function hoistStaticTree(
   state: TransformState,
   path: NodePath,
   tree: MessageTree
-): t.Identifier {
+): t.Expression {
   const file = getFile(state);
-  forEachPlaceholder(tree, (node) => {
-    if (
-      (node[1] === 'plural' || node[1] === 'selectordinal') &&
-      // Only a branch named for a category has one selected
-      Object.keys(node[2]).some((key) => key !== 'other' && key[0] !== '=')
-    ) {
-      file.plurals.add(node[1]);
-    }
-  });
   const key = JSON.stringify(tree);
-  let declaration = file.trees.get(key);
-  if (!declaration) {
-    declaration = t.variableDeclaration('const', [
-      t.variableDeclarator(
-        path.scope.getProgramParent().generateUidIdentifier('gtTree'),
-        treeToNode(tree)
-      ),
-    ]);
-    file.trees.set(key, declaration);
+  let name = file.trees.get(key);
+  if (!name) {
+    name = path.scope.getProgramParent().generateUid('gtTree');
+    file.trees.set(key, name);
   }
-  return t.cloneNode(declaration.declarations[0].id as t.Identifier);
+  return t.logicalExpression(
+    '||',
+    t.identifier(name),
+    t.assignmentExpression('=', t.identifier(name), treeToNode(tree))
+  );
 }
 
 /** A message tree as a literal, its text printed as written, where the generator would escape non-ASCII text. */
@@ -166,9 +208,10 @@ export function mayNeedStaticRuntime(
 
 /**
  * Finishes a file of a static-runtime build: points what the static entry
- * provides at it, drops the GT imports nothing reads anymore, declares the
- * file's formatter and trees, and records every import that still needs the
- * GT runtime. Returns whether the file changed.
+ * provides at it, drops the GT imports nothing reads anymore, imports the
+ * functions of the static runtime the file calls, declares the variables of
+ * its trees, and records every import that still needs the GT runtime.
+ * Returns whether the file changed.
  */
 export function finishStaticRuntimeFile(
   programPath: NodePath<t.Program>,
@@ -272,55 +315,45 @@ export function finishStaticRuntimeFile(
     },
   });
 
-  // The imports of the static entries, then each formatter, then the trees
   const imports = new Map<string, t.ImportSpecifier[]>(
     staticSpecifiers.length > 0
       ? [[STATIC_RUNTIME_SOURCE, staticSpecifiers]]
       : []
   );
-  const formatters: t.Statement[] = [];
-  for (const kind of Object.keys(STATIC_FORMATTERS) as StaticFormatterKind[]) {
-    const local = file.formatters[kind];
+  for (const kind of Object.keys(STATIC_HELPERS) as StaticHelperKind[]) {
+    const local = file.helpers[kind];
     if (!local) continue;
-    const { create, source } = STATIC_FORMATTERS[kind];
-    const createLocal = programPath.scope.generateUid(create);
+    const { name, source } = STATIC_HELPERS[kind];
     imports.set(source, [
       ...(imports.get(source) ?? []),
-      t.importSpecifier(t.identifier(createLocal), t.identifier(create)),
+      t.importSpecifier(t.identifier(local), t.identifier(name)),
     ]);
-    const timeZone =
-      runtime.timeZone === undefined ? [] : [t.stringLiteral(runtime.timeZone)];
-    // Only the tree formatter formats plurals
-    const counts =
-      kind === 'tree' ? encodeStaticCounts(runtime.counts, file.plurals) : '';
-    const call = t.callExpression(t.identifier(createLocal), [
-      t.valueToNode(runtime.locales),
-      ...(kind === 'tree' && (counts !== '' || timeZone.length > 0)
-        ? [t.stringLiteral(counts)]
-        : []),
-      ...timeZone,
-    ]);
-    // So a bundler drops the formatter of a module whose call sites it drops
-    t.addComment(call, 'leading', ' @__PURE__ ');
-    formatters.push(
-      t.variableDeclaration('const', [
-        t.variableDeclarator(t.identifier(local), call),
-      ])
-    );
   }
-  const declarations: t.Statement[] = [
-    ...Array.from(imports, ([source, specifiers]) =>
-      t.importDeclaration(specifiers, t.stringLiteral(source))
-    ),
-    ...formatters,
-    ...file.trees.values(),
-  ];
-  if (declarations.length > 0) {
+  if (file.trees.size > 0) {
     let afterImports = 0;
     program.body.forEach((statement, index) => {
       if (t.isImportDeclaration(statement)) afterImports = index + 1;
     });
-    program.body.splice(afterImports, 0, ...declarations);
+    program.body.splice(
+      afterImports,
+      0,
+      t.variableDeclaration(
+        'var',
+        Array.from(file.trees.values(), (name) =>
+          t.variableDeclarator(t.identifier(name))
+        )
+      )
+    );
+    file.changed = true;
+  }
+  if (imports.size > 0) {
+    // First, so the static runtime has run before a module this one imports
+    // calls back into this one through an import cycle
+    program.body.unshift(
+      ...Array.from(imports, ([source, specifiers]) =>
+        t.importDeclaration(specifiers, t.stringLiteral(source))
+      )
+    );
     file.changed = true;
   }
   return file.changed;

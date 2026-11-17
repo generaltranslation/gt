@@ -4,6 +4,7 @@
  * gt-react's runtime and for the static runtime, and both must render the
  * same text in the build's locale.
  */
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -24,8 +25,8 @@ import { formatMessageTree } from '@generaltranslation/icu';
 import { clearInlineTranslationsCache } from '../transform/injection/inline-translations/loadInlineTranslations';
 import {
   encodePluralCategories,
-  encodeStaticCounts,
   formatsPlainIntegers,
+  getStaticCountArguments,
   resolveStaticRuntime,
 } from '../transform/static-runtime/resolveStaticRuntime';
 import { compileJsx, evaluateModule } from './sourceReplacementHarness';
@@ -34,9 +35,11 @@ import { transformWithPlugin } from './transformWithPlugin';
 type GTConfig = NonNullable<GTUnpluginOptions['gtConfig']>;
 type Module = Record<string, unknown>;
 
-const GT_REACT_DIST = fileURLToPath(
-  new URL('../../node_modules/gt-react/dist/', import.meta.url)
+const NODE_MODULES = fileURLToPath(
+  new URL('../../node_modules/', import.meta.url)
 );
+
+const GT_REACT_DIST = path.join(NODE_MODULES, 'gt-react/dist/');
 
 const IMPORTS = `import { t, plural, selectordinal, select, part, n, number, date, time } from 'gt-react/unstable';`;
 
@@ -581,13 +584,13 @@ describe('experimentalStaticRuntime', () => {
         ];
       }`;
     expect(await build(source, staticOptions('en'))).toMatchInlineSnapshot(`
-      "import { createStaticValue as _createStaticValue, createStaticFormatter as _createStaticFormatter } from "gt-react/static-runtime";const _gtValue = /* @__PURE__ */_createStaticValue(["en"]);const _gtFormat = /* @__PURE__ */_createStaticFormatter(["en"], "1;xo|x");const _gtTree = [["count", "plural", { one: [0, " invoice"], other: [0, " invoices"] }]];
+      "import { staticValue as _gtValue, formatStatic as _gtFormat } from "gt-react/static-runtime";var _gtTree;
       function App({ name, count }) {
         return ["Account settings", \`Welcome back, \${_gtValue(
 
-          name)}!\`, _gtFormat(_gtTree, { count:
-          count }), \`Welcome back, \${_gtValue(
-          name)}!\`];
+          name, "en")}!\`, _gtFormat(_gtTree || (_gtTree = [["count", "plural", { one: [0, " invoice"], other: [0, " invoices"] }]]), { count:
+          count }, "en", 1, "xo|x"), \`Welcome back, \${_gtValue(
+          name, "en")}!\`];
 
       }
       export {
@@ -624,10 +627,10 @@ describe('experimentalStaticRuntime', () => {
       })
     );
     expect(output).toMatchInlineSnapshot(`
-      "import { Fragment as _Fragment } from "react/jsx-runtime";import { jsx, jsxs } from "react/jsx-runtime";
+      "import {
+        initializeGTSPA } from "gt-react/static-runtime";import { Fragment as _Fragment } from "react/jsx-runtime";import { jsx, jsxs } from "react/jsx-runtime";
 
-
-      import { loadTranslations } from "./translations";import { initializeGTSPA } from "gt-react/static-runtime";
+      import { loadTranslations } from "./translations";
       const ready = initializeGTSPA({ defaultLocale: "en", locales: ["fr"], loadTranslations });
       function App({ name }) {
         return /* @__PURE__ */jsx(_Fragment, { children: /* @__PURE__ */jsxs("p", { children: ["Historique de ", /* @__PURE__ */jsx(
@@ -686,6 +689,150 @@ describe('experimentalStaticRuntime', () => {
       call(output, staticModules, [{ log }]);
       expect(log).toEqual(['a', 'b', 1]);
     }
+  });
+
+  describe('runs before its module has', () => {
+    // b's functions are called by a, which b imports, before b's body runs
+    const B = `import { n, part, plural, select, t, number } from 'gt-react/unstable';
+      import './a.mjs';
+      export function greetValue(name) {
+        return t\`Cycle hello, \${{ name }}!\`;
+      }
+      export function greetPlural(count) {
+        return t\`\${plural({ count }, { one: part\`\${n} cycle file\`, other: part\`\${n} cycle files\` })}\`;
+      }
+      export function greetSelect(role) {
+        return t\`\${select({ role }, { admin: 'Cycle admin', other: 'Cycle guest' })}\`;
+      }
+      export function greetNumber(total) {
+        return t\`Cycle total \${number({ total })}\`;
+      }`;
+    const A = `import { greetNumber, greetPlural, greetSelect, greetValue } from './b.mjs';
+      export const texts = [greetValue('Ada'), greetPlural(2), greetSelect('admin'), greetNumber(1234.5)];`;
+    const ENTRY = `import './b.mjs';
+      import { texts } from './a.mjs';
+      console.log(JSON.stringify(texts));`;
+    const TRANSLATIONS = {
+      greetValue: ['Bonjour du cycle, ', ['name'], ' !'],
+      greetPlural: [
+        [
+          'count',
+          'plural',
+          {
+            one: [0, ' fichier du cycle'],
+            other: [0, ' fichiers du cycle'],
+          },
+        ],
+      ],
+      greetSelect: [
+        [
+          'role',
+          'select',
+          { admin: 'Admin du cycle', other: 'Invité du cycle' },
+        ],
+      ],
+      greetNumber: ['Total du cycle ', ['total', 'number']],
+    };
+    const EXPECTED = {
+      en: [
+        'Cycle hello, Ada!',
+        '2 cycle files',
+        'Cycle admin',
+        'Cycle total 1,234.5',
+      ],
+      fr: [
+        'Bonjour du cycle, Ada !',
+        '2 fichiers du cycle',
+        'Admin du cycle',
+        `Total du cycle ${new Intl.NumberFormat('fr').format(1234.5)}`,
+      ],
+    };
+
+    /** Writes the modules where Node resolves gt-react, and returns their folder. */
+    const writeModules = (modules: Record<string, string>) => {
+      const dir = fs.mkdtempSync(path.join(NODE_MODULES, '.gt-static-order-'));
+      onTestFinished(() => fs.rmSync(dir, { recursive: true, force: true }));
+      for (const [name, code] of Object.entries(modules)) {
+        fs.writeFileSync(path.join(dir, name), code);
+      }
+      return dir;
+    };
+
+    const run = (file: string) =>
+      JSON.parse(
+        execFileSync(process.execPath, [file], { encoding: 'utf8' })
+      ) as unknown;
+
+    const buildCycle = async (locale: 'en' | 'fr') => {
+      const translations: Record<string, unknown> = {};
+      for (const [name, translation] of Object.entries(TRANSLATIONS)) {
+        const body = B.slice(
+          B.indexOf('return', B.indexOf(`function ${name}(`)) + 'return'.length
+        );
+        translations[
+          await getHash(
+            `${IMPORTS}\nexport const x = (name, count, role, total) =>${body.slice(0, body.indexOf(';'))};`
+          )
+        ] = translation;
+      }
+      const options = staticOptions(locale, translations);
+      return writeModules({
+        'b.mjs': await build(B, options),
+        'a.mjs': A,
+        'entry.mjs': ENTRY,
+      });
+    };
+
+    it.each(['en', 'fr'] as const)(
+      'through an import cycle, as modules, in %s',
+      async (locale) => {
+        const dir = await buildCycle(locale);
+        expect(run(path.join(dir, 'entry.mjs'))).toEqual(EXPECTED[locale]);
+      }
+    );
+
+    it.each(['en', 'fr'] as const)(
+      'through an import cycle, as a minified bundle, in %s',
+      async (locale) => {
+        const dir = await buildCycle(locale);
+        buildSync({
+          entryPoints: [path.join(dir, 'entry.mjs')],
+          outfile: path.join(dir, 'bundle.mjs'),
+          bundle: true,
+          format: 'esm',
+          platform: 'node',
+          minify: true,
+          logLevel: 'silent',
+        });
+        expect(run(path.join(dir, 'bundle.mjs'))).toEqual(EXPECTED[locale]);
+      }
+    );
+
+    it('above an import', async () => {
+      const source = `import { n, part, plural, t } from 'gt-react/unstable';
+        const name = 'Ada';
+        const count = 2;
+        export const texts = [
+          t\`Early hello, \${{ name }}!\`,
+          t\`\${plural({ count }, { one: part\`\${n} early file\`, other: part\`\${n} early files\` })}\`,
+        ];
+        import { sep } from 'node:path';
+        export const separator = sep;`;
+      const output = await build(source, staticOptions('en'));
+      // Imports are hoisted, so the one of the static runtime is first wherever it is written
+      expect(output).toMatch(
+        /^import \{[^}]+\} from "gt-react\/static-runtime";/
+      );
+      const dir = writeModules({
+        'early.mjs': output,
+        'entry.mjs': `import { texts } from './early.mjs';
+          console.log(JSON.stringify(texts));`,
+      });
+      expect(run(path.join(dir, 'entry.mjs'))).toEqual([
+        'Early hello, Ada!',
+        '2 early files',
+      ]);
+    });
   });
 
   describe('fails the build on what still needs the GT runtime', () => {
@@ -891,7 +1038,7 @@ describe('experimentalStaticRuntime', () => {
           timeZone: 'Asia/Tokyo',
         } as GTConfig)
       );
-      expect(output).toContain('(["en-US"], "Asia/Tokyo")');
+      expect(output).toContain('name, "en-US", "Asia/Tokyo")');
     });
   });
 
@@ -947,19 +1094,21 @@ describe('experimentalStaticRuntime', () => {
           { locale, jsx: true },
           { defaultLocale: 'en' }
         )!;
-        const createStaticFormatter = staticModules['gt-react/static-runtime']
-          .createStaticFormatter as (
-          locales: string[],
-          counts: string
-        ) => (tree: unknown, values: object) => string;
-        const format = createStaticFormatter(
-          runtime.locales,
-          encodeStaticCounts(
-            runtime.counts,
-            new Set(['plural', 'selectordinal'] as const)
-          )
-        );
-        expect(counts.map((count) => format(tree, { count }))).toEqual(
+        const formatStatic = staticModules['gt-react/static-runtime']
+          .formatStatic as (
+          tree: unknown,
+          values: object,
+          locales: string,
+          ...counts: unknown[]
+        ) => string;
+        const format = (values: object) =>
+          formatStatic(
+            tree,
+            values,
+            runtime.locales.join(','),
+            ...getStaticCountArguments(runtime.counts, tree as never)
+          );
+        expect(counts.map((count) => format({ count }))).toEqual(
           counts.map((count) =>
             formatMessageTree(
               tree as never,
@@ -990,7 +1139,7 @@ describe('experimentalStaticRuntime', () => {
       );
     });
 
-    it('tells a formatter only about the plurals its file has', async () => {
+    it('tells a call site only about the plurals its tree has', async () => {
       const cardinal = await build(
         app(
           't`${plural({ count }, { one: "one", other: "other" })}`',
@@ -998,7 +1147,15 @@ describe('experimentalStaticRuntime', () => {
         ),
         staticOptions('en')
       );
-      expect(cardinal).toContain('(["en"], "1;xo|x")');
+      expect(cardinal).toContain('"en", 1, "xo|x")');
+      const select = await build(
+        app(
+          't`${select({ role }, { admin: "Admin", other: "Guest" })}`',
+          '{ role }'
+        ),
+        staticOptions('en')
+      );
+      expect(select).toContain('}, "en")');
       const ordinal = await build(
         app(
           't`${selectordinal({ count }, { one: "st", other: "th" })} ${plural({ count }, { other: part`${n} left` })}`',
@@ -1006,7 +1163,7 @@ describe('experimentalStaticRuntime', () => {
         ),
         staticOptions('en')
       );
-      expect(ordinal).toMatch(/\(\["en"\], "1;;[xotf|]{101}"\)/);
+      expect(ordinal).toMatch(/"en", 1, "", "[xotf|]{101}"\)/);
     });
   });
 
@@ -1053,6 +1210,6 @@ describe('experimentalStaticRuntime', () => {
         .filter((file) => !file.endsWith('app.js'))
         .map((file) => path.basename(file))
     ).toEqual(['static-runtime.mjs']);
-    expect(outputFiles[0].text.length).toBeLessThan(3_000);
+    expect(outputFiles[0].text.length).toBeLessThan(4_000);
   });
 });

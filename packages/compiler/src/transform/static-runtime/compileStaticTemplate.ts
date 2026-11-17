@@ -21,11 +21,12 @@ import {
 import { isSideEffectFree } from '../injection/inline-translations/isSideEffectFree';
 import { objectPropertyMatchesName } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { escapeTemplateText } from '../injection/inline-translations/replaceTemplateSource';
-import type { StaticFormatterKind } from './resolveStaticRuntime';
+import type { StaticHelperKind } from './resolveStaticRuntime';
 import {
   addStaticRuntimeError,
   addStaticRuntimeWarning,
-  getStaticFormatter,
+  getStaticArguments,
+  getStaticHelper,
   hoistStaticTree,
 } from './staticRuntimeModule';
 
@@ -189,7 +190,7 @@ function compile(
   }
 
   const used = new Set<string>();
-  let kind: Exclude<StaticFormatterKind, 'value'> = 'tree';
+  let kind: Exclude<StaticHelperKind, 'value'> = 'tree';
   let onlyValues = true;
   forEachPlaceholder(tree, (node) => {
     used.add(node[0]);
@@ -201,32 +202,38 @@ function compile(
   const usedFormats = [...formats].filter(
     ([name, properties]) => used.has(name) && properties.length > 0
   );
-  // Built on demand, since a call site may not need it, and twice at most
+  // Built on demand, since a call site may not need it
   const buildCall = (): t.Expression =>
-    t.callExpression(getStaticFormatter(state, path, kind), [
+    t.callExpression(getStaticHelper(state, path, kind), [
       hoistStaticTree(state, path, tree),
       t.objectExpression(
         ordered.map(([name, expression]) =>
           t.objectProperty(propertyKey(name), t.cloneNode(expression, true))
         )
       ),
-      ...(usedFormats.length > 0
-        ? [
-            t.objectExpression(
+      ...getStaticArguments(
+        state,
+        kind,
+        tree,
+        usedFormats.length > 0
+          ? t.objectExpression(
               usedFormats.map(([name, properties]) =>
                 t.objectProperty(
                   propertyKey(name),
                   t.objectExpression(properties)
                 )
               )
-            ),
-          ]
-        : []),
+            )
+          : undefined
+      ),
     ]);
   path.replaceWith(
     (onlyValues &&
-      buildValueTemplate(tree, values, ordered, () =>
-        getStaticFormatter(state, path, 'value')
+      buildValueTemplate(tree, values, ordered, (value) =>
+        t.callExpression(getStaticHelper(state, path, 'value'), [
+          value,
+          ...getStaticArguments(state, 'value'),
+        ])
       )) ||
       buildCall()
   );
@@ -239,7 +246,7 @@ function compile(
  * locale. The formatter prints nothing for null and undefined and formats a
  * Date for the locale, which the runtime's value helper does for each value:
  *
- *   `Bonjour ${value(name)}`
+ *   `Bonjour ${value(name, 'fr,en')}`
  *
  * A value written as text or a number needs no helper. Undefined when a value
  * has a side effect, since the translation decides how often and in what
@@ -250,7 +257,7 @@ function buildValueTemplate(
   tree: Exclude<MessageTree, string>,
   values: Map<string, t.Expression>,
   ordered: [string, t.Expression][],
-  getValueHelper: () => t.Identifier
+  print: (value: t.Expression) => t.Expression
 ): t.Expression | undefined {
   if (
     !tree.some((node) => typeof node === 'string' && node !== '') ||
@@ -266,9 +273,7 @@ function buildValueTemplate(
       continue;
     }
     const value = t.cloneNode(values.get((node as [string])[0])!, true);
-    expressions.push(
-      isText(value) ? value : t.callExpression(getValueHelper(), [value])
-    );
+    expressions.push(isText(value) ? value : print(value));
     quasis.push('');
   }
   return t.templateLiteral(
