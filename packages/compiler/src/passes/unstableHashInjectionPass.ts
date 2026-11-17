@@ -1,3 +1,4 @@
+import generate from '@babel/generator';
 import { TraverseOptions } from '@babel/traverse';
 import * as t from '@babel/types';
 import { isUnstableGTImportSource } from 'generaltranslation/internal';
@@ -5,7 +6,11 @@ import { TransformState } from '../state/types';
 import { injectUnstableTaggedTemplateHash } from '../transform/injection/injectUnstableTaggedTemplateHash';
 import { buildInlineTranslations } from '../transform/injection/inline-translations/injectInlineTranslations';
 import { replaceTemplateSource } from '../transform/injection/inline-translations/replaceTemplateSource';
+import type { HoistMessage } from '../transform/injection/precomputeUnstableMessage';
 import { createErrorLocation } from '../utils/errors';
+
+// Name of the module-scope constants that hold precomputed messages
+const MESSAGE_NAME = 'gt';
 
 /**
  * Unstable hash injection pass — injects `$_hash` into statically analyzable
@@ -13,6 +18,9 @@ import { createErrorLocation } from '../utils/errors';
  * `files.gt.inlineTranslations` the translations embedded at the call site.
  * Each template is hashed and rewritten in the same visit, so this pass needs
  * no collection counters.
+ *
+ * A static t template is replaced by a call with its precomputed message,
+ * which is declared once at module scope, after the imports.
  */
 export function unstableHashInjectionPass(
   state: TransformState
@@ -42,11 +50,48 @@ export function unstableHashInjectionPass(
         return undefined;
       }
     : undefined;
+  const declarations: t.VariableDeclaration[] = [];
+  // Call sites with the same message share one, by its code.
+  const hoisted = new Map<string, t.Identifier>();
   return {
     TaggedTemplateExpression(path) {
-      if (injectUnstableTaggedTemplateHash(path, buildInline, replaceSource)) {
+      const hoist: HoistMessage = (message) => {
+        const { code } = generate(message, { compact: true });
+        let id = hoisted.get(code);
+        if (!id) {
+          id = path.scope
+            .getProgramParent()
+            .generateUidIdentifier(MESSAGE_NAME);
+          hoisted.set(code, id);
+          declarations.push(
+            t.variableDeclaration('const', [t.variableDeclarator(id, message)])
+          );
+        }
+        return t.cloneNode(id);
+      };
+      if (
+        injectUnstableTaggedTemplateHash(
+          path,
+          buildInline,
+          replaceSource,
+          state.settings.precomputeMessages
+            ? { hoist, replacedLocale: sourceReplacement?.locale }
+            : undefined
+        )
+      ) {
         state.statistics.unstableHashInjectionsCount += 1;
       }
+    },
+    Program: {
+      exit(path) {
+        const { body } = path.node;
+        // After the imports, so a message reads a message module's import.
+        const start =
+          body
+            .map((statement) => statement.type)
+            .lastIndexOf('ImportDeclaration') + 1;
+        body.splice(start, 0, ...declarations);
+      },
     },
   };
 }

@@ -105,8 +105,9 @@ describe('inlineTranslations in gt.config.json', () => {
       USEGT_CODE
     );
     expect(output).toContain(
-      `gt({ $_hash: "${hash}", inline: (locale) => locale === "fr" ? "Bonjour le monde" : locale === "es" ? "Hola mundo" : void 0 })\`Hello world\``
+      `const _gt = { $_hash: "${hash}", $_tree: "Hello world", inline: (locale) => locale === "fr" ? "Bonjour le monde" : locale === "es" ? "Hola mundo" : void 0 };`
     );
+    expect(output).toContain('gt(_gt);');
   });
 
   it('only embeds the configured locales', async () => {
@@ -217,7 +218,7 @@ describe('inlineTranslations in gt.config.json', () => {
          gt({ context: 'greeting' })\`Hello world\`;`
       );
       expect(output).toContain(
-        `gt({ context: 'greeting', $_hash: "${HELLO_WORLD_GREETING}", inline: (locale) => locale === "fr" ? "Salut le monde" : void 0 })`
+        `{ $_hash: "${HELLO_WORLD_GREETING}", $_tree: "Hello world", context: "greeting", inline: (locale) => locale === "fr" ? "Salut le monde" : void 0 }`
       );
     });
 
