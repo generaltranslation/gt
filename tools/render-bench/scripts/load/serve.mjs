@@ -70,6 +70,46 @@ function createCertificate() {
   return created;
 }
 
+/** A file as the server sends it. */
+async function prepare(path, raw, quality) {
+  const type = TYPES[extname(path)];
+  const body = type
+    ? await compress(raw, {
+        params: {
+          [constants.BROTLI_PARAM_QUALITY]: quality,
+          [constants.BROTLI_PARAM_SIZE_HINT]: raw.length,
+        },
+      })
+    : raw;
+  return {
+    body,
+    raw,
+    rawBytes: raw.length,
+    // Not served: the size other tools report, gzip at its default level.
+    gzipBytes: type ? gzipSync(raw, { level: GZIP_LEVEL }).length : raw.length,
+    compressed: Boolean(type),
+    type: type ?? 'application/octet-stream',
+    etag: `"${createHash('sha1').update(raw).digest('hex')}"`,
+  };
+}
+
+/** Every file of a build by its URL path, compressed. */
+async function readFiles(directory, quality) {
+  const entries = readdirSync(directory, {
+    recursive: true,
+    withFileTypes: true,
+  }).filter((entry) => entry.isFile());
+  return new Map(
+    await Promise.all(
+      entries.map(async (entry) => {
+        const file = join(entry.parentPath, entry.name);
+        const path = `/${relative(directory, file).split(sep).join('/')}`;
+        return [path, await prepare(path, readFileSync(file), quality)];
+      })
+    )
+  );
+}
+
 /**
  * Serves `directory`. Every file is compressed before the server listens, so
  * no request waits for it. A path without an extension gets `index.html`, as
@@ -82,37 +122,7 @@ export async function serve(
   directory,
   { protocol = 'h2', quality = 11, immutable = /^\/assets\// } = {}
 ) {
-  const files = new Map();
-  const entries = readdirSync(directory, {
-    recursive: true,
-    withFileTypes: true,
-  }).filter((entry) => entry.isFile());
-  await Promise.all(
-    entries.map(async (entry) => {
-      const file = join(entry.parentPath, entry.name);
-      const raw = readFileSync(file);
-      const type = TYPES[extname(file)];
-      const body = type
-        ? await compress(raw, {
-            params: {
-              [constants.BROTLI_PARAM_QUALITY]: quality,
-              [constants.BROTLI_PARAM_SIZE_HINT]: raw.length,
-            },
-          })
-        : raw;
-      files.set(`/${relative(directory, file).split(sep).join('/')}`, {
-        body,
-        rawBytes: raw.length,
-        // Not served: the size other tools report, gzip at its default level.
-        gzipBytes: type
-          ? gzipSync(raw, { level: GZIP_LEVEL }).length
-          : raw.length,
-        compressed: Boolean(type),
-        type: type ?? 'application/octet-stream',
-        etag: `"${createHash('sha1').update(raw).digest('hex')}"`,
-      });
-    })
-  );
+  let files = await readFiles(directory, quality);
 
   /** Every response sent, in order: what a page transferred. */
   const log = [];
@@ -169,7 +179,17 @@ export async function serve(
     origin: `https://127.0.0.1:${server.address().port}`,
     spki,
     log,
-    files,
+    get files() {
+      return files;
+    },
+    /** Serves another build from the same origin, as a deploy does. */
+    async deploy(next) {
+      files = await readFiles(next, quality);
+    },
+    /** Serves other content at a path. */
+    async replace(path, raw) {
+      files.set(path, await prepare(path, raw, quality));
+    },
     close: () => new Promise((resolve) => server.close(resolve)),
   };
 }

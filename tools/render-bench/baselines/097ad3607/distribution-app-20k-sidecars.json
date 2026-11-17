@@ -1,0 +1,193 @@
+{
+  "kind": "distribution",
+  "app": "app-20k",
+  "label": "sidecars",
+  "dist": "apps/app-20k/dist/sidecars",
+  "locale": "fr-CA",
+  "compression": "gzip, level 6, of compact JSON",
+  "catalog": {
+    "messages": 20000,
+    "bytes": 443635
+  },
+  "chunks": {
+    "total": 372,
+    "withMessages": 367,
+    "messagesPerChunk": {
+      "n": 367,
+      "median": 51,
+      "p95": 254,
+      "max": 652
+    },
+    "translationFileBytes": {
+      "n": 367,
+      "median": 1483,
+      "p95": 7160,
+      "max": 16597
+    },
+    "translationFilesUnder1KiB": 48,
+    "translationBytesOfAllFiles": 806773
+  },
+  "messages": {
+    "inChunks": 20000,
+    "inMoreThanOneChunk": 3200,
+    "inTwoChunks": 1768,
+    "inThreeToTenChunks": 1344,
+    "inElevenOrMoreChunks": 88,
+    "mostChunks": 148
+  },
+  "entry": {
+    "file": "assets/index-C30BbMQR.js",
+    "module": "index.html",
+    "chunks": 4,
+    "messages": 50,
+    "bytes": 1794
+  },
+  "lazy": {
+    "chunks": 340,
+    "byChunk": {
+      "chunksLoaded": {
+        "n": 340,
+        "median": 29,
+        "p95": 29,
+        "max": 29
+      },
+      "translationFiles": {
+        "n": 340,
+        "median": 29,
+        "p95": 29,
+        "max": 29
+      },
+      "messages": {
+        "n": 340,
+        "median": 8449,
+        "p95": 8530,
+        "max": 8790
+      },
+      "bytes": {
+        "n": 340,
+        "median": 233791,
+        "p95": 236184,
+        "max": 242471
+      }
+    },
+    "byModule": {
+      "messages": {
+        "n": 340,
+        "median": 1971,
+        "p95": 2549,
+        "max": 2793
+      },
+      "bytes": {
+        "n": 340,
+        "median": 47277,
+        "p95": 60637,
+        "max": 65945
+      },
+      "bytesOfAllFiles": 12335332
+    },
+    "emitted": {
+      "entry": {
+        "file": "assets/index-C30BbMQR.fr-CA.787e7063.json",
+        "messages": 50,
+        "bytes": 1812
+      },
+      "files": 366,
+      "fileBytes": {
+        "n": 366,
+        "median": 1477,
+        "p95": 7133,
+        "max": 16511
+      },
+      "filesUnder1KiB": 49,
+      "bytesOfAllFiles": 802765,
+      "lazy": {
+        "files": {
+          "n": 340,
+          "median": 29,
+          "p95": 29,
+          "max": 29
+        },
+        "messages": {
+          "n": 340,
+          "median": 8449,
+          "p95": 8530,
+          "max": 8790
+        },
+        "bytes": {
+          "n": 340,
+          "median": 232528,
+          "p95": 234913,
+          "max": 241263
+        },
+        "timesByModule": {
+          "n": 338,
+          "median": 4.92,
+          "p95": 33.04,
+          "max": 40.18
+        }
+      }
+    },
+    "visited": [
+      {
+        "route": "/r/0",
+        "file": "assets/r0-SoNVl8aJ.js",
+        "module": "src/gt/routes/r0.jsx",
+        "byChunk": {
+          "chunks": 29,
+          "files": 29,
+          "messages": 8562,
+          "bytes": 237114
+        },
+        "byModule": {
+          "messages": 2290,
+          "bytes": 54601
+        },
+        "emitted": {
+          "files": 29,
+          "messages": 8562,
+          "bytes": 235850
+        }
+      },
+      {
+        "route": "/r/1",
+        "file": "assets/r1-DeFa6KqZ.js",
+        "module": "src/gt/routes/r1.jsx",
+        "byChunk": {
+          "chunks": 29,
+          "files": 29,
+          "messages": 8427,
+          "bytes": 233095
+        },
+        "byModule": {
+          "messages": 2043,
+          "bytes": 48587
+        },
+        "emitted": {
+          "files": 29,
+          "messages": 8427,
+          "bytes": 231842
+        }
+      },
+      {
+        "route": "/r/2",
+        "file": "assets/r2-R921GBva.js",
+        "module": "src/gt/routes/r2.jsx",
+        "byChunk": {
+          "chunks": 29,
+          "files": 29,
+          "messages": 8478,
+          "bytes": 234724
+        },
+        "byModule": {
+          "messages": 2177,
+          "bytes": 51644
+        },
+        "emitted": {
+          "files": 29,
+          "messages": 8478,
+          "bytes": 233458
+        }
+      }
+    ]
+  }
+}

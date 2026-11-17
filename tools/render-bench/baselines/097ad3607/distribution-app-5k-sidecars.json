@@ -1,0 +1,193 @@
+{
+  "kind": "distribution",
+  "app": "app-5k",
+  "label": "sidecars",
+  "dist": "apps/app-5k/dist/sidecars",
+  "locale": "fr-CA",
+  "compression": "gzip, level 6, of compact JSON",
+  "catalog": {
+    "messages": 5000,
+    "bytes": 111598
+  },
+  "chunks": {
+    "total": 98,
+    "withMessages": 93,
+    "messagesPerChunk": {
+      "n": 93,
+      "median": 50,
+      "p95": 284,
+      "max": 490
+    },
+    "translationFileBytes": {
+      "n": 93,
+      "median": 1407,
+      "p95": 7905,
+      "max": 12901
+    },
+    "translationFilesUnder1KiB": 16,
+    "translationBytesOfAllFiles": 198566
+  },
+  "messages": {
+    "inChunks": 5000,
+    "inMoreThanOneChunk": 800,
+    "inTwoChunks": 443,
+    "inThreeToTenChunks": 331,
+    "inElevenOrMoreChunks": 26,
+    "mostChunks": 85
+  },
+  "entry": {
+    "file": "assets/index-Dhlcv9G4.js",
+    "module": "index.html",
+    "chunks": 4,
+    "messages": 50,
+    "bytes": 1770
+  },
+  "lazy": {
+    "chunks": 87,
+    "byChunk": {
+      "chunksLoaded": {
+        "n": 87,
+        "median": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "translationFiles": {
+        "n": 87,
+        "median": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "messages": {
+        "n": 87,
+        "median": 2149,
+        "p95": 2202,
+        "max": 2465
+      },
+      "bytes": {
+        "n": 87,
+        "median": 59204,
+        "p95": 60864,
+        "max": 67475
+      }
+    },
+    "byModule": {
+      "messages": {
+        "n": 87,
+        "median": 544,
+        "p95": 914,
+        "max": 962
+      },
+      "bytes": {
+        "n": 87,
+        "median": 13989,
+        "p95": 22514,
+        "max": 23691
+      },
+      "bytesOfAllFiles": 1179284
+    },
+    "emitted": {
+      "entry": {
+        "file": "assets/index-Dhlcv9G4.fr-CA.6015cd54.json",
+        "messages": 50,
+        "bytes": 1788
+      },
+      "files": 92,
+      "fileBytes": {
+        "n": 92,
+        "median": 1411,
+        "p95": 7873,
+        "max": 12816
+      },
+      "filesUnder1KiB": 17,
+      "bytesOfAllFiles": 196274,
+      "lazy": {
+        "files": {
+          "n": 87,
+          "median": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "messages": {
+          "n": 87,
+          "median": 2149,
+          "p95": 2202,
+          "max": 2465
+        },
+        "bytes": {
+          "n": 87,
+          "median": 58919,
+          "p95": 60584,
+          "max": 67158
+        },
+        "timesByModule": {
+          "n": 85,
+          "median": 4.19,
+          "p95": 9.5,
+          "max": 9.77
+        }
+      }
+    },
+    "visited": [
+      {
+        "route": "/r/0",
+        "file": "assets/r0-BdiuDmhv.js",
+        "module": "src/gt/routes/r0.jsx",
+        "byChunk": {
+          "chunks": 8,
+          "files": 8,
+          "messages": 2150,
+          "bytes": 59252
+        },
+        "byModule": {
+          "messages": 565,
+          "bytes": 14174
+        },
+        "emitted": {
+          "files": 8,
+          "messages": 2150,
+          "bytes": 58972
+        }
+      },
+      {
+        "route": "/r/1",
+        "file": "assets/r1-B6eNvCe3.js",
+        "module": "src/gt/routes/r1.jsx",
+        "byChunk": {
+          "chunks": 8,
+          "files": 8,
+          "messages": 2149,
+          "bytes": 59233
+        },
+        "byModule": {
+          "messages": 816,
+          "bytes": 20174
+        },
+        "emitted": {
+          "files": 8,
+          "messages": 2149,
+          "bytes": 58949
+        }
+      },
+      {
+        "route": "/r/2",
+        "file": "assets/r2-CHnDP3yY.js",
+        "module": "src/gt/routes/r2.jsx",
+        "byChunk": {
+          "chunks": 8,
+          "files": 8,
+          "messages": 2164,
+          "bytes": 59721
+        },
+        "byModule": {
+          "messages": 502,
+          "bytes": 12989
+        },
+        "emitted": {
+          "files": 8,
+          "messages": 2164,
+          "bytes": 59445
+        }
+      }
+    ]
+  }
+}

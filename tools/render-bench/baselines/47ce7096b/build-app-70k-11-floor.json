@@ -1,0 +1,125 @@
+{
+  "kind": "build",
+  "sha": "df6e79f5d",
+  "date": "2026-11-17T20:09:26.875Z",
+  "machine": "Apple M4 Max, 16 cores, 128 GB",
+  "os": "darwin 24.6.0",
+  "node": "v24.13.0",
+  "app": "app-70k-11",
+  "messages": 70000,
+  "locales": [
+    "fr-CA",
+    "de",
+    "es",
+    "it",
+    "pt-BR",
+    "nl",
+    "sv",
+    "pl",
+    "ja",
+    "ko",
+    "zh-CN"
+  ],
+  "name": "floor",
+  "variant": "floor",
+  "env": {},
+  "init": "none",
+  "builds": [
+    {
+      "target": "floor.en",
+      "locale": "en",
+      "outDir": "apps/app-70k-11/dist/floor.en",
+      "runs": [
+        {
+          "wallMs": 1023.685584,
+          "peakRssBytes": 914784256,
+          "peakFootprintBytes": 880722736,
+          "cpuSeconds": 2.26
+        },
+        {
+          "wallMs": 1013.0127920000002,
+          "peakRssBytes": 921747456,
+          "peakFootprintBytes": 887341872,
+          "cpuSeconds": 2.2399999999999998
+        },
+        {
+          "wallMs": 1013.0688329999998,
+          "peakRssBytes": 924286976,
+          "peakFootprintBytes": 892060800,
+          "cpuSeconds": 2.25
+        }
+      ],
+      "wallMs": {
+        "n": 3,
+        "median": 1013.07,
+        "p25": 1013.04,
+        "p75": 1018.38,
+        "min": 1013.01,
+        "max": 1023.69
+      },
+      "peakRssBytes": {
+        "n": 3,
+        "median": 921747456,
+        "p25": 918265856,
+        "p75": 923017216,
+        "min": 914784256,
+        "max": 924286976
+      },
+      "files": 1288,
+      "filesByKind": {
+        "js": 1287,
+        "translations": 0,
+        "other": 1
+      },
+      "bytes": 9384340
+    },
+    {
+      "target": "floor.fr-CA",
+      "locale": "fr-CA",
+      "outDir": "apps/app-70k-11/dist/floor.fr-CA",
+      "runs": [
+        {
+          "wallMs": 1135.6270830000003,
+          "peakRssBytes": 923484160,
+          "peakFootprintBytes": 890061736,
+          "cpuSeconds": 2.4
+        },
+        {
+          "wallMs": 1067.0284579999998,
+          "peakRssBytes": 928497664,
+          "peakFootprintBytes": 887095464,
+          "cpuSeconds": 2.33
+        },
+        {
+          "wallMs": 1059.525917,
+          "peakRssBytes": 920879104,
+          "peakFootprintBytes": 886473736,
+          "cpuSeconds": 2.29
+        }
+      ],
+      "wallMs": {
+        "n": 3,
+        "median": 1067.03,
+        "p25": 1063.28,
+        "p75": 1101.33,
+        "min": 1059.53,
+        "max": 1135.63
+      },
+      "peakRssBytes": {
+        "n": 3,
+        "median": 923484160,
+        "p25": 922181632,
+        "p75": 925990912,
+        "min": 920879104,
+        "max": 928497664
+      },
+      "files": 1288,
+      "filesByKind": {
+        "js": 1287,
+        "translations": 0,
+        "other": 1
+      },
+      "bytes": 9771421
+    }
+  ]
+}

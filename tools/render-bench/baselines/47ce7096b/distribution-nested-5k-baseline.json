@@ -1,0 +1,136 @@
+{
+  "kind": "distribution",
+  "app": "nested-5k",
+  "label": "baseline",
+  "dist": "apps/nested-5k/dist/baseline",
+  "locale": "fr-CA",
+  "compression": "gzip, level 6, of compact JSON",
+  "catalog": {
+    "messages": 5050,
+    "bytes": 117894
+  },
+  "chunks": {
+    "total": 100,
+    "withMessages": 95,
+    "messagesPerChunk": {
+      "n": 95,
+      "median": 70,
+      "p95": 70,
+      "max": 70
+    },
+    "translationFileBytes": {
+      "n": 95,
+      "median": 2370,
+      "p95": 2492,
+      "max": 2542
+    },
+    "translationFilesUnder1KiB": 23,
+    "translationBytesOfAllFiles": 179291
+  },
+  "messages": {
+    "inChunks": 5050,
+    "inMoreThanOneChunk": 0,
+    "inTwoChunks": 0,
+    "inThreeToTenChunks": 0,
+    "inElevenOrMoreChunks": 0,
+    "mostChunks": 1
+  },
+  "entry": {
+    "file": "assets/index-Cb7hTtEK.js",
+    "module": "index.html",
+    "chunks": 4,
+    "messages": 50,
+    "bytes": 1836
+  },
+  "lazy": {
+    "chunks": 72,
+    "byChunk": {
+      "chunksLoaded": {
+        "n": 72,
+        "median": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "translationFiles": {
+        "n": 72,
+        "median": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "messages": {
+        "n": 72,
+        "median": 120,
+        "p95": 120,
+        "max": 120
+      },
+      "bytes": {
+        "n": 72,
+        "median": 4429,
+        "p95": 4524,
+        "max": 4579
+      }
+    },
+    "byModule": {
+      "messages": {
+        "n": 72,
+        "median": 120,
+        "p95": 120,
+        "max": 120
+      },
+      "bytes": {
+        "n": 72,
+        "median": 3773,
+        "p95": 3874,
+        "max": 3929
+      },
+      "bytesOfAllFiles": 235643
+    },
+    "visited": [
+      {
+        "route": "/s/0/p/0",
+        "file": "assets/s0-p0-CxIn5cbQ.js",
+        "module": "src/gt/routes/s0-p0.jsx",
+        "byChunk": {
+          "chunks": 3,
+          "files": 3,
+          "messages": 120,
+          "bytes": 4349
+        },
+        "byModule": {
+          "messages": 120,
+          "bytes": 3713
+        }
+      },
+      {
+        "route": "/s/0/p/1",
+        "file": "assets/s0-p1-B4Ssso23.js",
+        "module": "src/gt/routes/s0-p1.jsx",
+        "byChunk": {
+          "chunks": 3,
+          "files": 3,
+          "messages": 120,
+          "bytes": 4433
+        },
+        "byModule": {
+          "messages": 120,
+          "bytes": 3764
+        }
+      },
+      {
+        "route": "/s/1/p/0",
+        "file": "assets/s1-p0-CMKn1WLa.js",
+        "module": "src/gt/routes/s1-p0.jsx",
+        "byChunk": {
+          "chunks": 3,
+          "files": 3,
+          "messages": 120,
+          "bytes": 4461
+        },
+        "byModule": {
+          "messages": 120,
+          "bytes": 3783
+        }
+      }
+    ]
+  }
+}

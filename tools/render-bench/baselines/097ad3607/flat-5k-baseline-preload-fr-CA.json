@@ -1,0 +1,421 @@
+{
+  "kind": "load",
+  "label": "baseline-preload",
+  "sha": "05d0d7c79",
+  "date": "2026-11-17T21:04:37.070Z",
+  "machine": "Apple M4 Max, 16 cores, 128 GB",
+  "os": "darwin 24.6.0",
+  "node": "v24.13.0",
+  "packages": "097ad3607",
+  "chromium": "156.0.8078.4",
+  "dist": "apps/flat-5k/dist/baseline",
+  "app": "flat-5k",
+  "messages": 5050,
+  "locale": "fr-CA",
+  "translated": true,
+  "routes": ["/r/0", "/r/1", "/r/2"],
+  "samples": 9,
+  "protocol": "h2",
+  "compression": "brotli, quality 11",
+  "gzipLevel": 6,
+  "cpu": 1,
+  "translationFiles": "(\\/catalog\\.fr-CA-[^/]*\\.js|\\.fr-CA(\\.[^./]+)?\\.json)$",
+  "preloaded": ["/assets/r0-Dga6SDoC.js"],
+  "bytes": {
+    "firstLoad": {
+      "html": {
+        "requests": 1,
+        "bytes": 202,
+        "rawBytes": 575,
+        "gzipBytes": 292
+      },
+      "js": {
+        "requests": 5,
+        "bytes": 92859,
+        "rawBytes": 336546,
+        "gzipBytes": 107915
+      },
+      "translations": {
+        "requests": 1,
+        "bytes": 100604,
+        "rawBytes": 332408,
+        "gzipBytes": 118713
+      },
+      "other": {
+        "requests": 0,
+        "bytes": 0,
+        "rawBytes": 0,
+        "gzipBytes": 0
+      },
+      "total": {
+        "requests": 7,
+        "bytes": 193665,
+        "rawBytes": 669529,
+        "gzipBytes": 226920
+      },
+      "notFound": 0
+    },
+    "startupJs": {
+      "bytes": 92859,
+      "rawBytes": 336546,
+      "gzipBytes": 107915
+    },
+    "afterRoutes": {
+      "html": {
+        "requests": 1,
+        "bytes": 202,
+        "rawBytes": 575,
+        "gzipBytes": 292
+      },
+      "js": {
+        "requests": 7,
+        "bytes": 98601,
+        "rawBytes": 359852,
+        "gzipBytes": 115277
+      },
+      "translations": {
+        "requests": 1,
+        "bytes": 100604,
+        "rawBytes": 332408,
+        "gzipBytes": 118713
+      },
+      "other": {
+        "requests": 0,
+        "bytes": 0,
+        "rawBytes": 0,
+        "gzipBytes": 0
+      },
+      "total": {
+        "requests": 9,
+        "bytes": 199407,
+        "rawBytes": 692835,
+        "gzipBytes": 234282
+      },
+      "notFound": 0
+    },
+    "warmFirstLoad": {
+      "html": {
+        "requests": 1,
+        "bytes": 0,
+        "rawBytes": 0,
+        "gzipBytes": 0
+      },
+      "js": {
+        "requests": 0,
+        "bytes": 0,
+        "rawBytes": 0,
+        "gzipBytes": 0
+      },
+      "translations": {
+        "requests": 0,
+        "bytes": 0,
+        "rawBytes": 0,
+        "gzipBytes": 0
+      },
+      "other": {
+        "requests": 0,
+        "bytes": 0,
+        "rawBytes": 0,
+        "gzipBytes": 0
+      },
+      "total": {
+        "requests": 1,
+        "bytes": 0,
+        "rawBytes": 0,
+        "gzipBytes": 0
+      },
+      "notFound": 0
+    },
+    "stable": true
+  },
+  "timings": {
+    "20/50": {
+      "cold": {
+        "rendered": {
+          "n": 9,
+          "median": 140.2,
+          "p25": 140.1,
+          "p75": 141.2,
+          "min": 139.7,
+          "max": 144.2
+        },
+        "frame": {
+          "n": 9,
+          "median": 146.7,
+          "p25": 146.1,
+          "p75": 146.9,
+          "min": 144.7,
+          "max": 147.6
+        },
+        "firstText": {
+          "n": 9,
+          "median": 140.2,
+          "p25": 140.1,
+          "p75": 141.2,
+          "min": 139.7,
+          "max": 144.2
+        },
+        "firstTranslated": {
+          "n": 9,
+          "median": 140.2,
+          "p25": 140.1,
+          "p75": 141.2,
+          "min": 139.7,
+          "max": 144.2
+        },
+        "firstContentfulPaint": {
+          "n": 9,
+          "median": 156,
+          "p25": 156,
+          "p75": 156,
+          "min": 156,
+          "max": 156
+        },
+        "navigation": {
+          "n": 18,
+          "median": 33.05,
+          "p25": 31.62,
+          "p75": 34.2,
+          "min": 28.7,
+          "max": 37.6
+        },
+        "flashes": 0
+      },
+      "warm": {
+        "rendered": {
+          "n": 9,
+          "median": 65.9,
+          "p25": 64.2,
+          "p75": 66.4,
+          "min": 60.9,
+          "max": 68.3
+        },
+        "frame": {
+          "n": 9,
+          "median": 66.1,
+          "p25": 64.3,
+          "p75": 66.6,
+          "min": 61.3,
+          "max": 68.4
+        },
+        "firstText": {
+          "n": 9,
+          "median": 65.9,
+          "p25": 64.2,
+          "p75": 66.4,
+          "min": 60.9,
+          "max": 68.3
+        },
+        "firstTranslated": {
+          "n": 9,
+          "median": 65.9,
+          "p25": 64.2,
+          "p75": 66.4,
+          "min": 60.9,
+          "max": 68.3
+        },
+        "firstContentfulPaint": {
+          "n": 9,
+          "median": 76,
+          "p25": 72,
+          "p75": 76,
+          "min": 72,
+          "max": 76
+        },
+        "flashes": 0
+      }
+    },
+    "60/20": {
+      "cold": {
+        "rendered": {
+          "n": 9,
+          "median": 321.5,
+          "p25": 310.3,
+          "p75": 324.6,
+          "min": 303.6,
+          "max": 325.9
+        },
+        "frame": {
+          "n": 9,
+          "median": 321.7,
+          "p25": 319.5,
+          "p75": 325,
+          "min": 305.7,
+          "max": 326.1
+        },
+        "firstText": {
+          "n": 9,
+          "median": 321.5,
+          "p25": 310.3,
+          "p75": 324.6,
+          "min": 303.6,
+          "max": 325.9
+        },
+        "firstTranslated": {
+          "n": 9,
+          "median": 321.5,
+          "p25": 310.3,
+          "p75": 324.6,
+          "min": 303.6,
+          "max": 325.9
+        },
+        "firstContentfulPaint": {
+          "n": 9,
+          "median": 332,
+          "p25": 332,
+          "p75": 340,
+          "min": 316,
+          "max": 340
+        },
+        "navigation": {
+          "n": 18,
+          "median": 73.05,
+          "p25": 70.85,
+          "p75": 75.22,
+          "min": 67.8,
+          "max": 77.4
+        },
+        "flashes": 0
+      },
+      "warm": {
+        "rendered": {
+          "n": 9,
+          "median": 108.9,
+          "p25": 106.5,
+          "p75": 111.5,
+          "min": 103.1,
+          "max": 116.3
+        },
+        "frame": {
+          "n": 9,
+          "median": 109.1,
+          "p25": 106.7,
+          "p75": 119.6,
+          "min": 103.3,
+          "max": 120.8
+        },
+        "firstText": {
+          "n": 9,
+          "median": 108.9,
+          "p25": 106.5,
+          "p75": 111.5,
+          "min": 103.1,
+          "max": 116.3
+        },
+        "firstTranslated": {
+          "n": 9,
+          "median": 108.9,
+          "p25": 106.5,
+          "p75": 111.5,
+          "min": 103.1,
+          "max": 116.3
+        },
+        "firstContentfulPaint": {
+          "n": 9,
+          "median": 120,
+          "p25": 116,
+          "p75": 128,
+          "min": 112,
+          "max": 132
+        },
+        "flashes": 0
+      }
+    },
+    "150/5": {
+      "cold": {
+        "rendered": {
+          "n": 9,
+          "median": 838.1,
+          "p25": 836.5,
+          "p75": 842.4,
+          "min": 834.7,
+          "max": 857.2
+        },
+        "frame": {
+          "n": 9,
+          "median": 842.5,
+          "p25": 838.3,
+          "p75": 843.6,
+          "min": 834.9,
+          "max": 857.6
+        },
+        "firstText": {
+          "n": 9,
+          "median": 838.1,
+          "p25": 836.5,
+          "p75": 842.4,
+          "min": 834.7,
+          "max": 857.2
+        },
+        "firstTranslated": {
+          "n": 9,
+          "median": 838.1,
+          "p25": 836.5,
+          "p75": 842.4,
+          "min": 834.7,
+          "max": 857.2
+        },
+        "firstContentfulPaint": {
+          "n": 9,
+          "median": 856,
+          "p25": 852,
+          "p75": 856,
+          "min": 844,
+          "max": 872
+        },
+        "navigation": {
+          "n": 18,
+          "median": 168.15,
+          "p25": 167.07,
+          "p75": 169.47,
+          "min": 161,
+          "max": 170.9
+        },
+        "flashes": 0
+      },
+      "warm": {
+        "rendered": {
+          "n": 9,
+          "median": 209.4,
+          "p25": 208.1,
+          "p75": 212,
+          "min": 192.3,
+          "max": 215
+        },
+        "frame": {
+          "n": 9,
+          "median": 212,
+          "p25": 209.5,
+          "p75": 214.2,
+          "min": 192.5,
+          "max": 219.5
+        },
+        "firstText": {
+          "n": 9,
+          "median": 209.4,
+          "p25": 208.1,
+          "p75": 212,
+          "min": 192.3,
+          "max": 215
+        },
+        "firstTranslated": {
+          "n": 9,
+          "median": 209.4,
+          "p25": 208.1,
+          "p75": 212,
+          "min": 192.3,
+          "max": 215
+        },
+        "firstContentfulPaint": {
+          "n": 9,
+          "median": 224,
+          "p25": 220,
+          "p75": 224,
+          "min": 200,
+          "max": 228
+        },
+        "flashes": 0
+      }
+    }
+  }
+}

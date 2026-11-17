@@ -27,6 +27,18 @@ export const variants = {
     env: { GT_OMIT_ICU_PARSER: '1', GT_CHUNK_TRANSLATIONS: 'true' },
     compilerOptions: {},
   },
+  // The same with each translation file named by a hash of its content, and
+  // a map of the files per locale that a page loads first.
+  'sidecars-map': {
+    source: 'gt',
+    init: 'catalog',
+    env: {
+      GT_OMIT_ICU_PARSER: '1',
+      GT_CHUNK_TRANSLATIONS: 'true',
+      GT_CHUNK_TRANSLATIONS_NAMING: 'map',
+    },
+    compilerOptions: {},
+  },
   // The least a page can load: the app written in the user's language, with
   // no translation library. One build per locale, so not a single build.
   floor: { source: 'hardcoded', init: 'none', env: {} },

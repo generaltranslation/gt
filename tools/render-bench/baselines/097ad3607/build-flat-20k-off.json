@@ -1,0 +1,68 @@
+{
+  "kind": "build",
+  "sha": "05d0d7c79",
+  "date": "2026-11-17T20:43:56.149Z",
+  "machine": "Apple M4 Max, 16 cores, 128 GB",
+  "os": "darwin 24.6.0",
+  "node": "v24.13.0",
+  "packages": "097ad3607",
+  "app": "flat-20k",
+  "messages": 20050,
+  "locales": ["fr-CA", "de", "es"],
+  "name": "off",
+  "variant": "baseline",
+  "env": {
+    "GT_OMIT_ICU_PARSER": "1"
+  },
+  "compilerOptions": {},
+  "init": "catalog",
+  "builds": [
+    {
+      "target": "off",
+      "outDir": "apps/flat-20k/dist/off",
+      "runs": [
+        {
+          "wallMs": 1539.112,
+          "peakRssBytes": 981385216,
+          "peakFootprintBytes": 951739160,
+          "cpuSeconds": 2.79
+        },
+        {
+          "wallMs": 1552.114375,
+          "peakRssBytes": 1002078208,
+          "peakFootprintBytes": 973005832,
+          "cpuSeconds": 2.81
+        },
+        {
+          "wallMs": 1536.7857919999997,
+          "peakRssBytes": 963739648,
+          "peakFootprintBytes": 936599768,
+          "cpuSeconds": 2.77
+        }
+      ],
+      "wallMs": {
+        "n": 3,
+        "median": 1539.11,
+        "p25": 1537.95,
+        "p75": 1545.61,
+        "min": 1536.79,
+        "max": 1552.11
+      },
+      "peakRssBytes": {
+        "n": 3,
+        "median": 981385216,
+        "p25": 972562432,
+        "p75": 991731712,
+        "min": 963739648,
+        "max": 1002078208
+      },
+      "files": 210,
+      "filesByKind": {
+        "js": 206,
+        "translations": 3,
+        "other": 1
+      },
+      "bytes": 6632965
+    }
+  ]
+}

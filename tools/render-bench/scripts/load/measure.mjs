@@ -4,6 +4,11 @@
 //     [--n 15]                       page loads per network
 //     [--networks 20/50,60/20,150/5] latency ms / throughput Mbps; `none` is unshaped
 //     [--label name] [--out file]    default results/load/<app>-<label>-<locale>.json
+//     [--preload-landing]            add modulepreload links for the first
+//                                    route's chunks to the HTML, as a server
+//                                    that knows the route does
+//     [--redeploy dist]              also visit the routes again after this
+//                                    other build replaced the first one
 // A build of scripts/load/generate.mjs describes itself in bench-app.json.
 // Any other static build is measured by saying the same with flags:
 //     --routes /a,/b,/c              the routes to visit, the first by URL
@@ -13,8 +18,14 @@
 //     --translated-text '[áéíóú]'    matches a message in the page's locale;
 //                                    leave out for the source locale
 //     --translation-files regex      the requests that are translations
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { chromium } from 'playwright-core';
@@ -41,6 +52,8 @@ const { values: args } = parseArgs({
     'translated-text': { type: 'string' },
     'translation-files': { type: 'string', default: TRANSLATION_FILES },
     protocol: { type: 'string', default: 'h2' },
+    'preload-landing': { type: 'boolean', default: false },
+    redeploy: { type: 'string' },
     cpu: { type: 'string', default: '1' },
     label: { type: 'string' },
     out: { type: 'string' },
@@ -73,7 +86,8 @@ const pageConfig = {
 const translationFiles = new RegExp(
   args['translation-files'].replaceAll('{locale}', locale)
 );
-const label = args.label ?? basename(dist);
+const label =
+  args.label ?? basename(dist) + (args['preload-landing'] ? '-preload' : '');
 const samples = Number(args.n);
 const cpu = Number(args.cpu);
 
@@ -252,6 +266,8 @@ function transferred(mark) {
   }
   return {
     ...totals,
+    // Requests for files the build does not have, which `requests` counts.
+    notFound: responses.filter((response) => response.status === 404).length,
     files: responses.map(({ path, status, bytes }) => ({
       path,
       status,
@@ -361,15 +377,43 @@ async function load(context, network, visit) {
   };
 }
 
+/** A new context has an empty cache and no open connection. */
+async function newContext() {
+  const context = await browser.newContext({ locale });
+  await context.addInitScript(`(${observe})(${JSON.stringify(pageConfig)})`);
+  return context;
+}
+const unshaped = { name: 'none' };
+
+// The chunks the first route loads beyond those the HTML names already,
+// preloaded from the HTML.
+let preloaded;
+if (args['preload-landing']) {
+  const context = await newContext();
+  const { firstLoad } = await load(context, unshaped, routes.slice(0, 1));
+  await context.close();
+  const html = server.files.get('/index.html').raw.toString();
+  preloaded = firstLoad.files
+    .map((file) => file.path)
+    .filter((path) => categorize(path) === 'js' && !html.includes(`"${path}"`));
+  const links = preloaded
+    .map(
+      (path) => `    <link rel="modulepreload" crossorigin href="${path}">\n`
+    )
+    .join('');
+  await server.replace(
+    '/index.html',
+    Buffer.from(html.replace('</head>', `${links}  </head>`))
+  );
+}
+
 const runs = Object.fromEntries(
   networks.map((network) => [network.name, { cold: [], warm: [] }])
 );
 // Round-robin, so drift in the machine's load reaches every network alike.
 for (let i = 0; i < samples; i++) {
   for (const network of networks) {
-    // A new context has an empty cache and no open connection.
-    const context = await browser.newContext({ locale });
-    await context.addInitScript(`(${observe})(${JSON.stringify(pageConfig)})`);
+    const context = await newContext();
     try {
       runs[network.name].cold.push(await load(context, network, routes));
       // The same context again: the browser has every file of the landing
@@ -382,6 +426,35 @@ for (let i = 0; i < samples; i++) {
     }
   }
   process.stderr.write(`${label} ${locale}: sample ${i + 1}/${samples}\n`);
+}
+
+// A user who visited the routes comes back after another build was deployed:
+// what the browser fetches again, and which translation files it knew have
+// other names now.
+let redeploy;
+if (args.redeploy) {
+  const next = resolve(args.redeploy);
+  const names = (directory) =>
+    readdirSync(directory, { recursive: true })
+      .map((file) => `/${file.split(sep).join('/')}`)
+      .filter((path) => translationFiles.test(path));
+  const before = new Set(names(dist));
+  const after = names(next);
+  const context = await newContext();
+  try {
+    await load(context, unshaped, routes);
+    await server.deploy(next);
+    const returning = await load(context, unshaped, routes);
+    redeploy = {
+      dist: relative(root, next),
+      translationFiles: after.length,
+      translationFilesRenamed: after.filter((path) => !before.has(path)).length,
+      firstLoad: returning.firstLoad,
+      afterRoutes: returning.afterRoutes,
+    };
+  } finally {
+    await context.close();
+  }
 }
 
 const chromiumVersion = browser.version();
@@ -418,7 +491,7 @@ const results = {
   label,
   ...environment(),
   chromium: chromiumVersion,
-  dist: args.dist,
+  dist: relative(root, dist),
   app: manifest.name,
   messages: manifest.messages,
   locale,
@@ -430,6 +503,8 @@ const results = {
   gzipLevel: GZIP_LEVEL,
   cpu,
   translationFiles: translationFiles.source,
+  ...(preloaded ? { preloaded } : {}),
+  ...(redeploy ? { redeploy } : {}),
   bytes: {
     firstLoad: cold[0].firstLoad,
     startupJs: cold[0].startupJs,

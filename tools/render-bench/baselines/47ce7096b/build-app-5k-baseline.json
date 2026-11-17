@@ -1,0 +1,79 @@
+{
+  "kind": "build",
+  "sha": "df6e79f5d",
+  "date": "2026-11-17T20:08:24.420Z",
+  "machine": "Apple M4 Max, 16 cores, 128 GB",
+  "os": "darwin 24.6.0",
+  "node": "v24.13.0",
+  "app": "app-5k",
+  "messages": 5000,
+  "locales": ["fr-CA", "de", "es"],
+  "name": "baseline",
+  "variant": "baseline",
+  "env": {
+    "GT_OMIT_ICU_PARSER": "1"
+  },
+  "compilerOptions": {},
+  "init": "catalog",
+  "builds": [
+    {
+      "target": "baseline",
+      "outDir": "apps/app-5k/dist/baseline",
+      "runs": [
+        {
+          "wallMs": 972.361166,
+          "peakRssBytes": 679624704,
+          "peakFootprintBytes": 629888832,
+          "cpuSeconds": 1.79
+        },
+        {
+          "wallMs": 871.748334,
+          "peakRssBytes": 676184064,
+          "peakFootprintBytes": 641096256,
+          "cpuSeconds": 1.71
+        },
+        {
+          "wallMs": 880.2949999999998,
+          "peakRssBytes": 682082304,
+          "peakFootprintBytes": 633738688,
+          "cpuSeconds": 1.69
+        },
+        {
+          "wallMs": 864.8305420000002,
+          "peakRssBytes": 669630464,
+          "peakFootprintBytes": 627544912,
+          "cpuSeconds": 1.68
+        },
+        {
+          "wallMs": 865.3452079999997,
+          "peakRssBytes": 667402240,
+          "peakFootprintBytes": 618812528,
+          "cpuSeconds": 1.69
+        }
+      ],
+      "wallMs": {
+        "n": 5,
+        "median": 871.75,
+        "p25": 865.35,
+        "p75": 880.29,
+        "min": 864.83,
+        "max": 972.36
+      },
+      "peakRssBytes": {
+        "n": 5,
+        "median": 676184064,
+        "p25": 669630464,
+        "p75": 679624704,
+        "min": 667402240,
+        "max": 682082304
+      },
+      "files": 102,
+      "filesByKind": {
+        "js": 98,
+        "translations": 3,
+        "other": 1
+      },
+      "bytes": 2033063
+    }
+  ]
+}

@@ -166,7 +166,47 @@ const entryModuleHashes = graph
     )
   : undefined;
 
-const lazy = lazyFiles.map((file) => {
+// ===== The translation files a build wrote ===== //
+
+// A build that writes a translation file per chunk says in a manifest which
+// files a lazy chunk loads; what follows reads those files as they are.
+const MANIFEST = 'gt-chunk-translations.json';
+const manifestFile = readdirSync(dist, { recursive: true }).find(
+  (file) => basename(file) === MANIFEST
+);
+const emitted =
+  manifestFile && JSON.parse(readFileSync(join(dist, manifestFile), 'utf8'));
+const emittedFiles = new Map();
+function emittedFile(file) {
+  if (!emittedFiles.has(file)) {
+    const source = readFileSync(join(dist, file));
+    const content = JSON.parse(source);
+    emittedFiles.set(file, {
+      bytes: gzipSync(source, { level: GZIP_LEVEL }).length,
+      // An entry's file holds its translations under `t`.
+      hashes: Object.keys(content.t ?? content),
+    });
+  }
+  return emittedFiles.get(file);
+}
+/** The files of the locale that the build has a lazy chunk load. */
+function emittedFor(file) {
+  const files = (emitted.imports[file] ?? []).flatMap(
+    (key) => emitted.files[key]?.[args.locale] ?? []
+  );
+  return {
+    files: files.length,
+    messages: union(files.map((name) => emittedFile(name).hashes)).size,
+    bytes: files.reduce((sum, name) => sum + emittedFile(name).bytes, 0),
+  };
+}
+
+const lazy = lazyFiles.map((file) => ({
+  ...measureLazy(file),
+  ...(emitted ? { emitted: emittedFor(file) } : {}),
+}));
+
+function measureLazy(file) {
   const loaded = [...chunkClosure(file)].filter(
     (chunk) => !entryChunks.has(chunk)
   );
@@ -186,7 +226,41 @@ const lazy = lazyFiles.map((file) => {
     byChunk,
     byModule: { messages: reached.size, bytes: translationBytes(reached) },
   };
-});
+}
+
+function emittedSummary() {
+  const entryName = emitted.entries[entryFile]?.translations[args.locale];
+  const names = Object.values(emitted.files).flatMap(
+    (byLocale) => byLocale[args.locale] ?? []
+  );
+  const sizes = names.map((name) => emittedFile(name).bytes);
+  const reachable = lazy.filter((entry) => entry.byModule?.bytes);
+  return {
+    entry: entryName
+      ? {
+          file: entryName,
+          messages: emittedFile(entryName).hashes.length,
+          bytes: emittedFile(entryName).bytes,
+        }
+      : undefined,
+    files: names.length,
+    fileBytes: summarize(sizes),
+    filesUnder1KiB: sizes.filter((bytes) => bytes < 1024).length,
+    bytesOfAllFiles: sizes.reduce((a, b) => a + b, 0),
+    lazy: {
+      files: summarize(lazy.map((entry) => entry.emitted.files)),
+      messages: summarize(lazy.map((entry) => entry.emitted.messages)),
+      bytes: summarize(lazy.map((entry) => entry.emitted.bytes)),
+      // How many times what its module reaches a lazy chunk loads.
+      timesByModule: summarize(
+        reachable.map(
+          (entry) =>
+            Math.round((100 * entry.emitted.bytes) / entry.byModule.bytes) / 100
+        )
+      ),
+    },
+  };
+}
 
 // ===== Report ===== //
 
@@ -257,6 +331,7 @@ const results = {
           },
         }
       : {}),
+    ...(emitted ? { emitted: emittedSummary() } : {}),
     // The routes that measure.mjs visits, when the build says which.
     visited: Object.entries(manifest.visitModules ?? {}).flatMap(
       ([route, file]) => {
@@ -300,11 +375,23 @@ console.log(
           `Split by module: one file per lazy chunk, ${line(lazyChunks.byModule.messages)} messages, ${line(lazyChunks.byModule.bytes, kib)} KiB; all of them together ${kib(lazyChunks.byModule.bytesOfAllFiles)} KiB, ${share(lazyChunks.byModule.bytesOfAllFiles, whole.bytes)} of the catalog.`,
         ]
       : ['No module graph: the split by module is not computed.']),
+    ...(lazyChunks.emitted
+      ? [
+          `As built: ${lazyChunks.emitted.files} translation files of the locale besides the entry's (${lazyChunks.emitted.entry?.messages ?? 0} messages, ${kib(lazyChunks.emitted.entry?.bytes ?? 0)} KiB); ${line(lazyChunks.emitted.fileBytes, kib)} KiB; ${lazyChunks.emitted.filesUnder1KiB} under 1 KiB; all of them together ${kib(lazyChunks.emitted.bytesOfAllFiles)} KiB, ${share(lazyChunks.emitted.bytesOfAllFiles, whole.bytes)} of the catalog.`,
+          `As built, a lazy chunk loads ${line(lazyChunks.emitted.lazy.files)} files, ${line(lazyChunks.emitted.lazy.messages)} messages, ${line(lazyChunks.emitted.lazy.bytes, kib)} KiB` +
+            (lazyChunks.byModule
+              ? `: ${line(lazyChunks.emitted.lazy.timesByModule)} times the split by module.`
+              : '.'),
+        ]
+      : []),
     ...lazyChunks.visited.map(
       (visited) =>
         `${visited.route}: by chunk ${visited.byChunk.messages} messages in ${visited.byChunk.files} files, ${kib(visited.byChunk.bytes)} KiB` +
         (visited.byModule
           ? `; by module ${visited.byModule.messages} messages, ${kib(visited.byModule.bytes)} KiB`
+          : '') +
+        (visited.emitted
+          ? `; as built ${visited.emitted.messages} messages in ${visited.emitted.files} files, ${kib(visited.emitted.bytes)} KiB`
           : '')
     ),
   ].join('\n')

@@ -67,7 +67,10 @@ node scripts/load/measure.mjs --dist apps/flat-5k/dist/floor.fr-CA --locale fr-C
 # 4. How a build spreads the messages over its chunks.
 node scripts/load/distribution.mjs --dist apps/flat-5k/dist/baseline
 
-# 5. The tables of any results, side by side.
+# 5. What a returning user fetches again after one translation changed.
+node scripts/load/redeploy.mjs --app flat-5k --variant baseline
+
+# 6. The tables of any results, side by side.
 node scripts/load/report.mjs results/load/*.json   # --against baseline
 ```
 
@@ -103,12 +106,15 @@ of every word takes an accent, a different one per locale.
 build today: `gt-react/unstable` `t` with precomputed messages, no ICU string
 parser, and the user's whole catalog loaded before the app renders. `floor`
 is the app written in the user's language with no translation library, one
-build per locale. A build that differs by a flag needs no new variant:
+build per locale. `sidecars` is the baseline with the compiler's
+`GT_CHUNK_TRANSLATIONS`, which writes a translation file per chunk and locale
+(#2869); with packages that do not have the option it builds the baseline. A
+build that differs by a flag needs no new variant:
 
 ```sh
-node scripts/load/build.mjs --app flat-5k --variant baseline --as sidecars \
+node scripts/load/build.mjs --app flat-5k --variant baseline --as other \
   --env GT_SOME_FLAG=1 --init config   # and --compiler-options '{"files":{"gt":{}}}'
-node scripts/load/measure.mjs --dist apps/flat-5k/dist/sidecars --locale fr-CA
+node scripts/load/measure.mjs --dist apps/flat-5k/dist/other --locale fr-CA
 ```
 
 `--init` picks the module of the app's `src/init` that starts it: `catalog`
@@ -145,6 +151,20 @@ route again in the same context (warm). It reports:
 - **Loads that painted source text**: the page loads where a frame began
   while a message showed text that is not translated.
 
+A request for a file the build does not have counts as a request of no
+bytes, and the result says how many there were (`notFound`).
+
+With `--preload-landing` the HTML also carries a `modulepreload` link for
+each chunk of the first route, as a server that knows the route would write
+it; the result is named `<build>-preload`. Compare it with the same build
+without the flag.
+
+`redeploy.mjs` builds the app again with one translation of one locale
+changed, visits the three routes on the first build, replaces it with the
+second on the same origin, and visits them again in the same browser context.
+It reports how many of the locale's translation files have another URL, and
+what the second visit transferred.
+
 A generated app says what to visit and how to read it in `bench-app.json`.
 For any other build, pass `--routes`, `--route-selector`,
 `--message-selector`, `--messages` and `--translated-text`. The routes after
@@ -168,4 +188,16 @@ split the translations:
   its own module reaches through static imports.
 
 The second needs the module graph that `build.mjs` writes. Sizes are compact
-JSON with gzip at level 6.
+JSON with gzip at level 6. For a build that wrote translation files and a
+`gt-chunk-translations.json` manifest, it also reads what each lazy chunk
+loads as built, and how many times the split by module that is.
+
+Set `BENCH_PACKAGES` to the commit the GT packages were built from when it is
+not the commit of this directory; results record it.
+
+`baselines/` keeps the results measured so far, by the commit of the GT
+packages: `47ce7096b` (`baseline` and `floor`), and the translation files per
+chunk of #2869 at `3a4cee2cc`, `097ad3607` (`sidecars`, and the same packages
+with the option off as `off`) and `24eae20c2` (`sidecars-map`).
+`node scripts/load/report.mjs baselines/*/<app>-*.json` prints them side by
+side.
