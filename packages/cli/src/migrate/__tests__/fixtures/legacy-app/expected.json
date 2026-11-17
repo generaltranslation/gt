@@ -5,15 +5,15 @@
     "expectMatch": 49,
     "expectOptional": 3,
     "expectNoMatch": 7,
-    "sameKey": 16,
+    "sameKey": 15,
     "kinds": {
       "dictionary": 6,
       "edited-must-not-match": 5,
       "unchanged-T": 8,
       "unchanged-gt": 2,
-      "msg": 5,
       "T-to-t": 8,
       "gt-to-t": 23,
+      "msg": 5,
       "new": 2
     }
   },
@@ -97,12 +97,6 @@
       "kind": "gt-to-t",
       "expect": "match",
       "note": "named plural with part/n; ru has full categories"
-    },
-    "2548ab3bd542bc7e": {
-      "intent": "2548ab3bd542bc7e",
-      "kind": "msg",
-      "expect": "match",
-      "note": "legacy msg() from gt-next kept; same key"
     },
     "2cded0afec74560f": {
       "intent": "d218025620554381",
@@ -321,6 +315,12 @@
       "kind": "gt-to-t",
       "expect": "match",
       "note": "derive() variant Free; predicted ICU hash"
+    },
+    "c56a0796152d3ccf": {
+      "intent": "2548ab3bd542bc7e",
+      "kind": "msg",
+      "expect": "match",
+      "note": "msg`Almost gone` from /unstable"
     },
     "cd2f8827bcc97321": {
       "intent": "8732b45d6a9de0b3",

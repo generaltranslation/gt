@@ -183,7 +183,7 @@ describe('migrateCatalogs on the legacy-app fixture', () => {
           ),
         }))
       );
-    expect(checked).toHaveLength(167);
+    expect(checked).toHaveLength(172);
     expect(checked.filter(({ error }) => error !== undefined)).toEqual([]);
   });
 
@@ -192,7 +192,7 @@ describe('migrateCatalogs on the legacy-app fixture', () => {
       (message) =>
         message.tier === 'same-key' && message.dataFormat !== 'MESSAGE_TREE'
     );
-    expect(carried).toHaveLength(16);
+    expect(carried).toHaveLength(15);
     for (const message of carried) {
       for (const locale of FIXTURE_LOCALES) {
         expect(withSource.catalogs[locale][message.newHash]).toBe(
@@ -205,9 +205,9 @@ describe('migrateCatalogs on the legacy-app fixture', () => {
   it('summarizes every locale', () => {
     expect(summarizeReport(withSource.report)).toEqual([
       summary('fr', {
-        carried: 17,
+        carried: 16,
         migrated: {
-          'predicted-hash': 25,
+          'predicted-hash': 26,
           'source-alpha': 5,
           'source-exact': 3,
         },
@@ -217,9 +217,9 @@ describe('migrateCatalogs on the legacy-app fixture', () => {
         missingChars: 194,
       }),
       summary('de', {
-        carried: 17,
+        carried: 16,
         migrated: {
-          'predicted-hash': 26,
+          'predicted-hash': 27,
           'source-alpha': 4,
           'source-exact': 3,
         },
@@ -229,9 +229,9 @@ describe('migrateCatalogs on the legacy-app fixture', () => {
         missingChars: 202,
       }),
       summary('ru', {
-        carried: 17,
+        carried: 16,
         migrated: {
-          'predicted-hash': 26,
+          'predicted-hash': 27,
           'source-alpha': 5,
           'source-exact': 3,
         },
@@ -241,9 +241,9 @@ describe('migrateCatalogs on the legacy-app fixture', () => {
         missingChars: 171,
       }),
       summary('ja', {
-        carried: 17,
+        carried: 16,
         migrated: {
-          'predicted-hash': 26,
+          'predicted-hash': 27,
           'source-alpha': 4,
           'source-exact': 3,
         },
@@ -253,9 +253,9 @@ describe('migrateCatalogs on the legacy-app fixture', () => {
         missingChars: 204,
       }),
       summary('ar', {
-        carried: 17,
+        carried: 16,
         migrated: {
-          'predicted-hash': 26,
+          'predicted-hash': 27,
           'source-alpha': 5,
           'source-exact': 3,
         },
@@ -295,40 +295,40 @@ describe('migrateCatalogs on the legacy-app fixture', () => {
       const migrated = (count: number) => ({ 'predicted-hash': count });
       expect(summarizeReport(withoutSource.report)).toEqual([
         summary('fr', {
-          carried: 17,
-          migrated: migrated(25),
+          carried: 16,
+          migrated: migrated(26),
           filled: 3,
           rejected: 1,
           missing: 16,
           missingChars: 410,
         }),
         summary('de', {
-          carried: 17,
-          migrated: migrated(26),
+          carried: 16,
+          migrated: migrated(27),
           filled: 0,
           rejected: 0,
           missing: 16,
           missingChars: 387,
         }),
         summary('ru', {
-          carried: 17,
-          migrated: migrated(26),
+          carried: 16,
+          migrated: migrated(27),
           filled: 1,
           rejected: 0,
           missing: 16,
           missingChars: 387,
         }),
         summary('ja', {
-          carried: 17,
-          migrated: migrated(26),
+          carried: 16,
+          migrated: migrated(27),
           filled: 0,
           rejected: 0,
           missing: 16,
           missingChars: 387,
         }),
         summary('ar', {
-          carried: 17,
-          migrated: migrated(26),
+          carried: 16,
+          migrated: migrated(27),
           filled: 3,
           rejected: 0,
           missing: 16,
@@ -359,7 +359,7 @@ describe('migrateCatalogs on the legacy-app fixture', () => {
       report.messages.filter(
         (message) => message.locales.fr.status === 'migrated'
       )
-    ).toHaveLength(29);
+    ).toHaveLength(30);
   });
 });
 

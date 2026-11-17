@@ -363,10 +363,6 @@
     "source": "Mark all notifications as read",
     "dataFormat": "MESSAGE_TREE"
   },
-  "2548ab3bd542bc7e": {
-    "source": "Almost gone",
-    "dataFormat": "ICU"
-  },
   "bbf9419b8e6f5802": {
     "source": "Home",
     "dataFormat": "MESSAGE_TREE"
@@ -387,6 +383,10 @@
     "source": "Out of stock",
     "dataFormat": "MESSAGE_TREE",
     "context": "Product availability badge"
+  },
+  "c56a0796152d3ccf": {
+    "source": "Almost gone",
+    "dataFormat": "MESSAGE_TREE"
   },
   "db2f6b2dfab743e3": {
     "source": "Track package",

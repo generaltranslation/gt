@@ -129,12 +129,6 @@ const messages = {
     'match',
     'legacy getGT gt() kept in a server component; same key'
   ),
-  '2548ab3bd542bc7e': E(
-    '2548ab3bd542bc7e',
-    'msg',
-    'match',
-    'legacy msg() from gt-next kept; same key'
-  ),
 
   // ---- <T> rewritten as t ----
   '348f70b8949635e4': E(
@@ -350,6 +344,12 @@ const messages = {
     'msg',
     'match',
     'msg({ context })`Out of stock`'
+  ),
+  c56a0796152d3ccf: E(
+    '2548ab3bd542bc7e',
+    'msg',
+    'match',
+    'msg`Almost gone` from /unstable'
   ),
 
   // ---- edited: must not match ----

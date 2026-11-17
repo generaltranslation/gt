@@ -1,4 +1,3 @@
-import { msg as legacyMsg } from 'gt-next';
 import { msg } from 'gt-next/unstable';
 
 export const navLinks = [
@@ -10,5 +9,5 @@ export const navLinks = [
 
 export const stockLabels = {
   outOfStock: msg({ context: 'Product availability badge' })`Out of stock`,
-  lowStock: legacyMsg('Almost gone'),
+  lowStock: msg`Almost gone`,
 };
