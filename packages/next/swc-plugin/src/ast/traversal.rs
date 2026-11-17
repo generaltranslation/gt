@@ -8,6 +8,7 @@ use crate::hash::{
   SanitizedVariable, VariableType,
 };
 use crate::visitor::jsx_utils::{extract_attribute_from_jsx_attr, extract_max_chars_from_jsx_attr, jsx_attr_contains_derive_call};
+use crate::visitor::errors::create_non_literal_ordinal_error;
 use crate::TransformVisitor;
 use std::collections::BTreeMap;
 use swc_core::ecma::{ast::*, atoms::Atom};
@@ -25,6 +26,9 @@ struct ComponentInfo {
 pub struct JsxTraversal<'a> {
   visitor: &'a TransformVisitor,
   id_counter: u32,
+  /// Whether a Plural's `ordinal` is not a boolean literal, so only the
+  /// runtime knows which content the element hashes to.
+  unresolved_ordinal: bool,
 }
 
 impl<'a> JsxTraversal<'a> {
@@ -33,6 +37,7 @@ impl<'a> JsxTraversal<'a> {
     Self {
       visitor,
       id_counter: 0,
+      unresolved_ordinal: false,
     }
   }
 
@@ -55,7 +60,14 @@ impl<'a> JsxTraversal<'a> {
 
       // Check if sanitized children contain static components or context contains derive - if so, return empty hash
       let has_derive_in_context = jsx_attr_contains_derive_call(element, "context");
-      let has_static = JsxHasher::contains_static(&sanitized_children) || has_derive_in_context;
+      if self.unresolved_ordinal {
+        self.visitor.logger.log_error(&create_non_literal_ordinal_error(
+          self.visitor.settings.filename.as_deref(),
+        ));
+      }
+      let has_static = JsxHasher::contains_static(&sanitized_children)
+        || has_derive_in_context
+        || self.unresolved_ordinal;
       
       // Create the full SanitizedData structure to match TypeScript compiler inputs
       use crate::hash::SanitizedData;
@@ -460,6 +472,17 @@ impl<'a> JsxTraversal<'a> {
     false
   }
 
+  /// The stored transformation of a Plural. A non-literal `ordinal` reads as
+  /// cardinal here and leaves the element without a compile-time hash.
+  fn plural_transformation(&mut self, attrs: &[JSXAttrOrSpread]) -> String {
+    plural_transformation(attrs)
+      .unwrap_or_else(|| {
+        self.unresolved_ordinal = true;
+        "p"
+      })
+      .to_string()
+  }
+
   /// Analyze if this is a GT component and extract relevant info
   fn analyze_gt_component(&mut self, tag_name: &str, attrs: &[JSXAttrOrSpread]) -> ComponentInfo {
     let mut info = ComponentInfo::default();
@@ -482,7 +505,7 @@ impl<'a> JsxTraversal<'a> {
         info.transformation = Some(String::from("b"));
         info.branches = self.extract_branch_props(attrs);
       } else if self.is_plural_component(tag_name) {
-        info.transformation = Some(String::from(plural_transformation(attrs)));
+        info.transformation = Some(self.plural_transformation(attrs));
         info.branches = self.extract_plural_props(attrs);
       }
     } else if self
@@ -517,7 +540,7 @@ impl<'a> JsxTraversal<'a> {
               info.branches = self.extract_branch_props(attrs);
             }
             "Plural" => {
-              info.transformation = Some(plural_transformation(attrs).to_string());
+              info.transformation = Some(self.plural_transformation(attrs));
               info.branches = self.extract_plural_props(attrs);
             }
             _ => {
@@ -763,28 +786,35 @@ fn has_dynamic_content_recursive(children: &[JSXElementChild]) -> bool {
 }
 
 /// The stored transformation of a Plural: "o" with a bare `ordinal` attribute
-/// or `ordinal={true}`, otherwise "p".
-fn plural_transformation(attrs: &[JSXAttrOrSpread]) -> &'static str {
-  let ordinal = attrs.iter().any(|attr| match attr {
-    JSXAttrOrSpread::JSXAttr(JSXAttr {
+/// or `ordinal={true}`, otherwise "p". None when `ordinal` is not a boolean
+/// literal, since only the runtime knows its value.
+fn plural_transformation(attrs: &[JSXAttrOrSpread]) -> Option<&'static str> {
+  for attr in attrs {
+    let JSXAttrOrSpread::JSXAttr(JSXAttr {
       name: JSXAttrName::Ident(name),
       value,
       ..
-    }) if name.sym.as_ref() == "ordinal" => match value {
-      None => true,
-      Some(JSXAttrValue::JSXExprContainer(container)) => matches!(
-        &container.expr,
-        JSXExpr::Expr(expr) if matches!(expr.as_ref(), Expr::Lit(Lit::Bool(Bool { value: true, .. })))
-      ),
-      _ => false,
-    },
-    _ => false,
-  });
-  if ordinal {
-    "o"
-  } else {
-    "p"
+    }) = attr
+    else {
+      continue;
+    };
+    if name.sym.as_ref() != "ordinal" {
+      continue;
+    }
+    return match value {
+      None => Some("o"),
+      Some(JSXAttrValue::JSXExprContainer(JSXExprContainer {
+        expr: JSXExpr::Expr(expr),
+        ..
+      })) => match expr.as_ref() {
+        Expr::Lit(Lit::Bool(Bool { value: true, .. })) => Some("o"),
+        Expr::Lit(Lit::Bool(_)) => Some("p"),
+        _ => None,
+      },
+      _ => None,
+    };
   }
+  Some("p")
 }
 
 impl Default for HtmlContentProps {
@@ -1204,10 +1234,26 @@ mod tests {
 
     #[test]
     fn marks_an_ordinal_plural() {
-      assert_eq!(plural_transformation(&[]), "p");
-      assert_eq!(plural_transformation(&[ordinal_attr(None)]), "o");
-      assert_eq!(plural_transformation(&[ordinal_attr(Some(true))]), "o");
-      assert_eq!(plural_transformation(&[ordinal_attr(Some(false))]), "p");
+      assert_eq!(plural_transformation(&[]), Some("p"));
+      assert_eq!(plural_transformation(&[ordinal_attr(None)]), Some("o"));
+      assert_eq!(plural_transformation(&[ordinal_attr(Some(true))]), Some("o"));
+      assert_eq!(plural_transformation(&[ordinal_attr(Some(false))]), Some("p"));
+    }
+
+    #[test]
+    fn leaves_a_non_literal_ordinal_unresolved() {
+      let mut attr = ordinal_attr(Some(true));
+      if let JSXAttrOrSpread::JSXAttr(JSXAttr { value, .. }) = &mut attr {
+        *value = Some(JSXAttrValue::JSXExprContainer(JSXExprContainer {
+          span: DUMMY_SP,
+          expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident::new(
+            Atom::new("isPlace"),
+            DUMMY_SP,
+            SyntaxContext::empty(),
+          )))),
+        }));
+      }
+      assert_eq!(plural_transformation(&[attr]), None);
     }
 
     #[test]

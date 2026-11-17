@@ -27,3 +27,11 @@ pub fn create_dynamic_function_warning(
         )
   }
 }
+
+/// Generate error message for a <Plural> whose ordinal prop is not a boolean literal
+pub fn create_non_literal_ordinal_error(filename: Option<&str>) -> String {
+  let location = filename.map(|filename| format!(" in {filename}")).unwrap_or_default();
+  format!(
+    "gt-next{location}: The ordinal prop of <Plural> must be a boolean literal. Write a bare ordinal attribute, ordinal={{true}} or ordinal={{false}}."
+  )
+}
