@@ -928,12 +928,14 @@ describe('gt-vue formatting components', () => {
     }
   );
 
-  it('tries explicit, active, and default locales once while translating', () => {
+  it('uses explicit locales as they are, or the active locale, while translating', () => {
     expect(getFormatLocales(['fr-CA', 'fr', 'en'], 'fr', 'en')).toEqual([
       'fr-CA',
       'fr',
       'en',
     ]);
+    expect(getFormatLocales(['fr-CA'], 'fr', 'en')).toEqual(['fr-CA']);
+    expect(getFormatLocales(undefined, 'fr', 'en')).toEqual(['fr']);
   });
 
   it('ignores fallthrough attributes without warning for unwrapped values', async () => {
