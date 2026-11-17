@@ -3139,6 +3139,58 @@ importers:
         specifier: 8.1.4
         version: 8.1.4(@types/node@26.6.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
 
+  tools/render-bench:
+    dependencies:
+      gt-react:
+        specifier: workspace:*
+        version: link:../../packages/react
+      gt-react-release:
+        specifier: npm:gt-react@11.4.23
+        version: gt-react@11.4.23(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react:
+        specifier: ^19.2.4
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@generaltranslation/compiler-release':
+        specifier: npm:@generaltranslation/compiler@1.3.69
+        version: '@generaltranslation/compiler@1.3.69'
+      '@generaltranslation/icu':
+        specifier: workspace:*
+        version: link:../../packages/icu
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.13.10
+      '@types/react':
+        specifier: ^19
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.3.0(@types/react@19.2.14)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.2
+        version: 6.1.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.15)(vite@8.3.5(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.3.5(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      generaltranslation:
+        specifier: workspace:*
+        version: link:../../packages/core
+      generaltranslation-release:
+        specifier: npm:generaltranslation@9.5.12
+        version: generaltranslation@9.5.12
+      playwright-core:
+        specifier: ^1.64.1
+        version: 1.64.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vite:
+        specifier: ^8.0.16
+        version: 8.3.5(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+
 packages:
 
   '@0no-co/graphql.web@1.3.2':
@@ -5928,6 +5980,24 @@ packages:
 
   '@formatjs/intl-supportedvaluesof@2.3.11':
     resolution: {integrity: sha512-oRzzAbJA08psr6AO0jgXAdx4HZ2vGNeja1fgaio2R2ne8DLtGPV+fa3gxI/t8J2dNPOndrwVAZVVfbH6GDFDwA==}
+
+  '@generaltranslation/api@0.6.0':
+    resolution: {integrity: sha512-6wO2caNXTWhf3EJrlQUFIiBMR9usQvP4uiQ/u5XwdeR6kcIcH3H/qrC9JglU0Ha3fkOzFGsCcxKBbKuRHZuLGw==}
+
+  '@generaltranslation/compiler@1.3.69':
+    resolution: {integrity: sha512-TDhTsKFMi7pUNuTSMADRh0E7pwKzobboZvc6u63MH2J25ncmCzGkVpzTXMf/WfghY2fqv3H7nXhPOeXyeJz54w==}
+    engines: {node: '>=16.0.0'}
+
+  '@generaltranslation/format@0.1.10':
+    resolution: {integrity: sha512-uYh9FF0riud0ZjOZloz/irYB8CGSDpVVuKsZ2s/1kMn2cnQnelTGMVdoR7Dir1vaXQE6kbzfDkXPGwexGl7vWQ==}
+
+  '@generaltranslation/icu@0.1.2':
+    resolution: {integrity: sha512-2A0txUrZdAWAc42N58/PtoWv7vNB0U1Iyl+nDzf7RSswLHPMsonp7OmPnSraQgkoRSVSlueARVQK4T+zanWsyA==}
+
+  '@generaltranslation/react-core@11.4.23':
+    resolution: {integrity: sha512-RWeJxocmnoQsN9nNqqOAEeAUa693ksRyoMfZADdLiMN5QVPytXrdjw8sL+JfZvqCqGqdn3f/GF5+kx48bWkbow==}
+    peerDependencies:
+      react: '>=18.0.0'
 
   '@glimmer/env@0.1.7':
     resolution: {integrity: sha512-JKF/a9I9jw6fGoz8kA7LEQslrwJ5jms5CXhu/aqkBWk+PmZ6pTl8mlb/eJ/5ujBGTiQzBhy5AIWF712iA+4/mw==}
@@ -15631,6 +15701,9 @@ packages:
     peerDependencies:
       next: '>=13.2.0'
 
+  generaltranslation@9.5.12:
+    resolution: {integrity: sha512-TmCBM+EpldPKRwuEHtflr+hbLobizt0ngzFEv38YGsZPGOPJ5QTRvq+16FH2xTKTxoNzCXNjK1qKBws4irQiow==}
+
   generic-names@4.0.0:
     resolution: {integrity: sha512-ySFolZQfw9FoDb3ed9d80Cm9f0+r7qj+HJkWjeD9RBfpxEVTlVhol+gvaQB/78WbwYfbnNh8nWHHBSlg072y6A==}
 
@@ -15840,6 +15913,15 @@ packages:
   groq@6.9.2:
     resolution: {integrity: sha512-3M9bA7BqmX120GYb6oQSxWyWmwWfUNWxk7dEn5AyL8CHA6wCGcgsfMDT2o/mC1T9FkGH7iFvh6SE8AHSbiywwg==}
     engines: {node: '>=22.12'}
+
+  gt-i18n@1.0.44:
+    resolution: {integrity: sha512-XKAuVwbYeCCBj+rew63Lf55SjeARSzYoLKPBF2l6w8AH5edb7y9/p6SplAHHVf9T8Esxl5WMOeHQi16ZO1j+9A==}
+
+  gt-react@11.4.23:
+    resolution: {integrity: sha512-SrajVbrF/zqSoLbYezvKaXHgZ3H3T1lNZSMs76GaWmSwqchdekEDkaxfaCux8CH4KwpOtnT+5AfsnQWC/L7YFA==}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
 
   guess-json-indent@2.0.0:
     resolution: {integrity: sha512-3Tm6R43KhtZWEVSHZnFmYMV9+gf3Vu0HXNNYtPVk2s7o8eGwYlJPHrjLtYw/7HBc10YxV+bfzKMuOf24z5qFng==}
@@ -26579,6 +26661,33 @@ snapshots:
     dependencies:
       '@formatjs/fast-memoize': 3.1.7
 
+  '@generaltranslation/api@0.6.0': {}
+
+  '@generaltranslation/compiler@1.3.69':
+    dependencies:
+      '@babel/generator': 7.29.8
+      '@babel/parser': 7.29.8
+      '@babel/traverse': 7.29.8
+      '@babel/types': 7.29.8
+      '@generaltranslation/format': 0.1.10
+      generaltranslation: 9.5.12
+      unplugin: 2.3.10
+    transitivePeerDependencies:
+      - supports-color
+
+  '@generaltranslation/format@0.1.10':
+    dependencies:
+      '@generaltranslation/icu': 0.1.2
+
+  '@generaltranslation/icu@0.1.2': {}
+
+  '@generaltranslation/react-core@11.4.23(react@19.3.0)':
+    dependencies:
+      '@generaltranslation/format': 0.1.10
+      generaltranslation: 9.5.12
+      gt-i18n: 1.0.44
+      react: 19.3.0
+
   '@glimmer/env@0.1.7': {}
 
   '@glimmer/syntax@0.97.0':
@@ -31062,6 +31171,17 @@ snapshots:
       vite: 8.3.1(@types/node@26.6.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
     optional: true
 
+  '@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.15)(vite@8.3.5(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
+    dependencies:
+      '@babel/core': 7.29.7
+      picomatch: 4.0.7
+      rolldown: 1.2.15
+    optionalDependencies:
+      '@babel/plugin-transform-runtime': 7.29.0(@babel/core@7.29.7)
+      '@babel/runtime': 7.29.2
+      vite: 8.3.5(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+    optional: true
+
   '@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.15)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
     dependencies:
       '@babel/core': 7.29.7
@@ -34299,6 +34419,14 @@ snapshots:
       vite: 8.3.1(@types/node@26.6.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
     optionalDependencies:
       '@rolldown/plugin-babel': 0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.15)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      babel-plugin-react-compiler: 1.0.0
+
+  '@vitejs/plugin-react@6.1.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.15)(vite@8.3.5(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.3.5(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
+    dependencies:
+      '@rolldown/pluginutils': 1.0.1
+      vite: 8.3.5(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+    optionalDependencies:
+      '@rolldown/plugin-babel': 0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.15)(vite@8.3.5(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
       babel-plugin-react-compiler: 1.0.0
 
   '@vitejs/plugin-react@6.1.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.15)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
@@ -37613,6 +37741,13 @@ snapshots:
     dependencies:
       next: 16.3.8(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.64.1)(@types/node@26.6.3)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(sass@1.77.4)
 
+  generaltranslation@9.5.12:
+    dependencies:
+      '@generaltranslation/api': 0.6.0
+      '@generaltranslation/format': 0.1.10
+      '@generaltranslation/icu': 0.1.2
+      '@noble/hashes': 2.2.0
+
   generic-names@4.0.0:
     dependencies:
       loader-utils: 3.3.1
@@ -37872,6 +38007,19 @@ snapshots:
   groq@3.88.1-typegen-experimental.0: {}
 
   groq@6.9.2: {}
+
+  gt-i18n@1.0.44:
+    dependencies:
+      '@generaltranslation/format': 0.1.10
+      generaltranslation: 9.5.12
+
+  gt-react@11.4.23(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+    dependencies:
+      '@generaltranslation/react-core': 11.4.23(react@19.3.0)
+      generaltranslation: 9.5.12
+      gt-i18n: 1.0.44
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
 
   guess-json-indent@2.0.0: {}
 
@@ -43502,7 +43650,7 @@ snapshots:
 
   rrweb-snapshot@2.1.1:
     dependencies:
-      postcss: 8.5.28
+      postcss: 8.5.32
 
   rrweb@2.1.1:
     dependencies:
@@ -45495,7 +45643,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 7.3.1(@types/node@20.19.17)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+      vite: 7.3.7(@types/node@20.19.17)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -45516,7 +45664,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.1)
+      vite: 7.3.7(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.1)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -45537,7 +45685,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
+      vite: 7.3.7(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -45558,7 +45706,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+      vite: 7.3.7(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -45579,7 +45727,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 7.3.1(@types/node@26.6.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+      vite: 7.3.7(@types/node@26.6.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -45771,6 +45919,60 @@ snapshots:
       tsx: 4.23.15
       yaml: 2.9.0
 
+  vite@7.3.7(@types/node@20.19.17)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0):
+    dependencies:
+      esbuild: 0.28.1
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
+      postcss: 8.5.32
+      rollup: 4.63.5
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 20.19.17
+      fsevents: 2.3.3
+      jiti: 2.7.0
+      lightningcss: 1.33.0
+      sass: 1.77.4
+      terser: 5.51.2
+      tsx: 4.23.15
+      yaml: 2.9.0
+
+  vite@7.3.7(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.1):
+    dependencies:
+      esbuild: 0.28.1
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
+      postcss: 8.5.32
+      rollup: 4.63.5
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 22.13.10
+      fsevents: 2.3.3
+      jiti: 2.7.0
+      lightningcss: 1.33.0
+      sass: 1.77.4
+      terser: 5.51.2
+      tsx: 4.23.15
+      yaml: 2.8.1
+
+  vite@7.3.7(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3):
+    dependencies:
+      esbuild: 0.28.1
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
+      postcss: 8.5.32
+      rollup: 4.63.5
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 22.13.10
+      fsevents: 2.3.3
+      jiti: 2.7.0
+      lightningcss: 1.33.0
+      sass: 1.77.4
+      terser: 5.51.2
+      tsx: 4.23.15
+      yaml: 2.8.3
+
   vite@7.3.7(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0):
     dependencies:
       esbuild: 0.28.1
@@ -45781,6 +45983,24 @@ snapshots:
       tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 22.13.10
+      fsevents: 2.3.3
+      jiti: 2.7.0
+      lightningcss: 1.33.0
+      sass: 1.77.4
+      terser: 5.51.2
+      tsx: 4.23.15
+      yaml: 2.9.0
+
+  vite@7.3.7(@types/node@26.6.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0):
+    dependencies:
+      esbuild: 0.28.1
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
+      postcss: 8.5.32
+      rollup: 4.63.5
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 26.6.3
       fsevents: 2.3.3
       jiti: 2.7.0
       lightningcss: 1.33.0

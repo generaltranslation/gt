@@ -1,0 +1,31 @@
+{
+  "name": "gt-render-bench",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bench": "node scripts/run.mjs",
+    "bench:install": "playwright-core install chromium-headless-shell",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "gt-react": "workspace:*",
+    "gt-react-release": "npm:gt-react@11.4.23",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@generaltranslation/compiler": "workspace:*",
+    "@generaltranslation/compiler-release": "npm:@generaltranslation/compiler@1.3.69",
+    "@generaltranslation/icu": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.2",
+    "generaltranslation": "workspace:*",
+    "generaltranslation-release": "npm:generaltranslation@9.5.12",
+    "playwright-core": "^1.64.1",
+    "typescript": "catalog:",
+    "vite": "^8.0.16"
+  }
+}
