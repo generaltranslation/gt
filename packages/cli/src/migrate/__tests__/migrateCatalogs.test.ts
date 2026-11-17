@@ -407,6 +407,13 @@ describe('migrateCatalogs', () => {
       expected: 'Von {recipient} an {sender}',
     },
     {
+      name: 'moves an ICU translation to the currency its source changed to',
+      oldSource: 'Total: {amount, number, ::currency/EUR}',
+      newSource: 'Total: {amount, number, ::currency/USD}',
+      translation: 'Gesamt: {amount, number, ::currency/EUR}',
+      expected: 'Gesamt: {amount, number, ::currency/USD}',
+    },
+    {
       name: 'keeps the currency of an ICU translation it rewrites',
       oldSource: 'Total: {sum, number, ::currency/EUR}',
       newSource: 'Total: {amount, number, ::currency/EUR}',
@@ -525,6 +532,11 @@ describe('migrateCatalogs', () => {
       dataFormat: 'ICU' as const,
       source: '{count, plural, one {# item} other {# items}}',
       value: '{count, plural, one {# article} other {# articles}}',
+    },
+    {
+      dataFormat: 'ICU' as const,
+      source: 'Total: {amount, number, ::currency/EUR}',
+      value: 'Gesamt: {amount, number, ::currency/EUR}',
     },
   ])(
     'carries a $dataFormat value under the same key unchanged',

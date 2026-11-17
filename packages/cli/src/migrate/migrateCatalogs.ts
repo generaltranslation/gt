@@ -587,6 +587,23 @@ export function migrateCatalogs({
   };
 }
 
+/** An ICU source whose formatting context changed, like its currency, needs its translations rewritten with the new context. */
+function sameIcuFormats(message: NewMessage, match: Match): boolean {
+  if (
+    match.tier === 'same-key' ||
+    message.dataFormat !== 'ICU' ||
+    typeof message.source !== 'string'
+  ) {
+    return true;
+  }
+  const source = legacyIcuToMessage(message.source);
+  return (
+    source.ok &&
+    stringifySortedJson(source.formats, 0) ===
+      stringifySortedJson(match.sourceFormats, 0)
+  );
+}
+
 function migrateValue(
   message: NewMessage,
   tree: MessageTree | undefined,
@@ -599,7 +616,12 @@ function migrateValue(
   }
   const isTree = message.dataFormat === 'MESSAGE_TREE';
   const unchangedFormat = match.oldDataFormat === message.dataFormat;
-  if (!isTree && unchangedFormat && !Object.keys(match.renameMap).length) {
+  if (
+    !isTree &&
+    unchangedFormat &&
+    !Object.keys(match.renameMap).length &&
+    sameIcuFormats(message, match)
+  ) {
     return { outcome: { status: 'carried' }, value: oldValue };
   }
   if (tree === undefined) {
