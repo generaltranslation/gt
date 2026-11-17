@@ -14,7 +14,11 @@ import {
   isVariableComponent,
 } from '../../../utils/constants/gt/helpers';
 import { REACT_COMPONENTS } from '../../../utils/constants/react/constants';
-import { isSideEffectFree } from './isSideEffectFree';
+import {
+  type Evaluation,
+  isSideEffectFree,
+  keepsEvaluationOrder,
+} from './isSideEffectFree';
 import { PLURAL_SCENARIOS, selectPluralForm } from './pluralScenarios';
 
 /**
@@ -53,6 +57,8 @@ type Slot =
 type VariableItem = {
   type: 'variable';
   key: string;
+  /** The minified type it formats as, such as `n` for <Num> */
+  variableType: string;
   path: NodePath<t.CallExpression>;
   /** Whether its own expressions are free of side effects */
   free: boolean;
@@ -260,6 +266,7 @@ function buildItem(
     return addItem(ctx, {
       type: 'variable',
       key: entry.k,
+      variableType: entry.v || 'v',
       path,
       free: isFree(path.node, ctx),
     });
@@ -385,11 +392,17 @@ function renderArrayChild(
 ): t.Expression {
   if (typeof child === 'string') return t.stringLiteral(child);
   if (isVariable(child)) {
-    const variable = items.find(
-      (item): item is VariableItem =>
-        item.type === 'variable' && item.key === child.k
-    );
+    // react-core binds a name to its last sibling, and formats it as the translation's type
+    const variable = [...items]
+      .reverse()
+      .find(
+        (item): item is VariableItem =>
+          item.type === 'variable' && item.key === child.k
+      );
     if (!variable) fail(SOURCE_MISMATCH);
+    if ((child.v || 'v') !== variable.variableType) {
+      fail('the translation formats a variable as another type');
+    }
     return emitVariable(variable, ctx);
   }
   if (!isRecord(child) || typeof child.i !== 'number') fail(SOURCE_MISMATCH);
@@ -462,19 +475,23 @@ function getTranslatedProps(
     properties.forEach((property, index) => {
       if (t.isSpreadElement(property)) lastSpread = index;
     });
-    const matches = properties.filter((property, index) => {
-      if (!objectPropertyMatchesName(property, name)) return false;
+    let matches = 0;
+    properties.forEach((property, index) => {
+      if (!objectPropertyMatchesName(property, name)) return;
       // A later spread could override a replaced value, as it would the source
       if (index < lastSpread) fail(`a spread follows the ${name} prop`);
-      if (!isFree((property as t.ObjectProperty).value, ctx)) {
+      const { key, value: sourceValue } = property as t.ObjectProperty;
+      if (!isFree(sourceValue, ctx)) {
         fail(`the ${name} prop has side effects`);
       }
-      return true;
+      // A new node, since a later fallback must leave the source props as they were
+      properties[index] = t.objectProperty(
+        t.cloneNode(key, true),
+        t.stringLiteral(value)
+      );
+      matches += 1;
     });
-    for (const property of matches) {
-      (property as t.ObjectProperty).value = t.stringLiteral(value);
-    }
-    if (matches.length === 0) {
+    if (matches === 0) {
       properties.push(
         t.objectProperty(t.stringLiteral(name), t.stringLiteral(value))
       );
@@ -500,7 +517,7 @@ function renderPlural(
     const targetForm = form && branches[form] != null ? form : '';
     addPair(pairs, targetForm, sourceForm);
   }
-  checkDroppedProps(element, 'n', ctx);
+  checkRebuiltProps(element, 'n', ctx);
   const own = use(element, ctx);
   const props: t.ObjectProperty[] = [];
   const n = element.props.properties.find((property) =>
@@ -549,7 +566,7 @@ function renderBranch(
       key && element.branches.has(key) ? key : ''
     );
   }
-  checkDroppedProps(element, 'branch', ctx);
+  checkRebuiltProps(element, 'branch', ctx);
   const own = use(element, ctx);
   const props: t.ObjectProperty[] = [];
   const branch = element.props.properties.find((property) =>
@@ -673,18 +690,23 @@ function toExpression(rendered: Rendered): t.Expression {
 
 // ===== Side effects ===== //
 
-/** An item whose expressions have side effects must be emitted exactly once, in source order. */
+/** Items must be emitted so their expressions see the values they see in the source. */
 function checkUses(ctx: Context): void {
-  for (const item of ctx.items) {
-    if (ctx.uses.get(item) !== 1 && !item.free) {
-      fail('the translation drops or repeats an element with side effects');
-    }
-  }
-  const ordered = ctx.emitted
-    .filter((item) => !item.free)
-    .map((item) => getStart(item.path.node));
-  if (ordered.some((start, index) => index > 0 && ordered[index - 1] > start)) {
-    fail('the translation reorders elements with side effects');
+  const evaluations = new Map<Item, Evaluation>(
+    ctx.items.map((item) => [
+      item,
+      { start: getStart(item.path.node), free: item.free },
+    ])
+  );
+  if (
+    !keepsEvaluationOrder(
+      [...evaluations.values()],
+      ctx.emitted.map((item) => evaluations.get(item)!)
+    )
+  ) {
+    fail(
+      'the translation drops, repeats or reorders an element with side effects, or moves another across one'
+    );
   }
 }
 
@@ -715,16 +737,23 @@ function isContentProp(
   );
 }
 
-/** Props a <Plural> or <Branch> replacement leaves out must be free to drop. */
-function checkDroppedProps(
+/**
+ * Props a <Plural> or <Branch> replacement leaves out must be free to drop, and
+ * the one it keeps, which it moves ahead of the branches, free to move there.
+ */
+function checkRebuiltProps(
   element: ElementItem,
   kept: string,
   ctx: Context
 ): void {
+  let afterContent = false;
   for (const property of element.props.properties) {
+    if (isContentProp(element, property)) {
+      afterContent = true;
+      continue;
+    }
     if (
-      !isContentProp(element, property) &&
-      !objectPropertyMatchesName(property, kept) &&
+      (afterContent || !objectPropertyMatchesName(property, kept)) &&
       !(t.isObjectProperty(property) && isFree(property.value, ctx))
     ) {
       fail('a <Plural> or <Branch> prop has side effects');

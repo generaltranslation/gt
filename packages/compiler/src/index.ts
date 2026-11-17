@@ -337,6 +337,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         keyCacheOnInlineTranslations(compiler.options);
       },
       buildStart() {
+        sourceReplacementTotals.replaced = 0;
+        sourceReplacementTotals.kept = 0;
         if (
           isProduction() &&
           resolvedOptions.compileTimeHash === false &&
@@ -550,7 +552,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       buildEnd() {
         if (sourceReplacement && options.logLevel === 'debug') {
           new Logger(options.logLevel).logDebug(
-            `Replaced the source content of ${sourceReplacementTotals.replaced} call sites with their "${sourceReplacement.locale}" translations; ${sourceReplacementTotals.kept} call sites kept their source and embedded translation`
+            `In the modules this build transformed, replaced the source content of ${sourceReplacementTotals.replaced} call sites with their "${sourceReplacement.locale}" translations; ${sourceReplacementTotals.kept} call sites kept their source and embedded translation`
           );
         }
         if (debugManifest && debugManifest.size > 0) {
