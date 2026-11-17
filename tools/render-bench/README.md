@@ -134,7 +134,7 @@ route again in the same context (warm). It reports:
   would make the same responses. A translation file is a request that matches
   `--translation-files`, a regular expression with `{locale}` for the page's
   locale. The default matches a `baseline` build's catalog chunk and any
-  `*.{locale}.json`.
+  `*.{locale}.json` or `*.{locale}.<hash>.json`.
 - **Startup JavaScript**: the JavaScript the page had loaded when it rendered
   its first route, and the difference from the build that `report.mjs
 --against` names, for the same app and locale.

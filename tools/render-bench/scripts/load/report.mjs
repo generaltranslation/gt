@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 const kib = (bytes) => (bytes / 1024).toFixed(1);
-const signedKib = (bytes) => `${bytes >= 0 ? '+' : '−'}${kib(Math.abs(bytes))}`;
+const signed = (value, format) =>
+  `${value >= 0 ? '+' : '−'}${format(Math.abs(value))}`;
 const mb = (bytes) => (bytes / 2 ** 20).toFixed(0);
 const ms = (value) => value.toFixed(0);
 const seconds = (value) => (value / 1000).toFixed(2);
@@ -86,9 +87,9 @@ function startupTable(loads, against) {
         kib(startup.bytes),
         ...(reference
           ? [
-              signedKib(startup.rawBytes - reference.rawBytes),
-              signedKib(startup.gzipBytes - reference.gzipBytes),
-              signedKib(startup.bytes - reference.bytes),
+              signed(startup.rawBytes - reference.rawBytes, kib),
+              signed(startup.gzipBytes - reference.gzipBytes, kib),
+              signed(startup.bytes - reference.bytes, kib),
             ]
           : ['', '', '']),
       ];
@@ -119,7 +120,11 @@ function timingsTable(loads) {
         network,
         spread(cold.rendered, ms),
         result.translated && source?.timings[network]
-          ? `+${ms(cold.rendered.median - source.timings[network].cold.rendered.median)}`
+          ? signed(
+              cold.rendered.median -
+                source.timings[network].cold.rendered.median,
+              ms
+            )
           : '',
         spread(warm.rendered, ms),
         cold.navigation ? spread(cold.navigation, ms) : '',

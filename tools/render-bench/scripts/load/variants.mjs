@@ -18,6 +18,15 @@ export const variants = {
     env: { GT_OMIT_ICU_PARSER: '1' },
     compilerOptions: {},
   },
+  // The baseline with a translation file per chunk and locale, which a user
+  // of a translated locale fetches next to the chunk. The option is the
+  // prototype's (#2869): without its packages this builds the baseline.
+  sidecars: {
+    source: 'gt',
+    init: 'catalog',
+    env: { GT_OMIT_ICU_PARSER: '1', GT_CHUNK_TRANSLATIONS: 'true' },
+    compilerOptions: {},
+  },
   // The least a page can load: the app written in the user's language, with
   // no translation library. One build per locale, so not a single build.
   floor: { source: 'hardcoded', init: 'none', env: {} },
@@ -27,10 +36,11 @@ export const variants = {
  * Which requests of a page are translation files, as a regular expression on
  * the URL's path with `{locale}` for the page's locale: the catalog chunk of
  * a `baseline` build (named in vite.load.config.ts), or a JSON file named for
- * the locale next to a chunk, such as `route-a1b2.fr-CA.json`.
+ * the locale next to a chunk, such as `route-a1b2.fr-CA.json`, with or
+ * without a hash of its own after the locale.
  */
 export const TRANSLATION_FILES =
-  '(/catalog\\.{locale}-[^/]*\\.js|\\.{locale}\\.json)$';
+  '(/catalog\\.{locale}-[^/]*\\.js|\\.{locale}(\\.[^./]+)?\\.json)$';
 
 /** Latency in milliseconds / throughput in megabits per second. */
 export const NETWORKS = ['20/50', '60/20', '150/5'];

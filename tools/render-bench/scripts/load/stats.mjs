@@ -40,5 +40,9 @@ export function environment() {
     machine: `${cpus()[0].model}, ${cpus().length} cores, ${Math.round(totalmem() / 2 ** 30)} GB`,
     os: `${platform()} ${release()}`,
     node: process.version,
+    // What the GT packages were built from, when it is not `sha`.
+    ...(process.env.BENCH_PACKAGES
+      ? { packages: process.env.BENCH_PACKAGES }
+      : {}),
   };
 }
