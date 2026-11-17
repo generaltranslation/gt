@@ -42,6 +42,12 @@ import {
   isEsModule,
 } from './transform/injection/inline-translations/addInlineTranslationsImports';
 import { addInlineTranslationsCacheVersion } from './transform/injection/inline-translations/inlineTranslationsCacheVersion';
+import {
+  applyStaticLocale,
+  getStaticLocale,
+  getStaticLocaleWarning,
+  resolveStaticLocale,
+} from './transform/injection/inline-translations/resolveStaticLocale';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
@@ -153,7 +159,9 @@ function hasInlineGTConfig(options: GTUnpluginOptions): boolean {
     options.locales !== undefined ||
     options.projectId !== undefined ||
     options._versionId !== undefined ||
-    options.files !== undefined
+    options.files !== undefined ||
+    options.customMapping !== undefined ||
+    options.localeMatcher !== undefined
   );
 }
 
@@ -172,6 +180,12 @@ function getInlineGTConfig(options: GTUnpluginOptions): GTConfig | undefined {
       ? { _versionId: options._versionId }
       : {}),
     ...(options.files !== undefined ? { files: options.files } : {}),
+    ...(options.customMapping !== undefined
+      ? { customMapping: options.customMapping }
+      : {}),
+    ...(options.localeMatcher !== undefined
+      ? { localeMatcher: options.localeMatcher }
+      : {}),
   };
 }
 
@@ -225,9 +239,16 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
         : undefined;
+    const staticLocale = getStaticLocale(options.experimentalStaticLocale);
+    const staticLocaleResolution = staticLocale
+      ? resolveStaticLocale(staticLocale, loadedGTConfig)
+      : undefined;
+    const gtConfig = staticLocaleResolution
+      ? applyStaticLocale(loadedGTConfig, staticLocaleResolution)
+      : loadedGTConfig;
     const resolvedOptions: GTUnpluginOptions = {
       ...options,
-      ...(loadedGTConfig ? { gtConfig: loadedGTConfig } : {}),
+      ...(gtConfig ? { gtConfig } : {}),
     };
 
     if (shouldWarn(options.logLevel)) {
@@ -244,6 +265,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           })
         );
       }
+      const staticLocaleWarning =
+        staticLocale && staticLocaleResolution
+          ? getStaticLocaleWarning(
+              staticLocale,
+              staticLocaleResolution,
+              loadedGTConfig
+            )
+          : undefined;
+      if (staticLocaleWarning) console.warn(staticLocaleWarning);
     }
 
     // Debug manifest: accumulates hash → jsxChildren across all files
@@ -259,6 +289,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       {
         framework: meta.framework,
         warn: isProduction() && shouldWarn(options.logLevel),
+        staticLocale:
+          staticLocaleResolution?.kind === 'embedded'
+            ? staticLocaleResolution.locale
+            : undefined,
       }
     );
     // Only the modules buildStart wrote, so source files inside modulesDir are still transformed
@@ -295,7 +329,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         ) {
           throw new Error(INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR);
         }
-        if (inlineTranslationsModules?.mode !== 'physical' || !isProduction()) {
+        if (
+          inlineTranslationsModules?.mode !== 'physical' ||
+          !isProduction() ||
+          // Embeds nothing, and must not delete the modules other builds share
+          (staticLocaleResolution && staticLocaleResolution.kind !== 'embedded')
+        ) {
           return;
         }
         const modules = renderInlineTranslationsModules(loadModulesTable());

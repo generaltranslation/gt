@@ -11,9 +11,9 @@ type BundlerCacheOptions = {
 
 /**
  * Add the embedded translations settings and locale files to webpack's and
- * rspack's persistent cache version. Those caches do not see gt.config.json,
- * so they would reuse modules transformed for other settings, and they keep
- * modules built before a locale file existed.
+ * rspack's persistent cache version. Those caches see neither gt.config.json
+ * nor the static locale, so they would reuse modules transformed for other
+ * settings, and they keep modules built before a locale file existed.
  */
 export function addInlineTranslationsCacheVersion(
   options: BundlerCacheOptions,
