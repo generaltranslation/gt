@@ -171,10 +171,14 @@ export function validateTarget(
       const branches = getBranches(node);
       if (branches === null) return false;
       // A translation that could leave a value without a branch is not
-      // rendered: it needs `other`, or every branch of a source without one.
+      // rendered: it needs `other`, or every branch of the source.
       const names = Object.keys(branches ?? {});
-      const needed = info.b.includes('other') ? ['other'] : info.b;
-      if (!needed.every((name) => names.includes(name))) return false;
+      if (
+        !names.includes('other') &&
+        !info.b.every((name) => names.includes(name))
+      ) {
+        return false;
+      }
       for (const [name, branch] of Object.entries(branches ?? {})) {
         const branchScopes = getBranchScopes(
           resolved.scope,

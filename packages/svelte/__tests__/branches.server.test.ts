@@ -182,4 +182,21 @@ describe('nested branches in sibling snippets', () => {
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  it('renders a translated other for a source that has none', () => {
+    expect(
+      html({
+        component: NestedBranches,
+        props: { gender: 'female', count: 2 },
+        locale: 'fr',
+        translations: {
+          [nestedHash]: {
+            t: 'Branch',
+            i: 1,
+            d: { t: 'b', b: { other: 'Des chats' } },
+          },
+        },
+      })
+    ).toBe('Des chats');
+  });
 });
