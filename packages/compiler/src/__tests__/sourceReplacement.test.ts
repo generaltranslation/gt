@@ -865,8 +865,8 @@ describe('experimentalReplaceSource', () => {
       true
     );
     expect(replaced).toMatchInlineSnapshot(`
-      "import { t } from "gt-react/unstable";const _gt = { $_hash: "728c62f6bce558d1", $_tree: ["Utilisez \`code\`, \${x} et \\\\ pour ", ["name"], "\\r\\n"], $_locale: "fr" };
-      const App = ({ name }) => t(_gt, { name });
+      "import { t } from "gt-react/unstable";
+      const App = ({ name }) => t({ $_hash: "728c62f6bce558d1", $_tree: ["Utilisez \`code\`, \${x} et \\\\ pour ", ["name"], "\\r\\n"], $_locale: "fr" }, { name });
       export {
         App };"
     `);

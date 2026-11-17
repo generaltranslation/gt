@@ -59,7 +59,7 @@ function nonStatic(): never {
  *
  * With `precompute`, a `t` template becomes a call that passes its message,
  * built here (see buildPrecomputedCall): t`Hello, ${{ name }}!` ->
- * t(_gt, { name }), with `_gt` declared at module scope. A replaced template's message
+ * t(_gt(), { name }), with `_gt` declared at module scope. A replaced template's message
  * holds the translation's tree and its locale in place of `inline`; with
  * `replaceTree` that also covers a translation no template can be written
  * from, since the message is passed every value of the source. `msg`

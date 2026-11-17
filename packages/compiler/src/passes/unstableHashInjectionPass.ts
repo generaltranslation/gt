@@ -11,8 +11,10 @@ import type { HoistMessage } from '../transform/injection/precomputeUnstableMess
 import { canReplaceMessageTree } from '../transform/injection/replaceMessageTree';
 import { createErrorLocation } from '../utils/errors';
 
-// Name of the module-scope constants that hold precomputed messages
+// Name of the module-scope functions that hold precomputed messages
 const MESSAGE_NAME = 'gt';
+// Property of such a function that keeps its message
+const MESSAGE_PROPERTY = 'm';
 
 /**
  * Unstable hash injection pass — injects `$_hash` into statically analyzable
@@ -22,7 +24,10 @@ const MESSAGE_NAME = 'gt';
  * no collection counters.
  *
  * A static t template is replaced by a call with its precomputed message. A
- * message with values is declared once at module scope, after the imports.
+ * message with values is declared once at module scope, in a function that
+ * creates it when it is first read: a function declaration can be called
+ * before its module's body has run, as through an import cycle, where a
+ * constant could not be read yet.
  */
 export function unstableHashInjectionPass(
   state: TransformState
@@ -65,7 +70,7 @@ export function unstableHashInjectionPass(
         return translation;
       }
     : undefined;
-  const declarations: t.VariableDeclaration[] = [];
+  const declarations: t.FunctionDeclaration[] = [];
   // Call sites with the same message share one, by its code.
   const hoisted = new Map<string, t.Identifier>();
   return {
@@ -78,11 +83,28 @@ export function unstableHashInjectionPass(
             .getProgramParent()
             .generateUidIdentifier(MESSAGE_NAME);
           hoisted.set(code, id);
+          const kept = () =>
+            t.memberExpression(
+              t.cloneNode(id!),
+              t.identifier(MESSAGE_PROPERTY)
+            );
           declarations.push(
-            t.variableDeclaration('const', [t.variableDeclarator(id, message)])
+            t.functionDeclaration(
+              id,
+              [],
+              t.blockStatement([
+                t.returnStatement(
+                  t.logicalExpression(
+                    '||',
+                    kept(),
+                    t.assignmentExpression('=', kept(), message)
+                  )
+                ),
+              ])
+            )
           );
         }
-        return t.cloneNode(id);
+        return t.callExpression(t.cloneNode(id), []);
       };
       if (
         injectUnstableTaggedTemplateHash(
@@ -99,13 +121,7 @@ export function unstableHashInjectionPass(
     },
     Program: {
       exit(path) {
-        const { body } = path.node;
-        // After the imports, so a message reads a message module's import.
-        const start =
-          body
-            .map((statement) => statement.type)
-            .lastIndexOf('ImportDeclaration') + 1;
-        body.splice(start, 0, ...declarations);
+        path.node.body.push(...declarations);
       },
     },
   };
