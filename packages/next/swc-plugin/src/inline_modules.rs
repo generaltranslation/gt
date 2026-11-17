@@ -1,6 +1,6 @@
 //! Experimental: import inline translations callbacks from one module per
 //! message instead of embedding them, so bundlers only ship the translations a
-//! chunk uses. gt-next writes `<dir>/<hash>.js` before the build for every
+//! chunk uses. gt-next writes `<dir>/<hash>.mjs` before the build for every
 //! message with an embedded translation:
 //! `export default (locale) => locale === "fr" ? … : undefined;`
 //! gt-next passes the hashes it wrote a module for, so the plugin reads none.
@@ -104,7 +104,7 @@ impl MessageModules {
         })],
         src: Box::new(Str {
           span: DUMMY_SP,
-          value: Atom::new(format!("{}/{hash}.js", self.import_dir)).into(),
+          value: Atom::new(format!("{}/{hash}.mjs", self.import_dir)).into(),
           raw: None,
         }),
         type_only: false,

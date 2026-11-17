@@ -125,7 +125,7 @@ export const GTInlineTranslationsSchema = pipe(
     ),
     modules: optionalDescribed(
       picklist(inlineTranslationsModuleModes),
-      "Experimental: emit each embedded message as its own module, <modulesDir>/<hash>.js, imported by the call sites that use it instead of inlining the translations at every call site, so a message shared by several call sites ships once and bundlers include only the messages in use. 'physical' writes the modules when the build starts. 'virtual' serves them from memory where the build plugin can, and otherwise falls back to 'physical' with a warning, as gt-next's SWC plugin does. Unset inlines the translations at each call site"
+      "Experimental: emit each embedded message as its own module, <modulesDir>/<hash>.mjs, imported by the call sites that use it instead of inlining the translations at every call site, so a message shared by several call sites ships once and bundlers include only the messages in use. 'physical' writes the modules when the build starts. 'virtual' serves them from memory where the build plugin can, and otherwise falls back to 'physical' with a warning, as gt-next's SWC plugin does. Unset inlines the translations at each call site"
     ),
     modulesDir: optional(
       pipe(

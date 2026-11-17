@@ -786,7 +786,7 @@ fn transform_with_modules(code: &str, hashes: &[&str]) -> String {
 }
 
 fn module_import(hash: &str) -> String {
-  format!("import __gt_inline_{hash} from \"{MODULES_IMPORT_DIR}/{hash}.js\";")
+  format!("import __gt_inline_{hash} from \"{MODULES_IMPORT_DIR}/{hash}.mjs\";")
 }
 
 #[test]

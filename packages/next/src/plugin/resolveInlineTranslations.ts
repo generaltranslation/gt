@@ -46,7 +46,7 @@ export type ResolvedInlineTranslations = {
 
 export type ResolvedMessageModules = {
   dir: string;
-  /** Import specifier prefix of `<importDir>/<hash>.js`, aliased to `dir` */
+  /** Import specifier prefix of `<importDir>/<hash>.mjs`, aliased to `dir` */
   importDir: string;
   /** Hashes with a module, so the plugin reads none of them */
   hashes: string[];

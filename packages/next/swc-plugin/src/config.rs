@@ -26,14 +26,14 @@ pub struct InlineTranslationsConfig {
   pub modules: Option<InlineModulesConfig>,
 }
 
-/// Experimental: gt-next writes `<dir>/<hash>.js` for every message with an
+/// Experimental: gt-next writes `<dir>/<hash>.mjs` for every message with an
 /// embedded translation, and call sites import it.
 #[derive(Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct InlineModulesConfig {
   /// Module directory, relative to the working directory
   pub dir: String,
-  /// Import specifier prefix for the modules: `<importDir>/<hash>.js`
+  /// Import specifier prefix for the modules: `<importDir>/<hash>.mjs`
   pub import_dir: String,
   /// Hashes gt-next wrote a module for
   #[serde(default)]

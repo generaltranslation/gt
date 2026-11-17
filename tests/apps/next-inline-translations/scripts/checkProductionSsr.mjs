@@ -83,7 +83,11 @@ async function waitForServer() {
 let failed = false;
 try {
   if (modulesMode) {
-    const modulePath = path.join(appDir, '.gt/messages', `${EMBEDDED_HASH}.js`);
+    const modulePath = path.join(
+      appDir,
+      '.gt/messages',
+      `${EMBEDDED_HASH}.mjs`
+    );
     const source = fs.existsSync(modulePath)
       ? fs.readFileSync(modulePath, 'utf8')
       : '';

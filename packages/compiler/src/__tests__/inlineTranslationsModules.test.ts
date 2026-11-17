@@ -124,7 +124,7 @@ describe('writeInlineTranslationsModules', () => {
     for (const file of fs.readdirSync(dir)) {
       fs.utimesSync(path.join(dir, file), past, past);
     }
-    fs.writeFileSync(path.join(dir, 'index.js'), 'export {};\n');
+    fs.writeFileSync(path.join(dir, 'index.mjs'), 'export {};\n');
 
     expect(
       writeInlineTranslationsModules(
@@ -133,27 +133,29 @@ describe('writeInlineTranslationsModules', () => {
       )
     ).toEqual({ written: 1, removed: 1 });
     expect(fs.readdirSync(dir).sort()).toEqual([
-      'aaa.js',
-      'bbb.js',
-      'index.js',
+      'aaa.mjs',
+      'bbb.mjs',
+      'index.mjs',
     ]);
     expect(
-      Math.round(fs.statSync(path.join(dir, 'aaa.js')).mtimeMs / 1000)
+      Math.round(fs.statSync(path.join(dir, 'aaa.mjs')).mtimeMs / 1000)
     ).toBe(Math.round(past.getTime() / 1000));
-    expect(fs.readFileSync(path.join(dir, 'bbb.js'), 'utf8')).toContain('"B2"');
+    expect(fs.readFileSync(path.join(dir, 'bbb.mjs'), 'utf8')).toContain(
+      '"B2"'
+    );
   });
 
   it('refuses to overwrite a file it did not generate', () => {
     const dir = createDir();
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'index.js'), 'export {};\n');
+    fs.writeFileSync(path.join(dir, 'index.mjs'), 'export {};\n');
     expect(() =>
       writeInlineTranslationsModules(
         dir,
         renderInlineTranslationsModules({ fr: { index: 'Accueil' } })
       )
     ).toThrow('Did not overwrite');
-    expect(fs.readFileSync(path.join(dir, 'index.js'), 'utf8')).toBe(
+    expect(fs.readFileSync(path.join(dir, 'index.mjs'), 'utf8')).toBe(
       'export {};\n'
     );
   });
@@ -161,7 +163,7 @@ describe('writeInlineTranslationsModules', () => {
   it('refuses to overwrite a file it cannot read', () => {
     const dir = createDir();
     fs.mkdirSync(dir, { recursive: true });
-    const file = path.join(dir, 'index.js');
+    const file = path.join(dir, 'index.mjs');
     fs.writeFileSync(file, 'export {};\n');
     fs.chmodSync(file, 0o000);
     try {
@@ -193,8 +195,8 @@ describe('writeInlineTranslationsModules', () => {
   it('removes temp files a dead writer left behind', () => {
     const dir = createDir();
     fs.mkdirSync(dir, { recursive: true });
-    const fresh = path.join(dir, 'aaa.js.tmp-1-x');
-    const stale = path.join(dir, 'bbb.js.tmp-2-y');
+    const fresh = path.join(dir, 'aaa.mjs.tmp-1-x');
+    const stale = path.join(dir, 'bbb.mjs.tmp-2-y');
     fs.writeFileSync(fresh, INLINE_TRANSLATIONS_MODULE_HEADER);
     fs.writeFileSync(stale, INLINE_TRANSLATIONS_MODULE_HEADER);
     const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -209,8 +211,8 @@ describe('writeInlineTranslationsModules', () => {
   it('keeps old files that only look like its temp files', () => {
     const dir = createDir();
     fs.mkdirSync(dir, { recursive: true });
-    const backup = path.join(dir, 'index.js.tmp-backup');
-    const userFile = path.join(dir, 'index.js.tmp-1-x');
+    const backup = path.join(dir, 'index.mjs.tmp-backup');
+    const userFile = path.join(dir, 'index.mjs.tmp-1-x');
     fs.writeFileSync(backup, INLINE_TRANSLATIONS_MODULE_HEADER);
     fs.writeFileSync(userFile, 'export {};\n');
     const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -220,8 +222,8 @@ describe('writeInlineTranslationsModules', () => {
     writeInlineTranslationsModules(dir, new Map());
 
     expect(fs.readdirSync(dir).sort()).toEqual([
-      'index.js.tmp-1-x',
-      'index.js.tmp-backup',
+      'index.mjs.tmp-1-x',
+      'index.mjs.tmp-backup',
     ]);
   });
 });
