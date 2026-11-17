@@ -14,6 +14,7 @@ import {
   type MessageTreeHashMetadata,
 } from 'generaltranslation/id';
 import {
+  embedsUnstableGTHelperTemplates,
   isUnstableGTHelperName,
   isUnstableGTImportSource,
   type UnstableGTHelperName,
@@ -61,8 +62,11 @@ function nonStatic(): never {
  *
  * With `buildInline`, a `t` template whose holes are all named variables
  * (`${{ name }}`) also gets the translations embedded for the configured
- * locales as `inline`. That is the subset the gt-next SWC plugin embeds too,
- * and the CLI leaves out of `msgOutput` files
+ * locales as `inline`. That is the subset the gt-next SWC plugin embeds too.
+ * A `t` or `gt` of an entry only this compiler builds (see
+ * embedsUnstableGTHelperTemplates) also embeds templates that use helpers,
+ * as long as every value has a name. The CLI leaves the same templates out of
+ * `msgOutput` files
  * (packages/cli/src/react/jsx/utils/stringParsing/extractMessageTrees/isEmbeddedMessage.ts).
  * `msg` templates are rendered by `m()` away from their call site, so they are
  * never embedded.
@@ -82,12 +86,13 @@ export function injectUnstableTaggedTemplateHash(
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
-  const kind = t.isIdentifier(callee)
-    ? getUnstableTagKind(callee.name, path.scope)
+  const unstableTag = t.isIdentifier(callee)
+    ? getUnstableTag(callee.name, path.scope)
     : undefined;
-  if (!kind) return false;
+  if (!unstableTag) return false;
+  const { kind } = unstableTag;
   let hash: string;
-  let onlyNamedVariables: boolean;
+  let embedded: boolean;
   let metadata: MessageTreeHashMetadata;
   let tree: MessageTree;
   try {
@@ -101,7 +106,8 @@ export function injectUnstableTaggedTemplateHash(
       dataFormat: 'MESSAGE_TREE',
       ...metadata,
     });
-    onlyNamedVariables = holes.every((hole) => hole.kind === 'argument');
+    const helpers = embedsUnstableGTHelperTemplates(unstableTag.source);
+    embedded = holes.every((hole) => isEmbeddedHole(hole, helpers));
   } catch {
     // Non-static or invalid (e.g. a reserved `_gt_` name): skip only this
     // template; the runtime hashes it and reports any error.
@@ -128,9 +134,7 @@ export function injectUnstableTaggedTemplateHash(
     ),
   ];
   const inline =
-    buildInline && kind === 'gt' && onlyNamedVariables
-      ? buildInline(hash)
-      : undefined;
+    buildInline && kind === 'gt' && embedded ? buildInline(hash) : undefined;
   if (inline) {
     properties.push(
       t.objectProperty(t.identifier(INLINE_TRANSLATIONS_OPTION), inline)
@@ -147,16 +151,55 @@ export function injectUnstableTaggedTemplateHash(
 }
 
 /**
- * `gt` for `t` imported from an unstable source or
- * `const t = [await] useGT/getGT()`, and `msg` for an imported `msg`.
+ * Whether a template's translations are embedded where it has this hole: a
+ * named variable, or with `helpers` anything whose values all have names. A
+ * value without one, like `${count}` or `plural(count, ...)`, is only known
+ * to be a variable by following its bindings, which the CLI cannot mirror.
  */
-function getUnstableTagKind(
+function isEmbeddedHole(hole: TemplateHole, helpers: boolean): boolean {
+  switch (hole.kind) {
+    case 'argument':
+      return true;
+    case 'anonymous':
+      return false;
+    case 'pound':
+      return helpers;
+    case 'fragment':
+      return helpers && isEmbeddedFragment(hole);
+    case 'plural':
+    case 'selectordinal':
+    case 'select':
+      return (
+        helpers &&
+        hole.name !== undefined &&
+        Object.values(hole.branches).every(
+          (branch) =>
+            branch === undefined ||
+            typeof branch === 'string' ||
+            isEmbeddedFragment(branch)
+        )
+      );
+    default:
+      return helpers && hole.name !== undefined;
+  }
+}
+
+function isEmbeddedFragment(fragment: TemplateFragment): boolean {
+  return fragment.holes.every((hole) => isEmbeddedHole(hole, true));
+}
+
+/**
+ * `gt` for `t` imported from an unstable source or
+ * `const t = [await] useGT/getGT()`, and `msg` for an imported `msg`, with
+ * the source `t`, `msg` or the hook is imported from.
+ */
+function getUnstableTag(
   name: string,
   scope: Scope
-): 'gt' | 'msg' | undefined {
-  const helper = getHelperName(name, scope);
-  if (helper === 't') return 'gt';
-  if (helper === 'msg') return 'msg';
+): { kind: 'gt' | 'msg'; source: string } | undefined {
+  const helper = getHelper(name, scope);
+  if (helper?.name === 't') return { kind: 'gt', source: helper.source };
+  if (helper?.name === 'msg') return { kind: 'msg', source: helper.source };
   const binding = scope.getBinding(name);
   if (
     !binding?.constant ||
@@ -168,8 +211,10 @@ function getUnstableTagKind(
   let init = binding.path.node.init;
   if (t.isAwaitExpression(init)) init = init.argument;
   if (!t.isCallExpression(init) || !t.isIdentifier(init.callee)) return;
-  const hook = getHelperName(init.callee.name, binding.path.scope);
-  return hook === 'useGT' || hook === 'getGT' ? 'gt' : undefined;
+  const hook = getHelper(init.callee.name, binding.path.scope);
+  return hook?.name === 'useGT' || hook?.name === 'getGT'
+    ? { kind: 'gt', source: hook.source }
+    : undefined;
 }
 
 /** Original name of a helper imported from an unstable source. */
@@ -177,19 +222,30 @@ function getHelperName(
   name: string,
   scope: Scope
 ): UnstableGTHelperName | undefined {
+  return getHelper(name, scope)?.name;
+}
+
+/** A helper imported from an unstable source, by its original name. */
+function getHelper(
+  name: string,
+  scope: Scope
+): { name: UnstableGTHelperName; source: string } | undefined {
   const binding = scope.getBinding(name);
   if (
     !binding?.path.isImportSpecifier() ||
-    !binding.path.parentPath.isImportDeclaration() ||
-    !isUnstableGTImportSource(binding.path.parentPath.node.source.value)
+    !binding.path.parentPath.isImportDeclaration()
   ) {
     return;
   }
+  const source = binding.path.parentPath.node.source.value;
+  if (!isUnstableGTImportSource(source)) return;
   const { imported } = binding.path.node;
   const importedName = t.isIdentifier(imported)
     ? imported.name
     : imported.value;
-  return isUnstableGTHelperName(importedName) ? importedName : undefined;
+  return isUnstableGTHelperName(importedName)
+    ? { name: importedName, source }
+    : undefined;
 }
 
 function parseMessageOptions(

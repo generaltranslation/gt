@@ -4,10 +4,10 @@ type Update = Updates[number];
 
 /**
  * Entries the compiler embeds at their call sites for the locales in
- * `files.gt.inlineTranslations.locales`: `<T>`, and tagged-template messages
- * from the unstable `t`, `useGT()` and `getGT()` that both compilers resolve
- * (see extractMessageTrees/isEmbeddedMessage.ts). Derive content is never
- * embedded.
+ * `files.gt.inlineTranslations.locales`: `<T>`, and the tagged-template
+ * messages from the unstable `t`, `useGT()` and `getGT()` that the compiler
+ * of their entry point embeds (see extractMessageTrees/isEmbeddedMessage.ts).
+ * Derive content is never embedded.
  *
  * Every other entry, including `msg()`, `m()` and stable `gt()`/`t()`, still
  * has to be loaded, so `files.gt.inlineTranslations.msgOutput` writes every

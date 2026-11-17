@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
+  embedsUnstableGTHelperTemplates,
   isUnstableGTHelperName,
   isUnstableGTImportSource,
 } from '../unstableImportSources';
+
+describe('embedsUnstableGTHelperTemplates', () => {
+  it.each([
+    ['gt-react/unstable', true],
+    ['gt-tanstack-start/unstable', true],
+    // The gt-next SWC plugin embeds named variables only
+    ['gt-next/unstable', false],
+    ['gt-next/unstable/server', false],
+    ['gt-i18n/unstable', false],
+    ['gt-react', false],
+  ])('%s: %s', (source, embeds) => {
+    expect(embedsUnstableGTHelperTemplates(source)).toBe(embeds);
+  });
+});
 
 describe('isUnstableGTImportSource', () => {
   it('matches whole specifiers only', () => {

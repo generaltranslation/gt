@@ -36,6 +36,7 @@ export type {
   VariableTransformationSuffix,
 } from './types-dir/transformations';
 export {
+  embedsUnstableGTHelperTemplates,
   isUnstableGTHelperName,
   isUnstableGTImportSource,
   UNSTABLE_GT_HELPER_NAMES,

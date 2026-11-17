@@ -18,6 +18,7 @@ import { transformWithPlugin } from './transformWithPlugin';
 import type { GTUnpluginOptions } from '../index';
 import { clearInlineTranslationsCache } from '../transform/injection/inline-translations/loadInlineTranslations';
 import { hashSource } from 'generaltranslation/id';
+import embeddedTemplateCases from '../../../../test-fixtures/embedded-message-templates.json';
 
 const icuHash = (source: string, context?: string) =>
   hashSource({ source, ...(context && { context }), dataFormat: 'ICU' });
@@ -235,6 +236,48 @@ describe('inlineTranslations in gt.config.json', () => {
       );
     });
 
+    // The gt-next SWC plugin embeds a template only when every hole is a
+    // named variable. An entry only this compiler builds also embeds helpers
+    // whose values all have names. The CLI's isEmbeddedMessage reads the same
+    // fixture, so msgOutput files leave out exactly what is embedded here.
+    describe.each([
+      ['gt-react/unstable', 't', true],
+      ['gt-react/unstable', 'useGT()', true],
+      ['gt-tanstack-start/unstable', 'useGT()', true],
+      ['gt-next/unstable', 'useGT()', false],
+      ['gt-i18n/unstable', 'useGT()', false],
+    ] as const)(
+      'embeds the templates of %s %s that test-fixtures/embedded-message-templates.json says it does',
+      (source, tag, embedsHelpers) => {
+        const prelude = `import { ${tag === 't' ? 't' : 'useGT'}, plural, selectordinal, select, number, date, time, part, derive, n } from '${source}';
+          const name = 'Ada', count = 2, role = 'admin', price = 9.5, place = 1, currency = 'USD', timeZone = 'UTC', user = { name: 'Ada' };
+          const due = new Date(0);
+          ${tag === 't' ? '' : 'const t = useGT();'}`;
+
+        it.each(
+          embeddedTemplateCases.map((testCase) => [testCase.name, testCase])
+        )('%s', async (_name, testCase) => {
+          const { template, embeddedBy } = testCase;
+          const setup = 'setup' in testCase ? testCase.setup : '';
+          const code = `${prelude}\n${setup}\nexport const message = () => ${template};\n`;
+          const hash = (await transformWithPlugin(undefined, code))?.match(
+            /\$_hash: "([^"]+)"/
+          )?.[1];
+          // A template the compiler cannot hash is left to the runtime
+          const output = hash
+            ? await transformWithPlugin(
+                inlineOptions(['fr'], { fr: { [hash]: 'Traduction' } }),
+                code
+              )
+            : '';
+          expect(output?.includes('inline: (locale) =>')).toBe(
+            embeddedBy === 'every-compiler' ||
+              (embeddedBy === '@generaltranslation/compiler' && embedsHelpers)
+          );
+        });
+      }
+    );
+
     it.each([
       ['an unnamed value', 'const count = 3;', '${count}'],
       ['plural()', '', '${plural({ count }, { one: "item", other: "items" })}'],
@@ -242,7 +285,7 @@ describe('inlineTranslations in gt.config.json', () => {
     ])(
       'only hashes templates with %s, which the SWC plugin does not embed',
       async (_, setup, hole) => {
-        const code = `import { useGT, plural, part } from 'gt-react/unstable';
+        const code = `import { useGT, plural, part } from 'gt-next/unstable';
            const gt = useGT();
            ${setup}
            gt\`You have ${hole}\`;`;
