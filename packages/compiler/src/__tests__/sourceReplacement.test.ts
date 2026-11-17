@@ -1104,9 +1104,27 @@ describe('experimentalReplaceSource', () => {
             expect(replaced).not.toBe(kept);
           } else if (sourceLiteral === undefined) {
             // maxChars, and values that are read once, are left to the runtime,
-            // which renders the message in the build's default locale
+            // which renders the message in the build's default locale. A
+            // message with a locale is written at its call; without one it
+            // is declared in a function at the end of the module.
             expect(replaced).toContain('$_locale: "en"');
-            expect(replaced!.replaceAll(', $_locale: "en"', '')).toBe(kept);
+            expect(replaced).not.toContain('function _gt');
+            expect(replaced!.replaceAll(', $_locale: "en"', '')).toBe(
+              kept!
+                .replace(
+                  /function (_gt\d*)\(\) \{return \1\.m \|\| \(\1\.m = (\{.*?\})\);\}/g,
+                  ''
+                )
+                .replace(
+                  /_gt\d*\(\)/g,
+                  (read) =>
+                    kept!.match(
+                      new RegExp(
+                        `function ${read.slice(0, -2)}\\(\\) \\{return .*?\\.m = (\\{.*?\\})\\);\\}`
+                      )
+                    )![1]
+                )
+            );
           } else {
             expect(replaced).toContain(
               `() => ${JSON.stringify(sourceLiteral)};`
@@ -1805,7 +1823,7 @@ describe('experimentalReplaceSource', () => {
     // the call kept for objects is written there instead of declared
     expect(tagged).toBe(
       kept!
-        .replace(/const _gt = \{.*\};/, '')
+        .replace(/function _gt\(\) \{.*\}$/, '')
         .replace(/const label = .*;/, () => label)
     );
   });
