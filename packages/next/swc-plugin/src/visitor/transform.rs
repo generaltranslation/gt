@@ -726,12 +726,17 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
         let original_name = translation_variable.original_name.clone();
 
         // const gt = useGT() from an unstable source: its templates are
-        // hashed in one visit, so no string collector entry
+        // hashed in one visit, so no string collector entry. A let or var
+        // can be reassigned to another tag, so its templates are left alone.
         if original_name.as_ref() == UNSTABLE_USE_GT || original_name.as_ref() == UNSTABLE_GET_GT {
-          self
-            .import_tracker
-            .scope_tracker
-            .track_translation_variable(variable_name.clone(), UNSTABLE_GT_CALLBACK.into(), 0);
+          if self.traversal_state.in_const_declaration {
+            self
+              .import_tracker
+              .scope_tracker
+              .track_translation_variable(variable_name.clone(), UNSTABLE_GT_CALLBACK.into(), 0);
+          } else {
+            self.track_overriding_variable(variable_name);
+          }
         }
         // Check if its getGT or useGT
         else if is_translation_function_name(&original_name) {

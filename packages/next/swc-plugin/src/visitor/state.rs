@@ -17,6 +17,8 @@ pub struct TraversalState {
   pub in_variable_component: bool,
   /// Track whether we're inside a JSX attribute expression (to ignore them)
   pub in_jsx_attribute: bool,
+  /// Whether the declarators being visited belong to a `const` declaration
+  pub in_const_declaration: bool,
 }
 
 // For tracking gt-next imports and their aliases

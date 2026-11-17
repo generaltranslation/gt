@@ -391,6 +391,26 @@ fn respects_unstable_names_shadowed_by_local_declarations() {
 }
 
 #[test]
+fn skips_gt_bindings_that_can_be_reassigned() {
+  for kind in ["let", "var"] {
+    let output = transform(
+      &format!(
+        r#"
+          import {{ useGT }} from 'gt-next/unstable';
+          export function Page() {{
+            {kind} gt = useGT();
+            gt = (strings) => strings[0];
+            return gt`Hello world`;
+          }}
+        "#
+      ),
+      translations(&["fr"], serde_json::json!({ "fr": { HELLO_WORLD: "Bonjour le monde" } })),
+    );
+    assert!(!output.contains("(locale)=>"), "{output}");
+  }
+}
+
+#[test]
 fn embeds_only_uses_after_the_gt_declaration() {
   let output = transform(
     r#"

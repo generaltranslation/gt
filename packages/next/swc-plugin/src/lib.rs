@@ -33,6 +33,16 @@ impl VisitMut for TransformVisitor {
     import_decl.visit_mut_children_with(self);
   }
 
+  /// Record whether the declarators are const
+  fn visit_mut_var_decl(&mut self, var_decl: &mut VarDecl) {
+    let was_const = std::mem::replace(
+      &mut self.traversal_state.in_const_declaration,
+      var_decl.kind == VarDeclKind::Const,
+    );
+    var_decl.visit_mut_children_with(self);
+    self.traversal_state.in_const_declaration = was_const;
+  }
+
   /// Process variable declarations to track assignments like: const t = useGT()
   fn visit_mut_var_declarator(&mut self, var_declarator: &mut VarDeclarator) {
     self.track_variable_assignment(var_declarator);
@@ -216,6 +226,17 @@ impl Fold for TransformVisitor {
   fn fold_import_decl(&mut self, import_decl: ImportDecl) -> ImportDecl {
     self.process_gt_import_declaration(&import_decl);
     import_decl
+  }
+
+  /// Record whether the declarators are const
+  fn fold_var_decl(&mut self, var_decl: VarDecl) -> VarDecl {
+    let was_const = std::mem::replace(
+      &mut self.traversal_state.in_const_declaration,
+      var_decl.kind == VarDeclKind::Const,
+    );
+    let var_decl = var_decl.fold_children_with(self);
+    self.traversal_state.in_const_declaration = was_const;
+    var_decl
   }
 
   /// Process variable declarations to track assignments like: const t = useGT()
