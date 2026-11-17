@@ -4,20 +4,24 @@ import { icuToMessage } from '@generaltranslation/icu/convert';
 import { templateToMessage } from '@generaltranslation/icu/internal';
 import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
+import { legacySourceCandidates } from '../candidates.js';
+import {
+  convertLegacyValue,
+  gtjsxToMessage,
+  legacyIcuToMessage,
+} from '../legacy.js';
+import {
+  fillTranslationBranches,
+  migrateTranslation,
+  validateMigratedTranslation,
+} from '../translation.js';
 import {
   alphaRenameMap,
   canonicalizeTree,
-  convertLegacyValue,
-  fillTranslationBranches,
-  gtjsxToMessage,
-  legacyIcuToMessage,
-  legacySourceCandidates,
-  migrateTranslation,
   renameFormats,
   renameVariables,
   treeShape,
-  validateMigratedTranslation,
-} from '../index.js';
+} from '../tree.js';
 
 const FILES = icuToMessage('{n, plural, one {# file} other {# files}}').tree;
 

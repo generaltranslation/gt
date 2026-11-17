@@ -13,15 +13,12 @@ export type MigrationUploadClient = Pick<
 >;
 
 export type MigrationUploadResult = {
-  /** The seed version the partly covered locales were uploaded under. */
   seedVersionId?: string;
   /** Locales uploaded under the real version, which `gt translate` skips. */
   completedLocales: string[];
   /** Locales uploaded only under the seed, whose missing keys `gt translate` translates. */
   seededLocales: string[];
-  /** Why partly covered locales were not seeded. */
   seedSkipped?: string;
-  /** Whether the platform holds the real source version. */
   sourceUploaded: boolean;
   failed: boolean;
 };
@@ -29,6 +26,14 @@ export type MigrationUploadResult = {
 export function seedVersionId(versionId: string): string {
   return hashStringSync(`gt-migrate-seed:${versionId}`);
 }
+
+const failedUploadWarning = (what: string, reason: string) =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Warning',
+    whatHappened: `${what} was not uploaded`,
+    details: reason,
+  });
 
 const realVersionExistsWarning = createDiagnosticMessage({
   source: 'gt',
@@ -62,11 +67,9 @@ export async function uploadMigration({
   client: MigrationUploadClient;
   settings: Settings;
   branchData: BranchData;
-  /** The GTJSON source `gt translate` uploads. */
   template: FileToUpload;
   /** Each locale's migrated catalog, serialized as it is written locally. */
   translations: Record<string, string>;
-  /** Locales that hold a value for every key of the source. */
   completeLocales: string[];
 }): Promise<MigrationUploadResult> {
   const branchId = template.branchId ?? branchData.currentBranch.id;
@@ -111,7 +114,7 @@ export async function uploadMigration({
     const failure = response.results.find((r) => r.status === 'failed');
     if (failure || response.results.length === 0) {
       const reason = failure?.status === 'failed' ? failure.error : 'no result';
-      logger.warn(`Failed to upload ${template.fileName}: ${reason}`);
+      logger.warn(failedUploadWarning(`Source version ${versionId}`, reason));
       recordWarning('failed_upload', template.fileName, reason);
       result.failed = true;
       return false;
@@ -142,14 +145,15 @@ export async function uploadMigration({
         for (const r of response.results) {
           if (r.status === 'failed') {
             const reason = `Translation for locale ${r.locale}: ${r.error}`;
-            logger.warn(`Failed to upload ${r.fileName}: ${reason}`);
+            logger.warn(
+              failedUploadWarning(`The ${r.locale} seed translation`, r.error)
+            );
             recordWarning('failed_upload', r.fileName, reason);
             result.failed = true;
-          } else if (partial.includes(r.locale)) {
-            result.seededLocales.push(r.locale);
           }
         }
         result.seedVersionId = seed;
+        if (!result.failed) result.seededLocales = partial;
       }
       if (result.failed) {
         logger.warn(seedFailedWarning);

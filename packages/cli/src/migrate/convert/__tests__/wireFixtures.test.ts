@@ -4,11 +4,8 @@ import type { MessageTree } from '@generaltranslation/icu';
 import { messageTreeToIcu } from '@generaltranslation/icu/convert';
 import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
-import {
-  gtjsxToMessage,
-  legacyIcuToMessage,
-  legacySourceCandidates,
-} from '../index.js';
+import { legacySourceCandidates } from '../candidates.js';
+import { gtjsxToMessage, legacyIcuToMessage } from '../legacy.js';
 
 type MessageTreeCase = {
   name: string;

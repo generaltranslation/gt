@@ -13,7 +13,6 @@ export type LegacySources = {
   values: Map<string, unknown>;
   /** Formats known for certain, such as ICU for dictionary entries. */
   formats: Map<string, LegacyDataFormat>;
-  /** The dictionary id each key of a dictionary entry belongs to. */
   entries: Map<string, string>;
   kind: 'hashes' | 'dictionary';
 };

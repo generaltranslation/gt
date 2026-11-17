@@ -132,7 +132,7 @@ export class InlineCLI extends BaseCLI {
     )
       .option(
         '--from <dir>',
-        'Directory holding the legacy translation files. Defaults to the files.gt.output path'
+        'Directory holding the legacy translation files, laid out like files.gt.output from its first [locale] segment. Defaults to the files.gt.output path'
       )
       .option(
         '--legacy-source <path>',

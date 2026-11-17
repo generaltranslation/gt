@@ -12,6 +12,16 @@ function optionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value ? value : undefined;
 }
 
+/** `$` props written as expressions, like `$context={"Nav"}`, are extracted as their source code. */
+function propValue(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 /** Reads the messages `gt translate` would upload from the template file's content and format metadata. */
 export function readNewMessages(
   content: Record<string, unknown>,
@@ -21,9 +31,9 @@ export function readNewMessages(
     const metadata = isRecord(formatMetadata[hash]) ? formatMetadata[hash] : {};
     const requiresReview =
       metadata.requires_review === true || metadata.requiresReview === true;
-    const legacyContext = optionalString(metadata.$context);
-    const legacyMaxChars = optionalNumber(metadata.$maxChars);
-    const legacyRequiresReview = metadata.$requiresReview === true;
+    const legacyContext = optionalString(propValue(metadata.$context));
+    const legacyMaxChars = optionalNumber(propValue(metadata.$maxChars));
+    const legacyRequiresReview = propValue(metadata.$requiresReview) === true;
     const hasLegacyProps =
       legacyContext !== undefined ||
       legacyMaxChars !== undefined ||

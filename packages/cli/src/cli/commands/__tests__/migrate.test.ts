@@ -323,6 +323,40 @@ describe('handleMigrate', () => {
     );
   });
 
+  it('keeps one backup per locale when locales are directories', async () => {
+    const nested = (locale: string) =>
+      path.join(dir, 'locales', locale, 'gt.json');
+    writeLegacyFiles(nested);
+    const layout = {
+      files: {
+        resolvedPaths: {},
+        placeholderPaths: { gt: path.join(dir, 'locales/[locale]/gt.json') },
+        transformPaths: {},
+      },
+    };
+
+    await migrate({ upload: false }, layout);
+    await migrate({ upload: false }, layout);
+
+    expect(read(nested('fr'))).toBe(migrated.fr);
+    expect(read(nested('de'))).toBe(migrated.de);
+    for (const locale of ['fr', 'de']) {
+      expect(
+        read(path.join(dir, '.gt', 'migrate-backup', locale, 'gt.json'))
+      ).toBe(JSON.stringify(legacyFiles[locale], null, 2) + '\n');
+    }
+  });
+
+  it('exits with a diagnostic when a legacy file is not JSON', async () => {
+    writeLegacyFiles();
+    fs.writeFileSync(outputPath('fr'), '{ "broken": ');
+
+    await expect(migrate({ upload: false })).rejects.toThrow(
+      'public/_gt/fr.json could not be read as JSON'
+    );
+    expect(fs.existsSync(path.join(dir, '.gt'))).toBe(false);
+  });
+
   it('reads the legacy files from --from', async () => {
     writeLegacyFiles((locale) => path.join(dir, 'legacy', `${locale}.json`));
 

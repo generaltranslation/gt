@@ -9,7 +9,7 @@ import {
   type LegacySources,
   parseLegacySource,
 } from '../catalogs.js';
-import { validateMigratedTranslation } from '../convert/index.js';
+import { validateMigratedTranslation } from '../convert/translation.js';
 import {
   migrateCatalogs,
   type MigrateCatalogsInput,
@@ -398,6 +398,52 @@ const only = (result: ReturnType<typeof migrateCatalogs>): MessageDecision =>
   result.report.messages[0];
 
 describe('migrateCatalogs', () => {
+  it('does not reuse an old key another message proved has other metadata', () => {
+    const NOUN = 'bbbbbbbbbbbbbbbb';
+    const nounKey = legacyIcuHash('Book', { context: 'noun' });
+    const result = migrate({
+      messages: [
+        treeMessage('Book', { hash: NOUN, context: 'noun' }),
+        treeMessage('Book', { context: 'verb' }),
+      ],
+      sources: parseLegacySource({ [nounKey]: 'Book' }),
+      catalogs: { fr: { [nounKey]: 'Livre' } },
+    });
+    expect(result.catalogs).toEqual({ fr: { [NOUN]: 'Livre' } });
+    expect(result.report.messages[1]).toEqual({
+      newHash: NEW_HASH,
+      dataFormat: 'MESSAGE_TREE',
+      source: 'Book',
+      notes: [
+        `The old message ${nounKey} has this text but belongs to ${NOUN}, whose context, maxChars and requiresReview it matches`,
+      ],
+      locales: { fr: { status: 'missing' } },
+    });
+  });
+
+  it.each([
+    { name: 'a string literal', props: { $context: 'Nav' } },
+    { name: 'an expression', props: { $context: '"Nav"' } },
+  ])('reads a $-prop written as $name', ({ props }) => {
+    const jsx = { t: 'a', i: 1, c: 'Home' };
+    const oldKey = hashSource({
+      source: jsx,
+      context: 'Nav',
+      dataFormat: 'JSX',
+    });
+    const messages = readNewMessages(
+      { [NEW_HASH]: jsx },
+      { [NEW_HASH]: { dataFormat: 'JSX', ...props } }
+    );
+    const result = migrate({
+      messages,
+      catalogs: { fr: { [oldKey]: { t: 'a', i: 1, c: 'Accueil' } } },
+    });
+    expect(result.catalogs).toEqual({
+      fr: { [NEW_HASH]: { t: 'a', i: 1, c: 'Accueil' } },
+    });
+  });
+
   it.each([
     {
       dataFormat: 'JSX' as const,

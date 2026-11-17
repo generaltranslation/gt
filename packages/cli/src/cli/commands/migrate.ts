@@ -1,10 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
-import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/diagnostics';
 import { logger } from '../../console/logger.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
-import { noFilesError } from '../../console/index.js';
+import { branchResolutionError, noFilesError } from '../../console/index.js';
 import { displayTranslateSummary } from '../../console/displayTranslateSummary.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import updateConfig from '../../fs/config/updateConfig.js';
@@ -96,9 +99,28 @@ const noUploadWarning = createDiagnosticMessage({
   fix: 'Run gt migrate again with a project ID and without --no-upload before you run gt translate',
 });
 
+const unreadableCatalogError = (file: string, details?: string) =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened: `${file} could not be read as JSON`,
+    fix: 'Fix or remove the file, then run gt migrate again',
+    details,
+  });
+
 function readCatalog(file: string): Catalog | undefined {
   if (!fs.existsSync(file)) return undefined;
-  const json: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
+  let json: unknown;
+  try {
+    json = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    return logErrorAndExit(
+      unreadableCatalogError(
+        displayPath(file),
+        formatDiagnosticErrorDetails(error)
+      )
+    );
+  }
   return isRecord(json) ? json : undefined;
 }
 
@@ -113,6 +135,13 @@ type LocaleFiles = {
   backup: string;
 };
 
+/** The output path from the first directory that varies by locale, e.g. `[locale].json` or `[locale]/gt.json`. */
+function localePathPattern(placeholder: string): string {
+  const segments = path.normalize(placeholder).split(path.sep);
+  const first = segments.findIndex((segment) => segment.includes('[locale]'));
+  return segments.slice(first === -1 ? -1 : first).join(path.sep);
+}
+
 function localeFiles(
   settings: Settings,
   options: MigrateFlags,
@@ -120,13 +149,16 @@ function localeFiles(
 ): LocaleFiles {
   const output = resolveLocaleFiles(settings.files!.placeholderPaths, locale)
     .gt as string;
+  const relative = localePathPattern(
+    settings.files!.placeholderPaths.gt as string
+  ).replace(/\[locale\]/g, locale);
   const backupDir = path.resolve(
     path.dirname(path.resolve(settings.config)),
     options.backupDir ?? DEFAULT_BACKUP_DIR
   );
-  const backup = path.join(backupDir, path.basename(output));
+  const backup = path.join(backupDir, relative);
   const legacy = options.from
-    ? path.resolve(options.from, path.basename(output))
+    ? path.resolve(options.from, relative)
     : fs.existsSync(backup)
       ? backup
       : output;
@@ -262,7 +294,7 @@ export async function handleMigrate(
     const client = requireProject(settings);
     const branchData = await new BranchStep(client, settings).run();
     if (!branchData) {
-      return logErrorAndExit('The branch could not be resolved.');
+      return logErrorAndExit(branchResolutionError);
     }
     const uploaded = await uploadMigration({
       client,

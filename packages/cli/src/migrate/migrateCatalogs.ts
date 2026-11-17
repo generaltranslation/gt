@@ -2,15 +2,10 @@ import type { MessageFormats, MessageTree } from '@generaltranslation/icu';
 import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
 import type { Catalog, LegacySources } from './catalogs.js';
-import {
-  alphaRenameMap,
-  canonicalizeTree,
-  gtjsxToMessage,
-  legacyIcuToMessage,
-  legacySourceCandidates,
-  migrateTranslation,
-  treeShape,
-} from './convert/index.js';
+import { legacySourceCandidates } from './convert/candidates.js';
+import { gtjsxToMessage, legacyIcuToMessage } from './convert/legacy.js';
+import { migrateTranslation } from './convert/translation.js';
+import { alphaRenameMap, canonicalizeTree, treeShape } from './convert/tree.js';
 import { mapBranches, mapTree, sortedJson } from './convert/tree.js';
 import type {
   ConversionResult,
@@ -41,7 +36,6 @@ export type NewMessage = {
 export type MigrateCatalogsInput = {
   messages: NewMessage[];
   sources?: LegacySources;
-  /** Old translations by locale. */
   catalogs: Record<string, Catalog>;
   locales: string[];
   defaultLocale: string;
@@ -78,10 +72,11 @@ type Match = {
   tier: MatchTier;
   oldKey: string;
   oldDataFormat: LegacyDataFormat;
-  /** The old source's formats, in the old variable names. */
   sourceFormats: MessageFormats;
   renameMap: RenameMap;
   notes: string[];
+  /** Whether the old key's hash was reproduced, rather than only its text matched. */
+  verified: boolean;
 };
 
 function metaVariants(meta: HashMeta): HashMeta[] {
@@ -263,7 +258,8 @@ function pickSourceMatch(
   message: NewMessage,
   tree: MessageTree,
   found: { tier: MatchTier; candidates: OldSource[] },
-  catalogs: Record<string, Catalog>
+  catalogs: Record<string, Catalog>,
+  claimedElsewhere: (key: string) => string | undefined = () => undefined
 ): Match | { ambiguous: string } {
   const byKey = new Map<string, OldSource>();
   for (const candidate of found.candidates) {
@@ -277,6 +273,7 @@ function pickSourceMatch(
   const notes: string[] = [];
   let chosen: OldSource | undefined;
   let oldDataFormat: LegacyDataFormat | undefined;
+  let verified = false;
   for (const candidate of candidates) {
     for (const format of candidate.formats) {
       if (
@@ -286,24 +283,41 @@ function pickSourceMatch(
       ) {
         chosen = candidate;
         oldDataFormat = format;
+        verified = true;
         break;
       }
     }
     if (chosen) break;
   }
   if (!chosen) {
+    const claimed = candidates
+      .map((candidate) => [candidate.key, claimedElsewhere(candidate.key)])
+      .filter(([, owner]) => owner !== undefined);
+    if (claimed.length === candidates.length) {
+      return {
+        ambiguous: claimed
+          .map(
+            ([key, owner]) =>
+              `The old message ${key} has this text but belongs to ${owner}, whose context, maxChars and requiresReview it matches`
+          )
+          .join('; '),
+      };
+    }
+    const unclaimed = candidates.filter(
+      (candidate) => claimedElsewhere(candidate.key) === undefined
+    );
     if (
-      candidates.length > 1 &&
+      unclaimed.length > 1 &&
       !sameTranslations(
-        candidates.map((candidate) => candidate.key),
+        unclaimed.map((candidate) => candidate.key),
         catalogs
       )
     ) {
       return {
-        ambiguous: `${candidates.length} old messages have this text with other context or maxChars and different translations: ${candidates.map((candidate) => candidate.key).join(', ')}`,
+        ambiguous: `${unclaimed.length} old messages have this text with other context or maxChars and different translations: ${unclaimed.map((candidate) => candidate.key).join(', ')}`,
       };
     }
-    chosen = candidates[0];
+    chosen = unclaimed[0];
     oldDataFormat = chosen.treeFormat;
     notes.push(
       'The context, maxChars or requiresReview differs from the old message'
@@ -321,6 +335,7 @@ function pickSourceMatch(
     sourceFormats: chosen.treeFormats,
     renameMap: alphaRenameMap(chosen.tree, tree) ?? {},
     notes,
+    verified,
   };
 }
 
@@ -345,6 +360,7 @@ function predictTreeMatch(
         sourceFormats: converted.formats,
         renameMap: alphaRenameMap(converted.tree, tree) ?? {},
         notes: [],
+        verified: true,
       };
     }
   }
@@ -370,6 +386,7 @@ function predictJsxMatch(
         sourceFormats: {},
         renameMap: {},
         notes: ['Matched the hash the $-prefixed <T> props gave before'],
+        verified: true,
       }
     : undefined;
 }
@@ -401,47 +418,85 @@ export function migrateCatalogs({
   );
   const decisions: MessageDecision[] = [];
 
-  for (const message of messages) {
+  type Planned = {
+    message: NewMessage;
+    tree: MessageTree | undefined;
+    sameKey?: Match;
+    fallback?: Match;
+    found?: { tier: MatchTier; candidates: OldSource[] };
+    note?: string;
+  };
+  const plans: Planned[] = messages.map((message) => {
+    const tree = sourceTree(message);
+    const plan: Planned = { message, tree };
+    if (oldKeys.has(message.hash)) {
+      plan.sameKey = {
+        tier: 'same-key',
+        oldKey: message.hash,
+        oldDataFormat: message.dataFormat,
+        sourceFormats: {},
+        renameMap: {},
+        notes: [],
+        verified: true,
+      };
+    }
+    const needsFallback =
+      !plan.sameKey ||
+      locales.some((locale) => catalogs[locale]?.[message.hash] == null);
+    if (!needsFallback) return plan;
+    if (message.dataFormat === 'JSX') {
+      plan.fallback = predictJsxMatch(message, oldKeys);
+    }
+    if (!plan.fallback && message.dataFormat === 'MESSAGE_TREE' && tree) {
+      plan.fallback = predictTreeMatch(message, tree, oldKeys);
+    }
+    if (!plan.fallback && tree !== undefined) {
+      plan.found = index.find(tree, loose);
+      if (plan.found) {
+        const picked = pickSourceMatch(message, tree, plan.found, catalogs);
+        if (!('ambiguous' in picked)) plan.fallback = picked;
+        else if (picked.ambiguous) plan.note = picked.ambiguous;
+      }
+    }
+    return plan;
+  });
+
+  const owners = new Map<string, string>();
+  for (const { message, sameKey, fallback } of plans) {
+    for (const match of [sameKey, fallback]) {
+      if (match?.verified && !owners.has(match.oldKey)) {
+        owners.set(match.oldKey, message.hash);
+      }
+    }
+  }
+  for (const plan of plans) {
+    if (!plan.fallback || plan.fallback.verified || !plan.found) continue;
+    const owner = owners.get(plan.fallback.oldKey);
+    if (owner === undefined || owner === plan.message.hash) continue;
+    const picked = pickSourceMatch(
+      plan.message,
+      plan.tree as MessageTree,
+      plan.found,
+      catalogs,
+      (key) => {
+        const keyOwner = owners.get(key);
+        return keyOwner !== plan.message.hash ? keyOwner : undefined;
+      }
+    );
+    plan.fallback = 'ambiguous' in picked ? undefined : picked;
+    plan.note = 'ambiguous' in picked ? picked.ambiguous : undefined;
+  }
+
+  for (const { message, tree, sameKey, fallback, note } of plans) {
     const decision: MessageDecision = {
       newHash: message.hash,
       dataFormat: message.dataFormat,
       source: message.source,
       ...(message.staticId && { staticId: message.staticId }),
-      notes: [],
+      notes: note ? [note] : [],
       locales: {},
     };
     decisions.push(decision);
-    const tree = sourceTree(message);
-    const isTree = message.dataFormat === 'MESSAGE_TREE';
-
-    const sameKey: Match | undefined = oldKeys.has(message.hash)
-      ? {
-          tier: 'same-key',
-          oldKey: message.hash,
-          oldDataFormat: message.dataFormat,
-          sourceFormats: {},
-          renameMap: {},
-          notes: [],
-        }
-      : undefined;
-    const needsFallback =
-      !sameKey ||
-      locales.some((locale) => catalogs[locale]?.[message.hash] == null);
-    let fallback: Match | undefined;
-    if (needsFallback && message.dataFormat === 'JSX') {
-      fallback = predictJsxMatch(message, oldKeys);
-    }
-    if (needsFallback && !fallback && isTree && tree !== undefined) {
-      fallback = predictTreeMatch(message, tree, oldKeys);
-    }
-    if (needsFallback && !fallback && tree !== undefined) {
-      const found = index.find(tree, loose);
-      if (found) {
-        const picked = pickSourceMatch(message, tree, found, catalogs);
-        if (!('ambiguous' in picked)) fallback = picked;
-        else if (picked.ambiguous) decision.notes.push(picked.ambiguous);
-      }
-    }
 
     const match = sameKey ?? fallback;
     if (!match) {
