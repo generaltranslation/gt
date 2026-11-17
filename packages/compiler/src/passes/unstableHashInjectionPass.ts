@@ -8,6 +8,7 @@ import {
 } from '../transform/injection/injectUnstableTaggedTemplateHash';
 import { buildInlineTranslations } from '../transform/injection/inline-translations/injectInlineTranslations';
 import { replaceTemplateSource } from '../transform/injection/inline-translations/replaceTemplateSource';
+import { compileStaticTemplate } from '../transform/static-runtime/compileStaticTemplate';
 import { createErrorLocation } from '../utils/errors';
 
 /**
@@ -26,6 +27,10 @@ export function unstableHashInjectionPass(
   const replaceSource = getTemplateSourceReplacer(state);
   return {
     TaggedTemplateExpression(path) {
+      if (state.settings.staticRuntime && compileStaticTemplate(path, state)) {
+        state.statistics.unstableHashInjectionsCount += 1;
+        return;
+      }
       if (injectUnstableTaggedTemplateHash(path, buildInline, replaceSource)) {
         state.statistics.unstableHashInjectionsCount += 1;
       }

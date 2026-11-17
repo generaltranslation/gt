@@ -38,6 +38,8 @@ const entries = [
   'src/unstable.rsc.ts',
   'src/vite.ts',
   'src/static-locale.ts',
+  'src/static-runtime.ts',
+  'src/static-runtime-intl.ts',
 ];
 
 // src/index.types.ts only backs the exports map's "types" conditions; its
