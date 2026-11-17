@@ -154,11 +154,6 @@ const INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR =
     fix: 'Remove compileTimeHash: false, or remove files.gt.inlineTranslations from gt.config.json',
   });
 
-/** Installed packages are built already; their own imports are not the app's. */
-function isDependency(id: string): boolean {
-  return /[\\/]node_modules[\\/]/.test(id);
-}
-
 function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
   return logLevel !== 'silent' && logLevel !== 'error';
 }
@@ -585,7 +580,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             allowReturnOutsideFunction: true,
           });
 
-          if (omitIcuParser && isProduction() && !isDependency(id)) {
+          if (omitIcuParser && isProduction()) {
             const error = getIcuStringImportError(ast.program, id);
             if (error) throw new InvalidLibraryUsageError(error);
           }

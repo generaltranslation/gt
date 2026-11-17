@@ -15,9 +15,9 @@ no locale-data polyfills are shipped.
 - `@generaltranslation/icu/parser`: the ICU string parser. `parse()`,
   `formatIcu()`, `printAST()` and the syntax-tree types. Under the
   `gt-omit-icu-parser` export condition it resolves to a build without the
-  parser, where those three functions throw: for a bundle of an app whose
-  messages are all message trees, which imports this entry through other
-  packages and never calls it.
+  parser, where those three functions throw and the first call logs the
+  error: for a bundle of an app whose messages are all message trees, which
+  imports this entry through other packages and never calls it.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
   not a public API, and it may change in any release.
 

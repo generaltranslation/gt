@@ -26,16 +26,53 @@ const OMIT_ICU_PARSER_CONDITION = 'gt-omit-icu-parser';
 
 const ICU_PACKAGE_NAME = '@generaltranslation/icu';
 
-// What the stable entry points export that formats or reads an ICU string
-const ICU_STRING_APIS = new Set<string>([
-  ...Object.values(GT_FUNCTIONS_WITH_CALLBACKS),
-  GT_OTHER_FUNCTIONS.msg,
-  GT_OTHER_FUNCTIONS.t,
-  'tx',
-  'useTranslations',
-  'getTranslations',
-  'decodeVars',
-]);
+// Entry points an app imports GT's string APIs from; their /unstable
+// subpaths format message trees
+const FRAMEWORK_ROOTS: readonly string[] = [
+  ...Object.values(GT_IMPORT_SOURCES),
+  'gt-node',
+  'gt-react-native',
+  '@generaltranslation/react-core',
+];
+
+// The packages those are built on
+const LIBRARY_ROOTS: readonly string[] = [
+  'generaltranslation',
+  '@generaltranslation/format',
+];
+
+/** By entry point, the exports that format or read an ICU string. */
+const ICU_STRING_EXPORTS: readonly (readonly [
+  roots: readonly string[],
+  names: ReadonlySet<string>,
+])[] = [
+  [
+    FRAMEWORK_ROOTS,
+    new Set<string>([
+      ...Object.values(GT_FUNCTIONS_WITH_CALLBACKS),
+      GT_OTHER_FUNCTIONS.msg,
+      GT_OTHER_FUNCTIONS.t,
+      GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateString,
+      'tx',
+      'gtFallback',
+      'mFallback',
+      'useTranslations',
+      'getTranslations',
+      'decodeVars',
+    ]),
+  ],
+  [
+    LIBRARY_ROOTS,
+    new Set([
+      'formatMessage',
+      'decodeVars',
+      'indexVars',
+      'extractVars',
+      'condenseVars',
+    ]),
+  ],
+  [[ICU_PARSER_SPECIFIER], new Set(['formatIcu', 'parse', 'printAST'])],
+];
 
 /**
  * Whether this build leaves out the ICU string parser: the
@@ -96,57 +133,170 @@ export const OMITTED_ICU_PARSER_UNAVAILABLE_WARNING = createDiagnosticMessage({
 /**
  * An error for the first import in `program` of something that formats an ICU
  * string, which a build without the parser cannot do; undefined when the
- * module has none. The `/unstable` entry points format message trees.
+ * module has none, or belongs to a GT package, whose own code is what the
+ * build without the parser is for. The `/unstable` entry points format
+ * message trees.
+ *
+ * An import by name fails when the name is one of those exports. An import
+ * that takes a whole entry point (a namespace or default import, `export *`,
+ * `import()` or `require()`) fails whatever the module does with it, since
+ * the compiler does not follow what is read from it.
  */
 export function getIcuStringImportError(
   program: t.Program,
   filename: string
 ): string | undefined {
+  const found = findIcuStringImport(program);
+  if (!found || isGTPackageModule(filename)) return undefined;
+  const turnOff = `turn off experimentalOmitIcuParser (${OMIT_ICU_PARSER_ENV_VAR})`;
+  return createDiagnosticMessage({
+    source: '@generaltranslation/compiler',
+    severity: 'Error',
+    whatHappened:
+      found.name === undefined
+        ? `${found.form} "${found.source}" can reach what works with ICU strings there, but experimentalOmitIcuParser leaves the ICU parser out of this build`
+        : `${found.name} from "${found.source}" works with ICU strings, but experimentalOmitIcuParser leaves the ICU parser out of this build`,
+    fix:
+      found.name === undefined
+        ? `Import what this module uses from "${found.source}" by name, or ${turnOff}`
+        : `Write these messages with the tagged templates of the /unstable entry point or with <T>, or ${turnOff}`,
+    details: createErrorLocation(found.node)
+      .trim()
+      .replace('{filename}', filename),
+  });
+}
+
+type IcuStringImport = {
+  source: string;
+  node: t.Node;
+} & (
+  | { name: string; form?: undefined }
+  // How the module takes the whole entry point
+  | { name?: undefined; form: string }
+);
+
+function findIcuStringImport(program: t.Program): IcuStringImport | undefined {
   for (const statement of program.body) {
     if (
       (!t.isImportDeclaration(statement) &&
-        !t.isExportNamedDeclaration(statement)) ||
+        !t.isExportNamedDeclaration(statement) &&
+        !t.isExportAllDeclaration(statement)) ||
       !statement.source ||
-      !isStableGTImportSource(statement.source.value) ||
       (t.isImportDeclaration(statement)
         ? statement.importKind === 'type'
         : statement.exportKind === 'type')
     ) {
       continue;
     }
+    const source = statement.source.value;
+    const names = getIcuStringExports(source);
+    if (!names) continue;
+    if (t.isExportAllDeclaration(statement)) {
+      return { source, node: statement, form: 'export * from' };
+    }
     for (const specifier of statement.specifiers) {
+      if (t.isImportNamespaceSpecifier(specifier)) {
+        return { source, node: specifier, form: 'A namespace import of' };
+      }
+      if (t.isExportNamespaceSpecifier(specifier)) {
+        return { source, node: specifier, form: 'export * from' };
+      }
+      if (t.isImportDefaultSpecifier(specifier)) {
+        return { source, node: specifier, form: 'A default import of' };
+      }
+      if (t.isImportSpecifier(specifier) && specifier.importKind === 'type') {
+        continue;
+      }
       const imported = t.isImportSpecifier(specifier)
         ? specifier.imported
         : t.isExportSpecifier(specifier)
           ? specifier.local
           : undefined;
       const name = t.isIdentifier(imported) ? imported.name : imported?.value;
-      if (
-        name === undefined ||
-        !ICU_STRING_APIS.has(name) ||
-        (t.isImportSpecifier(specifier) && specifier.importKind === 'type')
-      ) {
-        continue;
+      if (name === 'default') {
+        return { source, node: specifier, form: 'A default import of' };
       }
-      return createDiagnosticMessage({
-        source: '@generaltranslation/compiler',
-        severity: 'Error',
-        whatHappened: `${name} from "${statement.source.value}" works with ICU strings, but experimentalOmitIcuParser leaves the ICU parser out of this build`,
-        fix: `Write these messages with the tagged templates of the /unstable entry point or with <T>, or turn off experimentalOmitIcuParser (${OMIT_ICU_PARSER_ENV_VAR})`,
-        details: createErrorLocation(specifier)
-          .trim()
-          .replace('{filename}', filename),
-      });
+      if (name !== undefined && names.has(name)) {
+        return { source, node: specifier, name };
+      }
     }
   }
-  return undefined;
+
+  let dynamic: IcuStringImport | undefined;
+  t.traverseFast(program, (node) => {
+    if (dynamic) return;
+    const [form, argument] = t.isImportExpression(node)
+      ? ['import() of', node.source]
+      : t.isCallExpression(node) && t.isImport(node.callee)
+        ? ['import() of', node.arguments[0]]
+        : t.isCallExpression(node) &&
+            t.isIdentifier(node.callee, { name: 'require' })
+          ? ['require() of', node.arguments[0]]
+          : [];
+    const source = t.isStringLiteral(argument)
+      ? argument.value
+      : t.isTemplateLiteral(argument) && argument.expressions.length === 0
+        ? argument.quasis[0].value.cooked
+        : undefined;
+    if (form && source != null && getIcuStringExports(source)) {
+      dynamic = { source, node, form };
+    }
+  });
+  return dynamic;
 }
 
-function isStableGTImportSource(source: string): boolean {
+/** The exports of an entry point that work with ICU strings, if it has any. */
+function getIcuStringExports(source: string): ReadonlySet<string> | undefined {
+  if (isUnstableGTImportSource(source)) return undefined;
+  return ICU_STRING_EXPORTS.find(([roots]) =>
+    roots.some((root) => source === root || source.startsWith(`${root}/`))
+  )?.[1];
+}
+
+const gtPackageDirectories = new Map<string, boolean>();
+
+/** Whether a module is part of a GT package, installed or linked from a workspace. */
+function isGTPackageModule(filename: string): boolean {
+  const file = filename.split('?')[0];
+  if (!path.isAbsolute(file)) return false;
+  const visited: string[] = [];
+  let directory = path.dirname(file);
+  let result: boolean | undefined;
+  while (result === undefined) {
+    result = gtPackageDirectories.get(directory);
+    if (result !== undefined) break;
+    visited.push(directory);
+    const manifest = path.join(directory, 'package.json');
+    if (fs.existsSync(manifest)) {
+      result = isGTPackageName(readPackageName(manifest));
+      break;
+    }
+    const parent = path.dirname(directory);
+    if (parent === directory) result = false;
+    directory = parent;
+  }
+  for (const visitedDirectory of visited) {
+    gtPackageDirectories.set(visitedDirectory, result);
+  }
+  return result;
+}
+
+function readPackageName(manifest: string): string | undefined {
+  try {
+    const { name } = JSON.parse(fs.readFileSync(manifest, 'utf8')) as {
+      name?: unknown;
+    };
+    return typeof name === 'string' ? name : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function isGTPackageName(name: string | undefined): boolean {
   return (
-    !isUnstableGTImportSource(source) &&
-    Object.values(GT_IMPORT_SOURCES).some(
-      (root) => source === root || source.startsWith(`${root}/`)
-    )
+    name !== undefined &&
+    (name.startsWith('@generaltranslation/') ||
+      FRAMEWORK_ROOTS.includes(name) ||
+      LIBRARY_ROOTS.includes(name))
   );
 }
