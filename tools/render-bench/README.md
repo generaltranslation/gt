@@ -207,6 +207,8 @@ not the commit of this directory; results record it.
 `baselines/` keeps the results measured so far, by the commit of the GT
 packages: `47ce7096b` (`baseline` and `floor`), and the translation files per
 chunk of #2869 at `3a4cee2cc`, `097ad3607` (`sidecars`, and the same packages
-with the option off as `off`) and `24eae20c2` (`sidecars-map`).
+with the option off as `off`), `24eae20c2` (`sidecars-map`) and `911fe605e`
+(all three again; measured on `dfbfd1c9f`, which builds these apps to the
+same bytes).
 `node scripts/load/report.mjs baselines/*/<app>-*.json` prints them side by
 side.

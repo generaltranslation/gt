@@ -434,12 +434,14 @@ for (let i = 0; i < samples; i++) {
 let redeploy;
 if (args.redeploy) {
   const next = resolve(args.redeploy);
-  const names = (directory) =>
+  const names = (directory, kind) =>
     readdirSync(directory, { recursive: true })
       .map((file) => `/${file.split(sep).join('/')}`)
-      .filter((path) => translationFiles.test(path));
-  const before = new Set(names(dist));
-  const after = names(next);
+      .filter((path) => categorize(path) === kind);
+  const before = new Set(names(dist, 'translations'));
+  const after = names(next, 'translations');
+  const scriptsBefore = new Set(names(dist, 'js'));
+  const scriptsAfter = names(next, 'js');
   const context = await newContext();
   try {
     await load(context, unshaped, routes);
@@ -449,6 +451,10 @@ if (args.redeploy) {
       dist: relative(root, next),
       translationFiles: after.length,
       translationFilesRenamed: after.filter((path) => !before.has(path)).length,
+      // The JavaScript files of every locale's pages that the deploy renamed.
+      scripts: scriptsAfter.length,
+      scriptsRenamed: scriptsAfter.filter((path) => !scriptsBefore.has(path))
+        .length,
       firstLoad: returning.firstLoad,
       afterRoutes: returning.afterRoutes,
     };

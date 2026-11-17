@@ -102,7 +102,7 @@ const visit = (transfer) =>
 console.log(
   [
     `${args.app} ${name}, ${args.locale}: one translation changed (${hash}).`,
-    `Translation files of the locale with another URL: ${redeploy.translationFilesRenamed} of ${redeploy.translationFiles}.`,
+    `Translation files of the locale with another URL: ${redeploy.translationFilesRenamed} of ${redeploy.translationFiles}. JavaScript files with another URL: ${redeploy.scriptsRenamed} of ${redeploy.scripts}.`,
     `First visit of ${result.routes.length} routes: ${visit(bytes.afterRoutes)}.`,
     `The same visit after the deploy: ${visit(redeploy.afterRoutes)}.`,
   ].join('\n')

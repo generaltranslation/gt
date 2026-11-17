@@ -1,0 +1,69 @@
+{
+  "kind": "build",
+  "sha": "cdc913a50",
+  "date": "2026-11-17T23:33:08.212Z",
+  "machine": "Apple M4 Max, 16 cores, 128 GB",
+  "os": "darwin 24.6.0",
+  "node": "v24.13.0",
+  "packages": "dfbfd1c9f",
+  "app": "app-5k",
+  "messages": 5000,
+  "locales": ["fr-CA", "de", "es"],
+  "name": "sidecars",
+  "variant": "sidecars",
+  "env": {
+    "GT_OMIT_ICU_PARSER": "1",
+    "GT_CHUNK_TRANSLATIONS": "true"
+  },
+  "compilerOptions": {},
+  "init": "catalog",
+  "builds": [
+    {
+      "target": "sidecars",
+      "outDir": "apps/app-5k/dist/sidecars",
+      "runs": [
+        {
+          "wallMs": 1137.8032910000002,
+          "peakRssBytes": 714129408,
+          "peakFootprintBytes": 683682928,
+          "cpuSeconds": 2.09
+        },
+        {
+          "wallMs": 1129.3889580000002,
+          "peakRssBytes": 704872448,
+          "peakFootprintBytes": 666478312,
+          "cpuSeconds": 2.06
+        },
+        {
+          "wallMs": 1123.836625,
+          "peakRssBytes": 703807488,
+          "peakFootprintBytes": 662447752,
+          "cpuSeconds": 2.1
+        }
+      ],
+      "wallMs": {
+        "n": 3,
+        "median": 1129.39,
+        "p25": 1126.61,
+        "p75": 1133.6,
+        "min": 1123.84,
+        "max": 1137.8
+      },
+      "peakRssBytes": {
+        "n": 3,
+        "median": 704872448,
+        "p25": 704339968,
+        "p75": 709500928,
+        "min": 703807488,
+        "max": 714129408
+      },
+      "files": 379,
+      "filesByKind": {
+        "js": 98,
+        "translations": 279,
+        "other": 2
+      },
+      "bytes": 2273286
+    }
+  ]
+}
