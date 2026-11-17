@@ -109,6 +109,11 @@ export function injectUnstableTaggedTemplateHash(
     hoist: HoistMessage;
     replacedLocale: string | undefined;
     /**
+     * Set in a per-locale build that renders the source: the default locale,
+     * which is the locale every message's own tree is rendered in there.
+     */
+    sourceLocale?: string;
+    /**
      * The translation of an embedded template whose text could not be
      * replaced, when it can be the message's tree as it is.
      */
@@ -213,10 +218,13 @@ export function injectUnstableTaggedTemplateHash(
       metadata,
       tree: translated ?? message.tree,
       bindings: message.bindings,
-      // A replaced tree is the translation, so it embeds no other copy.
+      // A replaced tree is the translation, so it embeds no other copy; in a
+      // build for the source locale, the source is what the build renders.
       ...(replaced || translated !== undefined
         ? { locale: precompute.replacedLocale }
-        : { inline: embeds ? buildInline(hash) : undefined }),
+        : precompute.sourceLocale !== undefined
+          ? { locale: precompute.sourceLocale }
+          : { inline: embeds ? buildInline(hash) : undefined }),
       // The call a template literal keeps for objects runs for no typed
       // value, so its message is written there and nothing is declared.
       hoist: isNative ? undefined : precompute.hoist,

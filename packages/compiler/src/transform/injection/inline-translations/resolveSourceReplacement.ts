@@ -1,3 +1,4 @@
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { GTConfig } from '../../../config';
 import { readBooleanEnv } from '../../../utils/readBooleanEnv';
@@ -15,10 +16,14 @@ export const REPLACE_SOURCE_ENV_VAR = 'GT_REPLACE_SOURCE';
 /**
  * How a per-locale build replaces source content at its call sites: `locale`
  * is the embedded spelling translations are read under, or undefined when the
- * static locale renders the source, and `jsx` is false when `<T>` must stay a
- * component (id-tagging with `_tagIds`).
+ * static locale renders the source, in `defaultLocale`, and `jsx` is false
+ * when `<T>` must stay a component (id-tagging with `_tagIds`).
  */
-export type SourceReplacement = { locale: string | undefined; jsx: boolean };
+export type SourceReplacement = {
+  locale: string | undefined;
+  defaultLocale: string;
+  jsx: boolean;
+};
 
 export const REPLACE_SOURCE_WITHOUT_STATIC_LOCALE_ERROR =
   createDiagnosticMessage({
@@ -59,6 +64,7 @@ export function resolveSourceReplacement(
       staticLocaleResolution.kind === 'embedded'
         ? staticLocaleResolution.locale
         : undefined,
+    defaultLocale: gtConfig?.defaultLocale ?? defaultDefaultLocale,
     jsx: gtConfig?._tagIds !== true,
   };
 }

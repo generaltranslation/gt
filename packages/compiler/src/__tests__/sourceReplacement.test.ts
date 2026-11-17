@@ -1103,8 +1103,10 @@ describe('experimentalReplaceSource', () => {
           if (sourceNative !== undefined) {
             expect(replaced).not.toBe(kept);
           } else if (sourceLiteral === undefined) {
-            // maxChars, and values that are read once, are left to the runtime
-            expect(replaced).toBe(kept);
+            // maxChars, and values that are read once, are left to the runtime,
+            // which renders the message in the build's default locale
+            expect(replaced).toContain('$_locale: "en"');
+            expect(replaced!.replaceAll(', $_locale: "en"', '')).toBe(kept);
           } else {
             expect(replaced).toContain(
               `() => ${JSON.stringify(sourceLiteral)};`
@@ -1240,7 +1242,7 @@ describe('experimentalReplaceSource', () => {
       );
       expect(sourceReplaced).toContain('title: "Greeting"');
       expect(sourceReplaced).toMatch(
-        /typeof name == "object" && name \? gt\(\{ \$_hash: "[0-9a-f]+", \$_tree: \["Hello ", \["name"\]\] \}, \{ name \}\) : `Hello \$\{name \?\? ""\}`/
+        /typeof name == "object" && name \? gt\(\{ \$_hash: "[0-9a-f]+", \$_tree: \["Hello ", \["name"\]\], \$_locale: "en" \}, \{ name \}\) : `Hello \$\{name \?\? ""\}`/
       );
       expect(await renderAll(sourceReplaced!, [{ name: 'Ada' }])).toEqual(
         await renderAll(source!, [{ name: 'Ada' }])
@@ -1425,7 +1427,7 @@ describe('experimentalReplaceSource', () => {
         return /* @__PURE__ */jsxs("button", { title: "Save", children: ["Save",
 
           " ", typeof
-          name == "object" && name ? gt({ $_hash: "982bebc72bdeffdf", $_tree: ["Hi ", ["name"]] }, { name }) : \`Hi \${name ?? ""}\`]
+          name == "object" && name ? gt({ $_hash: "982bebc72bdeffdf", $_tree: ["Hi ", ["name"]], $_locale: "en" }, { name }) : \`Hi \${name ?? ""}\`]
         });
       }
       export {
