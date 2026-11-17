@@ -121,23 +121,30 @@ describe('writeMessageTranslations', () => {
     expect(fs.existsSync(path.join(dir, 'de.msg.json'))).toBe(false);
   });
 
-  test('keeps the previous file and continues when a translations file is invalid', async () => {
-    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
-    fs.writeFileSync(path.join(dir, 'fr.json'), '{ not json');
-    fs.writeFileSync(path.join(dir, 'fr.msg.json'), '{"a":"Ancien"}');
-    fs.writeFileSync(path.join(dir, 'es.json'), '{"a":"Hola"}');
-    recordHashes(['b']);
-    const msgOutput = path.join(dir, '[locale].msg.json');
+  test.each([
+    ['not JSON', '{ not json'],
+    ['null', 'null'],
+    ['an array', '["Bonjour"]'],
+  ])(
+    'keeps the previous file and continues when a translations file is %s',
+    async (_, contents) => {
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+      fs.writeFileSync(path.join(dir, 'fr.json'), contents);
+      fs.writeFileSync(path.join(dir, 'fr.msg.json'), '{"a":"Ancien"}');
+      fs.writeFileSync(path.join(dir, 'es.json'), '{"a":"Hola"}');
+      recordHashes(['b']);
+      const msgOutput = path.join(dir, '[locale].msg.json');
 
-    await writeMessageTranslations(settings(msgOutput));
-    expect(warn).toHaveBeenCalledOnce();
-    expect(readJson('fr.msg.json')).toEqual({ a: 'Ancien' });
-    expect(readJson('es.msg.json')).toEqual({ a: 'Hola' });
+      await writeMessageTranslations(settings(msgOutput));
+      expect(warn).toHaveBeenCalledOnce();
+      expect(readJson('fr.msg.json')).toEqual({ a: 'Ancien' });
+      expect(readJson('es.msg.json')).toEqual({ a: 'Hola' });
 
-    fs.writeFileSync(path.join(dir, 'fr.json'), '{"a":"Bonjour"}');
-    await writeMessageTranslations(settings(msgOutput));
-    expect(readJson('fr.msg.json')).toEqual({ a: 'Bonjour' });
-  });
+      fs.writeFileSync(path.join(dir, 'fr.json'), '{"a":"Bonjour"}');
+      await writeMessageTranslations(settings(msgOutput));
+      expect(readJson('fr.msg.json')).toEqual({ a: 'Bonjour' });
+    }
+  );
 
   test.each([
     ['without [locale]', 'messages.json'],

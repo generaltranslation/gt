@@ -43,23 +43,33 @@ export async function writeMessageTranslations(
     if (!translationsPath || !messagesPath) continue;
     if (!fs.existsSync(translationsPath)) continue;
 
-    let translations: Record<string, unknown>;
+    let parsed: unknown;
     try {
-      translations = JSON.parse(
-        await fs.promises.readFile(translationsPath, 'utf8')
-      );
+      parsed = JSON.parse(await fs.promises.readFile(translationsPath, 'utf8'));
     } catch (error) {
       logger.warn(
-        createDiagnosticMessage({
-          source: 'gt',
-          severity: 'Warning',
-          whatHappened: `Could not write ${messagesPath}`,
-          why: `${translationsPath} is not valid JSON`,
-          details: formatDiagnosticErrorDetails(error),
-        })
+        createSkippedLocaleDiagnostic(
+          messagesPath,
+          `${translationsPath} is not valid JSON`,
+          formatDiagnosticErrorDetails(error)
+        )
       );
       continue;
     }
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      logger.warn(
+        createSkippedLocaleDiagnostic(
+          messagesPath,
+          `${translationsPath} is not a JSON object`
+        )
+      );
+      continue;
+    }
+    const translations = parsed as Record<string, unknown>;
 
     const messages: Record<string, unknown> = {};
     for (const hash of Object.keys(translations).sort()) {
@@ -67,6 +77,20 @@ export async function writeMessageTranslations(
     }
     await saveJSON(messagesPath, messages);
   }
+}
+
+function createSkippedLocaleDiagnostic(
+  messagesPath: string,
+  why: string,
+  details?: ReturnType<typeof formatDiagnosticErrorDetails>
+): string {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Warning',
+    whatHappened: `Could not write ${messagesPath}`,
+    why,
+    details,
+  });
 }
 
 function getInvalidMsgOutputReason(
