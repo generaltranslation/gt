@@ -77,6 +77,10 @@ import {
   finishStaticRuntimeFile,
   mayNeedStaticRuntime,
 } from './transform/static-runtime/staticRuntimeModule';
+import {
+  createUncompiledCallSitesError,
+  findUncompiledCallSites,
+} from './transform/validation/uncompiledCallSites';
 import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import {
@@ -583,6 +587,19 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           if (omitIcuParser && isProduction() && !isDependency(id)) {
             const error = getIcuStringImportError(ast.program, id);
             if (error) throw new InvalidLibraryUsageError(error);
+          }
+
+          if (
+            isProduction() &&
+            gtFiles?.inlineTranslations?.locales.length &&
+            !isDependency(id)
+          ) {
+            const uncompiled = findUncompiledCallSites(ast);
+            if (uncompiled.length) {
+              throw new InvalidLibraryUsageError(
+                createUncompiledCallSitesError(uncompiled, id, meta.framework)
+              );
+            }
           }
 
           // Pass 1: Jsx insertion
