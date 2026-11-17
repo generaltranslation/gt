@@ -23,6 +23,8 @@ const runtimeArtifactNames = [
   'unstable.mjs',
   'unstable.rsc.cjs',
   'unstable.rsc.mjs',
+  'static-locale.cjs',
+  'static-locale.mjs',
 ].sort();
 const builtArtifacts = runtimeArtifactNames.map((artifact) =>
   join(packageRoot, 'dist', artifact)
@@ -52,9 +54,11 @@ function isAllowedExternalizedSubpath(
 ): boolean {
   // Entries keep shared React context and singletons external.
   return (
-    (/^(?:index|compat)\./.test(file) || file.startsWith('unstable')) &&
-    (specifier.startsWith('@generaltranslation/react-core/') ||
-      specifier.startsWith('gt-i18n/'))
+    ((/^(?:index|compat)\./.test(file) || file.startsWith('unstable')) &&
+      (specifier.startsWith('@generaltranslation/react-core/') ||
+        specifier.startsWith('gt-i18n/'))) ||
+    // static-locale imports gt-i18n as a dependency
+    (file.startsWith('static-locale.') && specifier.startsWith('gt-i18n/'))
   );
 }
 
@@ -265,6 +269,48 @@ describe('gt-react package exports', () => {
           assert.equal('useTranslations' in react, false);
         `,
       ]);
+    }
+  });
+
+  it('loads gt-react/static-locale without React', () => {
+    for (const loader of [
+      `const staticLocale = require('gt-react/static-locale');`,
+      `const staticLocale = await import('gt-react/static-locale');`,
+    ]) {
+      node([
+        '-e',
+        `
+          (async () => {
+            const assert = require('node:assert/strict');
+            const Module = require('node:module');
+            const load = Module._load;
+            Module._load = function (request, ...args) {
+              if (/^react(-dom)?(\\/|$)/.test(request)) {
+                throw new Error('static-locale loaded ' + request);
+              }
+              return load.call(this, request, ...args);
+            };
+            ${loader}
+            assert.deepEqual(Object.keys(staticLocale), ['negotiateLocale']);
+            const { negotiateLocale } = staticLocale;
+            const request = new Request('http://localhost/', {
+              headers: { 'accept-language': 'fr' },
+            });
+            assert.equal(
+              negotiateLocale(request, { locales: ['fr'], defaultLocale: 'en' }),
+              'fr'
+            );
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+        `,
+      ]);
+    }
+    for (const file of ['dist/static-locale.cjs', 'dist/static-locale.mjs']) {
+      expect(readFileSync(join(packageRoot, file), 'utf8')).not.toMatch(
+        /["']react(-dom)?(\/[^"']*)?["']/
+      );
     }
   });
 

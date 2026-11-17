@@ -202,6 +202,16 @@
         "default": "./dist/unstable.mjs"
       },
       "default": "./dist/unstable.mjs"
+    },
+    "./static-locale": {
+      "require": {
+        "types": "./dist/static-locale.d.cts",
+        "default": "./dist/static-locale.cjs"
+      },
+      "import": {
+        "types": "./dist/static-locale.d.mts",
+        "default": "./dist/static-locale.mjs"
+      }
     }
   },
   "keywords": [
