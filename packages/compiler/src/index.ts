@@ -329,7 +329,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         ) {
           throw new Error(INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR);
         }
-        if (inlineTranslationsModules?.mode !== 'physical' || !isProduction()) {
+        if (
+          inlineTranslationsModules?.mode !== 'physical' ||
+          !isProduction() ||
+          // Embeds nothing, and must not delete the modules other builds share
+          (staticLocaleResolution && staticLocaleResolution.kind !== 'embedded')
+        ) {
           return;
         }
         const modules = renderInlineTranslationsModules(loadModulesTable());

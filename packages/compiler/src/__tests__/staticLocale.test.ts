@@ -14,6 +14,7 @@ import gtUnplugin from '../index';
 import type { GTUnpluginOptions } from '../index';
 import { transformWithPlugin } from './transformWithPlugin';
 import { clearInlineTranslationsCache } from '../transform/injection/inline-translations/loadInlineTranslations';
+import { renderInlineTranslationsModule } from '../transform/injection/inline-translations/inlineTranslationsModules';
 
 // Same hashes inlineTranslations.test.ts pins
 const HELLO_WORLD = '8ffa9649730810de';
@@ -308,12 +309,28 @@ describe('experimentalStaticLocale', () => {
       expect(result?.code).not.toContain('Hola');
     });
 
-    it('writes no modules for the default locale', () => {
-      const { root, options: pluginOptions } = moduleOptions('en', 'physical');
-      createModulesPlugin(root, pluginOptions).buildStart.call(context);
-      const dir = path.join(root, '.gt/messages');
-      expect(fs.existsSync(dir) ? fs.readdirSync(dir) : []).toEqual([]);
-    });
+    it.each(['en', 'ja'])(
+      'leaves the shared modules alone for a locale that embeds nothing (%s)',
+      (staticLocale) => {
+        const { root, options: pluginOptions } = moduleOptions(
+          staticLocale,
+          'physical'
+        );
+        const dir = path.join(root, '.gt/messages');
+        fs.mkdirSync(dir, { recursive: true });
+        const shared = path.join(dir, `${HELLO_WORLD}.js`);
+        fs.writeFileSync(
+          shared,
+          renderInlineTranslationsModule(
+            { fr: { [HELLO_WORLD]: 'Bonjour' } },
+            HELLO_WORLD
+          )!
+        );
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        createModulesPlugin(root, pluginOptions).buildStart.call(context);
+        expect(fs.readdirSync(dir)).toEqual([`${HELLO_WORLD}.js`]);
+      }
+    );
   });
 
   describe('warnings', () => {
