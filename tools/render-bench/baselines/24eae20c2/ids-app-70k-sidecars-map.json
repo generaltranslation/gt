@@ -5,8 +5,15 @@
   "packages": "24eae20c2",
   "locale": "fr-CA",
   "ids": 70000,
-  "callSites": 107193,
-  "translationKeys": 70000,
+  "placesInJs": 107193,
+  "entriesInTranslationFiles": 98301,
+  "translationFiles": 1285,
+  "chunks": 1290,
+  "positionalReads": {
+    "own": 107193,
+    "entry": 0,
+    "neither": 0
+  },
   "compression": "brotli quality 11, gzip level 6",
   "idLength": {
     "prefix": {
@@ -17,277 +24,458 @@
       "mean": 6.004671428571428,
       "max": 9
     },
+    "prefix8": {
+      "mean": 8.00002857142857,
+      "max": 9
+    },
     "counter": {
       "mean": 2.9442,
       "max": 3
     }
   },
   "sizes": {
-    "startup JS, first route": {
-      "original": {
+    "original": {
+      "startup JS, first route": {
         "raw": 6059199,
         "gzip": 1120512,
         "brotli": 901532
       },
-      "prefix": {
-        "raw": 5672694,
-        "gzip": 893163,
-        "brotli": 724727
-      },
-      "prefix6": {
-        "raw": 5716638,
-        "gzip": 921171,
-        "brotli": 735266
-      },
-      "counter": {
-        "raw": 5611737,
-        "gzip": 864810,
-        "brotli": 700748
-      }
-    },
-    "all JS": {
-      "original": {
+      "all JS": {
         "raw": 14844891,
         "gzip": 4302952,
         "brotli": 3428026
       },
-      "prefix": {
-        "raw": 13636275,
-        "gzip": 3541021,
-        "brotli": 2833433
-      },
-      "prefix6": {
-        "raw": 13773464,
-        "gzip": 3634702,
-        "brotli": 2869805
-      },
-      "counter": {
-        "raw": 13445484,
-        "gzip": 3440866,
-        "brotli": 2728837
-      }
-    },
-    "translations, first load": {
-      "original": {
+      "translations, first load": {
         "raw": 1960280,
         "gzip": 821366,
         "brotli": 724323
       },
-      "prefix": {
-        "raw": 1624595,
-        "gzip": 598810,
-        "brotli": 536048
-      },
-      "prefix6": {
-        "raw": 1662765,
-        "gzip": 626737,
-        "brotli": 555042
-      },
-      "counter": {
-        "raw": 1571650,
-        "gzip": 574838,
-        "brotli": 516322
-      }
-    },
-    "translations, 3 routes": {
-      "original": {
+      "translations, 3 routes": {
         "raw": 1965511,
         "gzip": 824459,
         "brotli": 727082
       },
-      "prefix": {
-        "raw": 1628653,
-        "gzip": 601100,
-        "brotli": 538109
-      },
-      "prefix6": {
-        "raw": 1666956,
-        "gzip": 629136,
-        "brotli": 557173
-      },
-      "counter": {
-        "raw": 1575523,
-        "gzip": 577041,
-        "brotli": 518300
-      }
-    },
-    "all translation files of the locale": {
-      "original": {
+      "all translation files of the locale": {
         "raw": 5577304,
         "gzip": 2830729,
         "brotli": 2511466
       },
-      "prefix": {
-        "raw": 4468989,
-        "gzip": 2081927,
-        "brotli": 1872646
-      },
-      "prefix6": {
-        "raw": 4594753,
-        "gzip": 2174979,
-        "brotli": 1933088
-      },
-      "counter": {
-        "raw": 4293974,
-        "gzip": 1996266,
-        "brotli": 1798021
-      }
-    },
-    "map file": {
-      "original": {
+      "map file": {
         "raw": 43823,
         "gzip": 20591,
         "brotli": 16593
       },
-      "prefix": {
-        "raw": 43823,
-        "gzip": 20591,
-        "brotli": 16593
-      },
-      "prefix6": {
-        "raw": 43823,
-        "gzip": 20591,
-        "brotli": 16593
-      },
-      "counter": {
-        "raw": 43823,
-        "gzip": 20591,
-        "brotli": 16593
-      }
-    },
-    "first load, en": {
-      "original": {
+      "first load, en": {
         "raw": 6062351,
         "gzip": 1121911,
         "brotli": 902682
       },
-      "prefix": {
+      "first load, fr-CA": {
+        "raw": 8066454,
+        "gzip": 1963868,
+        "brotli": 1643598
+      }
+    },
+    "prefix": {
+      "startup JS, first route": {
+        "raw": 5672694,
+        "gzip": 893163,
+        "brotli": 724727
+      },
+      "all JS": {
+        "raw": 13636275,
+        "gzip": 3541021,
+        "brotli": 2833433
+      },
+      "translations, first load": {
+        "raw": 1624595,
+        "gzip": 598810,
+        "brotli": 536048
+      },
+      "translations, 3 routes": {
+        "raw": 1628653,
+        "gzip": 601100,
+        "brotli": 538109
+      },
+      "all translation files of the locale": {
+        "raw": 4468989,
+        "gzip": 2081927,
+        "brotli": 1872646
+      },
+      "map file": {
+        "raw": 43823,
+        "gzip": 20591,
+        "brotli": 16593
+      },
+      "first load, en": {
         "raw": 5675846,
         "gzip": 894562,
         "brotli": 725877
       },
-      "prefix6": {
+      "first load, fr-CA": {
+        "raw": 7344264,
+        "gzip": 1513963,
+        "brotli": 1278518
+      }
+    },
+    "prefix6": {
+      "startup JS, first route": {
+        "raw": 5716638,
+        "gzip": 921171,
+        "brotli": 735266
+      },
+      "all JS": {
+        "raw": 13773464,
+        "gzip": 3634702,
+        "brotli": 2869805
+      },
+      "translations, first load": {
+        "raw": 1662765,
+        "gzip": 626737,
+        "brotli": 555042
+      },
+      "translations, 3 routes": {
+        "raw": 1666956,
+        "gzip": 629136,
+        "brotli": 557173
+      },
+      "all translation files of the locale": {
+        "raw": 4594753,
+        "gzip": 2174979,
+        "brotli": 1933088
+      },
+      "map file": {
+        "raw": 43823,
+        "gzip": 20591,
+        "brotli": 16593
+      },
+      "first load, en": {
         "raw": 5719790,
         "gzip": 922570,
         "brotli": 736416
       },
-      "counter": {
-        "raw": 5614889,
-        "gzip": 866209,
-        "brotli": 701898
-      }
-    },
-    "first load, fr-CA": {
-      "original": {
-        "raw": 8066454,
-        "gzip": 1963868,
-        "brotli": 1643598
-      },
-      "prefix": {
-        "raw": 7344264,
-        "gzip": 1513963,
-        "brotli": 1278518
-      },
-      "prefix6": {
+      "first load, fr-CA": {
         "raw": 7426378,
         "gzip": 1569898,
         "brotli": 1308051
+      }
+    },
+    "prefix8": {
+      "startup JS, first route": {
+        "raw": 5785017,
+        "gzip": 964499,
+        "brotli": 767656
       },
-      "counter": {
+      "all JS": {
+        "raw": 13987349,
+        "gzip": 3776953,
+        "brotli": 2979764
+      },
+      "translations, first load": {
+        "raw": 1722154,
+        "gzip": 668899,
+        "brotli": 588250
+      },
+      "translations, 3 routes": {
+        "raw": 1726553,
+        "gzip": 671431,
+        "brotli": 590511
+      },
+      "all translation files of the locale": {
+        "raw": 4790898,
+        "gzip": 2315003,
+        "brotli": 2046486
+      },
+      "map file": {
+        "raw": 43823,
+        "gzip": 20591,
+        "brotli": 16593
+      },
+      "first load, en": {
+        "raw": 5788169,
+        "gzip": 965898,
+        "brotli": 768806
+      },
+      "first load, fr-CA": {
+        "raw": 7554146,
+        "gzip": 1655388,
+        "brotli": 1373649
+      }
+    },
+    "counter": {
+      "startup JS, first route": {
+        "raw": 5611737,
+        "gzip": 864810,
+        "brotli": 700748
+      },
+      "all JS": {
+        "raw": 13445484,
+        "gzip": 3440866,
+        "brotli": 2728837
+      },
+      "translations, first load": {
+        "raw": 1571650,
+        "gzip": 574838,
+        "brotli": 516322
+      },
+      "translations, 3 routes": {
+        "raw": 1575523,
+        "gzip": 577041,
+        "brotli": 518300
+      },
+      "all translation files of the locale": {
+        "raw": 4293974,
+        "gzip": 1996266,
+        "brotli": 1798021
+      },
+      "map file": {
+        "raw": 43823,
+        "gzip": 20591,
+        "brotli": 16593
+      },
+      "first load, en": {
+        "raw": 5614889,
+        "gzip": 866209,
+        "brotli": 701898
+      },
+      "first load, fr-CA": {
         "raw": 7230362,
         "gzip": 1461638,
         "brotli": 1234813
+      }
+    },
+    "positional": {
+      "startup JS, first route": {
+        "raw": 5532303,
+        "gzip": 827721,
+        "brotli": 658421
+      },
+      "all JS": {
+        "raw": 13144979,
+        "gzip": 3301728,
+        "brotli": 2573463
+      },
+      "translations, first load": {
+        "raw": 1394726,
+        "gzip": 460500,
+        "brotli": 413302
+      },
+      "translations, 3 routes": {
+        "raw": 1397981,
+        "gzip": 462254,
+        "brotli": 414904
+      },
+      "all translation files of the locale": {
+        "raw": 3709585,
+        "gzip": 1595306,
+        "brotli": 1449036
+      },
+      "map file": {
+        "raw": 43823,
+        "gzip": 20591,
+        "brotli": 16593
+      },
+      "first load, en": {
+        "raw": 5535455,
+        "gzip": 829120,
+        "brotli": 659571
+      },
+      "first load, fr-CA": {
+        "raw": 6974004,
+        "gzip": 1310211,
+        "brotli": 1089466
       }
     }
   },
   "idCost": {
     "original": {
-      "perCallSite": {
-        "brotli": 9.702947020794268,
+      "perPlaceInJs": {
+        "raw": 16,
         "gzip": 11.931376115977722,
-        "raw": 16
+        "brotli": 9.702947020794268
       },
-      "perTranslation": {
-        "brotli": 10.521581672617776,
-        "gzip": 12.263771477401043,
-        "raw": 16
+      "perTranslationEntry": {
+        "raw": 19.000061037018952,
+        "gzip": 12.493402915534938,
+        "brotli": 10.763349304686626
       }
     },
     "prefix": {
-      "perCallSite": {
-        "brotli": 4.1560083214389,
+      "perPlaceInJs": {
+        "raw": 4.724860765161904,
         "gzip": 4.8233466737566815,
-        "raw": 4.724860765161904
+        "brotli": 4.1560083214389
       },
-      "perTranslation": {
-        "brotli": 4.022970264798934,
-        "gzip": 4.64633116651916,
-        "raw": 4.725292723370058
+      "perTranslationEntry": {
+        "raw": 7.72535376038901,
+        "gzip": 4.875962604653055,
+        "brotli": 4.264737896867784
       }
     },
     "prefix6": {
-      "perCallSite": {
-        "brotli": 4.4953215228606345,
+      "perPlaceInJs": {
+        "raw": 6.00469247059043,
         "gzip": 5.697293666564048,
-        "raw": 6.00469247059043
+        "brotli": 4.4953215228606345
       },
-      "perTranslation": {
-        "brotli": 4.637836848048341,
-        "gzip": 5.592933947772657,
-        "raw": 6.004669331949827
+      "perTranslationEntry": {
+        "raw": 9.00473036896878,
+        "gzip": 5.822565385906552,
+        "brotli": 4.879604480117191
+      }
+    },
+    "prefix8": {
+      "perPlaceInJs": {
+        "raw": 8.000018657934753,
+        "gzip": 7.0243486048529284,
+        "brotli": 5.521125446624313
+      },
+      "perTranslationEntry": {
+        "raw": 11.000081382691937,
+        "gzip": 7.247006642862229,
+        "brotli": 6.033183792636901
       }
     },
     "counter": {
-      "perCallSite": {
-        "brotli": 3.1802356497159328,
+      "perPlaceInJs": {
+        "raw": 2.9449777504128067,
         "gzip": 3.8890039461532004,
-        "raw": 2.9449777504128067
+        "brotli": 3.1802356497159328
       },
-      "perTranslation": {
-        "brotli": 3.263822341583504,
-        "gzip": 3.7749158197780286,
-        "raw": 2.944893744722841
+      "perTranslationEntry": {
+        "raw": 5.944954781741793,
+        "gzip": 4.0045472579119235,
+        "brotli": 3.5055899736523535
+      }
+    },
+    "positional": {
+      "perPlaceInJs": {
+        "raw": 0.14157640890729806,
+        "gzip": 2.5909900833076787,
+        "brotli": 1.730756672543916
+      },
+      "perTranslationEntry": {
+        "raw": 0.00006103701895199438,
+        "gzip": -0.07435326192002116,
+        "brotli": -0.0445773695079399
       }
     }
   },
   "stability": {
     "added": 0.01,
     "seeds": 5,
-    "translationFiles": 1285,
+    "gained": {
+      "files": {
+        "mean": 462.6,
+        "min": 451,
+        "max": 475
+      },
+      "chunks": {
+        "mean": 462.6,
+        "min": 451,
+        "max": 475
+      }
+    },
     "prefix": {
       "ids": {
-        "mean": 297.2,
-        "min": 295,
-        "max": 301
+        "mean": 279.8,
+        "min": 271,
+        "max": 294
       },
       "files": {
-        "mean": 345.6,
-        "min": 271,
-        "max": 487
+        "mean": 160.2,
+        "min": 145,
+        "max": 177
+      },
+      "chunks": {
+        "mean": 160.2,
+        "min": 145,
+        "max": 177
       }
     },
     "prefix6": {
       "ids": {
-        "mean": 4.2,
-        "min": 0,
-        "max": 7
+        "mean": 3.2,
+        "min": 2,
+        "max": 5
       },
       "files": {
-        "mean": 5.6,
+        "mean": 2.4,
+        "min": 1,
+        "max": 4
+      },
+      "chunks": {
+        "mean": 2.4,
+        "min": 1,
+        "max": 4
+      }
+    },
+    "prefix8": {
+      "ids": {
+        "mean": 0,
         "min": 0,
-        "max": 9
+        "max": 0
+      },
+      "files": {
+        "mean": 0,
+        "min": 0,
+        "max": 0
+      },
+      "chunks": {
+        "mean": 0,
+        "min": 0,
+        "max": 0
       }
     },
     "counter": {
       "ids": {
-        "mean": 69971.2,
-        "min": 69907,
-        "max": 69997
+        "mean": 69930.4,
+        "min": 69773,
+        "max": 70000
       },
       "files": {
-        "mean": 1285,
-        "min": 1285,
-        "max": 1285
+        "mean": 822.4,
+        "min": 810,
+        "max": 834
+      },
+      "chunks": {
+        "mean": 822.4,
+        "min": 810,
+        "max": 834
+      }
+    },
+    "positional": {
+      "ids": {
+        "mean": 33364.2,
+        "min": 32560,
+        "max": 34472
+      },
+      "files": {
+        "mean": 0,
+        "min": 0,
+        "max": 0
+      },
+      "chunks": {
+        "mean": 0,
+        "min": 0,
+        "max": 0
+      }
+    },
+    "positional, append-only": {
+      "ids": {
+        "mean": 0,
+        "min": 0,
+        "max": 0
+      },
+      "files": {
+        "mean": 0,
+        "min": 0,
+        "max": 0
+      },
+      "chunks": {
+        "mean": 0,
+        "min": 0,
+        "max": 0
       }
     }
   }
