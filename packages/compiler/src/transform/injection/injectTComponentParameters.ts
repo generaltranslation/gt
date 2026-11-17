@@ -7,7 +7,10 @@ import {
 import { TransformState } from '../../state/types';
 import { createErrorLocation } from '../../utils/errors';
 import { injectInlineTranslationsProp } from './inline-translations/injectInlineTranslations';
-import { replaceJsxSource } from './inline-translations/replaceJsxSource';
+import {
+  type JsxReplacementTarget,
+  replaceJsxSource,
+} from './inline-translations/replaceJsxSource';
 
 /**
  * Inject parameters into a T component
@@ -57,8 +60,8 @@ export function injectTComponentParameters(
   const props = callExpr.arguments[1];
   const { hash } = translationJsx;
   if (runtimeHash && !getObjectPropertyFromObjectExpression(props, 'inline')) {
-    const translation = getReplacementTranslation(callExpr, runtimeHash, state);
-    if (translation !== undefined) {
+    const target = getReplacementTarget(callExpr, runtimeHash, state);
+    if (target !== undefined) {
       // On exit, once translation calls in the children have taken their hashes in source order
       state.sourceReplacementsOnExit ??= new Map();
       state.sourceReplacementsOnExit.set(callExpr, () => {
@@ -67,7 +70,7 @@ export function injectTComponentParameters(
             callExprPath,
             translationJsx.children,
             runtimeHash,
-            translation,
+            target,
             state
           )
         ) {
@@ -116,12 +119,12 @@ function getRuntimeHash(
     : undefined;
 }
 
-/** The translation a per-locale build replaces a <T> with, if it replaces <T>. */
-function getReplacementTranslation(
+/** What a per-locale build replaces a <T> with, if it replaces <T>. */
+function getReplacementTarget(
   callExpr: t.CallExpression,
   hash: string,
   state: TransformState
-): unknown {
+): JsxReplacementTarget | undefined {
   const { sourceReplacement, inlineTranslationsTable } = state.settings;
   if (!sourceReplacement?.jsx) return undefined;
   // An enclosing <T> renders this one as part of its own content
@@ -130,33 +133,33 @@ function getReplacementTranslation(
   ) {
     return undefined;
   }
-  return inlineTranslationsTable?.[sourceReplacement.locale]?.[hash];
+  if (sourceReplacement.locale === undefined) return 'source';
+  const translation =
+    inlineTranslationsTable?.[sourceReplacement.locale]?.[hash];
+  return translation === undefined ? undefined : { translation };
 }
 
 /**
- * Swaps the <T> call for the JSX its translation renders. Returns whether it
- * did.
+ * Swaps the <T> call for the JSX it renders in the build's locale. Returns
+ * whether it did.
  */
 function replaceSource(
   callExprPath: NodePath<t.CallExpression>,
   sourceChildren: unknown,
   hash: string,
-  translation: unknown,
+  target: JsxReplacementTarget,
   state: TransformState
 ): boolean {
-  const reason = replaceJsxSource(
-    callExprPath,
-    sourceChildren,
-    translation,
-    state
-  );
+  const reason = replaceJsxSource(callExprPath, sourceChildren, target, state);
   if (reason === undefined) {
     state.statistics.sourceReplacementsCount += 1;
     return true;
   }
   state.statistics.sourceReplacementFallbacksCount += 1;
   state.logger.logDebug(
-    `Kept the source of <T> ${hash}, with its embedded translation: ${reason}` +
+    (target === 'source'
+      ? `Kept <T> ${hash} as a component: ${reason}`
+      : `Kept the source of <T> ${hash}, with its embedded translation: ${reason}`) +
       createErrorLocation(callExprPath.node).replace(
         '{filename}',
         state.settings.filename ?? ''

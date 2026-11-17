@@ -5,7 +5,16 @@
  * build with and without replacement in gt-react, and the HTML must match.
  */
 import { getPluralForm } from 'generaltranslation/internal';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from 'vitest';
 import gtUnplugin from '../index';
 import type { GTUnpluginOptions } from '../index';
 import { clearInlineTranslationsCache } from '../transform/injection/inline-translations/loadInlineTranslations';
@@ -37,6 +46,12 @@ type Case = {
   expected: 'replaced' | 'kept';
   /** Source strings a replaced build must not ship */
   sourceText?: string[];
+  /** Set when a build for the source locale keeps the <T> too */
+  sourceLocale?: 'kept';
+  /** Templates: the string literal a translated build compiles the call to */
+  literal?: string;
+  /** Templates: the string literal a build for the source locale compiles the call to */
+  sourceLiteral?: string;
   gtConfig?: GTConfig;
 };
 
@@ -464,6 +479,7 @@ const JSX_CASES: Case[] = [
     translation: ['Total : ', { k: '_gt_n_1', i: 1, v: 'n' }],
     renders: [{ n: 1234.5 }],
     expected: 'kept',
+    sourceLocale: 'kept',
   },
   {
     name: '<Plural> with a locales prop',
@@ -478,6 +494,7 @@ const JSX_CASES: Case[] = [
     },
     renders: [{ n: 1 }],
     expected: 'kept',
+    sourceLocale: 'kept',
   },
   {
     name: '<RelativeTime>',
@@ -485,6 +502,7 @@ const JSX_CASES: Case[] = [
     translation: ['Publié ', { k: '_gt_time_1', i: 1, v: 'rt' }],
     renders: [{}],
     expected: 'kept',
+    sourceLocale: 'kept',
   },
   {
     name: 'a repeated variable with side effects',
@@ -598,6 +616,49 @@ const TEMPLATE_CASES: Case[] = [
     renders: [{}],
     expected: 'replaced',
     sourceText: ['Hello world'],
+    literal: 'Bonjour le monde',
+    sourceLiteral: 'Hello world',
+  },
+  {
+    name: 'text that string and template literals escape',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = () => t\`"It's" \\\`a\\\` \\\${b} \\\\ {c}\\n\\u00e9 #\`;`,
+    translation: '« C\'est » `a` ${b} \\ {c}\n\u00e9 "#"',
+    renders: [{}],
+    expected: 'replaced',
+    literal: '« C\'est » `a` ${b} \\ {c}\n\u00e9 "#"',
+    sourceLiteral: '"It\'s" `a` ${b} \\ {c}\n\u00e9 #',
+  },
+  {
+    name: 'an empty translation',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = () => t\`Optional note\`;`,
+    translation: '',
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Optional note'],
+    literal: '',
+    sourceLiteral: 'Optional note',
+  },
+  {
+    name: 'an empty template',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = () => t\`\`;`,
+    translation: undefined,
+    renders: [{}],
+    expected: 'kept',
+    sourceLiteral: '',
+  },
+  {
+    name: 'requiresReview',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = () => t({ requiresReview: true })\`Terms\`;`,
+    translation: 'Conditions',
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Terms'],
+    literal: 'Conditions',
+    sourceLiteral: 'Terms',
   },
   {
     name: 'named variables the translation reorders',
@@ -634,6 +695,8 @@ const TEMPLATE_CASES: Case[] = [
     renders: [{}],
     expected: 'replaced',
     sourceText: ['Home'],
+    literal: 'Accueil',
+    sourceLiteral: 'Home',
   },
   {
     name: 'maxChars',
@@ -663,6 +726,15 @@ const TEMPLATE_CASES: Case[] = [
     ],
     renders: [{ count: 1 }, { count: 4 }],
     expected: 'kept',
+  },
+  {
+    name: 'a variable in the translation of a template without any',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = () => t\`Hi there\`;`,
+    translation: ['Salut ', ['nom']],
+    renders: [{}],
+    expected: 'kept',
+    sourceLiteral: 'Hi there',
   },
   {
     name: 'a variable the source lacks',
@@ -701,6 +773,23 @@ const TEMPLATE_CASES: Case[] = [
     expected: 'kept',
   },
 ];
+
+/** A build for a locale that renders the source: `en`, or its dialect `en-GB`. */
+function sourceLocaleOptions(
+  locale: string,
+  options: { replaceSource: boolean; gtConfig?: GTConfig }
+): GTUnpluginOptions {
+  return {
+    ...buildOptions(
+      {},
+      {
+        ...options,
+        gtConfig: { locales: ['en-GB', STATIC_LOCALE], ...options.gtConfig },
+      }
+    ),
+    experimentalStaticLocale: locale,
+  };
+}
 
 describe('experimentalReplaceSource', () => {
   let runtime: GTRuntime;
@@ -779,13 +868,57 @@ describe('experimentalReplaceSource', () => {
       TEMPLATE_CASES.map((testCase) => [testCase.name, testCase] as const)
     )('%s', async (_name, testCase) => {
       const { replaced, html } = await checkCase(testCase, true);
-      if (testCase.expected === 'replaced') {
+      if (testCase.literal !== undefined) {
+        // No call is left: the template is the text it renders
+        expect(replaced).toContain(
+          `() => ${JSON.stringify(testCase.literal)};`
+        );
+        expect(replaced).not.toMatch(/_hash|inline|t\(|t`/);
+        expect(html).toEqual([testCase.literal]);
+      } else if (testCase.expected === 'replaced') {
         // The runtime renders the embedded translation, with no lookup
         expect(replaced).toMatch(/\$_hash: "[0-9a-f]+", inline: \(locale\) =>/);
+      }
+      if (testCase.expected === 'replaced') {
         for (const text of testCase.sourceText ?? []) {
           for (const rendered of html) expect(rendered).not.toContain(text);
         }
       }
+    });
+
+    describe.each(['en', 'en-GB'])('in a build for %s', (locale) => {
+      beforeAll(() => runtime.setLocale(locale));
+      afterAll(() => runtime.setLocale(STATIC_LOCALE));
+
+      const sources = new Map(
+        TEMPLATE_CASES.map((testCase) => [testCase.source, testCase] as const)
+      );
+      it.each(
+        [...sources.values()].map((testCase) => [testCase.name, testCase])
+      )('%s', async (_name, { source, renders, sourceLiteral }) => {
+        const code = compileJsx(source);
+        const [kept, replaced] = await Promise.all(
+          [false, true].map((replaceSource) =>
+            transformWithPlugin(
+              sourceLocaleOptions(locale, { replaceSource }),
+              code
+            )
+          )
+        );
+        const [before, after] = await Promise.all([
+          renderAll(kept!, renders, true),
+          renderAll(replaced!, renders, true),
+        ]);
+        expect(after).toEqual(before);
+        if (sourceLiteral === undefined) {
+          // Variables and maxChars are formatted at runtime
+          expect(replaced).toBe(kept);
+        } else {
+          expect(replaced).toContain(`() => ${JSON.stringify(sourceLiteral)};`);
+          expect(replaced).not.toMatch(/_hash|t\(|t`/);
+          expect(after).toEqual([sourceLiteral]);
+        }
+      });
     });
 
     it('useGT()', async () => {
@@ -810,7 +943,7 @@ describe('experimentalReplaceSource', () => {
         buildOptions(translations, { replaceSource: true }),
         code
       );
-      expect(replaced).toContain('`Salutation`');
+      expect(replaced).toContain('title: "Salutation"');
       expect(replaced).toContain('`Bonjour ${{ name }}`');
       expect(replaced).not.toMatch(/Greeting|Hello/);
       const [before, after] = await Promise.all([
@@ -819,8 +952,61 @@ describe('experimentalReplaceSource', () => {
       ]);
       expect(after).toEqual(['<span title="Salutation">Bonjour Ada</span>']);
       expect(after).toEqual(before);
+
+      runtime.setLocale('en');
+      onTestFinished(() => runtime.setLocale(STATIC_LOCALE));
+      const [source, sourceReplaced] = await Promise.all(
+        [false, true].map((replaceSource) =>
+          transformWithPlugin(
+            sourceLocaleOptions('en', { replaceSource }),
+            code
+          )
+        )
+      );
+      expect(sourceReplaced).toContain('title: "Greeting"');
+      expect(sourceReplaced).toMatch(/gt\(\{ \$_hash: "[0-9a-f]+" \}\)`Hello /);
+      expect(await renderAll(sourceReplaced!, [{ name: 'Ada' }])).toEqual(
+        await renderAll(source!, [{ name: 'Ada' }])
+      );
     });
   });
+
+  describe.each(['en', 'en-GB'])(
+    'renders <T> as it renders its source in a build for %s',
+    (locale) => {
+      beforeAll(() => runtime.setLocale(locale));
+      afterAll(() => runtime.setLocale(STATIC_LOCALE));
+
+      const sources = new Map(
+        JSX_CASES.map((testCase) => [testCase.source, testCase] as const)
+      );
+      it.each(
+        [...sources.values()].map((testCase) => [testCase.name, testCase])
+      )('%s', async (_name, { source, renders, gtConfig, sourceLocale }) => {
+        const code = compileJsx(source);
+        const [kept, replaced] = await Promise.all(
+          [false, true].map((replaceSource) =>
+            transformWithPlugin(
+              sourceLocaleOptions(locale, { replaceSource, gtConfig }),
+              code
+            )
+          )
+        );
+        if (sourceLocale === 'kept') {
+          expect(replaced).toBe(kept);
+        } else {
+          expect(kept).toMatch(/[^$]_hash:/);
+          expect(replaced).not.toMatch(/[^$]_hash:|jsxs?\(T,/);
+        }
+        const [before, after] = await Promise.all([
+          renderAll(kept!, renders),
+          renderAll(replaced!, renders),
+        ]);
+        expect(after).toEqual(before);
+        for (const html of after) expect(html).not.toBe('');
+      });
+    }
+  );
 
   it('rewrites <T> as the JSX its translation renders', async () => {
     const { replaced } = await checkCase(
@@ -865,6 +1051,68 @@ describe('experimentalReplaceSource', () => {
     `);
   });
 
+  it('compiles a template without variables to the text it renders', async () => {
+    const code = compileJsx(`import { t, useGT } from 'gt-react/unstable';
+      export const title = () => t\`Settings\`;
+      export function App({ name }) {
+        const gt = useGT();
+        return <button title={gt({ context: 'tooltip' })\`Save\`}>{t\`Save\`} {gt\`Hi \${{ name }}\`}</button>;
+      }`);
+    const output = (await transformWithPlugin(undefined, code))!;
+    const [settings, tooltip, save, hi] = [
+      ...output.matchAll(/\$_hash: "([^"]+)"/g),
+    ].map((match) => match[1]);
+    const translated = await transformWithPlugin(
+      buildOptions(
+        {
+          [settings]: 'Paramètres',
+          [tooltip]: 'Enregistrer les modifications',
+          [save]: 'Enregistrer',
+          [hi]: ['Salut ', ['name']],
+        },
+        { replaceSource: true }
+      ),
+      code
+    );
+    expect(translated).toMatchInlineSnapshot(`
+      "import { jsxs } from "react/jsx-runtime";
+      import { t, useGT } from "gt-react/unstable";
+      const title = () => "Paramètres";
+      function App({ name }) {
+        const gt = useGT();
+        return /* @__PURE__ */jsxs("button", { title: "Enregistrer les modifications", children: ["Enregistrer",
+
+          " ",
+          gt({ $_hash: "982bebc72bdeffdf", inline: (locale) => locale === "fr" ? ["Salut ", ["name"]] : void 0 })\`Salut \${{ name }}\`]
+        });
+      }
+      export {
+        App,
+        title };"
+    `);
+    expect(
+      await transformWithPlugin(
+        sourceLocaleOptions('en', { replaceSource: true }),
+        code
+      )
+    ).toMatchInlineSnapshot(`
+      "import { jsxs } from "react/jsx-runtime";
+      import { t, useGT } from "gt-react/unstable";
+      const title = () => "Settings";
+      function App({ name }) {
+        const gt = useGT();
+        return /* @__PURE__ */jsxs("button", { title: "Save", children: ["Save",
+
+          " ",
+          gt({ $_hash: "982bebc72bdeffdf" })\`Hi \${{ name }}\`]
+        });
+      }
+      export {
+        App,
+        title };"
+    `);
+  });
+
   it('replaces each call site that shares a hash', async () => {
     const code = compileJsx(`${IMPORTS}
       import { t } from 'gt-react/unstable';
@@ -888,7 +1136,7 @@ describe('experimentalReplaceSource', () => {
     );
     expect(replaced).not.toContain('Save');
     expect(replaced?.match(/"Enregistrer"/g)).toHaveLength(2);
-    expect(replaced?.match(/`Sauvegarder`/g)).toHaveLength(2);
+    expect(replaced?.match(/"Sauvegarder"/g)).toHaveLength(2);
     const [html] = await renderAll(replaced!, [{}]);
     expect(html).toBe(
       'EnregistrerEnregistrer<span>SauvegarderSauvegarder</span>'
@@ -1023,22 +1271,27 @@ describe('experimentalReplaceSource', () => {
       code
     );
     expect(replaced).toMatch(/jsx\(T, \{ children: "Hello", inline:/);
-    expect(replaced).toContain('`Bonjour`');
+    expect(replaced).toContain('const label = () => "Bonjour";');
   });
 
   it.each(['physical', 'virtual'] as const)(
-    'needs no message module for a replaced <T> with %s modules',
+    'needs no message module for a replaced <T> or text with %s modules',
     async (modules) => {
       const code = compileJsx(`${IMPORTS}
         import { t } from 'gt-react/unstable';
         export const App = () => <T>Hello</T>;
-        export const label = () => t\`Hello\`;`);
+        export const label = () => t\`Hello\`;
+        export const greeting = (name) => t\`Hello \${{ name }}\`;`);
       const output = await transformWithPlugin(undefined, code);
-      const [jsxHash, templateHash] = [
+      const [jsxHash, textHash, templateHash] = [
         ...(output ?? '').matchAll(/\$?_hash: "([^"]+)"/g),
       ].map((match) => match[1]);
       const options = buildOptions(
-        { [jsxHash]: 'Bonjour (T)', [templateHash]: 'Bonjour (t)' },
+        {
+          [jsxHash]: 'Bonjour (T)',
+          [textHash]: 'Bonjour (t)',
+          [templateHash]: ['Bonjour ', ['name']],
+        },
         { replaceSource: true }
       );
       options.gtConfig!.files!.gt!.inlineTranslations!.modules = modules;
@@ -1046,19 +1299,75 @@ describe('experimentalReplaceSource', () => {
       expect(replaced).toMatch(
         /jsx\(_Fragment, \{ children: "Bonjour \(T\)" \}\)/
       );
+      expect(replaced).toContain('const label = () => "Bonjour (t)";');
       expect(replaced).not.toContain(`__gt_inline_${jsxHash}`);
-      // The template still reads its translation from its module
+      expect(replaced).not.toContain(`__gt_inline_${textHash}`);
+      // A template with variables still reads its translation from its module
       expect(replaced).toContain(`inline: __gt_inline_${templateHash}`);
-      expect(replaced).toContain('`Bonjour (t)`');
+      expect(replaced).toContain('`Bonjour ${{ name }}`');
     }
   );
 
-  it('changes nothing in a build for the source locale', async () => {
+  it('rewrites <T> as the JSX of its children in a build for the source locale', async () => {
+    const code = compileJsx(
+      app(
+        '<T id="inbox">You have <Plural n={n} one={<><b>one</b> message</>} other={<><Num>{n}</Num> messages</>} /></T>',
+        '{ n }'
+      )
+    );
+    // Without translations to embed, as the source locale needs none
+    const replaced = await transformWithPlugin(
+      {
+        experimentalStaticLocale: 'en',
+        experimentalReplaceSource: true,
+        gtConfig: { defaultLocale: 'en', locales: ['fr'] },
+      },
+      code
+    );
+    expect(replaced).toMatchInlineSnapshot(`
+      "import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+      import { T, Num, Plural } from "gt-react";
+      function App({ n }) {
+        return /* @__PURE__ */jsxs(Fragment, { children: [
+          "You have ",
+          /* @__PURE__ */jsx(Plural, { n, one: /* @__PURE__ */jsxs(Fragment, { children: [
+              /* @__PURE__ */jsx("b", { children: "one" }),
+              " message"]
+            }), other: /* @__PURE__ */jsxs(Fragment, { children: [
+              /* @__PURE__ */jsx(Num, { children: n }),
+              " messages"]
+            }) })] }
+        );
+      }
+      export {
+        App };"
+    `);
+  });
+
+  it('leaves <T> with _tagIds and templates with variables alone in a build for the source locale', async () => {
+    const code = compileJsx(`${IMPORTS}
+      import { t } from 'gt-react/unstable';
+      export const App = () => <T>Hello</T>;
+      export const label = (name) => t\`Hello \${{ name }}\`;`);
+    const options = (replaceSource: boolean, gtConfig?: GTConfig) =>
+      sourceLocaleOptions('en', { replaceSource, gtConfig });
+    const kept = await transformWithPlugin(options(false), code);
+    const replaced = await transformWithPlugin(options(true), code);
+    expect(replaced).toContain('jsx(_Fragment, { children: "Hello" })');
+    expect(replaced).toContain('t({ $_hash: "');
+    expect(
+      await transformWithPlugin(options(true, { _tagIds: true }), code)
+    ).toBe(kept);
+  });
+
+  it('changes nothing for a static locale that is not embedded', async () => {
     const code = compileJsx(app('<T>Hello</T>'));
-    const hash = await getInjectedHash(code);
     const options = (replaceSource: boolean) => ({
-      ...buildOptions({ [hash]: 'Bonjour' }, { replaceSource }),
-      experimentalStaticLocale: 'en',
+      ...buildOptions(
+        {},
+        { replaceSource, gtConfig: { locales: ['fr', 'de'] } }
+      ),
+      experimentalStaticLocale: 'de',
     });
     expect(await transformWithPlugin(options(true), code)).toBe(
       await transformWithPlugin(options(false), code)
@@ -1075,6 +1384,12 @@ describe('experimentalReplaceSource', () => {
     );
     expect(replaced).toContain('"Hello"');
     expect(replaced).not.toContain('Bonjour');
+    expect(
+      await transformWithPlugin(
+        sourceLocaleOptions('en', { replaceSource: true }),
+        code
+      )
+    ).toMatch(/jsx\(T, \{ children: "Hello", _hash:/);
   });
 
   describe('options', () => {
@@ -1179,6 +1494,40 @@ describe('experimentalReplaceSource', () => {
         ),
         expect.stringContaining(
           'In the modules this build transformed, replaced the source content of 0 call sites with their "fr" translations; 1 call sites kept their source and embedded translation'
+        ),
+      ]);
+    });
+
+    it('reports the call sites a build for the source locale keeps at debug level', async () => {
+      const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const code = compileJsx(`${IMPORTS}
+        import { t } from 'gt-react/unstable';
+        export const App = ({ date }) => <>
+          <T>Hello</T><T>Posted <RelativeTime>{date}</RelativeTime></T>
+          {t\`Save\`}{t({ maxChars: 3 })\`Cancel\`}
+        </>;`);
+      const plugin = createPlugin({
+        ...sourceLocaleOptions('en', { replaceSource: true }),
+        logLevel: 'debug',
+      });
+      (plugin.buildStart as () => void).call({});
+      await (plugin.transform as (code: string, id: string) => unknown).call(
+        { addWatchFile() {} },
+        code,
+        '/app/App.tsx'
+      );
+      (plugin.buildEnd as () => void).call({});
+      const messages = log.mock.calls.map(([message]) => String(message));
+      log.mockRestore();
+      expect(messages).toEqual([
+        expect.stringMatching(
+          /Kept <T> [0-9a-f]+ as a component: <RelativeTime> has props it formats differently outside <T> \/app\/App.tsx:\d+:\d+$/
+        ),
+        expect.stringMatching(
+          /Kept template [0-9a-f]+ as a call: maxChars cuts its text off at runtime \/app\/App.tsx:\d+:\d+$/
+        ),
+        expect.stringContaining(
+          'In the modules this build transformed, replaced 2 call sites with the source content they render; 2 call sites were kept as they are'
         ),
       ]);
     });
