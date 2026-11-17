@@ -1,5 +1,5 @@
 import type { SanityDocument } from 'sanity';
-import { gt, projectFor } from '../adapter/core';
+import { projectFor } from '../adapter/core';
 import { getDocumentPublishedId } from '../utils/documentIds';
 import { collectExistingTranslations } from './collectExistingTranslations';
 import {
@@ -53,7 +53,6 @@ export async function captureExistingTranslations({
   }
 
   const project = projectFor(secrets);
-  const sourceLocale = gt.defaultLocale;
 
   // No versionId: read the latest source version General Translation holds.
   const { results: seedFiles } = await project.queryFilesContent(
@@ -95,7 +94,7 @@ export async function captureExistingTranslations({
 
       return [
         {
-          source: { ...reference, content: seed.data, locale: sourceLocale },
+          source: { ...reference, content: seed.data },
           translations: translations.map(({ locale, content }) => ({
             ...reference,
             content,

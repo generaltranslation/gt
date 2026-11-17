@@ -513,7 +513,7 @@ export async function collectAndSendUserEditDiffs(
       saveResults.saved.push(edit);
       return;
     }
-    const reason = `Locale ${edit.locale}: ${result.error ?? 'Unknown error'}`;
+    const reason = `Locale ${edit.locale}: ${result.error}`;
     logger.warn(`Failed to save local edits to ${edit.fileName}: ${reason}`);
     recordWarning('failed_edit_save', edit.fileName, reason);
     saveResults.failed.push(edit);

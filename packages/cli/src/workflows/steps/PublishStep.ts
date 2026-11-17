@@ -30,9 +30,9 @@ export class PublishStep {
         return failedTranslations.length > 0
           ? failedTranslations.map((t) => ({
               name,
-              reason: `Locale ${t.locale}: ${t.error ?? r.error ?? 'Unknown error'}`,
+              reason: `Locale ${t.locale}: ${t.error}`,
             }))
-          : [{ name, reason: r.error ?? 'Unknown error' }];
+          : [{ name, reason: r.error }];
       });
       if (failures.length > 0) {
         this.spinner.stop(chalk.yellow('CDN updated with errors'));

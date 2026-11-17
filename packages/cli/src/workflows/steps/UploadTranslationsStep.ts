@@ -151,7 +151,7 @@ export class UploadTranslationsStep {
         )
       );
       for (const r of failedUploads) {
-        const reason = `Translation for locale ${r.locale}: ${r.error ?? 'Unknown error'}`;
+        const reason = `Translation for locale ${r.locale}: ${r.error}`;
         logger.warn(`Failed to upload ${r.fileName}: ${reason}`);
         recordWarning('failed_upload', r.fileName, reason);
       }

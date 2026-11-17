@@ -1,6 +1,7 @@
 import type { GTFile, Secrets } from '../types';
 import type { UploadTranslationsResponse } from '@generaltranslation/api';
-import { gt, projectFor } from '../adapter/core';
+import type { BatchWriteResponse } from 'generaltranslation';
+import { projectFor } from '../adapter/core';
 import type { SerializedDocument } from '../serialization/types';
 import type { ExistingTranslation } from './collectExistingTranslations';
 import { resolveFileName } from '../utils/fileNames';
@@ -22,7 +23,7 @@ export async function uploadTranslations(
     translations: ExistingTranslation[];
   }[],
   secrets: Secrets | null
-): Promise<UploadTranslationsResponse | null> {
+): Promise<BatchWriteResponse<UploadTranslationsResponse> | null> {
   const withTranslations = documents.filter(
     (document) => document.translations.length > 0
   );
@@ -31,7 +32,6 @@ export async function uploadTranslations(
   }
 
   const project = projectFor(secrets);
-  const sourceLocale = gt.defaultLocale;
   const uploadResult = await project.uploadTranslations(
     withTranslations.map(({ info, serializedDocument, translations }) => ({
       source: {
@@ -39,7 +39,6 @@ export async function uploadTranslations(
         fileName: resolveFileName(info),
         fileId: info.documentId,
         fileFormat: 'HTML' as const,
-        locale: sourceLocale,
         versionId: info.versionId || undefined,
       },
       translations: translations.map(({ locale, content }) => ({
