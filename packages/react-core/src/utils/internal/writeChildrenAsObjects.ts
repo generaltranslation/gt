@@ -95,7 +95,7 @@ const handleSingleChildElement = (
     const transformation = generaltranslation.transformation;
     if (transformation === 'variable') {
       const variableType = generaltranslation.variableType || 'variable';
-      const variableName = getVariableName(props, variableType);
+      const variableName = getVariableName(props);
       const minifiedVariableType = minifyVariableType(variableType);
       return {
         i: generaltranslation.id,

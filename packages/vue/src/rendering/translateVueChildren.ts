@@ -37,11 +37,11 @@ import { getFormatLocales, isBranchAttribute } from '../components/utils';
 import type { GTState } from '../types';
 
 const variableTypes = {
-  currency: { name: 'cost', type: 'c' },
-  datetime: { name: 'date', type: 'd' },
-  number: { name: 'n', type: 'n' },
-  variable: { name: 'value', type: 'v' },
-} as const satisfies Record<string, { name: string; type: VariableType }>;
+  currency: 'c',
+  datetime: 'd',
+  number: 'n',
+  variable: 'v',
+} as const satisfies Record<string, VariableType>;
 
 type Transformation = 'branch' | 'fragment' | 'plural' | 'variable' | undefined;
 
@@ -595,12 +595,11 @@ function getVariable(
   id: number
 ): { name: string; type: VariableType } {
   const variableType = metadata?.split('-')[1] ?? 'variable';
-  const variable =
-    variableTypes[variableType as keyof typeof variableTypes] ??
-    variableTypes.variable;
   return {
-    name: `_gt_${variable.name}_${id}`,
-    type: variable.type,
+    name: `_gt_${id}`,
+    type:
+      variableTypes[variableType as keyof typeof variableTypes] ??
+      variableTypes.variable,
   };
 }
 
@@ -932,7 +931,7 @@ function serializeNode(
   if (node.transformation === 'variable') {
     return {
       i: node.id,
-      k: node.variableName ?? `_gt_value_${node.id}`,
+      k: node.variableName ?? `_gt_${node.id}`,
       v: node.variableType ?? 'v',
     };
   }

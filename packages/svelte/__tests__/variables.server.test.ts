@@ -73,9 +73,9 @@ describe('variables whose value is their only child', () => {
         locale: 'fr',
         translations: {
           [childrenHash]: [
-            { i: 1, k: '_gt_n_1', v: 'n' },
+            { i: 1, k: '_gt_1', v: 'n' },
             ' articles, ',
-            { i: 2, k: '_gt_value_2', v: 'v' },
+            { i: 2, k: '_gt_2', v: 'v' },
           ],
         },
       })

@@ -33,7 +33,7 @@ describe('Vue template extraction', () => {
           {
             t: 'strong',
             i: 2,
-            c: { i: 3, k: '_gt_value_3', v: 'v' },
+            c: { i: 3, k: '_gt_3', v: 'v' },
           },
           ' ! ',
           { t: 'input', i: 4, d: { pl: 'Your name' } },
@@ -42,34 +42,34 @@ describe('Vue template extraction', () => {
             i: 5,
             d: { alt: 'Portrait', ard: 'hint' },
           },
-          { i: 6, k: '_gt_n_6', v: 'n' },
-          { i: 7, k: '_gt_date_7', v: 'd' },
-          { i: 8, k: '_gt_cost_8', v: 'c' },
+          { i: 6, k: '_gt_6', v: 'n' },
+          { i: 7, k: '_gt_7', v: 'd' },
+          { i: 8, k: '_gt_8', v: 'c' },
           { t: 'var', i: 9, c: 'native' },
           {
             t: 'Branch',
             i: 10,
             d: {
               b: {
-                formal: [' Formal ', { i: 11, k: '_gt_value_11', v: 'v' }],
-                casual: [' Casual ', { i: 11, k: '_gt_value_11', v: 'v' }],
+                formal: [' Formal ', { i: 11, k: '_gt_11', v: 'v' }],
+                casual: [' Casual ', { i: 11, k: '_gt_11', v: 'v' }],
               },
               t: 'b',
             },
-            c: [' Fallback ', { i: 11, k: '_gt_value_11', v: 'v' }],
+            c: [' Fallback ', { i: 11, k: '_gt_11', v: 'v' }],
           },
           {
             t: 'Plural',
             i: 12,
             d: {
               b: {
-                one: [' One ', { i: 13, k: '_gt_value_13', v: 'v' }],
-                other: [' Many ', { i: 13, k: '_gt_value_13', v: 'v' }],
+                one: [' One ', { i: 13, k: '_gt_13', v: 'v' }],
+                other: [' Many ', { i: 13, k: '_gt_13', v: 'v' }],
                 zero: 'None',
               },
               t: 'p',
             },
-            c: [' Fallback ', { i: 13, k: '_gt_value_13', v: 'v' }],
+            c: [' Fallback ', { i: 13, k: '_gt_13', v: 'v' }],
           },
         ],
       },
@@ -331,7 +331,7 @@ describe('Vue template extraction', () => {
       imports: 'T, Var',
       template: '<T>Outer <Var><T>Inner</T></Var></T>',
       expected: [
-        ['Outer ', { i: 1, k: '_gt_value_1', v: 'v' }],
+        ['Outer ', { i: 1, k: '_gt_1', v: 'v' }],
         'Inner',
       ] satisfies JsxChildren[],
     },
@@ -349,7 +349,7 @@ describe('Vue template extraction', () => {
       template: '<T><d-2 :value="date" /><var>native</var></T>',
       expected: [
         [
-          { i: 1, k: '_gt_date_1', v: 'd' },
+          { i: 1, k: '_gt_1', v: 'd' },
           { t: 'var', i: 2, c: 'native' },
         ],
       ] satisfies JsxChildren[],
@@ -740,8 +740,8 @@ describe('Vue template audit cases', () => {
           t: 'i',
           i: 2,
           c: [
-            { i: 3, k: '_gt_value_3', v: 'v' },
-            { i: 4, k: '_gt_n_4', v: 'n' },
+            { i: 3, k: '_gt_3', v: 'v' },
+            { i: 4, k: '_gt_4', v: 'n' },
           ],
         },
       ],
@@ -750,7 +750,7 @@ describe('Vue template audit cases', () => {
       name: 'comments do not consume element ids',
       script: `import { T, Var } from 'gt-vue';`,
       template: `<T>A<!-- note --><Var>x</Var></T>`,
-      source: ['A', { i: 1, k: '_gt_value_1', v: 'v' }],
+      source: ['A', { i: 1, k: '_gt_1', v: 'v' }],
     },
     {
       name: 'branch slots number independently from fallback and siblings',
@@ -765,17 +765,17 @@ describe('Vue template audit cases', () => {
               formal: {
                 t: 'b',
                 i: 2,
-                c: { i: 3, k: '_gt_value_3', v: 'v' },
+                c: { i: 3, k: '_gt_3', v: 'v' },
               },
               casual: {
                 t: 'i',
                 i: 2,
-                c: { i: 3, k: '_gt_value_3', v: 'v' },
+                c: { i: 3, k: '_gt_3', v: 'v' },
               },
             },
             t: 'b',
           },
-          c: ['Fallback ', { i: 2, k: '_gt_value_2', v: 'v' }],
+          c: ['Fallback ', { i: 2, k: '_gt_2', v: 'v' }],
         },
         { t: 'strong', i: 3, c: 'After' },
       ],
@@ -789,12 +789,12 @@ describe('Vue template audit cases', () => {
         i: 1,
         d: {
           b: {
-            one: ['One ', { i: 2, k: '_gt_value_2', v: 'v' }],
-            other: ['Other ', { i: 2, k: '_gt_value_2', v: 'v' }],
+            one: ['One ', { i: 2, k: '_gt_2', v: 'v' }],
+            other: ['Other ', { i: 2, k: '_gt_2', v: 'v' }],
           },
           t: 'p',
         },
-        c: ['Fallback ', { i: 2, k: '_gt_value_2', v: 'v' }],
+        c: ['Fallback ', { i: 2, k: '_gt_2', v: 'v' }],
       },
     },
     {
@@ -1043,7 +1043,7 @@ describe('Vue template audit cases', () => {
       expect(output.errors).toEqual([]);
       expect(output.results[0]?.source).toEqual([
         'Hello ',
-        { i: 1, k: '_gt_value_1', v: 'v' },
+        { i: 1, k: '_gt_1', v: 'v' },
       ]);
     });
 
@@ -1171,7 +1171,7 @@ describe('consumer Vue template compiler parity', () => {
     expect(output.errors).toEqual([]);
     expect(output.results.map((result) => result.source)).toEqual([
       'Static T',
-      ['Before ', { i: 1, k: '_gt_value_1', v: 'v' }, ' after'],
+      ['Before ', { i: 1, k: '_gt_1', v: 'v' }, ' after'],
     ]);
   });
 

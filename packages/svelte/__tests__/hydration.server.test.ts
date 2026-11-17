@@ -11,7 +11,7 @@ const [greetingHash] = hashesOf('Greeting.svelte');
 
 const greeting = (hello: string): Content => [
   `${hello} `,
-  { t: 'b', i: 1, c: { i: 2, k: '_gt_value_2', v: 'v' } },
+  { t: 'b', i: 1, c: { i: 2, k: '_gt_2', v: 'v' } },
 ];
 
 /** A catalog shaped like a real app's: mostly small JSX entries. */
@@ -20,7 +20,7 @@ function catalog(size: number): Record<string, Content> {
   for (let i = 0; i < size; i++) {
     entries[`h${i.toString(16).padStart(15, '0')}`] = [
       `Paragraphe ${i} avec `,
-      { t: 'b', i: 1, c: { i: 2, k: '_gt_value_2', v: 'v' } },
+      { t: 'b', i: 1, c: { i: 2, k: '_gt_2', v: 'v' } },
       ' et un ',
       { t: 'a', i: 3, c: 'lien', d: { ti: `Lien ${i}` } },
     ];

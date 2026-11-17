@@ -1,7 +1,7 @@
 {
   "118389d4a4f2c059": "Logo de React",
   "190a8744f66a4534": "Logo de Vite",
-  "7968ec22a523f965": [
+  "34f78d5363dc038c": [
     {
       "c": [
         {
@@ -59,7 +59,7 @@
             "Le compteur est de ",
             {
               "i": 12,
-              "k": "_gt_n_12",
+              "k": "_gt_12",
               "v": "n"
             }
           ],

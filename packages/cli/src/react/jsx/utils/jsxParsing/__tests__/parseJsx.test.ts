@@ -507,7 +507,7 @@ describe('GT IDs after Branch/Plural element children', () => {
     t: 'Plural',
     i: 1,
     d: { b: { one: 'one bottle' }, t: 'p' },
-    c: [{ i: 2, k: '_gt_n_2', v: 'n' }, ' bottles'],
+    c: [{ i: 2, k: '_gt_2', v: 'n' }, ' bottles'],
   };
   const pluralJsx =
     '<Plural n={2} one="one bottle"><Num>{2}</Num> bottles</Plural>';

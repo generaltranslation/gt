@@ -23,36 +23,36 @@ describe('extractFromVueSource', () => {
         t: 'p',
         i: 1,
         d: { ti: 'Greeting' },
-        c: [' Hello ', { i: 2, k: '_gt_value_2', v: 'v' }, ' ! '],
+        c: [' Hello ', { i: 2, k: '_gt_2', v: 'v' }, ' ! '],
       },
       {
         t: 'Plural',
         i: 3,
         d: {
           b: {
-            one: [' one ', { i: 4, k: '_gt_value_4', v: 'v' }],
-            other: [' other ', { i: 4, k: '_gt_value_4', v: 'v' }],
+            one: [' one ', { i: 4, k: '_gt_4', v: 'v' }],
+            other: [' other ', { i: 4, k: '_gt_4', v: 'v' }],
           },
           t: 'p',
         },
-        c: [' fallback ', { i: 4, k: '_gt_value_4', v: 'v' }],
+        c: [' fallback ', { i: 4, k: '_gt_4', v: 'v' }],
       },
       {
         t: 'Branch',
         i: 5,
         d: {
           b: {
-            formal: [' formal ', { i: 6, k: '_gt_value_6', v: 'v' }],
-            casual: [' casual ', { i: 6, k: '_gt_value_6', v: 'v' }],
+            formal: [' formal ', { i: 6, k: '_gt_6', v: 'v' }],
+            casual: [' casual ', { i: 6, k: '_gt_6', v: 'v' }],
           },
           t: 'b',
         },
-        c: [' fallback ', { i: 6, k: '_gt_value_6', v: 'v' }],
+        c: [' fallback ', { i: 6, k: '_gt_6', v: 'v' }],
       },
       { t: 'b', i: 7, c: 'end' },
-      { i: 8, k: '_gt_n_8', v: 'n' },
-      { i: 9, k: '_gt_date_9', v: 'd' },
-      { i: 10, k: '_gt_cost_10', v: 'c' },
+      { i: 8, k: '_gt_8', v: 'n' },
+      { i: 9, k: '_gt_9', v: 'd' },
+      { i: 10, k: '_gt_10', v: 'c' },
       { t: 'var', i: 11, c: 'native' },
     ];
     const rich = result.updates.find((update) => update.dataFormat === 'JSX');
@@ -134,7 +134,7 @@ describe('extractFromVueSource', () => {
     expect(result.errors).toEqual([]);
     expect(result.updates).toHaveLength(1);
     expect(result.updates[0].source).toEqual([
-      { i: 1, k: '_gt_date_1', v: 'd' },
+      { i: 1, k: '_gt_1', v: 'd' },
       { t: 'var', i: 2, c: 'native' },
     ]);
   });
@@ -238,7 +238,7 @@ describe('extractFromVueSource', () => {
 
     expect(result.errors).toEqual([]);
     expect(result.updates.map((update) => update.source)).toEqual([
-      [' Outer ', { i: 1, k: '_gt_value_1', v: 'v' }],
+      [' Outer ', { i: 1, k: '_gt_1', v: 'v' }],
       'Inner',
     ]);
   });

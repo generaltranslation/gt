@@ -19,7 +19,7 @@ function html(props: Record<string, unknown>): string {
 const translations: Record<string, Content> = {
   [componentHash]: [{ t: 'b', i: 1, c: { t: 'Widget', i: 2 } }, ' : Astuce'],
   [variableHash]: [
-    { t: 'b', i: 1, c: { i: 2, k: '_gt_value_2', v: 'v' } },
+    { t: 'b', i: 1, c: { i: 2, k: '_gt_2', v: 'v' } },
     ', bonjour',
   ],
 };

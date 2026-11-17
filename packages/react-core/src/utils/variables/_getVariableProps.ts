@@ -31,7 +31,7 @@ export function getVariableProps(props: VariableElementProps): VariableProps {
     props['data-_gt']?.variableType || 'variable';
 
   const result: VariableProps = {
-    variableName: getVariableName(props, variableType),
+    variableName: getVariableName(props),
     variableType: minifyVariableType(variableType),
     injectionType: props['data-_gt']?.injectionType || 'manual',
     variableValue: (() => {

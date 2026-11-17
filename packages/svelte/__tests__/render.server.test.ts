@@ -45,7 +45,7 @@ describe('<T> server rendering', () => {
             t: 'b',
             i: 1,
             d: { ti: 'Gras' },
-            c: [{ i: 2, k: '_gt_value_2', v: 'v' }, ' chère'],
+            c: [{ i: 2, k: '_gt_2', v: 'v' }, ' chère'],
           },
           ' !',
         ],
@@ -61,9 +61,9 @@ describe('<T> server rendering', () => {
     setupGT({
       fr: {
         [greetingHash]: [
-          { i: 2, k: '_gt_value_2', v: 'v' },
+          { i: 2, k: '_gt_2', v: 'v' },
           ', ',
-          { i: 2, k: '_gt_value_2', v: 'v' },
+          { i: 2, k: '_gt_2', v: 'v' },
         ],
       },
     });
@@ -95,7 +95,7 @@ describe('<T> server rendering', () => {
       fr: {
         [hash]: [
           'Bonjour ',
-          { i: 2, k: '_gt_value_2', v: 'v' },
+          { i: 2, k: '_gt_2', v: 'v' },
           ' ',
           { t: 'b', i: 1, c: 'chère' },
         ],
@@ -146,7 +146,7 @@ describe('<T> server rendering', () => {
               other: {
                 t: 'C2',
                 i: 2,
-                c: [{ i: 3, k: '_gt_n_3', v: 'n' }, ' messages'],
+                c: [{ i: 3, k: '_gt_3', v: 'n' }, ' messages'],
               },
             },
           },
@@ -164,7 +164,7 @@ describe('<T> server rendering', () => {
                 c: [
                   { t: 'i', i: 3, c: 'En ligne' },
                   ' en tant que ',
-                  { i: 4, k: '_gt_value_4', v: 'v' },
+                  { i: 4, k: '_gt_4', v: 'v' },
                 ],
               },
               other: 'Inconnu',

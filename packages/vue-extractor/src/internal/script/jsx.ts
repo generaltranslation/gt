@@ -690,15 +690,20 @@ function serializeElement(
     component === 'Currency'
   ) {
     validateVariableElement(element, component, context);
-    const variable =
-      component === 'Num'
-        ? { name: 'n', type: 'n' as const }
-        : component === 'DateTime'
-          ? { name: 'date', type: 'd' as const }
-          : component === 'Currency'
-            ? { name: 'cost', type: 'c' as const }
-            : { name: 'value', type: 'v' as const };
-    return [{ i: id, k: `_gt_${variable.name}_${id}`, v: variable.type }];
+    return [
+      {
+        i: id,
+        k: `_gt_${id}`,
+        v:
+          component === 'Num'
+            ? 'n'
+            : component === 'DateTime'
+              ? 'd'
+              : component === 'Currency'
+                ? 'c'
+                : 'v',
+      },
+    ];
   }
   if (component === 'Branch' || component === 'Plural') {
     return [
