@@ -30,7 +30,9 @@ export type I18nCacheConstructorParams =
   > & {
     /**
      * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
-     * disables expiry, and a number sets an explicit TTL.
+     * disables expiry, and a number sets an explicit TTL. The browser and
+     * React Native entry points of gt-react, gt-react-native, gt-next and
+     * gt-tanstack-start ignore it: their translations never expire.
      */
     cacheExpiryTime?: number | null;
     loadTranslations?: TranslationsLoader;
