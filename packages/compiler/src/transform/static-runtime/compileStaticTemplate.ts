@@ -189,7 +189,7 @@ function compile(
   }
 
   const used = new Set<string>();
-  let kind: StaticFormatterKind = 'tree';
+  let kind: Exclude<StaticFormatterKind, 'value'> = 'tree';
   let onlyValues = true;
   forEachPlaceholder(tree, (node) => {
     used.add(node[0]);
@@ -224,61 +224,54 @@ function compile(
         : []),
     ]);
   path.replaceWith(
-    (onlyValues && buildValueTemplate(tree, values, ordered, buildCall)) ||
+    (onlyValues &&
+      buildValueTemplate(tree, values, ordered, () =>
+        getStaticFormatter(state, path, 'value')
+      )) ||
       buildCall()
   );
   return true;
 }
 
 /**
- * A message of text and `{name}` values as a template literal, which is what
- * the formatter prints for a string, a number, a bigint or a boolean in every
- * locale; it prints nothing for null and undefined, hence `?? ""`. Only an
- * object differs, a Date being formatted for the locale, so an object goes to
- * `buildCall`'s formatter:
+ * A message of text and `{name}` values as a template literal, which prints a
+ * string, a number, a bigint or a boolean as the formatter does in every
+ * locale. The formatter prints nothing for null and undefined and formats a
+ * Date for the locale, which the runtime's value helper does for each value:
  *
- *   typeof name == "object" && name ? format(tree, { name }) : `Bonjour ${name ?? ""}`
+ *   `Bonjour ${value(name)}`
  *
- * Undefined when a value has a side effect, since each is read several times
- * here, and when the message has no text: the formatter prints a symbol
- * there, which a template literal throws on.
+ * A value written as text or a number needs no helper. Undefined when a value
+ * has a side effect, since the translation decides how often and in what
+ * order values are read here, and when the message has no text: the
+ * formatter prints a symbol there, which a template literal throws on.
  */
 function buildValueTemplate(
   tree: Exclude<MessageTree, string>,
   values: Map<string, t.Expression>,
   ordered: [string, t.Expression][],
-  buildCall: () => t.Expression
+  getValueHelper: () => t.Identifier
 ): t.Expression | undefined {
   if (
     !tree.some((node) => typeof node === 'string' && node !== '') ||
-    !ordered.every(([, value]) =>
-      isSideEffectFree(value, { isPureCall: () => false, sameIdentity: true })
-    )
+    !ordered.every(([, value]) => isFree(value))
   ) {
     return undefined;
   }
   const quasis: string[] = [''];
   const expressions: t.Expression[] = [];
-  const guarded: t.Expression[] = [];
   for (const node of tree) {
     if (typeof node === 'string') {
       quasis[quasis.length - 1] += node;
       continue;
     }
-    const value = values.get((node as [string])[0])!;
-    if (isText(value)) {
-      expressions.push(t.cloneNode(value, true));
-    } else {
-      expressions.push(
-        t.logicalExpression('??', t.cloneNode(value, true), t.stringLiteral(''))
-      );
-      if (!guarded.some((other) => t.isNodesEquivalent(other, value))) {
-        guarded.push(value);
-      }
-    }
+    const value = t.cloneNode(values.get((node as [string])[0])!, true);
+    expressions.push(
+      isText(value) ? value : t.callExpression(getValueHelper(), [value])
+    );
     quasis.push('');
   }
-  const literal = t.templateLiteral(
+  return t.templateLiteral(
     quasis.map((text, index) =>
       t.templateElement(
         { raw: escapeTemplateText(text), cooked: text },
@@ -287,22 +280,6 @@ function buildValueTemplate(
     ),
     expressions
   );
-  if (guarded.length === 0) return literal;
-  const isObject = guarded
-    .map(
-      (value): t.Expression =>
-        t.logicalExpression(
-          '&&',
-          t.binaryExpression(
-            '==',
-            t.unaryExpression('typeof', t.cloneNode(value, true)),
-            t.stringLiteral('object')
-          ),
-          t.cloneNode(value, true)
-        )
-    )
-    .reduce((left, right) => t.logicalExpression('||', left, right));
-  return t.conditionalExpression(isObject, buildCall(), literal);
 }
 
 /** Whether a value is surely a string, a number, a bigint or a boolean. */

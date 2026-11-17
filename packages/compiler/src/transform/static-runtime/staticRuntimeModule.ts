@@ -29,6 +29,12 @@ const RUNTIME_SOURCES =
 // What the static entry provides under the name gt-react exports it by
 const STATIC_EXPORTS = new Set(['initializeGTSPA']);
 
+const FORMATTER_NAMES: Record<StaticFormatterKind, string> = {
+  value: 'gtValue',
+  tree: 'gtFormat',
+  intl: 'gtFormatIntl',
+};
+
 function getFile(state: TransformState): StaticRuntimeFile {
   return (state.staticRuntime ??= {
     errors: [],
@@ -70,7 +76,7 @@ export function getStaticFormatter(
   const { formatters } = getFile(state);
   formatters[kind] ??= path.scope
     .getProgramParent()
-    .generateUid(kind === 'tree' ? 'gtFormat' : 'gtFormatIntl');
+    .generateUid(FORMATTER_NAMES[kind]);
   return t.identifier(formatters[kind]);
 }
 

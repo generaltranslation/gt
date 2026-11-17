@@ -574,13 +574,13 @@ describe('experimentalStaticRuntime', () => {
         ];
       }`;
     expect(await build(source, staticOptions('en'))).toMatchInlineSnapshot(`
-      "import { createStaticFormatter as _createStaticFormatter } from "gt-react/static-runtime";const _gtFormat = /* @__PURE__ */_createStaticFormatter(["en"]);const _gtTree = ["Welcome back, ", ["name"], "!"];const _gtTree2 = [["count", "plural", { one: [0, " invoice"], other: [0, " invoices"] }]];
+      "import { createStaticValue as _createStaticValue, createStaticFormatter as _createStaticFormatter } from "gt-react/static-runtime";const _gtValue = /* @__PURE__ */_createStaticValue(["en"]);const _gtFormat = /* @__PURE__ */_createStaticFormatter(["en"]);const _gtTree = [["count", "plural", { one: [0, " invoice"], other: [0, " invoices"] }]];
       function App({ name, count }) {
-        return ["Account settings", typeof
+        return ["Account settings", \`Welcome back, \${_gtValue(
 
-        name == "object" && name ? _gtFormat(_gtTree, { name: name }) : \`Welcome back, \${name ?? ""}!\`, _gtFormat(_gtTree2, { count:
-          count }), typeof
-        name == "object" && name ? _gtFormat(_gtTree, { name: name }) : \`Welcome back, \${name ?? ""}!\`];
+          name)}!\`, _gtFormat(_gtTree, { count:
+          count }), \`Welcome back, \${_gtValue(
+          name)}!\`];
 
       }
       export {
