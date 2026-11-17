@@ -9,7 +9,7 @@ export {
   select,
   selectordinal,
   time,
-  type Fragment,
+  type Part,
   type Placeholder,
 } from './unstable/placeholders';
 export { msg, type Msg } from './unstable/msg';
