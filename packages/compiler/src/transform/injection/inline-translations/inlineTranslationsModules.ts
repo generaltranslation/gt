@@ -65,10 +65,18 @@ export function renderInlineTranslationsModule(
   if (entries.length === 0) return undefined;
   const body = entries.reduceRight(
     (alternate, [locale, translation]) =>
-      `locale === ${JSON.stringify(locale)} ? ${JSON.stringify(translation)} : ${alternate}`,
+      `locale === ${JSON.stringify(locale)} ? ${toJavaScript(translation)} : ${alternate}`,
     'undefined'
   );
   return `${INLINE_TRANSLATIONS_MODULE_HEADER}\nexport default (locale) => ${body};\n`;
+}
+
+// A literal __proto__ key sets the prototype, so it becomes computed; compact JSON escapes every quote inside strings
+function toJavaScript(value: unknown): string {
+  return JSON.stringify(value).replace(
+    /([{,])"__proto__":/g,
+    '$1["__proto__"]:'
+  );
 }
 
 /** The module source of every message hash that gets a module, by hash. */

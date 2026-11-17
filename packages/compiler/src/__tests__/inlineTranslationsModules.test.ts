@@ -61,6 +61,17 @@ describe('renderInlineTranslationsModule', () => {
     expect(callback('de')).toBeUndefined();
   });
 
+  it('keeps __proto__ keys as own properties', async () => {
+    const tree = JSON.parse(
+      '{"b":{"__proto__":"proto","other":"autre"},"t":"x \\",\\"__proto__\\":"}'
+    );
+    const callback = await importModule(
+      renderInlineTranslationsModule({ fr: { abc: tree } }, 'abc')!
+    );
+    expect(callback('fr')).toEqual(tree);
+    expect(Object.hasOwn(callback('fr').b, '__proto__')).toBe(true);
+  });
+
   it('returns undefined when no locale translates the hash', () => {
     expect(
       renderInlineTranslationsModule({ fr: { other: 'x', abc: null } }, 'abc')

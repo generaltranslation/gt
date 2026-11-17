@@ -100,12 +100,21 @@ pub fn json_to_expr(value: &serde_json::Value, span: Span) -> Expr {
       props: entries
         .iter()
         .map(|(key, value)| {
-          PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-            key: PropName::Str(Str {
+          // A literal __proto__ key sets the prototype instead of a property
+          let key = if key == "__proto__" {
+            PropName::Computed(ComputedPropName {
+              span,
+              expr: Box::new(str_expr(key, span)),
+            })
+          } else {
+            PropName::Str(Str {
               span,
               value: key.as_str().into(),
               raw: None,
-            }),
+            })
+          };
+          PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+            key,
             value: Box::new(json_to_expr(value, span)),
           })))
         })

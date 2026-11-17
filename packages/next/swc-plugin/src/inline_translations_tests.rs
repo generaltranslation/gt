@@ -540,6 +540,18 @@ fn embeds_jsx_children_objects_for_t() {
 }
 
 #[test]
+fn keeps_proto_keys_in_embedded_translations() {
+  let output = transform(
+    T_CODE,
+    translations(
+      &["fr"],
+      serde_json::json!({ "fr": { JSX_HELLO_WORLD: { "b": { "__proto__": "proto", "other": "autre" } } } }),
+    ),
+  );
+  assert!(output.contains(r#"["__proto__"]: "proto""#), "{output}");
+}
+
+#[test]
 fn skips_t_when_props_can_change_the_computed_hash() {
   for code in [
     r#"import { T } from 'gt-next'; export const el = <T $_hash="custom">Hello world</T>;"#,
