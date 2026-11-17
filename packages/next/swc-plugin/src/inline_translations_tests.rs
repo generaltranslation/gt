@@ -356,6 +356,61 @@ fn respects_shadowed_unstable_names() {
   assert!(!output.contains("(locale)=>"), "{output}");
 }
 
+#[test]
+fn respects_unstable_names_shadowed_by_local_declarations() {
+  for code in [
+    r#"
+      import { t } from 'gt-react/unstable';
+      export function label() {
+        function t(strings) { return strings[0]; }
+        return t`Hello world`;
+      }
+    "#,
+    r#"
+      import { t } from 'gt-react/unstable';
+      export function label() {
+        const read = () => t`Hello world`;
+        const t = (strings) => strings[0];
+        return read();
+      }
+    "#,
+    r#"
+      import { t } from 'gt-react/unstable';
+      export function label() {
+        return t`Hello world`;
+        function t(strings) { return strings[0]; }
+      }
+    "#,
+  ] {
+    let output = transform(
+      code,
+      translations(&["fr"], serde_json::json!({ "fr": { HELLO_WORLD: "Bonjour le monde" } })),
+    );
+    assert!(!output.contains("(locale)=>"), "{output}");
+  }
+}
+
+#[test]
+fn embeds_only_uses_after_the_gt_declaration() {
+  let output = transform(
+    r#"
+      import { useGT } from 'gt-next/unstable';
+      export function Page() {
+        const before = () => gt`Hello`;
+        const gt = useGT();
+        const after = () => gt`Hello world`;
+        return [before(), after()];
+      }
+    "#,
+    translations(
+      &["fr"],
+      serde_json::json!({ "fr": { HELLO: "Bonjour", HELLO_WORLD: "Bonjour le monde" } }),
+    ),
+  );
+  assert!(output.contains("Bonjour le monde"), "{output}");
+  assert!(!output.contains("\"Bonjour\""), "{output}");
+}
+
 // ===== stable gt() and t() ===== //
 
 #[test]

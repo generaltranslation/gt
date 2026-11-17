@@ -685,6 +685,31 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
     }
   }
 
+  /// Names declared in a statement list shadow outer bindings in the whole
+  /// scope, including uses before the declaration such as earlier closures.
+  pub fn track_declared_overrides(&mut self, stmts: &[Stmt]) {
+    for stmt in stmts {
+      let Stmt::Decl(decl) = stmt else {
+        continue;
+      };
+      match decl {
+        Decl::Fn(FnDecl { ident, .. }) | Decl::Class(ClassDecl { ident, .. }) => {
+          self.track_overriding_variable(&ident.sym);
+        }
+        Decl::Var(var) => {
+          let mut identifiers = Vec::new();
+          for declarator in &var.decls {
+            self.extract_identifiers_from_pattern(&declarator.name, &mut identifiers);
+          }
+          for identifier in identifiers {
+            self.track_overriding_variable(&identifier);
+          }
+        }
+        _ => {}
+      }
+    }
+  }
+
   // Track function call assignments
   fn track_function_call_assignment(&mut self, callee_expr: &Box<Expr>, variable_name: &Atom) {
     if let Expr::Ident(Ident {

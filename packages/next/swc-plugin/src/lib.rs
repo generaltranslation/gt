@@ -62,6 +62,12 @@ impl VisitMut for TransformVisitor {
     })
   }
 
+  /// Statement lists: track the names they declare before visiting them
+  fn visit_mut_stmts(&mut self, stmts: &mut Vec<Stmt>) {
+    self.track_declared_overrides(stmts);
+    stmts.visit_mut_children_with(self);
+  }
+
   /// Block statements: { ... } - create scope for let/const
   fn visit_mut_block_stmt(&mut self, block: &mut BlockStmt) {
     self.with_scope(|visitor| {
@@ -239,6 +245,12 @@ impl Fold for TransformVisitor {
   /// Process function expressions to ensure their bodies are traversed
   fn fold_fn_expr(&mut self, fn_expr: FnExpr) -> FnExpr {
     self.with_scope(|visitor| fn_expr.fold_children_with(visitor))
+  }
+
+  /// Statement lists: track the names they declare before visiting them
+  fn fold_stmts(&mut self, stmts: Vec<Stmt>) -> Vec<Stmt> {
+    self.track_declared_overrides(&stmts);
+    stmts.fold_children_with(self)
   }
 
   /// Block statements: { ... } - create scope for let/const
