@@ -42,6 +42,17 @@ describe('getCookieValue', () => {
     expect(reads).toBe(2);
   });
 
+  it('reads a cookie again in the next task without queueMicrotask', async () => {
+    // Old browsers have none, and fake timers replace it.
+    vi.stubGlobal('queueMicrotask', undefined);
+    jar.locale = 'fr';
+    expect(getCookieValue({ cookieName: 'locale' })).toBe('fr');
+
+    jar.locale = 'es';
+    await Promise.resolve();
+    expect(getCookieValue({ cookieName: 'locale' })).toBe('es');
+  });
+
   it('reads a cookie it wrote in the same task', () => {
     jar.locale = 'fr';
     expect(getCookieValue({ cookieName: 'locale' })).toBe('fr');

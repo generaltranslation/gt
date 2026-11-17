@@ -16,7 +16,8 @@ export function oncePerTask<T>(read: () => T): {
     get() {
       if (!value) {
         value = { current: read() };
-        queueMicrotask(clear);
+        // Not queueMicrotask: old browsers have none, and fake timers hold it.
+        void Promise.resolve().then(clear);
       }
       return value.current;
     },
