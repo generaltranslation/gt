@@ -7,7 +7,7 @@ import {
 const LOCALE_PARAM = 'locale';
 
 /**
- * Build `(locale) => locale === "fr" ? … : locale === "es" ? … : undefined`
+ * Build `(locale) => locale === "fr" ? … : locale === "es" ? … : void 0`
  * for a translation hash. Returns undefined when no embedded locale has a
  * translation for the hash.
  */
@@ -29,7 +29,7 @@ export function buildInlineTranslationsFunction(
         t.valueToNode(translation),
         alternate
       ),
-    t.identifier('undefined')
+    t.unaryExpression('void', t.numericLiteral(0))
   );
 
   return t.arrowFunctionExpression([t.identifier(LOCALE_PARAM)], body);

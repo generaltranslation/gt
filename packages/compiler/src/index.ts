@@ -240,12 +240,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       : undefined;
 
     const gtFiles = resolvedOptions.gtConfig?.files?.gt;
-    const isProduction = process.env.NODE_ENV === 'production';
+    // Vite's build() sets NODE_ENV after plugins are created, so read it when each hook runs, as transforms do
+    const isProduction = () => process.env.NODE_ENV === 'production';
     const inlineTranslationsModules = resolveInlineTranslationsModules(
       gtFiles,
       {
         framework: meta.framework,
-        warn: isProduction && shouldWarn(options.logLevel),
+        warn: isProduction() && shouldWarn(options.logLevel),
       }
     );
     const modulesDirPrefix =
@@ -253,13 +254,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         ? inlineTranslationsModules.dir + path.sep
         : undefined;
     const loadModulesTable = () =>
-      isProduction ? loadInlineTranslations(gtFiles) : undefined;
+      isProduction() ? loadInlineTranslations(gtFiles) : undefined;
 
     const keyCacheOnInlineTranslations = (options: {
       cache?: unknown;
       experiments?: { cache?: unknown };
     }) => {
-      if (isProduction && loadedGTConfig?.files?.gt?.inlineTranslations) {
+      if (isProduction() && loadedGTConfig?.files?.gt?.inlineTranslations) {
         addInlineTranslationsCacheVersion(
           options,
           gtFiles,
@@ -277,13 +278,14 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         keyCacheOnInlineTranslations(compiler.options);
       },
       buildStart() {
-        if (inlineTranslationsModules?.mode !== 'physical' || !isProduction) {
+        if (inlineTranslationsModules?.mode !== 'physical' || !isProduction()) {
           return;
         }
+        const modules = renderInlineTranslationsModules(loadModulesTable());
         try {
           writeInlineTranslationsModules(
             inlineTranslationsModules.dir,
-            renderInlineTranslationsModules(loadModulesTable())
+            modules
           );
         } catch (error) {
           throw new Error(
@@ -345,7 +347,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         const state = initializeState(resolvedOptions, id);
         if (debugManifest) state.debugManifest = debugManifest;
         // webpack does not track files read outside the loader
-        if (state.settings.inlineTranslationsTable) {
+        if (isProduction()) {
           for (const file of getInlineTranslationsFiles(
             resolvedOptions.gtConfig?.files?.gt
           )) {

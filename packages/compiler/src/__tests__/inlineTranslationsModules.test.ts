@@ -10,6 +10,7 @@ import {
   onTestFinished,
   vi,
 } from 'vitest';
+import * as t from '@babel/types';
 import type { UnpluginBuildContext, UnpluginContext } from 'unplugin';
 import { defaultInlineTranslationsModulesDir } from 'generaltranslation/internal';
 import gtUnplugin, { type GTUnpluginOptions } from '../index';
@@ -434,7 +435,7 @@ describe('inlineTranslations.modules', () => {
         `
       );
       expect(output).not.toContain('__gt_inline_');
-      expect(output).toContain('locale === "fr" ? "Perso" : undefined');
+      expect(output).toContain('locale === "fr" ? "Perso" : void 0');
     });
 
     it('inlines the callback in CommonJS files', async () => {
@@ -467,6 +468,71 @@ describe('inlineTranslations.modules', () => {
       const output = await transform(plugin, root, USEGT_CODE);
       expect(output).not.toContain('__gt_inline_');
       expect(fs.existsSync(path.join(root, '.gt'))).toBe(false);
+    });
+
+    it.each(['physical', 'virtual'] as const)(
+      'embeds %s modules when NODE_ENV becomes production after the plugin is created',
+      async (modules) => {
+        vi.stubEnv('NODE_ENV', undefined);
+        const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
+        const plugin = createPlugin(
+          root,
+          moduleOptions(root, ['fr'], { modules })
+        );
+        vi.stubEnv('NODE_ENV', 'production');
+        plugin.buildStart.call(createContext());
+        const output = await transform(plugin, root, USEGT_CODE);
+        expect(output).toContain(`inline: __gt_inline_${HELLO_WORLD}`);
+        const source =
+          modules === 'physical'
+            ? fs.readFileSync(
+                path.join(root, '.gt/messages', `${HELLO_WORLD}.js`),
+                'utf8'
+              )
+            : plugin.load.call(
+                createContext(),
+                `\0virtual:gt/messages/${HELLO_WORLD}.js`
+              )?.code;
+        expect(source).toBe(
+          renderInlineTranslationsModule(
+            { fr: { [HELLO_WORLD]: 'Bonjour' } },
+            HELLO_WORLD
+          )
+        );
+      }
+    );
+
+    it('imports a module by absolute path from another Windows drive', async () => {
+      vi.resetModules();
+      vi.doMock('node:path', async () => {
+        const actual =
+          await vi.importActual<typeof import('node:path')>('node:path');
+        return { ...actual.win32, default: actual.win32 };
+      });
+      onTestFinished(() => {
+        vi.doUnmock('node:path');
+        vi.resetModules();
+      });
+      const { addInlineTranslationsImports } =
+        await import('../transform/injection/inline-translations/addInlineTranslationsImports');
+      const program = t.program([]);
+      const imports = new Map([[HELLO_WORLD, 'm']]);
+      const sources = (importer: string) => {
+        program.body = [];
+        addInlineTranslationsImports(
+          program,
+          imports,
+          { mode: 'physical', dir: 'C:\\app\\.gt\\messages' },
+          importer
+        );
+        return (program.body[0] as t.ImportDeclaration).source.value;
+      };
+      expect(sources('D:\\src\\App.tsx')).toBe(
+        `C:/app/.gt/messages/${HELLO_WORLD}.js`
+      );
+      expect(sources('C:\\app\\src\\App.tsx')).toBe(
+        `../.gt/messages/${HELLO_WORLD}.js`
+      );
     });
 
     it('does not transform message modules', () => {
@@ -503,6 +569,19 @@ describe('inlineTranslations.modules', () => {
       expect(
         fs.readFileSync(path.join(dir, `${HELLO_WORLD}.js`), 'utf8')
       ).toContain('locale === "fr" ? "Bonjour" : locale === "es" ? "Hola"');
+    });
+
+    it('names a locale file that is not valid JSON', () => {
+      const root = createProject({});
+      const file = path.join(root, 'translations', 'fr.json');
+      fs.writeFileSync(file, '{ "abc": ');
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical' })
+      );
+      expect(() => plugin.buildStart.call(createContext())).toThrow(
+        `Could not read the embedded translations in ${file}`
+      );
     });
 
     it('falls back to physical modules with a warning where virtual modules are unsupported', async () => {
@@ -641,6 +720,25 @@ describe('webpack cache version', () => {
     for (const version of versions) {
       expect(version).toMatch(/^next\|gt-inline-translations:[0-9a-f]{16}$/);
     }
+  });
+
+  it('changes when a locale file is created or edited', () => {
+    const root = createProject({});
+    const file = path.join(root, 'translations', 'fr.json');
+    const config = {
+      files: {
+        gt: {
+          output: path.join(root, 'translations', '[locale].json'),
+          inlineTranslations: { locales: ['fr'] },
+        },
+      },
+    };
+    const versions = [cacheVersion(config)];
+    fs.writeFileSync(file, '{}');
+    versions.push(cacheVersion(config));
+    fs.writeFileSync(file, '{"abc":"Bonjour"}');
+    versions.push(cacheVersion(config));
+    expect(new Set(versions).size).toBe(3);
   });
 
   it('is left alone without embedded translations or outside production', () => {

@@ -1,5 +1,8 @@
 import * as t from '@babel/types';
-import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
+import {
+  getObjectPropertyFromObjectExpression,
+  objectPropertyMatchesName,
+} from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { TransformState } from '../../state/types';
 import { createErrorLocation } from '../../utils/errors';
 import { injectInlineTranslationsProp } from './inline-translations/injectInlineTranslations';
@@ -78,9 +81,14 @@ function getRuntimeHash(
   computedHash: string
 ): string | undefined {
   if (getObjectPropertyFromObjectExpression(props, '$_hash')) return undefined;
-  const hashProp = getObjectPropertyFromObjectExpression(props, '_hash');
-  if (!hashProp) return computedHash;
-  return t.isObjectProperty(hashProp) && t.isStringLiteral(hashProp.value)
+  const hashProps = props.properties.filter((prop) =>
+    objectPropertyMatchesName(prop, '_hash')
+  );
+  if (hashProps.length === 0) return computedHash;
+  const [hashProp] = hashProps;
+  return hashProps.length === 1 &&
+    t.isObjectProperty(hashProp) &&
+    t.isStringLiteral(hashProp.value)
     ? hashProp.value.value
     : undefined;
 }

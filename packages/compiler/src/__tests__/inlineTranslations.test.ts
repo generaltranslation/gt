@@ -105,7 +105,7 @@ describe('inlineTranslations in gt.config.json', () => {
       USEGT_CODE
     );
     expect(output).toContain(
-      `gt({ $_hash: "${hash}", inline: (locale) => locale === "fr" ? "Bonjour le monde" : locale === "es" ? "Hola mundo" : undefined })\`Hello world\``
+      `gt({ $_hash: "${hash}", inline: (locale) => locale === "fr" ? "Bonjour le monde" : locale === "es" ? "Hola mundo" : void 0 })\`Hello world\``
     );
   });
 
@@ -129,7 +129,7 @@ describe('inlineTranslations in gt.config.json', () => {
       T_COMPONENT_CODE
     );
     expect(output).toContain(
-      'inline: (locale) => locale === "fr" ? "Bonjour le monde" : undefined'
+      'inline: (locale) => locale === "fr" ? "Bonjour le monde" : void 0'
     );
   });
 
@@ -149,7 +149,7 @@ describe('inlineTranslations in gt.config.json', () => {
       USEGT_CODE
     );
     expect(output).toContain(
-      '(locale) => locale === "fr" ? "Bonjour le monde" : undefined'
+      '(locale) => locale === "fr" ? "Bonjour le monde" : void 0'
     );
   });
 
@@ -160,7 +160,7 @@ describe('inlineTranslations in gt.config.json', () => {
       USEGT_CODE
     );
     expect(output).toContain(
-      '(locale) => locale === "fr" ? "Bonjour le monde" : undefined'
+      '(locale) => locale === "fr" ? "Bonjour le monde" : void 0'
     );
   });
 
@@ -175,7 +175,7 @@ describe('inlineTranslations in gt.config.json', () => {
   describe('unstable entry points', () => {
     const translations = { fr: { [HELLO_WORLD]: 'Bonjour le monde' } };
     const callback =
-      'inline: (locale) => locale === "fr" ? "Bonjour le monde" : undefined';
+      'inline: (locale) => locale === "fr" ? "Bonjour le monde" : void 0';
 
     it.each([
       [
@@ -217,7 +217,7 @@ describe('inlineTranslations in gt.config.json', () => {
          gt({ context: 'greeting' })\`Hello world\`;`
       );
       expect(output).toContain(
-        `gt({ context: 'greeting', $_hash: "${HELLO_WORLD_GREETING}", inline: (locale) => locale === "fr" ? "Salut le monde" : undefined })`
+        `gt({ context: 'greeting', $_hash: "${HELLO_WORLD_GREETING}", inline: (locale) => locale === "fr" ? "Salut le monde" : void 0 })`
       );
     });
 
@@ -231,7 +231,7 @@ describe('inlineTranslations in gt.config.json', () => {
          gt\`Hello, \${{ name }}!\`;`
       );
       expect(output).toContain(
-        'inline: (locale) => locale === "fr" ? ["Salut, ", ["name"], " !"] : undefined'
+        'inline: (locale) => locale === "fr" ? ["Salut, ", ["name"], " !"] : void 0'
       );
     });
 
@@ -328,16 +328,47 @@ describe('inlineTranslations in gt.config.json', () => {
     expect(output).not.toContain('"Bonjour le monde"');
   });
 
-  it('registers locale files as watch dependencies', async () => {
-    const hash = await getGtHash();
-    const dir = createOutputDir({ fr: { [hash]: 'Bonjour le monde' } });
-    const watched: string[] = [];
-    await transformWithPlugin(
-      gtConfigOptions(['fr', 'de'], dir),
-      USEGT_CODE,
-      (watchedFile) => watched.push(watchedFile)
+  it.each([
+    ['some locale files exist', { fr: { [HELLO_WORLD]: 'Bonjour le monde' } }],
+    ['no locale file exists', {}],
+  ])(
+    'registers configured locale files as watch dependencies when %s',
+    async (_, translations) => {
+      const dir = createOutputDir(translations);
+      const watched: string[] = [];
+      await transformWithPlugin(
+        gtConfigOptions(['fr', 'de'], dir),
+        USEGT_CODE,
+        (watchedFile) => watched.push(watchedFile)
+      );
+      expect(watched).toEqual([
+        path.join(dir, 'fr.json'),
+        path.join(dir, 'de.json'),
+      ]);
+    }
+  );
+
+  it('names a locale file that is not valid JSON', async () => {
+    const dir = createOutputDir();
+    const file = path.join(dir, 'fr.json');
+    fs.writeFileSync(file, '{ "abc": ');
+    await expect(
+      transformWithPlugin(gtConfigOptions(['fr'], dir), USEGT_CODE)
+    ).rejects.toThrow(`Could not read the embedded translations in ${file}`);
+  });
+
+  it('falls back with void 0, which a local undefined binding cannot shadow', async () => {
+    const output = await transformWithPlugin(
+      inlineOptions(['fr'], { fr: { [HELLO_WORLD]: 'Bonjour le monde' } }),
+      `import { useGT } from 'gt-react/unstable';
+       export function f(undefined) {
+         const gt = useGT();
+         return gt\`Hello world\`;
+       }`
     );
-    expect(watched).toEqual([path.join(dir, 'fr.json')]);
+    expect(output).toContain(
+      'inline: (locale) => locale === "fr" ? "Bonjour le monde" : void 0'
+    );
   });
 
   it('does not embed translations outside production builds', async () => {
@@ -403,7 +434,7 @@ describe('inlineTranslations in gt.config.json', () => {
            export const el = jsx(T, { children: "Hello world", _hash: "custom" });`
         );
         expect(output).toContain(
-          'inline: (locale) => locale === "fr" ? "Perso" : undefined'
+          'inline: (locale) => locale === "fr" ? "Perso" : void 0'
         );
       });
 
@@ -415,6 +446,19 @@ describe('inlineTranslations in gt.config.json', () => {
           `import { jsx } from 'react/jsx-runtime';
            import { T } from 'gt-react';
            export const el = jsx(T, { children: "Hello world", $_hash: "custom" });`
+        );
+        expect(output ?? '').not.toContain('inline:');
+      });
+
+      it.each([
+        ['a computed key', '[key]: "other"'],
+        ['a repeated _hash', '"_hash": "other"'],
+      ])('skips <T> with %s, which may override _hash', async (_, prop) => {
+        const output = await transformWithPlugin(
+          customOptions(),
+          `import { jsx } from 'react/jsx-runtime';
+           import { T } from 'gt-react';
+           export const el = jsx(T, { children: "Hello world", _hash: "custom", ${prop} });`
         );
         expect(output ?? '').not.toContain('inline:');
       });

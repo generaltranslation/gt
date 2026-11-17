@@ -15,8 +15,16 @@ export function injectInlineTranslationsProp(
   state: TransformState
 ): void {
   if (!state.settings.inlineTranslationsTable || !hash) return;
-  // A spread could carry its own _hash or inline prop
-  if (props.properties.some((prop) => t.isSpreadElement(prop))) return;
+  // A spread or computed key could carry its own _hash or inline prop
+  if (
+    props.properties.some(
+      (prop) =>
+        t.isSpreadElement(prop) ||
+        (prop.computed && !t.isStringLiteral(prop.key))
+    )
+  ) {
+    return;
+  }
 
   const inline = buildInlineTranslations(hash, state);
   if (inline) {

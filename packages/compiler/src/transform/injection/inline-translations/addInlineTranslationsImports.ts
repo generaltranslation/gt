@@ -42,9 +42,12 @@ function getImportSource(
   const file = getInlineTranslationsModuleFile(modules.dir, hash);
   const importer = importerId.split('?')[0];
   if (!path.isAbsolute(importer)) return toPosix(file);
-  const relative = toPosix(path.relative(path.dirname(importer), file));
+  const relative = path.relative(path.dirname(importer), file);
+  // Windows has no relative path between drives
+  if (path.isAbsolute(relative)) return toPosix(file);
+  const posixRelative = toPosix(relative);
   // A bare `.gt/…` would be read as a package name
-  return relative.startsWith('../') ? relative : `./${relative}`;
+  return posixRelative.startsWith('../') ? posixRelative : `./${posixRelative}`;
 }
 
 function toPosix(file: string): string {
