@@ -69,10 +69,10 @@ export function initializeState(
 
   // Embedded translations are a production optimization; dev builds keep
   // loading (and hot reloading) translations at runtime
-  const inlineTranslationsTable =
-    process.env.NODE_ENV === 'production'
-      ? loadInlineTranslations(gtConfig?.files?.gt)
-      : undefined;
+  const isProduction = process.env.NODE_ENV === 'production';
+  const inlineTranslationsTable = isProduction
+    ? loadInlineTranslations(gtConfig?.files?.gt)
+    : undefined;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
@@ -84,7 +84,11 @@ export function initializeState(
     autoJsxImportSource:
       options.autoJsxImportSource ?? DEFAULT_SETTINGS.autoJsxImportSource,
     inlineTranslationsTable,
-    sourceReplacement: inlineTranslationsTable ? sourceReplacement : undefined,
+    sourceReplacement:
+      isProduction &&
+      (inlineTranslationsTable || sourceReplacement?.locale === undefined)
+        ? sourceReplacement
+        : undefined,
     filename,
   };
 

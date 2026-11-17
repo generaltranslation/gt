@@ -26,6 +26,8 @@ type Module = Record<string, unknown>;
 
 export type GTRuntime = {
   modules: Record<string, Module>;
+  /** Switches the runtime's locale, as the app's locale cookie does. */
+  setLocale: (locale: string) => void;
   /** Static HTML for a component, after anything it suspends on resolves */
   render: (component: unknown, props?: unknown) => Promise<string>;
 };
@@ -69,11 +71,13 @@ export async function loadGTRuntime(locale: string): Promise<GTRuntime> {
   )) as Module;
   await gtReact.initializeGTSPA({
     defaultLocale: 'en',
-    locales: ['en', STATIC_LOCALE],
+    locales: ['en', 'en-GB', STATIC_LOCALE],
     locale,
     loadTranslations: async () => ({}),
   });
+  const [localeCookie] = [...cookies].find(([, value]) => value === locale)!;
   return {
+    setLocale: (next) => cookies.set(localeCookie, next),
     modules: {
       react,
       'react/jsx-runtime': requireFromGtReact('react/jsx-runtime') as Module,

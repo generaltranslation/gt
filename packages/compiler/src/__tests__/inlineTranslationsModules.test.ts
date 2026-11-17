@@ -817,6 +817,13 @@ describe('webpack cache version', () => {
     );
   });
 
+  it('changes when a build for the source locale replaces <T>', () => {
+    expect(cacheVersion(embedding(), 'en', true)).not.toBe(
+      cacheVersion(embedding(), 'en', false)
+    );
+    expect(cacheVersion({ files: { gt: {} } }, 'en', true)).not.toBe('next');
+  });
+
   it('changes when a per-locale build moves physical modules', () => {
     const singleLocale = {
       files: {

@@ -15,11 +15,12 @@ const ENV_TRUE_VALUES = new Set(['true', '1']);
 const ENV_FALSE_VALUES = new Set(['false', '0', '']);
 
 /**
- * How a per-locale build replaces source content at the call sites it embeds:
- * `locale` is the embedded spelling translations are read under, and `jsx` is
- * false when `<T>` must stay a component (id-tagging with `_tagIds`).
+ * How a per-locale build replaces source content at its call sites: `locale`
+ * is the embedded spelling translations are read under, or undefined when the
+ * static locale renders the source, and `jsx` is false when `<T>` must stay a
+ * component (id-tagging with `_tagIds`).
  */
-export type SourceReplacement = { locale: string; jsx: boolean };
+export type SourceReplacement = { locale: string | undefined; jsx: boolean };
 
 const createInvalidReplaceSourceEnvError = (value: string) =>
   createDiagnosticMessage({
@@ -55,18 +56,25 @@ export function getReplaceSource(option: boolean | undefined): boolean {
 
 /**
  * The source replacement for a per-locale build, or undefined when it is off
- * or the static locale embeds nothing (a source locale renders its source).
+ * or the static locale is not embedded, so its translations load at runtime.
  */
 export function resolveSourceReplacement(
   replaceSource: boolean,
   staticLocaleResolution: StaticLocaleResolution | undefined,
   gtConfig: GTConfig | undefined
 ): SourceReplacement | undefined {
-  if (!replaceSource || staticLocaleResolution?.kind !== 'embedded') {
+  if (
+    !replaceSource ||
+    !staticLocaleResolution ||
+    staticLocaleResolution.kind === 'not-embedded'
+  ) {
     return undefined;
   }
   return {
-    locale: staticLocaleResolution.locale,
+    locale:
+      staticLocaleResolution.kind === 'embedded'
+        ? staticLocaleResolution.locale
+        : undefined,
     jsx: gtConfig?._tagIds !== true,
   };
 }
