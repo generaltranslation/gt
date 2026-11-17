@@ -24,6 +24,7 @@ import {
   invalidCanonicalLocalesError,
   invalidLocalesError,
   createProjectIdMismatchError,
+  inlineTranslationsWithoutCompileTimeHashError,
   projectIdMissingWarn,
   standardizedCanonicalLocalesWarning,
   unresolvedLoadDictionaryBuildError,
@@ -651,6 +652,12 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
           distDir: internalNextConfig.distDir,
         })
       : undefined;
+  if (
+    swcInlineTranslations &&
+    !mergedConfig.experimentalCompilerOptions?.compileTimeHash
+  ) {
+    throw new Error(inlineTranslationsWithoutCompileTimeHashError);
+  }
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
     autoderiveJsx: autoderive.jsx,

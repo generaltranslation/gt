@@ -214,6 +214,15 @@ export const createInlineTranslationsDistDirOutsideCwdError = (
     fix: 'Set distDir to a directory inside the project',
   });
 
+export const inlineTranslationsWithoutCompileTimeHashError =
+  createGtNextPluginDiagnostic({
+    severity: 'Error',
+    whatHappened:
+      'files.gt.inlineTranslations is set, but experimentalCompilerOptions.compileTimeHash is false',
+    why: 'the SWC plugin only embeds translations when it computes hashes, and msgOutput files leave out the translations it would embed',
+    fix: 'Remove compileTimeHash: false, or remove files.gt.inlineTranslations from gt.config.json',
+  });
+
 export const virtualMessageModulesUnsupportedWarning =
   createGtNextPluginDiagnostic({
     severity: 'Warning',

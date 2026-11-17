@@ -1193,6 +1193,27 @@ describe('withGTConfig', () => {
         expect(getSwcOptions(result).inlineTranslations).toEqual(shards);
       });
 
+      it('rejects embedded translations without compileTimeHash', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        mockConfigFiles({});
+        vi.mocked(resolveInlineTranslations).mockReturnValueOnce({
+          locales: ['fr'],
+          dir: '.next/cache/gt/inline/h',
+          contentHash: 'h',
+        });
+        expect(() =>
+          withGTConfig(
+            {},
+            {
+              experimentalCompilerOptions: {
+                type: 'swc',
+                compileTimeHash: false,
+              },
+            }
+          )
+        ).toThrow('compileTimeHash is false');
+      });
+
       it('keys the webpack cache on the embedded translations', () => {
         vi.stubEnv('NODE_ENV', 'production');
         mockConfigFiles({});
