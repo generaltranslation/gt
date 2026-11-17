@@ -378,6 +378,10 @@ function buildBranches(
     if (LOCALE_PROPS.includes(name)) {
       fail(`<${canonicalName}> sets its locale`);
     }
+    // In the object the branches are written as, this key is the prototype
+    if (name === '__proto__') {
+      fail(`<${canonicalName}> has a branch named __proto__`);
+    }
     if (name === control) {
       if (!t.isExpression(property.value)) fail(SOURCE_MISMATCH);
       // The slot evaluates it before the slots of the branches

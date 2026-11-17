@@ -659,6 +659,16 @@ const CASES: Case[] = [
     renders: [{ n: 1 }, { n: 2 }],
     expected: 'kept',
   },
+  {
+    name: 'a <Branch> branch named __proto__',
+    source: app(
+      '<T><Branch branch={mode} __proto__="Prototype">Other mode</Branch></T>',
+      '{ mode }'
+    ),
+    translations: {},
+    renders: [{ mode: 'x' }],
+    expected: 'kept',
+  },
 ];
 
 const COMPONENTS = {
