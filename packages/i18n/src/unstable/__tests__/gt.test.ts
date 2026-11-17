@@ -731,7 +731,7 @@ describe('gt-i18n/unstable precomputed messages', () => {
     expect(call(t, ...args)).toBe('Save');
   });
 
-  it('keeps what a site resolved for its locale', async () => {
+  it('keeps what a message with values resolved for its locale', async () => {
     await setup();
     let reads = 0;
     const tree = new Proxy([literal('Bonjour, '), argument('name')], {
@@ -741,7 +741,7 @@ describe('gt-i18n/unstable precomputed messages', () => {
       },
     });
     const inline = vi.fn((locale: string) =>
-      locale === 'fr' ? 'Enregistrer' : undefined
+      locale === 'fr' ? [literal('Salut, '), argument('name')] : undefined
     );
     let locale = 'fr';
     const gt = createGT({
@@ -749,12 +749,11 @@ describe('gt-i18n/unstable precomputed messages', () => {
       lookupTranslation: () => tree,
     });
     const [greeting, values] = precompute()`Hello, ${{ name }}`;
-    const [save] = precompute()`Save`;
-    const embedded = { ...save, inline };
+    const embedded = { ...greeting, inline };
     const render = () => {
       reads = 0;
       expect(call(gt, greeting, values)).toBe('Bonjour, Ada');
-      expect(call(gt, embedded)).toBe('Enregistrer');
+      expect(call(gt, embedded, values)).toBe('Salut, Ada');
       return reads;
     };
 
@@ -765,10 +764,21 @@ describe('gt-i18n/unstable precomputed messages', () => {
     expect(inline).toHaveBeenCalledTimes(1);
 
     locale = 'en';
-    expect(call(gt, embedded)).toBe('Save');
+    expect(call(gt, embedded, values)).toBe('Bonjour, Ada');
     locale = 'fr';
-    expect(call(gt, embedded)).toBe('Enregistrer');
+    expect(call(gt, embedded, values)).toBe('Salut, Ada');
     expect(inline).toHaveBeenCalledTimes(2);
+  });
+
+  it('reads the translation embedded for text on each call', async () => {
+    const gt = await setup();
+    const [save] = precompute()`Save`;
+    const inline = vi.fn((locale: string) =>
+      locale === 'fr' ? 'Enregistrer' : undefined
+    );
+    expect(call(gt, { ...save, inline })).toBe('Enregistrer');
+    expect(call(gt, { ...save, inline })).toBe('Enregistrer');
+    expect(inline.mock.calls).toEqual([['fr'], ['fr']]);
   });
 
   it('renders a catalog entry that changes, and one that expires', async () => {

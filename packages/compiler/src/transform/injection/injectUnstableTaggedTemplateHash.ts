@@ -78,9 +78,9 @@ function nonStatic(): never {
  * option stays, so the runtime renders the translation in the target locale
  * without a lookup.
  *
- * With `precompute`, a `t` template becomes a call that reads its message,
- * built here and declared at module scope (see buildPrecomputedCall):
- * t`Hello, ${{ name }}!` -> t(_gt, { name }). A replaced template's message
+ * With `precompute`, a `t` template becomes a call that passes its message,
+ * built here (see buildPrecomputedCall): t`Hello, ${{ name }}!` ->
+ * t(_gt, { name }), with `_gt` declared at module scope. A replaced template's message
  * holds the translation's tree and its locale in place of `inline`. `msg`
  * templates, and templates whose values the call could evaluate differently,
  * keep the form above.

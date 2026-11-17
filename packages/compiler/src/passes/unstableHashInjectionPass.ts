@@ -22,8 +22,8 @@ const MESSAGE_NAME = 'gt';
  * Each template is hashed and rewritten in the same visit, so this pass needs
  * no collection counters.
  *
- * A static t template is replaced by a call with its precomputed message,
- * which is declared once at module scope, after the imports.
+ * A static t template is replaced by a call with its precomputed message. A
+ * message with values is declared once at module scope, after the imports.
  */
 export function unstableHashInjectionPass(
   state: TransformState

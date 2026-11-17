@@ -26,9 +26,11 @@ export type HoistMessage = (message: t.ObjectExpression) => t.Identifier;
 /**
  * The call that renders a static template from its precomputed message:
  * t`Hello, ${{ name }}!` becomes `t(_gt, { name })`, where `_gt` is the
- * hoisted `{ $_hash, $_tree, ...options }`. The call site then builds no
- * tree, hashes nothing and allocates no options. Undefined when the call
- * could evaluate the template's values differently than the template does.
+ * hoisted `{ $_hash, $_tree, ...options }`, so the call site builds no tree
+ * and hashes nothing. A message that is text keeps nothing between renders,
+ * so it is written at its call, t({ $_hash, $_tree: 'Save' }), which costs
+ * fewer bytes than a declaration. Undefined when the call could evaluate the
+ * template's values differently than the template does.
  */
 export function buildPrecomputedCall({
   callee,
@@ -110,7 +112,9 @@ export function buildPrecomputedCall({
     );
   }
 
-  const args: t.Expression[] = [hoist(message)];
+  const args: t.Expression[] = [
+    typeof tree === 'string' ? message : hoist(message),
+  ];
   if (variables.length) {
     args.push(
       t.objectExpression(

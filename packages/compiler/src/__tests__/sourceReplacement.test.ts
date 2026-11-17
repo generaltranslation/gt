@@ -965,9 +965,10 @@ describe('experimentalReplaceSource', () => {
           return <span title={gt\`Greeting\`}>{gt\`Hello \${{ name }}\`}</span>;
         }`);
       const output = await transformWithPlugin(undefined, code);
-      const [greeting, hello] = [
-        ...(output ?? '').matchAll(/\$_hash: "([^"]+)"/g),
-      ].map((match) => match[1]);
+      const [, greeting] = output!.match(
+        /\$_hash: "([^"]+)", \$_tree: "Greeting"/
+      )!;
+      const [, hello] = output!.match(/\$_hash: "([^"]+)", \$_tree: \[/)!;
       const translations = {
         [greeting]: 'Salutation',
         [hello]: ['Bonjour ', ['name']],
@@ -1141,8 +1142,11 @@ describe('experimentalReplaceSource', () => {
       }`);
     const output = (await transformWithPlugin(undefined, code))!;
     const [settings, tooltip, save, hi] = [
-      ...output.matchAll(/\$_hash: "([^"]+)"/g),
-    ].map((match) => match[1]);
+      /\$_hash: "([^"]+)", \$_tree: "Settings"/,
+      /\$_hash: "([^"]+)", \$_tree: "Save", context/,
+      /\$_hash: "([^"]+)", \$_tree: "Save" \}/,
+      /\$_hash: "([^"]+)", \$_tree: \[/,
+    ].map((pattern) => output.match(pattern)![1]);
     const translated = await transformWithPlugin(
       buildOptions(
         {
@@ -1478,9 +1482,12 @@ describe('experimentalReplaceSource', () => {
         export const greeting = (name) => t\`Hello \${{ name }}\`;`);
       const output = await transformWithPlugin(undefined, code);
       const [, jsxHash] = output!.match(/[^$]_hash: "([^"]+)"/)!;
-      const [textHash, templateHash] = [
-        ...output!.matchAll(/\$_hash: "([^"]+)"/g),
-      ].map((match) => match[1]);
+      const [, textHash] = output!.match(
+        /\$_hash: "([^"]+)", \$_tree: "Hello"/
+      )!;
+      const [, templateHash] = output!.match(
+        /\$_hash: "([^"]+)", \$_tree: \[/
+      )!;
       const options = buildOptions(
         {
           [jsxHash]: 'Bonjour (T)',

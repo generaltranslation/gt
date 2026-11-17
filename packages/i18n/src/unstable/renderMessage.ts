@@ -106,8 +106,9 @@ export function renderMessage(
 
 /**
  * A call site whose message a compiler built ahead of time: its hash, source
- * tree and literal options. The compiler hoists one per call site to module
- * scope and passes it to the GT with the values, in place of the template.
+ * tree and literal options, passed to the GT with the values in place of the
+ * template. The compiler declares a message with values once, at module
+ * scope, and writes a message that is text at its call.
  */
 export type PrecomputedMessage = MessageTreeHashMetadata &
   InlineTranslationsOption<MessageTree> & {
@@ -120,27 +121,35 @@ export type PrecomputedMessage = MessageTreeHashMetadata &
      * the translation for.
      */
     $_locale?: string;
-    /** What the call site last rendered; set as it renders. */
+    /** What a message with values last resolved to; set as it renders. */
     $_resolved?: ResolvedMessage;
   };
 
-/**
- * What a precomputed message resolved to, kept while the config, the
- * conditions and the looked-up catalog entry stay the same objects.
- */
-type ResolvedMessage = {
+/** The conditions of a render, with what they mean for every message. */
+type Conditions = {
   config: I18nConfig;
   locale: string;
   enabled: boolean;
-  options: MessageTreeLookupOptions;
-  /** The translation embedded at the call site for the locale. */
+  /**
+   * The locale an embedded translation is read for; undefined when the
+   * conditions need none.
+   */
+  embeddedLocale: string | undefined;
+};
+
+/**
+ * What a message resolved to, kept while the conditions and the looked-up
+ * catalog entry stay the same objects.
+ */
+type ResolvedMessage = {
+  conditions: Conditions;
+  /** The translation embedded at the call site for the conditions. */
   embedded: MessageTree | undefined;
+  options: MessageTreeLookupOptions | undefined;
   /** The catalog entry or embedded translation last read. */
   entry: unknown;
   /** That entry once validated. */
   translation: MessageTree | undefined;
-  /** The output, when it is text that no value changes. */
-  text: string | undefined;
 };
 
 const NO_VALUES: Record<string, unknown> = {};
@@ -152,6 +161,39 @@ export function isPrecomputedMessage(
   value: object
 ): value is PrecomputedMessage {
   return (value as PrecomputedMessage).$_tree !== undefined;
+}
+
+// Renders come in runs of one locale, so the last conditions are kept.
+let lastConditions: Conditions | undefined;
+
+function resolveConditions(locale: string, enabled: boolean): Conditions {
+  const config = getI18nConfig();
+  if (
+    lastConditions?.locale === locale &&
+    lastConditions.enabled === enabled &&
+    lastConditions.config === config
+  ) {
+    return lastConditions;
+  }
+  let embeddedLocale: string | undefined;
+  if (enabled) {
+    // The locale an inline callback is called with, when it is called.
+    lookupInlineTranslation((embedded) => {
+      embeddedLocale = embedded;
+      return undefined;
+    }, locale);
+  }
+  return (lastConditions = { config, locale, enabled, embeddedLocale });
+}
+
+/** The translation the compiler embedded at the site for the conditions. */
+function lookupEmbeddedTranslation(
+  site: PrecomputedMessage,
+  { embeddedLocale }: Conditions
+): MessageTree | undefined {
+  if (embeddedLocale === undefined) return undefined;
+  if (site.$_locale === embeddedLocale) return site.$_tree;
+  return site.inline?.(embeddedLocale);
 }
 
 /**
@@ -167,83 +209,78 @@ export function renderPrecomputedMessage(
   enabled: boolean,
   lookupTranslation: LookupTreeTranslation
 ): string {
-  const config = getI18nConfig();
+  const conditions = resolveConditions(locale, enabled);
   const tree = site.$_tree;
-  let resolved = site.$_resolved;
-  if (
-    resolved === undefined ||
-    resolved.locale !== locale ||
-    resolved.enabled !== enabled ||
-    resolved.config !== config
-  ) {
-    resolved = site.$_resolved = {
-      config,
-      locale,
-      enabled,
-      options: createMessageTreeLookupOptions(tree, locale, site),
-      embedded: enabled ? lookupEmbeddedTranslation(site, locale) : undefined,
-      entry: NOT_READ,
-      translation: undefined,
-      text: undefined,
-    };
+  const hash = site.$_hash;
+  let translation: MessageTree | undefined;
+  if (typeof tree === 'string') {
+    // Text is written at its call, so nothing of it is kept between renders.
+    // Disabled skips every lookup, including custom ones with default-locale entries.
+    const entry = enabled
+      ? (lookupEmbeddedTranslation(site, conditions) ??
+        lookupTranslation(
+          tree,
+          createMessageTreeLookupOptions(tree, locale, site)
+        ))
+      : undefined;
+    translation =
+      entry === tree ? tree : lookupTreeTranslation(entry, locale, hash);
+  } else {
+    let resolved = site.$_resolved;
+    if (resolved?.conditions !== conditions) {
+      resolved = site.$_resolved = {
+        conditions,
+        embedded: lookupEmbeddedTranslation(site, conditions),
+        options: undefined,
+        entry: NOT_READ,
+        translation: undefined,
+      };
+    }
+    const entry = enabled
+      ? (resolved.embedded ??
+        lookupTranslation(
+          tree,
+          (resolved.options ??= createMessageTreeLookupOptions(
+            tree,
+            locale,
+            site
+          ))
+        ))
+      : undefined;
+    if (entry !== resolved.entry) {
+      resolved.entry = entry;
+      // The compiler built the site's own tree, which is the entry of a
+      // replaced site and of the default locale.
+      resolved.translation =
+        entry === tree ? tree : lookupTreeTranslation(entry, locale, hash);
+    }
+    ({ translation } = resolved);
   }
-  // Disabled skips every lookup, including custom ones with default-locale entries.
-  const entry = enabled
-    ? (resolved.embedded ?? lookupTranslation(tree, resolved.options))
-    : undefined;
-  if (entry !== resolved.entry) {
-    resolved.entry = entry;
-    // The compiler built the site's own tree, which is the entry of a
-    // replaced site and of the default locale.
-    resolved.translation =
-      entry === tree ? tree : lookupTreeTranslation(entry, locale, site.$_hash);
-    resolved.text = undefined;
-  }
-  if (resolved.text !== undefined) return resolved.text;
 
-  const { translation } = resolved;
+  const { config } = conditions;
   const { maxChars } = site;
   const defaultLocale = config.getDefaultLocale();
   let outputLocale = defaultLocale;
-  let rendered = tree;
   let output: string | undefined;
   // An empty translation is the text '', not a missing one.
   if (translation !== undefined) {
     try {
       output = formatTree(translation, locale, values, formats);
       outputLocale = locale;
-      rendered = translation;
     } catch (error) {
       warnOnce(
-        `format:${locale}:${site.$_hash}`,
-        createTranslationFormatWarning(locale, site.$_hash, error)
+        `format:${locale}:${hash}`,
+        createTranslationFormatWarning(locale, hash, error)
       );
     }
   }
   output ??= formatTree(tree, defaultLocale, values, formats);
-  if (maxChars != null) {
-    output = formatCutoff(output, {
-      locales: config.resolveCanonicalLocale(outputLocale),
-      maxChars,
-    });
-  }
-  if (typeof rendered === 'string') resolved.text = output;
-  return output;
-}
-
-/** The translation the compiler embedded at the site for `locale`. */
-function lookupEmbeddedTranslation(
-  site: PrecomputedMessage,
-  locale: string
-): MessageTree | undefined {
-  const { $_locale, $_tree, inline } = site;
-  if ($_locale === undefined) {
-    return inline && lookupInlineTranslation(inline, locale);
-  }
-  return lookupInlineTranslation(
-    (embedded) => (embedded === $_locale ? $_tree : inline?.(embedded)),
-    locale
-  );
+  return maxChars == null
+    ? output
+    : formatCutoff(output, {
+        locales: config.resolveCanonicalLocale(outputLocale),
+        maxChars,
+      });
 }
 
 /** The lookup options of a tree in `locale`, hashing it unless `$_hash` is set. */

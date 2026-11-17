@@ -80,7 +80,7 @@ describe('unstableHashInjectionPass', () => {
     );
   });
 
-  it('replaces a t template with a call that reads its precomputed message', async () => {
+  it('replaces a t template with a call that passes its precomputed message', async () => {
     const save = hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' });
     const button = hashSource({
       source: 'Save',
@@ -88,10 +88,10 @@ describe('unstableHashInjectionPass', () => {
       context: 'button',
     });
     const output = await compile("t`Save`;\nt({ context: 'button' })`Save`;");
+    expect(output).toContain(`t({ $_hash: "${save}", $_tree: "Save" });`);
     expect(output).toContain(
-      `const _gt = { $_hash: "${save}", $_tree: "Save" };const _gt2 = { $_hash: "${button}", $_tree: "Save", context: "button" };`
+      `t({ $_hash: "${button}", $_tree: "Save", context: "button" });`
     );
-    expect(output).toContain('t(_gt);\nt(_gt2);');
   });
 
   it('rewrites a msg tag and leaves a msg literal call untouched', async () => {
