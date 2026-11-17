@@ -1,4 +1,3 @@
-import 'gt-react/macros'; // attaches the global t`...` macro (see src/navigation.ts)
 import { initializeGTSPA } from 'gt-react';
 import gtConfig from '../gt.config.json';
 import loadTranslations from './loadTranslations';

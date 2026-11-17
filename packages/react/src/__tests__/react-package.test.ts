@@ -19,8 +19,6 @@ const runtimeArtifactNames = [
   'compat.client.mjs',
   'compat.server.cjs',
   'compat.server.mjs',
-  'macros.cjs',
-  'macros.mjs',
   'unstable.cjs',
   'unstable.mjs',
   'unstable.rsc.cjs',
@@ -90,6 +88,8 @@ describe('gt-react package exports', () => {
               ]) {
                 assert.equal(typeof react[name], 'function', format + ' ' + name);
               }
+              // t is client-rendered (SPA) only, so the server entry lacks it.
+              assert.equal('t' in react, false, format);
               await assert.rejects(
                 () => react.initializeGTSPA({}),
                 /server runtime entry point/,
@@ -109,16 +109,17 @@ describe('gt-react package exports', () => {
     ]);
   });
 
-  it('exports the condition-store factory from the browser entrypoint', () => {
+  it('exports the condition-store factory and t from the browser entrypoint', () => {
     node([
       '--conditions=browser',
       '--input-type=module',
       '-e',
       `
           import assert from 'node:assert/strict';
-          import { createOrUpdateBrowserConditionStore } from 'gt-react';
+          import { createOrUpdateBrowserConditionStore, t } from 'gt-react';
 
           assert.equal(typeof createOrUpdateBrowserConditionStore, 'function');
+          assert.equal(typeof t, 'function');
         `,
     ]);
   });
@@ -148,30 +149,7 @@ describe('gt-react package exports', () => {
     }
   );
 
-  it('loads side-effect entrypoints without default-export interop', () => {
-    node([
-      '-e',
-      `
-          const assert = require('node:assert/strict');
-          const clientPath = require.resolve('./dist/index.client.cjs');
-
-          assert.equal(globalThis.t, undefined);
-          require('gt-react/macros');
-          assert.equal(typeof globalThis.t, 'function');
-          assert.equal(require.cache[clientPath], undefined);
-        `,
-    ]);
-  });
-
-  it('keeps macros independent from the client entrypoint', () => {
-    for (const file of ['dist/macros.cjs', 'dist/macros.mjs']) {
-      expect(readFileSync(join(packageRoot, file), 'utf8')).not.toContain(
-        'index.client'
-      );
-    }
-  });
-
-  it('prefers the RSC implementation over worker and browser conditions', () => {
+  it('prefers the RSC implementation, which lacks t, over worker and browser conditions', () => {
     node([
       '--conditions=react-server',
       '--conditions=workerd',
@@ -184,6 +162,7 @@ describe('gt-react package exports', () => {
             require.resolve('gt-react').endsWith('/dist/index.rsc.cjs'),
             true
           );
+          assert.equal('t' in require('gt-react'), false);
         `,
     ]);
   });

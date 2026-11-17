@@ -175,6 +175,7 @@ Load only the relevant file for the area being changed:
   - gt-i18n and the framework packages pass along what the user configured, even when it is `undefined`, to core's versions. Do not import a formatter or `GTIntl` from `@generaltranslation/format` or `@generaltranslation/icu` there, and do not fill in a default.
 - **ICU compatibility:** `@generaltranslation/icu` follows the four rules under "ICU compatibility" in `packages/icu/README.md`: ICU decides what a message says, Intl formats it, what Intl cannot format throws, and values are not converted. A message that does not format as in ICU4C needs a reason in `packages/icu/src/__tests__/icu4c-messages.test.ts`.
 - **CLI version generation:** `packages/cli/src/generated/version.ts` is ignored and generated from `packages/cli/package.json` by `node scripts/generate-version.js`; do not edit or track it manually.
+- **`t()` is client-rendered (SPA) only:** a server-rendered app does not support it anywhere, its client-side code included; it uses `useGT()`, `getGT()`, or `msg()` with `m()`. Details in `.claude/rules/react-packages.md`.
 - **gt-react / gt-react-native parity:** These two packages are fixed-version siblings (released together via changesets). When a feature is added to one, the equivalent should be added to the other unless it's platform-specific (e.g., DOM-only UI components). Compare gt-react's `src/index.*.ts` entries with gt-react-native's `src/index.tsx` to verify parity.
 
 ## MCP Server

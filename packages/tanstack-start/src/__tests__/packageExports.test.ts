@@ -267,7 +267,7 @@ describe.sequential('gt-tanstack-start package exports', () => {
     ]);
   });
 
-  it('exports the components injected by the compiler from both entrypoints', () => {
+  it('exports the components injected by the compiler, and not the SPA-only t, from both entrypoints', () => {
     for (const conditions of [[], ['--conditions=browser']]) {
       node([
         ...conditions,
@@ -275,10 +275,11 @@ describe.sequential('gt-tanstack-start package exports', () => {
         '-e',
         `
           import assert from 'node:assert/strict';
-          import { GtInternalTranslateJsx, GtInternalVar } from 'gt-tanstack-start';
+          import * as start from 'gt-tanstack-start';
 
-          assert.equal(typeof GtInternalTranslateJsx, 'function');
-          assert.equal(typeof GtInternalVar, 'function');
+          assert.equal(typeof start.GtInternalTranslateJsx, 'function');
+          assert.equal(typeof start.GtInternalVar, 'function');
+          assert.equal('t' in start, false);
         `,
       ]);
     }

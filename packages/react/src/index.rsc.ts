@@ -80,10 +80,7 @@ export {
 } from '@generaltranslation/react-core/components-rsc';
 
 // ===== Translation Helpers ===== //
-export {
-  getTranslationsSnapshot,
-  t,
-} from '@generaltranslation/react-core/pure';
+export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 
 // ===== Functions ===== //
 export {

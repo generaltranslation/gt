@@ -20,7 +20,7 @@ export function reportServerRenderedUse({
   const diagnostic = createDiagnosticMessage({
     source: '@generaltranslation/react-core',
     severity: 'Error',
-    whatHappened: `${name} from /unstable is only available in client-rendered (SPA) apps`,
+    whatHappened: `${name}() is only available in client-rendered (SPA) apps`,
     fix,
     wayOut: development ? undefined : 'The source message was rendered',
     details: message === undefined ? undefined : `Message: "${message}"`,

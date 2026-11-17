@@ -28,8 +28,8 @@ function translate(
 
 /**
  * Translates a message tree with the current locale. Client-rendered (SPA)
- * apps only, where it also works at module level; server-rendered apps use
- * useGT() or getGT().
+ * apps only, where it also works at module level; server-rendered apps,
+ * client-side code included, use useGT() or getGT().
  *
  * @example
  * t`Hello, ${{ name }}!`;
