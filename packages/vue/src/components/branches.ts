@@ -17,6 +17,8 @@ import {
 type PluralProps = {
   /** Number used to select a plural branch. */
   n: number | bigint;
+  /** Selects among ordinal categories, as for 1st, 2nd and 3rd. */
+  ordinal?: boolean;
 };
 
 type BranchProps = {
@@ -39,6 +41,8 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
         required: true,
         type: [Number, BigInt] as PropType<number | bigint>,
       },
+      /** Selects among ordinal categories, as for 1st, 2nd and 3rd. */
+      ordinal: Boolean,
     },
     setup(props, { attrs, slots }) {
       const state = useGTState();
@@ -53,7 +57,8 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
             ...branches.map(getPluralBranchKey),
             ...(slots.default ? ['other'] : []),
           ],
-          getFormatLocales(state.getLocale(), state.resolveFormattingLocale)
+          getFormatLocales(state.getLocale(), state.resolveFormattingLocale),
+          props.ordinal ? 'ordinal' : 'cardinal'
         );
         const branch = branches.find(
           (name) => getPluralBranchKey(name) === form

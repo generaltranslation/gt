@@ -306,6 +306,7 @@ Branch._gtt = 'branch';
  * `"There is 1 item"`, and for any other number `"There are many items"`.
  *
  * @param {number | bigint} n - The number that picks the branch.
+ * @param {boolean} [ordinal] - Pick among ordinal categories, as in `<Plural n={place} ordinal one="1st" two="2nd" few="3rd">nth</Plural>`.
  * @param {any} children - The content to render when no branch fits.
  * @param {...{[key: string]: any}} [branches] - Branches for the plural categories `zero`, `one`, `two`, `few` and `many`,
  * and for exact numbers, written `_0`, `_1` and so on.

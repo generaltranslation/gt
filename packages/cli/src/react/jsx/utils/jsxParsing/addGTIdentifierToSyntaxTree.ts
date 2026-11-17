@@ -78,7 +78,7 @@ function constructGTProp(
     addFallbackBranch(pluralBranches, props.children, id, gtVariableNames);
     // Add plural branches to the generaltranslation
     if (Object.keys(pluralBranches).length) {
-      generaltranslation.t = 'p';
+      generaltranslation.t = props.ordinal === true ? 'o' : 'p';
       generaltranslation.b = pluralBranches;
     }
 

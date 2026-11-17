@@ -461,6 +461,13 @@ function buildJSXTree({
             }
           }
         }
+        // <Plural ordinal> is on as a bare attribute or as {true}.
+        if (elementIsPlural && attrName === 'ordinal') {
+          attrValue =
+            !attr.value ||
+            (t.isJSXExpressionContainer(attr.value) &&
+              t.isBooleanLiteral(attr.value.expression, { value: true }));
+        }
         props[attrName] = attrValue;
       }
     });

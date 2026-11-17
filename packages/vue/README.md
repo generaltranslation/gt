@@ -235,7 +235,8 @@ const m = useMessages();
   `:value`; formatter slot children are not supported.
 - `<Plural :n="count">` selects a named slot as ICU does: an exact number such
   as `#_0`, then the locale's plural category such as `#one`, then the default
-  slot.
+  slot. Add `ordinal` to select among ordinal categories, as for 1st, 2nd and
+  3rd.
 - `<Branch :branch="key">` selects an arbitrary named slot, or the default slot
   when no slot matches.
 

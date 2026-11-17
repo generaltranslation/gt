@@ -131,6 +131,11 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
     tsx: `<T><Plural n={count} _0="No items" one="One item">Many items</Plural></T>`,
   },
   {
+    name: 'ordinal plural',
+    svelte: `<T><Plural n={count} ordinal one="1st">nth</Plural><Plural n={count} ordinal={true} _1="Winner">nth</Plural><Plural n={count} ordinal={false} one="one">more</Plural></T>`,
+    tsx: `<T><Plural n={count} ordinal one="1st">nth</Plural><Plural n={count} ordinal={true} _1="Winner">nth</Plural><Plural n={count} ordinal={false} one="one">more</Plural></T>`,
+  },
+  {
     name: 'branch with string, snippet, and nested plural',
     svelte: `<T>
       <Branch branch={status} inactive="Inactive">

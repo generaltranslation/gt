@@ -1854,7 +1854,22 @@ function serializeElement(
               ])
             )
           : branches;
-      data.t = originalName === 'Plural' ? 'p' : 'b';
+      // Vue reads a bare `ordinal` attribute, an empty string, as true.
+      const ordinal = element.props.some((property) => {
+        const key =
+          property.type === NodeTypes.ATTRIBUTE
+            ? property.name
+            : readDirectiveKey(property);
+        if (key !== 'ordinal') return false;
+        const value = readPropertyValue(
+          property,
+          expressionPlugins,
+          shadowed,
+          bindings
+        );
+        return value.ok && (value.value === true || value.value === '');
+      });
+      data.t = originalName !== 'Plural' ? 'b' : ordinal ? 'o' : 'p';
     }
   }
 

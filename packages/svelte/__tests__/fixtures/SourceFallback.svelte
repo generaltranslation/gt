@@ -8,3 +8,6 @@
   <T><Plural {n} _2="a pair" one="one item">many items</Plural></T>
 </p>
 <p class="num"><T>Total: <Num value={1234.5} /></T></p>
+<p class="ordinal">
+  <T><Plural {n} ordinal one="first" two="second">later</Plural></T>
+</p>

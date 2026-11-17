@@ -75,7 +75,12 @@ const createGTProp = (
       newGTProp = {
         ...newGTProp,
         b: newBranches,
-        t: transformation === 'plural' ? 'p' : 'b',
+        t:
+          transformation !== 'plural'
+            ? 'b'
+            : props.ordinal === true
+              ? 'o'
+              : 'p',
       };
   }
 

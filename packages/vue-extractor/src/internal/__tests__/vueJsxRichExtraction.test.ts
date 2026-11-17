@@ -1234,6 +1234,29 @@ describe('Vue JSX rich extraction', () => {
     expect(hashSource({ dataFormat: 'JSX', source })).toBe('dd8f74483bcb5654');
   });
 
+  it('marks an ordinal Plural in JSX', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Plural, T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Plural n={2} ordinal one="1st">nth</Plural>
+            <Plural n={2} ordinal={true} one="1st">nth</Plural>
+            <Plural n={2} ordinal={false} one="1st">nth</Plural>
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(
+      (output.results[0]?.source as { d: { t: string } }[]).map(
+        (plural) => plural.d.t
+      )
+    ).toEqual(['o', 'o', 'p']);
+  });
+
   it('keeps named JSX slots ahead of direct boolean and null props', async () => {
     const output = await extractFromVueSource(
       `

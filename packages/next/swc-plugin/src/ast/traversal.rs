@@ -482,7 +482,7 @@ impl<'a> JsxTraversal<'a> {
         info.transformation = Some(String::from("b"));
         info.branches = self.extract_branch_props(attrs);
       } else if self.is_plural_component(tag_name) {
-        info.transformation = Some(String::from("p"));
+        info.transformation = Some(String::from(plural_transformation(attrs)));
         info.branches = self.extract_plural_props(attrs);
       }
     } else if self
@@ -517,7 +517,7 @@ impl<'a> JsxTraversal<'a> {
               info.branches = self.extract_branch_props(attrs);
             }
             "Plural" => {
-              info.transformation = Some("p".to_string());
+              info.transformation = Some(plural_transformation(attrs).to_string());
               info.branches = self.extract_plural_props(attrs);
             }
             _ => {
@@ -760,6 +760,31 @@ fn has_dynamic_content_recursive(children: &[JSXElementChild]) -> bool {
     JSXElementChild::JSXSpreadChild(_) => true,
     _ => false,
   })
+}
+
+/// The stored transformation of a Plural: "o" with a bare `ordinal` attribute
+/// or `ordinal={true}`, otherwise "p".
+fn plural_transformation(attrs: &[JSXAttrOrSpread]) -> &'static str {
+  let ordinal = attrs.iter().any(|attr| match attr {
+    JSXAttrOrSpread::JSXAttr(JSXAttr {
+      name: JSXAttrName::Ident(name),
+      value,
+      ..
+    }) if name.sym.as_ref() == "ordinal" => match value {
+      None => true,
+      Some(JSXAttrValue::JSXExprContainer(container)) => matches!(
+        &container.expr,
+        JSXExpr::Expr(expr) if matches!(expr.as_ref(), Expr::Lit(Lit::Bool(Bool { value: true, .. })))
+      ),
+      _ => false,
+    },
+    _ => false,
+  });
+  if ordinal {
+    "o"
+  } else {
+    "p"
+  }
 }
 
 impl Default for HtmlContentProps {
@@ -1157,6 +1182,33 @@ mod tests {
 
   mod component_info_analysis {
     use super::*;
+
+    fn ordinal_attr(value: Option<bool>) -> JSXAttrOrSpread {
+      JSXAttrOrSpread::JSXAttr(JSXAttr {
+        span: DUMMY_SP,
+        name: JSXAttrName::Ident(IdentName {
+          span: DUMMY_SP,
+          sym: Atom::new("ordinal"),
+        }),
+        value: value.map(|value| {
+          JSXAttrValue::JSXExprContainer(JSXExprContainer {
+            span: DUMMY_SP,
+            expr: JSXExpr::Expr(Box::new(Expr::Lit(Lit::Bool(Bool {
+              span: DUMMY_SP,
+              value,
+            })))),
+          })
+        }),
+      })
+    }
+
+    #[test]
+    fn marks_an_ordinal_plural() {
+      assert_eq!(plural_transformation(&[]), "p");
+      assert_eq!(plural_transformation(&[ordinal_attr(None)]), "o");
+      assert_eq!(plural_transformation(&[ordinal_attr(Some(true))]), "o");
+      assert_eq!(plural_transformation(&[ordinal_attr(Some(false))]), "p");
+    }
 
     #[test]
     fn analyzes_unknown_component() {

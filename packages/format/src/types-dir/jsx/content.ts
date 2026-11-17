@@ -27,7 +27,7 @@ export type HtmlContentPropValuesRecord = Partial<
 export type GTProp = {
   // Branches. `other` is the fallback; a plural's exact number N is `=N`.
   b?: Record<string, JsxChildren>;
-  t?: 'p' | 'b'; // Branch Transformation
+  t?: 'p' | 'o' | 'b'; // Branch transformation: plural, ordinal plural, branch
 } & HtmlContentPropKeysRecord;
 
 export type JsxElement = {

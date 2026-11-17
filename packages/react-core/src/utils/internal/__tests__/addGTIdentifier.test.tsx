@@ -4,14 +4,17 @@ import { hashSource } from 'generaltranslation/id';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { addGTIdentifier } from '../addGTIdentifier';
 import { writeChildrenAsObjects } from '../writeChildrenAsObjects';
-import { renderDefaultChildren } from '../../rendering/renderPipeline.rsc';
+import {
+  renderDefaultChildren,
+  renderTranslatedChildren,
+} from '../../rendering/renderPipeline.rsc';
 import { Branch } from '../../../components/branches/Branch';
 import { Plural } from '../../../components/branches/Plural';
 import {
   GtInternalRelativeTime,
   RelativeTime,
 } from '../../../components/variables/RelativeTime';
-import type { GTTag, TaggedElement } from '../../types';
+import type { GTTag, TaggedElement, TranslatedChildren } from '../../types';
 
 function gtTag(node: unknown): GTTag {
   return (node as TaggedElement).props['data-_gt'];
@@ -100,6 +103,37 @@ describe('addGTIdentifier with <RelativeTime>', () => {
         enableI18n: true,
       })
     ).toBe('None');
+  });
+
+  it('stores and renders an ordinal Plural', () => {
+    const tagged = addGTIdentifier(
+      <Plural n={2} ordinal one='1st' two='2nd'>
+        nth
+      </Plural>
+    );
+
+    expect(writeChildrenAsObjects(tagged)).toEqual({
+      t: 'Plural',
+      i: 1,
+      d: { b: { one: '1st', two: '2nd', other: 'nth' }, t: 'o' },
+    });
+    expect(
+      renderDefaultChildren({
+        children: tagged,
+        defaultLocale: 'en',
+        enableI18n: true,
+      })
+    ).toBe('2nd');
+    expect(
+      renderTranslatedChildren({
+        source: tagged,
+        target: {
+          d: { b: { one: '1er', other: 'e' }, t: 'o' },
+        } as TranslatedChildren,
+        locales: ['fr'],
+        enableI18n: true,
+      })
+    ).toBe('e');
   });
 
   it('stores the children of a Branch as other, over an other prop', () => {

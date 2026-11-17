@@ -533,7 +533,16 @@ function constructGTProp(
 
     if (Object.keys(branches).length > 0) {
       value['b'] = branches;
-      value['t'] = canonicalName === GT_COMPONENT_TYPES.Branch ? 'b' : 'p';
+      // <Plural ordinal> compiles to `ordinal: true`.
+      const ordinal = parameters.properties.some(
+        (property) =>
+          t.isObjectProperty(property) &&
+          (t.isIdentifier(property.key, { name: 'ordinal' }) ||
+            t.isStringLiteral(property.key, { value: 'ordinal' })) &&
+          t.isBooleanLiteral(property.value, { value: true })
+      );
+      value['t'] =
+        canonicalName === GT_COMPONENT_TYPES.Branch ? 'b' : ordinal ? 'o' : 'p';
     }
   } else {
     // Get the html content props

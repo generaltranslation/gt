@@ -2,7 +2,8 @@
   @component
   Renders the branch for `n` as ICU does: an exact number such as `_0`, then
   the active locale's plural category, then its children. Branches are string
-  props or snippets.
+  props or snippets. `ordinal` selects among ordinal categories, as for 1st
+  and 2nd.
 
   ```svelte
   <Plural n={count} _0="No items" one="One item">
@@ -24,10 +25,12 @@
 
   let {
     n,
+    ordinal = false,
     children,
     ...branches
   }: {
     n: number | bigint;
+    ordinal?: boolean;
     /** The fallback, as `other` is in `plural()`. */
     children: Snippet;
   } & Partial<
@@ -46,7 +49,12 @@
     const keys = names.map(getPluralBranchKey);
     const key =
       typeof n === 'number' || typeof n === 'bigint'
-        ? getPluralForm(n, [...keys, 'other'], [contentLocale.current])
+        ? getPluralForm(
+            n,
+            [...keys, 'other'],
+            [contentLocale.current],
+            ordinal ? 'ordinal' : 'cardinal'
+          )
         : 'other';
     return key === 'other' ? children : all[names[keys.indexOf(key)]];
   });

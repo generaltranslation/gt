@@ -24,6 +24,17 @@ describe('hashSource rich wire literals', () => {
       expect(hashSource({ dataFormat: 'JSX', source })).toBe(expected);
     }
   );
+
+  it('hashes an ordinal plural differently from a cardinal one', () => {
+    const plural = (t: 'p' | 'o'): JsxChildren => ({
+      t: 'Plural',
+      i: 1,
+      d: { t, b: { one: '1st', other: 'nth' } },
+    });
+    expect(hashSource({ dataFormat: 'JSX', source: plural('o') })).not.toBe(
+      hashSource({ dataFormat: 'JSX', source: plural('p') })
+    );
+  });
 });
 
 describe('hashSource requiresReview', () => {

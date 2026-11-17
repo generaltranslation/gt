@@ -12,6 +12,11 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
 type PluralProps = {
   n: number | bigint;
+  /**
+   * Pick among ordinal categories, as for 1st, 2nd and 3rd. Write it as a
+   * literal: extraction reads it from the source.
+   */
+  ordinal?: boolean;
   /** The fallback, as `other` is in `plural()`. */
   children: ReactNode;
 } & Partial<
@@ -30,6 +35,7 @@ function renderPlural({
   _enableI18n,
   _locale,
   n,
+  ordinal,
   children,
   ...props
 }: ResolvedPluralProps): ReactNode {
@@ -43,7 +49,7 @@ function renderPlural({
       .map(([prop, branch]) => [getPluralBranchKey(prop), branch]),
     ['other', children],
   ]);
-  return getPluralBranch(n, locales, branches);
+  return getPluralBranch(n, locales, branches, ordinal);
 }
 
 export { renderPlural };

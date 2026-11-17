@@ -248,7 +248,7 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 **Control props are never modified.** These are selector/configuration props, not translatable content:
 
 - Branch: `branch` (selector key), `data-*` (HTML attributes, ignored at runtime)
-- Plural: `n` (count)
+- Plural: `n` (count), `ordinal` (ordinal categories)
 
 **Content props** (branch value keys like `Ernest`, `summary`, plural categories like `one`, exact numbers like `_0`, and `children`, the fallback) are processed:
 
