@@ -24,6 +24,7 @@ export function processCallExpression(
   return {
     enter: enterCallExpression(state),
     exit(callExprPath) {
+      state.openTranslationCalls?.delete(callExprPath.node);
       const replace = state.sourceReplacementsOnExit?.get(callExprPath.node);
       if (!replace) return;
       state.sourceReplacementsOnExit!.delete(callExprPath.node);
@@ -131,6 +132,8 @@ function handleReactInvocation(
   if (type !== 'generaltranslation' || !isTranslationComponent(canonicalName)) {
     return;
   }
+  state.openTranslationCalls ??= new Set();
+  state.openTranslationCalls.add(callExpr);
 
   // Track the component (increment counter, initialize aggregator, set hash)
   injectTComponentParameters(callExprPath, state);

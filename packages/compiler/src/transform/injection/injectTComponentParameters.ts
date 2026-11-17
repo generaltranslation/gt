@@ -57,7 +57,7 @@ export function injectTComponentParameters(
   const props = callExpr.arguments[1];
   const { hash } = translationJsx;
   if (runtimeHash && !getObjectPropertyFromObjectExpression(props, 'inline')) {
-    const translation = getReplacementTranslation(runtimeHash, state);
+    const translation = getReplacementTranslation(callExpr, runtimeHash, state);
     if (translation !== undefined) {
       // On exit, once translation calls in the children have taken their hashes in source order
       state.sourceReplacementsOnExit ??= new Map();
@@ -118,11 +118,18 @@ function getRuntimeHash(
 
 /** The translation a per-locale build replaces a <T> with, if it replaces <T>. */
 function getReplacementTranslation(
+  callExpr: t.CallExpression,
   hash: string,
   state: TransformState
 ): unknown {
   const { sourceReplacement, inlineTranslationsTable } = state.settings;
   if (!sourceReplacement?.jsx) return undefined;
+  // An enclosing <T> renders this one as part of its own content
+  if (
+    [...(state.openTranslationCalls ?? [])].some((open) => open !== callExpr)
+  ) {
+    return undefined;
+  }
   return inlineTranslationsTable?.[sourceReplacement.locale]?.[hash];
 }
 

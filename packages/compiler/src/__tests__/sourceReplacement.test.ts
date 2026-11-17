@@ -562,6 +562,17 @@ const JSX_CASES: Case[] = [
     expected: 'kept',
   },
   {
+    name: 'children passed before a prop with side effects',
+    source: `${IMPORTS}
+      export function App() {
+        let x = 0;
+        return <T><b children={<Var>{x}</Var>} data-x={x++} /></T>;
+      }`,
+    translation: { t: 'b', i: 1, c: { k: '_gt_value_2', i: 2, v: 'v' } },
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
     name: 'sibling variables that share a name',
     source: app(
       '<T><Var name="who">{a}</Var> / <Var name="who">{b}</Var></T>',
@@ -912,6 +923,48 @@ describe('experimentalReplaceSource', () => {
     expect(replaced).toContain('"Deux"');
     expect(calls(output)).toHaveLength(2);
     expect(calls(replaced)).toEqual(calls(output));
+  });
+
+  it('leaves a <T> inside another <T> alone', async () => {
+    const code = compileJsx(
+      app(
+        '<T>Outer <T><Var name="a">{a}</Var> and <Var name="b">{b}</Var></T></T>',
+        '{ a, b }'
+      )
+    );
+    const output = (await transformWithPlugin(undefined, code))!;
+    const [inner, outer] = [...output.matchAll(/[^$]_hash: "([^"]+)"/g)].map(
+      (match) => match[1]
+    );
+    const innerTranslation = [
+      { k: 'b', i: 2, v: 'v' },
+      ' puis ',
+      { k: 'a', i: 1, v: 'v' },
+    ];
+    for (const translations of [
+      { [inner]: innerTranslation },
+      {
+        [outer]: [
+          'Extérieur ',
+          {
+            t: 'T',
+            i: 1,
+            c: [{ k: 'a', i: 2, v: 'v' }, ' et ', { k: 'b', i: 3, v: 'v' }],
+          },
+        ],
+        [inner]: innerTranslation,
+      },
+    ]) {
+      const [embedded, replaced] = await Promise.all(
+        [false, true].map((replaceSource) =>
+          transformWithPlugin(
+            buildOptions(translations, { replaceSource }),
+            code
+          )
+        )
+      );
+      expect(replaced).toBe(embedded);
+    }
   });
 
   it('imports Fragment where the file lacks it', async () => {
