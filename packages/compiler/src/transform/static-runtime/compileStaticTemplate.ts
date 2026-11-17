@@ -3,7 +3,6 @@ import * as t from '@babel/types';
 import { isMessageTree, type MessageTree } from '@generaltranslation/icu';
 import {
   DATE_TIME_CONTEXT_OPTIONS,
-  FALLBACK_BRANCH_KEY,
   NUMBER_CONTEXT_OPTIONS,
   forEachPlaceholder,
   templateToMessage,
@@ -21,7 +20,7 @@ import {
 import { isSideEffectFree } from '../injection/inline-translations/isSideEffectFree';
 import { objectPropertyMatchesName } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { escapeTemplateText } from '../injection/inline-translations/replaceTemplateSource';
-import type { StaticHelperKind } from './resolveStaticRuntime';
+import type { StaticHelperKind, StaticScope } from './resolveStaticRuntime';
 import {
   addStaticRuntimeError,
   addStaticRuntimeWarning,
@@ -174,7 +173,7 @@ function compile(
     formats.set(name, properties);
   }
 
-  const tree = getTree(path, state, source, hash);
+  const { tree, scope, mayThrow } = getTree(path, state, source, hash);
   if (typeof tree === 'string') {
     const literal = t.stringLiteral(tree);
     // Printed as written, where the generator would escape non-ASCII text
@@ -189,53 +188,81 @@ function compile(
     return true;
   }
 
-  const used = new Set<string>();
-  let kind: Exclude<StaticHelperKind, 'value'> = 'tree';
-  let onlyValues = true;
-  forEachPlaceholder(tree, (node) => {
-    used.add(node[0]);
-    if (node[1] !== undefined) onlyValues = false;
-    if (node[1] === 'number' || node[1] === 'date' || node[1] === 'time') {
-      kind = 'intl';
-    }
-  });
-  const usedFormats = [...formats].filter(
-    ([name, properties]) => used.has(name) && properties.length > 0
-  );
-  // Built on demand, since a call site may not need it
-  const buildCall = (): t.Expression =>
-    t.callExpression(getStaticHelper(state, path, kind), [
-      hoistStaticTree(state, path, tree),
-      t.objectExpression(
-        ordered.map(([name, expression]) =>
-          t.objectProperty(propertyKey(name), t.cloneNode(expression, true))
-        )
-      ),
+  /** A call that formats a tree, in the locales of `formatScope`, with `valuesNode`. */
+  const format = (
+    formatted: MessageTree,
+    formatScope: StaticScope,
+    valuesNode: t.Expression
+  ): t.Expression => {
+    const used = new Set<string>();
+    let kind: Exclude<StaticHelperKind, 'value' | 'or'> = 'tree';
+    forEachPlaceholder(formatted, (node) => {
+      used.add(node[0]);
+      if (node[1] !== undefined && !isBranching(node[1])) kind = 'intl';
+    });
+    const usedFormats = [...formats].filter(
+      ([name, properties]) => used.has(name) && properties.length > 0
+    );
+    return t.callExpression(getStaticHelper(state, path, kind), [
+      hoistStaticTree(state, path, formatted),
+      valuesNode,
       ...getStaticArguments(
         state,
         kind,
-        tree,
+        formatScope,
+        formatted,
         usedFormats.length > 0
           ? t.objectExpression(
               usedFormats.map(([name, properties]) =>
                 t.objectProperty(
                   propertyKey(name),
-                  t.objectExpression(properties)
+                  t.objectExpression(
+                    properties.map((property) => t.cloneNode(property, true))
+                  )
                 )
               )
             )
           : undefined
       ),
     ]);
+  };
+  const valuesNode = () =>
+    t.objectExpression(
+      ordered.map(([name, expression]) =>
+        t.objectProperty(propertyKey(name), t.cloneNode(expression, true))
+      )
+    );
+
+  if (mayThrow) {
+    // The values are read once, whichever of the two is formatted
+    const parameter = path.scope.generateUidIdentifier('values');
+    path.replaceWith(
+      t.callExpression(getStaticHelper(state, path, 'or'), [
+        valuesNode(),
+        t.arrowFunctionExpression(
+          [parameter],
+          format(tree, scope, t.cloneNode(parameter))
+        ),
+        t.arrowFunctionExpression(
+          [t.cloneNode(parameter)],
+          format(source, 'source', t.cloneNode(parameter))
+        ),
+      ])
+    );
+    return true;
+  }
+
   path.replaceWith(
-    (onlyValues &&
+    (tree.every(
+      (node) => typeof node === 'string' || (node !== 0 && node.length === 1)
+    ) &&
       buildValueTemplate(tree, values, ordered, (value) =>
         t.callExpression(getStaticHelper(state, path, 'value'), [
           value,
-          ...getStaticArguments(state, 'value'),
+          ...getStaticArguments(state, 'value', scope),
         ])
       )) ||
-      buildCall()
+      format(tree, scope, valuesNode())
   );
   return true;
 }
@@ -389,19 +416,33 @@ function getContext(
 
 // ===== Translation ===== //
 
+/** What a template renders, and the locales it is formatted in. */
+type Rendered = {
+  tree: MessageTree;
+  scope: StaticScope;
+  /**
+   * Whether the tree is a translation that can throw on values its source
+   * formats, which the runtime then renders the source for.
+   */
+  mayThrow?: boolean;
+};
+
 /**
  * The tree the template renders in the build's locale: its translation, or
  * its source when the build's locale renders the source, or the translation
- * is missing or cannot stand in for the source.
+ * is missing or cannot stand in for the source. The source is formatted in
+ * the default locale, as the runtime formats it.
  */
 function getTree(
   path: NodePath<t.TaggedTemplateExpression>,
   state: TransformState,
   source: MessageTree,
   hash: string
-): MessageTree {
+): Rendered {
   const { sourceReplacement, inlineTranslationsTable } = state.settings;
-  if (sourceReplacement?.locale === undefined) return source;
+  if (sourceReplacement?.locale === undefined) {
+    return { tree: source, scope: 'source' };
+  }
   const translation =
     inlineTranslationsTable?.[sourceReplacement.locale]?.[hash];
   if (translation === undefined) {
@@ -410,71 +451,102 @@ function getTree(
       path.node,
       `the "${sourceReplacement.locale}" translation of message ${hash} is missing, so its source is rendered`
     );
-    return source;
+    return { tree: source, scope: 'source' };
   }
-  const problem = getTranslationProblem(source, translation);
-  if (problem !== undefined) {
+  const check = checkTranslation(source, translation);
+  if (typeof check === 'string') {
     addStaticRuntimeWarning(
       state,
       path.node,
-      `the "${sourceReplacement.locale}" translation of message ${hash} ${problem}, so its source is rendered`
+      `the "${sourceReplacement.locale}" translation of message ${hash} ${check}, so its source is rendered`
     );
-    return source;
+    return { tree: source, scope: 'source' };
   }
-  return translation as MessageTree;
+  return {
+    tree: translation as MessageTree,
+    scope: 'build',
+    mayThrow: check.mayThrow,
+  };
+}
+
+const PLAIN = 'plain';
+const SELECT = 'select';
+const COUNT = 'count';
+
+/**
+ * What a variable must be for a node to format it; branches do not matter.
+ * The rule of `canReplaceMessageTree` in ../injection/replaceMessageTree.ts.
+ */
+function toKind([kind, ...style]: unknown[]): string {
+  if (kind === undefined) return PLAIN;
+  if (kind === 'select') return SELECT;
+  if (kind === 'plural' || kind === 'selectordinal') return COUNT;
+  return JSON.stringify([kind, ...style]);
+}
+
+/** Whether a plural has a branch named for a plural category, which a count too large to categorize throws on. */
+function hasCategory(branches: Record<string, unknown>): boolean {
+  return Object.keys(branches).some((key) => key !== 'other' && key[0] !== '=');
 }
 
 /**
- * Why a translation cannot be formatted wherever its source can, which is
- * when the runtime renders the source instead; undefined when it can.
+ * How a translation stands in for its source. The runtime formats the
+ * translation and renders the source when that throws, so:
+ *
+ * - a translation that always throws is not rendered, and the reason is
+ *   returned: it is not a message tree, or it has a variable the source
+ *   lacks or a tag, which a template has no value for;
+ * - one that reads each variable as a kind the source reads it as formats
+ *   whatever the source formats: `{name}` takes any value, a select needs
+ *   the string a source select needs, a plural the number a source plural or
+ *   number needs, and a number, date or time must be written as the source
+ *   writes it, since the call site's formatting context is for that one;
+ * - any other `mayThrow` on values its source formats, as a plural does that
+ *   names a plural category for a count the source has none for.
  */
-function getTranslationProblem(
+function checkTranslation(
   source: MessageTree,
   translation: unknown
-): string | undefined {
+): string | { mayThrow: boolean } {
   if (!isMessageTree(translation)) return 'is not a message tree';
-  // What each variable of the source is formatted as
-  const kinds = new Map<string, Set<string>>();
+  const sourceKinds = new Map<string, Set<string>>();
+  const categorized = new Set<string>();
   forEachPlaceholder(source, (node) => {
-    const kind =
-      node[1] !== undefined && isBranching(node[1])
-        ? node[1]
-        : JSON.stringify(node.slice(1));
-    kinds.set(node[0], (kinds.get(node[0]) ?? new Set()).add(kind));
-  });
-  let problem: string | undefined;
-  forEachPlaceholder(translation, (node) => {
-    const [name, kind] = node;
-    const sourceKinds = kinds.get(name);
-    if (!sourceKinds) {
-      problem ??= `has the variable "${name}", which its source lacks`;
-    } else if (kind === undefined) {
-      // Any value formats as text
-    } else if (kind === 'tag') {
-      problem ??= `has the tag "${name}"`;
-    } else if (isBranching(kind)) {
-      // A value its source selects or counts with is one this can select or count with
-      const numeric = kind !== 'select';
-      const matches = [...sourceKinds].some((sourceKind) =>
-        numeric
-          ? sourceKind === 'plural' ||
-            sourceKind === 'selectordinal' ||
-            sourceKind.startsWith('["number"')
-          : sourceKind === 'select'
-      );
-      if (!matches) {
-        problem ??= `reads "${name}" as a ${kind}, which its source does not`;
-      } else if (
-        !Object.prototype.hasOwnProperty.call(node[2], FALLBACK_BRANCH_KEY)
-      ) {
-        problem ??= `has no "${FALLBACK_BRANCH_KEY}" branch for "${name}"`;
-      }
-    } else if (!sourceKinds.has(JSON.stringify(node.slice(1)))) {
-      problem ??= `formats "${name}" as its source does not`;
+    const [name, ...kind] = node;
+    sourceKinds.set(
+      name,
+      (sourceKinds.get(name) ?? new Set()).add(toKind(kind))
+    );
+    if (
+      (node[1] === 'plural' || node[1] === 'selectordinal') &&
+      hasCategory(node[2])
+    ) {
+      categorized.add(name);
     }
   });
-  return problem;
+  let problem: string | undefined;
+  let mayThrow = false;
+  forEachPlaceholder(translation, (node) => {
+    const [name, ...kind] = node;
+    const kinds = sourceKinds.get(name);
+    const translated = toKind(kind);
+    if (!kinds) {
+      problem ??= `has the variable "${name}", which its source lacks`;
+    } else if (node[1] === 'tag') {
+      problem ??= `has the tag "${name}"`;
+    } else if (translated === COUNT) {
+      mayThrow ||=
+        !(kinds.has(COUNT) || [...kinds].some(isNumber)) ||
+        (hasCategory(node[2] as Record<string, unknown>) &&
+          !categorized.has(name));
+    } else if (translated !== PLAIN) {
+      mayThrow ||= !kinds.has(translated);
+    }
+  });
+  return problem ?? { mayThrow };
 }
+
+const isNumber = (kind: string) => kind.startsWith('["number"');
 
 function isBranching(kind: string | undefined): boolean {
   return kind === 'select' || kind === 'plural' || kind === 'selectordinal';
