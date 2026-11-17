@@ -7,10 +7,7 @@ import {
 } from './translation.js';
 import type { SvelteElementNode, SvelteNode } from './types.js';
 
-/**
- * Variable components that format a value. gt-react passes it as children,
- * except to `<RelativeTime>`, which takes no children in either library.
- */
+/** Variable components that format a value, which gt-react passes as children. */
 const VALUE_VARIABLES = new Set([
   'Num',
   'Currency',
@@ -39,7 +36,7 @@ export function planVariables(
 ): VariablePlan {
   const plan: VariablePlan = { edits: [], problems: [] };
   for (const node of findVariableComponents(fragment, bindings)) {
-    planVariable(source, node, resolveComponent(bindings, node.name), plan);
+    planVariable(source, node, plan);
   }
   plan.edits.sort((a, b) => a.start - b.start);
   return plan;
@@ -48,7 +45,6 @@ export function planVariables(
 function planVariable(
   source: string,
   node: SvelteElementNode,
-  kind: ReturnType<typeof resolveComponent>,
   plan: VariablePlan
 ): void {
   const children = node.fragment.nodes.filter(
@@ -57,14 +53,6 @@ function planVariable(
       !(child.type === 'Text' && !(child.data as string).trim())
   );
   if (children.length === 0) return;
-  if (kind === 'RelativeTime') {
-    plan.problems.push({
-      offset: children[0].start,
-      whatHappened: `<${node.name}> takes no children, so they would be ignored`,
-      fix: `Write <${node.name} value={value} />`,
-    });
-    return;
-  }
   const valueAttribute = findAttribute(node, 'value');
   if (valueAttribute) {
     plan.problems.push({

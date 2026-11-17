@@ -160,10 +160,10 @@ DateTime._gtt = 'variable-datetime';
  *
  * @example
  * ```jsx
- * <RelativeTime date={someDate} />
+ * <RelativeTime>{someDate}</RelativeTime>
  * ```
  *
- * @param {Date} [date] - A date to compute relative time from now.
+ * @param {Date} [children] - A date to compute relative time from now.
  * @param {number} [value] - Explicit numeric value. Requires `unit`.
  * @param {Intl.RelativeTimeFormatUnit} [unit] - The unit of time.
  * @param {Date} [baseDate] - Base date for computing relative time. Defaults to `new Date()` at render time. Required for hydration safety.

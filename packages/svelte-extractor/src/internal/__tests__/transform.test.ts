@@ -558,7 +558,7 @@ describe('errors', () => {
   it('rejects variable children that cannot become the value', () => {
     const errorsFor = (markup: string) =>
       analyzeSvelteSource(
-        `<script>import { Num, DateTime, RelativeTime, Var } from 'gt-svelte';let x;</script>${markup}`,
+        `<script>import { Num, DateTime, Var } from 'gt-svelte';let x;</script>${markup}`,
         { parse }
       ).errors.map(({ whatHappened, fix }) => ({ whatHappened, fix }));
     expect(errorsFor('<p><Num>{x} items</Num></p>')).toEqual([
@@ -579,13 +579,6 @@ describe('errors', () => {
         whatHappened:
           '<Num> has both a "value" prop and children, so the children would be ignored',
         fix: 'Remove the "value" prop or the children',
-      },
-    ]);
-    expect(errorsFor('<RelativeTime>{x}</RelativeTime>')).toEqual([
-      {
-        whatHappened:
-          '<RelativeTime> takes no children, so they would be ignored',
-        fix: 'Write <RelativeTime value={value} />',
       },
     ]);
   });
