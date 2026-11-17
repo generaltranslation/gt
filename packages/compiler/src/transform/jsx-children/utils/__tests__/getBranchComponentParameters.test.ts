@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import traverse, { type NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { getBranchComponentParameters } from '../getBranchComponentParameters';
@@ -88,5 +88,30 @@ describe('getBranchComponentParameters', () => {
 
     const keys = result.map(([key]) => key);
     expect(keys).toEqual(['morning']);
+  });
+
+  it('warns about children and malformed exact numbers, which are not rendered', () => {
+    const warn = vi.fn();
+    const expression = makeObjectExpression({
+      n: '5',
+      _0: 'No items',
+      _01: 'One item',
+      _1e3: 'A thousand items',
+      other: 'Many items',
+      children: 'Fallback',
+    });
+
+    const result = getBranchComponentParameters(
+      getObjectExpressionPath(expression),
+      GT_COMPONENT_TYPES.Plural,
+      warn
+    );
+
+    expect(result.map(([key]) => key)).toEqual(['=0', 'other']);
+    expect(warn.mock.calls.map(([diagnostic]) => diagnostic)).toEqual([
+      'Ignored the _01 prop of <Plural> because it is not an exact number. Write the number without a leading zero or an exponent, as in _0 or _1000.',
+      'Ignored the _1e3 prop of <Plural> because it is not an exact number. Write the number without a leading zero or an exponent, as in _0 or _1000.',
+      '<Plural> does not render its children. Move the content to the other prop.',
+    ]);
   });
 });

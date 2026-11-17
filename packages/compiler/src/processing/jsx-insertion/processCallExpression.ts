@@ -473,7 +473,7 @@ function processOpaqueComponentProps({
     const valuePath = propPath.get('value');
     if (!valuePath.isExpression()) continue;
 
-    // children is fallback content for Branch/Plural — process element-by-element
+    // Branch/Plural do not render children, but they are still extracted — process element-by-element
     // For Derive, children is opaque — skip entirely
     if (propName === 'children') {
       if (

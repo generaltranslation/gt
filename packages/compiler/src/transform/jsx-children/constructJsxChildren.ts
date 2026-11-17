@@ -475,7 +475,14 @@ function constructGTProp(
     // Get the branching parameters
     const branchingParameters = getBranchComponentParameters(
       parametersPath as NodePath<t.ObjectExpression>,
-      canonicalName
+      canonicalName,
+      (diagnostic, node) =>
+        state.logger.logWarning(
+          (diagnostic + createErrorLocation(node)).replace(
+            '{filename}',
+            state.settings.filename || '{filename}'
+          )
+        )
     );
     // Add branch component branches
     const branches = {} as Record<string, JsxChildren>;

@@ -14,37 +14,49 @@ const isCount = (n: unknown): n is number | bigint =>
   typeof n === 'number' || typeof n === 'bigint';
 
 /**
- * The branch ICU picks for `n`: an exact key, then the locale's plural
- * category, then `other`. A value that is not a number only fits `other`.
+ * The key of the branch ICU picks for `n`: an exact key, then the locale's
+ * plural category, then `other`. A value that is not a number only fits `other`.
  */
-export function selectPluralBranch<T>(
+export function selectPluralKey(
   n: unknown,
   locales: string[],
-  branches: Record<string, T>
-): T | undefined {
-  if (!isCount(n)) return pick(branches, 'other');
+  branches: Record<string, unknown>
+): string {
+  if (!isCount(n)) return 'other';
   const keys = Object.keys(branches).filter(
     (key) => branches[key] !== undefined
   );
-  return pick(branches, getPluralForm(n, keys, locales));
+  return getPluralForm(n, keys, locales);
 }
 
-/** The branch named by the value, then `other`. */
-export function selectBranch<T>(
+/** The key of the branch named by the value, then `other`. */
+export function selectBranchKey(
   branch: unknown,
-  branches: Record<string, T>
-): T | undefined {
-  const selected = branch == null ? undefined : pick(branches, String(branch));
+  branches: Record<string, unknown>
+): string {
+  return branch != null && pick(branches, String(branch)) !== undefined
+    ? String(branch)
+    : 'other';
+}
+
+// A translation picks the key among its own branches, and the source may have
+// no branch of that name: its `other` pairs with it then.
+function pickOrOther<T>(branches: Record<string, T>, key: string) {
+  const selected = pick(branches, key);
   return selected !== undefined ? selected : pick(branches, 'other');
 }
 
-/** selectPluralBranch() for source content, which reports a count it cannot use. */
+/**
+ * The source branch of a `<Plural>`, which reports a count it cannot use.
+ * `key` is the branch a translation picked; without one the source picks.
+ */
 export function getPluralBranch<T>(
   n: unknown,
   locales: string[],
-  branches: Record<string, T>
+  branches: Record<string, T>,
+  key = selectPluralKey(n, locales, branches)
 ): T | undefined {
-  const selected = selectPluralBranch(n, locales, branches);
+  const selected = pickOrOther(branches, key);
   if (!isCount(n)) {
     report({
       whatHappened: '<Plural> needs a number or a bigint for n',
@@ -66,12 +78,16 @@ export function getPluralBranch<T>(
   return selected;
 }
 
-/** selectBranch() for source content, which reports a value with no branch. */
+/**
+ * The source branch of a `<Branch>`, which reports a value with no branch.
+ * `key` is the branch a translation picked; without one the source picks.
+ */
 export function getBranch<T>(
   branch: unknown,
-  branches: Record<string, T>
+  branches: Record<string, T>,
+  key = selectBranchKey(branch, branches)
 ): T | undefined {
-  const selected = selectBranch(branch, branches);
+  const selected = pickOrOther(branches, key);
   if (selected === undefined) {
     report({
       whatHappened: '<Branch> has no branch for its value',
@@ -100,7 +116,7 @@ function report({
     severity: 'Error',
     whatHappened,
     fix,
-    wayOut: development ? undefined : rendered,
+    reassurance: development ? undefined : rendered,
     details,
   });
   if (development) throw new Error(diagnostic);

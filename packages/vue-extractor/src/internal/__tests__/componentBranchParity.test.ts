@@ -21,6 +21,12 @@ describe('Branch attribute runtime parity', () => {
       source: branchSource({ formal: 'Hello' }),
     },
     {
+      name: 'attribute named locales',
+      template:
+        '<T><Branch branch="locales" locales="Hello">Fallback</Branch></T>',
+      source: branchSource({ locales: 'Hello' }),
+    },
+    {
       name: 'bound string literal',
       template:
         '<T><Branch branch="formal" :formal="\'Hello\'">Fallback</Branch></T>',
@@ -228,7 +234,7 @@ describe('Branch attribute runtime parity', () => {
     {
       name: 'GT and VNode control props',
       template:
-        '<T><Branch branch="formal" :n="2" :locales="[\'en\']" key="stable" ref="branchRef" ref-for ref-key="branch" ref_for ref_key="branch" formal="Hello">Fallback</Branch></T>',
+        '<T><Branch branch="formal" :n="2" key="stable" ref="branchRef" ref-for ref-key="branch" ref_for ref_key="branch" formal="Hello">Fallback</Branch></T>',
       source: branchSource({ formal: 'Hello' }),
     },
   ];

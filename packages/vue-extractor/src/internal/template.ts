@@ -143,7 +143,6 @@ const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
   'branch',
   'class',
   'n',
-  'locales',
   'key',
   'ref',
   'ref_for',

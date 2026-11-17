@@ -16,8 +16,8 @@ import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import {
   getBranch,
   getPluralBranch,
-  selectBranch,
-  selectPluralBranch,
+  selectBranchKey,
+  selectPluralKey,
 } from '../plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
@@ -76,30 +76,27 @@ function createRenderTranslatedChildren({
       });
     }
 
-    // plural (choose a branch)
+    // plural (the translation chooses a branch)
     if (transformation === 'plural') {
       const n = sourceElement.props.n;
+      const targetBranches = targetElement.d?.b || {};
+      const key = selectPluralKey(n, locales, targetBranches);
       return renderTranslatedChildren({
-        source: getPluralBranch(n, locales, sourceGT.branches || {}),
-        target: selectPluralBranch(
-          n,
-          locales,
-          targetElement.d?.b || {}
-        ) as TranslatedChildren,
+        source: getPluralBranch(n, locales, sourceGT.branches || {}, key),
+        target: targetBranches[key] as TranslatedChildren,
         locales,
         enableI18n,
       });
     }
 
-    // branch (choose a branch)
+    // branch (the translation chooses a branch)
     if (transformation === 'branch') {
       const { branch } = sourceProps;
+      const targetBranches = targetElement.d?.b || {};
+      const key = selectBranchKey(branch, targetBranches);
       return renderTranslatedChildren({
-        source: getBranch(branch, sourceGT.branches || {}),
-        target: selectBranch(
-          branch,
-          targetElement.d?.b || {}
-        ) as TranslatedChildren,
+        source: getBranch(branch, sourceGT.branches || {}, key),
+        target: targetBranches[key] as TranslatedChildren,
         locales,
         enableI18n,
       });
