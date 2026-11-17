@@ -118,7 +118,7 @@ export type PrecomputedMessage = MessageTreeHashMetadata &
     $_formats?: MessageFormats;
     /**
      * Set when a per-locale build replaced the source: the locale `$_tree` is
-     * the translation for.
+     * the translation for, which the build renders whatever the conditions.
      */
     $_locale?: string;
     /** What a message with values last resolved to; set as it renders. */
@@ -191,9 +191,46 @@ function lookupEmbeddedTranslation(
   site: PrecomputedMessage,
   { embeddedLocale }: Conditions
 ): MessageTree | undefined {
-  if (embeddedLocale === undefined) return undefined;
-  if (site.$_locale === embeddedLocale) return site.$_tree;
-  return site.inline?.(embeddedLocale);
+  return embeddedLocale === undefined
+    ? undefined
+    : site.inline?.(embeddedLocale);
+}
+
+/**
+ * Renders the message of a per-locale build that replaced the source: its
+ * tree is the build locale's translation, so there are no conditions to
+ * read, nothing to look up, and text is returned as it is.
+ */
+export function renderReplacedMessage(
+  site: PrecomputedMessage,
+  locale: string,
+  values: Record<string, unknown> = NO_VALUES,
+  formats: MessageFormats = site.$_formats ?? NO_FORMATS
+): string {
+  const tree = site.$_tree;
+  const { maxChars } = site;
+  let outputLocale = locale;
+  let output: string;
+  if (typeof tree === 'string') {
+    output = tree;
+  } else {
+    try {
+      output = formatTree(tree, locale, values, formats);
+    } catch (error) {
+      warnOnce(
+        `format:${locale}:${site.$_hash}`,
+        createTranslationFormatWarning(locale, site.$_hash, error)
+      );
+      outputLocale = getI18nConfig().getDefaultLocale();
+      output = formatTree(tree, outputLocale, values, formats);
+    }
+  }
+  return maxChars == null
+    ? output
+    : formatCutoff(output, {
+        locales: getI18nConfig().resolveCanonicalLocale(outputLocale),
+        maxChars,
+      });
 }
 
 /**

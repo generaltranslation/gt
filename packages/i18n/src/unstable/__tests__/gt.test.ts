@@ -806,23 +806,70 @@ describe('gt-i18n/unstable precomputed messages', () => {
     }
   });
 
-  it('renders a replaced tree in its locale without a lookup', async () => {
+  it('renders a replaced tree in its locale, whatever the conditions', async () => {
     await setup();
+    const getLocale = vi.fn(() => 'en');
+    const getEnableI18n = vi.fn(() => false);
     const lookupTranslation = vi.fn(() => 'Chargé');
-    let locale = 'fr';
-    const gt = createGT({ getLocale: () => locale, lookupTranslation });
-    const replaced: PrecomputedMessage = {
-      $_hash: keyOf()`${number({ total: 1 })} files`,
+    const gt = createGT({ getLocale, getEnableI18n, lookupTranslation });
+    const hash = keyOf()`${{ total: 1 }} files`;
+    const replaced = (
+      site: Partial<PrecomputedMessage>
+    ): PrecomputedMessage => ({
+      $_hash: hash,
       $_tree: [['total', 'number'], ' fichiers'],
       $_locale: 'fr',
-    };
-    expect(call(gt, replaced, { total: 1234.5 })).toBe(
+      ...site,
+    });
+    expect(call(gt, replaced({}), { total: 1234.5 })).toBe(
       `${(1234.5).toLocaleString('fr')} fichiers`
     );
+    expect(call(gt, replaced({ $_tree: 'Enregistrer' }))).toBe('Enregistrer');
+    expect(
+      call(
+        gt,
+        replaced({ $_tree: 'Enregistrer les modifications', maxChars: 12 })
+      )
+    ).toBe(
+      formatCutoff('Enregistrer les modifications', {
+        locales: 'fr',
+        maxChars: 12,
+      })
+    );
+    expect(getLocale).not.toHaveBeenCalled();
+    expect(getEnableI18n).not.toHaveBeenCalled();
     expect(lookupTranslation).not.toHaveBeenCalled();
+  });
 
-    // Another locale has no translation here, so it reads its catalog.
-    locale = 'en';
-    expect(call(gt, replaced, { total: 1234.5 })).toBe('Chargé');
+  it('renders text of a replaced tree without asking Intl for its locale', async () => {
+    await setup();
+    const supportedLocalesOf = vi.spyOn(
+      Intl.NumberFormat,
+      'supportedLocalesOf'
+    );
+    const gt = createGT({ getLocale: () => 'fr' });
+    try {
+      expect(
+        call(gt, { $_hash: 'h', $_tree: 'Enregistrer', $_locale: 'fr-x-new' })
+      ).toBe('Enregistrer');
+      expect(supportedLocalesOf).not.toHaveBeenCalled();
+    } finally {
+      supportedLocalesOf.mockRestore();
+    }
+  });
+
+  it('renders a replaced tree in the default locale when it fails to format', async () => {
+    await setup();
+    const gt = createGT({ getLocale: () => 'fr' });
+    const replaced: PrecomputedMessage = {
+      $_hash: 'h',
+      $_tree: [['count', 'number'], ' fichiers'],
+      $_locale: 'fr_FR',
+    };
+    expect(call(gt, replaced, { count: 1234.5 })).toBe('1,234.5 fichiers');
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain(
+      'Formatting the "fr_FR" translation'
+    );
   });
 });
