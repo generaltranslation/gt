@@ -36,6 +36,7 @@ const TRANSLATIONS = {
   es: { [HELLO_WORLD]: 'Hola mundo', [JSX_HELLO_WORLD]: 'Hola (T)' },
   de: { [HELLO_WORLD]: 'Hallo Welt', [JSX_HELLO_WORLD]: 'Hallo (T)' },
   cn: { [HELLO_WORLD]: '你好世界', [JSX_HELLO_WORLD]: '你好 (T)' },
+  'fr-FR': { [HELLO_WORLD]: 'Bonjour (FR)' },
 };
 
 function createOutputDir(): string {
@@ -168,6 +169,52 @@ describe('experimentalStaticLocale', () => {
     );
     expect(output).not.toContain('Bonjour');
   });
+
+  it.each([
+    ['nested in gtConfig', (config: GTUnpluginOptions) => config],
+    [
+      'passed as top-level plugin options',
+      ({ gtConfig, ...config }: GTUnpluginOptions) => ({
+        ...config,
+        ...gtConfig,
+      }),
+    ],
+  ])('resolves a custom mapping alias %s', async (_, toOptions) => {
+    const output = await transformWithPlugin(
+      toOptions(
+        options(
+          'zh-CN',
+          {
+            locales: ['cn', 'fr'],
+            customMapping: { cn: { code: 'zh-CN' } },
+          },
+          ['cn', 'fr']
+        )
+      ),
+      USEGT_CODE
+    );
+    expect(output).toContain('(locale) => locale === "cn" ?');
+    expect(output).not.toContain('Bonjour');
+  });
+
+  it.each([
+    ['best fit', true],
+    ['lookup', false],
+  ] as const)(
+    'negotiates with localeMatcher %s from top-level plugin options',
+    async (localeMatcher, embeds) => {
+      const { gtConfig, ...config } = options(
+        'fr-CA',
+        { locales: ['fr-FR'], localeMatcher },
+        ['fr-FR']
+      );
+      const output = await transformWithPlugin(
+        { ...config, ...gtConfig },
+        USEGT_CODE
+      );
+      expect(output?.includes('Bonjour (FR)')).toBe(embeds);
+    }
+  );
 
   it('matches the embedded spelling without configured locales', async () => {
     const output = await transformWithPlugin(
