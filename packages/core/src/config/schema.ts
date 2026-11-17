@@ -216,7 +216,7 @@ export const GTConfigSchema = looseObject({
   ),
   cacheExpiryTime: optionalDescribed(
     number(),
-    'How long translations are cached, in milliseconds'
+    'How long a server caches translations before loading them again, in milliseconds'
   ),
   modelProvider: optionalDescribed(
     picklist(Object.values(ModelProvider)),

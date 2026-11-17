@@ -103,7 +103,7 @@
     },
     "cacheExpiryTime": {
       "type": "number",
-      "description": "How long translations are cached, in milliseconds"
+      "description": "How long a server caches translations before loading them again, in milliseconds"
     },
     "modelProvider": {
       "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"],
