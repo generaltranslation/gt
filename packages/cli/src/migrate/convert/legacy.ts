@@ -13,6 +13,7 @@ import {
   type MessageFormatElement,
 } from '@generaltranslation/icu/parser';
 import { indexVars, isVariable } from 'generaltranslation/internal';
+import { stringifySortedJson } from '../../fs/sortedJson.js';
 import { isRecord } from '../catalogs.js';
 import type { ConversionResult, LegacyDataFormat } from '../types.js';
 import { canonicalizeTree, mapBranches, mapTree } from './tree.js';
@@ -162,12 +163,21 @@ function unmarkPercentSkeletons(tree: MessageTree): MessageTree {
 }
 
 function unmarkFormats(formats: MessageFormats): MessageFormats {
-  return Object.fromEntries(
-    Object.entries(formats).map(([name, context]) => [
-      PERCENT_MARK.exec(name)?.[1] ?? name,
-      context,
-    ])
-  );
+  const merged: Record<string, MessageFormats[string]> = {};
+  for (const [name, context] of Object.entries(formats)) {
+    const original = PERCENT_MARK.exec(name)?.[1] ?? name;
+    if (
+      original in merged &&
+      stringifySortedJson(merged[original], 0) !==
+        stringifySortedJson(context, 0)
+    ) {
+      throw new Error(
+        `Message variable "${original}" is formatted with different formatting context in one message; give each its own variable name.`
+      );
+    }
+    merged[original] = context;
+  }
+  return merged;
 }
 
 /** Converts a legacy `gt()`, `msg()` or dictionary ICU string, rewriting each declared variable to an argument. */

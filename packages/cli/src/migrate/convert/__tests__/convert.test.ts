@@ -882,6 +882,16 @@ describe('legacy plural and percent semantics', () => {
     }
   );
 
+  it('rejects one variable formatted with two contexts across percent occurrences', () => {
+    expect(
+      legacyIcuToMessage('{n, number, ::.00} ({n, number, ::percent .0})')
+    ).toEqual({
+      ok: false,
+      reason:
+        'Message variable "n" is formatted with different formatting context in one message; give each its own variable name.',
+    });
+  });
+
   it.each<[string, unknown]>([
     ['{n, number, ::percent}', [['n', 'number', 'percent']]],
     [
