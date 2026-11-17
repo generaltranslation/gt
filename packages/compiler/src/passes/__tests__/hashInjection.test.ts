@@ -284,6 +284,35 @@ describe('an other prop on Branch/Plural', () => {
   });
 });
 
+describe('a spread on Branch/Plural', () => {
+  it.each([
+    ['Plural', '<Plural n={count} {...forms} />', '{ n: count, ...forms }'],
+    [
+      'Branch',
+      '<Branch branch={status} {...branches}>Closed</Branch>',
+      '{ branch: status, ...branches, children: "Closed" }',
+    ],
+  ])('is rejected on <%s> inside <T>: %s', (component, _source, props) => {
+    const { errors, code } = transform(
+      `${JSX_IMPORTS}jsx(T, { children: jsx(${component}, ${props}) });`
+    );
+    expect(errors).toEqual([
+      expect.stringContaining(
+        `<${component}> cannot take a spread attribute because its props are read from the source. Write each prop out on the component.`
+      ),
+    ]);
+    expect(code).not.toContain('_hash');
+  });
+
+  it('is left alone outside translated content', () => {
+    const { errors, code } = transform(
+      `${JSX_IMPORTS}jsx(Plural, { n: count, ...forms });`
+    );
+    expect(errors).toEqual([]);
+    expect(code).not.toContain('_hash');
+  });
+});
+
 /**
  * Two regressions covered here:
  *

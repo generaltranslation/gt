@@ -37,11 +37,19 @@ import {
   generateDynamicContentErrorMessage,
 } from '../../utils/errors';
 import { validateJsxCall } from './validation/validateJsxCall';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
   JsxValidationError,
   dynamicContentError,
   structuralError,
 } from './errors';
+
+const createSpreadOnBranchError = (component: string) =>
+  createDiagnosticMessage({
+    whatHappened: `<${component}> cannot take a spread attribute`,
+    why: 'its props are read from the source',
+    fix: 'Write each prop out on the component',
+  });
 
 /**
  * Given the children of a <T> component, constructs a JsxChildren object.
@@ -472,6 +480,18 @@ function constructGTProp(
     type === 'generaltranslation' &&
     isBranchComponent(canonicalName)
   ) {
+    // The runtime reads the props a spread carries, which the source does not show.
+    const spread = parameters.properties.find((property) =>
+      t.isSpreadElement(property)
+    );
+    if (spread) {
+      errors.push(
+        structuralError(
+          createSpreadOnBranchError(canonicalName) + createErrorLocation(spread)
+        )
+      );
+      return { errors };
+    }
     // Get the branching parameters
     const branchingParameters = getBranchComponentParameters(
       parametersPath as NodePath<t.ObjectExpression>,

@@ -605,6 +605,31 @@ describe('Branch/Plural props that are never rendered', () => {
   });
 });
 
+describe('a spread attribute on Branch/Plural', () => {
+  it.each([
+    ['Plural', '<Plural n={count} {...forms} />'],
+    ['Branch', '<Branch branch={status} {...branches}>Closed</Branch>'],
+  ])('is rejected on <%s> inside <T>', (component, jsx) => {
+    const { updates, errors } = extractUserT(page(`<T>${jsx}</T>`));
+
+    expect(updates).toEqual([]);
+    expect(errors).toEqual([
+      expect.stringContaining(
+        `<${component}> cannot take a spread attribute because its props are read from the source. Write each prop out on the component.`
+      ),
+    ]);
+  });
+
+  it('is left alone outside translated content', () => {
+    const { updates, errors } = extractUserT(
+      page('<Plural n={count} {...forms} />')
+    );
+
+    expect(updates).toEqual([]);
+    expect(errors).toEqual([]);
+  });
+});
+
 describe('Derive of a variable', () => {
   const derive = (c: string, i = 1) => ({ t: 'Derive', i, c });
 

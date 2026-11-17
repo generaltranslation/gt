@@ -401,6 +401,21 @@ export const warnInvalidExactPluralPropSync = (
     location
   );
 
+export const warnSpreadOnBranchSync = (
+  file: string,
+  componentName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: `<${componentName}> cannot take a spread attribute`,
+      why: 'its props are read from the source',
+      fix: 'Write each prop out on the component',
+    }),
+    location
+  );
+
 export const warnRecursiveFunctionCallSync = (
   file: string,
   functionName: string,
