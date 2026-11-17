@@ -11,10 +11,13 @@ import type {
 import { buildSiteMessage } from './buildMessage';
 import type { CheckHoles } from './placeholders';
 import {
+  isPrecomputedMessage,
   type LookupTreeTranslation,
   type MessageTreeLookupOptions,
   type MessageTreeMetadata,
+  type PrecomputedMessage,
   renderMessage,
+  renderPrecomputedMessage,
 } from './renderMessage';
 
 /**
@@ -70,9 +73,7 @@ export type RenderTree = (
 export function createRenderTree({
   getLocale,
   getEnableI18n,
-  lookupTranslation = withDevHotReload((tree, options) =>
-    getI18nCache().lookupTranslation(options.$locale, tree, options)
-  ),
+  lookupTranslation = defaultLookupTranslation,
 }: CreateGTParams): RenderTree {
   return (tree, values, formats, options, inline) => {
     const enabled = getEnableI18n?.() ?? true;
@@ -91,6 +92,11 @@ export function createRenderTree({
  */
 export function createGT(params: CreateGTParams): GT {
   const renderTree = createRenderTree(params);
+  const {
+    getLocale,
+    getEnableI18n,
+    lookupTranslation = defaultLookupTranslation,
+  } = params;
   const render = (
     { inline, ...options }: GTRenderOptions,
     strings: TemplateStringsArray,
@@ -104,13 +110,26 @@ export function createGT(params: CreateGTParams): GT {
     return renderTree(tree, values, formats, metadata, inline);
   };
   const gt = (
-    first: TemplateStringsArray | GTRenderOptions,
+    first: TemplateStringsArray | GTRenderOptions | PrecomputedMessage,
     ...holes: unknown[]
-  ) =>
-    isTemplateStringsArray(first)
+  ) => {
+    // A compiler passes the call site's precomputed message with its values.
+    if (isPrecomputedMessage(first)) {
+      const enabled = getEnableI18n?.() ?? true;
+      return renderPrecomputedMessage(
+        first,
+        holes[0] as Record<string, unknown> | undefined,
+        holes[1] as MessageFormats | undefined,
+        enabled ? getLocale() : getI18nConfig().getDefaultLocale(),
+        enabled,
+        lookupTranslation
+      );
+    }
+    return isTemplateStringsArray(first)
       ? render({}, first, holes)
       : (strings: TemplateStringsArray, ...nested: unknown[]) =>
           render(first, strings, nested);
+  };
   return gt as GT;
 }
 
@@ -179,6 +198,11 @@ function withDevHotReload(
     return translation;
   };
 }
+
+const defaultLookupTranslation = /* @__PURE__ */ withDevHotReload(
+  (tree, options) =>
+    getI18nCache().lookupTranslation(options.$locale, tree, options)
+);
 
 /**
  * Translations embedded at the call site win over loaded translations; when
