@@ -5,6 +5,8 @@
  * and renders both in gt-react: the output must match.
  */
 import generateModule from '@babel/generator';
+import { parse } from '@babel/parser';
+import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
 import { build } from 'esbuild';
 import { hashSource } from 'generaltranslation/id';
@@ -15,6 +17,7 @@ import {
   loadGTRuntime,
   type GTRuntime,
 } from './sourceReplacementHarness';
+import { injectUnstableTaggedTemplateHash } from '../transform/injection/injectUnstableTaggedTemplateHash';
 import { buildPrecomputedCall } from '../transform/injection/precomputeUnstableMessage';
 import { canReplaceMessageTree } from '../transform/injection/replaceMessageTree';
 import { transformWithPlugin } from './transformWithPlugin';
@@ -22,6 +25,9 @@ import { transformWithPlugin } from './transformWithPlugin';
 const generate =
   (generateModule as unknown as { default?: typeof generateModule }).default ??
   generateModule;
+const traverse =
+  (traverseModule as unknown as { default?: typeof traverseModule }).default ??
+  traverseModule;
 
 const HELPERS =
   't, m, msg, useGT, plural, selectordinal, select, number, date, time, part, derive, n';
@@ -173,6 +179,38 @@ describe('emitted messages', () => {
     });
     expect(generate(call!, { concise: true }).code).toBe(
       't({ $_hash: "hash", $_tree: ["Bonjour, ", ["name"]], $_locale: "fr" }, { name })'
+    );
+  });
+
+  it('marks every message with the default locale in a build that renders the source', () => {
+    const ast = parse(
+      `import { t, plural, part, n } from 'gt-react/unstable';
+t\`\${plural({ count }, { one: part\`\${n} item\`, other: part\`\${n} items\` })}\`;
+t({ maxChars: 8 })\`Save all changes\`;`,
+      { sourceType: 'module' }
+    );
+    const declared: string[] = [];
+    traverse(ast, {
+      TaggedTemplateExpression(path) {
+        injectUnstableTaggedTemplateHash(path, undefined, undefined, {
+          hoist: (message) => {
+            declared.push(generate(message, { concise: true }).code);
+            return t.identifier('_gt');
+          },
+          replacedLocale: undefined,
+          sourceLocale: 'en',
+        });
+      },
+    });
+    const tree =
+      '[["count", "plural", { one: [0, " item"], other: [0, " items"] }]]';
+    expect(declared).toEqual([
+      `{ $_hash: "${hashOf([['count', 'plural', { one: [0, ' item'], other: [0, ' items'] }]])}", $_tree: ${tree}, $_locale: "en" }`,
+    ]);
+    const { code } = generate(ast, { concise: true });
+    expect(code).toContain('t(_gt, { count });');
+    expect(code).toContain(
+      `t({ $_hash: "${hashOf('Save all changes', { maxChars: 8 })}", $_tree: "Save all changes", maxChars: 8, $_locale: "en" });`
     );
   });
 
