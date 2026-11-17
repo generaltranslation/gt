@@ -1,4 +1,4 @@
-export const baseVariablePrefix = '_gt_';
+const baseVariablePrefix = '_gt_';
 
 export function getVariableName(props: Record<string, unknown> = {}): string {
   if (typeof props.name === 'string') return props.name;
