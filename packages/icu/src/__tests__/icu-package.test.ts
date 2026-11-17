@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import ts from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const parserMarker = 'UNMATCHED_CLOSING_TAG';
@@ -102,6 +102,9 @@ describe('@generaltranslation/icu package artifacts', () => {
       );
       expect(withoutParser.TYPE).toEqual(parser.TYPE);
       expect(withoutParser.SKELETON_TYPE).toEqual(parser.SKELETON_TYPE);
+      // A caller may catch what these throw, so the first one also logs it
+      const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+      onTestFinished(() => logged.mockRestore());
       for (const call of [
         () => withoutParser.parse('Hello {name}'),
         () => withoutParser.formatIcu('Hello {name}', 'en', { name: 'Ada' }),
@@ -111,6 +114,13 @@ describe('@generaltranslation/icu package artifacts', () => {
           'This build left out the ICU message parser, so it cannot read an ICU string.'
         );
       }
+      expect(logged.mock.calls).toEqual([
+        [
+          expect.stringContaining(
+            'This build left out the ICU message parser, so it cannot read an ICU string.'
+          ),
+        ],
+      ]);
     }
   );
 
