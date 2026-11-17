@@ -159,7 +159,9 @@ function hasInlineGTConfig(options: GTUnpluginOptions): boolean {
     options.locales !== undefined ||
     options.projectId !== undefined ||
     options._versionId !== undefined ||
-    options.files !== undefined
+    options.files !== undefined ||
+    options.customMapping !== undefined ||
+    options.localeMatcher !== undefined
   );
 }
 
@@ -178,6 +180,12 @@ function getInlineGTConfig(options: GTUnpluginOptions): GTConfig | undefined {
       ? { _versionId: options._versionId }
       : {}),
     ...(options.files !== undefined ? { files: options.files } : {}),
+    ...(options.customMapping !== undefined
+      ? { customMapping: options.customMapping }
+      : {}),
+    ...(options.localeMatcher !== undefined
+      ? { localeMatcher: options.localeMatcher }
+      : {}),
   };
 }
 
