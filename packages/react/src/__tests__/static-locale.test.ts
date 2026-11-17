@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
-import {
-  getStaticLocalePath,
-  negotiateLocale,
-  type StaticLocaleConfig,
-} from '../static-locale';
+import { negotiateLocale, type StaticLocaleConfig } from '../static-locale';
 
 const config: StaticLocaleConfig = {
   defaultLocale: 'en',
@@ -148,21 +144,25 @@ describe('negotiateLocale', () => {
     ).toBe('de');
   });
 
-  it('reads raw header values', () => {
+  it('reads headers passed without the request', () => {
+    // Node's req.headers
     expect(
       negotiateLocale(
-        { cookie: localeCookie('de'), acceptLanguage: 'fr' },
+        { cookie: 'other=1', 'accept-language': 'ja, de;q=0.9' },
         config
       )
     ).toBe('de');
-    expect(negotiateLocale({ acceptLanguage: 'fr' }, config)).toBe('fr');
+    expect(
+      negotiateLocale(
+        new Headers({ cookie: localeCookie('es'), 'accept-language': 'fr' }),
+        config
+      )
+    ).toBe('es');
   });
-});
 
-describe('getStaticLocalePath', () => {
-  it('joins the base and locale', () => {
-    expect(getStaticLocalePath('dist', 'fr')).toBe('dist/fr');
-    expect(getStaticLocalePath('dist/', 'fr')).toBe('dist/fr');
-    expect(getStaticLocalePath('/assets', 'de')).toBe('/assets/de');
+  it('takes the last of repeated locale cookies, like the middleware', () => {
+    const cookie = `${localeCookie('de')}; ${localeCookie('es')}`;
+    expect(negotiateLocale(webRequest({ cookie }), config)).toBe('es');
+    expect(negotiateLocale({ headers: { cookie } }, config)).toBe('es');
   });
 });
