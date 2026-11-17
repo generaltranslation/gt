@@ -32,14 +32,25 @@ function usePrepareT({
   const enableI18n = _enableI18n ?? contextEnableI18n;
   const shouldTranslate =
     enableI18n && getI18nConfig().requiresTranslation({ locale });
+  // The component passes a new params object on every render.
+  const { context, id, _hash, format, maxChars, requiresReview } = params;
   const prepared = useMemo(
     () =>
       prepareT({
         sourceChildren,
-        params,
+        params: { context, id, _hash, format, maxChars, requiresReview },
         locale,
       }),
-    [locale, params, sourceChildren]
+    [
+      locale,
+      sourceChildren,
+      context,
+      id,
+      _hash,
+      format,
+      maxChars,
+      requiresReview,
+    ]
   );
 
   return {
