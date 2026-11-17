@@ -75,6 +75,15 @@ export interface PluginConfig
    * the `GT_PRECOMPUTE_JSX` environment variable (`true` or `false`).
    */
   experimentalPrecomputeJsx?: boolean;
+  /**
+   * Experimental, for apps whose messages are all `<T>` and tagged templates
+   * from an `/unstable` entry point: leaves the ICU message string parser out
+   * of a production bundle, which formats message trees and JSX without it.
+   * A module that imports something that works with ICU strings, such as the
+   * stable `useGT()`, `msg()` or `t()`, fails the build. Defaults to the
+   * `GT_OMIT_ICU_PARSER` environment variable (`true` or `false`).
+   */
+  experimentalOmitIcuParser?: boolean;
 }
 
 /**

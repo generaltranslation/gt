@@ -67,6 +67,7 @@ export function initializeState(
     experimentalStaticLocale: _c,
     experimentalReplaceSource: _d,
     experimentalPrecomputeJsx: precomputeJsx,
+    experimentalOmitIcuParser: _e,
     ...restOptions
   } = options;
 
