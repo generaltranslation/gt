@@ -3,13 +3,19 @@ declare module '@generated' {
   import type { ComponentType } from 'react';
 
   export type Values = { name: string; count: number; role: string };
-  export type Kind = 'plain' | 'jsx' | 'interp' | 'plural' | 'select';
+  export type Kind =
+    | 'plain'
+    | 'jsx'
+    | 'interp'
+    | 'plural'
+    | 'select'
+    | 'element';
   type RouteModule = { Route: ComponentType<Values> };
 
   export const routes: (() => Promise<RouteModule>)[];
   export const kinds: Record<Kind, () => Promise<RouteModule>>;
   export function useMicroSites(): Record<
-    Exclude<Kind, 'jsx'>,
+    Exclude<Kind, 'jsx' | 'element'>,
     ((values: Values) => string)[]
   >;
   export function loadTranslations(locale: string): Promise<object>;

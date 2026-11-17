@@ -5,14 +5,16 @@ next to the least a render can cost.
 
 `scripts/generate.mjs` writes a synthetic Vite SPA into `src/generated/`: ten
 routes of 100 messages each (73 plain `t`, 15 `<T>` text, 9 named
-interpolation, 2.5 plural and 0.5 select per 100), one route per message kind,
-and pseudo-translations for the ten locales in `gt.config.json`. The app is the
+interpolation, 2.5 plural and 0.5 select per 100), one route per message kind
+(the five in the mix, and `element`: a `<T>` around a `<p>` of text), and
+pseudo-translations for the ten locales in `gt.config.json`. The app is the
 same on every run. Each variant in `scripts/variants.mjs` builds it with a
 different API:
 
 | Variant           | Messages                                                |
 | ----------------- | ------------------------------------------------------- |
 | `unstable`        | `t` from `gt-react/unstable`, hashes from the compiler  |
+| `precompute`      | `unstable` with each static `<T>` precomputed           |
 | `unstable-nohash` | the same without the compiler: `t` hashes as it renders |
 | `stable`          | `useGT()` and `<T>` from the published `gt-react`       |
 | `floor`           | precomputed strings and functions per locale            |

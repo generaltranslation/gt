@@ -9,6 +9,12 @@ import { vite as gtCompilerRelease } from '@generaltranslation/compiler-release'
 export const variants = {
   // gt-react/unstable t with the compiler, which injects each hash.
   unstable: { generated: 'unstable', init: 'gt', compiler: gtCompiler },
+  // The same with each static <T> precomputed by the compiler.
+  precompute: {
+    generated: 'unstable',
+    init: 'gt',
+    compiler: () => gtCompiler({ experimentalPrecomputeJsx: true }),
+  },
   // Without the compiler, t hashes each message when it renders, as it does
   // in a Next.js app: gt-next's SWC plugin injects no hash for these.
   'unstable-nohash': { generated: 'unstable', init: 'gt' },

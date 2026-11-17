@@ -12,18 +12,21 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const gtConfig = JSON.parse(readFileSync(join(root, 'gt.config.json'), 'utf8'));
 
 export const LOCALES = gtConfig.locales;
-export const KINDS = ['plain', 'jsx', 'interp', 'plural', 'select'];
+// `element` is last, so the messages of the other kinds stay as they were.
+export const KINDS = ['plain', 'jsx', 'interp', 'plural', 'select', 'element'];
 export const ROUTE_COUNT = 10;
 export const ROUTE_SIZE = 100;
 
 // Per 100 messages: 73% plain, 15% <T>, 9% interpolation, 2.5% plural, 0.5%
 // select. A route holds whole messages, so plural and select alternate.
+// `element`, a <T> around an element, has a route of its own only.
 const routeMix = (route) => ({
   plain: 73,
   jsx: 15,
   interp: 9,
   plural: route % 2 === 0 ? 2 : 3,
   select: route % 2 === 0 ? 1 : 0,
+  element: 0,
 });
 
 const WORDS =
@@ -61,6 +64,7 @@ function createMessage(kind) {
   switch (kind) {
     case 'plain':
     case 'jsx':
+    case 'element':
       return { kind, text: `${phrase(1, 6)} ${id}` };
     case 'interp':
       return {
@@ -114,6 +118,7 @@ function translate(message, locale) {
   switch (message.kind) {
     case 'plain':
     case 'jsx':
+    case 'element':
       return { ...message, text: mark + message.text };
     case 'interp':
       return { ...message, before: mark + message.before };
@@ -214,7 +219,10 @@ const writers = {
           return `t\`\${select({ role }, { admin: ${js(message.admin)}, other: ${js(message.other)} })}\``;
       }
     },
-    jsx: (message) => `<T>${message.text}</T>`,
+    jsx: (message) =>
+      message.kind === 'element'
+        ? `<T><p>${message.text}</p></T>`
+        : `<T>${message.text}</T>`,
     routeSetup: '',
   },
   stable: {
@@ -232,7 +240,10 @@ const writers = {
           return `gt(${icu}, { role })`;
       }
     },
-    jsx: (message) => `<T>${message.text}</T>`,
+    jsx: (message) =>
+      message.kind === 'element'
+        ? `<T><p>${message.text}</p></T>`
+        : `<T>${message.text}</T>`,
     routeSetup: '  const gt = useGT();\n',
   },
   floor: {
@@ -242,6 +253,7 @@ const writers = {
       switch (message.kind) {
         case 'plain':
         case 'jsx':
+        case 'element':
           return `m[${index}]`;
         case 'interp':
           return `m[${index}](name)`;
@@ -252,7 +264,9 @@ const writers = {
       }
     },
     jsx(message) {
-      return `{${this.expression(message)}}`;
+      return message.kind === 'element'
+        ? `<p>{${this.expression(message)}}</p>`
+        : `{${this.expression(message)}}`;
     },
     routeSetup: '',
   },
@@ -261,7 +275,7 @@ const writers = {
 function routeModule(writer, messages) {
   const items = messages
     .map((message) =>
-      message.kind === 'jsx'
+      message.kind === 'jsx' || message.kind === 'element'
         ? `      <li>${writer.jsx(message)}</li>`
         : `      <li>{${writer.expression(message)}}</li>`
     )
@@ -279,7 +293,7 @@ ${items}
 
 // The micro-benchmark calls each site with its values; `<T>` needs React.
 function microModule(writer) {
-  const kinds = KINDS.filter((kind) => kind !== 'jsx')
+  const kinds = KINDS.filter((kind) => kind !== 'jsx' && kind !== 'element')
     .map((kind) => {
       const sites = kindRoutes[kind]
         .map(
@@ -341,6 +355,15 @@ function treeTranslations(locale) {
   return Object.fromEntries(
     allMessages.map((message) => {
       const translated = translate(message, locale);
+      if (message.kind === 'element') {
+        return [
+          hashSource({
+            source: { t: 'p', i: 1, c: message.text },
+            dataFormat: 'JSX',
+          }),
+          { t: 'p', i: 1, c: translated.text },
+        ];
+      }
       return message.kind === 'jsx'
         ? [
             hashSource({ source: message.text, dataFormat: 'JSX' }),
@@ -358,6 +381,15 @@ function icuTranslations(locale) {
   return Object.fromEntries(
     allMessages.map((message) => {
       const translated = translate(message, locale);
+      if (message.kind === 'element') {
+        return [
+          hashSourceRelease({
+            source: { t: 'p', i: 1, c: message.text },
+            dataFormat: 'JSX',
+          }),
+          { t: 'p', i: 1, c: translated.text },
+        ];
+      }
       return message.kind === 'jsx'
         ? [
             hashSourceRelease({ source: message.text, dataFormat: 'JSX' }),
@@ -386,6 +418,7 @@ function floorMessages(locale) {
       switch (message.kind) {
         case 'plain':
         case 'jsx':
+        case 'element':
           return `  ${js(text)},`;
         case 'interp':
           return `  (name) => ${js(before)} + name + ${js(after)},`;
