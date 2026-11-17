@@ -52,8 +52,18 @@ type Case = {
   literal?: string;
   /** Templates: the string literal a build for the source locale compiles the call to */
   sourceLiteral?: string;
+  /** Templates with values: the template literal a translated build renders unless a value is an object */
+  native?: NativeTemplate;
+  /** Templates with values: the same, in a build for the source locale */
+  sourceNative?: NativeTemplate;
   gtConfig?: GTConfig;
 };
+
+/** `isObject ? call : literal`; a template whose values are written out has no call. */
+type NativeTemplate = { isObject?: string; literal: string };
+
+const isObject = (...values: string[]) =>
+  values.map((value) => `typeof ${value} == "object" && ${value}`).join(' || ');
 
 const IMPORTS = `import { T, Var, Num, Currency, DateTime, RelativeTime, Plural, Branch } from 'gt-react';`;
 
@@ -702,6 +712,14 @@ const TEMPLATE_CASES: Case[] = [
     renders: [{ from: 'Paris', to: 'Lyon' }],
     expected: 'replaced',
     sourceText: ['From '],
+    native: {
+      isObject: isObject('to', 'from'),
+      literal: '`Vers ${to ?? ""} depuis ${from ?? ""}`',
+    },
+    sourceNative: {
+      isObject: isObject('from', 'to'),
+      literal: '`From ${from ?? ""} to ${to ?? ""}`',
+    },
   },
   {
     name: 'a variable the translation repeats',
@@ -711,6 +729,14 @@ const TEMPLATE_CASES: Case[] = [
     renders: [{ user: { name: 'Ada' } }],
     expected: 'replaced',
     sourceText: ['Hi '],
+    native: {
+      isObject: isObject('user.name'),
+      literal: '`Salut ${user.name ?? ""} (${user.name ?? ""})`',
+    },
+    sourceNative: {
+      isObject: isObject('user.name'),
+      literal: '`Hi ${user.name ?? ""}`',
+    },
   },
   {
     name: 'a number formatted in the target locale',
@@ -720,6 +746,95 @@ const TEMPLATE_CASES: Case[] = [
     renders: [{ count: 1234.5 }],
     expected: 'replaced',
     sourceText: [' files'],
+    native: {
+      isObject: isObject('count'),
+      literal: '`${count ?? ""} fichiers`',
+    },
+    sourceNative: {
+      isObject: isObject('count'),
+      literal: '`${count ?? ""} files`',
+    },
+  },
+  {
+    name: 'values of every type',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ name, count }) => t\`Hi \${{ name }}, you have \${{ count }}\`;`,
+    translation: ['Salut ', ['name'], ', vous avez ', ['count']],
+    renders: [
+      { name: 'Ada', count: 1234.5 },
+      { name: '', count: 0 },
+      { name: null, count: undefined },
+      { name: true, count: false },
+      { name: 12n, count: -0 },
+      { name: NaN, count: 1e21 },
+      { name: DATE, count: 1 },
+      { name: 'Ada', count: DATE },
+      { name: ['a', 'b'], count: 1 },
+      { name: { toString: () => 'object' }, count: 1 },
+      { name: () => 1, count: 1 },
+    ],
+    expected: 'replaced',
+    sourceText: ['Hi '],
+    native: {
+      isObject: isObject('name', 'count'),
+      literal: '`Salut ${name ?? ""}, vous avez ${count ?? ""}`',
+    },
+    sourceNative: {
+      isObject: isObject('name', 'count'),
+      literal: '`Hi ${name ?? ""}, you have ${count ?? ""}`',
+    },
+  },
+  {
+    name: 'values written as text and numbers',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ last }) => t\`Hi \${{ name: 'Ada' }} \${{ last: \`\${last}!\` }} (\${{ count: 2 }})\`;`,
+    translation: [['count'], ' : salut ', ['name'], ' ', ['last']],
+    renders: [{ last: 'Lovelace' }],
+    expected: 'replaced',
+    sourceText: ['Hi '],
+    native: { literal: '`${2} : salut ${"Ada"} ${`${last}!`}`' },
+    sourceNative: { literal: '`Hi ${"Ada"} ${`${last}!`} (${2})`' },
+  },
+  {
+    name: 'a translation that drops every variable',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ name }) => t\`Welcome back, \${{ name }}\`;`,
+    translation: 'Bon retour',
+    renders: [{ name: 'Ada' }],
+    expected: 'replaced',
+    sourceText: ['Welcome back'],
+    native: { literal: '"Bon retour"' },
+    sourceNative: {
+      isObject: isObject('name'),
+      literal: '`Welcome back, ${name ?? ""}`',
+    },
+  },
+  {
+    name: 'a template that is only a value',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ name }) => t\`\${{ name }}\`;`,
+    translation: [['name']],
+    renders: [{ name: 'Ada' }, { name: Symbol('ada') }],
+    expected: 'kept',
+  },
+  {
+    name: 'a value with a side effect',
+    source: `import { t } from 'gt-react/unstable';
+      let reads = 0;
+      export const App = ({ name }) => t\`Hi \${{ name: name + reads++ }}\`;`,
+    translation: ['Salut ', ['name']],
+    renders: [{ name: 'Ada' }, { name: 'Ada' }],
+    expected: 'replaced',
+    sourceText: ['Hi '],
+  },
+  {
+    name: 'maxChars with a variable',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ name }) => t({ maxChars: 8 })\`Welcome back, \${{ name }}\`;`,
+    translation: ['Bon retour, ', ['name']],
+    renders: [{ name: 'Ada' }],
+    expected: 'replaced',
+    sourceText: ['Welcome back'],
   },
   {
     name: 'context',
@@ -749,6 +864,14 @@ const TEMPLATE_CASES: Case[] = [
     renders: [{ name: 'Ada' }],
     expected: 'replaced',
     sourceText: ['Use '],
+    native: {
+      isObject: isObject('name'),
+      literal: '`Utilisez \\`code\\`, \\${x} et \\\\ pour ${name ?? ""}\\r\n`',
+    },
+    sourceNative: {
+      isObject: isObject('name'),
+      literal: '`Use \\`code\\` for ${name ?? ""}`',
+    },
   },
   // Templates that keep their source and embedded translation
   {
@@ -760,6 +883,10 @@ const TEMPLATE_CASES: Case[] = [
     ],
     renders: [{ count: 1 }, { count: 4 }],
     expected: 'kept',
+    sourceNative: {
+      isObject: isObject('count'),
+      literal: '`${count ?? ""} files`',
+    },
   },
   {
     name: 'a variable in the translation of a template without any',
@@ -777,6 +904,10 @@ const TEMPLATE_CASES: Case[] = [
     translation: ['Salut ', ['nom']],
     renders: [{ name: 'Ada' }],
     expected: 'kept',
+    sourceNative: {
+      isObject: isObject('name'),
+      literal: '`Hi ${name ?? ""}`',
+    },
   },
   {
     name: 'a repeated variable that binds a new object each time',
@@ -897,6 +1028,19 @@ describe('experimentalReplaceSource', () => {
     );
   });
 
+  /** A template with values is a template literal, behind a check for objects. */
+  function expectNative(output: string, native: NativeTemplate | undefined) {
+    if (!native) {
+      expect(output).not.toContain('typeof');
+    } else if (native.isObject) {
+      expect(output).toContain(`=> ${native.isObject} ? t({ $_hash: "`);
+      expect(output).toContain(` : ${native.literal};`);
+    } else {
+      expect(output).toContain(`=> ${native.literal};`);
+      expect(output).not.toMatch(/_hash|typeof/);
+    }
+  }
+
   describe('renders unstable templates as they render the embedded translation', () => {
     it.each(
       TEMPLATE_CASES.map((testCase) => [testCase.name, testCase] as const)
@@ -909,10 +1053,14 @@ describe('experimentalReplaceSource', () => {
         );
         expect(replaced).not.toMatch(/_hash|inline|t\(|t`/);
         expect(html).toEqual([testCase.literal]);
-      } else if (testCase.expected === 'replaced') {
+      } else if (
+        testCase.expected === 'replaced' &&
+        (!testCase.native || testCase.native.isObject)
+      ) {
         // The runtime renders the embedded translation, with no lookup
         expect(replaced).toMatch(/\$_hash: "[0-9a-f]+", inline: \(locale\) =>/);
       }
+      expectNative(replaced, testCase.native);
       if (testCase.expected === 'replaced') {
         for (const text of testCase.sourceText ?? []) {
           for (const rendered of html) expect(rendered).not.toContain(text);
@@ -929,30 +1077,38 @@ describe('experimentalReplaceSource', () => {
       );
       it.each(
         [...sources.values()].map((testCase) => [testCase.name, testCase])
-      )('%s', async (_name, { source, renders, sourceLiteral }) => {
-        const code = compileJsx(source);
-        const [kept, replaced] = await Promise.all(
-          [false, true].map((replaceSource) =>
-            transformWithPlugin(
-              sourceLocaleOptions(locale, { replaceSource }),
-              code
+      )(
+        '%s',
+        async (_name, { source, renders, sourceLiteral, sourceNative }) => {
+          const code = compileJsx(source);
+          const [kept, replaced] = await Promise.all(
+            [false, true].map((replaceSource) =>
+              transformWithPlugin(
+                sourceLocaleOptions(locale, { replaceSource }),
+                code
+              )
             )
-          )
-        );
-        const [before, after] = await Promise.all([
-          renderAll(kept!, renders, true),
-          renderAll(replaced!, renders, true),
-        ]);
-        expect(after).toEqual(before);
-        if (sourceLiteral === undefined) {
-          // Variables and maxChars are formatted at runtime
-          expect(replaced).toBe(kept);
-        } else {
-          expect(replaced).toContain(`() => ${JSON.stringify(sourceLiteral)};`);
-          expect(replaced).not.toMatch(/_hash|t\(|t`/);
-          expect(after).toEqual([sourceLiteral]);
+          );
+          const [before, after] = await Promise.all([
+            renderAll(kept!, renders, true),
+            renderAll(replaced!, renders, true),
+          ]);
+          expect(after).toEqual(before);
+          expectNative(replaced!, sourceNative);
+          if (sourceNative !== undefined) {
+            expect(replaced).not.toBe(kept);
+          } else if (sourceLiteral === undefined) {
+            // maxChars, and values that are read once, are left to the runtime
+            expect(replaced).toBe(kept);
+          } else {
+            expect(replaced).toContain(
+              `() => ${JSON.stringify(sourceLiteral)};`
+            );
+            expect(replaced).not.toMatch(/_hash|t\(|t`/);
+            expect(after).toEqual([sourceLiteral]);
+          }
         }
-      });
+      );
     });
 
     it('useGT()', async () => {
@@ -978,7 +1134,10 @@ describe('experimentalReplaceSource', () => {
         code
       );
       expect(replaced).toContain('title: "Salutation"');
-      expect(replaced).toContain('`Bonjour ${{ name }}`');
+      expect(replaced).toContain(
+        'typeof name == "object" && name ? gt({ $_hash: "'
+      );
+      expect(replaced).toContain(': `Bonjour ${name ?? ""}` })');
       expect(replaced).not.toMatch(/Greeting|Hello/);
       const [before, after] = await Promise.all([
         renderAll(embedded!, [{ name: 'Ada' }]),
@@ -998,7 +1157,9 @@ describe('experimentalReplaceSource', () => {
         )
       );
       expect(sourceReplaced).toContain('title: "Greeting"');
-      expect(sourceReplaced).toMatch(/gt\(\{ \$_hash: "[0-9a-f]+" \}\)`Hello /);
+      expect(sourceReplaced).toMatch(
+        /typeof name == "object" && name \? gt\(\{ \$_hash: "[0-9a-f]+" \}\)`Hello \$\{\{ name \}\}` : `Hello \$\{name \?\? ""\}`/
+      );
       expect(await renderAll(sourceReplaced!, [{ name: 'Ada' }])).toEqual(
         await renderAll(source!, [{ name: 'Ada' }])
       );
@@ -1111,7 +1272,7 @@ describe('experimentalReplaceSource', () => {
     `);
   });
 
-  it('rewrites a template as its translation, keeping its variables and inline option', async () => {
+  it('rewrites a template as its translation, with the call for a value that is an object', async () => {
     const { replaced } = await checkCase(
       TEMPLATE_CASES.find(
         (testCase) => testCase.name === 'text with template syntax'
@@ -1120,9 +1281,9 @@ describe('experimentalReplaceSource', () => {
     );
     expect(replaced).toMatchInlineSnapshot(`
       "import { t } from "gt-react/unstable";
-      const App = ({ name }) => t({ $_hash: "728c62f6bce558d1", inline: (locale) => locale === "fr" ? ["Utilisez \`code\`, \${x} et \\\\ pour ", ["name"], "\\r\\n"] : void 0 })\`Utilisez \\\`code\\\`, \\\${x} et \\\\ pour \${{ name }}\\r
-      \`;export {
-        App };"
+      const App = ({ name }) => typeof name == "object" && name ? t({ $_hash: "728c62f6bce558d1", inline: (locale) => locale === "fr" ? ["Utilisez \`code\`, \${x} et \\\\ pour ", ["name"], "\\r\\n"] : void 0 })\`Utilisez \\\`code\\\`, \\\${x} et \\\\ pour \${{ name }}\\r
+      \` : \`Utilisez \\\`code\\\`, \\\${x} et \\\\ pour \${name ?? ""}\\r
+      \`;export { App };"
     `);
   });
 
@@ -1157,8 +1318,8 @@ describe('experimentalReplaceSource', () => {
         const gt = useGT();
         return /* @__PURE__ */jsxs("button", { title: "Enregistrer les modifications", children: ["Enregistrer",
 
-          " ",
-          gt({ $_hash: "982bebc72bdeffdf", inline: (locale) => locale === "fr" ? ["Salut ", ["name"]] : void 0 })\`Salut \${{ name }}\`]
+          " ", typeof
+          name == "object" && name ? gt({ $_hash: "982bebc72bdeffdf", inline: (locale) => locale === "fr" ? ["Salut ", ["name"]] : void 0 })\`Salut \${{ name }}\` : \`Salut \${name ?? ""}\`]
         });
       }
       export {
@@ -1178,8 +1339,8 @@ describe('experimentalReplaceSource', () => {
         const gt = useGT();
         return /* @__PURE__ */jsxs("button", { title: "Save", children: ["Save",
 
-          " ",
-          gt({ $_hash: "982bebc72bdeffdf" })\`Hi \${{ name }}\`]
+          " ", typeof
+          name == "object" && name ? gt({ $_hash: "982bebc72bdeffdf" })\`Hi \${{ name }}\` : \`Hi \${name ?? ""}\`]
         });
       }
       export {
@@ -1537,7 +1698,7 @@ describe('experimentalReplaceSource', () => {
     `);
   });
 
-  it('leaves <T> with _tagIds and templates with variables alone in a build for the source locale', async () => {
+  it('leaves <T> with _tagIds alone in a build for the source locale', async () => {
     const code = compileJsx(`${IMPORTS}
       import { t } from 'gt-react/unstable';
       export const App = () => <T>Hello</T>;
@@ -1547,10 +1708,19 @@ describe('experimentalReplaceSource', () => {
     const kept = await transformWithPlugin(options(false), code);
     const replaced = await transformWithPlugin(options(true), code);
     expect(replaced).toContain('jsx(_Fragment, { children: "Hello" })');
-    expect(replaced).toContain('t({ $_hash: "');
-    expect(
-      await transformWithPlugin(options(true, { _tagIds: true }), code)
-    ).toBe(kept);
+    expect(replaced).toContain(': `Hello ${name ?? ""}`');
+    const tagged = await transformWithPlugin(
+      options(true, { _tagIds: true }),
+      code
+    );
+    // Templates carry no id, so they are still replaced
+    expect(tagged).toBe(
+      kept!.replace(
+        /t\(\{ \$_hash: "[0-9a-f]+" \}\)`Hello \$\{\{ name \}\}`/,
+        (call) =>
+          `typeof name == "object" && name ? ${call} : \`Hello \${name ?? ""}\``
+      )
+    );
   });
 
   it('changes nothing for a static locale that is not embedded', async () => {

@@ -19,6 +19,7 @@ import {
   type UnstableGTHelperName,
 } from 'generaltranslation/internal';
 import { USEGT_CALLBACK_OPTIONS } from '../../utils/constants/gt/constants';
+import { buildNativeTemplate } from './inline-translations/buildNativeTemplate';
 
 // Option the runtime reads translations embedded at the call site from
 const INLINE_TRANSLATIONS_OPTION = 'inline';
@@ -42,6 +43,11 @@ export type TemplateSourceReplacer = {
     hash: string,
     quasi: t.TemplateLiteral
   ) => t.TemplateLiteral | undefined;
+  /**
+   * Set in a build whose locale renders the source: counts a template with
+   * values that becomes a template literal of its own text.
+   */
+  countSourceTemplate?: () => void;
 };
 
 // Derive-free mirror of the CLI walker in
@@ -71,7 +77,9 @@ function nonStatic(): never {
  * renders in the build's locale, and any other embedded template has its text
  * replaced by its translation (see replaceTemplateSource). There the `inline`
  * option stays, so the runtime renders the translation in the target locale
- * without a lookup.
+ * without a lookup. A template of text and `${{ name }}` values becomes a
+ * template literal of that text, which renders without the runtime unless a
+ * value is an object (see buildNativeTemplate).
  *
  * Returns whether the template was rewritten.
  */
@@ -131,17 +139,36 @@ export function injectUnstableTaggedTemplateHash(
     buildInline && kind === 'gt' && onlyNamedVariables
       ? buildInline(hash)
       : undefined;
+  let replaced: t.TemplateLiteral | undefined;
   if (inline) {
     properties.push(
       t.objectProperty(t.identifier(INLINE_TRANSLATIONS_OPTION), inline)
     );
-    const replaced = replaceSource?.replaceTemplate?.(hash, quasi);
+    replaced = replaceSource?.replaceTemplate?.(hash, quasi);
     if (replaced) path.node.quasi = replaced;
   }
   if (t.isCallExpression(tag)) {
     (tag.arguments[0] as t.ObjectExpression).properties.push(...properties);
   } else {
     path.node.tag = t.callExpression(tag, [t.objectExpression(properties)]);
+  }
+  // What the template renders in the build's locale: its translation, or its
+  // own text. maxChars cuts the text off at runtime.
+  const rendered =
+    replaced ?? (replaceSource?.countSourceTemplate ? quasi : undefined);
+  if (
+    rendered &&
+    kind === 'gt' &&
+    onlyNamedVariables &&
+    metadata.maxChars === undefined
+  ) {
+    const native = buildNativeTemplate(rendered, path.node);
+    if (native) {
+      if (!replaced) replaceSource?.countSourceTemplate?.();
+      path.replaceWith(native);
+      // The call inside is already rewritten.
+      path.skip();
+    }
   }
   return true;
 }
