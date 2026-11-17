@@ -874,7 +874,8 @@ const TEMPLATE_CASES: Case[] = [
       literal: '`Use \\`code\\` for ${name ?? ""}`',
     },
   },
-  // Templates that keep their source and embedded translation
+  // Templates that keep their source and embedded translation, and ones
+  // whose message takes the translation's tree with every value of the source
   {
     name: 'a translation with ICU syntax beyond {name}',
     source: `import { t } from 'gt-react/unstable';
@@ -916,7 +917,7 @@ const TEMPLATE_CASES: Case[] = [
       export const App = ({ a }) => t\`Hi \${{ name: [a].join('') }}\`;`,
     translation: ['Salut ', ['name'], ' ', ['name']],
     renders: [{ a: 'Ada' }],
-    expected: 'kept',
+    expected: 'replaced',
   },
   {
     name: 'variables with side effects the translation reorders',
@@ -925,7 +926,7 @@ const TEMPLATE_CASES: Case[] = [
       export const App = ({ a, b }) => t\`\${{ a: up(a) }} then \${{ b: up(b) }}\`;`,
     translation: [['b'], ' puis ', ['a']],
     renders: [{ a: 'x', b: 'y' }],
-    expected: 'kept',
+    expected: 'replaced',
   },
   {
     name: 'a variable the translation moves across one with side effects',
@@ -936,7 +937,7 @@ const TEMPLATE_CASES: Case[] = [
       };`,
     translation: [['b'], ' puis ', ['a']],
     renders: [{}],
-    expected: 'kept',
+    expected: 'replaced',
   },
 ];
 

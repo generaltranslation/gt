@@ -1,4 +1,5 @@
 import generate from '@babel/generator';
+import type { MessageTree } from '@generaltranslation/icu';
 import { TraverseOptions } from '@babel/traverse';
 import * as t from '@babel/types';
 import { isUnstableGTImportSource } from 'generaltranslation/internal';
@@ -11,6 +12,7 @@ import { buildInlineTranslations } from '../transform/injection/inline-translati
 import { replaceTemplateSource } from '../transform/injection/inline-translations/replaceTemplateSource';
 import type { HoistMessage } from '../transform/injection/precomputeUnstableMessage';
 import { compileStaticTemplate } from '../transform/static-runtime/compileStaticTemplate';
+import { canReplaceMessageTree } from '../transform/injection/replaceMessageTree';
 import { createErrorLocation } from '../utils/errors';
 
 // Name of the module-scope constants that hold precomputed messages
@@ -32,8 +34,26 @@ export function unstableHashInjectionPass(
   const buildInline = state.settings.inlineTranslationsTable
     ? (hash: string) => buildInlineTranslations(hash, state)
     : undefined;
-  const { sourceReplacement } = state.settings;
+  const { sourceReplacement, inlineTranslationsTable } = state.settings;
   const replaceSource = getTemplateSourceReplacer(state);
+  // The static locale's translations, as getTemplateSourceReplacer reads them
+  const translations =
+    sourceReplacement?.locale === undefined
+      ? undefined
+      : inlineTranslationsTable?.[sourceReplacement.locale];
+  const replaceTree = translations
+    ? (hash: string, source: MessageTree) => {
+        const translation = translations[hash];
+        if (!canReplaceMessageTree(source, translation)) return undefined;
+        // replaceSource counted this template as kept.
+        state.statistics.sourceReplacementsCount += 1;
+        state.statistics.sourceReplacementFallbacksCount -= 1;
+        state.logger.logDebug(
+          `Replaced template ${hash} with its translation's message tree`
+        );
+        return translation;
+      }
+    : undefined;
   const declarations: t.VariableDeclaration[] = [];
   // Call sites with the same message share one, by its code.
   const hoisted = new Map<string, t.Identifier>();
@@ -63,7 +83,7 @@ export function unstableHashInjectionPass(
           buildInline,
           replaceSource,
           state.settings.precomputeMessages
-            ? { hoist, replacedLocale: sourceReplacement?.locale }
+            ? { hoist, replacedLocale: sourceReplacement?.locale, replaceTree }
             : undefined
         )
       ) {

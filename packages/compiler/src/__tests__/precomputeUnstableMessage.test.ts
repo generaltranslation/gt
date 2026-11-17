@@ -16,6 +16,7 @@ import {
   type GTRuntime,
 } from './sourceReplacementHarness';
 import { buildPrecomputedCall } from '../transform/injection/precomputeUnstableMessage';
+import { canReplaceMessageTree } from '../transform/injection/replaceMessageTree';
 import { transformWithPlugin } from './transformWithPlugin';
 
 const generate =
@@ -302,6 +303,82 @@ export const unused = (n) => [t\`Dropped\`, t({ context: 'x' })\`Dropped \${{ n 
     expect(text).toContain('$_tree: ["Kept ", ["name"]]');
     expect(text).not.toContain('Dropped');
     expect(text.match(/\$_hash/g)).toHaveLength(1);
+  });
+});
+
+describe("a translation as a replaced message's tree", () => {
+  const source = [
+    ['name'],
+    ['role', 'select', { admin: 'Admin', other: 'User' }],
+    ['count', 'plural', { one: [0, ' item'], other: [0, ' items'] }],
+    ['price', 'number', 'currency'],
+    ['due', 'date', 'medium'],
+  ];
+
+  it.each([
+    ['text', 'Bonjour'],
+    ['a value it repeats and one it drops', [['name'], ' ', ['name']]],
+    ['any variable as a value', [['role'], ['count'], ['price'], ['due']]],
+    [
+      'a select with other branches',
+      [['role', 'select', { admin: 'Admin', invitee: 'Invité', other: 'x' }]],
+    ],
+    [
+      'a plural with other branches, and an ordinal',
+      [
+        ['count', 'plural', { one: 'un', many: 'des', other: [0] }],
+        ['count', 'selectordinal', { one: [0, 'er'], other: [0, 'e'] }],
+      ],
+    ],
+    [
+      'a plural of a variable its source formats as a number',
+      [['price', 'plural', { one: 'un', other: [0] }]],
+    ],
+    [
+      'a number and a date written as in its source',
+      [
+        ['price', 'number', 'currency'],
+        ['due', 'date', 'medium'],
+      ],
+    ],
+    [
+      'a variable inside a branch',
+      [
+        [
+          'role',
+          'select',
+          { other: [['count', 'plural', { other: [['name']] }]] },
+        ],
+      ],
+    ],
+  ])('takes %s', (_name, translation) => {
+    expect(canReplaceMessageTree(source as never, translation)).toBe(true);
+  });
+
+  it.each([
+    ['a value that is not a tree', { text: 'Bonjour' }],
+    ['a missing translation', undefined],
+    ['a select without other', [['role', 'select', { admin: 'Admin' }]]],
+    ['a variable its source lacks', ['Bonjour ', ['nom']]],
+    [
+      'a select of a value its source prints',
+      [['name', 'select', { other: 'x' }]],
+    ],
+    ['a select of a count', [['count', 'select', { other: 'x' }]]],
+    [
+      'a plural of a value its source selects on',
+      [['role', 'plural', { other: 'x' }]],
+    ],
+    ['a number its source counts with', [['count', 'number']]],
+    ['a number in another style', [['price', 'number', 'percent']]],
+    ['a date in another style', [['due', 'date', 'long']]],
+    ['a time of a date', [['due', 'time', 'medium']]],
+    [
+      'a variable its source lacks inside a branch',
+      [['role', 'select', { other: [['nom']] }]],
+    ],
+  ])('leaves %s to the embedded translation', (_name, translation) => {
+    expect(canReplaceMessageTree(source as never, translation)).toBe(false);
   });
 });
 
