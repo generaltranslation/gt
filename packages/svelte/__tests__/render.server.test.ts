@@ -167,9 +167,9 @@ describe('<T> server rendering', () => {
                   { i: 4, k: '_gt_value_4', v: 'v' },
                 ],
               },
+              other: 'Inconnu',
             },
           },
-          c: 'Inconnu',
         },
       },
     });

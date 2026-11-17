@@ -30,7 +30,7 @@ ruleTester.run('no-data-attrs-on-branch', noDataAttrsOnBranch, {
       name: 'data-* attribute on Plural',
       code: `
         import { Plural } from 'gt-react';
-        const el = <Plural data-testid="x" n={1} singular={<p>one</p>}>default</Plural>;
+        const el = <Plural data-testid="x" n={1} one={<p>one</p>}>default</Plural>;
       `,
     },
     {

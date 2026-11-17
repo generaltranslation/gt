@@ -14,9 +14,8 @@
 </p>
 <p class="branch">
   <T>
-    <Branch branch={status} away="Away">
+    <Branch branch={status} away="Away" other="Unknown">
       {#snippet online()}<i>Online</i> as <Var>{name}</Var>{/snippet}
-      Unknown
     </Branch>
   </T>
 </p>

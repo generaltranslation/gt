@@ -1,5 +1,6 @@
 import React, { ReactElement, isValidElement, ReactNode } from 'react';
 import {
+  getPluralBranchKey,
   isAcceptedPluralForm,
   Transformation,
   TransformationPrefix,
@@ -64,8 +65,9 @@ export function addGTIdentifier(
         const pluralBranches = Object.entries(props).reduce(
           (acc, [branchName, branch]) => {
             if (isAcceptedPluralForm(branchName)) {
-              (acc as Record<string, TaggedChildren>)[branchName] =
-                addGTIdentifier(branch as ReactNode, index);
+              (acc as Record<string, TaggedChildren>)[
+                getPluralBranchKey(branchName)
+              ] = addGTIdentifier(branch as ReactNode, index);
             }
             return acc;
           },

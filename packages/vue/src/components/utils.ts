@@ -118,7 +118,7 @@ export function isBranchAttribute(
   );
 }
 
-/** @internal */
+/** Names of the attributes and slots that can be branches. @internal */
 export function getBranchNames(
   attrs: Record<string, unknown>,
   slots: Slots
@@ -128,29 +128,26 @@ export function getBranchNames(
       ...Object.entries(attrs)
         .filter(([name, value]) => isBranchAttribute(name, value))
         .map(([name]) => name),
-      ...Object.keys(slots).filter(
-        (key) => key !== 'default' && !key.startsWith('_')
-      ),
+      ...Object.keys(slots).filter((key) => key !== 'default'),
     ]),
   ];
 }
 
-/** @internal */
+/** The content of a branch, which is empty for a branch there is not. @internal */
 export function getBranchContent(
-  branch: string | undefined,
+  branch: string,
   attrs: Record<string, unknown>,
   slots: Slots
 ) {
   if (
-    branch &&
     Object.prototype.hasOwnProperty.call(slots, branch) &&
     typeof slots[branch] === 'function'
   ) {
     return slots[branch]();
   }
-  const value = branch ? attrs[branch] : undefined;
-  if (branch && isBranchAttribute(branch, value)) {
+  const value = attrs[branch];
+  if (isBranchAttribute(branch, value)) {
     return value === null || typeof value === 'boolean' ? null : String(value);
   }
-  return slots.default?.() ?? null;
+  return null;
 }

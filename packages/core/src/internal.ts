@@ -28,7 +28,7 @@ export {
   type CredentialsEnv,
   type ResolvedCredentials,
 } from './config/credentials';
-export { isAcceptedPluralForm } from './settings/plurals';
+export { getPluralBranchKey, isAcceptedPluralForm } from './settings/plurals';
 export type {
   InjectionType,
   Transformation,

@@ -25,8 +25,13 @@ const translations = JSON.parse(
     [branchHash]: {
       t: 'Branch',
       i: 1,
-      d: { t: 'b', b: { constructor: { t: 'C2', i: 2, c: 'Constructeur' } } },
-      c: 'Autre',
+      d: {
+        t: 'b',
+        b: {
+          constructor: { t: 'C2', i: 2, c: 'Constructeur' },
+          other: 'Autre',
+        },
+      },
     },
   })
 ) as Record<string, Content>;

@@ -248,7 +248,7 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 **Control props are never modified.** These are selector/configuration props, not translatable content:
 
 - Branch: `branch` (selector key), `data-*` (HTML attributes, ignored at runtime)
-- Plural: `n` (count), `locales` (locale hint)
+- Plural: `n` (count)
 
 **Content props** (branch value keys like `Ernest`, `summary`, plural forms like `one`, `other`, and `children` as fallback) are processed:
 
@@ -263,7 +263,7 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 <div><_T><Branch branch="mode" summary={<p>Summary</p>}>Fallback</Branch></_T></div>
 // `branch` is a control prop → never Var-wrapped, even if dynamic
 
-// Plural as only child — _T wraps at parent, `n` and `locales` untouched
+// Plural as only child — _T wraps at parent, `n` untouched
 <div><Plural n={count} one="item" other="items" /></div>
 <div><_T><Plural n={count} one="item" other="items" /></_T></div>
 // `n` is a control prop → never Var-wrapped, even though `count` is dynamic

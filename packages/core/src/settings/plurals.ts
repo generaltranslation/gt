@@ -1,7 +1,4 @@
 export const pluralForms = [
-  'singular',
-  'plural',
-  'dual',
   'zero',
   'one',
   'two',
@@ -10,6 +7,20 @@ export const pluralForms = [
   'other',
 ] as const;
 export type PluralType = (typeof pluralForms)[number];
-export function isAcceptedPluralForm(form: string): form is PluralType {
-  return pluralForms.includes(form as (typeof pluralForms)[number]);
+
+const EXACT_PLURAL_PROP = /^_(0|[1-9]\d*)$/;
+
+/**
+ * Whether a `<Plural>` prop is a branch: a plural category, or `_N` for the
+ * exact number N, since `=N` is not a legal JSX attribute name.
+ */
+export function isAcceptedPluralForm(form: string): boolean {
+  return (
+    pluralForms.includes(form as PluralType) || EXACT_PLURAL_PROP.test(form)
+  );
+}
+
+/** The key a `<Plural>` branch prop is stored under: `_0` is ICU's `=0`. */
+export function getPluralBranchKey(prop: string): string {
+  return EXACT_PLURAL_PROP.test(prop) ? `=${prop.slice(1)}` : prop;
 }

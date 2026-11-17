@@ -17,7 +17,7 @@
         "few": "Few files",
         "many": "Many files",
         "other": "Other files",
-        "singular": {
+        "=1": {
           "t": "C3",
           "i": 3,
           "c": "Single file"

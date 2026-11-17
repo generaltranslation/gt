@@ -13,7 +13,12 @@ import {
 import { createRenderDefaultChildren } from './renderDefaultChildren.shared';
 import { isVariable } from 'generaltranslation/internal';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
-import { getPluralBranch } from '../plurals/getPluralBranch';
+import {
+  getBranch,
+  getPluralBranch,
+  selectBranch,
+  selectPluralBranch,
+} from '../plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
@@ -74,26 +79,13 @@ function createRenderTranslatedChildren({
     // plural (choose a branch)
     if (transformation === 'plural') {
       const n = sourceElement.props.n;
-      if (typeof n !== 'number') {
-        return renderDefaultChildren({
-          children: sourceElement,
-          defaultLocale: locales[0],
-          enableI18n,
-        });
-      }
-      const sourceBranches = sourceGT.branches || {};
-      const resolvedSourceBranch = getPluralBranch(n, locales, sourceBranches);
-      const sourceBranch =
-        resolvedSourceBranch != null
-          ? resolvedSourceBranch
-          : sourceElement.props.children;
-      const targetBranches = targetElement.d?.b || {};
-      const resolvedTargetBranch = getPluralBranch(n, locales, targetBranches);
-      const targetBranch =
-        resolvedTargetBranch != null ? resolvedTargetBranch : targetElement.c;
       return renderTranslatedChildren({
-        source: sourceBranch as TaggedChildren,
-        target: targetBranch as TranslatedChildren,
+        source: getPluralBranch(n, locales, sourceGT.branches || {}),
+        target: selectPluralBranch(
+          n,
+          locales,
+          targetElement.d?.b || {}
+        ) as TranslatedChildren,
         locales,
         enableI18n,
       });
@@ -101,22 +93,13 @@ function createRenderTranslatedChildren({
 
     // branch (choose a branch)
     if (transformation === 'branch') {
-      const { branch, children } = sourceProps;
-      const branchKey =
-        branch == null || branch === '' ? undefined : branch.toString();
-      const sourceBranches = sourceGT.branches || {};
-      const targetBranches = targetElement.d?.b || {};
-      const sourceBranch =
-        branchKey && sourceBranches[branchKey] !== undefined
-          ? sourceBranches[branchKey]
-          : children;
-      const targetBranch =
-        branchKey && targetBranches[branchKey] !== undefined
-          ? targetBranches[branchKey]
-          : targetElement.c;
+      const { branch } = sourceProps;
       return renderTranslatedChildren({
-        source: sourceBranch as TaggedChildren,
-        target: targetBranch as TranslatedChildren,
+        source: getBranch(branch, sourceGT.branches || {}),
+        target: selectBranch(
+          branch,
+          targetElement.d?.b || {}
+        ) as TranslatedChildren,
         locales,
         enableI18n,
       });

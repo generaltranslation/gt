@@ -17,9 +17,7 @@ export default function NotificationCenter() {
       <ul>
         {notifications.map((n) => (
           <li key={n.id}>
-            <Branch branch={n.type} order="Order Update" promo="Promotion" system="System Alert">
-              Notification
-            </Branch>
+            <Branch branch={n.type} order="Order Update" promo="Promotion" system="System Alert" other="Notification" />
             <p>{n.message}</p>
           </li>
         ))}

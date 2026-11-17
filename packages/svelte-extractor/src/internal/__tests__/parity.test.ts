@@ -130,8 +130,8 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
   },
   {
     name: 'plural with string branches',
-    svelte: `<T><Plural n={count} one="One item" other="Many items" /></T>`,
-    tsx: `<T><Plural n={count} one="One item" other="Many items" /></T>`,
+    svelte: `<T><Plural n={count} _0="No items" one="One item" other="Many items" /></T>`,
+    tsx: `<T><Plural n={count} _0="No items" one="One item" other="Many items" /></T>`,
   },
   {
     name: 'branch with string, snippet, and nested plural',

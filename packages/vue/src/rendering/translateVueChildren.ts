@@ -9,6 +9,7 @@ import {
   type VariableType,
 } from '@generaltranslation/format';
 import {
+  getPluralBranchKey,
   getPluralForm,
   isAcceptedPluralForm,
 } from 'generaltranslation/internal';
@@ -688,13 +689,15 @@ function getBranches(
     for (const [key, slot] of Object.entries(vnode.children)) {
       if (
         key !== 'default' &&
-        !key.startsWith('_') &&
-        (transformation === 'branch' || isAcceptedPluralForm(key)) &&
+        // Vue's own slot flags start with `_`; an exact plural form is `_0`.
+        (transformation === 'plural'
+          ? isAcceptedPluralForm(key)
+          : !key.startsWith('_')) &&
         typeof slot === 'function'
       ) {
         const value = invokeSlotWithOwner(vnode.children, slot);
         // React treats an undefined branch prop as absent and falls back to
-        // children. Vue's slot wrapper preserves that authored distinction.
+        // `other`. Vue's slot wrapper preserves that authored distinction.
         if (
           value === undefined ||
           (Array.isArray(value) && value.length === 1 && value[0] === undefined)
@@ -736,9 +739,13 @@ function getBranches(
     }
   }
 
-  const acceptedInputs = Object.entries(inputs).filter(
-    ([key]) => transformation === 'branch' || isAcceptedPluralForm(key)
-  );
+  // Plural branches are keyed as they are stored: `_0` is ICU's `=0`.
+  const acceptedInputs: [string, BranchSourceInput][] =
+    transformation === 'branch'
+      ? Object.entries(inputs)
+      : Object.entries(inputs)
+          .filter(([key]) => isAcceptedPluralForm(key))
+          .map(([key, input]) => [getPluralBranchKey(key), input]);
   const nodes: Record<string, SourceNode[]> = Object.fromEntries(
     acceptedInputs.map(([key, input]) => [
       key,
@@ -1143,11 +1150,15 @@ function renderElement(
   identityRender: TranslationIdentityRender
 ): VNodeChild {
   if (source.transformation === 'branch') {
-    const branch = getBranchKey(source.vnode);
-    const selectedSource = getSelectedSourceBranch(source, branch);
+    const branch = source.vnode.props?.branch;
+    const selectedSource = getSelectedSourceBranch(
+      source,
+      getBranchKey(branch, source.branches)
+    );
+    const targetBranches = target.d?.b ?? {};
     return renderNodes(
       selectedSource.nodes,
-      getSelectedTargetBranch(target, branch),
+      targetBranches[getBranchKey(branch, targetBranches)],
       state,
       identityRender,
       selectedSource.cardinality,
@@ -1156,21 +1167,13 @@ function renderElement(
   }
   if (source.transformation === 'plural') {
     const n = source.vnode.props?.n;
-    if (typeof n !== 'number') {
-      return renderDefaultNode(
-        source,
-        state,
-        identityRender,
-        state.getLocale()
-      );
-    }
     const sourceBranch = getPluralKey(n, Object.keys(source.branches), state);
     const targetBranches = target.d?.b ?? {};
     const targetBranch = getPluralKey(n, Object.keys(targetBranches), state);
     const selectedSource = getSelectedSourceBranch(source, sourceBranch);
     return renderNodes(
       selectedSource.nodes,
-      (targetBranch && targetBranches[targetBranch]) ?? target.c,
+      targetBranches[targetBranch],
       state,
       identityRender,
       selectedSource.cardinality,
@@ -1202,60 +1205,38 @@ function renderElement(
   );
 }
 
-function getBranchKey(source: VNode): string | undefined {
-  const branch = source.props?.branch;
-  if (branch == null) return undefined;
-  const key = String(branch);
-  return key || undefined;
+/** The key of the branch named by the value, or of `other`. */
+function getBranchKey(branch: unknown, branches: object): string {
+  const key = branch == null ? '' : String(branch);
+  return Object.hasOwn(branches, key) ? key : 'other';
 }
 
+/** The key of the branch ICU picks for `n`; anything but a number only fits `other`. */
 function getPluralKey(
-  n: number,
+  n: unknown,
   branches: string[],
   state: GTState,
   locale = state.getLocale()
-): string | undefined {
-  const forms = branches.filter(isAcceptedPluralForm);
-  if (!forms.length) return undefined;
-  return (
-    getPluralForm(
-      n,
-      forms,
-      getFormatLocales(
-        undefined,
-        locale,
-        state.defaultLocale,
-        state.resolveFormattingLocale
-      )
-    ) || undefined
+): string {
+  if (typeof n !== 'number' && typeof n !== 'bigint') return 'other';
+  return getPluralForm(
+    n,
+    branches,
+    getFormatLocales(
+      undefined,
+      locale,
+      state.defaultLocale,
+      state.resolveFormattingLocale
+    )
   );
 }
 
 function getSelectedSourceBranch(
   source: SourceElement,
-  branch?: string
+  branch: string
 ): SelectedBranchSource {
-  if (!branch || !Object.hasOwn(source.branches, branch)) {
-    return {
-      cardinality: source.childrenCardinality,
-      nodes: source.children,
-      ...(source.childrenCardinality === 'scalar' && {
-        scalarTruthy: source.childrenTruthy,
-      }),
-    };
-  }
-
-  const wireLiteral = source.branchWireLiterals[branch];
-  // React treats a null plural form as missing and renders the default branch,
-  // while a null Branch value remains a selected, empty branch.
-  if (source.transformation === 'plural' && wireLiteral === null) {
-    return {
-      cardinality: source.childrenCardinality,
-      nodes: source.children,
-      ...(source.childrenCardinality === 'scalar' && {
-        scalarTruthy: source.childrenTruthy,
-      }),
-    };
+  if (!Object.hasOwn(source.branches, branch)) {
+    return { cardinality: 'array', nodes: [] };
   }
   return {
     cardinality: source.branchCardinalities[branch],
@@ -1267,16 +1248,6 @@ function getSelectedSourceBranch(
 /** Returns the scalar/array shape for legacy call sites without raw input. */
 function getSourceCardinality(nodes: SourceNode[]): SourceCardinality {
   return nodes.filter(isContentNode).length === 1 ? 'scalar' : 'array';
-}
-
-function getSelectedTargetBranch(
-  target: JsxElement,
-  branch?: string
-): JsxChildren | undefined {
-  if (branch && target.d?.b && Object.hasOwn(target.d.b, branch)) {
-    return target.d.b[branch];
-  }
-  return target.c;
 }
 
 function isContentNode(
@@ -1346,7 +1317,10 @@ function renderDefaultNode(
   }
   if (node.transformation === 'branch') {
     return renderDefaultNodes(
-      getSelectedSourceBranch(node, getBranchKey(node.vnode)).nodes,
+      getSelectedSourceBranch(
+        node,
+        getBranchKey(node.vnode.props?.branch, node.branches)
+      ).nodes,
       state,
       identityRender,
       locale
@@ -1354,9 +1328,6 @@ function renderDefaultNode(
   }
   if (node.transformation === 'plural') {
     const n = node.vnode.props?.n;
-    if (typeof n !== 'number') {
-      return renderDefaultNodes(node.children, state, identityRender, locale);
-    }
     const branch = getPluralKey(n, Object.keys(node.branches), state, locale);
     return renderDefaultNodes(
       getSelectedSourceBranch(node, branch).nodes,

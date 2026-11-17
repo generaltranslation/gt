@@ -21,9 +21,8 @@ export default function CommerceOrderStatus() {
           shipped={<span>Shipped</span>}
           delivered={<span>Delivered</span>}
           cancelled={<span>Cancelled</span>}
-        >
-          <span>Unknown</span>
-        </Branch>
+          other={<span>Unknown</span>}
+        />
       </header>
 
       <section>

@@ -10,10 +10,10 @@ const date = new Date();
 <template>
   <T>
     <Plural :n="count">
-      <template #singular>
+      <template #_1>
         <Fragment>Transaction: <Currency :value="amount" currency="USD" /> on{{ ' ' }}<DateTime :value="date" /> for <Num :value="0.15" /> tax with{{ ' ' }}<Var>REF-123</Var></Fragment>
       </template>
-      <template #plural>
+      <template #_2>
         <div><Currency :value="amount * count" currency="EUR" /> total from{{ ' ' }}<Num :value="count" /> transactions on <DateTime :value="date" /></div>
       </template>
     </Plural>

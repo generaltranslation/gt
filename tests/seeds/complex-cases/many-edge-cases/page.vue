@@ -15,20 +15,20 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
 <template>
   <T>
     <Plural :n="1">
-      <template #singular><Fragment>{{ ' ' }}</Fragment></template>
-      <template #plural><Fragment>{{ ' ' }}</Fragment></template>
+      <template #_1><Fragment>{{ ' ' }}</Fragment></template>
+      <template #_2><Fragment>{{ ' ' }}</Fragment></template>
     </Plural>
     <Plural :n="1">
-      <template #singular><Fragment>{{ '\\t' }}</Fragment></template>
-      <template #plural><Fragment>{{ '\\n' }}</Fragment></template>
+      <template #_1><Fragment>{{ '\\t' }}</Fragment></template>
+      <template #_2><Fragment>{{ '\\n' }}</Fragment></template>
     </Plural>
     <span>start</span> <span>middle</span> <span>end</span>
     <div>surrounded by spaces</div>
     <Fragment> leading spaces</Fragment>
     <Fragment>trailing spaces </Fragment>
     <Fragment> both sides </Fragment>
-    <Plural :n="1" plural="files">
-      <template #singular>
+    <Plural :n="1" _2="files">
+      <template #_1>
         <Fragment><Fragment><Fragment><Fragment>deep fragment nesting</Fragment></Fragment></Fragment></Fragment>
       </template>
     </Plural>
@@ -63,8 +63,8 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
     </Branch>
     <Plural
       :n="1"
-      singular="Quotes: &quot; and '"
-      plural="Backslashes: \\ and \\n and \\t"
+      _1="Quotes: &quot; and '"
+      _2="Backslashes: \\ and \\n and \\t"
       other="Unicode: \u0041 and \x41"
     />
     <Branch
@@ -92,8 +92,8 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
     />
     <Plural
       :n="1"
-      singular="Template with ${escaped} and `backticks`"
-      :plural="multilineTemplate"
+      _1="Template with ${escaped} and `backticks`"
+      :_2="multilineTemplate"
       other="Mixed &quot;quotes&quot; and 'apostrophes' in template"
     />
     <Branch
@@ -110,8 +110,8 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
       few="few"
       many="many"
       other="other"
-      singular="sing"
-      plural="plur"
+      _1="sing"
+      _2="plur"
     />
     <Branch branch="many_options" a="option a" b="option b" c="option c" d="option d" e="option e" :h="42" :i="true" :j="null">
       <template #f><Fragment>fragment f</Fragment></template>
@@ -129,24 +129,24 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
     <DateTime :value="new Date(0)" />
     <Branch branch="l1" option2="l1 end">
       <template #option1>
-        <Plural :n="1" plural="l1 plural">
-          <template #singular>
+        <Plural :n="1" _2="l1 plural">
+          <template #_1>
             <Branch branch="l2" option2="l2 end">
               <template #option1>
-                <Plural :n="1" plural="l2 plural">
-                  <template #singular>
+                <Plural :n="1" _2="l2 plural">
+                  <template #_1>
                     <Branch branch="l3" option2="l3 end">
                       <template #option1>
-                        <Plural :n="1" plural="l3 plural">
-                          <template #singular>
+                        <Plural :n="1" _2="l3 plural">
+                          <template #_1>
                             <Branch branch="l4" option2="l4 end">
                               <template #option1>
-                                <Plural :n="1" plural="l4 plural">
-                                  <template #singular>
+                                <Plural :n="1" _2="l4 plural">
+                                  <template #_1>
                                     <Branch branch="l5" option2="l5 end">
                                       <template #option1>
-                                        <Plural :n="1" plural="l5 plural">
-                                          <template #singular>
+                                        <Plural :n="1" _2="l5 plural">
+                                          <template #_1>
                                             <Branch branch="l6" option2="l6 end">
                                               <template #option1><Var>maximum depth</Var></template>
                                             </Branch>
@@ -176,10 +176,10 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
           <Fragment>
             <span>Before plural</span>
             <Plural :n="count">
-              <template #singular>
+              <template #_1>
                 <div>Single item: <Num :value="count" />costing{{ ' ' }}<Currency :value="price" currency="USD" />at <DateTime :value="timestamp" />in{{ ' ' }}<Branch branch="location" work="office"><template #home><Fragment>home folder with <Var>variable</Var></Fragment></template></Branch></div>
               </template>
-              <template #plural>
+              <template #_2>
                 <div>Multiple items: <Num :value="count" />costing{{ ' ' }}<Currency :value="price * count" currency="USD" /><Fragment>with fragments</Fragment> and <span>elements</span></div>
               </template>
             </Plural>
@@ -205,12 +205,12 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
     />
     <Plural
       :n="1"
-      singular="English left-to-right"
-      plural="العربية من اليمين إلى اليسار"
+      _1="English left-to-right"
+      _2="العربية من اليمين إلى اليسار"
       other="עברית מימין לשמאל"
     />Normal text <div>and some nesting</div> with trailing space<Plural :n="1">
-      <template #singular><Fragment>{{ ' ' }}</Fragment></template>
-      <template #plural><Fragment /></template>
+      <template #_1><Fragment>{{ ' ' }}</Fragment></template>
+      <template #_2><Fragment /></template>
     </Plural>
     <Plural :n="1" :zero="0" :one="1" :two="-1" :few="3.14159" :many="1e6" :other="0xff" />
     <Branch branch="test" empty="" whitespace="   padded   " :number="42" :boolean="true" :null_value="null">

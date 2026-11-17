@@ -6,36 +6,36 @@ export default function Home() {
       option1={
         <Plural
           n={1}
-          singular={
+          _1={
             <Branch
               branch="level2"
               option1={
                 <Plural
                   n={1}
-                  singular={
+                  _1={
                     <Branch
                       branch="level3"
                       option1={
                         <Plural
                           n={1}
-                          singular={
+                          _1={
                             <Var name="deep_var">
                               deeply nested variable
                             </Var>
                           }
-                          plural="deep files"
+                          _2="deep files"
                         />
                       }
                       option2="level3 option2"
                     />
                   }
-                  plural="level2 plurals"
+                  _2="level2 plurals"
                 />
               }
               option2="level2 option2"
             />
           }
-          plural="level1 plurals"
+          _2="level1 plurals"
         />
       }
       option2="level1 option2"

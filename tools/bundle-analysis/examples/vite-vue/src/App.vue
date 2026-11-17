@@ -182,7 +182,7 @@ async function changeLocale(event: Event) {
                   <template #yearly>
                     Billed once a year. Two months are free.
                   </template>
-                  Billed per seat.
+                  <template #other>Billed per seat.</template>
                 </Branch>
               </p>
             </T>

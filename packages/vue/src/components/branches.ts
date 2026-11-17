@@ -1,4 +1,5 @@
 import {
+  getPluralBranchKey,
   getPluralForm,
   isAcceptedPluralForm,
 } from 'generaltranslation/internal';
@@ -9,14 +10,13 @@ import {
   getBranchContent,
   getBranchNames,
   getFormatLocales,
+  isBranchAttribute,
   withGTMetadata,
 } from './utils';
 
 type PluralProps = {
-  /** Locale preferences tried before active and default locales in translation. */
-  locales?: string[];
-  /** Numeric value used to select a plural category. */
-  n: number;
+  /** Number used to select a plural branch. */
+  n: number | bigint;
 };
 
 type BranchProps = {
@@ -25,23 +25,19 @@ type BranchProps = {
 };
 
 /**
- * Selects a named plural slot such as `one` or `other` from `n` and the active
- * locale's plural rules. Missing categories fall back to the default slot.
- *
- * At the default locale, explicit `locales` are ignored. Otherwise, they are
- * tried before the active and default GT locales.
+ * Selects a plural slot or attribute for `n` as ICU does: an exact number such
+ * as `_0`, then the active locale's plural category such as `one`, then
+ * `other`.
  */
 export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
   /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
     name: 'Plural',
     props: {
-      /** Locale preferences tried before active and default locales in translation. */
-      locales: Array as PropType<string[]>,
-      /** Numeric value used to select a plural category. */
+      /** Number used to select a plural branch. */
       n: {
         required: true,
-        type: Number,
+        type: [Number, BigInt] as PropType<number | bigint>,
       },
     },
     setup(props, { attrs, slots }) {
@@ -50,25 +46,22 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
         const branches = getBranchNames(attrs, slots).filter(
           isAcceptedPluralForm
         );
-        const branch = getPluralForm(
+        const form = getPluralForm(
           props.n,
-          branches,
+          branches.map(getPluralBranchKey),
           getFormatLocales(
-            props.locales,
+            undefined,
             state.getLocale(),
             state.defaultLocale,
             state.resolveFormattingLocale
           )
         );
-        const namedSlot = branch && slots[branch];
-        // React treats a null plural form as absent and renders the default,
-        // while false and true remain selected branches that render empty.
-        // A Vue named slot still wins over an attribute with the same name.
-        const content =
-          branch && attrs[branch] === null && typeof namedSlot !== 'function'
-            ? (slots.default?.() ?? null)
-            : getBranchContent(branch, attrs, slots);
-        return asFragmentRoot(content);
+        const branch = branches.find(
+          (name) => getPluralBranchKey(name) === form
+        );
+        return asFragmentRoot(
+          branch ? getBranchContent(branch, attrs, slots) : null
+        );
       };
     },
   }),
@@ -76,8 +69,8 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
 );
 
 /**
- * Selects an arbitrary named slot or attribute from `branch`. Missing branch
- * keys render the default slot.
+ * Selects an arbitrary named slot or attribute from `branch`. A value with no
+ * branch renders the `other` branch.
  *
  * When used inside {@link T}, every named branch is extracted for translation
  * while only the active branch is rendered.
@@ -92,8 +85,13 @@ export const Branch = /* @__PURE__ */ withGTMetadata<BranchProps>(
     },
     setup(props, { attrs, slots }) {
       return () => {
-        const branch = props.branch?.toString();
-        return asFragmentRoot(getBranchContent(branch, attrs, slots));
+        const branch = props.branch == null ? '' : String(props.branch);
+        const hasBranch =
+          Object.hasOwn(slots, branch) ||
+          isBranchAttribute(branch, attrs[branch]);
+        return asFragmentRoot(
+          getBranchContent(hasBranch ? branch : 'other', attrs, slots)
+        );
       };
     },
   }),

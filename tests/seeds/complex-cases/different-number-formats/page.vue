@@ -8,8 +8,8 @@ import { Branch, Plural, T } from 'gt-vue';
     <Branch branch="status" :active="true" :inactive="false" :unknown="null" pending="" />
     <Plural
       :n="1"
-      singular="Single 'quotes' inside"
-      plural='Double "quotes" inside'
+      _1="Single 'quotes' inside"
+      _2='Double "quotes" inside'
       other="Template with 'both' &quot;types&quot;"
     />
   </T>

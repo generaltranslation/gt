@@ -30,9 +30,8 @@ export default function SocialProfileHeader() {
             online={<span>Online</span>}
             away={<span>Away</span>}
             offline={<span>Offline</span>}
-          >
-            <span>Unknown</span>
-          </Branch>
+            other={<span>Unknown</span>}
+          />
         </div>
 
         {!user.isOwnProfile && (

@@ -19,9 +19,8 @@ export default function CmsArticleEditor() {
             draft={<span>Draft</span>}
             published={<span>Published</span>}
             scheduled={<span>Scheduled</span>}
-          >
-            <span>Unknown</span>
-          </Branch>
+            other={<span>Unknown</span>}
+          />
           <span>
             Last saved {article.lastSaved}
           </span>

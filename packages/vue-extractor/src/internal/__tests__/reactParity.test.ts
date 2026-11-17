@@ -699,10 +699,10 @@ describe('React CLI parity audit', () => {
       ]);
     });
 
-    it('extracts legacy and CLDR plural forms together', async () => {
+    it('extracts exact and CLDR plural forms together', async () => {
       const source = createSfc(
         `import { Plural, T } from 'gt-vue';`,
-        `<T><Plural :n="2" singular="Single" dual="Double" plural="Plural" zero="Zero" one="One" two="Two" few="Few" many="Many" other="Other">Fallback</Plural></T>`
+        `<T><Plural :n="2" _0="None" singular="Ignored" zero="Zero" one="One" two="Two" few="Few" many="Many" other="Other"><template #_12>Dozen</template></Plural></T>`
       );
       assertVueCompiles(source, 'plural-forms');
 
@@ -715,9 +715,8 @@ describe('React CLI parity audit', () => {
           i: 1,
           d: {
             b: {
-              singular: 'Single',
-              dual: 'Double',
-              plural: 'Plural',
+              '=0': 'None',
+              '=12': 'Dozen',
               zero: 'Zero',
               one: 'One',
               two: 'Two',
@@ -727,7 +726,6 @@ describe('React CLI parity audit', () => {
             },
             t: 'p',
           },
-          c: 'Fallback',
         },
       ]);
     });
@@ -1075,14 +1073,14 @@ describe('shared rich-content wire format', () => {
     import { Branch, T, Var } from 'gt-vue';
     const name = 'Ada';
     </script>
-    <template><T><Branch branch="formal"><template #formal><strong>Hello</strong> <Var>{{ name }}</Var></template><template #casual><em>Hi</em> <Var>{{ name }}</Var></template><template #default>Fallback</template></Branch><span>After</span></T></template>
+    <template><T><Branch branch="formal"><template #formal><strong>Hello</strong> <Var>{{ name }}</Var></template><template #casual><em>Hi</em> <Var>{{ name }}</Var></template><template #other>Fallback</template></Branch><span>After</span></T></template>
   `,
     'independent-plural-numbering': `
     <script setup>
     import { Num, Plural, T } from 'gt-vue';
     const count = 2;
     </script>
-    <template><T><Plural :n="count"><template #one>One <Num :value="1" /></template><template #other>Many <Num :value="count" /></template><template #default>Fallback</template></Plural><span>After</span></T></template>
+    <template><T><Plural :n="count"><template #one>One <Num :value="1" /></template><template #other>Many <Num :value="count" /></template></Plural><span>After</span></T></template>
   `,
   } satisfies Record<string, string>;
 

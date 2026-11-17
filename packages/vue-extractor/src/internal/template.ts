@@ -15,7 +15,10 @@ import {
   type JsxChild,
   type JsxChildren,
 } from '@generaltranslation/format';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import {
+  getPluralBranchKey,
+  isAcceptedPluralForm,
+} from 'generaltranslation/internal';
 import { ElementTypes, NodeTypes } from './compilerAst.js';
 import { processVueStringCall } from './stringCalls.js';
 import {
@@ -1837,7 +1840,16 @@ function serializeElement(
       context
     );
     if (Object.keys(branches).length > 0) {
-      data.b = branches;
+      // Plural branches are stored under ICU keys: `_0` is `=0`.
+      data.b =
+        originalName === 'Plural'
+          ? Object.fromEntries(
+              Object.entries(branches).map(([name, branch]) => [
+                getPluralBranchKey(name),
+                branch,
+              ])
+            )
+          : branches;
       data.t = originalName === 'Plural' ? 'p' : 'b';
     }
   }
@@ -2237,8 +2249,9 @@ function readBranches(
   const branches: Record<string, JsxChildren> = {};
 
   for (const [name, slot] of slots.namedSlots) {
-    if (name.startsWith('_')) continue;
-    if (component === 'Plural' && !isAcceptedPluralForm(name)) continue;
+    // Vue's own slot flags start with `_`; an exact plural form is `_0`.
+    if (component === 'Plural' ? !isAcceptedPluralForm(name) : name[0] === '_')
+      continue;
     branches[name] = collapseChildren(
       serializeChildren(
         slot.children,

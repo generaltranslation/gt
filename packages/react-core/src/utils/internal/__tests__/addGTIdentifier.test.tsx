@@ -69,12 +69,33 @@ describe('addGTIdentifier with <RelativeTime>', () => {
 
   it('tags <RelativeTime> inside a Plural branch prop', () => {
     const tagged = addGTIdentifier(
-      <Plural n={1} one={<RelativeTime value={-3} unit='day' />} />
+      <Plural
+        n={1}
+        one={<RelativeTime value={-3} unit='day' />}
+        other='Later'
+      />
     );
 
     expect(gtTag(gtTag(tagged).branches?.one)).toMatchObject({
       variableType: 'relativetime',
     });
+  });
+
+  it('stores an exact Plural branch under its ICU key', () => {
+    const tagged = addGTIdentifier(<Plural n={0} _0='None' other='Some' />);
+
+    expect(writeChildrenAsObjects(tagged)).toEqual({
+      t: 'Plural',
+      i: 1,
+      d: { b: { '=0': 'None', other: 'Some' }, t: 'p' },
+    });
+    expect(
+      renderDefaultChildren({
+        children: tagged,
+        defaultLocale: 'en',
+        enableI18n: true,
+      })
+    ).toBe('None');
   });
 
   it('renders <RelativeTime> in <T> source content as formatted time', () => {

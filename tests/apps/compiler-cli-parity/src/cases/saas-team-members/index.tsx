@@ -56,9 +56,8 @@ export default function SaasTeamMembers() {
                   admin="Admin"
                   member="Member"
                   viewer="View only"
-                >
-                  Unknown role
-                </Branch>
+                  other="Unknown role"
+                />
               </td>
               <td>{member.lastActive}</td>
               <td>

@@ -6,8 +6,8 @@ import { Fragment } from 'vue';
 <template>
   <T>
     <Plural :n="1">
-      <template #singular><Fragment>{{ ' ' }}</Fragment></template>
-      <template #plural><Fragment /></template>
+      <template #_1><Fragment>{{ ' ' }}</Fragment></template>
+      <template #_2><Fragment /></template>
     </Plural>
   </T>
 </template>

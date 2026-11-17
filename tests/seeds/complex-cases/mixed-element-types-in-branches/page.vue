@@ -10,7 +10,7 @@ const date = new Date();
 <template>
   <T>
     <Plural :n="count">
-      <template #singular>
+      <template #_1>
         <article>
           <h1>Single Item</h1>
           <p>Description with <Var>details</Var></p>
@@ -19,7 +19,7 @@ const date = new Date();
           </footer>
         </article>
       </template>
-      <template #plural>
+      <template #_2>
         <section>
           <header>
             <h2><Num :value="count" /> Items</h2>

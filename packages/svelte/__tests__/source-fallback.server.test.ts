@@ -4,7 +4,7 @@ import Harness from './fixtures/Harness.svelte';
 import SourceFallback from './fixtures/SourceFallback.svelte';
 import { hashesOf, setupGT, withoutComments } from './helpers';
 
-const [, numHash] = hashesOf('SourceFallback.svelte');
+const [pluralHash, numHash] = hashesOf('SourceFallback.svelte');
 
 /** Rendered body with Svelte's hydration comments removed. */
 function html(props: Record<string, unknown>): string {
@@ -27,6 +27,26 @@ describe('<T> source content in a translated locale', () => {
         translations: {},
       })
     ).toContain('<p class="plural">many items</p>');
+  });
+
+  it('picks an exact plural branch in the source and in a translation', () => {
+    const pair = (translations: Record<string, unknown>) =>
+      html({
+        component: SourceFallback,
+        props: { n: 2 },
+        locale: 'fr',
+        translations,
+      });
+    expect(pair({})).toContain('<p class="plural">a pair</p>');
+    expect(
+      pair({
+        [pluralHash]: {
+          t: 'Plural',
+          i: 1,
+          d: { t: 'p', b: { '=2': 'une paire', other: 'plusieurs' } },
+        },
+      })
+    ).toContain('<p class="plural">une paire</p>');
   });
 
   it('formats variables in the default locale without a translation', () => {

@@ -74,9 +74,8 @@ export function OrderPanel() {
                 Heats to 96 °C and holds for 60 minutes. Bloom for 30 seconds.
               </p>
             }
-          >
-            <p className='order-note'>Heats to the set temperature.</p>
-          </Branch>
+            other={<p className='order-note'>Heats to the set temperature.</p>}
+          />
         </T>
       </div>
 

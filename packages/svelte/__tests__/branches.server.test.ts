@@ -25,9 +25,9 @@ const statusTranslation = {
     b: {
       away: 'Absent',
       online: { t: 'C2', i: 2, c: { t: 'i', i: 3, c: 'En ligne' } },
+      other: 'Inconnu',
     },
   },
-  c: 'Inconnu',
 } satisfies Content;
 
 const renderFr = (status: unknown, translation: Content = statusTranslation) =>

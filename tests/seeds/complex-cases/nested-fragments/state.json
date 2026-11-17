@@ -164,9 +164,9 @@
                   "column": 20,
                   "index": 277
                 },
-                "identifierName": "singular"
+                "identifierName": "_1"
               },
-              "name": "singular"
+              "name": "_1"
             },
             "computed": false,
             "shorthand": false,
@@ -536,9 +536,9 @@
                   "column": 18,
                   "index": 543
                 },
-                "identifierName": "plural"
+                "identifierName": "_2"
               },
-              "name": "plural"
+              "name": "_2"
             },
             "computed": false,
             "shorthand": false,

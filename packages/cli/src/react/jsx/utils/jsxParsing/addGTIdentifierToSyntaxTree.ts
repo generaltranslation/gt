@@ -10,7 +10,10 @@ import {
   getVariableName,
   minifyVariableType,
 } from '../../../utils/getVariableName.js';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import {
+  getPluralBranchKey,
+  isAcceptedPluralForm,
+} from 'generaltranslation/internal';
 import { MultipliedTreeNode } from './types.js';
 import {
   DATA_ATTR_PREFIX,
@@ -46,7 +49,7 @@ function constructGTProp(
     const pluralBranches = Object.entries(props).reduce(
       (acc: Record<string, JsxChildren>, [branchName, branch]) => {
         if (isAcceptedPluralForm(branchName)) {
-          acc[branchName] = addGTIdentifierToSyntaxTree(
+          acc[getPluralBranchKey(branchName)] = addGTIdentifierToSyntaxTree(
             branch as MultipliedTreeNode,
             id
           );

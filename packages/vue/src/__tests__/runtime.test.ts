@@ -2253,13 +2253,13 @@ describe('gt-vue runtime', () => {
             h(
               Branch,
               { branch: 'toString' },
-              { default: () => 'Standalone fallback' }
+              { other: () => 'Standalone fallback' }
             ),
             '|',
             h(
               Branch,
               { branch: 'missing', missing: undefined },
-              { default: () => 'Undefined fallback' }
+              { other: () => 'Undefined fallback' }
             ),
             '|',
             h(T, null, {
@@ -2267,7 +2267,7 @@ describe('gt-vue runtime', () => {
                 h(
                   Branch,
                   { branch: 'constructor' },
-                  { default: () => 'Rich fallback' }
+                  { other: () => 'Rich fallback' }
                 ),
             }),
           ]);

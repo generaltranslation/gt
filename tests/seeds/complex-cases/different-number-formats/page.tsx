@@ -20,8 +20,8 @@ export default function Home() {
       />
       <Plural
         n={1}
-        singular="Single 'quotes' inside"
-        plural={'Double "quotes" inside'}
+        _1="Single 'quotes' inside"
+        _2={'Double "quotes" inside'}
         other={`Template with 'both' "types"`}
       />
     </T>

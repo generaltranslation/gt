@@ -233,8 +233,10 @@ const m = useMessages();
 - `<Var>` preserves a dynamic slot value inside `<T>`.
 - `<Num>`, `<DateTime>`, and `<Currency>` require typed runtime values through
   `:value`; formatter slot children are not supported.
-- `<Plural :n="count">` selects named slots such as `#one` and `#other`.
-- `<Branch :branch="key">` selects an arbitrary named slot.
+- `<Plural :n="count">` selects a named slot as ICU does: an exact number such
+  as `#_0`, then the locale's plural category such as `#one`, then `#other`.
+- `<Branch :branch="key">` selects an arbitrary named slot, or `#other` when no
+  slot matches.
 
 Use the required `value` prop for every formatting value.
 

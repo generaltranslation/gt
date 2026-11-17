@@ -11,11 +11,11 @@ export default function ExtremeEdgeCases() {
 
       {/* Only whitespace variations */}
       
-        <Plural n={1} singular={<> </>} plural={<> </>} />
+        <Plural n={1} _1={<> </>} _2={<> </>} />
       
 
       
-        <Plural n={1} singular={<>\t</>} plural={<>\n</>} />
+        <Plural n={1} _1={<>\t</>} _2={<>\n</>} />
       
 
       {/* Mixed whitespace preservation */}
@@ -41,7 +41,7 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={1}
-          singular={
+          _1={
             <>
               <>
                 <>
@@ -50,7 +50,7 @@ export default function ExtremeEdgeCases() {
               </>
             </>
           }
-          plural="files"
+          _2="files"
         />
       
 
@@ -160,8 +160,8 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={1}
-          singular="Quotes: &quot; and '"
-          plural="Backslashes: \\ and \\n and \\t"
+          _1="Quotes: &quot; and '"
+          _2="Backslashes: \\ and \\n and \\t"
           other={`Unicode: \\u0041 and \\x41`}
         />
       
@@ -221,8 +221,8 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={1}
-          singular={`Template with \${escaped} and \`backticks\``}
-          plural={`Multi
+          _1={`Template with \${escaped} and \`backticks\``}
+          _2={`Multi
             line
             template
             literal`}
@@ -252,8 +252,8 @@ export default function ExtremeEdgeCases() {
           few="few"
           many="many"
           other="other"
-          singular="sing"
-          plural="plur"
+          _1="sing"
+          _2="plur"
         />
       
 
@@ -329,31 +329,31 @@ export default function ExtremeEdgeCases() {
           option1={
             <Plural
               n={1}
-              singular={
+              _1={
                 <Branch
                   branch="l2"
                   option1={
                     <Plural
                       n={1}
-                      singular={
+                      _1={
                         <Branch
                           branch="l3"
                           option1={
                             <Plural
                               n={1}
-                              singular={
+                              _1={
                                 <Branch
                                   branch="l4"
                                   option1={
                                     <Plural
                                       n={1}
-                                      singular={
+                                      _1={
                                         <Branch
                                           branch="l5"
                                           option1={
                                             <Plural
                                               n={1}
-                                              singular={
+                                              _1={
                                                 <Branch
                                                   branch="l6"
                                                   option1={
@@ -364,31 +364,31 @@ export default function ExtremeEdgeCases() {
                                                   option2="l6 end"
                                                 />
                                               }
-                                              plural="l5 plural"
+                                              _2="l5 plural"
                                             />
                                           }
                                           option2="l5 end"
                                         />
                                       }
-                                      plural="l4 plural"
+                                      _2="l4 plural"
                                     />
                                   }
                                   option2="l4 end"
                                 />
                               }
-                              plural="l3 plural"
+                              _2="l3 plural"
                             />
                           }
                           option2="l3 end"
                         />
                       }
-                      plural="l2 plural"
+                      _2="l2 plural"
                     />
                   }
                   option2="l2 end"
                 />
               }
-              plural="l1 plural"
+              _2="l1 plural"
             />
           }
           option2="l1 end"
@@ -405,7 +405,7 @@ export default function ExtremeEdgeCases() {
                 <span>Before plural</span>
                 <Plural
                   n={count}
-                  singular={
+                  _1={
                     <div>
                       Single item: <Num name="single_count">{count}</Num>
                       costing{" "}
@@ -425,7 +425,7 @@ export default function ExtremeEdgeCases() {
                       />
                     </div>
                   }
-                  plural={
+                  _2={
                     <div>
                       Multiple items: <Num name="multi_count">{count}</Num>
                       costing{" "}
@@ -476,7 +476,7 @@ export default function ExtremeEdgeCases() {
 
       {/* Missing required attributes DISREGARD, INVALID */}
       {/* 
-        <Plural singular="file" plural="files" />
+        <Plural _1="file" _2="files" />
       
 
       
@@ -507,8 +507,8 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={1}
-          singular="English left-to-right"
-          plural="العربية من اليمين إلى اليسار"
+          _1="English left-to-right"
+          _2="العربية من اليمين إلى اليسار"
           other="עברית מימין לשמאל"
         />
       
@@ -521,7 +521,7 @@ export default function ExtremeEdgeCases() {
       
 
       
-        <Plural n={1} singular={<> </>} plural={<></>} />
+        <Plural n={1} _1={<> </>} _2={<></>} />
       
 
       

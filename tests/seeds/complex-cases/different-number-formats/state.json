@@ -1111,9 +1111,9 @@
                       "column": 24,
                       "index": 736
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1172,9 +1172,9 @@
                       "column": 22,
                       "index": 786
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,

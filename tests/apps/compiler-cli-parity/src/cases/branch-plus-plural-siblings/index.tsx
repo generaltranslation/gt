@@ -4,7 +4,7 @@ export default function BranchPluralSiblings() {
   const count = 3;
   return (
     <div>
-      Label: <Branch branch="x">fallback</Branch>
+      Label: <Branch branch="x" other="fallback" />
       <Plural n={count} one="one" other="many" />
     </div>
   );
