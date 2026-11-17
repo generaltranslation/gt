@@ -4,6 +4,8 @@
  * equivalence table compiles each case with and without `precomputeMessages`
  * and renders both in gt-react: the output must match.
  */
+import generateModule from '@babel/generator';
+import * as t from '@babel/types';
 import { build } from 'esbuild';
 import { hashSource } from 'generaltranslation/id';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
@@ -13,7 +15,12 @@ import {
   loadGTRuntime,
   type GTRuntime,
 } from './sourceReplacementHarness';
+import { buildPrecomputedCall } from '../transform/injection/precomputeUnstableMessage';
 import { transformWithPlugin } from './transformWithPlugin';
+
+const generate =
+  (generateModule as unknown as { default?: typeof generateModule }).default ??
+  generateModule;
 
 const HELPERS =
   't, m, msg, useGT, plural, selectordinal, select, number, date, time, part, derive, n';
@@ -152,6 +159,21 @@ describe('emitted messages', () => {
       expect(output).not.toContain('const _gt');
     }
   );
+
+  it('writes a message with values at its call when given nothing to declare it with', () => {
+    const call = buildPrecomputedCall({
+      callee: t.identifier('t'),
+      hash: 'hash',
+      metadata: {},
+      tree: ['Bonjour, ', ['name']],
+      bindings: [{ name: 'name', value: t.identifier('name') }],
+      locale: 'fr',
+      hoist: undefined,
+    });
+    expect(generate(call!, { concise: true }).code).toBe(
+      't({ $_hash: "hash", $_tree: ["Bonjour, ", ["name"]], $_locale: "fr" }, { name })'
+    );
+  });
 
   it('precomputes the templates of useGT() and getGT()', async () => {
     const output = await transformWithPlugin(
