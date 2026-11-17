@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setWritableConditionStore } from '../../condition-store/singleton-operations';
 import { I18nCache } from '../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
-import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
+import {
+  getI18nConfig,
+  initializeI18nConfig,
+} from '../../i18n-config/singleton-operations';
 import type { InlineTranslations } from '../../types-dir/inline';
 import { t } from '../../unstable';
 import { buildMessage } from '../buildMessage';
@@ -103,6 +106,41 @@ describe('unstable gt inline translations', () => {
       'Loaded'
     );
     warn.mockRestore();
+  });
+
+  it('matches the locale once while the locale and the config stay the same', async () => {
+    const gt = await setup();
+    const determineLocale = vi.spyOn(getI18nConfig(), 'determineLocale');
+    const callback = vi.fn(embedded({ fr: 'Bonjour', es: 'Hola' }));
+    for (let i = 0; i < 3; i++) {
+      expect(gt(inline(callback))`Hello`).toBe('Bonjour');
+    }
+    expect(determineLocale).toHaveBeenCalledTimes(1);
+    expect(callback).toHaveBeenCalledTimes(3);
+
+    const es = await getGT({ locale: 'es', enableI18n: true });
+    expect(es(inline(callback))`Hello`).toBe('Hola');
+    expect(gt(inline(callback))`Hello`).toBe('Bonjour');
+    expect(determineLocale).toHaveBeenCalledTimes(3);
+  });
+
+  it('matches the locale again for another config', async () => {
+    const callback = vi.fn(embedded({ fr: 'Bonjour', 'fr-CA': 'Allo' }));
+    const gt = await setup();
+    expect(gt(inline(callback))`Hello`).toBe('Bonjour');
+
+    resetGTGlobals();
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr-CA'] });
+    setI18nCache(new I18nCache({ loadTranslations: async () => ({}) }));
+    const canadian = await getGT({ locale: 'fr', enableI18n: true });
+    expect(canadian(inline(callback))`Hello`).toBe('Allo');
+
+    resetGTGlobals();
+    initializeI18nConfig({ defaultLocale: 'fr', locales: ['fr', 'en'] });
+    setI18nCache(new I18nCache({ loadTranslations: async () => ({}) }));
+    const source = await getGT({ locale: 'fr', enableI18n: true });
+    expect(source(inline(callback))`Hello`).toBe('Hello');
+    expect(callback.mock.calls).toEqual([['fr'], ['fr-CA']]);
   });
 
   it('is used by the global t', async () => {
