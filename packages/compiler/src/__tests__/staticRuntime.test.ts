@@ -106,6 +106,7 @@ const CASES: Case[] = [
       { value: DATE },
       { value: Symbol('symbol') },
       { value: { toString: () => 'object' } },
+      { value: ['a', 'b'] },
     ],
   },
   {
@@ -214,6 +215,8 @@ const CASES: Case[] = [
       { count: 0, name: 'Ada' },
       { count: 1, name: 'Ada' },
       { count: 12, name: 'Ada' },
+      { count: 12, name: { valueOf: () => 42, toString: () => 'text' } },
+      { count: 12, name: ['a', 'b'] },
     ],
   },
   {
@@ -371,12 +374,83 @@ const CASES: Case[] = [
     renders: [{ name: 'Ada' }],
     expected: 'source',
   },
+  // Without a translation, the source is formatted in the default locale
+  {
+    name: 'a missing translation of a plural',
+    source: app(
+      't`${plural({ count }, { one: part`${n} review item`, other: part`${n} review items` })}`',
+      '{ count }'
+    ),
+    translation: undefined,
+    renders: [{ count: 0 }, { count: 1 }, { count: 1.5 }, { count: 1234.5 }],
+    expected: 'source',
+  },
+  {
+    name: 'a missing translation of a number, a date and a value',
+    source: app(
+      't`${number({ price })} due ${date({ due }, { style: "medium", timeZone: "UTC" })}, ${{ seen }}`',
+      '{ price, due, seen }'
+    ),
+    translation: undefined,
+    renders: [{ price: 1234.5, due: DATE, seen: DATE }],
+    expected: 'source',
+  },
+  {
+    name: 'a missing translation of text and a value',
+    source: app('t`Seen ${{ seen }}`', '{ seen }'),
+    translation: undefined,
+    renders: [{ seen: DATE }, { seen: 'today' }],
+    expected: 'source',
+  },
+  // Translations that format only some of what their source formats: the
+  // runtime renders the source for the rest
   {
     name: 'a translation that selects on a value its source prints',
     source: app('t`Printed ${{ role }}`', '{ role }'),
     translation: [['role', 'select', { admin: 'Admin', other: 'Autre' }]],
-    renders: [{ role: 3 }],
-    expected: 'source',
+    renders: [{ role: 3 }, { role: 'admin' }, { role: 'guest' }],
+  },
+  {
+    name: 'a translation that formats a number where its source has a plural',
+    source: app(
+      't`${plural({ count }, { one: part`${n} file`, other: part`${n} files` })}`',
+      '{ count }'
+    ),
+    translation: [['count', 'number'], ' fichiers'],
+    renders: [
+      { count: 2 },
+      { count: 1234.5 },
+      { count: '7' },
+      { count: 'many' },
+    ],
+  },
+  {
+    name: 'a translation that counts what its source formats as a number',
+    source: app('t`Total ${number({ total })}`', '{ total }'),
+    translation: [
+      ['total', 'plural', { one: 'Un seul', other: ['Total ', 0] }],
+    ],
+    renders: [{ total: 1 }, { total: 1234.5 }, { total: 2n ** 70n }],
+  },
+  {
+    name: 'a translation with another date style than its source',
+    source: app(
+      't`Due ${date({ due }, { style: "medium", timeZone: "UTC" })}`',
+      '{ due }'
+    ),
+    translation: ['Pour le ', ['due', 'date', 'long']],
+    renders: [{ due: DATE }, { due: 'tomorrow' }],
+  },
+  {
+    name: 'a translation with plural categories its source has none of',
+    source: app(
+      't`${plural({ count }, { other: part`${n} review rows` })}`',
+      '{ count }'
+    ),
+    translation: [
+      ['count', 'plural', { one: [0, ' ligne'], other: [0, ' lignes'] }],
+    ],
+    renders: [{ count: 1 }, { count: 2 }, { count: 2n ** 70n }],
   },
 ];
 
@@ -671,6 +745,36 @@ describe('experimentalStaticRuntime', () => {
     expect(warnings[0]).toMatch(
       /App\.tsx:\d+.*the "fr" translation of <T> [0-9a-f]+ is missing, so its source is rendered/
     );
+  });
+
+  it('formats a source it falls back to in the default locale', async () => {
+    const source = app(
+      't`${plural({ count: read() }, { other: part`${n} review rows` })}`',
+      '{ read }'
+    );
+    const translation = [
+      ['count', 'plural', { one: [0, ' ligne'], other: [0, ' lignes'] }],
+    ];
+    const missing = await build(source, staticOptions('fr'));
+    expect(missing).toContain('}, "en", 1)');
+    expect(missing).not.toContain('"fr');
+
+    const output = await build(
+      source,
+      staticOptions('fr', { [await getHash(source)]: translation })
+    );
+    expect(output).toMatch(
+      /_gtOr\(\{ count:\s+read\(\) \}, \(_values\) => _gtFormat\(.*, _values, "fr,en", 1, "oo\|x"\), \(_values\) => _gtFormat\(.*, _values, "en", 1\)\)/
+    );
+    // The value is read once, whichever of the two is formatted
+    for (const [count, expected] of [
+      [2, '2 lignes'],
+      [2n ** 70n, '1,180,591,620,717,411,303,424 review rows'],
+    ] as const) {
+      const read = vi.fn(() => count);
+      expect(call(output, staticModules, [{ read }])).toEqual([expected]);
+      expect(read).toHaveBeenCalledTimes(1);
+    }
   });
 
   it('evaluates each value once, in source order, even when the text leaves it out', async () => {

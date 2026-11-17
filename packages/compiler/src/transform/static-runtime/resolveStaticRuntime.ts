@@ -24,11 +24,13 @@ export const STATIC_RUNTIME_SOURCE = 'gt-react/static-runtime';
  * and values, which is a template literal; `tree` for the message tree of a
  * message with selects and plurals; and `intl` for the tree of one that also
  * formats a number, a date or a time, which needs the runtime's own formatter.
+ * `or` formats a translation and, when that throws, its source.
  */
 export const STATIC_HELPERS = {
   value: { name: 'staticValue', source: STATIC_RUNTIME_SOURCE },
   tree: { name: 'formatStatic', source: STATIC_RUNTIME_SOURCE },
   intl: { name: 'formatStaticIntl', source: `${STATIC_RUNTIME_SOURCE}/intl` },
+  or: { name: 'staticOr', source: STATIC_RUNTIME_SOURCE },
 } as const;
 
 export type StaticHelperKind = keyof typeof STATIC_HELPERS;
@@ -36,14 +38,9 @@ export type StaticHelperKind = keyof typeof STATIC_HELPERS;
 const ENV_TRUE_VALUES = new Set(['true', '1']);
 const ENV_FALSE_VALUES = new Set(['false', '0', '']);
 
-/**
- * What a static-runtime build formats its messages with: the build's locale
- * and then its default locale, as Intl reads them, and the configured time
- * zone, if any.
- */
-export type StaticRuntime = {
+/** The locales a message is formatted in, as Intl reads them. */
+export type StaticLocales = {
   locales: string[];
-  timeZone?: string;
   /**
    * What the build's Intl says about each integer from 0 up to 1,000 in
    * these locales, so the static formatter can format a plural of such a
@@ -51,6 +48,20 @@ export type StaticRuntime = {
    */
   counts: StaticCounts;
 };
+
+/**
+ * What a static-runtime build formats its messages with: a translation in
+ * the build's locale and then its default locale, a source message in the
+ * default locale, as the runtime formats the source it falls back to, and
+ * both in the configured time zone, if any.
+ */
+export type StaticRuntime = StaticLocales & {
+  timeZone?: string;
+  source: StaticLocales;
+};
+
+/** Which of a build's locales a message is formatted in. */
+export type StaticScope = 'build' | 'source';
 
 export type StaticCounts = {
   /** Whether Intl formats each as its digits */
@@ -221,20 +232,26 @@ export function resolveStaticRuntime(
   if (!staticRuntime || !sourceReplacement?.jsx) return undefined;
   const defaultLocale = gtConfig?.defaultLocale ?? defaultDefaultLocale;
   // As the runtime resolves the locales it formats in
-  const locales = Array.from(
-    new Set(
-      [sourceReplacement.locale ?? defaultLocale, defaultLocale].map((locale) =>
-        resolveCanonicalLocale(locale, gtConfig?.customMapping)
+  const resolve = (locales: string[]): StaticLocales => {
+    const canonical = Array.from(
+      new Set(
+        locales.map((locale) =>
+          resolveCanonicalLocale(locale, gtConfig?.customMapping)
+        )
       )
-    )
-  );
+    );
+    return {
+      locales: canonical,
+      counts: {
+        digits: formatsPlainIntegers(canonical),
+        plural: encodePluralCategories(canonical, 'cardinal'),
+        selectordinal: encodePluralCategories(canonical, 'ordinal'),
+      },
+    };
+  };
   return {
-    locales,
-    counts: {
-      digits: formatsPlainIntegers(locales),
-      plural: encodePluralCategories(locales, 'cardinal'),
-      selectordinal: encodePluralCategories(locales, 'ordinal'),
-    },
+    ...resolve([sourceReplacement.locale ?? defaultLocale, defaultLocale]),
+    source: resolve([defaultLocale]),
     ...(gtConfig?.timeZone !== undefined && { timeZone: gtConfig.timeZone }),
   };
 }

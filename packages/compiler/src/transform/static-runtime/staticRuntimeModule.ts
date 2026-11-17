@@ -10,6 +10,7 @@ import {
   STATIC_HELPERS,
   STATIC_RUNTIME_SOURCE,
   type StaticHelperKind,
+  type StaticScope,
 } from './resolveStaticRuntime';
 
 /** What a file needs from the static runtime, and what it could not compile. */
@@ -35,6 +36,7 @@ const HELPER_NAMES: Record<StaticHelperKind, string> = {
   value: 'gtValue',
   tree: 'gtFormat',
   intl: 'gtFormatIntl',
+  or: 'gtOr',
 };
 
 function getFile(state: TransformState): StaticRuntimeFile {
@@ -83,22 +85,25 @@ export function getStaticHelper(
 }
 
 /**
- * What a call site passes a function of the static runtime after its own
- * arguments: the build's locales, then what else formats `tree`. A call site
- * passes these itself, where a module-scope constant would hold them once,
- * because a function can be called before its module has run: through an
- * import cycle, or from a statement above an import.
+ * What a call site passes a formatter of the static runtime after its own
+ * arguments: the locales of `scope`, then what else formats `tree`. A call
+ * site passes these itself, where a module-scope constant would hold them
+ * once, because a function can be called before its module has run: through
+ * an import cycle, or from a statement above an import.
  */
 export function getStaticArguments(
   state: TransformState,
-  kind: StaticHelperKind,
+  kind: Exclude<StaticHelperKind, 'or'>,
+  scope: StaticScope,
   tree?: MessageTree,
   formats?: t.Expression
 ): t.Expression[] {
   const runtime = state.settings.staticRuntime!;
+  const { locales: scopeLocales, counts: scopeCounts } =
+    scope === 'source' ? runtime.source : runtime;
   const timeZone =
     runtime.timeZone === undefined ? [] : [t.stringLiteral(runtime.timeZone)];
-  const locales = t.stringLiteral(runtime.locales.join(','));
+  const locales = t.stringLiteral(scopeLocales.join(','));
   if (kind === 'value') return [locales, ...timeZone];
   if (kind === 'intl') {
     return [
@@ -110,7 +115,7 @@ export function getStaticArguments(
     ];
   }
   const counts: (string | number)[] = getStaticCountArguments(
-    runtime.counts,
+    scopeCounts,
     tree!
   );
   let readsTimeZone = false;
