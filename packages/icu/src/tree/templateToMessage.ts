@@ -100,6 +100,10 @@ export function templateToMessage(
   strings: readonly string[],
   holes: readonly TemplateHole[]
 ): TemplateMessage {
+  // Most messages are text, which is its own tree.
+  if (strings.length === 1 && holes.length === 0) {
+    return { tree: strings[0] || '', values: [], formats: {} };
+  }
   const state: BuildState = { values: [], contexts: new Map() };
   const tree = toMessageTree(build(strings, holes, state, false));
   return {

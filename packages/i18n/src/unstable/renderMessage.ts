@@ -9,6 +9,7 @@ import {
 } from 'generaltranslation/id';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { formatCutoff } from 'generaltranslation/internal';
+import type { I18nConfig } from '../i18n-config/I18nConfig';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import logger from '../logs/logger';
@@ -143,18 +144,33 @@ function createInvalidTreeTranslationWarning(
   });
 }
 
+// Trees that passed validation. A catalog keeps the same object for an entry
+// until it is replaced, so each is validated once.
+const validTrees = new WeakSet<object>();
+
 function lookupTreeTranslation(
   value: unknown,
   locale: string,
   hash: string
 ): MessageTree | undefined {
-  if (value == null || isMessageTree(value)) return value ?? undefined;
+  if (value == null) return undefined;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object' && validTrees.has(value)) {
+    return value as MessageTree;
+  }
+  if (isMessageTree(value)) {
+    validTrees.add(value as object);
+    return value;
+  }
   warnOnce(
     `invalid:${locale}:${hash}`,
     createInvalidTreeTranslationWarning(locale, hash)
   );
   return undefined;
 }
+
+// Configured locales that Intl accepted, by the config that holds them.
+let acceptedLocales: { config: I18nConfig; locales: Set<string> } | undefined;
 
 function formatTree(
   tree: MessageTree,
@@ -163,6 +179,13 @@ function formatTree(
   formats: MessageFormats
 ): string {
   const config = getI18nConfig();
+  if (acceptedLocales?.config !== config) {
+    acceptedLocales = { config, locales: new Set() };
+  }
+  // Text needs no formatting, only a locale that formatting would accept.
+  if (typeof tree === 'string' && acceptedLocales.locales.has(locale)) {
+    return tree;
+  }
   // The config resolves custom aliases, which must not reach Intl as
   // language codes, and formats in its time zone.
   const formatted = config.formatMessageTree(tree, {
@@ -170,6 +193,9 @@ function formatTree(
     values,
     formats,
   });
+  if (locale === config.getDefaultLocale() || config.locales.includes(locale)) {
+    acceptedLocales.locales.add(locale);
+  }
   return Array.isArray(formatted) ? formatted.join('') : String(formatted);
 }
 

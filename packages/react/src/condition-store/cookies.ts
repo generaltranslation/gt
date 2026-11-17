@@ -1,4 +1,7 @@
 import { getCookieValue as getCookieValueFromString } from 'gt-i18n/internal/cookies';
+import { oncePerTask } from './oncePerTask';
+
+const cookieValues = oncePerTask(() => new Map<string, string | undefined>());
 
 /**
  * Minimally parses a cookie value for a given cookie name
@@ -11,7 +14,14 @@ export function getCookieValue({
   cookieName: string;
 }): string | undefined {
   if (typeof document === 'undefined') return undefined;
-  return getCookieValueFromString(document.cookie, cookieName);
+  const values = cookieValues.get();
+  if (!values.has(cookieName)) {
+    values.set(
+      cookieName,
+      getCookieValueFromString(document.cookie, cookieName)
+    );
+  }
+  return values.get(cookieName);
 }
 
 /**
@@ -29,4 +39,5 @@ export function setCookieValue({
 }): void {
   if (typeof document === 'undefined') return;
   document.cookie = `${cookieName}=${value};path=/`;
+  cookieValues.clear();
 }
