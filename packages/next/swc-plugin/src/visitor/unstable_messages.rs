@@ -182,9 +182,9 @@ fn named_variable(hole: &Expr) -> Option<String> {
   valid.then_some(name)
 }
 
-/// A numeric key as JavaScript prints it, for the integers it prints plainly
+/// A numeric key as JavaScript prints it (shortest round-trip digits), for the integers it prints plainly
 fn integer_key(value: f64) -> Option<String> {
-  (value.fract() == 0.0 && (0.0..1e21).contains(&value)).then(|| format!("{value:.0}"))
+  (value.fract() == 0.0 && (0.0..1e21).contains(&value)).then(|| format!("{value}"))
 }
 
 /// Strips TypeScript-only wrappers (as, satisfies, !, <Type>) and parentheses
@@ -259,7 +259,22 @@ fn is_identifier_boundary(character: char) -> bool {
 
 #[cfg(test)]
 mod tests {
-  use super::is_argument_name;
+  use super::{integer_key, is_argument_name};
+
+  #[test]
+  fn spells_integer_keys_like_javascript() {
+    for (value, key) in [
+      (0.0, "0"),
+      (42.0, "42"),
+      (9007199254740993.0, "9007199254740992"),
+      (1000000000000000100.0, "1000000000000000100"),
+      (1e20, "100000000000000000000"),
+    ] {
+      assert_eq!(integer_key(value).as_deref(), Some(key), "{value}");
+    }
+    assert_eq!(integer_key(1e21), None);
+    assert_eq!(integer_key(1.5), None);
+  }
 
   #[test]
   fn accepts_identifier_names() {
