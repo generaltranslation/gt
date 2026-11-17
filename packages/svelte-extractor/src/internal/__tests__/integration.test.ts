@@ -25,11 +25,11 @@ function createProject(files: Record<string, string>): string {
 
 const GREETING = `<script>
   import { T, Var, useGT } from 'gt-svelte';
-  const gt = useGT();
+  const t = useGT();
   let { name } = $props();
 </script>
 <T context="greeting">Hello <Var>{name}</Var></T>
-<p>{gt('Bye', { $context: 'farewell' })}</p>`;
+<p>{t('Bye', { $context: 'farewell' })}</p>`;
 
 describe('planSvelteExtraction', () => {
   it('ignores projects that do not select gt-svelte', () => {
@@ -153,9 +153,9 @@ describe('planSvelteExtraction', () => {
     const projectRoot = createProject({
       'src/A.svelte': `<script>
   import { useGT } from 'gt-svelte';
-  const gt = useGT();
+  const t = useGT();
 </script>
-<p>{gt('Hello {name', { name: 'x' })}</p>`,
+<p>{t('Hello {name', { name: 'x' })}</p>`,
     });
     const plan = planSvelteExtraction({ library: 'gt-svelte', projectRoot });
     if (!plan.handled) throw new Error('expected a plan');
@@ -163,7 +163,7 @@ describe('planSvelteExtraction', () => {
     expect(output.errors).toEqual([]);
     expect(output.warnings).toEqual([
       expect.stringMatching(
-        /^src\/A\.svelte \(5:8\): Found invalid ICU string "Hello \{name"/
+        /^src\/A\.svelte \(5:7\): Found invalid ICU string "Hello \{name"/
       ),
     ]);
     expect(output.updates).toEqual([]);
@@ -173,10 +173,10 @@ describe('planSvelteExtraction', () => {
     const projectRoot = createProject({
       'src/A.svelte': `<script>
   import { useGT } from 'gt-svelte';
-  const gt = useGT();
+  const t = useGT();
 </script>
-<p>{gt('Literal {braces}', { $format: 'STRING' })}</p>
-<p>{gt('Hello')}</p>`,
+<p>{t('Literal {braces}', { $format: 'STRING' })}</p>
+<p>{t('Hello')}</p>`,
     });
     const plan = planSvelteExtraction({ library: 'gt-svelte', projectRoot });
     if (!plan.handled) throw new Error('expected a plan');

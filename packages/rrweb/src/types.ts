@@ -53,7 +53,7 @@ export type HarvestOptions = {
   loadTranslations?: TranslationsLoader;
   /**
    * Hash a plain SOURCE string to its GT message hash, so the harvest also covers
-   * `gt()` / `useGT()` string translations — which render as bare text with no
+   * `t()` / `useGT()` string translations — which render as bare text with no
    * `data-_gt` marker, unlike `<T>` components. A GT app passes
    * `(m) => hashContent(m, { $format: 'ICU' })` from `gt-i18n/internal`. Omit it and only
    * `<T>` content (which carries a DOM hash) is harvested.

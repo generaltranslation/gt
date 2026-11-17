@@ -24,8 +24,8 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     });`,
     `${imports}
     const sendReceipt = createServerFn().handler(async () => {
-      const gt = await getGT();
-      return gt('Your receipt');
+      const t = await getGT();
+      return t('Your receipt');
     });`,
     `${imports}
     async function loadTitle() {
@@ -47,15 +47,15 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       loader: async () => (await i18n.getGT())('Title'),
     });`,
     `import * as server from 'gt-next/server';
-    const gt = await server.getGT();`,
+    const t = await server.getGT();`,
     `${compatImports}
     export const Route = createFileRoute('/')({
       loader: async () => (await getTranslations())('page.title'),
     });`,
     // Same names from other libraries, or not imported at all
     `import { getGT } from 'gt-next/server';
-    const gt = await getGT();`,
-    `const gt = await getGT();`,
+    const t = await getGT();`,
+    `const t = await getGT();`,
     // An anonymous default export that doesn't render isn't a component
     `${imports}
     export default async function () {
@@ -157,7 +157,7 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [{ messageId: 'moduleScope', data: { name: 'getLocale' } }],
     },
     {
-      code: `${imports}const gt = await (async () => getGT())();`,
+      code: `${imports}const t = await (async () => getGT())();`,
       errors: [{ messageId: 'moduleScope', data: { name: 'getGT' } }],
     },
     {
@@ -250,7 +250,7 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       ],
     },
     {
-      code: `${imports}const gt = await getGT();`,
+      code: `${imports}const t = await getGT();`,
       errors: [{ messageId: 'moduleScope', data: { name: 'getGT' } }],
     },
     {
@@ -259,7 +259,7 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     },
     {
       code: `import { getGT as translator } from 'gt-tanstack-start';
-      const title = translator().then((gt) => gt('Pricing'));`,
+      const title = translator().then((t) => t('Pricing'));`,
       errors: [{ messageId: 'moduleScope', data: { name: 'getGT' } }],
     },
     {

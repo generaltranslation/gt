@@ -32,8 +32,8 @@ function resetI18nGlobals() {
 }
 
 function Hello() {
-  const gt = useGT();
-  return <span>{gt`Hello, ${{ name }}!`}</span>;
+  const t = useGT();
+  return <span>{t`Hello, ${{ name }}!`}</span>;
 }
 
 const helloMessage = msg`Hello, ${{ name }}!`;
@@ -90,10 +90,10 @@ describe('gt-react/unstable', () => {
       ReturnType<typeof createConditionStoreSingleton>['setConditionStore']
     >[0]);
 
-    const gt = await useRscGT();
+    const t = await useRscGT();
     const m = await useRscMessages();
 
-    expect(gt`Hello, ${{ name }}!`).toBe('Bonjour, Ada !');
+    expect(t`Hello, ${{ name }}!`).toBe('Bonjour, Ada !');
     expect(m(helloMessage)).toBe('Bonjour, Ada !');
   });
 });

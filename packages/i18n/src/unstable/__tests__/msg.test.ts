@@ -66,11 +66,11 @@ describe('gt-i18n/unstable msg', () => {
     expect(msg`Save`).toBe('Save');
   });
 
-  it('translates a plain string as literal text with the hash of gt', async () => {
+  it('translates a plain string as literal text with the hash of t', async () => {
     const m = await setup({ [keyOf`Save`]: 'Enregistrer' });
-    const gt = await getGT({ locale: 'fr', enableI18n: true });
+    const t = await getGT({ locale: 'fr', enableI18n: true });
     expect(m(msg('Save'))).toBe('Enregistrer');
-    expect(gt`Save`).toBe('Enregistrer');
+    expect(t`Save`).toBe('Enregistrer');
   });
 
   it('keeps { # and quotes in a plain string as text', async () => {

@@ -2,14 +2,14 @@
  * ICU auto-fix: converts dynamic concat/template expressions into ICU-formatted strings.
  *
  * Handles:
- * - Concatenation:      gt("Hello " + name)                -> gt("Hello {var0}", { var0: name })
- * - Template literals:  gt(`Hello ${name}!`)                -> gt("Hello {var0}!", { var0: name })
- * - Ternaries:          gt("Hi " + (c ? "A" : "B"))        -> gt("Hi {var0, select, true {A} other {B}}", { var0: c })
- * - Equality select:    gt("" + (x === "a" ? "A" : "B"))   -> gt("{var0, select, a {A} other {B}}", { var0: x })
- * - Chained ternaries:  gt("" + (x === "a" ? "A" : x === "b" ? "B" : "C"))
- *                       -> gt("{var0, select, a {A} b {B} other {C}}", { var0: x })
- * - Nested selects:     gt("" + (x === "a" ? "A" : y === "b" ? "B" : "C"))
- *                       -> gt("{var0, select, a {A} other {{var1, select, b {B} other {C}}}}", { var0: x, var1: y })
+ * - Concatenation:      t("Hello " + name)                -> t("Hello {var0}", { var0: name })
+ * - Template literals:  t(`Hello ${name}!`)                -> t("Hello {var0}!", { var0: name })
+ * - Ternaries:          t("Hi " + (c ? "A" : "B"))        -> t("Hi {var0, select, true {A} other {B}}", { var0: c })
+ * - Equality select:    t("" + (x === "a" ? "A" : "B"))   -> t("{var0, select, a {A} other {B}}", { var0: x })
+ * - Chained ternaries:  t("" + (x === "a" ? "A" : x === "b" ? "B" : "C"))
+ *                       -> t("{var0, select, a {A} b {B} other {C}}", { var0: x })
+ * - Nested selects:     t("" + (x === "a" ? "A" : y === "b" ? "B" : "C"))
+ *                       -> t("{var0, select, a {A} other {{var1, select, b {B} other {C}}}}", { var0: x, var1: y })
  */
 
 import { TSESTree } from '@typescript-eslint/utils';

@@ -13,7 +13,7 @@ import wireFormatCases from '../../../../../../test-fixtures/message-tree-wire-f
 vi.mock('../../../fs/matchFiles.js', () => ({ matchFiles: vi.fn() }));
 
 const UNSTABLE_HELPERS =
-  't, msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
+  'msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
 
 // The fixtures' free variables, typed as in fixtureParity.test.ts: the CLI
 // skips an undeclared value, since TypeScript types it any.
@@ -103,14 +103,14 @@ const treeUpdates = (result: Awaited<ReturnType<typeof extract>>) =>
   result.updates.filter((update) => update.dataFormat === 'MESSAGE_TREE');
 
 describe('createInlineUpdates: unstable tagged templates', () => {
-  // `gt` in each fixture template becomes the tag under test.
+  // `t` in each fixture template becomes the tag under test.
   const forms: Record<string, (template: string) => string> = {
-    t: (template) => template.replace(/^gt/, 't'),
-    msg: (template) => template.replace(/^gt/, 'msg'),
+    t: (template) => template,
+    msg: (template) => template.replace(/^t(?=[`(])/, 'msg'),
     useGT: (template) =>
-      `export function Component() {\n  const gt = useGT();\n  return ${template};\n}`,
+      `export function Component() {\n  const t = useGT();\n  return ${template};\n}`,
     getGT: (template) =>
-      `export async function load() {\n  const gt = await getGT();\n  return ${template};\n}`,
+      `export async function load() {\n  const t = await getGT();\n  return ${template};\n}`,
   };
 
   describe.each(Object.keys(forms))('fixture parity via %s', (form) => {
@@ -118,7 +118,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       '%s',
       async (_name, testCase) => {
         const result = await extract(
-          `import { ${UNSTABLE_HELPERS} } from 'gt-i18n/unstable';\n${FIXTURE_VALUES}\n${forms[form](testCase.template)};\n`
+          `import { ${form === 't' ? 't, ' : ''}${UNSTABLE_HELPERS} } from 'gt-i18n/unstable';\n${FIXTURE_VALUES}\n${forms[form](testCase.template)};\n`
         );
 
         expect(result.errors).toEqual([]);
@@ -186,7 +186,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     `);
 
     expect(result.warnings.join('\n')).toContain(
-      'the gt() option "locale" is not supported'
+      'the t() option "locale" is not supported'
     );
     expect(treeUpdates(result).map((u) => u.source)).toEqual([
       'Still extracted',
@@ -546,7 +546,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
   });
 
   // Both APIs export derive(), so an editor can auto-import the wrong one.
-  describe('helpers mixed between gt() and unstable messages', () => {
+  describe('helpers mixed between t() and unstable messages', () => {
     it.each([
       ['inline', '`dear ${declareVar(name)}`'],
       ['through a function', 'label(name)'],
@@ -576,7 +576,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
       expect(treeUpdates(result)).toEqual([]);
       expect(result.warnings.join('\n')).toContain(
-        'derive() is imported from gt-react, which only works with gt() messages'
+        'derive() is imported from gt-react, which only works with t() messages'
       );
     });
 
@@ -584,28 +584,28 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       [
         'an unstable derive()',
         "import { derive } from 'gt-react/unstable';",
-        'gt(`Role: ${derive(admin ? "a" : "b")}`)',
+        't(`Role: ${derive(admin ? "a" : "b")}`)',
         'derive()',
       ],
-    ])('reports %s in a gt() message', async (_name, imports, call, helper) => {
+    ])('reports %s in a t() message', async (_name, imports, call, helper) => {
       const result = await extract(`
         import { useGT } from 'gt-react';
         ${imports}
         export function Component({ name, admin }) {
-          const gt = useGT();
+          const t = useGT();
           return ${call};
         }
       `);
 
       expect(result.updates).toEqual([]);
       expect(result.errors.join('\n')).toContain(
-        `${helper} is imported from an unstable entry, which only works inside tagged gt\`...\` messages`
+        `${helper} is imported from an unstable entry, which only works inside tagged t\`...\` messages`
       );
     });
   });
 
   describe('tag aliases', () => {
-    it('follows const aliases of t and gt', async () => {
+    it('follows const aliases of t and the useGT() result', async () => {
       const result = await extract(`
         import { t, useGT } from 'gt-react/unstable';
         const translate = t;
@@ -947,8 +947,8 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       const useTranslate = useGT;
       type Hook = typeof useGT;
       function Component() {
-        const gt = useTranslate();
-        return gt\`Hello\`;
+        const t = useTranslate();
+        return t\`Hello\`;
       }
     `);
 

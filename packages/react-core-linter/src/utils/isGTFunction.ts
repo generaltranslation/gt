@@ -226,7 +226,7 @@ export function isGTCallbackFunction({
   node,
   libs,
 }: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
-  // -- Step 1: Get binding for the gt identifier -- //
+  // -- Step 1: Get binding for the t identifier -- //
   const identifierName = getIdentifierName(node);
   if (identifierName === null) return false;
 
@@ -255,7 +255,7 @@ export function isGTCallbackFunction({
     });
   }
 
-  // Find the first variable declarator definition (const gt = ...)
+  // Find the first variable declarator definition (const t = ...)
   const variableDef = variable.defs.find(
     (def) =>
       def.type === 'Variable' &&
@@ -266,7 +266,7 @@ export function isGTCallbackFunction({
 
   // -- Step 3: Check the import -- //
 
-  // Case 1: const gt = useGT()
+  // Case 1: const t = useGT()
   if (
     init.type === AST_NODE_TYPES.CallExpression &&
     isGTDeclaratorCallExpression(init)
@@ -274,7 +274,7 @@ export function isGTCallbackFunction({
     return true;
   }
 
-  // Case 2: const gt = await getGT()
+  // Case 2: const t = await getGT()
   if (
     libs.includes('gt-next') &&
     init.type === AST_NODE_TYPES.AwaitExpression &&

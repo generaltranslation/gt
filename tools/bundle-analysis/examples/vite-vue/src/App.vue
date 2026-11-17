@@ -25,7 +25,7 @@ const YEARLY_PRICE = 80;
 const RELEASE_DATE = new Date(2026, 8, 24);
 const TRIAL_DAYS = 14;
 
-const gt = useGT();
+const t = useGT();
 const m = useMessages();
 const locale = useLocale();
 const setLocale = useSetLocale();
@@ -68,7 +68,7 @@ async function changeLocale(event: Event) {
       </a>
       <select
         name="generaltranslation-locale"
-        :aria-label="gt('Language')"
+        :aria-label="t('Language')"
         :value="locale"
         @change="changeLocale"
       >
@@ -92,10 +92,10 @@ async function changeLocale(event: Event) {
           </T>
           <div class="actions">
             <a class="gt-button" href="#pricing">
-              {{ gt('Start Free Trial') }}
+              {{ t('Start Free Trial') }}
             </a>
             <a class="gt-button outline" href="#faq">
-              {{ gt('Read The FAQ') }}
+              {{ t('Read The FAQ') }}
             </a>
           </div>
           <T>
@@ -156,21 +156,21 @@ async function changeLocale(event: Event) {
           </T>
 
           <fieldset class="field">
-            <legend class="gt-label">{{ gt('Billing') }}</legend>
+            <legend class="gt-label">{{ t('Billing') }}</legend>
             <div class="segmented">
               <button
                 type="button"
                 :aria-pressed="billing === 'monthly'"
                 @click="billing = 'monthly'"
               >
-                {{ gt('Monthly') }}
+                {{ t('Monthly') }}
               </button>
               <button
                 type="button"
                 :aria-pressed="billing === 'yearly'"
                 @click="billing = 'yearly'"
               >
-                {{ gt('Yearly') }}
+                {{ t('Yearly') }}
               </button>
             </div>
             <T>
@@ -189,11 +189,11 @@ async function changeLocale(event: Event) {
           </fieldset>
 
           <fieldset class="field">
-            <legend class="gt-label">{{ gt('Seats') }}</legend>
+            <legend class="gt-label">{{ t('Seats') }}</legend>
             <div class="stepper">
               <button
                 type="button"
-                :aria-label="gt('Remove a seat')"
+                :aria-label="t('Remove a seat')"
                 :disabled="seats <= 1"
                 @click="seats = Math.max(1, seats - 1)"
               >
@@ -202,7 +202,7 @@ async function changeLocale(event: Event) {
               <output class="gt-mono"><Num :value="seats" /></output>
               <button
                 type="button"
-                :aria-label="gt('Add a seat')"
+                :aria-label="t('Add a seat')"
                 :disabled="seats >= 50"
                 @click="seats = Math.min(50, seats + 1)"
               >
@@ -212,7 +212,7 @@ async function changeLocale(event: Event) {
           </fieldset>
 
           <label class="field">
-            <span class="gt-label">{{ gt('Team name') }}</span>
+            <span class="gt-label">{{ t('Team name') }}</span>
             <input v-model="team" class="text-input" maxlength="32" />
           </label>
         </div>
@@ -221,7 +221,7 @@ async function changeLocale(event: Event) {
           <T><p class="gt-label">Summary</p></T>
           <dl class="summary-list">
             <div>
-              <dt>{{ gt('Seats') }}</dt>
+              <dt>{{ t('Seats') }}</dt>
               <dd>
                 <T>
                   <Plural :n="seats">
@@ -235,15 +235,15 @@ async function changeLocale(event: Event) {
               </dd>
             </div>
             <div>
-              <dt>{{ gt('Price per seat') }}</dt>
+              <dt>{{ t('Price per seat') }}</dt>
               <dd><Currency :value="unitPrice" currency="USD" /></dd>
             </div>
             <div>
-              <dt>{{ gt('Total') }}</dt>
+              <dt>{{ t('Total') }}</dt>
               <dd><Currency :value="total" currency="USD" /></dd>
             </div>
             <div>
-              <dt>{{ gt('Trial ends') }}</dt>
+              <dt>{{ t('Trial ends') }}</dt>
               <dd>
                 <DateTime :value="trialEnds" :options="{ dateStyle: 'long' }" />
               </dd>
@@ -257,7 +257,7 @@ async function changeLocale(event: Event) {
             </p>
           </T>
           <button type="button" class="gt-button start" @click="started = true">
-            {{ gt('Start Free Trial') }}
+            {{ t('Start Free Trial') }}
           </button>
           <T v-if="started">
             <p class="note confirm">

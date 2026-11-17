@@ -19,7 +19,7 @@
  *   return (Math.random() > 0.5) ? "Alice" : "Brian";
  * }
  * ...
- * gt(`My name is ${derive(getSubject())}`);
+ * t(`My name is ${derive(getSubject())}`);
  * ```
  *
  * @param {T extends string | boolean | number | null | undefined} content - Content to derive for translation extraction.

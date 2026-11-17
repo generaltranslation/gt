@@ -5,6 +5,8 @@ import wireFormatCases from '../../../../test-fixtures/message-tree-wire-format.
 
 const UNSTABLE_HELPERS =
   't, msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
+/** For sources that bind `t` to useGT() or getGT() instead of importing it. */
+const HOOK_HELPERS = UNSTABLE_HELPERS.replace(/^t, /, '');
 
 // The fixtures' free variables, as local values like fixtureParity.test.ts:
 // only a provably primitive value is hashed as an unnamed variable.
@@ -22,30 +24,51 @@ afterEach(() => {
 });
 const consoleError = vi.spyOn(console, 'error');
 
-async function compile(body: string, options?: { compileTimeHash: boolean }) {
+async function compile(
+  body: string,
+  options?: { compileTimeHash: boolean },
+  helpers = UNSTABLE_HELPERS
+) {
   return transformWithPlugin(
     options,
-    `import { ${UNSTABLE_HELPERS} } from 'gt-i18n/unstable';\n${body}\n`
+    `import { ${helpers} } from 'gt-i18n/unstable';\n${body}\n`
   );
 }
 
 describe('unstableHashInjectionPass', () => {
-  // `gt` in each fixture template becomes the tag under test.
-  const forms: Record<string, (template: string) => string> = {
-    t: (template) => `${template.replace(/^gt/, 't')};`,
-    msg: (template) => `${template.replace(/^gt/, 'msg')};`,
-    useGT: (template) =>
-      `export function Component() {\n  const gt = useGT();\n  return ${template};\n}`,
-    getGT: (template) =>
-      `export async function load() {\n  const gt = await getGT();\n  return ${template};\n}`,
+  // The `t` tag of each fixture template becomes the tag under test.
+  const FIXTURE_TAG = /^t(?=[`(])/;
+  const forms: Record<
+    string,
+    [wrap: (template: string) => string, helpers: string]
+  > = {
+    t: [(template) => `${template};`, UNSTABLE_HELPERS],
+    msg: [
+      (template) => `${template.replace(FIXTURE_TAG, 'msg')};`,
+      UNSTABLE_HELPERS,
+    ],
+    useGT: [
+      (template) =>
+        `export function Component() {\n  const t = useGT();\n  return ${template};\n}`,
+      HOOK_HELPERS,
+    ],
+    getGT: [
+      (template) =>
+        `export async function load() {\n  const t = await getGT();\n  return ${template};\n}`,
+      HOOK_HELPERS,
+    ],
   };
 
   describe.each(Object.keys(forms))('fixture parity via %s', (form) => {
     it.each(wireFormatCases.map((testCase) => [testCase.name, testCase]))(
       '%s',
       async (_name, testCase) => {
+        expect(testCase.template).toMatch(FIXTURE_TAG);
+        const [wrap, helpers] = forms[form];
         const output = await compile(
-          `${FIXTURE_VALUES}\n${forms[form](testCase.template)}`
+          `${FIXTURE_VALUES}\n${wrap(testCase.template)}`,
+          undefined,
+          helpers
         );
         if (testCase.template.includes('derive(')) {
           // derive() values are resolved by the runtime, which hashes them.
@@ -130,7 +153,6 @@ describe('unstableHashInjectionPass', () => {
       "const vars = { count };\nt`${plural(vars, { other: 'x' })}`;",
     ],
     ['an unnamed date value written as an object', 't`${date({ ...due })}`;'],
-    ['a reassigned gt', 'let gt = useGT();\ngt = other;\ngt`Save`;'],
     // Values whose shape Babel cannot see: an object is a named variable at
     // runtime, so guessing an unnamed one would miss the catalog entry.
     [
@@ -181,13 +203,19 @@ describe('unstableHashInjectionPass', () => {
       'a value assigned by a loop',
       "let item = '';\nfor (item of items) {}\nt`Hi ${item}`;",
     ],
-    ['a destructured gt', 'const [gt] = useGT();\ngt`Save`;'],
     [
       'a variable a direct eval can assign',
       "let value = 'Ada';\neval(code);\nt`Hi ${value}`;",
     ],
   ])('leaves templates with %s untouched', async (_name, body) => {
     expect(await compile(body)).toBeNull();
+  });
+
+  it.each([
+    ['a reassigned t', 'let t = useGT();\nt = other;\nt`Save`;'],
+    ['a destructured t', 'const [t] = useGT();\nt`Save`;'],
+  ])('leaves a useGT() tag with %s untouched', async (_name, body) => {
+    expect(await compile(body, undefined, HOOK_HELPERS)).toBeNull();
   });
 
   it.each([
@@ -298,7 +326,7 @@ describe('unstableHashInjectionPass', () => {
   it('ignores the same names imported from legacy sources', async () => {
     const output = await transformWithPlugin(
       undefined,
-      "import { useGT } from 'gt-react';\nimport { t } from 'gt-i18n/unstable';\nconst gt = useGT();\ngt`Save`;"
+      "import { useGT } from 'gt-react';\nimport { msg } from 'gt-i18n/unstable';\nconst t = useGT();\nt`Save`;"
     );
     expect(output).toBeNull();
   });

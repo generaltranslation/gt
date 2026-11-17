@@ -122,7 +122,7 @@ function holeVariants(
     const imported = getNamedImport(callee);
     if (imported && isLegacyGTImportSource(imported.source, GT_LIBRARIES)) {
       throw new NonStaticMessageError(
-        `${imported.name}() is imported from ${imported.source}, which only works with gt() messages`,
+        `${imported.name}() is imported from ${imported.source}, which only works with t() messages`,
         expression.node,
         undefined,
         USE_UNSTABLE_HELPERS_FIX

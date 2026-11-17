@@ -11,7 +11,7 @@ import { isEncodedTranslationOptions } from 'gt-i18n/internal/string';
 // ===== Hook ===== //
 
 export function useMessages(_messages?: RegisteredMessage[]): MFunctionType {
-  const gt = useGT(_messages);
+  const t = useGT(_messages);
 
   return useCallback(
     <T extends string | null | undefined>(
@@ -24,13 +24,13 @@ export function useMessages(_messages?: RegisteredMessage[]): MFunctionType {
 
       const decodedOptions = decodeOptions(encodedMsg) ?? {};
       if (isEncodedTranslationOptions(decodedOptions)) {
-        return gt(decodedOptions.$_source, decodedOptions) as T extends string
+        return t(decodedOptions.$_source, decodedOptions) as T extends string
           ? string
           : T;
       }
 
-      return gt(encodedMsg, options) as T extends string ? string : T;
+      return t(encodedMsg, options) as T extends string ? string : T;
     },
-    [gt]
+    [t]
   );
 }

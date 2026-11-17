@@ -15,21 +15,21 @@ const DATE_FORMAT: Intl.DateTimeFormatOptions = {
 // Runs on the server: page metadata and shipping rows are translated with
 // getGT before they reach the client.
 const loadProductPage = createServerFn({ method: 'GET' }).handler(async () => {
-  const gt = await getGT();
+  const t = await getGT();
   const regions = [
-    { name: gt('United States and Canada'), days: 5, cost: 15, from: 'RTM' },
-    { name: gt('European Union and UK'), days: 2, cost: 8, from: 'RTM' },
-    { name: gt('China and Japan'), days: 3, cost: 8, from: 'SZX' },
+    { name: t('United States and Canada'), days: 5, cost: 15, from: 'RTM' },
+    { name: t('European Union and UK'), days: 2, cost: 8, from: 'RTM' },
+    { name: t('China and Japan'), days: 3, cost: 8, from: 'SZX' },
   ];
 
   return {
-    title: gt('Ferro K1 pour-over kettle'),
-    description: gt(
+    title: t('Ferro K1 pour-over kettle'),
+    description: t(
       'A gooseneck kettle that holds water within 1 °C of the target for up to 60 minutes.'
     ),
     regions: regions.map((region) => ({
       ...region,
-      eta: gt('{days, plural, one {# business day} other {# business days}}', {
+      eta: t('{days, plural, one {# business day} other {# business days}}', {
         days: region.days,
       }),
     })),

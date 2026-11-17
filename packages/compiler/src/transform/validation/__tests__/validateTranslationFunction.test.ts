@@ -40,7 +40,7 @@ function setup(
   return { callPath, state };
 }
 
-/** Validates the registration call in `source`, e.g. gt("Hello", { ... }) */
+/** Validates the registration call in `source`, e.g. t("Hello", { ... }) */
 function validate(
   source: string,
   options?: Record<string, unknown>,
@@ -83,8 +83,8 @@ describe('validateTranslationFunction', () => {
       ['`Value: ${true}`', 'Value: true'],
       ['"Active: " + false', 'Active: false'],
       ['`Value: ${null}`', 'Value: null'],
-    ])('resolves gt(%s)', (expression, content) => {
-      expect(validate(`gt(${expression})`)).toEqual({ errors: [], content });
+    ])('resolves t(%s)', (expression, content) => {
+      expect(validate(`t(${expression})`)).toEqual({ errors: [], content });
     });
 
     it.each([
@@ -96,20 +96,20 @@ describe('validateTranslationFunction', () => {
       '"Hello " + getName()',
       '`Hello ${getName()}`',
       'someOtherFunction("arg")',
-    ])('rejects dynamic gt(%s)', (expression) => {
-      const result = validate(`gt(${expression})`);
+    ])('rejects dynamic t(%s)', (expression) => {
+      const result = validate(`t(${expression})`);
       expect(result.errors).toContain(NOT_STATIC);
       expect(result.errors.at(-1)).toBe(FIRST_ARG);
       expect(result.content).toBeUndefined();
     });
 
     it('reports every problem with a dynamic argument', () => {
-      expect(validate('gt(myString)').errors).toEqual([
+      expect(validate('t(myString)').errors).toEqual([
         VARIABLE,
         NOT_STATIC,
         FIRST_ARG,
       ]);
-      expect(validate('gt(`Hello ${name}`)').errors).toEqual([
+      expect(validate('t(`Hello ${name}`)').errors).toEqual([
         VARIABLE,
         NOT_ALLOWED_CALL,
         NOT_STATIC,
@@ -118,8 +118,8 @@ describe('validateTranslationFunction', () => {
     });
 
     it.each([
-      ['gt()', 'registration function must have at least 1 argument'],
-      ['gt(...args)', FIRST_ARG],
+      ['t()', 'registration function must have at least 1 argument'],
+      ['t(...args)', FIRST_ARG],
     ])('rejects %s', (source, error) => {
       expect(validate(source)).toEqual({ errors: [error] });
     });
@@ -134,8 +134,8 @@ describe('validateTranslationFunction', () => {
       '`Hello ${derive(getName())}!`',
       '`Hello ${derive(await getName())}!`',
       '`${"A" + "B"} ${derive(fn())}`',
-    ])('accepts gt(%s)', (expression) => {
-      expect(validate(`gt(${expression})`)).toEqual({ errors: [] });
+    ])('accepts t(%s)', (expression) => {
+      expect(validate(`t(${expression})`)).toEqual({ errors: [] });
     });
 
     it.each([
@@ -149,8 +149,8 @@ describe('validateTranslationFunction', () => {
         'derive(await "not a call")',
         'derive() must have a call expression as the argument',
       ],
-    ])('rejects gt(%s)', (expression, error) => {
-      expect(validate(`gt(${expression})`).errors).toEqual([
+    ])('rejects t(%s)', (expression, error) => {
+      expect(validate(`t(${expression})`).errors).toEqual([
         error,
         NOT_STATIC,
         FIRST_ARG,
@@ -197,7 +197,7 @@ describe('validateTranslationFunction', () => {
         { hasDeriveContext: true },
       ],
     ])('extracts %s', (options, expected) => {
-      expect(validate(`gt("Hello", ${options})`)).toEqual({
+      expect(validate(`t("Hello", ${options})`)).toEqual({
         errors: [],
         content: 'Hello',
         ...expected,
@@ -206,7 +206,7 @@ describe('validateTranslationFunction', () => {
 
     it('extracts options alongside a complex first argument', () => {
       expect(
-        validate('gt("A" + `B ${"C"}`, { $id: "abc", $maxChars: 50 })')
+        validate('t("A" + `B ${"C"}`, { $id: "abc", $maxChars: 50 })')
       ).toEqual({ errors: [], content: 'AB C', id: 'abc', maxChars: 50 });
     });
 
@@ -221,7 +221,7 @@ describe('validateTranslationFunction', () => {
         [NOT_STATIC, 'derive() must have a call expression as the argument'],
       ],
     ])('rejects %s', (options, errors) => {
-      expect(validate(`gt("Hello", ${options})`)).toEqual({
+      expect(validate(`t("Hello", ${options})`)).toEqual({
         errors,
         content: 'Hello',
       });
@@ -230,7 +230,7 @@ describe('validateTranslationFunction', () => {
     it('reports invalid template escapes in $context', () => {
       expect(
         validate(
-          'gt("Hello", { $context: `\\xg` })',
+          't("Hello", { $context: `\\xg` })',
           {},
           { invalidEscapes: true }
         )
@@ -240,10 +240,10 @@ describe('validateTranslationFunction', () => {
 
   describe('autoderive', () => {
     it.each([
-      'gt(myVar)',
-      'gt(`Hello, ${name}`)',
-      'gt("Hello, " + getName())',
-      'gt(`Hello, ${derive(getName())} and ${name}`)',
+      't(myVar)',
+      't(`Hello, ${name}`)',
+      't("Hello, " + getName())',
+      't(`Hello, ${derive(getName())} and ${name}`)',
     ])('accepts dynamic %s and flags it for derivation', (source) => {
       expect(validate(source, { autoderive: true })).toEqual({
         errors: [],
@@ -259,7 +259,7 @@ describe('validateTranslationFunction', () => {
     ])(
       'autoderive: %j -> dynamic strings allowed: %s',
       (autoderive, allowed) => {
-        for (const source of ['gt(`Hello, ${name}`)', 'gt("Hello, " + name)']) {
+        for (const source of ['t(`Hello, ${name}`)', 't("Hello, " + name)']) {
           expect(validate(source, { autoderive }).errors.length === 0).toBe(
             allowed
           );
@@ -269,13 +269,13 @@ describe('validateTranslationFunction', () => {
 
     it('does not apply to $context', () => {
       expect(
-        validate('gt("Hello", { $context: contextVar })', { autoderive: true })
+        validate('t("Hello", { $context: contextVar })', { autoderive: true })
       ).toEqual({ errors: [NOT_STATIC, VARIABLE], content: 'Hello' });
     });
 
     it('still reports invalid template escapes', () => {
       expect(
-        validate('gt(`\\xg`)', { autoderive: true }, { invalidEscapes: true })
+        validate('t(`\\xg`)', { autoderive: true }, { invalidEscapes: true })
       ).toEqual({ errors: [INVALID_ESCAPE] });
     });
   });

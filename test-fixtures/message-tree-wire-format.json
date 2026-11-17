@@ -1,14 +1,14 @@
 [
   {
     "name": "plain-literal",
-    "template": "gt`Save`",
+    "template": "t`Save`",
     "options": {},
     "tree": "Save",
     "hash": "ab72d114d0d156a9"
   },
   {
     "name": "context",
-    "template": "gt({ context: 'button' })`Save`",
+    "template": "t({ context: 'button' })`Save`",
     "options": {
       "context": "button"
     },
@@ -17,14 +17,14 @@
   },
   {
     "name": "one-argument",
-    "template": "gt`Hello, ${{ name }}!`",
+    "template": "t`Hello, ${{ name }}!`",
     "options": {},
     "tree": ["Hello, ", ["name"], "!"],
     "hash": "b785eb9d5af50191"
   },
   {
     "name": "max-chars",
-    "template": "gt({ maxChars: 12 })`Read more about pricing`",
+    "template": "t({ maxChars: 12 })`Read more about pricing`",
     "options": {
       "maxChars": 12
     },
@@ -33,7 +33,7 @@
   },
   {
     "name": "max-chars-negative",
-    "template": "gt({ maxChars: -12 })`Read more about pricing`",
+    "template": "t({ maxChars: -12 })`Read more about pricing`",
     "options": {
       "maxChars": -12
     },
@@ -42,7 +42,7 @@
   },
   {
     "name": "nested-plural-pound-select",
-    "template": "gt`${plural({ count }, { one: part`${n} new message for ${select({ role }, { admin: 'admins', other: 'everyone' })}`, other: part`${n} new messages for ${select({ role }, { admin: 'admins', other: 'all # members' })}` })}`",
+    "template": "t`${plural({ count }, { one: part`${n} new message for ${select({ role }, { admin: 'admins', other: 'everyone' })}`, other: part`${n} new messages for ${select({ role }, { admin: 'admins', other: 'all # members' })}` })}`",
     "options": {},
     "tree": [
       [
@@ -80,7 +80,7 @@
   },
   {
     "name": "plural-exact-key-order",
-    "template": "gt`${plural({ count }, { '=2': 'A pair', '=10': 'Ten items', other: part`${n} items` })}`",
+    "template": "t`${plural({ count }, { '=2': 'A pair', '=10': 'Ten items', other: part`${n} items` })}`",
     "options": {},
     "tree": [
       [
@@ -97,7 +97,7 @@
   },
   {
     "name": "selectordinal",
-    "template": "gt`You finished ${selectordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`",
+    "template": "t`You finished ${selectordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`",
     "options": {},
     "tree": [
       "You finished ",
@@ -117,21 +117,21 @@
   },
   {
     "name": "number-intl-options",
-    "template": "gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`",
+    "template": "t`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`",
     "options": {},
     "tree": ["Total: ", ["price", "number", "currency"]],
     "hash": "d0a156bbfb4a8267"
   },
   {
     "name": "number-currency-dynamic",
-    "template": "gt`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`",
+    "template": "t`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`",
     "options": {},
     "tree": ["Total: ", ["price", "number", "currency"]],
     "hash": "d0a156bbfb4a8267"
   },
   {
     "name": "number-unit",
-    "template": "gt`${number({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`",
+    "template": "t`${number({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`",
     "options": {},
     "tree": [
       [
@@ -148,28 +148,28 @@
   },
   {
     "name": "date",
-    "template": "gt`Due ${date({ due }, { style: 'medium' })}`",
+    "template": "t`Due ${date({ due }, { style: 'medium' })}`",
     "options": {},
     "tree": ["Due ", ["due", "date", "medium"]],
     "hash": "84910212b94cc11b"
   },
   {
     "name": "date-style-dynamic-time-zone",
-    "template": "gt`Due ${date({ due }, { style: 'medium', timeZone })}`",
+    "template": "t`Due ${date({ due }, { style: 'medium', timeZone })}`",
     "options": {},
     "tree": ["Due ", ["due", "date", "medium"]],
     "hash": "84910212b94cc11b"
   },
   {
     "name": "time-style",
-    "template": "gt`Starts at ${time({ start }, { style: 'short' })}`",
+    "template": "t`Starts at ${time({ start }, { style: 'short' })}`",
     "options": {},
     "tree": ["Starts at ", ["start", "time", "short"]],
     "hash": "401c5ce0c936b517"
   },
   {
     "name": "date-fields-hour",
-    "template": "gt`Due ${date({ due }, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`",
+    "template": "t`Due ${date({ due }, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`",
     "options": {},
     "tree": [
       "Due ",
@@ -189,7 +189,7 @@
   },
   {
     "name": "time-fractional-seconds",
-    "template": "gt`Lap time: ${time({ lap }, { minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}`",
+    "template": "t`Lap time: ${time({ lap }, { minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}`",
     "options": {},
     "tree": [
       "Lap time: ",
@@ -207,7 +207,7 @@
   },
   {
     "name": "time-day-period",
-    "template": "gt`See you ${time({ start }, { hour: 'numeric', dayPeriod: 'long' })}`",
+    "template": "t`See you ${time({ start }, { hour: 'numeric', dayPeriod: 'long' })}`",
     "options": {},
     "tree": [
       "See you ",
@@ -224,28 +224,28 @@
   },
   {
     "name": "derive",
-    "template": "gt`Welcome ${derive('back')}, ${{ user }}!`",
+    "template": "t`Welcome ${derive('back')}, ${{ user }}!`",
     "options": {},
     "tree": ["Welcome back, ", ["user"], "!"],
     "hash": "7866dbd0773f8dea"
   },
   {
     "name": "anonymous",
-    "template": "gt`Hi ${name}!`",
+    "template": "t`Hi ${name}!`",
     "options": {},
     "tree": ["Hi ", ["_gt_1"], "!"],
     "hash": "067ccea6cfb338fd"
   },
   {
     "name": "anonymous-numbering",
-    "template": "gt`${first} meets ${second} today`",
+    "template": "t`${first} meets ${second} today`",
     "options": {},
     "tree": [["_gt_1"], " meets ", ["_gt_2"], " today"],
     "hash": "19a57bdc700c786f"
   },
   {
     "name": "anonymous-helper-values",
-    "template": "gt`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', other: 'everyone' })}, ${number(price, { style: 'percent' })} by ${date(due)} from ${name}`",
+    "template": "t`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', other: 'everyone' })}, ${number(price, { style: 'percent' })} by ${date(due)} from ${name}`",
     "options": {},
     "tree": [
       [
@@ -276,14 +276,14 @@
   },
   {
     "name": "literal-icu-syntax",
-    "template": "gt`Don't stop, '{team}' ${derive(\"O'Brien {x} #1\")} and ${{ name }}`",
+    "template": "t`Don't stop, '{team}' ${derive(\"O'Brien {x} #1\")} and ${{ name }}`",
     "options": {},
     "tree": ["Don't stop, '{team}' O'Brien {x} #1 and ", ["name"]],
     "hash": "6b3613e07d084640"
   },
   {
     "name": "part-in-branch",
-    "template": "gt`${plural({ count }, { '=0': 'No messages', one: part`${n} message from ${{ who }}`, other: part`${n} messages from ${{ who }}` })}`",
+    "template": "t`${plural({ count }, { '=0': 'No messages', one: part`${n} message from ${{ who }}`, other: part`${n} messages from ${{ who }}` })}`",
     "options": {},
     "tree": [
       [
@@ -300,7 +300,7 @@
   },
   {
     "name": "select-integer-like-keys",
-    "template": "gt`${select({ size }, { 10: \"ten\", 2: \"two\", other: \"many\" })}`",
+    "template": "t`${select({ size }, { 10: \"ten\", 2: \"two\", other: \"many\" })}`",
     "options": {},
     "tree": [
       [
@@ -317,7 +317,7 @@
   },
   {
     "name": "requires-review",
-    "template": "gt({ requiresReview: true })`Delete account`",
+    "template": "t({ requiresReview: true })`Delete account`",
     "options": {
       "requiresReview": true
     },

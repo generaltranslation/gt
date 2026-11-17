@@ -257,12 +257,12 @@ describe('Vue static-analysis soundness', () => {
   it.each([
     {
       name: 'factory call',
-      prelude: `const makeSetup = () => () => ({ gt: useGT() });`,
+      prelude: `const makeSetup = () => () => ({ t: useGT() });`,
       setup: 'makeSetup()',
     },
     {
       name: 'dynamic conditional',
-      prelude: `const direct = () => ({ gt: useGT() }); const other = () => ({}); const flag = Boolean(Date.now());`,
+      prelude: `const direct = () => ({ t: useGT() }); const other = () => ({}); const flag = Boolean(Date.now());`,
       setup: 'flag ? direct : other',
     },
     {
@@ -279,7 +279,7 @@ describe('Vue static-analysis soundness', () => {
       ${prelude}
       export default { setup: ${setup} };
       </script>
-      <template>{{ gt('Hidden') }}</template>
+      <template>{{ t('Hidden') }}</template>
     `);
 
       expect(output.results).toEqual([]);
@@ -309,12 +309,12 @@ describe('Vue static-analysis soundness', () => {
       const getState = () => ({});
       export default {
         setup() {
-          const gt = useGT();
-          return { ...getState(), gt };
+          const t = useGT();
+          return { ...getState(), t };
         },
       };
       </script>
-      <template>{{ gt('Known but incomplete') }}</template>
+      <template>{{ t('Known but incomplete') }}</template>
     `);
 
     expect(output.errors.join('\n')).toContain(
@@ -368,8 +368,8 @@ describe('Vue static-analysis soundness', () => {
       const outer = { config };
       config.context = 'new';
       const { config: { context } } = outer;
-      const gt = useGT();
-      gt('Hello', { $context: context });
+      const t = useGT();
+      t('Hello', { $context: context });
       </script>
       <template />
     `);
@@ -386,8 +386,8 @@ describe('Vue static-analysis soundness', () => {
       const outer = { config };
       const { config: { context } } = outer;
       config.context = 'new';
-      const gt = useGT();
-      gt('Hello', { $context: context });
+      const t = useGT();
+      t('Hello', { $context: context });
       </script>
       <template />
     `);
@@ -460,10 +460,10 @@ describe('Vue static-analysis soundness', () => {
       const output = await extractFromVueSource(
         `<script setup>
         import { useGT } from 'gt-vue';
-        const gt = useGT();
+        const t = useGT();
         let context;
         ${assignment}
-        gt('Hello', { $context: context });
+        t('Hello', { $context: context });
         </script><template />`,
         '/fixtures/ConditionalAssignment.vue',
         { projectRoot: '/fixtures' }
@@ -478,12 +478,12 @@ describe('Vue static-analysis soundness', () => {
     const output = await extractFromVueSource(
       `<script setup>
       import { useGT } from 'gt-vue';
-      const gt = useGT();
+      const t = useGT();
       let context;
       translateBeforeAssignment();
       context = 'chosen';
       function translateBeforeAssignment() {
-        gt('Hello', { $context: context });
+        t('Hello', { $context: context });
       }
       </script><template />`,
       '/fixtures/CrossFunctionAssignment.vue',
@@ -525,14 +525,14 @@ describe('Vue script provenance soundness', () => {
       import { msg, useGT, useMessages } from 'gt-vue';
       const baseGT = useGT();
       const baseM = useMessages();
-      const nested = { deep: { gt: baseGT, m: baseM, msg } };
+      const nested = { deep: { t: baseGT, m: baseM, msg } };
       const msgRef = ref(msg);
       const msgComputed = computed(() => msg);
       msgRef.value('Ref msg', { $context: 'ref-msg' });
       msgComputed.value('Computed msg', { $context: 'computed-msg' });
       </script>
       <template>
-        {{ nested.deep.gt('Nested gt', { $context: 'nested-gt' }) }}
+        {{ nested.deep.t('Nested t', { $context: 'nested-t' }) }}
         {{ nested.deep.m('Nested raw m', { $context: 'nested-m' }) }}
       </template>
     `);
@@ -543,7 +543,7 @@ describe('Vue script provenance soundness', () => {
     ).toEqual([
       ['Ref msg', 'ref-msg'],
       ['Computed msg', 'computed-msg'],
-      ['Nested gt', 'nested-gt'],
+      ['Nested t', 'nested-t'],
       ['Nested raw m', 'nested-m'],
     ]);
   });
@@ -554,11 +554,11 @@ describe('Vue script provenance soundness', () => {
       import { msg, useGT, useMessages } from 'gt-vue';
       const baseGT = useGT();
       const baseM = useMessages();
-      const nested = { deep: { gt: baseGT, m: baseM, msg } };
+      const nested = { deep: { t: baseGT, m: baseM, msg } };
       const messages = { nested: nested.deep.msg('Nested msg') };
       </script>
       <template>
-        {{ nested.deep.gt('Nested gt') }}
+        {{ nested.deep.t('Nested t') }}
         {{ nested.deep.m('Nested m') }}
         {{ messages.nested }}
       </template>
@@ -567,7 +567,7 @@ describe('Vue script provenance soundness', () => {
     expect(output.errors).toEqual([]);
     expect(output.results.map(({ source }) => source)).toEqual([
       'Nested msg',
-      'Nested gt',
+      'Nested t',
       'Nested m',
     ]);
   });
@@ -579,13 +579,13 @@ describe('Vue script provenance soundness', () => {
       const baseGT = useGT();
       const nested = {
         deep: {
-          gt: baseGT,
-          mutate() { nested.deep.gt = String; },
+          t: baseGT,
+          mutate() { nested.deep.t = String; },
         },
       };
       nested.deep.mutate();
       </script>
-      <template>{{ nested.deep.gt('Not translated') }}</template>
+      <template>{{ nested.deep.t('Not translated') }}</template>
     `);
 
     expect(output.results).toEqual([]);
@@ -627,7 +627,7 @@ describe('Vue script provenance soundness', () => {
   });
 
   it.each([
-    ['gt', 'useGT()', 'Getter gt'],
+    ['t', 'useGT()', 'Getter t'],
     ['m', 'useMessages()', 'Getter messages'],
     ['message', 'msg', 'Getter msg'],
   ])(
@@ -651,7 +651,7 @@ describe('Vue script provenance soundness', () => {
   );
 
   it.each([
-    ['gt', 'useGT()', 'Getter gt'],
+    ['t', 'useGT()', 'Getter t'],
     ['m', 'useMessages()', 'Getter messages'],
     ['message', 'msg', 'Getter msg'],
   ])(
@@ -681,11 +681,11 @@ describe('Vue script provenance soundness', () => {
       template: `{{ kit.message('Template msg snapshot') }}`,
     },
     {
-      name: 'template gt getter snapshot',
+      name: 'template t getter snapshot',
       importName: 'useGT',
       initial: 'useGT()',
-      member: 'gt',
-      template: `{{ kit.gt('Template gt snapshot') }}`,
+      member: 't',
+      template: `{{ kit.t('Template t snapshot') }}`,
     },
   ])('fails closed for a $name', async (testCase) => {
     const output = await extract(
@@ -717,21 +717,21 @@ describe('Vue script provenance soundness', () => {
       import { useGT } from 'gt-vue';
       let current = useGT();
       const kit = {
-        get gt() {
+        get t() {
           const selected = current;
           current = String;
           return selected;
         },
       };
-      kit.gt('Script gt snapshot');
-      kit.gt('Ordinary second call');
+      kit.t('Script t snapshot');
+      kit.t('Ordinary second call');
       </script>
     `);
 
     expect(output.results).toEqual([]);
     expect(output.errors).toHaveLength(1);
     expect(output.errors[0]).toContain(
-      'Could not statically resolve possible gt-vue string function alias "kit.gt"'
+      'Could not statically resolve possible gt-vue string function alias "kit.t"'
     );
   });
 
@@ -884,11 +884,11 @@ describe('Vue script provenance soundness', () => {
       setup(
         `
         import { useGT } from 'gt-vue';
-        const source = { gt: useGT() };
+        const source = { t: useGT() };
         const copy = { ...source };
-        source.gt = String;
+        source.t = String;
         `,
-        `{{ copy.gt('Copied translator') }}`
+        `{{ copy.t('Copied translator') }}`
       )
     );
 
@@ -942,9 +942,9 @@ describe('Vue script provenance soundness', () => {
     const output = await extract(
       setup(
         `import { msg, useGT, useMessages } from 'gt-vue';
-         const source = { unused: String, gt: useGT(), m: useMessages(), msg };
+         const source = { unused: String, t: useGT(), m: useMessages(), msg };
          const { unused, ...rest } = source;`,
-        `{{ rest.gt('Rest gt') }}
+        `{{ rest.t('Rest t') }}
          {{ rest.m('Rest messages') }}
          {{ rest.msg('Rest msg') }}`
       )
@@ -952,7 +952,7 @@ describe('Vue script provenance soundness', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results.map(({ source }) => source)).toEqual([
-      'Rest gt',
+      'Rest t',
       'Rest messages',
       'Rest msg',
     ]);

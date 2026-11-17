@@ -36,7 +36,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function Nav() {
-  const gt = useGT();
+  const t = useGT();
   return (
     <header className='gt-nav'>
       <div className='nav-start'>
@@ -44,11 +44,11 @@ function Nav() {
           <GtMark />
           <span>Ferro</span>
         </Link>
-        <nav className='nav-links' aria-label={gt('Pages')}>
+        <nav className='nav-links' aria-label={t('Pages')}>
           <Link to='/' activeOptions={{ exact: true }}>
-            {gt('Overview')}
+            {t('Overview')}
           </Link>
-          <Link to='/specs'>{gt('Specs')}</Link>
+          <Link to='/specs'>{t('Specs')}</Link>
         </nav>
       </div>
       <LocaleSelector className='locale-select' />

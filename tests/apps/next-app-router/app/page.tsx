@@ -3,7 +3,7 @@ import { getGT, getLocale } from 'gt-next/server';
 import { ClientDemo } from './client-demo';
 
 export default async function Home() {
-  const gt = await getGT();
+  const t = await getGT();
   const locale = await getLocale();
   const renderedAt = new Date().toISOString();
 
@@ -26,7 +26,7 @@ export default async function Home() {
             runtime value: <Var>{renderedAt}</Var>
           </p>
         </T>
-        <p>{gt('A server-translated string from getGT.')}</p>
+        <p>{t('A server-translated string from getGT.')}</p>
       </section>
 
       <ClientDemo />

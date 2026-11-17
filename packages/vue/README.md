@@ -60,7 +60,7 @@ through `name` or `value` props.
 import { T, Var, useGT, useLocale, useSetLocale } from 'gt-vue';
 
 const name = 'Ada';
-const gt = useGT();
+const t = useGT();
 const locale = useLocale();
 const setLocale = useSetLocale();
 </script>
@@ -72,7 +72,7 @@ const setLocale = useSetLocale();
       <Var>{{ name }}</Var>
       !
     </T>
-    <p>{{ gt('A plain string', { $context: 'homepage' }) }}</p>
+    <p>{{ t('A plain string', { $context: 'homepage' }) }}</p>
     <button @click="setLocale(locale === 'en' ? 'fr' : 'en')">
       {{ locale }}
     </button>
@@ -89,7 +89,7 @@ applied.
 Browser-only SPAs can call `t()` at module scope after `initializeGTSPA()` has
 loaded the active locale. Use an async bootstrap function, and dynamically
 import the rest of the application only after initialization.
-This complements rather than replaces the `gt()` callback from `useGT()`,
+This complements rather than replaces the `t()` callback from `useGT()`,
 which remains the normal API inside Vue components and for SSR applications.
 
 ```ts

@@ -287,13 +287,13 @@ describe('gt-vue runtime', () => {
     const plugin = createGT({ loadTranslations });
     const Root = defineComponent({
       setup() {
-        const gt = useGT();
+        const t = useGT();
         const m = useMessages();
         const locale = useLocale();
         return () =>
           h(
             'p',
-            `${locale.value}|${gt(source, { $context: 'greeting' })}|${m(encoded)}`
+            `${locale.value}|${t(source, { $context: 'greeting' })}|${m(encoded)}`
           );
       },
     });
@@ -402,9 +402,9 @@ describe('gt-vue runtime', () => {
     await plugin.setLocale('fr');
     const Root = defineComponent({
       setup() {
-        const gt = useGT();
+        const t = useGT();
         const m = useMessages();
-        return () => h('p', `${gt(source)}|${m(source)}`);
+        return () => h('p', `${t(source)}|${m(source)}`);
       },
     });
 
@@ -2540,8 +2540,8 @@ describe('gt-vue runtime', () => {
     });
     const Root = defineComponent({
       setup() {
-        const gt = useGT();
-        return () => h('p', gt(source));
+        const t = useGT();
+        return () => h('p', t(source));
       },
     });
 
@@ -2582,11 +2582,11 @@ describe('gt-vue runtime', () => {
     await frenchReady;
     const Root = defineComponent({
       setup() {
-        const gt = useGT();
+        const t = useGT();
         const locale = useLocale();
         return () =>
           h('p', [
-            `${locale.value}|${gt(source)}|`,
+            `${locale.value}|${t(source)}|`,
             h(T, null, { default: () => h('span', 'World') }),
           ]);
       },

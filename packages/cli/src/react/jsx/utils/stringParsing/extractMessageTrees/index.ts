@@ -25,8 +25,8 @@ const traverse = traverseModule.default || traverseModule;
  *
  * Supports t`...`, t({ ...options })`...`, the same forms on `msg` plus
  * msg('literal'), and the same forms on a
- * `const gt = useGT()` / `const gt = await getGT()` result, including const
- * aliases (`const tr = gt`) and configured tags (`const save = gt({ ... })`).
+ * `const t = useGT()` / `const t = await getGT()` result, including const
+ * aliases (`const tr = t`) and configured tags (`const save = t({ ... })`).
  * Messages that are not statically analyzable are skipped with a warning, and
  * so are uses of a tag that cannot be followed.
  */

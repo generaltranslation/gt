@@ -22,15 +22,15 @@ const PRESET_TEMPERATURE: Record<Preset, number> = {
 };
 
 export function OrderPanel() {
-  const gt = useGT();
+  const t = useGT();
   const [preset, setPreset] = useState<Preset>('coffee');
   const [filters, setFilters] = useState(1);
   const [added, setAdded] = useState(false);
 
   const presetNames: Record<Preset, string> = {
-    green: gt('Green tea'),
-    oolong: gt('Oolong'),
-    coffee: gt('Coffee'),
+    green: t('Green tea'),
+    oolong: t('Oolong'),
+    coffee: t('Coffee'),
   };
   const total = UNIT_PRICE + filters * FILTER_PACK_PRICE;
 
@@ -38,7 +38,7 @@ export function OrderPanel() {
     <div className='order'>
       <div className='order-group' role='group' aria-labelledby='preset-label'>
         <p className='gt-label' id='preset-label'>
-          {gt('Default preset')}
+          {t('Default preset')}
         </p>
         <div className='options'>
           {PRESETS.map((option) => (
@@ -82,12 +82,12 @@ export function OrderPanel() {
 
       <div className='order-group' role='group' aria-labelledby='filter-label'>
         <p className='gt-label' id='filter-label'>
-          {gt('Paper filter packs')}
+          {t('Paper filter packs')}
         </p>
         <div className='stepper'>
           <button
             type='button'
-            aria-label={gt('Remove one pack')}
+            aria-label={t('Remove one pack')}
             disabled={filters <= 0}
             onClick={() => setFilters(filters - 1)}
           >
@@ -96,7 +96,7 @@ export function OrderPanel() {
           <output aria-live='polite'>{filters}</output>
           <button
             type='button'
-            aria-label={gt('Add one pack')}
+            aria-label={t('Add one pack')}
             disabled={filters >= 6}
             onClick={() => setFilters(filters + 1)}
           >
@@ -139,12 +139,12 @@ export function OrderPanel() {
           className='gt-button'
           onClick={() => setAdded(true)}
         >
-          {gt('Add To Cart')}
+          {t('Add To Cart')}
         </button>
         <p className='gt-label' aria-live='polite'>
           {added
-            ? gt('Added. Your preset is saved to the kettle on first boot.')
-            : gt('Every kettle ships with a 2 year warranty.')}
+            ? t('Added. Your preset is saved to the kettle on first boot.')
+            : t('Every kettle ships with a 2 year warranty.')}
         </p>
       </div>
     </div>

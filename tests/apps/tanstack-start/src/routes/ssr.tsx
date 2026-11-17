@@ -4,14 +4,14 @@ import { getEnableI18n, getGT, getLocale } from 'gt-tanstack-start';
 import { ModePanel } from '../components/ModePanel';
 
 const loadSsrData = createServerFn({ method: 'GET' }).handler(async () => {
-  const gt = await getGT();
+  const t = await getGT();
   const locale = getLocale();
   const enableI18n = getEnableI18n();
 
   return {
     value: `SSR loader ran at ${new Date().toISOString()} for ${locale} (i18n: ${enableI18n})`,
-    title: gt('Server rendering | gt-tanstack-start'),
-    description: gt(
+    title: t('Server rendering | gt-tanstack-start'),
+    description: t(
       'Test gt-tanstack-start with server-rendered loader data and route HTML.'
     ),
   };

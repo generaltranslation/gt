@@ -6,7 +6,7 @@ import { injectUnstableTaggedTemplateHash } from '../transform/injection/injectU
 
 /**
  * Unstable hash injection pass — injects `$_hash` into statically analyzable
- * unstable tagged templates (gt`...`). Each template is hashed and rewritten
+ * unstable tagged templates (t`...`). Each template is hashed and rewritten
  * in the same visit, so this pass needs no collection counters.
  */
 export function unstableHashInjectionPass(

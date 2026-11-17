@@ -18,15 +18,15 @@ import {
   useMessages,
 } from 'gt-vue';
 
-const gt = useTranslate();
+const t = useTranslate();
 const m = useMessages();
-const alias = gt;
-const greeting = gt('Hello {name}', { $context: 'greeting' });
+const alias = t;
+const greeting = t('Hello {name}', { $context: 'greeting' });
 const navigation = m('Navigation');
 const list = defineMessage(['First', 'Second'] as const, { $context: 'list' });
 const aliased = alias('Aliased call');
-function shadowed(gt: (value: string) => string) {
-  return gt('Not a GT call');
+function shadowed(t: (value: string) => string) {
+  return t('Not a GT call');
 }
 </script>
 
@@ -67,8 +67,8 @@ function shadowed(gt: (value: string) => string) {
     <Currency :value="cost" />
     <var>native</var>
   </Translate>
-  {{ gt('Template call', { $context: 'template' }) }}
+  {{ t('Template call', { $context: 'template' }) }}
   {{ m(defineMessage('Encoded message', { $context: 'encoded' })) }}
-  <p :title="gt('Template title')" />
-  <Some v-slot="{ gt }">{{ gt('Shadowed template call') }}</Some>
+  <p :title="t('Template title')" />
+  <Some v-slot="{ t }">{{ t('Shadowed template call') }}</Some>
 </template>

@@ -33,7 +33,7 @@ const fixtures: TreeWireFormatFixture[] = JSON.parse(
   )
 );
 
-// Capture what the real gt builds instead of rendering it.
+// Capture what the real t builds instead of rendering it.
 const captured = vi.hoisted(() => ({
   tree: undefined as unknown,
   hash: undefined as unknown,
@@ -81,49 +81,49 @@ const second = 'Grace';
 const size: string = '2';
 
 // Each case is the fixture `template`, written with the real helpers.
-const cases: Record<string, (gt: GT) => string> = {
-  'plain-literal': (gt) => gt`Save`,
-  context: (gt) => gt({ context: 'button' })`Save`,
-  'one-argument': (gt) => gt`Hello, ${{ name }}!`,
-  'max-chars': (gt) => gt({ maxChars: 12 })`Read more about pricing`,
-  'max-chars-negative': (gt) => gt({ maxChars: -12 })`Read more about pricing`,
-  'nested-plural-pound-select': (gt) =>
-    gt`${plural(
+const cases: Record<string, (t: GT) => string> = {
+  'plain-literal': (t) => t`Save`,
+  context: (t) => t({ context: 'button' })`Save`,
+  'one-argument': (t) => t`Hello, ${{ name }}!`,
+  'max-chars': (t) => t({ maxChars: 12 })`Read more about pricing`,
+  'max-chars-negative': (t) => t({ maxChars: -12 })`Read more about pricing`,
+  'nested-plural-pound-select': (t) =>
+    t`${plural(
       { count },
       {
         one: part`${n} new message for ${select({ role }, { admin: 'admins', other: 'everyone' })}`,
         other: part`${n} new messages for ${select({ role }, { admin: 'admins', other: 'all # members' })}`,
       }
     )}`,
-  'plural-exact-key-order': (gt) =>
-    gt`${plural({ count }, { '=2': 'A pair', '=10': 'Ten items', other: part`${n} items` })}`,
-  selectordinal: (gt) =>
-    gt`You finished ${selectordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`,
-  'number-intl-options': (gt) =>
-    gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`,
-  'number-currency-dynamic': (gt) =>
-    gt`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`,
-  'number-unit': (gt) =>
-    gt`${number({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`,
-  date: (gt) => gt`Due ${date({ due }, { style: 'medium' })}`,
-  'date-style-dynamic-time-zone': (gt) =>
-    gt`Due ${date({ due }, { style: 'medium', timeZone })}`,
-  'time-style': (gt) => gt`Starts at ${time({ start }, { style: 'short' })}`,
-  'date-fields-hour': (gt) =>
-    gt`Due ${date({ due }, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`,
-  'time-fractional-seconds': (gt) =>
-    gt`Lap time: ${time({ lap }, { minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}`,
-  'time-day-period': (gt) =>
-    gt`See you ${time({ start }, { hour: 'numeric', dayPeriod: 'long' })}`,
-  derive: (gt) => gt`Welcome ${derive('back')}, ${{ user }}!`,
-  anonymous: (gt) => gt`Hi ${name}!`,
-  'anonymous-numbering': (gt) => gt`${first} meets ${second} today`,
-  'anonymous-helper-values': (gt) =>
-    gt`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', other: 'everyone' })}, ${number(price, { style: 'percent' })} by ${date(due)} from ${name}`,
-  'literal-icu-syntax': (gt) =>
-    gt`Don't stop, '{team}' ${derive("O'Brien {x} #1")} and ${{ name }}`,
-  'part-in-branch': (gt) =>
-    gt`${plural(
+  'plural-exact-key-order': (t) =>
+    t`${plural({ count }, { '=2': 'A pair', '=10': 'Ten items', other: part`${n} items` })}`,
+  selectordinal: (t) =>
+    t`You finished ${selectordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`,
+  'number-intl-options': (t) =>
+    t`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`,
+  'number-currency-dynamic': (t) =>
+    t`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`,
+  'number-unit': (t) =>
+    t`${number({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`,
+  date: (t) => t`Due ${date({ due }, { style: 'medium' })}`,
+  'date-style-dynamic-time-zone': (t) =>
+    t`Due ${date({ due }, { style: 'medium', timeZone })}`,
+  'time-style': (t) => t`Starts at ${time({ start }, { style: 'short' })}`,
+  'date-fields-hour': (t) =>
+    t`Due ${date({ due }, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`,
+  'time-fractional-seconds': (t) =>
+    t`Lap time: ${time({ lap }, { minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}`,
+  'time-day-period': (t) =>
+    t`See you ${time({ start }, { hour: 'numeric', dayPeriod: 'long' })}`,
+  derive: (t) => t`Welcome ${derive('back')}, ${{ user }}!`,
+  anonymous: (t) => t`Hi ${name}!`,
+  'anonymous-numbering': (t) => t`${first} meets ${second} today`,
+  'anonymous-helper-values': (t) =>
+    t`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', other: 'everyone' })}, ${number(price, { style: 'percent' })} by ${date(due)} from ${name}`,
+  'literal-icu-syntax': (t) =>
+    t`Don't stop, '{team}' ${derive("O'Brien {x} #1")} and ${{ name }}`,
+  'part-in-branch': (t) =>
+    t`${plural(
       { count },
       {
         '=0': 'No messages',
@@ -131,13 +131,13 @@ const cases: Record<string, (gt: GT) => string> = {
         other: part`${n} messages from ${{ who }}`,
       }
     )}`,
-  'select-integer-like-keys': (gt) =>
-    gt`${select({ size }, { 10: 'ten', 2: 'two', other: 'many' })}`,
-  'requires-review': (gt) => gt({ requiresReview: true })`Delete account`,
+  'select-integer-like-keys': (t) =>
+    t`${select({ size }, { 10: 'ten', 2: 'two', other: 'many' })}`,
+  'requires-review': (t) => t({ requiresReview: true })`Delete account`,
 };
 
 describe('message-tree-wire-format fixture parity', () => {
-  const gt = createGT({ getLocale: () => 'en' });
+  const t = createGT({ getLocale: () => 'en' });
 
   beforeEach(() => {
     captured.tree = undefined;
@@ -145,7 +145,7 @@ describe('message-tree-wire-format fixture parity', () => {
   });
 
   it.each(fixtures)('$name: $template', ({ name, tree, hash }) => {
-    cases[name](gt);
+    cases[name](t);
     // JSON round trip compares plain data, as stored in a catalog.
     expect(JSON.parse(JSON.stringify(captured.tree))).toEqual(tree);
     expect(isMessageTree(captured.tree)).toBe(true);

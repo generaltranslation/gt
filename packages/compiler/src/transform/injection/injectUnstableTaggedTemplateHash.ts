@@ -32,9 +32,9 @@ function nonStatic(): never {
 
 /**
  * Rewrites a statically analyzable unstable tagged template so the runtime
- * skips hashing: gt`...` -> gt({ $_hash })`...` and
- * gt({ context })`...` -> gt({ context, $_hash })`...`, for an imported `t`
- * or `msg` and for the result of `const gt = useGT()` / `const gt = await getGT()`.
+ * skips hashing: t`...` -> t({ $_hash })`...` and
+ * t({ context })`...` -> t({ context, $_hash })`...`, for an imported `t`
+ * or `msg` and for the result of `const t = useGT()` / `const t = await getGT()`.
  * Returns whether the template was rewritten.
  */
 export function injectUnstableTaggedTemplateHash(
@@ -75,7 +75,7 @@ export function injectUnstableTaggedTemplateHash(
 
 /**
  * `t` or `msg` imported from an unstable source, or
- * `const gt = [await] useGT/getGT()`.
+ * `const t = [await] useGT/getGT()`.
  */
 function isUnstableGT(name: string, scope: Scope): boolean {
   const helper = getHelperName(name, scope);

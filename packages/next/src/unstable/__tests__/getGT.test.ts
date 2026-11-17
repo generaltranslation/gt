@@ -45,10 +45,10 @@ describe('gt-next unstable getGT', () => {
   });
 
   it('translates with the request locale', async () => {
-    const gt = await getGT();
+    const t = await getGT();
     const rscGT = await useGT();
 
-    expect(gt`Save`).toBe('Enregistrer');
+    expect(t`Save`).toBe('Enregistrer');
     expect(rscGT`Save`).toBe('Enregistrer');
   });
 
@@ -66,8 +66,8 @@ describe('gt-next unstable getGT', () => {
       _enableI18n: false,
     });
 
-    const gt = await getGT();
+    const t = await getGT();
 
-    expect(gt`Save`).toBe('Save');
+    expect(t`Save`).toBe('Save');
   });
 });

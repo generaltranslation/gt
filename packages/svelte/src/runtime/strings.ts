@@ -27,10 +27,10 @@ import { getGTState, type GTState } from './state.svelte';
  * ```svelte
  * <script>
  *   import { useGT } from 'gt-svelte';
- *   const gt = useGT();
+ *   const t = useGT();
  * </script>
  *
- * <input placeholder={gt('Search {count} items', { count })} />
+ * <input placeholder={t('Search {count} items', { count })} />
  * ```
  */
 export function useGT(): GTFunctionType {
@@ -52,7 +52,7 @@ export function useGT(): GTFunctionType {
  * ```
  */
 export function useMessages(): MFunctionType {
-  const gt = createGT(getGTState());
+  const t = createGT(getGTState());
   return (<T extends string | null | undefined>(
     encodedMsg: T,
     options: GTTranslationOptions = {}
@@ -60,9 +60,9 @@ export function useMessages(): MFunctionType {
     if (encodedMsg == null) return encodedMsg;
     const decodedOptions = decodeOptions(encodedMsg) ?? {};
     if (isEncodedTranslationOptions(decodedOptions)) {
-      return gt(decodedOptions.$_source, decodedOptions);
+      return t(decodedOptions.$_source, decodedOptions);
     }
-    return gt(encodedMsg, options);
+    return t(encodedMsg, options);
   }) as MFunctionType;
 }
 

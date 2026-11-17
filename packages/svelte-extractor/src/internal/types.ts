@@ -105,7 +105,7 @@ export type TranslationSite = {
   sourceCode?: SourceCodeContext;
 };
 
-/** One `gt()` / `msg()` string call site. */
+/** One `t()` / `msg()` string call site. */
 export type StringSite = {
   source: string;
   hash: string;

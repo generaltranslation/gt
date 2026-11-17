@@ -114,7 +114,7 @@ function toTreeBranch(
 function createConflictingPlaceholderError(name: string): string {
   return createGtI18nDiagnostic({
     severity: 'Error',
-    whatHappened: `The gt template placeholder "${name}" is bound to different values`,
+    whatHappened: `The t template placeholder "${name}" is bound to different values`,
     fix: 'Give each distinct value its own placeholder name',
   });
 }

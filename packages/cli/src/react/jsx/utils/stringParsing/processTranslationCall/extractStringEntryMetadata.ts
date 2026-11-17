@@ -98,7 +98,7 @@ export function extractStringEntryMetadata({
 // ----- Helper Functions ----- //
 
 /**
- * Extracts inline metadata specified e.g. gt('Hello', { $context: 'greeting' })
+ * Extracts inline metadata specified e.g. t('Hello', { $context: 'greeting' })
  * @param options - The options to extract the metadata from
  * @param output - The output to use
  * @param config - The configuration to use

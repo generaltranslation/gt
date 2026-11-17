@@ -22,7 +22,7 @@ export function useGT(_messages?: RegisteredMessage[]): GTFunctionType {
   );
 
   /**
-   * gt() string translation callback
+   * t() string translation callback
    */
   return useCallback(
     (message: string, options: GTTranslationOptions = {}) => {

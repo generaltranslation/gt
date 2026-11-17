@@ -1,9 +1,9 @@
 <script setup>
 import * as GT from 'gt-vue';
 
-const gt = GT.useGT();
+const t = GT.useGT();
 const LocalT = GT.T;
-gt('Namespace hook');
+t('Namespace hook');
 GT.msg('Namespace message');
 GT['useGT']()('Computed namespace hook');
 GT['msg']('Computed namespace message');

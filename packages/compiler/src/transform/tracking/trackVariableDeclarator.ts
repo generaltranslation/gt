@@ -14,11 +14,11 @@ import { ScopeTracker } from '../../state/ScopeTracker';
  * - Track overriding variables
  *
  * GT callbacks:
- * - const gt = useGT()
+ * - const t = useGT()
  *
  * Overriding variables:
- * - const gt = msg("hello");
- * - const gt = "Hello"
+ * - const t = msg("hello");
+ * - const t = "Hello"
  */
 export function trackVariableDeclarator(
   varDeclarator: t.VariableDeclarator,
@@ -75,7 +75,7 @@ export function trackVariableDeclarator(
   // Track GT functions with callbacks (useGT, useMessages, etc.)
   const callbackFunctionName = GT_FUNCTIONS_TO_CALLBACKS[canonicalName];
 
-  // There can only be one callback defined for const gt = useGT()
+  // There can only be one callback defined for const t = useGT()
   if (identifiers.length !== 1) {
     state.errorTracker.addError(
       'Multiple identifiers found for GT function with callbacks: ${canonicalName}. Variable tracking failed.' +

@@ -27,8 +27,8 @@ describe('gt-tanstack-start import source', () => {
       undefined,
       `
       import { useGT } from 'gt-tanstack-start';
-      const gt = useGT();
-      gt("Hello world");
+      const t = useGT();
+      t("Hello world");
     `
     );
     expect(output).not.toBeNull();

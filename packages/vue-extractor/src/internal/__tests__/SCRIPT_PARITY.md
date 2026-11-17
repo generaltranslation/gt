@@ -32,6 +32,6 @@ The initial `gt-vue` API intentionally does not port React-only behavior:
   alias when the call must be extracted.
 
 Unsupported dynamic content or options in a statically resolved
-`gt()`/`msg()`/`t()` call receives an extraction diagnostic. Dynamic
+`t()`/`msg()` call receives an extraction diagnostic. Dynamic
 `useMessages()` input remains unreported because it may be an encoded value
 produced by `msg()` at runtime.

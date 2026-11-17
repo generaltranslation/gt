@@ -260,7 +260,7 @@ describe('gt-i18n/unstable rendering', () => {
   it('throws when a placeholder name is bound to different values', async () => {
     const gt = await setup({ locale: 'en' });
     expect(() => gt`${{ name: 'Ada' }} / ${{ name: 'Grace' }}`).toThrow(
-      'gt-i18n Error: The gt template placeholder "name" is bound to different values'
+      'gt-i18n Error: The t template placeholder "name" is bound to different values'
     );
     expect(
       () =>
@@ -464,7 +464,7 @@ describe('gt-i18n/unstable rendering', () => {
   it('throws a diagnostic for objects that are not named variables', async () => {
     const gt = await setup({ locale: 'en' });
     expect(() => gt`Hello, ${{ name, who: 'Grace' } as never}`).toThrow(
-      'gt-i18n Error: A gt template placeholder is not a value, a named variable, or a helper'
+      'gt-i18n Error: A t template placeholder is not a value, a named variable, or a helper'
     );
   });
 

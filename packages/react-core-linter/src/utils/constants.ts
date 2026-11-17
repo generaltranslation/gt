@@ -80,7 +80,7 @@ export const BRANCH_COMPONENT_NAMES = [
   PLURAL_COMPONENT_NAME,
 ];
 
-// const gt = useGT(); const gt = await getGT();
+// const t = useGT(); const t = await getGT();
 export const GT_CALLBACK_DECLARATOR_FUNCTION_NAMES = [
   USE_GT_FUNCTION_NAME,
   GET_GT_FUNCTION_NAME,

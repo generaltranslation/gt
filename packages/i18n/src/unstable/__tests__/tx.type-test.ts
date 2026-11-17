@@ -19,7 +19,7 @@ export const accepted = [
 ];
 
 export const rejected = [
-  // @ts-expect-error gt and t render from the catalog, which cannot hold dyn() text
+  // @ts-expect-error t renders from the catalog, which cannot hold dyn() text
   t`${dyn(greeting)}, ${{ name }}!`,
 
   // @ts-expect-error a part holding dyn() text is still runtime text

@@ -23,7 +23,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> =
   });
 
 export default function Home({ renderedAt, nextLocalePreference }: HomeProps) {
-  const gt = useGT();
+  const t = useGT();
   const locale = useLocale();
 
   return (
@@ -44,7 +44,7 @@ export default function Home({ renderedAt, nextLocalePreference }: HomeProps) {
         <T>
           <p>This paragraph is translated via gt-next in the Pages Router.</p>
         </T>
-        <p>{gt('A string translated with useGT from gt-next.')}</p>
+        <p>{t('A string translated with useGT from gt-next.')}</p>
       </section>
     </main>
   );

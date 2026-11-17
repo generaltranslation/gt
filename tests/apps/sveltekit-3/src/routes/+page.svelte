@@ -2,7 +2,7 @@
   import { Plural, Num, T, Var, useGT, useLocale } from 'gt-svelte';
   import LocaleSelector from '#lib/LocaleSelector.svelte';
 
-  const gt = useGT();
+  const t = useGT();
   const locale = useLocale();
   let count = $state(1);
   const name = 'Ada';
@@ -34,6 +34,6 @@
       recipes
     </T>
   </p>
-  <button onclick={() => (count += 1)}>{gt('Add a message')}</button>
-  <p data-testid="string">{gt('A string translated with useGT.')}</p>
+  <button onclick={() => (count += 1)}>{t('Add a message')}</button>
+  <p data-testid="string">{t('A string translated with useGT.')}</p>
 </main>

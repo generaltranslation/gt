@@ -351,7 +351,7 @@ describe('harvestHash', () => {
     expect(overlay.fr).toEqual({ 3: 'Utilisation' });
   });
 
-  it('combines <T> content with bare gt() strings when hashMessage is given', () => {
+  it('combines <T> content with bare t() strings when hashMessage is given', () => {
     const mixed = [
       fullSnapshot(
         el(1, 'MAIN', [

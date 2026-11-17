@@ -36,19 +36,19 @@ import { T } from 'gt-react';
 
 ## Translating simple strings
 
-Use the `gt` function returned by the `useGT()` hook to translate strings directly.
+Use the `t` function returned by the `useGT()` hook to translate strings directly.
 
 ```js
 import { useGT } from 'gt-react';
-const gt = useGT();
-gt('Hello, world!'); // returns "Hola, mundo"
+const t = useGT();
+t('Hello, world!'); // returns "Hola, mundo"
 ```
 
-- Just like with the children of the `<T>` component, all strings passed to `gt()` must be static string literals. No variables or template literals.
+- Just like with the children of the `<T>` component, all strings passed to `t()` must be static string literals. No variables or template literals.
 
 ## Translating shared or out-of-scope strings
 
-Use `msg()` to register strings for translation, and `useMessages()` to translate them. `const m = useMessages()` should be used equivalently to `const gt = useGT()`.
+Use `msg()` to register strings for translation, and `useMessages()` to translate them. `const m = useMessages()` should be used equivalently to `const t = useGT()`.
 
 ```js
 import { msg, useMessages } from 'gt-react';
