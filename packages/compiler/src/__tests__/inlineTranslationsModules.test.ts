@@ -601,3 +601,51 @@ describe('inlineTranslations.modules', () => {
     });
   });
 });
+
+describe('webpack cache version', () => {
+  type WebpackPlugin = { webpack(compiler: unknown): void };
+
+  function cacheVersion(
+    gtConfig: GTUnpluginOptions['gtConfig']
+  ): string | undefined {
+    const plugin = gtUnplugin.raw({ gtConfig }, {
+      framework: 'webpack',
+    } as never) as unknown as WebpackPlugin;
+    const options = { cache: { type: 'filesystem', version: 'next' } };
+    plugin.webpack({ options });
+    return options.cache.version;
+  }
+
+  const embedding = (inline: Record<string, unknown> = {}) => ({
+    defaultLocale: 'en',
+    locales: ['fr', 'es'],
+    files: {
+      gt: {
+        output: 'translations/[locale].json',
+        inlineTranslations: { locales: ['fr', 'es'], ...inline },
+      },
+    },
+  });
+
+  beforeEach(() => vi.stubEnv('NODE_ENV', 'production'));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('changes with the embedded translations settings', () => {
+    const versions = new Set([
+      cacheVersion(embedding()),
+      cacheVersion(embedding({ modules: 'physical' })),
+      cacheVersion(embedding({ locales: ['fr'] })),
+      cacheVersion(embedding({ modulesDir: 'generated/messages' })),
+    ]);
+    expect(versions.size).toBe(4);
+    for (const version of versions) {
+      expect(version).toMatch(/^next\|gt-inline-translations:[0-9a-f]{16}$/);
+    }
+  });
+
+  it('is left alone without embedded translations or outside production', () => {
+    expect(cacheVersion({ files: { gt: {} } })).toBe('next');
+    vi.stubEnv('NODE_ENV', 'development');
+    expect(cacheVersion(embedding())).toBe('next');
+  });
+});

@@ -39,6 +39,7 @@ import {
   addInlineTranslationsImports,
   isEsModule,
 } from './transform/injection/inline-translations/addInlineTranslationsImports';
+import { addInlineTranslationsCacheVersion } from './transform/injection/inline-translations/inlineTranslationsCacheVersion';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
@@ -254,8 +255,27 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const loadModulesTable = () =>
       isProduction ? loadInlineTranslations(gtFiles) : undefined;
 
+    const keyCacheOnInlineTranslations = (options: {
+      cache?: unknown;
+      experiments?: { cache?: unknown };
+    }) => {
+      if (isProduction && loadedGTConfig?.files?.gt?.inlineTranslations) {
+        addInlineTranslationsCacheVersion(
+          options,
+          gtFiles,
+          inlineTranslationsModules
+        );
+      }
+    };
+
     return {
       name: '@generaltranslation/GT_PLUGIN',
+      webpack(compiler) {
+        keyCacheOnInlineTranslations(compiler.options);
+      },
+      rspack(compiler) {
+        keyCacheOnInlineTranslations(compiler.options);
+      },
       buildStart() {
         if (inlineTranslationsModules?.mode !== 'physical' || !isProduction) {
           return;
