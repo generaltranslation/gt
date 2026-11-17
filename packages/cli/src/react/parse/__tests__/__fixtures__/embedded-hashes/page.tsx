@@ -33,7 +33,8 @@ export function Closure() {
 }
 
 export function LetBinding() {
-  const gt = useGT();
+  // oxlint-disable-next-line prefer-const
+  let gt = useGT();
   return gt`Let binding`;
 }
 
