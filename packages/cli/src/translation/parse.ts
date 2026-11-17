@@ -19,6 +19,7 @@ import {
   Libraries,
 } from '../types/libraries.js';
 import { extractInlineFromProject } from './extractInline.js';
+import { recordLoadedHashes } from '../state/embeddedHashes.js';
 import type { PrimaryInlineExtractor } from '@generaltranslation/vue-extractor/integration';
 
 /**
@@ -109,6 +110,7 @@ export async function createUpdates(
   errors = [...errors, ...newErrors];
   warnings = [...warnings, ...newWarnings];
   updates = [...updates, ...newUpdates];
+  recordLoadedHashes(updates);
 
   // Validate user-supplied IDs without using them as translation lookup keys.
   const idHashMap = new Map<string, string>();

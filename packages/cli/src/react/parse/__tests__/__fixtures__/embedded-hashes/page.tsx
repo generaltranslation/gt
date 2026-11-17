@@ -25,3 +25,9 @@ export function Page({ name, count }: { name: string; count: number }) {
     </>
   );
 }
+
+export function Closure() {
+  const label = () => gt`Earlier closure`;
+  const gt = useGT();
+  return label();
+}

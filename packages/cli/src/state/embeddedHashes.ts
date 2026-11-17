@@ -39,6 +39,18 @@ export function recordEmbeddedHashes(updates: Iterable<Update>): void {
 }
 
 /**
+ * Records the hashes of every other entry of the run, such as gt-vue's or a
+ * dictionary's, as loaded. Does nothing when no scan recorded hashes.
+ */
+export function recordLoadedHashes(updates: Iterable<Update>): void {
+  if (!loadedHashes) return;
+  for (const update of updates) {
+    const { hash } = update.metadata;
+    if (hash && !embeddedUpdates.has(update)) loadedHashes.add(hash);
+  }
+}
+
+/**
  * Hashes only embedded entries use. Undefined when nothing was extracted this
  * run (for example when translations are only downloaded), so callers don't
  * overwrite msgOutput files with every entry.

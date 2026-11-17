@@ -7,6 +7,7 @@ import { Libraries } from '../../../types/libraries.js';
 import {
   clearEmbeddedHashes,
   getEmbeddedHashes,
+  recordLoadedHashes,
 } from '../../../state/embeddedHashes.js';
 
 vi.mock('../../../console/logging.js', () => ({
@@ -76,7 +77,8 @@ describe('embedded hashes', () => {
     expect(loaded).toEqual(
       expect.arrayContaining([
         // msg(), a stable gt(), a configured tag, an anonymous value, a
-        // __proto__ variable, and a message an alias also uses
+        // __proto__ variable, a message an alias also uses, and a closure
+        // that precedes its gt declaration
         'Registered message',
         'Legacy string',
         'Save',
@@ -84,7 +86,21 @@ describe('embedded hashes', () => {
         // the compilers leave __proto__ keys to the runtime
         ['Proto ', ['__proto__']],
         'Shared text',
+        'Earlier closure',
       ])
+    );
+  });
+
+  test('keeps hashes that another extractor also loads', async () => {
+    const { updates } = await extract(FIXTURE);
+    const jsx = updates.find((update) => update.dataFormat === 'JSX')!;
+    // gt-vue's merge replaces an update that shares its hash with a new object
+    recordLoadedHashes([...updates, { ...jsx, metadata: { ...jsx.metadata } }]);
+    expect([...(getEmbeddedHashes() ?? [])].sort()).toEqual(
+      [
+        treeHash('Embedded string'),
+        treeHash(['Hello, ', ['name'], '!'], 'greeting'),
+      ].sort()
     );
   });
 
@@ -108,6 +124,9 @@ describe('embedded hashes', () => {
   });
 
   test('is undefined until something is extracted', () => {
+    recordLoadedHashes([
+      { dataFormat: 'ICU', source: 'Vue only', metadata: { hash: 'vue' } },
+    ]);
     expect(getEmbeddedHashes()).toBeUndefined();
   });
 });

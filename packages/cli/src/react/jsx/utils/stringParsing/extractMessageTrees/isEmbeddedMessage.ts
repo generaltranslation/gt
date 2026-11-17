@@ -9,8 +9,9 @@ const OPTION_KEYS = new Set(['context', 'maxChars', 'requiresReview']);
  * for `files.gt.inlineTranslations.locales`. Both @generaltranslation/compiler
  * and the gt-next SWC plugin embed exactly these call sites:
  * - The tag is `t` imported from an unstable source, or the `gt` of
- *   `const gt = useGT()` / `const gt = await getGT()` from one, optionally
- *   called with one object of literal options with identifier keys.
+ *   `const gt = useGT()` / `const gt = await getGT()` from one declared
+ *   earlier in the source, optionally called with one object of literal
+ *   options with identifier keys.
  * - Every hole is a named variable, like `${{ name }}`.
  *
  * Aliases, configured tags (`const save = gt({ ... })`), `msg`, derive and
@@ -37,7 +38,8 @@ function isEmbeddedTag(callee: NodePath): boolean {
   if (
     !binding?.constant ||
     !binding.path.isVariableDeclarator() ||
-    !t.isIdentifier(binding.path.node.id)
+    !t.isIdentifier(binding.path.node.id) ||
+    !isAfter(callee.node, binding.path.node)
   ) {
     return false;
   }
@@ -46,6 +48,15 @@ function isEmbeddedTag(callee: NodePath): boolean {
   if (!init.isCallExpression()) return false;
   const hook = getHelperName(init.get('callee'));
   return hook === 'useGT' || hook === 'getGT';
+}
+
+// The SWC plugin tracks `const gt = useGT()` in source order, so it does not embed an earlier closure's use
+function isAfter(node: t.Node, declaration: t.Node): boolean {
+  return (
+    node.start != null &&
+    declaration.end != null &&
+    node.start >= declaration.end
+  );
 }
 
 function hasLiteralOptions(node: t.Node): boolean {
