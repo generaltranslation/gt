@@ -1334,16 +1334,29 @@ function serializeBranchElement(
           )
         : branches;
     // Vue reads a bare `ordinal` attribute, an empty string, as true.
-    const ordinal = element.openingElement.attributes.some((attribute) => {
-      if (
-        attribute.type !== 'JSXAttribute' ||
-        readAttributeName(attribute.name) !== 'ordinal'
-      ) {
-        return false;
-      }
-      const value = readJSXAttributePrimitive(attribute, scope, analysis);
-      return value.ok && (value.value === true || value.value === '');
-    });
+    const ordinal =
+      component === 'Plural' &&
+      element.openingElement.attributes.some((attribute) => {
+        if (
+          attribute.type !== 'JSXAttribute' ||
+          readAttributeName(attribute.name) !== 'ordinal'
+        ) {
+          return false;
+        }
+        const value = readJSXAttributePrimitive(attribute, scope, analysis);
+        const isOrdinal =
+          value.ok && (value.value === true || value.value === '');
+        // The runtime reads the live value, so it must be known here.
+        if (!isOrdinal && !(value.ok && value.value === false)) {
+          addVueError(
+            context,
+            babelLocation(attribute.loc),
+            'Found an invalid or dynamic ordinal on a gt-vue <Plural> component',
+            'Use a static boolean or a bare ordinal prop'
+          );
+        }
+        return isOrdinal;
+      });
     data.t = component !== 'Plural' ? 'b' : ordinal ? 'o' : 'p';
   }
   return {

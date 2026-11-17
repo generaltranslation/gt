@@ -730,6 +730,27 @@ describe('React CLI parity audit', () => {
       ]);
     });
 
+    it.each([':ordinal="isPlace"', 'ordinal="true"'])(
+      'rejects %s on a template Plural',
+      async (ordinal) => {
+        const output = await extract(
+          createSfc(
+            `import { ref } from 'vue';
+             import { Plural, T } from 'gt-vue';
+             const isPlace = ref(true);`,
+            `<T><Plural :n="2" ${ordinal} one="1st">nth</Plural></T>`
+          ),
+          'plural-ordinal-invalid'
+        );
+
+        expect(output.errors).toEqual([
+          expect.stringContaining(
+            'Found an invalid or dynamic ordinal on a gt-vue <Plural> component. Use a static boolean or a bare ordinal prop.'
+          ),
+        ]);
+      }
+    );
+
     it('marks an ordinal Plural in a template', async () => {
       const source = createSfc(
         `import { Plural, T } from 'gt-vue';`,

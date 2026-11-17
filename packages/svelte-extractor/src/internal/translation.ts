@@ -688,13 +688,19 @@ class TranslationBuilder {
 
     const element: JsxElement = { t: getTagName(node), i: id };
     let d = getContentProps(node);
-    const ordinal = findAttribute(node, 'ordinal');
-    const transformation =
-      kind === 'Branch'
-        ? 'b'
-        : ordinal && getStaticBoolean(ordinal) === true
-          ? 'o'
-          : 'p';
+    let transformation: 'p' | 'o' | 'b' = kind === 'Branch' ? 'b' : 'p';
+    const ordinal = kind === 'Plural' && findAttribute(node, 'ordinal');
+    if (ordinal) {
+      const value = getStaticBoolean(ordinal);
+      if (value === undefined) {
+        this.problem(
+          ordinal.start,
+          'The "ordinal" prop on <Plural> must be a static boolean'
+        );
+      } else if (value) {
+        transformation = 'o';
+      }
+    }
     if (branchNames.length > 0) {
       d = { ...d, b: branches, t: transformation };
     }

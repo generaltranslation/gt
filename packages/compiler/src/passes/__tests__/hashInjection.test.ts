@@ -284,6 +284,35 @@ describe('an other prop on Branch/Plural', () => {
   });
 });
 
+describe('<Plural ordinal>', () => {
+  const plural = (ordinal: string) =>
+    `${JSX_IMPORTS}jsx(T, { children: jsx(Plural, { n: count, ${ordinal} one: "1st", children: "nth" }) });`;
+
+  it.each([
+    ['ordinal: true,', 'o'],
+    ['ordinal: false,', 'p'],
+    ['', 'p'],
+  ] as const)('hashes %s as t: %s', (ordinal, t) => {
+    const { errors, code } = transform(plural(ordinal));
+    expect(errors).toEqual([]);
+    expect(code).toContain(
+      `_hash: "${jsxHash({ t: 'Plural', i: 1, d: { b: { one: '1st', other: 'nth' }, t } })}"`
+    );
+  });
+
+  it.each(['ordinal: isPlace,', 'ordinal: "true",', 'ordinal: !0,'])(
+    'rejects %s which is not a boolean literal',
+    (ordinal) => {
+      const { errors } = transform(plural(ordinal));
+      expect(errors).toEqual([
+        expect.stringContaining(
+          'The ordinal prop of <Plural> must be a boolean literal. Write a bare ordinal attribute, ordinal={true} or ordinal={false}.'
+        ),
+      ]);
+    }
+  );
+});
+
 /**
  * Two regressions covered here:
  *

@@ -1234,6 +1234,29 @@ describe('Vue JSX rich extraction', () => {
     expect(hashSource({ dataFormat: 'JSX', source })).toBe('dd8f74483bcb5654');
   });
 
+  it.each(['ordinal={props.isPlace}', 'ordinal="true"'])(
+    'rejects %s on a JSX Plural',
+    async (ordinal) => {
+      const output = await extractFromVueSource(
+        `
+          import { Plural, T } from 'gt-vue';
+          export const View = (props: { isPlace: boolean }) => (
+            <T>
+              <Plural n={2} ${ordinal} one="1st">nth</Plural>
+            </T>
+          );
+        `,
+        '/project/src/View.tsx'
+      );
+
+      expect(output.errors).toEqual([
+        expect.stringContaining(
+          'Found an invalid or dynamic ordinal on a gt-vue <Plural> component. Use a static boolean or a bare ordinal prop.'
+        ),
+      ]);
+    }
+  );
+
   it('marks an ordinal Plural in JSX', async () => {
     const output = await extractFromVueSource(
       `

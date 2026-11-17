@@ -20,6 +20,7 @@ import {
   warnDataAttrOnBranch,
   warnBranchOtherPropSync,
   warnInvalidExactPluralPropSync,
+  warnNonLiteralOrdinalSync,
   warnNestedInternalTComponent,
   warnDeriveNonConstVariableSync,
   warnDeriveDestructuringSync,
@@ -461,12 +462,22 @@ function buildJSXTree({
             }
           }
         }
-        // <Plural ordinal> is on as a bare attribute or as {true}.
+        // <Plural ordinal> is on as a bare attribute or as {true}. The
+        // runtime reads the live value, so nothing else may stand here.
         if (elementIsPlural && attrName === 'ordinal') {
+          const expression = t.isJSXExpressionContainer(attr.value)
+            ? attr.value.expression
+            : undefined;
+          if (attr.value && !t.isBooleanLiteral(expression)) {
+            output.errors.push(
+              warnNonLiteralOrdinalSync(
+                config.file,
+                `${attr.loc?.start?.line}:${attr.loc?.start?.column}`
+              )
+            );
+          }
           attrValue =
-            !attr.value ||
-            (t.isJSXExpressionContainer(attr.value) &&
-              t.isBooleanLiteral(attr.value.expression, { value: true }));
+            !attr.value || t.isBooleanLiteral(expression, { value: true });
         }
         props[attrName] = attrValue;
       }

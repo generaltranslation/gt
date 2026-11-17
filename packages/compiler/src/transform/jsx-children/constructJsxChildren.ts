@@ -39,11 +39,18 @@ import {
   generateDynamicContentErrorMessage,
 } from '../../utils/errors';
 import { validateJsxCall } from './validation/validateJsxCall';
+import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
   JsxValidationError,
   dynamicContentError,
   structuralError,
 } from './errors';
+
+const NON_LITERAL_ORDINAL_ERROR = createDiagnosticMessage({
+  whatHappened: 'The ordinal prop of <Plural> must be a boolean literal',
+  fix: 'Write a bare ordinal attribute, ordinal={true} or ordinal={false}',
+});
 
 /**
  * Given the children of a <T> component, constructs a JsxChildren object.
@@ -533,16 +540,25 @@ function constructGTProp(
 
     if (Object.keys(branches).length > 0) {
       value['b'] = branches;
-      // <Plural ordinal> compiles to `ordinal: true`.
-      const ordinal = parameters.properties.some(
-        (property) =>
-          t.isObjectProperty(property) &&
-          (t.isIdentifier(property.key, { name: 'ordinal' }) ||
-            t.isStringLiteral(property.key, { value: 'ordinal' })) &&
-          t.isBooleanLiteral(property.value, { value: true })
-      );
-      value['t'] =
-        canonicalName === GT_COMPONENT_TYPES.Branch ? 'b' : ordinal ? 'o' : 'p';
+      value['t'] = 'b';
+      if (canonicalName === GT_COMPONENT_TYPES.Plural) {
+        // <Plural ordinal> compiles to `ordinal: true`. The runtime reads the
+        // live value, so nothing but a boolean literal may stand here.
+        const ordinal = getObjectPropertyFromObjectExpression(
+          parameters,
+          'ordinal'
+        );
+        const literal = t.isObjectProperty(ordinal) ? ordinal.value : undefined;
+        if (ordinal && !t.isBooleanLiteral(literal)) {
+          errors.push(
+            structuralError(
+              NON_LITERAL_ORDINAL_ERROR + createErrorLocation(ordinal)
+            )
+          );
+          return { errors };
+        }
+        value['t'] = t.isBooleanLiteral(literal, { value: true }) ? 'o' : 'p';
+      }
     }
   } else {
     // Get the html content props
