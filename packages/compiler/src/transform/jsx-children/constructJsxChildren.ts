@@ -86,6 +86,11 @@ export function constructJsxChildren(
     // Handle ArrayExpression
     value = [];
     const elementPaths = childrenPath.get('elements');
+    // Autoderive drops dynamic-content errors, so a structural error in a
+    // later sibling still has to be found.
+    const keepLooking = () =>
+      state.settings.autoderive.jsx &&
+      errors.every((error) => error.type === 'dynamic-content');
 
     for (let i = 0; i < children.elements.length; i++) {
       const child = children.elements[i];
@@ -97,6 +102,7 @@ export function constructJsxChildren(
               (child && createErrorLocation(child))
           )
         );
+        if (keepLooking()) continue;
         return { errors };
       }
 
@@ -112,12 +118,16 @@ export function constructJsxChildren(
       const validation = constructJsxChild(childPath, state, id);
       errors.push(...validation.errors);
       if (errors.length > 0) {
+        if (keepLooking()) continue;
         return { errors };
       }
       containsDerive ||= !!validation.containsDerive;
       // Skip if no value
       if (validation.value === undefined) continue;
       (value as JsxChild[]).push(validation.value);
+    }
+    if (errors.length > 0) {
+      return { errors };
     }
   } else {
     // Handle single child

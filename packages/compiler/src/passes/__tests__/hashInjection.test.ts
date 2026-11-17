@@ -304,6 +304,17 @@ describe('a spread on Branch/Plural', () => {
     expect(code).not.toContain('_hash');
   });
 
+  it('is rejected after a dynamic sibling that autoderive allows', () => {
+    // <T>{name}<Plural n={count} {...forms} /></T>
+    const { errors } = transform(
+      `${JSX_IMPORTS}jsxs(T, { children: [name, jsx(Plural, { n: count, ...forms })] });`,
+      { autoderive: true }
+    );
+    expect(errors).toEqual([
+      expect.stringContaining('<Plural> cannot take a spread attribute'),
+    ]);
+  });
+
   it('is left alone outside translated content', () => {
     const { errors, code } = transform(
       `${JSX_IMPORTS}jsx(Plural, { n: count, ...forms });`
