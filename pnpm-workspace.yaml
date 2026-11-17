@@ -4,6 +4,7 @@ packages:
   - examples/*
   - tools/bundle-analysis/analysis-app
   - tools/bundle-analysis/examples/*
+  - tools/render-bench
 
 enableGlobalVirtualStore: true
 hoist: false
