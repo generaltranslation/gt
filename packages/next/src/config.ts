@@ -24,6 +24,7 @@ import {
   invalidCanonicalLocalesError,
   invalidLocalesError,
   createProjectIdMismatchError,
+  inlineTranslationsWithoutCompileTimeHashError,
   projectIdMissingWarn,
   standardizedCanonicalLocalesWarning,
   unresolvedLoadDictionaryBuildError,
@@ -34,6 +35,7 @@ import { isValidLocale, standardizeLocale } from '@generaltranslation/format';
 import {
   localeRefreshSupported,
   rootParamStability,
+  swcPluginWasmFileName,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
 import { distDir, nodeRequire } from './plugin/nodeCompat';
@@ -52,6 +54,8 @@ import { getRuntimeCredentials } from './setup/runtimeCredentials';
 import { nextLocaleCookieName } from './utils/cookies';
 import { splitMiddlewareConfig } from './middleware-dir/defaultMiddlewareConfig';
 import { createGtNextPluginDiagnostic } from './errors/diagnostics';
+import { resolveInlineTranslations } from './plugin/resolveInlineTranslations';
+import { MESSAGE_MODULES_ALIAS } from './plugin/constants';
 
 type RuntimeCredentialProps = {
   apiKey?: string;
@@ -350,11 +354,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   if (mergedConfig.experimentalCompilerOptions?.type === 'swc') {
     try {
       if (turboPackEnabled) {
-        const absolutePath = path.resolve(distDir, './gt_swc_plugin.wasm');
+        const absolutePath = path.resolve(distDir, swcPluginWasmFileName);
         resolvedWasmFilePath =
           './' + path.relative(process.cwd(), absolutePath).replace(/\\/g, '/');
       } else {
-        resolvedWasmFilePath = path.resolve(distDir, './gt_swc_plugin.wasm');
+        resolvedWasmFilePath = path.resolve(distDir, swcPluginWasmFileName);
       }
     } catch (error) {
       console.error(
@@ -642,10 +646,25 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     loadedConfig.files?.gt?.parsingFlags?.autoderive
   );
 
+  const swcInlineTranslations =
+    mergedConfig.experimentalCompilerOptions?.type === 'swc'
+      ? resolveInlineTranslations(loadedConfig.files?.gt, {
+          distDir: internalNextConfig.distDir,
+        })
+      : undefined;
+  if (
+    swcInlineTranslations &&
+    !mergedConfig.experimentalCompilerOptions?.compileTimeHash
+  ) {
+    throw new Error(inlineTranslationsWithoutCompileTimeHashError);
+  }
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
     autoderiveJsx: autoderive.jsx,
     autoderiveStrings: autoderive.strings,
+    ...(swcInlineTranslations && {
+      inlineTranslations: swcInlineTranslations,
+    }),
   };
 
   const swcPluginEntry: [string, Record<string, unknown>] | null =
@@ -653,7 +672,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ? [resolvedWasmFilePath, swcPluginOptions]
       : null;
 
+  const messageModulesDir = swcInlineTranslations?.modules?.dir;
   const turboAliases = {
+    ...(messageModulesDir && {
+      [`${MESSAGE_MODULES_ALIAS}/*`]: `./${messageModulesDir}/*`,
+    }),
     'gt-next/internal/_dictionary': resolvedDictionaryFilePath || '',
     'gt-next/internal/_load-translations': customLoadTranslationsPath || '',
     'gt-next/internal/_load-dictionary': customLoadDictionaryPath || '',
@@ -795,6 +818,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         if (process.env.NODE_ENV === 'development') {
           webpackConfig.cache = false;
         }
+        if (messageModulesDir) {
+          webpackConfig.resolve.alias[MESSAGE_MODULES_ALIAS] =
+            path.resolve(messageModulesDir);
+        }
         if (resolvedDictionaryFilePath) {
           webpackConfig.resolve.alias['gt-next/internal/_dictionary'] =
             path.resolve(webpackConfig.context, resolvedDictionaryFilePath);
@@ -876,10 +903,19 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
           });
         }
       }
-      if (typeof internalNextConfig?.webpack === 'function') {
-        return internalNextConfig.webpack(webpackConfig, options);
+      const resolvedWebpackConfig =
+        typeof internalNextConfig?.webpack === 'function'
+          ? internalNextConfig.webpack(webpackConfig, options)
+          : webpackConfig;
+      // Next.js keys its webpack cache without SWC plugin options, so key it on the embedded translations after the user's hook can replace it
+      if (
+        !turboPackEnabled &&
+        swcInlineTranslations &&
+        typeof resolvedWebpackConfig.cache === 'object'
+      ) {
+        resolvedWebpackConfig.cache.version = `${resolvedWebpackConfig.cache.version ?? ''}|gt-inline-translations:${swcInlineTranslations.contentHash}`;
       }
-      return webpackConfig;
+      return resolvedWebpackConfig;
     },
   };
   return config as WithGTConfigResult<TNextConfig>;

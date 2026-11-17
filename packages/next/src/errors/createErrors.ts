@@ -4,6 +4,7 @@ import {
   createGtNextDiagnostic,
   createGtNextPluginDiagnostic,
 } from './diagnostics';
+import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 
 export const remoteTranslationsError = createGtNextDiagnostic({
@@ -189,3 +190,65 @@ export const babelCompilerTurbopackUnavailableWarning =
   `To use compiler optimizations with Turbopack, set experimentalCompilerOptions: { type: 'swc' }.`;
 
 export const swcPluginCompatibilityChangeWarning = `gt-next (plugin): The GT swc compiler requires next@${SWC_PLUGIN_SUPPORT} or newer. Update to the latest version of Next.js.`;
+
+export const createInlineTranslationsShardsWarning = (
+  dir: string,
+  error: unknown
+) =>
+  createGtNextPluginDiagnostic({
+    severity: 'Warning',
+    whatHappened: `Embedded translations could not be written to ${dir}`,
+    why: 'Builds read them from there, so a build will fail; servers do not need them',
+    fix: 'Make the Next.js distDir writable during next build',
+    details: formatDiagnosticErrorDetails(error),
+  });
+
+export const createInlineTranslationsDistDirOutsideCwdError = (
+  distDir: string,
+  cwd: string
+) =>
+  createGtNextPluginDiagnostic({
+    severity: 'Error',
+    whatHappened: `Translations cannot be embedded with distDir ${distDir}`,
+    why: `it is outside the working directory (${cwd}), and the SWC plugin can only read inside it`,
+    fix: 'Set distDir to a directory inside the project',
+  });
+
+export const inlineTranslationsWithoutCompileTimeHashError =
+  createGtNextPluginDiagnostic({
+    severity: 'Error',
+    whatHappened:
+      'files.gt.inlineTranslations is set, but experimentalCompilerOptions.compileTimeHash is false',
+    why: 'the SWC plugin only embeds translations when it computes hashes, and msgOutput files leave out the translations it would embed',
+    fix: 'Remove compileTimeHash: false, or remove files.gt.inlineTranslations from gt.config.json',
+  });
+
+export const virtualMessageModulesUnsupportedWarning =
+  createGtNextPluginDiagnostic({
+    severity: 'Warning',
+    whatHappened:
+      "files.gt.inlineTranslations.modules is 'virtual', which the SWC plugin does not support",
+    why: 'SWC plugins cannot serve virtual modules',
+    reassurance: 'Message modules are written to modulesDir instead',
+    fix: "Set modules to 'physical' to silence this warning",
+  });
+
+export const createMessageModulesWarning = (dir: string, error: unknown) =>
+  createGtNextPluginDiagnostic({
+    severity: 'Warning',
+    whatHappened: `Embedded translation modules could not be written to ${dir}`,
+    why: 'Builds import them from there, so a build will fail; servers do not need them',
+    fix: 'Make files.gt.inlineTranslations.modulesDir writable during next build',
+    details: formatDiagnosticErrorDetails(error),
+  });
+
+export const createMessageModulesDirOutsideCwdError = (
+  modulesDir: string,
+  cwd: string
+) =>
+  createGtNextPluginDiagnostic({
+    severity: 'Error',
+    whatHappened: `Message modules cannot be written to ${modulesDir}`,
+    why: `the SWC plugin can only read inside the working directory (${cwd})`,
+    fix: 'Set files.gt.inlineTranslations.modulesDir to a directory inside the project',
+  });

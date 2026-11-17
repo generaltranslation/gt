@@ -50,7 +50,32 @@ export type GTCompilerOptions = {
   enableAutoJsxInjection?: boolean;
 };
 
-/** Experimental: embed translations for the given locales at build time. */
+/**
+ * Experimental: embed translations for the given locales directly at their
+ * call sites, so bundlers tree-shake them with unused code. Translations are
+ * read from `files.gt.output`. Other locales keep loading at runtime. Only
+ * applied to production builds.
+ *
+ * Embedded call sites, with gt-next's SWC plugin:
+ * - `<T>`, except derive content.
+ * - The `t` from `/unstable`, and the `gt` from `const gt = useGT()` or
+ *   `const gt = await getGT()` from `/unstable`, when every value in the
+ *   template is a named variable like `${{ name }}` and options are literals,
+ *   like gt({ context: 'button' })`Save`.
+ *
+ * Everything else loads at runtime: stable `gt()` and `t()`, `msg()` (resolved
+ * by `m()` away from its call site), and other unstable templates, such as
+ * ones with unnamed values, `plural()` and other helpers, `part`, or
+ * `derive()`, or called through an alias or a configured tag. For embedded
+ * locales, have your `loadTranslations` load the `msgOutput` file the CLI
+ * writes instead of the full translations file: it has every entry except
+ * the embedded ones.
+ *
+ * `<T>` with spread props or a `$_hash` prop, and call sites in files the
+ * compiler leaves untransformed (such as a file with a non-extractable
+ * argument like `gt(someVar)` under `disableBuildChecks`), are not embedded,
+ * but the CLI still leaves those `<T>` out of `msgOutput` files.
+ */
 export type GTInlineTranslationsOptions = InferInput<
   typeof GTInlineTranslationsSchema
 >;

@@ -113,6 +113,11 @@ export const defaultGroups = [
     ],
   },
   {
+    name: 'defaultInlineTranslationsModulesDir',
+    declarations: ['packages/core/src/settings/inlineTranslations.ts'],
+    exceptions: [],
+  },
+  {
     name: 'defaultCacheUrl',
     declarations: ['packages/core/src/settings/settingsUrls.ts'],
     exceptions: [],
