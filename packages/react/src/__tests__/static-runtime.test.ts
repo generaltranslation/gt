@@ -42,7 +42,7 @@ describe('gt-react/static-runtime', () => {
   });
 
   it('formats text, values, selects and plurals in the build locale', () => {
-    const format = createStaticFormatter(['fr', 'en'], 'UTC');
+    const format = createStaticFormatter(['fr', 'en'], '', 'UTC');
     expect(
       format(
         [
@@ -100,6 +100,44 @@ describe('gt-react/static-runtime', () => {
     }
     expect(pluralRules()).toBe(1);
     expect(numberFormat()).toBe(1);
+  });
+
+  it('formats a plural of a small count from what the build found out, without Intl', () => {
+    const built = (
+      ['PluralRules', 'NumberFormat', 'DateTimeFormat'] as const
+    ).map(countBuilt);
+    // fr-CH: every integer below 1,000 is its digits; 0 and 1 are `one`
+    const format = createStaticFormatter(['fr-CH', 'en'], '1;oo|x');
+    const tree = [
+      ['count', 'plural', { one: [0, ' élément'], other: [0, ' éléments'] }],
+      ', ',
+      ['role', 'select', { admin: 'admin', other: 'invité' }],
+    ] as const;
+    expect(
+      [0, 1, 2, 999, '7', 12n].map((count) =>
+        format(tree, { count, role: 'admin' })
+      )
+    ).toEqual([
+      '0 élément, admin',
+      '1 élément, admin',
+      '2 éléments, admin',
+      '999 éléments, admin',
+      '7 éléments, admin',
+      '12 éléments, admin',
+    ]);
+    expect(built.map((count) => count())).toEqual([0, 0, 0]);
+
+    // A count the build did not look at goes to Intl
+    expect(format(tree, { count: 1000, role: 'x' })).toBe(
+      `${new originals.NumberFormat(['fr-CH', 'en']).format(1000)} éléments, invité`
+    );
+    expect(format(tree, { count: 1.5, role: 'x' })).toBe(
+      `${new originals.NumberFormat(['fr-CH', 'en']).format(1.5)} élément, invité`
+    );
+    expect(format(tree, { count: -1, role: 'x' })).toBe(
+      `${new originals.NumberFormat(['fr-CH', 'en']).format(-1)} élément, invité`
+    );
+    expect(built.map((count) => count())).toEqual([1, 1, 0]);
   });
 
   it('builds no Intl object for text and plain values', () => {

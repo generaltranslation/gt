@@ -100,18 +100,70 @@ export function createStaticValue(
   };
 }
 
+// The counts a build looks at; see `counts`
+const SMALL_COUNT_LIMIT = 1000;
+
+const PLURAL_CATEGORIES: Record<string, string> = {
+  z: 'zero',
+  o: 'one',
+  t: 'two',
+  f: 'few',
+  m: 'many',
+  x: 'other',
+};
+
+/** Whether a count is an integer from 0 up to 1,000, which a build knows about. */
+function isSmallCount(count: PluralCount): boolean {
+  return (
+    count >= 0 &&
+    count < SMALL_COUNT_LIMIT &&
+    (typeof count === 'bigint' || Number.isInteger(count))
+  );
+}
+
 /**
  * A formatter for the message trees of one build.
  * @param locales The build's locale, then its default locale, as Intl reads them.
+ * @param counts What the compiler found out from Intl, when it built, about
+ * each integer from 0 up to 1,000 in these locales, as `digits;plural;ordinal`.
+ * `digits` is `1` when Intl formats each as its digits. `plural` and `ordinal`
+ * are its plural categories as one letter each (`PLURAL_CATEGORIES`): those
+ * of the first integers, then after a `|` the ones that repeat from there. A
+ * part that is empty was not worked out. A page's first `Intl.NumberFormat`
+ * takes milliseconds to build, so a plural of such a count is formatted from
+ * this instead, and builds no Intl object.
  * @param timeZone The configured time zone; without one, dates format in the host's.
  * @internal
  */
 export function createStaticFormatter(
   locales: string[],
+  counts = '',
   timeZone?: string
 ): StaticFormatter {
   const shared = getIntl(locales, timeZone);
   const text = createStaticValue(locales, timeZone);
+  const [digits, plural, selectordinal] = counts.split(';');
+  const tables = { plural, selectordinal };
+
+  /** The plural category of a count: the build's for a small one, else Intl's. */
+  const categoryOf = (
+    kind: 'plural' | 'selectordinal',
+    count: PluralCount
+  ): string => {
+    const table = tables[kind];
+    if (table && isSmallCount(count)) {
+      const [first, repeating] = table.split('|');
+      const index = Number(count);
+      return PLURAL_CATEGORIES[
+        index < first.length
+          ? first[index]
+          : repeating[(index - first.length) % repeating.length]
+      ];
+    }
+    return (shared[kind] ??= new Intl.PluralRules(locales, {
+      type: kind === 'plural' ? 'cardinal' : 'ordinal',
+    })).select(Number(count));
+  };
 
   const format = (
     tree: StaticMessageTree,
@@ -127,9 +179,13 @@ export function createStaticFormatter(
       }
       if (node === 0) {
         if (count !== undefined) {
-          out += (shared.number ??= new Intl.NumberFormat(locales)).format(
-            count
-          );
+          out +=
+            // Intl prints -0 with its sign
+            digits === '1' && isSmallCount(count) && !Object.is(count, -0)
+              ? count
+              : (shared.number ??= new Intl.NumberFormat(locales)).format(
+                  count
+                );
         }
         continue;
       }
@@ -180,12 +236,7 @@ export function createStaticFormatter(
             `The variable "${name}" is outside the safe integer range.`
           );
         }
-        branch = ownBranch(
-          branches,
-          (shared[node[1]] ??= new Intl.PluralRules(locales, {
-            type: node[1] === 'plural' ? 'cardinal' : 'ordinal',
-          })).select(Number(adjusted))
-        );
+        branch = ownBranch(branches, categoryOf(node[1], adjusted));
       }
       branch ??= ownBranch(branches, FALLBACK_BRANCH_KEY);
       if (branch === undefined) throw noBranch(name, value);
