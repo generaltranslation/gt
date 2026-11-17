@@ -653,7 +653,8 @@ const TEMPLATE_CASES: Case[] = [
     expected: 'replaced',
     sourceText: ['Use '],
   },
-  // Templates that keep their source and embedded translation
+  // Templates that keep their source and embedded translation, and ones
+  // whose message takes the translation's tree with every value of the source
   {
     name: 'a translation with ICU syntax beyond {name}',
     source: `import { t } from 'gt-react/unstable';
@@ -678,7 +679,7 @@ const TEMPLATE_CASES: Case[] = [
       export const App = ({ a }) => t\`Hi \${{ name: [a].join('') }}\`;`,
     translation: ['Salut ', ['name'], ' ', ['name']],
     renders: [{ a: 'Ada' }],
-    expected: 'kept',
+    expected: 'replaced',
   },
   {
     name: 'variables with side effects the translation reorders',
@@ -687,7 +688,7 @@ const TEMPLATE_CASES: Case[] = [
       export const App = ({ a, b }) => t\`\${{ a: up(a) }} then \${{ b: up(b) }}\`;`,
     translation: [['b'], ' puis ', ['a']],
     renders: [{ a: 'x', b: 'y' }],
-    expected: 'kept',
+    expected: 'replaced',
   },
   {
     name: 'a variable the translation moves across one with side effects',
@@ -698,7 +699,7 @@ const TEMPLATE_CASES: Case[] = [
       };`,
     translation: [['b'], ' puis ', ['a']],
     renders: [{}],
-    expected: 'kept',
+    expected: 'replaced',
   },
 ];
 
@@ -864,8 +865,8 @@ describe('experimentalReplaceSource', () => {
       true
     );
     expect(replaced).toMatchInlineSnapshot(`
-      "import { t } from "gt-react/unstable";const _gt = { $_hash: "728c62f6bce558d1", $_tree: ["Utilisez \`code\`, \${x} et \\\\ pour ", ["name"], "\\r\\n"], $_locale: "fr" };
-      const App = ({ name }) => t(_gt, { name });
+      "import { t } from "gt-react/unstable";
+      const App = ({ name }) => t({ $_hash: "728c62f6bce558d1", $_tree: ["Utilisez \`code\`, \${x} et \\\\ pour ", ["name"], "\\r\\n"], $_locale: "fr" }, { name });
       export {
         App };"
     `);

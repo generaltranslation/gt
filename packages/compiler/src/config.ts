@@ -57,10 +57,10 @@ export interface PluginConfig
   /**
    * Replaces each static `t` template from an `/unstable` entry with a call
    * that reads its message, built at compile time and declared once at module
-   * scope, so the call site builds no message tree when it renders. The
-   * runtime packages must be from the same release as the compiler: an older
-   * `t` does not read these calls. Defaults to true; false keeps the tagged
-   * templates and only injects their hashes.
+   * scope, so the call site builds no message tree when it renders. An older
+   * `t` does not read these calls, so the default is true only when no
+   * installed GT runtime is older than that; false keeps the tagged templates
+   * and only injects their hashes.
    */
   precomputeMessages?: boolean;
 }
