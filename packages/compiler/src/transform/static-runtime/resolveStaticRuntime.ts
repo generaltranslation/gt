@@ -17,6 +17,21 @@ export const STATIC_RUNTIME_ENV_VAR = 'GT_STATIC_RUNTIME';
 /** The entry compiled code imports instead of gt-react. */
 export const STATIC_RUNTIME_SOURCE = 'gt-react/static-runtime';
 
+/**
+ * What a call site formats a message tree with: `tree` for a message of text,
+ * values, selects and plurals, and `intl` for one that also formats a number,
+ * a date or a time, which needs the runtime's own formatter.
+ */
+export const STATIC_FORMATTERS = {
+  tree: { create: 'createStaticFormatter', source: STATIC_RUNTIME_SOURCE },
+  intl: {
+    create: 'createStaticIntlFormatter',
+    source: `${STATIC_RUNTIME_SOURCE}/intl`,
+  },
+} as const;
+
+export type StaticFormatterKind = keyof typeof STATIC_FORMATTERS;
+
 const ENV_TRUE_VALUES = new Set(['true', '1']);
 const ENV_FALSE_VALUES = new Set(['false', '0', '']);
 

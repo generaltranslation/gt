@@ -4,21 +4,23 @@ import type { MessageTree } from '@generaltranslation/icu';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { TransformState } from '../../state/types';
 import { createErrorLocation } from '../../utils/errors';
-import { STATIC_RUNTIME_SOURCE } from './resolveStaticRuntime';
+import {
+  STATIC_FORMATTERS,
+  STATIC_RUNTIME_SOURCE,
+  type StaticFormatterKind,
+} from './resolveStaticRuntime';
 
 /** What a file needs from the static runtime, and what it could not compile. */
 export type StaticRuntimeFile = {
   /** Why the file still needs the GT runtime, each with its location */
   errors: string[];
-  /** Local name of the formatter, once a call site formats with it */
-  formatter?: string;
+  /** Local name of each formatter a call site formats with */
+  formatters: Partial<Record<StaticFormatterKind, string>>;
   /** Module-scope declarations of message trees, by the tree's JSON */
   trees: Map<string, t.VariableDeclaration>;
   /** Whether the file was changed */
   changed: boolean;
 };
-
-const CREATE_FORMATTER = 'createStaticFormatter';
 
 // Imports the app must not keep: these load the GT runtime, which is not started
 const RUNTIME_SOURCES =
@@ -30,6 +32,7 @@ const STATIC_EXPORTS = new Set(['initializeGTSPA']);
 function getFile(state: TransformState): StaticRuntimeFile {
   return (state.staticRuntime ??= {
     errors: [],
+    formatters: {},
     trees: new Map(),
     changed: false,
   });
@@ -58,14 +61,17 @@ export function addStaticRuntimeWarning(
   state.logger.logWarning(`${locate(state, node)}: ${reason}`);
 }
 
-/** The local name of this file's formatter, declared once the file is done. */
+/** The local name of one of this file's formatters, declared once the file is done. */
 export function getStaticFormatter(
   state: TransformState,
-  path: NodePath
+  path: NodePath,
+  kind: StaticFormatterKind
 ): t.Identifier {
-  const file = getFile(state);
-  file.formatter ??= path.scope.getProgramParent().generateUid('gtFormat');
-  return t.identifier(file.formatter);
+  const { formatters } = getFile(state);
+  formatters[kind] ??= path.scope
+    .getProgramParent()
+    .generateUid(kind === 'tree' ? 'gtFormat' : 'gtFormatIntl');
+  return t.identifier(formatters[kind]);
 }
 
 /** Declares a message tree once per file at module scope, so a render allocates none. */
@@ -81,12 +87,33 @@ export function hoistStaticTree(
     declaration = t.variableDeclaration('const', [
       t.variableDeclarator(
         path.scope.getProgramParent().generateUidIdentifier('gtTree'),
-        t.valueToNode(tree)
+        treeToNode(tree)
       ),
     ]);
     file.trees.set(key, declaration);
   }
   return t.cloneNode(declaration.declarations[0].id as t.Identifier);
+}
+
+/** A message tree as a literal, its text printed as written, where the generator would escape non-ASCII text. */
+function treeToNode(value: unknown): t.Expression {
+  if (typeof value === 'string') {
+    const literal = t.stringLiteral(value);
+    literal.extra = { rawValue: value, raw: JSON.stringify(value) };
+    return literal;
+  }
+  if (Array.isArray(value)) return t.arrayExpression(value.map(treeToNode));
+  if (typeof value === 'object' && value !== null) {
+    return t.objectExpression(
+      Object.entries(value).map(([key, entry]) =>
+        t.objectProperty(
+          t.isValidIdentifier(key) ? t.identifier(key) : t.stringLiteral(key),
+          treeToNode(entry)
+        )
+      )
+    );
+  }
+  return t.valueToNode(value);
 }
 
 /**
@@ -127,7 +154,7 @@ export function finishStaticRuntimeFile(
       !t.isImportDeclaration(statement) ||
       statement.importKind === 'type' ||
       !RUNTIME_SOURCES.test(statement.source.value) ||
-      statement.source.value === STATIC_RUNTIME_SOURCE
+      statement.source.value.startsWith(STATIC_RUNTIME_SOURCE)
     ) {
       continue;
     }
@@ -186,7 +213,7 @@ export function finishStaticRuntimeFile(
           t.isIdentifier(path.node.callee, { name: 'require' })) &&
         t.isStringLiteral(argument) &&
         RUNTIME_SOURCES.test(argument.value) &&
-        argument.value !== STATIC_RUNTIME_SOURCE
+        !argument.value.startsWith(STATIC_RUNTIME_SOURCE)
       ) {
         addStaticRuntimeError(
           state,
@@ -197,13 +224,23 @@ export function finishStaticRuntimeFile(
     },
   });
 
-  const declarations: t.Statement[] = [];
-  if (file.formatter) {
-    const create = programPath.scope.generateUid(CREATE_FORMATTER);
-    staticSpecifiers.push(
-      t.importSpecifier(t.identifier(create), t.identifier(CREATE_FORMATTER))
-    );
-    const call = t.callExpression(t.identifier(create), [
+  // The imports of the static entries, then each formatter, then the trees
+  const imports = new Map<string, t.ImportSpecifier[]>(
+    staticSpecifiers.length > 0
+      ? [[STATIC_RUNTIME_SOURCE, staticSpecifiers]]
+      : []
+  );
+  const formatters: t.Statement[] = [];
+  for (const kind of Object.keys(STATIC_FORMATTERS) as StaticFormatterKind[]) {
+    const local = file.formatters[kind];
+    if (!local) continue;
+    const { create, source } = STATIC_FORMATTERS[kind];
+    const createLocal = programPath.scope.generateUid(create);
+    imports.set(source, [
+      ...(imports.get(source) ?? []),
+      t.importSpecifier(t.identifier(createLocal), t.identifier(create)),
+    ]);
+    const call = t.callExpression(t.identifier(createLocal), [
       t.valueToNode(runtime.locales),
       ...(runtime.timeZone === undefined
         ? []
@@ -211,21 +248,19 @@ export function finishStaticRuntimeFile(
     ]);
     // So a bundler drops the formatter of a module whose call sites it drops
     t.addComment(call, 'leading', ' @__PURE__ ');
-    declarations.push(
+    formatters.push(
       t.variableDeclaration('const', [
-        t.variableDeclarator(t.identifier(file.formatter), call),
-      ]),
-      ...file.trees.values()
+        t.variableDeclarator(t.identifier(local), call),
+      ])
     );
   }
-  if (staticSpecifiers.length > 0) {
-    declarations.unshift(
-      t.importDeclaration(
-        staticSpecifiers,
-        t.stringLiteral(STATIC_RUNTIME_SOURCE)
-      )
-    );
-  }
+  const declarations: t.Statement[] = [
+    ...Array.from(imports, ([source, specifiers]) =>
+      t.importDeclaration(specifiers, t.stringLiteral(source))
+    ),
+    ...formatters,
+    ...file.trees.values(),
+  ];
   if (declarations.length > 0) {
     let afterImports = 0;
     program.body.forEach((statement, index) => {

@@ -155,7 +155,7 @@ function getArgumentName(node: unknown): string | undefined {
 }
 
 // Raw template text reads backslashes, backticks and `${` as syntax, and turns CR into LF
-function escapeTemplateText(text: string): string {
+export function escapeTemplateText(text: string): string {
   return text.replace(/\\|`|\$\{|\r/g, (match) =>
     match === '\r' ? '\\r' : `\\${match}`
   );
