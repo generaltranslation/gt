@@ -61,14 +61,19 @@ export function processMessage(
     }
   } catch (error) {
     if (!(error instanceof NonStaticMessageError)) throw error;
-    output.warnings.add(
-      warnNonStaticMessageTreeSync(
-        config.file,
-        error.message,
-        formatLocation(error.node),
-        error.details,
-        error.fix
-      )
+    const skipped = warnNonStaticMessageTreeSync(
+      config.file,
+      error.message,
+      formatLocation(error.node),
+      error.details,
+      error.fix
     );
+    if (!config.skippedMessagesAreErrors) {
+      output.warnings.add(skipped);
+    } else if (!output.errors.includes(skipped)) {
+      // Two messages that share a part`...` report the same skip, which the
+      // warnings set drops.
+      output.errors.push(skipped);
+    }
   }
 }

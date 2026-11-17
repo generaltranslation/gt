@@ -82,6 +82,7 @@ export async function createInlineUpdates(
       includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
       ignoreTaggedTemplates: false,
       ignoreGlobalTaggedTemplates: false,
+      skippedMessagesAreErrors: validate,
       // User configurable, otherwise default to AUTO
       autoderiveMethod: autoderive.strings ? 'AUTO' : 'DISABLED',
     };

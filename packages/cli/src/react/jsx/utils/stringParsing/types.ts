@@ -37,6 +37,11 @@ export type ParsingConfig = {
    */
   ignoreGlobalTaggedTemplates: boolean;
   /**
+   * If true, a tagged-template message that cannot be extracted is an error
+   * instead of a warning, as in `gt validate`
+   */
+  skippedMessagesAreErrors?: boolean;
+  /**
    * Skip requirement for a derive() invocation to trigger derivation
    * - ENABLED: Always autoderive
    * - DISABLED: Never autoderive

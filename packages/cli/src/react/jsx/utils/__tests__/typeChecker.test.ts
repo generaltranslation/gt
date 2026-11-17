@@ -65,7 +65,11 @@ async function deriveVariants(file: string) {
     CallExpression(callPath) {
       const [argument] = callPath.node.arguments;
       if (t.isIdentifier(callPath.node.callee, { name: 'derive' })) {
-        results.push(getStringVariants(file, argument.start!, argument.end!));
+        results.push(
+          getStringVariants(file, argument.start!, argument.end!, {
+            undefinedAsEmpty: true,
+          })
+        );
       }
     },
   });
@@ -189,6 +193,22 @@ describe.each([
       { variants: ['', 'A'] },
       { variants: ['', 'day', 'night'] },
     ]);
+  });
+
+  it('reads a shorthand property, with no empty variant unless asked', async () => {
+    const root = createProject({
+      'tsconfig.json': JSON.stringify({ compilerOptions: { strict: false } }),
+      'app.ts':
+        "declare const time: 'day' | 'night';\nexport const value = { time };",
+    });
+    const file = path.join(root, 'app.ts');
+    const start = fs.readFileSync(file, 'utf8').lastIndexOf('time');
+    await loadTypeScript(file);
+    expect(
+      getStringVariants(file, start, start + 'time'.length, {
+        undefinedAsEmpty: false,
+      })
+    ).toEqual({ variants: ['day', 'night'] });
   });
 
   it('reads a JavaScript file without a tsconfig', async () => {

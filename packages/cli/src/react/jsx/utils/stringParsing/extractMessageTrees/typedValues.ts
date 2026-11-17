@@ -56,7 +56,8 @@ export function deriveVariants(
   const result = getStringVariants(
     context.config.file,
     argument.start!,
-    argument.end!
+    argument.end!,
+    { undefinedAsEmpty: true }
   );
   if ('variants' in result) {
     assertVariantLimit(result.variants.length, argument);
@@ -79,6 +80,36 @@ export function deriveVariants(
       );
     default:
       return throwTypeIssue(result.issue, argument);
+  }
+}
+
+/**
+ * A select without `other` renders no text for a value with no branch, so
+ * every value of a finite union of string literals needs one. Any other type
+ * is left to the runtime.
+ */
+export function assertSelectCovered(
+  value: t.Node,
+  keys: string[],
+  branches: t.Node,
+  context: TreeContext
+): void {
+  const result = getStringVariants(
+    context.config.file,
+    value.start!,
+    value.end!,
+    // undefined is no value to write a branch for.
+    { undefinedAsEmpty: false }
+  );
+  if (!('variants' in result)) return;
+  const missing = result.variants.filter((variant) => !keys.includes(variant));
+  if (missing.length > 0) {
+    throw new NonStaticMessageError(
+      `select needs a branch for ${missing.map((variant) => `'${variant}'`).join(', ')}, or an other branch`,
+      branches,
+      undefined,
+      'Add a branch for each value, or an other branch for the rest'
+    );
   }
 }
 
