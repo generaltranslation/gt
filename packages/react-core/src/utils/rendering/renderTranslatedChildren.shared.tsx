@@ -76,27 +76,38 @@ function createRenderTranslatedChildren({
       });
     }
 
-    // plural (the translation chooses a branch)
+    // The translation chooses a branch; when it has none for the value, the
+    // source chooses its own, which then renders untranslated.
     if (transformation === 'plural') {
       const n = sourceElement.props.n;
       const targetBranches = targetElement.d?.b || {};
       const key = selectPluralKey(n, locales, targetBranches);
+      const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
-        source: getPluralBranch(n, locales, sourceGT.branches || {}, key),
-        target: targetBranches[key] as TranslatedChildren,
+        source: getPluralBranch(
+          n,
+          locales,
+          sourceGT.branches || {},
+          target === undefined ? undefined : key
+        ),
+        target,
         locales,
         enableI18n,
       });
     }
 
-    // branch (the translation chooses a branch)
     if (transformation === 'branch') {
       const { branch } = sourceProps;
       const targetBranches = targetElement.d?.b || {};
       const key = selectBranchKey(branch, targetBranches);
+      const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
-        source: getBranch(branch, sourceGT.branches || {}, key),
-        target: targetBranches[key] as TranslatedChildren,
+        source: getBranch(
+          branch,
+          sourceGT.branches || {},
+          target === undefined ? undefined : key
+        ),
+        target,
         locales,
         enableI18n,
       });

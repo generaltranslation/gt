@@ -185,6 +185,17 @@ describe('plural rendering', () => {
 
     expect(result).toBe('Items');
   });
+
+  it('lets the source pick when the translation has no branch for the value', () => {
+    const result = renderTranslatedChildren({
+      source: createBranchElement('a', { a: 'A', b: 'B' }),
+      target: { d: { b: { b: 'B traduit' } } } as unknown as TranslatedChildren,
+      locales: ['fr'],
+      enableI18n: true,
+    });
+
+    expect(result).toBe('A');
+  });
 });
 
 describe('shared plural component renderer', () => {
