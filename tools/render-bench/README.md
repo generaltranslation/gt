@@ -192,6 +192,13 @@ JSON with gzip at level 6. For a build that wrote translation files and a
 `gt-chunk-translations.json` manifest, it also reads what each lazy chunk
 loads as built, and how many times the split by module that is.
 
+`ids.mjs` estimates what shorter message ids would save in such a build. It
+rewrites every id in the built JavaScript and translation files under three
+schemes (the shortest unique prefix of the hash, a prefix of six characters
+or more, and a counter), compresses the result, and counts the ids and
+translation files that change when the app gains 1% more messages. `--write`
+keeps the rewritten builds, which `measure.mjs` loads like any other.
+
 Set `BENCH_PACKAGES` to the commit the GT packages were built from when it is
 not the commit of this directory; results record it.
 

@@ -11,6 +11,7 @@
     "load:measure": "node scripts/load/measure.mjs",
     "load:distribution": "node scripts/load/distribution.mjs",
     "load:redeploy": "node scripts/load/redeploy.mjs",
+    "load:ids": "node scripts/load/ids.mjs",
     "load:report": "node scripts/load/report.mjs",
     "typecheck": "tsc --noEmit"
   },

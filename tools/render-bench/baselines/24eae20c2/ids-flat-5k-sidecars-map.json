@@ -1,0 +1,294 @@
+{
+  "kind": "ids",
+  "app": "flat-5k",
+  "label": "sidecars-map",
+  "packages": "24eae20c2",
+  "locale": "fr-CA",
+  "ids": 5050,
+  "callSites": 5808,
+  "translationKeys": 5050,
+  "compression": "brotli quality 11, gzip level 6",
+  "idLength": {
+    "prefix": {
+      "mean": 4.086732673267327,
+      "max": 7
+    },
+    "prefix6": {
+      "mean": 6.000792079207921,
+      "max": 7
+    },
+    "counter": {
+      "mean": 2.2265346534653467,
+      "max": 3
+    }
+  },
+  "sizes": {
+    "startup JS, first route": {
+      "original": {
+        "raw": 340271,
+        "gzip": 109186,
+        "brotli": 93904
+      },
+      "prefix": {
+        "raw": 338211,
+        "gzip": 107915,
+        "brotli": 92890
+      },
+      "prefix6": {
+        "raw": 338541,
+        "gzip": 108136,
+        "brotli": 93036
+      },
+      "counter": {
+        "raw": 337892,
+        "gzip": 107738,
+        "brotli": 92834
+      }
+    },
+    "all JS": {
+      "original": {
+        "raw": 891884,
+        "gzip": 296037,
+        "brotli": 241321
+      },
+      "prefix": {
+        "raw": 822690,
+        "gzip": 253582,
+        "brotli": 207105
+      },
+      "prefix6": {
+        "raw": 833809,
+        "gzip": 261202,
+        "brotli": 211940
+      },
+      "counter": {
+        "raw": 811883,
+        "gzip": 247810,
+        "brotli": 203137
+      }
+    },
+    "translations, first load": {
+      "original": {
+        "raw": 9854,
+        "gzip": 5114,
+        "brotli": 4508
+      },
+      "prefix": {
+        "raw": 8066,
+        "gzip": 3857,
+        "brotli": 3430
+      },
+      "prefix6": {
+        "raw": 8354,
+        "gzip": 4077,
+        "brotli": 3614
+      },
+      "counter": {
+        "raw": 7792,
+        "gzip": 3700,
+        "brotli": 3316
+      }
+    },
+    "translations, 3 routes": {
+      "original": {
+        "raw": 23306,
+        "gzip": 11830,
+        "brotli": 10433
+      },
+      "prefix": {
+        "raw": 19134,
+        "gzip": 8902,
+        "brotli": 7933
+      },
+      "prefix6": {
+        "raw": 19806,
+        "gzip": 9424,
+        "brotli": 8323
+      },
+      "counter": {
+        "raw": 18497,
+        "gzip": 8528,
+        "brotli": 7634
+      }
+    },
+    "all translation files of the locale": {
+      "original": {
+        "raw": 332422,
+        "gzip": 165328,
+        "brotli": 146237
+      },
+      "prefix": {
+        "raw": 272260,
+        "gzip": 123258,
+        "brotli": 110328
+      },
+      "prefix6": {
+        "raw": 281926,
+        "gzip": 130806,
+        "brotli": 115996
+      },
+      "counter": {
+        "raw": 262866,
+        "gzip": 118276,
+        "brotli": 105958
+      }
+    },
+    "map file": {
+      "original": {
+        "raw": 1641,
+        "gzip": 866,
+        "brotli": 722
+      },
+      "prefix": {
+        "raw": 1641,
+        "gzip": 866,
+        "brotli": 722
+      },
+      "prefix6": {
+        "raw": 1641,
+        "gzip": 866,
+        "brotli": 722
+      },
+      "counter": {
+        "raw": 1641,
+        "gzip": 866,
+        "brotli": 722
+      }
+    },
+    "first load, en": {
+      "original": {
+        "raw": 343423,
+        "gzip": 110582,
+        "brotli": 95051
+      },
+      "prefix": {
+        "raw": 341363,
+        "gzip": 109311,
+        "brotli": 94037
+      },
+      "prefix6": {
+        "raw": 341693,
+        "gzip": 109532,
+        "brotli": 94183
+      },
+      "counter": {
+        "raw": 341044,
+        "gzip": 109134,
+        "brotli": 93981
+      }
+    },
+    "first load, fr-CA": {
+      "original": {
+        "raw": 354918,
+        "gzip": 116562,
+        "brotli": 100281
+      },
+      "prefix": {
+        "raw": 351070,
+        "gzip": 114034,
+        "brotli": 98189
+      },
+      "prefix6": {
+        "raw": 351688,
+        "gzip": 114475,
+        "brotli": 98519
+      },
+      "counter": {
+        "raw": 350477,
+        "gzip": 113700,
+        "brotli": 98019
+      }
+    }
+  },
+  "idCost": {
+    "original": {
+      "perCallSite": {
+        "brotli": 9.455922865013774,
+        "gzip": 11.874483471074381,
+        "raw": 16
+      },
+      "perTranslation": {
+        "brotli": 10.706930693069307,
+        "gzip": 12.585544554455446,
+        "raw": 16
+      }
+    },
+    "prefix": {
+      "perCallSite": {
+        "brotli": 3.564738292011019,
+        "gzip": 4.564738292011019,
+        "raw": 4.086432506887053
+      },
+      "perTranslation": {
+        "brotli": 3.5962376237623763,
+        "gzip": 4.254851485148515,
+        "raw": 4.086732673267327
+      }
+    },
+    "prefix6": {
+      "perCallSite": {
+        "brotli": 4.3972107438016526,
+        "gzip": 5.876721763085399,
+        "raw": 6.0008608815427
+      },
+      "perTranslation": {
+        "brotli": 4.718613861386139,
+        "gzip": 5.74950495049505,
+        "raw": 6.000792079207921
+      }
+    },
+    "counter": {
+      "perCallSite": {
+        "brotli": 2.881542699724518,
+        "gzip": 3.5709366391184574,
+        "raw": 2.2257231404958677
+      },
+      "perTranslation": {
+        "brotli": 2.730891089108911,
+        "gzip": 3.268316831683168,
+        "raw": 2.2265346534653467
+      }
+    }
+  },
+  "stability": {
+    "added": 0.01,
+    "seeds": 5,
+    "translationFiles": 51,
+    "prefix": {
+      "ids": {
+        "mean": 4.6,
+        "min": 3,
+        "max": 6
+      },
+      "files": {
+        "mean": 4.6,
+        "min": 3,
+        "max": 6
+      }
+    },
+    "prefix6": {
+      "ids": {
+        "mean": 0,
+        "min": 0,
+        "max": 0
+      },
+      "files": {
+        "mean": 0,
+        "min": 0,
+        "max": 0
+      }
+    },
+    "counter": {
+      "ids": {
+        "mean": 4937.6,
+        "min": 4862,
+        "max": 4964
+      },
+      "files": {
+        "mean": 51,
+        "min": 51,
+        "max": 51
+      }
+    }
+  }
+}

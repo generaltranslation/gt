@@ -1,0 +1,294 @@
+{
+  "kind": "ids",
+  "app": "app-70k",
+  "label": "sidecars-map",
+  "packages": "24eae20c2",
+  "locale": "fr-CA",
+  "ids": 70000,
+  "callSites": 107193,
+  "translationKeys": 70000,
+  "compression": "brotli quality 11, gzip level 6",
+  "idLength": {
+    "prefix": {
+      "mean": 4.722142857142857,
+      "max": 9
+    },
+    "prefix6": {
+      "mean": 6.004671428571428,
+      "max": 9
+    },
+    "counter": {
+      "mean": 2.9442,
+      "max": 3
+    }
+  },
+  "sizes": {
+    "startup JS, first route": {
+      "original": {
+        "raw": 6059199,
+        "gzip": 1120512,
+        "brotli": 901532
+      },
+      "prefix": {
+        "raw": 5672694,
+        "gzip": 893163,
+        "brotli": 724727
+      },
+      "prefix6": {
+        "raw": 5716638,
+        "gzip": 921171,
+        "brotli": 735266
+      },
+      "counter": {
+        "raw": 5611737,
+        "gzip": 864810,
+        "brotli": 700748
+      }
+    },
+    "all JS": {
+      "original": {
+        "raw": 14844891,
+        "gzip": 4302952,
+        "brotli": 3428026
+      },
+      "prefix": {
+        "raw": 13636275,
+        "gzip": 3541021,
+        "brotli": 2833433
+      },
+      "prefix6": {
+        "raw": 13773464,
+        "gzip": 3634702,
+        "brotli": 2869805
+      },
+      "counter": {
+        "raw": 13445484,
+        "gzip": 3440866,
+        "brotli": 2728837
+      }
+    },
+    "translations, first load": {
+      "original": {
+        "raw": 1960280,
+        "gzip": 821366,
+        "brotli": 724323
+      },
+      "prefix": {
+        "raw": 1624595,
+        "gzip": 598810,
+        "brotli": 536048
+      },
+      "prefix6": {
+        "raw": 1662765,
+        "gzip": 626737,
+        "brotli": 555042
+      },
+      "counter": {
+        "raw": 1571650,
+        "gzip": 574838,
+        "brotli": 516322
+      }
+    },
+    "translations, 3 routes": {
+      "original": {
+        "raw": 1965511,
+        "gzip": 824459,
+        "brotli": 727082
+      },
+      "prefix": {
+        "raw": 1628653,
+        "gzip": 601100,
+        "brotli": 538109
+      },
+      "prefix6": {
+        "raw": 1666956,
+        "gzip": 629136,
+        "brotli": 557173
+      },
+      "counter": {
+        "raw": 1575523,
+        "gzip": 577041,
+        "brotli": 518300
+      }
+    },
+    "all translation files of the locale": {
+      "original": {
+        "raw": 5577304,
+        "gzip": 2830729,
+        "brotli": 2511466
+      },
+      "prefix": {
+        "raw": 4468989,
+        "gzip": 2081927,
+        "brotli": 1872646
+      },
+      "prefix6": {
+        "raw": 4594753,
+        "gzip": 2174979,
+        "brotli": 1933088
+      },
+      "counter": {
+        "raw": 4293974,
+        "gzip": 1996266,
+        "brotli": 1798021
+      }
+    },
+    "map file": {
+      "original": {
+        "raw": 43823,
+        "gzip": 20591,
+        "brotli": 16593
+      },
+      "prefix": {
+        "raw": 43823,
+        "gzip": 20591,
+        "brotli": 16593
+      },
+      "prefix6": {
+        "raw": 43823,
+        "gzip": 20591,
+        "brotli": 16593
+      },
+      "counter": {
+        "raw": 43823,
+        "gzip": 20591,
+        "brotli": 16593
+      }
+    },
+    "first load, en": {
+      "original": {
+        "raw": 6062351,
+        "gzip": 1121911,
+        "brotli": 902682
+      },
+      "prefix": {
+        "raw": 5675846,
+        "gzip": 894562,
+        "brotli": 725877
+      },
+      "prefix6": {
+        "raw": 5719790,
+        "gzip": 922570,
+        "brotli": 736416
+      },
+      "counter": {
+        "raw": 5614889,
+        "gzip": 866209,
+        "brotli": 701898
+      }
+    },
+    "first load, fr-CA": {
+      "original": {
+        "raw": 8066454,
+        "gzip": 1963868,
+        "brotli": 1643598
+      },
+      "prefix": {
+        "raw": 7344264,
+        "gzip": 1513963,
+        "brotli": 1278518
+      },
+      "prefix6": {
+        "raw": 7426378,
+        "gzip": 1569898,
+        "brotli": 1308051
+      },
+      "counter": {
+        "raw": 7230362,
+        "gzip": 1461638,
+        "brotli": 1234813
+      }
+    }
+  },
+  "idCost": {
+    "original": {
+      "perCallSite": {
+        "brotli": 9.702947020794268,
+        "gzip": 11.931376115977722,
+        "raw": 16
+      },
+      "perTranslation": {
+        "brotli": 10.521581672617776,
+        "gzip": 12.263771477401043,
+        "raw": 16
+      }
+    },
+    "prefix": {
+      "perCallSite": {
+        "brotli": 4.1560083214389,
+        "gzip": 4.8233466737566815,
+        "raw": 4.724860765161904
+      },
+      "perTranslation": {
+        "brotli": 4.022970264798934,
+        "gzip": 4.64633116651916,
+        "raw": 4.725292723370058
+      }
+    },
+    "prefix6": {
+      "perCallSite": {
+        "brotli": 4.4953215228606345,
+        "gzip": 5.697293666564048,
+        "raw": 6.00469247059043
+      },
+      "perTranslation": {
+        "brotli": 4.637836848048341,
+        "gzip": 5.592933947772657,
+        "raw": 6.004669331949827
+      }
+    },
+    "counter": {
+      "perCallSite": {
+        "brotli": 3.1802356497159328,
+        "gzip": 3.8890039461532004,
+        "raw": 2.9449777504128067
+      },
+      "perTranslation": {
+        "brotli": 3.263822341583504,
+        "gzip": 3.7749158197780286,
+        "raw": 2.944893744722841
+      }
+    }
+  },
+  "stability": {
+    "added": 0.01,
+    "seeds": 5,
+    "translationFiles": 1285,
+    "prefix": {
+      "ids": {
+        "mean": 297.2,
+        "min": 295,
+        "max": 301
+      },
+      "files": {
+        "mean": 345.6,
+        "min": 271,
+        "max": 487
+      }
+    },
+    "prefix6": {
+      "ids": {
+        "mean": 4.2,
+        "min": 0,
+        "max": 7
+      },
+      "files": {
+        "mean": 5.6,
+        "min": 0,
+        "max": 9
+      }
+    },
+    "counter": {
+      "ids": {
+        "mean": 69971.2,
+        "min": 69907,
+        "max": 69997
+      },
+      "files": {
+        "mean": 1285,
+        "min": 1285,
+        "max": 1285
+      }
+    }
+  }
+}
