@@ -274,8 +274,8 @@ describe('gt-react package exports', () => {
 
   it('loads gt-react/static-locale without React', () => {
     for (const loader of [
-      `const { negotiateLocale, getStaticLocalePath } = require('gt-react/static-locale');`,
-      `const { negotiateLocale, getStaticLocalePath } = await import('gt-react/static-locale');`,
+      `const staticLocale = require('gt-react/static-locale');`,
+      `const staticLocale = await import('gt-react/static-locale');`,
     ]) {
       node([
         '-e',
@@ -291,6 +291,8 @@ describe('gt-react package exports', () => {
               return load.call(this, request, ...args);
             };
             ${loader}
+            assert.deepEqual(Object.keys(staticLocale), ['negotiateLocale']);
+            const { negotiateLocale } = staticLocale;
             const request = new Request('http://localhost/', {
               headers: { 'accept-language': 'fr' },
             });
@@ -298,7 +300,6 @@ describe('gt-react package exports', () => {
               negotiateLocale(request, { locales: ['fr'], defaultLocale: 'en' }),
               'fr'
             );
-            assert.equal(getStaticLocalePath('dist', 'fr'), 'dist/fr');
           })().catch((error) => {
             console.error(error);
             process.exit(1);

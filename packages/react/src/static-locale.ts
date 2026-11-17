@@ -1,8 +1,8 @@
 /**
- * Server helpers for per-locale builds made with the compiler's experimental
- * `experimentalStaticLocale` option: negotiate a request's locale and pick
- * the build for it. Framework agnostic and free of React, for Node, edge, or
- * any server handling Web or Node requests.
+ * Server helper for per-locale builds made with the compiler's experimental
+ * `experimentalStaticLocale` option: negotiate a request's locale, then serve
+ * that locale's build. Framework agnostic and free of React, for Node, edge,
+ * or any server handling Web or Node requests.
  */
 import { I18nConfig, parseAcceptLanguage } from 'gt-i18n/internal';
 import {
@@ -14,20 +14,20 @@ import type { CustomMapping, LocaleMatcher } from '@generaltranslation/format';
 type HeaderValue = string | string[] | null | undefined;
 
 /**
- * Request headers as a Web `Headers` object (Fetch `Request`) or a plain
- * object with lowercase names (Node `IncomingMessage`, Express `req`).
+ * Request headers: a Web `Headers` object, or Node's `IncomingHttpHeaders`
+ * (`req.headers`), whose names are lowercase.
  */
 export type StaticLocaleHeaders =
   | Pick<Headers, 'get'>
   | Record<string, HeaderValue>;
 
 /**
- * A request to negotiate: anything with headers, or the raw `Cookie` and
- * `Accept-Language` header values.
+ * A request to negotiate: a Web `Request`, a Node `IncomingMessage` or
+ * Express `req`, or the request's headers.
  */
 export type StaticLocaleRequest =
   | { headers: StaticLocaleHeaders }
-  | { cookie?: HeaderValue; acceptLanguage?: HeaderValue };
+  | StaticLocaleHeaders;
 
 export type StaticLocaleConfig = {
   /** The app's locales, as in gt.config.json. */
@@ -46,12 +46,14 @@ export type StaticLocaleConfig = {
 
 /**
  * Negotiate the locale for a request the way gt-next's middleware does
- * without locale path routing: a supported locale cookie first, then the
- * `Accept-Language` header by quality, then the default locale. The result is
- * always one of the configured locales, spelled as configured.
+ * without locale path routing: a supported locale cookie first (the last one
+ * when the name repeats), then the `Accept-Language` header by quality, then
+ * the default locale. The result is always one of the configured locales,
+ * spelled as configured, so it names the per-locale build to serve.
  *
  * @example
  * const locale = negotiateLocale(request, { locales: ['fr', 'de'], defaultLocale: 'en' });
+ * // With a Node request, pass it or its headers: negotiateLocale(req.headers, config)
  */
 export function negotiateLocale(
   request: StaticLocaleRequest,
@@ -73,7 +75,7 @@ export function negotiateLocale(
   const { cookie, acceptLanguage } = readRequestHeaders(request);
 
   const candidates: string[] = [];
-  const cookieLocale = getCookieValue(
+  const cookieLocale = getLastCookieValue(
     joinCookieHeader(cookie),
     localeCookieName
   );
@@ -86,25 +88,16 @@ export function negotiateLocale(
   return i18nConfig.resolveSupportedLocale(candidates);
 }
 
-/**
- * The directory or URL prefix of a locale's build: `<base>/<locale>`.
- * Pass a negotiated locale, which is always a configured one.
- *
- * @example
- * getStaticLocalePath('dist', 'fr'); // 'dist/fr'
- */
-export function getStaticLocalePath(base: string, locale: string): string {
-  return `${base.replace(/\/+$/, '')}/${locale}`;
-}
-
 function readRequestHeaders(request: StaticLocaleRequest): {
   cookie: HeaderValue;
   acceptLanguage: HeaderValue;
 } {
-  if (!('headers' in request)) {
-    return { cookie: request.cookie, acceptLanguage: request.acceptLanguage };
-  }
-  const { headers } = request;
+  const headers =
+    'headers' in request &&
+    typeof request.headers === 'object' &&
+    request.headers !== null
+      ? (request.headers as StaticLocaleHeaders)
+      : (request as StaticLocaleHeaders);
   if (typeof headers.get === 'function') {
     const webHeaders = headers as Pick<Headers, 'get'>;
     return {
@@ -121,4 +114,18 @@ function readRequestHeaders(request: StaticLocaleRequest): {
 
 function joinCookieHeader(value: HeaderValue): string | undefined {
   return (Array.isArray(value) ? value.join('; ') : value) ?? undefined;
+}
+
+// gt-next's middleware reads cookies through Next.js, which keeps the last of a repeated name
+function getLastCookieValue(
+  cookieHeader: string | undefined,
+  cookieName: string
+): string | undefined {
+  const prefix = `${cookieName}=`;
+  const lastCookie = cookieHeader
+    ?.split(';')
+    .map((value) => value.trim())
+    .filter((value) => value.startsWith(prefix))
+    .pop();
+  return getCookieValue(lastCookie, cookieName);
 }

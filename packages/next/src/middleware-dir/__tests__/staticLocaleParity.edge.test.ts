@@ -20,6 +20,8 @@ import { defaultReferrerLocaleCookieName } from '../../utils/cookies';
 type Scenario = {
   name: string;
   cookie?: string;
+  /** A raw Cookie header, used instead of `cookie` */
+  cookieHeader?: string;
   acceptLanguage?: string;
 };
 
@@ -34,7 +36,26 @@ const scenarios: Scenario[] = [
   { name: 'unsupported header', acceptLanguage: 'ja, ko;q=0.5' },
   { name: 'alias by canonical code', acceptLanguage: 'zh-CN' },
   { name: 'alias cookie', cookie: 'cn', acceptLanguage: 'fr' },
+  {
+    name: 'repeated cookie',
+    cookieHeader: `${defaultLocaleCookieName}=de; other=1; ${defaultLocaleCookieName}=es`,
+    acceptLanguage: 'fr',
+  },
 ];
+
+function requestHeaders({
+  cookie,
+  cookieHeader,
+  acceptLanguage,
+}: Scenario): Headers {
+  const headers = new Headers();
+  const rawCookie =
+    cookieHeader ??
+    (cookie && `${defaultLocaleCookieName}=${encodeURIComponent(cookie)}`);
+  if (rawCookie) headers.set('cookie', rawCookie);
+  if (acceptLanguage) headers.set('accept-language', acceptLanguage);
+  return headers;
+}
 
 const configs: {
   name: string;
@@ -52,15 +73,12 @@ const configs: {
 ];
 
 function middlewareLocale(
-  { cookie, acceptLanguage }: Scenario,
+  scenario: Scenario,
   { defaultLocale, locales, customMapping }: (typeof configs)[number]
 ): string {
-  const headers = new Headers();
-  if (acceptLanguage) headers.set('accept-language', acceptLanguage);
   const req = new NextRequest(new URL('/about', 'http://localhost'), {
-    headers,
+    headers: requestHeaders(scenario),
   });
-  if (cookie) req.cookies.set(defaultLocaleCookieName, cookie);
   return getLocaleFromRequest(
     req,
     defaultLocale,
@@ -95,15 +113,13 @@ describe('gt-react/static-locale parity with the middleware', () => {
 
   for (const config of configs) {
     it.each(scenarios)(`$name (${config.name} config)`, (scenario) => {
-      const cookieHeader = scenario.cookie
-        ? `${defaultLocaleCookieName}=${encodeURIComponent(scenario.cookie)}`
-        : undefined;
+      const headers = requestHeaders(scenario);
+      const expected = middlewareLocale(scenario, config);
+      expect(negotiateLocale({ headers }, config)).toBe(expected);
+      // Node's req.headers
       expect(
-        negotiateLocale(
-          { cookie: cookieHeader, acceptLanguage: scenario.acceptLanguage },
-          config
-        )
-      ).toBe(middlewareLocale(scenario, config));
+        negotiateLocale(Object.fromEntries(headers.entries()), config)
+      ).toBe(expected);
     });
   }
 
@@ -112,7 +128,7 @@ describe('gt-react/static-locale parity with the middleware', () => {
     const scenario = { name: 'header only', acceptLanguage: 'fr' };
     expect(
       negotiateLocale(
-        { acceptLanguage: scenario.acceptLanguage },
+        { headers: requestHeaders(scenario) },
         { ...configs[0], ignoreBrowserLocales: true }
       )
     ).toBe(middlewareLocale(scenario, configs[0]));
