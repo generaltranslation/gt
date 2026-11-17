@@ -70,7 +70,7 @@ function createRenderVariable({
         | undefined;
       return (
         <Num {...internalProps} options={numOptions}>
-          {variableValue as number | string | null | undefined}
+          {variableValue as number | bigint | null | undefined}
         </Num>
       );
     }
@@ -82,7 +82,7 @@ function createRenderVariable({
         | undefined;
       return (
         <DateTime {...internalProps} options={dateTimeOptions}>
-          {variableValue as Date | null | undefined}
+          {variableValue as Date | number | null | undefined}
         </DateTime>
       );
     }
@@ -93,8 +93,12 @@ function createRenderVariable({
         | Intl.NumberFormatOptions
         | undefined;
       return (
-        <Currency {...internalProps} options={currencyOptions}>
-          {variableValue as number | string | null | undefined}
+        <Currency
+          {...internalProps}
+          currency={currencyOptions?.currency as string}
+          options={currencyOptions}
+        >
+          {variableValue as number | bigint | null | undefined}
         </Currency>
       );
     }

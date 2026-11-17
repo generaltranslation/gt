@@ -22,21 +22,24 @@ describe('variable formatting with a custom locale alias', () => {
     resetGTGlobals();
     initializeI18nConfig({
       defaultLocale: 'en',
-      locales: ['en', 'brand-french'],
+      locales: ['en', 'brand-french', 'ar'],
       customMapping: { 'brand-french': { code: 'fr', name: 'Brand French' } },
     });
   });
   afterEach(resetGTGlobals);
 
-  it('formats numbers in the canonical locale', () => {
-    expect(computeNum({ ...props, children: 1234.5 })).toBe(
-      new Intl.NumberFormat(['fr', 'en']).format(1234.5)
-    );
-  });
+  it.each([1234.5, 12345678901234567890n])(
+    'formats the number %s in the canonical locale',
+    (children) => {
+      expect(computeNum({ ...props, children })).toBe(
+        new Intl.NumberFormat(['fr', 'en']).format(children)
+      );
+    }
+  );
 
   it('formats currency in the canonical locale', () => {
     expect(
-      computeCurrency({ ...props, children: '1234.5', currency: 'EUR' })
+      computeCurrency({ ...props, children: 1234.5, currency: 'EUR' })
     ).toBe(
       new Intl.NumberFormat(['fr', 'en'], {
         style: 'currency',
@@ -49,6 +52,40 @@ describe('variable formatting with a custom locale alias', () => {
     const options = { dateStyle: 'long', timeZone: 'UTC' } as const;
     expect(computeDateTime({ ...props, children: date, options })).toBe(
       new Intl.DateTimeFormat(['fr', 'en'], options).format(date)
+    );
+  });
+
+  it.each([
+    ['a Date', date],
+    ['a timestamp', date.getTime()],
+  ])(
+    'formats %s in the medium date style without a style or field',
+    (_, children) => {
+      const options = { timeZone: 'UTC' };
+      expect(computeDateTime({ ...props, children, options })).toBe(
+        new Intl.DateTimeFormat(['fr', 'en'], {
+          ...options,
+          dateStyle: 'medium',
+        }).format(date)
+      );
+    }
+  );
+
+  it('keeps the direction marks of a formatted date', () => {
+    const options = { dateStyle: 'short', timeZone: 'UTC' } as const;
+    const formatted = computeDateTime({
+      _enableI18n: true,
+      _locale: 'ar',
+      children: date,
+      options,
+    });
+    expect(formatted).toContain('\u200F');
+    expect(formatted).toBe(
+      new Intl.DateTimeFormat(['ar', 'en'], {
+        ...options,
+        calendar: 'gregory',
+        numberingSystem: 'latn',
+      }).format(date)
     );
   });
 

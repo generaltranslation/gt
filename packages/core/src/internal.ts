@@ -18,6 +18,7 @@ export {
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,
+  withDefaultDateStyle,
 } from './formatting/formatting';
 export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { credentialScope } from './client/clientConfig';

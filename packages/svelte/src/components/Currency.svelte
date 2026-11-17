@@ -19,21 +19,18 @@
 
   let {
     value,
-    currency = 'USD',
+    currency,
     options = {},
-    locales,
   }: {
-    value?: number | string | null | undefined;
+    value?: number | bigint | null | undefined;
     /**
      * The value as a single `{expression}` child, as in gt-react. The
      * gt-svelte preprocessor passes it as `value`.
      */
     children?: Snippet;
-    /** ISO 4217 currency code. Defaults to `USD`. */
-    currency?: string;
+    /** ISO 4217 currency code. */
+    currency: string;
     options?: Intl.NumberFormatOptions;
-    /** Locales to try before the active locale. */
-    locales?: string[];
     /** Variable key used in translations. Must be a static string. */
     name?: string;
   } = $props();
@@ -42,11 +39,10 @@
   const formatted = $derived(
     value == null
       ? null
-      : getI18nConfig().formatCurrency(
-          typeof value === 'string' ? parseFloat(value) : value,
-          currency,
-          { locales: getFormatLocales(contentLocale.current, locales), ...options }
-        )
+      : getI18nConfig().formatCurrency(value, currency, {
+          locales: getFormatLocales(contentLocale.current),
+          ...options,
+        })
   );
 </script>
 

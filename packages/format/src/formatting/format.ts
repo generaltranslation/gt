@@ -21,7 +21,7 @@ export type ZonedDateTimeFormatOptions = Intl.DateTimeFormatOptions & {
  * Formats a number according to the specified locales and options.
  *
  * @param {Object} params - The parameters for the number formatting.
- * @param {number} params.value - The number to format.
+ * @param {number | bigint} params.value - The number to format.
  * @param {string | string[]} params.locales - The locales to use for formatting.
  * @param {Intl.NumberFormatOptions} params.options - Options for number formatting.
  *
@@ -32,7 +32,7 @@ export function _formatNum({
   value,
   locales,
   options,
-}: FormatParams<number, Intl.NumberFormatOptions>): string {
+}: FormatParams<number | bigint, Intl.NumberFormatOptions>): string {
   return intlCache
     .get('NumberFormat', locales, {
       numberingSystem: 'latn',
@@ -45,7 +45,7 @@ export function _formatNum({
  * Formats a date according to the specified locales and options.
  *
  * @param {Object} params - The parameters for the date formatting.
- * @param {Date} params.value - The date to format.
+ * @param {Date | number} params.value - The date to format, or its timestamp.
  * @param {string | string[]} params.locales - The locales to use for formatting.
  * @param {ZonedDateTimeFormatOptions} params.options - Options for date formatting, with the time zone.
  *
@@ -56,7 +56,7 @@ export function _formatDateTime({
   value,
   locales,
   options,
-}: FormatParams<Date, ZonedDateTimeFormatOptions>): string {
+}: FormatParams<Date | number, ZonedDateTimeFormatOptions>): string {
   return intlCache
     .get('DateTimeFormat', locales, {
       calendar: 'gregory',
@@ -70,7 +70,7 @@ export function _formatDateTime({
  * Formats a currency value according to the specified locales, currency, and options.
  *
  * @param {Object} params - The parameters for the currency formatting.
- * @param {number} params.value - The currency value to format.
+ * @param {number | bigint} params.value - The currency value to format.
  * @param {string} params.currency - The currency code (e.g., 'USD').
  * @param {string | string[]} params.locales - The locales to use for formatting.
  * @param {Intl.NumberFormatOptions} params.options - Options for currency formatting.
@@ -84,7 +84,7 @@ export function _formatCurrency({
   locales,
   currency,
   options,
-}: FormatParams<number, Intl.NumberFormatOptions> & {
+}: FormatParams<number | bigint, Intl.NumberFormatOptions> & {
   currency: string;
 }): string {
   return intlCache

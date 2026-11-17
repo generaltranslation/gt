@@ -15,6 +15,10 @@ import {
   type MessageTree,
   type MessageValues,
 } from '@generaltranslation/icu';
+import {
+  DATE_FIELD_OPTIONS,
+  DEFAULT_DATE_TIME_STYLE,
+} from '@generaltranslation/icu/internal';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
@@ -42,7 +46,7 @@ const withLocales = <Given extends { locales?: string | string[] }>(
 /**
  * Formats a number according to the specified locales and options.
  *
- * @param {number} number - The number to format.
+ * @param {number | bigint} number - The number to format.
  * @param {Object} [options] - `Intl.NumberFormat` options, and `locales`.
  * @returns {string} The formatted number.
  *
@@ -50,7 +54,7 @@ const withLocales = <Given extends { locales?: string | string[] }>(
  * formatNum(1234.5, { locales: 'de' }); // "1.234,5"
  */
 export function formatNum(
-  number: number,
+  number: number | bigint,
   options?: Options<typeof _formatNum, 1>
 ): string {
   return _formatNum(number, withLocales(options));
@@ -59,7 +63,7 @@ export function formatNum(
 /**
  * Formats a date according to the specified locales and options.
  *
- * @param {Date} date - The date to format.
+ * @param {Date | number} date - The date to format, or its timestamp.
  * @param {Object} [options] - `Intl.DateTimeFormat` options, and `locales`.
  * The `timeZone` defaults to the host's.
  * @returns {string} The formatted date.
@@ -68,7 +72,7 @@ export function formatNum(
  * formatDateTime(new Date(), { dateStyle: 'full', timeZone: 'Asia/Tokyo' });
  */
 export function formatDateTime(
-  date: Date,
+  date: Date | number,
   options?: Options<typeof _formatDateTime, 1, 'timeZone'>
 ): string {
   return _formatDateTime(date, {
@@ -77,10 +81,28 @@ export function formatDateTime(
   });
 }
 
+const DATE_STYLE_AND_FIELD_OPTIONS = [
+  'dateStyle',
+  'timeStyle',
+  ...DATE_FIELD_OPTIONS,
+] as const;
+
+/**
+ * The options of a `<DateTime>` component: with no style and no date or time
+ * field, the medium date style, as `date()` formats a date in a message.
+ */
+export function withDefaultDateStyle(
+  options: Intl.DateTimeFormatOptions = {}
+): Intl.DateTimeFormatOptions {
+  return DATE_STYLE_AND_FIELD_OPTIONS.some((key) => options[key] !== undefined)
+    ? options
+    : { ...options, dateStyle: DEFAULT_DATE_TIME_STYLE };
+}
+
 /**
  * Formats a currency value according to the specified locales and options.
  *
- * @param {number} value - The currency value to format.
+ * @param {number | bigint} value - The currency value to format.
  * @param {string} currency - The currency code, such as 'USD'.
  * @param {Object} [options] - `Intl.NumberFormat` options, and `locales`.
  * @returns {string} The formatted currency value.
@@ -89,7 +111,7 @@ export function formatDateTime(
  * formatCurrency(5, 'EUR', { locales: 'en-US' }); // "€5.00"
  */
 export function formatCurrency(
-  value: number,
+  value: number | bigint,
   currency: string,
   options?: Options<typeof _formatCurrency, 2>
 ): string {

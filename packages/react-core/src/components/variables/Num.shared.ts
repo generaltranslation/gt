@@ -6,12 +6,9 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 // components-rsc entrypoint.
 
 type NumProps = {
-  children: number | string | null | undefined;
+  children: number | bigint | null | undefined;
   options?: Intl.NumberFormatOptions;
-  locales?: string[];
   name?: string;
-  _locale?: string;
-  _enableI18n?: boolean;
 };
 
 type ResolvedNumProps = NumProps & {
@@ -24,18 +21,14 @@ function computeNum({
   _locale,
   children,
   options = {},
-  locales: localesProp = [],
 }: ResolvedNumProps): string | null {
   const locales = getFormatLocales({
     locale: _locale,
     enableI18n: _enableI18n,
-    localesProp,
   });
   const i18nConfig = getI18nConfig();
   if (children == null) return null;
-  const parsedNumber =
-    typeof children === 'string' ? parseFloat(children) : children;
-  return i18nConfig.formatNum(parsedNumber, { locales, ...options });
+  return i18nConfig.formatNum(children, { locales, ...options });
 }
 
 export { computeNum };
