@@ -63,6 +63,7 @@ import {
 import {
   createStaticRuntimeError,
   finishStaticRuntimeFile,
+  mayNeedStaticRuntime,
 } from './transform/static-runtime/staticRuntimeModule';
 import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
@@ -571,7 +572,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
 
           let staticRuntimeChanged = false;
-          if (state.settings.staticRuntime) {
+          if (
+            state.settings.staticRuntime &&
+            mayNeedStaticRuntime(ast.program, code, state)
+          ) {
             traverse(ast, {
               Program(programPath) {
                 staticRuntimeChanged = finishStaticRuntimeFile(
