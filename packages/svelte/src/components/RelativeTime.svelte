@@ -1,8 +1,9 @@
 <!--
   @component
   Formats a relative time ("3 days ago") for the active locale. Pass a
-  `value` date, or a numeric `value` with a `unit`. Inside `<T>`, it is a
-  variable.
+  `value` date, or a numeric `value` with a `unit`. The value can also be
+  the only child, `<RelativeTime>{date}</RelativeTime>`. Inside `<T>`, it is
+  a variable.
 
   ```svelte
   <T>Posted <RelativeTime value={postedAt} /></T>
@@ -12,6 +13,7 @@
 <svelte:options preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { getI18nConfig } from 'gt-i18n/internal';
   import { getFormatLocales } from '../runtime/format';
   import { useContentLocale } from '../runtime/source';
@@ -23,6 +25,11 @@
     options = {},
   }: {
     value?: Date | number | null | undefined;
+    /**
+     * The value as a single `{expression}` child, as in gt-react. The
+     * gt-svelte preprocessor passes it as `value`.
+     */
+    children?: Snippet;
     /** Unit for a numeric `value`. */
     unit?: Intl.RelativeTimeFormatUnit;
     /** Date to measure from. Defaults to now. */

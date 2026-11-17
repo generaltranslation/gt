@@ -112,7 +112,7 @@ describe('variable formatting with a custom locale alias', () => {
     expect(
       computeRelativeTime({
         ...props,
-        date: new Date(date.getTime() - 2 * 3_600_000),
+        children: new Date(date.getTime() - 2 * 3_600_000),
         baseDate: date,
       })
     ).toBe(new Intl.RelativeTimeFormat(['fr', 'en']).format(-2, 'hour'));

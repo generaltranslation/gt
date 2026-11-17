@@ -131,12 +131,11 @@ function createRenderVariable({
       return (
         <RelativeTime
           {...internalProps}
-          date={
-            dateValue && !isNaN(dateValue.getTime()) ? dateValue : undefined
-          }
           baseDate={relativeTimeOptions?.baseDate}
           options={relativeTimeOptions}
-        />
+        >
+          {dateValue && !isNaN(dateValue.getTime()) ? dateValue : undefined}
+        </RelativeTime>
       );
     }
     const renderedValue = variableValue as ReactNode;
