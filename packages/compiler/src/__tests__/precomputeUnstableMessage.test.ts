@@ -44,20 +44,12 @@ afterEach(() => {
 describe('emitted messages', () => {
   it.each([
     [
-      'text',
-      't`Save`;',
-      '{ $_hash: "#", $_tree: "Save" }',
-      't(_gt);',
-      'Save',
-      {},
-    ],
-    [
       'literal options',
-      "t({ context: 'button', maxChars: -8, requiresReview: true })`Save`;",
-      '{ $_hash: "#", $_tree: "Save", context: "button", maxChars: -8, requiresReview: true }',
-      't(_gt);',
-      'Save',
-      { context: 'button', maxChars: -8, requiresReview: true },
+      "t({ context: 'greeting', maxChars: -8, requiresReview: true })`Hello, ${{ name }}!`;",
+      '{ $_hash: "#", $_tree: ["Hello, ", ["name"], "!"], context: "greeting", maxChars: -8, requiresReview: true }',
+      't(_gt, { name });',
+      ['Hello, ', ['name'], '!'],
+      { context: 'greeting', maxChars: -8, requiresReview: true },
     ],
     [
       'named variables, whose values may be any expression',
@@ -144,6 +136,23 @@ describe('emitted messages', () => {
     expect(output).toContain(call);
   });
 
+  it.each([
+    ['text', 't`Save`;', 't({ $_hash: "#", $_tree: "Save" });', {}],
+    [
+      'text with literal options',
+      "t({ context: 'button', maxChars: -8, requiresReview: true })`Save`;",
+      't({ $_hash: "#", $_tree: "Save", context: "button", maxChars: -8, requiresReview: true });',
+      { context: 'button', maxChars: -8, requiresReview: true },
+    ],
+  ])(
+    'writes the message of %s at its call',
+    async (_name, body, call, metadata) => {
+      const output = await compile(body);
+      expect(output).toContain(call.replace('#', hashOf('Save', metadata)));
+      expect(output).not.toContain('const _gt');
+    }
+  );
+
   it('precomputes the templates of useGT() and getGT()', async () => {
     const output = await transformWithPlugin(
       undefined,
@@ -159,23 +168,27 @@ export async function load() {
 }`
     );
     expect(output).toContain('return gt(_gt, { name });');
-    expect(output).toContain('return t(_gt2);');
+    expect(output).toContain(
+      `return t({ $_hash: "${hashOf('Save')}", $_tree: "Save" });`
+    );
   });
 
-  it('declares each message once, after the imports', async () => {
+  it('declares each message with values once, after the imports', async () => {
     const output = await transformWithPlugin(
       undefined,
       `import { t } from 'gt-react/unstable';
 const _gt = 'taken';
-export const labels = () => [t\`Save\`, t\`Cancel\`, t\`Save\`];
+export const labels = (a, b) => [t\`Hi \${{ a }}\`, t\`Bye \${{ b }}\`, t\`Hi \${{ a: b }}\`];
 import { other } from './other';`
     );
-    const save = `{ $_hash: "${hashOf('Save')}", $_tree: "Save" }`;
-    const cancel = `{ $_hash: "${hashOf('Cancel')}", $_tree: "Cancel" }`;
+    const hi = `{ $_hash: "${hashOf(['Hi ', ['a']])}", $_tree: ["Hi ", ["a"]] }`;
+    const bye = `{ $_hash: "${hashOf(['Bye ', ['b']])}", $_tree: ["Bye ", ["b"]] }`;
     expect(output).toContain(
-      `import { other } from './other';const _gt2 = ${save};const _gt3 = ${cancel};`
+      `import { other } from './other';const _gt2 = ${hi};const _gt3 = ${bye};`
     );
-    expect(output).toContain('[t(_gt2), t(_gt3), t(_gt2)]');
+    expect(output).toContain(
+      '[t(_gt2, { a }), t(_gt3, { b }), t(_gt2, { a: b })]'
+    );
   });
 
   it.each([
@@ -237,7 +250,7 @@ import { other } from './other';`
       undefined,
       `import { t } from 'gt-react/unstable';
 export const used = (name) => t\`Kept \${{ name }}\`;
-export const unused = () => [t\`Dropped\`, t({ context: 'x' })\`Dropped too\`];`
+export const unused = (n) => [t\`Dropped\`, t({ context: 'x' })\`Dropped \${{ n }} too\`];`
     );
     const { outputFiles } = await build({
       stdin: {
@@ -542,7 +555,9 @@ describe.each(['en', 'fr'])('rendering in %s', (locale) => {
       if (expected === 'kept') {
         expect(precomputed).toBe(template);
       } else {
-        expect(precomputed).toMatch(/export const App = \(props\) => t\(_gt/);
+        expect(precomputed).toMatch(
+          /export const App = \(props\) => t\((_gt|\{ \$_hash: "[0-9a-f]+", \$_tree: ")/
+        );
       }
       const rendered = await renderAll(precomputed!, renders);
       expect(rendered).toEqual(await renderAll(template!, renders));
@@ -563,7 +578,7 @@ describe.each(['en', 'fr'])('rendering in %s', (locale) => {
       code
     );
     const precomputed = await transformWithPlugin(undefined, code);
-    expect(precomputed).toContain('gt(_gt2, { name, count })');
+    expect(precomputed).toContain('gt(_gt, { name, count })');
     const props = { name: 'Ada', count: 2 };
     const runtime = await loadRuntime();
     const html = await runtime.render(

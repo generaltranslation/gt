@@ -105,9 +105,8 @@ describe('inlineTranslations in gt.config.json', () => {
       USEGT_CODE
     );
     expect(output).toContain(
-      `const _gt = { $_hash: "${hash}", $_tree: "Hello world", inline: (locale) => locale === "fr" ? "Bonjour le monde" : locale === "es" ? "Hola mundo" : void 0 };`
+      `gt({ $_hash: "${hash}", $_tree: "Hello world", inline: (locale) => locale === "fr" ? "Bonjour le monde" : locale === "es" ? "Hola mundo" : void 0 });`
     );
-    expect(output).toContain('gt(_gt);');
   });
 
   it('only embeds the configured locales', async () => {
