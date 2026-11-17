@@ -147,6 +147,25 @@ describe('writeInlineTranslationsModules', () => {
     );
   });
 
+  it('refuses to overwrite a file it cannot read', () => {
+    const dir = createDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, 'index.js');
+    fs.writeFileSync(file, 'export {};\n');
+    fs.chmodSync(file, 0o000);
+    try {
+      expect(() =>
+        writeInlineTranslationsModules(
+          dir,
+          renderInlineTranslationsModules({ fr: { index: 'Accueil' } })
+        )
+      ).toThrow('EACCES');
+    } finally {
+      fs.chmodSync(file, 0o644);
+    }
+    expect(fs.readFileSync(file, 'utf8')).toBe('export {};\n');
+  });
+
   it('removes every generated module once nothing is embedded', () => {
     const dir = createDir();
     writeInlineTranslationsModules(

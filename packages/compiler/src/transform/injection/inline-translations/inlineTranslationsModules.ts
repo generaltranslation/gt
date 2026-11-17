@@ -155,10 +155,12 @@ function removeStaleModules(
   return removed;
 }
 
+// Only a missing file reads as undefined, so an unreadable file is never treated as safe to replace
 function readFileIfExists(file: string): string | undefined {
   try {
     return fs.readFileSync(file, 'utf8');
-  } catch {
-    return undefined;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+    throw error;
   }
 }
