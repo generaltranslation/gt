@@ -116,6 +116,34 @@ function treeToNode(value: unknown): t.Expression {
   return t.valueToNode(value);
 }
 
+// import('gt-react') or require('gt-react'), as text
+const LOADS_RUNTIME =
+  /\b(?:import|require)\s*\(\s*['"`](?:gt-react|gt-i18n|@generaltranslation\/react-core)/;
+
+/**
+ * Whether a module has anything for `finishStaticRuntimeFile` to do, which
+ * most modules of an app, its dependencies included, do not: something
+ * compiled against the static runtime, or a mention of a GT runtime package.
+ */
+export function mayNeedStaticRuntime(
+  program: t.Program,
+  code: string,
+  state: TransformState
+): boolean {
+  return (
+    state.staticRuntime !== undefined ||
+    LOADS_RUNTIME.test(code) ||
+    program.body.some(
+      (statement) =>
+        (t.isImportDeclaration(statement) ||
+          t.isExportNamedDeclaration(statement) ||
+          t.isExportAllDeclaration(statement)) &&
+        !!statement.source &&
+        RUNTIME_SOURCES.test(statement.source.value)
+    )
+  );
+}
+
 /**
  * Finishes a file of a static-runtime build: points what the static entry
  * provides at it, drops the GT imports nothing reads anymore, declares the
