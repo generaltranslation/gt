@@ -6,7 +6,13 @@ import {
   type MessageTreeValidationError,
 } from '@generaltranslation/icu';
 import { icuToMessage } from '@generaltranslation/icu/convert';
+import {
+  parse,
+  TYPE,
+  type MessageFormatElement,
+} from '@generaltranslation/icu/parser';
 import { indexVars, isVariable } from 'generaltranslation/internal';
+import { isRecord } from '../catalogs.js';
 import type { ConversionResult, LegacyDataFormat } from '../types.js';
 import { canonicalizeTree, mapBranches, mapTree } from './tree.js';
 
@@ -30,8 +36,7 @@ const EXACT_VALUE_CATEGORIES: [category: string, value: number][] = [
   ['two', 2],
 ];
 const DERIVE_COMPONENT = 'Derive';
-const PERCENT_SKELETON = /::\s*percent\b/;
-const UNIT_PERCENT = /unit\/percent\b/;
+const PERCENT_STEMS = new Set(['percent', '%']);
 
 /**
  * How a converted `<Plural>` keeps the legacy rule that `zero`, `one` and
@@ -100,32 +105,51 @@ function rewriteDeclaredVariables(tree: MessageTree): MessageTree {
   });
 }
 
-function rewritePercentSkeletons(tree: MessageTree): MessageTree {
+/** Number arguments whose skeleton is `::percent` or `::%`, which the legacy runtime scaled by 100 like the `percent` style. */
+function percentSkeletonNames(icu: string): Set<string> {
+  const names = new Set<string>();
+  const walk = (elements: MessageFormatElement[]) => {
+    for (const element of elements) {
+      if (
+        element.type === TYPE.number &&
+        typeof element.style === 'object' &&
+        element.style?.tokens.some((token) => PERCENT_STEMS.has(token.stem))
+      ) {
+        names.add(element.value);
+      } else if (element.type === TYPE.plural || element.type === TYPE.select) {
+        for (const option of Object.values(element.options)) {
+          walk(option.value);
+        }
+      } else if (element.type === TYPE.tag) {
+        walk(element.children);
+      }
+    }
+  };
+  walk(parse(icu));
+  return names;
+}
+
+function rewritePercentSkeletons(
+  tree: MessageTree,
+  names: Set<string>
+): MessageTree {
+  const rewrite = (branch: MessageTree) =>
+    rewritePercentSkeletons(branch, names);
   return mapTree(tree, (node): MessageNode => {
     switch (node[1]) {
-      case 'number': {
-        const style = node[2];
-        return typeof style === 'object' &&
-          style.style === 'unit' &&
-          style.unit === 'percent'
-          ? [node[0], 'number', 'percent']
-          : node;
-      }
+      case 'number':
+        return names.has(node[0]) ? [node[0], 'number', 'percent'] : node;
       case 'select':
-        return [
-          node[0],
-          'select',
-          mapBranches(node[2], rewritePercentSkeletons),
-        ];
+        return [node[0], 'select', mapBranches(node[2], rewrite)];
       case 'plural':
       case 'selectordinal': {
-        const branches = mapBranches(node[2], rewritePercentSkeletons);
+        const branches = mapBranches(node[2], rewrite);
         return node[3]
           ? [node[0], node[1], branches, node[3]]
           : [node[0], node[1], branches];
       }
       case 'tag':
-        return [node[0], 'tag', rewritePercentSkeletons(node[2])];
+        return [node[0], 'tag', rewrite(node[2])];
       default:
         return node;
     }
@@ -135,21 +159,17 @@ function rewritePercentSkeletons(tree: MessageTree): MessageTree {
 /** Converts a legacy `gt()`, `msg()` or dictionary ICU string, rewriting each declared variable to an argument. */
 export function legacyIcuToMessage(icu: string): ConversionResult {
   try {
-    const { tree, formats } = icuToMessage(indexVars(icu));
+    const indexed = indexVars(icu);
+    const { tree, formats } = icuToMessage(indexed);
+    const percents = percentSkeletonNames(indexed);
     const rewritten = rewriteDeclaredVariables(tree);
     return converted(
-      PERCENT_SKELETON.test(icu) && !UNIT_PERCENT.test(icu)
-        ? rewritePercentSkeletons(rewritten)
-        : rewritten,
+      percents.size ? rewritePercentSkeletons(rewritten, percents) : rewritten,
       formats
     );
   } catch (error) {
     return { ok: false, reason: errorText(error) };
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function jsxNodes(children: unknown, options: GtjsxOptions): MessageNode[] {

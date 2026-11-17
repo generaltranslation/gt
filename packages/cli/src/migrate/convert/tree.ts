@@ -21,16 +21,6 @@ export function isPlaceholder(node: MessageNode): node is PlaceholderNode {
   return typeof node !== 'string' && node !== 0;
 }
 
-export function sortedJson(value: unknown): string {
-  return JSON.stringify(value, (_key, inner: unknown) =>
-    inner && typeof inner === 'object' && !Array.isArray(inner)
-      ? Object.fromEntries(
-          Object.entries(inner).sort(([a], [b]) => compareKeys(a, b))
-        )
-      : inner
-  );
-}
-
 function sortRecord<T extends object>(record: T): T {
   return Object.fromEntries(
     Object.entries(record).sort(([a], [b]) => compareKeys(a, b))

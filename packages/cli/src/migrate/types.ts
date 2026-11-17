@@ -1,14 +1,10 @@
-import type { MessageFormats, MessageTree } from '@generaltranslation/icu';
+import type { DataFormat } from '@generaltranslation/format';
+import type { Message } from '@generaltranslation/icu';
 
-export type LegacyDataFormat = 'ICU' | 'JSX' | 'STRING' | 'MESSAGE_TREE';
-
-export type ConvertedMessage = {
-  tree: MessageTree;
-  formats: MessageFormats;
-};
+export type LegacyDataFormat = Exclude<DataFormat, 'I18NEXT'>;
 
 export type ConversionResult =
-  | ({ ok: true } & ConvertedMessage)
+  | ({ ok: true } & Message)
   | { ok: false; reason: string };
 
 /** Maps a legacy variable name to the variable name the new source uses. */

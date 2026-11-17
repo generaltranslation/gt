@@ -7,7 +7,7 @@ function sortKeys(_key: string, value: unknown): unknown {
   );
 }
 
-/** Serializes JSON the way downloaded GTJSON files are written: keys sorted at every depth, 2-space indent, no final newline. */
-export function stringifySortedJson(value: unknown): string {
-  return JSON.stringify(value, sortKeys, 2);
+/** Serializes JSON with keys sorted at every depth; the default indent and no final newline match downloaded GTJSON files. */
+export function stringifySortedJson(value: unknown, indent = 2): string {
+  return JSON.stringify(value, sortKeys, indent);
 }

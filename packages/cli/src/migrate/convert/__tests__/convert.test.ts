@@ -888,6 +888,15 @@ describe('legacy plural and percent semantics', () => {
       '{n, number, ::unit/percent}',
       [['n', 'number', { style: 'unit', unit: 'percent' }]],
     ],
+    ['{n, number, ::%}', [['n', 'number', 'percent']]],
+    [
+      '{p, number, ::percent} {q, number, ::unit/percent}',
+      [
+        ['p', 'number', 'percent'],
+        ' ',
+        ['q', 'number', { style: 'unit', unit: 'percent' }],
+      ],
+    ],
   ])('converts %s', (icu, tree) => {
     expect(legacyIcuToMessage(icu)).toEqual({ ok: true, tree, formats: {} });
   });

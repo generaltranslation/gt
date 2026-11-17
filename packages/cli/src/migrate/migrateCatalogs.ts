@@ -1,13 +1,17 @@
 import type { MessageFormats, MessageTree } from '@generaltranslation/icu';
 import { messageTreeToIcu } from '@generaltranslation/icu/convert';
-import { hashSource } from 'generaltranslation/id';
+import {
+  hashSource,
+  type MessageTreeHashMetadata,
+} from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
 import type { Catalog, LegacySources } from './catalogs.js';
 import { legacySourceCandidates } from './convert/candidates.js';
 import { gtjsxToMessage, legacyIcuToMessage } from './convert/legacy.js';
 import { migrateTranslation } from './convert/translation.js';
 import { alphaRenameMap, canonicalizeTree, treeShape } from './convert/tree.js';
-import { mapBranches, mapTree, sortedJson } from './convert/tree.js';
+import { mapBranches, mapTree } from './convert/tree.js';
+import { stringifySortedJson } from '../fs/sortedJson.js';
 import type {
   ConversionResult,
   LegacyDataFormat,
@@ -51,16 +55,10 @@ export type MigrateCatalogsResult = {
   report: MigrationReport;
 };
 
-type HashMeta = {
-  context?: string;
-  maxChars?: number;
-  requiresReview?: boolean;
-};
-
 type OldSource = {
   key: string;
   value: unknown;
-  /** Formats the old key may have been hashed as, most likely first. */
+  /** Formats whose reading of the old value gives this tree, so the old key may have been hashed as one of them. */
   formats: LegacyDataFormat[];
   tree: MessageTree;
   treeFormats: MessageFormats;
@@ -80,7 +78,9 @@ type Match = {
   verified: boolean;
 };
 
-function metaVariants(meta: HashMeta): HashMeta[] {
+function metaVariants(
+  meta: MessageTreeHashMetadata
+): MessageTreeHashMetadata[] {
   const variants = [meta];
   if (meta.requiresReview) variants.push({ ...meta, requiresReview: false });
   return variants;
@@ -89,7 +89,7 @@ function metaVariants(meta: HashMeta): HashMeta[] {
 function legacyHash(
   source: unknown,
   dataFormat: LegacyDataFormat,
-  meta: HashMeta
+  meta: MessageTreeHashMetadata
 ): string {
   return hashSource({
     source: (dataFormat === 'ICU' && typeof source === 'string'
@@ -164,24 +164,28 @@ function convertOldSource(
       ]);
     }
   }
-  const seen = new Set<string>();
-  const converted: OldSource[] = [];
+  const byTree = new Map<string, OldSource>();
   for (const [treeFormat, result] of conversions) {
     if (!result.ok) continue;
-    const id = sortedJson(result.tree);
-    if (seen.has(id)) continue;
-    seen.add(id);
-    converted.push({
+    const id = stringifySortedJson(result.tree, 0);
+    const existing = byTree.get(id);
+    if (existing) {
+      if (!existing.formats.includes(treeFormat)) {
+        existing.formats.push(treeFormat);
+      }
+      continue;
+    }
+    byTree.set(id, {
       key,
       value,
-      formats,
+      formats: [treeFormat],
       tree: result.tree,
       treeFormats: result.formats,
       treeFormat,
       ...(entry !== undefined && { entry }),
     });
   }
-  return converted;
+  return [...byTree.values()];
 }
 
 class SourceIndex {
@@ -198,7 +202,7 @@ class SourceIndex {
         defaultLocale,
         sources?.entries.get(key)
       )) {
-        pushTo(this.exact, sortedJson(old.tree), old);
+        pushTo(this.exact, stringifySortedJson(old.tree, 0), old);
         pushTo(this.alpha, treeShape(old.tree).shape, old);
         pushTo(this.loose, treeShape(normalizeWhitespace(old.tree)).shape, old);
       }
@@ -209,7 +213,7 @@ class SourceIndex {
     tree: MessageTree,
     loose: boolean
   ): { tier: MatchTier; candidates: OldSource[] } | undefined {
-    const exact = this.exact.get(sortedJson(tree));
+    const exact = this.exact.get(stringifySortedJson(tree, 0));
     if (exact) return { tier: 'source-exact', candidates: exact };
     const alpha = this.alpha.get(treeShape(tree).shape);
     if (alpha) return { tier: 'source-alpha', candidates: alpha };
@@ -224,12 +228,14 @@ function sameTranslations(
   catalogs: Record<string, Catalog>
 ): boolean {
   return Object.values(catalogs).every((catalog) => {
-    const values = new Set(keys.map((key) => sortedJson(catalog[key])));
+    const values = new Set(
+      keys.map((key) => stringifySortedJson(catalog[key], 0))
+    );
     return values.size === 1;
   });
 }
 
-function hashMeta(message: NewMessage): HashMeta {
+function hashMeta(message: NewMessage): MessageTreeHashMetadata {
   return {
     context: message.context,
     maxChars: message.maxChars,
@@ -255,6 +261,23 @@ function dedupeAliases(
   return kept;
 }
 
+const READINGS: LegacyDataFormat[] = ['ICU', 'JSX'];
+
+/** A string read as ICU and as JSX can give different trees; a key whose hash proves the other reading does not mean this tree. */
+function hashedAsAnotherReading(
+  candidate: OldSource,
+  message: NewMessage
+): boolean {
+  if (typeof candidate.value !== 'string') return false;
+  return READINGS.some(
+    (format) =>
+      !candidate.formats.includes(format) &&
+      metaVariants(hashMeta(message)).some(
+        (meta) => legacyHash(candidate.value, format, meta) === candidate.key
+      )
+  );
+}
+
 function pickSourceMatch(
   message: NewMessage,
   tree: MessageTree,
@@ -269,8 +292,11 @@ function pickSourceMatch(
   const translated = [...byKey.values()].filter((candidate) =>
     Object.values(catalogs).some((catalog) => catalog[candidate.key] != null)
   );
-  if (translated.length === 0) return { ambiguous: '' };
-  const candidates = dedupeAliases(translated, catalogs);
+  const readable = translated.filter(
+    (candidate) => !hashedAsAnotherReading(candidate, message)
+  );
+  if (readable.length === 0) return { ambiguous: '' };
+  const candidates = dedupeAliases(readable, catalogs);
   const notes: string[] = [];
   let chosen: OldSource | undefined;
   let oldDataFormat: LegacyDataFormat | undefined;
@@ -612,7 +638,8 @@ function migrateValue(
           },
         };
   }
-  const unchanged = sortedJson(result.tree) === sortedJson(oldValue);
+  const unchanged =
+    stringifySortedJson(result.tree, 0) === stringifySortedJson(oldValue, 0);
   return {
     outcome:
       unchanged && match.tier === 'same-key'

@@ -398,6 +398,17 @@ const only = (result: ReturnType<typeof migrateCatalogs>): MessageDecision =>
   result.report.messages[0];
 
 describe('migrateCatalogs', () => {
+  it('does not match a reading of an old source its hash rules out', () => {
+    const oldKey = legacyIcuHash("Use '{name}'");
+    const result = migrate({
+      messages: [treeMessage("Use '{name}'")],
+      sources: parseLegacySource({ [oldKey]: "Use '{name}'" }),
+      catalogs: { fr: { [oldKey]: "Utilisez '{name}'" } },
+    });
+    expect(only(result).tier).toBeUndefined();
+    expect(result.catalogs).toEqual({ fr: {} });
+  });
+
   it('renames variables for a loose match by the normalized text', () => {
     const oldKey = legacyIcuHash('From {sender} to {recipient}');
     const result = migrate({

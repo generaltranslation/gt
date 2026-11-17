@@ -20,8 +20,8 @@ import {
   mapBranches,
   mapTree,
   renameVariables,
-  sortedJson,
 } from './tree.js';
+import { stringifySortedJson } from '../../fs/sortedJson.js';
 
 type PluralRulesByType = (
   type: Intl.PluralRuleType
@@ -161,7 +161,9 @@ function formatsMismatch(
     }
   });
   return [...names].filter(
-    (name) => sortedJson(formats[name]) !== sortedJson(sourceFormats[name])
+    (name) =>
+      stringifySortedJson(formats[name], 0) !==
+      stringifySortedJson(sourceFormats[name], 0)
   );
 }
 
