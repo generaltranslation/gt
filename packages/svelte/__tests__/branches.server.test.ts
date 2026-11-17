@@ -5,6 +5,7 @@ import BareBranch from './fixtures/BareBranch.svelte';
 import Harness from './fixtures/Harness.svelte';
 import NestedBranches from './fixtures/NestedBranches.svelte';
 import StatusBranch from './fixtures/StatusBranch.svelte';
+import UndefinedBranch from './fixtures/UndefinedBranch.svelte';
 import { hashesOf, setupGT, withoutComments } from './helpers';
 
 const [statusHash] = hashesOf('StatusBranch.svelte');
@@ -73,6 +74,16 @@ describe('<Branch> values that name Object.prototype members', () => {
   );
 });
 
+describe('a branch passed as undefined', () => {
+  beforeEach(() => setupGT());
+
+  it('renders the other branch', () => {
+    expect(html({ component: UndefinedBranch, props: {} })).toBe(
+      'UnknownItems'
+    );
+  });
+});
+
 describe('malformed branch translations', () => {
   beforeEach(() => setupGT());
 
@@ -91,6 +102,19 @@ describe('malformed branch translations', () => {
         c: 'x',
       } as unknown as Content)
     ).toBe('<i>Online</i>');
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('falls back to the source when the translation has no other branch', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(
+      renderFr('away', {
+        t: 'Branch',
+        i: 1,
+        d: { t: 'b', b: { online: 'En ligne' } },
+      })
+    ).toBe('Away');
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });

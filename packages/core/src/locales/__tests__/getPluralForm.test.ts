@@ -34,6 +34,15 @@ describe('getPluralForm', () => {
     expect(form(-1, ['=-1', 'other'], 'en')).toBe('=-1');
   });
 
+  it('rejects a bigint too large to have a category, as ICU does', () => {
+    const count = 9007199254741001n;
+    expect(() => form(count, ['one', 'few', 'many', 'other'], 'ru')).toThrow(
+      RangeError
+    );
+    expect(form(count, [`=${count}`, 'one', 'other'], 'ru')).toBe(`=${count}`);
+    expect(form(count, ['=0', 'other'], 'ru')).toBe('other');
+  });
+
   it('prefers an exact key over the category', () => {
     expect(form(1, ['=1', 'one', 'other'], 'en')).toBe('=1');
     expect(form(0, ['=0', 'other'], 'en')).toBe('=0');
