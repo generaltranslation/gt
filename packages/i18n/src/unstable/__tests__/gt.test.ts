@@ -185,6 +185,44 @@ describe('gt-i18n/unstable rendering', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it('renders the source when Intl rejects the locale of a translation without placeholders', async () => {
+    await setup();
+    const gt = createGT({
+      getLocale: () => 'fr_FR',
+      lookupTranslation: () => 'Enregistrer',
+    });
+    expect(gt`Save`).toBe('Save');
+    expect(gt`Save`).toBe('Save');
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain(
+      'Formatting the "fr_FR" translation'
+    );
+  });
+
+  it('validates a translated tree once', async () => {
+    let reads = 0;
+    const tree = new Proxy([literal('Bonjour, '), argument('name')], {
+      get(target, key, receiver) {
+        reads++;
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    await setup();
+    const gt = createGT({
+      getLocale: () => 'fr',
+      lookupTranslation: () => tree,
+    });
+    const render = () => {
+      reads = 0;
+      expect(gt`Hello, ${{ name }}`).toBe('Bonjour, Ada');
+      return reads;
+    };
+    const first = render();
+    const second = render();
+    expect(second).toBeLessThan(first);
+    expect(render()).toBe(second);
+  });
+
   it('treats a malformed nested branch as a miss', async () => {
     const tree = [['role', 'select', { other: [[['x']]] }]];
     const gt = await setup({ fr: { [keyOf()`Invalid`]: tree } });
