@@ -49,10 +49,12 @@ export interface PluginConfig
    * that embeds a translation with the static locale's translation, so those
    * call sites ship no source text and need no lookup. `<T>` becomes the JSX
    * its translation renders and an unstable `t` or `gt` template becomes the
-   * translated template; a call site whose translation does not match its
-   * source keeps the embedded translation. For a source locale, `<T>` becomes
-   * the JSX of its own children. Defaults to the `GT_REPLACE_SOURCE`
-   * environment variable (`true` or `false`).
+   * translated template, or the translated text itself when it has no
+   * variables; a call site whose translation does not match its source keeps
+   * the embedded translation. For a source locale, `<T>` becomes the JSX of
+   * its own children and a template without variables becomes its text.
+   * Defaults to the `GT_REPLACE_SOURCE` environment variable (`true` or
+   * `false`).
    */
   experimentalReplaceSource?: boolean;
 }
