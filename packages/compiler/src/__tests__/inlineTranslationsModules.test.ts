@@ -132,6 +132,21 @@ describe('writeInlineTranslationsModules', () => {
     expect(fs.readFileSync(path.join(dir, 'bbb.js'), 'utf8')).toContain('"B2"');
   });
 
+  it('refuses to overwrite a file it did not generate', () => {
+    const dir = createDir();
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'index.js'), 'export {};\n');
+    expect(() =>
+      writeInlineTranslationsModules(
+        dir,
+        renderInlineTranslationsModules({ fr: { index: 'Accueil' } })
+      )
+    ).toThrow('Did not overwrite');
+    expect(fs.readFileSync(path.join(dir, 'index.js'), 'utf8')).toBe(
+      'export {};\n'
+    );
+  });
+
   it('removes every generated module once nothing is embedded', () => {
     const dir = createDir();
     writeInlineTranslationsModules(
