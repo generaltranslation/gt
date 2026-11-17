@@ -30,6 +30,7 @@ import {
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { ModelProvider } from '@generaltranslation/api';
 import {
+  defaultInlineTranslationsHelpers,
   defaultInlineTranslationsModulesDir,
   inlineTranslationsModuleModes,
 } from '../settings/inlineTranslations';
@@ -121,6 +122,16 @@ export const GTInlineTranslationsSchema = pipe(
           "Output path pattern with [locale] placeholder for a copy of each embedded locale's translations file without the entries the compiler embeds, for loading those locales"
         ),
         examples(['public/i18n/[locale].msg.json'])
+      )
+    ),
+    helpers: optional(
+      pipe(
+        boolean(),
+        metadata({
+          description:
+            'Also embed tagged-template messages that use helpers such as plural(), select() or number(), where every value has a name, as in plural({ count }, ...). Applies to gt-react/unstable and gt-tanstack-start/unstable, which @generaltranslation/compiler builds. An embedded helper message ships its branches for every embedded locale, so turn this on for builds of one locale each, and leave it off to keep these messages in msgOutput files',
+          default: defaultInlineTranslationsHelpers,
+        })
       )
     ),
     modules: optionalDescribed(

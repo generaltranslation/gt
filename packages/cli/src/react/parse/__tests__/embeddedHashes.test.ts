@@ -66,7 +66,7 @@ describe('embedded hashes', () => {
       ?.metadata.hash;
     expect(jsxHash).toBeDefined();
 
-    expect([...(getEmbeddedHashes() ?? [])].sort()).toEqual(
+    expect([...(getEmbeddedHashes(false) ?? [])].sort()).toEqual(
       [
         jsxHash,
         treeHash('Embedded string'),
@@ -77,7 +77,7 @@ describe('embedded hashes', () => {
 
   test('leaves out entries that still load', async () => {
     const { updates } = await extract(FIXTURE);
-    const embedded = getEmbeddedHashes();
+    const embedded = getEmbeddedHashes(false);
     const loaded = updates
       .filter((update) => !embedded?.has(update.metadata.hash!))
       .map((update) => update.source);
@@ -105,7 +105,7 @@ describe('embedded hashes', () => {
     const jsx = updates.find((update) => update.dataFormat === 'JSX')!;
     // gt-vue's merge replaces an update that shares its hash with a new object
     recordLoadedHashes([...updates, { ...jsx, metadata: { ...jsx.metadata } }]);
-    expect([...(getEmbeddedHashes() ?? [])].sort()).toEqual(
+    expect([...(getEmbeddedHashes(false) ?? [])].sort()).toEqual(
       [
         treeHash('Embedded string'),
         treeHash(['Hello, ', ['name'], '!'], 'greeting'),
@@ -115,7 +115,7 @@ describe('embedded hashes', () => {
 
   test('does not embed stable gt() or m() through a helper', async () => {
     await extract(HELPER_FIXTURE);
-    expect([...(getEmbeddedHashes() ?? [])]).toEqual([]);
+    expect([...(getEmbeddedHashes(false) ?? [])]).toEqual([]);
   });
 
   test('stays undefined when the scan finds no inline content', async () => {
@@ -129,14 +129,14 @@ describe('embedded hashes', () => {
       {},
       parsingOptions
     );
-    expect(getEmbeddedHashes()).toBeUndefined();
+    expect(getEmbeddedHashes(false)).toBeUndefined();
   });
 
   test('is undefined until something is extracted', () => {
     recordLoadedHashes([
       { dataFormat: 'ICU', source: 'Vue only', metadata: { hash: 'vue' } },
     ]);
-    expect(getEmbeddedHashes()).toBeUndefined();
+    expect(getEmbeddedHashes(false)).toBeUndefined();
   });
 });
 const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-msg-embedded-'));
@@ -148,7 +148,8 @@ afterAll(() => {
 /** Extracts `files` as one project; entries are labeled `<dataFormat> <source>`. */
 async function extractProject(
   files: Record<string, string>,
-  library: GTLibrary = Libraries.GT_NEXT
+  library: GTLibrary = Libraries.GT_NEXT,
+  helpers = false
 ) {
   const dir = fs.mkdtempSync(path.join(projectRoot, 'project-'));
   const paths = Object.entries(files).map(([name, code]) => {
@@ -156,7 +157,7 @@ async function extractProject(
     return path.join(dir, name);
   });
   const { updates, warnings } = await extract(paths, library);
-  const embedded = getEmbeddedHashes();
+  const embedded = getEmbeddedHashes(helpers);
   const labels = (isEmbedded: boolean) =>
     updates
       .filter((update) => embedded?.has(update.metadata.hash!) === isEmbedded)
@@ -445,6 +446,80 @@ export const element = <T>Embedded</T>;
       [hashSource({ source: 'Saved', dataFormat: 'ICU' })]: 'fr "Saved"',
     });
   });
+});
+
+describe('messages that use helpers', () => {
+  const PLURAL = "plural({ count }, { one: 'One file', other: 'Many files' })";
+  const PLURAL_TREE =
+    'MESSAGE_TREE [["count","plural",{"one":"One file","other":"Many files"}]]';
+  const files = {
+    'page.ts': `import { t, msg, plural, part } from 'gt-react/unstable';
+declare const count: number, name: string;
+export const helper = () => t\`\${${PLURAL}}\`;
+export const named = () => t\`Hello, \${{ name }}!\`;
+export const text = () => t\`Save\`;
+export const sharedWithPart = () => [t\`Close\`, t\`\${part\`Close\`}\`];
+`,
+  };
+
+  test('are embedded with files.gt.inlineTranslations.helpers', async () => {
+    const result = await extractProject(files, Libraries.GT_REACT, true);
+    expect(result.embedded).toEqual([
+      PLURAL_TREE,
+      'MESSAGE_TREE ["Hello, ",["name"],"!"]',
+      'MESSAGE_TREE Save',
+      'MESSAGE_TREE Close',
+    ]);
+    expect(result.loaded).toEqual([]);
+  });
+
+  test('stay loaded without it, with every message one of them shares', async () => {
+    const result = await extractProject(files, Libraries.GT_REACT);
+    expect(result.embedded).toEqual([
+      'MESSAGE_TREE ["Hello, ",["name"],"!"]',
+      'MESSAGE_TREE Save',
+    ]);
+    // t`Close` is embedded either way, but the part that shares its hash is not
+    expect(result.loaded).toEqual([PLURAL_TREE, 'MESSAGE_TREE Close']);
+  });
+
+  test.each([
+    [
+      'msg',
+      `import { msg, plural } from 'gt-react/unstable';
+declare const count: number;
+export const shared = msg\`\${${PLURAL}}\`;
+`,
+    ],
+    [
+      'a branch behind a constant',
+      `import { t, plural, part } from 'gt-react/unstable';
+declare const count: number;
+const many = part\`Many files\`;
+export const shared = () => t\`\${plural({ count }, { one: 'One file', other: many })}\`;
+`,
+    ],
+    [
+      'a tag alias',
+      `import { t, plural } from 'gt-react/unstable';
+declare const count: number;
+const translate = t;
+export const shared = () => translate\`\${${PLURAL}}\`;
+`,
+    ],
+  ])(
+    'stay loaded when %s shares their hash, with helpers on',
+    async (_name, other) => {
+      const result = await extractProject(
+        { 'page.ts': files['page.ts'], 'other.ts': other },
+        Libraries.GT_REACT,
+        true
+      );
+      expect(result.loaded).toContain(PLURAL_TREE);
+      expect(result.embedded).not.toContain(PLURAL_TREE);
+      expect(result.embedded).toContain('MESSAGE_TREE Save');
+    }
+  );
 });
 
 describe('<T> is embedded only from sources every compiler tracks', () => {

@@ -1,6 +1,7 @@
 import { GTUnpluginOptions } from '../..';
 import { TransformState } from '../types';
 import { resolveAutoderive } from 'generaltranslation/config-schema';
+import { defaultInlineTranslationsHelpers } from 'generaltranslation/internal';
 import { PluginSettings, resolveDevHotReload } from '../../config';
 import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
@@ -34,6 +35,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   devHotReload: { strings: false, jsx: false },
   precomputeMessages: true,
   precomputeJsx: false,
+  inlineTranslationsHelpers: defaultInlineTranslationsHelpers,
 };
 
 /**
@@ -99,6 +101,9 @@ export function initializeState(
     precomputeMessages:
       options.precomputeMessages ?? DEFAULT_SETTINGS.precomputeMessages,
     inlineTranslationsTable,
+    inlineTranslationsHelpers:
+      gtConfig?.files?.gt?.inlineTranslations?.helpers ??
+      DEFAULT_SETTINGS.inlineTranslationsHelpers,
     sourceReplacement: activeSourceReplacement,
     staticRuntime: activeSourceReplacement ? staticRuntime : undefined,
     // Dev builds keep <T>, which hot reloads; id-tagging needs <T> to tag the DOM

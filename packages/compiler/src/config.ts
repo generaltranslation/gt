@@ -128,6 +128,8 @@ export interface PluginSettings {
   devHotReload: { strings: boolean; jsx: boolean };
   /** Resolved translations to embed at call sites, keyed by locale then hash */
   inlineTranslationsTable?: InlineTranslationsTable;
+  /** `files.gt.inlineTranslations.helpers`: also embed templates that use helpers */
+  inlineTranslationsHelpers: boolean;
   /** Set when a per-locale build replaces source content with its translations */
   sourceReplacement?: SourceReplacement;
   /** Replace static unstable t templates with calls that read a precomputed message */

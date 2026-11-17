@@ -25,11 +25,12 @@ const HELPER_EMBEDDING_GT_IMPORT_SOURCES: readonly string[] = [
 ] satisfies (typeof UNSTABLE_GT_IMPORT_SOURCES)[number][];
 
 /**
- * Whether build tools embed the translations of an entry's templates that use
- * helpers, such as `plural()`, besides those whose holes are all named
+ * Whether build tools can embed the translations of an entry's templates that
+ * use helpers, such as `plural()`, besides those whose holes are all named
  * variables. The gt-next SWC plugin embeds only the latter, so this holds for
- * the entries only @generaltranslation/compiler builds; the compiler and the
- * CLI's `msgOutput` must agree on it.
+ * the entries only @generaltranslation/compiler builds. They embed them when
+ * `files.gt.inlineTranslations.helpers` is on; the compiler and the CLI's
+ * `msgOutput` must agree on both.
  */
 export function embedsUnstableGTHelperTemplates(source: string): boolean {
   return HELPER_EMBEDDING_GT_IMPORT_SOURCES.includes(source);

@@ -74,10 +74,10 @@ function nonStatic(): never {
  * With `buildInline`, a `t` template whose holes are all named variables
  * (`${{ name }}`) also gets the translations embedded for the configured
  * locales as `inline`. That is the subset the gt-next SWC plugin embeds too.
- * A `t` or `gt` of an entry only this compiler builds (see
- * embedsUnstableGTHelperTemplates) also embeds templates that use helpers,
- * as long as every value has a name. The CLI leaves the same templates out of
- * `msgOutput` files
+ * With `embedHelpers` (`files.gt.inlineTranslations.helpers`), a `t` or `gt`
+ * of an entry only this compiler builds (see embedsUnstableGTHelperTemplates)
+ * also embeds templates that use helpers, as long as every value has a name.
+ * The CLI leaves the same templates out of `msgOutput` files
  * (packages/cli/src/react/jsx/utils/stringParsing/extractMessageTrees/isEmbeddedMessage.ts).
  * `msg` templates are rendered by `m()` away from their call site, so they are
  * never embedded.
@@ -121,7 +121,8 @@ export function injectUnstableTaggedTemplateHash(
       hash: string,
       source: MessageTree
     ) => MessageTree | undefined;
-  }
+  },
+  embedHelpers?: boolean
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
@@ -148,7 +149,8 @@ export function injectUnstableTaggedTemplateHash(
     onlyNamedVariables = message.holes.every(
       (hole) => hole.kind === 'argument'
     );
-    const helpers = embedsUnstableGTHelperTemplates(unstableTag.source);
+    const helpers =
+      !!embedHelpers && embedsUnstableGTHelperTemplates(unstableTag.source);
     embedded = message.holes.every((hole) => isEmbeddedHole(hole, helpers));
   } catch {
     // Non-static or invalid (e.g. a reserved `_gt_` name): skip only this

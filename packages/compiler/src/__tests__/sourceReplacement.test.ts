@@ -1202,7 +1202,15 @@ describe('experimentalReplaceSource', () => {
           compileJsx(`import { t, plural, select, selectordinal, number, date, part, n } from 'gt-react/unstable';
           export const App = ({ count, role, place, name, price, currency, due }) =>
             ${hole.startsWith('`') ? `t${hole}` : `t\`\${${hole}}\``};`);
-        const { embedded, replaced } = await buildBothWays(code, translation);
+        const { embedded, replaced } = await buildBothWays(code, translation, {
+          gtConfig: {
+            files: {
+              gt: {
+                inlineTranslations: { locales: [STATIC_LOCALE], helpers: true },
+              },
+            },
+          },
+        });
         expect(embedded).toContain('inline: (locale) => locale === "fr" ?');
         expect(await renderAll(embedded, renders, true)).toEqual(expected);
         expect(await renderAll(replaced, renders, true)).toEqual(expected);

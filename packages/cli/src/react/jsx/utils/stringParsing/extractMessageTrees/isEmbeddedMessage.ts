@@ -11,21 +11,29 @@ import { getNumber } from './staticValues.js';
 const OPTION_KEYS = new Set(['context', 'maxChars', 'requiresReview']);
 
 /**
- * Whether the compiler embeds this message's translations at its call site
- * for `files.gt.inlineTranslations.locales`. Both @generaltranslation/compiler
- * and the gt-next SWC plugin embed exactly these call sites:
+ * When the compiler embeds a message's translations at its call site for
+ * `files.gt.inlineTranslations.locales`: `always`, or `with-helpers`, only
+ * when `files.gt.inlineTranslations.helpers` is on.
+ */
+export type MessageEmbedding = 'always' | 'with-helpers';
+
+/**
+ * When the compiler embeds this message's translations at its call site, or
+ * undefined when it never does. Both @generaltranslation/compiler and the
+ * gt-next SWC plugin always embed exactly these call sites:
  * - The tag is `t` imported from an unstable source, or the `gt` of
  *   `const gt = useGT()` / `const gt = await getGT()` from one, declared
  *   earlier in the source, optionally called with one object of literal
  *   options with identifier keys.
  * - Every hole is a named variable, like `${{ name }}`.
  *
- * For a tag of an entry only @generaltranslation/compiler builds (see
- * embedsUnstableGTHelperTemplates), a hole may also be a helper the compiler
- * reads from the call site alone, as long as each value has a name: `n`, an
- * inline part`...`, `plural`, `selectordinal` or `select` with literal or
- * inline part branches, and `number`, `date` or `time` with literal options.
- * This mirrors isEmbeddedHole in
+ * With `files.gt.inlineTranslations.helpers`, for a tag of an entry only
+ * @generaltranslation/compiler builds (see embedsUnstableGTHelperTemplates),
+ * a hole may also be a helper the compiler reads from the call site alone, as
+ * long as each value has a name: `n`, an inline part`...`, `plural`,
+ * `selectordinal` or `select` with literal or inline part branches, and
+ * `number`, `date` or `time` with literal options. This mirrors isEmbeddedHole
+ * in
  * packages/compiler/src/transform/injection/injectUnstableTaggedTemplateHash.ts,
  * and test-fixtures/embedded-message-templates.json keeps both on the same
  * answer.
@@ -34,23 +42,24 @@ const OPTION_KEYS = new Set(['context', 'maxChars', 'requiresReview']);
  * values without a name and anything this extractor resolves beyond the call
  * site, such as a part behind a constant, are left to loaded translations.
  */
-export function isEmbeddedMessage(
+export function getMessageEmbedding(
   tagged: NodePath<t.TaggedTemplateExpression>
-): boolean {
+): MessageEmbedding | undefined {
   const tag = tagged.get('tag');
   let callee: NodePath = tag;
   if (tag.isCallExpression()) {
     const { arguments: args } = tag.node;
-    if (args.length !== 1 || !hasLiteralOptions(args[0])) return false;
+    if (args.length !== 1 || !hasLiteralOptions(args[0])) return undefined;
     callee = tag.get('callee');
   }
   const source = getEmbeddedTagSource(callee);
-  if (source === undefined) return false;
-  const helpers = embedsUnstableGTHelperTemplates(source);
-  return tagged
-    .get('quasi')
-    .get('expressions')
-    .every((hole) => isEmbeddedHole(hole, helpers));
+  if (source === undefined) return undefined;
+  const holes = tagged.get('quasi').get('expressions');
+  if (holes.every((hole) => isEmbeddedHole(hole, false))) return 'always';
+  return embedsUnstableGTHelperTemplates(source) &&
+    holes.every((hole) => isEmbeddedHole(hole, true))
+    ? 'with-helpers'
+    : undefined;
 }
 
 /** The unstable source an embedded tag, or the hook that returned it, is imported from. */

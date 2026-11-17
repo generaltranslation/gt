@@ -12,8 +12,15 @@ import {
   recordEmbeddedHashes,
 } from '../../state/embeddedHashes.js';
 
-/** Records hashes as extracted, with `embedded` ones embedded by the compiler. */
-function recordHashes(embedded: string[], loaded: string[] = []) {
+/**
+ * Records hashes as extracted: `embedded` ones the compiler always embeds,
+ * and `withHelpers` ones it embeds with files.gt.inlineTranslations.helpers.
+ */
+function recordHashes(
+  embedded: string[],
+  loaded: string[] = [],
+  withHelpers: string[] = []
+) {
   const update = (hash: string) =>
     ({
       dataFormat: 'ICU',
@@ -21,21 +28,35 @@ function recordHashes(embedded: string[], loaded: string[] = []) {
       metadata: { hash },
     }) as Updates[number];
   const embeddedUpdates = embedded.map(update);
-  embeddedUpdates.forEach(markEmbeddedUpdate);
-  recordEmbeddedHashes([...embeddedUpdates, ...loaded.map(update)]);
+  embeddedUpdates.forEach((embeddedUpdate) =>
+    markEmbeddedUpdate(embeddedUpdate, 'always')
+  );
+  const helperUpdates = withHelpers.map(update);
+  helperUpdates.forEach((helperUpdate) =>
+    markEmbeddedUpdate(helperUpdate, 'with-helpers')
+  );
+  recordEmbeddedHashes([
+    ...embeddedUpdates,
+    ...helperUpdates,
+    ...loaded.map(update),
+  ]);
 }
 
 let dir: string;
 
 function settings(
   msgOutput: string | undefined,
-  locales = ['fr', 'es']
+  locales = ['fr', 'es'],
+  helpers?: boolean
 ): Settings {
   return {
     locales: ['fr', 'es', 'de'],
     files: {
       placeholderPaths: { gt: path.join(dir, '[locale].json') },
-      gtJson: { inlineTranslations: { locales, msgOutput }, parsingFlags: {} },
+      gtJson: {
+        inlineTranslations: { locales, msgOutput, helpers },
+        parsingFlags: {},
+      },
     },
   } as unknown as Settings;
 }
@@ -77,13 +98,37 @@ describe('writeMessageTranslations', () => {
     expect(readJson('fr.msg.json')).toEqual({ a: 'Bonjour', c: 'Merci' });
   });
 
+  test.each([
+    ['unset', undefined, { a: 'Bonjour', b: 'Au revoir', c: 'Merci' }],
+    ['off', false, { a: 'Bonjour', b: 'Au revoir', c: 'Merci' }],
+    ['on', true, { c: 'Merci' }],
+  ])(
+    'keeps messages that use helpers when helpers is %s',
+    async (_name, helpers, expected) => {
+      // b is a helper message; a is one a call site without helpers shares
+      recordHashes(['a'], [], ['a', 'b']);
+      await writeMessageTranslations(
+        settings(path.join(dir, '[locale].msg.json'), ['fr'], helpers)
+      );
+      expect(readJson('fr.msg.json')).toEqual(expected);
+    }
+  );
+
+  test('keeps a helper message a loaded call site shares, with helpers on', async () => {
+    recordHashes([], ['b'], ['a', 'b']);
+    await writeMessageTranslations(
+      settings(path.join(dir, '[locale].msg.json'), ['fr'], true)
+    );
+    expect(readJson('fr.msg.json')).toEqual({ b: 'Au revoir', c: 'Merci' });
+  });
+
   test('never treats derive entries as embedded', async () => {
     const derived = {
       dataFormat: 'ICU',
       source: 'b',
       metadata: { hash: 'b', staticId: 'derive-id' },
     } as Updates[number];
-    markEmbeddedUpdate(derived);
+    markEmbeddedUpdate(derived, 'always');
     recordEmbeddedHashes([derived]);
     await writeMessageTranslations(
       settings(path.join(dir, '[locale].msg.json'))

@@ -593,6 +593,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           if (
             isProduction() &&
             gtFiles?.inlineTranslations?.locales.length &&
+            // A static-runtime build reports these call sites itself
+            !state.settings.staticRuntime &&
             !isDependency(id)
           ) {
             const uncompiled = findUncompiledCallSites(ast);

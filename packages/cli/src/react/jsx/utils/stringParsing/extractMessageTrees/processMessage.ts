@@ -9,7 +9,7 @@ import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { NonStaticMessageError, formatLocation } from './diagnostics.js';
 import { parseMessageOptions } from './parseMessageOptions.js';
 import { templateVariants } from './templateVariants.js';
-import { isEmbeddedMessage } from './isEmbeddedMessage.js';
+import { getMessageEmbedding } from './isEmbeddedMessage.js';
 import { markEmbeddedUpdate } from '../../../../../state/embeddedHashes.js';
 import type { TagOptions, TreeContext } from './types.js';
 
@@ -53,7 +53,7 @@ export function processMessage(
         );
       }
     });
-    const embedded = isEmbeddedMessage(tagged);
+    const embedding = getMessageEmbedding(tagged);
     for (const tree of trees) {
       const update = {
         dataFormat: 'MESSAGE_TREE' as const,
@@ -61,7 +61,7 @@ export function processMessage(
         // Each variant gets its own hash, so it needs its own metadata object.
         metadata: { ...metadata },
       };
-      if (embedded) markEmbeddedUpdate(update);
+      if (embedding) markEmbeddedUpdate(update, embedding);
       output.updates.push(update);
     }
   } catch (error) {

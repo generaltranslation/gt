@@ -115,7 +115,8 @@ export function unstableHashInjectionPass(
                     ? sourceReplacement.defaultLocale
                     : undefined,
               }
-            : undefined
+            : undefined,
+          state.settings.inlineTranslationsHelpers
         )
       ) {
         state.statistics.unstableHashInjectionsCount += 1;
