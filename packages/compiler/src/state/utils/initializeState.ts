@@ -57,7 +57,12 @@ export function initializeState(
 
   // Spread options but exclude already-resolved fields
   // eslint-disable-next-line no-unused-vars
-  const { autoderive: _a, devHotReload: _b, ...restOptions } = options;
+  const {
+    autoderive: _a,
+    devHotReload: _b,
+    experimentalStaticLocale: _c,
+    ...restOptions
+  } = options;
 
   // Embedded translations are a production optimization; dev builds keep
   // loading (and hot reloading) translations at runtime
