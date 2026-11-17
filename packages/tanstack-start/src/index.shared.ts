@@ -30,4 +30,3 @@ export {
 // ===== Functions ===== //
 export { msg, decodeMsg, decodeOptions, mFallback, gtFallback } from 'gt-i18n';
 export { derive, declareVar, decodeVars } from 'generaltranslation';
-export { t } from '@generaltranslation/react-core/pure';

@@ -34,7 +34,6 @@ const entries = [
   'src/compat.rsc.ts',
   'src/compat.client.ts',
   'src/compat.server.ts',
-  'src/macros.ts',
   'src/unstable.ts',
   'src/unstable.rsc.ts',
   'src/vite.ts',

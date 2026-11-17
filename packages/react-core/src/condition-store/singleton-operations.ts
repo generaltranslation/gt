@@ -12,7 +12,7 @@ const conditionStoreNotInitializedError = createDiagnosticMessage({
   fix: 'Call initializeGT() during setup (gt-next runs this automatically) and add a <GTProvider> at the root of your component tree.',
 });
 
-const { getConditionStore, setConditionStore, isConditionStoreInitialized } =
+const { getConditionStore, setConditionStore } =
   createConditionStoreSingleton<ReadonlyConditionStoreInterface>(
     conditionStoreNotInitializedError
   );
@@ -20,5 +20,4 @@ const { getConditionStore, setConditionStore, isConditionStoreInitialized } =
 export {
   getConditionStore as getReadonlyConditionStore,
   setConditionStore as setReadonlyConditionStore,
-  isConditionStoreInitialized as isReadonlyConditionStoreInitialized,
 };

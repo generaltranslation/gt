@@ -100,10 +100,7 @@ export {
   getVersionId,
 } from 'gt-i18n';
 export { derive, declareVar, decodeVars } from 'generaltranslation';
-export {
-  getTranslationsSnapshot,
-  t,
-} from '@generaltranslation/react-core/pure';
+export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 
 export type { SharedGTProviderProps } from './provider/GTProviderProps';
 export {

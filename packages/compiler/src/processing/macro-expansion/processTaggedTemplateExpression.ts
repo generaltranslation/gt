@@ -10,7 +10,7 @@ import { isStringTranslationTaggedTemplate } from '../../utils/parsing/isStringT
  * Transforms t`Hello, ${name}` → t("Hello, {0}", { "0": name })
  *
  * Only transforms when:
- * - t is unbound (global macro via gt-react/macros)
+ * - t is unbound (a global the app defines)
  * - t is imported from a gt-react entrypoint
  * Skips when t is bound to a non-GT import (e.g., i18next)
  */
