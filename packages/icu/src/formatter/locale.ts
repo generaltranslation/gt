@@ -6,6 +6,10 @@ const MAX_RESOLVED_LOCALES = 64;
 /** A locale as Intl supports it, or as it was given when Intl does not. */
 type ResolvedLocale = { locale: Intl.Locale; supported: boolean };
 
+// A run of calls is in one locale, and formatting plain text costs less than
+// looking its locale up, so the last locale is kept beside the map.
+let last: { locales: string; locale: Intl.Locale } | undefined;
+
 /**
  * The locale to format in: the first one Intl supports, as
  * `supportedLocalesOf` picks one from a list. Each locale is resolved once,
@@ -14,9 +18,12 @@ type ResolvedLocale = { locale: Intl.Locale; supported: boolean };
 export function resolveLocale(
   locales: string | string[]
 ): Intl.Locale | undefined {
+  if (last !== undefined && locales === last.locales) return last.locale;
   if (typeof Intl.Locale === 'undefined') return undefined;
   if (typeof locales !== 'string') return firstSupported(locales);
-  return (resolvedLocales.get(locales) ?? resolve(locales)).locale;
+  const { locale } = resolvedLocales.get(locales) ?? resolve(locales);
+  last = { locales, locale };
+  return locale;
 }
 
 /**

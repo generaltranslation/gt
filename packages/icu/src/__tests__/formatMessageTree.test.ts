@@ -145,6 +145,23 @@ describe('formatMessageTree', () => {
     }
   });
 
+  it('resolves each call in its own locale when calls alternate', () => {
+    // `j` is the hour of the resolved locale, so a stale one would show here.
+    const time = new Date(Date.UTC(2026, 0, 15, 14, 3));
+    for (const [locale, text] of [
+      ['en', '2:03 PM'],
+      ['de', '14:03'],
+      ['en', '2:03 PM'],
+    ]) {
+      expect(
+        formatIcu('{t, time, ::jmm}', locale, { t: time }, { timeZone: 'UTC' })
+      ).toBe(text);
+    }
+    // After a valid locale, one that is not valid is still an error.
+    expect(() => formatMessageTree('Hi', 'not a locale!')).toThrow(RangeError);
+    expect(formatMessageTree('Hi', 'en')).toBe('Hi');
+  });
+
   it('formats in the first locale of a list that Intl supports', () => {
     // Klingon has no locale data, so each list falls through to the next one.
     expect(
