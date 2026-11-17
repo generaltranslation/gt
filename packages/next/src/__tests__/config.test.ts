@@ -1219,6 +1219,34 @@ describe('withGTConfig', () => {
         });
       });
 
+      it('keys the webpack cache a user hook replaces', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        mockConfigFiles({});
+        vi.mocked(resolveInlineTranslations).mockReturnValueOnce({
+          locales: ['fr'],
+          dir: 'out/cache/gt/inline/h',
+          contentHash: 'h',
+        });
+        const result = withGTConfig(
+          {
+            webpack: (config: object) => ({
+              ...config,
+              cache: { type: 'filesystem', version: 'app' },
+            }),
+          },
+          { experimentalCompilerOptions: { type: 'swc' } }
+        );
+        const { returned } = runWebpack(
+          result,
+          { isServer: true },
+          { type: 'filesystem', version: 'next' }
+        );
+        expect(returned.cache).toEqual({
+          type: 'filesystem',
+          version: 'app|gt-inline-translations:h',
+        });
+      });
+
       it('aliases message module imports to modulesDir', () => {
         vi.stubEnv('NODE_ENV', 'production');
         mockConfigFiles({});

@@ -811,11 +811,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         if (process.env.NODE_ENV === 'development') {
           webpackConfig.cache = false;
         }
-        // Next.js keys its webpack cache without SWC plugin options, so cached
-        // modules would keep translations embedded by an earlier build
-        if (swcInlineTranslations && typeof webpackConfig.cache === 'object') {
-          webpackConfig.cache.version = `${webpackConfig.cache.version ?? ''}|gt-inline-translations:${swcInlineTranslations.contentHash}`;
-        }
         if (messageModulesDir) {
           webpackConfig.resolve.alias[MESSAGE_MODULES_ALIAS] =
             path.resolve(messageModulesDir);
@@ -901,10 +896,19 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
           });
         }
       }
-      if (typeof internalNextConfig?.webpack === 'function') {
-        return internalNextConfig.webpack(webpackConfig, options);
+      const resolvedWebpackConfig =
+        typeof internalNextConfig?.webpack === 'function'
+          ? internalNextConfig.webpack(webpackConfig, options)
+          : webpackConfig;
+      // Next.js keys its webpack cache without SWC plugin options, so key it on the embedded translations after the user's hook can replace it
+      if (
+        !turboPackEnabled &&
+        swcInlineTranslations &&
+        typeof resolvedWebpackConfig.cache === 'object'
+      ) {
+        resolvedWebpackConfig.cache.version = `${resolvedWebpackConfig.cache.version ?? ''}|gt-inline-translations:${swcInlineTranslations.contentHash}`;
       }
-      return webpackConfig;
+      return resolvedWebpackConfig;
     },
   };
   return config as WithGTConfigResult<TNextConfig>;
