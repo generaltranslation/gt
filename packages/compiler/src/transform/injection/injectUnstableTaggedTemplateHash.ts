@@ -19,6 +19,11 @@ import {
   type UnstableGTHelperName,
 } from 'generaltranslation/internal';
 import { USEGT_CALLBACK_OPTIONS } from '../../utils/constants/gt/constants';
+import {
+  buildPrecomputedCall,
+  type Binding,
+  type HoistMessage,
+} from './precomputeUnstableMessage';
 
 // Option the runtime reads translations embedded at the call site from
 const INLINE_TRANSLATIONS_OPTION = 'inline';
@@ -73,12 +78,20 @@ function nonStatic(): never {
  * option stays, so the runtime renders the translation in the target locale
  * without a lookup.
  *
+ * With `precompute`, a `t` template becomes a call that reads its message,
+ * built here and declared at module scope (see buildPrecomputedCall):
+ * t`Hello, ${{ name }}!` -> t(_gt, { name }). A replaced template's message
+ * holds the translation's tree and its locale in place of `inline`. `msg`
+ * templates, and templates whose values the call could evaluate differently,
+ * keep the form above.
+ *
  * Returns whether the template was rewritten.
  */
 export function injectUnstableTaggedTemplateHash(
   path: NodePath<t.TaggedTemplateExpression>,
   buildInline?: (hash: string) => t.Expression | undefined,
-  replaceSource?: TemplateSourceReplacer
+  replaceSource?: TemplateSourceReplacer,
+  precompute?: { hoist: HoistMessage; replacedLocale: string | undefined }
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
@@ -89,19 +102,20 @@ export function injectUnstableTaggedTemplateHash(
   let hash: string;
   let onlyNamedVariables: boolean;
   let metadata: MessageTreeHashMetadata;
-  let tree: MessageTree;
+  let message: StaticMessage;
   try {
     metadata = t.isCallExpression(tag)
       ? parseMessageOptions(tag.arguments)
       : {};
-    const { strings, holes } = templateFragment(quasi, path.scope);
-    ({ tree } = templateToMessage(strings, holes));
+    message = buildStaticMessage(quasi, path.scope);
     hash = hashSource({
-      source: tree,
+      source: message.tree,
       dataFormat: 'MESSAGE_TREE',
       ...metadata,
     });
-    onlyNamedVariables = holes.every((hole) => hole.kind === 'argument');
+    onlyNamedVariables = message.holes.every(
+      (hole) => hole.kind === 'argument'
+    );
   } catch {
     // Non-static or invalid (e.g. a reserved `_gt_` name): skip only this
     // template; the runtime hashes it and reports any error.
@@ -110,9 +124,9 @@ export function injectUnstableTaggedTemplateHash(
   if (
     kind === 'gt' &&
     quasi.expressions.length === 0 &&
-    typeof tree === 'string'
+    typeof message.tree === 'string'
   ) {
-    const text = replaceSource?.getText(hash, tree, metadata, quasi);
+    const text = replaceSource?.getText(hash, message.tree, metadata, quasi);
     if (text !== undefined) {
       const literal = t.stringLiteral(text);
       // Printed as written, where the generator would escape non-ASCII text
@@ -127,16 +141,40 @@ export function injectUnstableTaggedTemplateHash(
       t.stringLiteral(hash)
     ),
   ];
-  const inline =
-    buildInline && kind === 'gt' && onlyNamedVariables
-      ? buildInline(hash)
-      : undefined;
+  const embeds = buildInline && kind === 'gt' && onlyNamedVariables;
+  // Only a hash with a translation is replaced, and that hash embeds one.
+  const replaced = embeds
+    ? replaceSource?.replaceTemplate?.(hash, quasi)
+    : undefined;
+  if (replaced) {
+    path.node.quasi = replaced;
+    // The replaced template's holes are the source's, so it builds too.
+    message = buildStaticMessage(replaced, path.scope);
+  }
+  // msg templates are rendered by m() away from their call site.
+  if (precompute && kind === 'gt') {
+    const call = buildPrecomputedCall({
+      callee: callee as t.Identifier,
+      hash,
+      metadata,
+      tree: message.tree,
+      bindings: message.bindings,
+      // A replaced tree is the translation, so it embeds no other copy.
+      ...(replaced
+        ? { locale: precompute.replacedLocale }
+        : { inline: embeds ? buildInline(hash) : undefined }),
+      hoist: precompute.hoist,
+    });
+    if (call) {
+      path.replaceWith(call);
+      return true;
+    }
+  }
+  const inline = embeds ? buildInline(hash) : undefined;
   if (inline) {
     properties.push(
       t.objectProperty(t.identifier(INLINE_TRANSLATIONS_OPTION), inline)
     );
-    const replaced = replaceSource?.replaceTemplate?.(hash, quasi);
-    if (replaced) path.node.quasi = replaced;
   }
   if (t.isCallExpression(tag)) {
     (tag.arguments[0] as t.ObjectExpression).properties.push(...properties);
@@ -229,20 +267,48 @@ function parseMessageOptions(
   return metadata;
 }
 
-function templateFragment(
+type StaticMessage = TemplateFragment & {
+  tree: MessageTree;
+  /** The values the template binds, in the order it evaluates them. */
+  bindings: Binding[];
+};
+
+/** A static template's tree, with the expression of each of its variables. */
+function buildStaticMessage(
   quasi: t.TemplateLiteral,
   scope: Scope
+): StaticMessage {
+  const bindings: Binding[] = [];
+  const fragment = templateFragment(quasi, scope, bindings);
+  const built = templateToMessage(fragment.strings, fragment.holes);
+  // The builder numbers each value without a name, in tree order.
+  for (const [name, binding] of built.values) (binding as Binding).name = name;
+  return { ...fragment, tree: built.tree, bindings };
+}
+
+function templateFragment(
+  quasi: t.TemplateLiteral,
+  scope: Scope,
+  bindings: Binding[]
 ): TemplateFragment {
   return {
     strings: quasi.quasis.map(({ value }) => value.cooked ?? nonStatic()),
-    holes: quasi.expressions.map((expression) => getHole(expression, scope)),
+    holes: quasi.expressions.map((expression) =>
+      getHole(expression, scope, bindings)
+    ),
   };
 }
 
-function getHole(hole: t.Expression | t.TSType, scope: Scope): TemplateHole {
+function getHole(
+  hole: t.Expression | t.TSType,
+  scope: Scope,
+  bindings: Binding[]
+): TemplateHole {
   const expression = unwrapTypeScript(hole);
   if (t.isObjectExpression(expression)) {
-    return { kind: 'argument', name: getVariableName(expression) };
+    const name = getVariableName(expression);
+    bindings.push({ name, value: getVariableValue(expression) });
+    return { kind: 'argument', name };
   }
   if (
     t.isIdentifier(expression) &&
@@ -250,11 +316,13 @@ function getHole(hole: t.Expression | t.TSType, scope: Scope): TemplateHole {
   ) {
     return { kind: 'pound' };
   }
-  const fragment = getFragment(expression, scope);
+  const fragment = getFragment(expression, scope, bindings);
   if (fragment) return { kind: 'fragment', ...fragment };
   if (!t.isCallExpression(expression) || !t.isIdentifier(expression.callee)) {
     if (!isPrimitive(expression, scope, newWalk())) nonStatic();
-    return { kind: 'anonymous' };
+    const binding: Binding = { value: hole as t.Expression };
+    bindings.push(binding);
+    return { kind: 'anonymous', value: binding };
   }
   const helper = getHelperName(expression.callee.name, scope);
   const args = expression.arguments;
@@ -264,25 +332,27 @@ function getHole(hole: t.Expression | t.TSType, scope: Scope): TemplateHole {
     case 'select': {
       const [variable, branchesArg] = args;
       if (args.length !== 2 || !t.isObjectExpression(branchesArg)) nonStatic();
-      const holeVariable = getHoleVariable(variable, scope);
+      const binding = getHoleVariable(variable, scope, bindings);
       const branches: Record<string, TemplateBranch> = {};
       for (const property of branchesArg.properties) {
         branches[getPropertyKey(property)] = getBranch(
           (property as t.ObjectProperty).value,
-          scope
+          scope,
+          bindings
         );
       }
-      return { kind: helper, ...holeVariable, branches };
+      return { kind: helper, name: binding.name, value: binding, branches };
     }
     case 'number':
     case 'date':
     case 'time': {
       if (args.length < 1 || args.length > 2) nonStatic();
-      const holeVariable = getHoleVariable(args[0], scope);
-      const options = args[1] && getIntlOptions(args[1], helper);
+      const binding = getHoleVariable(args[0], scope, bindings);
+      const options = args[1] && getIntlOptions(args[1], helper, binding);
       return {
         kind: helper,
-        ...holeVariable,
+        name: binding.name,
+        value: binding,
         ...(options && { options }),
       } as TemplateHole;
     }
@@ -427,18 +497,26 @@ function everyAssignedValue(
   return proven;
 }
 
-function getBranch(value: t.Node, scope: Scope): TemplateBranch {
+function getBranch(
+  value: t.Node,
+  scope: Scope,
+  bindings: Binding[]
+): TemplateBranch {
   if (t.isStringLiteral(value) || t.isTemplateLiteral(value)) {
     return getStaticText(value);
   }
-  return getFragment(value, scope) ?? nonStatic();
+  return getFragment(value, scope, bindings) ?? nonStatic();
 }
 
 /**
  * An inline part`...`; undefined otherwise. Fragments referenced through an
  * identifier are left to the runtime: the object can be mutated before use.
  */
-function getFragment(node: t.Node, scope: Scope): TemplateFragment | undefined {
+function getFragment(
+  node: t.Node,
+  scope: Scope,
+  bindings: Binding[]
+): TemplateFragment | undefined {
   if (
     !t.isTaggedTemplateExpression(node) ||
     !t.isIdentifier(node.tag) ||
@@ -446,7 +524,7 @@ function getFragment(node: t.Node, scope: Scope): TemplateFragment | undefined {
   ) {
     return;
   }
-  return templateFragment(node.quasi, scope);
+  return templateFragment(node.quasi, scope, bindings);
 }
 
 /** Name of `{ name }` / `{ name: value }`: an object literal with one key. */
@@ -456,15 +534,26 @@ function getFragment(node: t.Node, scope: Scope): TemplateFragment | undefined {
  */
 function getHoleVariable(
   node: t.Node | undefined,
-  scope: Scope
-): { name?: string } {
+  scope: Scope,
+  bindings: Binding[]
+): Binding {
   const value = node && unwrapTypeScript(node);
+  let binding: Binding;
   if (!t.isExpression(value) || t.isObjectExpression(value)) {
-    return { name: getVariableName(value) };
+    const name = getVariableName(value);
+    binding = { name, value: getVariableValue(value as t.ObjectExpression) };
+  } else {
+    // An object here is a { name: value } binding at runtime.
+    if (!isPrimitive(value, scope, newWalk())) nonStatic();
+    binding = { value: node as t.Expression };
   }
-  // An object here is a { name: value } binding at runtime.
-  if (!isPrimitive(value, scope, newWalk())) nonStatic();
-  return {};
+  bindings.push(binding);
+  return binding;
+}
+
+/** The value of `{ name }` / `{ name: value }`, once getVariableName accepts it. */
+function getVariableValue(node: t.ObjectExpression): t.Expression {
+  return (node.properties[0] as t.ObjectProperty).value as t.Expression;
 }
 
 function getVariableName(node: t.Node | undefined): string {
@@ -520,7 +609,8 @@ function getNumber(node: t.Node): number | undefined {
  */
 function getIntlOptions(
   node: t.Node,
-  kind: 'number' | 'date' | 'time'
+  kind: 'number' | 'date' | 'time',
+  binding: Binding
 ): Record<string, string | number | boolean> {
   if (!t.isObjectExpression(node)) nonStatic();
   const contextKeys: readonly string[] =
@@ -528,8 +618,11 @@ function getIntlOptions(
   const options: Record<string, string | number | boolean> = {};
   for (const property of node.properties) {
     const key = getPropertyKey(property);
-    if (contextKeys.includes(key)) continue;
     const value = (property as t.ObjectProperty).value;
+    if (contextKeys.includes(key)) {
+      (binding.context ??= []).push({ key, value: value as t.Expression });
+      continue;
+    }
     const number = getNumber(value);
     if (number != null) options[key] = number;
     else if (t.isBooleanLiteral(value)) options[key] = value.value;

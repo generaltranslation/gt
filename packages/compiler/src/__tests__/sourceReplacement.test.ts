@@ -910,8 +910,11 @@ describe('experimentalReplaceSource', () => {
         expect(replaced).not.toMatch(/_hash|inline|t\(|t`/);
         expect(html).toEqual([testCase.literal]);
       } else if (testCase.expected === 'replaced') {
-        // The runtime renders the embedded translation, with no lookup
-        expect(replaced).toMatch(/\$_hash: "[0-9a-f]+", inline: \(locale\) =>/);
+        // The runtime renders the replaced tree, with no lookup
+        expect(replaced).toMatch(
+          /\$_hash: "[0-9a-f]+", \$_tree: .*\$_locale: "fr" \}/
+        );
+        expect(replaced).not.toContain('inline:');
       }
       if (testCase.expected === 'replaced') {
         for (const text of testCase.sourceText ?? []) {
@@ -978,7 +981,9 @@ describe('experimentalReplaceSource', () => {
         code
       );
       expect(replaced).toContain('title: "Salutation"');
-      expect(replaced).toContain('`Bonjour ${{ name }}`');
+      expect(replaced).toContain(
+        '$_tree: ["Bonjour ", ["name"]], $_locale: "fr"'
+      );
       expect(replaced).not.toMatch(/Greeting|Hello/);
       const [before, after] = await Promise.all([
         renderAll(embedded!, [{ name: 'Ada' }]),
@@ -998,7 +1003,8 @@ describe('experimentalReplaceSource', () => {
         )
       );
       expect(sourceReplaced).toContain('title: "Greeting"');
-      expect(sourceReplaced).toMatch(/gt\(\{ \$_hash: "[0-9a-f]+" \}\)`Hello /);
+      expect(sourceReplaced).toContain('$_tree: ["Hello ", ["name"]] }');
+      expect(sourceReplaced).toContain('gt(_gt, { name })');
       expect(await renderAll(sourceReplaced!, [{ name: 'Ada' }])).toEqual(
         await renderAll(source!, [{ name: 'Ada' }])
       );
@@ -1111,7 +1117,7 @@ describe('experimentalReplaceSource', () => {
     `);
   });
 
-  it('rewrites a template as its translation, keeping its variables and inline option', async () => {
+  it('rewrites a template as its translation, keeping its variables', async () => {
     const { replaced } = await checkCase(
       TEMPLATE_CASES.find(
         (testCase) => testCase.name === 'text with template syntax'
@@ -1119,9 +1125,9 @@ describe('experimentalReplaceSource', () => {
       true
     );
     expect(replaced).toMatchInlineSnapshot(`
-      "import { t } from "gt-react/unstable";
-      const App = ({ name }) => t({ $_hash: "728c62f6bce558d1", inline: (locale) => locale === "fr" ? ["Utilisez \`code\`, \${x} et \\\\ pour ", ["name"], "\\r\\n"] : void 0 })\`Utilisez \\\`code\\\`, \\\${x} et \\\\ pour \${{ name }}\\r
-      \`;export {
+      "import { t } from "gt-react/unstable";const _gt = { $_hash: "728c62f6bce558d1", $_tree: ["Utilisez \`code\`, \${x} et \\\\ pour ", ["name"], "\\r\\n"], $_locale: "fr" };
+      const App = ({ name }) => t(_gt, { name });
+      export {
         App };"
     `);
   });
@@ -1151,14 +1157,14 @@ describe('experimentalReplaceSource', () => {
     );
     expect(translated).toMatchInlineSnapshot(`
       "import { jsxs } from "react/jsx-runtime";
-      import { t, useGT } from "gt-react/unstable";
+      import { t, useGT } from "gt-react/unstable";const _gt = { $_hash: "982bebc72bdeffdf", $_tree: ["Salut ", ["name"]], $_locale: "fr" };
       const title = () => "Paramètres";
       function App({ name }) {
         const gt = useGT();
         return /* @__PURE__ */jsxs("button", { title: "Enregistrer les modifications", children: ["Enregistrer",
 
           " ",
-          gt({ $_hash: "982bebc72bdeffdf", inline: (locale) => locale === "fr" ? ["Salut ", ["name"]] : void 0 })\`Salut \${{ name }}\`]
+          gt(_gt, { name })]
         });
       }
       export {
@@ -1172,14 +1178,14 @@ describe('experimentalReplaceSource', () => {
       )
     ).toMatchInlineSnapshot(`
       "import { jsxs } from "react/jsx-runtime";
-      import { t, useGT } from "gt-react/unstable";
+      import { t, useGT } from "gt-react/unstable";const _gt = { $_hash: "982bebc72bdeffdf", $_tree: ["Hi ", ["name"]] };
       const title = () => "Settings";
       function App({ name }) {
         const gt = useGT();
         return /* @__PURE__ */jsxs("button", { title: "Save", children: ["Save",
 
           " ",
-          gt({ $_hash: "982bebc72bdeffdf" })\`Hi \${{ name }}\`]
+          gt(_gt, { name })]
         });
       }
       export {
@@ -1195,13 +1201,8 @@ describe('experimentalReplaceSource', () => {
         return <><T>Save</T><T>Save</T><span>{t\`Save\`}{t\`Save\`}</span></>;
       }`);
     const output = await transformWithPlugin(undefined, code);
-    const [jsxHash, templateHash] = [
-      ...new Set(
-        [...(output ?? '').matchAll(/\$?_hash: "([^"]+)"/g)].map(
-          (match) => match[1]
-        )
-      ),
-    ];
+    const [, jsxHash] = output!.match(/[^$]_hash: "([^"]+)"/)!;
+    const [, templateHash] = output!.match(/\$_hash: "([^"]+)"/)!;
     const replaced = await transformWithPlugin(
       buildOptions(
         { [jsxHash]: 'Enregistrer', [templateHash]: 'Sauvegarder' },
@@ -1476,8 +1477,9 @@ describe('experimentalReplaceSource', () => {
         export const label = () => t\`Hello\`;
         export const greeting = (name) => t\`Hello \${{ name }}\`;`);
       const output = await transformWithPlugin(undefined, code);
-      const [jsxHash, textHash, templateHash] = [
-        ...(output ?? '').matchAll(/\$?_hash: "([^"]+)"/g),
+      const [, jsxHash] = output!.match(/[^$]_hash: "([^"]+)"/)!;
+      const [textHash, templateHash] = [
+        ...output!.matchAll(/\$_hash: "([^"]+)"/g),
       ].map((match) => match[1]);
       const options = buildOptions(
         {
@@ -1494,10 +1496,11 @@ describe('experimentalReplaceSource', () => {
       );
       expect(replaced).toContain('const label = () => "Bonjour (t)";');
       expect(replaced).not.toContain(`__gt_inline_${jsxHash}`);
-      expect(replaced).not.toContain(`__gt_inline_${textHash}`);
-      // A template with variables still reads its translation from its module
-      expect(replaced).toContain(`inline: __gt_inline_${templateHash}`);
-      expect(replaced).toContain('`Bonjour ${{ name }}`');
+      // Nor for a replaced template, whose tree is its translation
+      expect(replaced).not.toContain('__gt_inline_');
+      expect(replaced).toContain(
+        '$_tree: ["Bonjour ", ["name"]], $_locale: "fr"'
+      );
     }
   );
 
@@ -1547,7 +1550,7 @@ describe('experimentalReplaceSource', () => {
     const kept = await transformWithPlugin(options(false), code);
     const replaced = await transformWithPlugin(options(true), code);
     expect(replaced).toContain('jsx(_Fragment, { children: "Hello" })');
-    expect(replaced).toContain('t({ $_hash: "');
+    expect(replaced).toContain('t(_gt, { name })');
     expect(
       await transformWithPlugin(options(true, { _tagIds: true }), code)
     ).toBe(kept);

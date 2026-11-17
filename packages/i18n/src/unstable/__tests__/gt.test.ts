@@ -3,7 +3,10 @@ import type { MessageNode } from '@generaltranslation/icu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setWritableConditionStore } from '../../condition-store/singleton-operations';
 import { I18nCache } from '../../i18n-cache/I18nCache';
-import { setI18nCache } from '../../i18n-cache/singleton-operations';
+import {
+  getI18nCache,
+  setI18nCache,
+} from '../../i18n-cache/singleton-operations';
 import {
   getI18nConfig,
   initializeI18nConfig,
@@ -14,6 +17,7 @@ import { createGT, getGT } from '../gt';
 import type {
   LookupTreeTranslation,
   MessageTreeMetadata,
+  PrecomputedMessage,
 } from '../renderMessage';
 import {
   date,
@@ -577,5 +581,238 @@ describe('gt-i18n/unstable call sites', () => {
   it('hashes a template with a helper when it renders', () => {
     const { site } = greet(plural({ count: 2 }, { other: 'any' }));
     expect(site.metadata).toEqual({});
+  });
+});
+
+describe('gt-i18n/unstable precomputed messages', () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    resetGTGlobals();
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+    resetGTGlobals();
+  });
+
+  type Call = [
+    site: PrecomputedMessage,
+    values?: Record<string, unknown>,
+    formats?: Record<string, object>,
+  ];
+  // What the compiler emits, which the public GT type does not accept.
+  const call = (gt: unknown, ...args: Call) =>
+    (gt as (...args: Call) => string)(...args);
+
+  /** The call a compiler emits for a template: its message, then its values. */
+  const precompute =
+    (metadata: MessageTreeHashMetadata = {}) =>
+    (strings: TemplateStringsArray, ...holes: unknown[]): Call => {
+      const { tree, values, formats } = buildMessage(strings, holes);
+      const site: PrecomputedMessage = {
+        $_hash: keyOf(metadata)(strings, ...holes),
+        $_tree: tree,
+        ...metadata,
+      };
+      return Object.keys(formats).length
+        ? [site, { ...values }, formats]
+        : [site, { ...values }];
+    };
+
+  const count = 2;
+  const role = 'admin' as 'admin' | 'member';
+  const due = new Date(Date.UTC(2024, 0, 2));
+  const templates: [
+    name: string,
+    render: (
+      tag: (
+        metadata?: MessageTreeHashMetadata
+      ) => (strings: TemplateStringsArray, ...holes: unknown[]) => unknown
+    ) => unknown,
+    translation?: unknown,
+  ][] = [
+    ['text', (tag) => tag()`Save`, 'Enregistrer'],
+    ['text without a translation', (tag) => tag()`Cancel`],
+    ['empty text', (tag) => tag()``, ''],
+    ['context', (tag) => tag({ context: 'button' })`Save`, 'Sauvegarder'],
+    [
+      'maxChars',
+      (tag) => tag({ maxChars: 12 })`Read more about pricing`,
+      'En savoir plus sur les tarifs',
+    ],
+    [
+      'negative maxChars on the source',
+      (tag) => tag({ maxChars: -12 })`Read more about plans`,
+    ],
+    [
+      'named variables the translation reorders',
+      (tag) => tag()`${{ name }} invited ${{ guest: 'Grace' }}`,
+      [['guest'], ' invitée par ', ['name']],
+    ],
+    [
+      'plain values',
+      (tag) => tag()`${12n} ${false} ${null} ${undefined} ${1.5}`,
+    ],
+    [
+      'a plural',
+      (tag) =>
+        tag()`${plural({ count }, { one: part`${n} item`, other: part`${n} items` })}`,
+      [['count', 'plural', { one: [0, ' article'], other: [0, ' articles'] }]],
+    ],
+    [
+      'helper values without a name',
+      (tag) =>
+        tag()`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', member: 'members' })}`,
+    ],
+    [
+      'a select',
+      (tag) => tag()`${select({ role }, { admin: 'Admin', member: 'Member' })}`,
+      [['role', 'select', { admin: 'Administratrice', other: 'Membre' }]],
+    ],
+    [
+      'number and date formatting context',
+      (tag) =>
+        tag()`${number({ price: 1234.5 }, { style: 'currency', currency: 'EUR' })} by ${date({ due }, { style: 'medium', timeZone: 'UTC' })} at ${time({ at: due }, { style: 'short', timeZone: 'UTC' })}`,
+      [
+        ['price', 'number', 'currency'],
+        ' avant le ',
+        ['due', 'date', 'medium'],
+        ' à ',
+        ['at', 'time', 'short'],
+      ],
+    ],
+    [
+      'a translation that fails to format',
+      (tag) => tag()`Hello, ${{ name }}!`,
+      ['Bonjour, ', ['nom']],
+    ],
+    [
+      'a translation that is not a tree',
+      (tag) => tag()`Malformed`,
+      { text: 'Mal formé' },
+    ],
+  ];
+
+  describe.each(['en', 'fr'])('in %s', (locale) => {
+    it.each(templates)(
+      'renders %s like its template',
+      async (_name, render, translation) => {
+        const [site] = render(precompute) as Call;
+        const fr =
+          translation === undefined ? {} : { [site.$_hash]: translation };
+        const template = await setup({ locale, fr });
+        const expected = String(
+          render((metadata) => (metadata ? template(metadata) : template))
+        );
+        const templateWarnings = warn.mock.calls.length;
+        warn.mockClear();
+        resetGTGlobals();
+
+        const gt = await setup({ locale, fr });
+        const args = render(precompute) as Call;
+        expect(call(gt, ...args)).toBe(expected);
+        expect(call(t, ...args)).toBe(expected);
+        // Again, from what the call site kept.
+        expect(call(gt, ...args)).toBe(expected);
+        expect(warn).toHaveBeenCalledTimes(templateWarnings);
+      }
+    );
+  });
+
+  it('renders the source when i18n is disabled', async () => {
+    const args = precompute()`Save`;
+    const gt = await setup({
+      enableI18n: false,
+      fr: { [args[0].$_hash]: 'Enregistrer' },
+    });
+    expect(call(gt, ...args)).toBe('Save');
+    expect(call(t, ...args)).toBe('Save');
+  });
+
+  it('keeps what a site resolved for its locale', async () => {
+    await setup();
+    let reads = 0;
+    const tree = new Proxy([literal('Bonjour, '), argument('name')], {
+      get(target, key, receiver) {
+        reads++;
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    const inline = vi.fn((locale: string) =>
+      locale === 'fr' ? 'Enregistrer' : undefined
+    );
+    let locale = 'fr';
+    const gt = createGT({
+      getLocale: () => locale,
+      lookupTranslation: () => tree,
+    });
+    const [greeting, values] = precompute()`Hello, ${{ name }}`;
+    const [save] = precompute()`Save`;
+    const embedded = { ...save, inline };
+    const render = () => {
+      reads = 0;
+      expect(call(gt, greeting, values)).toBe('Bonjour, Ada');
+      expect(call(gt, embedded)).toBe('Enregistrer');
+      return reads;
+    };
+
+    const first = render();
+    const second = render();
+    expect(second).toBeLessThan(first);
+    expect(render()).toBe(second);
+    expect(inline).toHaveBeenCalledTimes(1);
+
+    locale = 'en';
+    expect(call(gt, embedded)).toBe('Save');
+    locale = 'fr';
+    expect(call(gt, embedded)).toBe('Enregistrer');
+    expect(inline).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders a catalog entry that changes, and one that expires', async () => {
+    vi.useFakeTimers();
+    try {
+      const args = precompute({ maxChars: 12 })`Read more about pricing`;
+      const [{ $_hash: hash }] = args;
+      const cut = (text: string, locales: string) =>
+        formatCutoff(text, { locales, maxChars: 12 });
+      await setup({
+        cacheExpiryTime: 1000,
+        fr: { [hash]: 'En savoir plus sur les tarifs' },
+      });
+      expect(call(t, ...args)).toBe(cut('En savoir plus sur les tarifs', 'fr'));
+
+      getI18nCache().updateTranslations({
+        fr: { [hash]: 'Consulter les tarifs' },
+      });
+      expect(call(t, ...args)).toBe(cut('Consulter les tarifs', 'fr'));
+
+      vi.advanceTimersByTime(2000);
+      expect(call(t, ...args)).toBe(cut('Read more about pricing', 'en'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('renders a replaced tree in its locale without a lookup', async () => {
+    await setup();
+    const lookupTranslation = vi.fn(() => 'Chargé');
+    let locale = 'fr';
+    const gt = createGT({ getLocale: () => locale, lookupTranslation });
+    const replaced: PrecomputedMessage = {
+      $_hash: keyOf()`${number({ total: 1 })} files`,
+      $_tree: [['total', 'number'], ' fichiers'],
+      $_locale: 'fr',
+    };
+    expect(call(gt, replaced, { total: 1234.5 })).toBe(
+      `${(1234.5).toLocaleString('fr')} fichiers`
+    );
+    expect(lookupTranslation).not.toHaveBeenCalled();
+
+    // Another locale has no translation here, so it reads its catalog.
+    locale = 'en';
+    expect(call(gt, replaced, { total: 1234.5 })).toBe('Chargé');
   });
 });

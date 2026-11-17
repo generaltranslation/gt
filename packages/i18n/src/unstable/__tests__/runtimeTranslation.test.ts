@@ -29,46 +29,60 @@ describe('gt-i18n/unstable runtime translation', () => {
     Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
   });
 
-  it('sends a missing tree for runtime translation in dev hot reload, like other formats', async () => {
-    initializeI18nConfig({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      apiKey: 'dev-key',
-      projectId: 'project-id',
-    });
-    const cache = new I18nCache({ loadTranslations: async () => ({}) });
-    setI18nCache(cache);
-    setWritableConditionStore({
-      getLocale: () => 'fr',
-      getEnableI18n: () => true,
-    });
-    await cache.loadTranslations('fr');
-
-    const source = 'Save';
-    const hash = hashSource({
-      source,
-      dataFormat: 'MESSAGE_TREE',
-      context: 'button',
-    });
-    translateMany.mockResolvedValue({
-      [hash]: { success: true, translation: 'Enregistrer' },
-    });
-
-    expect(t({ context: 'button' })`Save`).toBe('Save');
-    await vi.advanceTimersByTimeAsync(50);
-
-    expect(translateMany).toHaveBeenCalledWith({
-      [hash]: {
-        source,
-        metadata: expect.objectContaining({
-          hash,
-          context: 'button',
-          dataFormat: 'MESSAGE_TREE',
-        }),
-      },
-    });
-    expect(t({ context: 'button' })`Save`).toBe('Enregistrer');
+  const buttonHash = hashSource({
+    source: 'Save',
+    dataFormat: 'MESSAGE_TREE',
+    context: 'button',
   });
+  // The call a compiler emits for the template, which GT's type leaves out.
+  const precomputed = {
+    $_hash: buttonHash,
+    $_tree: 'Save',
+    context: 'button',
+  } as unknown as TemplateStringsArray;
+
+  it.each([
+    ['a template', () => t({ context: 'button' })`Save`],
+    ['a precomputed message', () => t(precomputed)],
+  ])(
+    'sends a miss of %s for runtime translation in dev hot reload, like other formats',
+    async (_form, render) => {
+      initializeI18nConfig({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        apiKey: 'dev-key',
+        projectId: 'project-id',
+      });
+      const cache = new I18nCache({ loadTranslations: async () => ({}) });
+      setI18nCache(cache);
+      setWritableConditionStore({
+        getLocale: () => 'fr',
+        getEnableI18n: () => true,
+      });
+      await cache.loadTranslations('fr');
+
+      const source = 'Save';
+      const hash = buttonHash;
+      translateMany.mockResolvedValue({
+        [hash]: { success: true, translation: 'Enregistrer' },
+      });
+
+      expect(render()).toBe('Save');
+      await vi.advanceTimersByTimeAsync(50);
+
+      expect(translateMany).toHaveBeenCalledWith({
+        [hash]: {
+          source,
+          metadata: expect.objectContaining({
+            hash,
+            context: 'button',
+            dataFormat: 'MESSAGE_TREE',
+          }),
+        },
+      });
+      expect(render()).toBe('Enregistrer');
+    }
+  );
 
   it('translates a getGT() miss into the cache its GT reads, even once it expires', async () => {
     initializeI18nConfig({

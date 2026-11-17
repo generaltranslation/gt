@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   autoderive: { jsx: false, strings: false },
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
+  precomputeMessages: true,
 };
 
 /**
@@ -83,6 +84,8 @@ export function initializeState(
     // An explicit undefined in the options must not erase the default.
     autoJsxImportSource:
       options.autoJsxImportSource ?? DEFAULT_SETTINGS.autoJsxImportSource,
+    precomputeMessages:
+      options.precomputeMessages ?? DEFAULT_SETTINGS.precomputeMessages,
     inlineTranslationsTable,
     sourceReplacement:
       isProduction &&

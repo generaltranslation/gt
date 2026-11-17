@@ -57,6 +57,15 @@ export interface PluginConfig
    * `false`).
    */
   experimentalReplaceSource?: boolean;
+  /**
+   * Replaces each static `t` template from an `/unstable` entry with a call
+   * that reads its message, built at compile time and declared once at module
+   * scope, so the call site builds no message tree when it renders. The
+   * runtime packages must be from the same release as the compiler: an older
+   * `t` does not read these calls. Defaults to true; false keeps the tagged
+   * templates and only injects their hashes.
+   */
+  precomputeMessages?: boolean;
 }
 
 /**
@@ -87,6 +96,8 @@ export interface PluginSettings {
   inlineTranslationsTable?: InlineTranslationsTable;
   /** Set when a per-locale build replaces source content with its translations */
   sourceReplacement?: SourceReplacement;
+  /** Replace static unstable t templates with calls that read a precomputed message */
+  precomputeMessages: boolean;
 }
 
 /**

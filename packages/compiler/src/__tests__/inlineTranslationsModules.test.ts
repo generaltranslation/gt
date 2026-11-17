@@ -365,7 +365,7 @@ describe('inlineTranslations.modules', () => {
       );
       expect(output).toMatch(
         new RegExp(
-          `\\$_hash: "${HELLO_WORLD}",\\s*inline: __gt_inline_${HELLO_WORLD}\\s*}\\)\`Hello world\``
+          `\\$_hash: "${HELLO_WORLD}",\\s*\\$_tree: "Hello world",\\s*inline: __gt_inline_${HELLO_WORLD}\\s*}`
         )
       );
       expect(output).not.toContain('locale =>');
@@ -416,7 +416,9 @@ describe('inlineTranslations.modules', () => {
         `${USEGT_CODE}\n  gt\`Hello world\`;\n`
       );
       expect(output.match(/^import __gt_inline_/gm)).toHaveLength(1);
-      expect(output.match(/inline: __gt_inline_/g)).toHaveLength(2);
+      // Both call sites read the one precomputed message.
+      expect(output.match(/inline: __gt_inline_/g)).toHaveLength(1);
+      expect(output.match(/gt\(_gt\)/g)).toHaveLength(2);
     });
 
     it('inlines the callback for hashes that cannot name a module', async () => {
