@@ -21,6 +21,7 @@ import {
   warnBranchChildrenSync,
   warnInvalidExactPluralPropSync,
   warnNonLiteralOrdinalSync,
+  warnSpreadOnBranchSync,
   warnNestedInternalTComponent,
   warnDeriveNonConstVariableSync,
   warnDeriveDestructuringSync,
@@ -470,6 +471,15 @@ function buildJSXTree({
             !attr.value || t.isBooleanLiteral(expression, { value: true });
         }
         props[attrName] = attrValue;
+      } else if (elementIsPlural || elementIsBranch) {
+        // The runtime reads the props a spread carries, which the source does not show.
+        output.errors.push(
+          warnSpreadOnBranchSync(
+            config.file,
+            componentType,
+            `${attr.loc?.start?.line}:${attr.loc?.start?.column}`
+          )
+        );
       }
     });
 

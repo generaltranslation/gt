@@ -590,6 +590,32 @@ describe('Branch/Plural props that are never rendered', () => {
   });
 });
 
+describe('a spread attribute on Branch/Plural', () => {
+  it.each([
+    ['Plural', '<Plural n={count} {...forms} />'],
+    ['Plural', '<Plural n={2} {...{ ordinal: true }} one="1st" other="nth" />'],
+    ['Branch', '<Branch branch={status} {...branches} other="Closed" />'],
+  ])('is rejected on <%s> inside <T>', (component, jsx) => {
+    const { updates, errors } = extractUserT(page(`<T>${jsx}</T>`));
+
+    expect(updates).toEqual([]);
+    expect(errors).toEqual([
+      expect.stringContaining(
+        `<${component}> cannot take a spread attribute because its props are read from the source. Write each prop out on the component.`
+      ),
+    ]);
+  });
+
+  it('is left alone outside translated content', () => {
+    const { updates, errors } = extractUserT(
+      page('<Plural n={count} {...forms} />')
+    );
+
+    expect(updates).toEqual([]);
+    expect(errors).toEqual([]);
+  });
+});
+
 describe('<Plural ordinal>', () => {
   const plural = (ordinal: string) =>
     page(`<T><Plural n={count} ${ordinal} one="1st" other="nth" /></T>`);
