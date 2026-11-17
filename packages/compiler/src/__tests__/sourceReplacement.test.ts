@@ -57,8 +57,42 @@ type Case = {
 
 const IMPORTS = `import { T, Var, Num, Currency, DateTime, RelativeTime, Plural, Branch } from 'gt-react';`;
 
-const app = (body: string, params = '{}') =>
-  `${IMPORTS}\nexport function App(${params}) {\n  return ${body};\n}`;
+// Sources by the JSX they return, so a case can be rebuilt with that JSX among other children
+const APP_BODIES = new Map<string, { body: string; params: string }>();
+
+const app = (body: string, params = '{}') => {
+  const source = `${IMPORTS}\nexport function App(${params}) {\n  return ${body};\n}`;
+  APP_BODIES.set(source, { body, params });
+  return source;
+};
+
+/** Where a `<T>` sits among the children of what renders it. */
+const PLACEMENTS: Record<string, (body: string) => string> = {
+  'the only child of an element': (body) => `<section>${body}</section>`,
+  'among the children of an element': (body) =>
+    `<section>Before {1}${body}<i>after</i></section>`,
+  'among the children of a fragment': (body) => `<>${body}<i>after</i></>`,
+  'in a condition': (body) =>
+    `<section>{on ? ${body} : 'off'}{!on || ${body}}<i>after</i></section>`,
+  'the only child of a component': (body) => `<Box>${body}</Box>`,
+};
+
+/** Each `app()` case of `cases`, with the JSX it returns placed by `place`. */
+const placeCases = (cases: Case[], place: (body: string) => string): Case[] =>
+  [...new Map(cases.map((testCase) => [testCase.source, testCase])).values()]
+    .filter((testCase) => APP_BODIES.has(testCase.source))
+    .map((testCase) => {
+      const { body, params } = APP_BODIES.get(testCase.source)!;
+      return {
+        ...testCase,
+        source: `${IMPORTS}
+          const on = true;
+          const Box = ({ children }) => <div>{children}</div>;
+          export function App(${params}) {
+            return ${place(body)};
+          }`,
+      };
+    });
 
 const DATE = new Date(Date.UTC(2024, 0, 15, 12));
 
@@ -1008,6 +1042,47 @@ describe('experimentalReplaceSource', () => {
     }
   );
 
+  describe.each(Object.entries(PLACEMENTS))(
+    'renders a replaced <T> that is %s as <T> renders there',
+    (_placement, place) => {
+      const placed = placeCases(JSX_CASES, place);
+
+      it('in a translated build', async () => {
+        for (const { name, source, translation, renders, gtConfig } of placed) {
+          const { embedded, replaced } = await buildBothWays(
+            compileJsx(source),
+            translation,
+            { gtConfig }
+          );
+          expect(
+            await renderAll(replaced, renders),
+            `${name}\n${replaced}`
+          ).toEqual(await renderAll(embedded, renders));
+        }
+      });
+
+      it('in a build for the source locale', async () => {
+        runtime.setLocale('en');
+        onTestFinished(() => runtime.setLocale(STATIC_LOCALE));
+        for (const { name, source, renders, gtConfig } of placed) {
+          const code = compileJsx(source);
+          const [kept, replaced] = await Promise.all(
+            [false, true].map((replaceSource) =>
+              transformWithPlugin(
+                sourceLocaleOptions('en', { replaceSource, gtConfig }),
+                code
+              )
+            )
+          );
+          expect(
+            await renderAll(replaced!, renders),
+            `${name}\n${replaced}`
+          ).toEqual(await renderAll(kept!, renders));
+        }
+      });
+    }
+  );
+
   it('rewrites <T> as the JSX its translation renders', async () => {
     const { replaced } = await checkCase(
       JSX_CASES.find(
@@ -1143,34 +1218,152 @@ describe('experimentalReplaceSource', () => {
     );
   });
 
-  it('keeps the hashes of translation calls inside a <T> the translation reorders', async () => {
-    const code = compileJsx(`import { T, useGT } from 'gt-react';
+  it.each([
+    ['', ''],
+    ['<div>', '<p>{gt("Third")}</p></div>'],
+  ])(
+    'keeps the hashes of translation calls in and after a <T> the translation reorders, inside "%s"',
+    async (open, close) => {
+      const code = compileJsx(`import { T, useGT } from 'gt-react';
       export function App() {
         const gt = useGT();
-        return <T><button onClick={() => gt('First')}>A</button> <button onClick={() => gt('Second')}>B</button></T>;
+        return ${open}<T><button onClick={() => gt('First')}>A</button> <button onClick={() => gt('Second')}>B</button></T>${close};
+      }`);
+      const output = (await transformWithPlugin(undefined, code))!;
+      const [, hash] = output.match(/[^$]_hash: "([^"]+)"/)!;
+      const replaced = (await transformWithPlugin(
+        buildOptions(
+          {
+            [hash]: [
+              { t: 'button', i: 2, c: 'Deux' },
+              ' ',
+              { t: 'button', i: 1, c: 'Un' },
+            ],
+          },
+          { replaceSource: true }
+        ),
+        code
+      ))!;
+      const calls = (text: string) =>
+        [...text.matchAll(/gt\("(\w+)", \{ "\$_hash": "(\w+)" \}\)/g)]
+          .map(([, message, messageHash]) => `${message} ${messageHash}`)
+          .sort();
+      expect(replaced).toContain('"Deux"');
+      expect(calls(output)).toHaveLength(open ? 3 : 2);
+      expect(calls(replaced)).toEqual(calls(output));
+      expect(
+        calls(
+          (await transformWithPlugin(
+            sourceLocaleOptions('en', { replaceSource: true }),
+            code
+          ))!
+        )
+      ).toEqual(calls(output));
+    }
+  );
+
+  it('puts what a replaced <T> renders among the children of its element', async () => {
+    const code = compileJsx(`import { T, Num } from 'gt-react';
+      const Box = ({ children }) => <div>{children}</div>;
+      export function App({ n, open, items }) {
+        return (
+          <ul>
+            <li><T>Save</T></li>
+            <li>Count: <T><Num>{n}</Num> files</T>!</li>
+            <li><T><Num>{n}</Num> files</T></li>
+            <li>{open ? <T>Save</T> : null}{open && <T><Num>{n}</Num> files</T>}</li>
+            {items.map((item) => <T key={item}>Save</T>)}
+            <Box><T>Save</T></Box>
+          </ul>
+        );
       }`);
     const output = (await transformWithPlugin(undefined, code))!;
-    const [, hash] = output.match(/[^$]_hash: "([^"]+)"/)!;
-    const replaced = (await transformWithPlugin(
+    const [save, files] = [
+      ...new Set(
+        [...output.matchAll(/[^$]_hash: "([^"]+)"/g)].map((match) => match[1])
+      ),
+    ];
+    const translated = await transformWithPlugin(
       buildOptions(
         {
-          [hash]: [
-            { t: 'button', i: 2, c: 'Deux' },
-            ' ',
-            { t: 'button', i: 1, c: 'Un' },
-          ],
+          [save]: 'Enregistrer',
+          [files]: [{ k: '_gt_n_1', i: 1, v: 'n' }, ' fichiers'],
         },
         { replaceSource: true }
       ),
       code
-    ))!;
-    const calls = (text: string) =>
-      [...text.matchAll(/gt\("(\w+)", \{ "\$_hash": "(\w+)" \}\)/g)]
-        .map(([, message, messageHash]) => `${message} ${messageHash}`)
-        .sort();
-    expect(replaced).toContain('"Deux"');
-    expect(calls(output)).toHaveLength(2);
-    expect(calls(replaced)).toEqual(calls(output));
+    );
+    expect(translated).toMatchInlineSnapshot(`
+      "import { Fragment as _Fragment } from "react/jsx-runtime";import { jsx, jsxs } from "react/jsx-runtime";
+      import { T, Num } from "gt-react";
+      const Box = ({ children }) => /* @__PURE__ */jsx("div", { children });
+      function App({ n, open, items }) {
+        return /* @__PURE__ */jsxs("ul", { children: [
+          /* @__PURE__ */jsx("li", { children: "Enregistrer" }),
+          /* @__PURE__ */jsxs("li", { children: [
+            "Count: ",
+
+            /* @__PURE__ */jsx(Num, { children: n }), " fichiers",
+
+
+            "!"]
+          }),
+          /* @__PURE__ */jsxs("li", { children: [
+            /* @__PURE__ */jsx(Num, { children: n }), " fichiers"]
+
+          }),
+          /* @__PURE__ */jsxs("li", { children: [
+            open ? "Enregistrer" : null,
+            open && /* @__PURE__ */jsxs(_Fragment, { children: [
+              /* @__PURE__ */jsx(Num, { children: n }), " fichiers"] }
+
+            )]
+          }),
+          items.map((item) => /* @__PURE__ */jsx(_Fragment, { children: "Enregistrer" }, item)),
+          /* @__PURE__ */jsx(Box, { children: /* @__PURE__ */jsx(_Fragment, { children: "Enregistrer" }) })]
+        });
+      }
+      export {
+        App };"
+    `);
+    expect(
+      await transformWithPlugin(
+        sourceLocaleOptions('en', { replaceSource: true }),
+        code
+      )
+    ).toMatchInlineSnapshot(`
+      "import { Fragment as _Fragment } from "react/jsx-runtime";import { jsx, jsxs } from "react/jsx-runtime";
+      import { T, Num } from "gt-react";
+      const Box = ({ children }) => /* @__PURE__ */jsx("div", { children });
+      function App({ n, open, items }) {
+        return /* @__PURE__ */jsxs("ul", { children: [
+          /* @__PURE__ */jsx("li", { children: "Save" }),
+          /* @__PURE__ */jsxs("li", { children: [
+            "Count: ",
+
+            /* @__PURE__ */jsx(Num, { children: n }),
+            " files",
+
+            "!"]
+          }),
+          /* @__PURE__ */jsxs("li", { children: [
+            /* @__PURE__ */jsx(Num, { children: n }),
+            " files"]
+          }),
+          /* @__PURE__ */jsxs("li", { children: [
+            open ? "Save" : null,
+            open && /* @__PURE__ */jsxs(_Fragment, { children: [
+              /* @__PURE__ */jsx(Num, { children: n }),
+              " files"] }
+            )]
+          }),
+          items.map((item) => /* @__PURE__ */jsx(_Fragment, { children: "Save" }, item)),
+          /* @__PURE__ */jsx(Box, { children: /* @__PURE__ */jsx(_Fragment, { children: "Save" }) })]
+        });
+      }
+      export {
+        App };"
+    `);
   });
 
   it('leaves a <T> inside another <T> alone', async () => {
