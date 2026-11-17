@@ -27,6 +27,6 @@
 />
 ```
 
-Exact branches such as `_1` and the `other` fallback work as they do without `ordinal`. Write `ordinal` as a bare attribute or as `ordinal={true}`: `gt`, the compiler, the gt-next SWC plugin and the Vue and Svelte extractors read it from the source, so a value computed at runtime is not seen. Vue and Svelte take the same prop.
+Exact branches such as `_1` and the `other` fallback work as they do without `ordinal`. Write `ordinal` as a bare attribute, `ordinal={true}` or `ordinal={false}`: `gt`, the compiler, the gt-next SWC plugin and the Vue and Svelte extractors read it from the source, where a value computed at runtime cannot be seen. `gt`, the compiler and the Vue and Svelte extractors report any other value, such as `ordinal={isPlace}`, as an error. Vue and Svelte take the same prop.
 
 Stored content marks an ordinal plural with `t: 'o'` in an element's GT data, beside `'p'` for a plural and `'b'` for a branch, so `GTProp['t']` from `@generaltranslation/format` is now `'p' | 'o' | 'b'`. An ordinal plural hashes differently from a cardinal one with the same branches.

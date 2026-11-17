@@ -367,6 +367,18 @@ describe('errors', () => {
       { parse }
     ).errors.map((error) => error.whatHappened);
 
+  it.each(['ordinal={isPlace}', 'ordinal="true"'])(
+    'rejects <Plural %s>, which is not a static boolean',
+    (ordinal) => {
+      expect(
+        errorsFor(
+          `<T><Plural n={1} ${ordinal} one="1st" other="nth" /></T>`,
+          'let isPlace = true;'
+        )
+      ).toEqual(['The "ordinal" prop on <Plural> must be a static boolean']);
+    }
+  );
+
   it('rejects unwrapped dynamic content', () => {
     expect(errorsFor('<T>Hi {name}</T>', 'let name;')).toEqual([
       'Dynamic content inside <T> must be wrapped in a variable component',

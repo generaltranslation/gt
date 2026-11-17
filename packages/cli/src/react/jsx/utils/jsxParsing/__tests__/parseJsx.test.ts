@@ -590,6 +590,39 @@ describe('Branch/Plural props that are never rendered', () => {
   });
 });
 
+describe('<Plural ordinal>', () => {
+  const plural = (ordinal: string) =>
+    page(`<T><Plural n={count} ${ordinal} one="1st" other="nth" /></T>`);
+
+  it.each([
+    ['ordinal', 'o'],
+    ['ordinal={true}', 'o'],
+    ['ordinal={false}', 'p'],
+    ['', 'p'],
+  ])('stores %s as t: %s', (ordinal, t) => {
+    const result = extractUserT(plural(ordinal));
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      { t: 'Plural', i: 1, d: { b: { one: '1st', other: 'nth' }, t } },
+    ]);
+  });
+
+  it.each(['ordinal={isPlace}', 'ordinal="true"', 'ordinal={!0}'])(
+    'rejects %s, which is not a boolean literal',
+    (ordinal) => {
+      const { updates, errors } = extractUserT(plural(ordinal));
+
+      expect(updates).toEqual([]);
+      expect(errors).toEqual([
+        expect.stringContaining(
+          'The ordinal prop of <Plural> must be a boolean literal. Write a bare ordinal attribute, ordinal={true} or ordinal={false}.'
+        ),
+      ]);
+    }
+  );
+});
+
 describe('Derive of a variable', () => {
   const derive = (c: string, i = 1) => ({ t: 'Derive', i, c });
 

@@ -1850,20 +1850,33 @@ function serializeElement(
             )
           : branches;
       // Vue reads a bare `ordinal` attribute, an empty string, as true.
-      const ordinal = element.props.some((property) => {
-        const key =
-          property.type === NodeTypes.ATTRIBUTE
-            ? property.name
-            : readDirectiveKey(property);
-        if (key !== 'ordinal') return false;
-        const value = readPropertyValue(
-          property,
-          expressionPlugins,
-          shadowed,
-          bindings
-        );
-        return value.ok && (value.value === true || value.value === '');
-      });
+      const ordinal =
+        originalName === 'Plural' &&
+        element.props.some((property) => {
+          const key =
+            property.type === NodeTypes.ATTRIBUTE
+              ? property.name
+              : readDirectiveKey(property);
+          if (key !== 'ordinal') return false;
+          const value = readPropertyValue(
+            property,
+            expressionPlugins,
+            shadowed,
+            bindings
+          );
+          const isOrdinal =
+            value.ok && (value.value === true || value.value === '');
+          // The runtime reads the live value, so it must be known here.
+          if (!isOrdinal && !(value.ok && value.value === false)) {
+            addVueError(
+              context,
+              property.loc,
+              'Found an invalid or dynamic ordinal on a gt-vue <Plural> component',
+              'Use a static boolean or a bare ordinal prop'
+            );
+          }
+          return isOrdinal;
+        });
       data.t = originalName !== 'Plural' ? 'b' : ordinal ? 'o' : 'p';
     }
   }

@@ -401,6 +401,19 @@ export const warnInvalidExactPluralPropSync = (
     location
   );
 
+export const warnNonLiteralOrdinalSync = (
+  file: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: 'The ordinal prop of <Plural> must be a boolean literal',
+      fix: 'Write a bare ordinal attribute, ordinal={true} or ordinal={false}',
+    }),
+    location
+  );
+
 export const warnRecursiveFunctionCallSync = (
   file: string,
   functionName: string,
