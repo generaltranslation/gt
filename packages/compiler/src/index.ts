@@ -25,7 +25,9 @@ import {
   loadInlineTranslations,
 } from './transform/injection/inline-translations/loadInlineTranslations';
 import {
+  INLINE_TRANSLATIONS_MODULE_IMPORT_PREFIX,
   INLINE_TRANSLATIONS_VIRTUAL_MODULE_PREFIX,
+  getInlineTranslationsModuleFile,
   parseInlineTranslationsVirtualModuleId,
   renderInlineTranslationsModule,
   renderInlineTranslationsModules,
@@ -96,6 +98,16 @@ export interface GTUnpluginOptions extends PluginConfig, GTConfig {}
 
 export const MISSING_GT_CONFIG_WARNING =
   '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
+
+const INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR =
+  createDiagnosticMessage({
+    source: '@generaltranslation/compiler',
+    severity: 'Error',
+    whatHappened:
+      'files.gt.inlineTranslations is set, but compileTimeHash is false',
+    why: 'translations are only embedded where hashes are computed at build time, and msgOutput files leave out the translations that would be embedded',
+    fix: 'Remove compileTimeHash: false, or remove files.gt.inlineTranslations from gt.config.json',
+  });
 
 function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
   return logLevel !== 'silent' && logLevel !== 'error';
@@ -249,10 +261,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         warn: isProduction() && shouldWarn(options.logLevel),
       }
     );
-    const modulesDirPrefix =
-      inlineTranslationsModules?.mode === 'physical'
-        ? inlineTranslationsModules.dir + path.sep
-        : undefined;
+    // Only the modules buildStart wrote, so source files inside modulesDir are still transformed
+    let messageModuleFiles = new Set<string>();
     const loadModulesTable = () =>
       isProduction() ? loadInlineTranslations(gtFiles) : undefined;
 
@@ -278,6 +288,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         keyCacheOnInlineTranslations(compiler.options);
       },
       buildStart() {
+        if (
+          isProduction() &&
+          resolvedOptions.compileTimeHash === false &&
+          gtFiles?.inlineTranslations?.locales.length
+        ) {
+          throw new Error(INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR);
+        }
         if (inlineTranslationsModules?.mode !== 'physical' || !isProduction()) {
           return;
         }
@@ -295,6 +312,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             )
           );
         }
+        messageModuleFiles = new Set(
+          Array.from(modules.keys(), (hash) =>
+            getInlineTranslationsModuleFile(inlineTranslationsModules.dir, hash)
+          )
+        );
       },
       resolveId(id: string) {
         if (
@@ -330,7 +352,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       transformInclude(id: string) {
         if (
           id.includes(INLINE_TRANSLATIONS_VIRTUAL_MODULE_PREFIX) ||
-          (modulesDirPrefix !== undefined && id.startsWith(modulesDirPrefix))
+          messageModuleFiles.has(id.split('?')[0])
         ) {
           return false;
         }
@@ -398,7 +420,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           if (
             inlineTranslationsModules &&
             state.settings.inlineTranslationsTable &&
-            isEsModule(ast.program)
+            isEsModule(ast.program) &&
+            // Generated import names could clash with the file's own bindings
+            !code.includes(INLINE_TRANSLATIONS_MODULE_IMPORT_PREFIX)
           ) {
             state.inlineTranslationsImports = new Map();
           }

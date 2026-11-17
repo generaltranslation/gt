@@ -536,18 +536,68 @@ describe('inlineTranslations.modules', () => {
     });
 
     it('does not transform message modules', () => {
-      const root = createProject({});
+      const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
       const plugin = createPlugin(
         root,
         moduleOptions(root, ['fr'], { modules: 'physical' })
       );
+      plugin.buildStart.call(createContext());
       expect(
-        plugin.transformInclude(path.join(root, '.gt/messages/abc.js'))
+        plugin.transformInclude(
+          path.join(root, '.gt/messages', `${HELLO_WORLD}.js`)
+        )
       ).toBe(false);
       expect(
         plugin.transformInclude(`\0virtual:gt/messages/${HELLO_WORLD}.js`)
       ).toBe(false);
       expect(plugin.transformInclude(path.join(root, 'src/abc.js'))).toBe(true);
+    });
+
+    it('transforms source files inside modulesDir', () => {
+      const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical', modulesDir: '.' })
+      );
+      plugin.buildStart.call(createContext());
+      expect(
+        plugin.transformInclude(path.join(root, `${HELLO_WORLD}.js`))
+      ).toBe(false);
+      expect(plugin.transformInclude(path.join(root, 'index.js'))).toBe(true);
+      expect(plugin.transformInclude(path.join(root, 'App.tsx'))).toBe(true);
+    });
+
+    it('inlines the callback in files that use the generated import prefix', async () => {
+      const root = createProject({ fr: { custom: 'Perso' } });
+      const plugin = createPlugin(
+        root,
+        moduleOptions(root, ['fr'], { modules: 'physical' })
+      );
+      const output = await transform(
+        plugin,
+        root,
+        `
+          import { jsx } from 'react/jsx-runtime';
+          import { T } from 'gt-react';
+          const __gt_inline_custom = 1;
+          export const el = jsx(T, { _hash: "custom", children: "Hello world" });
+        `
+      );
+      expect(output).not.toContain('import __gt_inline_custom');
+      expect(output).toContain('locale === "fr" ? "Perso" : void 0');
+    });
+
+    it('fails production builds that embed translations without compileTimeHash', () => {
+      const root = createProject({ fr: { [HELLO_WORLD]: 'Bonjour' } });
+      const plugin = createPlugin(root, {
+        ...moduleOptions(root, ['fr'], {}),
+        compileTimeHash: false,
+      });
+      expect(() => plugin.buildStart.call(createContext())).toThrow(
+        'files.gt.inlineTranslations is set, but compileTimeHash is false'
+      );
+      vi.stubEnv('NODE_ENV', 'development');
+      expect(() => plugin.buildStart.call(createContext())).not.toThrow();
     });
   });
 

@@ -16,7 +16,7 @@ export const INLINE_TRANSLATIONS_VIRTUAL_MODULE_PREFIX = 'virtual:gt/messages/';
 
 // .mjs, so bundlers parse the modules as ES modules even in a "type": "commonjs" package
 const MODULE_EXTENSION = '.mjs';
-const MODULE_IMPORT_PREFIX = '__gt_inline_';
+export const INLINE_TRANSLATIONS_MODULE_IMPORT_PREFIX = '__gt_inline_';
 
 const createModuleCollisionDiagnostic = (file: string) =>
   createDiagnosticMessage({
@@ -46,7 +46,7 @@ export type InlineTranslationsModules =
   | { mode: 'virtual' };
 
 export function getInlineTranslationsModuleImportName(hash: string): string {
-  return `${MODULE_IMPORT_PREFIX}${hash}`;
+  return `${INLINE_TRANSLATIONS_MODULE_IMPORT_PREFIX}${hash}`;
 }
 
 export function getInlineTranslationsVirtualModuleId(hash: string): string {
