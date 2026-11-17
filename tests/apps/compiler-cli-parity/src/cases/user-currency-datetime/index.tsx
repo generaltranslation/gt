@@ -5,7 +5,7 @@ export default function UserCurrencyDateTime() {
   const date = new Date();
   return (
     <div>
-      Paid <Currency>{amount}</Currency> on <DateTime>{date}</DateTime>
+      Paid <Currency currency='USD'>{amount}</Currency> on <DateTime>{date}</DateTime>
     </div>
   );
 }

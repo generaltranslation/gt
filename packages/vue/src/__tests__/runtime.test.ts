@@ -2166,14 +2166,13 @@ describe('gt-vue runtime', () => {
       setup() {
         return () =>
           h('div', [
-            h(Num, { locales: ['en-US'], value: '1234.5' }),
+            h(Num, { value: 1234.5 }),
             '|',
-            h(Currency, { currency: 'USD', locales: ['en-US'], value: '12' }),
+            h(Currency, { currency: 'USD', value: 12 }),
             '|',
             h(DateTime, {
-              locales: ['en-US'],
               options: { timeZone: 'UTC', year: 'numeric' },
-              value: '2024-01-01T00:00:00.000Z',
+              value: new Date('2024-01-01T00:00:00.000Z'),
             }),
             '|',
             h(
@@ -2211,15 +2210,18 @@ describe('gt-vue runtime', () => {
             'B',
             h(T, { _hash: 'missing' }, { default: () => 'source' }),
             'C',
-            h(Num, { value: 'number' }),
+            h(Num, { value: 1 }),
             'D',
             h(Num, { value: null }),
             'E',
-            h(Currency, { value: 'currency' }),
+            h(Currency, { currency: 'EUR', value: 2 }),
             'F',
-            h(Currency, { value: null }),
+            h(Currency, { currency: 'EUR', value: null }),
             'G',
-            h(DateTime, { value: 'date' }),
+            h(DateTime, {
+              options: { timeZone: 'UTC', year: 'numeric' },
+              value: 0,
+            }),
             'H',
             h(DateTime, { value: null }),
             'I',
@@ -2238,7 +2240,7 @@ describe('gt-vue runtime', () => {
     });
 
     expect(await renderWithPlugin(Root, plugin)).toBe(
-      '<div>A<!--[-->target<!--]-->B<!--[-->source<!--]-->C<!--[-->number<!--]-->D<!--[--><!--]-->E<!--[-->currency<!--]-->F<!--[--><!--]-->G<!--[-->date<!--]-->H<!--[--><!--]-->I<!--[-->branch<!--]-->J<!--[--><!--]-->K<!--[-->plural<!--]-->L<!--[--><!--]-->M<!--[-->variable<!--]-->N</div>'
+      '<div>A<!--[-->target<!--]-->B<!--[-->source<!--]-->C<!--[-->1<!--]-->D<!--[--><!--]-->E<!--[-->2,00\u00A0€<!--]-->F<!--[--><!--]-->G<!--[-->1970<!--]-->H<!--[--><!--]-->I<!--[-->branch<!--]-->J<!--[--><!--]-->K<!--[-->plural<!--]-->L<!--[--><!--]-->M<!--[-->variable<!--]-->N</div>'
     );
   });
 
@@ -2319,7 +2321,7 @@ describe('gt-vue runtime', () => {
     expect(html).not.toContain('alt="Portrait traduit"');
   });
 
-  it('uses pipeline locales instead of public preferences for rich formatters', async () => {
+  it('uses pipeline locales for rich formatters', async () => {
     const date = new Date('2024-01-02T00:00:00.000Z');
     const dateOptions = {
       day: 'numeric',
@@ -2328,19 +2330,11 @@ describe('gt-vue runtime', () => {
       year: 'numeric',
     } as const;
     const renderFormatters = () => [
-      h(Num, { locales: ['de-DE'], value: 1234.5 }),
+      h(Num, { value: 1234.5 }),
       '|',
-      h(Currency, {
-        currency: 'EUR',
-        locales: ['de-DE'],
-        value: 1234.5,
-      }),
+      h(Currency, { currency: 'EUR', value: 1234.5 }),
       '|',
-      h(DateTime, {
-        locales: ['de-DE'],
-        options: dateOptions,
-        value: date,
-      }),
+      h(DateTime, { options: dateOptions, value: date }),
     ];
     const expected = (locale: string) =>
       [
@@ -2349,9 +2343,7 @@ describe('gt-vue runtime', () => {
           currency: 'EUR',
           style: 'currency',
         }).format(1234.5),
-        new Intl.DateTimeFormat(locale, dateOptions)
-          .format(date)
-          .replace(/[\u200F\u202B\u202E]/g, ''),
+        new Intl.DateTimeFormat(locale, dateOptions).format(date),
       ].join('|');
 
     const missingPlugin = createGT({
@@ -2455,9 +2447,7 @@ describe('gt-vue runtime', () => {
           currency: 'EUR',
           style: 'currency',
         }).format(1234.5),
-        new Intl.DateTimeFormat(locale, dateOptions)
-          .format(date)
-          .replace(/[\u200F\u202B\u202E]/g, ''),
+        new Intl.DateTimeFormat(locale, dateOptions).format(date),
       ].join('|');
     const loadTranslations = vi.fn(async () => ({
       formatters: [

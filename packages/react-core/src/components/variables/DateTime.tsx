@@ -1,5 +1,9 @@
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
-import { computeDateTime, type DateTimeProps } from './DateTime.shared';
+import {
+  computeDateTime,
+  type DateTimeProps,
+  type ResolvedDateTimeProps,
+} from './DateTime.shared';
 
 // ===== Component ===== //
 
@@ -7,7 +11,7 @@ function GtInternalDateTime({
   _enableI18n,
   _locale,
   ...props
-}: DateTimeProps): string | null {
+}: DateTimeProps & Partial<ResolvedDateTimeProps>): string | null {
   return computeDateTime({
     ...props,
     _enableI18n: _enableI18n ?? useEnableI18n(),

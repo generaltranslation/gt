@@ -245,9 +245,9 @@ describe('strings and formatting', () => {
 
   it('formats variables for the active locale', async () => {
     setupGT();
-    expect(html({ component: Formats, locale: 'en' })).toContain(
-      '<span class="num">1,234.5</span>'
-    );
+    const source = html({ component: Formats, locale: 'en' });
+    expect(source).toContain('<span class="num">1,234.5</span>');
+    expect(source).toContain('<span class="date">Jan 1, 1970</span>');
     const gt = await loadTranslations('fr');
     expect(html({ component: Formats, ...gt })).toMatch(
       /<span class="num">1\s234,5<\/span>/

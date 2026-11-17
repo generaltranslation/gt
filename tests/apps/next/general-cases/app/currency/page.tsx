@@ -5,7 +5,7 @@ export default function Page() {
 
   return (
     <T>
-      The price is <Currency>{price}</Currency>
+      The price is <Currency currency='USD'>{price}</Currency>
     </T>
   );
 }

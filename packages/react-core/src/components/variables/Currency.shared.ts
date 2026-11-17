@@ -6,13 +6,10 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 // components-rsc entrypoint.
 
 type CurrencyProps = {
-  children: number | string | null | undefined;
-  currency?: string;
+  children: number | bigint | null | undefined;
+  currency: string;
   options?: Intl.NumberFormatOptions;
-  locales?: string[];
   name?: string;
-  _locale?: string;
-  _enableI18n?: boolean;
 };
 
 type ResolvedCurrencyProps = CurrencyProps & {
@@ -24,20 +21,16 @@ function computeCurrency({
   _enableI18n,
   _locale,
   children,
-  currency = 'USD',
+  currency,
   options = {},
-  locales: localesProp = [],
 }: ResolvedCurrencyProps): string | null {
   const locales = getFormatLocales({
     locale: _locale,
     enableI18n: _enableI18n,
-    localesProp,
   });
   const i18nConfig = getI18nConfig();
   if (children == null) return null;
-  const parsedNumber =
-    typeof children === 'string' ? parseFloat(children) : children;
-  return i18nConfig.formatCurrency(parsedNumber, currency, {
+  return i18nConfig.formatCurrency(children, currency, {
     locales,
     ...options,
   });

@@ -79,36 +79,25 @@ describe('getFormatLocales', () => {
   it('uses an explicit locale when translation is required', () => {
     setup({ locale: 'en' });
 
-    expect(
-      getFormatLocales({
-        locale: 'fr',
-        enableI18n: true,
-        localesProp: ['fr-CA'],
-      })
-    ).toEqual(['fr-CA', 'fr', 'en']);
+    expect(getFormatLocales({ locale: 'fr', enableI18n: true })).toEqual([
+      'fr',
+      'en',
+    ]);
   });
 
   it('returns only the default locale when explicit locale does not require translation', () => {
     setup({ locale: 'de', locales: ['en', 'fr', 'de'] });
 
-    expect(
-      getFormatLocales({
-        locale: 'en',
-        enableI18n: true,
-        localesProp: ['fr-CA'],
-      })
-    ).toEqual(['en']);
+    expect(getFormatLocales({ locale: 'en', enableI18n: true })).toEqual([
+      'en',
+    ]);
   });
 
   it('returns only the default locale when translation is disabled', () => {
     setup({ locale: 'fr', enableI18n: false });
 
-    expect(
-      getFormatLocales({
-        locale: 'fr',
-        enableI18n: false,
-        localesProp: ['fr-CA'],
-      })
-    ).toEqual(['en']);
+    expect(getFormatLocales({ locale: 'fr', enableI18n: false })).toEqual([
+      'en',
+    ]);
   });
 });

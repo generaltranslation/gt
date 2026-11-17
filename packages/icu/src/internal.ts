@@ -12,8 +12,10 @@ export type {
 } from './tree/templateToMessage';
 export { FALLBACK_BRANCH_KEY, PLURAL_CATEGORIES } from './settings/syntax';
 export {
+  DATE_FIELD_OPTIONS,
   DATE_TIME_CONTEXT_OPTIONS,
   NUMBER_CONTEXT_OPTIONS,
 } from './settings/formatOptions';
+export { DEFAULT_DATE_TIME_STYLE } from './formatter/formatMessageTree';
 export { forEachPlaceholder } from './tree/walk';
 export { IntlCache, intlCache } from './cache/IntlCache';

@@ -70,7 +70,7 @@ Use variable components for dynamic values inside `<T>`:
 
 - `<Var>{value}</Var>` — variables (strings, numbers, etc.)
 - `<Num>{value}</Num>` — formatted numbers
-- `<Currency>{value}</Currency>` — formatted currency
+- `<Currency currency="USD">{value}</Currency>` — formatted currency
 - `<DateTime>{value}</DateTime>` — formatted dates/times
 
 ```jsx

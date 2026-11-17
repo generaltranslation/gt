@@ -31,7 +31,6 @@ function renderPlural({
   const locales = getFormatLocales({
     locale: _locale,
     enableI18n: _enableI18n,
-    localesProp,
   });
   if (typeof n !== 'number') {
     return children;

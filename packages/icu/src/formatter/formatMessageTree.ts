@@ -28,7 +28,7 @@ import {
 const DATE_TIME_STYLES = new Set<string>(DATE_TIME_STYLE_NAMES);
 
 // ICU formats `{d, date}` and `{t, time}` without a style in the medium style.
-const DEFAULT_DATE_TIME_STYLE: DateTimeStyleName = 'medium';
+export const DEFAULT_DATE_TIME_STYLE: DateTimeStyleName = 'medium';
 
 type PluralValue = number | bigint;
 
