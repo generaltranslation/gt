@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import type { GTOutputFileConfig } from 'generaltranslation';
 import type { InlineTranslationsModules } from './inlineTranslationsModules';
+import type { SourceReplacement } from './resolveSourceReplacement';
 import { getInlineTranslationsFiles } from './loadInlineTranslations';
 
 type BundlerCacheOptions = {
@@ -12,13 +13,15 @@ type BundlerCacheOptions = {
 /**
  * Add the embedded translations settings and locale files to webpack's and
  * rspack's persistent cache version. Those caches see neither gt.config.json
- * nor the static locale, so they would reuse modules transformed for other
- * settings, and they keep modules built before a locale file existed.
+ * nor the static locale or source replacement, so they would reuse modules
+ * transformed for other settings, and they keep modules built before a locale
+ * file existed.
  */
 export function addInlineTranslationsCacheVersion(
   options: BundlerCacheOptions,
   gtFiles: GTOutputFileConfig | undefined,
-  modules: InlineTranslationsModules | undefined
+  modules: InlineTranslationsModules | undefined,
+  sourceReplacement: SourceReplacement | undefined
 ): void {
   const hash = crypto
     .createHash('sha256')
@@ -27,6 +30,7 @@ export function addInlineTranslationsCacheVersion(
         gtFiles?.output,
         gtFiles?.inlineTranslations ?? null,
         modules ?? null,
+        sourceReplacement ?? null,
       ])
     );
   for (const file of getInlineTranslationsFiles(gtFiles)) {

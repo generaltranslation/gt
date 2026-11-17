@@ -48,6 +48,13 @@ import {
   getStaticLocaleWarning,
   resolveStaticLocale,
 } from './transform/injection/inline-translations/resolveStaticLocale';
+import {
+  getReplaceSource,
+  REPLACE_SOURCE_WITHOUT_STATIC_LOCALE_ERROR,
+  resolveSourceReplacement,
+} from './transform/injection/inline-translations/resolveSourceReplacement';
+import { addFragmentImports } from './transform/injection/inline-translations/replaceJsxSource';
+import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
@@ -246,6 +253,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const gtConfig = staticLocaleResolution
       ? applyStaticLocale(loadedGTConfig, staticLocaleResolution)
       : loadedGTConfig;
+    const replaceSource = getReplaceSource(options.experimentalReplaceSource);
+    const sourceReplacement = resolveSourceReplacement(
+      replaceSource,
+      staticLocaleResolution,
+      loadedGTConfig
+    );
+    const sourceReplacementTotals = { replaced: 0, kept: 0 };
     const resolvedOptions: GTUnpluginOptions = {
       ...options,
       ...(gtConfig ? { gtConfig } : {}),
@@ -308,7 +322,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         addInlineTranslationsCacheVersion(
           options,
           gtFiles,
-          inlineTranslationsModules
+          inlineTranslationsModules,
+          sourceReplacement
         );
       }
     };
@@ -328,6 +343,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           gtFiles?.inlineTranslations?.locales.length
         ) {
           throw new Error(INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR);
+        }
+        if (isProduction() && replaceSource && !staticLocale) {
+          throw new Error(REPLACE_SOURCE_WITHOUT_STATIC_LOCALE_ERROR);
         }
         if (
           inlineTranslationsModules?.mode !== 'physical' ||
@@ -405,7 +423,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
       transform(code: string, id: string) {
         // Initialize processing state
-        const state = initializeState(resolvedOptions, id);
+        const state = initializeState(resolvedOptions, id, sourceReplacement);
         if (debugManifest) state.debugManifest = debugManifest;
         // webpack does not track files read outside the loader
         if (isProduction()) {
@@ -475,6 +493,14 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, unstableHashInjectionPass(state));
           }
 
+          if (state.sourceReplacementImports?.size) {
+            addFragmentImports(ast.program, state.sourceReplacementImports);
+          }
+          sourceReplacementTotals.replaced +=
+            state.statistics.sourceReplacementsCount;
+          sourceReplacementTotals.kept +=
+            state.statistics.sourceReplacementFallbacksCount;
+
           if (
             inlineTranslationsModules &&
             state.inlineTranslationsImports?.size
@@ -522,6 +548,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         }
       },
       buildEnd() {
+        if (sourceReplacement && options.logLevel === 'debug') {
+          new Logger(options.logLevel).logDebug(
+            `Replaced the source content of ${sourceReplacementTotals.replaced} call sites with their "${sourceReplacement.locale}" translations; ${sourceReplacementTotals.kept} call sites kept their source and embedded translation`
+          );
+        }
         if (debugManifest && debugManifest.size > 0) {
           const fs = require('fs');
           const path = require('path');
