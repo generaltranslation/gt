@@ -31,3 +31,12 @@ export function Closure() {
   const gt = useGT();
   return label();
 }
+
+export function LetBinding() {
+  const gt = useGT();
+  return gt`Let binding`;
+}
+
+export const beforeImport = () => late`Before its import`;
+
+import { t as late } from 'gt-next/unstable';

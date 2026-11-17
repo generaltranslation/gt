@@ -9,7 +9,7 @@ const OPTION_KEYS = new Set(['context', 'maxChars', 'requiresReview']);
  * for `files.gt.inlineTranslations.locales`. Both @generaltranslation/compiler
  * and the gt-next SWC plugin embed exactly these call sites:
  * - The tag is `t` imported from an unstable source, or the `gt` of
- *   `const gt = useGT()` / `const gt = await getGT()` from one declared
+ *   `const gt = useGT()` / `const gt = await getGT()` from one, declared
  *   earlier in the source, optionally called with one object of literal
  *   options with identifier keys.
  * - Every hole is a named variable, like `${{ name }}`.
@@ -33,13 +33,14 @@ export function isEmbeddedMessage(
 
 function isEmbeddedTag(callee: NodePath): boolean {
   if (!callee.isIdentifier()) return false;
-  if (getHelperName(callee) === 't') return true;
   const binding = callee.scope.getBinding(callee.node.name);
+  if (!binding || !isAfter(callee.node, binding.path.node)) return false;
+  if (getHelperName(callee) === 't') return true;
   if (
-    !binding?.constant ||
+    !binding.constant ||
     !binding.path.isVariableDeclarator() ||
-    !t.isIdentifier(binding.path.node.id) ||
-    !isAfter(callee.node, binding.path.node)
+    !t.isVariableDeclaration(binding.path.parent, { kind: 'const' }) ||
+    !t.isIdentifier(binding.path.node.id)
   ) {
     return false;
   }
@@ -50,7 +51,7 @@ function isEmbeddedTag(callee: NodePath): boolean {
   return hook === 'useGT' || hook === 'getGT';
 }
 
-// The SWC plugin tracks `const gt = useGT()` in source order, so it does not embed an earlier closure's use
+// The SWC plugin tracks imports and `const gt = useGT()` in source order, so it does not embed an earlier use
 function isAfter(node: t.Node, declaration: t.Node): boolean {
   return (
     node.start != null &&

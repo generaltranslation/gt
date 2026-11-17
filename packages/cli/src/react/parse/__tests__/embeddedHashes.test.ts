@@ -77,8 +77,8 @@ describe('embedded hashes', () => {
     expect(loaded).toEqual(
       expect.arrayContaining([
         // msg(), a stable gt(), a configured tag, an anonymous value, a
-        // __proto__ variable, a message an alias also uses, and a closure
-        // that precedes its gt declaration
+        // __proto__ variable, a message an alias also uses, a closure that
+        // precedes its gt declaration, a let gt, and a use before its import
         'Registered message',
         'Legacy string',
         'Save',
@@ -87,6 +87,8 @@ describe('embedded hashes', () => {
         ['Proto ', ['__proto__']],
         'Shared text',
         'Earlier closure',
+        'Let binding',
+        'Before its import',
       ])
     );
   });
