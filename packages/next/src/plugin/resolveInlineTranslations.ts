@@ -4,6 +4,7 @@ import path from 'path';
 import type { GTOutputFileConfig } from 'generaltranslation';
 import { nodeRequire } from './nodeCompat';
 import {
+  createInlineTranslationsDistDirOutsideCwdError,
   createInlineTranslationsShardsWarning,
   createMessageModulesDirOutsideCwdError,
   createMessageModulesWarning,
@@ -97,7 +98,7 @@ export function resolveInlineTranslations(
   // The plugin can only read inside the working directory
   if (dir.startsWith('..') || path.isAbsolute(dir)) {
     throw new Error(
-      `gt-next: cannot embed translations because distDir (${distDir}) is outside the working directory (${cwd}).`
+      createInlineTranslationsDistDirOutsideCwdError(distDir, cwd)
     );
   }
 

@@ -200,7 +200,18 @@ export const createInlineTranslationsShardsWarning = (
     whatHappened: `Embedded translations could not be written to ${dir}`,
     why: 'Builds read them from there, so a build will fail; servers do not need them',
     fix: 'Make the Next.js distDir writable during next build',
-    details: String(error),
+    details: formatDiagnosticErrorDetails(error),
+  });
+
+export const createInlineTranslationsDistDirOutsideCwdError = (
+  distDir: string,
+  cwd: string
+) =>
+  createGtNextPluginDiagnostic({
+    severity: 'Error',
+    whatHappened: `Translations cannot be embedded with distDir ${distDir}`,
+    why: `it is outside the working directory (${cwd}), and the SWC plugin can only read inside it`,
+    fix: 'Set distDir to a directory inside the project',
   });
 
 export const virtualMessageModulesUnsupportedWarning =
