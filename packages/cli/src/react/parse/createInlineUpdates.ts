@@ -18,6 +18,7 @@ import type { ParsingConfig } from '../jsx/utils/stringParsing/types.js';
 import {
   GTLibrary,
   GT_LIBRARIES_UPSTREAM,
+  Libraries,
   REACT_LIBRARIES,
   ReactLibrary,
 } from '../../types/libraries.js';
@@ -36,7 +37,7 @@ import {
   markEmbeddedUpdate,
   recordEmbeddedHashes,
 } from '../../state/embeddedHashes.js';
-import traverseModule from '@babel/traverse';
+import traverseModule, { type NodePath } from '@babel/traverse';
 const traverse = traverseModule.default || traverseModule;
 
 export async function createInlineUpdates(
@@ -113,8 +114,8 @@ export async function createInlineUpdates(
     // Parse <T> components — PASS 1: user-written T
     if (REACT_LIBRARIES.includes(pkg as ReactLibrary)) {
       // The compiler embeds <T>, user-written or auto-inserted (not derive)
-      const firstJsxUpdate = updates.length;
       for (const { localName, path } of translationComponentPaths) {
+        const firstComponentUpdate = updates.length;
         parseTranslationComponent({
           originalName: localName,
           localName,
@@ -134,9 +135,15 @@ export async function createInlineUpdates(
             unwrappedExpressions: [],
           },
         });
+        if (isEmbeddedComponentImport(path, pkg)) {
+          for (const update of updates.slice(firstComponentUpdate)) {
+            markEmbeddedUpdate(update);
+          }
+        }
       }
 
       // PASS 2: Auto-inject GtInternalTranslateJsx and GtInternalVar and extract (flag-gated)
+      const firstAutoInsertedUpdate = updates.length;
       if (parsingFlags.enableAutoJsxInjection) {
         // Add translation component names to importAliases so autoInsertJsxComponents
         // recognizes user T as hands-off (getPathsAndAliases separates them out)
@@ -198,7 +205,7 @@ export async function createInlineUpdates(
           });
         }
       }
-      for (const update of updates.slice(firstJsxUpdate)) {
+      for (const update of updates.slice(firstAutoInsertedUpdate)) {
         markEmbeddedUpdate(update);
       }
     }
@@ -213,6 +220,28 @@ export async function createInlineUpdates(
   linkDeriveUpdates(updates);
 
   return { updates, errors, warnings: [...warnings] };
+}
+
+// Must match the sources the gt-next SWC plugin and @generaltranslation/compiler track <T> from
+const SWC_COMPONENT_SOURCES = new Set(['gt-next', 'gt-next/server', 'gt-i18n']);
+const COMPILER_COMPONENT_SOURCES = new Set([
+  ...SWC_COMPONENT_SOURCES,
+  'gt-react',
+  'gt-tanstack-start',
+]);
+
+/**
+ * Whether the compilers that can build a `pkg` app all embed a `<T>` from
+ * this import: gt-next apps may use the SWC plugin, which tracks fewer
+ * sources than @generaltranslation/compiler.
+ */
+function isEmbeddedComponentImport(path: NodePath, pkg: GTLibrary): boolean {
+  if (!path.isImportDeclaration()) return false;
+  const sources =
+    pkg === Libraries.GT_NEXT
+      ? SWC_COMPONENT_SOURCES
+      : COMPILER_COMPONENT_SOURCES;
+  return sources.has(path.node.source.value);
 }
 
 /**

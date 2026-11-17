@@ -446,3 +446,25 @@ export const element = <T>Embedded</T>;
     });
   });
 });
+
+describe('<T> is embedded only from sources every compiler tracks', () => {
+  test.each([
+    ['gt-next', Libraries.GT_NEXT, true],
+    ['gt-next/server', Libraries.GT_NEXT, true],
+    ['gt-react', Libraries.GT_NEXT, false],
+    ['gt-next/client', Libraries.GT_NEXT, false],
+    ['@generaltranslation/react-core', Libraries.GT_NEXT, false],
+    ['gt-react', Libraries.GT_REACT, true],
+    ['gt-tanstack-start', Libraries.GT_TANSTACK_START, true],
+    ['gt-react-native', Libraries.GT_REACT_NATIVE, false],
+  ] as const)('<T> from %s in a %s app', async (source, library, embedded) => {
+    const result = await extractProject(
+      {
+        'page.tsx': `import { T } from '${source}';\nexport const page = <T>Hello</T>;\n`,
+      },
+      library
+    );
+    expect(result.embedded).toEqual(embedded ? ['JSX Hello'] : []);
+    expect(result.loaded).toEqual(embedded ? [] : ['JSX Hello']);
+  });
+});
