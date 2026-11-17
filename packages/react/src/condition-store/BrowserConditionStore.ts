@@ -147,9 +147,23 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   };
 }
 
+// Matching the candidates to a configured locale costs more than rendering a
+// message, so the last match is kept.
+let lastMatch:
+  | { config: unknown; candidates: string; locale: string }
+  | undefined;
+
 function getBrowserLocale(getLocale?: GetLocale): string {
   const i18nConfig = getI18nConfig();
   const candidates = readBrowserLocale(i18nConfig.getLocaleCookieName());
   if (getLocale) candidates.push(getLocale());
-  return i18nConfig.resolveSupportedLocale(candidates);
+  const key = candidates.join();
+  if (lastMatch?.config !== i18nConfig || lastMatch.candidates !== key) {
+    lastMatch = {
+      config: i18nConfig,
+      candidates: key,
+      locale: i18nConfig.resolveSupportedLocale(candidates),
+    };
+  }
+  return lastMatch.locale;
 }
