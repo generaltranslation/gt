@@ -31,11 +31,20 @@ export type GTRuntime = {
 };
 
 /**
- * gt-react's SPA runtime in `locale`, with nothing loaded at runtime, and the
- * modules compiled code imports. React comes from gt-react's install, so
+ * gt-react's SPA runtime in `locale`, with nothing loaded at runtime unless
+ * `loadTranslations` is given, and the modules compiled code imports. React comes from gt-react's install, so
  * gt-react and react-core share one copy.
  */
-export async function loadGTRuntime(locale: string): Promise<GTRuntime> {
+export async function loadGTRuntime(
+  locale: string,
+  {
+    locales = ['en', STATIC_LOCALE],
+    loadTranslations = async () => ({}),
+  }: {
+    locales?: string[];
+    loadTranslations?: (locale: string) => Promise<Record<string, unknown>>;
+  } = {}
+): Promise<GTRuntime> {
   // The SPA condition store keeps the locale in a cookie, which Node lacks
   const cookies = new Map<string, string>();
   vi.stubGlobal('document', {
@@ -50,6 +59,8 @@ export async function loadGTRuntime(locale: string): Promise<GTRuntime> {
       cookies.set(pair.slice(0, index), pair.slice(index + 1));
     },
   });
+  // Test files share a process, and GT keeps the first runtime a process starts
+  Reflect.deleteProperty(globalThis, '__generaltranslation');
   const requireFromGtReact = createRequire(GT_REACT_DIST);
   const react = requireFromGtReact('react') as Module;
   const { prerenderToNodeStream } = requireFromGtReact('react-dom/static') as {
@@ -69,9 +80,9 @@ export async function loadGTRuntime(locale: string): Promise<GTRuntime> {
   )) as Module;
   await gtReact.initializeGTSPA({
     defaultLocale: 'en',
-    locales: ['en', STATIC_LOCALE],
+    locales,
     locale,
-    loadTranslations: async () => ({}),
+    loadTranslations,
   });
   return {
     modules: {
