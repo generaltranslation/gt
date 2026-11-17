@@ -1,4 +1,4 @@
-import { VisitNode } from '@babel/traverse';
+import { NodePath, VisitNode } from '@babel/traverse';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
 import {
@@ -21,6 +21,21 @@ import { injectStandaloneTFunctionParameters } from '../../transform/injection/i
 export function processCallExpression(
   state: TransformState
 ): VisitNode<t.Node, t.CallExpression> {
+  return {
+    enter: enterCallExpression(state),
+    exit(callExprPath) {
+      state.openTranslationCalls?.delete(callExprPath.node);
+      const replace = state.sourceReplacementsOnExit?.get(callExprPath.node);
+      if (!replace) return;
+      state.sourceReplacementsOnExit!.delete(callExprPath.node);
+      replace();
+    },
+  };
+}
+
+function enterCallExpression(
+  state: TransformState
+): (callExprPath: NodePath<t.CallExpression>) => void {
   return (callExprPath) => {
     // Get the call expression
     const callExpr = callExprPath.node;
@@ -51,7 +66,7 @@ export function processCallExpression(
       injectUseGTCallbackParameters(callExprPath, state);
     } else if (type === 'react' && isReactFunction(canonicalName)) {
       // Handle react variables (jsxDEV, etc.)
-      handleReactInvocation(callExpr, state);
+      handleReactInvocation(callExprPath, state);
     } else if (
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.t
@@ -72,9 +87,10 @@ export function processCallExpression(
  * We want to check these because they wrap <T> and other components
  */
 function handleReactInvocation(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState
 ) {
+  const callExpr = callExprPath.node;
   // Check if it contains a GT component (first argument)
   if (callExpr.arguments.length === 0) {
     state.logger.logError(
@@ -116,7 +132,9 @@ function handleReactInvocation(
   if (type !== 'generaltranslation' || !isTranslationComponent(canonicalName)) {
     return;
   }
+  state.openTranslationCalls ??= new Set();
+  state.openTranslationCalls.add(callExpr);
 
   // Track the component (increment counter, initialize aggregator, set hash)
-  injectTComponentParameters(callExpr, state);
+  injectTComponentParameters(callExprPath, state);
 }

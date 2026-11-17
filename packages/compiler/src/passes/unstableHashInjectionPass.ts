@@ -4,6 +4,8 @@ import { isUnstableGTImportSource } from 'generaltranslation/internal';
 import { TransformState } from '../state/types';
 import { injectUnstableTaggedTemplateHash } from '../transform/injection/injectUnstableTaggedTemplateHash';
 import { buildInlineTranslations } from '../transform/injection/inline-translations/injectInlineTranslations';
+import { replaceTemplateSource } from '../transform/injection/inline-translations/replaceTemplateSource';
+import { createErrorLocation } from '../utils/errors';
 
 /**
  * Unstable hash injection pass — injects `$_hash` into statically analyzable
@@ -18,9 +20,31 @@ export function unstableHashInjectionPass(
   const buildInline = state.settings.inlineTranslationsTable
     ? (hash: string) => buildInlineTranslations(hash, state)
     : undefined;
+  const { sourceReplacement, inlineTranslationsTable } = state.settings;
+  const translations =
+    sourceReplacement && inlineTranslationsTable?.[sourceReplacement.locale];
+  const replaceSource = translations
+    ? (hash: string, quasi: t.TemplateLiteral) => {
+        if (translations[hash] === undefined) return undefined;
+        const replacement = replaceTemplateSource(quasi, translations[hash]);
+        if (replacement.quasi) {
+          state.statistics.sourceReplacementsCount += 1;
+          return replacement.quasi;
+        }
+        state.statistics.sourceReplacementFallbacksCount += 1;
+        state.logger.logDebug(
+          `Kept the source of template ${hash}, with its embedded translation: ${replacement.reason}` +
+            createErrorLocation(quasi).replace(
+              '{filename}',
+              state.settings.filename ?? ''
+            )
+        );
+        return undefined;
+      }
+    : undefined;
   return {
     TaggedTemplateExpression(path) {
-      if (injectUnstableTaggedTemplateHash(path, buildInline)) {
+      if (injectUnstableTaggedTemplateHash(path, buildInline, replaceSource)) {
         state.statistics.unstableHashInjectionsCount += 1;
       }
     },

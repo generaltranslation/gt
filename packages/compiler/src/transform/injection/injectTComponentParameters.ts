@@ -1,3 +1,4 @@
+import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
   getObjectPropertyFromObjectExpression,
@@ -6,14 +7,16 @@ import {
 import { TransformState } from '../../state/types';
 import { createErrorLocation } from '../../utils/errors';
 import { injectInlineTranslationsProp } from './inline-translations/injectInlineTranslations';
+import { replaceJsxSource } from './inline-translations/replaceJsxSource';
 
 /**
  * Inject parameters into a T component
  */
 export function injectTComponentParameters(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState
 ) {
+  const callExpr = callExprPath.node;
   // Increment counter (in place of registering the component)
   const identifier = state.stringCollector.incrementCounter();
 
@@ -51,24 +54,44 @@ export function injectTComponentParameters(
     callExpr.arguments[1],
     translationJsx.hash
   );
-  if (
-    runtimeHash &&
-    !getObjectPropertyFromObjectExpression(callExpr.arguments[1], 'inline')
-  ) {
-    injectInlineTranslationsProp(callExpr.arguments[1], runtimeHash, state);
+  const props = callExpr.arguments[1];
+  const { hash } = translationJsx;
+  if (runtimeHash && !getObjectPropertyFromObjectExpression(props, 'inline')) {
+    const translation = getReplacementTranslation(callExpr, runtimeHash, state);
+    if (translation !== undefined) {
+      // On exit, once translation calls in the children have taken their hashes in source order
+      state.sourceReplacementsOnExit ??= new Map();
+      state.sourceReplacementsOnExit.set(callExpr, () => {
+        if (
+          replaceSource(
+            callExprPath,
+            translationJsx.children,
+            runtimeHash,
+            translation,
+            state
+          )
+        ) {
+          return;
+        }
+        injectInlineTranslationsProp(props, runtimeHash, state);
+        injectHash(props, hash);
+      });
+      return;
+    }
+    injectInlineTranslationsProp(props, runtimeHash, state);
   }
+  injectHash(props, hash);
+}
 
+function injectHash(props: t.ObjectExpression, hash: string): void {
   // If already has hash set then skip
-  if (getObjectPropertyFromObjectExpression(callExpr.arguments[1], '_hash')) {
+  if (getObjectPropertyFromObjectExpression(props, '_hash')) {
     return;
   }
 
   // Inject the parameters into the call expression
-  callExpr.arguments[1].properties.push(
-    t.objectProperty(
-      t.identifier('_hash'),
-      t.stringLiteral(translationJsx.hash)
-    )
+  props.properties.push(
+    t.objectProperty(t.identifier('_hash'), t.stringLiteral(hash))
   );
 }
 
@@ -91,4 +114,53 @@ function getRuntimeHash(
     t.isStringLiteral(hashProp.value)
     ? hashProp.value.value
     : undefined;
+}
+
+/** The translation a per-locale build replaces a <T> with, if it replaces <T>. */
+function getReplacementTranslation(
+  callExpr: t.CallExpression,
+  hash: string,
+  state: TransformState
+): unknown {
+  const { sourceReplacement, inlineTranslationsTable } = state.settings;
+  if (!sourceReplacement?.jsx) return undefined;
+  // An enclosing <T> renders this one as part of its own content
+  if (
+    [...(state.openTranslationCalls ?? [])].some((open) => open !== callExpr)
+  ) {
+    return undefined;
+  }
+  return inlineTranslationsTable?.[sourceReplacement.locale]?.[hash];
+}
+
+/**
+ * Swaps the <T> call for the JSX its translation renders. Returns whether it
+ * did.
+ */
+function replaceSource(
+  callExprPath: NodePath<t.CallExpression>,
+  sourceChildren: unknown,
+  hash: string,
+  translation: unknown,
+  state: TransformState
+): boolean {
+  const reason = replaceJsxSource(
+    callExprPath,
+    sourceChildren,
+    translation,
+    state
+  );
+  if (reason === undefined) {
+    state.statistics.sourceReplacementsCount += 1;
+    return true;
+  }
+  state.statistics.sourceReplacementFallbacksCount += 1;
+  state.logger.logDebug(
+    `Kept the source of <T> ${hash}, with its embedded translation: ${reason}` +
+      createErrorLocation(callExprPath.node).replace(
+        '{filename}',
+        state.settings.filename ?? ''
+      )
+  );
+  return false;
 }
