@@ -841,6 +841,37 @@ describe('gt-i18n/unstable precomputed messages', () => {
     expect(lookupTranslation).not.toHaveBeenCalled();
   });
 
+  describe.each(['en', 'en-GB'])(
+    'a message marked with the default locale, in %s',
+    (locale) => {
+      it.each(templates)(
+        'renders %s like its template',
+        async (_name, render) => {
+          initializeI18nConfig({
+            defaultLocale: 'en',
+            locales: ['en', 'en-GB', 'fr'],
+          });
+          setI18nCache(new I18nCache({ loadTranslations: async () => ({}) }));
+          setWritableConditionStore({
+            getLocale: () => locale,
+            getEnableI18n: () => true,
+          });
+          const template = await getGT({ locale, enableI18n: true });
+          const expected = String(
+            render((metadata) => (metadata ? template(metadata) : template))
+          );
+          const getLocale = vi.fn(() => locale);
+          const gt = createGT({ getLocale });
+          const [site, ...values] = render(precompute) as Call;
+          expect(call(gt, { ...site, $_locale: 'en' }, ...values)).toBe(
+            expected
+          );
+          expect(getLocale).not.toHaveBeenCalled();
+        }
+      );
+    }
+  );
+
   it('renders text of a replaced tree without asking Intl for its locale', async () => {
     await setup();
     const supportedLocalesOf = vi.spyOn(

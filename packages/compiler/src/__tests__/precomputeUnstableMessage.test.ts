@@ -4,16 +4,43 @@
  * equivalence table compiles each case with and without `precomputeMessages`
  * and renders both in gt-react: the output must match.
  */
+import generateModule from '@babel/generator';
+import { parse } from '@babel/parser';
+import traverseModule from '@babel/traverse';
+import * as t from '@babel/types';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import { hashSource } from 'generaltranslation/id';
-import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from 'vitest';
 import {
   compileJsx,
   evaluateModule,
   loadGTRuntime,
   type GTRuntime,
 } from './sourceReplacementHarness';
+import { injectUnstableTaggedTemplateHash } from '../transform/injection/injectUnstableTaggedTemplateHash';
+import { buildPrecomputedCall } from '../transform/injection/precomputeUnstableMessage';
+import { findPrecomputedMessageSupport } from '../transform/injection/precomputedMessageSupport';
+import { canReplaceMessageTree } from '../transform/injection/replaceMessageTree';
 import { transformWithPlugin } from './transformWithPlugin';
+
+const generate =
+  (generateModule as unknown as { default?: typeof generateModule }).default ??
+  generateModule;
+const traverse =
+  (traverseModule as unknown as { default?: typeof traverseModule }).default ??
+  traverseModule;
 
 const HELPERS =
   't, m, msg, useGT, plural, selectordinal, select, number, date, time, part, derive, n';
@@ -47,7 +74,7 @@ describe('emitted messages', () => {
       'literal options',
       "t({ context: 'greeting', maxChars: -8, requiresReview: true })`Hello, ${{ name }}!`;",
       '{ $_hash: "#", $_tree: ["Hello, ", ["name"], "!"], context: "greeting", maxChars: -8, requiresReview: true }',
-      't(_gt, { name });',
+      't(_gt(), { name });',
       ['Hello, ', ['name'], '!'],
       { context: 'greeting', maxChars: -8, requiresReview: true },
     ],
@@ -55,7 +82,7 @@ describe('emitted messages', () => {
       'named variables, whose values may be any expression',
       't`Hello, ${{ name }}! Card ${{ card: data.card }}`;',
       '{ $_hash: "#", $_tree: ["Hello, ", ["name"], "! Card ", ["card"]] }',
-      't(_gt, { name, card: data.card });',
+      't(_gt(), { name, card: data.card });',
       ['Hello, ', ['name'], '! Card ', ['card']],
       {},
     ],
@@ -64,7 +91,7 @@ describe('emitted messages', () => {
       "const total = 3;\nt`${total} of ${total + 1}: ${select({ role }, { b: part`${'B'}`, a: part`${'A'}` })}`;",
       '{ $_hash: "#", $_tree: [["_gt_1"], " of ", ["_gt_2"], ": ", ["role", "select", { a: [["_gt_3"]], b: [["_gt_4"]], other: "" }]] }',
       // Evaluated in source order, where b comes before a.
-      "t(_gt, { _gt_1: total, _gt_2: total + 1, role, _gt_4: 'B', _gt_3: 'A' });",
+      "t(_gt(), { _gt_1: total, _gt_2: total + 1, role, _gt_4: 'B', _gt_3: 'A' });",
       [
         ['_gt_1'],
         ' of ',
@@ -78,7 +105,7 @@ describe('emitted messages', () => {
       'plural with part and n',
       't`${plural({ count }, { one: part`${n} item`, other: part`${n} items for ${{ name }}` })}`;',
       '{ $_hash: "#", $_tree: [["count", "plural", { one: [0, " item"], other: [0, " items for ", ["name"]] }]] }',
-      't(_gt, { count, name });',
+      't(_gt(), { count, name });',
       [
         [
           'count',
@@ -92,7 +119,7 @@ describe('emitted messages', () => {
       'selectordinal',
       't`${selectordinal({ place }, { one: part`${n}st`, other: part`${n}th` })}`;',
       '{ $_hash: "#", $_tree: [["place", "selectordinal", { one: [0, "st"], other: [0, "th"] }]] }',
-      't(_gt, { place });',
+      't(_gt(), { place });',
       [['place', 'selectordinal', { one: [0, 'st'], other: [0, 'th'] }]],
       {},
     ],
@@ -100,7 +127,7 @@ describe('emitted messages', () => {
       'select',
       "t`${select({ role }, { admin: 'Admin', other: 'User' })}`;",
       '{ $_hash: "#", $_tree: [["role", "select", { admin: "Admin", other: "User" }]] }',
-      't(_gt, { role });',
+      't(_gt(), { role });',
       [['role', 'select', { admin: 'Admin', other: 'User' }]],
       {},
     ],
@@ -108,7 +135,7 @@ describe('emitted messages', () => {
       'number with a literal formatting context',
       "t`Total ${number({ price }, { style: 'currency', maximumFractionDigits: 0, currency: 'USD' })}`;",
       '{ $_hash: "#", $_tree: ["Total ", ["price", "number", "currency"]], $_formats: { price: { currency: \'USD\', maximumFractionDigits: 0 } } }',
-      't(_gt, { price });',
+      't(_gt(), { price });',
       ['Total ', ['price', 'number', 'currency']],
       {},
     ],
@@ -116,7 +143,7 @@ describe('emitted messages', () => {
       'date and time with a formatting context read at runtime',
       "t`Due ${date({ due }, { style: 'medium', timeZone })} at ${time({ at: due }, { style: 'short', timeZone: zones.user })}`;",
       '{ $_hash: "#", $_tree: ["Due ", ["due", "date", "medium"], " at ", ["at", "time", "short"]] }',
-      't(_gt, { due, at: due }, { due: { timeZone }, at: { timeZone: zones.user } });',
+      't(_gt(), { due, at: due }, { due: { timeZone }, at: { timeZone: zones.user } });',
       ['Due ', ['due', 'date', 'medium'], ' at ', ['at', 'time', 'short']],
       {},
     ],
@@ -124,14 +151,15 @@ describe('emitted messages', () => {
       'a variable repeated with the same value',
       't`${{ name }} and ${{ name }}`;',
       '{ $_hash: "#", $_tree: [["name"], " and ", ["name"]] }',
-      't(_gt, { name });',
+      't(_gt(), { name });',
       [['name'], ' and ', ['name']],
       {},
     ],
   ])('precomputes %s', async (_name, body, message, call, tree, metadata) => {
     const output = await compile(body);
+    const built = message.replace('#', hashOf(tree, metadata));
     expect(output).toContain(
-      `const _gt = ${message.replace('#', hashOf(tree, metadata))};`
+      `function _gt() {return _gt.m || (_gt.m = ${built});}`
     );
     expect(output).toContain(call);
   });
@@ -149,9 +177,55 @@ describe('emitted messages', () => {
     async (_name, body, call, metadata) => {
       const output = await compile(body);
       expect(output).toContain(call.replace('#', hashOf('Save', metadata)));
-      expect(output).not.toContain('const _gt');
+      expect(output).not.toContain('function _gt');
     }
   );
+
+  it('writes a message with values at its call when given nothing to declare it with', () => {
+    const call = buildPrecomputedCall({
+      callee: t.identifier('t'),
+      hash: 'hash',
+      metadata: {},
+      tree: ['Bonjour, ', ['name']],
+      bindings: [{ name: 'name', value: t.identifier('name') }],
+      locale: 'fr',
+      hoist: undefined,
+    });
+    expect(generate(call!, { concise: true }).code).toBe(
+      't({ $_hash: "hash", $_tree: ["Bonjour, ", ["name"]], $_locale: "fr" }, { name })'
+    );
+  });
+
+  it('marks every message with the default locale in a build that renders the source', () => {
+    const ast = parse(
+      `import { t, plural, part, n } from 'gt-react/unstable';
+t\`\${plural({ count }, { one: part\`\${n} item\`, other: part\`\${n} items\` })}\`;
+t({ maxChars: 8 })\`Save all changes\`;`,
+      { sourceType: 'module' }
+    );
+    traverse(ast, {
+      TaggedTemplateExpression(path) {
+        injectUnstableTaggedTemplateHash(path, undefined, undefined, {
+          // Nothing is declared: a message with a locale is written at its call
+          hoist: () => {
+            throw new Error('declared a message');
+          },
+          replacedLocale: undefined,
+          sourceLocale: 'en',
+        });
+      },
+    });
+    const tree = [
+      ['count', 'plural', { one: [0, ' item'], other: [0, ' items'] }],
+    ];
+    const { code } = generate(ast, { concise: true });
+    expect(code).toContain(
+      `t({ $_hash: "${hashOf(tree)}", $_tree: [["count", "plural", { one: [0, " item"], other: [0, " items"] }]], $_locale: "en" }, { count });`
+    );
+    expect(code).toContain(
+      `t({ $_hash: "${hashOf('Save all changes', { maxChars: 8 })}", $_tree: "Save all changes", maxChars: 8, $_locale: "en" });`
+    );
+  });
 
   it('precomputes the templates of useGT() and getGT()', async () => {
     const output = await transformWithPlugin(
@@ -167,28 +241,101 @@ export async function load() {
   return t\`Save\`;
 }`
     );
-    expect(output).toContain('return gt(_gt, { name });');
+    expect(output).toContain('return gt(_gt(), { name });');
     expect(output).toContain(
       `return t({ $_hash: "${hashOf('Save')}", $_tree: "Save" });`
     );
   });
 
-  it('declares each message with values once, after the imports', async () => {
+  it('declares each message with values once', async () => {
     const output = await transformWithPlugin(
       undefined,
       `import { t } from 'gt-react/unstable';
 const _gt = 'taken';
-export const labels = (a, b) => [t\`Hi \${{ a }}\`, t\`Bye \${{ b }}\`, t\`Hi \${{ a: b }}\`];
-import { other } from './other';`
+export const labels = (a, b) => [t\`Hi \${{ a }}\`, t\`Bye \${{ b }}\`, t\`Hi \${{ a: b }}\`];`
     );
-    const hi = `{ $_hash: "${hashOf(['Hi ', ['a']])}", $_tree: ["Hi ", ["a"]] }`;
-    const bye = `{ $_hash: "${hashOf(['Bye ', ['b']])}", $_tree: ["Bye ", ["b"]] }`;
+    const declared = (name: string, tree: unknown) =>
+      `function ${name}() {return ${name}.m || (${name}.m = { $_hash: "${hashOf(tree)}", $_tree: ${JSON.stringify(tree).replaceAll(',', ', ')} });}`;
     expect(output).toContain(
-      `import { other } from './other';const _gt2 = ${hi};const _gt3 = ${bye};`
+      '[t(_gt2(), { a }), t(_gt3(), { b }), t(_gt2(), { a: b })]'
     );
     expect(output).toContain(
-      '[t(_gt2, { a }), t(_gt3, { b }), t(_gt2, { a: b })]'
+      declared('_gt2', ['Hi ', ['a']]) + declared('_gt3', ['Bye ', ['b']])
     );
+  });
+
+  describe('a message that is read before its module has run', () => {
+    // t, as the runtime reads the two forms the compiler emits
+    const STUB = `export const t = (first, values) =>
+  first.$_tree !== undefined
+    ? first.$_tree.map((node) => (typeof node === 'string' ? node : values[node[0]])).join('')
+    : (strings, ...holes) => strings.map((text, i) => text + (i < holes.length ? Object.values(holes[i])[0] : '')).join('');`;
+    // b's functions are called by a, which b imports, before b's body runs
+    const CYCLE = {
+      'b.mjs': `import { t } from 'gt-react/unstable';
+import './a.mjs';
+export function label(name) { return t\`Hi \${{ name }}\`; }`,
+      'a.mjs': `import { label } from './b.mjs';
+export const title = label('Ada');`,
+      'entry.mjs': `import './b.mjs';
+export { title } from './a.mjs';`,
+    };
+
+    const writeModules = async (modules: Record<string, string>) => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-precompute-'));
+      onTestFinished(() => fs.rmSync(dir, { recursive: true, force: true }));
+      fs.writeFileSync(path.join(dir, 'gt.mjs'), STUB);
+      for (const [file, code] of Object.entries(modules)) {
+        const compiled = (await transformWithPlugin(undefined, code)) ?? code;
+        fs.writeFileSync(
+          path.join(dir, file),
+          compiled.replace(/(['"])gt-react\/unstable\1/, "'./gt.mjs'")
+        );
+      }
+      return dir;
+    };
+
+    it('renders through an import cycle, as modules', async () => {
+      const dir = await writeModules(CYCLE);
+      expect(fs.readFileSync(path.join(dir, 'b.mjs'), 'utf8')).toContain(
+        't(_gt(), { name })'
+      );
+      const { title } = await import(
+        /* @vite-ignore */ pathToFileURL(path.join(dir, 'entry.mjs')).href
+      );
+      expect(title).toBe('Hi Ada');
+    });
+
+    it('renders through an import cycle, in a bundle', async () => {
+      const dir = await writeModules(CYCLE);
+      const { outputFiles } = await build({
+        entryPoints: [path.join(dir, 'entry.mjs')],
+        bundle: true,
+        minify: true,
+        write: false,
+        format: 'esm',
+      });
+      const bundle = path.join(dir, 'bundle.mjs');
+      fs.writeFileSync(bundle, outputFiles[0].text);
+      const { title } = await import(
+        /* @vite-ignore */ pathToFileURL(bundle).href
+      );
+      expect(title).toBe('Hi Ada');
+    });
+
+    it('renders at module level above a later import', async () => {
+      const dir = await writeModules({
+        'entry.mjs': `import { t } from 'gt-react/unstable';
+export const title = t\`Hello \${{ name: 'Ada' }}\`;
+import { other } from './other.mjs';
+export { other };`,
+        'other.mjs': 'export const other = 1;',
+      });
+      const { title } = await import(
+        /* @vite-ignore */ pathToFileURL(path.join(dir, 'entry.mjs')).href
+      );
+      expect(title).toBe('Hello Ada');
+    });
   });
 
   it.each([
@@ -280,6 +427,164 @@ export const unused = (n) => [t\`Dropped\`, t({ context: 'x' })\`Dropped \${{ n 
     expect(text).toContain('$_tree: ["Kept ", ["name"]]');
     expect(text).not.toContain('Dropped');
     expect(text.match(/\$_hash/g)).toHaveLength(1);
+  });
+});
+
+describe('the installed runtime', () => {
+  /** An app whose node_modules hold `packages`, each a name and the gt-i18n it depends on. */
+  const install = (packages: Record<string, 'new' | 'old' | undefined>) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-runtime-'));
+    onTestFinished(() => fs.rmSync(root, { recursive: true, force: true }));
+    const writePackage = (dir: string, name: string, entry: string) => {
+      fs.mkdirSync(path.join(dir, 'dist'), { recursive: true });
+      fs.writeFileSync(
+        path.join(dir, 'package.json'),
+        JSON.stringify({
+          name,
+          exports: {
+            '.': './dist/index.cjs',
+            './unstable/internal': './dist/unstable-internal.cjs',
+          },
+        })
+      );
+      fs.writeFileSync(path.join(dir, 'dist/index.cjs'), '');
+      fs.writeFileSync(path.join(dir, 'dist/unstable-internal.cjs'), entry);
+    };
+    for (const [name, runtime] of Object.entries(packages)) {
+      const dir = path.join(root, 'node_modules', name);
+      writePackage(dir, name, '');
+      if (!runtime) continue;
+      writePackage(
+        name === 'gt-i18n' ? dir : path.join(dir, 'node_modules/gt-i18n'),
+        'gt-i18n',
+        runtime === 'new'
+          ? 'exports.createGT = 1; exports.isPrecomputedMessage = 1;'
+          : 'exports.createGT = 1;'
+      );
+    }
+    return root;
+  };
+
+  it.each([
+    ['a runtime that reads them', { 'gt-react': 'new' }, true],
+    ['an older runtime', { 'gt-react': 'old' }, false],
+    [
+      'an older runtime next to a newer one',
+      { 'gt-next': 'new', 'gt-react': 'old' },
+      false,
+    ],
+    ['gt-i18n alone', { 'gt-i18n': 'new' }, true],
+    ['an older gt-i18n alone', { 'gt-i18n': 'old' }, false],
+    ['no GT runtime', { react: undefined }, undefined],
+  ] as const)('finds %s', (_name, packages, expected) => {
+    expect(findPrecomputedMessageSupport(install(packages))).toBe(expected);
+  });
+
+  it('keeps the tagged templates, with a warning, next to an older runtime', async () => {
+    const root = install({ 'gt-react': 'old' });
+    const cwd = vi.spyOn(process, 'cwd').mockReturnValue(root);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    onTestFinished(() => {
+      cwd.mockRestore();
+      warn.mockRestore();
+    });
+    const { default: gtUnplugin } = await import('../index');
+    const plugin = gtUnplugin.raw(
+      { gtConfig: { defaultLocale: 'en', locales: ['fr'] } },
+      { framework: 'vite' }
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('does not read precomputed messages')
+    );
+    const transform = plugin.transform as (
+      this: unknown,
+      code: string,
+      id: string
+    ) => Promise<{ code: string } | null>;
+    const result = await transform.call(
+      { warn() {}, error() {}, addWatchFile() {} },
+      "import { t } from 'gt-react/unstable';\nt`Hello, ${{ name }}!`;",
+      path.join(root, 'App.tsx')
+    );
+    expect(result?.code).toContain(
+      `t({ $_hash: "${hashOf(['Hello, ', ['name'], '!'])}" })\`Hello, \${{ name }}!\``
+    );
+  });
+});
+
+describe("a translation as a replaced message's tree", () => {
+  const source = [
+    ['name'],
+    ['role', 'select', { admin: 'Admin', other: 'User' }],
+    ['count', 'plural', { one: [0, ' item'], other: [0, ' items'] }],
+    ['price', 'number', 'currency'],
+    ['due', 'date', 'medium'],
+  ];
+
+  it.each([
+    ['text', 'Bonjour'],
+    ['a value it repeats and one it drops', [['name'], ' ', ['name']]],
+    ['any variable as a value', [['role'], ['count'], ['price'], ['due']]],
+    [
+      'a select with other branches',
+      [['role', 'select', { admin: 'Admin', invitee: 'Invité', other: 'x' }]],
+    ],
+    [
+      'a plural with other branches, and an ordinal',
+      [
+        ['count', 'plural', { one: 'un', many: 'des', other: [0] }],
+        ['count', 'selectordinal', { one: [0, 'er'], other: [0, 'e'] }],
+      ],
+    ],
+    [
+      'a plural of a variable its source formats as a number',
+      [['price', 'plural', { one: 'un', other: [0] }]],
+    ],
+    [
+      'a number and a date written as in its source',
+      [
+        ['price', 'number', 'currency'],
+        ['due', 'date', 'medium'],
+      ],
+    ],
+    [
+      'a variable inside a branch',
+      [
+        [
+          'role',
+          'select',
+          { other: [['count', 'plural', { other: [['name']] }]] },
+        ],
+      ],
+    ],
+  ])('takes %s', (_name, translation) => {
+    expect(canReplaceMessageTree(source as never, translation)).toBe(true);
+  });
+
+  it.each([
+    ['a value that is not a tree', { text: 'Bonjour' }],
+    ['a missing translation', undefined],
+    ['a select without other', [['role', 'select', { admin: 'Admin' }]]],
+    ['a variable its source lacks', ['Bonjour ', ['nom']]],
+    [
+      'a select of a value its source prints',
+      [['name', 'select', { other: 'x' }]],
+    ],
+    ['a select of a count', [['count', 'select', { other: 'x' }]]],
+    [
+      'a plural of a value its source selects on',
+      [['role', 'plural', { other: 'x' }]],
+    ],
+    ['a number its source counts with', [['count', 'number']]],
+    ['a number in another style', [['price', 'number', 'percent']]],
+    ['a date in another style', [['due', 'date', 'long']]],
+    ['a time of a date', [['due', 'time', 'medium']]],
+    [
+      'a variable its source lacks inside a branch',
+      [['role', 'select', { other: [['nom']] }]],
+    ],
+  ])('leaves %s to the embedded translation', (_name, translation) => {
+    expect(canReplaceMessageTree(source as never, translation)).toBe(false);
   });
 });
 
@@ -556,7 +861,7 @@ describe.each(['en', 'fr'])('rendering in %s', (locale) => {
         expect(precomputed).toBe(template);
       } else {
         expect(precomputed).toMatch(
-          /export const App = \(props\) => t\((_gt|\{ \$_hash: "[0-9a-f]+", \$_tree: ")/
+          /export const App = \(props\) => t\((_gt\(\)|\{ \$_hash: "[0-9a-f]+", \$_tree: ")/
         );
       }
       const rendered = await renderAll(precomputed!, renders);
@@ -578,7 +883,7 @@ describe.each(['en', 'fr'])('rendering in %s', (locale) => {
       code
     );
     const precomputed = await transformWithPlugin(undefined, code);
-    expect(precomputed).toContain('gt(_gt, { name, count })');
+    expect(precomputed).toContain('gt(_gt(), { name, count })');
     const props = { name: 'Ada', count: 2 };
     const runtime = await loadRuntime();
     const html = await runtime.render(
