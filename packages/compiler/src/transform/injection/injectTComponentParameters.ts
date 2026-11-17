@@ -1,3 +1,4 @@
+import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
   getObjectPropertyFromObjectExpression,
@@ -6,14 +7,16 @@ import {
 import { TransformState } from '../../state/types';
 import { createErrorLocation } from '../../utils/errors';
 import { injectInlineTranslationsProp } from './inline-translations/injectInlineTranslations';
+import { replaceJsxSource } from './inline-translations/replaceJsxSource';
 
 /**
  * Inject parameters into a T component
  */
 export function injectTComponentParameters(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState
 ) {
+  const callExpr = callExprPath.node;
   // Increment counter (in place of registering the component)
   const identifier = state.stringCollector.incrementCounter();
 
@@ -55,6 +58,11 @@ export function injectTComponentParameters(
     runtimeHash &&
     !getObjectPropertyFromObjectExpression(callExpr.arguments[1], 'inline')
   ) {
+    if (
+      replaceSource(callExprPath, translationJsx.children, runtimeHash, state)
+    ) {
+      return;
+    }
     injectInlineTranslationsProp(callExpr.arguments[1], runtimeHash, state);
   }
 
@@ -91,4 +99,40 @@ function getRuntimeHash(
     t.isStringLiteral(hashProp.value)
     ? hashProp.value.value
     : undefined;
+}
+
+/**
+ * In a per-locale build that replaces source content, swaps the <T> call for
+ * the JSX its translation renders. Returns whether it did.
+ */
+function replaceSource(
+  callExprPath: NodePath<t.CallExpression>,
+  sourceChildren: unknown,
+  hash: string,
+  state: TransformState
+): boolean {
+  const { sourceReplacement, inlineTranslationsTable } = state.settings;
+  if (!sourceReplacement?.jsx) return false;
+  const translation =
+    inlineTranslationsTable?.[sourceReplacement.locale]?.[hash];
+  if (translation === undefined) return false;
+  const reason = replaceJsxSource(
+    callExprPath,
+    sourceChildren,
+    translation,
+    state
+  );
+  if (reason === undefined) {
+    state.statistics.sourceReplacementsCount += 1;
+    return true;
+  }
+  state.statistics.sourceReplacementFallbacksCount += 1;
+  state.logger.logDebug(
+    `Kept the source of <T> ${hash}, with its embedded translation: ${reason}` +
+      createErrorLocation(callExprPath.node).replace(
+        '{filename}',
+        state.settings.filename ?? ''
+      )
+  );
+  return false;
 }

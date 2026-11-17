@@ -1,0 +1,1074 @@
+/**
+ * experimentalReplaceSource: a per-locale build replaces the source content of
+ * the call sites it embeds with the static locale's translation. The main
+ * safety net is the equivalence tables: each case renders the per-locale
+ * build with and without replacement in gt-react, and the HTML must match.
+ */
+import { getPluralForm } from 'generaltranslation/internal';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import gtUnplugin from '../index';
+import type { GTUnpluginOptions } from '../index';
+import { clearInlineTranslationsCache } from '../transform/injection/inline-translations/loadInlineTranslations';
+import {
+  PLURAL_SCENARIOS,
+  selectPluralForm,
+} from '../transform/injection/inline-translations/pluralScenarios';
+import {
+  buildBothWays,
+  buildOptions,
+  compileJsx,
+  evaluateModule,
+  getInjectedHash,
+  loadGTRuntime,
+  STATIC_LOCALE,
+  type GTRuntime,
+} from './sourceReplacementHarness';
+import { transformWithPlugin } from './transformWithPlugin';
+
+type GTConfig = NonNullable<GTUnpluginOptions['gtConfig']>;
+
+type Case = {
+  name: string;
+  /** Module exporting `App`, a component rendered (or for templates, a function called) with each of `renders` */
+  source: string;
+  translation: unknown;
+  renders: Record<string, unknown>[];
+  /** Whether the call site is replaced, or keeps its source and embedded translation */
+  expected: 'replaced' | 'kept';
+  /** Source strings a replaced build must not ship */
+  sourceText?: string[];
+  gtConfig?: GTConfig;
+};
+
+const IMPORTS = `import { T, Var, Num, Currency, DateTime, RelativeTime, Plural, Branch } from 'gt-react';`;
+
+const app = (body: string, params = '{}') =>
+  `${IMPORTS}\nexport function App(${params}) {\n  return ${body};\n}`;
+
+const DATE = new Date(Date.UTC(2024, 0, 15, 12));
+
+const JSX_CASES: Case[] = [
+  {
+    name: 'plain text',
+    source: app('<T>Hello world</T>'),
+    translation: 'Bonjour le monde',
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Hello world'],
+  },
+  {
+    name: 'a nested element with props',
+    source: app(
+      '<T>Hello, <b className="greeting" data-test="x">World!</b></T>'
+    ),
+    translation: ['Bonjour, ', { t: 'b', i: 1, c: 'le Monde !' }],
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Hello', 'World'],
+  },
+  {
+    name: 'several sibling elements',
+    source: app('<T><b>One</b>, <i>two</i> and <a href="/three">three</a></T>'),
+    translation: [
+      { t: 'b', i: 1, c: 'Un' },
+      ', ',
+      { t: 'i', i: 2, c: 'deux' },
+      ' et ',
+      { t: 'a', i: 3, c: 'trois' },
+    ],
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['One', '"two"', '"three"', ' and '],
+  },
+  {
+    name: 'elements reordered by the translation',
+    source: app('<T><b>red</b> <i>car</i></T>'),
+    translation: [
+      { t: 'i', i: 2, c: 'voiture' },
+      ' ',
+      { t: 'b', i: 1, c: 'rouge' },
+    ],
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['red', 'car'],
+  },
+  {
+    name: 'self-closing elements',
+    source: app('<T>First line<br />second line <img src="/x.png" /></T>'),
+    translation: [
+      'Première ligne',
+      { t: 'br', i: 1 },
+      'deuxième ligne ',
+      { t: 'img', i: 2 },
+    ],
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['First line', 'second line'],
+  },
+  {
+    name: 'a translated title on an element with children',
+    source: app(
+      '<T><abbr title="World Health Organization">WHO</abbr> guidance</T>'
+    ),
+    translation: [
+      {
+        t: 'abbr',
+        i: 1,
+        d: { ti: 'Organisation mondiale de la Santé' },
+        c: 'OMS',
+      },
+      ' recommandations',
+    ],
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['World Health Organization', 'guidance'],
+  },
+  {
+    name: 'a translated aria-label next to a spread',
+    source: app(
+      '<T><a {...link} aria-label="Read more">More</a></T>',
+      '{ link }'
+    ),
+    translation: { t: 'a', i: 1, d: { arl: 'Lire la suite' }, c: 'Plus' },
+    renders: [{ link: { href: '/more', className: 'cta' } }],
+    expected: 'replaced',
+    sourceText: ['Read more', 'More'],
+  },
+  {
+    name: 'a fragment',
+    source: app('<T><>Hello <b>you</b></></T>'),
+    translation: {
+      t: 'C1',
+      i: 1,
+      c: ['Salut ', { t: 'b', i: 2, c: 'toi' }],
+    },
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Hello', 'you'],
+  },
+  {
+    name: 'whitespace and newlines',
+    source: app(`<T>
+      Hello,{' '}
+      <b>  spaced  </b>   world
+    </T>`),
+    translation: [' Bonjour, ', { t: 'b', i: 1, c: '  espacé  ' }, '\n monde '],
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Hello', 'world'],
+  },
+  {
+    name: 'entities and characters HTML escapes',
+    source: app('<T>Fish &amp; chips&nbsp;&lt;3</T>'),
+    translation: 'Poisson & frites <3 "maison"',
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Fish', 'chips'],
+  },
+  {
+    name: '<Var>',
+    source: app('<T>Hi <Var>{name}</Var>, welcome!</T>', '{ name }'),
+    translation: [
+      'Salut ',
+      { k: '_gt_value_1', i: 1, v: 'v' },
+      ', bienvenue !',
+    ],
+    renders: [{ name: 'Ada' }],
+    expected: 'replaced',
+    sourceText: ['Hi ', 'welcome'],
+  },
+  {
+    name: 'named variables the translation reorders',
+    source: app(
+      '<T>From <Var name="from">{a}</Var> to <Var name="to">{b}</Var></T>',
+      '{ a, b }'
+    ),
+    translation: [
+      'Vers ',
+      { k: 'to', i: 2, v: 'v' },
+      ' depuis ',
+      { k: 'from', i: 1, v: 'v' },
+    ],
+    renders: [{ a: 'Paris', b: 'Lyon' }],
+    expected: 'replaced',
+    sourceText: ['From ', ' to '],
+  },
+  {
+    name: 'a variable the translation repeats',
+    source: app('<T>Hi <Var>{name}</Var></T>', '{ name }'),
+    translation: [
+      'Salut ',
+      { k: '_gt_value_1', i: 1, v: 'v' },
+      ' (',
+      { k: '_gt_value_1', i: 1, v: 'v' },
+      ')',
+    ],
+    renders: [{ name: 'Ada' }],
+    expected: 'replaced',
+    sourceText: ['Hi '],
+  },
+  {
+    name: '<Num> with options',
+    source: app(
+      "<T>Progress: <Num options={{ style: 'percent' }}>{ratio}</Num></T>",
+      '{ ratio }'
+    ),
+    translation: ['Progression : ', { k: '_gt_n_1', i: 1, v: 'n' }],
+    renders: [{ ratio: 0.256 }, { ratio: 1234.5 }],
+    expected: 'replaced',
+    sourceText: ['Progress:'],
+  },
+  {
+    name: '<Currency>',
+    source: app(
+      '<T>Total: <Currency currency="EUR">{price}</Currency></T>',
+      '{ price }'
+    ),
+    translation: ['Total : ', { k: '_gt_cost_1', i: 1, v: 'c' }],
+    renders: [{ price: 1234.5 }],
+    expected: 'replaced',
+    sourceText: ['Total: '],
+  },
+  {
+    name: '<DateTime>',
+    source: app(
+      "<T>Due <DateTime options={{ dateStyle: 'long', timeZone: 'UTC' }}>{due}</DateTime></T>",
+      '{ due }'
+    ),
+    translation: ['Échéance le ', { k: '_gt_date_1', i: 1, v: 'd' }],
+    renders: [{ due: DATE }],
+    expected: 'replaced',
+    sourceText: ['Due '],
+  },
+  {
+    name: '<Plural> with a branch the source lacks',
+    source: app(
+      '<T><Plural n={n} one="One item" other="Many items" /></T>',
+      '{ n }'
+    ),
+    translation: {
+      t: 'Plural',
+      i: 1,
+      d: {
+        t: 'p',
+        b: {
+          one: 'Un article',
+          many: "Beaucoup d'articles",
+          other: 'Des articles',
+        },
+      },
+    },
+    renders: [{ n: 0 }, { n: 1 }, { n: 2 }, { n: 1.5 }, { n: 1_000_000 }],
+    expected: 'replaced',
+    sourceText: ['One item', 'Many items'],
+  },
+  {
+    name: '<Plural> with elements and variables in its branches',
+    source: app(
+      '<T>You have <Plural n={n} one={<><b>one</b> message</>} other={<><Num>{n}</Num> messages</>} /></T>',
+      '{ n }'
+    ),
+    translation: [
+      'Vous avez ',
+      {
+        t: 'Plural',
+        i: 1,
+        d: {
+          t: 'p',
+          b: {
+            one: { t: 'C2', i: 2, c: [{ t: 'b', i: 3, c: 'un' }, ' message'] },
+            many: {
+              t: 'C2',
+              i: 2,
+              c: [{ k: '_gt_n_3', i: 3, v: 'n' }, ' de messages'],
+            },
+            other: {
+              t: 'C2',
+              i: 2,
+              c: [{ k: '_gt_n_3', i: 3, v: 'n' }, ' messages'],
+            },
+          },
+        },
+      },
+    ],
+    renders: [{ n: 0 }, { n: 1 }, { n: 7 }, { n: 1_000_000 }],
+    expected: 'replaced',
+    sourceText: ['You have', '"one"'],
+  },
+  {
+    name: '<Plural> inside an element',
+    source: app(
+      '<T><p>You have <Plural n={n} one="one task" other="many tasks" /></p></T>',
+      '{ n }'
+    ),
+    translation: {
+      t: 'p',
+      i: 1,
+      c: [
+        'Vous avez ',
+        {
+          t: 'Plural',
+          i: 2,
+          d: { t: 'p', b: { one: 'une tâche', other: 'des tâches' } },
+        },
+      ],
+    },
+    renders: [{ n: 1 }, { n: 3 }],
+    expected: 'replaced',
+    sourceText: ['You have', 'task'],
+  },
+  {
+    name: '<Branch>',
+    source: app(
+      '<T><Branch branch={mode} dark={<b>Dark</b>} light="Light">Auto</Branch> theme</T>',
+      '{ mode }'
+    ),
+    translation: [
+      {
+        t: 'Branch',
+        i: 1,
+        d: {
+          t: 'b',
+          b: { dark: { t: 'b', i: 2, c: 'Sombre' }, light: 'Clair' },
+        },
+        c: 'Automatique',
+      },
+      ' (thème)',
+    ],
+    renders: [
+      { mode: 'dark' },
+      { mode: 'light' },
+      { mode: 'system' },
+      { mode: undefined },
+    ],
+    expected: 'replaced',
+    sourceText: ['Dark', 'Light', '"Auto"', ' theme'],
+  },
+  {
+    name: 'id and context props',
+    source: app('<T id="hero" context="landing">Hello</T>'),
+    translation: 'Bonjour',
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Hello'],
+  },
+  {
+    name: 'a key in a list',
+    source: app(
+      '<ul>{items.map((item) => <li key={item}><T key={item}>Item</T></li>)}</ul>',
+      '{ items }'
+    ),
+    translation: 'Élément',
+    renders: [{ items: ['a', 'b'] }],
+    expected: 'replaced',
+    sourceText: ['Item'],
+  },
+  {
+    name: 'side-effect props kept in order',
+    source: `${IMPORTS}
+      const tag = (name) => 'tag-' + name;
+      export function App() {
+        return <T><a data-x={tag('a')}>A</a> and <b data-x={tag('b')}>B</b></T>;
+      }`,
+    translation: [
+      { t: 'a', i: 1, c: 'Un' },
+      ' et ',
+      { t: 'b', i: 2, c: 'Deux' },
+    ],
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: [' and '],
+  },
+  {
+    name: 'auto-inserted <T> and <Var>',
+    source: `export function App({ name }) { return <p>Hello {name}, welcome</p>; }`,
+    gtConfig: {
+      files: { gt: { parsingFlags: { enableAutoJsxInjection: true } } },
+    },
+    translation: [
+      'Bonjour ',
+      { k: '_gt_value_1', i: 1, v: 'v' },
+      ', bienvenue',
+    ],
+    renders: [{ name: 'Ada' }],
+    expected: 'replaced',
+    sourceText: ['Hello', 'welcome'],
+  },
+  // Call sites that keep their source and embedded translation
+  {
+    name: 'a missing translation',
+    source: app('<T>Hello world</T>'),
+    translation: undefined,
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'a malformed translation',
+    source: app('<T>Hello world</T>'),
+    translation: 42,
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'an element id the source lacks',
+    source: app('<T>Hello, <b>World!</b></T>'),
+    translation: ['Bonjour, ', { t: 'b', i: 9, c: 'le Monde !' }],
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'a variable key the source lacks',
+    source: app('<T>Hi <Var>{name}</Var></T>', '{ name }'),
+    translation: ['Salut ', { k: 'nom', i: 1, v: 'v' }],
+    renders: [{ name: 'Ada' }],
+    expected: 'kept',
+  },
+  {
+    name: 'a translation that leaves out the children of an element',
+    source: app('<T>Click <a href="/x">here</a></T>'),
+    translation: ['Cliquez ', { t: 'a', i: 1 }],
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'a translation that leaves out a title',
+    source: app('<T><abbr title="World Health Organization">WHO</abbr></T>'),
+    translation: { t: 'abbr', i: 1, c: 'OMS' },
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'an alt on an element without children, which <T> leaves in the source language',
+    source: app('<T>A <img alt="cat" src="/c.png" /></T>'),
+    translation: ['Un ', { t: 'img', i: 1, d: { alt: 'chat' } }],
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'a translated branch that pairs with different source branches',
+    source: app(
+      '<T><Plural n={n} one={<b>one</b>} other={<i>many</i>} /></T>',
+      '{ n }'
+    ),
+    translation: {
+      t: 'Plural',
+      i: 1,
+      d: { t: 'p', b: { other: { t: 'i', i: 2, c: 'plusieurs' } } },
+    },
+    renders: [{ n: 1 }, { n: 5 }],
+    expected: 'kept',
+  },
+  {
+    name: '<Num> with a locales prop',
+    source: app("<T>Count: <Num locales={['de']}>{n}</Num></T>", '{ n }'),
+    translation: ['Total : ', { k: '_gt_n_1', i: 1, v: 'n' }],
+    renders: [{ n: 1234.5 }],
+    expected: 'kept',
+  },
+  {
+    name: '<Plural> with a locales prop',
+    source: app(
+      '<T><Plural n={n} locales={[\'de\']} one="One" other="Many" /></T>',
+      '{ n }'
+    ),
+    translation: {
+      t: 'Plural',
+      i: 1,
+      d: { t: 'p', b: { one: 'Un', other: 'Plusieurs' } },
+    },
+    renders: [{ n: 1 }],
+    expected: 'kept',
+  },
+  {
+    name: '<RelativeTime>',
+    source: app('<T>Posted <RelativeTime unit="day">{-1}</RelativeTime></T>'),
+    translation: ['Publié ', { k: '_gt_time_1', i: 1, v: 'rt' }],
+    renders: [{}],
+    expected: 'kept',
+  },
+  {
+    name: 'a repeated variable with side effects',
+    source: `${IMPORTS}
+      const shout = (s) => s.toUpperCase();
+      export function App({ name }) { return <T>Hi <Var>{shout(name)}</Var></T>; }`,
+    translation: [
+      'Salut ',
+      { k: '_gt_value_1', i: 1, v: 'v' },
+      ' ',
+      { k: '_gt_value_1', i: 1, v: 'v' },
+    ],
+    renders: [{ name: 'Ada' }],
+    expected: 'kept',
+  },
+  {
+    name: 'side-effect props the translation reorders',
+    source: `${IMPORTS}
+      const tag = (name) => 'tag-' + name;
+      export function App() {
+        return <T><a data-x={tag('a')}>A</a> and <b data-x={tag('b')}>B</b></T>;
+      }`,
+    translation: [
+      { t: 'b', i: 2, c: 'Deux' },
+      ' et ',
+      { t: 'a', i: 1, c: 'Un' },
+    ],
+    renders: [{}],
+    expected: 'kept',
+  },
+];
+
+const TEMPLATE_CASES: Case[] = [
+  {
+    name: 'plain text',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = () => t\`Hello world\`;`,
+    translation: 'Bonjour le monde',
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Hello world'],
+  },
+  {
+    name: 'named variables the translation reorders',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ from, to }) => t\`From \${{ from }} to \${{ to }}\`;`,
+    translation: ['Vers ', ['to'], ' depuis ', ['from']],
+    renders: [{ from: 'Paris', to: 'Lyon' }],
+    expected: 'replaced',
+    sourceText: ['From '],
+  },
+  {
+    name: 'a variable the translation repeats',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ user }) => t\`Hi \${{ name: user.name }}\`;`,
+    translation: ['Salut ', ['name'], ' (', ['name'], ')'],
+    renders: [{ user: { name: 'Ada' } }],
+    expected: 'replaced',
+    sourceText: ['Hi '],
+  },
+  {
+    name: 'a number formatted in the target locale',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ count }) => t\`\${{ count }} files\`;`,
+    translation: [['count'], ' fichiers'],
+    renders: [{ count: 1234.5 }],
+    expected: 'replaced',
+    sourceText: [' files'],
+  },
+  {
+    name: 'context',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = () => t({ context: 'navigation' })\`Home\`;`,
+    translation: 'Accueil',
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Home'],
+  },
+  {
+    name: 'maxChars',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = () => t({ maxChars: 8 })\`Read the whole story\`;`,
+    translation: "Lire toute l'histoire",
+    renders: [{}],
+    expected: 'replaced',
+    sourceText: ['Read the whole story'],
+  },
+  {
+    name: 'text with template syntax',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ name }) => t\`Use \\\`code\\\` for \${{ name }}\`;`,
+    translation: ['Utilisez `code`, ${x} et \\ pour ', ['name'], '\r\n'],
+    renders: [{ name: 'Ada' }],
+    expected: 'replaced',
+    sourceText: ['Use '],
+  },
+  // Templates that keep their source and embedded translation
+  {
+    name: 'a translation with ICU syntax beyond {name}',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ count }) => t\`\${{ count }} files\`;`,
+    translation: [
+      ['count', 'plural', { one: [0, ' fichier'], other: [0, ' fichiers'] }],
+    ],
+    renders: [{ count: 1 }, { count: 4 }],
+    expected: 'kept',
+  },
+  {
+    name: 'a variable the source lacks',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ name }) => t\`Hi \${{ name }}\`;`,
+    translation: ['Salut ', ['nom']],
+    renders: [{ name: 'Ada' }],
+    expected: 'kept',
+  },
+  {
+    name: 'a repeated variable that binds a new object each time',
+    source: `import { t } from 'gt-react/unstable';
+      export const App = ({ a }) => t\`Hi \${{ name: [a].join('') }}\`;`,
+    translation: ['Salut ', ['name'], ' ', ['name']],
+    renders: [{ a: 'Ada' }],
+    expected: 'kept',
+  },
+  {
+    name: 'variables with side effects the translation reorders',
+    source: `import { t } from 'gt-react/unstable';
+      const up = (s) => s.toUpperCase();
+      export const App = ({ a, b }) => t\`\${{ a: up(a) }} then \${{ b: up(b) }}\`;`,
+    translation: [['b'], ' puis ', ['a']],
+    renders: [{ a: 'x', b: 'y' }],
+    expected: 'kept',
+  },
+];
+
+describe('experimentalReplaceSource', () => {
+  let runtime: GTRuntime;
+
+  beforeAll(async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    runtime = await loadGTRuntime(STATIC_LOCALE);
+  });
+
+  beforeEach(() => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('GT_STATIC_LOCALE', '');
+    vi.stubEnv('GT_REPLACE_SOURCE', '');
+    clearInlineTranslationsCache();
+  });
+
+  async function renderAll(
+    code: string,
+    renders: Case['renders'],
+    asText = false
+  ) {
+    const { App } = evaluateModule(code, runtime.modules);
+    return Promise.all(
+      renders.map((props) =>
+        asText
+          ? String((App as (props: unknown) => unknown)(props))
+          : runtime.render(App, props)
+      )
+    );
+  }
+
+  /**
+   * Builds the case both ways and checks the replaced build renders the same
+   * HTML; returns both outputs.
+   */
+  async function checkCase(
+    { source, translation, renders, expected, sourceText = [], gtConfig }: Case,
+    asText = false
+  ) {
+    const code = compileJsx(source);
+    const { embedded, replaced } = await buildBothWays(code, translation, {
+      gtConfig,
+    });
+    if (expected === 'kept') {
+      expect(replaced).toBe(embedded);
+    } else {
+      expect(replaced).not.toBe(embedded);
+      for (const text of sourceText) expect(replaced).not.toContain(text);
+    }
+    const [before, after] = await Promise.all([
+      renderAll(embedded, renders, asText),
+      renderAll(replaced, renders, asText),
+    ]);
+    expect(after).toEqual(before);
+    return { embedded, replaced, html: after };
+  }
+
+  describe('renders <T> as it renders the embedded translation', () => {
+    it.each(JSX_CASES.map((testCase) => [testCase.name, testCase] as const))(
+      '%s',
+      async (_name, testCase) => {
+        const { replaced, html } = await checkCase(testCase);
+        if (testCase.expected === 'replaced') {
+          expect(replaced).not.toMatch(/inline:|_hash:|jsxs?\(T,/);
+          // The embedded translation renders, not the source
+          for (const text of testCase.sourceText ?? []) {
+            for (const rendered of html) expect(rendered).not.toContain(text);
+          }
+        }
+      }
+    );
+  });
+
+  describe('renders unstable templates as they render the embedded translation', () => {
+    it.each(
+      TEMPLATE_CASES.map((testCase) => [testCase.name, testCase] as const)
+    )('%s', async (_name, testCase) => {
+      const { replaced, html } = await checkCase(testCase, true);
+      if (testCase.expected === 'replaced') {
+        // The runtime renders the embedded translation, with no lookup
+        expect(replaced).toMatch(/\$_hash: "[0-9a-f]+", inline: \(locale\) =>/);
+        for (const text of testCase.sourceText ?? []) {
+          for (const rendered of html) expect(rendered).not.toContain(text);
+        }
+      }
+    });
+
+    it('useGT()', async () => {
+      const code = compileJsx(`import { useGT } from 'gt-react/unstable';
+        export function App({ name }) {
+          const gt = useGT();
+          return <span title={gt\`Greeting\`}>{gt\`Hello \${{ name }}\`}</span>;
+        }`);
+      const output = await transformWithPlugin(undefined, code);
+      const [greeting, hello] = [
+        ...(output ?? '').matchAll(/\$_hash: "([^"]+)"/g),
+      ].map((match) => match[1]);
+      const translations = {
+        [greeting]: 'Salutation',
+        [hello]: ['Bonjour ', ['name']],
+      };
+      const embedded = await transformWithPlugin(
+        buildOptions(translations, { replaceSource: false }),
+        code
+      );
+      const replaced = await transformWithPlugin(
+        buildOptions(translations, { replaceSource: true }),
+        code
+      );
+      expect(replaced).toContain('`Salutation`');
+      expect(replaced).toContain('`Bonjour ${{ name }}`');
+      expect(replaced).not.toMatch(/Greeting|Hello/);
+      const [before, after] = await Promise.all([
+        renderAll(embedded!, [{ name: 'Ada' }]),
+        renderAll(replaced!, [{ name: 'Ada' }]),
+      ]);
+      expect(after).toEqual(['<span title="Salutation">Bonjour Ada</span>']);
+      expect(after).toEqual(before);
+    });
+  });
+
+  it('rewrites <T> as the JSX its translation renders', async () => {
+    const { replaced } = await checkCase(
+      JSX_CASES.find(
+        (testCase) =>
+          testCase.name ===
+          '<Plural> with elements and variables in its branches'
+      )!
+    );
+    expect(replaced).toMatchInlineSnapshot(`
+      "import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+      import { T, Num, Plural } from "gt-react";
+      function App({ n }) {
+        return /* @__PURE__ */jsxs(Fragment, { children: ["Vous avez ", /* @__PURE__ */jsx(
+
+            Plural, { n, one: /* @__PURE__ */jsxs(Fragment, { children: [/* @__PURE__ */jsx(
+                  "b", { children: "un" }), " message"] }), other: /* @__PURE__ */jsxs(
+
+                Fragment, { children: [
+                  /* @__PURE__ */jsx(Num, { children: n }), " messages"] }), many: /* @__PURE__ */jsxs(Fragment, { children: [/* @__PURE__ */jsx(Num, { children: n }), " de messages"] }) })] }
+
+
+        );
+      }
+      export {
+        App };"
+    `);
+  });
+
+  it('rewrites a template as its translation, keeping its variables and inline option', async () => {
+    const { replaced } = await checkCase(
+      TEMPLATE_CASES.find(
+        (testCase) => testCase.name === 'text with template syntax'
+      )!,
+      true
+    );
+    expect(replaced).toMatchInlineSnapshot(`
+      "import { t } from "gt-react/unstable";
+      const App = ({ name }) => t({ $_hash: "728c62f6bce558d1", inline: (locale) => locale === "fr" ? ["Utilisez \`code\`, \${x} et \\\\ pour ", ["name"], "\\r\\n"] : void 0 })\`Utilisez \\\`code\\\`, \\\${x} et \\\\ pour \${{ name }}\\r
+      \`;export {
+        App };"
+    `);
+  });
+
+  it('replaces each call site that shares a hash', async () => {
+    const code = compileJsx(`${IMPORTS}
+      import { t } from 'gt-react/unstable';
+      export function App() {
+        return <><T>Save</T><T>Save</T><span>{t\`Save\`}{t\`Save\`}</span></>;
+      }`);
+    const output = await transformWithPlugin(undefined, code);
+    const [jsxHash, templateHash] = [
+      ...new Set(
+        [...(output ?? '').matchAll(/\$?_hash: "([^"]+)"/g)].map(
+          (match) => match[1]
+        )
+      ),
+    ];
+    const replaced = await transformWithPlugin(
+      buildOptions(
+        { [jsxHash]: 'Enregistrer', [templateHash]: 'Sauvegarder' },
+        { replaceSource: true }
+      ),
+      code
+    );
+    expect(replaced).not.toContain('Save');
+    expect(replaced?.match(/"Enregistrer"/g)).toHaveLength(2);
+    expect(replaced?.match(/`Sauvegarder`/g)).toHaveLength(2);
+    const [html] = await renderAll(replaced!, [{}]);
+    expect(html).toBe(
+      'EnregistrerEnregistrer<span>SauvegarderSauvegarder</span>'
+    );
+  });
+
+  it('imports Fragment where the file lacks it', async () => {
+    const code = `
+      import { jsx as _jsx } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      const Fragment = 'shadowed';
+      export const App = () => _jsx(T, { children: "Hello" });
+    `;
+    const hash = await getInjectedHash(code);
+    const replaced = await transformWithPlugin(
+      buildOptions({ [hash]: 'Bonjour' }, { replaceSource: true }),
+      code
+    );
+    expect(replaced).toContain(
+      'import { Fragment as _Fragment } from "react/jsx-runtime";'
+    );
+    expect(replaced).toContain('_jsx(_Fragment, { children: "Bonjour" })');
+  });
+
+  it('leaves msg() and derive content alone', async () => {
+    const code = compileJsx(`${IMPORTS}
+      import { msg, t, derive } from 'gt-react/unstable';
+      import { Derive } from 'gt-react';
+      export const message = msg\`Hello\`;
+      export const derived = (x) => t\`Hi \${derive(x)}\`;
+      export function App({ x }) { return <T>Hi <Derive>{x}</Derive></T>; }`);
+    const embedded = await transformWithPlugin(
+      buildOptions({}, { replaceSource: false }),
+      code
+    );
+    const replaced = await transformWithPlugin(
+      buildOptions({}, { replaceSource: true }),
+      code
+    );
+    expect(replaced).toBe(embedded);
+  });
+
+  it('keeps <T> a component when _tagIds needs its hash on the DOM', async () => {
+    const code = compileJsx(`${IMPORTS}
+      import { t } from 'gt-react/unstable';
+      export const App = () => <T>Hello</T>;
+      export const label = () => t\`Hello\`;`);
+    const output = await transformWithPlugin(undefined, code);
+    const translations = Object.fromEntries(
+      [...(output ?? '').matchAll(/\$?_hash: "([^"]+)"/g)].map((match) => [
+        match[1],
+        'Bonjour',
+      ])
+    );
+    const replaced = await transformWithPlugin(
+      buildOptions(translations, {
+        replaceSource: true,
+        gtConfig: { _tagIds: true },
+      }),
+      code
+    );
+    expect(replaced).toMatch(/jsx\(T, \{ children: "Hello", inline:/);
+    expect(replaced).toContain('`Bonjour`');
+  });
+
+  it.each(['physical', 'virtual'] as const)(
+    'needs no message module for a replaced <T> with %s modules',
+    async (modules) => {
+      const code = compileJsx(`${IMPORTS}
+        import { t } from 'gt-react/unstable';
+        export const App = () => <T>Hello</T>;
+        export const label = () => t\`Hello\`;`);
+      const output = await transformWithPlugin(undefined, code);
+      const [jsxHash, templateHash] = [
+        ...(output ?? '').matchAll(/\$?_hash: "([^"]+)"/g),
+      ].map((match) => match[1]);
+      const options = buildOptions(
+        { [jsxHash]: 'Bonjour (T)', [templateHash]: 'Bonjour (t)' },
+        { replaceSource: true }
+      );
+      options.gtConfig!.files!.gt!.inlineTranslations!.modules = modules;
+      const replaced = await transformWithPlugin(options, code);
+      expect(replaced).toMatch(
+        /jsx\(_Fragment, \{ children: "Bonjour \(T\)" \}\)/
+      );
+      expect(replaced).not.toContain(`__gt_inline_${jsxHash}`);
+      // The template still reads its translation from its module
+      expect(replaced).toContain(`inline: __gt_inline_${templateHash}`);
+      expect(replaced).toContain('`Bonjour (t)`');
+    }
+  );
+
+  it('changes nothing in a build for the source locale', async () => {
+    const code = compileJsx(app('<T>Hello</T>'));
+    const hash = await getInjectedHash(code);
+    const options = (replaceSource: boolean) => ({
+      ...buildOptions({ [hash]: 'Bonjour' }, { replaceSource }),
+      experimentalStaticLocale: 'en',
+    });
+    expect(await transformWithPlugin(options(true), code)).toBe(
+      await transformWithPlugin(options(false), code)
+    );
+  });
+
+  it('changes nothing outside production builds', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const code = compileJsx(app('<T>Hello</T>'));
+    const hash = await getInjectedHash(code);
+    const replaced = await transformWithPlugin(
+      buildOptions({ [hash]: 'Bonjour' }, { replaceSource: true }),
+      code
+    );
+    expect(replaced).toContain('"Hello"');
+    expect(replaced).not.toContain('Bonjour');
+  });
+
+  describe('options', () => {
+    function createPlugin(options: GTUnpluginOptions) {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        return gtUnplugin.raw(options, { framework: 'vite' });
+      } finally {
+        warn.mockRestore();
+      }
+    }
+
+    function runBuildStart(options: GTUnpluginOptions) {
+      const { buildStart } = createPlugin(options);
+      return () => (buildStart as () => void).call({});
+    }
+
+    it('throws in production builds without a static locale', () => {
+      const options = buildOptions({}, { replaceSource: true });
+      delete options.experimentalStaticLocale;
+      expect(runBuildStart(options)).toThrow(
+        '@generaltranslation/compiler Error: experimentalReplaceSource is set, but this build has no static locale'
+      );
+    });
+
+    it('allows development builds without a static locale', () => {
+      vi.stubEnv('NODE_ENV', 'development');
+      const options = buildOptions({}, { replaceSource: true });
+      delete options.experimentalStaticLocale;
+      expect(runBuildStart(options)).not.toThrow();
+    });
+
+    it.each([
+      ['true', true],
+      ['1', true],
+      [' TRUE ', true],
+      ['false', false],
+      ['0', false],
+      ['', false],
+    ])('reads GT_REPLACE_SOURCE=%j', async (value, replaces) => {
+      vi.stubEnv('GT_REPLACE_SOURCE', value);
+      const code = compileJsx(app('<T>Hello</T>'));
+      const hash = await getInjectedHash(code);
+      const options = buildOptions(
+        { [hash]: 'Bonjour' },
+        { replaceSource: false }
+      );
+      delete options.experimentalReplaceSource;
+      const output = await transformWithPlugin(options, code);
+      expect(output?.includes('jsx(_Fragment')).toBe(replaces);
+    });
+
+    it('lets the option override GT_REPLACE_SOURCE', async () => {
+      vi.stubEnv('GT_REPLACE_SOURCE', 'true');
+      const code = compileJsx(app('<T>Hello</T>'));
+      const hash = await getInjectedHash(code);
+      const output = await transformWithPlugin(
+        buildOptions({ [hash]: 'Bonjour' }, { replaceSource: false }),
+        code
+      );
+      expect(output).toContain('inline:');
+    });
+
+    it('rejects a GT_REPLACE_SOURCE that is not a boolean', () => {
+      vi.stubEnv('GT_REPLACE_SOURCE', 'yes');
+      const options = buildOptions({}, { replaceSource: false });
+      delete options.experimentalReplaceSource;
+      expect(() => createPlugin(options)).toThrow(
+        '@generaltranslation/compiler Error: GT_REPLACE_SOURCE is set to "yes", which is not a boolean'
+      );
+    });
+
+    it('reports call sites that keep their source at debug level', async () => {
+      const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const code = compileJsx(app('<T>Hello, <b>World!</b></T>'));
+      const hash = await getInjectedHash(code);
+      const options = buildOptions(
+        { [hash]: ['Bonjour, ', { t: 'b', i: 9, c: 'le Monde !' }] },
+        { replaceSource: true, logLevel: 'debug' }
+      );
+      const plugin = createPlugin(options);
+      await (plugin.transform as (code: string, id: string) => unknown).call(
+        { addWatchFile() {} },
+        code,
+        '/app/App.tsx'
+      );
+      (plugin.buildEnd as () => void).call({});
+      const messages = log.mock.calls.map(([message]) => String(message));
+      log.mockRestore();
+      expect(messages).toEqual([
+        expect.stringMatching(
+          new RegExp(
+            `Kept the source of <T> ${hash}, with its embedded translation: the translation does not match the source children /app/App.tsx:\\d+:\\d+$`
+          )
+        ),
+        expect.stringContaining(
+          'Replaced the source content of 0 call sites with their "fr" translations; 1 call sites kept their source and embedded translation'
+        ),
+      ]);
+    });
+  });
+});
+
+describe('selectPluralForm', () => {
+  const FORM_SETS = [
+    ['one', 'other'],
+    ['one', 'few', 'many', 'other'],
+    ['zero', 'one', 'two', 'few', 'many', 'other'],
+    ['singular', 'plural'],
+    ['singular', 'dual', 'plural'],
+    ['zero', 'other'],
+    ['two', 'other'],
+    ['few'],
+    [],
+  ];
+  const LOCALES = ['en', 'fr', 'ru', 'pl', 'ar', 'cy', 'ja', 'sl', 'ga'];
+  const COUNTS = [
+    0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 21, 22, 100, 101, 1e6, 0.5, 1.5, -1, -2,
+  ];
+
+  it('picks the branch getPluralForm picks', () => {
+    for (const locale of LOCALES) {
+      const rules = new Intl.PluralRules(locale);
+      for (const n of COUNTS) {
+        const abs = Math.abs(n);
+        const scenario = {
+          count: abs === 0 || abs === 1 || abs === 2 ? abs : 'other',
+          category: rules.select(n),
+        } as const;
+        for (const forms of FORM_SETS) {
+          expect([locale, n, forms, selectPluralForm(scenario, forms)]).toEqual(
+            [locale, n, forms, getPluralForm(n, forms as never, [locale])]
+          );
+        }
+      }
+    }
+  });
+
+  it('covers every scenario a locale can produce', () => {
+    const keys = new Set(
+      PLURAL_SCENARIOS.map(({ count, category }) => `${count}:${category}`)
+    );
+    for (const locale of LOCALES) {
+      const rules = new Intl.PluralRules(locale);
+      for (const n of COUNTS) {
+        const abs = Math.abs(n);
+        const count = abs === 0 || abs === 1 || abs === 2 ? abs : 'other';
+        expect(keys).toContain(`${count}:${rules.select(n)}`);
+      }
+    }
+  });
+});

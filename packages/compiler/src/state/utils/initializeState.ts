@@ -11,6 +11,7 @@ import {
   GT_OTHER_FUNCTIONS,
 } from '../../utils/constants/gt/constants';
 import { loadInlineTranslations } from '../../transform/injection/inline-translations/loadInlineTranslations';
+import type { SourceReplacement } from '../../transform/injection/inline-translations/resolveSourceReplacement';
 
 const DEFAULT_SETTINGS: PluginSettings = {
   logLevel: 'warn',
@@ -37,7 +38,8 @@ const DEFAULT_SETTINGS: PluginSettings = {
  */
 export function initializeState(
   options: GTUnpluginOptions,
-  filename: string
+  filename: string,
+  sourceReplacement?: SourceReplacement
 ): TransformState {
   // Pull enableAutoJsxInjection from gtConfig if provided
   const gtConfig = options.gtConfig;
@@ -61,6 +63,7 @@ export function initializeState(
     autoderive: _a,
     devHotReload: _b,
     experimentalStaticLocale: _c,
+    experimentalReplaceSource: _d,
     ...restOptions
   } = options;
 
@@ -81,6 +84,7 @@ export function initializeState(
     autoJsxImportSource:
       options.autoJsxImportSource ?? DEFAULT_SETTINGS.autoJsxImportSource,
     inlineTranslationsTable,
+    sourceReplacement: inlineTranslationsTable ? sourceReplacement : undefined,
     filename,
   };
 
@@ -97,6 +101,8 @@ export function initializeState(
       jsxInsertionsCount: 0,
       runtimeTranslateCount: 0,
       unstableHashInjectionsCount: 0,
+      sourceReplacementsCount: 0,
+      sourceReplacementFallbacksCount: 0,
     },
   };
 }

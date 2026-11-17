@@ -3,6 +3,7 @@
  */
 
 import type { InlineTranslationsTable } from './transform/injection/inline-translations/loadInlineTranslations';
+import type { SourceReplacement } from './transform/injection/inline-translations/resolveSourceReplacement';
 import type {
   GTCompilerOptions,
   GTConfig as SharedGTConfig,
@@ -42,6 +43,17 @@ export interface PluginConfig
    * embeds every configured locale.
    */
   experimentalStaticLocale?: string;
+  /**
+   * Experimental, for per-locale builds of single-page apps
+   * (`experimentalStaticLocale`): replaces the source content of each call site
+   * that embeds a translation with the static locale's translation, so those
+   * call sites ship no source text and need no lookup. `<T>` becomes the JSX
+   * its translation renders and an unstable `t` or `gt` template becomes the
+   * translated template; a call site whose translation does not match its
+   * source keeps the embedded translation. Does nothing for a source locale.
+   * Defaults to the `GT_REPLACE_SOURCE` environment variable (`true` or `false`).
+   */
+  experimentalReplaceSource?: boolean;
 }
 
 /**
@@ -70,6 +82,8 @@ export interface PluginSettings {
   devHotReload: { strings: boolean; jsx: boolean };
   /** Resolved translations to embed at call sites, keyed by locale then hash */
   inlineTranslationsTable?: InlineTranslationsTable;
+  /** Set when a per-locale build replaces source content with its translations */
+  sourceReplacement?: SourceReplacement;
 }
 
 /**

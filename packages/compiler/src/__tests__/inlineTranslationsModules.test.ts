@@ -736,12 +736,14 @@ describe('webpack cache version', () => {
 
   function cacheVersion(
     gtConfig: GTUnpluginOptions['gtConfig'],
-    staticLocale?: string
+    staticLocale?: string,
+    experimentalReplaceSource?: boolean
   ): string | undefined {
     const plugin = gtUnplugin.raw(
       {
         gtConfig,
         ...(staticLocale && { experimentalStaticLocale: staticLocale }),
+        experimentalReplaceSource,
       },
       { framework: 'webpack' } as never
     ) as unknown as WebpackPlugin;
@@ -807,6 +809,12 @@ describe('webpack cache version', () => {
       cacheVersion(embedding(), 'en'),
     ]);
     expect(versions.size).toBe(4);
+  });
+
+  it('changes when a per-locale build replaces source content', () => {
+    expect(cacheVersion(embedding(), 'fr', true)).not.toBe(
+      cacheVersion(embedding(), 'fr', false)
+    );
   });
 
   it('changes when a per-locale build moves physical modules', () => {

@@ -21,7 +21,13 @@ export interface TransformState {
     jsxInsertionsCount: number;
     runtimeTranslateCount: number;
     unstableHashInjectionsCount: number;
+    /** Call sites whose source content was replaced with a translation */
+    sourceReplacementsCount: number;
+    /** Call sites with a translation that kept their source content */
+    sourceReplacementFallbacksCount: number;
   };
+  /** JSX runtime source to the local name source replacement imports its Fragment as */
+  sourceReplacementImports?: Map<string, string>;
   /** Hash to local import name; set only when this file imports message modules. */
   inlineTranslationsImports?: Map<string, string>;
   /** Debug: shared manifest map for hash → jsxChildren mapping (accumulated across files) */

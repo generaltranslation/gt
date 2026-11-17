@@ -47,11 +47,19 @@ function nonStatic(): never {
  * `msg` templates are rendered by `m()` away from their call site, so they are
  * never embedded.
  *
+ * With `replaceSource`, an embedded template's text is replaced by its
+ * translation (see replaceTemplateSource). The `inline` option stays, so the
+ * runtime renders the translation in the target locale without a lookup.
+ *
  * Returns whether the template was rewritten.
  */
 export function injectUnstableTaggedTemplateHash(
   path: NodePath<t.TaggedTemplateExpression>,
-  buildInline?: (hash: string) => t.Expression | undefined
+  buildInline?: (hash: string) => t.Expression | undefined,
+  replaceSource?: (
+    hash: string,
+    quasi: t.TemplateLiteral
+  ) => t.TemplateLiteral | undefined
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
@@ -91,6 +99,8 @@ export function injectUnstableTaggedTemplateHash(
     properties.push(
       t.objectProperty(t.identifier(INLINE_TRANSLATIONS_OPTION), inline)
     );
+    const replaced = replaceSource?.(hash, quasi);
+    if (replaced) path.node.quasi = replaced;
   }
   if (t.isCallExpression(tag)) {
     (tag.arguments[0] as t.ObjectExpression).properties.push(...properties);
