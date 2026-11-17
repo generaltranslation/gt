@@ -102,6 +102,7 @@ export { initializeGTSRA as initializeGT } from './setup/initializeGTSRA';
 
 // ===== Types ===== //
 export type {
+  BranchProps,
   CurrencyProps,
   DateTimeProps,
   JsxTranslationOptions,

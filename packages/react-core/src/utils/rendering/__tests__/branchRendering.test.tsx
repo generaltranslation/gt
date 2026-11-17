@@ -45,7 +45,7 @@ function createBranchElement(
 
 function createPluralElement(
   n: number,
-  branches: Record<string, string | number | boolean | undefined>
+  branches: Record<string, React.ReactNode>
 ): TaggedElement {
   const props = {
     'data-_gt': {
@@ -148,6 +148,31 @@ describe('plural rendering', () => {
         enableI18n: true,
       })
     ).toBe('Sin elementos');
+  });
+
+  it('pairs the branch a translation picks with the source other branch', () => {
+    // Russian has no =0 branch and counts 0 as "many", which English lacks.
+    const items = React.createElement('b', { 'data-_gt': { id: 2 } }, 'items');
+    const result = renderTranslatedChildren({
+      source: createPluralElement(0, { '=0': 'None', other: items }),
+      target: {
+        d: {
+          b: {
+            one: { i: 2, c: 'элемент' },
+            few: { i: 2, c: 'элемента' },
+            many: { i: 2, c: 'элементов' },
+            other: { i: 2, c: 'элемента' },
+          },
+        },
+      } as unknown as TranslatedChildren,
+      locales: ['ru'],
+      enableI18n: true,
+    });
+
+    expect(result).toMatchObject({
+      type: 'b',
+      props: { children: 'элементов' },
+    });
   });
 
   it('renders the source branch when the translation has no branch', () => {

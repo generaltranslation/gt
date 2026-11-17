@@ -18,6 +18,8 @@ import {
   warnInvalidDeriveInitSync,
   warnRecursiveFunctionCallSync,
   warnDataAttrOnBranch,
+  warnBranchChildrenSync,
+  warnInvalidExactPluralPropSync,
   warnNestedInternalTComponent,
   warnDeriveNonConstVariableSync,
   warnDeriveDestructuringSync,
@@ -376,6 +378,20 @@ function buildJSXTree({
             warnDataAttrOnBranch(config.file, attrName, location)
           );
         }
+        // `_01` looks like an exact number but is not a branch.
+        if (
+          elementIsPlural &&
+          /^_\d/.test(attrName) &&
+          !isAcceptedPluralForm(attrName)
+        ) {
+          output.warnings.add(
+            warnInvalidExactPluralPropSync(
+              config.file,
+              attrName,
+              `${attr.loc?.start?.line}:${attr.loc?.start?.column}`
+            )
+          );
+        }
         if (attr.value) {
           if (t.isStringLiteral(attr.value)) {
             attrValue = attr.value.value;
@@ -511,6 +527,17 @@ function buildJSXTree({
       props.children = children[0];
     } else if (children.length > 1) {
       props.children = children;
+    }
+
+    // Children are still extracted, so the hash matches the runtime's.
+    if ((elementIsPlural || elementIsBranch) && 'children' in props) {
+      output.warnings.add(
+        warnBranchChildrenSync(
+          config.file,
+          componentType,
+          `${element.loc?.start?.line}:${element.loc?.start?.column}`
+        )
+      );
     }
 
     return {

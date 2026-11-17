@@ -110,7 +110,6 @@ const NON_BRANCH_PROP_NAMES = new Set([
   'branch',
   'class',
   'key',
-  'locales',
   'n',
   'ref',
   'ref-for',

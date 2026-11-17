@@ -71,7 +71,12 @@ describe('createInlineUpdates on tests/seeds', () => {
       expect(result.warnings.length || result.errors.length).toBeGreaterThan(0);
       return;
     }
-    expect(result.warnings).toEqual([]);
+    // Some seeds keep <Branch>/<Plural> children to cover their extraction.
+    expect(
+      result.warnings.filter(
+        (warning) => !warning.includes('does not render its children')
+      )
+    ).toEqual([]);
     expect(result.errors).toEqual([]);
 
     for (const update of result.updates) {

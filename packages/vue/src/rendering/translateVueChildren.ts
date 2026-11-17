@@ -1149,28 +1149,25 @@ function renderElement(
   state: GTState,
   identityRender: TranslationIdentityRender
 ): VNodeChild {
-  if (source.transformation === 'branch') {
-    const branch = source.vnode.props?.branch;
+  if (
+    source.transformation === 'branch' ||
+    source.transformation === 'plural'
+  ) {
+    const targetBranches = target.d?.b ?? {};
+    const targetBranch =
+      source.transformation === 'branch'
+        ? getBranchKey(source.vnode.props?.branch, targetBranches)
+        : getPluralKey(
+            source.vnode.props?.n,
+            Object.keys(targetBranches),
+            state
+          );
+    // The translation picks the branch. The source pairs with it by key, or
+    // with `other` when it has no branch of that name.
     const selectedSource = getSelectedSourceBranch(
       source,
-      getBranchKey(branch, source.branches)
+      Object.hasOwn(source.branches, targetBranch) ? targetBranch : 'other'
     );
-    const targetBranches = target.d?.b ?? {};
-    return renderNodes(
-      selectedSource.nodes,
-      targetBranches[getBranchKey(branch, targetBranches)],
-      state,
-      identityRender,
-      selectedSource.cardinality,
-      selectedSource.scalarTruthy
-    );
-  }
-  if (source.transformation === 'plural') {
-    const n = source.vnode.props?.n;
-    const sourceBranch = getPluralKey(n, Object.keys(source.branches), state);
-    const targetBranches = target.d?.b ?? {};
-    const targetBranch = getPluralKey(n, Object.keys(targetBranches), state);
-    const selectedSource = getSelectedSourceBranch(source, sourceBranch);
     return renderNodes(
       selectedSource.nodes,
       targetBranches[targetBranch],

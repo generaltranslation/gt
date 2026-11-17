@@ -552,6 +552,44 @@ describe('GT IDs after Branch/Plural element children', () => {
   });
 });
 
+describe('Branch/Plural props that are never rendered', () => {
+  it.each([
+    [
+      'Branch children',
+      '<Branch branch="open" open="Open">Closed</Branch>',
+      '<Branch> does not render its children. Move the content to the other prop.',
+    ],
+    [
+      'Plural children',
+      '<Plural n={2} one="one bottle">bottles</Plural>',
+      '<Plural> does not render its children. Move the content to the other prop.',
+    ],
+    [
+      'an exact number with a leading zero',
+      '<Plural n={2} _01="one bottle" other="bottles" />',
+      'Ignored the _01 prop of <Plural> because it is not an exact number.',
+    ],
+    [
+      'an exact number with an exponent',
+      '<Plural n={2} _1e3="a thousand bottles" other="bottles" />',
+      'Ignored the _1e3 prop of <Plural> because it is not an exact number.',
+    ],
+  ])('warns about %s', (_name, jsx, message) => {
+    const { errors, warnings } = extractUserT(page(`<T>${jsx}</T>`));
+
+    expect(errors).toEqual([]);
+    expect([...warnings]).toEqual([expect.stringContaining(message)]);
+  });
+
+  it('does not warn about exact numbers and an other branch', () => {
+    const { warnings } = extractUserT(
+      page('<T><Plural n={2} _0="none" _10="ten" other="bottles" /></T>')
+    );
+
+    expect([...warnings]).toEqual([]);
+  });
+});
+
 describe('Derive of a variable', () => {
   const derive = (c: string, i = 1) => ({ t: 'Derive', i, c });
 

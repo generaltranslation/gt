@@ -279,7 +279,6 @@ describe('Branch and Plural attributes', () => {
       ['style', 'color: red'],
       ['style', { color: 'red' }],
       ['n', 2],
-      ['locales', 'fr'],
       ['key', 'stable'],
       ['ref', 'component'],
       ['ref-for', true],
@@ -301,6 +300,8 @@ describe('Branch and Plural attributes', () => {
     expect(
       attributes.filter(([name, value]) => isBranchAttribute(name, value))
     ).toEqual([]);
+    // Plural has no locales prop, so the name is a branch as in React.
+    expect(isBranchAttribute('locales', 'fr')).toBe(true);
   });
 
   it.each([
@@ -605,6 +606,40 @@ describe('Branch and Plural attributes', () => {
 
     expect(html).toContain('French one');
     expect(html).not.toContain('English other');
+  });
+
+  it('pairs the branch a translation picks with the source other branch', async () => {
+    const source: JsxChildren = {
+      t: 'Plural',
+      i: 1,
+      d: { b: { '=0': 'None', other: { t: 'b', i: 2, c: 'items' } }, t: 'p' },
+    };
+    // Russian has no =0 branch and counts 0 as "many", which English lacks.
+    const target: JsxChildren = {
+      t: 'Plural',
+      i: 1,
+      d: {
+        b: {
+          one: { t: 'b', i: 2, c: 'элемент' },
+          few: { t: 'b', i: 2, c: 'элемента' },
+          many: { t: 'b', i: 2, c: 'элементов' },
+          other: { t: 'b', i: 2, c: 'элемента' },
+        },
+        t: 'p',
+      },
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({ [jsxHash(source)]: target }),
+    });
+    await plugin.setLocale('ru');
+
+    expect(
+      await renderTemplate(
+        '<T><Plural :n="0" _0="None"><template #other><b>items</b></template></Plural></T>',
+        undefined,
+        plugin
+      )
+    ).toBe('<b>элементов</b>');
   });
 
   it('uses the same filtered inputs for a rich Plural hash', async () => {
