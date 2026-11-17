@@ -8,6 +8,7 @@ import {
 import { icuToMessage } from '@generaltranslation/icu/convert';
 import {
   parse,
+  printAST,
   TYPE,
   type MessageFormatElement,
 } from '@generaltranslation/icu/parser';
@@ -105,9 +106,12 @@ function rewriteDeclaredVariables(tree: MessageTree): MessageTree {
   });
 }
 
-/** Number arguments whose skeleton is `::percent` or `::%`, which the legacy runtime scaled by 100 like the `percent` style. */
-function percentSkeletonNames(icu: string): Set<string> {
-  const names = new Set<string>();
+const PERCENT_MARK = /^__gt_migrate_percent_\d+_(.+)$/;
+
+/** Renames each number argument written `::percent` or `::%`, which the legacy runtime scaled by 100 like the `percent` style, so the occurrence can be found in the tree. */
+function markPercentSkeletons(icu: string): string {
+  const ast = parse(icu);
+  let count = 0;
   const walk = (elements: MessageFormatElement[]) => {
     for (const element of elements) {
       if (
@@ -115,7 +119,7 @@ function percentSkeletonNames(icu: string): Set<string> {
         typeof element.style === 'object' &&
         element.style?.tokens.some((token) => PERCENT_STEMS.has(token.stem))
       ) {
-        names.add(element.value);
+        element.value = `__gt_migrate_percent_${count++}_${element.value}`;
       } else if (element.type === TYPE.plural || element.type === TYPE.select) {
         for (const option of Object.values(element.options)) {
           walk(option.value);
@@ -125,47 +129,56 @@ function percentSkeletonNames(icu: string): Set<string> {
       }
     }
   };
-  walk(parse(icu));
-  return names;
+  walk(ast);
+  return count ? printAST(ast) : icu;
 }
 
-function rewritePercentSkeletons(
-  tree: MessageTree,
-  names: Set<string>
-): MessageTree {
-  const rewrite = (branch: MessageTree) =>
-    rewritePercentSkeletons(branch, names);
+function unmarkPercentSkeletons(tree: MessageTree): MessageTree {
   return mapTree(tree, (node): MessageNode => {
     switch (node[1]) {
-      case 'number':
-        return names.has(node[0]) ? [node[0], 'number', 'percent'] : node;
+      case 'number': {
+        const original = PERCENT_MARK.exec(node[0])?.[1];
+        return original === undefined ? node : [original, 'number', 'percent'];
+      }
       case 'select':
-        return [node[0], 'select', mapBranches(node[2], rewrite)];
+        return [
+          node[0],
+          'select',
+          mapBranches(node[2], unmarkPercentSkeletons),
+        ];
       case 'plural':
       case 'selectordinal': {
-        const branches = mapBranches(node[2], rewrite);
+        const branches = mapBranches(node[2], unmarkPercentSkeletons);
         return node[3]
           ? [node[0], node[1], branches, node[3]]
           : [node[0], node[1], branches];
       }
       case 'tag':
-        return [node[0], 'tag', rewrite(node[2])];
+        return [node[0], 'tag', unmarkPercentSkeletons(node[2])];
       default:
         return node;
     }
   });
 }
 
+function unmarkFormats(formats: MessageFormats): MessageFormats {
+  return Object.fromEntries(
+    Object.entries(formats).map(([name, context]) => [
+      PERCENT_MARK.exec(name)?.[1] ?? name,
+      context,
+    ])
+  );
+}
+
 /** Converts a legacy `gt()`, `msg()` or dictionary ICU string, rewriting each declared variable to an argument. */
 export function legacyIcuToMessage(icu: string): ConversionResult {
   try {
-    const indexed = indexVars(icu);
-    const { tree, formats } = icuToMessage(indexed);
-    const percents = percentSkeletonNames(indexed);
-    const rewritten = rewriteDeclaredVariables(tree);
+    const { tree, formats } = icuToMessage(
+      markPercentSkeletons(indexVars(icu))
+    );
     return converted(
-      percents.size ? rewritePercentSkeletons(rewritten, percents) : rewritten,
-      formats
+      unmarkPercentSkeletons(rewriteDeclaredVariables(tree)),
+      unmarkFormats(formats)
     );
   } catch (error) {
     return { ok: false, reason: errorText(error) };

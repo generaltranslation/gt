@@ -890,6 +890,20 @@ describe('legacy plural and percent semantics', () => {
     ],
     ['{n, number, ::%}', [['n', 'number', 'percent']]],
     [
+      '{n, number} = {n, number, ::percent}',
+      [['n', 'number'], ' = ', ['n', 'number', 'percent']],
+    ],
+    [
+      "{n, plural, one {'{'#'}' {n, number, ::percent}} other {x}}",
+      [
+        [
+          'n',
+          'plural',
+          { one: ['{', 0, '} ', ['n', 'number', 'percent']], other: 'x' },
+        ],
+      ],
+    ],
+    [
       '{p, number, ::percent} {q, number, ::unit/percent}',
       [
         ['p', 'number', 'percent'],
