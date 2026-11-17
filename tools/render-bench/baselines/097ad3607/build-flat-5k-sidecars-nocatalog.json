@@ -1,0 +1,57 @@
+{
+  "kind": "build",
+  "sha": "05d0d7c79",
+  "date": "2026-11-17T21:08:04.616Z",
+  "machine": "Apple M4 Max, 16 cores, 128 GB",
+  "os": "darwin 24.6.0",
+  "node": "v24.13.0",
+  "packages": "097ad3607",
+  "app": "flat-5k",
+  "messages": 5050,
+  "locales": ["fr-CA", "de", "es"],
+  "name": "sidecars-nocatalog",
+  "variant": "sidecars",
+  "env": {
+    "GT_OMIT_ICU_PARSER": "1",
+    "GT_CHUNK_TRANSLATIONS": "true"
+  },
+  "compilerOptions": {},
+  "init": "config",
+  "builds": [
+    {
+      "target": "sidecars-nocatalog",
+      "outDir": "apps/flat-5k/dist/sidecars-nocatalog",
+      "runs": [
+        {
+          "wallMs": 844.021291,
+          "peakRssBytes": 604405760,
+          "peakFootprintBytes": 562088504,
+          "cpuSeconds": 1.5999999999999999
+        }
+      ],
+      "wallMs": {
+        "n": 1,
+        "median": 844.02,
+        "p25": 844.02,
+        "p75": 844.02,
+        "min": 844.02,
+        "max": 844.02
+      },
+      "peakRssBytes": {
+        "n": 1,
+        "median": 604405760,
+        "p25": 604405760,
+        "p75": 604405760,
+        "min": 604405760,
+        "max": 604405760
+      },
+      "files": 211,
+      "filesByKind": {
+        "js": 56,
+        "translations": 153,
+        "other": 2
+      },
+      "bytes": 1908631
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "kind": "build",
+  "sha": "4b7354550",
+  "date": "2026-11-17T21:25:35.347Z",
+  "machine": "Apple M4 Max, 16 cores, 128 GB",
+  "os": "darwin 24.6.0",
+  "node": "v24.13.0",
+  "packages": "24eae20c2",
+  "app": "flat-5k",
+  "messages": 5050,
+  "locales": ["fr-CA", "de", "es"],
+  "name": "sidecars-map-nocatalog",
+  "variant": "sidecars-map",
+  "env": {
+    "GT_OMIT_ICU_PARSER": "1",
+    "GT_CHUNK_TRANSLATIONS": "true",
+    "GT_CHUNK_TRANSLATIONS_NAMING": "map"
+  },
+  "compilerOptions": {},
+  "init": "config",
+  "builds": [
+    {
+      "target": "sidecars-map-nocatalog",
+      "outDir": "apps/flat-5k/dist/sidecars-map-nocatalog",
+      "runs": [
+        {
+          "wallMs": 832.359167,
+          "peakRssBytes": 597245952,
+          "peakFootprintBytes": 566822544,
+          "cpuSeconds": 1.5999999999999999
+        }
+      ],
+      "wallMs": {
+        "n": 1,
+        "median": 832.36,
+        "p25": 832.36,
+        "p75": 832.36,
+        "min": 832.36,
+        "max": 832.36
+      },
+      "peakRssBytes": {
+        "n": 1,
+        "median": 597245952,
+        "p25": 597245952,
+        "p75": 597245952,
+        "min": 597245952,
+        "max": 597245952
+      },
+      "files": 214,
+      "filesByKind": {
+        "js": 56,
+        "translations": 156,
+        "other": 2
+      },
+      "bytes": 1913536
+    }
+  ]
+}

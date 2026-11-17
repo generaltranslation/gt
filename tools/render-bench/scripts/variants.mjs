@@ -9,6 +9,18 @@ import { vite as gtCompilerRelease } from '@generaltranslation/compiler-release'
 export const variants = {
   // gt-react/unstable t with the compiler, which injects each hash.
   unstable: { generated: 'unstable', init: 'gt', compiler: gtCompiler },
+  // The same with a translation file per chunk and locale, which a route's
+  // import fetches with the route. The option is the prototype's (#2869):
+  // without its packages this is `unstable`.
+  sidecars: {
+    generated: 'unstable',
+    init: 'gt',
+    compiler: () =>
+      gtCompiler({
+        experimentalChunkTranslations: true,
+        files: { gt: { output: 'src/generated/unstable/_gt/[locale].json' } },
+      }),
+  },
   // Without the compiler, t hashes each message when it renders, as it does
   // in a Next.js app: gt-next's SWC plugin injects no hash for these.
   'unstable-nohash': { generated: 'unstable', init: 'gt' },

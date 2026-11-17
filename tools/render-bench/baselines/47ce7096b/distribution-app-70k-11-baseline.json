@@ -1,0 +1,136 @@
+{
+  "kind": "distribution",
+  "app": "app-70k-11",
+  "label": "baseline",
+  "dist": "apps/app-70k-11/dist/baseline",
+  "locale": "fr-CA",
+  "compression": "gzip, level 6, of compact JSON",
+  "catalog": {
+    "messages": 70000,
+    "bytes": 1557091
+  },
+  "chunks": {
+    "total": 1290,
+    "withMessages": 1285,
+    "messagesPerChunk": {
+      "n": 1285,
+      "median": 49,
+      "p95": 278,
+      "max": 590
+    },
+    "translationFileBytes": {
+      "n": 1285,
+      "median": 1422,
+      "p95": 7805,
+      "max": 15119
+    },
+    "translationFilesUnder1KiB": 138,
+    "translationBytesOfAllFiles": 2839032
+  },
+  "messages": {
+    "inChunks": 70000,
+    "inMoreThanOneChunk": 11200,
+    "inTwoChunks": 6262,
+    "inThreeToTenChunks": 4564,
+    "inElevenOrMoreChunks": 374,
+    "mostChunks": 274
+  },
+  "entry": {
+    "file": "assets/index-CTjjhFbs.js",
+    "module": "index.html",
+    "chunks": 4,
+    "messages": 330,
+    "bytes": 8943
+  },
+  "lazy": {
+    "chunks": 1187,
+    "byChunk": {
+      "chunksLoaded": {
+        "n": 1187,
+        "median": 100,
+        "p95": 100,
+        "max": 100
+      },
+      "translationFiles": {
+        "n": 1187,
+        "median": 100,
+        "p95": 100,
+        "max": 100
+      },
+      "messages": {
+        "n": 1187,
+        "median": 29447,
+        "p95": 29516,
+        "max": 29896
+      },
+      "bytes": {
+        "n": 1187,
+        "median": 817226,
+        "p95": 819301,
+        "max": 828765
+      }
+    },
+    "byModule": {
+      "messages": {
+        "n": 1187,
+        "median": 7159,
+        "p95": 8019,
+        "max": 8694
+      },
+      "bytes": {
+        "n": 1187,
+        "median": 167785,
+        "p95": 187749,
+        "max": 203359
+      },
+      "bytesOfAllFiles": 136196082
+    },
+    "visited": [
+      {
+        "route": "/r/0",
+        "file": "assets/r0-e8eyLrqT.js",
+        "module": "src/gt/routes/r0.jsx",
+        "byChunk": {
+          "chunks": 100,
+          "files": 100,
+          "messages": 29436,
+          "bytes": 816877
+        },
+        "byModule": {
+          "messages": 7260,
+          "bytes": 169872
+        }
+      },
+      {
+        "route": "/r/1",
+        "file": "assets/r1-Bso6WpJZ.js",
+        "module": "src/gt/routes/r1.jsx",
+        "byChunk": {
+          "chunks": 100,
+          "files": 100,
+          "messages": 29442,
+          "bytes": 817085
+        },
+        "byModule": {
+          "messages": 6805,
+          "bytes": 159227
+        }
+      },
+      {
+        "route": "/r/2",
+        "file": "assets/r2-BaffqwdK.js",
+        "module": "src/gt/routes/r2.jsx",
+        "byChunk": {
+          "chunks": 100,
+          "files": 100,
+          "messages": 29462,
+          "bytes": 817719
+        },
+        "byModule": {
+          "messages": 7686,
+          "bytes": 179988
+        }
+      }
+    ]
+  }
+}

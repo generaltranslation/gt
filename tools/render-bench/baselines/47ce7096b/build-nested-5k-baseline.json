@@ -1,0 +1,79 @@
+{
+  "kind": "build",
+  "sha": "47ce7096b",
+  "date": "2026-11-17T19:54:26.596Z",
+  "machine": "Apple M4 Max, 16 cores, 128 GB",
+  "os": "darwin 24.6.0",
+  "node": "v24.13.0",
+  "app": "nested-5k",
+  "messages": 5050,
+  "locales": ["fr-CA", "de", "es"],
+  "name": "baseline",
+  "variant": "baseline",
+  "env": {
+    "GT_OMIT_ICU_PARSER": "1"
+  },
+  "compilerOptions": {},
+  "init": "catalog",
+  "builds": [
+    {
+      "target": "baseline",
+      "outDir": "apps/nested-5k/dist/baseline",
+      "runs": [
+        {
+          "wallMs": 873.228917,
+          "peakRssBytes": 633028608,
+          "peakFootprintBytes": 585827936,
+          "cpuSeconds": 1.68
+        },
+        {
+          "wallMs": 835.5171670000001,
+          "peakRssBytes": 634339328,
+          "peakFootprintBytes": 589612904,
+          "cpuSeconds": 1.63
+        },
+        {
+          "wallMs": 826.9209999999998,
+          "peakRssBytes": 650985472,
+          "peakFootprintBytes": 606834696,
+          "cpuSeconds": 1.63
+        },
+        {
+          "wallMs": 799.9599170000001,
+          "peakRssBytes": 629309440,
+          "peakFootprintBytes": 585321040,
+          "cpuSeconds": 1.58
+        },
+        {
+          "wallMs": 797.1347079999996,
+          "peakRssBytes": 622313472,
+          "peakFootprintBytes": 578094640,
+          "cpuSeconds": 1.56
+        }
+      ],
+      "wallMs": {
+        "n": 5,
+        "median": 826.92,
+        "p25": 799.96,
+        "p75": 835.52,
+        "min": 797.13,
+        "max": 873.23
+      },
+      "peakRssBytes": {
+        "n": 5,
+        "median": 633028608,
+        "p25": 629309440,
+        "p75": 634339328,
+        "min": 622313472,
+        "max": 650985472
+      },
+      "files": 104,
+      "filesByKind": {
+        "js": 100,
+        "translations": 3,
+        "other": 1
+      },
+      "bytes": 1929314
+    }
+  ]
+}

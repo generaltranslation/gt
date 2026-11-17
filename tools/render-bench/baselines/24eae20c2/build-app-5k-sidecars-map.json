@@ -1,0 +1,82 @@
+{
+  "kind": "build",
+  "sha": "4b7354550",
+  "date": "2026-11-17T21:12:26.777Z",
+  "machine": "Apple M4 Max, 16 cores, 128 GB",
+  "os": "darwin 24.6.0",
+  "node": "v24.13.0",
+  "packages": "24eae20c2",
+  "app": "app-5k",
+  "messages": 5000,
+  "locales": ["fr-CA", "de", "es"],
+  "name": "sidecars-map",
+  "variant": "sidecars-map",
+  "env": {
+    "GT_OMIT_ICU_PARSER": "1",
+    "GT_CHUNK_TRANSLATIONS": "true",
+    "GT_CHUNK_TRANSLATIONS_NAMING": "map"
+  },
+  "compilerOptions": {},
+  "init": "catalog",
+  "builds": [
+    {
+      "target": "sidecars-map",
+      "outDir": "apps/app-5k/dist/sidecars-map",
+      "runs": [
+        {
+          "wallMs": 1117.068458,
+          "peakRssBytes": 728743936,
+          "peakFootprintBytes": 699673568,
+          "cpuSeconds": 2.1
+        },
+        {
+          "wallMs": 1121.728792,
+          "peakRssBytes": 722026496,
+          "peakFootprintBytes": 698248496,
+          "cpuSeconds": 2.05
+        },
+        {
+          "wallMs": 1134.0741660000003,
+          "peakRssBytes": 736165888,
+          "peakFootprintBytes": 695906040,
+          "cpuSeconds": 2.1
+        },
+        {
+          "wallMs": 1129.9422920000006,
+          "peakRssBytes": 745996288,
+          "peakFootprintBytes": 705112720,
+          "cpuSeconds": 2.1
+        },
+        {
+          "wallMs": 1128.0059159999992,
+          "peakRssBytes": 733921280,
+          "peakFootprintBytes": 701213544,
+          "cpuSeconds": 2.1
+        }
+      ],
+      "wallMs": {
+        "n": 5,
+        "median": 1128.01,
+        "p25": 1121.73,
+        "p75": 1129.94,
+        "min": 1117.07,
+        "max": 1134.07
+      },
+      "peakRssBytes": {
+        "n": 5,
+        "median": 733921280,
+        "p25": 728743936,
+        "p75": 736165888,
+        "min": 722026496,
+        "max": 745996288
+      },
+      "files": 385,
+      "filesByKind": {
+        "js": 98,
+        "translations": 285,
+        "other": 2
+      },
+      "bytes": 3207686
+    }
+  ]
+}

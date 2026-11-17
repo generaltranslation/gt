@@ -1,0 +1,81 @@
+{
+  "kind": "build",
+  "sha": "cdc913a50",
+  "date": "2026-11-17T22:55:32.903Z",
+  "machine": "Apple M4 Max, 16 cores, 128 GB",
+  "os": "darwin 24.6.0",
+  "node": "v24.13.0",
+  "packages": "dfbfd1c9f",
+  "app": "flat-5k",
+  "messages": 5050,
+  "locales": ["fr-CA", "de", "es"],
+  "name": "sidecars",
+  "variant": "sidecars",
+  "env": {
+    "GT_OMIT_ICU_PARSER": "1",
+    "GT_CHUNK_TRANSLATIONS": "true"
+  },
+  "compilerOptions": {},
+  "init": "catalog",
+  "builds": [
+    {
+      "target": "sidecars",
+      "outDir": "apps/flat-5k/dist/sidecars",
+      "runs": [
+        {
+          "wallMs": 858.333208,
+          "peakRssBytes": 606420992,
+          "peakFootprintBytes": 568200192,
+          "cpuSeconds": 1.63
+        },
+        {
+          "wallMs": 887.6629170000001,
+          "peakRssBytes": 598360064,
+          "peakFootprintBytes": 563251984,
+          "cpuSeconds": 1.67
+        },
+        {
+          "wallMs": 876.702875,
+          "peakRssBytes": 604946432,
+          "peakFootprintBytes": 559401528,
+          "cpuSeconds": 1.65
+        },
+        {
+          "wallMs": 861.9000419999998,
+          "peakRssBytes": 612171776,
+          "peakFootprintBytes": 568265176,
+          "cpuSeconds": 1.65
+        },
+        {
+          "wallMs": 856.4848750000001,
+          "peakRssBytes": 593592320,
+          "peakFootprintBytes": 557730168,
+          "cpuSeconds": 1.67
+        }
+      ],
+      "wallMs": {
+        "n": 5,
+        "median": 861.9,
+        "p25": 858.33,
+        "p75": 876.7,
+        "min": 856.48,
+        "max": 887.66
+      },
+      "peakRssBytes": {
+        "n": 5,
+        "median": 604946432,
+        "p25": 598360064,
+        "p75": 606420992,
+        "min": 593592320,
+        "max": 612171776
+      },
+      "files": 211,
+      "filesByKind": {
+        "js": 56,
+        "translations": 153,
+        "other": 2
+      },
+      "bytes": 1911756
+    }
+  ]
+}

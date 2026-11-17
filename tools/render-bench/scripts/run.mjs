@@ -9,6 +9,7 @@ import { parseArgs } from 'node:util';
 import { chromium } from 'playwright-core';
 import { preview } from 'vite';
 import { generate, KINDS, ROUTE_SIZE } from './generate.mjs';
+import { summarize } from './load/stats.mjs';
 import { median, report } from './report.mjs';
 import { variants as allVariants } from './variants.mjs';
 
@@ -189,6 +190,9 @@ for (const task of tasks) {
       : {
           mount: medians(task, (sample) => sample.mount),
           update: medians(task, (sample) => sample.update),
+          // The medians again with their quartiles and extremes.
+          mountSpread: summarize(task.samples.map((sample) => sample.mount)),
+          updateSpread: summarize(task.samples.map((sample) => sample.update)),
         };
 }
 
