@@ -20,7 +20,10 @@ const createModuleCollisionDiagnostic = (file: string) =>
     why: 'it is not a generated message module',
     fix: 'Set files.gt.inlineTranslations.modulesDir to a directory used only for message modules',
   });
-const TEMP_FILE_MARKER = `${MODULE_EXTENSION}.tmp-`;
+// Matches only the temp names writeFileIfChanged creates
+const TEMP_FILE_PATTERN = new RegExp(
+  `^[0-9a-z_]+\\${MODULE_EXTENSION}\\.tmp-\\d+-[0-9a-z]+$`
+);
 const STALE_TEMP_FILE_MS = 60 * 60 * 1000;
 // Accepts every computed hash (16 lowercase hex characters), stays unique on case-insensitive filesystems, and is a valid identifier suffix.
 const MODULE_HASH_PATTERN = /^[0-9a-z_]+$/;
@@ -142,9 +145,13 @@ function removeStaleModules(
   let removed = 0;
   for (const entry of fs.readdirSync(dir)) {
     const file = path.join(dir, entry);
-    if (entry.includes(TEMP_FILE_MARKER)) {
+    if (TEMP_FILE_PATTERN.test(entry)) {
       const stat = fs.statSync(file, { throwIfNoEntry: false });
-      if (stat && Date.now() - stat.mtimeMs >= STALE_TEMP_FILE_MS) {
+      if (
+        stat &&
+        Date.now() - stat.mtimeMs >= STALE_TEMP_FILE_MS &&
+        isGeneratedFile(file)
+      ) {
         fs.rmSync(file, { force: true });
       }
       continue;
@@ -161,6 +168,16 @@ function removeStaleModules(
     removed++;
   }
   return removed;
+}
+
+function isGeneratedFile(file: string): boolean {
+  try {
+    return fs
+      .readFileSync(file, 'utf8')
+      .startsWith(INLINE_TRANSLATIONS_MODULE_HEADER);
+  } catch {
+    return false;
+  }
 }
 
 // Only a missing file reads as undefined, so an unreadable file is never treated as safe to replace

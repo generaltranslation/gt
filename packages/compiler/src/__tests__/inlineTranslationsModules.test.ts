@@ -195,8 +195,8 @@ describe('writeInlineTranslationsModules', () => {
     fs.mkdirSync(dir, { recursive: true });
     const fresh = path.join(dir, 'aaa.js.tmp-1-x');
     const stale = path.join(dir, 'bbb.js.tmp-2-y');
-    fs.writeFileSync(fresh, '');
-    fs.writeFileSync(stale, '');
+    fs.writeFileSync(fresh, INLINE_TRANSLATIONS_MODULE_HEADER);
+    fs.writeFileSync(stale, INLINE_TRANSLATIONS_MODULE_HEADER);
     const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
     fs.utimesSync(stale, old, old);
 
@@ -204,5 +204,24 @@ describe('writeInlineTranslationsModules', () => {
 
     expect(fs.existsSync(fresh)).toBe(true);
     expect(fs.existsSync(stale)).toBe(false);
+  });
+
+  it('keeps old files that only look like its temp files', () => {
+    const dir = createDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const backup = path.join(dir, 'index.js.tmp-backup');
+    const userFile = path.join(dir, 'index.js.tmp-1-x');
+    fs.writeFileSync(backup, INLINE_TRANSLATIONS_MODULE_HEADER);
+    fs.writeFileSync(userFile, 'export {};\n');
+    const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    fs.utimesSync(backup, old, old);
+    fs.utimesSync(userFile, old, old);
+
+    writeInlineTranslationsModules(dir, new Map());
+
+    expect(fs.readdirSync(dir).sort()).toEqual([
+      'index.js.tmp-1-x',
+      'index.js.tmp-backup',
+    ]);
   });
 });
