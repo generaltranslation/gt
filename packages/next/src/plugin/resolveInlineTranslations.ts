@@ -22,18 +22,13 @@ type CompilerFileHelpers = Pick<
   | 'writeInlineTranslationsModules'
 >;
 
-const SHARD_FORMAT_VERSION = '1';
+const SHARD_FORMAT_VERSION = '2';
 const SHARDS_DIR = path.join('cache', 'gt', 'inline');
 const TEMP_PREFIX = '.tmp-';
 const STALE_TEMP_MS = 60 * 60 * 1000;
 const FALLBACK_SHARD_KEY = '_';
-// Every key is written for every locale, so the plugin can treat a missing shard as an error
-const SHARD_KEYS = [
-  ...Array.from({ length: 256 }, (_, byte) =>
-    byte.toString(16).padStart(2, '0')
-  ),
-  FALLBACK_SHARD_KEY,
-];
+// Every key is written, so the plugin can treat a missing shard as an error
+const SHARD_KEYS = [...'0123456789abcdef'.split(''), FALLBACK_SHARD_KEY];
 
 /**
  * Plugin options pointing the SWC plugin at the shard files holding the
@@ -53,16 +48,19 @@ export type ResolvedMessageModules = {
   dir: string;
   /** Import specifier prefix of `<importDir>/<hash>.js`, aliased to `dir` */
   importDir: string;
+  /** Hashes with a module, so the plugin reads none of them */
+  hashes: string[];
   /** Why the modules could not be written; the SWC plugin then fails the build */
   writeError?: string;
 };
 
 /**
- * Shard key for a translation hash: its first two lowercase hex characters,
- * or `_` otherwise. Must match the SWC plugin's `shard_key`.
+ * Shard key for a translation hash: its first lowercase hex character, or `_`
+ * otherwise. Must match the SWC plugin's `shard_key`, which reads at most one
+ * file per key in each module.
  */
 export function getShardKey(hash: string): string {
-  return /^[0-9a-f]{2}/.test(hash) ? hash.slice(0, 2) : FALLBACK_SHARD_KEY;
+  return /^[0-9a-f]/.test(hash) ? hash[0] : FALLBACK_SHARD_KEY;
 }
 
 /**
@@ -157,6 +155,7 @@ function resolveMessageModules(
   const resolvedModules: ResolvedMessageModules = {
     dir: dir.split(path.sep).join('/'),
     importDir: MESSAGE_MODULES_ALIAS,
+    hashes: Array.from(modules.keys()).sort(),
     ...(writeError && { writeError }),
   };
   // Transformed files only depend on which hashes have a module, so edited
@@ -164,7 +163,6 @@ function resolveMessageModules(
   const contentHash = crypto
     .createHash('sha256')
     .update(`${SHARD_FORMAT_VERSION}\0${JSON.stringify(resolvedModules)}`)
-    .update(Array.from(modules.keys()).sort().join('\0'))
     .digest('hex')
     .slice(0, 16);
   return {
@@ -196,16 +194,21 @@ function writeShards(
   fs.mkdirSync(shardsRoot, { recursive: true });
   const temp = fs.mkdtempSync(path.join(shardsRoot, TEMP_PREFIX));
   try {
+    const shards: Record<
+      string,
+      Record<string, Record<string, unknown>>
+    > = Object.create(null);
     for (const { locale, filePath } of files) {
-      const localeDir = path.join(temp, locale);
-      fs.mkdirSync(localeDir);
-      const shards = groupByShard(readTranslationsFile(filePath) ?? {});
-      for (const key of SHARD_KEYS) {
-        fs.writeFileSync(
-          path.join(localeDir, `${key}.json`),
-          JSON.stringify(shards[key] ?? {})
-        );
+      const translations = readTranslationsFile(filePath) ?? {};
+      for (const [key, entries] of Object.entries(groupByShard(translations))) {
+        (shards[key] ??= Object.create(null))[locale] = entries;
       }
+    }
+    for (const key of SHARD_KEYS) {
+      fs.writeFileSync(
+        path.join(temp, `${key}.json`),
+        JSON.stringify(shards[key] ?? {})
+      );
     }
     try {
       fs.renameSync(temp, target);

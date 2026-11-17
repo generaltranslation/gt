@@ -7,7 +7,6 @@
 #![allow(clippy::expect_used)]
 
 use crate::config::PluginConfig;
-use crate::inline_modules::MODULE_HEADER;
 use crate::inline_shards::shard_key;
 use crate::transform_program_in;
 use crate::visitor::unstable_messages::hash_unstable_message;
@@ -57,32 +56,26 @@ const SHARD_DIR: &str = ".next/cache/gt/inline/test";
 /// Write `{ locales, translations }` as shards the way gt-next does and return
 /// the plugin option pointing at them
 fn write_shards(cwd: &Path, inline_translations: &serde_json::Value) -> serde_json::Value {
-  let mut shards: BTreeMap<(String, String), serde_json::Map<String, serde_json::Value>> = BTreeMap::new();
+  let mut shards: BTreeMap<String, BTreeMap<String, serde_json::Map<String, serde_json::Value>>> = BTreeMap::new();
   if let Some(locales) = inline_translations["translations"].as_object() {
     for (locale, entries) in locales {
       for (hash, value) in entries.as_object().expect("translations object") {
         shards
-          .entry((locale.clone(), shard_key(hash).to_string()))
+          .entry(shard_key(hash).to_string())
+          .or_default()
+          .entry(locale.clone())
           .or_default()
           .insert(hash.clone(), value.clone());
       }
     }
   }
-  // Like gt-next, write every shard key for every locale, empty or not
-  let keys = (0..=255u8).map(|byte| format!("{byte:02x}")).chain(std::iter::once("_".to_string()));
-  let locales: Vec<String> = inline_translations["locales"]
-    .as_array()
-    .map(|locales| locales.iter().filter_map(|locale| locale.as_str().map(String::from)).collect())
-    .unwrap_or_default();
-  for key in keys {
-    for locale in &locales {
-      let dir = cwd.join(SHARD_DIR).join(locale);
-      std::fs::create_dir_all(&dir).expect("shard dir");
-      let entries = shards.remove(&(locale.clone(), key.clone())).unwrap_or_default();
-      std::fs::write(dir.join(format!("{key}.json")), serde_json::to_vec(&entries).expect("json")).expect("shard");
-    }
+  // Like gt-next, write every shard key, empty or not
+  let dir = cwd.join(SHARD_DIR);
+  std::fs::create_dir_all(&dir).expect("shard dir");
+  for key in "0123456789abcdef_".chars().map(String::from) {
+    let entries = shards.remove(&key).unwrap_or_default();
+    std::fs::write(dir.join(format!("{key}.json")), serde_json::to_vec(&entries).expect("json")).expect("shard");
   }
-  std::fs::create_dir_all(cwd.join(SHARD_DIR)).expect("shard dir");
   serde_json::json!({
     "locales": inline_translations["locales"],
     "dir": SHARD_DIR,
@@ -712,7 +705,7 @@ fn fails_the_build_when_a_shard_is_unparsable() {
     &cwd.0,
     &translations(&["fr"], serde_json::json!({ "fr": { HELLO_WORLD: "Bonjour le monde" } })),
   );
-  std::fs::write(cwd.0.join(SHARD_DIR).join("fr").join(format!("{}.json", shard_key(HELLO_WORLD))), "{")
+  std::fs::write(cwd.0.join(SHARD_DIR).join(format!("{}.json", shard_key(HELLO_WORLD))), "{")
     .expect("corrupt shard");
   transform_with_option(USEGT_CODE, option, &cwd.0);
 }
@@ -725,7 +718,7 @@ fn fails_the_build_when_a_shard_is_missing() {
     &cwd.0,
     &translations(&["fr"], serde_json::json!({ "fr": { HELLO_WORLD: "Bonjour le monde" } })),
   );
-  std::fs::remove_file(cwd.0.join(SHARD_DIR).join("fr").join(format!("{}.json", shard_key(HELLO_WORLD))))
+  std::fs::remove_file(cwd.0.join(SHARD_DIR).join(format!("{}.json", shard_key(HELLO_WORLD))))
     .expect("remove shard");
   transform_with_option(USEGT_CODE, option, &cwd.0);
 }
@@ -749,29 +742,44 @@ fn reads_hashes_from_different_shards() {
   assert!(output.contains(r#"locale === "fr" ? "Bonjour""#), "{output}");
 }
 
+#[test]
+fn embeds_every_shard_and_locale_in_one_module() {
+  let locales = ["fr", "es", "de", "ja", "ko", "it", "pt", "nl", "sv", "pl"];
+  let hashes: Vec<String> = (0..=255u8).map(|byte| format!("{byte:02x}hash")).chain(["custom".into()]).collect();
+  let code = std::iter::once("import { T } from 'gt-next';".to_string())
+    .chain(hashes.iter().map(|hash| format!(r#"export const t{hash} = <T _hash="{hash}">Hello</T>;"#)))
+    .collect::<Vec<_>>()
+    .join("\n");
+  let entries: serde_json::Map<String, serde_json::Value> = locales
+    .iter()
+    .map(|locale| {
+      let messages = hashes.iter().map(|hash| (hash.clone(), format!("{locale} {hash}").into())).collect();
+      (locale.to_string(), serde_json::Value::Object(messages))
+    })
+    .collect();
+  let output = transform(&code, translations(&locales, serde_json::Value::Object(entries)));
+  for hash in &hashes {
+    for locale in locales {
+      assert!(output.contains(&format!(r#"locale === "{locale}" ? "{locale} {hash}""#)), "{locale} {hash}");
+    }
+  }
+}
+
 // ===== message modules ===== //
 
 const MODULES_DIR: &str = ".gt/messages";
 const MODULES_IMPORT_DIR: &str = "gt-next/internal/_inline-messages";
 
-/// Write an (unread) module for each hash and transform `code` in modules mode
+/// Transform `code` in modules mode, with a module for each of `hashes`
 fn transform_with_modules(code: &str, hashes: &[&str]) -> String {
   let cwd = TempCwd::new();
-  let dir = cwd.0.join(MODULES_DIR);
-  std::fs::create_dir_all(&dir).expect("modules dir");
-  for hash in hashes {
-    std::fs::write(
-      dir.join(format!("{hash}.js")),
-      format!("{MODULE_HEADER}\nexport default () => undefined;\n"),
-    )
-    .expect("module");
-  }
+  std::fs::create_dir_all(cwd.0.join(MODULES_DIR)).expect("modules dir");
   transform_with_option(
     code,
     serde_json::json!({
       "locales": ["fr"],
       "contentHash": "test",
-      "modules": { "dir": MODULES_DIR, "importDir": MODULES_IMPORT_DIR },
+      "modules": { "dir": MODULES_DIR, "importDir": MODULES_IMPORT_DIR, "hashes": hashes },
     }),
     &cwd.0,
   )
@@ -833,24 +841,6 @@ fn skips_call_sites_without_a_message_module() {
   assert!(output.contains(&module_import(HELLO)), "{output}");
   assert!(output.contains("gt`Hello world`"), "{output}");
   assert_eq!(output.matches("__gt_inline_").count(), 2, "{output}");
-}
-
-#[test]
-fn skips_files_that_are_not_generated_modules() {
-  let cwd = TempCwd::new();
-  let dir = cwd.0.join(MODULES_DIR);
-  std::fs::create_dir_all(&dir).expect("modules dir");
-  std::fs::write(dir.join(format!("{HELLO_WORLD}.js")), "export default {};\n").expect("file");
-  let output = transform_with_option(
-    USEGT_CODE,
-    serde_json::json!({
-      "locales": ["fr"],
-      "contentHash": "test",
-      "modules": { "dir": MODULES_DIR, "importDir": MODULES_IMPORT_DIR },
-    }),
-    &cwd.0,
-  );
-  assert!(!output.contains("__gt_inline_"), "{output}");
 }
 
 #[test]

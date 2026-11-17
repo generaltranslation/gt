@@ -1,7 +1,7 @@
 use crate::inline_source::InlineSource;
 use crate::logging::LogLevel;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Translations to embed for one locale, keyed by translation hash
 pub type LocaleTranslations = HashMap<String, serde_json::Value>;
@@ -31,11 +31,13 @@ pub struct InlineTranslationsConfig {
 #[derive(Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct InlineModulesConfig {
-  /// Module directory, relative to the working directory, to check which
-  /// hashes have a module
+  /// Module directory, relative to the working directory
   pub dir: String,
   /// Import specifier prefix for the modules: `<importDir>/<hash>.js`
   pub import_dir: String,
+  /// Hashes gt-next wrote a module for
+  #[serde(default)]
+  pub hashes: HashSet<String>,
   /// Why gt-next could not write the modules, which may be missing or stale
   #[serde(default)]
   pub write_error: Option<String>,

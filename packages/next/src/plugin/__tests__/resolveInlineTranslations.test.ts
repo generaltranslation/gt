@@ -22,9 +22,9 @@ function writeLocale(locale: string, translations: Record<string, unknown>) {
   );
 }
 
-function readShard(dir: string, locale: string, key: string) {
+function readShard(dir: string, key: string) {
   return JSON.parse(
-    fs.readFileSync(path.join(cwd, dir, locale, `${key}.json`), 'utf8')
+    fs.readFileSync(path.join(cwd, dir, `${key}.json`), 'utf8')
   );
 }
 
@@ -43,12 +43,12 @@ afterEach(() => {
 });
 
 describe('getShardKey', () => {
-  it('uses the first two lowercase hex characters', () => {
-    expect(getShardKey('05a87bce151d258b')).toBe('05');
+  it('uses the first lowercase hex character', () => {
+    expect(getShardKey('05a87bce151d258b')).toBe('0');
   });
 
   it('falls back for other hashes', () => {
-    for (const hash of ['', 'a', 'AB12', 'my-hash', '../x', 'éa']) {
+    for (const hash of ['', 'AB12', 'my-hash', '../x', 'éa']) {
       expect(getShardKey(hash)).toBe('_');
     }
   });
@@ -60,7 +60,7 @@ describe('resolveInlineTranslations', () => {
       '05aa': 'Bonjour',
       '05bb': 'Salut',
       ff00: 'Au revoir',
-      custom: 'Perso',
+      'my-hash': 'Perso',
     });
     writeLocale('es', { '05aa': 'Hola' });
 
@@ -68,23 +68,23 @@ describe('resolveInlineTranslations', () => {
 
     expect(result).toMatchObject({ locales: ['fr', 'es'] });
     expect(result!.dir).toBe(`.next/cache/gt/inline/${result!.contentHash}`);
-    expect(readShard(result!.dir, 'fr', '05')).toEqual({
-      '05aa': 'Bonjour',
-      '05bb': 'Salut',
+    expect(readShard(result!.dir, '0')).toEqual({
+      fr: { '05aa': 'Bonjour', '05bb': 'Salut' },
+      es: { '05aa': 'Hola' },
     });
-    expect(readShard(result!.dir, 'fr', 'ff')).toEqual({ ff00: 'Au revoir' });
-    expect(readShard(result!.dir, 'fr', '_')).toEqual({ custom: 'Perso' });
-    expect(readShard(result!.dir, 'es', '05')).toEqual({ '05aa': 'Hola' });
-    expect(readShard(result!.dir, 'es', 'ff')).toEqual({});
+    expect(readShard(result!.dir, 'f')).toEqual({ fr: { ff00: 'Au revoir' } });
+    expect(readShard(result!.dir, '_')).toEqual({ fr: { 'my-hash': 'Perso' } });
+    expect(readShard(result!.dir, '1')).toEqual({});
   });
 
-  it('writes every shard key for every locale', () => {
+  it('writes every shard key once for all locales', () => {
     writeLocale('fr', { '05aa': 'Bonjour' });
+    writeLocale('es', { '05aa': 'Hola' });
     const result = resolveInlineTranslations(gtFiles)!;
-    const keys = fs.readdirSync(path.join(cwd, result.dir, 'fr'));
-    expect(keys).toHaveLength(257);
-    expect(keys).toContain('00.json');
-    expect(keys).toContain('ff.json');
+    const keys = fs.readdirSync(path.join(cwd, result.dir));
+    expect(keys).toHaveLength(17);
+    expect(keys).toContain('0.json');
+    expect(keys).toContain('f.json');
     expect(keys).toContain('_.json');
   });
 
@@ -95,15 +95,15 @@ describe('resolveInlineTranslations', () => {
       inlineTranslations: { locales: ['fr', 'fr'] },
     })!;
     expect(result.locales).toEqual(['fr']);
-    expect(readShard(result.dir, 'fr', '05')).toEqual({ '05aa': 'Bonjour' });
+    expect(readShard(result.dir, '0')).toEqual({ fr: { '05aa': 'Bonjour' } });
   });
 
   it('keeps a __proto__ hash', () => {
     writeLocale('fr', JSON.parse('{"__proto__": "Perso"}'));
     const result = resolveInlineTranslations(gtFiles)!;
-    expect(
-      fs.readFileSync(path.join(cwd, result.dir, 'fr', '_.json'), 'utf8')
-    ).toBe('{"__proto__":"Perso"}');
+    expect(fs.readFileSync(path.join(cwd, result.dir, '_.json'), 'utf8')).toBe(
+      '{"fr":{"__proto__":"Perso"}}'
+    );
   });
 
   it('warns and still returns the options when shards cannot be written', () => {
@@ -132,7 +132,7 @@ describe('resolveInlineTranslations', () => {
   it('reuses complete shards for unchanged translations', () => {
     writeLocale('fr', { '05aa': 'Bonjour' });
     const first = resolveInlineTranslations(gtFiles)!;
-    const marker = path.join(cwd, first.dir, 'fr', 'marker');
+    const marker = path.join(cwd, first.dir, 'marker');
     fs.writeFileSync(marker, '');
 
     const second = resolveInlineTranslations(gtFiles)!;
@@ -149,7 +149,7 @@ describe('resolveInlineTranslations', () => {
     const second = resolveInlineTranslations(gtFiles)!;
 
     expect(second.contentHash).not.toBe(first.contentHash);
-    expect(readShard(second.dir, 'fr', '05')).toEqual({ '05aa': 'Bonjour !' });
+    expect(readShard(second.dir, '0')).toEqual({ fr: { '05aa': 'Bonjour !' } });
     expect(fs.existsSync(path.join(cwd, first.dir))).toBe(false);
   });
 
@@ -206,6 +206,7 @@ describe('resolveInlineTranslations with message modules', () => {
       modules: {
         dir: '.gt/messages',
         importDir: 'gt-next/internal/_inline-messages',
+        hashes: ['05aa', 'ff00'],
       },
     });
     expect(result.dir).toBeUndefined();
@@ -283,6 +284,7 @@ describe('resolveInlineTranslations with message modules', () => {
     expect(result.modules).toEqual({
       dir: '.gt/messages',
       importDir: 'gt-next/internal/_inline-messages',
+      hashes: ['05aa'],
     });
     expect(fs.readdirSync(path.join(cwd, '.gt/messages'))).toEqual(['05aa.js']);
   });

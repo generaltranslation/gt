@@ -1,22 +1,26 @@
 //! Experimental: read embedded translations from the shard files gt-next
-//! writes before the build, `<dir>/<locale>/<shard key>.json`, loading only
-//! the shards for the hashes a module uses. gt-next writes every shard key for
-//! every locale, so an unreadable shard means a broken build and fails it.
+//! writes before the build, `<dir>/<shard key>.json` holding every embedded
+//! locale's translations for the hashes with that key, loading only the shards
+//! for the hashes a module uses. gt-next writes every shard key, so an
+//! unreadable shard means a broken build and fails it.
 
 use crate::config::{InlineTranslationsConfig, LocaleTranslations};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 /// Mount point of the process working directory inside SWC's WASI sandbox.
 pub const PLUGIN_CWD: &str = "/cwd";
 
-const SHARD_KEY_LEN: usize = 2;
+// The plugin runner of Next.js < 16.4 hangs the build once a module makes
+// about 64 file reads, so a module reads at most 17 shards.
+const SHARD_KEY_LEN: usize = 1;
 const FALLBACK_SHARD_KEY: &str = "_";
 
-/// Shard key for a hash: its first two lowercase hex characters, or `_` for
-/// hashes that do not start with them. Must match gt-next's `getShardKey`.
+/// Shard key for a hash: its first lowercase hex character, or `_` for hashes
+/// that do not start with one. Must match gt-next's `getShardKey`.
 pub fn shard_key(hash: &str) -> &str {
   match hash.get(..SHARD_KEY_LEN) {
     Some(prefix) if prefix.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')) => prefix,
@@ -54,22 +58,31 @@ impl ShardedTranslations {
     if let Some(table) = self.cache.borrow().get(key) {
       return table.clone();
     }
+    let mut shard = self.read_shard(key);
     let table: Rc<InlineTable> = Rc::new(
       self
         .locales
         .iter()
-        .map(|locale| (locale.clone(), self.read_shard(locale, key)))
+        .map(|locale| (locale.clone(), shard.remove(locale).unwrap_or_default()))
         .collect(),
     );
     self.cache.borrow_mut().insert(key.to_string(), table.clone());
     table
   }
 
-  fn read_shard(&self, locale: &str, key: &str) -> LocaleTranslations {
-    let path = self.root.join(locale).join(format!("{key}.json"));
-    let bytes = std::fs::read(&path).unwrap_or_else(|error| fail(&path, &error.to_string()));
+  fn read_shard(&self, key: &str) -> HashMap<String, LocaleTranslations> {
+    let path = self.root.join(format!("{key}.json"));
+    let bytes = read_file(&path).unwrap_or_else(|error| fail(&path, &error.to_string()));
     serde_json::from_slice(&bytes).unwrap_or_else(|error| fail(&path, &error.to_string()))
   }
+}
+
+/// Reads a file without the extra read `std::fs::read` makes to find its end
+fn read_file(path: &Path) -> std::io::Result<Vec<u8>> {
+  let mut file = std::fs::File::open(path)?;
+  let mut bytes = vec![0; usize::try_from(file.metadata()?.len()).unwrap_or_default()];
+  file.read_exact(&mut bytes)?;
+  Ok(bytes)
 }
 
 fn fail(path: &Path, reason: &str) -> ! {
@@ -82,20 +95,30 @@ fn fail(path: &Path, reason: &str) -> ! {
 #[cfg(test)]
 mod tests {
   use super::shard_key;
+  use std::collections::HashSet;
 
   #[test]
-  fn uses_the_first_two_hex_characters() {
-    assert_eq!(shard_key("05a87bce151d258b"), "05");
-    assert_eq!(shard_key("ff"), "ff");
+  fn uses_the_first_hex_character() {
+    assert_eq!(shard_key("05a87bce151d258b"), "0");
+    assert_eq!(shard_key("f"), "f");
   }
 
   #[test]
   fn falls_back_for_other_hashes() {
     assert_eq!(shard_key(""), "_");
-    assert_eq!(shard_key("a"), "_");
     assert_eq!(shard_key("AB12"), "_");
     assert_eq!(shard_key("my-hash"), "_");
     assert_eq!(shard_key("../x"), "_");
     assert_eq!(shard_key("éa"), "_");
+  }
+
+  #[test]
+  fn has_seventeen_keys() {
+    let hashes: Vec<String> = (0..=u16::MAX)
+      .map(|value| format!("{value:04x}"))
+      .chain(["", "AB12", "my-hash"].map(String::from))
+      .collect();
+    let keys: HashSet<&str> = hashes.iter().map(|hash| shard_key(hash)).collect();
+    assert_eq!(keys.len(), 17);
   }
 }
