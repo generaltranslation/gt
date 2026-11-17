@@ -7,6 +7,7 @@
 #![allow(clippy::expect_used)]
 
 use crate::config::PluginConfig;
+use crate::inline_modules::MODULE_HEADER;
 use crate::inline_shards::shard_key;
 use crate::transform_program_in;
 use crate::visitor::unstable_messages::hash_unstable_message;
@@ -747,7 +748,11 @@ fn transform_with_modules(code: &str, hashes: &[&str]) -> String {
   let dir = cwd.0.join(MODULES_DIR);
   std::fs::create_dir_all(&dir).expect("modules dir");
   for hash in hashes {
-    std::fs::write(dir.join(format!("{hash}.js")), "export default () => undefined;").expect("module");
+    std::fs::write(
+      dir.join(format!("{hash}.js")),
+      format!("{MODULE_HEADER}\nexport default () => undefined;\n"),
+    )
+    .expect("module");
   }
   transform_with_option(
     code,
@@ -816,6 +821,24 @@ fn skips_call_sites_without_a_message_module() {
   assert!(output.contains(&module_import(HELLO)), "{output}");
   assert!(output.contains("gt`Hello world`"), "{output}");
   assert_eq!(output.matches("__gt_inline_").count(), 2, "{output}");
+}
+
+#[test]
+fn skips_files_that_are_not_generated_modules() {
+  let cwd = TempCwd::new();
+  let dir = cwd.0.join(MODULES_DIR);
+  std::fs::create_dir_all(&dir).expect("modules dir");
+  std::fs::write(dir.join(format!("{HELLO_WORLD}.js")), "export default {};\n").expect("file");
+  let output = transform_with_option(
+    USEGT_CODE,
+    serde_json::json!({
+      "locales": ["fr"],
+      "contentHash": "test",
+      "modules": { "dir": MODULES_DIR, "importDir": MODULES_IMPORT_DIR },
+    }),
+    &cwd.0,
+  );
+  assert!(!output.contains("__gt_inline_"), "{output}");
 }
 
 #[test]
