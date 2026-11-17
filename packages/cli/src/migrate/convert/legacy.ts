@@ -169,7 +169,7 @@ function unmarkFormats(
   formats: MessageFormats
 ): MessageFormats {
   const contexts = new Map<string, string>();
-  const merged: Record<string, MessageFormats[string]> = {};
+  const merged = new Map<string, MessageFormats[string]>();
   forEachPlaceholder(markedTree, (node) => {
     if (node[1] !== 'number' && node[1] !== 'date' && node[1] !== 'time') {
       return;
@@ -184,9 +184,9 @@ function unmarkFormats(
       );
     }
     contexts.set(original, key);
-    if (context) merged[original] = context;
+    if (context) merged.set(original, context);
   });
-  return merged;
+  return Object.fromEntries(merged);
 }
 
 /** Converts a legacy `gt()`, `msg()` or dictionary ICU string, rewriting each declared variable to an argument. */

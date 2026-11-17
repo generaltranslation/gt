@@ -95,17 +95,17 @@ export function fillTranslationBranches(
       const source = sourceKeys.get(branchKey(node));
       if (!has(branches, 'other')) return [node[0], node[1], branches];
       if (node[1] === 'select') {
+        const filled = Object.entries(branches).filter(([key]) => {
+          if (!source || source.has(key)) return true;
+          counts.dropped++;
+          return false;
+        });
         for (const key of source ?? []) {
           if (has(branches, key)) continue;
-          branches[key] = branches.other;
+          filled.push([key, branches.other]);
           counts.keys++;
         }
-        for (const key of Object.keys(branches)) {
-          if (!source || source.has(key)) continue;
-          delete branches[key];
-          counts.dropped++;
-        }
-        return [node[0], 'select', branches];
+        return [node[0], 'select', Object.fromEntries(filled)];
       }
       const offset = node[3] ?? 0;
       const rules = rulesFor(node[1] === 'plural' ? 'cardinal' : 'ordinal');

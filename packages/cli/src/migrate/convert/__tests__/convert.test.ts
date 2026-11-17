@@ -894,6 +894,21 @@ describe('legacy plural and percent semantics', () => {
     });
   });
 
+  it('renames a variable named __proto__', () => {
+    const map = alphaRenameMap(['Hi ', ['__proto__']], ['Hi ', ['name']]);
+    expect(map && Object.entries(map)).toEqual([['__proto__', 'name']]);
+  });
+
+  it('keeps the formats of a variable named __proto__', () => {
+    const result = legacyIcuToMessage(
+      '{__proto__, number, ::.00} ({p, number, ::percent})'
+    );
+    expect(result.ok && Object.keys(result.formats)).toEqual(['__proto__']);
+    expect(result.ok && Object.getPrototypeOf(result.formats)).toBe(
+      Object.prototype
+    );
+  });
+
   it('keeps one variable formatted alike across percent occurrences', () => {
     expect(
       legacyIcuToMessage('{n, number, ::.0} ({n, number, ::percent .0})')

@@ -153,11 +153,11 @@ export function alphaRenameMap(
   const from = treeShape(fromTree);
   const to = treeShape(toTree);
   if (from.shape !== to.shape) return undefined;
-  const map: RenameMap = {};
-  from.variables.forEach((name, index) => {
-    if (name !== to.variables[index]) map[name] = to.variables[index];
-  });
-  return map;
+  return Object.fromEntries(
+    from.variables
+      .map((name, index) => [name, to.variables[index]])
+      .filter(([name, target]) => name !== target)
+  );
 }
 
 function renamed(name: string, map: RenameMap): string {
