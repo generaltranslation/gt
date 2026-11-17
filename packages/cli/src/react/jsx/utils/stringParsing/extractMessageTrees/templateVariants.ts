@@ -1,10 +1,12 @@
 import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import type {
-  TemplateBranch,
-  BranchingKind,
-  TemplateFragment,
-  TemplateHole,
+import {
+  FALLBACK_BRANCH_KEY,
+  PLURAL_CATEGORIES,
+  type TemplateBranch,
+  type BranchingKind,
+  type TemplateFragment,
+  type TemplateHole,
 } from '@generaltranslation/icu/internal';
 import {
   GT_LIBRARIES,
@@ -21,7 +23,11 @@ import {
   getVariableName,
   skipProtoSetter,
 } from './staticValues.js';
-import { assertPlainValue, deriveVariants } from './typedValues.js';
+import {
+  assertPlainValue,
+  assertSelectCovered,
+  deriveVariants,
+} from './typedValues.js';
 import type { TreeContext } from './types.js';
 
 // The compiler mirrors this walker without derive() in
@@ -177,10 +183,32 @@ function branchHoleVariants(
   const branchLists: TemplateBranch[][] = [];
   for (const property of branchesArg.get('properties')) {
     if (skipProtoSetter(property.node, context)) continue;
-    keys.push(getPropertyKey(property.node));
+    const key = getPropertyKey(property.node);
+    // The tree builder checks an exact =N key.
+    if (kind !== 'select' && key[0] !== '=' && !PLURAL_CATEGORIES.has(key)) {
+      throw new NonStaticMessageError(
+        `${kind}() has the branch ${key}, which is not a plural category`,
+        property.node,
+        undefined,
+        `Use ${[...PLURAL_CATEGORIES].join(', ')}, or an exact number like =0`
+      );
+    }
+    keys.push(key);
     // getPropertyKey throws for anything but an ObjectProperty.
     const value = (property as NodePath<t.ObjectProperty>).get('value');
     branchLists.push(branchVariants(value, context));
+  }
+  if (kind === 'select' && !keys.includes(FALLBACK_BRANCH_KEY)) {
+    const value = variable.node;
+    assertSelectCovered(
+      // getHoleVariable() checked that an object has one static property.
+      t.isObjectExpression(value)
+        ? (value.properties[0] as t.ObjectProperty).value
+        : value,
+      keys,
+      branchesArg.node,
+      context
+    );
   }
   return product(branchLists, call.node).map((branches) => ({
     kind,

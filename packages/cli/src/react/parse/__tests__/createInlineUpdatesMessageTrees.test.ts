@@ -8,6 +8,8 @@ import { createInlineUpdates } from '../createInlineUpdates.js';
 import { Libraries, type GTLibrary } from '../../../types/libraries.js';
 import type { GTParsingFlags } from '../../../types/parsing.js';
 import { matchFiles } from '../../../fs/matchFiles.js';
+import { logger } from '../../../console/logger.js';
+import { validateProject } from '../../../translation/validate.js';
 import wireFormatCases from '../../../../../../test-fixtures/message-tree-wire-format.json' with { type: 'json' };
 
 vi.mock('../../../fs/matchFiles.js', () => ({ matchFiles: vi.fn() }));
@@ -975,6 +977,125 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       '3',
       '4',
     ]);
+  });
+
+  describe('plural and selectordinal branch keys', () => {
+    it.each([
+      ['plural', 'onee'],
+      ['selectordinal', 'first'],
+    ])(
+      'skips a %s with the branch %s, which is not a plural category',
+      async (helper, key) => {
+        const result = await extract(`
+          import { t, ${helper} } from 'gt-react/unstable';
+          declare const count: number;
+          t\`\${${helper}({ count }, { ${key}: 'One file', other: 'Many files' })}\`;
+          t\`Still extracted\`;
+        `);
+
+        expect(result.warnings.join('\n')).toContain(
+          `${helper}() has the branch ${key}, which is not a plural category. Use zero, one, two, few, many, other, or an exact number like =0`
+        );
+        expect(treeUpdates(result).map((u) => u.source)).toEqual([
+          'Still extracted',
+        ]);
+      }
+    );
+
+    it.each(['plural', 'selectordinal'])(
+      'accepts =0 and the six categories in %s',
+      async (helper) => {
+        const result = await extract(`
+          import { t, ${helper} } from 'gt-react/unstable';
+          declare const count: number;
+          t\`\${${helper}({ count }, { '=0': 'a', zero: 'b', one: 'c', two: 'd', few: 'e', many: 'f', other: 'g' })}\`;
+        `);
+
+        expect(result.warnings).toEqual([]);
+        expect(treeUpdates(result)).toHaveLength(1);
+      }
+    );
+  });
+
+  describe('select branches', () => {
+    const extractSelect = (call: string, dir?: string) =>
+      extract(
+        `import { t, select } from 'gt-react/unstable';\ndeclare const role: 'admin' | 'member' | 'guest';\ndeclare const name: string;\nt\`\${${call}}\`;\n`,
+        undefined,
+        undefined,
+        dir
+      );
+
+    it.each([
+      "select({ role }, { admin: 'Admins' })",
+      "select(role, { admin: 'Admins' })",
+    ])(
+      'skips %s, which has no other and no branch for some values',
+      async (call) => {
+        const result = await extractSelect(call);
+
+        expect(result.warnings.join('\n')).toContain(
+          "select needs a branch for 'guest', 'member', or an other branch"
+        );
+        expect(treeUpdates(result)).toEqual([]);
+      }
+    );
+
+    it.each([
+      ['with other', "select({ role }, { admin: 'Admins', other: 'Others' })"],
+      [
+        'with a branch for every value',
+        "select({ role }, { admin: 'A', member: 'M', guest: 'G' })",
+      ],
+      ['over any string', "select({ name }, { admin: 'Admins' })"],
+    ])('extracts a select %s', async (_name, call) => {
+      const result = await extractSelect(call);
+
+      expect(result.warnings).toEqual([]);
+      expect(treeUpdates(result)).toHaveLength(1);
+    });
+
+    // There a type hides undefined, which is no value to write a branch for.
+    it('extracts a select with a branch for every value without strictNullChecks', async () => {
+      const result = await extractSelect(
+        "select({ role }, { admin: 'A', member: 'M', guest: 'G' })",
+        looseDir
+      );
+
+      expect(result.warnings).toEqual([]);
+      expect(treeUpdates(result)).toHaveLength(1);
+    });
+  });
+
+  it('fails gt validate when a message is skipped', async () => {
+    const specifier = writeModule(
+      "import { t } from 'gt-react/unstable';\nt`Hi ${{ a, b }}`;\nt`Still extracted`;\n"
+    );
+    const file = path.join(projectDir, `${specifier}.tsx`);
+    vi.mocked(matchFiles).mockReturnValue([file]);
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('exit');
+    });
+    const error = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    const success = vi.spyOn(logger, 'success').mockImplementation(() => {});
+
+    await expect(
+      validateProject(
+        {
+          files: { gtJson: { parsingFlags: {} } },
+          parsingOptions: { conditionNames: [] },
+        } as Parameters<typeof validateProject>[0],
+        Libraries.GT_REACT,
+        [file]
+      )
+    ).rejects.toThrow('exit');
+
+    expect(exit).toHaveBeenCalledWith(1);
+    expect(error.mock.calls.join('\n')).toContain(
+      'Skipped a tagged-template message'
+    );
+    expect(success).not.toHaveBeenCalled();
+    for (const spy of [exit, error, success]) spy.mockRestore();
   });
 
   describe('__proto__ keys', () => {

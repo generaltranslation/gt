@@ -82,6 +82,39 @@ export function deriveVariants(
   }
 }
 
+/**
+ * A select without `other` renders no text for a value with no branch, so
+ * every value of a finite union of string literals needs one. Any other type
+ * is left to the runtime.
+ */
+export function assertSelectCovered(
+  value: t.Node,
+  keys: string[],
+  branches: t.Node,
+  context: TreeContext
+): void {
+  const result = getStringVariants(
+    context.config.file,
+    value.start!,
+    value.end!
+  );
+  if (!('variants' in result)) return;
+  // shortcut: a '' value is never reported, since getStringVariants() also
+  // adds it for the undefined that a project without strictNullChecks hides;
+  // tell the two apart if a select over '' needs the check.
+  const missing = result.variants.filter(
+    (variant) => variant !== '' && !keys.includes(variant)
+  );
+  if (missing.length > 0) {
+    throw new NonStaticMessageError(
+      `select needs a branch for ${missing.map((variant) => `'${variant}'`).join(', ')}, or an other branch`,
+      branches,
+      undefined,
+      'Add a branch for each value, or an other branch for the rest'
+    );
+  }
+}
+
 const DERIVE_TYPE_FIX =
   'Type the value as a string literal or a union of them, such as a union type, a string enum, or an as const lookup';
 
