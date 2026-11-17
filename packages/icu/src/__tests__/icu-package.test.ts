@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import ts from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const parserMarker = 'UNMATCHED_CLOSING_TAG';
@@ -21,7 +21,7 @@ function modifiedAt(file: string): number {
 // Turbo builds before testing; a direct vitest run may find an older build.
 function hasCurrentBuild(): boolean {
   const built = extensions.flatMap((extension) =>
-    ['index', 'parser', 'convert', 'internal'].map((entry) =>
+    ['index', 'parser', 'parser.omitted', 'convert', 'internal'].map((entry) =>
       modifiedAt(join(packageRoot, 'dist', `${entry}.${extension}`))
     )
   );
@@ -72,6 +72,57 @@ describe('@generaltranslation/icu package artifacts', () => {
     expect(root).not.toContain(parserMarker);
     expect(parser).toContain(parserMarker);
   });
+
+  it.each([
+    ['mjs', 'import'],
+    ['cjs', 'require'],
+  ] as const)(
+    'resolves the parser entry to a %s build without the parser under gt-omit-icu-parser',
+    async (ext, kind) => {
+      const { exports } = JSON.parse(
+        readFileSync(join(packageRoot, 'package.json'), 'utf8')
+      );
+      const entry = exports['./parser'];
+      const omitted = entry['gt-omit-icu-parser'][kind];
+      expect(omitted).toEqual({
+        types: entry[kind].types,
+        default: `./dist/parser.omitted.${ext}`,
+      });
+      expect(bundledCode(join(packageRoot, omitted.default))).not.toContain(
+        parserMarker
+      );
+
+      const [parser, withoutParser] = await Promise.all(
+        [entry[kind].default, omitted.default].map(
+          (file) => import(join(packageRoot, file))
+        )
+      );
+      expect(Object.keys(withoutParser).sort()).toEqual(
+        Object.keys(parser).sort()
+      );
+      expect(withoutParser.TYPE).toEqual(parser.TYPE);
+      expect(withoutParser.SKELETON_TYPE).toEqual(parser.SKELETON_TYPE);
+      // A caller may catch what these throw, so the first one also logs it
+      const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+      onTestFinished(() => logged.mockRestore());
+      for (const call of [
+        () => withoutParser.parse('Hello {name}'),
+        () => withoutParser.formatIcu('Hello {name}', 'en', { name: 'Ada' }),
+        () => withoutParser.printAST([]),
+      ]) {
+        expect(call).toThrow(
+          'This build left out the ICU message parser, so it cannot read an ICU string.'
+        );
+      }
+      expect(logged.mock.calls).toEqual([
+        [
+          expect.stringContaining(
+            'This build left out the ICU message parser, so it cannot read an ICU string.'
+          ),
+        ],
+      ]);
+    }
+  );
 
   // Runs the TypeScript compiler, which can take over 5 s on a busy CI runner.
   it('typechecks its declarations with an older lib and skipLibCheck off', () => {

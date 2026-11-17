@@ -64,6 +64,7 @@ export function initializeState(
     devHotReload: _b,
     experimentalStaticLocale: _c,
     experimentalReplaceSource: _d,
+    experimentalOmitIcuParser: _e,
     ...restOptions
   } = options;
 

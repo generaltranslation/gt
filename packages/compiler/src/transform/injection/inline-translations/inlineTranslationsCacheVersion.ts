@@ -13,15 +13,16 @@ type BundlerCacheOptions = {
 /**
  * Add the embedded translations settings and locale files to webpack's and
  * rspack's persistent cache version. Those caches see neither gt.config.json
- * nor the static locale or source replacement, so they would reuse modules
- * transformed for other settings, and they keep modules built before a locale
- * file existed.
+ * nor the static locale, source replacement or omitted ICU parser, so they
+ * would reuse modules transformed or resolved for other settings, and they
+ * keep modules built before a locale file existed.
  */
 export function addInlineTranslationsCacheVersion(
   options: BundlerCacheOptions,
   gtFiles: GTOutputFileConfig | undefined,
   modules: InlineTranslationsModules | undefined,
-  sourceReplacement: SourceReplacement | undefined
+  sourceReplacement: SourceReplacement | undefined,
+  omitIcuParser: boolean
 ): void {
   const hash = crypto
     .createHash('sha256')
@@ -31,6 +32,7 @@ export function addInlineTranslationsCacheVersion(
         gtFiles?.inlineTranslations ?? null,
         modules ?? null,
         sourceReplacement ?? null,
+        omitIcuParser,
       ])
     );
   for (const file of getInlineTranslationsFiles(gtFiles)) {

@@ -57,6 +57,17 @@ export interface PluginConfig
    * `false`).
    */
   experimentalReplaceSource?: boolean;
+  /**
+   * Experimental, for apps whose messages are all `<T>` and tagged templates
+   * from an `/unstable` entry point: leaves the ICU message string parser out
+   * of a production bundle, which formats message trees and JSX without it.
+   * A module that imports something that works with ICU strings, such as the
+   * stable `useGT()`, `msg()` or `t()`, fails the build, and so does one that
+   * takes a whole stable entry point (`import * as`, `export *`, `import()`,
+   * `require()`): import by name. Defaults to the `GT_OMIT_ICU_PARSER`
+   * environment variable (`true` or `false`).
+   */
+  experimentalOmitIcuParser?: boolean;
 }
 
 /**

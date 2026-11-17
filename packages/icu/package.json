@@ -65,6 +65,16 @@
       }
     },
     "./parser": {
+      "gt-omit-icu-parser": {
+        "require": {
+          "types": "./dist/parser.d.cts",
+          "default": "./dist/parser.omitted.cjs"
+        },
+        "import": {
+          "types": "./dist/parser.d.mts",
+          "default": "./dist/parser.omitted.mjs"
+        }
+      },
       "require": {
         "types": "./dist/parser.d.cts",
         "default": "./dist/parser.cjs"
