@@ -48,6 +48,7 @@ export {
 export type {
   JsxTranslationOptions,
   PreparedT,
+  TProps,
 } from './utils/translation/prepareT.shared';
 export type {
   PluralProps,

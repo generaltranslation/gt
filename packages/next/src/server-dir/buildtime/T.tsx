@@ -1,10 +1,10 @@
 import { getRequestConditions } from '../../request/getRequestConditions';
-import { T as RscT } from '@generaltranslation/react-core/components-rsc';
+import {
+  T as RscT,
+  type TProps,
+} from '@generaltranslation/react-core/components-rsc';
 import { renderPreparedT } from './renderPipeline';
-import type { T as ClientT } from 'gt-react';
-import type { ComponentProps, ReactNode } from 'react';
-
-type TProps = ComponentProps<typeof ClientT>;
+import type { ReactNode } from 'react';
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
