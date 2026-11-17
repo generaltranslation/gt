@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createStaticFormatter, initializeGTSPA } from '../static-runtime';
+import {
+  createStaticFormatter,
+  createStaticValue,
+  initializeGTSPA,
+} from '../static-runtime';
 import { createStaticIntlFormatter } from '../static-runtime-intl';
 
 // Equivalence with gt-react's runtime is tested where the trees are compiled:
@@ -59,6 +63,26 @@ describe('gt-react/static-runtime', () => {
     ).toBe(
       `Ada : ${new Intl.NumberFormat('fr').format(1234.5)} fichiers (invité) le 15/01/2024 12:30`
     );
+  });
+
+  it('gives a template literal what a value prints as', () => {
+    const expected = new Intl.DateTimeFormat(['fr-BE', 'en'], {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      timeZone: 'UTC',
+    }).format(DATE);
+    const built = countBuilt('DateTimeFormat');
+    const value = createStaticValue(['fr-BE', 'en'], 'UTC');
+    const object = { toString: () => 'object' };
+    expect(
+      [null, undefined, 'text', 0, false, 12n, object].map((input) =>
+        value(input)
+      )
+    ).toEqual(['', '', 'text', 0, false, 12n, object]);
+    expect(built()).toBe(0);
+    expect(`Le ${value(DATE)}`).toBe(`Le ${expected}`);
+    expect(value(DATE)).toBe(expected);
+    expect(built()).toBe(1);
   });
 
   it('builds each Intl object once for every module of a build', () => {

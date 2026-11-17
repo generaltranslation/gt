@@ -64,23 +64,27 @@ function ownBranch(
     : undefined;
 }
 
+function getIntl(locales: string[], timeZone: string | undefined): StaticIntl {
+  const key = `${locales}|${timeZone}`;
+  let intl = intlByLocales.get(key);
+  if (!intl) intlByLocales.set(key, (intl = {}));
+  return intl;
+}
+
 /**
- * A formatter for the message trees of one build.
+ * What a `{name}` value prints as, for a template literal to print: nothing
+ * for null and undefined, a Date in the locale's short date and time, as in
+ * ICU, and any other value as it is.
  * @param locales The build's locale, then its default locale, as Intl reads them.
  * @param timeZone The configured time zone; without one, dates format in the host's.
  * @internal
  */
-export function createStaticFormatter(
+export function createStaticValue(
   locales: string[],
   timeZone?: string
-): StaticFormatter {
-  const key = `${locales}|${timeZone}`;
-  let intl = intlByLocales.get(key);
-  if (!intl) intlByLocales.set(key, (intl = {}));
-  const shared = intl;
-
-  // A value as text: a Date in the locale's short date and time, as in ICU
-  const text = (value: unknown): unknown => {
+): (value: unknown) => unknown {
+  const shared = getIntl(locales, timeZone);
+  return (value) => {
     if (value == null) return '';
     if (
       typeof value === 'object' &&
@@ -94,6 +98,20 @@ export function createStaticFormatter(
     }
     return value;
   };
+}
+
+/**
+ * A formatter for the message trees of one build.
+ * @param locales The build's locale, then its default locale, as Intl reads them.
+ * @param timeZone The configured time zone; without one, dates format in the host's.
+ * @internal
+ */
+export function createStaticFormatter(
+  locales: string[],
+  timeZone?: string
+): StaticFormatter {
+  const shared = getIntl(locales, timeZone);
+  const text = createStaticValue(locales, timeZone);
 
   const format = (
     tree: StaticMessageTree,
