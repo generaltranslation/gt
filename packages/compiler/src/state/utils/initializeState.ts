@@ -32,6 +32,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
   precomputeMessages: true,
+  precomputeJsx: false,
 };
 
 /**
@@ -65,6 +66,7 @@ export function initializeState(
     devHotReload: _b,
     experimentalStaticLocale: _c,
     experimentalReplaceSource: _d,
+    experimentalPrecomputeJsx: precomputeJsx,
     ...restOptions
   } = options;
 
@@ -92,6 +94,11 @@ export function initializeState(
       (inlineTranslationsTable || sourceReplacement?.locale === undefined)
         ? sourceReplacement
         : undefined,
+    // Dev builds keep <T>, which hot reloads; id-tagging needs <T> to tag the DOM
+    precomputeJsx:
+      precomputeJsx === true &&
+      process.env.NODE_ENV === 'production' &&
+      gtConfig?._tagIds !== true,
     filename,
   };
 

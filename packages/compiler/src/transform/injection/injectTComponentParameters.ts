@@ -11,6 +11,7 @@ import {
   type JsxReplacementTarget,
   replaceJsxSource,
 } from './inline-translations/replaceJsxSource';
+import { precomputeJsx } from './precompute-jsx/precomputeJsx';
 
 /**
  * Inject parameters into a T component
@@ -59,6 +60,14 @@ export function injectTComponentParameters(
   );
   const props = callExpr.arguments[1];
   const { hash } = translationJsx;
+  // On exit, once translation calls in the children have taken their hashes in source order
+  const precomputeOnExit = () => {
+    if (!state.settings.precomputeJsx || !runtimeHash) return;
+    state.precomputedJsxOnExit ??= new Map();
+    state.precomputedJsxOnExit.set(callExpr, () =>
+      precompute(callExprPath, translationJsx.children, runtimeHash, state)
+    );
+  };
   if (runtimeHash && !getObjectPropertyFromObjectExpression(props, 'inline')) {
     const target = getReplacementTarget(callExpr, runtimeHash, state);
     if (target !== undefined) {
@@ -78,12 +87,14 @@ export function injectTComponentParameters(
         }
         injectInlineTranslationsProp(props, runtimeHash, state);
         injectHash(props, hash);
+        precomputeOnExit();
       });
       return;
     }
     injectInlineTranslationsProp(props, runtimeHash, state);
   }
   injectHash(props, hash);
+  precomputeOnExit();
 }
 
 function injectHash(props: t.ObjectExpression, hash: string): void {
@@ -166,4 +177,22 @@ function replaceSource(
       )
   );
   return false;
+}
+
+/** Turns the <T> call into a precomputed component, where its children allow it. */
+function precompute(
+  callExprPath: NodePath<t.CallExpression>,
+  sourceChildren: unknown,
+  hash: string,
+  state: TransformState
+): void {
+  const reason = precomputeJsx(callExprPath, sourceChildren, hash, state);
+  if (reason === undefined) return;
+  state.logger.logDebug(
+    `Left <T> ${hash} as a component: ${reason}` +
+      createErrorLocation(callExprPath.node).replace(
+        '{filename}',
+        state.settings.filename ?? ''
+      )
+  );
 }

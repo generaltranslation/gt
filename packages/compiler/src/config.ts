@@ -66,6 +66,15 @@ export interface PluginConfig
    * templates and only injects their hashes.
    */
   precomputeMessages?: boolean;
+  /**
+   * Experimental, for production builds of React apps that import `<T>` from
+   * `gt-react`: turns each `<T>` whose children are static into a precomputed
+   * component. The build tags the children and writes their source content as
+   * data, so rendering looks up the translation by its hash without walking
+   * the children. A `<T>` the build cannot analyze stays as it is. Defaults to
+   * the `GT_PRECOMPUTE_JSX` environment variable (`true` or `false`).
+   */
+  experimentalPrecomputeJsx?: boolean;
 }
 
 /**
@@ -98,6 +107,8 @@ export interface PluginSettings {
   sourceReplacement?: SourceReplacement;
   /** Replace static unstable t templates with calls that read a precomputed message */
   precomputeMessages: boolean;
+  /** Whether a production build turns static <T> calls into precomputed components */
+  precomputeJsx: boolean;
 }
 
 /**

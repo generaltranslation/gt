@@ -26,9 +26,15 @@ export function processCallExpression(
     exit(callExprPath) {
       state.openTranslationCalls?.delete(callExprPath.node);
       const replace = state.sourceReplacementsOnExit?.get(callExprPath.node);
-      if (!replace) return;
-      state.sourceReplacementsOnExit!.delete(callExprPath.node);
-      replace();
+      if (replace) {
+        state.sourceReplacementsOnExit!.delete(callExprPath.node);
+        replace();
+      }
+      const precompute = state.precomputedJsxOnExit?.get(callExprPath.node);
+      if (precompute) {
+        state.precomputedJsxOnExit!.delete(callExprPath.node);
+        precompute();
+      }
     },
   };
 }

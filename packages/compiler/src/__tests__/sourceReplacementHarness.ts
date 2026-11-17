@@ -39,9 +39,13 @@ export type GTRuntime = {
  */
 export async function loadGTRuntime(
   locale: string,
-  loadTranslations: (
-    locale: string
-  ) => Promise<Record<string, unknown>> = async () => ({})
+  {
+    locales = ['en', 'en-GB', STATIC_LOCALE],
+    loadTranslations = async () => ({}),
+  }: {
+    locales?: string[];
+    loadTranslations?: (locale: string) => Promise<Record<string, unknown>>;
+  } = {}
 ): Promise<GTRuntime> {
   // The SPA condition store keeps the locale in a cookie, which Node lacks
   const cookies = new Map<string, string>();
@@ -57,6 +61,8 @@ export async function loadGTRuntime(
       cookies.set(pair.slice(0, index), pair.slice(index + 1));
     },
   });
+  // Test files share a process, and GT keeps the first runtime a process starts
+  Reflect.deleteProperty(globalThis, '__generaltranslation');
   const requireFromGtReact = createRequire(GT_REACT_DIST);
   const react = requireFromGtReact('react') as Module;
   const { prerenderToNodeStream } = requireFromGtReact('react-dom/static') as {
@@ -76,7 +82,7 @@ export async function loadGTRuntime(
   )) as Module;
   await gtReact.initializeGTSPA({
     defaultLocale: 'en',
-    locales: ['en', 'en-GB', STATIC_LOCALE],
+    locales,
     locale,
     loadTranslations,
   });

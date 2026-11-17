@@ -500,9 +500,10 @@ describe.each(['en', 'fr'])('rendering in %s', (locale) => {
         translations[output!.match(/\$_hash: "([^"]+)"/)![1]] =
           testCase.translation;
       }
-      return loadGTRuntime(locale, async (requested) =>
-        requested === 'fr' ? translations : {}
-      );
+      return loadGTRuntime(locale, {
+        loadTranslations: async (requested) =>
+          requested === 'fr' ? translations : {},
+      });
     })());
 
   afterAll(() => {

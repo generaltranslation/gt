@@ -111,7 +111,7 @@ const EMPTY: Slot = { kind: 'empty' };
 const SOURCE_MISMATCH = 'the translation does not match the source children';
 
 // Props each variable component formats with outside <T> as it does inside
-const VARIABLE_PROPS: Partial<Record<GT_COMPONENT_TYPES, string[]>> = {
+export const VARIABLE_PROPS: Partial<Record<GT_COMPONENT_TYPES, string[]>> = {
   [GT_COMPONENT_TYPES.Var]: ['children', 'name'],
   [GT_COMPONENT_TYPES.GtInternalVar]: ['children', 'name'],
   [GT_COMPONENT_TYPES.Num]: ['children', 'name', 'options'],
@@ -128,7 +128,7 @@ const VARIABLE_PROPS: Partial<Record<GT_COMPONENT_TYPES, string[]>> = {
 };
 
 // Props that would change how a component renders outside <T>
-const LOCALE_PROPS = ['locales', '_locale', '_enableI18n'];
+export const LOCALE_PROPS = ['locales', '_locale', '_enableI18n'];
 
 // Keys a translated <Branch> branch cannot take without clashing with a prop
 const RESERVED_BRANCH_KEYS = new Set([

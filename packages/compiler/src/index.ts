@@ -54,6 +54,11 @@ import {
   resolveSourceReplacement,
 } from './transform/injection/inline-translations/resolveSourceReplacement';
 import { addFragmentImports } from './transform/injection/inline-translations/replaceJsxSource';
+import { addPrecomputedJsxDeclarations } from './transform/injection/precompute-jsx/precomputeJsx';
+import {
+  addPrecomputeJsxCacheVersion,
+  getPrecomputeJsx,
+} from './transform/injection/precompute-jsx/resolvePrecomputeJsx';
 import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
@@ -260,9 +265,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       loadedGTConfig
     );
     const sourceReplacementTotals = { replaced: 0, kept: 0 };
+    const precomputeJsx = getPrecomputeJsx(options.experimentalPrecomputeJsx);
     const resolvedOptions: GTUnpluginOptions = {
       ...options,
       ...(gtConfig ? { gtConfig } : {}),
+      experimentalPrecomputeJsx: precomputeJsx,
     };
 
     if (shouldWarn(options.logLevel)) {
@@ -335,9 +342,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       name: '@generaltranslation/GT_PLUGIN',
       webpack(compiler) {
         keyCacheOnInlineTranslations(compiler.options);
+        if (precomputeJsx) addPrecomputeJsxCacheVersion(compiler.options);
       },
       rspack(compiler) {
         keyCacheOnInlineTranslations(compiler.options);
+        if (precomputeJsx) addPrecomputeJsxCacheVersion(compiler.options);
       },
       buildStart() {
         sourceReplacementTotals.replaced = 0;
@@ -500,6 +509,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
 
           if (state.sourceReplacementImports?.size) {
             addFragmentImports(ast.program, state.sourceReplacementImports);
+          }
+          if (state.precomputedJsxImports?.size) {
+            addPrecomputedJsxDeclarations(ast.program, state);
           }
           sourceReplacementTotals.replaced +=
             state.statistics.sourceReplacementsCount;
