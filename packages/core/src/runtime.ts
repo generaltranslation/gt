@@ -12,8 +12,7 @@ import type {
   TranslateManyEntry,
   TranslateOptions,
 } from './types-dir/api/entry';
-import { DEFAULT_TIMEOUT_MS } from '@generaltranslation/api';
-import { resolveServiceLocale } from './client/apiClient';
+import { resolveServiceLocale } from './client/serviceLocale';
 import type { GTProjectConfig } from './client/clientConfig';
 import {
   noScopeIdProvidedError,
@@ -21,10 +20,9 @@ import {
 } from './logging/errors';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { defaultRuntimeApiUrl } from './settings/settingsUrls';
-import {
-  translateEntries,
-  type RuntimeTranslateCall,
-} from './translate/runtimeTranslate';
+import type { RuntimeTranslateCall } from './translate/runtimeTranslate';
+
+type RuntimeTranslate = typeof import('./translate/runtimeTranslate');
 
 export type { GTCredentials, GTProjectConfig } from './client/clientConfig';
 
@@ -93,10 +91,12 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslationResult> {
-    const [result] = await translateEntries(
-      this.resolveTranslateCall('translate', options, timeout),
-      [source]
+    const { translateEntries, call } = await this.resolveTranslateCall(
+      'translate',
+      options,
+      timeout
     );
+    const [result] = await translateEntries(call, [source]);
     return result;
   }
 
@@ -133,25 +133,36 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-    return translateEntries(
-      this.resolveTranslateCall('translateMany', options, timeout),
-      sources
+    const { translateEntries, call } = await this.resolveTranslateCall(
+      'translateMany',
+      options,
+      timeout
     );
+    return translateEntries(call, sources);
   }
 
-  /** Resolves a call's options against this runtime's configuration. */
-  private resolveTranslateCall(
+  /**
+   * Resolves a call's options against this runtime's configuration, and
+   * loads the function that sends the call's entries.
+   */
+  private async resolveTranslateCall(
     functionName: 'translate' | 'translateMany',
     options: string | TranslateOptions,
     timeout: number | undefined
-  ): RuntimeTranslateCall {
+  ): Promise<{
+    translateEntries: RuntimeTranslate['translateEntries'];
+    call: RuntimeTranslateCall;
+  }> {
     const callOptions =
       typeof options === 'string' ? { targetLocale: options } : options;
     if (!callOptions?.targetLocale) {
       throw new Error(noTargetLocaleProvidedError(functionName));
     }
     const { customMapping, defaultLocale } = this.localeConfig;
-    return {
+    // Imported on the first translation, so an app that constructs a runtime does not load the API client until it translates.
+    const { translateEntries } = await import('./translate/runtimeTranslate');
+    const { DEFAULT_TIMEOUT_MS } = await import('@generaltranslation/api');
+    const call: RuntimeTranslateCall = {
       apiKey: this.apiKey,
       userTokenProvider: this.userTokenProvider,
       projectId: this.projectId,
@@ -167,5 +178,6 @@ export class GTRuntime {
       modelProvider: callOptions.modelProvider,
       timeoutMs: timeout ?? DEFAULT_TIMEOUT_MS,
     };
+    return { translateEntries, call };
   }
 }

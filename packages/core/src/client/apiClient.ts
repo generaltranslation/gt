@@ -8,11 +8,6 @@ import {
   type ApiVersion,
   type BatchWriteSummary,
 } from '@generaltranslation/api';
-import {
-  resolveCanonicalLocale,
-  standardizeLocale,
-  type CustomMapping,
-} from '@generaltranslation/format';
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import type {
   GTAccountConfig,
@@ -47,18 +42,6 @@ export function resolveApiClientSettings({
  */
 export function apiVersionHeaders(): { 'gt-api-version': ApiVersion } {
   return { 'gt-api-version': API_VERSION };
-}
-
-/**
- * @internal
- * Mapping resolves aliases; standardization also canonicalizes configured
- * spellings such as en-us before they cross the service boundary.
- */
-export function resolveServiceLocale(
-  locale: string,
-  customMapping: CustomMapping | undefined
-): string {
-  return standardizeLocale(resolveCanonicalLocale(locale, customMapping));
 }
 
 type BatchResults<Result> = {

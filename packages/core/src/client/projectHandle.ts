@@ -82,11 +82,11 @@ import {
 import {
   apiVersionHeaders,
   resolveApiClientSettings,
-  resolveServiceLocale,
   writeInBatches,
   type ApiClientSettings,
   type BatchWriteResponse,
 } from './apiClient';
+import { resolveServiceLocale } from './serviceLocale';
 import { createDiagnosticMessage } from '../logging/diagnostics';
 import type { GTProjectConfig } from './clientConfig';
 import { GTRuntime } from '../runtime';
