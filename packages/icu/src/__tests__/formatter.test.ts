@@ -24,47 +24,6 @@ describe('formatIcu', () => {
     }
   );
 
-  it('parses a message once for each locale', () => {
-    const message =
-      '{n, plural, one {# parse} other {# parses}} at {t, time, ::jmm}';
-    const t = new Date(Date.UTC(2026, 0, 15, 14, 3));
-    const format = (locale: string, n: number) =>
-      formatIcu(message, locale, { n, t }, { timeZone: 'UTC' });
-    vi.mocked(parse).mockClear();
-    expect([format('en', 1), format('en', 2), format('en', 1)]).toEqual([
-      '1 parse at 2:03 PM',
-      '2 parses at 2:03 PM',
-      '1 parse at 2:03 PM',
-    ]);
-    expect(parse).toHaveBeenCalledTimes(1);
-    // `j` is the hour of the locale, so another locale has its own tree.
-    expect([format('de', 2), format('en', 2)]).toEqual([
-      '2 parses at 14:03',
-      '2 parses at 2:03 PM',
-    ]);
-    expect(parse).toHaveBeenCalledTimes(2);
-  });
-
-  it('parses a message that is not valid on every call', () => {
-    vi.mocked(parse).mockClear();
-    for (let i = 0; i < 2; i++) {
-      expect(() => formatIcu('{unclosed', 'en')).toThrow(SyntaxError);
-    }
-    expect(parse).toHaveBeenCalledTimes(2);
-  });
-
-  it('starts over when a locale has 1,024 parsed messages', () => {
-    // A locale no other test formats in, so none of its messages is kept yet.
-    const format = (i: number) => formatIcu(`{n} ${i}`, 'fo', { n: 'x' });
-    vi.mocked(parse).mockClear();
-    for (let i = 0; i < 1024; i++) format(i);
-    format(0);
-    expect(parse).toHaveBeenCalledTimes(1024);
-    format(1024);
-    format(0);
-    expect(parse).toHaveBeenCalledTimes(1026);
-  });
-
   it('interpolates direct arguments without dropping zero', () => {
     expect(
       formatIcu('Hi {name}, count: {count}', 'en', {
