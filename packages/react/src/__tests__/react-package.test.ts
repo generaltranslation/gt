@@ -19,8 +19,6 @@ const runtimeArtifactNames = [
   'compat.client.mjs',
   'compat.server.cjs',
   'compat.server.mjs',
-  'macros.cjs',
-  'macros.mjs',
   'unstable.cjs',
   'unstable.mjs',
   'unstable.rsc.cjs',
@@ -147,29 +145,6 @@ describe('gt-react package exports', () => {
       ]);
     }
   );
-
-  it('loads side-effect entrypoints without default-export interop', () => {
-    node([
-      '-e',
-      `
-          const assert = require('node:assert/strict');
-          const clientPath = require.resolve('./dist/index.client.cjs');
-
-          assert.equal(globalThis.t, undefined);
-          require('gt-react/macros');
-          assert.equal(typeof globalThis.t, 'function');
-          assert.equal(require.cache[clientPath], undefined);
-        `,
-    ]);
-  });
-
-  it('keeps macros independent from the client entrypoint', () => {
-    for (const file of ['dist/macros.cjs', 'dist/macros.mjs']) {
-      expect(readFileSync(join(packageRoot, file), 'utf8')).not.toContain(
-        'index.client'
-      );
-    }
-  });
 
   it('prefers the RSC implementation over worker and browser conditions', () => {
     node([

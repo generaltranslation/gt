@@ -138,7 +138,6 @@ module.exports = [
   react('gt-react/compat (client)', 'compat.client'),
   reactNode('gt-react/compat (rsc)', 'compat.rsc'),
   reactNode('gt-react/compat (server)', 'compat.server'),
-  react('gt-react/macros', 'macros'),
 
   // Locale matching is loaded only when initializeGTSPA() runs. Track the
   // always-loaded runtime and complete SPA payload independently.

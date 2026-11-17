@@ -1,9 +1,9 @@
 import { LocaleSelector, T, Var, useLocale } from 'gt-react';
 
-// A module-level t`...` string, using the global macro that src/index.ts
-// attaches via `import 'gt-react/macros'`. This is allowed in an SPA (it is
-// only forbidden in server-rendered apps). Switching locales reloads the page,
-// so this line re-evaluates with the new locale on every switch.
+// A module-level t`...` string, using the global macro that src/macros.ts
+// attaches. This is allowed in an SPA (it is only forbidden in server-rendered
+// apps). Switching locales reloads the page, so this line re-evaluates with the
+// new locale on every switch.
 const tagline = t`Internationalized at build time, translated in the browser.`;
 
 function Demo() {
