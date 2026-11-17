@@ -199,12 +199,15 @@ function branchHoleVariants(
     branchLists.push(branchVariants(value, context));
   }
   if (kind === 'select' && !keys.includes(FALLBACK_BRANCH_KEY)) {
-    const value = variable.node;
+    const named = unwrapTypeScriptPath(variable).node;
     assertSelectCovered(
       // getHoleVariable() checked that an object has one static property.
-      t.isObjectExpression(value)
-        ? (value.properties[0] as t.ObjectProperty).value
-        : value,
+      // shortcut: an `as T` around the object can retype the property, which
+      // is read from its value instead; follow T if such a select shows up.
+      t.isObjectExpression(named)
+        ? (named.properties[0] as t.ObjectProperty).value
+        : // Passed directly, `role as 'admin'` is typed by its assertion.
+          variable.node,
       keys,
       branchesArg.node,
       context

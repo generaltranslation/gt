@@ -56,7 +56,8 @@ export function deriveVariants(
   const result = getStringVariants(
     context.config.file,
     argument.start!,
-    argument.end!
+    argument.end!,
+    { undefinedAsEmpty: true }
   );
   if ('variants' in result) {
     assertVariantLimit(result.variants.length, argument);
@@ -96,15 +97,12 @@ export function assertSelectCovered(
   const result = getStringVariants(
     context.config.file,
     value.start!,
-    value.end!
+    value.end!,
+    // A hidden undefined is no value to write a branch for.
+    { undefinedAsEmpty: false }
   );
   if (!('variants' in result)) return;
-  // shortcut: a '' value is never reported, since getStringVariants() also
-  // adds it for the undefined that a project without strictNullChecks hides;
-  // tell the two apart if a select over '' needs the check.
-  const missing = result.variants.filter(
-    (variant) => variant !== '' && !keys.includes(variant)
-  );
+  const missing = result.variants.filter((variant) => !keys.includes(variant));
   if (missing.length > 0) {
     throw new NonStaticMessageError(
       `select needs a branch for ${missing.map((variant) => `'${variant}'`).join(', ')}, or an other branch`,

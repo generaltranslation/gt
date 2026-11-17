@@ -1020,22 +1020,30 @@ describe('createInlineUpdates: unstable tagged templates', () => {
   describe('select branches', () => {
     const extractSelect = (call: string, dir?: string) =>
       extract(
-        `import { t, select } from 'gt-react/unstable';\ndeclare const role: 'admin' | 'member' | 'guest';\ndeclare const name: string;\nt\`\${${call}}\`;\n`,
+        `import { t, select } from 'gt-react/unstable';\ndeclare const role: 'admin' | 'member' | 'guest';\ndeclare const blank: 'admin' | '';\ndeclare const name: string;\nt\`\${${call}}\`;\n`,
         undefined,
         undefined,
         dir
       );
 
     it.each([
-      "select({ role }, { admin: 'Admins' })",
-      "select(role, { admin: 'Admins' })",
+      ["select({ role }, { admin: 'Admins' })", "'guest', 'member'"],
+      ["select(role, { admin: 'Admins' })", "'guest', 'member'"],
+      ["select({ role } as const, { admin: 'Admins' })", "'guest', 'member'"],
+      [
+        "select({ role } satisfies object, { admin: 'Admins' })",
+        "'guest', 'member'",
+      ],
+      ["select({ role }!, { admin: 'Admins' })", "'guest', 'member'"],
+      // ICU cannot write an empty key, so this one needs other.
+      ["select({ blank }, { admin: 'Admins' })", "''"],
     ])(
-      'skips %s, which has no other and no branch for some values',
-      async (call) => {
+      'skips %s, which has no other and no branch for %s',
+      async (call, missing) => {
         const result = await extractSelect(call);
 
         expect(result.warnings.join('\n')).toContain(
-          "select needs a branch for 'guest', 'member', or an other branch"
+          `select needs a branch for ${missing}, or an other branch`
         );
         expect(treeUpdates(result)).toEqual([]);
       }
@@ -1048,6 +1056,10 @@ describe('createInlineUpdates: unstable tagged templates', () => {
         "select({ role }, { admin: 'A', member: 'M', guest: 'G' })",
       ],
       ['over any string', "select({ name }, { admin: 'Admins' })"],
+      [
+        'over a value asserted to one branch',
+        "select(role as 'admin', { admin: 'Admins' })",
+      ],
     ])('extracts a select %s', async (_name, call) => {
       const result = await extractSelect(call);
 

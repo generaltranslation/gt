@@ -62,12 +62,14 @@ type TypeFlagName =
 /**
  * Every string the expression at `[start, end)` of `file` can be, read from
  * its TypeScript type: a string literal or a union of them. Offsets are those
- * of a Babel node parsed from the same file text.
+ * of a Babel node parsed from the same file text. `undefinedAsEmpty` adds `''`
+ * for the undefined that a project without strictNullChecks hides.
  */
 export function getStringVariants(
   file: string,
   start: number,
-  end: number
+  end: number,
+  { undefinedAsEmpty }: { undefinedAsEmpty: boolean }
 ): StringVariantsResult {
   const type = getTypeAt(file, start, end);
   if ('issue' in type) return type;
@@ -88,7 +90,7 @@ export function getStringVariants(
   }
   // Without strictNullChecks a type never includes undefined or null, which
   // derive() renders as no text, so that message is extracted too.
-  if (!type.strictNullChecks) variants.add('');
+  if (undefinedAsEmpty && !type.strictNullChecks) variants.add('');
   // Union member order depends on check order, so sort for stable output.
   return { variants: [...variants].sort() };
 }
