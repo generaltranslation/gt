@@ -32,13 +32,14 @@ const allowedPackages = [
 
 // Parse imports rather than grep one entry: cover re-exports, require and dynamic
 // imports too. A computed dependency is not an auditable isolated artifact.
-function imports(code: string): string[] {
+function imports(code: string, { dynamic = true } = {}): string[] {
   const result: string[] = [];
   const visit = (node: ts.Node) => {
     let specifier: ts.Node | undefined;
     if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
       specifier = node.moduleSpecifier;
     } else if (
+      dynamic &&
       ts.isCallExpression(node) &&
       (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
         (ts.isIdentifier(node.expression) &&
@@ -151,6 +152,25 @@ it('loads published ESM/CJS, typechecks NodeNext declarations and keeps the publ
         join(nodeModules, 'generaltranslation/dist', `runtime.${extension}`)
       );
     }
+
+    // The API client loads on the first translation, not with the runtime
+    // entry, so an app that never translates at runtime does not download it.
+    const loaded = new Set<string>();
+    const load = (file: string) => {
+      if (loaded.has(file)) return;
+      loaded.add(file);
+      for (const specifier of imports(readFileSync(file, 'utf8'), {
+        dynamic: false,
+      })) {
+        if (specifier.startsWith('.')) load(resolve(dirname(file), specifier));
+        else loaded.add(specifier);
+      }
+    };
+    load(join(nodeModules, 'generaltranslation/dist/runtime.mjs'));
+    expect([...loaded]).not.toContain('@generaltranslation/api');
+    expect(
+      [...loaded].filter((file) => /runtimeTranslate|apiClient/.test(file))
+    ).toEqual([]);
 
     // One fresh Node consumer loads every entry through both export conditions.
     const smoke = `

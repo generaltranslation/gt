@@ -12,19 +12,62 @@ import type {
   TranslateManyEntry,
   TranslateOptions,
 } from './types-dir/api/entry';
-import { DEFAULT_TIMEOUT_MS } from '@generaltranslation/api';
-import { resolveServiceLocale } from './client/apiClient';
+import { resolveServiceLocale } from './client/serviceLocale';
 import type { GTProjectConfig } from './client/clientConfig';
 import {
+  translationClientLoadError,
   noScopeIdProvidedError,
   noTargetLocaleProvidedError,
 } from './logging/errors';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { defaultRuntimeApiUrl } from './settings/settingsUrls';
-import {
-  translateEntries,
-  type RuntimeTranslateCall,
-} from './translate/runtimeTranslate';
+import type { RuntimeTranslateCall } from './translate/runtimeTranslate';
+
+type RuntimeTranslate = typeof import('./translate/runtimeTranslate');
+
+// setTimeout runs a longer delay, Infinity included, after 1ms.
+const MAX_TIMER_DELAY_MS = 2 ** 31 - 1;
+
+/**
+ * Loads the function that sends a call's entries. It is imported on the
+ * first translation, so an app that constructs a runtime does not load the
+ * API client until it translates.
+ *
+ * The load is part of the call: it rejects once `timeout` has passed, as the
+ * request does, so a file that never arrives does not leave the call
+ * pending. A call without a timeout cannot time the load, since the default
+ * is the API client's, which is what is being loaded. A load that fails or
+ * times out rejects with an `Error` whose `cause` is the reason, like a
+ * request that got no response; each call imports again, so it recovers
+ * when the loader retries.
+ */
+async function loadTranslateEntries(
+  timeout: number | undefined
+): Promise<RuntimeTranslate['translateEntries']> {
+  const loading = import('./translate/runtimeTranslate');
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const { translateEntries } = await (timeout === undefined
+      ? loading
+      : Promise.race([
+          loading,
+          new Promise<never>((_resolve, reject) => {
+            timer = setTimeout(
+              reject,
+              Math.min(timeout, MAX_TIMER_DELAY_MS),
+              `timed out after ${timeout}ms`
+            );
+          }),
+        ]));
+    return translateEntries;
+  } catch (reason) {
+    // The load may still fail after the call has given up on it.
+    loading.catch(() => {});
+    throw new Error(translationClientLoadError(reason), { cause: reason });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export type { GTCredentials, GTProjectConfig } from './client/clientConfig';
 
@@ -93,10 +136,12 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslationResult> {
-    const [result] = await translateEntries(
-      this.resolveTranslateCall('translate', options, timeout),
-      [source]
+    const { translateEntries, call } = await this.resolveTranslateCall(
+      'translate',
+      options,
+      timeout
     );
+    const [result] = await translateEntries(call, [source]);
     return result;
   }
 
@@ -133,25 +178,34 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-    return translateEntries(
-      this.resolveTranslateCall('translateMany', options, timeout),
-      sources
+    const { translateEntries, call } = await this.resolveTranslateCall(
+      'translateMany',
+      options,
+      timeout
     );
+    return translateEntries(call, sources);
   }
 
-  /** Resolves a call's options against this runtime's configuration. */
-  private resolveTranslateCall(
+  /**
+   * Resolves a call's options against this runtime's configuration, and
+   * loads the function that sends the call's entries.
+   */
+  private async resolveTranslateCall(
     functionName: 'translate' | 'translateMany',
     options: string | TranslateOptions,
     timeout: number | undefined
-  ): RuntimeTranslateCall {
+  ): Promise<{
+    translateEntries: RuntimeTranslate['translateEntries'];
+    call: RuntimeTranslateCall;
+  }> {
     const callOptions =
       typeof options === 'string' ? { targetLocale: options } : options;
     if (!callOptions?.targetLocale) {
       throw new Error(noTargetLocaleProvidedError(functionName));
     }
     const { customMapping, defaultLocale } = this.localeConfig;
-    return {
+    const translateEntries = await loadTranslateEntries(timeout);
+    const call: RuntimeTranslateCall = {
       apiKey: this.apiKey,
       userTokenProvider: this.userTokenProvider,
       projectId: this.projectId,
@@ -165,7 +219,8 @@ export class GTRuntime {
         customMapping
       ),
       modelProvider: callOptions.modelProvider,
-      timeoutMs: timeout ?? DEFAULT_TIMEOUT_MS,
+      timeoutMs: timeout,
     };
+    return { translateEntries, call };
   }
 }

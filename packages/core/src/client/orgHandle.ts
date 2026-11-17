@@ -13,11 +13,11 @@ import {
 } from '@generaltranslation/api';
 import {
   apiVersionHeaders,
-  resolveServiceLocale,
   writeInBatches,
   type ApiClientSettings,
   type BatchWriteResponse,
 } from './apiClient';
+import { resolveServiceLocale } from './serviceLocale';
 import type { CustomMapping } from '@generaltranslation/format';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
 
