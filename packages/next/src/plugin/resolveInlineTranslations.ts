@@ -52,6 +52,8 @@ export type ResolvedMessageModules = {
   dir: string;
   /** Import specifier prefix of `<importDir>/<hash>.js`, aliased to `dir` */
   importDir: string;
+  /** Why the modules could not be written; the SWC plugin then fails the build */
+  writeError?: string;
 };
 
 /**
@@ -132,7 +134,7 @@ function resolveMessageModules(
   }
   const cwd = process.cwd();
   const target = compiler.resolveInlineTranslationsModulesDir(gtFiles, cwd);
-  const dir = path.relative(cwd, target);
+  const dir = path.relative(cwd, target) || '.';
   // The plugin can only read inside the working directory
   if (dir.startsWith('..') || path.isAbsolute(dir)) {
     throw new Error(createMessageModulesDirOutsideCwdError(target, cwd));
@@ -142,16 +144,19 @@ function resolveMessageModules(
     compiler.loadInlineTranslations(gtFiles)
   );
   // next start also loads the config, possibly on a read-only filesystem, and
-  // needs no modules; a build fails in the SWC plugin when they are missing
+  // needs no modules; a build fails in the SWC plugin when they were not written
+  let writeError: string | undefined;
   try {
     compiler.writeInlineTranslationsModules(target, modules);
   } catch (error) {
     console.warn(createMessageModulesWarning(dir, error));
+    writeError = String(error);
   }
 
   const resolvedModules: ResolvedMessageModules = {
     dir: dir.split(path.sep).join('/'),
     importDir: MESSAGE_MODULES_ALIAS,
+    ...(writeError && { writeError }),
   };
   // Transformed files only depend on which hashes have a module, so edited
   // translations reach the build through the modules without a cache miss

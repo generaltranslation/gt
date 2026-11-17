@@ -236,6 +236,19 @@ describe('resolveInlineTranslations with message modules', () => {
     ).toBe(true);
   });
 
+  it('keeps a modulesDir of the working directory non-empty', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const result = resolveInlineTranslations({
+      ...modulesFiles,
+      inlineTranslations: {
+        ...modulesFiles.inlineTranslations,
+        modulesDir: '.',
+      },
+    })!;
+    expect(result.modules?.dir).toBe('.');
+    expect(fs.existsSync(path.join(cwd, '05aa.js'))).toBe(true);
+  });
+
   it('falls back to physical modules for virtual with a warning', () => {
     writeLocale('fr', { '05aa': 'Bonjour' });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -287,7 +300,7 @@ describe('resolveInlineTranslations with message modules', () => {
     expect(readModule('05aa.js')).toContain('"Bonjour !"');
   });
 
-  it('warns and still returns the options when modules cannot be written', () => {
+  it('warns and passes the write error to the plugin when modules cannot be written', () => {
     writeLocale('fr', { '05aa': 'Bonjour' });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     fs.mkdirSync(path.join(cwd, '.gt'));
@@ -295,11 +308,27 @@ describe('resolveInlineTranslations with message modules', () => {
     try {
       const result = resolveInlineTranslations(modulesFiles);
       expect(result?.modules?.dir).toBe('.gt/messages');
+      expect(result?.modules?.writeError).toContain('EACCES');
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('could not be written')
       );
     } finally {
       fs.chmodSync(path.join(cwd, '.gt'), 0o755);
+    }
+  });
+
+  it('passes the write error when an existing modules directory cannot be updated', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    resolveInlineTranslations(modulesFiles);
+    writeLocale('fr', { '05aa': 'Bonjour !' });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fs.chmodSync(path.join(cwd, '.gt/messages'), 0o555);
+    try {
+      const result = resolveInlineTranslations(modulesFiles);
+      expect(result?.modules?.writeError).toContain('EACCES');
+      expect(readModule('05aa.js')).toContain('"Bonjour"');
+    } finally {
+      fs.chmodSync(path.join(cwd, '.gt/messages'), 0o755);
     }
   });
 

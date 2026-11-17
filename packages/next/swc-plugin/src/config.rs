@@ -36,6 +36,9 @@ pub struct InlineModulesConfig {
   pub dir: String,
   /// Import specifier prefix for the modules: `<importDir>/<hash>.js`
   pub import_dir: String,
+  /// Why gt-next could not write the modules, which may be missing or stale
+  #[serde(default)]
+  pub write_error: Option<String>,
 }
 
 // For plugin configuration and settings

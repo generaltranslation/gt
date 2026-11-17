@@ -39,10 +39,16 @@ pub struct MessageModules {
 }
 
 impl MessageModules {
-  /// Panics when the module directory cannot be read: gt-next wrote it before
-  /// the build, so embedding would otherwise silently stop.
+  /// Panics when gt-next could not write the module directory or it cannot be
+  /// read, so embedding never silently stops or uses stale modules.
   pub fn open(cwd: &Path, config: InlineModulesConfig) -> Self {
     let root = cwd.join(&config.dir);
+    if let Some(error) = &config.write_error {
+      panic!(
+        "gt-next: could not write embedded translation modules to {} ({error}). Make files.gt.inlineTranslations.modulesDir writable during next build.",
+        config.dir
+      );
+    }
     match std::fs::metadata(&root) {
       Ok(metadata) if metadata.is_dir() => Self {
         root,

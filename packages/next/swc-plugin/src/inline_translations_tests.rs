@@ -804,3 +804,22 @@ fn fails_the_build_when_the_modules_dir_is_missing() {
     &cwd.0,
   );
 }
+
+#[test]
+#[should_panic(expected = "could not write embedded translation modules")]
+fn fails_the_build_when_gt_next_could_not_write_the_modules() {
+  let cwd = TempCwd::new();
+  std::fs::create_dir_all(cwd.0.join(MODULES_DIR)).expect("modules dir");
+  transform_with_option(
+    USEGT_CODE,
+    serde_json::json!({
+      "locales": ["fr"],
+      "modules": {
+        "dir": MODULES_DIR,
+        "importDir": MODULES_IMPORT_DIR,
+        "writeError": "EACCES: permission denied",
+      },
+    }),
+    &cwd.0,
+  );
+}
