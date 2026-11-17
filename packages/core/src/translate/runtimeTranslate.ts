@@ -76,7 +76,8 @@ export type RuntimeTranslateCall = {
   targetLocale: string;
   sourceLocale: string;
   modelProvider: ModelProvider | undefined;
-  timeoutMs: number;
+  /** The call's timeout; without one the API client applies its default. */
+  timeoutMs: number | undefined;
 };
 
 /**

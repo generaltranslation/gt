@@ -26,6 +26,8 @@ export default defineConfig(
     {
       ...esmConfig,
       copy: [{ from: '../api/spec/openapi.json', to: 'dist' }],
+      // An inlined constant leaves an import of its chunk without a name, which bundlers warn they ignore.
+      inputOptions: { optimization: { inlineConst: false } },
     },
     ...configSchemaConfigs,
   ])
