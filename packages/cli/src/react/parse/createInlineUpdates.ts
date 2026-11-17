@@ -137,7 +137,7 @@ export async function createInlineUpdates(
         });
         if (isEmbeddedComponentImport(path, pkg)) {
           for (const update of updates.slice(firstComponentUpdate)) {
-            markEmbeddedUpdate(update);
+            markEmbeddedUpdate(update, 'always');
           }
         }
       }
@@ -206,7 +206,7 @@ export async function createInlineUpdates(
         }
       }
       for (const update of updates.slice(firstAutoInsertedUpdate)) {
-        markEmbeddedUpdate(update);
+        markEmbeddedUpdate(update, 'always');
       }
     }
   }

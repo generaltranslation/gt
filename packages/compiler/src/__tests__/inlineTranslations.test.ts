@@ -64,26 +64,34 @@ function createOutputDir(
 
 function gtConfigOptions(
   locales: string[],
-  outputDir: string | undefined
+  outputDir: string | undefined,
+  helpers?: boolean
 ): GTUnpluginOptions {
   return {
     gtConfig: {
       files: {
         gt: {
           ...(outputDir && { output: path.join(outputDir, '[locale].json') }),
-          inlineTranslations: { locales },
+          inlineTranslations: {
+            locales,
+            ...(helpers !== undefined && { helpers }),
+          },
         },
       },
     },
   };
 }
 
-/** Options embedding `locales`, with `translations` written to files.gt.output. */
+/**
+ * Options embedding `locales`, with `translations` written to files.gt.output
+ * and `helpers` as files.gt.inlineTranslations.helpers.
+ */
 function inlineOptions(
   locales: string[],
-  translations: Record<string, Record<string, unknown>>
+  translations: Record<string, Record<string, unknown>>,
+  helpers?: boolean
 ): GTUnpluginOptions {
-  return gtConfigOptions(locales, createOutputDir(translations));
+  return gtConfigOptions(locales, createOutputDir(translations), helpers);
 }
 
 describe('inlineTranslations in gt.config.json', () => {
@@ -237,9 +245,10 @@ describe('inlineTranslations in gt.config.json', () => {
     });
 
     // The gt-next SWC plugin embeds a template only when every hole is a
-    // named variable. An entry only this compiler builds also embeds helpers
-    // whose values all have names. The CLI's isEmbeddedMessage reads the same
-    // fixture, so msgOutput files leave out exactly what is embedded here.
+    // named variable. With files.gt.inlineTranslations.helpers, an entry only
+    // this compiler builds also embeds helpers whose values all have names.
+    // The CLI's tests read the same fixture, so msgOutput files leave out
+    // exactly what is embedded here.
     describe.each([
       ['gt-react/unstable', 't', true],
       ['gt-react/unstable', 'useGT()', true],
@@ -265,16 +274,25 @@ describe('inlineTranslations in gt.config.json', () => {
           )?.[1];
           if ('buildable' in testCase) expect(hash).toBeUndefined();
           // A template the compiler cannot hash is left to the runtime
-          const output = hash
-            ? await transformWithPlugin(
-                inlineOptions(['fr'], { fr: { [hash]: 'Traduction' } }),
+          const embeds = async (helpers?: boolean) =>
+            hash !== undefined &&
+            !!(
+              await transformWithPlugin(
+                inlineOptions(
+                  ['fr'],
+                  { fr: { [hash]: 'Traduction' } },
+                  helpers
+                ),
                 code
               )
-            : '';
-          expect(output?.includes('inline: (locale) =>')).toBe(
+            )?.includes('inline: (locale) =>');
+          expect(await embeds(true)).toBe(
             embeddedBy === 'every-compiler' ||
               (embeddedBy === '@generaltranslation/compiler' && embedsHelpers)
           );
+          // Unset is off: only what every compiler embeds
+          expect(await embeds(false)).toBe(embeddedBy === 'every-compiler');
+          expect(await embeds()).toBe(embeddedBy === 'every-compiler');
         });
       }
     );
