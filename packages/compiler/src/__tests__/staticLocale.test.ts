@@ -289,7 +289,7 @@ describe('experimentalStaticLocale', () => {
       const { root, options: pluginOptions } = moduleOptions('es', 'physical');
       createModulesPlugin(root, pluginOptions).buildStart.call(context);
       const source = fs.readFileSync(
-        path.join(root, '.gt/messages/es', `${HELLO_WORLD}.js`),
+        path.join(root, '.gt/messages/es', `${HELLO_WORLD}.mjs`),
         'utf8'
       );
       expect(source).toContain('locale === "es" ? "Hola mundo" : undefined');
@@ -301,7 +301,7 @@ describe('experimentalStaticLocale', () => {
       const { root, options: pluginOptions } = moduleOptions('fr', 'virtual');
       const result = createModulesPlugin(root, pluginOptions).load.call(
         context,
-        `\0virtual:gt/messages/${HELLO_WORLD}.js`
+        `\0virtual:gt/messages/${HELLO_WORLD}.mjs`
       );
       expect(result?.code).toContain(
         'locale === "fr" ? "Bonjour le monde" : undefined'
@@ -318,7 +318,7 @@ describe('experimentalStaticLocale', () => {
         );
         const dir = path.join(root, '.gt/messages');
         fs.mkdirSync(dir, { recursive: true });
-        const shared = path.join(dir, `${HELLO_WORLD}.js`);
+        const shared = path.join(dir, `${HELLO_WORLD}.mjs`);
         fs.writeFileSync(
           shared,
           renderInlineTranslationsModule(
@@ -328,7 +328,7 @@ describe('experimentalStaticLocale', () => {
         );
         vi.spyOn(console, 'warn').mockImplementation(() => {});
         createModulesPlugin(root, pluginOptions).buildStart.call(context);
-        expect(fs.readdirSync(dir)).toEqual([`${HELLO_WORLD}.js`]);
+        expect(fs.readdirSync(dir)).toEqual([`${HELLO_WORLD}.mjs`]);
       }
     );
   });
