@@ -103,9 +103,9 @@ export const BRANCH_CONTROL_PROPS = new Set(['branch']);
 
 /**
  * Plural control props — not translatable content.
- * `n` is the count.
+ * `n` is the count, `ordinal` picks ordinal categories.
  */
-export const PLURAL_CONTROL_PROPS = new Set(['n']);
+export const PLURAL_CONTROL_PROPS = new Set(['n', 'ordinal']);
 
 /**
  * Fields that must be string literals for useGT_callback / getGT_callback

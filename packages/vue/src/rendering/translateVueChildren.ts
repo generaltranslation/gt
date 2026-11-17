@@ -954,7 +954,12 @@ function serializeNode(
         serializeBranch(node, key, branch),
       ])
     );
-    data.t = node.transformation === 'plural' ? 'p' : 'b';
+    data.t =
+      node.transformation !== 'plural'
+        ? 'b'
+        : isOrdinal(node.vnode)
+          ? 'o'
+          : 'p';
   }
 
   return {
@@ -1157,7 +1162,12 @@ function renderElement(
     const selectKey = (branches: object) =>
       source.transformation === 'branch'
         ? getBranchKey(source.vnode.props?.branch, branches)
-        : getPluralKey(source.vnode.props?.n, Object.keys(branches), state);
+        : getPluralKey(
+            source.vnode.props?.n,
+            Object.keys(branches),
+            isOrdinal(source.vnode),
+            state
+          );
     const targetBranch = selectKey(targetBranches);
     // The translation picks the branch. The source pairs with it by key, or
     // with `other` when it has no branch of that name. A translation with no
@@ -1214,6 +1224,7 @@ function getBranchKey(branch: unknown, branches: object): string {
 function getPluralKey(
   n: unknown,
   branches: string[],
+  ordinal: boolean,
   state: GTState,
   locale = state.getLocale()
 ): string {
@@ -1226,8 +1237,15 @@ function getPluralKey(
       locale,
       state.defaultLocale,
       state.resolveFormattingLocale
-    )
+    ),
+    ordinal ? 'ordinal' : 'cardinal'
   );
+}
+
+/** A bare `ordinal` attribute reaches a raw VNode as an empty string. */
+function isOrdinal(vnode: VNode): boolean {
+  const ordinal = vnode.props?.ordinal;
+  return ordinal === true || ordinal === '';
 }
 
 function getSelectedSourceBranch(
@@ -1327,7 +1345,13 @@ function renderDefaultNode(
   }
   if (node.transformation === 'plural') {
     const n = node.vnode.props?.n;
-    const branch = getPluralKey(n, Object.keys(node.branches), state, locale);
+    const branch = getPluralKey(
+      n,
+      Object.keys(node.branches),
+      isOrdinal(node.vnode),
+      state,
+      locale
+    );
     return renderDefaultNodes(
       getSelectedSourceBranch(node, branch).nodes,
       state,

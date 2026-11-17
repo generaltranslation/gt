@@ -45,7 +45,8 @@ function createBranchElement(
 
 function createPluralElement(
   n: number,
-  branches: Record<string, React.ReactNode>
+  branches: Record<string, React.ReactNode>,
+  ordinal?: boolean
 ): TaggedElement {
   const props = {
     'data-_gt': {
@@ -55,6 +56,7 @@ function createPluralElement(
       branches,
     },
     n,
+    ordinal,
   } as unknown as TaggedElementProps;
   return React.createElement('span', props) as TaggedElement;
 }
@@ -173,6 +175,24 @@ describe('plural rendering', () => {
       type: 'b',
       props: { children: 'элементов' },
     });
+  });
+
+  it('picks an ordinal branch among the branches of the translation', () => {
+    // Swedish counts 2 as "one" in ordinals and as "other" in cardinals.
+    const result = renderTranslatedChildren({
+      source: createPluralElement(
+        2,
+        { one: '1st', two: '2nd', other: 'nth' },
+        true
+      ),
+      target: {
+        d: { b: { one: ':a', other: ':e' } },
+      } as unknown as TranslatedChildren,
+      locales: ['sv'],
+      enableI18n: true,
+    });
+
+    expect(result).toBe(':a');
   });
 
   it('renders the source branch when the translation has no branch', () => {

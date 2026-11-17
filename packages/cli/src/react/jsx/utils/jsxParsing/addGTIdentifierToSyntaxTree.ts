@@ -60,7 +60,7 @@ function constructGTProp(
     );
     // Add plural branches to the generaltranslation
     if (Object.keys(pluralBranches).length) {
-      generaltranslation.t = 'p';
+      generaltranslation.t = props.ordinal === true ? 'o' : 'p';
       generaltranslation.b = pluralBranches;
     }
 

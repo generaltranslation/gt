@@ -12,6 +12,11 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
 type PluralProps = {
   n: number | bigint;
+  /**
+   * Pick among ordinal categories, as for 1st, 2nd and 3rd. Write it as a
+   * literal: extraction reads it from the source.
+   */
+  ordinal?: boolean;
   other: ReactNode;
 } & Partial<
   // `_0` is the exact number 0: ICU's `=0`, which JSX cannot spell.
@@ -29,6 +34,7 @@ function renderPlural({
   _enableI18n,
   _locale,
   n,
+  ordinal,
   ...props
 }: ResolvedPluralProps): ReactNode {
   const locales = getFormatLocales({
@@ -40,7 +46,7 @@ function renderPlural({
       .filter(([prop]) => isAcceptedPluralForm(prop))
       .map(([prop, branch]) => [getPluralBranchKey(prop), branch])
   );
-  return getPluralBranch(n, locales, branches);
+  return getPluralBranch(n, locales, branches, ordinal);
 }
 
 export { renderPlural };

@@ -50,6 +50,17 @@ describe('getPluralForm', () => {
     expect(form(1n, ['one', 'other'], 'en')).toBe('one');
   });
 
+  it.each([
+    [1, 'one'],
+    [2, 'two'],
+    [3, 'few'],
+    [4, 'other'],
+    [22, 'two'],
+  ])('en ordinal n=%i picks "%s"', (n, category) => {
+    const forms = ['one', 'two', 'few', 'other'];
+    expect(getPluralForm(n, forms, ['en'], 'ordinal')).toBe(category);
+  });
+
   it('returns "" when no branch matches and there is no "other"', () => {
     expect(form(5, ['one'], 'en')).toBe('');
     expect(form(1, ['singular', 'plural'], 'en')).toBe('');

@@ -730,6 +730,26 @@ describe('React CLI parity audit', () => {
       ]);
     });
 
+    it('marks an ordinal Plural in a template', async () => {
+      const source = createSfc(
+        `import { Plural, T } from 'gt-vue';`,
+        `<T><Plural :n="2" ordinal one="1st" other="nth" /><Plural :n="2" :ordinal="true" one="1st" other="nth" /><Plural :n="2" :ordinal="false" one="1st" other="nth" /></T>`
+      );
+      assertVueCompiles(source, 'plural-ordinal');
+
+      const output = await extract(source, 'plural-ordinal');
+
+      expect(output.errors).toEqual([]);
+      const b = { one: '1st', other: 'nth' };
+      expect(richSources(output.results)).toEqual([
+        [
+          { t: 'Plural', i: 1, d: { b, t: 'o' } },
+          { t: 'Plural', i: 2, d: { b, t: 'o' } },
+          { t: 'Plural', i: 3, d: { b, t: 'p' } },
+        ],
+      ]);
+    });
+
     it('preserves entities, built-ins, custom components, and void elements', async () => {
       const source = createSfc(
         `import { T } from 'gt-vue'; import Card from './Card.vue';`,

@@ -57,6 +57,22 @@ describe('plural branch selection', () => {
     ).toBe(expected);
   });
 
+  it.each([
+    [1, '1st'],
+    [2, '2nd'],
+    [3, '3rd'],
+    [4, 'nth'],
+    [22, '2nd'],
+  ])('ordinal n=%i picks the ordinal category', (n, expected) => {
+    const places = { one: '1st', two: '2nd', few: '3rd', other: 'nth' };
+    expect(renderPlural({ ...conditions, n, ordinal: true, ...places })).toBe(
+      expected
+    );
+    expect(renderPlural({ ...conditions, n, ...places })).toBe(
+      n === 1 ? '1st' : 'nth'
+    );
+  });
+
   it('reads zero as a plural category, which English does not have', () => {
     expect(
       renderPlural({ ...conditions, n: 0, zero: 'No items', other: 'N items' })

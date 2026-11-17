@@ -1316,7 +1316,18 @@ function serializeBranchElement(
             ])
           )
         : branches;
-    data.t = component === 'Plural' ? 'p' : 'b';
+    // Vue reads a bare `ordinal` attribute, an empty string, as true.
+    const ordinal = element.openingElement.attributes.some((attribute) => {
+      if (
+        attribute.type !== 'JSXAttribute' ||
+        readAttributeName(attribute.name) !== 'ordinal'
+      ) {
+        return false;
+      }
+      const value = readJSXAttributePrimitive(attribute, scope, analysis);
+      return value.ok && (value.value === true || value.value === '');
+    });
+    data.t = component !== 'Plural' ? 'b' : ordinal ? 'o' : 'p';
   }
   return {
     t: component,

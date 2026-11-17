@@ -16,17 +16,24 @@ const isCount = (n: unknown): n is number | bigint =>
 /**
  * The key of the branch ICU picks for `n`: an exact key, then the locale's
  * plural category, then `other`. A value that is not a number only fits `other`.
+ * `ordinal` is the `<Plural>` prop: `true` picks among ordinal categories.
  */
 export function selectPluralKey(
   n: unknown,
   locales: string[],
-  branches: Record<string, unknown>
+  branches: Record<string, unknown>,
+  ordinal?: unknown
 ): string {
   if (!isCount(n)) return 'other';
   const keys = Object.keys(branches).filter(
     (key) => branches[key] !== undefined
   );
-  return getPluralForm(n, keys, locales);
+  return getPluralForm(
+    n,
+    keys,
+    locales,
+    ordinal === true ? 'ordinal' : 'cardinal'
+  );
 }
 
 /** The key of the branch named by the value, then `other`. */
@@ -54,7 +61,8 @@ export function getPluralBranch<T>(
   n: unknown,
   locales: string[],
   branches: Record<string, T>,
-  key = selectPluralKey(n, locales, branches)
+  ordinal?: unknown,
+  key = selectPluralKey(n, locales, branches, ordinal)
 ): T | undefined {
   const selected = pickOrOther(branches, key);
   if (!isCount(n)) {

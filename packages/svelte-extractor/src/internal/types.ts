@@ -83,7 +83,7 @@ export type SvelteExtractionError = {
 export type GTRuntimeMetadata = {
   v?: Record<string, Record<string, number>>;
   s?: Record<string, Record<string, number>>;
-  b?: Record<string, { t: 'p' | 'b'; b: string[] }>;
+  b?: Record<string, { t: 'p' | 'o' | 'b'; b: string[] }>;
 };
 
 /** Source lines around a call site, as the CLI uploads them. */

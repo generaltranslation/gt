@@ -4,7 +4,7 @@ import Harness from './fixtures/Harness.svelte';
 import SourceFallback from './fixtures/SourceFallback.svelte';
 import { hashesOf, setupGT, withoutComments } from './helpers';
 
-const [pluralHash, numHash] = hashesOf('SourceFallback.svelte');
+const [pluralHash, numHash, ordinalHash] = hashesOf('SourceFallback.svelte');
 
 /** Rendered body with Svelte's hydration comments removed. */
 function html(props: Record<string, unknown>): string {
@@ -47,6 +47,27 @@ describe('<T> source content in a translated locale', () => {
         },
       })
     ).toContain('<p class="plural">une paire</p>');
+  });
+
+  it('picks an ordinal plural branch in the source and in a translation', () => {
+    const second = (translations: Record<string, unknown>) =>
+      html({
+        component: SourceFallback,
+        props: { n: 2 },
+        locale: 'fr',
+        translations,
+      });
+    expect(second({})).toContain('<p class="ordinal">second</p>');
+    // French has no ordinal "two": 2 is "other".
+    expect(
+      second({
+        [ordinalHash]: {
+          t: 'Plural',
+          i: 1,
+          d: { t: 'o', b: { one: 'premier', other: 'suivant' } },
+        },
+      })
+    ).toContain('<p class="ordinal">suivant</p>');
   });
 
   it('formats variables in the default locale without a translation', () => {

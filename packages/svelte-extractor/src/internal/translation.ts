@@ -665,12 +665,15 @@ class TranslationBuilder {
 
     const element: JsxElement = { t: getTagName(node), i: id };
     let d = getContentProps(node);
+    const ordinal = findAttribute(node, 'ordinal');
+    const transformation =
+      kind === 'Branch'
+        ? 'b'
+        : ordinal && getStaticBoolean(ordinal) === true
+          ? 'o'
+          : 'p';
     if (branchNames.length > 0) {
-      d = {
-        ...d,
-        b: branches,
-        t: kind === 'Plural' ? 'p' : 'b',
-      };
+      d = { ...d, b: branches, t: transformation };
     }
     // Fallback children keep the running counter, like React.
     const children = this.convertChildren(
@@ -686,7 +689,7 @@ class TranslationBuilder {
     const selector = findAttribute(node, kind === 'Plural' ? 'n' : 'branch');
     const snippetName = `${RESERVED_PREFIX}e_${scope}${id}`;
     (this.runtimeMetadata.b ??= {})[`${scope}${id}`] = {
-      t: kind === 'Plural' ? 'p' : 'b',
+      t: transformation,
       b: branchNames,
     };
     this.snippets.push(

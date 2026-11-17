@@ -79,15 +79,16 @@ function createRenderTranslatedChildren({
     // The translation chooses a branch; when it has none for the value, the
     // source chooses its own, which then renders untranslated.
     if (transformation === 'plural') {
-      const n = sourceElement.props.n;
+      const { n, ordinal } = sourceElement.props;
       const targetBranches = targetElement.d?.b || {};
-      const key = selectPluralKey(n, locales, targetBranches);
+      const key = selectPluralKey(n, locales, targetBranches, ordinal);
       const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
         source: getPluralBranch(
           n,
           locales,
           sourceGT.branches || {},
+          ordinal,
           target === undefined ? undefined : key
         ),
         target,

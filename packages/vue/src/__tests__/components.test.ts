@@ -131,6 +131,26 @@ describe('Branch and Plural attributes', () => {
     });
   });
 
+  it('marks an ordinal Plural in the rich wire source and selects ordinally', async () => {
+    const forms = { one: '1st', two: '2nd', other: 'nth' };
+    expect(
+      serializeVueChildren([
+        h(Plural, { n: 2, ordinal: true, ...forms }),
+        h(Plural, { n: 2, ordinal: '', ...forms }),
+        h(Plural, { n: 2, ordinal: false, ...forms }),
+      ])
+    ).toEqual([
+      { t: 'Plural', i: 1, d: { b: forms, t: 'o' } },
+      { t: 'Plural', i: 2, d: { b: forms, t: 'o' } },
+      { t: 'Plural', i: 3, d: { b: forms, t: 'p' } },
+    ]);
+
+    const html = await renderTemplate(
+      '<div><Plural :n="2" ordinal one="1st" two="2nd" other="nth" />|<T><Plural :n="2" ordinal one="1st" two="2nd" other="nth" /></T>|<Plural :n="2" one="1st" two="2nd" other="nth" /></div>'
+    );
+    expect(stripFragmentMarkers(html)).toContain('2nd|2nd|nth');
+  });
+
   it('preserves primitive accepted Plural forms and rejects other attributes in the rich wire source', () => {
     const source = serializeVueChildren([
       h(Plural, {
@@ -665,6 +685,32 @@ describe('Branch and Plural attributes', () => {
         plugin
       )
     ).toBe('A');
+  });
+
+  it('picks an ordinal branch among the branches of the translation', async () => {
+    const source: JsxChildren = {
+      t: 'Plural',
+      i: 1,
+      d: { b: { one: '1st', two: '2nd', other: 'nth' }, t: 'o' },
+    };
+    // Swedish counts 2 as "one" in ordinals and as "other" in cardinals.
+    const target: JsxChildren = {
+      t: 'Plural',
+      i: 1,
+      d: { b: { one: ':a', other: ':e' }, t: 'o' },
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({ [jsxHash(source)]: target }),
+    });
+    await plugin.setLocale('sv');
+
+    expect(
+      await renderTemplate(
+        '<T><Plural :n="2" ordinal one="1st" two="2nd" other="nth" /></T>',
+        undefined,
+        plugin
+      )
+    ).toBe(':a');
   });
 
   it('uses the same filtered inputs for a rich Plural hash', async () => {

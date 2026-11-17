@@ -86,7 +86,7 @@ export const DATA_ATTR_PREFIX = 'data-' as const;
 export const BRANCH_CONTROL_PROPS = new Set(['branch']);
 
 /** Plural control props — not translatable content. */
-export const PLURAL_CONTROL_PROPS = new Set(['n']);
+export const PLURAL_CONTROL_PROPS = new Set(['n', 'ordinal']);
 
 // demarcation for global t macro
 export const T_GLOBAL_REGISTRATION_FUNCTION_MARKER =

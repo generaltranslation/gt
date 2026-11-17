@@ -129,9 +129,9 @@ export function selectBranch(
 
   const branches = Object.keys(targetBranches);
   const targetBranch =
-    info.t === 'p'
-      ? pickPluralForm(value, branches, context.locales)
-      : pickBranch(value, branches);
+    info.t === 'b'
+      ? pickBranch(value, branches)
+      : pickPluralForm(value, branches, context.locales, info.t === 'o');
   if (targetBranch === undefined) return none;
   const ownerScope = scopedId.slice(0, scopedId.length - String(node.i).length);
   return {
@@ -254,12 +254,14 @@ function getBranchScopes(
 function pickPluralForm(
   n: unknown,
   branches: string[],
-  locales: string[]
+  locales: string[],
+  ordinal: boolean
 ): string | undefined {
   if (typeof n !== 'number' && typeof n !== 'bigint') {
     return pickBranch(undefined, branches);
   }
-  return getPluralForm(n, branches, locales) || undefined;
+  const type = ordinal ? 'ordinal' : 'cardinal';
+  return getPluralForm(n, branches, locales, type) || undefined;
 }
 
 /** The branch named by the value, then `other`. */
