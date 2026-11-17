@@ -111,7 +111,7 @@ type PluralCountHole = typeof n | Part<true>;
 type DynHole = DynPlaceholder | Part<boolean, true> | ChoicePlaceholder<true>;
 /**
  * ICU has a plural count only inside a plural or selectordinal branch, so a
- * message (`AllowsPluralCount` false) rejects `n` and fragments that
+ * message (`AllowsPluralCount` false) rejects `n` and parts that
  * use it, while a part may hold them for the branch it ends up in.
  */
 type CheckHole<H, AllowsPluralCount extends boolean> = H extends PluralCountHole
