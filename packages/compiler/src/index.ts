@@ -154,6 +154,11 @@ const INLINE_TRANSLATIONS_WITHOUT_COMPILE_TIME_HASH_ERROR =
     fix: 'Remove compileTimeHash: false, or remove files.gt.inlineTranslations from gt.config.json',
   });
 
+/** The CLI extracts no messages from installed packages, so none of theirs is left out of msgOutput. */
+function isDependency(id: string): boolean {
+  return /[\\/]node_modules[\\/]/.test(id);
+}
+
 function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
   return logLevel !== 'silent' && logLevel !== 'error';
 }
