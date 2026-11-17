@@ -8,6 +8,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
+import { defaultInlineTranslationsHelpers } from 'generaltranslation/internal';
 
 /**
  * Write `files.gt.inlineTranslations.msgOutput` for each embedded locale: a
@@ -21,7 +22,9 @@ export async function writeMessageTranslations(
 ): Promise<void> {
   const inlineTranslations = settings.files.gtJson.inlineTranslations;
   const gtOutput = settings.files.placeholderPaths.gt;
-  const embeddedHashes = getEmbeddedHashes();
+  const embeddedHashes = getEmbeddedHashes(
+    inlineTranslations?.helpers ?? defaultInlineTranslationsHelpers
+  );
   if (!inlineTranslations?.msgOutput || !gtOutput || !embeddedHashes) return;
   const { locales, msgOutput } = inlineTranslations;
   const invalidReason = getInvalidMsgOutputReason(msgOutput, gtOutput);

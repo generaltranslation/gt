@@ -62,8 +62,10 @@ export interface PluginConfig
    * from an `/unstable` entry point: leaves the ICU message string parser out
    * of a production bundle, which formats message trees and JSX without it.
    * A module that imports something that works with ICU strings, such as the
-   * stable `useGT()`, `msg()` or `t()`, fails the build. Defaults to the
-   * `GT_OMIT_ICU_PARSER` environment variable (`true` or `false`).
+   * stable `useGT()`, `msg()` or `t()`, fails the build, and so does one that
+   * takes a whole stable entry point (`import * as`, `export *`, `import()`,
+   * `require()`): import by name. Defaults to the `GT_OMIT_ICU_PARSER`
+   * environment variable (`true` or `false`).
    */
   experimentalOmitIcuParser?: boolean;
 }
@@ -94,6 +96,8 @@ export interface PluginSettings {
   devHotReload: { strings: boolean; jsx: boolean };
   /** Resolved translations to embed at call sites, keyed by locale then hash */
   inlineTranslationsTable?: InlineTranslationsTable;
+  /** `files.gt.inlineTranslations.helpers`: also embed templates that use helpers */
+  inlineTranslationsHelpers: boolean;
   /** Set when a per-locale build replaces source content with its translations */
   sourceReplacement?: SourceReplacement;
 }

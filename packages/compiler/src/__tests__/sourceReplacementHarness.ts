@@ -137,7 +137,10 @@ export function buildOptions(
         gt: {
           ...gtConfig.files?.gt,
           output: path.join(dir, '[locale].json'),
-          inlineTranslations: { locales: [STATIC_LOCALE] },
+          inlineTranslations: {
+            ...gtConfig.files?.gt?.inlineTranslations,
+            locales: [STATIC_LOCALE],
+          },
         },
       },
     },

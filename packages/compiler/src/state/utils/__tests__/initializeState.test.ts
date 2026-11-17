@@ -41,3 +41,21 @@ describe('initializeState enableAutoJsxInjection precedence', () => {
     ).toBe(true);
   });
 });
+
+describe('initializeState inlineTranslationsHelpers', () => {
+  const helpers = (inlineTranslations?: {
+    locales: string[];
+    helpers?: boolean;
+  }) =>
+    initializeState(
+      { gtConfig: { files: { gt: { inlineTranslations } } } },
+      'a.tsx'
+    ).settings.inlineTranslationsHelpers;
+
+  it('is off unless files.gt.inlineTranslations.helpers turns it on', () => {
+    expect(helpers()).toBe(false);
+    expect(helpers({ locales: ['fr'] })).toBe(false);
+    expect(helpers({ locales: ['fr'], helpers: false })).toBe(false);
+    expect(helpers({ locales: ['fr'], helpers: true })).toBe(true);
+  });
+});

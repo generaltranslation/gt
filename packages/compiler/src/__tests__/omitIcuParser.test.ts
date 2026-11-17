@@ -4,10 +4,19 @@
  * a module imports something that works with ICU strings.
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from 'vitest';
 import gtUnplugin, { esbuild as gtEsbuild } from '../index';
 import type { GTUnpluginOptions } from '../index';
 import { transformWithPlugin } from './transformWithPlugin';
@@ -137,6 +146,18 @@ describe('experimentalOmitIcuParser', () => {
       ['getGT', `import { getGT } from 'gt-next/server';`],
       ['useTranslations', `import { useTranslations } from 'gt-react/compat';`],
       ['useMessages', `export { useMessages } from 'gt-tanstack-start';`],
+      ['gtFallback', `import { gtFallback } from 'gt-react';`],
+      ['mFallback', `import { mFallback } from 'gt-i18n';`],
+      ['getGT', `import { getGT } from 'gt-node';`],
+      ['useGT', `import { useGT } from 'gt-react-native';`],
+      ['useGT', `import { useGT } from '@generaltranslation/react-core';`],
+      ['formatMessage', `import { formatMessage } from 'generaltranslation';`],
+      ['decodeVars', `import { decodeVars } from 'generaltranslation';`],
+      [
+        'formatMessage',
+        `import { formatMessage } from '@generaltranslation/format';`,
+      ],
+      ['parse', `import { parse } from '@generaltranslation/icu/parser';`],
     ])('fail the build: %s', async (name, statement) => {
       await expect(
         transform(`${statement}\nexport const x = 1;`)
@@ -145,6 +166,55 @@ describe('experimentalOmitIcuParser', () => {
           `@generaltranslation/compiler Error: ${name} from "[^"]+" works with ICU strings, but experimentalOmitIcuParser leaves the ICU parser out of this build\\..*App\\.tsx:1:\\d+`,
           's'
         )
+      );
+    });
+
+    // The compiler does not follow what a module reads from a whole entry point
+    it.each([
+      [
+        'A namespace import of',
+        'gt-react',
+        `import * as GT from 'gt-react';\nexport const x = GT.T;`,
+      ],
+      [
+        'A default import of',
+        'gt-react',
+        `import GT from 'gt-react';\nexport const x = GT;`,
+      ],
+      [
+        'A default import of',
+        'gt-i18n',
+        `import { default as GT } from 'gt-i18n';\nexport const x = GT;`,
+      ],
+      ['export * from', 'gt-react', `export * from 'gt-react';`],
+      [
+        'export * from',
+        'gt-next/server',
+        `export * as GT from 'gt-next/server';`,
+      ],
+      [
+        'import() of',
+        'gt-react',
+        `export const load = async () => (await import('gt-react')).useGT;`,
+      ],
+      [
+        'import() of',
+        'gt-node',
+        'export const load = () => import(`gt-node`);',
+      ],
+      [
+        'require() of',
+        'gt-react',
+        `const { useGT } = require('gt-react');\nexport const x = useGT;`,
+      ],
+      [
+        'A namespace import of',
+        'generaltranslation',
+        `import * as core from 'generaltranslation';\nexport const x = core;`,
+      ],
+    ])('fail the build: %s "%s"', async (form, source, code) => {
+      await expect(transform(code)).rejects.toThrow(
+        `@generaltranslation/compiler Error: ${form} "${source}" can reach what works with ICU strings there, but experimentalOmitIcuParser leaves the ICU parser out of this build. Import what this module uses from "${source}" by name, or turn off experimentalOmitIcuParser (GT_OMIT_ICU_PARSER) Details: `
       );
     });
 
@@ -165,29 +235,72 @@ describe('experimentalOmitIcuParser', () => {
         'another package',
         `import { useGT, t } from 'other-i18n';\nexport const x = [useGT, t];`,
       ],
+      [
+        'a whole /unstable entry point',
+        `import * as gt from 'gt-react/unstable';\nexport * from 'gt-react/unstable';\nexport const load = () => [import('gt-react/unstable'), require('gt-tanstack-start/unstable')];\nexport const x = gt;`,
+      ],
+      [
+        'a type-only namespace',
+        `import type * as GT from 'gt-react';\nexport type * from 'gt-react';\nexport const x: typeof GT.T | undefined = undefined;`,
+      ],
+      ['an import for its side effects', `import 'gt-react';`],
+      [
+        'what formats no ICU string in the packages below',
+        `import { GT, GTIntl, formatNum } from 'generaltranslation';\nimport { TYPE } from '@generaltranslation/icu/parser';\nimport { formatMessageTree } from '@generaltranslation/icu';\nexport const x = [GT, GTIntl, formatNum, TYPE, formatMessageTree];`,
+      ],
+      [
+        'a module the compiler cannot name',
+        `const name = 'gt-react';\nexport const load = () => [import(name), require(name)];`,
+      ],
     ])('pass with %s', async (_name, code) => {
       await expect(transform(code)).resolves.not.toThrow();
     });
 
-    it("pass in an installed package, whose own imports are not the app's", async () => {
+    it('pass in a GT package, and fail in any other installed package', async () => {
       const plugin = gtUnplugin.raw(
         { gtConfig: {}, experimentalOmitIcuParser: true },
         { framework: 'rollup' }
       ) as unknown as {
         transform: (this: unknown, code: string, id: string) => unknown;
       };
-      const code = `import { useGT } from 'gt-react';\nexport const x = useGT;`;
+      const code = `import { useGT } from 'gt-react';\nconst i18n = require('gt-i18n');\nexport const x = [useGT, i18n];`;
       const context = { addWatchFile() {} };
+      const installed = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-installed-'));
+      onTestFinished(() =>
+        fs.rmSync(installed, { recursive: true, force: true })
+      );
+      const packageFile = (name: string) => {
+        const dir = path.join(installed, 'node_modules', name, 'dist');
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(
+          path.join(dir, '..', 'package.json'),
+          JSON.stringify({ name })
+        );
+        return path.join(dir, 'index.js');
+      };
+      // Their own string code is what the build without the parser is for
+      for (const name of ['gt-react', '@generaltranslation/react-core']) {
+        expect(() =>
+          plugin.transform.call(context, code, packageFile(name))
+        ).not.toThrow();
+      }
+      // The workspace's gt-react, as a linked package is
       expect(() =>
         plugin.transform.call(
           context,
           code,
-          '/app/node_modules/ui-kit/index.js'
+          path.join(PACKAGE_ROOT, '..', 'react', 'src', 'index.client.ts')
         )
       ).not.toThrow();
-      expect(() =>
-        plugin.transform.call(context, code, '/app/src/index.js')
-      ).toThrow('useGT from "gt-react" works with ICU strings');
+      for (const file of [
+        packageFile('ui-kit'),
+        packageFile('gt-dashboard'),
+        '/app/src/index.js',
+      ]) {
+        expect(() => plugin.transform.call(context, code, file)).toThrow(
+          'useGT from "gt-react" works with ICU strings'
+        );
+      }
     });
 
     it('pass when the parser is not left out', async () => {

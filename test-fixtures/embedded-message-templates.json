@@ -130,5 +130,59 @@
     "name": "option-with-a-prototype-setter",
     "template": "t`Total: ${number({ price }, { __proto__: null, style: 'percent' })}`",
     "embeddedBy": "none"
+  },
+  {
+    "name": "unbuildable-plural-branch-key",
+    "template": "t`${plural({ count }, { 'a-b': 'One file', other: 'Many files' })}`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-count-outside-a-plural",
+    "template": "t`${n} files`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-count-in-a-select-branch",
+    "template": "t`${select({ role }, { admin: part`${n} files`, other: 'No files' })}`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-number-option",
+    "template": "t`Total: ${number({ price }, { rounding: 'up' })}`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-unit-without-its-style",
+    "template": "t`Length: ${number({ price }, { unit: 'meter' })}`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-date-style-with-fields",
+    "template": "t`Due ${date({ due }, { style: 'medium', year: 'numeric' })}`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-reserved-variable-name",
+    "template": "t`Hello, ${{ _gt_name: name }}!`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-variable-name",
+    "template": "t`Hello, ${{ 'first-name': name }}!`",
+    "embeddedBy": "none",
+    "buildable": false
+  },
+  {
+    "name": "unbuildable-escape",
+    "template": "t`\\u{110000}${{ name }}`",
+    "embeddedBy": "none",
+    "buildable": false
   }
 ]

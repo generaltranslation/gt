@@ -169,10 +169,22 @@ describe('createInlineUpdates: unstable tagged templates', () => {
         const hashes = treeUpdates(result).map(
           (update) => update.metadata.hash!
         );
-        // Every case is extracted, so one that is not embedded stays in msgOutput
+        // With and without files.gt.inlineTranslations.helpers
+        const withHelpers = getEmbeddedHashes(true) ?? new Set();
+        const withoutHelpers = getEmbeddedHashes(false) ?? new Set();
+        if ('buildable' in testCase) {
+          // Reported and not extracted, so there is no translation to leave out
+          expect(result.updates).toEqual([]);
+          expect(result.warnings).toHaveLength(1);
+          expect(withHelpers.size).toBe(0);
+          return;
+        }
+        // Every other case is extracted, so one that is not embedded stays in msgOutput
         expect(hashes).toHaveLength(1);
-        const embedded = getEmbeddedHashes() ?? new Set();
-        expect(hashes.some((hash) => embedded.has(hash))).toBe(
+        expect(withoutHelpers.has(hashes[0])).toBe(
+          embeddedBy === 'every-compiler'
+        );
+        expect(withHelpers.has(hashes[0])).toBe(
           embeddedBy === 'every-compiler' ||
             (embeddedBy === '@generaltranslation/compiler' && embedsHelpers)
         );
