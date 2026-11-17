@@ -65,6 +65,7 @@ import {
   finishStaticRuntimeFile,
   mayNeedStaticRuntime,
 } from './transform/static-runtime/staticRuntimeModule';
+import { createUncompiledStaticCallSitesError } from './transform/static-runtime/uncompiledStaticCallSites';
 import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
@@ -586,8 +587,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
               },
             });
             if (state.staticRuntime?.errors.length) {
+              const { errors, uncompiled } = state.staticRuntime;
               throw new InvalidLibraryUsageError(
-                createStaticRuntimeError(state.staticRuntime.errors)
+                uncompiled.length > 0
+                  ? createUncompiledStaticCallSitesError(
+                      uncompiled,
+                      id,
+                      meta.framework
+                    )
+                  : createStaticRuntimeError(errors)
               );
             }
           }

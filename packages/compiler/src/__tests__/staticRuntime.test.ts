@@ -29,6 +29,7 @@ import {
   getStaticCountArguments,
   resolveStaticRuntime,
 } from '../transform/static-runtime/resolveStaticRuntime';
+import { createUncompiledStaticCallSitesError } from '../transform/static-runtime/uncompiledStaticCallSites';
 import { compileJsx, evaluateModule } from './sourceReplacementHarness';
 import { transformWithPlugin } from './transformWithPlugin';
 
@@ -1033,6 +1034,119 @@ describe('experimentalStaticRuntime', () => {
       expect(error?.message).toMatch(reason);
       // Each reason names its file and line
       expect(error?.message).toMatch(/App\.tsx:\d+/);
+    });
+  });
+
+  describe('says when a call site reached the compiler uncompiled', () => {
+    const failure = (source: string, locale: 'en' | 'fr' = 'en') =>
+      transformWithPlugin(staticOptions(locale), source).then(
+        () => undefined,
+        (thrown: Error) => thrown.message
+      );
+
+    it.each([
+      [
+        '<T>',
+        `import { T } from 'gt-react';
+         export function App() { return <T>Raw <b>JSX</b></T>; }`,
+        /cannot resolve <T> from "gt-react" because the compiler received it as JSX that is not compiled yet/,
+      ],
+      [
+        '<T> under another name',
+        `import { T as Trans } from 'gt-react';
+         export function App() { return <Trans>Raw JSX</Trans>; }`,
+        /cannot resolve <Trans> from "gt-react" because the compiler received it as JSX/,
+      ],
+      [
+        '<T> of a namespace import',
+        `import * as GT from 'gt-react';
+         export function App() { return <GT.T>Raw JSX</GT.T>; }`,
+        /cannot resolve <GT\.T> from "gt-react" because the compiler received it as JSX/,
+      ],
+    ])('%s still written as JSX', async (_name, source, reason) => {
+      for (const locale of ['en', 'fr'] as const) {
+        const message = await failure(source, locale);
+        expect(message).toMatch(
+          /experimentalStaticRuntime leaves out the GT runtime that would render it/
+        );
+        expect(message).toMatch(reason);
+        expect(message).toMatch(/Compile JSX before this plugin runs/);
+        // The location is the one in the file as it is written
+        expect(message).toMatch(/App\.tsx:2:\d+/);
+        expect(message).not.toMatch(/needs the GT runtime\./);
+      }
+    });
+
+    it.each([
+      [
+        'by TypeScript',
+        `import { t } from 'gt-react/unstable';
+         var __makeTemplateObject = function (cooked, raw) { return cooked; };
+         var templateObject_1;
+         export function App(_a) {
+           var name = _a.name;
+           return t(templateObject_1 || (templateObject_1 = __makeTemplateObject(["Hello ", "!"], ["Hello ", "!"])), { name: name });
+         }`,
+      ],
+      [
+        'by Babel or SWC',
+        `import { t } from 'gt-react/unstable';
+         function _templateObject() { return ["Hello ", "!"]; }
+         export function App(_ref) {
+           return t(_templateObject(), { name: _ref.name });
+         }`,
+      ],
+      [
+        'with options',
+        `import { t } from 'gt-react/unstable';
+         function _templateObject() { return ["Save"]; }
+         export function App() {
+           return t({ context: 'button' })(_templateObject());
+         }`,
+      ],
+    ])('a t template compiled to a call %s', async (_name, source) => {
+      const message = await failure(source);
+      expect(message).toMatch(
+        /cannot resolve a t template from "gt-react\/unstable" because the compiler received it as a call that takes a template object, not as a tagged template/
+      );
+      expect(message).toMatch(/Raise the target of the tool/);
+      expect(message).toMatch(/App\.tsx:\d+:\d+/);
+    });
+
+    it('reports any other call of t as needing the runtime', async () => {
+      const message = await failure(
+        `import { t } from 'gt-react/unstable';
+         export function App({ strings }) { return t(strings); }`
+      );
+      expect(message).toMatch(
+        /t from "gt-react\/unstable" needs the GT runtime/
+      );
+      expect(message).not.toMatch(/template object/);
+    });
+
+    it('names the fix for the bundler, and the first five places', () => {
+      const node = { loc: { start: { line: 3, column: 9 } } } as never;
+      const site = {
+        kind: 'jsx',
+        name: 'T',
+        source: 'gt-react',
+        node,
+      } as const;
+      const esbuild = createUncompiledStaticCallSitesError(
+        Array.from({ length: 7 }, () => site),
+        'src/main.tsx',
+        'esbuild'
+      );
+      expect(esbuild).toMatch(
+        /esbuild runs plugins before it compiles JSX, so its plugin cannot resolve <T>.*turn off experimentalStaticRuntime/
+      );
+      expect(esbuild.match(/src\/main\.tsx:3:\d+/g)).toHaveLength(5);
+      expect(esbuild).toContain('and 2 more in this file');
+      expect(
+        createUncompiledStaticCallSitesError([site], 'src/main.tsx', 'rolldown')
+      ).toMatch(
+        /transformSync\(id, code, \{ jsx: \{ runtime: "automatic" \} \}\)/
+      );
     });
   });
 

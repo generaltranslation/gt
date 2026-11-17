@@ -12,11 +12,17 @@ import {
   type StaticHelperKind,
   type StaticScope,
 } from './resolveStaticRuntime';
+import {
+  getUncompiledStaticCallSite,
+  type UncompiledStaticCallSite,
+} from './uncompiledStaticCallSites';
 
 /** What a file needs from the static runtime, and what it could not compile. */
 export type StaticRuntimeFile = {
   /** Why the file still needs the GT runtime, each with its location */
   errors: string[];
+  /** The call sites among them that reached the compiler in a form it does not transform */
+  uncompiled: UncompiledStaticCallSite[];
   /** Local name of each function of the static runtime a call site calls */
   helpers: Partial<Record<StaticHelperKind, string>>;
   /** The module-scope variable that holds each message tree, by the tree's JSON */
@@ -42,6 +48,7 @@ const HELPER_NAMES: Record<StaticHelperKind, string> = {
 function getFile(state: TransformState): StaticRuntimeFile {
   return (state.staticRuntime ??= {
     errors: [],
+    uncompiled: [],
     helpers: {},
     trees: new Map(),
     changed: false,
@@ -287,6 +294,10 @@ export function finishStaticRuntimeFile(
         staticSpecifiers.push(specifier as t.ImportSpecifier);
         file.changed = true;
         return false;
+      }
+      for (const reference of references) {
+        const site = getUncompiledStaticCallSite(reference, imported, source);
+        if (site) file.uncompiled.push(site);
       }
       addStaticRuntimeError(
         state,
