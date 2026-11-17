@@ -20,6 +20,8 @@ import {
 } from '../injection/injectUnstableTaggedTemplateHash';
 import { isSideEffectFree } from '../injection/inline-translations/isSideEffectFree';
 import { objectPropertyMatchesName } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
+import { escapeTemplateText } from '../injection/inline-translations/replaceTemplateSource';
+import type { StaticFormatterKind } from './resolveStaticRuntime';
 import {
   addStaticRuntimeError,
   addStaticRuntimeWarning,
@@ -180,30 +182,132 @@ function compile(
     return true;
   }
 
-  const args: t.Expression[] = [
-    hoistStaticTree(state, path, tree),
-    t.objectExpression(
-      ordered.map(([name, expression]) =>
-        t.objectProperty(propertyKey(name), expression)
-      )
-    ),
-  ];
   const used = new Set<string>();
-  forEachPlaceholder(tree, (node) => used.add(node[0]));
+  let kind: StaticFormatterKind = 'tree';
+  let onlyValues = true;
+  forEachPlaceholder(tree, (node) => {
+    used.add(node[0]);
+    if (node[1] !== undefined) onlyValues = false;
+    if (node[1] === 'number' || node[1] === 'date' || node[1] === 'time') {
+      kind = 'intl';
+    }
+  });
   const usedFormats = [...formats].filter(
     ([name, properties]) => used.has(name) && properties.length > 0
   );
-  if (usedFormats.length > 0) {
-    args.push(
+  // Built on demand, since a call site may not need it, and twice at most
+  const buildCall = (): t.Expression =>
+    t.callExpression(getStaticFormatter(state, path, kind), [
+      hoistStaticTree(state, path, tree),
       t.objectExpression(
-        usedFormats.map(([name, properties]) =>
-          t.objectProperty(propertyKey(name), t.objectExpression(properties))
+        ordered.map(([name, expression]) =>
+          t.objectProperty(propertyKey(name), t.cloneNode(expression, true))
         )
-      )
-    );
-  }
-  path.replaceWith(t.callExpression(getStaticFormatter(state, path), args));
+      ),
+      ...(usedFormats.length > 0
+        ? [
+            t.objectExpression(
+              usedFormats.map(([name, properties]) =>
+                t.objectProperty(
+                  propertyKey(name),
+                  t.objectExpression(properties)
+                )
+              )
+            ),
+          ]
+        : []),
+    ]);
+  path.replaceWith(
+    (onlyValues && buildValueTemplate(tree, values, ordered, buildCall)) ||
+      buildCall()
+  );
   return true;
+}
+
+/**
+ * A message of text and `{name}` values as a template literal, which is what
+ * the formatter prints for a string, a number, a bigint or a boolean in every
+ * locale; it prints nothing for null and undefined, hence `?? ""`. Only an
+ * object differs, a Date being formatted for the locale, so an object goes to
+ * `buildCall`'s formatter:
+ *
+ *   typeof name == "object" && name ? format(tree, { name }) : `Bonjour ${name ?? ""}`
+ *
+ * Undefined when a value has a side effect, since each is read several times
+ * here, and when the message has no text: the formatter prints a symbol
+ * there, which a template literal throws on.
+ */
+function buildValueTemplate(
+  tree: Exclude<MessageTree, string>,
+  values: Map<string, t.Expression>,
+  ordered: [string, t.Expression][],
+  buildCall: () => t.Expression
+): t.Expression | undefined {
+  if (
+    !tree.some((node) => typeof node === 'string' && node !== '') ||
+    !ordered.every(([, value]) =>
+      isSideEffectFree(value, { isPureCall: () => false, sameIdentity: true })
+    )
+  ) {
+    return undefined;
+  }
+  const quasis: string[] = [''];
+  const expressions: t.Expression[] = [];
+  const guarded: t.Expression[] = [];
+  for (const node of tree) {
+    if (typeof node === 'string') {
+      quasis[quasis.length - 1] += node;
+      continue;
+    }
+    const value = values.get((node as [string])[0])!;
+    if (isText(value)) {
+      expressions.push(t.cloneNode(value, true));
+    } else {
+      expressions.push(
+        t.logicalExpression('??', t.cloneNode(value, true), t.stringLiteral(''))
+      );
+      if (!guarded.some((other) => t.isNodesEquivalent(other, value))) {
+        guarded.push(value);
+      }
+    }
+    quasis.push('');
+  }
+  const literal = t.templateLiteral(
+    quasis.map((text, index) =>
+      t.templateElement(
+        { raw: escapeTemplateText(text), cooked: text },
+        index === quasis.length - 1
+      )
+    ),
+    expressions
+  );
+  if (guarded.length === 0) return literal;
+  const isObject = guarded
+    .map(
+      (value): t.Expression =>
+        t.logicalExpression(
+          '&&',
+          t.binaryExpression(
+            '==',
+            t.unaryExpression('typeof', t.cloneNode(value, true)),
+            t.stringLiteral('object')
+          ),
+          t.cloneNode(value, true)
+        )
+    )
+    .reduce((left, right) => t.logicalExpression('||', left, right));
+  return t.conditionalExpression(isObject, buildCall(), literal);
+}
+
+/** Whether a value is surely a string, a number, a bigint or a boolean. */
+function isText(value: t.Expression): boolean {
+  return (
+    t.isStringLiteral(value) ||
+    t.isNumericLiteral(value) ||
+    t.isBigIntLiteral(value) ||
+    t.isBooleanLiteral(value) ||
+    t.isTemplateLiteral(value)
+  );
 }
 
 function propertyKey(name: string): t.Identifier | t.StringLiteral {

@@ -71,6 +71,58 @@ const CASES: Case[] = [
     ],
   },
   {
+    name: 'a named value that is no text: only an object is formatted',
+    source: app('t`Value: ${{ value }}.`', '{ value }'),
+    translation: ['Valeur : ', ['value'], '.'],
+    renders: [
+      { value: { toString: () => 'object' } },
+      { value: ['a', 'b'] },
+      { value: () => 'function' },
+      { value: 0 },
+      { value: '' },
+      { value: false },
+      { value: NaN },
+      { value: Symbol('symbol') },
+    ],
+  },
+  {
+    name: 'a message that is one value',
+    source: app('t`${{ value }}`', '{ value }'),
+    translation: [['value']],
+    renders: [
+      { value: 'text' },
+      { value: 7 },
+      { value: null },
+      { value: DATE },
+      { value: Symbol('symbol') },
+      { value: { toString: () => 'object' } },
+    ],
+  },
+  {
+    name: 'two values and no text',
+    source: app('t`${{ first }}${{ second }}`', '{ first, second }'),
+    translation: [['second'], ['first']],
+    renders: [
+      { first: 'a', second: 'b' },
+      { first: Symbol('symbol'), second: 'b' },
+    ],
+  },
+  {
+    name: 'values written as text or numbers',
+    source: app(
+      't`Version ${{ major: 2 }}.${{ minor: "x" }} of ${{ name }}`',
+      '{ name }'
+    ),
+    translation: ['Version ', ['major'], '.', ['minor'], ' de ', ['name']],
+    renders: [{ name: 'GT' }, { name: null }],
+  },
+  {
+    name: 'text that a template literal reads as syntax',
+    source: app('t`Run ${{ command }} now`', '{ command }'),
+    translation: ['Lancez `', ['command'], '` : ${pas une valeur} \\ fin\r'],
+    renders: [{ command: 'build' }],
+  },
+  {
     name: 'a value named apart from its expression, and one the translation repeats',
     source: app(
       't`From ${{ from: route.from }} to ${{ to: route.to }}`',
@@ -118,8 +170,15 @@ const CASES: Case[] = [
       { count: 1.5 },
       { count: 1234 },
       { count: 1_000_000 },
+      { count: -1 },
       { count: '3' },
+      { count: ' 1 ' },
+      { count: '1e3' },
       { count: 5n },
+      { count: 2n ** 70n },
+      { count: 'many' },
+      { count: null },
+      { count: true },
     ],
   },
   {
@@ -179,7 +238,30 @@ const CASES: Case[] = [
     translation: [
       ['role', 'select', { admin: 'Gérer l’espace', other: 'Voir l’espace' }],
     ],
-    renders: [{ role: 'admin' }, { role: 'member' }, { role: '' }],
+    renders: [
+      { role: 'admin' },
+      { role: 'member' },
+      { role: '' },
+      { role: 'toString' },
+      { role: 1 },
+      { role: null },
+    ],
+  },
+  {
+    name: 'a select and a plural without an other branch',
+    source: app(
+      't`${select({ role }, { admin: "Admin" })} ${plural({ count }, { one: "one" })}`',
+      '{ role, count }'
+    ),
+    translation: [
+      ['role', 'select', { admin: 'Administrateur', other: '' }],
+      ' ',
+      ['count', 'plural', { one: 'un', other: '' }],
+    ],
+    renders: [
+      { role: 'admin', count: 1 },
+      { role: 'guest', count: 5 },
+    ],
   },
   {
     name: 'a plural inside a select',
@@ -388,7 +470,7 @@ async function getHash(source: string): Promise<string> {
 }
 
 describe('experimentalStaticRuntime', () => {
-  let staticRuntime: Module;
+  let staticModules: Record<string, Module>;
   const catalog: Record<string, unknown> = {};
   let loading: ReturnType<typeof loadRuntime> | undefined;
 
@@ -404,9 +486,14 @@ describe('experimentalStaticRuntime', () => {
 
   beforeAll(async () => {
     vi.stubEnv('NODE_ENV', 'production');
-    staticRuntime = (await import(
-      path.join(GT_REACT_DIST, 'static-runtime.mjs')
-    )) as Module;
+    staticModules = {
+      'gt-react/static-runtime': (await import(
+        path.join(GT_REACT_DIST, 'static-runtime.mjs')
+      )) as Module,
+      'gt-react/static-runtime/intl': (await import(
+        path.join(GT_REACT_DIST, 'static-runtime-intl.mjs')
+      )) as Module,
+    };
   });
 
   beforeEach(() => {
@@ -425,7 +512,13 @@ describe('experimentalStaticRuntime', () => {
     const { App } = evaluateModule(code, modules) as {
       App: (props: unknown) => unknown;
     };
-    return renders.map((props) => String(App(props)));
+    return renders.map((props) => {
+      try {
+        return String(App(props));
+      } catch (error) {
+        return `throws ${(error as Error).constructor.name}`;
+      }
+    });
   };
 
   // Through esbuild first, as a bundler hands a module to the plugin
@@ -458,13 +551,9 @@ describe('experimentalStaticRuntime', () => {
             console.warn = warn;
           });
           expect(staticBuild).not.toMatch(/from "gt-react(\/unstable)?"/);
-          expect(
-            call(
-              staticBuild,
-              { 'gt-react/static-runtime': staticRuntime },
-              renders
-            )
-          ).toEqual(call(runtimeBuild, reference.modules, renders));
+          expect(call(staticBuild, staticModules, renders)).toEqual(
+            call(runtimeBuild, reference.modules, renders)
+          );
           // A build says which messages render their source for want of a translation
           expect(
             warnings.filter((warning) => warning.includes(hash))
@@ -487,11 +576,11 @@ describe('experimentalStaticRuntime', () => {
     expect(await build(source, staticOptions('en'))).toMatchInlineSnapshot(`
       "import { createStaticFormatter as _createStaticFormatter } from "gt-react/static-runtime";const _gtFormat = /* @__PURE__ */_createStaticFormatter(["en"]);const _gtTree = ["Welcome back, ", ["name"], "!"];const _gtTree2 = [["count", "plural", { one: [0, " invoice"], other: [0, " invoices"] }]];
       function App({ name, count }) {
-        return ["Account settings", _gtFormat(_gtTree, { name:
+        return ["Account settings", typeof
 
-          name }), _gtFormat(_gtTree2, { count:
-          count }), _gtFormat(_gtTree, { name:
-          name })];
+        name == "object" && name ? _gtFormat(_gtTree, { name: name }) : \`Welcome back, \${name ?? ""}!\`, _gtFormat(_gtTree2, { count:
+          count }), typeof
+        name == "object" && name ? _gtFormat(_gtTree, { name: name }) : \`Welcome back, \${name ?? ""}!\`];
 
       }
       export {
@@ -531,7 +620,7 @@ describe('experimentalStaticRuntime', () => {
       "import { Fragment as _Fragment } from "react/jsx-runtime";import { jsx, jsxs } from "react/jsx-runtime";
 
 
-      import { loadTranslations } from "./translations";import { initializeGTSPA, createStaticFormatter as _createStaticFormatter } from "gt-react/static-runtime";const _gtFormat = /* @__PURE__ */_createStaticFormatter(["fr", "en"]);const _gtTree = ["Re\\xE7us de ", ["name"]];
+      import { loadTranslations } from "./translations";import { initializeGTSPA } from "gt-react/static-runtime";
       const ready = initializeGTSPA({ defaultLocale: "en", locales: ["fr"], loadTranslations });
       function App({ name }) {
         return /* @__PURE__ */jsx(_Fragment, { children: /* @__PURE__ */jsxs("p", { children: ["Historique de ", /* @__PURE__ */jsx(
@@ -539,7 +628,7 @@ describe('experimentalStaticRuntime', () => {
               "b", { children: "facturation" })] }) }
         );
       }
-      const title = () => _gtFormat(_gtTree, { name: "Ada" });
+      const title = () => \`Reçus de \${"Ada"}\`;
       export {
         App,
         ready,
@@ -548,7 +637,7 @@ describe('experimentalStaticRuntime', () => {
     const { ready, title } = evaluateModule(output, {
       'react/jsx-runtime': {},
       './translations': {},
-      'gt-react/static-runtime': staticRuntime,
+      ...staticModules,
     }) as { ready: Promise<void>; title: () => string };
     await expect(ready).resolves.toBeUndefined();
     expect(title()).toBe('Reçus de Ada');
@@ -567,7 +656,7 @@ describe('experimentalStaticRuntime', () => {
         source,
         staticOptions('fr', { [hash]: translation })
       );
-      call(output, { 'gt-react/static-runtime': staticRuntime }, [{ log }]);
+      call(output, staticModules, [{ log }]);
       expect(log).toEqual(['a', 'b', 1]);
     }
   });
@@ -809,17 +898,13 @@ describe('experimentalStaticRuntime', () => {
       nodePaths: [path.join(__dirname, '../../node_modules')],
     });
     const inputs = Object.keys(Object.values(metafile.outputs)[0].inputs);
-    // The formatter, and none of the cache, config, parser, client or hashing
+    // The static entry alone: no cache, config, parser, client, hashing or
+    // formatter of the runtime
     expect(
-      inputs.some((file) => /icu\/dist\/formatMessageTree/.test(file))
-    ).toBe(true);
-    expect(
-      inputs.filter((file) =>
-        /packages\/(i18n|api|react-core)\/|icu\/dist\/(syntaxTree|parser)|@noble|core\/dist\/(runtime|hashSource)/.test(
-          file
-        )
-      )
-    ).toEqual([]);
-    expect(outputFiles[0].text.length).toBeLessThan(12_000);
+      inputs
+        .filter((file) => !file.endsWith('app.js'))
+        .map((file) => path.basename(file))
+    ).toEqual(['static-runtime.mjs']);
+    expect(outputFiles[0].text.length).toBeLessThan(2_500);
   });
 });
