@@ -14,6 +14,7 @@ import {
 } from '@clack/prompts';
 import type { Option } from '@clack/prompts';
 import chalk from 'chalk';
+import { GT_LOGO_ASCII } from 'gt/console/logo';
 import { getLocadexVersion } from '../utils/getPaths.js';
 import { exit } from '../utils/shutdown.js';
 
@@ -59,18 +60,7 @@ export function displayHeader() {
 
 function displayAsciiTitle() {
   // eslint-disable-next-line no-console
-  console.log(
-    chalk.cyan(
-      `\n  ,ad8888ba,  888888888888  
- d8"'    \`"8b      88       
-d8'                88       
-88                 88       
-88      88888      88       
-Y8,        88      88       
- Y8a.    .a88      88       
-  \`"Y88888P"       88       `
-    )
-  );
+  console.log(chalk.cyan(`\n${GT_LOGO_ASCII}`));
 }
 
 function displayInitializingText() {

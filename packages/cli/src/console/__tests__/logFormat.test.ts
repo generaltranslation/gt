@@ -78,6 +78,31 @@ describe('displayHeader banner', () => {
       expect(logSpy).not.toHaveBeenCalled();
     }
   );
+
+  it('prints the GT logo banner in the default format', async () => {
+    vi.stubEnv('GT_LOG_FORMAT', 'default');
+    spyConsoleWrites();
+    const { displayHeader } = await import('../logging.js');
+    const { GT_LOGO_ASCII } = await import('../logo.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    displayHeader('Doing a thing...');
+
+    expect(String(logSpy.mock.calls[0]?.[0])).toContain(GT_LOGO_ASCII);
+  });
+});
+
+describe('GT_LOGO_ASCII', () => {
+  it('fits an 80-column terminal without trailing whitespace', async () => {
+    const { GT_LOGO_ASCII } = await import('../logo.js');
+    const lines = GT_LOGO_ASCII.split('\n');
+
+    expect(lines).toHaveLength(17);
+    for (const line of lines) {
+      expect(line.length).toBeLessThanOrEqual(80);
+      expect(line).toBe(line.trimEnd());
+    }
+  });
 });
 
 describe('agent log format', () => {

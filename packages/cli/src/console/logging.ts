@@ -13,6 +13,7 @@ import chalk from 'chalk';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { getCLIVersion } from '../utils/packageJson.js';
 import { logger } from './logger.js';
+import { GT_LOGO_ASCII } from './logo.js';
 import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
 import type { CustomMapping, FileToUpload } from 'generaltranslation/types';
 import { parseTypedLocale } from './promptParsing.js';
@@ -79,19 +80,7 @@ export function displayHeader(introString?: string) {
 
 function displayAsciiTitle() {
   // eslint-disable-next-line no-console
-  console.log(
-    chalk.cyan(
-      `\n    @@@@@@@@@@@@@@@@@@@@@@
-  @@  @@@@@@@@@@@@ @@@@@@@
- @@ @@@          @ @
-@@ @@            @ @
-@@ @      @@@@@  @ @
-@@ @@     @@@ @  @ @
- @@ @@      @ @  @ @
-  @@  @@@@@@@ @  @ @
-    @@@@@@@@@    @ @`
-    )
-  );
+  console.log(chalk.cyan(`\n${GT_LOGO_ASCII}`));
 }
 
 function displayInitializingText() {
