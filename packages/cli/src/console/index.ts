@@ -429,6 +429,21 @@ export const warnSpreadOnBranchSync = (
     location
   );
 
+export const warnReservedVariableNameSync = (
+  file: string,
+  name: string,
+  reservedPrefix: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: `The variable name "${name}" starts with the reserved "${reservedPrefix}" prefix`,
+      fix: 'Pick another name',
+    }),
+    location
+  );
+
 export const warnRecursiveFunctionCallSync = (
   file: string,
   functionName: string,

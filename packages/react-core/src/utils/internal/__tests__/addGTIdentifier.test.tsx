@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { addGTIdentifier } from '../addGTIdentifier';
 import { writeChildrenAsObjects } from '../writeChildrenAsObjects';
@@ -12,6 +12,7 @@ import {
   GtInternalRelativeTime,
   RelativeTime,
 } from '../../../components/variables/RelativeTime';
+import { Var } from '../../../components/variables/Var';
 import type { GTTag, TaggedElement, TranslatedChildren } from '../../types';
 
 function gtTag(node: unknown): GTTag {
@@ -144,5 +145,50 @@ describe('addGTIdentifier with <RelativeTime>', () => {
     });
 
     expect(renderText(rendered)).toBe('Posted 3 days ago');
+  });
+});
+
+describe('a variable name with the reserved _gt_ prefix', () => {
+  const RESERVED =
+    'A variable name starts with the reserved "_gt_" prefix. Pick another name. Details: name: _gt_2.';
+  // The unnamed variable is _gt_2 as well, so one value would render twice.
+  const tagged = () =>
+    addGTIdentifier([
+      <Var key='first' name='_gt_2'>
+        Alice
+      </Var>,
+      ' / ',
+      <Var key='second'>Bob</Var>,
+    ]);
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it('throws in development', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    expect(() => writeChildrenAsObjects(tagged())).toThrow(RESERVED);
+    expect(() =>
+      renderDefaultChildren({
+        children: tagged(),
+        defaultLocale: 'en',
+        enableI18n: true,
+      })
+    ).toThrow(RESERVED);
+  });
+
+  it('logs in production and keeps the name', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(writeChildrenAsObjects(tagged())).toEqual([
+      { i: 1, k: '_gt_2', v: 'v' },
+      ' / ',
+      { i: 2, k: '_gt_2', v: 'v' },
+    ]);
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'A variable name starts with the reserved "_gt_" prefix. The variable was rendered under that name. Pick another name. Details: name: _gt_2.'
+      )
+    );
   });
 });

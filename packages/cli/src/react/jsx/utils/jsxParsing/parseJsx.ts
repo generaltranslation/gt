@@ -21,6 +21,7 @@ import {
   warnBranchChildrenSync,
   warnInvalidExactPluralPropSync,
   warnNonLiteralOrdinalSync,
+  warnReservedVariableNameSync,
   warnSpreadOnBranchSync,
   warnNestedInternalTComponent,
   warnDeriveNonConstVariableSync,
@@ -39,6 +40,7 @@ import {
   HTML_CONTENT_PROPS,
   type JsxChildren,
 } from '@generaltranslation/format';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import { NodePath } from '@babel/traverse';
 import { ParsingConfigOptions } from '../../../../types/parsing.js';
 import { resolveImportPath } from '../resolveImportPath.js';
@@ -519,6 +521,20 @@ function buildJSXTree({
           results.props.children = childrenArray;
         }
         return results;
+      }
+
+      if (
+        typeof props.name === 'string' &&
+        props.name.startsWith(RESERVED_NAME_PREFIX)
+      ) {
+        output.errors.push(
+          warnReservedVariableNameSync(
+            config.file,
+            props.name,
+            RESERVED_NAME_PREFIX,
+            `${element.loc?.start?.line}:${element.loc?.start?.column}`
+          )
+        );
       }
 
       return {

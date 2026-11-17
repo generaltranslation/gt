@@ -379,6 +379,18 @@ describe('errors', () => {
     }
   );
 
+  it('rejects a variable name with the reserved _gt_ prefix', () => {
+    // Without the error, both variables would compile to one _gt_2 entry.
+    expect(
+      errorsFor(
+        '<T><Var name="_gt_2">{first}</Var> / <Var>{second}</Var></T>',
+        'let first, second;'
+      )
+    ).toEqual([
+      'The variable name "_gt_2" starts with the reserved "_gt_" prefix',
+    ]);
+  });
+
   it('rejects unwrapped dynamic content', () => {
     expect(errorsFor('<T>Hi {name}</T>', 'let name;')).toEqual([
       'Dynamic content inside <T> must be wrapped in a variable component',

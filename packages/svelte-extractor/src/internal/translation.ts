@@ -536,6 +536,14 @@ class TranslationBuilder {
         );
         return undefined;
       }
+      if (name.startsWith(RESERVED_NAME_PREFIX)) {
+        this.problem(
+          nameAttribute.start,
+          `The variable name "${name}" starts with the reserved "${RESERVED_NAME_PREFIX}" prefix`,
+          'Pick another name'
+        );
+        return undefined;
+      }
       key = name;
     }
     if (containsComponent(node.fragment, this.bindings, 'T')) {

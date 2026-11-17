@@ -8,7 +8,7 @@ use crate::hash::{
   SanitizedVariable, VariableType,
 };
 use crate::visitor::jsx_utils::{extract_attribute_from_jsx_attr, extract_max_chars_from_jsx_attr, jsx_attr_contains_derive_call};
-use crate::visitor::errors::create_non_literal_ordinal_error;
+use crate::visitor::errors::{create_non_literal_ordinal_error, create_reserved_variable_name_error};
 use crate::TransformVisitor;
 use std::collections::BTreeMap;
 use swc_core::ecma::{ast::*, atoms::Atom};
@@ -22,13 +22,16 @@ struct ComponentInfo {
   branches: Option<BTreeMap<String, Box<SanitizedChild>>>,
 }
 
+/// The prefix of the names given to variables without a `name`
+const RESERVED_NAME_PREFIX: &str = "_gt_";
+
 /// AST traversal for converting JSX to sanitized GT objects
 pub struct JsxTraversal<'a> {
   visitor: &'a TransformVisitor,
   id_counter: u32,
-  /// Whether a Plural's `ordinal` is not a boolean literal, so only the
-  /// runtime knows which content the element hashes to.
-  unresolved_ordinal: bool,
+  /// The error that leaves the element without a compile-time hash: only the
+  /// runtime knows which content it hashes to, or the runtime rejects it.
+  hash_error: Option<String>,
 }
 
 impl<'a> JsxTraversal<'a> {
@@ -37,7 +40,7 @@ impl<'a> JsxTraversal<'a> {
     Self {
       visitor,
       id_counter: 0,
-      unresolved_ordinal: false,
+      hash_error: None,
     }
   }
 
@@ -60,14 +63,12 @@ impl<'a> JsxTraversal<'a> {
 
       // Check if sanitized children contain static components or context contains derive - if so, return empty hash
       let has_derive_in_context = jsx_attr_contains_derive_call(element, "context");
-      if self.unresolved_ordinal {
-        self.visitor.logger.log_error(&create_non_literal_ordinal_error(
-          self.visitor.settings.filename.as_deref(),
-        ));
+      if let Some(error) = &self.hash_error {
+        self.visitor.logger.log_error(error);
       }
       let has_static = JsxHasher::contains_static(&sanitized_children)
         || has_derive_in_context
-        || self.unresolved_ordinal;
+        || self.hash_error.is_some();
       
       // Create the full SanitizedData structure to match TypeScript compiler inputs
       use crate::hash::SanitizedData;
@@ -378,7 +379,15 @@ impl<'a> JsxTraversal<'a> {
           if name_ident.sym.as_ref() == "name" {
             if let Some(JSXAttrValue::Str(str_lit)) = &jsx_attr.value {
               if !str_lit.value.is_empty() {
-                return str_lit.value.to_string_lossy().to_string();
+                let name = str_lit.value.to_string_lossy().to_string();
+                if name.starts_with(RESERVED_NAME_PREFIX) {
+                  self.hash_error = Some(create_reserved_variable_name_error(
+                    self.visitor.settings.filename.as_deref(),
+                    &name,
+                    RESERVED_NAME_PREFIX,
+                  ));
+                }
+                return name;
               }
             }
           }
@@ -387,7 +396,7 @@ impl<'a> JsxTraversal<'a> {
     }
 
     // Fallback: the key of an unnamed variable is its id, as in a message tree
-    format!("_gt_{}", self.id_counter)
+    format!("{RESERVED_NAME_PREFIX}{}", self.id_counter)
   }
 
   /// Check if this is a Branch component
@@ -455,7 +464,9 @@ impl<'a> JsxTraversal<'a> {
   fn plural_transformation(&mut self, attrs: &[JSXAttrOrSpread]) -> String {
     plural_transformation(attrs)
       .unwrap_or_else(|| {
-        self.unresolved_ordinal = true;
+        self.hash_error = Some(create_non_literal_ordinal_error(
+          self.visitor.settings.filename.as_deref(),
+        ));
         "p"
       })
       .to_string()
@@ -1487,6 +1498,35 @@ mod tests {
       let mut content_traversal = JsxTraversal::new(&visitor);
       let (content_hash, _) = content_traversal.calculate_element_hash(&different_content);
       assert_ne!(first_hash, content_hash, "Content should change hash");
+    }
+
+    #[test]
+    fn reserved_variable_name_leaves_the_hash_to_the_runtime() {
+      let mut visitor = create_test_visitor();
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_regular_variable("Var".into(), "Var".into());
+      let named = |name: &str| {
+        let mut var = create_jsx_element("Var");
+        var.opening.attrs = vec![create_string_attr("name", name)];
+        // The unnamed variable is _gt_2, the name the first one may not take.
+        create_jsx_element_with_children(
+          "T",
+          vec![
+            JSXElementChild::JSXElement(Box::new(var)),
+            create_jsx_text_child(" / "),
+            JSXElementChild::JSXElement(Box::new(create_jsx_element("Var"))),
+          ],
+        )
+      };
+
+      let (hash, json) = JsxTraversal::new(&visitor).calculate_element_hash(&named("first"));
+      assert_eq!(hash.len(), 16);
+      assert!(json.contains(r#""k":"first""#) && json.contains(r#""k":"_gt_2""#));
+
+      let (reserved_hash, _) = JsxTraversal::new(&visitor).calculate_element_hash(&named("_gt_2"));
+      assert_eq!(reserved_hash, "");
     }
   }
 

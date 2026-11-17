@@ -2,6 +2,8 @@ import * as t from '@babel/types';
 import { getObjectPropertyFromObjectExpression } from '../../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { getStringLiteralFromExpression } from '../../../utils/parsing/getStringLiteralFromExpression';
 import { createErrorLocation } from '../../../utils/errors';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 
 /**
  * Extracts name field for var component
@@ -40,5 +42,15 @@ export function validateNameFieldForVarComponent(
     );
     return { errors };
   }
-  return { errors, value: getStringLiteralFromExpression(nameProperty.value) };
+  const value = getStringLiteralFromExpression(nameProperty.value);
+  if (value.startsWith(RESERVED_NAME_PREFIX)) {
+    errors.push(
+      createDiagnosticMessage({
+        whatHappened: `The variable name "${value}" starts with the reserved "${RESERVED_NAME_PREFIX}" prefix`,
+        fix: 'Pick another name',
+      }) + createErrorLocation(nameProperty.value)
+    );
+    return { errors };
+  }
+  return { errors, value };
 }

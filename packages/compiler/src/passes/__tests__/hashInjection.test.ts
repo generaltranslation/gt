@@ -324,6 +324,18 @@ describe('<Plural ordinal>', () => {
   );
 });
 
+it('rejects a variable name with the reserved _gt_ prefix', () => {
+  // Without the error, both variables would be hashed as _gt_2.
+  const { errors } = transform(
+    `${JSX_IMPORTS}jsxs(T, { children: [jsx(Var, { name: "_gt_2", children: first }), " / ", jsx(Var, { children: second })] });`
+  );
+  expect(errors).toEqual([
+    expect.stringContaining(
+      'The variable name "_gt_2" starts with the reserved "_gt_" prefix. Pick another name.'
+    ),
+  ]);
+});
+
 /**
  * Two regressions covered here:
  *

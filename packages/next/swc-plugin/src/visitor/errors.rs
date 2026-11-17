@@ -35,3 +35,15 @@ pub fn create_non_literal_ordinal_error(filename: Option<&str>) -> String {
     "gt-next{location}: The ordinal prop of <Plural> must be a boolean literal. Write a bare ordinal attribute, ordinal={{true}} or ordinal={{false}}."
   )
 }
+
+/// Generate error message for a variable component whose name has the prefix of generated names
+pub fn create_reserved_variable_name_error(
+  filename: Option<&str>,
+  name: &str,
+  reserved_prefix: &str,
+) -> String {
+  let location = filename.map(|filename| format!(" in {filename}")).unwrap_or_default();
+  format!(
+    "gt-next{location}: The variable name \"{name}\" starts with the reserved \"{reserved_prefix}\" prefix. Pick another name."
+  )
+}

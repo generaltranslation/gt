@@ -649,6 +649,20 @@ describe('<Plural ordinal>', () => {
   );
 });
 
+it('rejects a variable name with the reserved _gt_ prefix', () => {
+  // Without the error, both variables would be stored as _gt_2.
+  const { updates, errors } = extractUserT(
+    page('<T><Var name="_gt_2">{first}</Var> / <Var>{second}</Var></T>')
+  );
+
+  expect(updates).toEqual([]);
+  expect(errors).toEqual([
+    expect.stringContaining(
+      'The variable name "_gt_2" starts with the reserved "_gt_" prefix. Pick another name.'
+    ),
+  ]);
+});
+
 describe('Derive of a variable', () => {
   const derive = (c: string, i = 1) => ({ t: 'Derive', i, c });
 

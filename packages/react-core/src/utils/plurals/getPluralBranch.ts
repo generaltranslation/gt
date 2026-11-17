@@ -107,7 +107,7 @@ export function getBranch<T>(
   return selected;
 }
 
-function report({
+export function report({
   whatHappened,
   fix,
   rendered,
