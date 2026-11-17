@@ -4,6 +4,7 @@
 
 import type { InlineTranslationsTable } from './transform/injection/inline-translations/loadInlineTranslations';
 import type { SourceReplacement } from './transform/injection/inline-translations/resolveSourceReplacement';
+import type { StaticRuntime } from './transform/static-runtime/resolveStaticRuntime';
 import type {
   GTCompilerOptions,
   GTConfig as SharedGTConfig,
@@ -85,6 +86,20 @@ export interface PluginConfig
    * `GT_OMIT_ICU_PARSER` environment variable (`true` or `false`).
    */
   experimentalOmitIcuParser?: boolean;
+  /**
+   * Experimental, for per-locale builds of single-page apps that replace
+   * source content (`experimentalStaticLocale` with
+   * `experimentalReplaceSource`): leaves the GT runtime out of the build. The
+   * compiler resolves every `t` template from `gt-react/unstable` and every
+   * `<T>` for the build's locale, and a template with variables formats its
+   * message through `gt-react/static-runtime`, which loads no translations
+   * and reads no locale. `initializeGTSPA()` becomes a call that does
+   * nothing. Anything that would still need the runtime, such as `useGT()`,
+   * `msg()`, a `GTProvider`, the locale hooks, or a `<T>` the build cannot
+   * replace, fails the build with its location. Defaults to the
+   * `GT_STATIC_RUNTIME` environment variable (`true` or `false`).
+   */
+  experimentalStaticRuntime?: boolean;
 }
 
 /**
@@ -119,6 +134,8 @@ export interface PluginSettings {
   precomputeMessages: boolean;
   /** Whether a production build turns static <T> calls into precomputed components */
   precomputeJsx: boolean;
+  /** Set when a build leaves the GT runtime out and formats with the static entry */
+  staticRuntime?: StaticRuntime;
 }
 
 /**

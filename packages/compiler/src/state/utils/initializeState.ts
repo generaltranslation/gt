@@ -12,6 +12,7 @@ import {
 } from '../../utils/constants/gt/constants';
 import { loadInlineTranslations } from '../../transform/injection/inline-translations/loadInlineTranslations';
 import type { SourceReplacement } from '../../transform/injection/inline-translations/resolveSourceReplacement';
+import type { StaticRuntime } from '../../transform/static-runtime/resolveStaticRuntime';
 
 const DEFAULT_SETTINGS: PluginSettings = {
   logLevel: 'warn',
@@ -41,7 +42,8 @@ const DEFAULT_SETTINGS: PluginSettings = {
 export function initializeState(
   options: GTUnpluginOptions,
   filename: string,
-  sourceReplacement?: SourceReplacement
+  sourceReplacement?: SourceReplacement,
+  staticRuntime?: StaticRuntime
 ): TransformState {
   // Pull enableAutoJsxInjection from gtConfig if provided
   const gtConfig = options.gtConfig;
@@ -68,6 +70,7 @@ export function initializeState(
     experimentalReplaceSource: _d,
     experimentalPrecomputeJsx: precomputeJsx,
     experimentalOmitIcuParser: _e,
+    experimentalStaticRuntime: _f,
     ...restOptions
   } = options;
 
@@ -77,6 +80,12 @@ export function initializeState(
   const inlineTranslationsTable = isProduction
     ? loadInlineTranslations(gtConfig?.files?.gt)
     : undefined;
+
+  const activeSourceReplacement =
+    isProduction &&
+    (inlineTranslationsTable || sourceReplacement?.locale === undefined)
+      ? sourceReplacement
+      : undefined;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
@@ -90,11 +99,8 @@ export function initializeState(
     precomputeMessages:
       options.precomputeMessages ?? DEFAULT_SETTINGS.precomputeMessages,
     inlineTranslationsTable,
-    sourceReplacement:
-      isProduction &&
-      (inlineTranslationsTable || sourceReplacement?.locale === undefined)
-        ? sourceReplacement
-        : undefined,
+    sourceReplacement: activeSourceReplacement,
+    staticRuntime: activeSourceReplacement ? staticRuntime : undefined,
     // Dev builds keep <T>, which hot reloads; id-tagging needs <T> to tag the DOM
     precomputeJsx:
       precomputeJsx === true &&

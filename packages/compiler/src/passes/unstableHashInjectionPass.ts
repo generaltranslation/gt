@@ -10,6 +10,7 @@ import {
 import { buildInlineTranslations } from '../transform/injection/inline-translations/injectInlineTranslations';
 import { replaceTemplateSource } from '../transform/injection/inline-translations/replaceTemplateSource';
 import type { HoistMessage } from '../transform/injection/precomputeUnstableMessage';
+import { compileStaticTemplate } from '../transform/static-runtime/compileStaticTemplate';
 import { createErrorLocation } from '../utils/errors';
 
 // Name of the module-scope constants that hold precomputed messages
@@ -38,6 +39,10 @@ export function unstableHashInjectionPass(
   const hoisted = new Map<string, t.Identifier>();
   return {
     TaggedTemplateExpression(path) {
+      if (state.settings.staticRuntime && compileStaticTemplate(path, state)) {
+        state.statistics.unstableHashInjectionsCount += 1;
+        return;
+      }
       const hoist: HoistMessage = (message) => {
         const { code } = generate(message, { compact: true });
         let id = hoisted.get(code);

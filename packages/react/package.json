@@ -212,6 +212,16 @@
         "types": "./dist/static-locale.d.mts",
         "default": "./dist/static-locale.mjs"
       }
+    },
+    "./static-runtime": {
+      "require": {
+        "types": "./dist/static-runtime.d.cts",
+        "default": "./dist/static-runtime.cjs"
+      },
+      "import": {
+        "types": "./dist/static-runtime.d.mts",
+        "default": "./dist/static-runtime.mjs"
+      }
     }
   },
   "keywords": [

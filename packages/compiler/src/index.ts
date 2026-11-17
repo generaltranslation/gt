@@ -66,6 +66,16 @@ import {
   OMITTED_ICU_PARSER_UNAVAILABLE_WARNING,
   resolveOmittedIcuParser,
 } from './transform/icu-parser/omitIcuParser';
+import {
+  addStaticRuntimeCacheVersion,
+  getStaticRuntime,
+  resolveStaticRuntime,
+  STATIC_RUNTIME_WITHOUT_SOURCE_REPLACEMENT_ERROR,
+} from './transform/static-runtime/resolveStaticRuntime';
+import {
+  createStaticRuntimeError,
+  finishStaticRuntimeFile,
+} from './transform/static-runtime/staticRuntimeModule';
 import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
@@ -279,6 +289,14 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const sourceReplacementTotals = { replaced: 0, kept: 0 };
     const precomputeJsx = getPrecomputeJsx(options.experimentalPrecomputeJsx);
     const omitIcuParser = getOmitIcuParser(options.experimentalOmitIcuParser);
+    const staticRuntimeOption = getStaticRuntime(
+      options.experimentalStaticRuntime
+    );
+    const staticRuntime = resolveStaticRuntime(
+      staticRuntimeOption,
+      sourceReplacement,
+      loadedGTConfig
+    );
     const resolvedOptions: GTUnpluginOptions = {
       ...options,
       ...(gtConfig ? { gtConfig } : {}),
@@ -375,10 +393,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       webpack(compiler) {
         keyCacheOnInlineTranslations(compiler.options);
         if (precomputeJsx) addPrecomputeJsxCacheVersion(compiler.options);
+        if (staticRuntime) addStaticRuntimeCacheVersion(compiler.options);
       },
       rspack(compiler) {
         keyCacheOnInlineTranslations(compiler.options);
         if (precomputeJsx) addPrecomputeJsxCacheVersion(compiler.options);
+        if (staticRuntime) addStaticRuntimeCacheVersion(compiler.options);
       },
       vite: {
         // Vite resolves package imports before a plugin's resolveId sees them
@@ -423,6 +443,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         }
         if (isProduction() && replaceSource && !staticLocale) {
           throw new Error(REPLACE_SOURCE_WITHOUT_STATIC_LOCALE_ERROR);
+        }
+        if (
+          isProduction() &&
+          staticRuntimeOption &&
+          (!staticRuntime || resolvedOptions.compileTimeHash === false)
+        ) {
+          throw new Error(STATIC_RUNTIME_WITHOUT_SOURCE_REPLACEMENT_ERROR);
         }
         if (
           inlineTranslationsModules?.mode !== 'physical' ||
@@ -503,7 +530,16 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
       transform(code: string, id: string) {
         // Initialize processing state
-        const state = initializeState(resolvedOptions, id, sourceReplacement);
+        const state = initializeState(
+          resolvedOptions,
+          id,
+          sourceReplacement,
+          staticRuntime
+        );
+        // Without the locale's translations file the build would keep the runtime
+        if (isProduction() && staticRuntime && !state.settings.staticRuntime) {
+          throw new Error(STATIC_RUNTIME_WITHOUT_SOURCE_REPLACEMENT_ERROR);
+        }
         if (debugManifest) state.debugManifest = debugManifest;
         // webpack does not track files read outside the loader
         if (isProduction()) {
@@ -550,6 +586,14 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
 
           // Handle errors
           if (handleErrors(state)) {
+            // Left as it is, the module would import a runtime nothing starts
+            if (state.settings.staticRuntime) {
+              throw new InvalidLibraryUsageError(
+                createStaticRuntimeError([
+                  `${id}: the module has invalid GT usage, logged above, so it was not compiled`,
+                ])
+              );
+            }
             return null;
           }
 
@@ -609,8 +653,27 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, runtimeTranslatePass(state));
           }
 
+          let staticRuntimeChanged = false;
+          if (state.settings.staticRuntime) {
+            traverse(ast, {
+              Program(programPath) {
+                staticRuntimeChanged = finishStaticRuntimeFile(
+                  programPath,
+                  state
+                );
+                programPath.stop();
+              },
+            });
+            if (state.staticRuntime?.errors.length) {
+              throw new InvalidLibraryUsageError(
+                createStaticRuntimeError(state.staticRuntime.errors)
+              );
+            }
+          }
+
           // Generate code if any pass modified the AST
           if (
+            !staticRuntimeChanged &&
             !injectionRan &&
             state.statistics.macroExpansionsCount === 0 &&
             state.statistics.jsxInsertionsCount === 0 &&
@@ -629,6 +692,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           if (error instanceof InvalidLibraryUsageError) {
             throw error;
           }
+
+          // Left as it is, the module would import a runtime nothing starts
+          if (state.settings.staticRuntime) throw error;
 
           // Otherwise, log the error
           state.logger.logError(`Error processing ${id}: ${error}`);

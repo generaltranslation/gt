@@ -8,6 +8,10 @@ import { TransformState } from '../../state/types';
 import { createErrorLocation } from '../../utils/errors';
 import { injectInlineTranslationsProp } from './inline-translations/injectInlineTranslations';
 import {
+  addStaticRuntimeError,
+  addStaticRuntimeWarning,
+} from '../static-runtime/staticRuntimeModule';
+import {
   type JsxReplacementTarget,
   replaceJsxSource,
 } from './inline-translations/replaceJsxSource';
@@ -147,6 +151,14 @@ function getReplacementTarget(
   if (sourceReplacement.locale === undefined) return 'source';
   const translation =
     inlineTranslationsTable?.[sourceReplacement.locale]?.[hash];
+  if (translation === undefined && state.settings.staticRuntime) {
+    addStaticRuntimeWarning(
+      state,
+      callExpr,
+      `the "${sourceReplacement.locale}" translation of <T> ${hash} is missing, so its source is rendered`
+    );
+    return 'source';
+  }
   return translation === undefined ? undefined : { translation };
 }
 
@@ -167,6 +179,13 @@ function replaceSource(
     return true;
   }
   state.statistics.sourceReplacementFallbacksCount += 1;
+  if (state.settings.staticRuntime) {
+    addStaticRuntimeError(
+      state,
+      callExprPath.node,
+      `this <T> cannot be replaced with what it renders: ${reason}`
+    );
+  }
   state.logger.logDebug(
     (target === 'source'
       ? `Kept <T> ${hash} as a component: ${reason}`
