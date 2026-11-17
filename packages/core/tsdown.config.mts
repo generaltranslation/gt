@@ -21,7 +21,8 @@ const configSchemaConfigs = createTsdownConfig(['src/config-schema.ts']).map(
 
 export default defineConfig(
   withPackageChecks([
-    cjsConfig,
+    // A CommonJS consumer loads the packages this build imports on demand with require, like its other dependencies.
+    { ...cjsConfig, outputOptions: { dynamicImportInCjs: false } },
     {
       ...esmConfig,
       copy: [{ from: '../api/spec/openapi.json', to: 'dist' }],
