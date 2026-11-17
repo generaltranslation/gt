@@ -3,6 +3,7 @@ import type { InferInput, ObjectEntries, ObjectSchema } from 'valibot';
 import type {
   GTConfigSchema,
   GTFilesConfigSchema,
+  GTInlineTranslationsSchema,
   GTOutputFileConfigSchema,
   GTParsingFlagsSchema,
 } from '../config/schema';
@@ -48,6 +49,11 @@ export type GTCompilerOptions = {
    */
   enableAutoJsxInjection?: boolean;
 };
+
+/** Experimental: embed translations for the given locales at build time. */
+export type GTInlineTranslationsOptions = InferInput<
+  typeof GTInlineTranslationsSchema
+>;
 
 /** Configuration for generated GT translation files. */
 export type GTOutputFileConfig = InferInput<typeof GTOutputFileConfigSchema>;

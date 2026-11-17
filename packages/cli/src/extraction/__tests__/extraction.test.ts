@@ -100,6 +100,22 @@ describe('dedupeUpdates', () => {
       ])
     );
   });
+
+  it('does not merge an update repeated by reference into itself', () => {
+    const sourceCode = { 'page.tsx': [{ before: '', target: 'x', after: '' }] };
+    const repeated = update('hello', {
+      hash: 'h1',
+      filePaths: ['pathA'],
+      sourceCode,
+    });
+    const updates: Updates = Array.from({ length: 30 }, () => repeated);
+
+    dedupeUpdates(updates);
+
+    expect(updates).toEqual([repeated]);
+    expect(repeated.metadata.sourceCode).toEqual(sourceCode);
+    expect(repeated.metadata.filePaths).toEqual(['pathA']);
+  });
 });
 
 describe('linkDeriveUpdates', () => {

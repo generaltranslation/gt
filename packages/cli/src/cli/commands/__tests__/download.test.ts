@@ -14,10 +14,20 @@ import {
 import { runDownloadWorkflow } from '../../../workflows/download.js';
 import { logErrorAndExit } from '../../../console/logging.js';
 import { noVersionIdError } from '../../../console/index.js';
+import { aggregateInlineTranslations } from '../../../translation/stage.js';
+import { writeMessageTranslations } from '../../../fs/writeMessageTranslations.js';
 
 vi.mock('../../../formats/files/collectFiles.js', () => ({
   collectFiles: vi.fn(),
   resolveInlineLibrary: vi.fn(),
+}));
+
+vi.mock('../../../translation/stage.js', () => ({
+  aggregateInlineTranslations: vi.fn(),
+}));
+
+vi.mock('../../../fs/writeMessageTranslations.js', () => ({
+  writeMessageTranslations: vi.fn(),
 }));
 
 vi.mock('../../../workflows/download.js', () => ({
@@ -178,4 +188,63 @@ describe('handleDownload GTJSON versionId guard', () => {
       );
     }
   );
+});
+
+describe('handleDownload msgOutput', () => {
+  const msgOutputFiles = {
+    resolvedPaths: {},
+    placeholderPaths: {},
+    transformPaths: {},
+    gtJson: {
+      parsingFlags: {},
+      inlineTranslations: {
+        locales: ['es'],
+        msgOutput: '/project/[locale].msg.json',
+      },
+    },
+  } as unknown as Settings['files'];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(resolveInlineLibrary).mockReturnValue('gt-next');
+    vi.mocked(collectFiles).mockResolvedValue({
+      files: [],
+      reactComponents: 0,
+      publishMap: new Map(),
+    });
+  });
+
+  it('writes msgOutput files after downloading', async () => {
+    await handleDownload(options, settings(), 'gt-next');
+
+    expect(writeMessageTranslations).toHaveBeenCalledTimes(1);
+    expect(
+      vi.mocked(runDownloadWorkflow).mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      vi.mocked(writeMessageTranslations).mock.invocationCallOrder[0]
+    );
+  });
+
+  it('scans the source for embedded hashes when downloading staged translations', async () => {
+    const staged = settings({ stageTranslations: true, files: msgOutputFiles });
+
+    await handleDownload(options, staged, 'gt-next');
+
+    expect(aggregateInlineTranslations).toHaveBeenCalledWith(
+      options,
+      staged,
+      'gt-next'
+    );
+    expect(writeMessageTranslations).toHaveBeenCalledWith(staged);
+  });
+
+  it('does not scan staged downloads without msgOutput', async () => {
+    await handleDownload(
+      options,
+      settings({ stageTranslations: true }),
+      'gt-next'
+    );
+
+    expect(aggregateInlineTranslations).not.toHaveBeenCalled();
+  });
 });

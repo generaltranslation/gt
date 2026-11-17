@@ -19,6 +19,7 @@ export const createMockSettings = (
       resolvedPaths: {},
       placeholderPaths: {},
       transformPaths: {},
+      gtJson: { parsingFlags: {} },
     },
     parsingOptions: {
       conditionNames: [],
