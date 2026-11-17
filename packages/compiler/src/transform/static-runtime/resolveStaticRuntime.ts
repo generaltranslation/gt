@@ -18,11 +18,13 @@ export const STATIC_RUNTIME_ENV_VAR = 'GT_STATIC_RUNTIME';
 export const STATIC_RUNTIME_SOURCE = 'gt-react/static-runtime';
 
 /**
- * What a call site formats a message tree with: `tree` for a message of text,
- * values, selects and plurals, and `intl` for one that also formats a number,
- * a date or a time, which needs the runtime's own formatter.
+ * What a call site formats with: `value` for each value of a message of text
+ * and values, which is a template literal; `tree` for the message tree of a
+ * message with selects and plurals; and `intl` for the tree of one that also
+ * formats a number, a date or a time, which needs the runtime's own formatter.
  */
 export const STATIC_FORMATTERS = {
+  value: { create: 'createStaticValue', source: STATIC_RUNTIME_SOURCE },
   tree: { create: 'createStaticFormatter', source: STATIC_RUNTIME_SOURCE },
   intl: {
     create: 'createStaticIntlFormatter',
