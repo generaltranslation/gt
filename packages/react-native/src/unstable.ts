@@ -1,6 +1,7 @@
 // Tagged-template translation entrypoint. Keep in parity with gt-react/unstable,
-// except `t`: like the root entry, React Native registers no global locale
-// store for it to read (the provider keeps it in context). Use useGT().
+// except `t` and `m`: like the root entry, React Native registers no global
+// locale store for them to read (the provider keeps it in context). Use useGT()
+// and useMessages().
 
 export { useGT, useMessages } from '@generaltranslation/react-core/unstable';
 export {

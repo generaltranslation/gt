@@ -5,7 +5,7 @@ import { I18nCache } from '../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { msg as legacyMsg } from '../../translation-functions/msg/msg';
-import { mFallback, msg, type Msg } from '../../unstable';
+import { m as globalM, mFallback, msg, type Msg } from '../../unstable';
 import { createMessages, getMessages } from '../../unstable-internal';
 import { buildMessage } from '../buildMessage';
 import { getGT } from '../gt';
@@ -21,7 +21,11 @@ function keyOf(strings: TemplateStringsArray, ...holes: unknown[]) {
   });
 }
 
-function setup(fr: Record<string, unknown> = {}, locale = 'fr') {
+function setup(
+  fr: Record<string, unknown> = {},
+  locale = 'fr',
+  getEnableI18n = () => true
+) {
   initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
   setI18nCache(
     new I18nCache({
@@ -32,7 +36,7 @@ function setup(fr: Record<string, unknown> = {}, locale = 'fr') {
   );
   setWritableConditionStore({
     getLocale: () => locale,
-    getEnableI18n: () => true,
+    getEnableI18n,
   });
   return getMessages({ locale, enableI18n: true });
 }
@@ -213,6 +217,25 @@ describe('gt-i18n/unstable msg', () => {
     });
     expect(m(msg`Hello, ${{ name }}!`)).toBe('Hello, Ada!');
     expect(warn).toHaveBeenCalled();
+  });
+
+  it('the global m renders with the condition store locale', async () => {
+    await setup({
+      [keyOf`Hello, ${{ name }}!`]: ['Bonjour, ', ['name'], ' !'],
+    });
+    expect(globalM(msg`Hello, ${{ name }}!`)).toBe('Bonjour, Ada !');
+    expect(globalM(msg`Hello, ${{ name }}!`, { name: 'Bo' })).toBe(
+      'Bonjour, Bo !'
+    );
+    expect(globalM(null)).toBeNull();
+  });
+
+  it('the global m renders the source when i18n is disabled', async () => {
+    let enableI18n = true;
+    await setup({ [keyOf`Save`]: 'Enregistrer' }, 'fr', () => enableI18n);
+    expect(globalM(msg('Save'))).toBe('Enregistrer');
+    enableI18n = false;
+    expect(globalM(msg('Save'))).toBe('Save');
   });
 
   it('createMessages reads a custom lookupTranslation', () => {

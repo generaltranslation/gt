@@ -3,7 +3,12 @@
 // Tagged-template translation entrypoint for client and SSR React runtimes.
 // Named exports only: React client boundaries do not support `export *`.
 
-export { t, useGT, useMessages } from '@generaltranslation/react-core/unstable';
+export {
+  m,
+  t,
+  useGT,
+  useMessages,
+} from '@generaltranslation/react-core/unstable';
 export {
   date,
   derive,

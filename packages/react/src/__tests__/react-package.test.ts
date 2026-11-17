@@ -221,24 +221,27 @@ describe('gt-react package exports', () => {
           const core = require('@generaltranslation/react-core/unstable');
           const i18n = require('gt-i18n/unstable');
 
-          // react-core's hooks plus gt-i18n's message helpers (not its own t).
+          // react-core's hooks plus gt-i18n's message helpers (not its own t or m).
           // gt-react-native/unstable is checked against the same surface.
           assert.deepEqual(
             Object.keys(client).sort(),
             [
               ...Object.keys(core),
-              ...Object.keys(i18n).filter((name) => name !== 't'),
+              ...Object.keys(i18n).filter((name) => name !== 't' && name !== 'm'),
             ].sort()
           );
           assert.equal(client.msg, i18n.msg);
-          // t is client-rendered (SPA) only, so server components lack it.
+          // t and m are client-rendered (SPA) only, so server components lack them.
           assert.deepEqual(
-            Object.keys(client).filter((name) => name !== 't').sort(),
+            Object.keys(client).filter((name) => name !== 't' && name !== 'm').sort(),
             Object.keys(rsc).sort()
           );
           assert.equal(typeof client.useGT, 'function');
           assert.equal(typeof client.t, 'function');
           assert.equal(rsc.t, undefined);
+          assert.equal(typeof client.m, 'function');
+          assert.equal(client.m, core.m);
+          assert.equal(rsc.m, undefined);
           assert.notEqual(client.useGT, rsc.useGT);
           assert.equal(typeof client.useMessages, 'function');
           assert.notEqual(client.useMessages, rsc.useMessages);
