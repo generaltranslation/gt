@@ -9,7 +9,7 @@ import {
   defaultLocaleCookieName,
   getCookieValue,
 } from 'gt-i18n/internal/cookies';
-import type { CustomMapping, LocaleMatcher } from '@generaltranslation/format';
+import type { GTConfig } from 'generaltranslation';
 
 type HeaderValue = string | string[] | null | undefined;
 
@@ -29,15 +29,11 @@ export type StaticLocaleRequest =
   | { headers: StaticLocaleHeaders }
   | StaticLocaleHeaders;
 
-export type StaticLocaleConfig = {
-  /** The app's locales, as in gt.config.json. */
-  locales?: string[];
-  /** The default locale, as in gt.config.json. */
-  defaultLocale?: string;
-  /** Custom locale aliases, as in gt.config.json. */
-  customMapping?: CustomMapping;
-  /** The locale matching algorithm, as in gt.config.json. */
-  localeMatcher?: LocaleMatcher;
+/** The gt.config.json locale settings, and how requests carry the locale. */
+export type StaticLocaleConfig = Pick<
+  GTConfig,
+  'locales' | 'defaultLocale' | 'customMapping' | 'localeMatcher'
+> & {
   /** The locale cookie, if your app renamed it. */
   localeCookieName?: string;
   /** Ignore the Accept-Language header, as with gt-next's `ignoreBrowserLocales`. */
