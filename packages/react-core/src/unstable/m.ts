@@ -1,13 +1,8 @@
 import type { M, Msg } from 'gt-i18n/unstable';
 import { createMessages } from 'gt-i18n/unstable/internal';
-import { getReadonlyConditionStore } from '../condition-store/singleton-operations';
-import { isSpa, reportServerRenderedUse } from './spaOnly';
+import { reportServerRenderedUse, taskConditions } from './spaOnly';
 
-const messages = /* @__PURE__ */ createMessages({
-  getLocale: () => getReadonlyConditionStore().getLocale(),
-  // Outside an SPA, m renders the source once the misuse is reported.
-  getEnableI18n: () => isSpa() && getReadonlyConditionStore().getEnableI18n(),
-});
+const messages = /* @__PURE__ */ createMessages(taskConditions);
 
 function sourceOf(message: string | Msg | null | undefined) {
   if (message == null) return undefined;
@@ -31,7 +26,7 @@ export const m = ((
   message: string | Msg | null | undefined,
   values?: Record<string, unknown>
 ) => {
-  if (!isSpa()) {
+  if (!taskConditions.isSpa()) {
     reportServerRenderedUse({
       name: 'm',
       fix: 'In components, use useMessages(); on the server, use getMessages()',
