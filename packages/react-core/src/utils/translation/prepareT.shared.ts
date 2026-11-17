@@ -31,14 +31,12 @@ type RenderPreparedT = (params: RenderPreparedTParams) => ReactNode;
 
 type TProps = {
   children: ReactNode;
-  _locale?: string;
-  _enableI18n?: boolean;
-  _renderPreparedT?: RenderPreparedT;
 } & JsxTranslationOptions;
 
 type ResolvedTProps = TProps & {
   _locale: string;
   _enableI18n: boolean;
+  _renderPreparedT?: RenderPreparedT;
 };
 
 function prepareT({
