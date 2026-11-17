@@ -164,7 +164,7 @@ describe('runStageFilesWorkflow font sync', () => {
     );
     expect(getWarnings()).toEqual([
       {
-        category: 'failed_upload',
+        category: 'failed_font_sync',
         fileName: 'Broken.ttf',
         reason: 'no family',
       },
