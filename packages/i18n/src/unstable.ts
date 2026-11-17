@@ -13,4 +13,4 @@ export {
   type Placeholder,
 } from './unstable/placeholders';
 export { msg, type Msg } from './unstable/msg';
-export { mFallback, type M } from './unstable/messages';
+export { m, mFallback, type M } from './unstable/messages';

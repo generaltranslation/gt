@@ -81,6 +81,7 @@ describe('@generaltranslation/react-core package exports', () => {
                 ['hooks', 'useGT'],
                 ['components-rsc', 'Branch'],
                 ['unstable', 't'],
+                ['unstable', 'm'],
                 ['unstable', 'useGT'],
                 ['unstable', 'useMessages'],
               ]) {

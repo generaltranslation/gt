@@ -1,6 +1,7 @@
 // Backs the "types" condition of gt-next/unstable. Only its declarations ship.
-// No `t`, like the root entry: Next has no synchronous global locale store
-// (RSC's is async), so use useGT() or gt-next/unstable/server getGT().
+// No `t` or `m`, like the root entry: Next has no synchronous global locale
+// store (RSC's is async), so use useGT(), useMessages(), or
+// gt-next/unstable/server getGT() and getMessages().
 
 export { useGT, useMessages } from 'gt-react/unstable';
 export {
