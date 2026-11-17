@@ -8,14 +8,21 @@ import {
   useI18nStore,
   useTranslationsSnapshot,
 } from '../i18n-store/useI18nStore';
-import { getI18nConfig } from 'gt-i18n/internal';
+import {
+  getI18nConfig,
+  lookupInlineTranslation,
+  type InlineTranslations,
+} from 'gt-i18n/internal';
 import { useHandleMissingTranslation } from './utils/missing-translation';
 
 /**
  * @internal
+ * @param inline - Translations embedded at the call site, which win over
+ * loaded translations. Pass it only when the locale should be translated.
  */
 export function useTranslate<T extends Content>(
-  lookup: TranslateLookup<T>
+  lookup: TranslateLookup<T>,
+  inline?: InlineTranslations<T>
 ): TranslateSnapshot<T> {
   const i18nStore = useI18nStore();
   const translationsSnapshot = useTranslationsSnapshot();
@@ -57,5 +64,8 @@ export function useTranslate<T extends Content>(
     onMissingTranslation(lookup);
   }
 
-  return storeTranslation;
+  return (
+    (inline && lookupInlineTranslation(inline, lookup.locale)) ??
+    storeTranslation
+  );
 }

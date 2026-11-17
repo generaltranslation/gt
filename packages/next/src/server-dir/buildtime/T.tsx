@@ -2,6 +2,8 @@ import { getRequestConditions } from '../../request/getRequestConditions';
 import { T as RscT } from 'gt-react';
 import { renderPreparedT } from './renderPipeline';
 import type { ReactNode } from 'react';
+import type { InlineTranslationsOption } from 'gt-i18n/internal';
+import type { JsxChildren } from '@generaltranslation/format';
 
 type TProps = {
   children: ReactNode;
@@ -10,7 +12,7 @@ type TProps = {
   _hash?: string;
   requiresReview?: boolean;
   [key: string]: ReactNode;
-};
+} & InlineTranslationsOption<JsxChildren>;
 
 /**
  * Build-time translation component that renders its children in the user's given locale.

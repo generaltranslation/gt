@@ -1,3 +1,4 @@
+import type { GTOptions } from 'gt-i18n/unstable';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEnableI18n } from '../../hooks/condition-store';
 import { useTrackedTranslationResolver } from '../../hooks/external-store/useTrackedTranslationResolver';
@@ -92,5 +93,42 @@ describe('react-core/unstable useGT', () => {
 
     expect(useGT()`Hello, ${{ name }}!`).toBe('Hello, Ada!');
     expect(resolveTranslation).not.toHaveBeenCalled();
+  });
+
+  describe('inline translations', () => {
+    // The options the compiler injects for an embedded call site
+    const inline = (callback: (locale: string) => unknown) =>
+      ({ inline: callback }) as GTOptions;
+
+    it('uses the translation embedded at the call site', () => {
+      const gt = useGT();
+      expect(
+        gt(
+          inline((locale) =>
+            locale === 'fr' ? ['Salut, ', ['name'], ' !'] : undefined
+          )
+        )`Hello, ${{ name }}!`
+      ).toBe('Salut, Ada !');
+      expect(resolveTranslation).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the tracked resolver when the callback returns undefined', () => {
+      resolveTranslation.mockReturnValue(['Bonjour, ', ['name'], ' !']);
+      expect(useGT()(inline(() => undefined))`Hello, ${{ name }}!`).toBe(
+        'Bonjour, Ada !'
+      );
+    });
+
+    it('is not called for a locale that needs no translation', () => {
+      vi.mocked(useTranslationConditions).mockReturnValue({
+        locale: 'en',
+        shouldTranslate: false,
+      });
+      const callback = vi.fn(() => 'Salut');
+      expect(useGT()(inline(callback))`Hello, ${{ name }}!`).toBe(
+        'Hello, Ada!'
+      );
+      expect(callback).not.toHaveBeenCalled();
+    });
   });
 });
