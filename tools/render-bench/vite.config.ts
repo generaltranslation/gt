@@ -11,7 +11,7 @@ const variant = variants[name];
 if (!variant) throw new Error(`Unknown BENCH_VARIANT "${name}"`);
 
 export default defineConfig({
-  plugins: [variant.compiler?.(), react()],
+  plugins: [variant.compiler?.(process.env.BENCH_LOCALE), react()],
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: [

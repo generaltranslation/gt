@@ -35,17 +35,36 @@ const variants = args.variants?.split(',') ?? Object.keys(allVariants);
 
 generate();
 const servers = {};
-for (const variant of variants) {
+// A variant built per locale has one build, and one server, for each.
+const builds = variants.flatMap((variant) =>
+  allVariants[variant].perLocale
+    ? ['fr', 'en'].map((locale) => ({
+        variant,
+        locale,
+        key: `${variant}:${locale}`,
+        outDir: `dist/${variant}-${locale}`,
+      }))
+    : [{ variant, key: variant, outDir: `dist/${variant}` }]
+);
+const serverOf = (variant, locale) =>
+  servers[`${variant}:${locale}`] ?? servers[variant];
+for (const { variant, locale, key, outDir } of builds) {
   execFileSync('pnpm', ['exec', 'vite', 'build', '--logLevel', 'warn'], {
     cwd: root,
     stdio: 'inherit',
-    env: { ...process.env, BENCH_VARIANT: variant, NODE_ENV: 'production' },
+    env: {
+      ...process.env,
+      BENCH_VARIANT: variant,
+      BENCH_OUT_DIR: outDir,
+      ...(locale && { BENCH_LOCALE: locale }),
+      NODE_ENV: 'production',
+    },
   });
-  servers[variant] = await preview({
+  servers[key] = await preview({
     root,
     configFile: false,
     logLevel: 'warn',
-    build: { outDir: `dist/${variant}` },
+    build: { outDir },
     preview: {
       port: 0,
       // Cross-origin isolation gives performance.now() its 5µs resolution.
@@ -68,7 +87,7 @@ async function samplePage(variant, { locale, cpu }, measure, argument) {
     const page = await context.newPage();
     const session = await context.newCDPSession(page);
     await session.send('Emulation.setCPUThrottlingRate', { rate: cpu });
-    await page.goto(servers[variant].resolvedUrls.local[0]);
+    await page.goto(serverOf(variant, locale).resolvedUrls.local[0]);
     await page.waitForFunction(() => window.__bench);
     return await page.evaluate(measure, argument);
   } finally {
