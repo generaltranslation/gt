@@ -643,6 +643,26 @@ describe('experimentalStaticRuntime', () => {
     expect(title()).toBe('Reçus de Ada');
   });
 
+  it('renders the source of a <T> without a translation, and says so', async () => {
+    const warnings: string[] = [];
+    const warn = console.warn;
+    console.warn = (message: unknown) => warnings.push(String(message));
+    const output = await build(
+      `import { T } from 'gt-react';
+       export function App() { return <T>Untranslated <b>content</b></T>; }`,
+      { ...staticOptions('fr'), logLevel: 'warn' }
+    ).finally(() => {
+      console.warn = warn;
+    });
+    expect(output).not.toContain('gt-react');
+    expect(output).toContain('"Untranslated "');
+    expect(output).toContain('children: "content"');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(
+      /App\.tsx:\d+.*the "fr" translation of <T> [0-9a-f]+ is missing, so its source is rendered/
+    );
+  });
+
   it('evaluates each value once, in source order, even when the text leaves it out', async () => {
     const source = `${IMPORTS}
       export function App({ log }) {
