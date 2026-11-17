@@ -34,27 +34,42 @@ const variants = args.variants?.split(',') ?? Object.keys(allVariants);
 // ===== Build and serve ===== //
 
 generate();
+const MEASURED_LOCALES = ['fr', 'en'];
 const servers = {};
+// A per-locale variant is one build per locale; the others serve every locale.
+const buildOf = (variant, locale) =>
+  allVariants[variant].perLocale ? `${variant}-${locale}` : variant;
 for (const variant of variants) {
-  execFileSync('pnpm', ['exec', 'vite', 'build', '--logLevel', 'warn'], {
-    cwd: root,
-    stdio: 'inherit',
-    env: { ...process.env, BENCH_VARIANT: variant, NODE_ENV: 'production' },
-  });
-  servers[variant] = await preview({
-    root,
-    configFile: false,
-    logLevel: 'warn',
-    build: { outDir: `dist/${variant}` },
-    preview: {
-      port: 0,
-      // Cross-origin isolation gives performance.now() its 5µs resolution.
-      headers: {
-        'Cross-Origin-Opener-Policy': 'same-origin',
-        'Cross-Origin-Embedder-Policy': 'require-corp',
+  const { perLocale, env } = allVariants[variant];
+  for (const locale of perLocale ? MEASURED_LOCALES : [undefined]) {
+    const name = locale ? buildOf(variant, locale) : variant;
+    execFileSync('pnpm', ['exec', 'vite', 'build', '--logLevel', 'warn'], {
+      cwd: root,
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        ...env,
+        ...(locale && { GT_STATIC_LOCALE: locale }),
+        BENCH_VARIANT: variant,
+        BENCH_OUT_DIR: `dist/${name}`,
+        NODE_ENV: 'production',
       },
-    },
-  });
+    });
+    servers[name] = await preview({
+      root,
+      configFile: false,
+      logLevel: 'warn',
+      build: { outDir: `dist/${name}` },
+      preview: {
+        port: 0,
+        // Cross-origin isolation gives performance.now() its 5µs resolution.
+        headers: {
+          'Cross-Origin-Opener-Policy': 'same-origin',
+          'Cross-Origin-Embedder-Policy': 'require-corp',
+        },
+      },
+    });
+  }
 }
 
 // ===== Measure ===== //
@@ -68,7 +83,7 @@ async function samplePage(variant, { locale, cpu }, measure, argument) {
     const page = await context.newPage();
     const session = await context.newCDPSession(page);
     await session.send('Emulation.setCPUThrottlingRate', { rate: cpu });
-    await page.goto(servers[variant].resolvedUrls.local[0]);
+    await page.goto(servers[buildOf(variant, locale)].resolvedUrls.local[0]);
     await page.waitForFunction(() => window.__bench);
     return await page.evaluate(measure, argument);
   } finally {
@@ -101,7 +116,7 @@ const mountAndUpdate = async (mount) => {
 const tasks = variants.flatMap((variant) => [
   ...[1, 10].flatMap((routes) =>
     [1, 4].flatMap((cpu) =>
-      ['fr', 'en'].map((locale) => ({
+      MEASURED_LOCALES.map((locale) => ({
         variant,
         group: 'render',
         name: `${routes * ROUTE_SIZE} strings, ${cpu}x CPU, ${locale}`,
@@ -123,7 +138,7 @@ const tasks = variants.flatMap((variant) => [
     measure: (name) => window.__bench.mountKind(name),
     argument: kind,
   })),
-  ...['fr', 'en'].map((locale) => ({
+  ...MEASURED_LOCALES.map((locale) => ({
     variant,
     group: 'micro',
     name: locale,

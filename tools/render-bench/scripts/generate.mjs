@@ -311,6 +311,9 @@ function indexModule(hasTranslations) {
   const translationLoaders = LOCALES.map(
     (locale) => `  ${js(locale)}: () => import('./_gt/${locale}.json'),`
   ).join('\n');
+  const msgLoaders = LOCALES.map(
+    (locale) => `  ${js(locale)}: () => import('./_gt/${locale}.msg.json'),`
+  ).join('\n');
   return `export { useMicroSites } from './micro.jsx';
 
 export const routes = [
@@ -330,6 +333,15 @@ ${translationLoaders}
 export async function loadTranslations(locale) {
   return (await translations[locale]()).default;
 }
+
+const msgTranslations = {
+${msgLoaders}
+};
+
+// What the compiler does not embed at a call site.
+export async function loadMsgTranslations(locale) {
+  return (await msgTranslations[locale]?.())?.default ?? {};
+}
 `
     : ''
 }`;
@@ -337,9 +349,16 @@ export async function loadTranslations(locale) {
 
 // ===== Translations per variant ===== //
 
-function treeTranslations(locale) {
+// The compiler embeds <T> and templates whose values are all named; the
+// CLI's msgOutput files keep the rest, which load at runtime.
+const isEmbedded = (message) =>
+  message.kind === 'jsx' ||
+  message.kind === 'plain' ||
+  message.kind === 'interp';
+
+function treeTranslations(locale, messages = allMessages) {
   return Object.fromEntries(
-    allMessages.map((message) => {
+    messages.map((message) => {
       const translated = translate(message, locale);
       return message.kind === 'jsx'
         ? [
@@ -456,6 +475,16 @@ export function generate() {
       'unstable',
       `_gt/${locale}.json`,
       JSON.stringify(treeTranslations(locale))
+    );
+    write(
+      'unstable',
+      `_gt/${locale}.msg.json`,
+      JSON.stringify(
+        treeTranslations(
+          locale,
+          allMessages.filter((message) => !isEmbedded(message))
+        )
+      )
     );
     write(
       'stable',

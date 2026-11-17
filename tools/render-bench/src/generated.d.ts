@@ -13,6 +13,7 @@ declare module '@generated' {
     ((values: Values) => string)[]
   >;
   export function loadTranslations(locale: string): Promise<object>;
+  export function loadMsgTranslations(locale: string): Promise<object>;
 }
 
 declare module '@init' {

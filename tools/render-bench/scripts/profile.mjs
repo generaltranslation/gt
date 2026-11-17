@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { preview } from 'vite';
 import { generate } from './generate.mjs';
+import { variants } from './variants.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const [variant, locale, expression, pages = '1'] = process.argv.slice(2);
@@ -24,6 +25,8 @@ execFileSync(
     stdio: 'inherit',
     env: {
       ...process.env,
+      ...variants[variant]?.env,
+      ...(variants[variant]?.perLocale && { GT_STATIC_LOCALE: locale }),
       BENCH_VARIANT: variant,
       BENCH_OUT_DIR: outDir,
       NODE_ENV: 'production',
