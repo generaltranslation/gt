@@ -26,7 +26,6 @@ import {
   type MessageValues,
   type OnePartValues,
 } from './formatMessageTree';
-import { intlCache } from '../cache/IntlCache';
 
 /**
  * A number, date or time as the formatter reads it. A message tree's nodes
@@ -51,27 +50,6 @@ export type ParsedTree = MessageTree<ParsedNode>;
 // The parser reads `{` as a placeholder, `'` as a quote and `<` as a tag, and
 // a message with none of them as its text.
 const ICU_SYNTAX = /[{'<]/;
-
-/**
- * The locale whose hour a `j` skeleton takes: the first one given. Only a
- * message with a skeleton needs it. Without one, as for an empty list, or
- * one that is no language tag, the hour is left to `Intl`, which formats in
- * the host's locale or rejects the tag.
- */
-function hourLocale(
-  icu: string,
-  locales: string | string[]
-): Intl.Locale | undefined {
-  const first = typeof locales === 'string' ? locales : locales[0];
-  if (!first || !icu.includes('::') || typeof Intl.Locale === 'undefined') {
-    return;
-  }
-  try {
-    return intlCache.get('Locale', first);
-  } catch {
-    return;
-  }
-}
 
 /**
  * The parser's syntax tree as the formatter reads it: a formatted placeholder
@@ -134,7 +112,9 @@ export function formatIcu<R>(
 ): string | R | Array<string | R> {
   // Most messages are plain text, which is its own tree.
   if (!ICU_SYNTAX.test(icu)) return icu;
-  const tree = toParsedTree(parse(icu, { locale: hourLocale(icu, locales) }));
+  // Parsed without a locale: the formatter reads the hour of a `::j`
+  // skeleton from the locale it formats in, as for a message tree.
+  const tree = toParsedTree(parse(icu));
   return formatParsedTree(tree, icu, locales, values, {
     formats: {},
     timeZone: options.timeZone,

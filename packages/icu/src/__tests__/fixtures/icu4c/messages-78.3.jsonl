@@ -821,6 +821,19 @@
 {"id":"dt-hc-4","locale":"ja-JP-u-hc-h12","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"午後11:30"}
 {"id":"dt-hc-5","locale":"en-US-u-hc-h11","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"0:30 AM"}
 {"id":"dt-hc-6","locale":"en-US-u-hc-h24","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T00:30:00Z"}},"icu":"24:30"}
+{"id":"dt-rg-1","locale":"en-u-rg-gbzzzz","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"23:30"}
+{"id":"dt-rg-2","locale":"en-GB-u-rg-uszzzz","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"11:30 pm"}
+{"id":"dt-rg-3","locale":"de-u-rg-uszzzz","message":"{d, time, ::jms}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"11:30:05 PM"}
+{"id":"dt-rg-4","locale":"en-u-rg-gbzzzz","message":"{d, time, short}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"23:30"}
+{"id":"dt-rg-5","locale":"en-u-rg-gbzzzz","message":"{d}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"5/6/20, 23:30"}
+{"id":"dt-rg-6","locale":"en-u-rg-gbzzzz","message":"{d, date, short}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"5/6/20"}
+{"id":"dt-rg-7","locale":"en-u-hc-h12-rg-gbzzzz","message":"{d, time, ::jm}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"11:30 PM"}
+{"id":"dt-rg-8","locale":"en-GB-u-rg-uszzzz","message":"{d, time, short}","values":{"d":{"$date":"2021-01-02T03:04:05.006Z"}},"ours":"03:04 am","icu":"3:04 am","differs":"region-hour"}
+{"id":"dt-hj-1","locale":"de-DE","message":"{d, time, ::hj}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"23 Uhr"}
+{"id":"dt-hj-2","locale":"de-DE","message":"{d, time, ::jh}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"11 PM"}
+{"id":"dt-hj-3","locale":"en-US","message":"{d, time, ::Hj}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"11 PM"}
+{"id":"dt-hj-4","locale":"en-US","message":"{d, time, ::jH}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"23"}
+{"id":"dt-hj-5","locale":"de-DE","message":"{d, time, ::jjjjj}","values":{"d":{"$date":"2020-05-06T23:30:05.123Z"}},"icu":"23 Uhr","differs":"intl-cannot"}
 {"id":"dt-num-1","locale":"en-US","message":"{d, date}","values":{"d":1588807805123},"icu":"May 6, 2020"}
 {"id":"dt-num-2","locale":"en-US","message":"{d, time, ::Hms}","values":{"d":0},"icu":"00:00:00"}
 {"id":"dt-num-3","locale":"en-US","message":"{d, date, ::yMMMd}","values":{"d":-86400000},"icu":"Dec 31, 1969"}

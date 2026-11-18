@@ -220,11 +220,15 @@ function formatNodes<R>(
         append(
           isDateValue(value)
             ? intlCache
-                .get('DateTimeFormat', context.locales, {
-                  dateStyle: 'short',
-                  timeStyle: 'short',
-                  timeZone: context.timeZone,
-                })
+                .get(
+                  'DateTimeFormat',
+                  context.locales,
+                  withRegionHourCycle(context.locales, {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                    timeZone: context.timeZone,
+                  })
+                )
                 .format(value)
             : plainValueText(value)
         );
@@ -297,10 +301,14 @@ function formatNodes<R>(
           ...styleOptions,
           ...formatsOf(context, name),
         };
-        const formatter = intlCache.get('DateTimeFormat', context.locales, {
-          ...withLocaleHourPadding(options),
-          timeZone: options.timeZone ?? context.timeZone,
-        });
+        const formatter = intlCache.get(
+          'DateTimeFormat',
+          context.locales,
+          withRegionHourCycle(context.locales, {
+            ...withLocaleHourPadding(options),
+            timeZone: options.timeZone ?? context.timeZone,
+          })
+        );
         // Intl adds a date to an era or a time zone name with no other field.
         const fields = Object.keys(styleOptions ?? {});
         const alone = fields.every(
@@ -399,6 +407,53 @@ function withLocaleHourPadding(
     ...(options.minute && { minute: 'numeric' }),
     ...(options.second && { second: 'numeric' }),
   };
+}
+
+type HourCycle = NonNullable<Intl.DateTimeFormatOptions['hourCycle']>;
+
+// Reading a locale's hour cycle costs as much as formatting twenty messages.
+const regionHourCycles = new WeakMap<Intl.Locale, HourCycle | null>();
+
+/**
+ * The options with the hour cycle of the locale's region override, as in
+ * `en-u-rg-gbzzzz`, for a time that names no cycle of its own: the hour of
+ * `::j`, or a named style. ICU reads the override and Intl does not. Intl
+ * does read an `hc` keyword, which comes first.
+ */
+function withRegionHourCycle<Options extends Intl.DateTimeFormatOptions>(
+  locales: string | string[],
+  options: Options
+): Options {
+  if (
+    options.hourCycle !== undefined ||
+    options.hour12 !== undefined ||
+    (options.hour === undefined && options.timeStyle === undefined) ||
+    // Almost no locale has an override.
+    !/-rg-/i.test(String(locales)) ||
+    typeof Intl.Locale === 'undefined'
+  ) {
+    return options;
+  }
+  // Of a list, the locale Intl formats in.
+  const tag =
+    typeof locales === 'string'
+      ? locales
+      : Intl.DateTimeFormat.supportedLocalesOf(locales)[0];
+  if (!tag) return options;
+  const locale = intlCache.get('Locale', tag);
+  let hourCycle = regionHourCycles.get(locale);
+  if (hourCycle === undefined) {
+    // Engines name the cycles in a method, or in the older getter.
+    const { getHourCycles, hourCycles } = locale as Intl.Locale & {
+      getHourCycles?: () => HourCycle[];
+      hourCycles?: HourCycle[];
+    };
+    hourCycle = locale.hourCycle
+      ? null
+      : (getHourCycles?.call(locale)[0] ?? hourCycles?.[0] ?? null);
+    regionHourCycles.set(locale, hourCycle);
+  }
+  return hourCycle ? { ...options, hourCycle } : options;
 }
 
 function formatsOf<R>(

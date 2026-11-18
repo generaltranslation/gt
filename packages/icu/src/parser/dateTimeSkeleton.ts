@@ -97,11 +97,16 @@ export function parseDateTimeSkeletonOptions(
         result.dayPeriod = WIDTHS[Math.max(length - 3, 0)];
         break;
       // `j` is the locale's hour, which Intl spells as an hour with no
-      // hourCycle. Three or more widen its AM or PM.
+      // hourCycle. Three or more widen its AM or PM. Like any hour symbol,
+      // the last one decides the clock: `hj` is the locale's hour in ICU.
       case 'j':
         if (length > 4) throw unsupported(field, 'date/time');
         hasHour = true;
-        if (localeHour) result.hour = length % 2 ? 'numeric' : '2-digit';
+        if (localeHour) {
+          delete result.hour12;
+          delete result.hourCycle;
+          result.hour = length % 2 ? 'numeric' : '2-digit';
+        }
         break;
       case 'h':
       case 'H':

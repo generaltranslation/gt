@@ -27,7 +27,8 @@ import {
   type ParserOptions,
 } from '../parser';
 import { expectEachCase } from './expectEachCase';
-import { formatIcu } from './format';
+import { icuToMessage } from '../convert';
+import { formatIcu, formatMessageTree } from './format';
 
 const PLURAL_LOCALES = [
   'en',
@@ -354,6 +355,24 @@ function expectSameFormat(
   );
 }
 
+/** The string formats as the tree it converts to, or fails as its conversion does. */
+function expectSameAsTree(
+  message: string,
+  locale: string,
+  values: Record<string, unknown>
+): void {
+  const formatTree = () => {
+    const { tree, formats } = icuToMessage(message);
+    return formatMessageTree(tree, locale, values, { formats });
+  };
+  const error = catchError(formatTree);
+  if (error) {
+    expect(catchError(() => formatIcu(message, locale, values))).toEqual(error);
+  } else {
+    expect(formatIcu(message, locale, values)).toEqual(formatTree());
+  }
+}
+
 function expectSameAst(message: string, options: ParserOptions): void {
   expect(parse(message, options)).toEqual(
     withOurHourClock(formatJsParse(message, options) as MessageFormatElement[])
@@ -390,23 +409,20 @@ describe('live FormatJS runtime compatibility', () => {
     });
   });
 
-  it('matches locale-aware hour skeletons', () => {
-    const values = { value: new Date(2020, 4, 6, 14, 3, 2) };
-    expectEachCase(HOUR_SKELETON_RUNTIME_CASES, ({ locale, skeleton }) => {
-      expectSameFormat(`{value, time, ::${skeleton}}`, locale, values);
-    });
-  });
-
+  // The parser reads the hour of `j` from a locale it is given, as FormatJS
+  // does. formatIcu gives it none: the formatter reads the hour, as ICU does
+  // and as for a message tree. FormatJS differs where `j` meets an hour: the
+  // last hour symbol decides in ICU.
   // One test per locale: the whole corpus in one test outran the test timeout
   // on a busy CI runner.
   it.each(GENERATED_HOUR_SKELETON_LOCALES)(
-    'matches every generated hour skeleton and its AST for $locale',
+    'parses every generated hour skeleton as FormatJS does, and formats it as its message tree, for $locale',
     ({ locale, skeletons }) => {
       const values = { value: new Date(2020, 4, 6, 19, 3, 2) };
       const options = { locale: new Intl.Locale(locale) };
       expectEachCase(skeletons, (skeleton) => {
         const message = `{value, time, ::${skeleton}}`;
-        expectSameFormat(message, locale, values);
+        expectSameAsTree(message, locale, values);
         expectSameAst(message, options);
       });
     }

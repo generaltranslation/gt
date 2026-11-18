@@ -423,53 +423,61 @@ describe('formatIcu', () => {
   };
   const seven = new Date(2020, 4, 6, 7, 3, 2);
 
-  it("reads a locale's hour cycle from getHourCycles(), once per locale", () => {
+  it("reads the hour cycle of a locale's region override from getHourCycles(), once per locale", () => {
     const getHourCycles = vi.fn(() => ['h23']);
     withHourCycleApis({ getHourCycles }, () => {
       // A locale no other test uses, so its hour cycle is not read yet.
       for (let i = 0; i < 3; i++) {
-        expect(formatIcu('{d, time, ::j}', 'en-x-once', { d: seven })).toBe(
-          '07'
-        );
+        expect(
+          formatIcu('{d, time, ::j}', 'en-u-rg-gbzzzz-x-once', { d: seven })
+        ).toBe('07');
       }
+      expect(getHourCycles).toHaveBeenCalledTimes(1);
+      // A locale without an override is Intl's to read.
+      expect(formatIcu('{d, time, ::j}', 'en-x-none', { d: seven })).toBe(
+        '7 AM'
+      );
       expect(getHourCycles).toHaveBeenCalledTimes(1);
     });
   });
 
-  it('reads the hour cycle from a DateTimeFormat, once per locale, where the engine has no other way', () => {
-    const DateTimeFormat = Intl.DateTimeFormat;
-    const built = vi.fn();
-    Object.defineProperty(Intl, 'DateTimeFormat', {
-      value: new Proxy(DateTimeFormat, {
-        construct(target, args) {
-          built();
-          return Reflect.construct(target, args);
-        },
-      }),
+  it('leaves the hour to Intl where the engine names no hour cycles', () => {
+    withHourCycleApis({ getHourCycles: undefined }, () => {
+      // Intl does not see the region override.
+      expect(
+        formatIcu('{d, time, ::j}', 'en-CA-u-rg-gbzzzz-x-none', { d: seven })
+      ).toBe('7 a.m.');
     });
-    try {
-      withHourCycleApis({ getHourCycles: undefined }, () => {
-        // A DateTimeFormat does not see the region override.
-        for (let i = 0; i < 3; i++) {
-          expect(
-            formatIcu('{d, time, ::j}', 'en-CA-u-rg-gbzzzz-x-dtf', { d: seven })
-          ).toBe('7 a.m.');
-        }
-        // The one the hour cycle is read from, and the one that formats.
-        expect(built).toHaveBeenCalledTimes(2);
-      });
-    } finally {
-      Object.defineProperty(Intl, 'DateTimeFormat', { value: DateTimeFormat });
-    }
   });
 
-  it('honors Unicode region overrides', () => {
+  it('honors Unicode region overrides, which change the hour and nothing else', () => {
     const value = new Date(2020, 4, 6, 7, 3, 2);
     expect(formatIcu('{d, time, ::j}', 'en-u-rg-gbzzzz', { d: value })).toBe(
       '07'
     );
     expect(formatIcu('{d, time, ::j}', 'en-GB-u-rg-uszzzz', { d: value })).toBe(
       '7 am'
+    );
+    // A named style and a bare date take the region's hour too.
+    expect(formatIcu('{d, time, short}', 'en-u-rg-gbzzzz', { d: value })).toBe(
+      '07:03'
+    );
+    expect(formatIcu('{d}', 'en-u-rg-gbzzzz', { d: value })).toBe(
+      '5/6/20, 07:03'
+    );
+    // An `hc` keyword comes first, a cycle the message names is kept, and a
+    // list takes the override of the locale Intl formats in.
+    expect(
+      formatIcu('{d, time, ::j}', 'en-u-hc-h12-rg-gbzzzz', { d: value })
+    ).toBe('7 AM');
+    expect(formatIcu('{d, time, ::h}', 'en-u-rg-gbzzzz', { d: value })).toBe(
+      '7 AM'
+    );
+    expect(
+      formatIcu('{d, time, ::j}', ['tlh', 'en-u-rg-gbzzzz'], { d: value })
+    ).toBe('07');
+    expect(formatIcu('{d, date, short}', 'en-u-rg-gbzzzz', { d: value })).toBe(
+      '5/6/20'
     );
   });
 
