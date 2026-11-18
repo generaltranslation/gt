@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { I18nConfig } from '../I18nConfig';
-import { initializeI18nConfig } from '../singleton-operations';
+import { initializeI18nConfig, setI18nConfig } from '../singleton-operations';
 
 describe('I18nConfig', () => {
   beforeEach(() => {
@@ -276,7 +276,8 @@ describe('I18nConfig', () => {
       vi.stubEnv('NODE_ENV', 'development');
       initializeI18nConfig(config(['en', 'fr', 'brand']));
       expect(warn).not.toHaveBeenCalled();
-      initializeI18nConfig(config(['en', 'brand', 'tlh', 'la']));
+      // A framework sets a config it built itself, which is checked too.
+      setI18nConfig(new I18nConfig(config(['en', 'brand', 'tlh', 'la'])));
       // The same locales again, as a hot reload initializes them.
       initializeI18nConfig(config(['en', 'brand', 'tlh', 'la']));
       expect(warn).toHaveBeenCalledTimes(1);
