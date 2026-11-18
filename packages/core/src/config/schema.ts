@@ -103,6 +103,28 @@ export const GTParsingFlagsSchema = pipe(
 );
 
 /** `files.gt`: generated GT translation files. */
+/** `files.gt.inlineTranslations`: locales whose translations are embedded at build time. */
+export const GTInlineTranslationsSchema = pipe(
+  strictObject({
+    locales: pipe(
+      array(string()),
+      description('Locales to embed, usually the most visited ones')
+    ),
+    msgOutput: optional(
+      pipe(
+        string(),
+        description(
+          "Output path pattern with [locale] placeholder for a copy of each embedded locale's translations file without the entries the compiler embeds, for loading those locales"
+        ),
+        examples(['public/i18n/[locale].msg.json'])
+      )
+    ),
+  }),
+  description(
+    'Experimental: embed translations for the given locales at build time'
+  )
+);
+
 export const GTOutputFileConfigSchema = pipe(
   strictObject({
     output: optional(
@@ -114,6 +136,7 @@ export const GTOutputFileConfigSchema = pipe(
         examples(['public/i18n/[locale].json', 'translations/[locale].json'])
       )
     ),
+    inlineTranslations: optional(GTInlineTranslationsSchema),
     publish: optionalDescribed(
       boolean(),
       'Publish GT translation files to the CDN'

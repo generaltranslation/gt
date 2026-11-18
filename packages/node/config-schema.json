@@ -176,6 +176,26 @@
                 "translations/[locale].json"
               ]
             },
+            "inlineTranslations": {
+              "type": "object",
+              "properties": {
+                "locales": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Locales to embed, usually the most visited ones"
+                },
+                "msgOutput": {
+                  "type": "string",
+                  "description": "Output path pattern with [locale] placeholder for a copy of each embedded locale's translations file without the entries the compiler embeds, for loading those locales",
+                  "examples": ["public/i18n/[locale].msg.json"]
+                }
+              },
+              "required": ["locales"],
+              "additionalProperties": false,
+              "description": "Experimental: embed translations for the given locales at build time"
+            },
             "publish": {
               "type": "boolean",
               "description": "Publish GT translation files to the CDN"

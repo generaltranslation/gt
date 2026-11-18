@@ -11,6 +11,7 @@ import { logger } from '../console/logger.js';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig.js';
 import { noFilesError } from '../console/index.js';
 import { saveJSON } from '../fs/saveJSON.js';
+import { writeMessageTranslations } from '../fs/writeMessageTranslations.js';
 import { loadJSON } from '../fs/loadJSON.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
@@ -173,6 +174,8 @@ export class InlineCLI extends BaseCLI {
         );
         await saveJSON(translationsFile.gt, filteredTranslations);
       }
+      // For embedded locales, the translations the compiler does not embed
+      await writeMessageTranslations(settings);
       logger.step('Merged translations successfully!');
     }
   }

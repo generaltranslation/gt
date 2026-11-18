@@ -1,7 +1,7 @@
 import type { CustomMapping } from '@generaltranslation/format';
 import type { InferInput } from 'valibot';
 import type { FileFormat, UserTokenProvider } from '@generaltranslation/api';
-import type { Updates } from 'generaltranslation';
+import type { GTInlineTranslationsOptions, Updates } from 'generaltranslation';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,
@@ -245,6 +245,7 @@ export type Settings = {
     parsingFlags: ParseFlagsByFileType;
     gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN
+      inlineTranslations?: GTInlineTranslationsOptions; // msgOutput resolved to an absolute path
       parsingFlags: ResolvedGTParsingFlags; // Flags for parsing inline content
     };
   };

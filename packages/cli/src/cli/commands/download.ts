@@ -14,6 +14,8 @@ import {
   resolveInlineLibrary,
 } from '../../formats/files/collectFiles.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
+import { aggregateInlineTranslations } from '../../translation/stage.js';
+import { writeMessageTranslations } from '../../fs/writeMessageTranslations.js';
 import type { InlineLibrary } from '../../types/libraries.js';
 
 // Downloads translations that were originally staged
@@ -53,6 +55,10 @@ export async function handleDownload(
   if (settings.stageTranslations) {
     inlineLibrary = resolveInlineLibrary(library);
     fileVersionData = getStagedEntriesFromLockfile(settings);
+    // msgOutput needs the hashes the compiler embeds, which only a scan finds
+    if (inlineLibrary && settings.files.gtJson.inlineTranslations?.msgOutput) {
+      await aggregateInlineTranslations(options, settings, inlineLibrary);
+    }
   } else {
     const { files, inlineLibrary: collectedInlineLibrary } = await collectFiles(
       options,
@@ -90,4 +96,7 @@ export async function handleDownload(
     forceRetranslation: false, // force is not applicable for downloading staged translations
     forceDownload: options.force || options.forceDownload,
   });
+
+  // For embedded locales, the translations the compiler does not embed
+  await writeMessageTranslations(settings);
 }
