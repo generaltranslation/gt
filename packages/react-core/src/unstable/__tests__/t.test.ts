@@ -109,4 +109,26 @@ describe('react-core/unstable t', () => {
       vi.unstubAllEnvs();
     }
   });
+
+  it('uses translations embedded at the call site', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    setConditions('fr');
+    // The options the compiler injects for an embedded call site
+    const options = {
+      context: 'button',
+      inline: (locale: string) => (locale === 'fr' ? 'Valider' : undefined),
+    };
+
+    expect(t(options)`Save`).toBe('Valider');
+    expect(t({ inline: () => undefined })`Save`).toBe('Enregistrer');
+  });
+
+  it('does not call the callback for a locale that needs no translation', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    setConditions('en');
+    const inline = vi.fn(() => 'Valider');
+
+    expect(t({ inline })`Save`).toBe('Save');
+    expect(inline).not.toHaveBeenCalled();
+  });
 });

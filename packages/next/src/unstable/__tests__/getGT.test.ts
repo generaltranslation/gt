@@ -70,4 +70,15 @@ describe('gt-next unstable getGT', () => {
 
     expect(t`Save`).toBe('Save');
   });
+
+  it('uses translations embedded at the call site', async () => {
+    const gt = await getGT();
+    // The options the compiler injects for an embedded call site
+    const embedded = {
+      inline: (locale: string) => (locale === 'fr' ? 'Valider' : undefined),
+    };
+
+    expect(gt(embedded)`Save`).toBe('Valider');
+    expect(gt({ inline: () => undefined })`Save`).toBe('Enregistrer');
+  });
 });
