@@ -906,6 +906,16 @@ const TranslationsProviderContent: React.FC<
           (prev) => new Set([...prev, ...enqueuedStatusKeys])
         );
 
+        // A forced run keeps the same version, so a status that was already
+        // ready describes the result being discarded and must not be imported.
+        if (force) {
+          setTranslationStatuses((prev) => {
+            const next = new Map(prev);
+            for (const key of enqueuedStatusKeys) next.delete(key);
+            return next;
+          });
+        }
+
         toast.push({
           title: force
             ? `Retranslating ${sourceDocuments.length} documents from scratch`

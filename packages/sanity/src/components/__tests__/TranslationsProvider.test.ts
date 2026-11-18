@@ -457,6 +457,45 @@ describe('Translate All', () => {
       })
     );
   });
+
+  test('a forced run drops the ready status of the result it discards', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    vi.spyOn(api, 'createBranch').mockResolvedValue({
+      branch: { id: 'b' },
+    } as Awaited<ReturnType<typeof api.createBranch>>);
+    const frFile = {
+      branchId: 'b',
+      fileId: 'page-en',
+      versionId: 'r1',
+      locale: 'fr',
+    };
+    vi.spyOn(api, 'queryFileData').mockResolvedValue({
+      translatedFiles: [{ ...frFile, completedAt: '2026-01-01T00:00:00Z' }],
+    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    const frKey = 'b:page-en:r1:fr';
+
+    const context = await renderProvider(page('page-en', 'en'));
+    expect(context.translationStatuses.get(frKey)?.isReady).toBe(true);
+
+    // The refresh that follows the run has not answered yet.
+    vi.spyOn(api, 'queryFileData').mockReturnValue(new Promise(() => {}));
+    await act(() => context.handleTranslateAll());
+    expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(true);
+
+    await act(() => latest!.handleTranslateAll({ force: true }));
+
+    expect(mocks.createJobs).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.arrayContaining(['fr']),
+      { project: 'p' },
+      true
+    );
+    expect(latest!.translationStatuses.get(frKey)?.isReady).toBeFalsy();
+    expect(latest!.pendingTranslations.has(frKey)).toBe(true);
+  });
 });
 
 describe('without allowNonDefaultSourceLocales', () => {

@@ -10,6 +10,7 @@ import { Tooltip } from '@sanity/ui/tooltip';
 import { useToast } from '@sanity/ui/toast';
 import { pluginConfig } from '../../adapter/core';
 import { SaveLocalTranslationsDialog } from '../page/SaveLocalTranslationsDialog';
+import { RetranslateDocumentDialog } from '../page/RetranslateDocumentDialog';
 import { DebugInfoDialog } from '../page/DebugInfoDialog';
 import { version as PACKAGE_VERSION } from '../../../package.json';
 import { useTranslations } from '../TranslationsProvider';
@@ -27,6 +28,7 @@ import { DownloadIcon } from '@sanity/icons/Download';
 import { LinkIcon } from '@sanity/icons/Link';
 import { PublishIcon } from '@sanity/icons/Publish';
 import { RefreshIcon } from '@sanity/icons/Refresh';
+import { ResetIcon } from '@sanity/icons/Reset';
 import { TranslateIcon } from '@sanity/icons/Translate';
 import { UploadIcon } from '@sanity/icons/Upload';
 import {
@@ -69,6 +71,7 @@ export const TranslationView = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploadingExisting, setIsUploadingExisting] = useState(false);
   const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
+  const [isRetranslateDialogOpen, setIsRetranslateDialogOpen] = useState(false);
   const [isDebugInfoDialogOpen, setIsDebugInfoDialogOpen] = useState(false);
 
   const toast = useToast();
@@ -326,21 +329,49 @@ export const TranslationView = () => {
 
         <LocaleSelector />
 
-        <Button
-          onClick={() => {
-            // A new run's results should import even for locales that already
-            // had a translation when the dialog opened.
-            alreadyCompleteRef.current = new Set();
-            handleTranslateAll();
-          }}
-          disabled={
-            isBusy || isWaitingOnTranslations || !availableLocales.length
-          }
-          icon={TranslateIcon}
-          text={isWaitingOnTranslations ? 'Translating…' : 'Translate'}
-          loading={(isBusy && !isUploadingExisting) || isWaitingOnTranslations}
-        />
+        <Flex gap={2}>
+          <Button
+            onClick={() => {
+              // A new run's results should import even for locales that already
+              // had a translation when the dialog opened.
+              alreadyCompleteRef.current = new Set();
+              handleTranslateAll();
+            }}
+            disabled={
+              isBusy || isWaitingOnTranslations || !availableLocales.length
+            }
+            icon={TranslateIcon}
+            text={isWaitingOnTranslations ? 'Translating…' : 'Translate'}
+            loading={
+              (isBusy && !isUploadingExisting) || isWaitingOnTranslations
+            }
+            style={{ flex: 1 }}
+          />
+          <Button
+            mode='ghost'
+            tone='caution'
+            onClick={() => setIsRetranslateDialogOpen(true)}
+            disabled={
+              isBusy || isWaitingOnTranslations || !availableLocales.length
+            }
+            icon={ResetIcon}
+            text='Retranslate'
+          />
+        </Flex>
       </Stack>
+
+      <RetranslateDocumentDialog
+        isOpen={isRetranslateDialogOpen}
+        localeIds={availableLocales.map((locale) => locale.localeId)}
+        onClose={() => setIsRetranslateDialogOpen(false)}
+        onConfirm={async () => {
+          setIsRetranslateDialogOpen(false);
+          await handleTranslateAll({ force: true });
+          // Reset only once the run is enqueued: until then a completed
+          // status is the stored result this run discards, not its own.
+          alreadyCompleteRef.current = new Set();
+        }}
+      />
 
       <SaveLocalTranslationsDialog
         isOpen={isSaveLocalDialogOpen}

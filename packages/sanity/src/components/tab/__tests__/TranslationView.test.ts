@@ -326,6 +326,104 @@ describe('TranslationView automatic import', () => {
   });
 });
 
+describe('TranslationView forced retranslation', () => {
+  const frKey = 'b:page:r1:fr';
+
+  function button(text: string, scope: ParentNode = container) {
+    const found = [...scope.querySelectorAll('button')].find(
+      (element) => element.textContent === text
+    );
+    if (!found) throw new Error(`Button "${text}" not found`);
+    return found;
+  }
+
+  function dialog() {
+    return document.getElementById('retranslate-document-dialog');
+  }
+
+  test('asks for confirmation before forcing a fresh translation', async () => {
+    setTranslations({ language: 'en', preserveExistingTranslations: false });
+    await renderView();
+
+    await act(async () => button('Retranslate').click());
+    expect(dialog()?.textContent).toContain(
+      'This document is translated again from scratch into the selected locales.'
+    );
+    expect(dialog()?.textContent).toContain(
+      'Existing translations are replaced'
+    );
+    await act(async () => button('Cancel', dialog()!).click());
+
+    expect(dialog()).toBeNull();
+    expect(translations.current.handleTranslateAll).not.toHaveBeenCalled();
+
+    await act(async () => button('Retranslate').click());
+    await act(async () => button('Retranslate', dialog()!).click());
+
+    expect(dialog()).toBeNull();
+    expect(translations.current.handleTranslateAll).toHaveBeenCalledTimes(1);
+    expect(translations.current.handleTranslateAll).toHaveBeenCalledWith({
+      force: true,
+    });
+  });
+
+  test('is unavailable while a translation is in progress', async () => {
+    setTranslations({ language: 'en', preserveExistingTranslations: false });
+    translations.current.pendingTranslations = new Set([frKey]);
+    await renderView();
+
+    expect(button('Retranslate').disabled).toBe(true);
+  });
+
+  test('imports the fresh result, not the one it discards, for a locale that was already complete', async () => {
+    setTranslations({ language: 'en', preserveExistingTranslations: false });
+    let finishEnqueue: () => void = () => {};
+    const importedTranslations = new Set<string>();
+    Object.assign(translations.current, {
+      autoImport: true,
+      translationStatuses: new Map([[frKey, { isReady: true }]]),
+      handleTranslateAll: vi.fn(
+        () => new Promise<void>((resolve) => (finishEnqueue = resolve))
+      ),
+      // Like the provider, mark the import done so the effect settles.
+      handleImportDocument: vi.fn(async () => {
+        importedTranslations.add(frKey);
+        return true;
+      }),
+    });
+    await renderView();
+
+    await act(async () => button('Retranslate').click());
+    await act(async () => button('Retranslate', dialog()!).click());
+    // The stored result is still reported ready while the run is enqueued.
+    translations.current = { ...translations.current, importedTranslations };
+    await renderView();
+    expect(translations.current.handleImportDocument).not.toHaveBeenCalled();
+
+    // Like the provider, drop the superseded status once the run is enqueued.
+    translations.current = {
+      ...translations.current,
+      translationStatuses: new Map(),
+    };
+    await act(async () => finishEnqueue());
+    await renderView();
+    expect(translations.current.handleImportDocument).not.toHaveBeenCalled();
+
+    translations.current = {
+      ...translations.current,
+      translationStatuses: new Map([[frKey, { isReady: true }]]),
+    };
+    await renderView();
+
+    expect(translations.current.handleImportDocument).toHaveBeenCalledTimes(1);
+    expect(translations.current.handleImportDocument).toHaveBeenCalledWith(
+      'page',
+      'r1',
+      'fr'
+    );
+  });
+});
+
 describe('TranslationView without allowNonDefaultSourceLocales', () => {
   beforeEach(() => {
     vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
