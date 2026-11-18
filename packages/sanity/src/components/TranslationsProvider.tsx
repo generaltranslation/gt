@@ -879,20 +879,23 @@ const TranslationsProviderContent: React.FC<
           }
         }
 
+        // Without the branch, the result a forced run discards cannot be told
+        // from the new one.
+        if (force && !branchId) throw new Error('Branch not loaded');
+
         const uploadResult = await uploadFiles(transformedDocuments, secrets);
         await initProject(uploadResult, { timeout: 600 }, secrets);
 
         // Recorded before the jobs exist, so a refresh that answers while they
         // are being created cannot report a discarded result as the new one.
+        // Nothing recorded earlier is dropped until this run is enqueued: a
+        // result an earlier forced run discarded stays discarded meanwhile.
+        const completed = force
+          ? await getCompletedResults(enqueuedFiles, secrets)
+          : new Map<string, string>();
         const supersededBefore = new Map(supersededResultsRef.current);
-        for (const key of enqueuedStatusKeys) {
-          supersededResultsRef.current.delete(key);
-        }
-        if (force && enqueuedFiles.length > 0) {
-          const completed = await getCompletedResults(enqueuedFiles, secrets);
-          for (const [key, completedAt] of completed) {
-            supersededResultsRef.current.set(key, completedAt);
-          }
+        for (const [key, completedAt] of completed) {
+          supersededResultsRef.current.set(key, completedAt);
         }
         let enqueueResult: Awaited<ReturnType<typeof createJobs>>;
         try {
@@ -905,6 +908,11 @@ const TranslationsProviderContent: React.FC<
         } catch (error) {
           supersededResultsRef.current = supersededBefore;
           throw error;
+        }
+        if (!force) {
+          for (const key of enqueuedStatusKeys) {
+            supersededResultsRef.current.delete(key);
+          }
         }
 
         // Pin the _rev each file was uploaded under. GT status queries need the

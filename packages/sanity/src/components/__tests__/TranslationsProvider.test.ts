@@ -510,6 +510,58 @@ describe('Translate All', () => {
     expect(latest!.pendingTranslations.has(frKey)).toBe(false);
   });
 
+  test('a forced run does not start before the branch is loaded', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    const context = await renderProvider(page('page-en', 'en'));
+
+    const enqueuedKeys = await act(() =>
+      context.handleTranslateAll({ force: true })
+    );
+
+    expect(enqueuedKeys).toEqual([]);
+    expect(mocks.createJobs).not.toHaveBeenCalled();
+  });
+
+  test('retrying a forced run keeps the discarded result out while its lookup fails', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    vi.spyOn(api, 'createBranch').mockResolvedValue({
+      branch: { id: 'b' },
+    } as Awaited<ReturnType<typeof api.createBranch>>);
+    const stored = {
+      translatedFiles: [
+        {
+          branchId: 'b',
+          fileId: 'page-en',
+          versionId: 'r1',
+          locale: 'fr',
+          completedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+    } as Awaited<ReturnType<typeof api.queryFileData>>;
+    const queryFileData = vi
+      .spyOn(api, 'queryFileData')
+      .mockResolvedValue(stored);
+    const frKey = 'b:page-en:r1:fr';
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleTranslateAll({ force: true }));
+
+    queryFileData.mockRejectedValueOnce(new Error('unavailable'));
+    const retried = await act(() =>
+      latest!.handleTranslateAll({ force: true })
+    );
+    await act(() => latest!.handleRefreshAll({ silent: true }));
+
+    expect(retried).toEqual([]);
+    expect(mocks.createJobs).toHaveBeenCalledTimes(1);
+    expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(false);
+  });
+
   test('a forced run that cannot be enqueued keeps the stored result ready', async () => {
     const { client } = createGroqClient([page('page-en', 'en')]);
     mocks.client = Object.assign(client, {
