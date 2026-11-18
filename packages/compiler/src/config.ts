@@ -100,8 +100,14 @@ export interface PluginConfig
    * Experimental, with `experimentalChunkTranslationsSplit: 'module'`: what
    * one more request for a translations file is worth, in bytes of a
    * compressed download. Two files are merged while that saves a page more
-   * than the bytes it then downloads without needing them; zero merges the
-   * least. Defaults to the `GT_CHUNK_TRANSLATIONS_REQUEST_COST` environment
+   * than the bytes it then downloads without needing them.
+   *
+   * A lower cost is not a better split. At zero nothing is merged that
+   * costs a page a byte, so an app has many small files: a page makes many
+   * more requests, and every translated page downloads a larger map, which
+   * names them all. Lower it only after measuring what pages then load.
+   *
+   * Defaults to the `GT_CHUNK_TRANSLATIONS_REQUEST_COST` environment
    * variable, else to 8192.
    */
   experimentalChunkTranslationsRequestCost?: number;
