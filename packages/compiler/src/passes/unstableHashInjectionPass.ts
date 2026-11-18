@@ -3,18 +3,24 @@ import * as t from '@babel/types';
 import { isUnstableGTImportSource } from 'generaltranslation/internal';
 import { TransformState } from '../state/types';
 import { injectUnstableTaggedTemplateHash } from '../transform/injection/injectUnstableTaggedTemplateHash';
+import { buildInlineTranslations } from '../transform/injection/inline-translations/injectInlineTranslations';
 
 /**
  * Unstable hash injection pass — injects `$_hash` into statically analyzable
- * unstable tagged templates (t`...`). Each template is hashed and rewritten
- * in the same visit, so this pass needs no collection counters.
+ * unstable tagged templates (t`...`), and in production builds with
+ * `files.gt.inlineTranslations` the translations embedded at the call site.
+ * Each template is hashed and rewritten in the same visit, so this pass needs
+ * no collection counters.
  */
 export function unstableHashInjectionPass(
   state: TransformState
 ): TraverseOptions {
+  const buildInline = state.settings.inlineTranslationsTable
+    ? (hash: string) => buildInlineTranslations(hash, state)
+    : undefined;
   return {
     TaggedTemplateExpression(path) {
-      if (injectUnstableTaggedTemplateHash(path)) {
+      if (injectUnstableTaggedTemplateHash(path, buildInline)) {
         state.statistics.unstableHashInjectionsCount += 1;
       }
     },
