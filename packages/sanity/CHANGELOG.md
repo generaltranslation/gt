@@ -1,5 +1,13 @@
 # gt-sanity
 
+## 4.0.36
+
+### Patch Changes
+
+- [#2899](https://github.com/generaltranslation/gt/pull/2899) [`a2617e0`](https://github.com/generaltranslation/gt/commit/a2617e0d7665fa2bab7b437b66c8bcbe40618cee) Thanks [@ruymon](https://github.com/ruymon)! - The Translate dialog on a document has a **Retranslate** button that translates the selected locales again from scratch, even when the document has not changed. Use it to replace a stored translation that came back wrong without editing the source document.
+
+- [#2901](https://github.com/generaltranslation/gt/pull/2901) [`b976776`](https://github.com/generaltranslation/gt/commit/b976776a940ae1b1ec251d8c715c8a3cc0452618) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Retranslating a document no longer risks importing the translation it replaces. Retrying after a failed retranslation, or starting one before the Translate dialog has finished loading, could let auto-import bring back the old translation.
+
 ## 4.0.35
 
 ### Patch Changes
