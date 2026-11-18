@@ -1,22 +1,14 @@
 import type { ReactNode } from 'react';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
-import {
-  renderPlural,
-  type PluralConditions,
-  type PluralProps,
-} from './Plural.shared';
+import { renderPlural, type PluralProps } from './Plural.shared';
 
 // ===== Component ===== //
 
-function GtInternalPlural({
-  _enableI18n,
-  _locale,
-  ...props
-}: PluralProps & Partial<PluralConditions>): ReactNode {
+function GtInternalPlural(props: PluralProps): ReactNode {
   return renderPlural({
     ...props,
-    _locale: _locale ?? useLocale(),
-    _enableI18n: _enableI18n ?? useEnableI18n(),
+    _locale: useLocale(),
+    _enableI18n: useEnableI18n(),
   });
 }
 

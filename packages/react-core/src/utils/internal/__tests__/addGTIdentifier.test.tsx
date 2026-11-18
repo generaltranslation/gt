@@ -4,6 +4,7 @@ import { initializeI18nConfig } from 'gt-i18n/internal';
 import { addGTIdentifier } from '../addGTIdentifier';
 import { writeChildrenAsObjects } from '../writeChildrenAsObjects';
 import { renderDefaultChildren } from '../../rendering/renderPipeline.rsc';
+import { Branch } from '../../../components/branches/Branch';
 import { Plural } from '../../../components/branches/Plural';
 import {
   GtInternalRelativeTime,
@@ -98,6 +99,16 @@ describe('addGTIdentifier with <RelativeTime>', () => {
         enableI18n: true,
       })
     ).toBe('None');
+  });
+
+  it('stores the children of a Branch as other, over an other prop', () => {
+    const tagged = addGTIdentifier(
+      <Branch branch='x' {...{ other: 'Prop' }}>
+        Children
+      </Branch>
+    );
+
+    expect(gtTag(tagged).branches).toEqual({ other: 'Children' });
   });
 
   it('renders <RelativeTime> in <T> source content as formatted time', () => {

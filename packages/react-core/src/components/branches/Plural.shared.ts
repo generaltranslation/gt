@@ -47,4 +47,4 @@ function renderPlural({
 }
 
 export { renderPlural };
-export type { PluralConditions, PluralProps, ResolvedPluralProps };
+export type { PluralProps, ResolvedPluralProps };

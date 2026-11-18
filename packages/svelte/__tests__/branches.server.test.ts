@@ -1,6 +1,8 @@
+import { createRawSnippet } from 'svelte';
 import { render } from 'svelte/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Content } from '@generaltranslation/format';
+import Branch from '../src/components/Branch.svelte';
 import BareBranch from './fixtures/BareBranch.svelte';
 import Harness from './fixtures/Harness.svelte';
 import NestedBranches from './fixtures/NestedBranches.svelte';
@@ -81,6 +83,18 @@ describe('a branch passed as undefined', () => {
     expect(html({ component: UndefinedBranch, props: {} })).toBe(
       'UnknownItems'
     );
+  });
+});
+
+describe('a branch value named other', () => {
+  it('renders the children, not an other prop', () => {
+    const children = createRawSnippet(() => ({
+      render: () => '<b>Children</b>',
+    }));
+    const { body } = render(Branch, {
+      props: { branch: 'other', other: 'Prop', children },
+    });
+    expect(withoutComments(body).trim()).toBe('<b>Children</b>');
   });
 });
 

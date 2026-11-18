@@ -87,7 +87,7 @@ export function addGTIdentifier(
           result.branches = pluralBranches;
       }
       if (transformationParts[0] === 'branch') {
-        const { children, branch: _branch, other: _other, ...branches } = props;
+        const { children, branch: _branch, ...branches } = props;
         // Filter out data-* attributes injected by build tools
         const filteredBranches = Object.fromEntries(
           Object.entries(branches).filter(([key]) => !key.startsWith('data-'))
