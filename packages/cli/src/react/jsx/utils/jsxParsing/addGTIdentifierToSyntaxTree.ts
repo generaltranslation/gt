@@ -84,7 +84,7 @@ function constructGTProp(
 
     // Branch
   } else if (type === BRANCH_COMPONENT) {
-    const { children, branch: _branch, other: _other, ...allBranches } = props;
+    const { children, branch: _branch, ...allBranches } = props;
     // Filter out data-* attributes injected by build tools
     const branches = Object.fromEntries(
       Object.entries(allBranches).filter(
