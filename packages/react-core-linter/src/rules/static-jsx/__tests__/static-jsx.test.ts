@@ -482,6 +482,16 @@ ruleTester.run('static-jsx: ternary to Branch', staticJsx, {
         String.raw`<Branch branch={cond} true="path\to\file">other</Branch>`,
       ],
       [
+        'a tab is braced, as JSX text would read it as a space',
+        String.raw`{cond ? "yes" : "a\tb"}`,
+        String.raw`<Branch branch={cond} true="yes">{"a\tb"}</Branch>`,
+      ],
+      [
+        'a carriage return is braced, as JSX text would read it as a space',
+        String.raw`{cond ? "yes" : "a\rb"}`,
+        String.raw`<Branch branch={cond} true="yes">{"a\rb"}</Branch>`,
+      ],
+      [
         'nested ternary in the consequent',
         '{a ? (b ? "x" : "y") : "z"}',
         '<Branch branch={a} true={<Branch branch={b} true="x">y</Branch>}>z</Branch>',

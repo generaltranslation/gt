@@ -104,8 +104,9 @@ export function formatAsPropValue(
   return `{${sourceCode.getText(expr)}}`;
 }
 
-// Text with no markup, entity or brace, and no space JSX would trim.
-const RAW_JSX_TEXT = /^[^\s{}<>&]([^{}<>&\n]*[^\s{}<>&])?$/;
+// Text with no markup, entity or brace, and no whitespace JSX would trim or
+// collapse: only spaces, and only inside.
+const RAW_JSX_TEXT = /^[^\s{}<>&]( *[^\s{}<>&])*$/;
 
 /**
  * Formats an expression as JSX children text.
