@@ -133,13 +133,15 @@ describe('formatMessageTree', () => {
     expect(format({ ...own, timeZone: 'Asia/Tokyo' }, 'UTC')).toBe('11:03 PM');
   });
 
-  it('takes the hour of a `::j` skeleton from the first locale given', () => {
+  it('takes the hour of a `::j` skeleton from the locale Intl formats in', () => {
     const t = new Date(Date.UTC(2026, 0, 15, 14, 3));
     const format = (locales: string | string[]) =>
       formatIcu('{t, time, ::jmm}', locales, { t }, { timeZone: 'UTC' });
     expect(format('en')).toBe('2:03 PM');
     expect(format('de')).toBe('14:03');
     expect(format(['de', 'en'])).toBe('14:03');
+    // Klingon has no locale data, so the list formats in German.
+    expect(format(['tlh', 'de'])).toBe('14:03');
   });
 
   it('formats in the first locale of a list that Intl supports', () => {

@@ -164,10 +164,7 @@ describe('parse', () => {
           value: undefined,
         });
       }
-      ast = parse(
-        '😀 {n, plural, one {one} other {# items}} {d, time, ::j  }',
-        { locale: new Intl.Locale('en-US') }
-      );
+      ast = parse('😀 {n, plural, one {one} other {# items}} {d, time, ::j  }');
     } finally {
       for (const [owner, key] of [
         [String.prototype, 'codePointAt'],
@@ -310,11 +307,7 @@ describe('parse', () => {
   it.each(['A', 'C', 'J', 'g', 'EEEEEE', 'yyyyy', 'SSSS', 'haaaaa', 'jjjjj'])(
     'rejects the date/time skeleton ::%s, which Intl cannot format',
     (skeleton) => {
-      expect(() =>
-        parse(`{date, time, ::${skeleton}}`, {
-          locale: new Intl.Locale('en-US'),
-        })
-      ).toThrow(RangeError);
+      expect(() => parse(`{date, time, ::${skeleton}}`)).toThrow(RangeError);
     }
   );
 

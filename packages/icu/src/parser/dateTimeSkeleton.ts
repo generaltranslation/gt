@@ -44,9 +44,8 @@ export function dateTimeSkeletonFields(skeleton: string): string[] {
 }
 
 /**
- * The Intl options of a date skeleton. `localeHour` says how to read `j`,
- * which remains only when the skeleton was parsed without a locale: as the
- * locale's hour, or as nothing, like FormatJS.
+ * The Intl options of a date skeleton. `localeHour` says how to read `j`: as
+ * the locale's hour, which Intl picks, or as nothing, like FormatJS.
  */
 export function parseDateTimeSkeletonOptions(
   skeleton: string,
@@ -97,11 +96,16 @@ export function parseDateTimeSkeletonOptions(
         result.dayPeriod = WIDTHS[Math.max(length - 3, 0)];
         break;
       // `j` is the locale's hour, which Intl spells as an hour with no
-      // hourCycle. Three or more widen its AM or PM.
+      // hourCycle. Three or more widen its AM or PM. Like any hour symbol,
+      // the last one decides the clock: `hj` is the locale's hour in ICU.
       case 'j':
         if (length > 4) throw unsupported(field, 'date/time');
         hasHour = true;
-        if (localeHour) result.hour = length % 2 ? 'numeric' : '2-digit';
+        if (localeHour) {
+          delete result.hour12;
+          delete result.hourCycle;
+          result.hour = length % 2 ? 'numeric' : '2-digit';
+        }
         break;
       case 'h':
       case 'H':
@@ -149,90 +153,6 @@ export function parseDateTimeSkeletonOptions(
     throw new RangeError(createDayPeriodWithoutHourError());
   }
   return result;
-}
-
-export function resolveLocaleHourSkeleton(
-  skeleton: string,
-  locale?: Intl.Locale
-): string {
-  if (!locale || !skeleton.includes('j')) return skeleton;
-
-  const localeHourSymbol = getLocaleHourSymbol(locale);
-  let resolvedSkeleton = '';
-
-  // Ported from FormatJS's getBestPattern scanner. Its ordering is observable
-  // in the public AST and, for mixed j/J/hour runs, changes Intl options and
-  // rendered output. In particular, only identical j runs are coalesced. A J
-  // stays, since Intl cannot hide AM or PM in a locale with a 12-hour clock.
-  for (let index = 0; index < skeleton.length; index += 1) {
-    const character = skeleton[index];
-    if (character === 'j') {
-      let extraLength = 0;
-      while (skeleton[index + 1] === character) {
-        extraLength += 1;
-        index += 1;
-      }
-      const hourLength = 1 + (extraLength & 1);
-      const dayPeriodLength =
-        localeHourSymbol === 'H' || localeHourSymbol === 'k'
-          ? 0
-          : extraLength < 2
-            ? 1
-            : 3 + (extraLength >> 1);
-      resolvedSkeleton =
-        localeHourSymbol.repeat(hourLength) +
-        resolvedSkeleton +
-        'a'.repeat(dayPeriodLength);
-    } else {
-      resolvedSkeleton += character;
-    }
-  }
-
-  return resolvedSkeleton;
-}
-
-// Reading a locale's hour cycle costs as much as formatting twenty messages,
-// and a formatter resolves the same Intl.Locale for every message in a locale.
-const localeHourSymbols = new WeakMap<Intl.Locale, 'h' | 'H' | 'K' | 'k'>();
-
-function getLocaleHourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
-  let symbol = localeHourSymbols.get(locale);
-  if (!symbol) {
-    symbol = hourSymbol(locale);
-    localeHourSymbols.set(locale, symbol);
-  }
-  return symbol;
-}
-
-/**
- * The symbol of the locale's hour cycle, region override included. Engines
- * expose the cycle as `getHourCycles()`, or as the older `hourCycles` getter
- * that V8 has since removed; a DateTimeFormat, the last resort, ignores a
- * `-u-rg-` override.
- */
-function hourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
-  const withHourCycles = locale as Intl.Locale & {
-    getHourCycles?: () => Intl.LocaleHourCycleKey[];
-    hourCycles?: Intl.LocaleHourCycleKey[];
-  };
-  const hourCycle =
-    locale.hourCycle ??
-    withHourCycles.getHourCycles?.()[0] ??
-    withHourCycles.hourCycles?.[0] ??
-    new Intl.DateTimeFormat(locale.toString(), {
-      hour: 'numeric',
-    }).resolvedOptions().hourCycle;
-
-  switch (hourCycle) {
-    case 'h11':
-      return 'K';
-    case 'h12':
-      return 'h';
-    case 'h24':
-      return 'k';
-    default:
-      return 'H';
-  }
 }
 
 /**

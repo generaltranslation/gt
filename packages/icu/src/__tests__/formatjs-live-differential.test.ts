@@ -105,59 +105,23 @@ const DATE_RUNTIME_CASES = NUMBER_LOCALES.flatMap((locale) =>
   ].map((message) => ({ locale, message, value: DATE_VALUE }))
 );
 
-// The pinned FormatJS reads a region override like `-u-rg-gbzzzz` only
-// through Intl.Locale's `hourCycles` getter, which V8 has since removed.
-const FORMATJS_READS_REGION = 'hourCycles' in Intl.Locale.prototype;
-const REGION_OVERRIDES = FORMATJS_READS_REGION
-  ? ['en-u-rg-gbzzzz', 'en-GB-u-rg-uszzzz']
-  : [];
-
-const HOUR_SKELETON_RUNTIME_CASES = [
-  { locale: 'de-DE', skeleton: 'hj' },
-  ...REGION_OVERRIDES.map((locale) => ({ locale, skeleton: 'j' })),
-  { locale: 'und-GB', skeleton: 'j' },
-] as const;
-const HOUR_SKELETON_AST_CASES = [
-  ...HOUR_SKELETON_RUNTIME_CASES,
-  { locale: 'en-US', skeleton: 'Mj' },
-] as const;
 // Without `J` and `C`, which Intl cannot format and FormatJS reads as `H` and
 // as nothing.
 const HOUR_SKELETON_SYMBOLS = ['h', 'H', 'k', 'K', 'j'] as const;
-const GENERATED_HOUR_SKELETONS = [1, 2, 3]
-  .flatMap((length) =>
-    Array.from(
-      { length: HOUR_SKELETON_SYMBOLS.length ** length },
-      (_, combination) => {
-        let cursor = combination;
-        return Array.from({ length }, () => {
-          const symbol =
-            HOUR_SKELETON_SYMBOLS[cursor % HOUR_SKELETON_SYMBOLS.length];
-          cursor = Math.floor(cursor / HOUR_SKELETON_SYMBOLS.length);
-          return symbol;
-        }).join('');
-      }
-    )
+const GENERATED_HOUR_SKELETONS = [1, 2, 3].flatMap((length) =>
+  Array.from(
+    { length: HOUR_SKELETON_SYMBOLS.length ** length },
+    (_, combination) => {
+      let cursor = combination;
+      return Array.from({ length }, () => {
+        const symbol =
+          HOUR_SKELETON_SYMBOLS[cursor % HOUR_SKELETON_SYMBOLS.length];
+        cursor = Math.floor(cursor / HOUR_SKELETON_SYMBOLS.length);
+        return symbol;
+      }).join('');
+    }
   )
-  // FormatJS reads the `a` that `j` brings as `hour12`, which turns an `H`
-  // or `k` beside it into a 12-hour clock. ICU4C keeps 24 hours: `Ha` is 23.
-  .filter((skeleton) => !(skeleton.includes('j') && /[Hk]/.test(skeleton)));
-// The skeleton scanner only sees a locale through its resolved hour symbol, so
-// every combination runs for one 12-hour and one 24-hour locale. The locales
-// that exercise other ways of resolving that symbol (numbering system, region
-// overrides, undetermined language) run every combination of up to two symbols.
-const GENERATED_HOUR_SKELETON_LOCALES = [
-  ...['en-US', 'de-DE'].map((locale) => ({
-    locale,
-    skeletons: GENERATED_HOUR_SKELETONS,
-  })),
-  ...['ar-EG', 'ja-JP', ...REGION_OVERRIDES, 'und-GB'].map((locale) => ({
-    locale,
-    skeletons: GENERATED_HOUR_SKELETONS.filter(
-      (skeleton) => skeleton.length <= 2
-    ),
-  })),
-];
+);
 
 const NON_GRAMMAR_SPACES = [
   '\u00A0',
@@ -390,25 +354,18 @@ describe('live FormatJS runtime compatibility', () => {
     });
   });
 
-  it('matches locale-aware hour skeletons', () => {
-    const values = { value: new Date(2020, 4, 6, 14, 3, 2) };
-    expectEachCase(HOUR_SKELETON_RUNTIME_CASES, ({ locale, skeleton }) => {
-      expectSameFormat(`{value, time, ::${skeleton}}`, locale, values);
-    });
-  });
-
-  // One test per locale: the whole corpus in one test outran the test timeout
-  // on a busy CI runner.
-  it.each(GENERATED_HOUR_SKELETON_LOCALES)(
-    'matches every generated hour skeleton and its AST for $locale',
-    ({ locale, skeletons }) => {
-      const values = { value: new Date(2020, 4, 6, 19, 3, 2) };
-      const options = { locale: new Intl.Locale(locale) };
-      expectEachCase(skeletons, (skeleton) => {
-        const message = `{value, time, ::${skeleton}}`;
-        expectSameFormat(message, locale, values);
-        expectSameAst(message, options);
-      });
+  // Without `j`: FormatJS reads it only from a locale given to its parser,
+  // and lets it win over another hour symbol, where the last one decides in
+  // ICU. icu4c-messages.test.ts has those.
+  it.each(['en-US', 'de-DE', 'ar-EG', 'ja-JP'])(
+    'matches every generated hour skeleton without j for %s',
+    (locale) => {
+      const value = new Date(2020, 4, 6, 19, 3, 2);
+      expectEachCase(
+        GENERATED_HOUR_SKELETONS.filter((skeleton) => !skeleton.includes('j')),
+        (skeleton) =>
+          expectSameFormat(`{value, time, ::${skeleton}}`, locale, { value })
+      );
     }
   );
 
@@ -455,11 +412,9 @@ describe('live FormatJS parser compatibility', () => {
     });
   });
 
-  it('matches the locale-aware AST for hour skeletons', () => {
-    expectEachCase(HOUR_SKELETON_AST_CASES, ({ locale, skeleton }) => {
-      expectSameAst(`{value, time, ::${skeleton}}`, {
-        locale: new Intl.Locale(locale),
-      });
+  it('matches the AST of every generated hour skeleton', () => {
+    expectEachCase(GENERATED_HOUR_SKELETONS, (skeleton) => {
+      expectSameAst(`{value, time, ::${skeleton}}`, { captureLocation: false });
     });
   });
 
