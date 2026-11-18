@@ -32,7 +32,7 @@ import {
 } from './unsplitTranslations';
 
 /** A file of the bundle, as Rollup, Rolldown and Vite pass it to a plugin. */
-type BundleFile = {
+export type BundleFile = {
   type: string;
   code?: string;
   /** The modules the bundler put into a chunk */
@@ -82,7 +82,7 @@ export type ChunkTranslationsManifest = {
 };
 
 /** The key of a locale's map, inside the directory of the build's assets. */
-const TRANSLATIONS_MAP_KEY = 'gt-map';
+export const TRANSLATIONS_MAP_KEY = 'gt-map';
 
 /**
  * The key of every file a build names by its own hash alone, inside the
@@ -191,7 +191,7 @@ export const createUngatedImportsWarning = (imports: UngatedImports[]) =>
     ),
   });
 
-function getFileHash(source: string): string {
+export function getFileHash(source: string): string {
   return getDigest(source).slice(0, FILE_HASH_LENGTH);
 }
 
@@ -205,7 +205,7 @@ function getContentHash(source: string): string {
 }
 
 /** The translations of `hashes` that `locale` has, in their order. */
-function pickTranslations(
+export function pickTranslations(
   translations: Record<string, unknown>,
   hashes: string[]
 ): Record<string, unknown> {
@@ -290,23 +290,11 @@ export function renderChunkTranslations(
     imports: Object.fromEntries(assignment.imports),
   };
   const entryHashes = new Map<string, Record<string, string>>();
-  const unsplitHashes: Record<string, string> = {};
-  const unsplitFiles: { locale: string; count: number; bytes: number }[] = [];
-  for (const [locale, translations] of Object.entries(
-    unsplit?.translations ?? {}
-  )) {
-    const source = JSON.stringify(translations);
-    const hash = getFileHash(source);
-    const fileName = getFileName(unsplit!.key, locale, hash);
-    files.push({ fileName, source });
-    unsplitHashes[locale] = hash;
-    (manifest.unsplit ??= {})[locale] = fileName;
-    unsplitFiles.push({
-      locale,
-      count: Object.keys(translations).length,
-      bytes: Buffer.byteLength(source),
-    });
-  }
+  const { unsplitHashes, unsplitFiles } = renderUnsplitFiles(
+    unsplit,
+    files,
+    manifest
+  );
 
   const imported = renderImportedFiles(
     assignment.imports,
@@ -394,7 +382,42 @@ export function renderChunkTranslations(
   return { files, manifest, unsplit: unsplitFiles, startupScripts };
 }
 
-function findBundledCatalogs(
+/**
+ * Adds the unsplit file of each locale that has one to `files` and to the
+ * manifest. Returns the hash in the name of each, and what each holds.
+ */
+export function renderUnsplitFiles(
+  unsplit:
+    | { key: string; translations: Record<string, Record<string, unknown>> }
+    | undefined,
+  files: { fileName: string; source: string }[],
+  manifest: { unsplit?: Record<string, string> }
+): {
+  unsplitHashes: Record<string, string>;
+  unsplitFiles: { locale: string; count: number; bytes: number }[];
+} {
+  const unsplitHashes: Record<string, string> = {};
+  const unsplitFiles: { locale: string; count: number; bytes: number }[] = [];
+  for (const [locale, translations] of Object.entries(
+    unsplit?.translations ?? {}
+  )) {
+    const source = JSON.stringify(translations);
+    const hash = getFileHash(source);
+    const fileName = getFileName(unsplit!.key, locale, hash);
+    files.push({ fileName, source });
+    unsplitHashes[locale] = hash;
+    (manifest.unsplit ??= {})[locale] = fileName;
+    unsplitFiles.push({
+      locale,
+      count: Object.keys(translations).length,
+      bytes: Buffer.byteLength(source),
+    });
+  }
+  return { unsplitHashes, unsplitFiles };
+}
+
+/** The translation files at `files.gt.output` that are modules of the build. */
+export function findBundledCatalogs(
   chunks: BundleFile[],
   gtFiles: GTOutputFileConfig,
   build: Pick<ChunkTranslations, 'locales'>
@@ -424,8 +447,26 @@ export function loadChunkTranslationsTable(
     : {};
 }
 
+/** Whether loading the first chunk loads the second, as one it imports statically. */
+export function createIsLoadedWith(
+  chunks: readonly { fileName: string; imports: readonly string[] }[]
+): (chunk: string, other: string) => boolean {
+  const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+  return (chunk, other) => {
+    const reached = new Set<string>();
+    const pending = [chunk];
+    for (let file = pending.pop(); file; file = pending.pop()) {
+      if (file === other) return true;
+      if (reached.has(file)) continue;
+      reached.add(file);
+      pending.push(...(byFile.get(file)?.imports ?? []));
+    }
+    return false;
+  };
+}
+
 // gt-react's getFileUrl() reads files by the same name
-function getFileName(key: string, locale: string, hash: string): string {
+export function getFileName(key: string, locale: string, hash: string): string {
   return `${key}.${locale}.${hash}.json`;
 }
 
@@ -502,18 +543,7 @@ export function writeChunkTranslations(
   if (uncovered.length) {
     throw new Error(createUncoveredChunkMessagesError(uncovered));
   }
-  const byFile = new Map(assigned.map((chunk) => [chunk.fileName, chunk]));
-  const isLoadedWith = (chunk: string, other: string): boolean => {
-    const reached = new Set<string>();
-    const pending = [chunk];
-    for (let file = pending.pop(); file; file = pending.pop()) {
-      if (file === other) return true;
-      if (reached.has(file)) continue;
-      reached.add(file);
-      pending.push(...(byFile.get(file)?.imports ?? []));
-    }
-    return false;
-  };
+  const isLoadedWith = createIsLoadedWith(assigned);
   const { files, manifest, unsplit, startupScripts } = renderChunkTranslations(
     assignment,
     build,

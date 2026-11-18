@@ -290,6 +290,90 @@ function startMappedTranslations(
 }
 
 /**
+ * Runs right after in a build that splits by module, where the file the
+ * function at the top requested is the locale's map and holds no
+ * translations (see renderRegionTranslations). Requests the files the entry
+ * holds, whose hashes the page has, with the map. Once the map has arrived,
+ * requests the files it lists for each chunk the page preloads: those of the
+ * dynamic import that the chunk is the target of. A chunk that only other
+ * chunks import is the target of none.
+ */
+function startRegionTranslations(
+  state: StartupState & {
+    /** The hash in the name of each file the entry holds, by locale and key */
+    e?: Record<string, Record<string, string>>;
+  },
+  files: Record<string, Record<string, string>>
+): void {
+  state.e = files;
+  const locale = state.l;
+  const map = (locale && state.p ? state.p[locale] : undefined) as
+    | Promise<{
+        i?: { k: string[]; c: (number[] | 0)[]; h: (string | 0)[] };
+      }>
+    | undefined;
+  if (!locale || !map) return;
+  const requested: Record<string, Promise<unknown>> = (state.g = {});
+  const request = (key: string, hash: string | 0 | undefined): void => {
+    const id = locale + ' ' + key;
+    if (hash && !requested[id] && !(state.r && state.r[id])) {
+      const file = fetch(
+        state.b + key + '.' + locale + '.' + hash + '.json'
+      ).then((response) => {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+      });
+      // gt-react reports a failure when it reads the request
+      file.catch(() => {});
+      requested[id] = file;
+    }
+  };
+  const held = files[locale] || {};
+  for (const key of Object.keys(held)) request(key, held[key]);
+  map
+    .then((file) => {
+      const lists = file.i;
+      if (!lists) return;
+      const requestLink = (link: HTMLLinkElement): void => {
+        if (link.rel !== 'modulepreload') return;
+        const path = link.href
+          .split(/[?#]/)[0]
+          .replace(/\.[cm]?js$/, '')
+          .split('/');
+        // After the origin, the longest end of the path that is a chunk's key
+        for (let start = 3; start < path.length; start++) {
+          const needed = lists.c[lists.k.indexOf(path.slice(start).join('/'))];
+          if (!needed) continue;
+          for (let pair = 1; pair < needed.length; pair += 2) {
+            for (let next = 0; next < needed[pair + 1]; next++) {
+              const place = needed[pair] + next;
+              request(lists.k[place], lists.h[place]);
+            }
+          }
+          return;
+        }
+      };
+      document.querySelectorAll('link').forEach(requestLink);
+      if (document.readyState !== 'loading') return;
+      const observer = new window.MutationObserver((records) => {
+        for (const record of records) {
+          record.addedNodes.forEach((node) => {
+            if (node.nodeName === 'LINK') {
+              requestLink(node as HTMLLinkElement);
+            }
+          });
+        }
+      });
+      observer.observe(document, { childList: true, subtree: true });
+      document.addEventListener('DOMContentLoaded', () =>
+        observer.disconnect()
+      );
+    })
+    // gt-react reports a failure when it reads the map
+    .catch(() => {});
+}
+
+/**
  * Runs right after, in a build with unsplit files (see
  * unsplitTranslations.ts): also requests the unsplit file of the locale the
  * script read, which the loader of those files then reads.
@@ -360,6 +444,7 @@ function renderCall(run: (...data: never[]) => void, data: string[]): string {
  * @param tokens The token in the name of every file but the entry's, by locale; with `maps`, the hash in the name of each locale's map.
  * @param files The keys of those files, whose chunks the script requests them for when the page preloads the chunks.
  * @param maps The key of the maps, in a build that names each file by its own hash.
+ * @param regions The hash in the name of each file the entry holds, by locale and key, in a build that splits by module; `entry` and `hashes` are then of the locale's map.
  * @param unsplit The key of the build's unsplit files and the hash in the name of each locale's, when it has any.
  */
 export function renderStartupScript({
@@ -369,6 +454,7 @@ export function renderStartupScript({
   tokens,
   files = [],
   maps,
+  regions,
   locales,
   unsplit,
 }: {
@@ -378,6 +464,7 @@ export function renderStartupScript({
   tokens: Record<string, string>;
   files?: string[];
   maps?: { key: string };
+  regions?: Record<string, Record<string, string>>;
   locales: string[];
   unsplit?: { key: string; hashes: Record<string, string> };
 }): string {
@@ -400,6 +487,9 @@ export function renderStartupScript({
     ]),
     maps
       ? renderCall(startMappedTranslations, [shared, toScriptJson(maps.key)])
+      : '',
+    regions
+      ? renderCall(startRegionTranslations, [shared, toScriptJson(regions)])
       : '',
     files.length
       ? renderCall(startPreloadedTranslations, [

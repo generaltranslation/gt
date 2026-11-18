@@ -29,6 +29,8 @@ import {
   UNSPLIT_LOADER_PLACEHOLDER,
   getChunkTranslations,
   getChunkTranslationsNaming,
+  getChunkTranslationsSplit,
+  getRegionSplit,
   resolveChunkTranslations,
 } from './transform/chunk-translations/resolveChunkTranslations';
 import {
@@ -53,11 +55,21 @@ import {
   type UngatedImports,
 } from './transform/chunk-translations/assignTranslations';
 import {
+  createConservativeSplitMessage,
+  createMissingPreviousWarning,
+  writeRegionTranslations,
+} from './transform/chunk-translations/writeRegionTranslations';
+import {
+  initialisesModulesLazily,
+  type RegionModuleInfo,
+} from './transform/chunk-translations/createRegionGraph';
+import {
   createUnsplitTranslationsMessage,
   getUnsplitTranslations,
   replaceUnsplitLoader,
 } from './transform/chunk-translations/unsplitTranslations';
 import { getPageBase } from './transform/chunk-translations/startupScript';
+import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
@@ -234,16 +246,27 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
         : undefined;
+    const resolveChunkTranslationsOptions = () => {
+      const split = getChunkTranslationsSplit(
+        options.experimentalChunkTranslationsSplit
+      );
+      return resolveChunkTranslations(loadedGTConfig, {
+        framework: meta.framework,
+        compileTimeHash: options.compileTimeHash !== false,
+        naming: getChunkTranslationsNaming(
+          options.experimentalChunkTranslationsNaming,
+          split
+        ),
+        regions: getRegionSplit(split, {
+          requestCost: options.experimentalChunkTranslationsRequestCost,
+          previous: options.experimentalChunkTranslationsPrevious,
+        }),
+      });
+    };
     const chunkTranslationsResolution = getChunkTranslations(
       options.experimentalChunkTranslations
     )
-      ? resolveChunkTranslations(loadedGTConfig, {
-          framework: meta.framework,
-          compileTimeHash: options.compileTimeHash !== false,
-          naming: getChunkTranslationsNaming(
-            options.experimentalChunkTranslationsNaming
-          ),
-        })
+      ? resolveChunkTranslationsOptions()
       : undefined;
     const chunkTranslations =
       chunkTranslationsResolution && !('error' in chunkTranslationsResolution)
@@ -418,18 +441,78 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     // Where the build's files are served from and its assets go: Vite's `base` and `build.assetsDir`
     let base = '';
     let assetsDir = '';
+    // What the bundler's `options` and `outputOptions` hooks received, which
+    // say when a module runs; `generateBundle` gets options that do not
+    let inputOptions: Parameters<typeof initialisesModulesLazily>[1] = {};
+    let outputOptions: Parameters<typeof initialisesModulesLazily>[0] = {};
+    const { regions } = chunkTranslations;
+    const keepOptions = regions && {
+      options(received: typeof inputOptions) {
+        inputOptions = received ?? {};
+        return null;
+      },
+      outputOptions(received: typeof outputOptions) {
+        outputOptions = received ?? {};
+        return null;
+      },
+    };
+    function writeRegions(
+      context: {
+        emitFile: (file: never) => unknown;
+        getModuleInfo: (id: string) => RegionModuleInfo | null;
+      },
+      bundle: Record<string, { type: string }>
+    ) {
+      const written = writeRegionTranslations(
+        bundle,
+        { ...chunkTranslations!, regions: regions! },
+        {
+          gtFiles: gtFiles!,
+          base,
+          assetsDir,
+          emitFile: (file) => context.emitFile(file as never),
+          getModuleInfo: (id) => context.getModuleInfo(id),
+          isLazy: initialisesModulesLazily(outputOptions, inputOptions),
+        }
+      );
+      if (shouldWarn(options.logLevel)) {
+        if (written.missingPrevious) {
+          console.warn(createMissingPreviousWarning(regions!.previous!));
+        }
+        if (
+          written.stats.isConservative &&
+          written.stats.conservativeMessages
+        ) {
+          console.warn(
+            createConservativeSplitMessage(written.stats.conservativeMessages)
+          );
+        }
+      }
+      if (options.logLevel === 'debug') {
+        const { loads, regions: count, files, comparisons } = written.stats;
+        new Logger(options.logLevel).logDebug(
+          `Split the chunk translations by module: ${loads} entries and dynamic imports, ${count} groups of messages that the same ones need, ${files} files after ${comparisons} comparisons. Replayed every entry and import against those files: each holds every message it reads`
+        );
+      }
+      return written;
+    }
     function generateBundle(
-      this: { emitFile: (file: never) => unknown },
+      this: {
+        emitFile: (file: never) => unknown;
+        getModuleInfo: (id: string) => RegionModuleInfo | null;
+      },
       _outputOptions: unknown,
       bundle: Record<string, { type: string }>
     ): void {
       if (!isProduction()) return;
-      const written = writeChunkTranslations(bundle, chunkTranslations!, {
-        gtFiles: gtFiles!,
-        base,
-        assetsDir,
-        emitFile: (file) => this.emitFile(file as never),
-      });
+      const written = regions
+        ? writeRegions(this, bundle)
+        : writeChunkTranslations(bundle, chunkTranslations!, {
+            gtFiles: gtFiles!,
+            base,
+            assetsDir,
+            emitFile: (file) => this.emitFile(file as never),
+          });
       startupScripts = written.startupScripts;
       imported = written.imported;
       isLoadedWith = written.isLoadedWith;
@@ -529,6 +612,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             base = config.base;
             assetsDir = config.build.assetsDir;
           },
+          ...keepOptions,
           renderChunk,
           generateBundle,
           transformIndexHtml: {
@@ -575,8 +659,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           ) {
             return null;
           }
-          return (wrapDynamicImports(code, id, chunkTranslations.naming) ??
-            null) as never;
+          return (wrapDynamicImports(
+            code,
+            id,
+            chunkTranslations.naming,
+            regions !== undefined
+          ) ?? null) as never;
         },
       },
     ] as UnpluginOptions[];
