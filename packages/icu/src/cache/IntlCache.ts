@@ -62,7 +62,7 @@ export class IntlCache<Constructors extends Record<string, Constructor>> {
       names.length > 1
         ? Object.fromEntries(names.sort().map((name) => [name, given[name]]))
         : given;
-    const key = `${String(locales)}|${JSON.stringify(options)}`;
+    const key = `${localesKey(locales)}|${JSON.stringify(options)}`;
     const Constructor = this.constructors[constructor];
     let instances = this.instances.get(Constructor);
     if (!instances) this.instances.set(Constructor, (instances = new Map()));
@@ -89,6 +89,17 @@ export class IntlCache<Constructors extends Record<string, Constructor>> {
       this.instances
     );
   }
+}
+
+/**
+ * A key that a tag and a list never share: `['de', 'fr']` prints as
+ * `de,fr`, which as a tag is not valid and has to reach its constructor.
+ */
+function localesKey(locales: unknown): string {
+  if (typeof locales === 'string') return `:${locales}`;
+  return JSON.stringify(
+    Array.isArray(locales) ? locales.map(String) : String(locales)
+  );
 }
 
 /** The instances of Intl's own constructors, shared by every package. */

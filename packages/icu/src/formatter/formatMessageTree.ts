@@ -4,7 +4,6 @@
  */
 
 import { intlCache } from '../cache/IntlCache';
-import { resolveLocale } from './locale';
 import {
   DECIMAL_NUMBER,
   FALLBACK_BRANCH_KEY,
@@ -131,8 +130,9 @@ type FormatContext<R> = FormatMessageTreeOptions & {
  *     timeZone,
  *   }); // '€5.00'
  *
- * Locales are validated the same way as `formatIcu` from
- * `@generaltranslation/icu/parser`.
+ * The locales go to `Intl` as they are given: it picks from a list, and
+ * throws a `RangeError` for one that is not a language tag when it formats
+ * with them. A message of text alone formats with any locales.
  */
 export function formatMessageTree(
   tree: MessageTree,
@@ -159,11 +159,10 @@ export function formatMessageTree<R>(
   values: MessageValues<R>,
   options: FormatMessageTreeOptions
 ): Part<R> | Part<R>[] {
-  resolveLocale(locales);
   return formatParsedTree(tree, '', locales, values, options);
 }
 
-/** Formats a tree whose locales were already validated; `icu` is reported on errors. */
+/** Formats a message tree or an ICU string's syntax tree; `icu` is reported on errors. */
 export function formatParsedTree<R>(
   tree: ParsedTree,
   icu: string,

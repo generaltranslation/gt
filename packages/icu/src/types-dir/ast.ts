@@ -125,5 +125,4 @@ export interface ParserOptions {
   requiresOtherClause?: boolean;
   shouldParseSkeletons?: boolean;
   captureLocation?: boolean;
-  locale?: Intl.Locale;
 }

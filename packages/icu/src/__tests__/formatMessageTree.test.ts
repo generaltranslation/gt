@@ -73,23 +73,32 @@ describe('formatMessageTree', () => {
     ).toThrow('did not match any of: a');
   });
 
-  it('validates locales like formatIcu instead of using the host locale', () => {
-    const tree: MessageTree = ['Hi'];
-    const errorOf = (format: () => unknown): unknown => {
-      try {
-        format();
-      } catch (error) {
-        return error;
-      }
-      throw new Error('expected an invalid-locale error');
-    };
+  it('gives its locales to Intl, which checks them when it formats', () => {
+    // Text alone reaches no formatter, so it formats with any locales.
     for (const locales of [[], 'not a locale!', ['en', 'x!']]) {
-      expect(errorOf(() => formatMessageTree(tree, locales))).toEqual(
-        errorOf(() => formatIcu('Hi', locales))
+      expect(formatMessageTree('Hi', locales)).toBe('Hi');
+      expect(formatIcu('Hi', locales)).toBe('Hi');
+    }
+    for (const locales of ['not a locale!', ['en', 'x!']]) {
+      expect(() =>
+        formatMessageTree([['n', 'number']], locales, { n: 1 })
+      ).toThrow(RangeError);
+      expect(() => formatIcu('{n, number}', locales, { n: 1 })).toThrow(
+        RangeError
       );
     }
-    expect(() => formatMessageTree(tree, [])).toThrow(TypeError);
-    expect(() => formatMessageTree(tree, 'not a locale!')).toThrow(RangeError);
+    // A skeleton asks for a locale's hour, which changes none of this.
+    expect(formatIcu('{n, number, ::.00}', [], { n: 1.5 })).toBe(
+      new Intl.NumberFormat([], { minimumFractionDigits: 2 }).format(1.5)
+    );
+    for (const locales of [[], 'not a locale!']) {
+      expect(formatIcu('Hi {name} ::', locales, { name: 'Ada' })).toBe(
+        'Hi Ada ::'
+      );
+    }
+    expect(() =>
+      formatIcu('{n, number, ::.00}', 'not a locale!', { n: 1.5 })
+    ).toThrow(RangeError);
   });
 
   it('formats a date with its own options only', () => {
@@ -124,25 +133,15 @@ describe('formatMessageTree', () => {
     expect(format({ ...own, timeZone: 'Asia/Tokyo' }, 'UTC')).toBe('11:03 PM');
   });
 
-  // Locales no other test uses, so none is resolved yet.
-  it.each([
-    ['a locale', 'se-NO', 1],
-    ['each locale of a list', ['nn-NO', 'nb-NO'], 2],
-  ])('resolves %s once, not on every call', (_name, locales, lookups) => {
-    const supportedLocalesOf = vi.spyOn(
-      Intl.NumberFormat,
-      'supportedLocalesOf'
-    );
-    try {
-      for (let i = 0; i < 3; i++) {
-        expect(formatMessageTree(['Hi ', ['n']], locales, { n: 'Ada' })).toBe(
-          'Hi Ada'
-        );
-      }
-      expect(supportedLocalesOf).toHaveBeenCalledTimes(lookups);
-    } finally {
-      supportedLocalesOf.mockRestore();
-    }
+  it('takes the hour of a `::j` skeleton from the locale Intl formats in', () => {
+    const t = new Date(Date.UTC(2026, 0, 15, 14, 3));
+    const format = (locales: string | string[]) =>
+      formatIcu('{t, time, ::jmm}', locales, { t }, { timeZone: 'UTC' });
+    expect(format('en')).toBe('2:03 PM');
+    expect(format('de')).toBe('14:03');
+    expect(format(['de', 'en'])).toBe('14:03');
+    // Klingon has no locale data, so the list formats in German.
+    expect(format(['tlh', 'de'])).toBe('14:03');
   });
 
   it('formats in the first locale of a list that Intl supports', () => {

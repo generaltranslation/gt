@@ -63,6 +63,18 @@ describe('IntlCache', () => {
     expect(intlCache.get('NumberFormat', 'en-NZ').format(1)).toBe('1');
   });
 
+  it('keeps a tag and a list that print alike apart', () => {
+    // 'de,fr' is no language tag, so it must reach Intl, which rejects it.
+    const list = intlCache.get('NumberFormat', ['de', 'fr']);
+    expect(intlCache.get('NumberFormat', ['de', 'fr'])).toBe(list);
+    expect(() => intlCache.get('NumberFormat', 'de,fr')).toThrow(RangeError);
+    expect(() => intlCache.get('NumberFormat', ['de,fr'])).toThrow(RangeError);
+    // An empty list is the host's locale; an empty tag is not valid.
+    intlCache.get('NumberFormat', []);
+    expect(() => intlCache.get('NumberFormat', '')).toThrow(RangeError);
+    expect(() => intlCache.get('NumberFormat', [''])).toThrow(RangeError);
+  });
+
   it('starts over when a constructor has 256 instances', () => {
     class Format {
       constructor(

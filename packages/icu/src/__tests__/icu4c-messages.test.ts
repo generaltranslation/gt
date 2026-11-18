@@ -69,6 +69,8 @@ const REASONS = {
   'intl-year': 'yyyy does not pad a year before 1000 to four digits in Intl.',
   'intl-calendar':
     'Before 15 October 1582 ICU4C counts in the Julian calendar and V8 in the Gregorian.',
+  'region-hour':
+    'A region override, like en-u-rg-gbzzzz, changes the hour cycle in ICU4C. Intl does not read it, so the hour is the one of the locale without it.',
   'intl-grouping':
     'Spanish groups a number from five digits. ICU4C’s {n, number} groups from four, and its own skeletons from five.',
 

@@ -202,23 +202,21 @@ describe('formatMessage with ICU strings', () => {
     }
   );
 
-  it('preserves regional hour cycles', () => {
+  it("formats an empty list in the host's locale", () => {
     const value = new Date(2020, 4, 6, 7, 3, 2);
     expect(
-      publicFormatMessage('{value, time, ::j}', {
-        timeZone,
-        locales: 'en-u-rg-gbzzzz',
-        variables: { value },
-      })
-    ).toBe('07');
-
-    expect(() =>
       publicFormatMessage('{value, time, ::j}', {
         timeZone,
         locales: [],
         variables: { value },
       })
-    ).toThrow();
+    ).toBe(
+      publicFormatMessage('{value, time, ::j}', {
+        timeZone,
+        locales: new Intl.DateTimeFormat().resolvedOptions().locale,
+        variables: { value },
+      })
+    );
   });
 
   it('preserves locale arrays through the package boundary', () => {

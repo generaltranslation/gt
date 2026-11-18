@@ -26,7 +26,6 @@ import {
   type MessageValues,
   type OnePartValues,
 } from './formatMessageTree';
-import { resolveLocale } from './locale';
 
 /**
  * A number, date or time as the formatter reads it. A message tree's nodes
@@ -111,10 +110,11 @@ export function formatIcu<R>(
   values: MessageValues<R>,
   options: FormatIcuOptions
 ): string | R | Array<string | R> {
-  const locale = resolveLocale(locales);
   // Most messages are plain text, which is its own tree.
   if (!ICU_SYNTAX.test(icu)) return icu;
-  const tree = toParsedTree(parse(icu, { locale }));
+  // Parsed without a locale: the formatter reads the hour of a `::j`
+  // skeleton from the locale it formats in, as for a message tree.
+  const tree = toParsedTree(parse(icu));
   return formatParsedTree(tree, icu, locales, values, {
     formats: {},
     timeZone: options.timeZone,
