@@ -3,7 +3,7 @@ import {
   ensureInitialized,
   getServerConditionStore,
   isLocaleRoutingEnabled,
-} from '../setup/initializeGT.server';
+} from 'gt-tanstack-start/internal/initializeGT.server';
 import { createGTRouterWrap, readGTRouterState } from './createGTRouterWrap';
 import {
   resolveIntegrationOptions,

@@ -7,6 +7,9 @@ export default mergeConfig(
   defineConfig({
     resolve: {
       alias: {
+        'gt-tanstack-start/internal/initializeGT.server': fileURLToPath(
+          new URL('./src/setup/initializeGT.server.ts', import.meta.url)
+        ),
         'gt-tanstack-start/internal/_config': fileURLToPath(
           new URL('./src/internal/_config.ts', import.meta.url)
         ),

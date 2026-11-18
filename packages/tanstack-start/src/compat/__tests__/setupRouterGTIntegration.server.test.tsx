@@ -3,18 +3,12 @@ import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
-  compatPluginModule,
   mockConditionStore,
   mockEnsureInitialized,
   mockInitializeDictionaryManager,
   mockLoadDictionary,
   mockProvider,
 } = vi.hoisted(() => ({
-  compatPluginModule: {
-    dictionary: { greeting: 'Hello' },
-    loadDictionary: async () => ({}),
-    state: { initialized: false },
-  },
   mockConditionStore: {
     getLocale: vi.fn(() => 'fr'),
     getRegion: vi.fn(() => undefined),
@@ -30,7 +24,10 @@ const {
 }));
 
 vi.mock('gt-tanstack-start/internal/_config', () => ({ config: {} }));
-vi.mock('gt-tanstack-start/internal/_compat-config', () => compatPluginModule);
+vi.mock('gt-tanstack-start/internal/_compat-config', () => ({
+  dictionary: { greeting: 'Hello' },
+  loadDictionary: async () => ({}),
+}));
 vi.mock('../../setup/initializeGT.server', () => ({
   ensureInitialized: mockEnsureInitialized,
   getServerConditionStore: () => mockConditionStore,
@@ -67,7 +64,6 @@ function createRouter(options: GTRouterOptions = {}, isShell?: () => boolean) {
 describe.sequential('compat setupRouterGTIntegration server', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    compatPluginModule.state = { initialized: false };
     mockConditionStore.getLocale.mockReturnValue('fr');
   });
 

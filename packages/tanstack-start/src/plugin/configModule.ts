@@ -16,9 +16,6 @@ export const RESOLVED_COMPAT_CONFIG_MODULE_ID =
   '\0gt-tanstack-start:compat-config';
 export const LOCALE_ROUTING_MODULE_ID =
   'gt-tanstack-start/internal/localeRouting';
-// Each evaluation of a generated module gets its own state, so the server sets
-// GT up again when a dev server restart evaluates the module, and its loader, again.
-const STATE_EXPORT = 'export const state = { initialized: false };';
 const CUSTOM_LOADER_FILES = [
   'src/loadTranslations.ts',
   'src/loadTranslations.tsx',
@@ -139,7 +136,6 @@ function createCompatConfigModuleCode(
         )
       : ['export const loadDictionary = undefined;'])
   );
-  lines.push(STATE_EXPORT);
   return lines.join('\n');
 }
 
@@ -173,7 +169,6 @@ export function createConfigModule(
   );
   const lines = [
     `export const config = ${JSON.stringify({ ...publicConfig, ...definedRuntimeOptions })};`,
-    STATE_EXPORT,
   ];
   const compatCode = createCompatConfigModuleCode(root, cwd, {
     dictionary,

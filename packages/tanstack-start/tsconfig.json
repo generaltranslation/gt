@@ -11,6 +11,9 @@
     "jsx": "react-jsx",
     "composite": true,
     "paths": {
+      "gt-tanstack-start/internal/initializeGT.server": [
+        "./src/setup/initializeGT.server.ts"
+      ],
       "gt-tanstack-start/internal/_config": ["./src/internal/_config.ts"],
       "gt-tanstack-start/internal/_compat-config": [
         "./src/internal/_compat-config.ts"

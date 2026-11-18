@@ -8,6 +8,3 @@ import type { DictionaryConfig } from 'gt-i18n/internal/compat';
 export const dictionary: DictionaryConfig['dictionary'] = undefined;
 
 export const loadDictionary: DictionaryConfig['loadDictionary'] = undefined;
-
-/** Whether the server has set up the DictionaryManager from this evaluation of the module. */
-export const state = { initialized: false };

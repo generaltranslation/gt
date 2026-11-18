@@ -5,7 +5,6 @@ const { mockInitializeReactGT, pluginModule } = vi.hoisted(() => ({
   pluginModule: {
     config: { defaultLocale: 'en', locales: ['fr'], localeCookieName: 'lc' },
     loadTranslations: async () => ({}),
-    state: { initialized: false },
   },
 }));
 

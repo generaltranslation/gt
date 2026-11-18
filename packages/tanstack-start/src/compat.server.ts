@@ -1,6 +1,6 @@
 // Dictionary (key-based) API. The dictionary and its loader come from the
 // gtTanstackStart() Vite plugin.
-import { getServerConditionStore } from './setup/initializeGT.server';
+import { getServerConditionStore } from 'gt-tanstack-start/internal/initializeGT.server';
 import { ensureDictionaryManager } from './compat/dictionaryManager.server';
 import { createGetTranslations } from './compat/runtime';
 

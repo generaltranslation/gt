@@ -13,6 +13,8 @@ const deps = {
     /^@generaltranslation\/compiler$/,
     // Kept as bare imports so the Vite plugin can replace them.
     /^gt-tanstack-start\/internal\/(?:_config|_compat-config|localeRouting)$/,
+    // Kept as a bare import so the server entries share one copy of its state.
+    /^gt-tanstack-start\/internal\/initializeGT\.server$/,
     /^@generaltranslation\/react-core$/,
     /^@generaltranslation\/react-core\//,
     /^gt-react$/,
@@ -32,6 +34,7 @@ const entries: Record<string, string> = {
   'unstable.client': 'src/unstable.client.ts',
   'unstable.server': 'src/unstable.server.ts',
   'plugin/vite': 'src/plugin/vite.ts',
+  'internal/initializeGT.server': 'src/setup/initializeGT.server.ts',
   'internal/_config': 'src/internal/_config.ts',
   'internal/_compat-config': 'src/internal/_compat-config.ts',
   'internal/localeRouting': 'src/internal/localeRouting.ts',

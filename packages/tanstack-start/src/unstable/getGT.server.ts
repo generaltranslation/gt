@@ -1,4 +1,4 @@
-import { getServerConditionStore } from '../setup/initializeGT.server';
+import { getServerConditionStore } from 'gt-tanstack-start/internal/initializeGT.server';
 import { createUnstableGetGT, createUnstableGetMessages } from './getGT';
 
 /**

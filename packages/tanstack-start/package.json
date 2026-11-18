@@ -148,6 +148,13 @@
       },
       "default": "./dist/plugin/vite.mjs"
     },
+    "./internal/initializeGT.server": {
+      "import": {
+        "types": "./dist/internal/initializeGT.server.d.mts",
+        "default": "./dist/internal/initializeGT.server.mjs"
+      },
+      "default": "./dist/internal/initializeGT.server.mjs"
+    },
     "./internal/_config": {
       "import": {
         "types": "./dist/internal/_config.d.mts",
