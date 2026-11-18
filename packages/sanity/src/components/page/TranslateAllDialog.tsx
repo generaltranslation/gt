@@ -44,7 +44,7 @@ export const TranslateAllDialog: React.FC<TranslateAllDialogProps> = ({
       onClose={handleCancel}
       footer={
         <Box padding={3}>
-          <Flex gap={2}>
+          <Flex gap={2} justify='flex-end'>
             <Button text='Cancel' mode='ghost' onClick={handleCancel} />
             <Button
               text={force ? 'Retranslate All' : 'Translate All'}

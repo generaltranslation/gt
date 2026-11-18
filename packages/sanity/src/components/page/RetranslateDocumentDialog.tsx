@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Button, Card, Dialog, Flex, Stack, Text } from '@sanity/ui';
-import { formatLocaleLabel } from '../../utils/localeDisplay';
+import { LocaleLabel } from '../shared/LocaleLabel';
 
 interface RetranslateDocumentDialogProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ export const RetranslateDocumentDialog: React.FC<
       onClose={onClose}
       footer={
         <Box padding={3}>
-          <Flex gap={2}>
+          <Flex gap={2} justify='flex-end'>
             <Button text='Cancel' mode='ghost' onClick={onClose} />
             <Button text='Retranslate' tone='caution' onClick={onConfirm} />
           </Flex>
@@ -29,19 +29,25 @@ export const RetranslateDocumentDialog: React.FC<
       }
     >
       <Box padding={4}>
-        <Stack gap={4}>
+        <Stack gap={5}>
+          <Text>
+            This document is translated again from scratch into the selected
+            locales. Any saved translation is ignored, even if the document has
+            not changed.
+          </Text>
+
           <Stack gap={3}>
-            <Text>
-              This document is translated again from scratch into the selected
-              locales. Any translation General Translation already holds for
-              them is ignored, even if the document has not changed.
+            <Text size={1} muted>
+              {localeIds.length === 1 ? 'Locale' : 'Locales'}
             </Text>
-            <Text size={1} weight='medium'>
-              Locales: {localeIds.map(formatLocaleLabel).join(', ')}
-            </Text>
+            <Flex gap={3} wrap='wrap'>
+              {localeIds.map((localeId) => (
+                <LocaleLabel key={localeId} localeId={localeId} />
+              ))}
+            </Flex>
           </Stack>
 
-          <Card padding={3} radius={2} tone='caution' border>
+          <Card padding={4} radius={2} tone='caution' border>
             <Stack gap={3}>
               <Text size={1} weight='medium'>
                 Existing translations are replaced
@@ -54,11 +60,6 @@ export const RetranslateDocumentDialog: React.FC<
               </Text>
             </Stack>
           </Card>
-
-          <Text size={1} muted>
-            Use this when a stored translation is wrong. To pick up changes to
-            the document, use Translate.
-          </Text>
         </Stack>
       </Box>
     </Dialog>

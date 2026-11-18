@@ -19,7 +19,7 @@ export const SaveLocalTranslationsDialog: React.FC<
       onClose={onClose}
       footer={
         <Box padding={3}>
-          <Flex gap={2}>
+          <Flex gap={2} justify='flex-end'>
             <Button text='Cancel' mode='ghost' onClick={onClose} />
             <Button text='Turn on' tone='primary' onClick={onConfirm} />
           </Flex>

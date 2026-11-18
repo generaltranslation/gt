@@ -62,3 +62,35 @@ export async function checkTranslationStatus(
     return [];
   }
 }
+
+/** When GT completed the result it currently holds for each file, by status key. Files without a completed result are left out. */
+export async function getCompletedResults(
+  fileQueryData: FileProperties[],
+  secrets: Secrets
+): Promise<Map<string, string>> {
+  overrideConfig(secrets);
+  const responseData = await api.queryFileData({
+    translatedFiles: fileQueryData,
+  });
+  const completed = new Map<string, string>();
+  for (const translation of responseData.translatedFiles || []) {
+    if (!translation.completedAt) continue;
+    completed.set(
+      createTranslationStatusKey(
+        translation.branchId,
+        translation.fileId,
+        translation.versionId,
+        translation.locale
+      ),
+      translation.completedAt
+    );
+  }
+  return completed;
+}
+
+export function isCompletedAfter(
+  completedAt: string | null | undefined,
+  supersededAt: string
+): boolean {
+  return !!completedAt && Date.parse(completedAt) > Date.parse(supersededAt);
+}
