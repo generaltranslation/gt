@@ -18,6 +18,8 @@ export type GTTag = {
   id: number;
   injectionType: InjectionType;
   transformation?: TransformationPrefix;
+  /** A plural that picks among ordinal categories: an `<Ordinal>`. */
+  ordinal?: boolean;
   branches?: Record<string, TaggedChildren>;
   variableType?: VariableTransformationSuffix;
 };

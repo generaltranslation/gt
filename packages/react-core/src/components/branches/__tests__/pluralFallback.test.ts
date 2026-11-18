@@ -15,7 +15,10 @@ beforeEach(() => {
   // Both the locales list and _enableI18n matter here. Without them
   // getFormatLocales() returns [defaultLocale], the rows below run English
   // rules instead of Latvian and Arabic ones, and they still pass.
-  initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'ar', 'lv'] });
+  initializeI18nConfig({
+    defaultLocale: 'en',
+    locales: ['en', 'ar', 'cy', 'lv'],
+  });
 });
 afterEach(() => {
   resetGTGlobals();
@@ -55,6 +58,73 @@ describe('plural branch selection', () => {
         children: 'N items',
       })
     ).toBe(expected);
+  });
+
+  it('picks English ordinal branches', () => {
+    const place = (n: number, exact = {}) =>
+      renderPlural(
+        {
+          ...conditions,
+          n,
+          ...exact,
+          one: `${n}st`,
+          two: `${n}nd`,
+          few: `${n}rd`,
+          children: `${n}th`,
+        },
+        true
+      );
+    expect(
+      [1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111].map((n) => place(n))
+    ).toEqual(
+      '1st 2nd 3rd 4th 11th 12th 13th 21st 22nd 23rd 101st 111th'.split(' ')
+    );
+    expect([1, 2, 21].map((n) => place(n, { _1: 'Winner' }))).toEqual([
+      'Winner',
+      '2nd',
+      '21st',
+    ]);
+    // English cardinals have one and other.
+    expect(
+      renderPlural({ ...conditions, n: 2, two: '2nd', children: '2th' })
+    ).toBe('2th');
+  });
+
+  it.each([
+    [0, 'zero'],
+    [1, 'one'],
+    [2, 'two'],
+    [3, 'few'],
+    [4, 'few'],
+    [5, 'many'],
+    [6, 'many'],
+    [7, 'zero'],
+    [10, 'other'],
+  ])('cy ordinal n=%i is %s', (n, category) => {
+    expect(
+      renderPlural(
+        {
+          n,
+          _locale: 'cy',
+          _enableI18n: true,
+          zero: 'zero',
+          one: 'one',
+          two: 'two',
+          few: 'few',
+          many: 'many',
+          children: 'other',
+        },
+        true
+      )
+    ).toBe(category);
+  });
+
+  it('names <Ordinal> when it reports n', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const untyped = { ...conditions, n: '3', children: 'nth' } as unknown;
+    expect(() =>
+      renderPlural(untyped as Parameters<typeof renderPlural>[0], true)
+    ).toThrow('<Ordinal> needs a number or a bigint for n');
   });
 
   it('reads zero as a plural category, which English does not have', () => {

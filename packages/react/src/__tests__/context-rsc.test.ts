@@ -61,6 +61,7 @@ describe('gt-react react-server surface', () => {
     expect(mod.Derive).toBeTypeOf('function');
     expect('GtInternalDerive' in mod).toBe(false);
     expect(mod.Num).toBeTypeOf('function');
+    expect(mod.Ordinal).toBeTypeOf('function');
     expect(mod.Plural).toBeTypeOf('function');
     expect(mod.RelativeTime).toBeTypeOf('function');
     expect('RscT' in mod).toBe(false);

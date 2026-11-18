@@ -99,6 +99,7 @@ const rootExportNames = [
   'LocaleSelector',
   'N',
   'Num',
+  'Ordinal',
   'Plural',
   'RelativeTime',
   'T',

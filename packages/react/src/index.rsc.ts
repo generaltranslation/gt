@@ -41,6 +41,7 @@ export {
   Derive,
   N,
   Num,
+  Ordinal,
   Plural,
   RelativeTime,
   T,

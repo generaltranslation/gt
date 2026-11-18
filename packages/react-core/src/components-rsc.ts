@@ -8,6 +8,10 @@ export { Branch, GtInternalBranch } from './components/branches/Branch';
 export { Derive, GtInternalDerive } from './components/derivation/Derive';
 export { GtInternalVar, Var } from './components/variables/Var';
 export {
+  RscGtInternalOrdinal as GtInternalOrdinal,
+  RscOrdinal as Ordinal,
+} from './components/branches/Ordinal.rsc';
+export {
   RscGtInternalPlural as GtInternalPlural,
   RscPlural as Plural,
 } from './components/branches/Plural.rsc';

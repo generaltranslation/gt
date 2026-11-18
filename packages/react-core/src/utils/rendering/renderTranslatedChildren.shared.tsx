@@ -90,13 +90,14 @@ function createRenderTranslatedChildren({
     if (transformation === 'plural') {
       const n = sourceElement.props.n;
       const targetBranches = targetElement.d?.b || {};
-      const key = selectPluralKey(n, locales, targetBranches);
+      const key = selectPluralKey(n, locales, targetBranches, sourceGT.ordinal);
       const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
         source: getPluralBranch(
           n,
           locales,
           sourceGT.branches || {},
+          sourceGT.ordinal,
           target === undefined ? undefined : key
         ),
         target,

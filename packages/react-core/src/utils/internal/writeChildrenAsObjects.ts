@@ -39,7 +39,8 @@ const getTagName = (child: TaggedElement): string => {
 const createGTProp = (
   transformation: Transformation,
   props: Record<string, unknown>,
-  branches?: Record<string, TaggedChildren>
+  branches?: Record<string, TaggedChildren>,
+  ordinal?: boolean
 ): GTProp | undefined => {
   // Add translatable HTML content props
   let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce<GTProp>(
@@ -74,7 +75,7 @@ const createGTProp = (
       newGTProp = {
         ...newGTProp,
         b: newBranches,
-        t: transformation === 'plural' ? 'p' : 'b',
+        t: transformation !== 'plural' ? 'b' : ordinal ? 'o' : 'p',
       };
   }
 
@@ -117,7 +118,8 @@ const handleSingleChildElement = (
     minifiedElement.d = createGTProp(
       transformation as Transformation,
       props,
-      generaltranslation.branches
+      generaltranslation.branches,
+      generaltranslation.ordinal
     );
   }
   if (props.children) {

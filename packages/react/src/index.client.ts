@@ -18,6 +18,7 @@ export { BrowserGTProvider as GTProvider } from './provider/BrowserGTProvider';
 // ===== Components ===== //
 export {
   Branch,
+  Ordinal,
   Plural,
   Derive,
   GtInternalTranslateJsx,

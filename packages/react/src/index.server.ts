@@ -52,6 +52,7 @@ export { RegionSelector } from './components/RegionSelector';
 // ===== Components ===== //
 export {
   Branch,
+  Ordinal,
   Plural,
   Derive,
   GtInternalTranslateJsx,

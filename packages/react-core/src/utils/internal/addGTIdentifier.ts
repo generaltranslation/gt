@@ -77,6 +77,7 @@ export function addGTIdentifier(
         }
       }
       if (transformationParts[0] === 'plural') {
+        if (transformationParts[1] === 'ordinal') result.ordinal = true;
         const { n } = props;
         const fill = (branch: unknown) =>
           isCount(n)

@@ -5,6 +5,7 @@ import {
   Derive,
   LocaleSelector,
   Num,
+  Ordinal,
   Plural,
   RelativeTime,
   T,
@@ -25,6 +26,7 @@ export default function ServerExportsPage() {
         fallback
       </Branch>
       <Plural n={1}>fallback</Plural>
+      <Ordinal n={1}>fallback</Ordinal>
       <Num>{1234.5}</Num>
       <Currency currency='USD'>{10}</Currency>
       <DateTime>{new Date(0)}</DateTime>

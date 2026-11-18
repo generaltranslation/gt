@@ -14,7 +14,8 @@ function getTransformation(type: unknown): Transformation | undefined {
 
 /**
  * Gives each `<N>` in a plural's branch the count it shows. A nested
- * `<Plural>` gives its own. A branch with no `<N>` is returned as it is.
+ * `<Plural>` or `<Ordinal>` gives its own. A branch with no `<N>` is returned
+ * as it is.
  */
 export function fillCount(branch: ReactNode, n: number | bigint): ReactNode {
   const fill = (node: ReactNode): ReactNode => {
@@ -32,7 +33,7 @@ export function fillCount(branch: ReactNode, n: number | bigint): ReactNode {
       transformation === component ||
       transformation === `${component}-automatic`;
     if (is('variable-count')) return cloneElement(node, { _count: n });
-    if (is('plural')) return node;
+    if (is('plural') || is('plural-ordinal')) return node;
     // A <Branch> keeps its named branches in its props.
     const names = is('branch') ? Object.keys(node.props) : ['children'];
     const filled = names

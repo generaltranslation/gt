@@ -27,6 +27,7 @@ import {
   Num as _Num,
   Var as _Var,
   Branch as _Branch,
+  Ordinal as _Ordinal,
   Plural as _Plural,
   Derive as _Derive,
   useLocaleDirection as _useLocaleDirection,
@@ -345,6 +346,36 @@ export const Plural: typeof _Plural = () => {
 };
 /** @internal _gtt - The GT transformation for the component. */
 Plural._gtt = 'plural';
+
+/**
+ * The `<Ordinal>` component is `<Plural>` for ordinals such as 1st, 2nd and 3rd: it renders the branch that
+ * fits the number `n`, an exact branch such as `_1` first, then the ordinal category of `n` in the current
+ * locale (`zero`, `one`, `two`, `few`, `many`), then the children.
+ *
+ * @example
+ * ```jsx
+ * <Ordinal
+ *   n={place}
+ *   one={<><Num>{place}</Num>st</>}
+ *   two={<><Num>{place}</Num>nd</>}
+ *   few={<><Num>{place}</Num>rd</>}
+ * >
+ *   <Num>{place}</Num>th
+ * </Ordinal>
+ * ```
+ * In English this renders `1st`, `2nd`, `3rd`, `4th`, `11th`, `21st` and so on.
+ *
+ * @param {number | bigint} n - The number that picks the branch.
+ * @param {any} children - The content to render when no branch fits.
+ * @param {...{[key: string]: any}} [branches] - Branches for the ordinal categories `zero`, `one`, `two`, `few` and `many`,
+ * and for exact numbers, written `_0`, `_1` and so on.
+ * @returns {React.JSX.Element} The rendered content of the branch that fits `n`.
+ */
+export const Ordinal: typeof _Ordinal = () => {
+  throw new Error(typesFileError);
+};
+/** @internal _gtt - The GT transformation for the component. */
+Ordinal._gtt = 'plural-ordinal';
 
 /**
  * A dropdown component that allows users to select a locale.

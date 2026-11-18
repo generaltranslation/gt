@@ -54,6 +54,7 @@ export {
   LocaleSelector,
   N,
   Num,
+  Ordinal,
   Plural,
   RegionSelector,
   RelativeTime,

@@ -1,6 +1,7 @@
 export {
   // ===== Components ===== //
   Branch,
+  Ordinal,
   Plural,
   Derive,
   T,

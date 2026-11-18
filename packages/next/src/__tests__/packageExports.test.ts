@@ -253,6 +253,7 @@ describe('gt-next package exports', () => {
     'LocaleSelector',
     'N',
     'Num',
+    'Ordinal',
     'Plural',
     'RegionSelector',
     'RelativeTime',

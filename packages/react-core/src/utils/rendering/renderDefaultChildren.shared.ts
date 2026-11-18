@@ -55,7 +55,8 @@ function createRenderDefaultChildren({
           getPluralBranch(
             child.props.n,
             [defaultLocale],
-            generaltranslation.branches || {}
+            generaltranslation.branches || {},
+            generaltranslation.ordinal
           )
         );
       }

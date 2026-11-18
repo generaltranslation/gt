@@ -11,6 +11,7 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     LocaleSelector: vi.fn(),
     N: vi.fn(),
     Num: vi.fn(),
+    Ordinal: vi.fn(),
     Plural: vi.fn(),
     RelativeTime: vi.fn(),
     RscT: vi.fn(),
@@ -64,6 +65,7 @@ describe('rsc component wrappers', () => {
     ],
     ['N', () => import('../variables/N'), mockComponents.N],
     ['Num', () => import('../variables/Num'), mockComponents.Num],
+    ['Ordinal', () => import('../branches/Ordinal'), mockComponents.Ordinal],
     ['Plural', () => import('../branches/Plural'), mockComponents.Plural],
     [
       'RelativeTime',
@@ -116,6 +118,8 @@ describe('rsc component wrappers', () => {
     expect(module.DateTime).toBeTypeOf('function');
     expect(module.RelativeTime).toBeTypeOf('function');
     expect(module.Branch).toBe(mockComponents.Branch);
+    expect(module.Ordinal).toBeTypeOf('function');
+    expect(module.Ordinal._gtt).toBe('plural-ordinal');
     expect(module.Plural).toBeTypeOf('function');
     expect(module.LocaleSelector).toBe(mockComponents.LocaleSelector);
     expect(module.Derive).toBe(mockComponents.Derive);
