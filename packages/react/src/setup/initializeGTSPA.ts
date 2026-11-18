@@ -1,5 +1,5 @@
 import {
-  getTranslationsSnapshot,
+  preloadTranslations,
   I18nStore,
   setI18nStore,
   setReactI18nCache,
@@ -46,5 +46,5 @@ export async function initializeGTSPA(config: InitializeGTSPAParams) {
   setI18nStore(i18nStore);
 
   // Block until translations are loaded
-  await getTranslationsSnapshot(getReadonlyConditionStore().getLocale());
+  await preloadTranslations(getReadonlyConditionStore().getLocale());
 }

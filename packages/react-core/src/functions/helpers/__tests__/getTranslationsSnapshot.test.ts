@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReactI18nCache } from '../../../i18n-cache/ReactI18nCache';
 import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../../setup/i18nConfig';
-import { getTranslationsSnapshot } from '../getTranslationsSnapshot';
+import { getReactI18nCache } from '../../../i18n-cache/singleton-operations';
+import {
+  getTranslationsSnapshot,
+  preloadTranslations,
+} from '../getTranslationsSnapshot';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
@@ -104,5 +108,41 @@ describe('getTranslationsSnapshot', () => {
       es: { hash1: 'hola' },
     });
     expect(loadTranslations).toHaveBeenCalledTimes(2);
+  });
+
+  it('preloads a locale into the cache without copying its table out', async () => {
+    const loadTranslations = vi.fn(async () => ({ hash1: 'hola' }));
+    setup(loadTranslations);
+    const clone = vi.spyOn(globalThis, 'structuredClone');
+
+    await expect(preloadTranslations('es')).resolves.toBeUndefined();
+    await expect(preloadTranslations('en')).resolves.toBeUndefined();
+    expect(loadTranslations.mock.calls).toEqual([['es']]);
+    // The cache copies what the loader gave it, once.
+    expect(clone).toHaveBeenCalledTimes(1);
+    expect(
+      getReactI18nCache().lookupTranslation('es', 'hello', {
+        $format: 'STRING',
+        $_hash: 'hash1',
+      })
+    ).toBe('hola');
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
+  it('development: warns when a preload fails, and the next one retries', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const loadTranslations = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Cannot find module './_gt/es.json'"))
+      .mockResolvedValue({ hash1: 'hola' });
+    setup(loadTranslations);
+
+    await expect(preloadTranslations('es')).resolves.toBeUndefined();
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"es"')
+    );
+    await preloadTranslations('es');
+    expect(loadTranslations).toHaveBeenCalledTimes(2);
+    expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
   });
 });

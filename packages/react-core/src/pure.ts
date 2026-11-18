@@ -3,7 +3,10 @@
 // hooks, or component implementations.
 
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
-export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
+export {
+  getTranslationsSnapshot,
+  preloadTranslations,
+} from './functions/helpers/getTranslationsSnapshot';
 export { t } from './functions/translation/t';
 export { m } from './functions/translation/m';
 export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
