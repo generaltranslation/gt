@@ -35,9 +35,6 @@ export function setupGT(
   ) => Promise<Record<string, Content>> = async (locale) =>
     catalog[locale] ?? {}
 ) {
-  // gt-i18n singletons keep their first value, so start each test fresh.
-  delete (globalThis as { __generaltranslation?: unknown })
-    .__generaltranslation;
   initializeGT({
     defaultLocale: 'en',
     locales: ['en', 'fr', 'de', 'ar', 'he', 'fa'],

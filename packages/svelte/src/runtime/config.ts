@@ -24,6 +24,7 @@ export type GTTranslationsData = {
 /**
  * Initializes General Translation. Call it once, from a module shared by the
  * server and the browser, before rendering or loading translations.
+ * Calling it again replaces the configuration and clears cached translations.
  *
  * @example
  * ```ts

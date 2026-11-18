@@ -28,6 +28,7 @@ export type AsyncConditionStoreParams = {
 export const {
   getConditionStore: getAsyncConditionStore,
   setConditionStore: setAsyncConditionStore,
+  isConditionStoreInitialized: isAsyncConditionStoreInitialized,
 } = createConditionStoreSingleton<AsyncConditionStore>(
   createDiagnosticMessage({
     source: 'gt-next',

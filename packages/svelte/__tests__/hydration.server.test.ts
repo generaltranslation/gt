@@ -2,7 +2,11 @@ import { getI18nCache } from 'gt-i18n/internal';
 import { render } from 'svelte/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Content } from '@generaltranslation/format';
-import { loadTranslations } from '../src/runtime/config';
+import {
+  initializeGT,
+  loadTranslations,
+  resolveLocale,
+} from '../src/runtime/config';
 import Greeting from './fixtures/Greeting.svelte';
 import Harness from './fixtures/Harness.svelte';
 import { hashesOf, setupGT, withoutComments } from './helpers';
@@ -51,6 +55,39 @@ function median(runs: number, fn: () => unknown): number {
 }
 
 afterEach(() => vi.restoreAllMocks());
+
+describe('initializeGT', () => {
+  it('replaces the loader and invalidates cached translations on reinitialization', async () => {
+    const previousLoader = vi
+      .fn()
+      .mockResolvedValueOnce({ hello: 'Bonjour' })
+      .mockRejectedValue(new Error('Vite module runner has been closed.'));
+    setupGT({}, previousLoader);
+    expect(await loadTranslations('fr')).toEqual({
+      locale: 'fr',
+      translations: { hello: 'Bonjour' },
+    });
+
+    const nextLoader = vi.fn(async (locale: string) => ({ hello: locale }));
+    initializeGT({
+      defaultLocale: 'es',
+      locales: ['es', 'fr', 'de'],
+      loadTranslations: nextLoader,
+    });
+
+    expect(await loadTranslations('de')).toEqual({
+      locale: 'de',
+      translations: { hello: 'de' },
+    });
+    expect(await loadTranslations('fr')).toEqual({
+      locale: 'fr',
+      translations: { hello: 'fr' },
+    });
+    expect(previousLoader.mock.calls).toEqual([['fr']]);
+    expect(nextLoader.mock.calls).toEqual([['de'], ['fr']]);
+    expect(resolveLocale('en')).toBe('es');
+  });
+});
 
 describe('<GTProvider> translations on the server', () => {
   it('does not copy translations loaded from the cache back into it', async () => {

@@ -5,7 +5,6 @@ import { I18nConfig, type I18nConfigParams } from './I18nConfig';
 const i18nConfigSingleton = createGlobalSingleton<I18nConfig>({
   namespace: 'i18n',
   key: 'i18nConfig',
-  source: 'gt-i18n',
   notInitialized: () =>
     createDiagnosticMessage({
       source: 'gt-i18n',

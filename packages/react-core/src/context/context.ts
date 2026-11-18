@@ -36,7 +36,6 @@ const gtContextSingleton = createGlobalSingleton<
 >({
   namespace: 'reactCore',
   key: 'gtContext',
-  source: '@generaltranslation/react-core',
   notInitialized: () =>
     createDiagnosticMessage({
       source: '@generaltranslation/react-core',

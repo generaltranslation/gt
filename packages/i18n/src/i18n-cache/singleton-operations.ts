@@ -6,7 +6,6 @@ import type { Content } from '@generaltranslation/format';
 const i18nCacheSingleton = createGlobalSingleton<I18nCache>({
   namespace: 'i18n',
   key: 'i18nCache',
-  source: 'gt-i18n',
   notInitialized: () =>
     createDiagnosticMessage({
       source: 'gt-i18n',
