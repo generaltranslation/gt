@@ -6,7 +6,6 @@ import {
   JsxChildren,
 } from '@generaltranslation/format';
 import {
-  getVariableName,
   minifyVariableType,
   minifyVariableTypeMap,
 } from '../../../utils/getVariableName.js';
@@ -158,10 +157,10 @@ export default function addGTIdentifierToSyntaxTree(
         const variableType = minifyVariableType(
           type as keyof typeof minifyVariableTypeMap
         );
-        const variableName = getVariableName(props, indexObject.index);
+        const name = (props as Record<string, unknown> | undefined)?.name;
         return {
           i: indexObject.index,
-          k: variableName,
+          ...(typeof name === 'string' && name !== '' && { k: name }),
           v: variableType,
         };
       }

@@ -3,7 +3,6 @@ import {
   isGTComponent,
   isVariableComponent,
   isDeriveComponent,
-  getVariableName,
 } from '../helpers';
 import { GT_COMPONENT_TYPES, MINIFY_CANONICAL_NAME_MAP } from '../constants';
 
@@ -47,19 +46,15 @@ describe('GT component helpers', () => {
     expect(isDeriveComponent('RelativeTime')).toBe(false);
   });
 
-  // Minified names and default variable keys are part of the hashed wire
-  // format shared with the CLI and the runtime.
+  // Minified names are part of the hashed wire format shared with the CLI
+  // and the runtime.
   it.each([
-    [GT_COMPONENT_TYPES.Var, 'v', '_gt_1'],
-    [GT_COMPONENT_TYPES.Num, 'n', '_gt_1'],
-    [GT_COMPONENT_TYPES.Currency, 'c', '_gt_1'],
-    [GT_COMPONENT_TYPES.DateTime, 'd', '_gt_1'],
-    [GT_COMPONENT_TYPES.RelativeTime, 'rt', '_gt_1'],
-  ] as const)(
-    '%s minifies to %s and defaults to the key %s',
-    (component, minified, key) => {
-      expect(MINIFY_CANONICAL_NAME_MAP[component]).toBe(minified);
-      expect(getVariableName(1)).toBe(key);
-    }
-  );
+    [GT_COMPONENT_TYPES.Var, 'v'],
+    [GT_COMPONENT_TYPES.Num, 'n'],
+    [GT_COMPONENT_TYPES.Currency, 'c'],
+    [GT_COMPONENT_TYPES.DateTime, 'd'],
+    [GT_COMPONENT_TYPES.RelativeTime, 'rt'],
+  ] as const)('%s minifies to %s', (component, minified) => {
+    expect(MINIFY_CANONICAL_NAME_MAP[component]).toBe(minified);
+  });
 });

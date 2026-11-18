@@ -30,7 +30,7 @@
      */
     children?: Snippet;
     options?: Intl.DateTimeFormatOptions;
-    /** Variable key used in translations. Must be a static string. */
+    /** Name shown to translators. Must be a static string. */
     name?: string;
   } = $props();
 

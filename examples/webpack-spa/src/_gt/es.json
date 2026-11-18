@@ -4,12 +4,11 @@
   "edd2e391c8aba4cb": "Envuelve cualquier texto en el componente T para traducirlo.",
   "cc386fe41fd380ce": "Cambia de idioma con el selector de idioma integrado.",
   "f0079859dda9c02d": "Previsualiza las traducciones en vivo mientras desarrollas con el compilador de GT.",
-  "b4bf727e79a469e7": {
+  "262ff7334078e8e8": {
     "c": [
       "Renderizado con un valor dinámico. El año actual es ",
       {
         "i": 2,
-        "k": "_gt_2",
         "v": "v"
       }
     ],

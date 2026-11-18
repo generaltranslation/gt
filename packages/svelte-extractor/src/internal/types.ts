@@ -74,15 +74,9 @@ export type SvelteExtractionError = {
 
 /**
  * Runtime metadata passed to `<T>` as `_gtm`.
- * - `v`: per scope, the variable key -> variable id map.
- * - `s`: per parent (a scoped element id, or `""` for `<T>` itself), the
- *   variable key -> variable id map of its child variables. Only emitted
- *   for keys used more than once in a scope.
  * - `b`: per scoped element id, the Branch/Plural kind and its source branch names.
  */
 export type GTRuntimeMetadata = {
-  v?: Record<string, Record<string, number>>;
-  s?: Record<string, Record<string, number>>;
   b?: Record<string, { t: 'p' | 'b'; b: string[] }>;
 };
 

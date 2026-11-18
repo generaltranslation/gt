@@ -22,23 +22,21 @@
   },
   {
     "id": "typed-variables",
-    "description": "Variable identifiers and generated names follow source order.",
+    "description": "Variable identifiers follow source order.",
     "source": [
       "Hello ",
       {
         "i": 1,
-        "k": "_gt_1",
         "v": "v"
       },
       ", you have ",
       {
         "i": 2,
-        "k": "_gt_2",
         "v": "n"
       },
       " messages."
     ],
-    "hash": "0fd5883fa4d997b6"
+    "hash": "ad1d467dd30f93d2"
   },
   {
     "id": "independent-branch-numbering",
@@ -58,7 +56,6 @@
               " ",
               {
                 "i": 3,
-                "k": "_gt_3",
                 "v": "v"
               }
             ],
@@ -71,7 +68,6 @@
               " ",
               {
                 "i": 3,
-                "k": "_gt_3",
                 "v": "v"
               }
             ],
@@ -86,7 +82,7 @@
         "c": "After"
       }
     ],
-    "hash": "1b6091ff9597ec25"
+    "hash": "ed8ae5a527b746b1"
   },
   {
     "id": "independent-plural-numbering",
@@ -101,7 +97,6 @@
               "One ",
               {
                 "i": 2,
-                "k": "_gt_2",
                 "v": "n"
               }
             ],
@@ -109,7 +104,6 @@
               "Many ",
               {
                 "i": 2,
-                "k": "_gt_2",
                 "v": "n"
               }
             ]
@@ -123,6 +117,6 @@
         "c": "After"
       }
     ],
-    "hash": "634a0a7a71151f55"
+    "hash": "2fe3421fb7db4dfe"
   }
 ]

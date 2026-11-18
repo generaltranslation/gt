@@ -40,7 +40,7 @@ const DYNAMIC_CHILDREN =
   '<T> component has children that could change at runtime';
 
 /** The variable an auto-injected (or user) Var produces at GT id `i`. */
-const variable = (i: number) => ({ i, k: `_gt_${i}`, v: 'v' });
+const variable = (i: number) => ({ i, v: 'v' });
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -509,26 +509,19 @@ describe('injection and extraction', () => {
     [
       'a user Num',
       page('<div>Price: <Num>{price}</Num></div>'),
-      [['Price: ', { i: 1, k: '_gt_1', v: 'n' }]],
+      [['Price: ', { i: 1, v: 'n' }]],
     ],
     [
       'a user RelativeTime',
       page('<div>Updated: <RelativeTime>{date}</RelativeTime></div>'),
-      [['Updated: ', { i: 1, k: '_gt_1', v: 'rt' }]],
+      [['Updated: ', { i: 1, v: 'rt' }]],
     ],
     [
       'a user Currency and DateTime',
       page(
         '<div>Paid <Currency>{amount}</Currency> on <DateTime>{date}</DateTime></div>'
       ),
-      [
-        [
-          'Paid ',
-          { i: 1, k: '_gt_1', v: 'c' },
-          ' on ',
-          { i: 2, k: '_gt_2', v: 'd' },
-        ],
-      ],
+      [['Paid ', { i: 1, v: 'c' }, ' on ', { i: 2, v: 'd' }]],
     ],
     [
       'nothing from a JSX ternary inside a user Var',

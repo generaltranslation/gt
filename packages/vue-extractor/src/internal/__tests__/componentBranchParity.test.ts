@@ -656,7 +656,7 @@ describe('component slot runtime parity', () => {
       },
       {
         context: 'inner',
-        source: ['Inner', { i: 1, k: '_gt_1', v: 'v' }],
+        source: ['Inner', { i: 1, v: 'v' }],
       },
     ]);
   });

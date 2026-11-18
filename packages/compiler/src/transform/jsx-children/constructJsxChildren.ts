@@ -21,7 +21,6 @@ import { validateChildrenFromArgs } from './validation/validateChildrenFromArgs'
 import { IdObject } from './utils/id';
 import { VariableType } from '../../state/ScopeTracker';
 import {
-  getVariableName,
   isBranchComponent,
   isDeriveComponent,
   isGTComponent,
@@ -592,7 +591,7 @@ function constructVariable(
   // Check for name field
   const value: Variable = {
     i: id.get(),
-    k: getVariableName(id.get(), name),
+    ...(name ? { k: name } : {}),
     v: minifyCanonicalName(canonicalName) as GTVariableType,
   };
 

@@ -110,7 +110,6 @@ type SourceElement = {
   preserveExplicitKey: boolean;
   replaceDefaultSlot: boolean;
   transformation: Transformation;
-  variableName?: string;
   variableType?: VariableType;
   vnode: VNode;
 };
@@ -308,7 +307,7 @@ function rollbackTranslationIdentityCache(
  * Serializes compiled Vue slot children into the complete persisted GT source.
  *
  * This internal seam exists so compiler/extractor parity tests can compare
- * element IDs, variable names, and branches before `hashSource()` deliberately
+ * element IDs, variable IDs, and branches before `hashSource()` deliberately
  * removes identity-only fields.
  */
 export function serializeVueChildren(children: unknown): JsxChildren {
@@ -487,15 +486,15 @@ function visitChildren(
   }
   const metadata = getGTMetadata(children);
   const transformation = getTransformation(metadata);
-  const variable =
-    transformation === 'variable' ? getVariable(metadata, id) : undefined;
+  const variableType =
+    transformation === 'variable' ? getVariableType(metadata) : undefined;
   // The default slot of a Branch or a Plural is its `other` branch, which
   // getBranches reads.
   const defaultSlot =
-    variable || transformation === 'branch' || transformation === 'plural'
+    variableType || transformation === 'branch' || transformation === 'plural'
       ? { children: undefined, replace: false }
       : readDefaultSlot(children);
-  const sourceChildren = variable
+  const sourceChildren = variableType
     ? []
     : visitChildren(defaultSlot.children, index, identity, identityRender);
   const childrenShape = getNormalizedChildrenShape(
@@ -514,8 +513,7 @@ function visitChildren(
     preserveExplicitKey: !transparentKeyScope,
     replaceDefaultSlot: defaultSlot.replace,
     transformation,
-    variableName: variable?.name,
-    variableType: variable?.type,
+    variableType,
     vnode: children,
   };
 
@@ -586,17 +584,12 @@ function getTransformation(metadata?: string): Transformation {
   return undefined;
 }
 
-function getVariable(
-  metadata: string | undefined,
-  id: number
-): { name: string; type: VariableType } {
+function getVariableType(metadata: string | undefined): VariableType {
   const variableType = metadata?.split('-')[1] ?? 'variable';
-  return {
-    name: `_gt_${id}`,
-    type:
-      variableTypes[variableType as keyof typeof variableTypes] ??
-      variableTypes.variable,
-  };
+  return (
+    variableTypes[variableType as keyof typeof variableTypes] ??
+    variableTypes.variable
+  );
 }
 
 /**
@@ -942,11 +935,7 @@ function serializeNode(
   }
   if (typeof node === 'string') return node;
   if (node.transformation === 'variable') {
-    return {
-      i: node.id,
-      k: node.variableName ?? `_gt_${node.id}`,
-      v: node.variableType ?? 'v',
-    };
+    return { i: node.id, v: node.variableType ?? 'v' };
   }
 
   const data: GTProp = {};
@@ -1051,7 +1040,7 @@ function renderNodes(
   const variables = new Map(
     sourceElements
       .filter((node) => node.transformation === 'variable')
-      .map((node) => [node.variableName, node])
+      .map((node) => [node.id, node])
   );
   const ordinary = sourceElements.filter(
     (node) => node.transformation !== 'variable'
@@ -1065,7 +1054,7 @@ function renderNodes(
   // records one by one, so this check must remain limited to scalar targets.
   if (!targetIsArray) {
     const hasCompatibleSource = isVariable(target)
-      ? variables.has(target.k)
+      ? variables.has(target.i)
       : ordinary.length > 0;
     if (!hasCompatibleSource) {
       return renderDefaultNodes(
@@ -1080,7 +1069,7 @@ function renderNodes(
   return targets.map((targetNode) => {
     if (typeof targetNode === 'string') return targetNode;
     if (isVariable(targetNode)) {
-      const variable = variables.get(targetNode.k);
+      const variable = variables.get(targetNode.i);
       return variable
         ? keySourceResult(
             variable,
@@ -1498,7 +1487,7 @@ function isVariable(value: unknown): value is Variable {
   return (
     value != null &&
     typeof value === 'object' &&
-    'k' in value &&
-    typeof value.k === 'string'
+    'v' in value &&
+    typeof value.v === 'string'
   );
 }

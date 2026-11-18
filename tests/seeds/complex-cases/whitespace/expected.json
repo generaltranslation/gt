@@ -94,13 +94,11 @@
   "User:",
   {
     "i": 13,
-    "k": "_gt_13",
     "v": "v"
   },
   "has",
   {
     "i": 14,
-    "k": "_gt_14",
     "v": "n"
   },
   "items",
@@ -127,7 +125,6 @@
   "Total: ",
   {
     "i": 17,
-    "k": "_gt_17",
     "v": "c"
   },
   " available",
@@ -170,13 +167,11 @@
   "Hello ",
   {
     "i": 22,
-    "k": "_gt_22",
     "v": "v"
   },
   ", you have ",
   {
     "i": 23,
-    "k": "_gt_23",
     "v": "n"
   },
   " new messages.",
@@ -230,13 +225,11 @@
             "Very long text with ",
             {
               "i": 31,
-              "k": "_gt_31",
               "v": "v"
             },
             " that continues for a very long time and includes multiple ",
             {
               "i": 32,
-              "k": "_gt_32",
               "v": "n"
             },
             " ",
@@ -244,7 +237,6 @@
             " ",
             {
               "i": 33,
-              "k": "_gt_33",
               "v": "c"
             },
             " monetary amounts spread throughout the content to test how the algorithm handles very large content blocks with mixed variable types."

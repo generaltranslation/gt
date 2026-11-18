@@ -171,11 +171,11 @@ function createRenderTranslatedChildren({
     // Multiple children
     if (Array.isArray(source) && Array.isArray(target)) {
       // Track the variables
-      const variables: Record<string, VariableProps['variableValue']> = {};
-      const variablesOptions: Record<string, VariableProps['variableOptions']> =
+      const variables: Record<number, VariableProps['variableValue']> = {};
+      const variablesOptions: Record<number, VariableProps['variableOptions']> =
         {};
       const variableInjectionTypes: Record<
-        string,
+        number,
         VariableProps['injectionType']
       > = {};
 
@@ -187,14 +187,14 @@ function createRenderTranslatedChildren({
           if (React.isValidElement(sourceChild)) {
             if (isVariableElementProps(sourceChild.props)) {
               const {
-                variableName,
+                variableId,
                 variableValue,
                 variableOptions,
                 injectionType,
               } = getVariableProps(sourceChild.props);
-              variables[variableName] = variableValue;
-              variablesOptions[variableName] = variableOptions;
-              variableInjectionTypes[variableName] = injectionType;
+              variables[variableId] = variableValue;
+              variablesOptions[variableId] = variableOptions;
+              variableInjectionTypes[variableId] = injectionType;
             } else {
               return true;
             }
@@ -234,13 +234,13 @@ function createRenderTranslatedChildren({
           return (
             <React.Fragment key={`var_${index}`}>
               {renderVariable({
-                variableType: targetChild.v || 'v',
-                variableValue: variables[targetChild.k],
-                variableOptions: variablesOptions[targetChild.k],
+                variableType: targetChild.v,
+                variableValue: variables[targetChild.i],
+                variableOptions: variablesOptions[targetChild.i],
                 locales,
                 enableI18n,
                 injectionType:
-                  variableInjectionTypes[targetChild.k] || 'manual',
+                  variableInjectionTypes[targetChild.i] || 'manual',
               })}
             </React.Fragment>
           );

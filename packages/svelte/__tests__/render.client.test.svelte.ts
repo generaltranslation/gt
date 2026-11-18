@@ -23,7 +23,7 @@ const bold = (children: JsxChild[]): JsxElement => ({
   d: { ti: 'Gras' },
   c: children,
 });
-const name: Variable = { i: 2, k: '_gt_2', v: 'v' };
+const name: Variable = { i: 2, v: 'v' };
 
 let cleanup: (() => void) | undefined;
 afterEach(() => {

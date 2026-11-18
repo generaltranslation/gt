@@ -1,4 +1,6 @@
 ---
+'generaltranslation': major
+'@generaltranslation/format': major
 '@generaltranslation/react-core': major
 'gt-react': major
 'gt-react-native': major
@@ -7,11 +9,26 @@
 'gt': major
 '@generaltranslation/compiler': major
 '@generaltranslation/vue-extractor': major
+'gt-rrweb': major
 'gt-vue': minor
 'gt-svelte': minor
 '@generaltranslation/svelte-extractor': minor
 ---
 
-A variable component without a `name` inside `<T>` is now named `_gt_<id>`, like an unnamed value in a `` t`…` `` message. The name no longer holds the type, which is in the variable's `v` field: `_gt_value_3`, `_gt_n_3`, `_gt_cost_3`, `_gt_date_3` and `_gt_time_3` are all `_gt_3`.
+**Breaking:** a variable in the content of a `<T>` is found by its id, and has a name only when its author gave it one. A variable component without a `name` used to get a generated one, such as `_gt_cost_2`.
 
-The name is part of the stored source and of what `hashSource` hashes, so every `<T>` that holds a `<Var>`, `<Num>`, `<Currency>`, `<DateTime>` or `<RelativeTime>` without a `name` gets a new hash. The runtimes, `gt`, the compiler, the Next.js SWC plugin and the Vue and Svelte extractors all write the new name, so upgrade them together, then run `gt translate` again. Translations stored under the old hashes are no longer found: local translation files need their keys and variable names updated or regenerated. Variables with a `name` and messages without variables keep their hashes.
+```diff
+- { "i": 2, "k": "_gt_cost_2", "v": "c" }   // <Currency>
++ { "i": 2, "v": "c" }
+
+  { "i": 3, "k": "price", "v": "c" }        // <Currency name="price">, unchanged
+```
+
+- `i` identifies a variable among its siblings, as it does an element. The runtimes match a translated variable to its value by `i`, so two variables with the same `name` no longer render the same value.
+- `v`, the type, is always there, and is how a variable is told from an element. `Variable` in `@generaltranslation/format` is now `{ i: number; v: VariableType; k?: string }`.
+- `k` is only a label for translators. An empty `name` counts as none, in every runtime and extractor.
+- `hashSource` hashes a variable by its `v` and, when it has one, its `k`.
+
+Every `<T>` that holds a `<Var>`, `<Num>`, `<Currency>`, `<DateTime>` or `<RelativeTime>` without a `name` gets a new hash. The runtimes, `gt`, the compiler, the Next.js SWC plugin and the Vue and Svelte extractors all write the new form, so upgrade them together, then run `gt translate` again. Translations stored under the old hashes are no longer found, and a translated variable needs its `i`: local translation files need their keys and variables updated or regenerated. A `<T>` whose variables all have a `name`, or that has no variables, keeps its hash.
+
+gt-svelte's `_gtm` metadata no longer lists variable names.

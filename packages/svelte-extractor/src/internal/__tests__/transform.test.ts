@@ -35,7 +35,7 @@ describe('transformSvelteSource', () => {
         let name = $state('Ada');
       </script>
 
-      <Translate _hash="8b941a8eeebdc213" _gtm={{"v":{"":{"_gt_2":2}}}} context="greeting">Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!{#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
+      <Translate _hash="894af089daa035e6" context="greeting">Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!{#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
       "
     `);
     expect(() =>
@@ -85,9 +85,7 @@ describe('transformSvelteSource', () => {
 <T><Plural n={count}>{#snippet one()}<b>One</b>{/snippet}<Num value={count} /> items</Plural></T>`);
     expect(result?.errors).toEqual([]);
     const code = result!.code;
-    expect(code).toContain(
-      '_gtm={{"v":{"b1_1$":{"_gt_2":2}},"b":{"1":{"t":"p","b":["one","other"]}}}}'
-    );
+    expect(code).toContain('_gtm={{"b":{"1":{"t":"p","b":["one","other"]}}}}');
     expect(code).toContain(
       '{#snippet __gt_e_b1_0$2(__gt_kids)}{@render __gt_kids()}{/snippet}'
     );
@@ -103,16 +101,14 @@ describe('transformSvelteSource', () => {
     expect(() => compile(code, { filename: 'Fixture.svelte' })).not.toThrow();
   });
 
-  it('maps repeated variable names to the variables of each parent', () => {
+  it('needs no runtime metadata for repeated variable names', () => {
     const result = transform(`<script>
   import { T, Var } from 'gt-svelte';
   let { first, second } = $props();
 </script>
 <T><b><Var name="who">{first}</Var></b> and <Var name="who">{second}</Var> <Var>{first}</Var></T>`);
     expect(result?.errors).toEqual([]);
-    expect(result?.code).toContain(
-      '_gtm={{"v":{"":{"who":3,"_gt_4":4}},"s":{"1":{"who":2},"":{"who":3}}}}'
-    );
+    expect(result?.code).not.toContain('_gtm');
   });
 
   it('extracts the whitespace Svelte renders', () => {
@@ -133,9 +129,9 @@ describe('transformSvelteSource', () => {
 </T>`)
     ).toEqual([
       'You can make ',
-      { i: 1, k: '_gt_1', v: 'n' },
+      { i: 1, v: 'n' },
       ' of ',
-      { i: 2, k: '_gt_2', v: 'n' },
+      { i: 2, v: 'n' },
       ' recipes',
     ]);
     // Whitespace at the edges of a fragment is removed.
@@ -532,22 +528,6 @@ describe('errors', () => {
         'let s;'
       )
     ).toEqual([problem]);
-  });
-
-  it('keeps a variable named __proto__ in the runtime metadata', () => {
-    const result = transformSvelteSource(
-      `<script>import { T, Var } from 'gt-svelte'; let a;</script>
-<T>Hi <Var name="__proto__">{a}</Var></T>`,
-      { parse, filename: 'Fixture.svelte' }
-    );
-    const literal = result!.code.match(
-      /_gtm=\{JSON\.parse\(("(?:[^"\\]|\\.)*")\)\}/
-    )![1];
-    const meta = JSON.parse(JSON.parse(literal)) as {
-      v: Record<string, Record<string, number>>;
-    };
-    expect(Object.hasOwn(meta.v[''], '__proto__')).toBe(true);
-    expect(meta.v[''].__proto__).toBe(1);
   });
 
   it('rejects reserved identifiers', () => {

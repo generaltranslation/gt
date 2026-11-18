@@ -693,7 +693,6 @@ function serializeElement(
     return [
       {
         i: id,
-        k: `_gt_${id}`,
         v:
           component === 'Num'
             ? 'n'

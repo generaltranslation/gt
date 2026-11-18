@@ -33,7 +33,7 @@
     requiresReview?: boolean;
     /** @internal Precomputed translation hash. */
     _hash?: string;
-    /** @internal Variable keys and branch metadata. */
+    /** @internal Branch metadata. */
     _gtm?: GTRuntimeMetadata;
     [snippet: string]: unknown;
   };
@@ -87,7 +87,7 @@
 </script>
 
 {#if valid}
-  <GtNodes nodes={target} scopes={['']} parent="" context={renderContext} />
+  <GtNodes nodes={target} scopes={['']} context={renderContext} />
 {:else}
   {@render children?.()}
 {/if}

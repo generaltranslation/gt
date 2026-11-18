@@ -1770,7 +1770,6 @@ function serializeElement(
     validateVariableComponentShape(element, originalName, context);
     return {
       i: id,
-      k: `_gt_${id}`,
       v:
         originalName === 'Num'
           ? 'n'

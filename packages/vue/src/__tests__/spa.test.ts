@@ -198,11 +198,11 @@ describe('gt-vue SPA runtime', () => {
       customMapping: { pirate: { code: 'fr-FR' } },
       loadTranslations: async () => ({
         formatters: [
-          { i: 1, k: '_gt_1', v: 'n' },
+          { i: 1, v: 'n' },
           '|',
-          { i: 2, k: '_gt_2', v: 'c' },
+          { i: 2, v: 'c' },
           '|',
-          { i: 3, k: '_gt_3', v: 'd' },
+          { i: 3, v: 'd' },
         ],
         plural: {
           t: 'Plural',

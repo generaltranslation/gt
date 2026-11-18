@@ -359,11 +359,8 @@ impl<'a> JsxTraversal<'a> {
     let component_info = self.analyze_gt_component(&tag_name, &element.opening.attrs);
 
     if let Some(var_type) = component_info.variable_type {
-      // Extract variable name from children or attributes with proper prefix
-      let variable_key = self.extract_variable_key(element);
-
       Some(SanitizedVariable {
-        k: Some(variable_key),
+        k: Self::extract_variable_name(element),
         v: Some(var_type),
         t: None,
       })
@@ -372,16 +369,15 @@ impl<'a> JsxTraversal<'a> {
     }
   }
 
-  /// Extract variable key from JSX element (from children or name attribute)
-  fn extract_variable_key(&mut self, element: &JSXElement) -> String {
-    // First, check for a 'name' attribute
+  /// The name a variable was given: a non-empty `name` string attribute
+  fn extract_variable_name(element: &JSXElement) -> Option<String> {
     for attr in &element.opening.attrs {
       if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
         if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
           if name_ident.sym.as_ref() == "name" {
             if let Some(JSXAttrValue::Str(str_lit)) = &jsx_attr.value {
               if !str_lit.value.is_empty() {
-                return str_lit.value.to_string_lossy().to_string();
+                return Some(str_lit.value.to_string_lossy().to_string());
               }
             }
           }
@@ -389,8 +385,7 @@ impl<'a> JsxTraversal<'a> {
       }
     }
 
-    // Fallback: the key of an unnamed variable is its id, as in a message tree
-    format!("_gt_{}", self.id_counter)
+    None
   }
 
   /// Check if this is a Branch component
@@ -982,20 +977,6 @@ mod tests {
     }
   }
 
-  mod extract_variable_key {
-    use super::*;
-
-    #[test]
-    fn generates_fallback_keys() {
-      let visitor = create_test_visitor();
-      let mut traversal = JsxTraversal::new(&visitor);
-      let element = create_jsx_element("Var");
-
-      traversal.id_counter = 3;
-      assert_eq!(traversal.extract_variable_key(&element), "_gt_3");
-    }
-  }
-
   mod build_sanitized_child_from_jsx_expr {
     use super::*;
 
@@ -1179,6 +1160,18 @@ mod tests {
           raw: None,
         })),
       })
+    }
+
+    #[test]
+    fn reads_only_an_authored_variable_name() {
+      let mut element = create_jsx_element("Var");
+      assert_eq!(JsxTraversal::extract_variable_name(&element), None);
+
+      element.opening.attrs = vec![create_string_attr("name", "user")];
+      assert_eq!(
+        JsxTraversal::extract_variable_name(&element),
+        Some("user".to_string())
+      );
     }
 
     fn create_number_attr(name: &str, value: f64) -> JSXAttrOrSpread {

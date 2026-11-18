@@ -14,7 +14,6 @@ import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
 } from '@generaltranslation/format';
-import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 
 /**
  * Check if a name is a GT function
@@ -184,11 +183,4 @@ export function minifyCanonicalName(canonicalName: GT_COMPONENT_TYPES): string {
       canonicalName as keyof typeof MINIFY_CANONICAL_NAME_MAP
     ] || canonicalName
   );
-}
-
-/**
- * Get the variable name
- */
-export function getVariableName(id: number, name?: string): string {
-  return name || `${RESERVED_NAME_PREFIX}${id}`;
 }

@@ -6,10 +6,10 @@ export type VariableType =
   | 'rt'; // Relative Time
 
 /**
- * Variables are used to store the variable name and type.
+ * A variable is found by its id. `k` is the name its author gave it, if any.
  */
 export type Variable = {
-  k: string;
-  i?: number;
-  v?: VariableType;
+  i: number;
+  v: VariableType;
+  k?: string;
 };
