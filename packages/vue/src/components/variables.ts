@@ -175,9 +175,7 @@ function getVariableFormatLocales(
   state: ReturnType<typeof useGTState>
 ): string[] {
   return getFormatLocales(
-    undefined,
     props._locale ?? state.getLocale(),
-    state.defaultLocale,
     state.resolveFormattingLocale
   );
 }

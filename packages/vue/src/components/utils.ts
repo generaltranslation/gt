@@ -1,4 +1,3 @@
-import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import {
   type Component,
   type DefineComponent,
@@ -39,21 +38,16 @@ export function withGTMetadata<Props = {}>(
 }
 
 /**
- * The locales a variable formats in and a plural is selected in: the
- * `locales` it is given, as they are, or the active locale. When the active
- * locale is the default locale, that locale alone, as in the React runtime.
+ * The locales a variable formats in and a plural is selected in: the active
+ * locale.
  *
  * @internal
  */
 export function getFormatLocales(
-  locales: string[] | undefined,
   locale: string,
-  defaultLocale: string = defaultDefaultLocale,
   resolveLocale: (locale: string) => string = identityLocale
 ): string[] {
-  const resolvedLocale = resolveLocale(locale);
-  if (resolvedLocale === resolveLocale(defaultLocale)) return [resolvedLocale];
-  return locales?.length ? locales.map(resolveLocale) : [resolvedLocale];
+  return [resolveLocale(locale)];
 }
 
 function identityLocale(locale: string): string {

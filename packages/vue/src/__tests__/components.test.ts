@@ -6,7 +6,6 @@ import {
   renderTranslatedChildren as renderReactTranslatedChildren,
 } from '@generaltranslation/react-core/components-rsc';
 import { initializeI18nConfig as initializeReactI18nConfig } from '@generaltranslation/react-core/pure';
-import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import type { JsxChildren } from '@generaltranslation/format';
 import * as React from 'react';
 import {
@@ -903,13 +902,6 @@ describe('gt-vue formatting components', () => {
     expect(warnings).toEqual([]);
   });
 
-  it('uses only the default locale when it is active', () => {
-    expect(getFormatLocales(['fr-CA'], 'en', 'en')).toEqual(['en']);
-    expect(getFormatLocales(['fr-CA'], defaultDefaultLocale)).toEqual([
-      defaultDefaultLocale,
-    ]);
-  });
-
   it('formats with Latin digits and the Gregorian calendar, as gt-react does', async () => {
     const date = new Date(Date.UTC(2020, 4, 6, 12));
     const Root = defineComponent({
@@ -958,14 +950,8 @@ describe('gt-vue formatting components', () => {
     }
   );
 
-  it('uses explicit locales as they are, or the active locale, while translating', () => {
-    expect(getFormatLocales(['fr-CA', 'fr', 'en'], 'fr', 'en')).toEqual([
-      'fr-CA',
-      'fr',
-      'en',
-    ]);
-    expect(getFormatLocales(['fr-CA'], 'fr', 'en')).toEqual(['fr-CA']);
-    expect(getFormatLocales(undefined, 'fr', 'en')).toEqual(['fr']);
+  it('uses the active locale', () => {
+    expect(getFormatLocales('fr')).toEqual(['fr']);
   });
 
   it('ignores fallthrough attributes without warning for unwrapped values', async () => {
