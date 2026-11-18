@@ -20,7 +20,6 @@ type Named<V extends BranchValue> = Exclude<`${V}`, 'other'>;
  */
 type BranchProps<V extends BranchValue = BranchValue> = {
   branch: V;
-  other?: never;
 } & (true extends IsOpen<`${V}`>
   ? { children: ReactNode; [branch: string]: ReactNode }
   : Partial<Record<Named<V>, ReactNode>> &

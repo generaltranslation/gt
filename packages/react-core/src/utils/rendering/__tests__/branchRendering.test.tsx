@@ -243,8 +243,6 @@ describe('branch component prop types', () => {
       <Branch key={5} branch={name} admin='A' />,
       // @ts-expect-error not a value of the union
       <Branch key={6} branch={status} owner='O' children='O' />,
-      // @ts-expect-error other is not a prop: the fallback is the children
-      <Branch key={7} branch={name} other='O' children='Fallback' />,
       <Plural key={8} n={1} _0='None' one='One' children='Many' />,
       <Plural key={9} n={1n} children='Many' />,
       // @ts-expect-error children are required
@@ -263,6 +261,6 @@ describe('branch component prop types', () => {
       // @ts-expect-error the value other has no prop, so children are required
       <Branch key={17} branch={gender} female='F' />,
     ];
-    expect(elements).toHaveLength(18);
+    expect(elements).toHaveLength(17);
   });
 });

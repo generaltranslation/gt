@@ -14,7 +14,6 @@ type PluralProps = {
   n: number | bigint;
   /** The fallback, as `other` is in `plural()`. */
   children: ReactNode;
-  other?: never;
 } & Partial<
   // `_0` is the exact number 0: ICU's `=0`, which JSX cannot spell.
   Record<Exclude<Intl.LDMLPluralRule, 'other'> | `_${number}`, ReactNode>

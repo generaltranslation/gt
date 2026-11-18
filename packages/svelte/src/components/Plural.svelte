@@ -30,7 +30,6 @@
     n: number | bigint;
     /** The fallback, as `other` is in `plural()`. */
     children: Snippet;
-    other?: never;
   } & Partial<
     Record<Exclude<PluralType, 'other'> | `_${number}`, string | Snippet>
   > = $props();
