@@ -1,5 +1,12 @@
 # generaltranslation
 
+## 9.5.13
+
+### Patch Changes
+
+- Updated dependencies [[`622199e`](https://github.com/generaltranslation/gt/commit/622199edeb5376a4667ef544f44dba1a7096ae0b)]:
+  - @generaltranslation/format@0.1.11
+
 ## 9.5.12
 
 ### Patch Changes

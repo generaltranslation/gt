@@ -1,5 +1,12 @@
 # gt-sanity
 
+## 4.0.37
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.13
+
 ## 4.0.36
 
 ### Patch Changes

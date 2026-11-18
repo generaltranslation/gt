@@ -1,5 +1,12 @@
 # gt-payload
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.13
+
 ## 0.1.6
 
 ### Patch Changes
