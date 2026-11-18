@@ -1643,6 +1643,36 @@ describe('gt-react/chunk-translations', () => {
           expect(title()).toBe('Aperçu, encore');
         });
 
+        it('adds the files that arrive after the timeout also when another of them failed', async () => {
+          // In the build that is served, Reports needs two files. One
+          // arrives after the import's timeout and within its own, and the
+          // host fails the other
+          const files = built();
+          Object.assign(files, {
+            [CURRENT]: after(80, { v: { fr: '99999999' } }),
+            [NEXT_MAP]: {
+              i: {
+                k: ['assets/gt-ee', 'assets/gt-gg', 'assets/Reports-d4'],
+                c: [0, 0, [0, 0, 2]],
+                h: ['34343434', '56565656'],
+              },
+            },
+            '/assets/gt-ee.fr.34343434.json': after(60, {
+              [TITLE]: 'Aperçu, encore',
+            }),
+            '/assets/gt-gg.fr.56565656.json': () =>
+              Promise.resolve(new Response('Busy', { status: 503 })),
+          });
+          serve(files);
+          writeSplitState({ n: 'assets/gt-current', w: 100 });
+          await startSplit();
+          await tick();
+
+          expect(await reports()).toEqual({ evaluated: 'Overview' });
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          expect(title()).toBe('Aperçu, encore');
+        });
+
         it('asks for the files in place of a missing one when the lists arrive after its timeout', async () => {
           const files = built();
           files[CURRENT] = after(90, { v: { fr: '99999999' } });

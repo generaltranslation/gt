@@ -96,9 +96,8 @@ export function within(
     const timer = setTimeout(
       () => {
         resolve(false);
-        void loading.then((arrived) => {
-          if (arrived) addArrived(state);
-        });
+        // Also when one of several files failed: the others arrived
+        void loading.then(() => addArrived(state));
       },
       Math.max(0, start + getTimeout(state) - Date.now())
     );
