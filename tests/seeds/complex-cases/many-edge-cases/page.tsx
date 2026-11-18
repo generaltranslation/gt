@@ -90,8 +90,7 @@ export default function ExtremeEdgeCases() {
           two={999999999999}
           few={-999999999999}
           many={0.000000001}
-          other={-0.000000001}
-        />
+        >{-0.000000001}</Plural>
       
 
       {/* Special float values */}
@@ -162,8 +161,7 @@ export default function ExtremeEdgeCases() {
           n={1}
           _1="Quotes: &quot; and '"
           _2="Backslashes: \\ and \\n and \\t"
-          other={`Unicode: \\u0041 and \\x41`}
-        />
+        >{`Unicode: \\u0041 and \\x41`}</Plural>
       
 
       {/* Raw strings with problematic characters */}
@@ -197,8 +195,7 @@ export default function ExtremeEdgeCases() {
           two={null}
           few=""
           many={0}
-          other="false"
-        />
+        >false</Plural>
       
 
       {/* Mixed boolean contexts */}
@@ -226,8 +223,7 @@ export default function ExtremeEdgeCases() {
             line
             template
             literal`}
-          other={`Mixed "quotes" and 'apostrophes' in template`}
-        />
+        >{`Mixed "quotes" and 'apostrophes' in template`}</Plural>
       
 
       {/* Template with special characters */}
@@ -251,10 +247,9 @@ export default function ExtremeEdgeCases() {
           two="2"
           few="few"
           many="many"
-          other="other"
           _1="sing"
           _2="plur"
-        />
+        >other</Plural>
       
 
       {/* Branch with many options */}
@@ -509,8 +504,7 @@ export default function ExtremeEdgeCases() {
           n={1}
           _1="English left-to-right"
           _2="العربية من اليمين إلى اليسار"
-          other="עברית מימין לשמאל"
-        />
+        >עברית מימין לשמאל</Plural>
       
 
       {/* ========== REGRESSION PREVENTION TESTS ========== */}
@@ -532,8 +526,7 @@ export default function ExtremeEdgeCases() {
           two={-1}
           few={3.14159}
           many={1e6}
-          other={0xff}
-        />
+        >{0xff}</Plural>
       
 
       

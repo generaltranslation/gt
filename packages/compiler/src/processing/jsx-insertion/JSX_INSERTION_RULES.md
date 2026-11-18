@@ -243,51 +243,49 @@ This does NOT apply to auto-inserted \_Var. When the pass itself inserts a \_Var
 
 ## Rule 8: Branch and Plural — \_T wraps from parent, control props untouched, content props processed
 
-Branch and Plural components trigger \_T insertion at the **parent** level. The `<T>` component already knows how to translate their branches, so static content inside Branch/Plural props is left alone.
+Branch and Plural components trigger \_T insertion at the **parent** level. The `<T>` component already knows how to translate their branches, so static content inside Branch/Plural props and children is left alone.
 
 **Control props are never modified.** These are selector/configuration props, not translatable content:
 
 - Branch: `branch` (selector key), `data-*` (HTML attributes, ignored at runtime)
 - Plural: `n` (count)
 
-**Content props** (branch value keys like `Ernest`, `summary`, plural categories like `one`, exact numbers like `_0`, and `other`, the fallback) are processed:
+**Content props** (branch value keys like `Ernest`, `summary`, plural categories like `one`, exact numbers like `_0`, and `children`, the fallback) are processed:
 
 - **Static content prop values** (direct JSX like `summary={<p>Text</p>}`) are left untouched — no \_T inside.
 - **Dynamic non-JSX content prop values** (variables, function calls, etc.) get \_Var wrapped.
 - **JSX content prop values with dynamic children** (e.g., `Ernest={<>Text {name}</>}`) — the JSX itself is not \_T-wrapped, but dynamic expressions inside its children get \_Var wrapped.
 - **Dynamic content prop values containing JSX** (ternaries, logical expressions) get \_Var wrapped. JSX inside those \_Var wrappers still gets \_T.
 
-**`children` are not a fallback.** Branch and Plural do not render their children: the fallback is the `other` prop, and both tools warn when they find children. Children are still processed like a content prop and still extracted as `c`, so that build-time and runtime hashes agree.
-
 ```jsx
 // Branch as only child — _T wraps at parent, `branch` selector untouched
-<div><Branch branch="mode" summary={<p>Summary</p>} other="Fallback" /></div>
-<div><_T><Branch branch="mode" summary={<p>Summary</p>} other="Fallback" /></_T></div>
+<div><Branch branch="mode" summary={<p>Summary</p>}>Fallback</Branch></div>
+<div><_T><Branch branch="mode" summary={<p>Summary</p>}>Fallback</Branch></_T></div>
 // `branch` is a control prop → never Var-wrapped, even if dynamic
 
 // Plural as only child — _T wraps at parent, `n` untouched
-<div><Plural n={count} one="item" other="items" /></div>
-<div><_T><Plural n={count} one="item" other="items" /></_T></div>
+<div><Plural n={count} one="item">items</Plural></div>
+<div><_T><Plural n={count} one="item">items</Plural></_T></div>
 // `n` is a control prop → never Var-wrapped, even though `count` is dynamic
 
 // Branch with static JSX in prop arguments — NO _T inside the props
-<div><Branch branch="mode" summary={<p>Summary text</p>} details={<p>Details text</p>} other="Fallback" /></div>
-<div><_T><Branch branch="mode" summary={<p>Summary text</p>} details={<p>Details text</p>} other="Fallback" /></_T></div>
+<div><Branch branch="mode" summary={<p>Summary text</p>} details={<p>Details text</p>}>Fallback</Branch></div>
+<div><_T><Branch branch="mode" summary={<p>Summary text</p>} details={<p>Details text</p>}>Fallback</Branch></_T></div>
 // Only 1 _T at div — "Summary text" and "Details text" are static, left alone
 
 // Plural with static JSX in prop arguments — NO _T inside the props
-<div><Plural n={count} one={<span>One item</span>} other={<span>Many items</span>} /></div>
-<div><_T><Plural n={count} one={<span>One item</span>} other={<span>Many items</span>} /></_T></div>
+<div><Plural n={count} one={<span>One item</span>}><span>Many items</span></Plural></div>
+<div><_T><Plural n={count} one={<span>One item</span>}><span>Many items</span></Plural></_T></div>
 // Only 1 _T at div — "One item" and "Many items" are static, left alone
 
-// Branch with JSX children, which are not rendered — NO _T inside children either
-<div><Branch branch="test" other="Fallback"><p>Unused text</p></Branch></div>
-<div><_T><Branch branch="test" other="Fallback"><p>Unused text</p></Branch></_T></div>
-// Only 1 _T at div — "Unused text" is static, left alone
+// Branch with nested JSX children — NO _T inside children either
+<div><Branch branch="test"><p>Fallback text</p></Branch></div>
+<div><_T><Branch branch="test"><p>Fallback text</p></Branch></_T></div>
+// Only 1 _T at div — "Fallback text" is static, left alone
 
 // Branch alongside text — _T wraps everything at parent
-<div>Results: <Branch branch="view" list={<ul>...</ul>} other="Default" /></div>
-<div><_T>Results: <Branch branch="view" list={<ul>...</ul>} other="Default" /></_T></div>
+<div>Results: <Branch branch="view" list={<ul>...</ul>}>Default</Branch></div>
+<div><_T>Results: <Branch branch="view" list={<ul>...</ul>}>Default</Branch></_T></div>
 
 // Branch with dynamic expression in content prop — dynamic value gets _Var
 <div><Branch branch="hello" hello={count} /></div>
@@ -301,8 +299,8 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 // The Fragment itself is static JSX (no _T inside), but {userName} is dynamic → _Var
 
 // Branch with ternary containing JSX in prop — ternary gets _Var, JSX inside gets _T
-<div><Branch branch="mode" summary={condition ? <p>Option A</p> : <p>Option B</p>} other="Fallback" /></div>
-<div><_T><Branch branch="mode" summary={<_Var>{condition ? <p><_T>Option A</_T></p> : <p><_T>Option B</_T></p>}</_Var>} other="Fallback" /></_T></div>
+<div><Branch branch="mode" summary={condition ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch></div>
+<div><_T><Branch branch="mode" summary={<_Var>{condition ? <p><_T>Option A</_T></p> : <p><_T>Option B</_T></p>}</_Var>}>Fallback</Branch></_T></div>
 // The ternary is dynamic → _Var. The <p> elements inside are JSX with text → each gets _T.
 // This works because _Var is auto-inserted, so JSX inside it is still fair game.
 ```
@@ -497,16 +495,16 @@ When Branch, Plural, or other opaque GT components appear inside Derive's childr
 
 ```jsx
 // Direct child of Derive:
-<div>Hello <Derive><Branch branch="x" other="fallback" /></Derive></div>
+<div>Hello <Derive><Branch branch="x">fallback</Branch></Derive></div>
 
 // After injection:
 <div>
-  <_T>Hello <Derive><_T><Branch branch="x" other="fallback" /></_T></Derive></_T>
+  <_T>Hello <Derive><_T><Branch branch="x">fallback</Branch></_T></Derive></_T>
 </div>
 
 // Produces 2 hash entries:
 //   1. ["Hello ", { t: "Derive", i: 1 }]  (outer _T — contains Derive)
-//   2. { t: "Branch", i: 1, d: { b: { other: "fallback" }, t: "b" } }  (inner _T — standalone Branch)
+//   2. { t: "Branch", i: 1, d: { b: { other: "fallback" }, t: "b" } }  (inner _T — standalone Branch; its children are stored as the `other` branch)
 //
 // At runtime, removeInjectedT strips the inner _T, but the standalone hash
 // entry is still needed for translation resolution.
@@ -517,7 +515,7 @@ This is consistent with the function-definition case:
 ```jsx
 // Function that returns Branch:
 function getNav() {
-  return <Branch branch='x' other='fallback' />;
+  return <Branch branch='x'>fallback</Branch>;
 }
 // The compiler inserts _T inside getNav(), producing the same standalone Branch entry.
 // If this function is called inside <Derive>{getNav()}</Derive>, the inner _T is

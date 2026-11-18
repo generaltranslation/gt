@@ -471,9 +471,15 @@ describe('Vue JSX rich extraction', () => {
       '/project/src/View.tsx'
     );
     const source = {
-      c: true,
       d: {
-        b: { array: [], empty: null, many: [], no: false, yes: true },
+        b: {
+          array: [],
+          empty: null,
+          many: [],
+          no: false,
+          other: true,
+          yes: true,
+        },
         t: 'b',
       },
       i: 1,
@@ -482,7 +488,7 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual(source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('ffb22a789e8e9619');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('0401db2633fc35ff');
   });
 
   it('omits undefined Branch slots while retaining authored empty arrays', async () => {
@@ -561,8 +567,7 @@ describe('Vue JSX rich extraction', () => {
         'NaN',
         'Infinity',
         {
-          c: 'Fallback',
-          d: { b: { few: 'Infinity', many: 'NaN' }, t: 'b' },
+          d: { b: { few: 'Infinity', many: 'NaN', other: 'Fallback' }, t: 'b' },
           i: 1,
           t: 'Branch',
         },
@@ -1047,7 +1052,6 @@ describe('Vue JSX rich extraction', () => {
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual([
       {
-        c: 'Fallback',
         d: {
           b: {
             casual: [
@@ -1060,6 +1064,7 @@ describe('Vue JSX rich extraction', () => {
               ' ',
               { i: 3, k: '_gt_value_3', v: 'v' },
             ],
+            other: 'Fallback',
           },
           t: 'b',
         },
@@ -1078,9 +1083,8 @@ describe('Vue JSX rich extraction', () => {
         export const View = () => (
           <T><Plural n={count} zero="None" title="Tip" v-slots={{
             one: () => ['One ', <Num value={1} />],
-            other: () => ['Many ', <Num value={count} />],
             invalid: () => 'ignored',
-            default: () => 'Fallback',
+            default: () => ['Many ', <Num value={count} />],
           }} /><span>After</span></T>
         );
       `,
@@ -1090,7 +1094,6 @@ describe('Vue JSX rich extraction', () => {
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual([
       {
-        c: 'Fallback',
         d: {
           b: {
             one: ['One ', { i: 2, k: '_gt_n_2', v: 'n' }],
@@ -1122,9 +1125,10 @@ describe('Vue JSX rich extraction', () => {
                 two={-1}
                 few={3.14159}
                 many={1e6}
-                other={0xff}
                 ignored={false}
-              />
+              >
+                {0xff}
+              </Plural>
               <Branch
                 branch="status"
                 active={true}
@@ -1136,8 +1140,9 @@ describe('Vue JSX rich extraction', () => {
                 n={1}
                 _0="Single 'quotes' inside"
                 _12={'Double "quotes" inside'}
-                other={\`Template with 'both' "types"\`}
-              />
+              >
+                {\`Template with 'both' "types"\`}
+              </Plural>
             </T>
           );
         `,
@@ -1207,7 +1212,7 @@ describe('Vue JSX rich extraction', () => {
               zero
               one={false}
               two="Two"
-              other={null}
+              few={null}
               invalid={true}
             />
           </T>
@@ -1218,7 +1223,7 @@ describe('Vue JSX rich extraction', () => {
 
     const source = {
       d: {
-        b: { one: false, other: null, two: 'Two', zero: true },
+        b: { few: null, one: false, two: 'Two', zero: true },
         t: 'p' as const,
       },
       i: 1,
@@ -1226,7 +1231,7 @@ describe('Vue JSX rich extraction', () => {
     };
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toStrictEqual(source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('5057e7a9d4100a95');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('dd8f74483bcb5654');
   });
 
   it('keeps named JSX slots ahead of direct boolean and null props', async () => {
@@ -1247,10 +1252,10 @@ describe('Vue JSX rich extraction', () => {
             <Plural
               n={1}
               one={false}
-              other={null}
+              few={null}
               v-slots={{
                 one: () => 'One slot',
-                other: () => 'Other slot',
+                few: () => 'Few slot',
               }}
             />
           </T>
@@ -1270,7 +1275,7 @@ describe('Vue JSX rich extraction', () => {
         t: 'Branch',
       },
       {
-        d: { b: { one: 'One slot', other: 'Other slot' }, t: 'p' },
+        d: { b: { few: 'Few slot', one: 'One slot' }, t: 'p' },
         i: 2,
         t: 'Plural',
       },
@@ -1391,6 +1396,16 @@ describe('Vue JSX rich extraction', () => {
       name: 'spread T props',
       source: `<T {...props}>Hello</T>`,
       diagnostic: 'spread prop',
+    },
+    {
+      name: 'other prop on Plural, whose fallback is its children',
+      source: `<T><Plural n={2} one="One" other="Other" /></T>`,
+      diagnostic: 'other branch on a gt-vue <Plural>',
+    },
+    {
+      name: 'other slot on Branch, whose fallback is its children',
+      source: `<T><Branch branch="a" v-slots={{ a: () => 'A', other: () => 'Other' }} /></T>`,
+      diagnostic: 'other branch on a gt-vue <Branch>',
     },
     {
       name: 'internal hash override',

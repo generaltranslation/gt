@@ -3,4 +3,4 @@
   let { status }: { status: string } = $props();
 </script>
 
-<Branch branch={status} away="Away" other="Unknown">{#snippet online()}<i>Online</i>{/snippet}</Branch>
+<Branch branch={status} away="Away">{#snippet online()}<i>Online</i>{/snippet}Unknown</Branch>

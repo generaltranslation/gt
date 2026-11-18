@@ -21,8 +21,10 @@ export default function ServerExportsPage() {
       <T>Server exports fixture</T>
       <Var>value</Var>
       <Derive>static</Derive>
-      <Branch branch='a' a='A' other='fallback' />
-      <Plural n={1} other='fallback' />
+      <Branch branch='a' a='A'>
+        fallback
+      </Branch>
+      <Plural n={1}>fallback</Plural>
       <Num>{1234.5}</Num>
       <Currency currency='USD'>{10}</Currency>
       <DateTime>{new Date(0)}</DateTime>

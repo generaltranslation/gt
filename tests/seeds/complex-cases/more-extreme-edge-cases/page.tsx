@@ -55,15 +55,14 @@ export default function ExtremeEdgeCases() {
               content{}
             </>
           }
-          other={
+        >{
             <>
               <>
                 {}
                 {}
               </>
             </>
-          }
-        />
+          }</Plural>
       
 
       {/* ========== BOOLEAN CONTEXT EDGE CASES ========== */}
@@ -105,8 +104,7 @@ export default function ExtremeEdgeCases() {
               Mixed {false} and {null}
             </>
           }
-          other="normal"
-        />
+        >normal</Plural>
       
 
       {/* ========== NUMERIC PRECISION EDGE CASES ========== */}
@@ -133,8 +131,7 @@ export default function ExtremeEdgeCases() {
           two={1.0}
           few={5.0e10}
           many={5.0e10}
-          other={5.0e-10}
-        />
+        >{5.0e-10}</Plural>
       
 
       {/* ========== WHITESPACE PATHOLOGICAL CASES ========== */}
@@ -157,9 +154,8 @@ export default function ExtremeEdgeCases() {
         <Plural
           n={1}
           _1={<>Line1\nLine2</>} /* Unix LF */
-          _2={<>Line1\r\nLine2</>} /* Windows CRLF */
-          other={<>Line1\rLine2</>} /* Old Mac CR */
-        />
+          _2={<>Line1\r\nLine2</>} /* Windows CRLF */ /* Old Mac CR */
+        >{<>Line1\rLine2</>}</Plural>
       
 
       {/* ========== FRAGMENT PATHOLOGICAL NESTING ========== */}
@@ -213,15 +209,14 @@ export default function ExtremeEdgeCases() {
               Start<></>Middle<></>End
             </>
           }
-          other={
+        >{
             <>
               <></>Text
               <>
                 <></>
               </>
             </>
-          }
-        />
+          }</Plural>
       
 
       {/* ========== VARIABLE COMPONENT STRESS TESTS ========== */}
@@ -293,9 +288,8 @@ export default function ExtremeEdgeCases() {
         <Plural
           n={1}
           _1="é" /* Pre-composed */
-          _2="é" /* Decomposed (e + combining acute) */
-          other="ñ vs ñ" /* Different normalizations */
-        />
+          _2="é" /* Decomposed (e + combining acute) */ /* Different normalizations */
+        >ñ vs ñ</Plural>
       
 
       {/* Surrogate pairs and emoji variations */}
@@ -319,9 +313,8 @@ export default function ExtremeEdgeCases() {
         <Plural
           n={1}
           _1={`\\x41`} /* Hex escape */
-          _2={`\\u0041`} /* Unicode escape */
-          other={`\\101`} /* Octal escape */
-        />
+          _2={`\\u0041`} /* Unicode escape */ /* Octal escape */
+        >{`\\101`}</Plural>
       
 
       {/* ========== BOUNDARY OVERFLOW CONDITIONS ========== */}
@@ -456,8 +449,7 @@ export default function ExtremeEdgeCases() {
           one={1}
           two={-1}
           few={Infinity}
-          other={NaN}
-        />
+        >{NaN}</Plural>
       
 
       {/* String values that look like JSON */}
@@ -556,13 +548,12 @@ export default function ExtremeEdgeCases() {
                     }
                   />
                 }
-                other={
+              >{
                   <>
                     Other {+0} vs {-0}
                     {+1} vs {-1}
                   </>
-                }
-              />
+                }</Plural>
               End {} <></>
             </>
           }

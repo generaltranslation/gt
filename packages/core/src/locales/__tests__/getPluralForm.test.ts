@@ -59,7 +59,8 @@ describe('getPluralForm', () => {
 describe('plural branch props', () => {
   it.each([
     ['one', true, 'one'],
-    ['other', true, 'other'],
+    // `other` is not a prop: it is the children
+    ['other', false, 'other'],
     ['_0', true, '=0'],
     ['_12', true, '=12'],
     ['_01', false, '_01'],

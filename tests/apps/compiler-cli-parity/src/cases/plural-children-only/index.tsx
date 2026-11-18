@@ -4,7 +4,9 @@ export default function PluralChildrenOnly() {
   const n = 1;
   return (
     <div>
-      <Plural n={n} other="Default content" />
+      <Plural n={n}>
+        Default content
+      </Plural>
     </div>
   );
 }

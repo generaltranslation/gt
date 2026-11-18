@@ -489,19 +489,15 @@ function visitChildren(
   const transformation = getTransformation(metadata);
   const variable =
     transformation === 'variable' ? getVariable(metadata, id) : undefined;
-  const defaultSlot = variable
-    ? { children: undefined, replace: false }
-    : readDefaultSlot(children);
+  // The default slot of a Branch or a Plural is its `other` branch, which
+  // getBranches reads.
+  const defaultSlot =
+    variable || transformation === 'branch' || transformation === 'plural'
+      ? { children: undefined, replace: false }
+      : readDefaultSlot(children);
   const sourceChildren = variable
     ? []
-    : visitChildren(
-        defaultSlot.children,
-        index,
-        transformation === 'branch' || transformation === 'plural'
-          ? `${identity}/default`
-          : identity,
-        identityRender
-      );
+    : visitChildren(defaultSlot.children, index, identity, identityRender);
   const childrenShape = getNormalizedChildrenShape(
     defaultSlot.shapeInput ?? defaultSlot.children
   );
@@ -689,6 +685,8 @@ function getBranches(
     for (const [key, slot] of Object.entries(vnode.children)) {
       if (
         key !== 'default' &&
+        // `other` is not a slot: it is the default slot.
+        key !== 'other' &&
         // Vue's own slot flags start with `_`; an exact plural form is `_0`.
         (transformation === 'plural'
           ? isAcceptedPluralForm(key)
@@ -746,6 +744,21 @@ function getBranches(
       : Object.entries(inputs)
           .filter(([key]) => isAcceptedPluralForm(key))
           .map(([key, input]) => [getPluralBranchKey(key), input]);
+  // The default slot is the fallback, stored as the `other` branch. As for
+  // React's children, an empty one is no fallback.
+  const fallback = readDefaultSlot(vnode).children;
+  const fallbackShape = getNormalizedChildrenShape(fallback);
+  if (fallback !== undefined && fallbackShape.truthy) {
+    acceptedInputs.push([
+      'other',
+      {
+        cardinality: fallbackShape.cardinality,
+        ...(fallbackShape.cardinality === 'scalar' && { scalarTruthy: true }),
+        slotWrapped: true,
+        value: fallback,
+      },
+    ]);
+  }
   const nodes: Record<string, SourceNode[]> = Object.fromEntries(
     acceptedInputs.map(([key, input]) => [
       key,
@@ -944,17 +957,22 @@ function serializeNode(
       data[shortName as keyof HtmlContentPropKeysRecord] = value;
     }
   }
-  if (
-    (node.transformation === 'branch' || node.transformation === 'plural') &&
-    Object.keys(node.branches).length
-  ) {
-    data.b = Object.fromEntries(
-      Object.entries(node.branches).map(([key, branch]) => [
-        key,
-        serializeBranch(node, key, branch),
-      ])
-    );
-    data.t = node.transformation === 'plural' ? 'p' : 'b';
+  if (node.transformation === 'branch' || node.transformation === 'plural') {
+    const branches = Object.entries(node.branches)
+      .map(
+        ([key, branch]) => [key, serializeBranch(node, key, branch)] as const
+      )
+      // An empty default slot renders as the fallback, but is no content to
+      // store, as for React's children.
+      .filter(
+        ([key, branch]) =>
+          key !== 'other' ||
+          (branch != null && (branch as unknown) !== false && branch !== '')
+      );
+    if (branches.length) {
+      data.b = Object.fromEntries(branches);
+      data.t = node.transformation === 'plural' ? 'p' : 'b';
+    }
   }
 
   return {

@@ -44,9 +44,7 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
       :one="-0"
       :two="999999999999"
       :few="-999999999999"
-      :many="0.000000001"
-      :other="-0.000000001"
-    />
+      :many="0.000000001">{{ -0.000000001 }}</Plural>
     <Branch
       branch="floats"
       :tiny="0.1"
@@ -64,9 +62,7 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
     <Plural
       :n="1"
       _1="Quotes: &quot; and '"
-      _2="Backslashes: \\ and \\n and \\t"
-      other="Unicode: \u0041 and \x41"
-    />
+      _2="Backslashes: \\ and \\n and \\t">{{ 'Unicode: \\u0041 and \\x41' }}</Plural>
     <Branch
       branch="raw"
       json='{"key": "value", "array": [1,2,3]}'
@@ -79,7 +75,7 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
       email="user.name+tag@subdomain.example-site.co.uk"
       css="body { margin: 0; padding: 10px; font-family: Arial, sans-serif; }"
     />
-    <Plural :n="1" :zero="false" :one="true" :two="null" few="" :many="0" other="false" />
+    <Plural :n="1" :zero="false" :one="true" :two="null" few="" :many="0">false</Plural>
     <Branch
       branch="booleans"
       :truthy="true"
@@ -93,9 +89,7 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
     <Plural
       :n="1"
       _1="Template with ${escaped} and `backticks`"
-      :_2="multilineTemplate"
-      other="Mixed &quot;quotes&quot; and 'apostrophes' in template"
-    />
+      :_2="multilineTemplate">Mixed "quotes" and 'apostrophes' in template</Plural>
     <Branch
       branch="templates"
       code="function test() { return `Hello ${name}`; }"
@@ -109,10 +103,8 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
       two="2"
       few="few"
       many="many"
-      other="other"
       _1="sing"
-      _2="plur"
-    />
+      _2="plur">other</Plural>
     <Branch branch="many_options" a="option a" b="option b" c="option c" d="option d" e="option e" :h="42" :i="true" :j="null">
       <template #f><Fragment>fragment f</Fragment></template>
       <template #g><span>element g</span></template>
@@ -206,13 +198,11 @@ const markdown = `# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 
     <Plural
       :n="1"
       _1="English left-to-right"
-      _2="العربية من اليمين إلى اليسار"
-      other="עברית מימין לשמאל"
-    />Normal text <div>and some nesting</div> with trailing space<Plural :n="1">
+      _2="العربية من اليمين إلى اليسار">עברית מימין לשמאל</Plural>Normal text <div>and some nesting</div> with trailing space<Plural :n="1">
       <template #_1><Fragment>{{ ' ' }}</Fragment></template>
       <template #_2><Fragment /></template>
     </Plural>
-    <Plural :n="1" :zero="0" :one="1" :two="-1" :few="3.14159" :many="1e6" :other="0xff" />
+    <Plural :n="1" :zero="0" :one="1" :two="-1" :few="3.14159" :many="1e6">{{ 0xff }}</Plural>
     <Branch branch="test" empty="" whitespace="   padded   " :number="42" :boolean="true" :null_value="null">
       <template #fragment><Fragment>fragment content</Fragment></template>
       <template #element><span>element content</span></template>

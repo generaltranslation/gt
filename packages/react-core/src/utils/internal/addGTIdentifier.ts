@@ -25,6 +25,15 @@ export function addGTIdentifier(
   // Object to keep track of the current index for GT IDs
   let index = startingIndex;
 
+  // The children of a <Plural> or a <Branch> are its `other` branch.
+  const addFallbackBranch = (
+    branches: Record<string, TaggedChildren>,
+    children: unknown
+  ) => {
+    if (children !== undefined)
+      branches.other = addGTIdentifier(children as ReactNode, index);
+  };
+
   /**
    * Function to create a GTTag object for a ReactElement
    * @param child - The ReactElement for which the GTTag is created
@@ -73,11 +82,12 @@ export function addGTIdentifier(
           },
           {} as Record<string, TaggedChildren>
         );
+        addFallbackBranch(pluralBranches, props.children);
         if (Object.keys(pluralBranches).length)
           result.branches = pluralBranches;
       }
       if (transformationParts[0] === 'branch') {
-        const { children: _children, branch: _branch, ...branches } = props;
+        const { children, branch: _branch, other: _other, ...branches } = props;
         // Filter out data-* attributes injected by build tools
         const filteredBranches = Object.fromEntries(
           Object.entries(branches).filter(([key]) => !key.startsWith('data-'))
@@ -90,6 +100,7 @@ export function addGTIdentifier(
           },
           {} as Record<string, TaggedChildren>
         );
+        addFallbackBranch(resultBranches, children);
         if (Object.keys(resultBranches).length)
           result.branches = resultBranches;
       }
@@ -109,7 +120,13 @@ export function addGTIdentifier(
       ...props,
       'data-_gt': generaltranslation,
     };
-    if (props.children && !generaltranslation.variableType) {
+    if (
+      generaltranslation.transformation === 'plural' ||
+      generaltranslation.transformation === 'branch'
+    ) {
+      // Stored as the `other` branch above.
+      newProps.children = undefined;
+    } else if (props.children && !generaltranslation.variableType) {
       newProps.children = handleChildren(props.children as ReactNode);
     }
     if (child.type === React.Fragment) {

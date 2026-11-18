@@ -120,11 +120,11 @@ export function selectBranch(
   item: Extract<RenderItem, { kind: 'branch' }>,
   value: unknown,
   context: RenderContext
-): { nodes: JsxChildren | undefined; scopes: string[] } {
+): { nodes: JsxChildren | undefined; scopes: string[]; parent: string } {
   const { node, scopes, scopedId } = item;
   const info = context.meta.b?.[scopedId];
   const targetBranches = getBranches(node) ?? {};
-  const none = { nodes: undefined, scopes };
+  const none = { nodes: undefined, scopes, parent: scopedId };
   if (!info) return none;
 
   const branches = Object.keys(targetBranches);
@@ -136,7 +136,7 @@ export function selectBranch(
   const ownerScope = scopedId.slice(0, scopedId.length - String(node.i).length);
   return {
     nodes: targetBranches[targetBranch],
-    scopes: getBranchScopes(
+    ...getBranchContext(
       ownerScope,
       node,
       info.b,
@@ -180,14 +180,21 @@ export function validateTarget(
         return false;
       }
       for (const [name, branch] of Object.entries(branches ?? {})) {
-        const branchScopes = getBranchScopes(
+        const branchContext = getBranchContext(
           resolved.scope,
           node,
           info.b,
           getPairedSourceBranch(info.b, name),
           scopes
         );
-        if (!validateTarget(branch, branchScopes, context, resolved.scopedId)) {
+        if (
+          !validateTarget(
+            branch,
+            branchContext.scopes,
+            context,
+            branchContext.parent
+          )
+        ) {
           return false;
         }
       }
@@ -231,15 +238,17 @@ function getPairedSourceBranch(
 /**
  * Returns the scopes a Branch/Plural element's branch content resolves in:
  * the paired source branch first, then its siblings, then the scopes the
- * element itself resolves in.
+ * element itself resolves in. `parent` is the scoped id the content is the
+ * children of: the element's id in the paired branch's scope, as the
+ * preprocessor records the children that are the `other` branch.
  */
-function getBranchScopes(
+function getBranchContext(
   ownerScope: string,
   node: JsxElement,
   sourceBranches: string[],
   sourceBranch: string | undefined,
   scopes: string[]
-): string[] {
+): { scopes: string[]; parent: string } {
   // Branch scopes are named after the branch's position in the source,
   // as the preprocessor names them.
   const indexes = sourceBranches.map((_, index) => index);
@@ -248,10 +257,13 @@ function getBranchScopes(
     paired === -1
       ? indexes
       : [paired, ...indexes.filter((index) => index !== paired)];
-  return [
-    ...ordered.map((index) => `${ownerScope}b${node.i}_${index}$`),
-    ...scopes,
-  ];
+  const branchScopes = ordered.map(
+    (index) => `${ownerScope}b${node.i}_${index}$`
+  );
+  return {
+    scopes: [...branchScopes, ...scopes],
+    parent: `${paired === -1 ? ownerScope : branchScopes[0]}${node.i}`,
+  };
 }
 
 /** The branch ICU picks for `n`; anything but a number only fits `other`. */

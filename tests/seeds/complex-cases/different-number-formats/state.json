@@ -507,7 +507,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1235,7 +1235,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,

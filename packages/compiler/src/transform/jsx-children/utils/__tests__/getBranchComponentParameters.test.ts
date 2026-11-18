@@ -63,7 +63,7 @@ describe('getBranchComponentParameters', () => {
       'data-track': 'click',
       n: '5',
       one: 'One item',
-      other: 'Many items',
+      children: 'Many items',
     });
 
     const result = getBranchComponentParameters(
@@ -75,7 +75,7 @@ describe('getBranchComponentParameters', () => {
     expect(keys).toEqual(['one', 'other']);
   });
 
-  it('should filter out children for any component type', () => {
+  it('reads the children as the other branch', () => {
     const expression = makeObjectExpression({
       children: 'child content',
       morning: 'Good morning',
@@ -87,18 +87,17 @@ describe('getBranchComponentParameters', () => {
     );
 
     const keys = result.map(([key]) => key);
-    expect(keys).toEqual(['morning']);
+    expect(keys).toEqual(['other', 'morning']);
   });
 
-  it('warns about children and malformed exact numbers, which are not rendered', () => {
+  it('warns about malformed exact numbers, which are not rendered', () => {
     const warn = vi.fn();
     const expression = makeObjectExpression({
       n: '5',
       _0: 'No items',
       _01: 'One item',
       _1e3: 'A thousand items',
-      other: 'Many items',
-      children: 'Fallback',
+      children: 'Many items',
     });
 
     const result = getBranchComponentParameters(
@@ -111,7 +110,29 @@ describe('getBranchComponentParameters', () => {
     expect(warn.mock.calls.map(([diagnostic]) => diagnostic)).toEqual([
       'Ignored the _01 prop of <Plural> because it is not an exact number. Write the number without a leading zero or an exponent, as in _0 or _1000.',
       'Ignored the _1e3 prop of <Plural> because it is not an exact number. Write the number without a leading zero or an exponent, as in _0 or _1000.',
-      '<Plural> does not render its children. Move the content to the other prop.',
     ]);
   });
+
+  it.each([GT_COMPONENT_TYPES.Plural, GT_COMPONENT_TYPES.Branch])(
+    'fails an other prop on <%s>, whose fallback is its children',
+    (component) => {
+      const fail = vi.fn();
+      const expression = makeObjectExpression({
+        one: 'One item',
+        other: 'Many items',
+      });
+
+      const result = getBranchComponentParameters(
+        getObjectExpressionPath(expression),
+        component,
+        undefined,
+        fail
+      );
+
+      expect(result.map(([key]) => key)).toEqual(['one']);
+      expect(fail.mock.calls.map(([diagnostic]) => diagnostic)).toEqual([
+        `<${component}> has no other prop. Write the fallback as its children.`,
+      ]);
+    }
+  );
 });

@@ -215,7 +215,7 @@ describe('gt-vue SPA runtime', () => {
       setup() {
         const pluralSlots = {
           one: () => 'one',
-          other: () => 'other',
+          default: () => 'other',
         };
         return () =>
           h('div', [

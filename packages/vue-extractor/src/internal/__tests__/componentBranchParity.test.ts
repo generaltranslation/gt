@@ -172,8 +172,11 @@ describe('Branch attribute runtime parity', () => {
       source: {
         t: 'Branch',
         i: 1,
-        d: { arl: 'secret', b: { formal: 'Hello' }, t: 'b' },
-        c: 'Fallback',
+        d: {
+          arl: 'secret',
+          b: { formal: 'Hello', other: 'Fallback' },
+          t: 'b',
+        },
       },
     },
     {
@@ -295,10 +298,9 @@ describe('Branch attribute runtime parity', () => {
           alt: 'Alt',
           arb: 'Labelled',
           ard: 'Described',
-          b: { title: 'Title', alt: 'Alt' },
+          b: { title: 'Title', alt: 'Alt', other: 'Fallback' },
           t: 'b',
         },
-        c: 'Fallback',
       },
     });
 
@@ -312,10 +314,9 @@ describe('Branch attribute runtime parity', () => {
           alt: 'Alt',
           arb: 'Labelled',
           ard: 'Described',
-          b: { title: 'Title', alt: 'Alt' },
+          b: { title: 'Title', alt: 'Alt', other: 'Fallback' },
           t: 'b',
         },
-        c: 'Fallback',
       },
     ]);
   });
@@ -324,7 +325,7 @@ describe('Branch attribute runtime parity', () => {
     const output = await extractCase({
       name: 'Plural content props',
       template:
-        '<T><Plural :n="2" title="Title" alt="Alt" aria-labelledby="Labelled" aria-describedby="Described" other="Other">Fallback</Plural></T>',
+        '<T><Plural :n="2" title="Title" alt="Alt" aria-labelledby="Labelled" aria-describedby="Described">Fallback</Plural></T>',
       source: {
         t: 'Plural',
         i: 1,
@@ -333,10 +334,9 @@ describe('Branch attribute runtime parity', () => {
           alt: 'Alt',
           arb: 'Labelled',
           ard: 'Described',
-          b: { other: 'Other' },
+          b: { other: 'Fallback' },
           t: 'p',
         },
-        c: 'Fallback',
       },
     });
 
@@ -350,10 +350,9 @@ describe('Branch attribute runtime parity', () => {
           alt: 'Alt',
           arb: 'Labelled',
           ard: 'Described',
-          b: { other: 'Other' },
+          b: { other: 'Fallback' },
           t: 'p',
         },
-        c: 'Fallback',
       },
     ]);
   });
@@ -413,14 +412,13 @@ describe('Branch attribute runtime parity', () => {
       name: 'plural primitive matrix',
       setup: 'const ignored = String(Date.now());',
       template:
-        '<T><Plural :n="2" zero="None" :one="1" :two="2n" :few="false" :many="null" other="Other" :label="ignored" class="secret" @click="ignored">Fallback</Plural></T>',
+        '<T><Plural :n="2" zero="None" :one="1" :two="2n" :few="false" :many="null" :label="ignored" class="secret" @click="ignored">Fallback</Plural></T>',
       source: pluralSource({
         zero: 'None',
         one: '1',
         two: '2',
         few: false,
         many: null,
-        other: 'Other',
       }),
     });
 
@@ -432,7 +430,6 @@ describe('Branch attribute runtime parity', () => {
         two: '2',
         few: false,
         many: null,
-        other: 'Other',
       }),
     ]);
   });
@@ -471,12 +468,11 @@ describe('Branch attribute runtime parity', () => {
       two: null,
       few: '',
       many: '0',
-      other: 'Other',
     });
     const pluralOutput = await extractCase({
       name: 'primitive Plural runtime hash',
       template:
-        '<T><Plural :n="2" :zero="false" :one="true" :two="null" few="" :many="0" other="Other">Fallback</Plural></T>',
+        '<T><Plural :n="2" :zero="false" :one="true" :two="null" few="" :many="0">Fallback</Plural></T>',
       source: pluralExpected,
     });
 
@@ -489,13 +485,13 @@ describe('Branch attribute runtime parity', () => {
         dataFormat: 'JSX',
         source: richSources(branchOutput)[0],
       })
-    ).toBe('be0765c641c3c17a');
+    ).toBe('d82f8a17e0903307');
     expect(
       hashSource({
         dataFormat: 'JSX',
         source: richSources(pluralOutput)[0],
       })
-    ).toBe('69b0a0d0f137587f');
+    ).toBe('e92f3c8633d764dc');
   });
 
   it.each([
@@ -555,19 +551,17 @@ describe('Branch attribute runtime parity', () => {
 
     expect(output.errors).toEqual([]);
     expect(source).toEqual(testCase.source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('dab20b4518607f20');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('dec9c092fa934698');
   });
 
   function branchSource(
     branches?: Record<string, BranchWireValue>
   ): JsxChildren {
+    // The default slot is the `other` branch.
     return {
       t: 'Branch',
       i: 1,
-      ...(branches && Object.keys(branches).length > 0
-        ? { d: { b: branches, t: 'b' as const } }
-        : {}),
-      c: 'Fallback',
+      d: { b: { ...branches, other: 'Fallback' }, t: 'b' },
     } as unknown as JsxChildren;
   }
 
@@ -577,8 +571,7 @@ describe('Branch attribute runtime parity', () => {
     return {
       t: 'Plural',
       i: 1,
-      d: { b: branches, t: 'p' },
-      c: 'Fallback',
+      d: { b: { ...branches, other: 'Fallback' }, t: 'p' },
     } as unknown as JsxChildren;
   }
 

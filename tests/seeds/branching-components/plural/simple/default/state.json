@@ -195,67 +195,6 @@
           },
           {
             "type": "ObjectProperty",
-            "start": 264,
-            "end": 285,
-            "loc": {
-              "start": {
-                "line": 8,
-                "column": 12,
-                "index": 264
-              },
-              "end": {
-                "line": 8,
-                "column": 33,
-                "index": 285
-              }
-            },
-            "method": false,
-            "key": {
-              "type": "Identifier",
-              "start": 264,
-              "end": 269,
-              "loc": {
-                "start": {
-                  "line": 8,
-                  "column": 12,
-                  "index": 264
-                },
-                "end": {
-                  "line": 8,
-                  "column": 17,
-                  "index": 269
-                },
-                "identifierName": "other"
-              },
-              "name": "other"
-            },
-            "computed": false,
-            "shorthand": false,
-            "value": {
-              "type": "StringLiteral",
-              "start": 271,
-              "end": 285,
-              "loc": {
-                "start": {
-                  "line": 8,
-                  "column": 19,
-                  "index": 271
-                },
-                "end": {
-                  "line": 8,
-                  "column": 33,
-                  "index": 285
-                }
-              },
-              "extra": {
-                "rawValue": "Good evening",
-                "raw": "\"Good evening\""
-              },
-              "value": "Good evening"
-            }
-          },
-          {
-            "type": "ObjectProperty",
             "start": 299,
             "end": 318,
             "loc": {

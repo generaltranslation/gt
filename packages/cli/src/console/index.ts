@@ -372,7 +372,7 @@ export const warnDataAttrOnBranch = (
     location
   );
 
-export const warnBranchChildrenSync = (
+export const warnBranchOtherPropSync = (
   file: string,
   componentName: string,
   location?: string
@@ -380,8 +380,8 @@ export const warnBranchChildrenSync = (
   withLocation(
     file,
     createDiagnosticMessage({
-      whatHappened: `<${componentName}> does not render its children`,
-      fix: 'Move the content to the other prop',
+      whatHappened: `<${componentName}> has no other prop`,
+      fix: 'Write the fallback as its children',
     }),
     location
   );

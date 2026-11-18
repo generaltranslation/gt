@@ -6,8 +6,7 @@ export default function Home() {
       n={1}
       _1="Line1\nLine2\tTabbed"
       _2="Special: !@#$%^&*()_+-=[]{}|;:,.<>?"
-      other={`Template with \${variable} and \`backticks\``}
-    />
+    >{`Template with \${variable} and \`backticks\``}</Plural>
 
 <Branch
           branch="language"

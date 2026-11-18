@@ -7,9 +7,7 @@ import { Branch, Plural, T } from 'gt-vue';
     <Plural
       :n="1"
       _1="Line1\nLine2\tTabbed"
-      _2="Special: !@#$%^&amp;*()_+-=[]{}|;:,.&lt;&gt;?"
-      other="Template with ${variable} and `backticks`"
-    />
+      _2="Special: !@#$%^&amp;*()_+-=[]{}|;:,.&lt;&gt;?">{{ 'Template with $\x7bvariable\x7d and `backticks`' }}</Plural>
     <Branch
       branch="language"
       english="Hello World"

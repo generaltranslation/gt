@@ -4,7 +4,9 @@ export default function BranchFallbackDynamicJsx() {
   const name = 'Alice';
   return (
     <div>
-      <Branch branch="x" other={<p>Fallback {name}</p>} />
+      <Branch branch="x">
+        <p>Fallback {name}</p>
+      </Branch>
     </div>
   );
 }

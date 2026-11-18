@@ -4,9 +4,8 @@
   "d": {
     "b": {
       "one": "Good morning",
-      "other": "Good evening"
+      "other": "default"
     },
     "t": "p"
-  },
-  "c": "default"
+  }
 }

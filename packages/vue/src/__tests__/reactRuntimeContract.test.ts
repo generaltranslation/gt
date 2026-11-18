@@ -189,13 +189,12 @@ const fixtures: ContractFixture[] = [
         {
           n: 2,
           one: createElement('span', null, 'One item'),
-          other: createElement('span', null, 'Many items'),
         },
         createElement('span', null, 'Items')
       ),
     vue: {
       template:
-        '<T><Plural :n="2"><template #one><span>One item</span></template><template #other><span>Many items</span></template><span>Items</span></Plural></T>',
+        '<T><Plural :n="2"><template #one><span>One item</span></template><span>Items</span></Plural></T>',
     },
   },
   {
@@ -1100,8 +1099,9 @@ const catalogCases = {
     source: (alternate = false) => [
       h(
         Branch,
-        { branch: alternate ? 'casual' : 'formal', other: 'Fallback' },
+        { branch: alternate ? 'casual' : 'formal' },
         {
+          default: () => 'Fallback',
           casual: () => [
             h('em', null, 'Hi'),
             ' ',
@@ -1156,7 +1156,7 @@ const catalogCases = {
         { n: alternate ? 1 : 2 },
         {
           one: () => ['One ', h(Num, { value: 1 })],
-          other: () => ['Many ', h(Num, { value: 2 })],
+          default: () => ['Many ', h(Num, { value: 2 })],
         }
       ),
       h('span', null, 'After'),

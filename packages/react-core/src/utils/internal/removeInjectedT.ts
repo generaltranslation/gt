@@ -62,7 +62,10 @@ function handleSingleChildElement(
         Record<string, unknown>
       >((acc, [branchName, branch]) => {
         if (branchName !== 'branch' && !branchName.startsWith('data-')) {
-          acc[branchName] = handleSingleChild(branch, derivationDepth);
+          acc[branchName] = handleChildren(
+            branch as ReactNode,
+            derivationDepth
+          );
         } else {
           // Skip recursion on non-translated branches
           acc[branchName] = branch;
@@ -78,8 +81,12 @@ function handleSingleChildElement(
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
       >((acc, [branchName, branch]) => {
-        if (isAcceptedPluralForm(branchName)) {
-          acc[branchName] = handleSingleChild(branch, derivationDepth);
+        // The children are the fallback branch.
+        if (isAcceptedPluralForm(branchName) || branchName === 'children') {
+          acc[branchName] = handleChildren(
+            branch as ReactNode,
+            derivationDepth
+          );
         } else {
           // Skip Recursion on non-translated branches
           acc[branchName] = branch;

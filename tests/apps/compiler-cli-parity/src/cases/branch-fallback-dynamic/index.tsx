@@ -4,9 +4,9 @@ export default function BranchFallbackDynamic() {
   const name = 'Alice';
   return (
     <div>
-      <Branch branch={name} other={<>
+      <Branch branch={name}>
         Fallback with {name}
-      </>} />
+      </Branch>
     </div>
   );
 }

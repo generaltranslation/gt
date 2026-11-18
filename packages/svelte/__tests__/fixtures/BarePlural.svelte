@@ -3,4 +3,4 @@
   let { n }: { n: number } = $props();
 </script>
 
-<Plural {n} one="one item" other="many items" />
+<Plural {n} one="one item">many items</Plural>

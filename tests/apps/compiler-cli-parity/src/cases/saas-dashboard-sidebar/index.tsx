@@ -31,7 +31,7 @@ export default function SaasDashboardSidebar() {
             <span>Issues</span>
             {openIssues > 0 && (
               <span>
-                <Plural n={openIssues} one="1 open" other="open" />
+                <Plural n={openIssues} one="1 open">open</Plural>
               </span>
             )}
           </a>

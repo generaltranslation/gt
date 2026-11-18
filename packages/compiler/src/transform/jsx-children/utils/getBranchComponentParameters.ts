@@ -10,10 +10,10 @@ import {
   GT_COMPONENT_TYPES,
 } from '../../../utils/constants/gt/constants';
 
-const createChildrenWarning = (component: string) =>
+export const createOtherPropError = (component: string) =>
   createDiagnosticMessage({
-    whatHappened: `<${component}> does not render its children`,
-    fix: 'Move the content to the other prop',
+    whatHappened: `<${component}> has no other prop`,
+    fix: 'Write the fallback as its children',
   });
 
 const createInvalidExactPluralPropWarning = (prop: string) =>
@@ -25,13 +25,15 @@ const createInvalidExactPluralPropWarning = (prop: string) =>
 
 /**
  * Given an object expression path, get branch component argument paths,
- * each with the key its branch is stored under. `warn` is called for a
- * property that holds content but is never rendered.
+ * each with the key its branch is stored under: the children are the `other`
+ * branch. `warn` is called for a property that is ignored, and `fail` for an
+ * `other` prop.
  */
 export function getBranchComponentParameters(
   parametersPath: NodePath<t.ObjectExpression>,
   canonicalName: string,
-  warn: (diagnostic: string, node: t.Node) => void = () => {}
+  warn: (diagnostic: string, node: t.Node) => void = () => {},
+  fail: (diagnostic: string, node: t.Node) => void = () => {}
 ): [string, NodePath<t.Expression>][] {
   // Get the args
   return parametersPath
@@ -58,9 +60,12 @@ export function getBranchComponentParameters(
         return null;
       }
 
-      // Avoid children property
+      // The children are the fallback
       if (propertyName === 'children') {
-        warn(createChildrenWarning(canonicalName), property);
+        return ['other', valuePath as NodePath<t.Expression>];
+      }
+      if (propertyName === 'other') {
+        fail(createOtherPropError(canonicalName), property);
         return null;
       }
 

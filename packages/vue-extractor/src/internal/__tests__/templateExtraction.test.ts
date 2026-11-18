@@ -53,23 +53,22 @@ describe('Vue template extraction', () => {
               b: {
                 formal: [' Formal ', { i: 11, k: '_gt_value_11', v: 'v' }],
                 casual: [' Casual ', { i: 11, k: '_gt_value_11', v: 'v' }],
+                other: [' Fallback ', { i: 11, k: '_gt_value_11', v: 'v' }],
               },
               t: 'b',
             },
-            c: [' Fallback ', { i: 11, k: '_gt_value_11', v: 'v' }],
           },
           {
             t: 'Plural',
-            i: 12,
+            i: 11,
             d: {
               b: {
-                one: [' One ', { i: 13, k: '_gt_value_13', v: 'v' }],
-                other: [' Many ', { i: 13, k: '_gt_value_13', v: 'v' }],
+                one: [' One ', { i: 12, k: '_gt_value_12', v: 'v' }],
+                other: [' Fallback ', { i: 12, k: '_gt_value_12', v: 'v' }],
                 zero: 'None',
               },
               t: 'p',
             },
-            c: [' Fallback ', { i: 13, k: '_gt_value_13', v: 'v' }],
           },
         ],
       },
@@ -155,7 +154,7 @@ describe('Vue template extraction', () => {
       const source = vueSource({
         imports: 'Branch, Plural, T',
         template:
-          '<T><Branch branch="formal"><template #formal>First</template> <template #casual>Second</template></Branch></T><T><Plural :n="1"><template #one>One</template> <template #other>Other</template></Plural></T>',
+          '<T><Branch branch="formal"><template #formal>First</template> <template #casual>Second</template></Branch></T><T><Plural :n="1"><template #one>One</template> <template #default>Other</template></Plural></T>',
       });
 
       const output = await extractFromVueSource(source, '/fixtures/Slots.vue', {
@@ -199,8 +198,17 @@ describe('Vue template extraction', () => {
         {
           t: 'Branch',
           i: 1,
-          d: { b: { formal: 'Formal' }, t: 'b' },
-          c: [{ t: 'span', i: 2, c: 'A' }, '  ', { t: 'b', i: 3, c: 'B' }],
+          d: {
+            b: {
+              formal: 'Formal',
+              other: [
+                { t: 'span', i: 2, c: 'A' },
+                '  ',
+                { t: 'b', i: 3, c: 'B' },
+              ],
+            },
+            t: 'b',
+          },
         },
       ]);
     }
@@ -293,8 +301,7 @@ describe('Vue template extraction', () => {
         {
           t: 'Branch',
           i: 1,
-          d: { b: { formal: 'Hello' }, t: 'b' },
-          c: 'Fallback',
+          d: { b: { formal: 'Hello', other: 'Fallback' }, t: 'b' },
         },
       ] satisfies JsxChildren[],
     },
@@ -307,8 +314,10 @@ describe('Vue template extraction', () => {
         {
           t: 'Branch',
           i: 1,
-          d: { b: { zero: '0', off: false, empty: null }, t: 'b' },
-          c: 'Fallback',
+          d: {
+            b: { zero: '0', off: false, empty: null, other: 'Fallback' },
+            t: 'b',
+          },
         } as unknown as JsxChildren,
       ] satisfies JsxChildren[],
     },
@@ -316,13 +325,12 @@ describe('Vue template extraction', () => {
       name: 'filters non-CLDR plural branch props',
       imports: 'Plural, T',
       template:
-        '<T><Plural :n="2" one="One" other="Other" label="ignored">Fallback</Plural></T>',
+        '<T><Plural :n="2" one="One" two="Two" label="ignored">Fallback</Plural></T>',
       expected: [
         {
           t: 'Plural',
           i: 1,
-          d: { b: { one: 'One', other: 'Other' }, t: 'p' },
-          c: 'Fallback',
+          d: { b: { one: 'One', two: 'Two', other: 'Fallback' }, t: 'p' },
         },
       ] satisfies JsxChildren[],
     },
@@ -772,29 +780,28 @@ describe('Vue template audit cases', () => {
                 i: 2,
                 c: { i: 3, k: '_gt_value_3', v: 'v' },
               },
+              other: ['Fallback ', { i: 2, k: '_gt_value_2', v: 'v' }],
             },
             t: 'b',
           },
-          c: ['Fallback ', { i: 2, k: '_gt_value_2', v: 'v' }],
         },
-        { t: 'strong', i: 3, c: 'After' },
+        { t: 'strong', i: 2, c: 'After' },
       ],
     },
     {
       name: 'plural slots number independently',
       script: `import { Plural, T, Var } from 'gt-vue';`,
-      template: `<T><Plural :n="2"><template #one>One <Var>x</Var></template><template #other>Other <Var>y</Var></template>Fallback <Var>z</Var></Plural></T>`,
+      template: `<T><Plural :n="2"><template #one>One <Var>x</Var></template>Fallback <Var>z</Var></Plural></T>`,
       source: {
         t: 'Plural',
         i: 1,
         d: {
           b: {
             one: ['One ', { i: 2, k: '_gt_value_2', v: 'v' }],
-            other: ['Other ', { i: 2, k: '_gt_value_2', v: 'v' }],
+            other: ['Fallback ', { i: 2, k: '_gt_value_2', v: 'v' }],
           },
           t: 'p',
         },
-        c: ['Fallback ', { i: 2, k: '_gt_value_2', v: 'v' }],
       },
     },
     {
@@ -804,8 +811,7 @@ describe('Vue template audit cases', () => {
       source: {
         t: 'Branch',
         i: 1,
-        d: { b: { formal: 'Slot' }, t: 'b' },
-        c: 'Fallback',
+        d: { b: { formal: 'Slot', other: 'Fallback' }, t: 'b' },
       },
     },
     {
@@ -882,6 +888,18 @@ describe('Vue template audit cases', () => {
       script: `import { T } from 'gt-vue';`,
       template: `<T><template #other>Named</template></T>`,
       diagnostic: 'named slot on a gt-vue <T>',
+    },
+    {
+      name: 'other slot on Branch, whose fallback is the default slot',
+      script: `import { Branch, T } from 'gt-vue';`,
+      template: `<T><Branch branch="a" a="A"><template #other>Other</template></Branch></T>`,
+      diagnostic: 'other branch on a gt-vue <Branch>',
+    },
+    {
+      name: 'other prop on Plural, whose fallback is the default slot',
+      script: `import { Plural, T } from 'gt-vue';`,
+      template: `<T><Plural :n="2" one="One" other="Other" /></T>`,
+      diagnostic: 'other branch on a gt-vue <Plural>',
     },
     {
       name: 'source-shaping v-if',
@@ -1196,7 +1214,7 @@ describe('consumer Vue template compiler parity', () => {
           import { Branch, Plural, T } from 'gt-vue';
           import { Fragment } from 'vue';
         </script>
-        <template><T><div is="vue:Branch" formal="Formal" casual="Casual">Default</div><div is="vue:Plural" one="One" other="Other">Many</div><div is="vue:Suspense"><b>Ready</b><template #fallback>Loading</template></div><div is="vue:Fragment"><i>First</i><u>Second</u></div></T></template>
+        <template><T><div is="vue:Branch" formal="Formal" casual="Casual">Default</div><div is="vue:Plural" one="One">Many</div><div is="vue:Suspense"><b>Ready</b><template #fallback>Loading</template></div><div is="vue:Fragment"><i>First</i><u>Second</u></div></T></template>
       `,
       '/project/src/StaticRichVueIs.vue',
       { projectRoot: '/project' }
@@ -1209,19 +1227,17 @@ describe('consumer Vue template compiler parity', () => {
         t: 'Branch',
         i: 1,
         d: {
-          b: { formal: 'Formal', casual: 'Casual' },
+          b: { formal: 'Formal', casual: 'Casual', other: 'Default' },
           t: 'b',
         },
-        c: 'Default',
       },
       {
         t: 'Plural',
         i: 2,
         d: {
-          b: { one: 'One', other: 'Other' },
+          b: { one: 'One', other: 'Many' },
           t: 'p',
         },
-        c: 'Many',
       },
       {
         t: 'Suspense',
@@ -1238,7 +1254,7 @@ describe('consumer Vue template compiler parity', () => {
       },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '6e3d6f99b81eb251'
+      '1ff5d7c491cd1c5e'
     );
   });
 

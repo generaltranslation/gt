@@ -3,7 +3,7 @@ import { Branch } from 'gt-react';
 export default function BranchAllStatic() {
   return (
     <div>
-      <Branch branch={'color' as string} red="Red" blue="Blue" other="Default" />
+      <Branch branch={'color' as string} red="Red" blue="Blue">Default</Branch>
     </div>
   );
 }

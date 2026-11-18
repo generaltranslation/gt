@@ -11,6 +11,8 @@ const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
   'class',
   'key',
   'n',
+  // The fallback is the default slot, so `other` names no branch.
+  'other',
   'ref',
   'ref-for',
   'ref-key',
@@ -120,7 +122,9 @@ export function getBranchNames(
       ...Object.entries(attrs)
         .filter(([name, value]) => isBranchAttribute(name, value))
         .map(([name]) => name),
-      ...Object.keys(slots).filter((key) => key !== 'default'),
+      ...Object.keys(slots).filter(
+        (key) => key !== 'default' && key !== 'other'
+      ),
     ]),
   ];
 }

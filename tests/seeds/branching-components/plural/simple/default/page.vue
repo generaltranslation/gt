@@ -2,4 +2,4 @@
 import { Plural, T } from 'gt-vue';
 </script>
 
-<template><T><Plural :n="1" one="Good morning" other="Good evening">default</Plural></T></template>
+<template><T><Plural :n="1" one="Good morning">default</Plural></T></template>

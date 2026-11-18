@@ -1,11 +1,12 @@
 <!--
   @component
-  Renders the branch named by `branch`, or the `other` branch when no branch
+  Renders the branch named by `branch`, or its children when no branch
   matches. Branches are string props or snippets.
 
   ```svelte
-  <Branch branch={status} inactive="Inactive" other="Unknown">
+  <Branch branch={status} inactive="Inactive">
     {#snippet active()}<b>Active</b>{/snippet}
+    Unknown
   </Branch>
   ```
 -->
@@ -17,9 +18,13 @@
 
   let {
     branch,
+    children,
+    // `other` is not a branch: the fallback is the children.
+    other: _other,
     ...branches
   }: {
     branch?: string | number | boolean | null;
+    children?: Snippet;
     [branch: string]: unknown;
   } = $props();
 
@@ -29,7 +34,7 @@
       Object.hasOwn(branches, String(branch)) &&
       branches[String(branch)] !== undefined
       ? branches[String(branch)]
-      : branches.other
+      : children
   );
 </script>
 

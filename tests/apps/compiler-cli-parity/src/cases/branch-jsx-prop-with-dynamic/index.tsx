@@ -4,7 +4,7 @@ export default function BranchJsxPropWithDynamic() {
   const userName = 'Alice';
   return (
     <div>
-      <Branch branch={'mode' as string} greeting={<>Hello {userName}</>} other="Fallback" />
+      <Branch branch={'mode' as string} greeting={<>Hello {userName}</>}>Fallback</Branch>
     </div>
   );
 }

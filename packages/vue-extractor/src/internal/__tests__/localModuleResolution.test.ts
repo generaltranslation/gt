@@ -1425,7 +1425,7 @@ function componentSource(moduleClause: string): string {
   <template>
     <T context="rich">
       <p>Welcome <Var>Ernest</Var></p>
-      <Branch branch="docs"><template #docs>Documentation</template><template #other>Other</template></Branch>
+      <Branch branch="docs"><template #docs>Documentation</template>Other</Branch>
       <Num :value="2" />
       <Currency :value="12" currency="USD" />
       <DateTime :value="0" />

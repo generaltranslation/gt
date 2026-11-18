@@ -31,29 +31,28 @@ describe('extractFromVueSource', () => {
         d: {
           b: {
             one: [' one ', { i: 4, k: '_gt_value_4', v: 'v' }],
-            other: [' other ', { i: 4, k: '_gt_value_4', v: 'v' }],
+            other: [' fallback ', { i: 4, k: '_gt_value_4', v: 'v' }],
           },
           t: 'p',
         },
-        c: [' fallback ', { i: 4, k: '_gt_value_4', v: 'v' }],
       },
       {
         t: 'Branch',
-        i: 5,
+        i: 4,
         d: {
           b: {
-            formal: [' formal ', { i: 6, k: '_gt_value_6', v: 'v' }],
-            casual: [' casual ', { i: 6, k: '_gt_value_6', v: 'v' }],
+            formal: [' formal ', { i: 5, k: '_gt_value_5', v: 'v' }],
+            casual: [' casual ', { i: 5, k: '_gt_value_5', v: 'v' }],
+            other: [' fallback ', { i: 5, k: '_gt_value_5', v: 'v' }],
           },
           t: 'b',
         },
-        c: [' fallback ', { i: 6, k: '_gt_value_6', v: 'v' }],
       },
-      { t: 'b', i: 7, c: 'end' },
-      { i: 8, k: '_gt_n_8', v: 'n' },
-      { i: 9, k: '_gt_date_9', v: 'd' },
-      { i: 10, k: '_gt_cost_10', v: 'c' },
-      { t: 'var', i: 11, c: 'native' },
+      { t: 'b', i: 5, c: 'end' },
+      { i: 6, k: '_gt_n_6', v: 'n' },
+      { i: 7, k: '_gt_date_7', v: 'd' },
+      { i: 8, k: '_gt_cost_8', v: 'c' },
+      { t: 'var', i: 9, c: 'native' },
     ];
     const rich = result.updates.find((update) => update.dataFormat === 'JSX');
     expect(rich).toMatchObject({
@@ -180,8 +179,7 @@ describe('extractFromVueSource', () => {
     const expectedSource: JsxChildren = {
       t: 'Branch',
       i: 1,
-      d: { b: { formal: 'Hello' }, t: 'b' },
-      c: 'Fallback',
+      d: { b: { formal: 'Hello', other: 'Fallback' }, t: 'b' },
     };
 
     expect(result.errors).toEqual([]);
@@ -206,10 +204,10 @@ describe('extractFromVueSource', () => {
           b: {
             constructor: 'Constructor branch',
             toString: 'String branch',
+            other: ' Fallback ',
           },
           t: 'b',
         },
-        c: ' Fallback ',
       },
     });
   });

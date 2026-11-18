@@ -166,8 +166,10 @@ describe('Derive resolution across files', () => {
           {
             t: 'Branch',
             i: 2,
-            d: { b: { light: 'Light', dark: 'Dark' }, t: 'b' },
-            c: 'Default',
+            d: {
+              b: { light: 'Light', dark: 'Dark', other: 'Default' },
+              t: 'b',
+            },
           },
         ],
       ],
@@ -451,13 +453,13 @@ describe('Derive inside Plural/Branch props', () => {
     [
       'one Plural form',
       2,
-      '<Plural n={count} one={<><Derive>{getAnimal()}</Derive> is here</>} other="animals" />',
+      '<Plural n={count} one={<><Derive>{getAnimal()}</Derive> is here</>}>animals</Plural>',
       'function getAnimal() { if (Math.random() > 0.5) return "cat"; return "dog"; }',
     ],
     [
       'two Plural forms (3 x 3)',
       9,
-      '<Plural n={count} one={<><Derive>{getAnimal()}</Derive> is here</>} other={<><Derive>{getAnimal()}</Derive> are here</>} />',
+      '<Plural n={count} one={<><Derive>{getAnimal()}</Derive> is here</>}><Derive>{getAnimal()}</Derive> are here</Plural>',
       'function getAnimal() { if (Math.random() > 0.5) return "cat"; if (Math.random() > 0.5) return "dog"; return "bird"; }',
     ],
     [
@@ -480,14 +482,15 @@ describe('Derive inside Plural/Branch props', () => {
         <Plural
           n={count}
           one={<>Here is <Num>{count}</Num> <Derive>{getSubject()}</Derive> who is a racing driver</>}
-          other={<>Here are <Num>{count}</Num> <Derive>{getSubject()}</Derive> who are racing drivers</>}
-        />.
+        >
+          Here are <Num>{count}</Num> <Derive>{getSubject()}</Derive> who are racing drivers
+        </Plural>.
       </p>`,
       `function getSubject() {
         const subject = Math.random() > 0.5 ? 'man' : 'woman';
-        if (subject === 'man') return <Plural n={count} one='man' other='men' />;
-        if (subject === 'woman') return <Plural n={count} one='woman' other='women' />;
-        return <Plural n={count} one='child' other='children' />;
+        if (subject === 'man') return <Plural n={count} one='man'>men</Plural>;
+        if (subject === 'woman') return <Plural n={count} one='woman'>women</Plural>;
+        return <Plural n={count} one='child'>children</Plural>;
       }`,
     ],
   ])('multiplies Derive in %s into %i updates', (_name, count, jsx, outer) => {
@@ -499,15 +502,20 @@ describe('Derive inside Plural/Branch props', () => {
 });
 
 // https://github.com/generaltranslation/gt/issues/2449
-// IDs must match the runtime's addGTIdentifier (react-core), which keeps a
-// shared counter through Branch/Plural children. Branch props start their own
+// IDs must match the runtime's addGTIdentifier (react-core). The children of
+// a Branch or a Plural are its `other` branch, and every branch starts its own
 // counter from the branching element's ID in both implementations.
-describe('GT IDs after Branch/Plural element children', () => {
+describe('GT IDs of Branch/Plural children, which are the other branch', () => {
   const plural = {
     t: 'Plural',
     i: 1,
-    d: { b: { one: 'one bottle' }, t: 'p' },
-    c: [{ i: 2, k: '_gt_n_2', v: 'n' }, ' bottles'],
+    d: {
+      b: {
+        one: 'one bottle',
+        other: [{ i: 2, k: '_gt_n_2', v: 'n' }, ' bottles'],
+      },
+      t: 'p',
+    },
   };
   const pluralJsx =
     '<Plural n={2} one="one bottle"><Num>{2}</Num> bottles</Plural>';
@@ -516,7 +524,7 @@ describe('GT IDs after Branch/Plural element children', () => {
     [
       'an element after Plural children',
       `<T>${pluralJsx}<span> live</span></T>`,
-      [plural, { t: 'span', i: 3, c: ' live' }],
+      [plural, { t: 'span', i: 2, c: ' live' }],
     ],
     [
       'an element after Branch children',
@@ -525,10 +533,12 @@ describe('GT IDs after Branch/Plural element children', () => {
         {
           t: 'Branch',
           i: 1,
-          d: { b: { open: 'Open' }, t: 'b' },
-          c: { t: 'span', i: 2, c: 'Closed' },
+          d: {
+            b: { open: 'Open', other: { t: 'span', i: 2, c: 'Closed' } },
+            t: 'b',
+          },
         },
-        { t: 'span', i: 3, c: ' live' },
+        { t: 'span', i: 2, c: ' live' },
       ],
     ],
     [
@@ -538,9 +548,11 @@ describe('GT IDs after Branch/Plural element children', () => {
         plural,
         {
           t: 'Branch',
-          i: 3,
-          d: { b: { open: { t: 'b', i: 4, c: 'Open' } }, t: 'b' },
-          c: 'Closed',
+          i: 2,
+          d: {
+            b: { open: { t: 'b', i: 3, c: 'Open' }, other: 'Closed' },
+            t: 'b',
+          },
         },
       ],
     ],
@@ -555,23 +567,13 @@ describe('GT IDs after Branch/Plural element children', () => {
 describe('Branch/Plural props that are never rendered', () => {
   it.each([
     [
-      'Branch children',
-      '<Branch branch="open" open="Open">Closed</Branch>',
-      '<Branch> does not render its children. Move the content to the other prop.',
-    ],
-    [
-      'Plural children',
-      '<Plural n={2} one="one bottle">bottles</Plural>',
-      '<Plural> does not render its children. Move the content to the other prop.',
-    ],
-    [
       'an exact number with a leading zero',
-      '<Plural n={2} _01="one bottle" other="bottles" />',
+      '<Plural n={2} _01="one bottle">bottles</Plural>',
       'Ignored the _01 prop of <Plural> because it is not an exact number.',
     ],
     [
       'an exact number with an exponent',
-      '<Plural n={2} _1e3="a thousand bottles" other="bottles" />',
+      '<Plural n={2} _1e3="a thousand bottles">bottles</Plural>',
       'Ignored the _1e3 prop of <Plural> because it is not an exact number.',
     ],
   ])('warns about %s', (_name, jsx, message) => {
@@ -581,12 +583,25 @@ describe('Branch/Plural props that are never rendered', () => {
     expect([...warnings]).toEqual([expect.stringContaining(message)]);
   });
 
-  it('does not warn about exact numbers and an other branch', () => {
+  it('does not warn about exact numbers and children', () => {
     const { warnings } = extractUserT(
-      page('<T><Plural n={2} _0="none" _10="ten" other="bottles" /></T>')
+      page('<T><Plural n={2} _0="none" _10="ten">bottles</Plural></T>')
     );
 
     expect([...warnings]).toEqual([]);
+  });
+
+  it.each([
+    ['Plural', '<Plural n={2} one="one bottle" other="bottles" />'],
+    ['Branch', '<Branch branch="open" open="Open" other="Closed" />'],
+  ])('rejects an other prop on <%s>', (component, jsx) => {
+    const { errors } = extractUserT(page(`<T>${jsx}</T>`));
+
+    expect(errors).toEqual([
+      expect.stringContaining(
+        `<${component}> has no other prop. Write the fallback as its children.`
+      ),
+    ]);
   });
 });
 

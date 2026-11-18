@@ -157,7 +157,7 @@ describe('nested branches in sibling snippets', () => {
                   t: 'p',
                   b: {
                     one: { t: 'C4', i: 4, c: 'un chat' },
-                    other: { t: 'C4', i: 4, c: 'des chats' },
+                    other: 'des chats',
                   },
                 },
               },

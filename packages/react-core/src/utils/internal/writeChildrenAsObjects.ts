@@ -62,6 +62,12 @@ const createGTProp = (
     const newBranches: Record<string, JsxChildren> = {};
     Object.entries(branches).forEach(
       ([key, value]: [string, TaggedChildren]) => {
+        // Empty children render as the fallback, but are no content to store.
+        if (
+          key === 'other' &&
+          (value == null || value === false || value === '')
+        )
+          return;
         newBranches[key] = writeChildrenAsObjects(value);
       }
     );

@@ -4,7 +4,7 @@ export default function PluralWithTextAlongside() {
   const n = 3;
   return (
     <div>
-      You have <Plural n={n} one="one notification" other="many notifications" /> today.
+      You have <Plural n={n} one="one notification">many notifications</Plural> today.
     </div>
   );
 }

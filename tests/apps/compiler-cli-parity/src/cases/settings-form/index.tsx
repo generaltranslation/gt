@@ -7,7 +7,7 @@ export default function SettingsForm() {
       <fieldset>
         <legend>Appearance</legend>
         <label>Theme</label>
-        <Branch branch={theme} dark="Dark mode enabled" light="Light mode enabled" other="System default" />
+        <Branch branch={theme} dark="Dark mode enabled" light="Light mode enabled">System default</Branch>
       </fieldset>
       <fieldset>
         <legend>Notifications</legend>

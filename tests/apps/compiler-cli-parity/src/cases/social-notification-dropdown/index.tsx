@@ -14,7 +14,7 @@ export default function SocialNotificationDropdown() {
         <h3>Notifications</h3>
         {unreadCount > 0 && (
           <span>
-            <Plural n={unreadCount} one="1 new" other="new" />
+            <Plural n={unreadCount} one="1 new">new</Plural>
           </span>
         )}
         <button>Mark all as read</button>
@@ -28,8 +28,7 @@ export default function SocialNotificationDropdown() {
               like={<span><strong>{n.actor}</strong> liked {n.target}</span>}
               follow={<span><strong>{n.actor}</strong> started following you</span>}
               mention={<span><strong>{n.actor}</strong> mentioned you in {n.target}</span>}
-              other={<span>New notification</span>}
-            />
+            ><span>New notification</span></Branch>
             <time>{n.time}</time>
           </li>
         ))}

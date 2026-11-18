@@ -143,11 +143,7 @@ describe('<T> server rendering', () => {
                 i: 2,
                 c: [{ t: 'b', i: 3, c: 'Un' }, ' message'],
               },
-              other: {
-                t: 'C2',
-                i: 2,
-                c: [{ i: 3, k: '_gt_n_3', v: 'n' }, ' messages'],
-              },
+              other: [{ i: 2, k: '_gt_n_2', v: 'n' }, ' messages'],
             },
           },
         },

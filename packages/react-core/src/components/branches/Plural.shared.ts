@@ -12,7 +12,9 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
 type PluralProps = {
   n: number | bigint;
-  other: ReactNode;
+  /** The fallback, as `other` is in `plural()`. */
+  children: ReactNode;
+  other?: never;
 } & Partial<
   // `_0` is the exact number 0: ICU's `=0`, which JSX cannot spell.
   Record<Exclude<Intl.LDMLPluralRule, 'other'> | `_${number}`, ReactNode>
@@ -29,17 +31,19 @@ function renderPlural({
   _enableI18n,
   _locale,
   n,
+  children,
   ...props
 }: ResolvedPluralProps): ReactNode {
   const locales = getFormatLocales({
     locale: _locale,
     enableI18n: _enableI18n,
   });
-  const branches = Object.fromEntries(
-    Object.entries(props)
+  const branches = Object.fromEntries([
+    ...Object.entries(props)
       .filter(([prop]) => isAcceptedPluralForm(prop))
-      .map(([prop, branch]) => [getPluralBranchKey(prop), branch])
-  );
+      .map(([prop, branch]) => [getPluralBranchKey(prop), branch]),
+    ['other', children],
+  ]);
   return getPluralBranch(n, locales, branches);
 }
 

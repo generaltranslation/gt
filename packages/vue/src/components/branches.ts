@@ -26,8 +26,8 @@ type BranchProps = {
 
 /**
  * Selects a plural slot or attribute for `n` as ICU does: an exact number such
- * as `_0`, then the active locale's plural category such as `one`, then
- * `other`.
+ * as `_0`, then the active locale's plural category such as `one`, then the
+ * default slot.
  */
 export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
   /* @__PURE__ */ defineComponent({
@@ -48,7 +48,11 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
         );
         const form = getPluralForm(
           props.n,
-          branches.map(getPluralBranchKey),
+          // The default slot is the fallback: ICU's `other`.
+          [
+            ...branches.map(getPluralBranchKey),
+            ...(slots.default ? ['other'] : []),
+          ],
           getFormatLocales(
             undefined,
             state.getLocale(),
@@ -60,7 +64,11 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
           (name) => getPluralBranchKey(name) === form
         );
         return asFragmentRoot(
-          branch ? getBranchContent(branch, attrs, slots) : null
+          branch
+            ? getBranchContent(branch, attrs, slots)
+            : form === 'other'
+              ? slots.default?.()
+              : null
         );
       };
     },
@@ -70,7 +78,7 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
 
 /**
  * Selects an arbitrary named slot or attribute from `branch`. A value with no
- * branch renders the `other` branch.
+ * branch renders the default slot.
  *
  * When used inside {@link T}, every named branch is extracted for translation
  * while only the active branch is rendered.
@@ -86,11 +94,14 @@ export const Branch = /* @__PURE__ */ withGTMetadata<BranchProps>(
     setup(props, { attrs, slots }) {
       return () => {
         const branch = props.branch == null ? '' : String(props.branch);
+        // `other` is not a branch name: it is the default slot.
         const hasBranch =
-          Object.hasOwn(slots, branch) ||
+          (branch !== 'other' && Object.hasOwn(slots, branch)) ||
           isBranchAttribute(branch, attrs[branch]);
         return asFragmentRoot(
-          getBranchContent(hasBranch ? branch : 'other', attrs, slots)
+          hasBranch
+            ? getBranchContent(branch, attrs, slots)
+            : (slots.default?.() ?? null)
         );
       };
     },

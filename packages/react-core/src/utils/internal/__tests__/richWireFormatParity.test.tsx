@@ -42,17 +42,15 @@ const sources = {
         <Var key='name'>Ada</Var>,
       ]}
       casual={[<em key='em'>Hi</em>, ' ', <Var key='name'>Ada</Var>]}
-      other='Fallback'
-    />,
+    >
+      Fallback
+    </Branch>,
     <span key='after'>After</span>,
   ],
   'independent-plural-numbering': [
-    <Plural
-      key='plural'
-      n={2}
-      one={['One ', <Num key='count'>{1}</Num>]}
-      other={['Many ', <Num key='count'>{2}</Num>]}
-    />,
+    <Plural key='plural' n={2} one={['One ', <Num key='count'>{1}</Num>]}>
+      Many <Num key='count'>{2}</Num>
+    </Plural>,
     <span key='after'>After</span>,
   ],
 } satisfies Record<string, ReactNode>;

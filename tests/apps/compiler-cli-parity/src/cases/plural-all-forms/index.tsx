@@ -11,8 +11,7 @@ export default function PluralAllForms() {
         two="two items"
         few="a few items"
         many="many items"
-        other="other items"
-      />
+      >other items</Plural>
     </div>
   );
 }

@@ -74,8 +74,9 @@ export function OrderPanel() {
                 Heats to 96 °C and holds for 60 minutes. Bloom for 30 seconds.
               </p>
             }
-            other={<p className='order-note'>Heats to the set temperature.</p>}
-          />
+          >
+            <p className='order-note'>Heats to the set temperature.</p>
+          </Branch>
         </T>
       </div>
 
@@ -118,12 +119,11 @@ export function OrderPanel() {
               n={filters}
               zero={<>no filters</>}
               one={<>one filter pack</>}
-              other={
-                <>
-                  <Num>{filters}</Num> filter packs
-                </>
-              }
-            />
+            >
+              <>
+                <Num>{filters}</Num> filter packs
+              </>
+            </Plural>
             .
           </p>
         </T>

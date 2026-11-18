@@ -21,6 +21,22 @@ import {
   PLURAL_COMPONENT,
 } from '../constants.js';
 
+// The children of a <Plural> or a <Branch> are its `other` branch.
+function addFallbackBranch(
+  branches: Record<string, JsxChildren>,
+  children: unknown,
+  id: number,
+  gtVariableNames?: Set<string>
+): void {
+  if (children === undefined) return;
+  const fallback = addGTIdentifierToSyntaxTree(
+    children as MultipliedTreeNode,
+    id,
+    gtVariableNames
+  );
+  if (fallback) branches.other = fallback;
+}
+
 /**
  * Construct the data-_gt prop
  * @param type - The type of the element
@@ -31,7 +47,8 @@ import {
 function constructGTProp(
   type: string,
   props: Record<string, unknown>,
-  id: number
+  id: number,
+  gtVariableNames?: Set<string>
 ): GTProp | undefined {
   // Add translatable HTML content props
   const generaltranslation: GTProp = Object.entries(
@@ -58,6 +75,7 @@ function constructGTProp(
       },
       {}
     );
+    addFallbackBranch(pluralBranches, props.children, id, gtVariableNames);
     // Add plural branches to the generaltranslation
     if (Object.keys(pluralBranches).length) {
       generaltranslation.t = 'p';
@@ -66,7 +84,7 @@ function constructGTProp(
 
     // Branch
   } else if (type === BRANCH_COMPONENT) {
-    const { children: _children, branch: _branch, ...allBranches } = props;
+    const { children, branch: _branch, other: _other, ...allBranches } = props;
     // Filter out data-* attributes injected by build tools
     const branches = Object.fromEntries(
       Object.entries(allBranches).filter(
@@ -83,6 +101,7 @@ function constructGTProp(
       },
       {}
     );
+    addFallbackBranch(resultBranches, children, id, gtVariableNames);
     // Add branches to the generaltranslation
     if (Object.keys(resultBranches).length) {
       generaltranslation.t = 'b';
@@ -155,16 +174,19 @@ export default function addGTIdentifierToSyntaxTree(
       const generaltranslation = constructGTProp(
         type as string,
         (props || {}) as Record<string, unknown>,
-        indexObject.index
+        indexObject.index,
+        gtVariableNames
       );
 
-      // Save current index and recurse.
-      // Number Branch/Plural children with the running counter like any other
-      // children (only branch props restart), to match the runtime's addGTIdentifier.
+      // Save current index and recurse. The children of a Branch or a Plural
+      // are a branch, constructed above.
       const currentIndex = indexObject.index;
-      const children = handleChildren(
-        props?.children === undefined ? null : props?.children
-      );
+      const children =
+        type === PLURAL_COMPONENT || type === BRANCH_COMPONENT
+          ? false
+          : handleChildren(
+              props?.children === undefined ? null : props?.children
+            );
 
       // Enforce boolean rendering behavior
       // <T>{true}</T> -> true <- this is a boolean value, not a string

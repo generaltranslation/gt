@@ -120,7 +120,7 @@ const count = 1;
           content
         </Fragment>
       </template>
-      <template #other>
+      <template #default>
         <Fragment><Fragment /></Fragment>
       </template>
     </Plural>

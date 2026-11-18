@@ -27,14 +27,14 @@ describe('plural branch selection', () => {
   it.each([
     ['lv', 0],
     ['ar', 0],
-  ])('%s n=%i falls back to the other branch', (locale, n) => {
+  ])('%s n=%i falls back to the children', (locale, n) => {
     expect(
       renderPlural({
         n,
         _locale: locale,
         _enableI18n: true,
         one: '1 item',
-        other: 'N items',
+        children: 'N items',
       })
     ).toBe('N items');
   });
@@ -52,25 +52,30 @@ describe('plural branch selection', () => {
         _0: 'No items',
         _1: 'Exactly one',
         one: '1 item',
-        other: 'N items',
+        children: 'N items',
       })
     ).toBe(expected);
   });
 
   it('reads zero as a plural category, which English does not have', () => {
     expect(
-      renderPlural({ ...conditions, n: 0, zero: 'No items', other: 'N items' })
+      renderPlural({
+        ...conditions,
+        n: 0,
+        zero: 'No items',
+        children: 'N items',
+      })
     ).toBe('N items');
   });
 
-  it('logs and renders other in production when n is not a number', () => {
+  it('logs and renders the children in production when n is not a number', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(
       renderPlural({
         ...conditions,
         n: '3' as unknown as number,
         one: '1 item',
-        other: 'N items',
+        children: 'N items',
       })
     ).toBe('N items');
     expect(error).toHaveBeenCalledWith(
@@ -84,7 +89,7 @@ describe('plural branch selection', () => {
       renderPlural({
         ...conditions,
         n: '3' as unknown as number,
-        other: 'N items',
+        children: 'N items',
       })
     ).toThrow('<Plural> needs a number or a bigint for n');
   });
@@ -119,7 +124,7 @@ describe('branch selection', () => {
         true: 'Yes',
         0: 'Zero',
         'data-id': 'injected',
-        other: 'Someone',
+        children: 'Someone',
       })
     ).toBe(expected);
   });

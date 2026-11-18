@@ -4704,10 +4704,10 @@
                     }
                   },
                   "extra": {
-                    "rawValue": 1e-9,
+                    "rawValue": 1e-09,
                     "raw": "0.000000001"
                   },
-                  "value": 1e-9
+                  "value": 1e-09
                 }
               },
               {
@@ -4744,7 +4744,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -4783,10 +4783,10 @@
                       }
                     },
                     "extra": {
-                      "rawValue": 1e-9,
+                      "rawValue": 1e-09,
                       "raw": "0.000000001"
                     },
-                    "value": 1e-9
+                    "value": 1e-09
                   }
                 }
               }
@@ -7537,7 +7537,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -8807,7 +8807,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -9758,7 +9758,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -10678,7 +10678,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -25069,7 +25069,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -26302,7 +26302,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,

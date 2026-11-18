@@ -8,14 +8,15 @@
   <T>
     <Plural n={count}>
       {#snippet one()}<b>One</b> message{/snippet}
-      {#snippet other()}<Num value={count} /> messages{/snippet}
+      <Num value={count} /> messages
     </Plural>
   </T>
 </p>
 <p class="branch">
   <T>
-    <Branch branch={status} away="Away" other="Unknown">
+    <Branch branch={status} away="Away">
       {#snippet online()}<i>Online</i> as <Var>{name}</Var>{/snippet}
+      Unknown
     </Branch>
   </T>
 </p>

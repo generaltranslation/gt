@@ -25,8 +25,7 @@ export default function SaasTeamMembers() {
           <Plural
             n={pendingInvites}
             one="1 pending invitation"
-            other="pending invitations"
-          />
+          >pending invitations</Plural>
           {' — '}
           <a href="/settings/invites">View invites</a>
         </div>
@@ -56,8 +55,7 @@ export default function SaasTeamMembers() {
                   admin="Admin"
                   member="Member"
                   viewer="View only"
-                  other="Unknown role"
-                />
+                >Unknown role</Branch>
               </td>
               <td>{member.lastActive}</td>
               <td>

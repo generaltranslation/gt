@@ -234,9 +234,10 @@ const m = useMessages();
 - `<Num>`, `<DateTime>`, and `<Currency>` require typed runtime values through
   `:value`; formatter slot children are not supported.
 - `<Plural :n="count">` selects a named slot as ICU does: an exact number such
-  as `#_0`, then the locale's plural category such as `#one`, then `#other`.
-- `<Branch :branch="key">` selects an arbitrary named slot, or `#other` when no
-  slot matches.
+  as `#_0`, then the locale's plural category such as `#one`, then the default
+  slot.
+- `<Branch :branch="key">` selects an arbitrary named slot, or the default slot
+  when no slot matches.
 
 Use the required `value` prop for every formatting value.
 

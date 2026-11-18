@@ -12,11 +12,13 @@ const EXACT_PLURAL_PROP = /^_(0|[1-9]\d*)$/;
 
 /**
  * Whether a `<Plural>` prop is a branch: a plural category, or `_N` for the
- * exact number N, since `=N` is not a legal JSX attribute name.
+ * exact number N, since `=N` is not a legal JSX attribute name. `other` is
+ * not a prop: it is the children.
  */
 export function isAcceptedPluralForm(form: string): boolean {
   return (
-    pluralForms.includes(form as PluralType) || EXACT_PLURAL_PROP.test(form)
+    (form !== 'other' && pluralForms.includes(form as PluralType)) ||
+    EXACT_PLURAL_PROP.test(form)
   );
 }
 

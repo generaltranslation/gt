@@ -47,10 +47,6 @@ const tone = 'formal';
           One
           <Value>{{ count }}</Value>
         </template>
-        <template #other>
-          Many
-          <Value>{{ count }}</Value>
-        </template>
         Fallback
         <Value>{{ count }}</Value>
       </Plural>

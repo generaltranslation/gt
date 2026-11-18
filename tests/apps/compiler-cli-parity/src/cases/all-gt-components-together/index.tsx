@@ -12,10 +12,10 @@ export default function AllGtComponentsTogether() {
       <T>Manual translation</T>
       <p>Auto text with <Var>{name}</Var></p>
       <div>
-        <Branch branch={'status' as string} active="Active" inactive="Inactive" other="Default" />
+        <Branch branch={'status' as string} active="Active" inactive="Inactive">Default</Branch>
       </div>
       <div>
-        <Plural n={count} one="one item" other="many items" />
+        <Plural n={count} one="one item">many items</Plural>
       </div>
       <div>
         Label: <Derive>{getLabel()}</Derive>

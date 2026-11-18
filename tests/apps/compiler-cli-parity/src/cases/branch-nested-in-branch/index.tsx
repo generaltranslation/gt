@@ -6,10 +6,9 @@ export default function BranchNestedInBranch() {
       <Branch
         branch={'outer' as string}
         a={
-          <Branch branch={'inner' as string} x="Inner X" y="Inner Y" other="Inner default" />
+          <Branch branch={'inner' as string} x="Inner X" y="Inner Y">Inner default</Branch>
         }
-        other="Outer default"
-      />
+      >Outer default</Branch>
     </div>
   );
 }

@@ -7,8 +7,7 @@
 <p>
   <T
     ><Plural {n}
-      >{#snippet _0()}<i>None</i>{/snippet}{#snippet other()}<b>Items</b
-        >{/snippet}</Plural
+      >{#snippet _0()}<i>None</i>{/snippet}<b>Items</b></Plural
     ></T
   >
 </p>

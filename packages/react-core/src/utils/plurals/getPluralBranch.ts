@@ -64,13 +64,13 @@ export function getPluralBranch<T>(
       rendered:
         selected === undefined
           ? 'Nothing was rendered'
-          : 'The other branch was rendered',
+          : 'The children were rendered',
       details: `n: ${String(n)} (${typeof n})`,
     });
   } else if (selected === undefined) {
     report({
       whatHappened: '<Plural> has no branch for n',
-      fix: 'Add an other branch',
+      fix: 'Give it children to render as the fallback',
       rendered: 'Nothing was rendered',
       details: `n: ${n}`,
     });
@@ -91,7 +91,7 @@ export function getBranch<T>(
   if (selected === undefined) {
     report({
       whatHappened: '<Branch> has no branch for its value',
-      fix: 'Add an other branch',
+      fix: 'Give it children to render as the fallback',
       rendered: 'Nothing was rendered',
       details: `branch: ${String(branch)}`,
     });

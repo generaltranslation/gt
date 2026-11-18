@@ -62,8 +62,9 @@ export function OrderPanel() {
                 Bead-blasted titanium arm with a graphite base.
               </p>
             }
-            other={<p className='order-note'>Steel arm and aluminum head.</p>}
-          />
+          >
+            <p className='order-note'>Steel arm and aluminum head.</p>
+          </Branch>
         </T>
       </div>
 
@@ -104,15 +105,11 @@ export function OrderPanel() {
       <div className='order-total'>
         <T>
           <p>
-            <Plural
-              n={quantity}
-              one={<>One lamp</>}
-              other={
-                <>
-                  <Num>{quantity}</Num> lamps
-                </>
-              }
-            />{' '}
+            <Plural n={quantity} one={<>One lamp</>}>
+              <>
+                <Num>{quantity}</Num> lamps
+              </>
+            </Plural>{' '}
             in <Var>{finishNames[finish]}</Var>. Shipping{' '}
             <Currency currency='USD'>{shipping}</Currency>.
           </p>

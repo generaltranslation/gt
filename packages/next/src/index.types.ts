@@ -85,11 +85,9 @@ export function GTProvider(
  * ```jsx
  * // Translating a plural
  * <T id="item_count">
- *  <Plural
- *    n={n}
- *    one={<>You have <Num>{n}</Num> item.</>}
- *    other={<>You have <Num>{n}</Num> items.</>}
- *  />
+ *  <Plural n={n} one={<>You have <Num>{n}</Num> item.</>}>
+ *    You have <Num>{n}</Num> items.
+ *  </Plural>
  * </T>
  * ```
  *
@@ -276,13 +274,14 @@ Derive._gtt = 'derive';
  *  branch={view}
  *  summary={<p>This is a summary</p>}
  *  details={<p>Details here</p>}
- *  other={<p>Fallback content</p>}
- * />
+ * >
+ *  <p>Fallback content</p>
+ * </Branch>
  * ```
- * If `view` is `"summary"`, it renders `<p>This is a summary</p>`. If `view` matches none of the branches, it renders the `other` branch, `<p>Fallback content</p>`.
+ * If `view` is `"summary"`, it renders `<p>This is a summary</p>`. If `view` matches none of the branches, it renders the children, `<p>Fallback content</p>`.
  *
  * @param {string | number | boolean} branch - The value that names the branch to render.
- * @param {any} [other] - The branch to render when no other branch matches. Required unless the branches cover every value `branch` can have.
+ * @param {any} [children] - The content to render when no branch matches. Required unless the branches cover every value `branch` can have.
  * @param {...{[key: string]: any}} [branches] - The possible branches as keys and their content as values.
  * @returns {React.JSX.Element} The rendered branch.
  */
@@ -295,22 +294,19 @@ Branch._gtt = 'branch';
 /**
  * The `<Plural>` component renders the branch that fits the number `n`, chosen as ICU does: an exact
  * branch such as `_0` first, then the plural category of `n` in the current locale (`zero`, `one`, `two`,
- * `few`, `many`), then `other`.
+ * `few`, `many`), then the children.
  *
  * @example
  * ```jsx
- * <Plural
- *  n={count}
- *  _0="There are no items"
- *  one="There is 1 item"
- *  other="There are many items"
- * />
+ * <Plural n={count} _0="There are no items" one="There is 1 item">
+ *  There are many items
+ * </Plural>
  * ```
  * In this example, if `count` is 0, it renders `"There are no items"`. In English, if `count` is 1, it renders
  * `"There is 1 item"`, and for any other number `"There are many items"`.
  *
  * @param {number | bigint} n - The number that picks the branch.
- * @param {any} other - The branch to render when no other branch fits.
+ * @param {any} children - The content to render when no branch fits.
  * @param {...{[key: string]: any}} [branches] - Branches for the plural categories `zero`, `one`, `two`, `few` and `many`,
  * and for exact numbers, written `_0`, `_1` and so on.
  * @returns {React.JSX.Element} The rendered content of the branch that fits `n`.

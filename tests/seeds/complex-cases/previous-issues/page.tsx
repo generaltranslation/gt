@@ -11,9 +11,8 @@ export default function Home() {
       two="Two files"
       few="Few files"
       many="Many files"
-      other="Other files"
       _1={<>Single file</>}
-    />
+    >Other files</Plural>
     <Branch
       branch="context"
       option1=""

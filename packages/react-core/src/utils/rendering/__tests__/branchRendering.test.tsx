@@ -212,7 +212,7 @@ describe('shared plural component renderer', () => {
         _enableI18n: true,
         _locale: 'en',
         n: 2,
-        other: 0,
+        children: 0,
       })
     ).toBe(0);
     expect(
@@ -220,7 +220,7 @@ describe('shared plural component renderer', () => {
         _enableI18n: true,
         _locale: 'en',
         n: 2,
-        other: false,
+        children: false,
       })
     ).toBe(false);
   });
@@ -231,34 +231,38 @@ describe('branch component prop types', () => {
     const status = 'admin' as 'admin' | 'guest';
     const name = 'admin' as string;
     const isAdmin = true as boolean;
+    const gender = 'other' as 'female' | 'other';
     const elements = [
       <Branch key={0} branch={status} admin='A' guest='G' />,
-      <Branch key={1} branch={status} admin='A' other='O' />,
+      <Branch key={1} branch={status} admin='A' children='O' />,
       <Branch key={2} branch={isAdmin} true='A' false='G' />,
-      <Branch key={3} branch={name} admin='A' other='O' />,
-      // @ts-expect-error a finite union needs a branch for every value, or other
+      <Branch key={3} branch={name} admin='A' children='O' />,
+      // @ts-expect-error a finite union needs a branch for every value, or children
       <Branch key={4} branch={status} admin='A' />,
-      // @ts-expect-error any string needs other
+      // @ts-expect-error any string needs children
       <Branch key={5} branch={name} admin='A' />,
       // @ts-expect-error not a value of the union
-      <Branch key={6} branch={status} owner='O' other='O' />,
-      // @ts-expect-error children are not a fallback
+      <Branch key={6} branch={status} owner='O' children='O' />,
+      // @ts-expect-error other is not a prop: the fallback is the children
       <Branch key={7} branch={name} other='O' children='Fallback' />,
-      <Plural key={8} n={1} _0='None' one='One' other='Many' />,
-      <Plural key={9} n={1n} other='Many' />,
-      // @ts-expect-error other is required
+      <Plural key={8} n={1} _0='None' one='One' children='Many' />,
+      <Plural key={9} n={1n} children='Many' />,
+      // @ts-expect-error children are required
       <Plural key={10} n={1} one='One' />,
       // @ts-expect-error singular is not a plural category
-      <Plural key={11} n={1} singular='One' other='Many' />,
+      <Plural key={11} n={1} singular='One' children='Many' />,
       // @ts-expect-error locales is not a prop
-      <Plural key={12} n={1} locales={['en']} other='Many' />,
+      <Plural key={12} n={1} locales={['en']} children='Many' />,
       // @ts-expect-error _locale is internal
-      <Plural key={13} n={1} _locale='en' other='Many' />,
+      <Plural key={13} n={1} _locale='en' children='Many' />,
       // @ts-expect-error n is a number or a bigint
-      <Plural key={14} n='1' other='Many' />,
-      // @ts-expect-error children are not a fallback
+      <Plural key={14} n='1' children='Many' />,
+      // @ts-expect-error other is not a prop: the fallback is the children
       <Plural key={15} n={1} other='Many' children='Fallback' />,
+      <Branch key={16} branch={gender} female='F' children='O' />,
+      // @ts-expect-error the value other has no prop, so children are required
+      <Branch key={17} branch={gender} female='F' />,
     ];
-    expect(elements).toHaveLength(16);
+    expect(elements).toHaveLength(18);
   });
 });

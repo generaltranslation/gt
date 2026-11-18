@@ -57,11 +57,12 @@ export default function SaasBillingPage() {
               <button>Update card</button>
             </div>
           }
-          other={<div>
+        >
+          <div>
             <p>No payment method on file.</p>
             <button>Add payment method</button>
-          </div>}
-        />
+          </div>
+        </Branch>
       </section>
 
       <section>

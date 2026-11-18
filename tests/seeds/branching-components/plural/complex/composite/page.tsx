@@ -6,8 +6,7 @@ export default function Home() {
       <Plural
         n={1}
         one={<p>There is <Num>count</Num> item</p>}
-        other={<p>There are <Num>count</Num> items</p>}
-      />
+      ><p>There are <Num>count</Num> items</p></Plural>
     </T>
   );
 }

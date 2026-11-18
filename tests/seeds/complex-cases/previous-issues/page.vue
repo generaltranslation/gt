@@ -14,10 +14,9 @@ const variable = 'test';
       two="Two files"
       few="Few files"
       many="Many files"
-      other="Other files"
     >
       <template #_1><Fragment>Single file</Fragment></template>
-    </Plural>
+    <template #default>Other files</template></Plural>
     <Branch branch="context" option1="" option2="   padded   ">
       <template #option3><Var>{{ variable }}</Var></template>
       <template #option4><Fragment>fragment content</Fragment></template>
