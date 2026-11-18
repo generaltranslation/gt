@@ -48,7 +48,11 @@ export type RegionOptions = {
    * as the bytes grow. Defaults to estimateCompressedSize.
    */
   estimateSize?: (bytes: number) => number;
-  /** How often each load point loads, by its id. Defaults to 1 for each. */
+  /**
+   * How often each load point loads, by its id. A load without a weight
+   * loads once for itself and once for each time a load that can only run
+   * after it loads, so an entry weighs as much as all that its pages load.
+   */
   weights?: ReadonlyMap<string, number>;
   /** The key of the file each message was in after the previous build */
   previous?: ReadonlyMap<string, string>;
@@ -120,6 +124,18 @@ export type RegionAssignment = {
      * reaching their module. A build that initialises modules lazily has none.
      */
     conservativeMessages: number;
+    /**
+     * The messages in the files of `entries`, which every page requests
+     * before any code runs, and their bytes in the unit of `sizes`
+     */
+    startupMessages: number;
+    startupBytes: number;
+    /**
+     * The messages the entries demand themselves and their bytes: the least
+     * those files can hold
+     */
+    entryMessages: number;
+    entryBytes: number;
   };
 };
 
@@ -327,6 +343,118 @@ function getBits(rows: Uint32Array, offset: number, words: number): number[] {
   return bits;
 }
 
+/** The first bit of a row at or after `from`, -1 when there is none. */
+function findBit(
+  rows: Uint32Array,
+  offset: number,
+  words: number,
+  from: number
+): number {
+  for (let word = from >>> 5; word < words; word++) {
+    let rest = rows[offset + word];
+    if (word === from >>> 5) rest &= -1 << (from & 31);
+    if (rest !== 0) return word * 32 + 31 - Math.clz32(rest & -rest);
+  }
+  return -1;
+}
+
+/**
+ * The load each load can only run after, nearest first: its immediate
+ * dominator in the graph of dynamic imports, in which a page starts at an
+ * entry. -1 for a load that no single load has to run before: an entry, a
+ * load that several entries import, and one that no entry leads to. `order`
+ * lists the loads so that each comes after every load it dominates.
+ * `importedIn` has a row for each load, of the loads that import it.
+ */
+function findDominators(
+  importedIn: Uint32Array,
+  words: number,
+  isEntry: readonly boolean[]
+): { dominators: Int32Array; order: number[] } {
+  const count = isEntry.length;
+  // Where every page starts
+  const root = count;
+  const imported = new Uint32Array(count * words);
+  for (let target = 0; target < count; target++) {
+    for (const source of getBits(importedIn, target * words, words)) {
+      setBit(imported, source * words, target);
+    }
+  }
+  // Where each load is in `order`
+  const position = new Int32Array(count + 1).fill(-1);
+  const order: number[] = [];
+  const visit = (start: number) => {
+    position[start] = count;
+    const path = [start];
+    const next = [0];
+    while (path.length) {
+      const load = path[path.length - 1];
+      const target = findBit(
+        imported,
+        load * words,
+        words,
+        next[next.length - 1]
+      );
+      if (target === -1) {
+        position[load] = order.length;
+        order.push(load);
+        path.pop();
+        next.pop();
+        continue;
+      }
+      next[next.length - 1] = target + 1;
+      if (position[target] !== -1) continue;
+      position[target] = count;
+      path.push(target);
+      next.push(0);
+    }
+  };
+  for (let load = 0; load < count; load++) {
+    if (isEntry[load] && position[load] === -1) visit(load);
+  }
+  // A load that no entry leads to starts a page of its own
+  const isStart = isEntry.map((entry, load) => entry || position[load] === -1);
+  for (let load = 0; load < count; load++) {
+    if (position[load] === -1) visit(load);
+  }
+  position[root] = count;
+
+  const dominators = new Int32Array(count + 1).fill(-1);
+  dominators[root] = root;
+  const getShared = (first: number, second: number): number => {
+    while (first !== second) {
+      while (position[first] < position[second]) first = dominators[first];
+      while (position[second] < position[first]) second = dominators[second];
+    }
+    return first;
+  };
+  for (let isSettled = false; !isSettled; ) {
+    isSettled = true;
+    for (let at = count - 1; at >= 0; at--) {
+      const load = order[at];
+      let nearest = isStart[load] ? root : -1;
+      const offset = load * words;
+      for (
+        let source = findBit(importedIn, offset, words, 0);
+        source !== -1 && nearest !== root;
+        source = findBit(importedIn, offset, words, source + 1)
+      ) {
+        if (dominators[source] === -1) continue;
+        nearest = nearest === -1 ? source : getShared(source, nearest);
+      }
+      if (dominators[load] === nearest) continue;
+      dominators[load] = nearest;
+      isSettled = false;
+    }
+  }
+  return {
+    dominators: dominators
+      .subarray(0, count)
+      .map((load) => (load === root ? -1 : load)),
+    order,
+  };
+}
+
 type Region = { hashes: string[]; demandIds: Set<number>; payerId: number };
 
 /**
@@ -336,8 +464,7 @@ type Region = { hashes: string[]; demandIds: Set<number>; payerId: number };
  */
 function findRegions(graph: RegionGraph) {
   const indexed = indexGraph(graph);
-  const { ids, imports, dynamicImports, loads, loadOf, isEntry, pages } =
-    indexed;
+  const { ids, imports, dynamicImports, loads, loadOf, isEntry } = indexed;
   const words = getWords(loads.length);
 
   // The loads that reach each module, and those it is initialised with
@@ -370,14 +497,11 @@ function findRegions(graph: RegionGraph) {
 
   // The loads in which an import of each load point can run
   const importedIn = new Uint32Array(loads.length * words);
-  const isImported = loads.map(() => false);
   dynamicImports.forEach((targets, module) => {
     if (!targets.length) return;
     const contexts = getContexts(module);
-    if (contexts.every((word) => word === 0)) return;
     for (const target of targets) {
       const offset = loadOf[target] * words;
-      isImported[loadOf[target]] = true;
       for (let word = 0; word < words; word++) {
         importedIn[offset + word] |= contexts[word];
       }
@@ -386,38 +510,15 @@ function findRegions(graph: RegionGraph) {
   const entryLoads = loads.flatMap((_module, load) =>
     isEntry[load] ? [load] : []
   );
-  // The loads that are the first of a page of each entry
-  const firstLoads = new Map(
-    entryLoads.map((entry) => {
-      const first = new Uint32Array(words);
-      loads.forEach((_module, load) => {
-        if (!isEntry[load] && hasBit(importedIn, load * words, entry)) {
-          setBit(first, 0, load);
-        }
-      });
-      return [entry, first];
-    })
-  );
-  const heldByEntries = new Map<string, Uint32Array>();
-  /** The lazy loads whose pages all start from one of `entries`. */
-  const getHeldByEntries = (entries: number[]): Uint32Array => {
-    const key = entries.join();
-    let held = heldByEntries.get(key);
-    if (!held) {
-      held = new Uint32Array(words);
-      loads.forEach((_module, load) => {
-        if (
-          !isEntry[load] &&
-          pages[load].length &&
-          pages[load].every((entry) => entries.includes(entry))
-        ) {
-          setBit(held!, 0, load);
-        }
-      });
-      heldByEntries.set(key, held);
+  const { dominators, order } = findDominators(importedIn, words, isEntry);
+  // The loads that can only run after each load
+  const beneath = new Uint32Array(loads.length * words);
+  for (let load = 0; load < loads.length; load++) {
+    for (let above = dominators[load]; above !== -1; ) {
+      setBit(beneath, above * words, load);
+      above = dominators[above];
     }
-    return held;
-  };
+  }
 
   // What demands each message: one row of loads per distinct set
   const demands: Uint32Array[] = [];
@@ -483,49 +584,39 @@ function findRegions(graph: RegionGraph) {
     return moduleDemandIds[demand];
   };
 
-  // What pays for each message: its demand, without the lazy loads that hold
-  // it already, with the first loads of the entries that demand it
+  // What pays for each message: the loads that demand it and cannot only
+  // run after another that does
   const payers: Uint32Array[] = [];
   const payerIds = new Map<string, number>();
   const payerIdOfDemand: number[] = [];
-  // The lazy loads that demand each message and hold it already
+  // The loads that can only run after one that pays, by the same id
   const holders: Uint32Array[] = [];
   const getPayerId = (demandId: number): number => {
     if (payerIdOfDemand[demandId] !== undefined) {
       return payerIdOfDemand[demandId];
     }
     const demand = demands[demandId];
-    const demanding = getBits(demand, 0, words);
-    const entries = demanding.filter((load) => isEntry[load]);
-    const held = getHeldByEntries(entries);
-    const row = demand.slice();
-    const holding = new Uint32Array(words);
-    for (const load of demanding) {
-      if (isEntry[load] || !isImported[load]) continue;
-      const offset = load * words;
-      let isHeld = true;
-      for (let word = 0; word < words && isHeld; word++) {
-        isHeld =
-          (importedIn[offset + word] & ~(demand[word] | held[word])) === 0;
+    const row = new Uint32Array(words);
+    for (const load of getBits(demand, 0, words)) {
+      let above = dominators[load];
+      while (above !== -1 && !hasBit(demand, 0, above)) {
+        above = dominators[above];
       }
-      if (!isHeld) continue;
-      row[load >>> 5] &= ~(1 << (load & 31));
-      setBit(holding, 0, load);
+      if (above === -1) setBit(row, 0, load);
     }
-    for (const entry of entries) {
-      const first = firstLoads.get(entry)!;
-      for (let word = 0; word < words; word++) {
-        row[word] |= first[word];
-        holding[word] &= ~first[word];
-      }
-    }
-    holders[demandId] = holding;
     const key = String.fromCharCode(...new Uint16Array(row.buffer));
     let id = payerIds.get(key);
     if (id === undefined) {
       id = payers.length;
       payers.push(row);
       payerIds.set(key, id);
+      const holding = new Uint32Array(words);
+      for (const load of getBits(row, 0, words)) {
+        for (let word = 0; word < words; word++) {
+          holding[word] |= beneath[load * words + word];
+        }
+      }
+      holders.push(holding);
     }
     payerIdOfDemand[demandId] = id;
     return id;
@@ -575,6 +666,8 @@ function findRegions(graph: RegionGraph) {
     payers,
     holders,
     entryLoads,
+    dominators,
+    order,
     getContexts,
     isConservative: evaluated !== undefined,
     conservativeMessages,
@@ -604,21 +697,27 @@ export function listRegions(
  *   demands the messages of that module and of every module it reaches
  *   through static imports. With `graph.evaluated` it also demands the
  *   `initialHashes` of every module that is initialised with it.
- * - A region is the messages that the same loads have to fetch. A lazy load
- *   does not fetch what every load that can run its `import()` holds by
- *   then: what the page's entries demand, and what the loads demand whose
- *   modules the import is written in. It holds those messages instead. An
- *   entry's demand also counts for each load imported from the entry's own
- *   modules, since that load is the first of a page; so an entry weighs as
- *   much as the pages that start from it, and its region is one, whatever
- *   else demands those messages.
+ * - A load can only run after the loads that every chain of dynamic imports
+ *   from an entry to it passes through: the root an entry imports, a
+ *   layout, the route that opens a dialog. What one of those demands is
+ *   held when its own `import()` runs, so it does not fetch it. A load that
+ *   several loads import can only run after those that all of them run
+ *   after.
+ * - A file is downloaded as often as the loads that fetch it load. A load
+ *   loads once for itself and once for each time a load that can only run
+ *   after it loads, unless `weights` says how often: so an entry weighs as
+ *   much as all that its pages load, a root as much as its routes and their
+ *   dialogs, and a route as much as its dialogs.
+ * - A region is the messages that the same loads have to fetch. What an
+ *   entry demands is one region, whatever else demands those messages.
  * - Regions are merged into files best pair first, see mergeRegions: a load
  *   downloads every file that holds something it demands, and a merge trades
  *   the bytes it wastes for the requests it saves, at `requestCost` bytes a
  *   request. What a load fetches also merges into a file the load holds,
  *   where it costs that load no request and everyone who fetches the file
- *   its bytes. Entries are loads like any other, so files merge into theirs
- *   only when that pays for every page; `pinEntries` rules it out.
+ *   its bytes. An entry or a root is a load like any other, so files merge
+ *   into theirs only when that pays for every load after them; `pinEntries`
+ *   rules it out for the entries.
  * - With `previous`, each region starts in the file that held most of its
  *   bytes, and the regions of a file merge among themselves before anything
  *   else does. What still merges keeps its file and the file's key, so a
@@ -647,6 +746,8 @@ export function assignTranslationsByRegion(
     payers,
     holders,
     entryLoads,
+    dominators,
+    order,
     getContexts,
     isConservative,
     conservativeMessages,
@@ -663,11 +764,7 @@ export function assignTranslationsByRegion(
   regions.forEach((region, index) => {
     const row = payers[region.payerId];
     regionLoads.set(row, index * words);
-    for (const demandId of region.demandIds) {
-      for (let word = 0; word < words; word++) {
-        regionHolders[index * words + word] |= holders[demandId][word];
-      }
-    }
+    regionHolders.set(holders[region.payerId], index * words);
     if (
       options.pinEntries &&
       entryLoads.some((entry) => hasBit(row, 0, entry))
@@ -697,14 +794,20 @@ export function assignTranslationsByRegion(
     groups![index] = groupIds.get(most)!;
   });
 
+  // A load loads once for itself and whenever a load that can only run after
+  // it does
+  const weights = new Float64Array(loads.length);
+  const after = new Float64Array(loads.length);
+  for (const load of order) {
+    weights[load] = options.weights?.get(ids[loads[load]]) ?? 1 + after[load];
+    if (dominators[load] !== -1) after[dominators[load]] += weights[load];
+  }
+
   const merged = mergeRegions({
     loads: regionLoads,
     words,
     holders: regionHolders,
-    weights: Float64Array.from(
-      loads,
-      (module) => options.weights?.get(ids[module]) ?? 1
-    ),
+    weights,
     bytes: regionBytes,
     classes,
     groups,
@@ -768,6 +871,27 @@ export function assignTranslationsByRegion(
       blockWords
     ).map((index) => blocks[index].key);
 
+  const startup = {
+    startupMessages: 0,
+    startupBytes: 0,
+    entryMessages: 0,
+    entryBytes: 0,
+  };
+  blocks.forEach((block, index) => {
+    if (
+      !entryLoads.some((entry) => hasBit(demanded, entry * blockWords, index))
+    )
+      return;
+    startup.startupMessages += block.hashes.length;
+    for (const hash of block.hashes) startup.startupBytes += getSize(hash);
+  });
+  regions.forEach((region, index) => {
+    if (!entryLoads.some((entry) => hasBit(payers[region.payerId], 0, entry)))
+      return;
+    startup.entryMessages += region.hashes.length;
+    startup.entryBytes += regionBytes[index];
+  });
+
   const entries = new Map<string, string[]>();
   const imported = new Map<string, string[]>();
   const demandedByImport = new Map<string, string[]>();
@@ -809,6 +933,7 @@ export function assignTranslationsByRegion(
       comparisons: merged.comparisons,
       isConservative,
       conservativeMessages,
+      ...startup,
     },
   };
 }

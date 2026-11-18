@@ -1,5 +1,9 @@
 import type { AssignedChunk } from '../assignTranslations';
-import type { RegionGraph, RegionModule } from '../assignTranslationsByRegion';
+import type {
+  RegionAssignment,
+  RegionGraph,
+  RegionModule,
+} from '../assignTranslationsByRegion';
 
 /**
  * A module graph in the shape of a large production app, with the chunks a
@@ -8,14 +12,16 @@ import type { RegionGraph, RegionModule } from '../assignTranslationsByRegion';
  * than 20 loads, no route has messages only it demands, and about one load in
  * seven, all of them dialogs, has a small region of its own.
  *
- * - The entry imports a small shell and names every route and every page in
- *   a dynamic import.
+ * - The entry awaits its setup, imports a part of the shell and then imports
+ *   the root dynamically, as the documentation prescribes. The root imports
+ *   the rest of the shell and names every route and every page in a dynamic
+ *   import. With `root: 'static'` the entry imports the root statically.
  * - A route has no messages. It imports the pages it declares, which are
  *   lazy loads too and which several routes of a product area share, the
  *   area's kits, and one hub module that every route imports.
- * - The hub reaches about 1% of the shared cluster's messages, but its chunk
- *   imports the chunk of every shared group, so by chunk every route loads
- *   the whole cluster.
+ * - The hub reaches a module of the entry's shell and about 1% of the shared
+ *   cluster's messages, but its chunk imports the chunk of every shared
+ *   group, so by chunk every route loads the whole cluster.
  * - The cluster is groups of features, components and primitives, one chunk
  *   per group. An area's kits import the features of a run of the groups, so
  *   a route reaches 10 to 42% of the cluster's messages.
@@ -30,6 +36,11 @@ export type SyntheticApp = {
   /** The chunk file of each module */
   chunkOf: Map<string, string>;
   entry: string;
+  /**
+   * The loads every page runs before a route: the entry, and the root when
+   * the entry imports it dynamically
+   */
+  startup: string[];
   routes: string[];
   /** The pages and the dialogs */
   lazy: string[];
@@ -50,6 +61,18 @@ const AREA_SPAN = [0.1, 0.42];
 const KIT_SHARE = 0.85;
 // The modules of its own an area has for each of its routes
 const LOCAL_MODULES = 2.8;
+// The modules of the shell, and how many of them the entry imports itself
+const SHELLS = 20;
+const ENTRY_SHELLS = 6;
+
+/** How the entry imports the module that names the routes. */
+export type RootImport = 'dynamic' | 'static';
+
+type SyntheticAppOptions = {
+  messages?: number;
+  seed?: number;
+  root?: RootImport;
+};
 
 export function createRandom(seed: number): () => number {
   let state = seed >>> 0;
@@ -64,10 +87,8 @@ export function createRandom(seed: number): () => number {
 export function createSyntheticApp({
   messages = FULL_SCALE_MESSAGES,
   seed = 1,
-}: {
-  messages?: number;
-  seed?: number;
-} = {}): SyntheticApp {
+  root: rootImport = 'dynamic',
+}: SyntheticAppOptions = {}): SyntheticApp {
   const random = createRandom(seed);
   const pick = (count: number) => Math.floor(random() * count);
   const between = (low: number, high: number) => low + pick(high - low + 1);
@@ -177,14 +198,24 @@ export function createSyntheticApp({
   }
 
   const entry = addModule('src/main.tsx', 'assets/index.js', 12);
-  for (let index = 0; index < 20; index++) {
+  const root = addModule(
+    'src/app/root.tsx',
+    rootImport === 'static' ? 'assets/index.js' : 'assets/root.js',
+    0
+  );
+  (rootImport === 'static' ? entry.imports : entry.dynamicImports).push(
+    root.id
+  );
+  for (let index = 0; index < SHELLS; index++) {
+    const owner = index < ENTRY_SHELLS ? entry : root;
     const shell = addModule(
       `src/app/shell${index}.tsx`,
-      'assets/index.js',
+      chunkOf.get(owner.id)!,
       between(10, 22)
     );
-    entry.imports.push(shell.id);
+    owner.imports.push(shell.id);
   }
+  hub.imports.push('src/app/shell0.tsx');
 
   // Each product area uses a run of the groups. Its base kit, which all of
   // its routes import, pulls in most of their features; two more kits, which
@@ -251,7 +282,7 @@ export function createSyntheticApp({
     const page = addModule(id, `assets/page-${pad(index)}.js`, between(6, 38));
     lazy.push(id);
     pagesOf[area].push(id);
-    entry.dynamicImports.push(id);
+    root.dynamicImports.push(id);
     const imports = new Set<string>();
     for (let count = between(2, 7); count > 0; count--) {
       imports.add(`src/areas/a${pad(area)}/local${pick(localCount)}.tsx`);
@@ -285,7 +316,7 @@ export function createSyntheticApp({
     const id = `src/routes/r${pad(index)}.tsx`;
     const route = addModule(id, `assets/route-${pad(index)}.js`, 0);
     routes.push(id);
-    entry.dynamicImports.push(id);
+    root.dynamicImports.push(id);
     if (!declared[index].size && pagesOf[area].length) {
       declared[index].add(pagesOf[area][pick(pagesOf[area].length)]);
     }
@@ -338,6 +369,7 @@ export function createSyntheticApp({
     chunks: getChunks(bundled, chunkOf, [entry.id]),
     chunkOf,
     entry: entry.id,
+    startup: rootImport === 'static' ? [entry.id] : [entry.id, root.id],
     routes,
     lazy,
     cluster: cluster.filter((id) => reached.has(id)),
@@ -354,6 +386,8 @@ export const STRESS_SCALE_MESSAGES = 70_000;
  * repeat single messages of each other at random. Merging chains such pairs
  * into wide files.
  *
+ * - The entry imports its shell, and the root, which names the routes,
+ *   dynamically, or statically with `root: 'static'`.
  * - Every route and every dialog has messages only it demands.
  * - 16% of the messages are repeated: most by two loads, a third by three to
  *   five and a tenth by six to twenty.
@@ -363,10 +397,8 @@ export const STRESS_SCALE_MESSAGES = 70_000;
 export function createStressApp({
   messages = STRESS_SCALE_MESSAGES,
   seed = 1,
-}: {
-  messages?: number;
-  seed?: number;
-} = {}): SyntheticApp {
+  root: rootImport = 'dynamic',
+}: SyntheticAppOptions = {}): SyntheticApp {
   const random = createRandom(seed);
   const pick = (count: number) => Math.floor(random() * count);
   const scale = messages / STRESS_SCALE_MESSAGES;
@@ -407,6 +439,14 @@ export function createStressApp({
   entry.imports.push(
     addModule('src/shell.tsx', 'assets/index.js', entryMessages).id
   );
+  const root = addModule(
+    'src/root.tsx',
+    rootImport === 'static' ? 'assets/index.js' : 'assets/root.js',
+    0
+  );
+  (rootImport === 'static' ? entry.imports : entry.dynamicImports).push(
+    root.id
+  );
   const pool = Array.from({ length: poolCount }, (_, index) =>
     addModule(
       `src/pool/p${index}.tsx`,
@@ -441,7 +481,7 @@ export function createStressApp({
   const routes = loads.slice(0, routeCount);
   const dialogs = loads.slice(routeCount);
   for (const route of routes) {
-    entry.dynamicImports.push(route.id);
+    root.dynamicImports.push(route.id);
     for (const module of pool) {
       if (random() < 0.25) route.imports.push(module.id);
     }
@@ -469,6 +509,7 @@ export function createStressApp({
     chunks: getChunks(modules, chunkOf, [entry.id]),
     chunkOf,
     entry: entry.id,
+    startup: rootImport === 'static' ? [entry.id] : [entry.id, root.id],
     routes: routes.map((route) => route.id),
     lazy: dialogs.map((dialog) => dialog.id),
     cluster,
@@ -519,11 +560,68 @@ export function getChunks(
 export type Split = {
   /** The hashes in each file */
   files: Map<string, string[]>;
-  /** The files a page holds before any code runs */
+  /**
+   * The files a page holds before a route loads: the entry's first, then
+   * those the other loads of `startup` add
+   */
   entry: string[];
   /** The files a page that holds only those adds for a route */
   getRouteFiles: (route: string) => string[];
 };
+
+type AssignedFiles = Pick<RegionAssignment, 'entries' | 'files' | 'imports'>;
+
+/** The files of an assignment as the pages of an app come to hold them. */
+export function getRegionSplit(
+  app: SyntheticApp,
+  assignment: AssignedFiles
+): Split {
+  return {
+    files: assignment.files,
+    entry: [
+      ...new Set([
+        ...assignment.entries.get(app.entry)!,
+        ...app.startup
+          .slice(1)
+          .flatMap((load) => assignment.imports.get(load)!),
+      ]),
+    ],
+    getRouteFiles: (route) => assignment.imports.get(route)!,
+  };
+}
+
+/**
+ * The files a page requests before any code runs, counted from the graph and
+ * the files alone: how many, their messages, what they download as, and how
+ * many of the messages the entry demands.
+ */
+export function describeStartup(
+  app: SyntheticApp,
+  assignment: AssignedFiles,
+  estimateSize: (bytes: number) => number
+): { files: number; messages: number; bytes: number; demanded: number } {
+  const byId = new Map(app.graph.modules.map((module) => [module.id, module]));
+  const demanded = new Set(
+    [...getReached(app, app.entry)].flatMap((id) => byId.get(id)!.hashes)
+  );
+  const keys = assignment.entries.get(app.entry)!;
+  const hashes = keys.flatMap((key) => assignment.files.get(key)!);
+  return {
+    files: keys.length,
+    messages: hashes.length,
+    bytes: keys.reduce(
+      (sum, key) =>
+        sum +
+        estimateSize(
+          assignment.files
+            .get(key)!
+            .reduce((raw, hash) => raw + app.sizes.get(hash)!, 0)
+        ),
+      0
+    ),
+    demanded: hashes.filter((hash) => demanded.has(hash)).length,
+  };
+}
 
 export type SplitQuality = {
   /** Mean bytes a page downloads for the entry and one route */
@@ -797,7 +895,9 @@ export function describeFiles(
   const [entryKey] = split.entry;
 
   const byId = new Map(app.graph.modules.map((module) => [module.id, module]));
-  const entryModules = getReached(app, app.entry);
+  const entryModules = app.startup.flatMap((load) => [
+    ...getReached(app, load),
+  ]);
   const describe = (key: string | undefined): FileWaste | undefined => {
     if (key === undefined) return undefined;
     const hashes = new Set(split.files.get(key));

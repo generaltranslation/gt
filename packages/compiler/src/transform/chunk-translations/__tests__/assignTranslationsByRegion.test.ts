@@ -30,10 +30,13 @@ import {
   createStressApp,
   createSyntheticApp,
   describeFiles,
+  describeStartup,
   getEntryWaste,
   getPrevious,
+  getRegionSplit,
   measureSplit,
   type FileWaste,
+  type RootImport,
   type Split,
   type SyntheticApp,
 } from './syntheticApp';
@@ -207,7 +210,7 @@ describe('assignTranslationsByRegion', () => {
     [
       'small',
       50,
-      { own: ['own', 'shared'], route: ['route'], other: ['other'] },
+      { own: ['own', 'route'], shared: ['shared'], other: ['other'] },
       [],
     ],
     [
@@ -243,8 +246,9 @@ describe('assignTranslationsByRegion', () => {
         requestCost: 1000,
         estimateSize: linear,
       });
-      // In one file the dialog saves its request of 1,000 and both routes
-      // download its bytes
+      // In the file of the route that opens it the dialog saves its request
+      // of 1,000, and only that route downloads its bytes: in the shared
+      // file the other route would too
       expect(Object.fromEntries(assignment.files)).toEqual(files);
       expect(assignment.getImportedFiles('route', 'dialog')).toEqual(
         dialogFiles
@@ -278,8 +282,8 @@ describe('assignTranslationsByRegion', () => {
       { hashes: ['badge', 'cell', 'table'], loads: ['home', 'orders'] },
       { hashes: ['dialog', 'extra'], loads: ['dialog'] },
       { hashes: ['home'], loads: ['home'] },
-      // The entry's, which every first load of a page counts for
-      { hashes: ['nav', 'shell', 'title'], loads: ['home', 'main', 'orders'] },
+      // The entry's alone, though a route and the dialog demand some of it
+      { hashes: ['nav', 'shell', 'title'], loads: ['main'] },
       { hashes: ['orders', 'term1', 'term2'], loads: ['orders'] },
     ]);
   });
@@ -321,6 +325,174 @@ describe('assignTranslationsByRegion', () => {
       expect(findUncoveredMessages(graph, assignment)).toEqual([]);
     }
   );
+
+  describe('in an app whose entry imports the root, which names the routes', () => {
+    // 40 routes, each with a dialog and five of the 20 modules of a pool.
+    // The entry and every route import the theme.
+    const routes = Array.from({ length: 40 }, (_, index) => `route${index}`);
+    const createApp = (root: RootImport): RegionGraph => ({
+      entries: ['main'],
+      modules: [
+        module('main', ['setup'], {
+          imports: root === 'static' ? ['theme', 'root'] : ['theme'],
+          dynamicImports: root === 'static' ? [] : ['root'],
+        }),
+        module('root', ['nav'], { imports: ['table'] }),
+        module('table', [], { dynamicImports: routes }),
+        module('theme', ['theme']),
+        ...routes.flatMap((id, index) => [
+          module(id, [id], {
+            imports: [
+              'theme',
+              ...[0, 1, 2, 3, 4].map((at) => `pool${(index + at) % 20}`),
+            ],
+            dynamicImports: [`dialog${index}`],
+          }),
+          module(`dialog${index}`, [`dialog${index}`], {
+            imports: [`pool${index % 20}`],
+          }),
+        ]),
+        ...Array.from({ length: 20 }, (_, index) =>
+          module(`pool${index}`, [`pool${index}`])
+        ),
+      ],
+    });
+    const sizes = (graph: RegionGraph) =>
+      new Map(
+        [...sizesOf(graph, 3000)].map(([hash, bytes]) => [
+          hash,
+          hash.startsWith('pool') ? 20_000 : bytes,
+        ])
+      );
+
+    it.each(['dynamic', 'static'] as const)(
+      'keeps the startup file to what every page demands, with a %s import of the root',
+      (root) => {
+        const graph = createApp(root);
+        const assignment = assignTranslationsByRegion(graph, {
+          sizes: sizes(graph),
+          estimateSize: linear,
+        });
+        // Whichever way the root is imported: a route pays for one module of
+        // the pool in four, and 81 loads would download it with the entry
+        expect(
+          assignment.entries
+            .get('main')!
+            .map((key) => assignment.files.get(key))
+        ).toEqual([['nav', 'setup', 'theme']]);
+        expect(assignment.stats).toMatchObject({
+          startupMessages: 3,
+          startupBytes: 9000,
+          entryMessages: root === 'static' ? 3 : 2,
+          entryBytes: root === 'static' ? 9000 : 6000,
+        });
+        // A route requests its own file and those of its five pool modules
+        expect(assignment.imports.get('route7')).toHaveLength(6);
+        expect(assignment.files.size).toBe(61);
+        expectPartition(graph, assignment);
+        expect(findUncoveredMessages(graph, assignment)).toEqual([]);
+      }
+    );
+  });
+
+  describe('in a chain of loads, each imported by the one before', () => {
+    // The entry imports the root, the root a layout and the layout ten
+    // pages, which import its frame. The first page opens a dialog.
+    const pages = Array.from({ length: 10 }, (_, index) => `page${index}`);
+    const graph: RegionGraph = {
+      entries: ['main'],
+      modules: [
+        module('main', ['setup'], { dynamicImports: ['root'] }),
+        module('root', [], { imports: ['nav'], dynamicImports: ['layout'] }),
+        module('nav', ['nav']),
+        module('layout', [], { imports: ['frame'], dynamicImports: pages }),
+        module('frame', ['frame']),
+        ...pages.map((id, index) =>
+          module(id, [id], {
+            imports: index < 2 ? ['frame', 'shared'] : ['frame'],
+            dynamicImports: index ? [] : ['dialog'],
+          })
+        ),
+        module('shared', ['shared']),
+        module('dialog', ['dialog'], { imports: ['nav', 'frame'] }),
+      ],
+    };
+
+    it('counts a message for the first load that demands it, and for none that can only run after that one', () => {
+      expect(listRegions(graph)).toEqual([
+        { hashes: ['dialog'], loads: ['dialog'] },
+        // Not the pages and the dialog, which only run after the layout
+        { hashes: ['frame'], loads: ['layout'] },
+        // Not the dialog, three imports further on
+        { hashes: ['nav'], loads: ['root'] },
+        ...pages.map((id) => ({ hashes: [id], loads: [id] })),
+        { hashes: ['setup'], loads: ['main'] },
+        { hashes: ['shared'], loads: ['page0', 'page1'] },
+      ]);
+    });
+
+    it.each([
+      ['two pages share and that is small', 50, 1, ['shared']],
+      ['two pages share and that is large', 5000, 1, []],
+      [
+        'the pages with most of the traffic share',
+        5000,
+        30,
+        ['page0', 'page1', 'shared'],
+      ],
+    ])(
+      'weighs a merge into the file of a load by every load that can only run after it: what %s',
+      (_name, bytes, weight, merged) => {
+        const assignment = assignTranslationsByRegion(graph, {
+          sizes: new Map([...sizesOf(graph, 200), ['shared', bytes]]),
+          requestCost: 1000,
+          estimateSize: linear,
+          weights: new Map([
+            ['page0', weight],
+            ['page1', weight],
+          ]),
+        });
+        // The layout's frame is in the startup file, which 14 loads
+        // download: what two pages share joins it only when their requests
+        // outweigh its bytes for the other loads
+        expect(
+          assignment.entries
+            .get('main')!
+            .map((key) => assignment.files.get(key))
+        ).toEqual([['frame', 'nav', 'setup', ...merged].sort()]);
+        expect(findUncoveredMessages(graph, assignment)).toEqual([]);
+      }
+    );
+
+    it('lists for an import the files its load demands, without the entry’s and the importing load’s', () => {
+      const assignment = assignTranslationsByRegion(graph, exact(graph));
+      expect(Object.fromEntries(assignment.demands)).toEqual({
+        dialog: ['dialog', 'frame', 'nav'],
+        layout: ['frame'],
+        ...Object.fromEntries(
+          pages.map((id, index) => [
+            id,
+            index < 2 ? ['frame', id, 'shared'] : ['frame', id],
+          ])
+        ),
+        root: ['nav'],
+      });
+      expect(assignment.getImportedFiles('main', 'root')).toEqual(['nav']);
+      expect(assignment.getImportedFiles('root', 'layout')).toEqual(['frame']);
+      expect(assignment.getImportedFiles('layout', 'page0')).toEqual([
+        'page0',
+        'shared',
+      ]);
+      // The root's file is held by then too. The list of an import site
+      // leaves out only what its own load and the entry demand; the build
+      // ships `demands`, and gt-react skips every file a page holds
+      expect(assignment.getImportedFiles('page0', 'dialog')).toEqual([
+        'dialog',
+        'nav',
+      ]);
+      expect(findUncoveredMessages(graph, assignment)).toEqual([]);
+    });
+  });
 
   it('handles a load point that another imports statically, and one without messages', () => {
     const graph: RegionGraph = {
@@ -679,35 +851,49 @@ describe('assignTranslationsByRegion', () => {
 
   // What an average route downloads of the entry's file without demanding
   // it, at the default cost of a request, in an app of 12,000 messages. The
-  // bounds are a quarter above what the rule gives today: 25.6 kB on the
-  // shape of the measured app and 33.2 kB on the stress shape.
+  // bounds are a quarter above what the rule gives today, whichever way the
+  // entry imports the root: 20.7 kB on the shape of the measured app and
+  // 24.9 kB on the stress shape.
   it.each([
-    ['the measured app', createSyntheticApp, 32],
+    ['the measured app', createSyntheticApp, 26],
     [
       'an app whose loads repeat single messages of each other',
       createStressApp,
-      42,
+      31,
     ],
   ])(
-    'keeps the waste in the entry file under a bound on the shape of %s',
+    'keeps the waste in the entry file under a bound on the shape of %s, whichever way the entry imports the root',
     (_name, create, bound) => {
-      const app = create({ messages: 12_000 });
-      const assignment = assignTranslationsByRegion(app.graph, {
-        sizes: app.sizes,
+      const [dynamic, fixed] = (['dynamic', 'static'] as const).map((root) => {
+        const app = create({ messages: 12_000, root });
+        const assignment = assignTranslationsByRegion(app.graph, {
+          sizes: app.sizes,
+        });
+        expectPartition(app.graph, assignment);
+        expect(findUncoveredMessages(app.graph, assignment)).toEqual([]);
+        const waste = getEntryWaste(
+          app,
+          listRegions(app.graph),
+          getRegionSplit(app, assignment),
+          estimateCompressedSize
+        );
+        expect(waste / 1024).toBeLessThan(bound);
+        // The counts of the result are those of its files
+        const startup = describeStartup(
+          app,
+          assignment,
+          estimateCompressedSize
+        );
+        expect(assignment.stats).toMatchObject({
+          startupMessages: startup.messages,
+          entryMessages: startup.demanded,
+        });
+        return assignment.stats;
       });
-      expectPartition(app.graph, assignment);
-      expect(findUncoveredMessages(app.graph, assignment)).toEqual([]);
-      const waste = getEntryWaste(
-        app,
-        listRegions(app.graph),
-        {
-          files: assignment.files,
-          entry: assignment.entries.get(app.entry)!,
-          getRouteFiles: (route) => assignment.imports.get(route)!,
-        },
-        estimateCompressedSize
-      );
-      expect(waste / 1024).toBeLessThan(bound);
+      // With a dynamic import the entry demands no more, and its file holds
+      // what the root demands all the same
+      expect(dynamic.entryMessages).toBeLessThanOrEqual(fixed.entryMessages);
+      expect(dynamic.startupMessages / fixed.startupMessages).toBeCloseTo(1, 1);
     }
   );
 
@@ -716,6 +902,203 @@ describe('assignTranslationsByRegion', () => {
     const counts = countRegionsByLoads(regions);
     expect(counts['2'] / regions.length).toBeGreaterThan(0.45);
     expect(counts['over 20'] / regions.length).toBeLessThan(0.05);
+  });
+
+  describe('against the rule as it is written', () => {
+    /**
+     * The files of a graph, with nothing of the function: a page that gets as
+     * far as a load has run that load and every load it cannot run without,
+     * and downloads each file with a message one of them demands. Every load
+     * is where a page gets to equally often. The two files merge first whose
+     * merge saves the most bytes, at `requestCost` bytes a request.
+     */
+    function assignNaively(
+      graph: RegionGraph,
+      sizes: ReadonlyMap<string, number>,
+      requestCost: number,
+      estimateSize: (bytes: number) => number
+    ): string[][] {
+      const byId = new Map(graph.modules.map((item) => [item.id, item]));
+      const follow = (
+        starts: Iterable<string>,
+        next: (id: string) => string[]
+      ) => {
+        const reached = new Set(starts);
+        for (const id of reached) for (const to of next(id)) reached.add(to);
+        return reached;
+      };
+      const loads = [
+        ...new Set([
+          ...graph.entries,
+          ...graph.modules.flatMap((item) => item.dynamicImports),
+        ]),
+      ].sort();
+      const modulesOf = new Map(
+        loads.map((load) => [
+          load,
+          follow([load], (id) => [...byId.get(id)!.imports]),
+        ])
+      );
+      const importedBy = (load: string) =>
+        [...modulesOf.get(load)!].flatMap((id) => byId.get(id)!.dynamicImports);
+      const led = follow(graph.entries, importedBy);
+      // A load no entry leads to starts a page of its own
+      const starts = loads.filter(
+        (load) => graph.entries.includes(load) || !led.has(load)
+      );
+      /** Whether a page can get to `load` without running `other`. */
+      const runsWithout = (load: string, other: string) =>
+        follow(
+          starts.filter((start) => start !== other),
+          (id) => importedBy(id).filter((to) => to !== other)
+        ).has(load);
+      const running = new Map(
+        loads.map((load) => [
+          load,
+          loads.filter((other) => other === load || !runsWithout(load, other)),
+        ])
+      );
+
+      const demanding = new Map<string, Set<string>>();
+      for (const load of loads) {
+        for (const id of modulesOf.get(load)!) {
+          for (const hash of byId.get(id)!.hashes) {
+            if (!demanding.has(hash)) demanding.set(hash, new Set());
+            demanding.get(hash)!.add(load);
+          }
+        }
+      }
+      type File = { hashes: string[]; pages: Set<string>; bytes: number };
+      const regions = new Map<string, File>();
+      for (const hash of [
+        ...new Set(graph.modules.flatMap((item) => item.hashes)),
+      ].sort()) {
+        const demand = demanding.get(hash) ?? new Set(graph.entries);
+        const pages = loads.filter((load) =>
+          running.get(load)!.some((ran) => demand.has(ran))
+        );
+        const key = pages.join();
+        if (!regions.has(key)) {
+          regions.set(key, { hashes: [], pages: new Set(pages), bytes: 0 });
+        }
+        regions.get(key)!.hashes.push(hash);
+        regions.get(key)!.bytes += sizes.get(hash)!;
+      }
+      const files = [...regions.values()];
+      for (;;) {
+        let best = 0;
+        let pair: [number, number] | undefined;
+        for (let a = 0; a < files.length; a++) {
+          for (let b = a + 1; b < files.length; b++) {
+            const [x, y] = [files[a], files[b]];
+            const shared = [...x.pages].filter((page) =>
+              y.pages.has(page)
+            ).length;
+            const gain =
+              x.pages.size * estimateSize(x.bytes) +
+              y.pages.size * estimateSize(y.bytes) +
+              requestCost * shared -
+              (x.pages.size + y.pages.size - shared) *
+                estimateSize(x.bytes + y.bytes);
+            if (gain > best) {
+              best = gain;
+              pair = [a, b];
+            }
+          }
+        }
+        if (!pair) break;
+        const [x, y] = [files[pair[0]], files[pair[1]]];
+        x.hashes.push(...y.hashes);
+        for (const page of y.pages) x.pages.add(page);
+        x.bytes += y.bytes;
+        files.splice(pair[1], 1);
+      }
+      return files.map((file) => file.hashes.sort()).sort();
+    }
+
+    /** Modules that import each other at random, also in cycles. */
+    function createGraph(seed: number) {
+      const random = createRandom(seed);
+      const pick = (count: number) => Math.floor(random() * count);
+      const ids = Array.from(
+        { length: 6 + pick(14) },
+        (_, index) => `m${String(index).padStart(2, '0')}`
+      );
+      const some = (most: number) =>
+        Array.from({ length: pick(most + 1) }, () => ids[pick(ids.length)]);
+      const graph: RegionGraph = {
+        entries: random() < 0.3 ? [ids[0], ids[1]] : [ids[0]],
+        modules: ids.map((id) =>
+          module(
+            id,
+            [
+              ...new Set(
+                Array.from(
+                  { length: pick(4) },
+                  () => `h${String(pick(ids.length * 2)).padStart(2, '0')}`
+                )
+              ),
+            ],
+            { imports: some(2), dynamicImports: some(2) }
+          )
+        ),
+      };
+      const sizes = new Map(
+        graph.modules
+          .flatMap((item) => item.hashes)
+          .sort()
+          .map((hash) => [hash, 20 + pick(3000)])
+      );
+      return { graph, sizes };
+    }
+
+    it('gives the files that trying every pair gives, on 90 graphs', () => {
+      for (let seed = 0; seed < 90; seed++) {
+        const { graph, sizes } = createGraph(seed);
+        const requestCost = [0, 200, 2000][seed % 3];
+        const estimateSize = seed % 2 ? estimateCompressedSize : linear;
+        const assignment = assignTranslationsByRegion(graph, {
+          sizes,
+          requestCost,
+          estimateSize,
+        });
+        expect([seed, ...assignment.files.values()]).toEqual([
+          seed,
+          ...assignNaively(graph, sizes, requestCost, estimateSize),
+        ]);
+        expect(findUncoveredMessages(graph, assignment)).toEqual([]);
+      }
+    });
+  });
+
+  it('takes a load that two loads import to run only after what both run after', () => {
+    // `b` can only run after `a`, which it imports back; `d` runs after `b`
+    // or after `c`
+    const graph: RegionGraph = {
+      entries: ['main'],
+      modules: [
+        module('main', ['main'], { dynamicImports: ['a', 'c'] }),
+        module('a', ['a'], { dynamicImports: ['b'] }),
+        module('b', ['b', 'a'], { imports: ['x'], dynamicImports: ['a', 'd'] }),
+        module('c', ['c'], { imports: ['x'], dynamicImports: ['d'] }),
+        module('d', ['d', 'a', 'main'], { imports: ['x'] }),
+        module('x', ['x']),
+      ],
+    };
+    expect(listRegions(graph)).toEqual([
+      { hashes: ['a'], loads: ['a', 'd'] },
+      { hashes: ['b'], loads: ['b'] },
+      { hashes: ['c'], loads: ['c'] },
+      { hashes: ['d'], loads: ['d'] },
+      { hashes: ['main'], loads: ['main'] },
+      { hashes: ['x'], loads: ['b', 'c', 'd'] },
+    ]);
+    expect(
+      findUncoveredMessages(
+        graph,
+        assignTranslationsByRegion(graph, exact(graph))
+      )
+    ).toEqual([]);
   });
 });
 
@@ -1095,7 +1478,117 @@ const kb = (bytes: number) => (bytes / 1024).toFixed(1).padStart(9);
 describe.runIf(process.env.GT_REGION_REPORT)('report', () => {
   const messages = Number(process.env.GT_REGION_MESSAGES ?? 65_000);
 
-  it('prints time, memory, quality and stability', { timeout: 600_000 }, () => {
+  /** What each way of splitting costs the routes of an app. */
+  const describeQuality = (app: SyntheticApp): string[] => {
+    const options: RegionOptions = { sizes: app.sizes };
+    const measure = (split: Split) =>
+      measureSplit(app, split, estimateCompressedSize);
+    const byChunk = assignTranslationsByChunk(app.chunks);
+    const assigned = new Map<string, RegionAssignment>();
+    const assign = (cost: number, pinEntries = false) => {
+      const key = `${cost} ${pinEntries}`;
+      if (!assigned.has(key)) {
+        assigned.set(
+          key,
+          assignTranslationsByRegion(app.graph, {
+            ...options,
+            requestCost: cost * 1024,
+            pinEntries,
+          })
+        );
+      }
+      return assigned.get(key)!;
+    };
+    const rows = [
+      [
+        'whole catalog',
+        measure({
+          files: new Map([['catalog', [...app.sizes.keys()]]]),
+          entry: ['catalog'],
+          getRouteFiles: () => [],
+        }),
+      ],
+      [
+        'per chunk (assignTranslationsByChunk)',
+        measure({
+          files: new Map([
+            ...byChunk.files,
+            ...[...byChunk.entries].map(
+              ([file, hashes]) => [`entry ${file}`, hashes] as const
+            ),
+          ]),
+          entry: [
+            ...[...byChunk.entries.keys()].map((file) => `entry ${file}`),
+            ...app.startup
+              .slice(1)
+              .flatMap((load) => byChunk.imports.get(app.chunkOf.get(load)!)!),
+          ],
+          getRouteFiles: (route) =>
+            byChunk.imports.get(app.chunkOf.get(route)!)!,
+        }),
+      ],
+      [
+        'module-level regions, exact',
+        measure(
+          getRegionSplit(
+            app,
+            assignTranslationsByRegion(app.graph, {
+              ...options,
+              requestCost: 0,
+              estimateSize: linear,
+            })
+          )
+        ),
+      ],
+      ...[2, 8, 32].map(
+        (cost) =>
+          [
+            `module-level regions merged, λ = ${cost} kB`,
+            measure(getRegionSplit(app, assign(cost))),
+          ] as const
+      ),
+      [
+        'the same, λ = 8 kB, pinEntries',
+        measure(getRegionSplit(app, assign(8, true))),
+      ],
+    ] as const;
+    const lines = [
+      `${'strategy'.padEnd(42)} first load kB  session kB  duplicates kB  requests/load  files`,
+      ...rows.map(
+        ([name, row]) =>
+          `${name.padEnd(42)} ${kb(row.firstLoad)}    ${kb(row.session)}  ${kb(row.duplicates)}      ${row.requests.toFixed(1).padStart(8)}      ${String(row.files).padStart(5)}`
+      ),
+    ];
+    const regions = listRegions(app.graph);
+    lines.push(
+      `regions by the loads that pay for them: ${JSON.stringify(countRegionsByLoads(regions))}`
+    );
+    for (const cost of [0, 2, 8, 32]) {
+      for (const pinEntries of [false, true]) {
+        const result = assign(cost, pinEntries);
+        const { privateRegions, entry, widest } = describeFiles(
+          app,
+          regions,
+          getRegionSplit(app, result),
+          estimateCompressedSize
+        );
+        const describe = (file: FileWaste | undefined) =>
+          file
+            ? `${file.messages} messages, ${kb(file.bytes).trim()} kB, loaded by ${(100 * file.routes).toFixed(0)}% of routes, ${file.narrowMessages} messages that under 10% of routes demand, ${kb(file.wastePerRoute).trim()} kB wasted per route load`
+            : 'none';
+        const startup = describeStartup(app, result, estimateCompressedSize);
+        lines.push(
+          `λ = ${cost} kB${pinEntries ? ', pinEntries' : ''}: regions of one load ${JSON.stringify(privateRegions)}`,
+          `  the entry's files: ${startup.files} with ${startup.messages} messages, ${kb(startup.bytes).trim()} kB, of which the entry demands ${startup.demanded}`,
+          `  entry file: ${describe(entry)}`,
+          `  widest other file: ${describe(widest)}`
+        );
+      }
+    }
+    return lines;
+  };
+
+  it('prints time, memory and stability', { timeout: 600_000 }, () => {
     const app = createSyntheticApp({ messages });
     const lines = [
       `${app.sizes.size} messages, ${app.graph.modules.length} modules, ${app.routes.length} routes, ${app.lazy.length} lazy loads`,
@@ -1133,111 +1626,6 @@ describe.runIf(process.env.GT_REGION_REPORT)('report', () => {
       `with a weight per load: ${Math.round(performance.now() - weighted)} ms`
     );
 
-    const measure = (split: Split) =>
-      measureSplit(app, split, estimateCompressedSize);
-    const regionSplit = (result: RegionAssignment): Split => ({
-      files: result.files,
-      entry: result.entries.get(app.entry)!,
-      getRouteFiles: (route) => result.imports.get(route)!,
-    });
-    const byChunk = assignTranslationsByChunk(app.chunks);
-    const rows = [
-      [
-        'whole catalog',
-        measure({
-          files: new Map([['catalog', [...app.sizes.keys()]]]),
-          entry: ['catalog'],
-          getRouteFiles: () => [],
-        }),
-      ],
-      [
-        'per chunk (assignTranslationsByChunk)',
-        measure({
-          files: new Map([
-            ...byChunk.files,
-            ...[...byChunk.entries].map(
-              ([file, hashes]) => [`entry ${file}`, hashes] as const
-            ),
-          ]),
-          entry: [...byChunk.entries.keys()].map((file) => `entry ${file}`),
-          getRouteFiles: (route) =>
-            byChunk.imports.get(app.chunkOf.get(route)!)!,
-        }),
-      ],
-      [
-        'module-level regions, exact',
-        measure(
-          regionSplit(
-            assignTranslationsByRegion(app.graph, {
-              ...options,
-              requestCost: 0,
-              estimateSize: linear,
-            })
-          )
-        ),
-      ],
-      ...[2, 8, 32].map(
-        (cost) =>
-          [
-            `module-level regions merged, λ = ${cost} kB`,
-            measure(
-              regionSplit(
-                assignTranslationsByRegion(app.graph, {
-                  ...options,
-                  requestCost: cost * 1024,
-                })
-              )
-            ),
-          ] as const
-      ),
-      [
-        'the same, λ = 8 kB, pinEntries',
-        measure(
-          regionSplit(
-            assignTranslationsByRegion(app.graph, {
-              ...options,
-              pinEntries: true,
-            })
-          )
-        ),
-      ],
-    ] as const;
-    lines.push(
-      `${'strategy'.padEnd(42)} first load kB  session kB  duplicates kB  requests/load  files`,
-      ...rows.map(
-        ([name, row]) =>
-          `${name.padEnd(42)} ${kb(row.firstLoad)}    ${kb(row.session)}  ${kb(row.duplicates)}      ${row.requests.toFixed(1).padStart(8)}      ${String(row.files).padStart(5)}`
-      )
-    );
-    const regions = listRegions(app.graph);
-    lines.push(
-      `regions by the loads that pay for them: ${JSON.stringify(countRegionsByLoads(regions))}`
-    );
-    for (const cost of [2, 8, 32]) {
-      for (const pinEntries of [false, true]) {
-        const result = assignTranslationsByRegion(app.graph, {
-          ...options,
-          requestCost: cost * 1024,
-          pinEntries,
-        });
-        const { privateRegions, entry, widest } = describeFiles(
-          app,
-          regions,
-          regionSplit(result),
-          estimateCompressedSize
-        );
-        const describe = (file: FileWaste | undefined) =>
-          file
-            ? `${file.messages} messages, ${kb(file.bytes).trim()} kB, loaded by ${(100 * file.routes).toFixed(0)}% of routes, ${file.narrowMessages} messages that under 10% of routes demand, ${kb(file.wastePerRoute).trim()} kB wasted per route load`
-            : 'none';
-        lines.push(
-          `λ = ${cost} kB${pinEntries ? ', pinEntries' : ''}: regions of one load ${JSON.stringify(privateRegions)}`,
-          `  entry file: ${describe(entry)}`,
-          `  widest other file: ${describe(widest)}`
-        );
-      }
-    }
-
     for (const [name, change] of [
       ['no change', (same: SyntheticApp) => same],
       ['one more import', addImport],
@@ -1274,4 +1662,26 @@ describe.runIf(process.env.GT_REGION_REPORT)('report', () => {
     }
     process.stdout.write(`${lines.join('\n')}\n`);
   });
+
+  it.runIf(process.env.GT_REGION_REPORT !== 'time').each([
+    ['the measured shape', createSyntheticApp, 'dynamic'],
+    ['the measured shape', createSyntheticApp, 'static'],
+    ['the stress shape', createStressApp, 'dynamic'],
+    ['the stress shape', createStressApp, 'static'],
+  ] as const)(
+    'prints quality on %s',
+    { timeout: 600_000 },
+    async (name, create, root) => {
+      // Lets the runner report the test before
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const app = create({ messages, root });
+      process.stdout.write(
+        `${[
+          '',
+          `${name}, with a ${root} import of the root: ${app.sizes.size} messages, ${app.routes.length} routes, ${app.lazy.length} lazy loads`,
+          ...describeQuality(app),
+        ].join('\n')}\n`
+      );
+    }
+  );
 });

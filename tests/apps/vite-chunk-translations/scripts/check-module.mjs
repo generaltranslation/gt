@@ -44,9 +44,9 @@ const SOURCE_LOADS = 9;
  * it reaches. Without it a chunk runs all of its modules, and the build
  * splits as if each read its messages then. `shared` packs the shared
  * modules, which different routes use, into one chunk. The app's files are a
- * few hundred bytes, so at the default request cost nearly all of them merge;
- * the shared builds are split at a request cost of zero, which keeps apart
- * what different routes reach.
+ * few hundred bytes, so at the default request cost all of them merge into
+ * the entry's; the shared builds are split at a request cost of zero, which
+ * keeps apart what different routes reach.
  */
 const VARIANTS = {
   lazy: { lazy: true, shared: false, slow: true },
@@ -1013,16 +1013,20 @@ async function checkVariant(name, variant) {
     const early = listed('App', 'Orders').filter(
       (file) => !entry.includes(file)
     );
+    // At the default request cost every file of this small app merges into
+    // the entry's, and no other is left to request early
+    const isSplit = variant.requestCost === 0;
+    const IN_ENTRY = "every message is in the entry's file";
     check(
       "preloaded: the files of the preloaded root and route are requested from the startup script, before the entry's files arrive",
-      early.length > 0 &&
+      (early.length > 0 || !isSplit) &&
         early.every((file) => app.started(file) < entryArrived),
       early
         .map(
           (file) =>
             `${((entryArrived - app.started(file)) * 1000).toFixed(0)} ms before`
         )
-        .join(', ')
+        .join(', ') || IN_ENTRY
     );
     const expected = [
       ...new Set([...entry, ...listed('App', 'Orders')]),
@@ -1058,7 +1062,7 @@ async function checkVariant(name, variant) {
       );
       check(
         `${label}: the files of the route are requested once the link is there, before the entry's files arrive`,
-        route.length > 0 &&
+        (route.length > 0 || !isSplit) &&
           route.every(
             (file) =>
               app.started(file) > mapArrived + STREAM_DELAY_MS / 2000 &&
@@ -1069,7 +1073,7 @@ async function checkVariant(name, variant) {
             (file) =>
               `${((app.started(file) - mapArrived) * 1000).toFixed(0)} ms after the map`
           )
-          .join(', ')
+          .join(', ') || IN_ENTRY
       );
       check(
         `${label}: each file is requested once`,

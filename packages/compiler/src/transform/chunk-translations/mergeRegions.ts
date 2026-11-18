@@ -7,8 +7,8 @@ export type RegionMergeInput = {
   loads: Uint32Array;
   words: number;
   /**
-   * The loads that demand each region and hold it by the time they run, in
-   * the shape of `loads`. No load both pays for a region and holds it.
+   * The loads that hold each region by the time they run, in the shape of
+   * `loads`. No load both pays for a region and holds it.
    */
   holders?: Uint32Array;
   /** The weight of each load */
