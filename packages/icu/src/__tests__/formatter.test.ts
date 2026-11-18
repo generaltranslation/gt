@@ -5,9 +5,25 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { parse } from '../parser/parse';
 import { formatIcu } from './format';
 
+// The real parser, with its calls counted.
+vi.mock('../parser/parse', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../parser/parse')>();
+  return { ...actual, parse: vi.fn(actual.parse) };
+});
+
 describe('formatIcu', () => {
+  it.each(['Save changes', '', '100% } # > done', 'a \u{1F600} b'])(
+    'returns %j, which has no ICU syntax, without parsing it',
+    (text) => {
+      vi.mocked(parse).mockClear();
+      expect(formatIcu(text, 'en')).toBe(text);
+      expect(parse).not.toHaveBeenCalled();
+    }
+  );
+
   it('interpolates direct arguments without dropping zero', () => {
     expect(
       formatIcu('Hi {name}, count: {count}', 'en', {

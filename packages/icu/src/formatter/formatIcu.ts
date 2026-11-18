@@ -48,6 +48,10 @@ export type ParsedNode =
 /** What the formatter reads: a message tree, or an ICU string's syntax tree. */
 export type ParsedTree = MessageTree<ParsedNode>;
 
+// The parser reads `{` as a placeholder, `'` as a quote and `<` as a tag, and
+// a message with none of them as its text.
+const ICU_SYNTAX = /[{'<]/;
+
 /**
  * The parser's syntax tree as the formatter reads it: a formatted placeholder
  * keeps every Intl option its skeleton spells, which a message tree cannot
@@ -108,6 +112,8 @@ export function formatIcu<R>(
   options: FormatIcuOptions
 ): string | R | Array<string | R> {
   const locale = resolveLocale(locales);
+  // Most messages are plain text, which is its own tree.
+  if (!ICU_SYNTAX.test(icu)) return icu;
   const tree = toParsedTree(parse(icu, { locale }));
   return formatParsedTree(tree, icu, locales, values, {
     formats: {},
