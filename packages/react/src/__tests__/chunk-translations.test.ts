@@ -693,8 +693,6 @@ describe('gt-react/chunk-translations', () => {
       new Promise<Response>((resolve) =>
         setTimeout(() => resolve(new Response(JSON.stringify(file))), ms)
       );
-    const wait = (ms: number) =>
-      new Promise((resolve) => setTimeout(resolve, ms));
 
     it('renders the source at once while the names are later than the timeout, asks for the file by its current name when they arrive, and is translated from then on', async () => {
       const fetched = serve({
@@ -704,30 +702,34 @@ describe('gt-react/chunk-translations', () => {
       writeOpen({ w: 40 });
       await start();
       fetched.mockClear();
+      vi.useFakeTimers();
 
       // The first import waits for the file's timeout, and no longer
-      const started = Date.now();
-      expect(await preloadedImport([])()).toEqual({ evaluated: 'Orders' });
-      expect(Date.now() - started).toBeLessThan(100);
+      const steps: string[] = [];
+      const first = preloadedImport(steps)();
+      await vi.advanceTimersByTimeAsync(39);
+      expect(steps).toEqual([PRELOAD]);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await first).toEqual({ evaluated: 'Orders' });
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn.mock.calls[0][0]).toContain('did not load within 40 ms');
 
       // A second, while the names are still on their way: a file that was
       // late is not waited for again, and nothing more is asked for
-      const again = Date.now();
-      expect(await plainImport([])()).toEqual({ evaluated: 'Orders' });
-      expect(Date.now() - again).toBeLessThan(30);
+      const second = plainImport([])();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(await second).toEqual({ evaluated: 'Orders' });
       expect(urls(fetched)).toEqual([ORDERS_FILE, CURRENT]);
 
       // The names arrive: the file is asked for by its name there, and added
-      await wait(200);
+      await vi.advanceTimersByTimeAsync(110);
       expect(urls(fetched)).toEqual([ORDERS_FILE, CURRENT, NEXT_ORDERS_FILE]);
       expect(orders()).toBe('Commandes, encore');
 
       // An import after that is translated, and asks for nothing
-      expect(await plainImport([])()).toEqual({
-        evaluated: 'Commandes, encore',
-      });
+      const third = plainImport([])();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(await third).toEqual({ evaluated: 'Commandes, encore' });
       expect(urls(fetched)).toHaveLength(3);
       expect(warn).toHaveBeenCalledTimes(1);
     });
@@ -875,26 +877,26 @@ describe('gt-react/chunk-translations', () => {
         await initializeMappedChunkTranslations(initializeGTSPA, CONFIG);
         await tick();
         fetched.mockClear();
+        vi.useFakeTimers();
 
-        const started = Date.now();
-        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
-          evaluated: 'Orders',
-        });
-        expect(Date.now() - started).toBeLessThan(100);
+        const steps: string[] = [];
+        const first = preloadedImport(steps)(loadMappedChunk);
+        await vi.advanceTimersByTimeAsync(39);
+        expect(steps).toEqual([PRELOAD]);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(await first).toEqual({ evaluated: 'Orders' });
 
         // A second import while the names are on their way asks for nothing
-        const again = Date.now();
-        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
-          evaluated: 'Orders',
-        });
-        expect(Date.now() - again).toBeLessThan(30);
+        const second = preloadedImport([])(loadMappedChunk);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(await second).toEqual({ evaluated: 'Orders' });
         expect(urls(fetched)).toEqual([
           file('a0000000'),
           file('b0000000'),
           CURRENT,
         ]);
 
-        await wait(200);
+        await vi.advanceTimersByTimeAsync(110);
         expect(urls(fetched)).toEqual([
           file('a0000000'),
           file('b0000000'),
@@ -906,9 +908,9 @@ describe('gt-react/chunk-translations', () => {
         expect(orders()).toBe('Commandes, encore');
 
         // An import after that is translated, and asks for nothing
-        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
-          evaluated: 'Commandes, encore',
-        });
+        const third = preloadedImport([])(loadMappedChunk);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(await third).toEqual({ evaluated: 'Commandes, encore' });
         expect(urls(fetched)).toHaveLength(6);
         // One warning for each of the two files that were late
         expect(warn).toHaveBeenCalledTimes(2);
