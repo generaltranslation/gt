@@ -3,24 +3,14 @@ import { api, overrideConfig } from '../adapter/core';
 import { createTranslationStatusKey } from '../utils/documentIds';
 import type { createJobs } from './createJobs';
 
-/**
- * Forced runs whose own result has not arrived, by status key. The status
- * query goes on reporting the translation a forced run replaces as completed,
- * so these keys are ready only once their job is.
- */
+/** Forced runs still in progress, watched so one that fails stops being pending. */
 export type ForcedJobs = {
-  /** Job id of each run still in progress. */
+  /** Job id of each run, by status key. */
   running: Map<string, string>;
-  /** Runs that ended without a result: what is stored is still the old one. */
-  failed: Set<string>;
 };
 
 export function createForcedJobs(): ForcedJobs {
-  return { running: new Map(), failed: new Set() };
-}
-
-export function isAwaitingForcedJob(forcedJobs: ForcedJobs, key: string) {
-  return forcedJobs.running.has(key) || forcedJobs.failed.has(key);
+  return { running: new Map() };
 }
 
 /** Records the jobs of a run over `enqueuedKeys`, replacing earlier ones. */
@@ -30,10 +20,7 @@ export function trackEnqueuedJobs(
   enqueueResult: Awaited<ReturnType<typeof createJobs>> | undefined,
   force: boolean
 ) {
-  for (const key of enqueuedKeys) {
-    forcedJobs.running.delete(key);
-    forcedJobs.failed.delete(key);
-  }
+  for (const key of enqueuedKeys) forcedJobs.running.delete(key);
   if (!force) return;
   for (const [jobId, job] of Object.entries(enqueueResult?.jobData ?? {})) {
     forcedJobs.running.set(
@@ -86,7 +73,6 @@ export function settleForcedJobs(
       forcedJobs.running.delete(key);
     } else if (status === 'failed' || status === 'unknown') {
       forcedJobs.running.delete(key);
-      forcedJobs.failed.add(key);
       newlyFailed.push(key);
     }
   }

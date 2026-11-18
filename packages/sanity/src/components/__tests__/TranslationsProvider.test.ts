@@ -480,8 +480,6 @@ describe('Translate All', () => {
     const context = await renderProvider(page('page-en', 'en'));
     expect(context.translationStatuses.get(frKey)?.isReady).toBe(true);
 
-    // The refresh that follows the run has not answered yet.
-    vi.spyOn(api, 'queryFileData').mockReturnValue(new Promise(() => {}));
     await act(() => context.handleTranslateAll());
     expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(true);
 
@@ -499,18 +497,57 @@ describe('Translate All', () => {
     expect(latest!.translationStatuses.get(frKey)?.isReady).toBeFalsy();
     expect(latest!.pendingTranslations.has(frKey)).toBe(true);
 
-    // A run that cannot be enqueued reports nothing and leaves statuses alone.
+    // GT reports the stored result as completed until the new one lands.
+    await act(() => latest!.handleRefreshAll({ silent: true }));
+    expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(false);
+    expect(latest!.pendingTranslations.has(frKey)).toBe(true);
+
+    vi.spyOn(api, 'queryFileData').mockResolvedValue({
+      translatedFiles: [{ ...frFile, completedAt: '2026-01-01T00:05:00Z' }],
+    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    await act(() => latest!.handleRefreshAll({ silent: true }));
+    expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(true);
+    expect(latest!.pendingTranslations.has(frKey)).toBe(false);
+  });
+
+  test('a forced run that cannot be enqueued keeps the stored result ready', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    vi.spyOn(api, 'createBranch').mockResolvedValue({
+      branch: { id: 'b' },
+    } as Awaited<ReturnType<typeof api.createBranch>>);
+    vi.spyOn(api, 'queryFileData').mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'b',
+          fileId: 'page-en',
+          versionId: 'r1',
+          locale: 'fr',
+          completedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    const frKey = 'b:page-en:r1:fr';
+    const context = await renderProvider(page('page-en', 'en'));
     mocks.createJobs.mockRejectedValueOnce(new Error('unavailable'));
-    expect(
-      await act(() => latest!.handleTranslateAll({ force: true }))
-    ).toEqual([]);
+
+    const enqueuedKeys = await act(() =>
+      context.handleTranslateAll({ force: true })
+    );
+    await act(() => latest!.handleRefreshAll({ silent: true }));
+
+    expect(enqueuedKeys).toEqual([]);
+    expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(true);
+    expect(latest!.pendingTranslations.has(frKey)).toBe(false);
   });
 
   test.each([
     { jobStatus: 'completed', isReady: true, toasts: 0 },
     { jobStatus: 'failed', isReady: false, toasts: 1 },
   ] as const)(
-    'a forced run is ready only once its own job is $jobStatus',
+    'a forced run whose job $jobStatus stops being pending',
     async ({ jobStatus, isReady, toasts }) => {
       const { client } = createGroqClient([page('page-en', 'en')]);
       mocks.client = Object.assign(client, {
@@ -519,18 +556,19 @@ describe('Translate All', () => {
       vi.spyOn(api, 'createBranch').mockResolvedValue({
         branch: { id: 'b' },
       } as Awaited<ReturnType<typeof api.createBranch>>);
-      // The stored translation is reported completed throughout.
-      vi.spyOn(api, 'queryFileData').mockResolvedValue({
-        translatedFiles: [
-          {
-            branchId: 'b',
-            fileId: 'page-en',
-            versionId: 'r1',
-            locale: 'fr',
-            completedAt: '2026-01-01T00:00:00Z',
-          },
-        ],
-      } as Awaited<ReturnType<typeof api.queryFileData>>);
+      const reportCompleted = (completedAt: string) =>
+        vi.spyOn(api, 'queryFileData').mockResolvedValue({
+          translatedFiles: [
+            {
+              branchId: 'b',
+              fileId: 'page-en',
+              versionId: 'r1',
+              locale: 'fr',
+              completedAt,
+            },
+          ],
+        } as Awaited<ReturnType<typeof api.queryFileData>>);
+      reportCompleted('2026-01-01T00:00:00Z');
       mocks.createJobs.mockResolvedValue({
         jobData: {
           'job-1': {
@@ -561,6 +599,8 @@ describe('Translate All', () => {
       expect(latest!.pendingTranslations.has(frKey)).toBe(true);
 
       checkJobStatus.mockResolvedValue([{ jobId: 'job-1', status: jobStatus }]);
+      // Only a job that completed replaces the stored result.
+      if (jobStatus === 'completed') reportCompleted('2026-01-01T00:05:00Z');
       await act(() => latest!.handleRefreshAll({ silent: true }));
       // A settled job is not asked about again.
       checkJobStatus.mockClear();

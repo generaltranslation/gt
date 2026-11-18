@@ -13,7 +13,10 @@ import { SaveLocalTranslationsDialog } from '../page/SaveLocalTranslationsDialog
 import { RetranslateDocumentDialog } from '../page/RetranslateDocumentDialog';
 import { DebugInfoDialog } from '../page/DebugInfoDialog';
 import { version as PACKAGE_VERSION } from '../../../package.json';
-import { useTranslations } from '../TranslationsProvider';
+import {
+  useTranslations,
+  type TranslateAllOptions,
+} from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { resolveLanguageStatusState } from '../../utils/languageStatusState';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
@@ -133,8 +136,9 @@ export const TranslationView = () => {
   // Translations that were already complete when this dialog opened. Auto-import
   // means "import a translation that finishes while I am watching", so these are
   // left alone: importing them would rewrite translated documents — discarding
-  // any edits made to them — every time the dialog is opened. Reset on Translate,
-  // so a fresh run's results are imported even for a locale that already had one.
+  // any edits made to them — every time the dialog is opened. A run takes what
+  // it enqueued back out, so its results are imported even for a locale that
+  // already had one.
   const alreadyCompleteRef = useRef<Set<string> | null>(null);
 
   const statusKeyFor = useCallback(
@@ -160,6 +164,14 @@ export const TranslationView = () => {
         .filter((key) => translationStatuses.get(key)?.isReady)
     );
   }
+
+  const handleStartRun = async (options?: TranslateAllOptions) => {
+    const enqueuedKeys = await handleTranslateAll(options);
+    // A run that did not start leaves the stored results as they were.
+    if (enqueuedKeys.length === 0) return;
+    const alreadyComplete = (alreadyCompleteRef.current ??= new Set());
+    for (const key of enqueuedKeys) alreadyComplete.delete(key);
+  };
 
   // The per-locale rows already read "Translating…"; this only guards the
   // button against enqueueing the same run twice.
@@ -331,12 +343,7 @@ export const TranslationView = () => {
 
         <Flex gap={2}>
           <Button
-            onClick={() => {
-              // A new run's results should import even for locales that already
-              // had a translation when the dialog opened.
-              alreadyCompleteRef.current = new Set();
-              handleTranslateAll();
-            }}
+            onClick={() => handleStartRun()}
             disabled={
               isBusy || isWaitingOnTranslations || !availableLocales.length
             }
@@ -364,14 +371,9 @@ export const TranslationView = () => {
         isOpen={isRetranslateDialogOpen}
         localeIds={availableLocales.map((locale) => locale.localeId)}
         onClose={() => setIsRetranslateDialogOpen(false)}
-        onConfirm={async () => {
+        onConfirm={() => {
           setIsRetranslateDialogOpen(false);
-          const enqueuedKeys = await handleTranslateAll({ force: true });
-          // Only what this run enqueued, and only once it is enqueued: any
-          // other completed status is still a stored result, not a fresh one.
-          for (const key of enqueuedKeys) {
-            alreadyCompleteRef.current?.delete(key);
-          }
+          return handleStartRun({ force: true });
         }}
       />
 

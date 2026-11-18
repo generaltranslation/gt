@@ -32,11 +32,14 @@ import { captureExistingTranslations } from '../translation/captureExistingTrans
 import { collectExistingTranslations } from '../translation/collectExistingTranslations';
 import { uploadTranslations } from '../translation/uploadTranslations';
 import { downloadTranslations } from '../translation/downloadTranslations';
-import { checkTranslationStatus } from '../translation/checkTranslationStatus';
+import {
+  checkTranslationStatus,
+  getCompletedResults,
+  isCompletedAfter,
+} from '../translation/checkTranslationStatus';
 import {
   createForcedJobs,
   fetchForcedJobStatuses,
-  isAwaitingForcedJob,
   settleForcedJobs,
   trackEnqueuedJobs,
 } from '../translation/forcedJobs';
@@ -384,6 +387,9 @@ const TranslationsProviderContent: React.FC<
   const [isRefreshing, setIsRefreshing] = useState(false);
   const pendingTranslationsRef = useRef(pendingTranslations);
   const [forcedJobs] = useState(createForcedJobs);
+  // When each result a forced run discards was completed, by status key. GT
+  // keeps reporting that result as completed until the new one replaces it.
+  const supersededResultsRef = useRef(new Map<string, string>());
   // Changing what a refresh asks for (locales, documents, their uploaded
   // versions, the branch) starts a new refresh while an older one may still be
   // in flight. The tracker drops responses whose scope is no longer current, so
@@ -845,30 +851,9 @@ const TranslationsProviderContent: React.FC<
               )
             : availableLocaleIds;
 
-        const uploadResult = await uploadFiles(transformedDocuments, secrets);
-        await initProject(uploadResult, { timeout: 600 }, secrets);
-        const enqueueResult = await createJobs(
-          uploadResult,
-          enqueueLocaleIds,
-          secrets,
-          force
-        );
-
-        // Pin the _rev each file was uploaded under. GT status queries need the
-        // exact uploaded versionId, and the live _rev moves on (in-place array
-        // imports bump it), so status lookups go through getVersionId instead.
-        // Persisted to sessionStorage so the pins survive a page refresh.
-        const nextUploadedVersions = new Map(uploadedVersions);
-        for (const { info } of transformedDocuments) {
-          if (info.versionId) {
-            nextUploadedVersions.set(info.documentId, info.versionId);
-          }
-        }
-        writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
-        setUploadedVersions(nextUploadedVersions);
-
         const enqueuedStatusKeys = new Set<string>();
         const enqueuedStableKeys = new Set<string>();
+        const enqueuedFiles: FileProperties[] = [];
         for (const { info } of transformedDocuments) {
           for (const localeId of targetLocaleIdsByDocument?.get(
             info.documentId
@@ -884,8 +869,56 @@ const TranslationsProviderContent: React.FC<
             enqueuedStableKeys.add(
               createStableTranslationKey(branchId, info.documentId, localeId)
             );
+            if (!branchId) continue;
+            enqueuedFiles.push({
+              branchId,
+              fileId: info.documentId,
+              versionId: info.versionId ?? '',
+              locale: localeId,
+            });
           }
         }
+
+        const uploadResult = await uploadFiles(transformedDocuments, secrets);
+        await initProject(uploadResult, { timeout: 600 }, secrets);
+
+        // Recorded before the jobs exist, so a refresh that answers while they
+        // are being created cannot report a discarded result as the new one.
+        const supersededBefore = new Map(supersededResultsRef.current);
+        for (const key of enqueuedStatusKeys) {
+          supersededResultsRef.current.delete(key);
+        }
+        if (force && enqueuedFiles.length > 0) {
+          const completed = await getCompletedResults(enqueuedFiles, secrets);
+          for (const [key, completedAt] of completed) {
+            supersededResultsRef.current.set(key, completedAt);
+          }
+        }
+        let enqueueResult: Awaited<ReturnType<typeof createJobs>>;
+        try {
+          enqueueResult = await createJobs(
+            uploadResult,
+            enqueueLocaleIds,
+            secrets,
+            force
+          );
+        } catch (error) {
+          supersededResultsRef.current = supersededBefore;
+          throw error;
+        }
+
+        // Pin the _rev each file was uploaded under. GT status queries need the
+        // exact uploaded versionId, and the live _rev moves on (in-place array
+        // imports bump it), so status lookups go through getVersionId instead.
+        // Persisted to sessionStorage so the pins survive a page refresh.
+        const nextUploadedVersions = new Map(uploadedVersions);
+        for (const { info } of transformedDocuments) {
+          if (info.versionId) {
+            nextUploadedVersions.set(info.documentId, info.versionId);
+          }
+        }
+        writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
+        setUploadedVersions(nextUploadedVersions);
 
         // A key already downloaded this session is skipped by the status
         // query, so re-translating one would leave it outstanding forever:
@@ -1434,7 +1467,13 @@ const TranslationsProviderContent: React.FC<
               translation.versionId,
               translation.locale
             );
-            if (isAwaitingForcedJob(forcedJobs, key)) continue;
+            const supersededAt = supersededResultsRef.current.get(key);
+            if (supersededAt) {
+              if (!isCompletedAfter(translation.completedAt, supersededAt)) {
+                continue;
+              }
+              supersededResultsRef.current.delete(key);
+            }
             newStatuses.set(key, {
               progress: 100,
               isReady: true,
