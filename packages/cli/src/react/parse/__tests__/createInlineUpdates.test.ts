@@ -225,3 +225,19 @@ describe('<T> props', () => {
     });
   });
 });
+
+describe('gt-node in a React project', () => {
+  test.each([
+    Libraries.GT_NEXT,
+    Libraries.GT_REACT,
+    Libraries.GT_TANSTACK_START,
+  ])('%s extracts gt-node strings', async (pkg) => {
+    const result = await scan(pkg, [
+      path.join(__dirname, '__fixtures__/gt-node/inviteEmail.ts'),
+    ]);
+
+    expect(result.updates.map((update) => update.source)).toEqual([
+      'You are invited to {groupName}',
+    ]);
+  });
+});
