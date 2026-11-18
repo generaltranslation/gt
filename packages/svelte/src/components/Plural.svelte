@@ -14,12 +14,9 @@
 <svelte:options preserveWhitespace={false} />
 
 <script lang="ts">
-  import {
-    getPluralBranchKey,
-    getPluralForm,
-  } from 'generaltranslation/internal';
   import type { PluralType } from 'generaltranslation';
   import type { Snippet } from 'svelte';
+  import { selectPluralBranch } from '../runtime/plural';
   import { useContentLocale } from '../runtime/source';
 
   let {
@@ -35,21 +32,9 @@
   > = $props();
 
   const contentLocale = useContentLocale();
-  const selected = $derived.by(() => {
-    // Untyped callers can still pass other props, which match no key. A
-    // branch passed as undefined counts as absent, as in gt-react.
-    const all: Record<string, unknown> = branches;
-    // `other` is not a prop: the children are ICU's `other`.
-    const names = Object.keys(all).filter(
-      (name) => name !== 'other' && all[name] !== undefined
-    );
-    const keys = names.map(getPluralBranchKey);
-    const key =
-      typeof n === 'number' || typeof n === 'bigint'
-        ? getPluralForm(n, [...keys, 'other'], [contentLocale.current])
-        : 'other';
-    return key === 'other' ? children : all[names[keys.indexOf(key)]];
-  });
+  const selected = $derived(
+    selectPluralBranch(n, branches, children, contentLocale.current, 'cardinal')
+  );
 </script>
 
 {#if typeof selected === 'function'}
