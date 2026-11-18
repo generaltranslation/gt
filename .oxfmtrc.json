@@ -17,6 +17,7 @@
     ".changeset/*.md",
     "examples/next-chatbot/lib/db/migrations/**",
     "tests/seeds/*",
+    "tools/message-format-bench/results/*",
     "tests/apps/compiler-cli-parity/**",
     "packages/vue-extractor/src/internal/__tests__/fixtures/template-runtime-parity.vue",
     "**/next-env.d.ts",

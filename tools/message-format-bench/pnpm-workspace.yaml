@@ -1,0 +1,4 @@
+# A workspace of its own, with its own lockfile. In the repository's
+# workspace, the @babel/core 8 that Intlayer depends on became the peer of
+# every package that leaves that peer open, gt's CLI among them.
+minimumReleaseAge: 10080
