@@ -15,6 +15,7 @@ export type BaseTransformation =
   | 'variable-relativetime'
   | 'variable-count'
   | 'plural'
+  | 'plural-ordinal'
   | 'branch'
   | 'derive';
 export type TransformationPrefix =
