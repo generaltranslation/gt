@@ -212,13 +212,20 @@ describe('formatMessage with ICU strings', () => {
       })
     ).toBe('07');
 
-    expect(() =>
+    // An empty list is the host's locale to Intl.
+    expect(
       publicFormatMessage('{value, time, ::j}', {
         timeZone,
         locales: [],
         variables: { value },
       })
-    ).toThrow();
+    ).toBe(
+      publicFormatMessage('{value, time, ::j}', {
+        timeZone,
+        locales: new Intl.DateTimeFormat().resolvedOptions().locale,
+        variables: { value },
+      })
+    );
   });
 
   it('preserves locale arrays through the package boundary', () => {
