@@ -45,7 +45,10 @@ export async function handleStage(
     reactComponents,
     inlineLibrary,
     publishMap,
-  } = await collectFiles(options, settings, library);
+    inlineUpToDate,
+  } = await collectFiles(options, settings, library, {
+    untranslatedInlineOnly: true,
+  });
 
   // Point at dashboard review setup when uploading review-gated content
   await warnManualReviewSetup(settings, allFiles);
@@ -57,7 +60,9 @@ export async function handleStage(
     return null;
   }
 
-  if (allFiles.length === 0 && !settings.publish) {
+  if (inlineUpToDate && allFiles.length === 0) {
+    logger.success('All inline entries are already translated.');
+  } else if (allFiles.length === 0 && !settings.publish) {
     logger.error(
       'No files to translate were found. Check your configuration and try again.'
     );

@@ -5,6 +5,7 @@ import loadJSON from '../fs/loadJSON.js';
 import { createDictionaryUpdates } from '../react/parse/createDictionaryUpdates.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import { createPythonInlineUpdates } from '../python/parse/createPythonInlineUpdates.js';
+import { readSvelteManifest } from '../svelte/manifest.js';
 import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
 import type { ParsingConfigOptions, GTParsingFlags } from '../types/parsing.js';
@@ -81,16 +82,18 @@ export async function createUpdates(
   const extractPrimary: PrimaryInlineExtractor | undefined =
     pkg === Libraries.GT_VUE
       ? undefined
-      : (primaryPatterns) =>
-          isPythonLibrary(pkg)
-            ? createPythonInlineUpdates(primaryPatterns)
-            : createInlineUpdates(
-                pkg,
-                validate,
-                primaryPatterns,
-                parsingFlags,
-                parsingOptions
-              );
+      : pkg === Libraries.GT_SVELTE
+        ? () => readSvelteManifest(parsingFlags)
+        : (primaryPatterns) =>
+            isPythonLibrary(pkg)
+              ? createPythonInlineUpdates(primaryPatterns)
+              : createInlineUpdates(
+                  pkg,
+                  validate,
+                  primaryPatterns,
+                  parsingFlags,
+                  parsingOptions
+                );
   const {
     updates: newUpdates,
     errors: newErrors,

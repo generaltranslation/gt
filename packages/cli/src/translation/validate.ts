@@ -6,6 +6,7 @@ import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+import { readSvelteManifest } from '../svelte/manifest.js';
 import { InlineLibrary, Libraries } from '../types/libraries.js';
 import {
   extractInlineFromProject,
@@ -34,14 +35,16 @@ async function runValidation(
     const extractPrimary: PrimaryInlineExtractor | undefined =
       pkg === Libraries.GT_VUE
         ? undefined
-        : (primaryFiles) =>
-            createInlineUpdates(
-              pkg,
-              true,
-              primaryFiles,
-              settings.files.gtJson.parsingFlags,
-              settings.parsingOptions
-            );
+        : pkg === Libraries.GT_SVELTE
+          ? () => readSvelteManifest(settings.files.gtJson.parsingFlags)
+          : (primaryFiles) =>
+              createInlineUpdates(
+                pkg,
+                true,
+                primaryFiles,
+                settings.files.gtJson.parsingFlags,
+                settings.parsingOptions
+              );
     return extractInlineFromProject(
       pkg,
       files,

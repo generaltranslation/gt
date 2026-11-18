@@ -50,6 +50,21 @@
       }
     },
     {
+      "files": ["**/*.svelte", "**/*.svelte.{js,ts}"],
+      "globals": {
+        "$bindable": "readonly",
+        "$derived": "readonly",
+        "$effect": "readonly",
+        "$host": "readonly",
+        "$inspect": "readonly",
+        "$props": "readonly",
+        "$state": "readonly"
+      },
+      "rules": {
+        "prefer-const": "off"
+      }
+    },
+    {
       "files": ["packages/next/src/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [

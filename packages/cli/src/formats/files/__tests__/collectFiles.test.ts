@@ -16,6 +16,10 @@ vi.mock('../../../translation/stage.js', () => ({
   aggregateInlineTranslations: vi.fn(),
 }));
 
+vi.mock('../../../svelte/manifest.js', () => ({
+  selectUntranslatedUpdates: vi.fn((updates: Updates) => updates.slice(1)),
+}));
+
 import { aggregateInlineTranslations } from '../../../translation/stage.js';
 
 const makeSettings = (overrides: Partial<Settings> = {}): Settings =>
@@ -161,5 +165,28 @@ describe('collectFiles GTJSON requiresReview', () => {
     );
 
     expect(allReview?.versionId).not.toBe(partialReview?.versionId);
+  });
+});
+
+describe('collectFiles gt-svelte', () => {
+  it.each([
+    ['every entry for downloads', undefined, ['a', 'b']],
+    [
+      'only untranslated entries for uploads',
+      { untranslatedInlineOnly: true },
+      ['b'],
+    ],
+  ])('collects %s', async (_name, collectOptions, hashes) => {
+    vi.mocked(aggregateInlineTranslations).mockResolvedValue(
+      makeUpdates([{ hash: 'a' }, { hash: 'b' }])
+    );
+    const { files } = await collectFiles(
+      {} as TranslateFlags,
+      makeSettings(),
+      'gt-svelte',
+      collectOptions
+    );
+    const gtFile = files.find((file) => file.fileId === TEMPLATE_FILE_ID);
+    expect(Object.keys(JSON.parse(gtFile!.content))).toEqual(hashes);
   });
 });

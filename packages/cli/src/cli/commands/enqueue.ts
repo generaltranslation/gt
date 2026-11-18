@@ -6,6 +6,8 @@ import {
 } from '../../types/index.js';
 import { runEnqueueWorkflow } from '../../workflows/enqueue.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
+import { withUploadedTemplateVersion } from '../../svelte/manifest.js';
+import { Libraries } from '../../types/libraries.js';
 import { noFilesError } from '../../console/index.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
@@ -40,5 +42,13 @@ export async function handleEnqueue(
   // Point at dashboard review setup when uploading review-gated content
   await warnManualReviewSetup(settings, files);
 
-  return runEnqueueWorkflow({ files, options, settings, inlineLibrary });
+  return runEnqueueWorkflow({
+    files:
+      inlineLibrary === Libraries.GT_SVELTE
+        ? withUploadedTemplateVersion(files, settings._versionId)
+        : files,
+    options,
+    settings,
+    inlineLibrary,
+  });
 }

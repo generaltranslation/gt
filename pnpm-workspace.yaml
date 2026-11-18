@@ -18,6 +18,7 @@ minimumReleaseAgeExclude:
   - gt-next
   - gt-react
   - gt-vue
+  - gt-svelte
   - gt-sanity
   - '@generaltranslation/format'
   - gt-i18n
@@ -64,3 +65,6 @@ packageExtensions:
   size-limit@*:
     dependencies:
       '@size-limit/preset-small-lib': '*'
+  '@sveltejs/package@*':
+    peerDependencies:
+      typescript: '*'

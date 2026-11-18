@@ -1,0 +1,82 @@
+{
+  "name": "gt-svelte",
+  "version": "0.0.0",
+  "description": "A Svelte 5 internationalization library for General Translation whose Vite plugin compiles gt() and <T> at build time.",
+  "type": "module",
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "default": "./dist/vite/index.js"
+    }
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0",
+    "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@typescript-eslint/scope-manager": "^8.72.1",
+    "generaltranslation": "workspace:*",
+    "gt-i18n": "workspace:*",
+    "magic-string": "^0.30.21"
+  },
+  "devDependencies": {
+    "@sveltejs/package": "2.5.8",
+    "@sveltejs/vite-plugin-svelte": "6.2.4",
+    "@types/estree": "1.0.8",
+    "@types/node": "catalog:",
+    "jsdom": "^26.1.0",
+    "svelte": "5.57.3",
+    "svelte-check": "4.7.8",
+    "typescript": "catalog:",
+    "vite": "7.3.1",
+    "vitest": "catalog:"
+  },
+  "scripts": {
+    "build": "svelte-package -i src/lib -o dist",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git",
+    "directory": "packages/svelte"
+  },
+  "author": "General Translation, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "keywords": [
+    "svelte",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n"
+  ]
+}
