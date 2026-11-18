@@ -35,6 +35,7 @@ import { downloadTranslations } from '../translation/downloadTranslations';
 import { checkTranslationStatus } from '../translation/checkTranslationStatus';
 import {
   createForcedJobs,
+  fetchForcedJobStatuses,
   isAwaitingForcedJob,
   settleForcedJobs,
   trackEnqueuedJobs,
@@ -1392,9 +1393,19 @@ const TranslationsProviderContent: React.FC<
           secrets
         );
 
-        const failedForcedKeys = await settleForcedJobs(forcedJobs, secrets);
+        const forcedJobStatuses = await fetchForcedJobStatuses(
+          forcedJobs,
+          secrets
+        );
 
         if (!refresh.isCurrent()) return;
+
+        // Settled only by a refresh that goes on to apply it: a discarded one
+        // would take the failure with it and leave the key pending for good.
+        const failedForcedKeys = settleForcedJobs(
+          forcedJobs,
+          forcedJobStatuses
+        );
 
         // Built here rather than inside an updater: it derives from the
         // response, not from previous state, and a state updater has to stay

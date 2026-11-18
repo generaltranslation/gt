@@ -48,31 +48,40 @@ export function trackEnqueuedJobs(
   }
 }
 
-/**
- * Asks for the status of the running jobs and settles the finished ones.
- * Returns the keys whose job ended without a result in this call.
- */
-export async function settleForcedJobs(
+type JobStatuses = Map<
+  string,
+  Awaited<ReturnType<typeof api.checkJobStatus>>[number]['status']
+>;
+
+/** Asks for the status of the running jobs, by job id. Changes nothing. */
+export async function fetchForcedJobStatuses(
   forcedJobs: ForcedJobs,
   secrets: Secrets
-): Promise<string[]> {
-  const running = [...forcedJobs.running];
-  if (running.length === 0) return [];
+): Promise<JobStatuses> {
+  const jobIds = [...forcedJobs.running.values()];
+  if (jobIds.length === 0) return new Map();
   overrideConfig(secrets);
-  let statuses: Awaited<ReturnType<typeof api.checkJobStatus>>;
   try {
-    statuses = await api.checkJobStatus(running.map(([, jobId]) => jobId));
+    const statuses = await api.checkJobStatus(jobIds);
+    return new Map(statuses.map((job) => [job.jobId, job.status]));
   } catch (error) {
     // Still unknown: keep waiting and ask again on the next refresh.
     console.error('Error checking translation job status', error);
-    return [];
+    return new Map();
   }
-  const statusByJobId = new Map(statuses.map((job) => [job.jobId, job.status]));
+}
+
+/**
+ * Settles the running jobs that `statuses` reports finished. Returns the keys
+ * whose job ended without a result.
+ */
+export function settleForcedJobs(
+  forcedJobs: ForcedJobs,
+  statuses: JobStatuses
+): string[] {
   const newlyFailed: string[] = [];
-  for (const [key, jobId] of running) {
-    // A newer run may have replaced this job while the request was out.
-    if (forcedJobs.running.get(key) !== jobId) continue;
-    const status = statusByJobId.get(jobId);
+  for (const [key, jobId] of forcedJobs.running) {
+    const status = statuses.get(jobId);
     if (status === 'completed') {
       forcedJobs.running.delete(key);
     } else if (status === 'failed' || status === 'unknown') {

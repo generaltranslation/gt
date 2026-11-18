@@ -572,6 +572,68 @@ describe('Translate All', () => {
       expect(failureToasts()).toBe(toasts);
     }
   );
+
+  test('a failed forced run stops being pending when its job status arrives for a refresh that was replaced', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    vi.spyOn(api, 'createBranch').mockResolvedValue({
+      branch: { id: 'b' },
+    } as Awaited<ReturnType<typeof api.createBranch>>);
+    vi.spyOn(api, 'queryFileData').mockResolvedValue({
+      translatedFiles: [],
+      sourceFiles: [],
+    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    mocks.createJobs.mockResolvedValue({
+      jobData: {
+        'job-1': {
+          branchId: 'b',
+          fileId: 'page-en',
+          versionId: 'r1',
+          targetLocale: 'fr',
+        },
+      },
+    });
+    const failed = [{ jobId: 'job-1', status: 'failed' as const }];
+    let answerReplacedRefresh: (statuses: typeof failed) => void = () => {};
+    const checkJobStatus = vi
+      .spyOn(api, 'checkJobStatus')
+      .mockResolvedValue([{ jobId: 'job-1', status: 'processing' }]);
+    const frKey = 'b:page-en:r1:fr';
+
+    await renderProvider(page('page-en', 'en'));
+    await act(() => latest!.handleTranslateAll({ force: true }));
+    await flush();
+
+    checkJobStatus.mockReturnValueOnce(
+      new Promise((resolve) => (answerReplacedRefresh = resolve))
+    );
+    let replacedRefresh: Promise<void> = Promise.resolve();
+    await act(async () => {
+      replacedRefresh = latest!.handleRefreshAll({ silent: true });
+    });
+    // Changing the selection replaces the refresh that is still out.
+    await act(async () =>
+      latest!.setLocales(
+        latest!.locales.map((locale) =>
+          locale.localeId === 'de' ? { ...locale, enabled: false } : locale
+        )
+      )
+    );
+    await flush();
+    await act(async () => {
+      answerReplacedRefresh(failed);
+      await replacedRefresh;
+    });
+    expect(latest!.pendingTranslations.has(frKey)).toBe(true);
+
+    checkJobStatus.mockResolvedValue(failed);
+    await act(() => latest!.handleRefreshAll({ silent: true }));
+
+    expect(latest!.pendingTranslations.has(frKey)).toBe(false);
+    expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(false);
+  });
 });
 
 describe('without allowNonDefaultSourceLocales', () => {
