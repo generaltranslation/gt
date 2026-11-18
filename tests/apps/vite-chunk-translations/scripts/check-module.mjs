@@ -1631,6 +1631,59 @@ if (!selected.length) {
   }
   served.close();
 }
+
+// ===== An import the bundler writes without an import() ===== //
+// The same app as one chunk: a route's module is in the chunk that imports
+// it, so the bundler writes the import as Promise.resolve().then(...). It
+// loads nothing and nothing can wait there, so the entry's files hold what
+// every route reads.
+if (!selected.length) {
+  prefix = '[one chunk] ';
+  const { outDir, output } = build(
+    'module-one-chunk',
+    { lazy: true, shared: false, requestCost: 0 },
+    { CHECK_ENTRY: 'start.html', CHECK_ONE_CHUNK: 'true' }
+  );
+  const built = readBuild(outDir);
+  const chunks = built.assets.filter((file) => file.endsWith('.js'));
+  const code = chunks
+    .map((file) => readFileSync(join(outDir, 'assets', file), 'utf8'))
+    .join('\n');
+  check(
+    'the build is one chunk, which imports no chunk',
+    chunks.length === 1 && !/\bimport\(/.test(code),
+    chunks.join(', ')
+  );
+  check(
+    'no import has a list, and the build warns of none',
+    !Object.keys(built.manifest.imports).length &&
+      !output.includes('Nothing waits for the translations'),
+    Object.keys(built.manifest.imports).join(', ')
+  );
+  const served = await serve(outDir);
+  for (const [name, first] of [
+    ['opened first', 'orders'],
+    ['opened after another route', ''],
+  ]) {
+    const app = await open(served.url, 'fr');
+    await app.goto(`start.html${first && `#${first}`}`);
+    if (!first) await app.navigate('orders');
+    await checkRoute(app, 'fr', 'orders', 0, `the route ${name}`);
+    check(
+      `the route ${name}: the entry holds the file of what the route reads`,
+      built
+        .entryFiles('fr')
+        .includes(built.fileOf(ROUTES.orders.heading, 'fr')),
+      translationsOf(app).join(', ')
+    );
+    await checkNoSource(`the route ${name}`, app, 'fr', [
+      ROUTES.orders.heading,
+      ROUTES.orders.lines,
+    ]);
+    await app.close();
+  }
+  served.close();
+}
 await browser.close();
 
 console.log(report.join('\n'));

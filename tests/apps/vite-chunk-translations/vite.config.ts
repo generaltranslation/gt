@@ -84,8 +84,12 @@ export default defineConfig({
         ...(process.env.CHECK_LAZY === 'true' && {
           strictExecutionOrder: true,
         }),
-        // For scripts/check-module.mjs. CHECK_SHARED_CHUNK: the shared
-        // modules, which different routes use, are one chunk.
+        // For scripts/check-module.mjs. CHECK_ONE_CHUNK: the app is one
+        // chunk, so the bundler writes the import of a route without an
+        // import(): the page has the route's module already.
+        ...(process.env.CHECK_ONE_CHUNK === 'true' && { codeSplitting: false }),
+        // CHECK_SHARED_CHUNK: the shared modules, which different routes
+        // use, are one chunk.
         ...(process.env.CHECK_SHARED_CHUNK === 'true' && {
           codeSplitting: {
             // Without what they import, or React would move in with them

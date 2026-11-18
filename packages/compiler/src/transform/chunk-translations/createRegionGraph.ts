@@ -11,6 +11,8 @@ export type RegionChunk = {
   facadeModuleId: string | null;
   /** The files of the chunks it imports statically */
   imports: readonly string[];
+  /** The files of the chunks it imports dynamically */
+  dynamicImports?: readonly string[];
   /** The rendered code of each of its modules, before the chunk is minified */
   modules: Record<string, { code: string | null }>;
 };
@@ -64,6 +66,11 @@ export function initialisesModulesLazily(
  *   in a chunk's code and in none of its modules' is given to all of them;
  *   `unattributed` counts those.
  * - The entries are the modules the entry chunks are made for.
+ * - A dynamic import of a module in the chunk of the module that imports it
+ *   is one of that module's `imports`, unless that chunk imports another
+ *   that is made for the imported module. The bundler writes it without an
+ *   `import()`, so it loads nothing and nothing can wait for files there:
+ *   the load that brought the importing module holds its messages.
  *
  * With `isLazy` false, a chunk runs all of its modules when it loads. Each
  * load point then gets, in `evaluated`, the modules of the chunks that hold
@@ -108,19 +115,46 @@ export function createRegionGraph(
     }
   }
 
+  // The module each chunk that holds none of its own is made for: an import
+  // of the module loads that chunk, which passes on the module's exports
+  const madeFor = new Map(
+    chunks.flatMap((chunk) =>
+      chunk.facadeModuleId && !(chunk.facadeModuleId in chunk.modules)
+        ? [[chunk.fileName, chunk.facadeModuleId] as const]
+        : []
+    )
+  );
+  const isInlined = (id: string, importer: string) => {
+    const holding = chunksOfModule.get(importer);
+    const chunksOfId = chunksOfModule.get(id);
+    return (
+      !!holding &&
+      !!chunksOfId &&
+      holding.every(
+        (chunk) =>
+          chunksOfId.includes(chunk) &&
+          !chunk.dynamicImports?.some((file) => madeFor.get(file) === id)
+      )
+    );
+  };
+
   const modules: RegionModule[] = [];
   const dynamicTargets = new Set<string>();
   const seen = new Set(moduleHashes.keys());
   const pending = [...seen];
   for (let id = pending.pop(); id !== undefined; id = pending.pop()) {
     const info = getModuleInfo(id);
-    const imports = [...(info?.importedIds ?? [])];
-    const dynamicImports = [...(info?.dynamicallyImportedIds ?? [])];
+    const imports = new Set(info?.importedIds);
+    const dynamicImports: string[] = [];
+    for (const next of info?.dynamicallyImportedIds ?? []) {
+      if (isInlined(next, id)) imports.add(next);
+      else dynamicImports.push(next);
+    }
     const held = [...(moduleHashes.get(id) ?? [])].sort();
     modules.push({
       id,
       hashes: held,
-      imports,
+      imports: [...imports],
       dynamicImports,
       ...(!options.isLazy && {
         initialHashes: options.initialHashes

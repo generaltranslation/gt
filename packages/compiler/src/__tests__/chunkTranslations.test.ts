@@ -2878,6 +2878,7 @@ export const ready = initializeGTSPA({});`,
       requestCost = 0,
       previous,
       graph = GRAPH,
+      bundle = BUNDLE,
       cwd = createPlugins(ON, 'vite', {
         'translations/fr.json': JSON.stringify(CATALOG),
       }).cwd,
@@ -2886,11 +2887,12 @@ export const ready = initializeGTSPA({});`,
       requestCost?: number;
       previous?: string;
       graph?: typeof GRAPH;
+      bundle?: typeof BUNDLE;
       cwd?: string;
     } = {}) {
       const emitted: Record<string, string> = {};
       const written = writeRegionTranslations(
-        BUNDLE,
+        bundle,
         {
           defaultLocale: 'en',
           locales: ['fr'],
@@ -2911,14 +2913,18 @@ export const ready = initializeGTSPA({});`,
       const manifest = JSON.parse(
         emitted['assets/gt-chunk-translations.json']
       ) as RegionTranslationsManifest;
-      /** The messages in the files the import of a chunk needs. */
-      const messagesOf = (chunk: string) =>
-        manifest.imports[chunk]
+      const messagesIn = (keys: string[]) =>
+        keys
           .flatMap((key) =>
             Object.values(JSON.parse(emitted[manifest.files[key].fr]))
           )
           .sort();
-      return { written, emitted, manifest, messagesOf, cwd };
+      /** The messages in the files the import of a chunk needs. */
+      const messagesOf = (chunk: string) => messagesIn(manifest.imports[chunk]);
+      /** The messages in the files a page holds before any code runs. */
+      const messagesOfEntry = (chunk: string) =>
+        messagesIn(manifest.entries[chunk].files);
+      return { written, emitted, manifest, messagesOf, messagesOfEntry, cwd };
     }
 
     it('gives a route the translations of the modules it reaches, not of the others in a chunk it loads', () => {
@@ -2942,6 +2948,135 @@ export const ready = initializeGTSPA({});`,
         files: 4,
         isConservative: false,
         conservativeMessages: 0,
+      });
+    });
+
+    describe('an import of a module in the chunk of the module that imports it, which the bundler writes without an import()', () => {
+      const bundleOf = (...chunks: ReturnType<typeof chunk>[]) =>
+        Object.fromEntries(chunks.map((file) => [file.fileName, file]));
+
+      it.each([true, false])(
+        'gives its translations to the entry whose chunk holds both, with isLazy %s',
+        (isLazy) => {
+          const { manifest, messagesOf, messagesOfEntry } = write({
+            isLazy,
+            bundle: bundleOf(
+              chunk(
+                'assets/index.js',
+                {
+                  '/main.js': site('title'),
+                  '/home.js': site('home'),
+                  '/picker.js': site('picker'),
+                },
+                { isEntry: true, dynamicImports: ['assets/index.js'] }
+              ),
+              chunk('assets/Billing.js', { '/billing.js': site('billing') })
+            ),
+            graph: {
+              '/main.js': { dynamic: ['/home.js', '/billing.js'] },
+              '/home.js': { imports: ['/picker.js'] },
+            },
+          });
+          // Nothing imports the entry's chunk, so no list of it is ever read
+          expect(Object.keys(manifest.imports)).toEqual(['assets/Billing.js']);
+          expect(messagesOfEntry('assets/index.js')).toEqual(
+            expect.arrayContaining(['HOME', 'PICKER', 'TITLE'])
+          );
+          expect(messagesOf('assets/Billing.js')).toContain('BILLING');
+        }
+      );
+
+      it('gives its translations to the import that loads their chunk with another', () => {
+        // Home's chunk imports the shared chunk, where a helper imports the
+        // panel: only the list of Home's chunk is read when Home loads
+        const { manifest, messagesOf } = write({
+          bundle: bundleOf(
+            chunk(
+              'assets/index.js',
+              { '/main.js': site('title') },
+              { isEntry: true }
+            ),
+            chunk(
+              'assets/Home.js',
+              { '/home.js': site('home') },
+              { imports: ['assets/shared.js'] }
+            ),
+            chunk(
+              'assets/shared.js',
+              { '/picker.js': site('picker'), '/panel.js': site('panel') },
+              { facadeModuleId: null, dynamicImports: ['assets/shared.js'] }
+            )
+          ),
+          graph: {
+            '/main.js': { dynamic: ['/home.js'] },
+            '/home.js': { imports: ['/picker.js'] },
+            '/picker.js': { dynamic: ['/panel.js'] },
+          },
+        });
+        expect(Object.keys(manifest.imports)).toEqual(['assets/Home.js']);
+        expect(messagesOf('assets/Home.js')).toEqual(
+          expect.arrayContaining(['HOME', 'PANEL', 'PICKER'])
+        );
+      });
+
+      it('still lists the files of a module whose import loads a chunk that is made for it', () => {
+        // As Rolldown writes it where modules do not run in order: Home's
+        // import of the picker loads a chunk that passes on what Home's holds
+        const { manifest, messagesOf } = write({
+          bundle: bundleOf(
+            chunk(
+              'assets/index.js',
+              { '/main.js': site('title') },
+              { isEntry: true }
+            ),
+            chunk(
+              'assets/Home.js',
+              { '/home.js': site('home'), '/picker.js': site('picker') },
+              { dynamicImports: ['assets/Picker.js'] }
+            ),
+            chunk(
+              'assets/Picker.js',
+              {},
+              { facadeModuleId: '/picker.js', imports: ['assets/Home.js'] }
+            )
+          ),
+          graph: {
+            '/main.js': { dynamic: ['/home.js'] },
+            '/home.js': { dynamic: ['/picker.js'] },
+          },
+        });
+        expect(Object.keys(manifest.imports).sort()).toEqual([
+          'assets/Home.js',
+          'assets/Picker.js',
+        ]);
+        expect(messagesOf('assets/Picker.js')).toContain('PICKER');
+      });
+
+      it('still lists the files of a module that another chunk imports too', () => {
+        const { messagesOf } = write({
+          bundle: bundleOf(
+            chunk(
+              'assets/index.js',
+              { '/main.js': site('title') },
+              { isEntry: true }
+            ),
+            chunk('assets/Home.js', {
+              '/home.js': site('home'),
+              '/picker.js': site('picker'),
+            }),
+            chunk('assets/Billing.js', { '/billing.js': site('billing') })
+          ),
+          graph: {
+            '/main.js': { dynamic: ['/home.js', '/billing.js'] },
+            '/home.js': { dynamic: ['/picker.js'] },
+            '/billing.js': { dynamic: ['/picker.js'] },
+          },
+        });
+        // Billing's import of the picker loads Home's chunk
+        expect(messagesOf('assets/Home.js')).toEqual(
+          expect.arrayContaining(['HOME', 'PICKER'])
+        );
+        expect(messagesOf('assets/Billing.js')).toContain('BILLING');
       });
     });
 
