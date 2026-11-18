@@ -87,6 +87,18 @@ describe('formatMessageTree', () => {
         RangeError
       );
     }
+    // A skeleton asks for a locale's hour, which changes none of this.
+    expect(formatIcu('{n, number, ::.00}', [], { n: 1.5 })).toBe(
+      new Intl.NumberFormat([], { minimumFractionDigits: 2 }).format(1.5)
+    );
+    for (const locales of [[], 'not a locale!']) {
+      expect(formatIcu('Hi {name} ::', locales, { name: 'Ada' })).toBe(
+        'Hi Ada ::'
+      );
+    }
+    expect(() =>
+      formatIcu('{n, number, ::.00}', 'not a locale!', { n: 1.5 })
+    ).toThrow(RangeError);
   });
 
   it('formats a date with its own options only', () => {

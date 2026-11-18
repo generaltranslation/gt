@@ -471,8 +471,6 @@ describe('formatIcu', () => {
     expect(formatIcu('{d, time, ::j}', 'en-GB-u-rg-uszzzz', { d: value })).toBe(
       '7 am'
     );
-
-    expect(() => formatIcu('{d, time, ::j}', [], { d: value })).toThrow();
   });
 
   // FormatJS skips `C` and `A` and reads `J` as `H`.

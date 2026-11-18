@@ -54,17 +54,23 @@ const ICU_SYNTAX = /[{'<]/;
 
 /**
  * The locale whose hour a `j` skeleton takes: the first one given. Only a
- * message with a skeleton needs it.
+ * message with a skeleton needs it. Without one, as for an empty list, or
+ * one that is no language tag, the hour is left to `Intl`, which formats in
+ * the host's locale or rejects the tag.
  */
 function hourLocale(
   icu: string,
   locales: string | string[]
 ): Intl.Locale | undefined {
-  if (!icu.includes('::') || typeof Intl.Locale === 'undefined') return;
-  return intlCache.get(
-    'Locale',
-    typeof locales === 'string' ? locales : locales[0]
-  );
+  const first = typeof locales === 'string' ? locales : locales[0];
+  if (!first || !icu.includes('::') || typeof Intl.Locale === 'undefined') {
+    return;
+  }
+  try {
+    return intlCache.get('Locale', first);
+  } catch {
+    return;
+  }
 }
 
 /**

@@ -412,11 +412,17 @@ describe('live FormatJS runtime compatibility', () => {
     }
   );
 
-  it('matches empty locale-list behavior', () => {
+  it('formats an empty locale list in the host locale, where FormatJS throws', () => {
     const message = '{value, time, ::j}';
     const values = { value: new Date(2020, 4, 6, 7, 3, 2) };
 
-    expect(() => formatIcu(message, [], values)).toThrow();
+    expect(formatIcu(message, [], values)).toBe(
+      formatIcu(
+        message,
+        new Intl.DateTimeFormat().resolvedOptions().locale,
+        values
+      )
+    );
     expect(() => formatWithFormatJs(message, [], values)).toThrow();
   });
 
