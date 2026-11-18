@@ -77,6 +77,7 @@ export function createGT(params: CreateGTParams): GT {
     getEnableI18n,
     lookupTranslation = defaultLookupTranslation,
   } = params;
+  const readsCache = lookupTranslation === defaultLookupTranslation;
   const render = (
     options: GTOptions & Pick<MessageTreeMetadata, '$_hash'>,
     strings: TemplateStringsArray,
@@ -102,7 +103,8 @@ export function createGT(params: CreateGTParams): GT {
         holes[1] as MessageFormats | undefined,
         enabled ? getLocale() : getI18nConfig().getDefaultLocale(),
         enabled,
-        lookupTranslation
+        lookupTranslation,
+        readsCache
       );
     }
     return isTemplateStringsArray(first)

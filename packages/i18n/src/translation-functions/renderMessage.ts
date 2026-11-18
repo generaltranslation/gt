@@ -9,6 +9,8 @@ import {
 } from 'generaltranslation/id';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { formatCutoff } from 'generaltranslation/internal';
+import { getI18nCache } from '../i18n-cache/singleton-operations';
+import type { I18nConfig } from '../i18n-config/I18nConfig';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import logger from '../logs/logger';
@@ -121,6 +123,18 @@ export function isPrecomputedMessage(
   return (value as PrecomputedMessage).$_tree !== undefined;
 }
 
+// The config with which the I18nCache was last seen set up.
+let configWithCache: I18nConfig | undefined;
+
+function hasCache(config: I18nConfig): boolean {
+  if (configWithCache !== config) {
+    // Throws for a cache that was never set up, as its lookup does.
+    getI18nCache();
+    configWithCache = config;
+  }
+  return true;
+}
+
 /**
  * Renders a precomputed message like renderMessage renders its template:
  * the same lookup, validation, formatting, fallback and cutoff.
@@ -131,24 +145,32 @@ export function renderPrecomputedMessage(
   formats: MessageFormats = site.$_formats ?? NO_FORMATS,
   locale: string,
   enabled: boolean,
-  lookupTranslation: LookupTreeTranslation
+  lookupTranslation: LookupTreeTranslation,
+  readsCache: boolean
 ): string {
   const tree = site.$_tree;
   const hash = site.$_hash;
+  const config = getI18nConfig();
+  const defaultLocale = config.getDefaultLocale();
+  let translation: MessageTree | undefined;
   // Disabled skips every lookup, including custom ones with default-locale entries.
-  const entry = enabled
-    ? lookupTranslation(
+  if (enabled) {
+    if (readsCache && locale === defaultLocale && hasCache(config)) {
+      // The I18nCache gives a message in the default locale back as its own
+      // entry, so there is nothing to look up.
+      translation = tree;
+    } else {
+      const entry = lookupTranslation(
         tree,
         createMessageTreeLookupOptions(tree, locale, site)
-      )
-    : undefined;
-  // The compiler built the site's own tree, the default locale's entry.
-  const translation =
-    entry === tree ? tree : lookupTreeTranslation(entry, locale, hash);
+      );
+      // The compiler built the site's own tree, the default locale's entry.
+      translation =
+        entry === tree ? tree : lookupTreeTranslation(entry, locale, hash);
+    }
+  }
 
-  const config = getI18nConfig();
   const { maxChars } = site;
-  const defaultLocale = config.getDefaultLocale();
   let outputLocale = defaultLocale;
   let output: string | undefined;
   // An empty translation is the text '', not a missing one.

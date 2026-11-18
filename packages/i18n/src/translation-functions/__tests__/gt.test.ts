@@ -742,6 +742,138 @@ describe('gt-i18n precomputed messages', () => {
     expect(call(t, ...args)).toBe('Save');
   });
 
+  it('reads no entry in the default locale, where a message is its own', async () => {
+    const save = precompute()`Save`;
+    const greeting = precompute()`Hello, ${{ name }}!`;
+    const cut = precompute({ maxChars: 4 })`Read more`;
+    let locale = 'en';
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    setI18nCache(
+      new I18nCache({
+        loadTranslations: async () => ({ [save[0].$_hash]: 'Enregistrer' }),
+      })
+    );
+    setWritableConditionStore({
+      getLocale: () => locale,
+      getEnableI18n: () => true,
+    });
+    await getI18nCache().loadTranslations('fr');
+    const lookup = vi.spyOn(getI18nCache(), 'lookupTranslation');
+
+    expect(call(t, ...save)).toBe('Save');
+    expect(call(t, ...greeting)).toBe('Hello, Ada!');
+    expect(call(t, ...cut)).toBe(
+      formatCutoff('Read more', { locales: 'en', maxChars: 4 })
+    );
+    expect(lookup).not.toHaveBeenCalled();
+
+    locale = 'fr';
+    expect(call(t, ...save)).toBe('Enregistrer');
+    expect(call(t, ...greeting)).toBe('Hello, Ada!');
+    expect(lookup).toHaveBeenCalledTimes(2);
+
+    locale = 'en';
+    expect(call(t, ...save)).toBe('Save');
+    expect(lookup).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    [
+      'a dialect of the default locale that is configured',
+      { defaultLocale: 'en-US', locales: ['en-US', 'en-GB'] },
+      'en-GB',
+      'Colour',
+    ],
+    [
+      'an alias that is not the default locale',
+      {
+        defaultLocale: 'en',
+        locales: ['en', 'brand'],
+        customMapping: { brand: { code: 'en-GB' } },
+      },
+      'brand',
+      'Colour',
+    ],
+    [
+      'an alias that is the default locale',
+      {
+        defaultLocale: 'source',
+        locales: ['source', 'fr'],
+        customMapping: { source: { code: 'en-US' } },
+      },
+      'source',
+      'Color',
+    ],
+  ])(
+    'looks up %s by its configured name',
+    async (_name, config, locale, expected) => {
+      const args = precompute()`Color`;
+      const price = precompute()`${number({ price: 1234.5 })}`;
+      initializeI18nConfig(config);
+      setI18nCache(
+        new I18nCache({
+          loadTranslations: async (requested) =>
+            requested === config.defaultLocale
+              ? {}
+              : { [args[0].$_hash]: 'Colour' },
+        })
+      );
+      setWritableConditionStore({
+        getLocale: () => locale,
+        getEnableI18n: () => true,
+      });
+      await getI18nCache().loadTranslations(locale);
+
+      expect(call(t, ...args)).toBe(expected);
+      expect(call(t, ...price)).toBe('1,234.5');
+    }
+  );
+
+  it('asks a custom lookupTranslation for the default locale too', async () => {
+    await setup({ locale: 'en' });
+    const lookupTranslation = vi.fn<LookupTreeTranslation>(() => 'Save all');
+    const gt = createGT({ getLocale: () => 'en', lookupTranslation });
+    expect(call(gt, ...precompute()`Save`)).toBe('Save all');
+    expect(call(gt, ...precompute()`Hello, ${{ name }}!`)).toBe('Save all');
+    expect(lookupTranslation).toHaveBeenCalledTimes(2);
+
+    const disabled = createGT({
+      getLocale: () => 'en',
+      getEnableI18n: () => false,
+      lookupTranslation,
+    });
+    expect(call(disabled, ...precompute()`Save`)).toBe('Save');
+    expect(lookupTranslation).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports a cache that was never set up in the default locale too', () => {
+    const args = precompute()`Save`;
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    setWritableConditionStore({
+      getLocale: () => 'en',
+      getEnableI18n: () => true,
+    });
+    const error = /Cannot read I18nCache before it has been initialized/;
+    expect(() => call(t, ...args)).toThrow(error);
+    expect(() => call(t, ...args)).toThrow(error);
+
+    setI18nCache(new I18nCache({ loadTranslations: async () => ({}) }));
+    expect(call(t, ...args)).toBe('Save');
+  });
+
+  it('fails like its template when the source does not format in the default locale', async () => {
+    const render = (
+      tag: (strings: TemplateStringsArray, ...holes: unknown[]) => unknown
+    ) =>
+      tag`${select({ role: 5 as unknown as string }, { admin: 'Admin', other: 'Member' })}`;
+    const template = await setup({ locale: 'en' });
+    const error = 'The ICU variable "role" must be a string.';
+    expect(() => render(template)).toThrow(error);
+    const args = render(precompute()) as Call;
+    expect(() => call(template, ...args)).toThrow(error);
+    expect(() => call(t, ...args)).toThrow(error);
+  });
+
   it('renders a catalog entry that changes, and one that expires', async () => {
     vi.useFakeTimers();
     try {
