@@ -28,7 +28,11 @@
  *   keeps the locale for good: the files a build wrote do not change.
  *
  * Which messages a file holds is the compiler's choice: this entry only loads
- * files by the keys it is given.
+ * files by the keys it is given. A build that splits by module (the
+ * compiler's `experimentalChunkTranslationsSplit: 'module'`) has files that
+ * hold the messages of modules from many chunks: an import needs several, the
+ * entry holds several, and the file the startup script requests first is the
+ * locale's map, which lists them. See `loadRegionChunk()`.
  *
  * A file that fails to load, or takes longer than the timeout, is reported
  * with a warning and its messages render their source.
@@ -45,3 +49,8 @@ export {
   loadMappedChunk,
   loadMappedChunkTranslations,
 } from './chunk-translations/map';
+export {
+  initializeRegionChunkTranslations,
+  loadRegionChunk,
+  loadRegionChunkTranslations,
+} from './chunk-translations/region';

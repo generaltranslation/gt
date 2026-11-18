@@ -3,9 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   initializeChunkTranslations,
   initializeMappedChunkTranslations,
+  initializeRegionChunkTranslations,
   loadChunk,
   loadChunkTranslations,
   loadMappedChunk,
+  loadRegionChunk,
+  loadRegionChunkTranslations,
   type ChunkTranslationsState,
 } from '../chunk-translations';
 import { getReactI18nCache, t } from '@generaltranslation/react-core/pure';
@@ -621,6 +624,201 @@ describe('gt-react/chunk-translations', () => {
       expect(warn.mock.calls[0][0]).toContain(
         `Could not load the translations in ${MAP}`
       );
+    });
+  });
+
+  describe('in a build that splits by module', () => {
+    const MAP = '/assets/gt-map.fr.11111111.json';
+    const SHELL = '/assets/gt-aa.fr.44444444.json';
+    const SHARED = '/assets/gt-bb.fr.55555555.json';
+    const ROUTE = '/assets/gt-cc.fr.66666666.json';
+    const TITLE = '3f85538d4b215b91';
+    // The import of the Orders chunk needs the entry's file, a file other
+    // imports need too, one the locale has no translations for, and its own
+    const LISTED = {
+      k: [
+        'assets/gt-aa',
+        'assets/gt-bb',
+        'assets/gt-dd',
+        'assets/gt-cc',
+        'assets/Orders-b2',
+      ],
+      c: [0, 0, 0, 0, [0, 0, 4]],
+      h: ['44444444', '55555555', 0, '66666666'],
+    };
+    const SPLIT: Files = {
+      [MAP]: { i: LISTED },
+      [SHELL]: { [SAVE]: 'Enregistrer' },
+      [SHARED]: { [TITLE]: 'Aperçu' },
+      [ROUTE]: { [ORDERS]: 'Commandes' },
+    };
+    const title = () => t({ $_hash: TITLE } as never)`Overview`;
+    /** What the startup script leaves: the map is the file it names. */
+    const writeSplitState = (state: Partial<ChunkTranslationsState> = {}) =>
+      writeState({
+        f: 'assets/gt-map',
+        v: {},
+        e: { fr: { 'assets/gt-aa': '44444444' } },
+        ...state,
+      });
+    const startSplit = () =>
+      initializeRegionChunkTranslations(initializeGTSPA, CONFIG);
+
+    it("starts with the entry's files and the map, then requests the other files an import needs", async () => {
+      const fetched = serve(SPLIT);
+      writeSplitState();
+      await startSplit();
+      await tick();
+      expect(fetched.mock.calls.flat().sort()).toEqual([MAP, SHELL].sort());
+      expect(save()).toBe('Enregistrer');
+      expect(title()).toBe('Overview');
+      fetched.mockClear();
+
+      expect(await preloadedImport([])(loadRegionChunk)).toEqual({
+        evaluated: 'Commandes',
+      });
+
+      // Not the entry's file, which the page holds, nor one without a name
+      expect(fetched.mock.calls.flat().sort()).toEqual([ROUTE, SHARED].sort());
+      expect(title()).toBe('Aperçu');
+      fetched.mockClear();
+      await preloadedImport([])(loadRegionChunk);
+      expect(fetched).not.toHaveBeenCalled();
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('starts without waiting for the map, and runs an import once the map and every file it lists have arrived', async () => {
+      const map = hold(SPLIT[MAP]);
+      const route = hold(SPLIT[ROUTE]);
+      const fetched = serve({
+        ...SPLIT,
+        [MAP]: map.response,
+        [ROUTE]: route.response,
+      });
+      writeSplitState();
+      await startSplit();
+      fetched.mockClear();
+      const steps: string[] = [];
+
+      const loading = preloadedImport(steps)(loadRegionChunk);
+      await tick();
+      // The chunk downloads while the map does; no file can be named yet
+      expect(steps).toEqual([PRELOAD]);
+      expect(fetched).not.toHaveBeenCalled();
+
+      map.respond();
+      await tick();
+      expect(fetched.mock.calls.flat().sort()).toEqual([ROUTE, SHARED].sort());
+      expect(steps).toEqual([PRELOAD]);
+
+      route.respond();
+      expect(await loading).toEqual({ evaluated: 'Commandes' });
+      expect(steps).toEqual([PRELOAD, 'import']);
+    });
+
+    it("waits for the entry's files too when an import starts before they have arrived", async () => {
+      const shell = hold(SPLIT[SHELL]);
+      serve({ ...SPLIT, [SHELL]: shell.response });
+      // Before initializeGTSPA(): the locale is the startup script's
+      writeSplitState({ l: 'fr' });
+      const steps: string[] = [];
+
+      const loading = loadRegionChunk(() => {
+        // Before initializeGTSPA() the files wait for the cache's first load
+        const arrived = (
+          globalThis as { __GT_CHUNK_TRANSLATIONS__?: ChunkTranslationsState }
+        ).__GT_CHUNK_TRANSLATIONS__?.t?.fr;
+        steps.push(`import ${arrived?.[SAVE]}`);
+        return Promise.resolve({});
+      }, ORDERS_CHUNK);
+      await tick();
+      expect(steps).toEqual([]);
+
+      shell.respond();
+      await loading;
+      expect(steps).toEqual(['import Enregistrer']);
+    });
+
+    it('reads the requests the startup script made instead of making others', async () => {
+      const fetched = serve(SPLIT);
+      writeSplitState({
+        l: 'fr',
+        p: { fr: Promise.resolve({ i: LISTED }) },
+        g: {
+          'fr assets/gt-aa': Promise.resolve({ [SAVE]: 'Du script' }),
+          'fr assets/gt-cc': Promise.resolve({ [ORDERS]: 'Du lien' }),
+        },
+      });
+
+      await startSplit();
+      await plainImport([])(loadRegionChunk);
+
+      expect(fetched.mock.calls).toEqual([[SHARED]]);
+      expect(save()).toBe('Du script');
+      expect(orders()).toBe('Du lien');
+    });
+
+    it('loads the files of a chunk by their keys for an app that preloads chunks itself', async () => {
+      const fetched = serve(SPLIT);
+      writeSplitState();
+      await startSplit();
+      fetched.mockClear();
+
+      await loadRegionChunkTranslations(['assets/gt-cc', 'assets/gt-aa']);
+
+      expect(fetched.mock.calls).toEqual([[ROUTE]]);
+      expect(orders()).toBe('Commandes');
+      expect(loadRegionChunkTranslations([])).toBeUndefined();
+    });
+
+    it.each([
+      [
+        'the map',
+        MAP,
+        { save: 'Enregistrer', title: 'Overview', orders: 'Orders' },
+      ],
+      [
+        "one of an import's files",
+        SHARED,
+        { save: 'Enregistrer', title: 'Overview', orders: 'Commandes' },
+      ],
+      [
+        "the entry's file",
+        SHELL,
+        { save: 'Save', title: 'Aperçu', orders: 'Commandes' },
+      ],
+    ])(
+      'renders the source of what %s would have brought, and warns, when it is missing',
+      async (_name, missing, expected) => {
+        const files = { ...SPLIT };
+        delete files[missing];
+        serve(files);
+        writeSplitState();
+
+        await startSplit();
+        await preloadedImport([])(loadRegionChunk);
+
+        expect({ save: save(), title: title(), orders: orders() }).toEqual(
+          expected
+        );
+        expect(warn.mock.calls[0][0]).toContain(
+          `Could not load the translations in ${missing}`
+        );
+      }
+    );
+
+    it('requests nothing in a locale that renders the source', async () => {
+      const fetched = serve(SPLIT);
+      writeSplitState();
+      setLocale('en');
+      const steps: string[] = [];
+
+      await startSplit();
+      await preloadedImport(steps)(loadRegionChunk);
+
+      expect(fetched).not.toHaveBeenCalled();
+      expect(steps).toEqual([PRELOAD, 'import']);
+      expect(links()).toEqual([]);
     });
   });
 });

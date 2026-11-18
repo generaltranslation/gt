@@ -63,6 +63,11 @@ export type ChunkTranslationsState = {
   /** The hash in the name of the entry's file, by locale */
   h?: Record<string, string>;
   /**
+   * In a build that splits by module, where `f` and `h` are of the locale's
+   * map: the hash in the name of each file the entry holds, by locale and key
+   */
+  e?: Record<string, Record<string, string> | undefined>;
+  /**
    * The token in the name of every other file of a locale, by locale. In a
    * build that names each file by its own hash, the token in the name of the
    * locale's map of those hashes.
