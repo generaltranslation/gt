@@ -688,27 +688,48 @@ describe('gt-react/chunk-translations', () => {
       expect(warn.mock.calls[0][0]).toContain('did not load within 20 ms');
     });
 
-    it('asks for the file by its current name when the names arrive after its timeout, and adds it then', async () => {
+    /** A response that takes `ms`. */
+    const after = (ms: number, file: unknown) => () =>
+      new Promise<Response>((resolve) =>
+        setTimeout(() => resolve(new Response(JSON.stringify(file))), ms)
+      );
+    const wait = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+
+    it('renders the source at once while the names are later than the timeout, asks for the file by its current name when they arrive, and is translated from then on', async () => {
       const fetched = serve({
         ...DEPLOYED,
-        [CURRENT]: () =>
-          new Promise<Response>((resolve) =>
-            setTimeout(
-              () => resolve(new Response(JSON.stringify(DEPLOYED[CURRENT]))),
-              90
-            )
-          ),
+        [CURRENT]: after(150, DEPLOYED[CURRENT]),
       });
       writeOpen({ w: 40 });
       await start();
+      fetched.mockClear();
 
+      // The first import waits for the file's timeout, and no longer
       const started = Date.now();
       expect(await preloadedImport([])()).toEqual({ evaluated: 'Orders' });
-      expect(Date.now() - started).toBeLessThan(80);
+      expect(Date.now() - started).toBeLessThan(100);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toContain('did not load within 40 ms');
 
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      expect(urls(fetched)).toContain(NEXT_ORDERS_FILE);
+      // A second, while the names are still on their way: a file that was
+      // late is not waited for again, and nothing more is asked for
+      const again = Date.now();
+      expect(await plainImport([])()).toEqual({ evaluated: 'Orders' });
+      expect(Date.now() - again).toBeLessThan(30);
+      expect(urls(fetched)).toEqual([ORDERS_FILE, CURRENT]);
+
+      // The names arrive: the file is asked for by its name there, and added
+      await wait(200);
+      expect(urls(fetched)).toEqual([ORDERS_FILE, CURRENT, NEXT_ORDERS_FILE]);
       expect(orders()).toBe('Commandes, encore');
+
+      // An import after that is translated, and asks for nothing
+      expect(await plainImport([])()).toEqual({
+        evaluated: 'Commandes, encore',
+      });
+      expect(urls(fetched)).toHaveLength(3);
+      expect(warn).toHaveBeenCalledTimes(1);
     });
 
     it('reads nothing in a build that wrote no such file', async () => {
@@ -842,6 +863,55 @@ describe('gt-react/chunk-translations', () => {
         expect(urls(fetched)).toEqual([file('d1111111')]);
         expect(save()).toBe('Enregistrer');
         expect(warn).not.toHaveBeenCalled();
+      });
+
+      it('renders the source at once while the names are later than the timeout, and is translated once they and the map have arrived', async () => {
+        const files: Files = {
+          ...DEPLOYED_MAP,
+          [CURRENT]: after(150, names('99999999')),
+        };
+        const fetched = serve(files);
+        writeOpen({ f: 'assets/gt', k: 'assets/gt-map', w: 40 });
+        await initializeMappedChunkTranslations(initializeGTSPA, CONFIG);
+        await tick();
+        fetched.mockClear();
+
+        const started = Date.now();
+        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
+          evaluated: 'Orders',
+        });
+        expect(Date.now() - started).toBeLessThan(100);
+
+        // A second import while the names are on their way asks for nothing
+        const again = Date.now();
+        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
+          evaluated: 'Orders',
+        });
+        expect(Date.now() - again).toBeLessThan(30);
+        expect(urls(fetched)).toEqual([
+          file('a0000000'),
+          file('b0000000'),
+          CURRENT,
+        ]);
+
+        await wait(200);
+        expect(urls(fetched)).toEqual([
+          file('a0000000'),
+          file('b0000000'),
+          CURRENT,
+          map('99999999'),
+          file('a1111111'),
+          file('b1111111'),
+        ]);
+        expect(orders()).toBe('Commandes, encore');
+
+        // An import after that is translated, and asks for nothing
+        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
+          evaluated: 'Commandes, encore',
+        });
+        expect(urls(fetched)).toHaveLength(6);
+        // One warning for each of the two files that were late
+        expect(warn).toHaveBeenCalledTimes(2);
       });
 
       it('asks again for a file in place of a missing one after it failed', async () => {
