@@ -505,6 +505,73 @@ describe('Translate All', () => {
       await act(() => latest!.handleTranslateAll({ force: true }))
     ).toEqual([]);
   });
+
+  test.each([
+    { jobStatus: 'completed', isReady: true, toasts: 0 },
+    { jobStatus: 'failed', isReady: false, toasts: 1 },
+  ] as const)(
+    'a forced run is ready only once its own job is $jobStatus',
+    async ({ jobStatus, isReady, toasts }) => {
+      const { client } = createGroqClient([page('page-en', 'en')]);
+      mocks.client = Object.assign(client, {
+        config: () => ({ projectId: 'p', dataset: 'd' }),
+      });
+      vi.spyOn(api, 'createBranch').mockResolvedValue({
+        branch: { id: 'b' },
+      } as Awaited<ReturnType<typeof api.createBranch>>);
+      // The stored translation is reported completed throughout.
+      vi.spyOn(api, 'queryFileData').mockResolvedValue({
+        translatedFiles: [
+          {
+            branchId: 'b',
+            fileId: 'page-en',
+            versionId: 'r1',
+            locale: 'fr',
+            completedAt: '2026-01-01T00:00:00Z',
+          },
+        ],
+      } as Awaited<ReturnType<typeof api.queryFileData>>);
+      mocks.createJobs.mockResolvedValue({
+        jobData: {
+          'job-1': {
+            branchId: 'b',
+            fileId: 'page-en',
+            versionId: 'r1',
+            targetLocale: 'fr',
+          },
+        },
+      });
+      const checkJobStatus = vi
+        .spyOn(api, 'checkJobStatus')
+        .mockResolvedValue([{ jobId: 'job-1', status: 'processing' }]);
+      const frKey = 'b:page-en:r1:fr';
+      const failureToasts = () =>
+        mocks.toastPush.mock.calls.filter(([toast]) =>
+          String(toast.title).includes('could not be completed')
+        ).length;
+
+      const context = await renderProvider(page('page-en', 'en'));
+      expect(context.translationStatuses.get(frKey)?.isReady).toBe(true);
+
+      await act(() => latest!.handleTranslateAll({ force: true }));
+      await act(() => latest!.handleRefreshAll({ silent: true }));
+
+      expect(checkJobStatus).toHaveBeenLastCalledWith(['job-1']);
+      expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(false);
+      expect(latest!.pendingTranslations.has(frKey)).toBe(true);
+
+      checkJobStatus.mockResolvedValue([{ jobId: 'job-1', status: jobStatus }]);
+      await act(() => latest!.handleRefreshAll({ silent: true }));
+      // A settled job is not asked about again.
+      checkJobStatus.mockClear();
+      await act(() => latest!.handleRefreshAll({ silent: true }));
+
+      expect(checkJobStatus).not.toHaveBeenCalled();
+      expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(isReady);
+      expect(latest!.pendingTranslations.has(frKey)).toBe(false);
+      expect(failureToasts()).toBe(toasts);
+    }
+  );
 });
 
 describe('without allowNonDefaultSourceLocales', () => {

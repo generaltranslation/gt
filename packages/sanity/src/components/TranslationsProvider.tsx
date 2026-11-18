@@ -33,6 +33,12 @@ import { collectExistingTranslations } from '../translation/collectExistingTrans
 import { uploadTranslations } from '../translation/uploadTranslations';
 import { downloadTranslations } from '../translation/downloadTranslations';
 import { checkTranslationStatus } from '../translation/checkTranslationStatus';
+import {
+  createForcedJobs,
+  isAwaitingForcedJob,
+  settleForcedJobs,
+  trackEnqueuedJobs,
+} from '../translation/forcedJobs';
 import { importDocument } from '../translation/importDocument';
 import { commitResolvedRefs, resolveRefs } from '../sanity-api/resolveRefs';
 import { findTranslatedDocumentForLocale } from '../sanity-api/findDocuments';
@@ -376,6 +382,7 @@ const TranslationsProviderContent: React.FC<
   >(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const pendingTranslationsRef = useRef(pendingTranslations);
+  const [forcedJobs] = useState(createForcedJobs);
   // Changing what a refresh asks for (locales, documents, their uploaded
   // versions, the branch) starts a new refresh while an older one may still be
   // in flight. The tracker drops responses whose scope is no longer current, so
@@ -839,7 +846,12 @@ const TranslationsProviderContent: React.FC<
 
         const uploadResult = await uploadFiles(transformedDocuments, secrets);
         await initProject(uploadResult, { timeout: 600 }, secrets);
-        await createJobs(uploadResult, enqueueLocaleIds, secrets, force);
+        const enqueueResult = await createJobs(
+          uploadResult,
+          enqueueLocaleIds,
+          secrets,
+          force
+        );
 
         // Pin the _rev each file was uploaded under. GT status queries need the
         // exact uploaded versionId, and the live _rev moves on (in-place array
@@ -909,6 +921,7 @@ const TranslationsProviderContent: React.FC<
 
         // A forced run keeps the same version, so a status that was already
         // ready describes the result being discarded and must not be imported.
+        trackEnqueuedJobs(forcedJobs, enqueuedStatusKeys, enqueueResult, force);
         if (force) {
           setTranslationStatuses((prev) => {
             const next = new Map(prev);
@@ -1379,6 +1392,8 @@ const TranslationsProviderContent: React.FC<
           secrets
         );
 
+        const failedForcedKeys = await settleForcedJobs(forcedJobs, secrets);
+
         if (!refresh.isCurrent()) return;
 
         // Built here rather than inside an updater: it derives from the
@@ -1408,6 +1423,7 @@ const TranslationsProviderContent: React.FC<
               translation.versionId,
               translation.locale
             );
+            if (isAwaitingForcedJob(forcedJobs, key)) continue;
             newStatuses.set(key, {
               progress: 100,
               isReady: true,
@@ -1430,8 +1446,19 @@ const TranslationsProviderContent: React.FC<
           for (const [key, status] of newStatuses) {
             if (status.isReady) next.delete(key);
           }
+          for (const key of failedForcedKeys) next.delete(key);
           return next.size === prev.size ? prev : next;
         });
+
+        if (failedForcedKeys.length > 0) {
+          toast.push({
+            title: `${failedForcedKeys.length} retranslation(s) could not be completed`,
+            description:
+              'The translations they were replacing were left as they are. Retranslate again to retry.',
+            status: 'error',
+            closable: true,
+          });
+        }
 
         if (!silent) {
           toast.push({
