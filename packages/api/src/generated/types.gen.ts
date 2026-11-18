@@ -203,7 +203,7 @@ export type TranslateContentResponse = {
          */
         error: string;
         /**
-         * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+         * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
          */
         code:
           | 'invalid_request'
@@ -388,6 +388,10 @@ export type WorkspacePluginTranslateData = {
      * Whether to force retranslation of existing translations. Defaults to false. Retranslation may incur additional translation charges.
      */
     force?: boolean;
+    /**
+     * Whether to save edits made in existing translated copies to GT before applying. Defaults to false, which overwrites those copies with the latest GT translations.
+     */
+    saveLocalEdits?: boolean;
   };
   path?: never;
   query?: never;
@@ -2256,7 +2260,7 @@ export type OverwriteTranslationsResponses = {
            */
           error: string;
           /**
-           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
            */
           code:
             | 'source_file_not_found'
@@ -2283,7 +2287,7 @@ export type MoveFilesData = {
     moves: Array<{
       oldFileId: string;
       /**
-       * New file ID, at most 64 characters. A longer ID fails only this move, with code `invalid_request`.
+       * New file ID, at most 64 characters. A longer one fails this move with `invalid_request`.
        */
       newFileId: string;
       newFileName: string;
@@ -2370,7 +2374,7 @@ export type MoveFilesError = MoveFilesErrors[keyof MoveFilesErrors];
 
 export type MoveFilesResponses = {
   /**
-   * Result for each move, in request order, even when every move fails; a failed move has `status: "failed"`, an `error` and a `code`. A move whose `newFileId` is longer than 64 characters fails with `invalid_request`, and one whose old file does not exist with `source_file_not_found`. Each move clones the latest source file and its translations under the new file ID and makes the new file ID current in place of the old one.
+   * One result per move, in request order, even when every move fails. `invalid_request`: `newFileId` is longer than 64 characters. `source_file_not_found`: the old file does not exist. A move clones the latest source file and its translations under the new file ID, which becomes current in place of the old one.
    */
   200: {
     summary: BatchWriteSummary;
@@ -2394,7 +2398,7 @@ export type MoveFilesResponses = {
            */
           error: string;
           /**
-           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
            */
           code:
             | 'invalid_request'
@@ -2957,7 +2961,7 @@ export type PublishFilesResponses = {
                  */
                 error: string;
                 /**
-                 * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+                 * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
                  */
                 code:
                   | 'not_found'
@@ -2988,7 +2992,7 @@ export type PublishFilesResponses = {
                  */
                 error: string;
                 /**
-                 * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+                 * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
                  */
                 code:
                   | 'not_found'
@@ -3003,7 +3007,7 @@ export type PublishFilesResponses = {
            */
           error: string;
           /**
-           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
            */
           code:
             | 'source_file_not_found'
@@ -3174,20 +3178,20 @@ export type UploadSourceFilesData = {
         dataFormat?: FileDataFormat;
         locale: string;
         /**
-         * File ID, at most 64 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved.
+         * File ID, at most 64 characters. A longer one fails this file with `invalid_request`.
          */
         fileId?: string;
         /**
-         * Version ID, at most 255 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved.
+         * Version ID, at most 255 characters. A longer one fails this file with `invalid_request`.
          */
         versionId?: string;
         branchId?: string;
         /**
-         * Branch this file's branch was created from. When the file has no version on its own branch yet, it continues from that branch's current version, so its translations are reused. A branch that does not exist fails this file with `branch_not_found`.
+         * Branch this file's branch was created from. A file with no version on its own branch continues from that branch's current version and reuses its translations. Must exist, or this file fails with `branch_not_found`.
          */
         checkedOutBranchId?: string;
         /**
-         * Branch that was merged into this file's branch. The file is linked to that branch's current version, so translations made there are reused. A branch that does not exist fails this file with `branch_not_found`.
+         * Branch merged into this file's branch. The file links to that branch's current version and reuses its translations. Must exist, or this file fails with `branch_not_found`.
          */
         incomingBranchId?: string;
         metadata?: {
@@ -3219,7 +3223,7 @@ export type UploadSourceFilesData = {
       } & (
         | {
             /**
-             * Base64-encoded file content.
+             * Base64-encoded file content; for LOTTIE, the .lottie ZIP archive.
              */
             content: string;
           }
@@ -3256,7 +3260,7 @@ export type UploadSourceFilesData = {
 
 export type UploadSourceFilesErrors = {
   /**
-   * The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.
+   * The request is malformed or failed validation, or its uploaded non-media files are together too large to read (`file_too_large`). Nothing is saved.
    */
   400: ErrorResponse & {
     code?:
@@ -3331,7 +3335,7 @@ export type UploadSourceFilesError =
 
 export type UploadSourceFilesResponses = {
   /**
-   * Upload result for each source file, in request order, even when every file fails: a failed file has `status: "failed"`, an `error` and a `code` while the other files are saved. A file whose content is not valid base64 or does not parse in its `fileFormat`, or whose upload is missing or not that format, fails with `invalid_request`; a file larger than the API reads per file, as content or as an upload, fails with `file_too_large`; a file that names a branch that does not exist, in `branchId`, `checkedOutBranchId` or `incomingBranchId`, fails with `branch_not_found`. Retrying with the same content and identifiers is safe.
+   * One result per file, in request order, even when every file fails; one failure does not affect the other files. `invalid_request`: content that is not valid base64 or does not parse as its `fileFormat`, or an upload that is missing or another format. `file_too_large`: larger than the API reads per file. `branch_not_found`: `branchId`, `checkedOutBranchId` or `incomingBranchId` names no branch. Retrying with the same content and identifiers is safe.
    */
   200: {
     summary: BatchWriteSummary;
@@ -3367,7 +3371,7 @@ export type UploadSourceFilesResponses = {
            */
           error: string;
           /**
-           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
            */
           code:
             | 'invalid_request'
@@ -3393,18 +3397,18 @@ export type UploadTranslationsData = {
         fileFormat: FileFormat;
         dataFormat?: FileDataFormat;
         /**
-         * File ID, at most 64 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved.
+         * File ID, at most 64 characters. A longer one fails this file with `invalid_request`.
          */
         fileId?: string;
         /**
-         * Version ID, at most 255 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved.
+         * Version ID, at most 255 characters. A longer one fails this file with `invalid_request`.
          */
         versionId?: string;
         branchId?: string;
       } & (
         | {
             /**
-             * Base64-encoded file content.
+             * Base64-encoded file content; for LOTTIE, the .lottie ZIP archive.
              */
             content: string;
           }
@@ -3463,7 +3467,7 @@ export type UploadTranslationsData = {
 
 export type UploadTranslationsErrors = {
   /**
-   * The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.
+   * The request is malformed or failed validation, or its uploaded non-media files are together too large to read (`file_too_large`). Nothing is saved.
    */
   400: ErrorResponse & {
     code?:
@@ -3538,7 +3542,7 @@ export type UploadTranslationsError =
 
 export type UploadTranslationsResponses = {
   /**
-   * Upload result for each translation, in request order, even when every translation fails: a failed translation has `status: "failed"`, an `error` and a `code` while the others are saved. A translation fails with `invalid_request` when its content or its source's content is not valid base64 or does not decode or parse, when its or its source's upload is missing or not that format, or when its MESSAGE_TREE keys do not match the source; it fails with `file_too_large` when it or its source is larger than the API reads per file, as content or as an upload, and with `source_file_not_found` when its source file does not exist. Retrying with the same content is safe; translations that were already saved are saved again, which can repeat completed webhooks and revisions.
+   * One result per translation, in request order, even when every translation fails; one failure does not affect the others. `invalid_request`: its content does not decode or parse, its source's does not decode, an upload of either is missing or another format, or its MESSAGE_TREE keys do not match the source. `file_too_large`: it or its source is larger than the API reads per file. `source_file_not_found`: its source file does not exist. Retrying with the same content is safe, but saves again the translations already saved, which can repeat completed webhooks and revisions.
    */
   200: {
     summary: BatchWriteSummary;
@@ -3576,7 +3580,7 @@ export type UploadTranslationsResponses = {
            */
           error: string;
           /**
-           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
            */
           code:
             | 'invalid_request'
@@ -4707,7 +4711,7 @@ export type TranslateContentError =
 
 export type TranslateContentResponses = {
   /**
-   * Translation results: one result per entry in `requests`, in request order, even when every entry fails. An entry that could not be translated has `status: "failed"` with its `error` message and error `code`, so inspect every result. An entry whose `source` is not valid for its `dataFormat` fails with `invalid_request` and is not translated or billed.
+   * One result per entry in `requests`, in request order, even when every entry fails. An entry whose `source` is invalid for its `dataFormat` fails with `invalid_request` and is not translated or billed.
    */
   200: TranslateContentResponse;
 };
@@ -8412,7 +8416,7 @@ export type ExportContextContentResponse =
 export type UpsertAssetsData = {
   body: {
     /**
-     * 1–10 assets. OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today, and a font's identity is its family, weight and italic style. Two assets with the same identity reject the request, counting each asset whose identity is known from `family` and `style` or, within the size limit, from the font itself. Uploading an asset with a stored identity replaces it for the whole organization.
+     * OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font's identity is its family, weight and italic style: an asset with a stored identity replaces it for the whole organization, and two assets with the same identity reject the request.
      */
     assets: Array<{
       assetType: 'FONT';
@@ -8446,7 +8450,7 @@ export type UpsertAssetsData = {
 
 export type UpsertAssetsErrors = {
   /**
-   * The request is malformed or failed validation, or two assets have the same identity, known from `family` and `style` or, for an asset within the size limit, from the font itself; no asset is written.
+   * The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from a font within the size limit. No asset is written.
    */
   400: ErrorResponse & {
     code?:
@@ -8506,7 +8510,7 @@ export type UpsertAssetsError = UpsertAssetsErrors[keyof UpsertAssetsErrors];
 
 export type UpsertAssetsResponses = {
   /**
-   * Result of each asset, in request order, as `succeeded` or as `failed` with an `error` and a `code`, even when every asset fails: an oversized asset fails with `file_too_large`, and a font with no derivable family with `invalid_request`. Assets are stored independently, and retrying a failed asset is safe.
+   * One result per asset, in request order, even when every asset fails. `file_too_large`: an oversized asset. `invalid_request`: a font whose family cannot be determined. Retrying a failed asset is safe.
    */
   200: {
     summary: BatchWriteSummary;
@@ -8531,7 +8535,7 @@ export type UpsertAssetsResponses = {
            */
           error: string;
           /**
-           * A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize.
+           * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
            */
           code: 'file_too_large' | 'invalid_request' | 'internal_error';
         }
