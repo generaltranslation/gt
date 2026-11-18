@@ -43,6 +43,7 @@ vi.mock('gt-i18n/internal', () => ({
 vi.mock('gt-i18n/internal/compat', () => ({
   getDictionaryManager: () => ({ loadDictionary: mockLoadDictionary }),
   initializeDictionaryManager: mockInitializeDictionaryManager,
+  isDictionaryManagerInitialized: () => false,
 }));
 vi.mock('gt-react/compat', () => ({ GTProvider: mockProvider }));
 

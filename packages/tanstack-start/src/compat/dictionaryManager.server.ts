@@ -1,4 +1,7 @@
-import { initializeDictionaryManager } from 'gt-i18n/internal/compat';
+import {
+  initializeDictionaryManager,
+  isDictionaryManagerInitialized,
+} from 'gt-i18n/internal/compat';
 import { config as pluginConfig } from 'gt-tanstack-start/internal/_config';
 import {
   dictionary,
@@ -6,8 +9,14 @@ import {
 } from 'gt-tanstack-start/internal/_compat-config';
 import { getServerConditionStore } from 'gt-tanstack-start/internal/initializeGT.server';
 
-// Module state, so a Vite dev server restart sets the DictionaryManager up again with the new loader.
+// A Vite dev server restart evaluates the plugin's dictionary loader again, so outside production builds the DictionaryManager is set up once for each evaluation.
 let initialized = false;
+
+function isInitialized(): boolean {
+  return process.env.NODE_ENV === 'production'
+    ? isDictionaryManagerInitialized()
+    : initialized;
+}
 
 /**
  * Initialize GT, then the DictionaryManager from the Vite plugin's dictionary
@@ -16,7 +25,7 @@ let initialized = false;
 export function ensureDictionaryManager(): void {
   // Initializes GT, or throws the plugin setup error without the plugin.
   getServerConditionStore();
-  if (initialized) return;
+  if (isInitialized()) return;
   initializeDictionaryManager({
     dictionary,
     loadDictionary,

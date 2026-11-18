@@ -40,6 +40,7 @@ const config = {
 describe.sequential('gt-tanstack-start/compat (server)', () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.unstubAllEnvs();
     Reflect.deleteProperty(globalThis, '__generaltranslation');
     compatPluginModule.dictionary = { greeting: 'Hello' };
     internalInitializeGTSRA({ ...config, loadTranslations: async () => ({}) });
@@ -80,18 +81,25 @@ describe.sequential('gt-tanstack-start/compat (server)', () => {
     });
   });
 
-  it('sets the dictionary manager up again when the entry is evaluated again, as after a Vite dev server restart', async () => {
-    vi.mocked(getRequest).mockReturnValue(new Request('https://example.com'));
-    await (await load()).getTranslations();
+  // A Vite dev server restart evaluates the entry again; a build never does.
+  it.each([
+    { nodeEnv: 'development', greeting: 'Hi' },
+    { nodeEnv: 'production', greeting: 'Hello' },
+  ])(
+    'serves "$greeting" when the entry is evaluated again with a new dictionary in $nodeEnv',
+    async ({ nodeEnv, greeting }) => {
+      vi.stubEnv('NODE_ENV', nodeEnv);
+      vi.mocked(getRequest).mockReturnValue(new Request('https://example.com'));
+      await (await load()).getTranslations();
 
-    compatPluginModule.dictionary = { greeting: 'Hi' };
-    vi.resetModules();
-    await (await load()).getTranslations();
-    vi.mocked(getRequest).mockRestore();
+      compatPluginModule.dictionary = { greeting: 'Hi' };
+      vi.resetModules();
+      await (await load()).getTranslations();
+      vi.mocked(getRequest).mockRestore();
 
-    expect(getDictionaryManager().lookupDictionary('en', 'greeting')).toEqual({
-      entry: 'Hi',
-      options: {},
-    });
-  });
+      expect(getDictionaryManager().lookupDictionary('en', 'greeting')).toEqual(
+        { entry: greeting, options: {} }
+      );
+    }
+  );
 });

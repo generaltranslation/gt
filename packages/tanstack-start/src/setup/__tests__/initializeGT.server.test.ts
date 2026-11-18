@@ -57,6 +57,7 @@ function resetConditionStoreSingleton() {
 describe('server initialization', () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.unstubAllEnvs();
     resetConditionStoreSingleton();
     mockInitializeReactGT.mockReset();
     mockStoreConstructor.mockClear();
@@ -76,16 +77,24 @@ describe('server initialization', () => {
     expect(getConditionStore()).toBe(mockConditionStore);
   });
 
-  it('initializes again when the module is evaluated again, as after a Vite dev server restart', async () => {
-    pluginModule.config = { defaultLocale: 'en', locales: ['en', 'fr'] };
-    (await load()).ensureInitialized();
+  // A Vite dev server restart evaluates the module again; a build never does.
+  it.each([
+    { nodeEnv: 'development', setups: 2 },
+    { nodeEnv: 'production', setups: 1 },
+  ])(
+    'sets GT up $setups time(s) when the module is evaluated twice in $nodeEnv',
+    async ({ nodeEnv, setups }) => {
+      vi.stubEnv('NODE_ENV', nodeEnv);
+      pluginModule.config = { defaultLocale: 'en', locales: ['en', 'fr'] };
+      (await load()).ensureInitialized();
 
-    vi.resetModules();
-    (await load()).ensureInitialized();
+      vi.resetModules();
+      (await load()).ensureInitialized();
 
-    expect(mockInitializeReactGT).toHaveBeenCalledTimes(2);
-    expect(mockStoreConstructor).toHaveBeenCalledTimes(2);
-  });
+      expect(mockInitializeReactGT).toHaveBeenCalledTimes(setups);
+      expect(mockStoreConstructor).toHaveBeenCalledTimes(setups);
+    }
+  );
 
   it('does nothing without the plugin', async () => {
     pluginModule.config = undefined;
