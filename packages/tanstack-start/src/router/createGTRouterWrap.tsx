@@ -8,7 +8,7 @@ import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 import type { GTRouterState } from './types';
 
-type GTConditionSource = Pick<
+export type GTConditionSource = Pick<
   ReadonlyConditionStoreInterface,
   'getLocale' | 'getRegion' | 'getEnableI18n'
 >;

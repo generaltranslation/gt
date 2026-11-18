@@ -4,7 +4,11 @@ import {
   getServerConditionStore,
   isLocaleRoutingEnabled,
 } from 'gt-tanstack-start/internal/initializeGT.server';
-import { createGTRouterWrap, readGTRouterState } from './createGTRouterWrap';
+import {
+  createGTRouterWrap,
+  readGTRouterState,
+  type GTConditionSource,
+} from './createGTRouterWrap';
 import {
   resolveIntegrationOptions,
   type RouterIntegrationOptions,
@@ -45,9 +49,7 @@ export function integrateRouter<State extends GTRouterState>(
     Provider,
     loadState,
   }: Pick<Parameters<typeof createGTRouterWrap<State>>[0], 'Provider'> & {
-    loadState: (
-      conditionStore: ReturnType<typeof getServerConditionStore>
-    ) => Promise<State>;
+    loadState: (conditionStore: GTConditionSource) => Promise<State>;
   }
 ): void {
   if (integratedRouters.has(router)) return;
