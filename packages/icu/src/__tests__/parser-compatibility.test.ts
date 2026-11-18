@@ -3,7 +3,8 @@
  * https://github.com/formatjs/formatjs/tree/75edf1cd6a7045475bb134daf62c686602c92547/packages/icu-messageformat-parser/integration-tests/test_cases
  * The upstream fixtures are MIT licensed. See ../../THIRD_PARTY_NOTICES.md.
  *
- * The syntax tree is FormatJS's. The options of a skeleton are not always:
+ * The syntax tree is FormatJS's, parsed without a locale: this parser takes
+ * none, so `j` stays in a skeleton for the formatter. The options of a skeleton are not always:
  * where ICU4C reads a skeleton differently, the case is parsed without them
  * (`shouldParseSkeletons: false`) and its hash is FormatJS's for that, and a
  * skeleton Intl cannot format is an error. icu4c-conformance.test.ts checks
@@ -14,11 +15,10 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { parse, type ParserOptions } from '../parser';
 
-type CompatibilityOptions = Omit<ParserOptions, 'locale'> & { locale?: string };
 type CompatibilityCase = {
   name: string;
   message: string;
-  options: CompatibilityOptions;
+  options: ParserOptions;
   expected: { hash: string } | { error: string };
 };
 
@@ -67,7 +67,6 @@ const CASES = [
     name: 'date_arg_skeleton_with_capital_J',
     message: '{0, date, ::J}',
     options: {
-      locale: 'und-u-hc-h12',
       shouldParseSkeletons: true,
       requiresOtherClause: true,
     },
@@ -77,7 +76,6 @@ const CASES = [
     name: 'date_arg_skeleton_with_capital_JJ',
     message: '{0, date, ::JJ}',
     options: {
-      locale: 'und-u-hc-h12',
       shouldParseSkeletons: true,
       requiresOtherClause: true,
     },
@@ -87,72 +85,66 @@ const CASES = [
     name: 'date_arg_skeleton_with_j',
     message: '{0, date, ::j}',
     options: {
-      locale: 'und-u-hc-h12',
       shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: '1b7557b433f27f715d00d3b77dd401446f2f19948b49cceb277b5fedceec48e4',
+      hash: 'db577fedb4e354e251231e199dc5b0d8a412f85d0017c27fe678d1c15b60fa93',
     },
   },
   {
     name: 'date_arg_skeleton_with_jj',
     message: '{0, date, ::jj}',
     options: {
-      locale: 'und-u-hc-h12',
       shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: '7f009aebb20b00725d3198388da1514d97100e558774f2020059200bc811a6fc',
+      hash: '56d22be8c3f1f6cfe46930b00bcd00ff7d3aaa22e40ceccd7c26bbc2167e02aa',
     },
   },
   {
     name: 'date_arg_skeleton_with_jjj',
     message: '{0, date, ::jjj}',
     options: {
-      locale: 'und-u-hc-h12',
       shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: '9db7d9b84bf161bd13ca0bec677968eb16e6a8481c77479e3887c43ee99e76be',
+      hash: '8ecef700ddb8c2e84a8b652e62818eac65b3e85247e7d8cbbfb2903a677b1681',
     },
   },
   {
     name: 'date_arg_skeleton_with_jjjj',
     message: '{0, date, ::jjjj}',
     options: {
-      locale: 'und-u-hc-h12',
       shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: 'a91770cfcd8f6a9752e9143802bca68ee07e57e4ee7efc7ec61060a97dff61b1',
+      hash: '5a5ca9692528a3718101a513241cf5a7fc180d3f386b250cc15c394c0409e34d',
     },
   },
   {
     name: 'date_arg_skeleton_with_jjjjj',
     message: '{0, date, ::jjjjj}',
     options: {
-      locale: 'und-u-hc-h12',
       shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: 'bc856cb8493464467c2ee019125d6697f71a742b9955f03e0321ad0b2f0d0cce',
+      hash: 'de7d3ecfae6e9a6bffb262253cb8f9890d4326872396fbea44f95093f9de9f49',
     },
   },
   {
     name: 'date_arg_skeleton_with_jjjjjj',
     message: '{0, date, ::jjjjjj}',
     options: {
-      locale: 'und-u-hc-h12',
       shouldParseSkeletons: false,
       requiresOtherClause: true,
     },
     expected: {
-      hash: '52599f8960e428c95982b7ac9d2eea943d1d28a35af64680729cb82abb79fe97',
+      hash: 'b9c1d7d0f3c1c305a0ea2fd503b7ee00870ecbe6c1acbff105f5701f2c997de2',
     },
   },
   {
@@ -971,7 +963,6 @@ describe('FormatJS parser compatibility corpus', () => {
       requiresOtherClause: false,
       shouldParseSkeletons: false,
       ...options,
-      ...(options.locale ? { locale: new Intl.Locale(options.locale) } : {}),
     };
 
     if ('error' in expected) {

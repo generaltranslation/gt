@@ -18,10 +18,7 @@ import {
   parseNumberSkeletonOptions,
   parseNumberSkeletonTokens,
 } from './numberSkeleton';
-import {
-  parseDateTimeSkeletonOptions,
-  resolveLocaleHourSkeleton,
-} from './dateTimeSkeleton';
+import { parseDateTimeSkeletonOptions } from './dateTimeSkeleton';
 import {
   GRAMMAR_WHITE_SPACE,
   IDENTIFIER_BOUNDARY,
@@ -313,16 +310,12 @@ class IcuParser {
           if (!skeleton) {
             this.failAt('EXPECT_DATE_TIME_SKELETON', start, this.index);
           }
-          const pattern = resolveLocaleHourSkeleton(
-            skeleton,
-            this.options.locale
-          );
           style = {
             type: SKELETON_TYPE.dateTime,
-            pattern,
+            pattern: skeleton,
             ...(styleLocation ? { location: styleLocation } : {}),
             parsedOptions: this.options.shouldParseSkeletons
-              ? parseDateTimeSkeletonOptions(pattern, false)
+              ? parseDateTimeSkeletonOptions(skeleton, false)
               : {},
           };
         }

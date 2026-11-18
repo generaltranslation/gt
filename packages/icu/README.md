@@ -171,9 +171,7 @@ disagree:
    skeletons.
 2. **`Intl` does the formatting.** This package ships no locale data. What a
    message leaves unsaid is `Intl`'s default: `{n, number, integer}` rounds
-   2.5 to `3`, where ICU rounds it to `2`. The one thing it reads for `Intl`
-   is the hour cycle of a region override, like `en-u-rg-gbzzzz`, which ICU
-   honours and `Intl` does not.
+   2.5 to `3`, where ICU rounds it to `2`.
 3. **What `Intl` can't do throws.** `{n, number, ::permille}` throws a
    `RangeError` that names `permille`, rather than printing something else.
 4. **Values aren't converted.** A number, plural or selectordinal takes a
