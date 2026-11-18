@@ -489,9 +489,18 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         }
       }
       if (options.logLevel === 'debug') {
-        const { loads, regions: count, files, comparisons } = written.stats;
+        const {
+          loads,
+          regions: count,
+          files,
+          comparisons,
+          startupMessages,
+          startupBytes,
+          entryMessages,
+          entryBytes,
+        } = written.stats;
         new Logger(options.logLevel).logDebug(
-          `Split the chunk translations by module: ${loads} entries and dynamic imports, ${count} groups of messages that the same ones need, ${files} files after ${comparisons} comparisons. Replayed every entry and import against those files: each holds every message it reads`
+          `Split the chunk translations by module: ${loads} entries and dynamic imports, ${count} groups of messages that the same ones need, ${files} files after ${comparisons} comparisons. The files every page requests as it starts hold ${startupMessages} messages (${startupBytes} B), of which the entries read ${entryMessages} (${entryBytes} B). Replayed every entry and import against those files: each holds every message it reads`
         );
       }
       return written;

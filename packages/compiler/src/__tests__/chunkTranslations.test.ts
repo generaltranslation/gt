@@ -3152,8 +3152,13 @@ export const ready = initializeGTSPA({});`,
     });
 
     it('reads when modules run from the options of the bundler, and says what a build that runs every module of a chunk loads', async () => {
+      const log = vi.spyOn(console, 'log').mockImplementation(() => {});
       const created = createPlugins(
-        { ...SPLIT, experimentalChunkTranslationsRequestCost: 0 },
+        {
+          ...SPLIT,
+          experimentalChunkTranslationsRequestCost: 0,
+          logLevel: 'debug',
+        },
         'vite',
         { 'translations/fr.json': JSON.stringify(CATALOG) }
       );
@@ -3214,9 +3219,16 @@ export const ready = initializeGTSPA({});`,
 
       vite.options({});
       vite.outputOptions({ strictExecutionOrder: true });
+      log.mockClear();
       expect(generate()['assets/Home.js']).toBeUndefined();
       expect(console.warn).not.toHaveBeenCalledWith(
         expect.stringContaining('they never import')
+      );
+      // The panel's message, which no load reaches, so the entry holds it
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'The files every page requests as it starts hold 1 messages (0 B), of which the entries read 1 (0 B). Replayed every entry'
+        )
       );
     });
 

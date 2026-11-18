@@ -784,6 +784,25 @@ async function checkVariant(name, variant) {
       'Replayed every entry and import against those files: each holds every message it reads'
     )
   );
+  const atStartup =
+    /The files every page requests as it starts hold (\d+) messages \(\d+ B\), of which the entries read (\d+) \(\d+ B\)/.exec(
+      on.output
+    );
+  check(
+    'the build says how many messages a page requests as it starts, and how many of them its entries read',
+    atStartup !== null &&
+      Number(atStartup[1]) >= Number(atStartup[2]) &&
+      Number(atStartup[1]) ===
+        new Set(
+          Object.values(manifest.entries).flatMap((entry) =>
+            entry.files.flatMap(
+              (key) =>
+                manifest.assignment.files[key.slice(key.indexOf('gt-') + 3)]
+            )
+          )
+        ).size,
+    atStartup?.[0]
+  );
   const conservative = /pages load (\d+) messages of modules they never import/;
   // Only a chunk that holds a module one of its imports does not reach makes
   // a page load more than it reaches: the chunk of the shared modules
