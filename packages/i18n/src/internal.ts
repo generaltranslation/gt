@@ -1,6 +1,7 @@
 export {
   createGT,
   getGT,
+  renderCachedMessage,
   type CreateGTParams,
 } from './translation-functions/gt';
 export { createMessages, getMessages } from './translation-functions/messages';
