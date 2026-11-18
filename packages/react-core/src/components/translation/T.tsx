@@ -1,7 +1,7 @@
 import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
-import { renderPreparedT } from '../../utils/rendering/renderPipeline';
+import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
 import type { TProps } from '../../utils/translation/prepareT.shared';
 import { usePrepareT } from '../../utils/translation/usePrepareT';
 

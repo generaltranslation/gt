@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { addGTIdentifier } from '../addGTIdentifier';
 import { writeChildrenAsObjects } from '../writeChildrenAsObjects';
-import { renderDefaultChildren } from '../../rendering/renderPipeline';
+import { renderDefaultChildren } from '../../rendering/renderPipeline.rsc';
 import { Plural } from '../../../components/branches/Plural';
 import {
   GtInternalRelativeTime,

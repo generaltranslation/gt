@@ -4,7 +4,7 @@ import { initializeI18nConfig } from 'gt-i18n/internal';
 import {
   renderDefaultChildren,
   renderTranslatedChildren,
-} from '../renderPipeline';
+} from '../renderPipeline.rsc';
 import { renderPlural } from '../../../components/branches/Plural.shared';
 import type {
   TaggedElement,

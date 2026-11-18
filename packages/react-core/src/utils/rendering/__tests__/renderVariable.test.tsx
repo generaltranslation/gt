@@ -4,7 +4,7 @@ import {
   renderDefaultChildren,
   renderTranslatedChildren,
   renderVariable,
-} from '../renderPipeline';
+} from '../renderPipeline.rsc';
 import type { TaggedElement } from '../../types';
 
 function createNumberVariable(value: number): TaggedElement {

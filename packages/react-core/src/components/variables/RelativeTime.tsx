@@ -2,20 +2,15 @@ import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import {
   computeRelativeTime,
   type RelativeTimeProps,
-  type ResolvedRelativeTimeProps,
 } from './RelativeTime.shared';
 
 // ===== Component ===== //
 
-function GtInternalRelativeTime({
-  _enableI18n,
-  _locale,
-  ...props
-}: RelativeTimeProps & Partial<ResolvedRelativeTimeProps>): string | null {
+function GtInternalRelativeTime(props: RelativeTimeProps): string | null {
   return computeRelativeTime({
     ...props,
-    _enableI18n: _enableI18n ?? useEnableI18n(),
-    _locale: _locale ?? useLocale(),
+    _enableI18n: useEnableI18n(),
+    _locale: useLocale(),
   });
 }
 

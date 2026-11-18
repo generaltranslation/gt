@@ -70,7 +70,7 @@ function createRenderVariable({
         | undefined;
       return (
         <Num {...internalProps} options={numOptions}>
-          {variableValue as number | bigint | null | undefined}
+          {variableValue as ResolvedNumProps['children']}
         </Num>
       );
     }
@@ -82,7 +82,7 @@ function createRenderVariable({
         | undefined;
       return (
         <DateTime {...internalProps} options={dateTimeOptions}>
-          {variableValue as Date | number | null | undefined}
+          {variableValue as ResolvedDateTimeProps['children']}
         </DateTime>
       );
     }
@@ -98,7 +98,7 @@ function createRenderVariable({
           currency={currencyOptions?.currency as string}
           options={currencyOptions}
         >
-          {variableValue as number | bigint | null | undefined}
+          {variableValue as ResolvedCurrencyProps['children']}
         </Currency>
       );
     }

@@ -14,8 +14,9 @@ import {
 import { GtInternalVar, Var } from '../../components/variables/Var';
 import { createRenderPipeline } from './createRenderPipeline';
 
-// RSC render pipeline: bound to the variable renderer backed by the Rsc
-// variable implementations, which receive request conditions explicitly.
+// Render pipeline: bound to the variable renderer backed by the Rsc variable
+// implementations, which receive request conditions explicitly. The pipeline
+// always has them, so the hook-based <T> renders with it too.
 // This module must stay free of hook/context imports so it can be reached
 // from the components-rsc entrypoint.
 
