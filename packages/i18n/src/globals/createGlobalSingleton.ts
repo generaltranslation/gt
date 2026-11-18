@@ -33,11 +33,9 @@ function getExistingNamespace(
   return globalObj.__generaltranslation?.[namespace];
 }
 
-export type SingletonSetOptions = { replace?: boolean };
-
 export type GlobalSingleton<T> = {
   get: () => T;
-  set: (next: T, options?: SingletonSetOptions) => void;
+  set: (next: T) => void;
   isInitialized: () => boolean;
 };
 
@@ -46,6 +44,9 @@ export type GlobalSingleton<T> = {
  *
  * Centralizes the global-registry plumbing and overwrite warning shared by the
  * i18nConfig, i18nCache, i18nStore, and conditionStore singletons.
+ *
+ * `set()` replaces the stored instance, so a caller that must keep the first
+ * one checks `isInitialized()` before it calls `set()`.
  *
  * @param namespace - The package namespace bag (e.g. `i18n`, `reactCore`).
  * @param key - The slot within the namespace and the name used in the warning.
@@ -72,19 +73,18 @@ export function createGlobalSingleton<T>({
     return value as T;
   }
 
-  function set(next: T, { replace = false }: SingletonSetOptions = {}): void {
+  function set(next: T): void {
     const ns = getNamespace(namespace);
-    if (!replace && ns[key] !== undefined && ns[key] !== next) {
+    if (ns[key] !== undefined && ns[key] !== next) {
       if (shouldLogDebugWarnings()) {
         console.warn(
           createDiagnosticMessage({
             source,
             severity: 'Warning',
-            whatHappened: `Global ${key} singleton instance was already initialized`,
+            whatHappened: `Global ${key} singleton instance was replaced`,
           })
         );
       }
-      return;
     }
     ns[key] = next as unknown;
   }

@@ -3,6 +3,7 @@ import type { InitializeGTParams } from './types';
 import {
   I18nCache,
   initializeI18nConfig,
+  isI18nConfigInitialized,
   setI18nCache,
 } from 'gt-i18n/internal';
 import { AsyncConditionStore } from '../async-i18n-cache/AsyncConditionStore';
@@ -14,6 +15,9 @@ import { resolveCredentials } from 'generaltranslation/internal';
  * TODO: auto detect if can find gt.config.json files
  */
 export function initializeGT(params: InitializeGTParams): void {
+  // Another GT runtime in this process, such as gt-next, may own these slots, and replacing them would break it.
+  if (isI18nConfigInitialized()) return;
+
   // The only read of the environment: a variable set after this call is not used.
   const config = { ...params, ...resolveCredentials(params, process.env) };
 

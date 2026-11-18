@@ -55,34 +55,34 @@ describe('react-core i18n store singleton operations', () => {
     expect(reloaded.getI18nStore()).toBe(store);
   });
 
-  it('preserves an existing global i18n store', () => {
+  it('replaces an existing global i18n store', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = createI18nStoreStub();
 
-    setI18nStore(store);
     setI18nStore(createI18nStoreStub());
+    setI18nStore(store);
 
     expect(warn).not.toHaveBeenCalled();
     expect(getI18nStore()).toBe(store);
   });
 
-  it('warns about an existing global i18n store when debug logging is enabled', () => {
+  it('reports a replaced global i18n store when debug logging is enabled', () => {
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = createI18nStoreStub();
 
-    setI18nStore(store);
     setI18nStore(createI18nStoreStub());
+    setI18nStore(store);
 
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining(
-        'Global i18nStore singleton instance was already initialized'
+        'Global i18nStore singleton instance was replaced'
       )
     );
     expect(getI18nStore()).toBe(store);
   });
 
-  it('warns about an existing global i18n store when cached config enables debug logging', () => {
+  it('reports a replaced global i18n store when cached config enables debug logging', () => {
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
     initializeI18nConfig({ defaultLocale: 'en' });
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', '');
@@ -90,12 +90,12 @@ describe('react-core i18n store singleton operations', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = createI18nStoreStub();
 
-    setI18nStore(store);
     setI18nStore(createI18nStoreStub());
+    setI18nStore(store);
 
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining(
-        'Global i18nStore singleton instance was already initialized'
+        'Global i18nStore singleton instance was replaced'
       )
     );
     expect(getI18nStore()).toBe(store);

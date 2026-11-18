@@ -7,6 +7,7 @@ import {
 import { initializeGT } from '../initGT';
 import { initializeGTClient } from '../initGT.client';
 import { initializeGTServer } from '../initGT.server';
+import { getAsyncConditionStore } from '../../condition-store/AsyncConditionStore';
 import { getParams } from '../shared';
 
 type TestGlobal = typeof globalThis & {
@@ -61,27 +62,44 @@ describe('initializeGT', () => {
     expect(getI18nConfig().isDevHotReloadEnabled()).toBe(true);
   });
 
-  it('does not replace an existing ReactI18nCache', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const params = {
-      i18nConfigParams: {
-        defaultLocale: 'en',
-        locales: ['en', 'fr'],
-      },
-      i18nCacheParams: {
-        defaultLocale: 'en',
-        locales: ['en', 'fr'],
-      },
-    };
+  // Every gt-next entry module initializes GT when it is imported.
+  it.each([
+    ['initializeGT', initializeGT],
+    ['initializeGTServer', initializeGTServer],
+    ['initializeGTClient', initializeGTClient],
+  ])(
+    '%s keeps the config and cache a first call set up',
+    (_name, initialize) => {
+      const params = {
+        i18nConfigParams: {
+          defaultLocale: 'en',
+          locales: ['en', 'fr'],
+        },
+        i18nCacheParams: {
+          defaultLocale: 'en',
+          locales: ['en', 'fr'],
+        },
+      };
 
-    initializeGT(params);
-    const cache = getReactI18nCache();
-    expect(cache).toBeInstanceOf(ReactI18nCache);
+      initialize(params);
+      const config = getI18nConfig();
+      const cache = getReactI18nCache();
+      expect(cache).toBeInstanceOf(ReactI18nCache);
 
-    initializeGT(params);
+      initialize(params);
 
-    expect(getReactI18nCache()).toBe(cache);
-    warn.mockRestore();
+      expect(getI18nConfig()).toBe(config);
+      expect(getReactI18nCache()).toBe(cache);
+    }
+  );
+
+  it('initializeGTServer keeps the condition store a first call set up', () => {
+    initializeGTServer();
+    const conditionStore = getAsyncConditionStore();
+
+    initializeGTServer();
+
+    expect(getAsyncConditionStore()).toBe(conditionStore);
   });
 
   it('initializes the React Core config singleton', () => {

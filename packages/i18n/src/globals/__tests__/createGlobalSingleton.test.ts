@@ -39,14 +39,14 @@ describe('createGlobalSingleton', () => {
     }
   );
 
-  it('keeps the first instance and the other fields of its namespace', () => {
+  it('replaces the instance and keeps the other fields of its namespace', () => {
     registry().testGlobalSingleton = { marker: true };
     const singleton = createTestSingleton();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const value = { id: 'first' };
+    const value = { id: 'second' };
 
+    singleton.set({ id: 'first' });
     singleton.set(value);
-    singleton.set({ id: 'second' });
 
     expect(warn).not.toHaveBeenCalled();
     expect(singleton.get()).toBe(value);
@@ -55,18 +55,18 @@ describe('createGlobalSingleton', () => {
     expect(registry().testGlobalSingleton?.marker).toBe(true);
   });
 
-  it('warns about a second instance when debug logging is enabled', () => {
+  it('reports a replaced instance when debug logging is enabled', () => {
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
     const singleton = createTestSingleton();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const value = { id: 'first' };
+    const value = { id: 'second' };
 
+    singleton.set({ id: 'first' });
     singleton.set(value);
-    singleton.set({ id: 'second' });
 
     expect(warn).toHaveBeenCalledExactlyOnceWith(
       expect.stringContaining(
-        'Global singleton singleton instance was already initialized'
+        'Global singleton singleton instance was replaced'
       )
     );
     expect(singleton.get()).toBe(value);
@@ -114,7 +114,7 @@ describe.each([
     create: () => ({ getLocale: () => 'en' }),
   },
 ])('$name singleton', ({ name, notInitialized, load, create }) => {
-  it('throws before it is set, then shares the first instance across module reloads', async () => {
+  it('throws before it is set, then shares its instance with a reloaded module, which can replace it', async () => {
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const first = await load();
@@ -124,13 +124,14 @@ describe.each([
     first.set(instance as never);
     vi.resetModules();
     const reloaded = await load();
-    reloaded.set(create() as never);
-
     expect(reloaded.get()).toBe(instance);
+
+    const replacement = create();
+    reloaded.set(replacement as never);
+
+    expect(first.get()).toBe(replacement);
     expect(warn).toHaveBeenCalledExactlyOnceWith(
-      expect.stringContaining(
-        `Global ${name} singleton instance was already initialized`
-      )
+      expect.stringContaining(`Global ${name} singleton instance was replaced`)
     );
   });
 });
@@ -152,20 +153,20 @@ describe('i18nConfig singleton', () => {
     expect(getI18nConfig().isGTServicesEnabled()).toBe(true);
   });
 
-  it('warns about a second config when the first one enabled debug logging', async () => {
+  it('reports a replaced config when the first one enabled debug logging', async () => {
     const { getI18nConfig, initializeI18nConfig } =
       await import('../../i18n-config/singleton-operations');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     // The stored config remembers the log level it was created with.
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
-    const config = initializeI18nConfig({ defaultLocale: 'en' });
+    initializeI18nConfig({ defaultLocale: 'en' });
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', '');
-    initializeI18nConfig({ defaultLocale: 'fr' });
+    const config = initializeI18nConfig({ defaultLocale: 'fr' });
 
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining(
-        'Global i18nConfig singleton instance was already initialized'
+        'Global i18nConfig singleton instance was replaced'
       )
     );
     expect(getI18nConfig()).toBe(config);

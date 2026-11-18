@@ -40,7 +40,7 @@ export type GTTranslationsData = {
  * ```
  */
 export function initializeGT(config: GTSvelteConfig = {}): void {
-  initializeI18nConfig(config, { replace: true });
+  initializeI18nConfig(config);
   setI18nCache(
     new I18nCache<Content>({
       ...config,
@@ -52,8 +52,7 @@ export function initializeGT(config: GTSvelteConfig = {}): void {
         config.cacheExpiryTime === undefined && typeof window !== 'undefined'
           ? null
           : config.cacheExpiryTime,
-    }),
-    { replace: true }
+    })
   );
 }
 

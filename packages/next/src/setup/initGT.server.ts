@@ -12,7 +12,10 @@ import {
   AsyncConditionStore,
   type AsyncConditionStoreParams,
 } from '../condition-store/AsyncConditionStore';
-import { setAsyncConditionStore } from '../condition-store/AsyncConditionStore';
+import {
+  isAsyncConditionStoreInitialized,
+  setAsyncConditionStore,
+} from '../condition-store/AsyncConditionStore';
 import {
   customGetLocaleUnresolvedWarning,
   customGetRegionUnresolvedWarning,
@@ -43,6 +46,9 @@ export function initializeGTServer(
     i18nConfigParams,
     i18nCacheParams,
   });
+
+  // Every gt-next server entry module calls this on import, so only the first call may set the store.
+  if (isAsyncConditionStoreInitialized()) return;
 
   const asyncConditionStoreParams = getAsyncConditionStoreParams();
 

@@ -20,6 +20,13 @@ describe.sequential('initializeGT credentials', () => {
     });
   });
 
+  it('keeps the first initialization, which another GT runtime may own', () => {
+    initializeGT({ defaultLocale: 'en' });
+    initializeGT({ defaultLocale: 'fr' });
+
+    expect(getI18nConfig().getDefaultLocale()).toBe('en');
+  });
+
   it('does not use a variable set after initialization', () => {
     vi.stubEnv('GT_API_KEY', undefined);
     initializeGT({ projectId: 'project-id' });

@@ -35,8 +35,6 @@ export function setupGT(
   ) => Promise<Record<string, Content>> = async (locale) =>
     catalog[locale] ?? {}
 ) {
-  delete (globalThis as { __generaltranslation?: unknown })
-    .__generaltranslation;
   initializeGT({
     defaultLocale: 'en',
     locales: ['en', 'fr', 'de', 'ar', 'he', 'fa'],

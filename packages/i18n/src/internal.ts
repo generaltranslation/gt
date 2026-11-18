@@ -25,6 +25,7 @@ export type { TranslateListenerLookup } from './utils/listenerKeys';
 export {
   getI18nConfig,
   initializeI18nConfig,
+  isI18nConfigInitialized,
   setI18nConfig,
 } from './i18n-config/singleton-operations';
 export { I18nConfig } from './i18n-config/I18nConfig';

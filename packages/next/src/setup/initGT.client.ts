@@ -3,6 +3,7 @@ import {
   type I18nConfigParams,
   type ReactI18nCacheParams,
 } from '@generaltranslation/react-core/pure';
+import { isI18nConfigInitialized } from 'gt-i18n/internal';
 import { getParams } from './shared';
 
 /**
@@ -17,6 +18,9 @@ export function initializeGTClient(
     i18nCacheParams: ReactI18nCacheParams;
   } = getParams()
 ): void {
+  // Every gt-next client entry module calls this on import, so only the first call may set up GT.
+  if (isI18nConfigInitialized()) return;
+
   internalInitializeGTSRA({
     ...i18nConfigParams,
     ...i18nCacheParams,
