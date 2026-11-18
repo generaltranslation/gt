@@ -19,6 +19,19 @@ export function isElementNode(node: JsxChild): node is JsxElement {
   return typeof node === 'object' && node !== null && !isVariable(node);
 }
 
+/** The text of rich content, for elements such as `<textarea>` that hold only text. */
+export function plainText(children: JsxChildren | undefined): string {
+  return childList(children)
+    .map((node) =>
+      typeof node === 'string'
+        ? node
+        : isElementNode(node)
+          ? plainText(node.c)
+          : ''
+    )
+    .join('');
+}
+
 /** Maps each variable key in the source to the id of its snippet. */
 export function variableIds(source: JsxChildren): Map<string, number> {
   const ids = new Map<string, number>();

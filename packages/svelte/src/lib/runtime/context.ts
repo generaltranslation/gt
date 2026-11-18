@@ -33,6 +33,29 @@ export function getGT(): GT {
   throw new Error(missingGTDiagnostic);
 }
 
+/** The runtime a component's compiled `gt()` calls read. */
+export type GTHandle = {
+  bind(): void;
+  string(hash: string, source: string): string;
+};
+
+/**
+ * Target of compiled component code. The plugin calls `bind()` at the end of
+ * the component script, so a `setGT()` in that script is already in effect.
+ */
+export function createGTHandle(): GTHandle {
+  let runtime: GT | undefined;
+  return {
+    bind() {
+      runtime = getGT();
+    },
+    string(hash, source) {
+      runtime ??= getGT();
+      return runtime.string(hash, source);
+    },
+  };
+}
+
 /**
  * Creates the page's browser runtime and loads the active locale's catalog,
  * so the first render already shows translated text.

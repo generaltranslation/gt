@@ -2,7 +2,7 @@ import path from 'node:path';
 import { defaultInlineManifestPath } from 'generaltranslation/internal';
 import { packageName } from '../shared/protocol.js';
 import type { AnyNode } from './ast.js';
-import { prepareSvelteComponent } from './component.js';
+import { prepareSvelteComponent, withoutStyleContent } from './component.js';
 import { SourceCompiler } from './compiler.js';
 import { compileModule } from './module.js';
 import { ManifestCollector } from './manifest.js';
@@ -97,7 +97,12 @@ export function gtSvelte(
     async transform(code, id) {
       const file = sourceFile(id);
       if (!file?.endsWith('.svelte')) return null;
-      const prepared = prepareSvelteComponent(code, file, relative(file));
+      const prepared = prepareSvelteComponent(
+        code,
+        file,
+        relative(file),
+        await withoutStyleContent(code, file)
+      );
       const sources = await runtimeSources(this, prepared.importSources, file);
       const result = sources.size ? prepared.compile(sources) : null;
       collector.set(file, result?.entries ?? []);

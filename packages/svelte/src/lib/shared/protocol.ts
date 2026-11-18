@@ -7,10 +7,11 @@ export const compiledPrefix = '__gt_';
 export const hashProp = `${compiledPrefix}hash`;
 export const sourceProp = `${compiledPrefix}source`;
 export const componentHandle = `${compiledPrefix}rt`;
-export const getGTAlias = `${compiledPrefix}getGT`;
+export const handleAlias = `${compiledPrefix}handle`;
 export const lookupAlias = `${compiledPrefix}lookup`;
 export const renderParam = `${compiledPrefix}r`;
 export const childrenParam = `${compiledPrefix}c`;
+export const textParam = `${compiledPrefix}t`;
 
 /** Names the snippet that renders the element or variable with this id. */
 export function snippetName(id: number): string {

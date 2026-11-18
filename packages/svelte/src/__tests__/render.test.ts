@@ -2,7 +2,9 @@ import { formatNum } from 'generaltranslation';
 import { createGT, gtContext } from 'gt-svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
+import { hashStringMessage } from 'gt-i18n/internal/string';
 import Greeting from './fixtures/Greeting.svelte';
+import RootProvider from './fixtures/RootProvider.svelte';
 import { frenchCatalog } from './frenchCatalog';
 
 function renderGreeting(locale: string): string {
@@ -32,6 +34,19 @@ describe('server rendering', () => {
     );
     expect(html).toContain(
       `Ada, vous avez ${formatNum(1234, { locales: ['fr', 'en'] })} messages.`
+    );
+  });
+
+  it('reads the runtime a component provides in its own script', () => {
+    const hello = hashStringMessage('Hello');
+    const { body } = render(RootProvider, {
+      props: {
+        translations: { [hello]: 'Bonjour' },
+        nestedTranslations: { [hello]: 'Salut' },
+      },
+    });
+    expect(body.replace(/<!--[^]*?-->/g, '')).toBe(
+      '<h1>Bonjour</h1> <p>Salut</p>'
     );
   });
 });

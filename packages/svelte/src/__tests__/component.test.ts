@@ -4,7 +4,10 @@ import { compile } from 'svelte/compiler';
 import { parseAst } from 'vite';
 import { describe, expect, it } from 'vitest';
 import type { AnyNode } from '../lib/vite/ast';
-import { prepareSvelteComponent } from '../lib/vite/component';
+import {
+  prepareSvelteComponent,
+  withoutStyleContent,
+} from '../lib/vite/component';
 import { compileModule } from '../lib/vite/module';
 
 const wireFormat = JSON.parse(
@@ -66,7 +69,7 @@ describe('<T> serialization', () => {
 </script>
 <T context="cta">Click <button class="primary" title={gt('Press')} onclick={() => clicks++}>here</button>.</T>`);
     expect(result!.code).toContain(
-      '{#snippet __gt_1(__gt_r, __gt_c)}<button class="primary" title={__gt_rt.string('
+      '{#snippet __gt_1(__gt_r, __gt_c, __gt_t)}<button class="primary" title={__gt_rt.string('
     );
     expect(result!.code).toContain(
       '{@render __gt_r(__gt_c)}</button>{/snippet}'
@@ -80,6 +83,62 @@ describe('<T> serialization', () => {
   });
 });
 
+describe('markup Svelte handles specially', () => {
+  it('compiles textarea content as text for client and server', () => {
+    const result = compileComponent(
+      `<script>import { T } from 'gt-svelte';</script><T><textarea>Hello</textarea></T>`
+    );
+    expect(result!.code).toContain(
+      '{#snippet __gt_1(__gt_r, __gt_c, __gt_t)}<textarea>{__gt_t}</textarea>{/snippet}'
+    );
+    expect(compile(result!.code, { generate: 'client' }).js.code).toBeTruthy();
+    expect(compile(result!.code, { generate: 'server' }).js.code).toBeTruthy();
+  });
+
+  it('keeps preformatted whitespace and non-breaking spaces in the source', () => {
+    const result =
+      compileComponent(`<script>import { T } from 'gt-svelte';</script>
+<T>&nbsp;Code:&nbsp;<pre>
+first
+  second</pre></T>`);
+    expect(result!.entries[0]!.source).toEqual([
+      '\u00a0Code:\u00a0',
+      { t: 'pre', i: 1, c: 'first\n  second' },
+    ]);
+  });
+
+  it('names the namespace of elements inside svg', () => {
+    const result = compileComponent(
+      `<script>import { T } from 'gt-svelte';</script><T><svg><a href="/"><text>Hi</text></a></svg></T>`
+    );
+    expect(result!.code).toContain(
+      '<svelte:element this="a" xmlns="http://www.w3.org/2000/svg" href="/">'
+    );
+    expect(result!.code).toContain('<svg>{@render __gt_r(__gt_c)}</svg>');
+  });
+
+  it('parses components whose styles need a preprocessor', async () => {
+    const code = `<script>import { gt } from 'gt-svelte';</script>
+<p>{gt('Styled')}</p>
+<style lang="scss">$color: red; p { color: $color; }</style>`;
+    const prepared = prepareSvelteComponent(
+      code,
+      'C.svelte',
+      'C.svelte',
+      await withoutStyleContent(code, 'C.svelte')
+    );
+    const result = prepared.compile(runtime);
+    expect(result!.entries.map((entry) => entry.source)).toEqual(['Styled']);
+    expect(result!.code).toContain('$color: red; p { color: $color; }');
+  });
+
+  it('leaves components Svelte cannot parse for Svelte to report', () => {
+    expect(
+      compileComponent('<template lang="pug">p Hello</template><p>{')
+    ).toBeNull();
+  });
+});
+
 describe('gt() calls', () => {
   it('replaces aliased calls with precomputed STRING lookups', () => {
     const result = compileComponent(`<script lang="ts">
@@ -90,7 +149,8 @@ describe('gt() calls', () => {
 {#each ['a'] as tr}<span>{tr}</span>{/each}`);
     const welcome = hashStringMessage('Welcome', { $context: 'page heading' });
     expect(result!.code).toContain(`__gt_rt.string("${welcome}", "Welcome")`);
-    expect(result!.code).toContain('const __gt_rt = __gt_getGT();');
+    expect(result!.code).toContain('const __gt_rt = __gt_handle();');
+    expect(result!.code).toContain(';__gt_rt.bind();\n</script>');
     expect(result!.code).toContain('<span>{tr}</span>');
     expect(result!.entries.map((entry) => entry.metadata.hash)).toEqual([
       welcome,
@@ -107,7 +167,7 @@ describe('gt() calls', () => {
     expect(result!.code).toContain(
       `export const label = __gt_lookup("${hashStringMessage('Module label')}", "Module label");`
     );
-    expect(result!.code).not.toContain('__gt_getGT');
+    expect(result!.code).not.toContain('__gt_handle');
   });
 
   it('ignores components that do not import the runtime', () => {

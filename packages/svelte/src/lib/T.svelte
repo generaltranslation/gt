@@ -7,12 +7,13 @@
     childList,
     isElementNode,
     isVariableNode,
+    plainText,
     variableIds,
   } from './runtime/richContent.js';
   import { snippetName } from './shared/protocol.js';
 
   type ShellSnippet = Snippet<
-    [Snippet<[JsxChildren | undefined]>, JsxChildren | undefined]
+    [Snippet<[JsxChildren | undefined]>, JsxChildren | undefined, string]
   >;
 
   // These names must match hashProp and sourceProp in shared/protocol.ts.
@@ -39,4 +40,4 @@
   }
 </script>
 
-{#snippet nodes(children: JsxChildren | undefined)}{#each childList(children) as node}{#if typeof node === 'string'}{node}{:else if isVariableNode(node)}{@render shell(ids.get(node.k))?.(nodes, undefined)}{:else if isElementNode(node)}{@const render = shell(node.i)}{#if render}{@render render(nodes, node.c)}{:else}{@render nodes(node.c)}{/if}{/if}{/each}{/snippet}{@render nodes(content)}
+{#snippet nodes(children: JsxChildren | undefined)}{#each childList(children) as node}{#if typeof node === 'string'}{node}{:else if isVariableNode(node)}{@render shell(ids.get(node.k))?.(nodes, undefined, '')}{:else if isElementNode(node)}{@const render = shell(node.i)}{#if render}{@render render(nodes, node.c, plainText(node.c))}{:else}{@render nodes(node.c)}{/if}{/if}{/each}{/snippet}{@render nodes(content)}

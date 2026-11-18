@@ -5,17 +5,18 @@ import type {
   JsxElement,
   Variable,
 } from 'generaltranslation/types';
-import { parse } from 'svelte/compiler';
+import { parse, preprocess } from 'svelte/compiler';
 import {
   childrenParam,
   componentHandle,
-  getGTAlias,
+  handleAlias,
   hashProp,
   isVariableExport,
   lookupAlias,
   renderParam,
   snippetName,
   sourceProp,
+  textParam,
   variableExports,
   type VariableExport,
 } from '../shared/protocol.js';
@@ -114,13 +115,31 @@ type TMetadata = {
   requiresReview?: boolean;
 };
 
+type Namespace = 'html' | 'svg' | 'mathml';
+
+const namespaceUris = {
+  svg: 'http://www.w3.org/2000/svg',
+  mathml: 'http://www.w3.org/1998/Math/MathML',
+} as const;
+
 type Shell =
-  | { id: number; kind: 'element'; node: AnyNode }
+  | { id: number; kind: 'element'; node: AnyNode; namespace: Namespace }
   | { id: number; kind: 'variable'; node: AnyNode; variable: VariableExport };
 
 type RichContentState = { nextId: number; shells: Shell[] };
 
+/** How the text inside an element renders. */
+type TextContext = { isRoot: boolean; preserve: boolean };
+
+/** Elements whose whitespace renders as written. */
+const preformattedElements = new Set(['pre', 'textarea']);
+
+/** Elements whose content Svelte accepts only as text and expressions. */
+const rawTextElements = new Set(['textarea']);
+
 const whitespace = /[\t\n\f\r ]+/g;
+const leadingWhitespace = /^[\t\n\f\r ]+/;
+const trailingWhitespace = /[\t\n\f\r ]+$/;
 
 export type PreparedComponent = {
   /** Import sources in the component's scripts, to resolve before compiling. */
@@ -129,13 +148,46 @@ export type PreparedComponent = {
   compile(runtimeSources: ReadonlySet<string>): CompileResult | null;
 };
 
-/** Parses a component once with Svelte's own parser. */
+const unparsable: PreparedComponent = {
+  importSources: [],
+  compile: () => null,
+};
+
+/**
+ * The component with every `<style>` body replaced by spaces, so style
+ * languages such as SCSS do not have to parse as CSS. Offsets stay the same.
+ */
+export async function withoutStyleContent(
+  code: string,
+  filename: string
+): Promise<string> {
+  if (!code.includes('<style')) return code;
+  const { code: blanked } = await preprocess(
+    code,
+    { style: ({ content }) => ({ code: content.replace(/[^\n]/g, ' ') }) },
+    { filename }
+  );
+  return blanked.length === code.length ? blanked : code;
+}
+
+/**
+ * Parses a component once with Svelte's own parser.
+ *
+ * `parseSource` must have the same offsets as `code`; edits apply to `code`.
+ * A component Svelte cannot parse is left for Svelte to report.
+ */
 export function prepareSvelteComponent(
   code: string,
   filename: string,
-  filePath: string
+  filePath: string,
+  parseSource: string = code
 ): PreparedComponent {
-  const ast = parse(code, { modern: true, filename }) as unknown as AnyNode;
+  let ast: AnyNode;
+  try {
+    ast = parse(parseSource, { modern: true, filename }) as unknown as AnyNode;
+  } catch {
+    return unparsable;
+  }
   const scripts = [ast.module, ast.instance].filter(Boolean) as AnyNode[];
   return {
     importSources: scripts.flatMap((script) =>
@@ -189,9 +241,11 @@ class ComponentCompiler extends SourceCompiler {
         moduleBindings
       );
     }
+    const options = this.ast.options as { namespace?: Namespace } | null;
     this.#walkFragment(
       this.ast.fragment as AnyNode,
-      new TemplateScope(new Set())
+      new TemplateScope(new Set()),
+      options?.namespace ?? 'html'
     );
 
     const source = JSON.stringify(this.runtimeSource);
@@ -203,10 +257,14 @@ class ComponentCompiler extends SourceCompiler {
         );
       }
       if (this.usesCallSite('component')) {
-        const declaration = `\nimport { getGT as ${getGTAlias} } from ${source};\nconst ${componentHandle} = ${getGTAlias}();\n`;
-        if (instanceProgram)
+        const declaration = `\nimport { createGTHandle as ${handleAlias} } from ${source};\nconst ${componentHandle} = ${handleAlias}();\n`;
+        const bind = `\n;${componentHandle}.bind();\n`;
+        if (instanceProgram) {
           output.appendLeft(instanceProgram.start, declaration);
-        else output.prepend(`<script>${declaration}</script>\n`);
+          output.appendLeft(instanceProgram.end, bind);
+        } else {
+          output.prepend(`<script>${declaration}${bind}</script>\n`);
+        }
       }
     }, filename);
   }
@@ -232,7 +290,11 @@ class ComponentCompiler extends SourceCompiler {
     }
   }
 
-  #walkFragment(fragment: AnyNode | null | undefined, scope: TemplateScope) {
+  #walkFragment(
+    fragment: AnyNode | null | undefined,
+    scope: TemplateScope,
+    namespace: Namespace
+  ) {
     if (!fragment) return;
     const nodes = fragment.nodes as AnyNode[];
     const names = new Set<string>();
@@ -247,10 +309,10 @@ class ComponentCompiler extends SourceCompiler {
       }
     }
     const inner = scope.extend(names);
-    for (const node of nodes) this.#walkNode(node, inner);
+    for (const node of nodes) this.#walkNode(node, inner, namespace);
   }
 
-  #walkNode(node: AnyNode, scope: TemplateScope): void {
+  #walkNode(node: AnyNode, scope: TemplateScope, namespace: Namespace): void {
     switch (node.type) {
       case 'Text':
       case 'Comment':
@@ -271,8 +333,8 @@ class ComponentCompiler extends SourceCompiler {
         return;
       case 'IfBlock':
         this.#expression(node.test, scope);
-        this.#walkFragment(node.consequent as AnyNode, scope);
-        this.#walkFragment(node.alternate as AnyNode | null, scope);
+        this.#walkFragment(node.consequent as AnyNode, scope, namespace);
+        this.#walkFragment(node.alternate as AnyNode | null, scope, namespace);
         return;
       case 'EachBlock': {
         this.#expression(node.expression, scope);
@@ -282,13 +344,17 @@ class ComponentCompiler extends SourceCompiler {
         const body = scope.extend(names);
         if (node.context) this.#expression([node.context as AnyNode], body);
         this.#expression(node.key, body);
-        this.#walkFragment(node.body as AnyNode, body);
-        this.#walkFragment(node.fallback as AnyNode | undefined, scope);
+        this.#walkFragment(node.body as AnyNode, body, namespace);
+        this.#walkFragment(
+          node.fallback as AnyNode | undefined,
+          scope,
+          namespace
+        );
         return;
       }
       case 'AwaitBlock': {
         this.#expression(node.expression, scope);
-        this.#walkFragment(node.pending as AnyNode | null, scope);
+        this.#walkFragment(node.pending as AnyNode | null, scope, namespace);
         for (const [pattern, fragment] of [
           [node.value, node.then],
           [node.error, node.catch],
@@ -297,13 +363,13 @@ class ComponentCompiler extends SourceCompiler {
           patternNames(pattern, names);
           const inner = scope.extend(names);
           if (pattern) this.#expression([pattern as AnyNode], inner);
-          this.#walkFragment(fragment as AnyNode | null, inner);
+          this.#walkFragment(fragment as AnyNode | null, inner, namespace);
         }
         return;
       }
       case 'KeyBlock':
         this.#expression(node.expression, scope);
-        this.#walkFragment(node.fragment as AnyNode, scope);
+        this.#walkFragment(node.fragment as AnyNode, scope, namespace);
         return;
       case 'SnippetBlock': {
         const parameters = node.parameters as AnyNode[];
@@ -311,41 +377,49 @@ class ComponentCompiler extends SourceCompiler {
         for (const parameter of parameters) patternNames(parameter, names);
         const body = scope.extend(names);
         this.#expression(parameters, body);
-        this.#walkFragment(node.body as AnyNode, body);
+        this.#walkFragment(node.body as AnyNode, body, namespace);
         return;
       }
       case 'Component': {
         const binding = this.#binding(componentRoot(node), scope);
         if (binding?.imported === 'T') {
-          this.#compileT(node, scope);
+          this.#compileT(node, scope, namespace);
           return;
         }
         if (binding?.imported === 'gt') {
           this.diagnostics.report(node.start, directCallOnly);
           return;
         }
-        this.#walkElement(node, scope);
+        this.#walkElement(node, scope, namespace);
         return;
       }
       default:
         if (elementTypes.has(node.type)) {
-          this.#walkElement(node, scope);
+          this.#walkElement(node, scope, namespace);
           return;
         }
         forEachChild(node, (child) => {
-          if (child.type === 'Fragment') this.#walkFragment(child, scope);
-          else if (templateTypes.has(child.type)) this.#walkNode(child, scope);
-          else this.#expression(child, scope);
+          if (child.type === 'Fragment') {
+            this.#walkFragment(child, scope, namespace);
+          } else if (templateTypes.has(child.type)) {
+            this.#walkNode(child, scope, namespace);
+          } else {
+            this.#expression(child, scope);
+          }
         });
     }
   }
 
-  #walkElement(node: AnyNode, scope: TemplateScope): void {
+  #walkElement(node: AnyNode, scope: TemplateScope, namespace: Namespace) {
     if (node.type === 'SvelteElement') this.#expression(node.tag, scope);
     if (node.type === 'SvelteComponent')
       this.#expression(node.expression, scope);
     const letNames = this.#walkAttributes(node, scope);
-    this.#walkFragment(node.fragment as AnyNode, scope.extend(letNames));
+    this.#walkFragment(
+      node.fragment as AnyNode,
+      scope.extend(letNames),
+      contentNamespace(node, namespace)
+    );
   }
 
   /** Compiles attribute expressions and returns the names `let:` directives declare. */
@@ -385,14 +459,15 @@ class ComponentCompiler extends SourceCompiler {
     return letNames;
   }
 
-  #compileT(node: AnyNode, scope: TemplateScope): void {
+  #compileT(node: AnyNode, scope: TemplateScope, namespace: Namespace) {
     const metadata = this.#readTMetadata(node);
     const state: RichContentState = { nextId: 1, shells: [] };
     const children = this.#serializeChildren(
       (node.fragment as AnyNode).nodes as AnyNode[],
       scope,
       state,
-      true
+      namespace,
+      { isRoot: true, preserve: false }
     );
     const source = toWireChildren(children);
     if (source === undefined) {
@@ -439,7 +514,8 @@ class ComponentCompiler extends SourceCompiler {
     nodes: AnyNode[],
     scope: TemplateScope,
     state: RichContentState,
-    isRoot: boolean
+    namespace: Namespace,
+    text: TextContext
   ): JsxChild[] {
     const children: JsxChild[] = [];
     for (const node of nodes) {
@@ -450,7 +526,9 @@ class ComponentCompiler extends SourceCompiler {
         case 'Comment':
           break;
         case 'RegularElement':
-          children.push(this.#serializeElement(node, scope, state));
+          children.push(
+            this.#serializeElement(node, scope, state, namespace, text)
+          );
           break;
         case 'Component': {
           const binding = this.#binding(componentRoot(node), scope);
@@ -460,10 +538,18 @@ class ComponentCompiler extends SourceCompiler {
             this.diagnostics.report(node.start, directCallOnly);
           } else if (binding && isVariableExport(binding.imported)) {
             children.push(
-              this.#serializeVariable(node, binding.imported, scope, state)
+              this.#serializeVariable(
+                node,
+                binding.imported,
+                scope,
+                state,
+                namespace
+              )
             );
           } else {
-            children.push(this.#serializeElement(node, scope, state));
+            children.push(
+              this.#serializeElement(node, scope, state, namespace, text)
+            );
           }
           break;
         }
@@ -471,27 +557,41 @@ class ComponentCompiler extends SourceCompiler {
           this.diagnostics.report(node.start, dynamicTContent);
       }
     }
-    return normalizeText(children, isRoot);
+    return normalizeText(children, text);
   }
 
   #serializeElement(
     node: AnyNode,
     scope: TemplateScope,
-    state: RichContentState
+    state: RichContentState,
+    parentNamespace: Namespace,
+    parentText: TextContext
   ): JsxElement {
     const id = state.nextId++;
-    state.shells.push({ id, kind: 'element', node });
+    const namespace = ownNamespace(node, parentNamespace);
+    state.shells.push({ id, kind: 'element', node, namespace });
     if (this.#walkAttributes(node, scope).size) {
       this.diagnostics.report(node.start, dynamicTContent);
     }
-    const children = toWireChildren(
-      this.#serializeChildren(
-        (node.fragment as AnyNode).nodes as AnyNode[],
-        scope,
-        state,
-        false
-      )
+    const preformatted =
+      node.type === 'RegularElement' &&
+      preformattedElements.has(node.name as string);
+    const serialized = this.#serializeChildren(
+      (node.fragment as AnyNode).nodes as AnyNode[],
+      scope,
+      state,
+      contentNamespace(node, parentNamespace),
+      {
+        isRoot: false,
+        preserve: parentText.preserve || preformatted,
+      }
     );
+    // The HTML parser drops one newline right after a <pre> or <textarea> tag.
+    if (preformatted && typeof serialized[0] === 'string') {
+      serialized[0] = serialized[0].replace(/^\r?\n/, '');
+      if (!serialized[0]) serialized.shift();
+    }
+    const children = toWireChildren(serialized);
     return {
       t: node.name as string,
       i: id,
@@ -503,7 +603,8 @@ class ComponentCompiler extends SourceCompiler {
     node: AnyNode,
     variable: VariableExport,
     scope: TemplateScope,
-    state: RichContentState
+    state: RichContentState,
+    namespace: Namespace
   ): Variable {
     const id = state.nextId++;
     state.shells.push({ id, kind: 'variable', node, variable });
@@ -511,9 +612,9 @@ class ComponentCompiler extends SourceCompiler {
       if ((node.attributes as AnyNode[]).length) {
         this.diagnostics.report(node.start, varProps);
       }
-      this.#walkFragment(node.fragment as AnyNode, scope);
+      this.#walkFragment(node.fragment as AnyNode, scope, namespace);
     } else {
-      this.#walkElement(node, scope);
+      this.#walkElement(node, scope, namespace);
     }
     const { name, type } = variableExports[variable];
     return { i: id, k: `_gt_${name}_${id}`, v: type };
@@ -535,14 +636,67 @@ class ComponentCompiler extends SourceCompiler {
             : '';
       return `{#snippet ${snippetName(shell.id)}()}${content}{/snippet}`;
     }
+    const name = node.name as string;
+    const tag = elementTag(node, shell.namespace);
     if (!first || !last) {
-      return `{#snippet ${snippetName(shell.id)}()}${this.edits.text(node.start, node.end)}{/snippet}`;
+      const markup = this.edits.text(node.start, node.end);
+      const content = tag
+        ? `${tag.open}${markup.slice(name.length + 1)}`.replace(
+            new RegExp(`</${escapeRegExp(name)}\\s*>$`),
+            tag.close
+          )
+        : markup;
+      return `{#snippet ${snippetName(shell.id)}()}${content}{/snippet}`;
     }
-    return `{#snippet ${snippetName(shell.id)}(${renderParam}, ${childrenParam})}${this.edits.text(
-      node.start,
-      first.start
-    )}{@render ${renderParam}(${childrenParam})}${this.edits.text(last.end, node.end)}{/snippet}`;
+    const open = this.edits.text(node.start, first.start);
+    const close = this.edits.text(last.end, node.end);
+    const content = rawTextElements.has(name)
+      ? `{${textParam}}`
+      : `{@render ${renderParam}(${childrenParam})}`;
+    return `{#snippet ${snippetName(shell.id)}(${renderParam}, ${childrenParam}, ${textParam})}${
+      tag ? tag.open + open.slice(name.length + 1) : open
+    }${content}${tag ? tag.close : close}{/snippet}`;
   }
+}
+
+/** The namespace an element renders in, given the namespace around it. */
+function ownNamespace(node: AnyNode, parent: Namespace): Namespace {
+  if (node.type !== 'RegularElement') return parent;
+  if (node.name === 'svg') return 'svg';
+  if (node.name === 'math') return 'mathml';
+  return parent;
+}
+
+/** The namespace of an element's children. */
+function contentNamespace(node: AnyNode, parent: Namespace): Namespace {
+  const own = ownNamespace(node, parent);
+  return own === 'svg' && node.name === 'foreignObject' ? 'html' : own;
+}
+
+/**
+ * A snippet outside its `<svg>` or `<math>` parent compiles as HTML, so an
+ * element that renders in another namespace names it explicitly.
+ */
+function elementTag(
+  node: AnyNode,
+  namespace: Namespace
+): { open: string; close: string } | undefined {
+  if (
+    namespace === 'html' ||
+    node.type !== 'RegularElement' ||
+    node.name === 'svg' ||
+    node.name === 'math'
+  ) {
+    return undefined;
+  }
+  return {
+    open: `<svelte:element this=${JSON.stringify(node.name)} xmlns=${JSON.stringify(namespaceUris[namespace])}`,
+    close: '</svelte:element>',
+  };
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function componentRoot(node: AnyNode): string {
@@ -569,8 +723,14 @@ function attributeConstant(
   return undefined;
 }
 
-/** Collapses whitespace like Svelte does and trims it at the `<T>` boundary. */
-function normalizeText(children: JsxChild[], isRoot: boolean): JsxChild[] {
+/**
+ * Collapses ASCII whitespace like Svelte does and trims it at the `<T>`
+ * boundary. Preformatted text and non-breaking spaces stay as written.
+ */
+function normalizeText(
+  children: JsxChild[],
+  { isRoot, preserve }: TextContext
+): JsxChild[] {
   const merged: JsxChild[] = [];
   for (const child of children) {
     const previous = merged.at(-1);
@@ -580,16 +740,20 @@ function normalizeText(children: JsxChild[], isRoot: boolean): JsxChild[] {
       merged.push(child);
     }
   }
+  if (preserve) return merged.filter((child) => child !== '');
   const normalized = merged.map((child) =>
     typeof child === 'string' ? child.replace(whitespace, ' ') : child
   );
   if (isRoot) {
     if (typeof normalized[0] === 'string') {
-      normalized[0] = normalized[0].trimStart();
+      normalized[0] = normalized[0].replace(leadingWhitespace, '');
     }
     const lastIndex = normalized.length - 1;
     if (typeof normalized[lastIndex] === 'string') {
-      normalized[lastIndex] = (normalized[lastIndex] as string).trimEnd();
+      normalized[lastIndex] = (normalized[lastIndex] as string).replace(
+        trailingWhitespace,
+        ''
+      );
     }
   }
   return normalized.filter((child) => child !== '');
