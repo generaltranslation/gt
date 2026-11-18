@@ -44,8 +44,10 @@ export function isTagName(name: string): boolean {
 // can be split between the two groups in every way, which takes quadratic time.
 export const DECIMAL_NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
 
-// `=N` as the parser writes it: a safe integer spelled one way, so `=1` and
-// not `=01`.
+/**
+ * Whether a plural branch key is an exact number as the parser writes it: a
+ * safe integer spelled one way, so `=1` and not `=01`.
+ */
 export function isExactKey(key: string): boolean {
   const number = Number(key.slice(1));
   return key === `=${number}` && Number.isSafeInteger(number);
@@ -63,6 +65,22 @@ export const PLURAL_CATEGORIES: ReadonlySet<string> = new Set([
   'many',
   'other',
 ]);
+
+/**
+ * The plural categories a locale uses, cardinal or ordinal, in CLDR's order.
+ * Nothing when Intl has no plural rules for the locale: Intl would answer
+ * with the host's language instead.
+ */
+export function getPluralCategories(
+  locale: string,
+  type: Intl.PluralRuleType
+): string[] | undefined {
+  if (!Intl.PluralRules.supportedLocalesOf(locale).length) return undefined;
+  const used: readonly string[] = new Intl.PluralRules(locale, {
+    type,
+  }).resolvedOptions().pluralCategories;
+  return [...PLURAL_CATEGORIES].filter((category) => used.includes(category));
+}
 
 /** A plural key named for a locale's category, like `one`: not `other` or an exact `=N`. */
 export function isPluralCategoryKey(key: string): boolean {

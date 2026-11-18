@@ -29,6 +29,7 @@ export type {
   TimeFieldOptions,
   TimeMessageOptions,
 } from './settings/formatOptions';
+export { getPluralCategories, isExactKey } from './settings/syntax';
 export { isMessageTree, validateMessageTree } from './tree/validateMessageTree';
 export type {
   MessageTreeValidationError,
