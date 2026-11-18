@@ -27,7 +27,10 @@ import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
 import { getDictionaryManager } from 'gt-i18n/internal/compat';
 import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
 import { setConditionStore } from '../../condition-store/singleton';
-import { getTranslations } from '../../compat.server';
+
+// The entry remembers that it set the dictionary manager up, so each test
+// evaluates it again.
+const load = () => import('../../compat.server');
 
 const config = {
   defaultLocale: 'en',
@@ -36,7 +39,10 @@ const config = {
 
 describe.sequential('gt-tanstack-start/compat (server)', () => {
   beforeEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
     Reflect.deleteProperty(globalThis, '__generaltranslation');
+    compatPluginModule.dictionary = { greeting: 'Hello' };
     internalInitializeGTSRA({ ...config, loadTranslations: async () => ({}) });
     setConditionStore(new AsyncLocalConditionStore(config));
     mockGetTranslationsInternal.mockClear();
@@ -52,6 +58,7 @@ describe.sequential('gt-tanstack-start/compat (server)', () => {
       })
     );
 
+    const { getTranslations } = await load();
     await expect(getTranslations('metadata')).resolves.toBe('translations');
     vi.mocked(getRequest).mockRestore();
 
@@ -65,7 +72,7 @@ describe.sequential('gt-tanstack-start/compat (server)', () => {
   it("initializes the dictionary manager from the plugin's dictionary", async () => {
     vi.mocked(getRequest).mockReturnValue(new Request('https://example.com'));
 
-    await getTranslations();
+    await (await load()).getTranslations();
     vi.mocked(getRequest).mockRestore();
 
     expect(getDictionaryManager().lookupDictionary('en', 'greeting')).toEqual({
@@ -73,4 +80,26 @@ describe.sequential('gt-tanstack-start/compat (server)', () => {
       options: {},
     });
   });
+
+  // A Vite dev server restart evaluates the entry again; a build never does.
+  it.each([
+    { nodeEnv: 'development', greeting: 'Hi' },
+    { nodeEnv: 'production', greeting: 'Hello' },
+  ])(
+    'serves "$greeting" when the entry is evaluated again with a new dictionary in $nodeEnv',
+    async ({ nodeEnv, greeting }) => {
+      vi.stubEnv('NODE_ENV', nodeEnv);
+      vi.mocked(getRequest).mockReturnValue(new Request('https://example.com'));
+      await (await load()).getTranslations();
+
+      compatPluginModule.dictionary = { greeting: 'Hi' };
+      vi.resetModules();
+      await (await load()).getTranslations();
+      vi.mocked(getRequest).mockRestore();
+
+      expect(getDictionaryManager().lookupDictionary('en', 'greeting')).toEqual(
+        { entry: greeting, options: {} }
+      );
+    }
+  );
 });

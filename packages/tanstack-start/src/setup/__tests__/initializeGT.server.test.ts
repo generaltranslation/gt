@@ -34,10 +34,9 @@ vi.mock('../../condition-store/AsyncLocalConditionStore', () => ({
 }));
 
 import { getConditionStore } from '../../condition-store/singleton';
-import {
-  ensureInitialized,
-  isLocaleRoutingEnabled,
-} from '../initializeGT.server';
+
+// The module remembers that it initialized, so each test evaluates it again.
+const load = () => import('../initializeGT.server');
 
 type GlobalWithRegistry = {
   __generaltranslation?: {
@@ -57,13 +56,16 @@ function resetConditionStoreSingleton() {
 
 describe('server initialization', () => {
   beforeEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
     resetConditionStoreSingleton();
     mockInitializeReactGT.mockReset();
     mockStoreConstructor.mockClear();
   });
 
-  it('initializes React and the request condition store once with the same config', () => {
+  it('initializes React and the request condition store once with the same config', async () => {
     pluginModule.config = { defaultLocale: 'en', locales: ['en', 'fr'] };
+    const { ensureInitialized } = await load();
 
     ensureInitialized();
     ensureInitialized();
@@ -75,8 +77,28 @@ describe('server initialization', () => {
     expect(getConditionStore()).toBe(mockConditionStore);
   });
 
-  it('does nothing without the plugin', () => {
+  // A Vite dev server restart evaluates the module again; a build never does.
+  it.each([
+    { nodeEnv: 'development', setups: 2 },
+    { nodeEnv: 'production', setups: 1 },
+  ])(
+    'sets GT up $setups time(s) when the module is evaluated twice in $nodeEnv',
+    async ({ nodeEnv, setups }) => {
+      vi.stubEnv('NODE_ENV', nodeEnv);
+      pluginModule.config = { defaultLocale: 'en', locales: ['en', 'fr'] };
+      (await load()).ensureInitialized();
+
+      vi.resetModules();
+      (await load()).ensureInitialized();
+
+      expect(mockInitializeReactGT).toHaveBeenCalledTimes(setups);
+      expect(mockStoreConstructor).toHaveBeenCalledTimes(setups);
+    }
+  );
+
+  it('does nothing without the plugin', async () => {
     pluginModule.config = undefined;
+    const { ensureInitialized, isLocaleRoutingEnabled } = await load();
 
     ensureInitialized();
 
@@ -84,7 +106,8 @@ describe('server initialization', () => {
     expect(isLocaleRoutingEnabled()).toBe(false);
   });
 
-  it('reads locale routing from the initialized condition store', () => {
+  it('reads locale routing from the initialized condition store', async () => {
+    const { ensureInitialized, isLocaleRoutingEnabled } = await load();
     expect(isLocaleRoutingEnabled()).toBe(false);
 
     pluginModule.config = {

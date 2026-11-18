@@ -25,16 +25,26 @@ function initialize(config: InitializeGTParams): void {
   setConditionStore(new AsyncLocalConditionStore(config));
 }
 
+// A Vite dev server restart evaluates this module, and the plugin's loader, again, so outside production builds GT is set up once for each evaluation.
+let initialized = false;
+
+function isInitialized(): boolean {
+  return process.env.NODE_ENV === 'production'
+    ? isConditionStoreInitialized()
+    : initialized;
+}
+
 /**
  * Initialize once from the Vite plugin's config. Without the plugin this is a
  * no-op, and reading request state throws the plugin setup error.
  */
 export function ensureInitialized(): void {
-  if (isConditionStoreInitialized() || !pluginConfig) return;
+  if (isInitialized() || !pluginConfig) return;
   initialize({
     ...pluginConfig,
     loadTranslations: pluginLoadTranslations,
   });
+  initialized = true;
 }
 
 /** Server condition store, initialized from the Vite plugin on first use. */

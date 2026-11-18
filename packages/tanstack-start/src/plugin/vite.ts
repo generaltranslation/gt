@@ -23,9 +23,9 @@ export type {
   GTTanstackStartRuntimeOptions,
 } from './types';
 
-// GT's server state is a first-write-wins global that outlives Vite module
-// reloads and in-process restarts, so in dev the config module is generated
-// once per process too. Builds read the config fresh. Any later read could hand the browser settings SSR never applied.
+// In dev the config module is generated once per process, so an edit to the
+// config needs a process restart (configureServer warns). Builds read the
+// config fresh.
 // Keyed by app root and working directory too: the loader depends on both.
 // The options it was generated with are kept to warn when a restart with
 // other options keeps serving it.
