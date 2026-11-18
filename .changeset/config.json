@@ -54,6 +54,7 @@
     "gt-test-tanstack-start",
     "gt-test-vite-react",
     "gt-test-vite-vue",
+    "gt-test-sveltekit",
     "gt-test-webpack-react",
     "cli-vue-binary-test",
     "cli-paraglide-binary-test",

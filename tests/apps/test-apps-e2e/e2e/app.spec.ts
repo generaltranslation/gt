@@ -1,7 +1,14 @@
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { APIRequestContext, Browser, Page } from '@playwright/test';
 import { getApp } from '../apps.mjs';
 import { expect, test } from './fixtures';
 
+const packageDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..'
+);
 const appName = process.env.GT_TEST_APP;
 const app = getApp(appName);
 const localeSelectorName = 'General Translation locale selector';
@@ -17,6 +24,9 @@ test(`${appName} renders local translations and switches locales`, async ({
       break;
     case 'vue-spa':
       await testVueSpa(page);
+      break;
+    case 'sveltekit':
+      await testSvelteKitApp(page, request);
       break;
     case 'next':
       await testNextApp(page);
@@ -65,6 +75,111 @@ async function testReactApp(page: Page) {
   await selectLocale(page, 'en');
   await expect(page.getByText('Locale: en')).toBeVisible();
   await expect(page.getByText('A string translated with useGT.')).toBeVisible();
+}
+
+async function testSvelteKitApp(page: Page, request: APIRequestContext) {
+  const french = await loadSvelteKitTranslations('fr');
+  const heading = page.getByRole('heading', { level: 1 });
+  const counter = page.getByTestId('counter');
+
+  const serverHtml = await (
+    await request.get('/', {
+      headers: { cookie: 'generaltranslation.locale=fr' },
+    })
+  ).text();
+  expect(serverHtml).toContain(french.string('Welcome to the Svelte test app'));
+
+  await page.context().clearCookies();
+  await page
+    .context()
+    .addCookies([
+      { name: 'generaltranslation.locale', value: 'fr', url: app.baseURL },
+    ]);
+  await page.goto('/');
+  await expect(heading).toHaveText(
+    french.string('Welcome to the Svelte test app')
+  );
+  await expect(page.getByTestId('greeting')).toHaveText(
+    french.rich('Hello ', {
+      _gt_value_2: 'Ada',
+      _gt_n_3: new Intl.NumberFormat(['fr', 'en']).format(1234),
+    })
+  );
+
+  await counter.getByRole('button').click();
+  await expect(counter).toHaveText(
+    french.rich('You clicked ', { _gt_value_2: '1' })
+  );
+
+  await page.getByRole('button', { name: 'English' }).click();
+  await expect(heading).toHaveText('Welcome to the Svelte test app');
+  await expect(page.getByTestId('greeting')).toHaveText(
+    'Hello Ada, you have 1,234 new messages.'
+  );
+  await expect(counter).toHaveText('You clicked this button 1 times.');
+
+  await page.getByRole('button', { name: 'Français' }).click();
+  await page
+    .getByRole('link', { name: french.string('About this app') })
+    .click();
+  await expect(page).toHaveURL(/\/about$/);
+  await expect(heading).toHaveText(french.string('About'));
+  await expect(page.getByTestId('about')).toHaveText(
+    french.rich('This page was reached by ', {})
+  );
+}
+
+type SvelteKitEntry = {
+  dataFormat: 'JSX' | 'STRING';
+  source: unknown;
+  metadata: { hash: string };
+};
+
+/** Looks up the committed catalog through the manifest the app build wrote. */
+async function loadSvelteKitTranslations(locale: string) {
+  const appDir = path.resolve(packageDir, '../sveltekit');
+  const read = async (file: string) =>
+    JSON.parse(await readFile(path.join(appDir, file), 'utf8'));
+  const manifest: SvelteKitEntry[] = await read('.gt/inline-manifest.json');
+  const catalog: Record<string, unknown> = await read(`src/_gt/${locale}.json`);
+  const translation = (matches: (entry: SvelteKitEntry) => boolean) => {
+    const entry = manifest.find(matches);
+    const value = entry && catalog[entry.metadata.hash];
+    if (value === undefined) {
+      throw new Error(`The ${locale} catalog lacks a manifest entry`);
+    }
+    return value;
+  };
+  return {
+    string: (source: string) =>
+      translation(
+        (entry) => entry.dataFormat === 'STRING' && entry.source === source
+      ) as string,
+    rich: (sourceStart: string, variables: Record<string, string>) =>
+      textOf(
+        translation(
+          (entry) =>
+            entry.dataFormat === 'JSX' &&
+            Array.isArray(entry.source) &&
+            entry.source[0] === sourceStart
+        ),
+        variables
+      ),
+  };
+}
+
+function textOf(children: unknown, variables: Record<string, string>): string {
+  if (typeof children === 'string') return children;
+  if (Array.isArray(children)) {
+    return children.map((child) => textOf(child, variables)).join('');
+  }
+  if (children && typeof children === 'object') {
+    const node = children as { k?: string; c?: unknown };
+    return node.k !== undefined
+      ? (variables[node.k] ?? '')
+      : textOf(node.c, variables);
+  }
+  return '';
 }
 
 async function testVueSpa(page: Page) {

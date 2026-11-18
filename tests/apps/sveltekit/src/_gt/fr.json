@@ -1,0 +1,42 @@
+{
+  "01b6328077d0237f": [
+    "chemin ",
+    {
+      "c": {
+        "k": "_gt_value_2"
+      },
+      "i": 1
+    },
+    ", étoile lumière ",
+    {
+      "k": "_gt_n_3"
+    },
+    " forêt forêt."
+  ],
+  "162a1e79f5ee0613": "rivière nuage chemin lumière montagne matin",
+  "340a97673a8969da": "matin montagne matin",
+  "4a53885611fc1d4d": "jardin",
+  "63e2c8a9a6c93dd1": "nuage",
+  "9976c543d75d551a": [
+    "étoile forêt ",
+    {
+      "c": "horizon plume",
+      "i": 1
+    },
+    " ",
+    {
+      "k": "_gt_value_2"
+    },
+    " rivière."
+  ],
+  "ce68dfe96afc8c6e": "plume lumière",
+  "dc6ec1fa60fae61e": [
+    "nuage lumière étoile chemin matin ",
+    {
+      "c": "étoile étoile",
+      "i": 1
+    },
+    "."
+  ],
+  "f8386d677601c01f": "rivière chemin étoile"
+}

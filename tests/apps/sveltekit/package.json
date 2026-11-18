@@ -1,0 +1,27 @@
+{
+  "name": "gt-test-sveltekit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite dev --host 127.0.0.1 --port 5181 --strictPort",
+    "e2e:translate": "node scripts/e2e.mjs",
+    "lint": "oxlint --config ../../../.oxlintrc.json .",
+    "test:e2e:serve": "vite build && PORT=5181 HOST=127.0.0.1 node build/index.js",
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "gt-svelte": "workspace:*",
+    "svelte": "5.57.3"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "5.5.8",
+    "@sveltejs/kit": "2.70.4",
+    "@sveltejs/vite-plugin-svelte": "6.2.4",
+    "gt": "workspace:*",
+    "svelte-check": "4.7.8",
+    "typescript": "5.9.3",
+    "vite": "7.3.1"
+  }
+}
