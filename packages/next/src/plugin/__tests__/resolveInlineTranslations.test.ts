@@ -1,0 +1,369 @@
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  getShardKey,
+  resolveInlineTranslations,
+} from '../resolveInlineTranslations';
+
+const gtFiles = {
+  output: 'translations/[locale].json',
+  inlineTranslations: { locales: ['fr', 'es', 'de'] },
+};
+
+let cwd: string;
+
+function writeLocale(locale: string, translations: Record<string, unknown>) {
+  fs.mkdirSync(path.join(cwd, 'translations'), { recursive: true });
+  fs.writeFileSync(
+    path.join(cwd, 'translations', `${locale}.json`),
+    JSON.stringify(translations)
+  );
+}
+
+function readShard(dir: string, key: string) {
+  return JSON.parse(
+    fs.readFileSync(path.join(cwd, dir, `${key}.json`), 'utf8')
+  );
+}
+
+beforeEach(() => {
+  cwd = fs.realpathSync(
+    fs.mkdtempSync(path.join(os.tmpdir(), 'gt-inline-shards-'))
+  );
+  vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+  vi.stubEnv('NODE_ENV', 'production');
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
+describe('getShardKey', () => {
+  it('uses the first lowercase hex character', () => {
+    expect(getShardKey('05a87bce151d258b')).toBe('0');
+  });
+
+  it('falls back for other hashes', () => {
+    for (const hash of ['', 'AB12', 'my-hash', '../x', 'éa']) {
+      expect(getShardKey(hash)).toBe('_');
+    }
+  });
+});
+
+describe('resolveInlineTranslations', () => {
+  it('writes shards grouped by hash prefix and returns plugin options', () => {
+    writeLocale('fr', {
+      '05aa': 'Bonjour',
+      '05bb': 'Salut',
+      ff00: 'Au revoir',
+      'my-hash': 'Perso',
+    });
+    writeLocale('es', { '05aa': 'Hola' });
+
+    const result = resolveInlineTranslations(gtFiles);
+
+    expect(result).toMatchObject({ locales: ['fr', 'es'] });
+    expect(result!.dir).toBe(`.next/cache/gt/inline/${result!.contentHash}`);
+    expect(readShard(result!.dir, '0')).toEqual({
+      fr: { '05aa': 'Bonjour', '05bb': 'Salut' },
+      es: { '05aa': 'Hola' },
+    });
+    expect(readShard(result!.dir, 'f')).toEqual({ fr: { ff00: 'Au revoir' } });
+    expect(readShard(result!.dir, '_')).toEqual({ fr: { 'my-hash': 'Perso' } });
+    expect(readShard(result!.dir, '1')).toEqual({});
+  });
+
+  it('writes every shard key once for all locales', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    writeLocale('es', { '05aa': 'Hola' });
+    const result = resolveInlineTranslations(gtFiles)!;
+    const keys = fs.readdirSync(path.join(cwd, result.dir));
+    expect(keys).toHaveLength(17);
+    expect(keys).toContain('0.json');
+    expect(keys).toContain('f.json');
+    expect(keys).toContain('_.json');
+  });
+
+  it('writes each repeated locale once', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const result = resolveInlineTranslations({
+      ...gtFiles,
+      inlineTranslations: { locales: ['fr', 'fr'] },
+    })!;
+    expect(result.locales).toEqual(['fr']);
+    expect(readShard(result.dir, '0')).toEqual({ fr: { '05aa': 'Bonjour' } });
+  });
+
+  it('keeps a __proto__ hash', () => {
+    writeLocale('fr', JSON.parse('{"__proto__": "Perso"}'));
+    const result = resolveInlineTranslations(gtFiles)!;
+    expect(fs.readFileSync(path.join(cwd, result.dir, '_.json'), 'utf8')).toBe(
+      '{"fr":{"__proto__":"Perso"}}'
+    );
+  });
+
+  it('warns and still returns the options when shards cannot be written', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fs.mkdirSync(path.join(cwd, '.next'));
+    fs.chmodSync(path.join(cwd, '.next'), 0o555);
+    try {
+      const result = resolveInlineTranslations(gtFiles);
+      expect(result?.locales).toEqual(['fr']);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('could not be written')
+      );
+    } finally {
+      fs.chmodSync(path.join(cwd, '.next'), 0o755);
+    }
+  });
+
+  it('rejects a distDir outside the working directory', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    expect(() =>
+      resolveInlineTranslations(gtFiles, { distDir: '../elsewhere' })
+    ).toThrow('outside the working directory');
+  });
+
+  it('reuses complete shards for unchanged translations', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const first = resolveInlineTranslations(gtFiles)!;
+    const marker = path.join(cwd, first.dir, 'marker');
+    fs.writeFileSync(marker, '');
+
+    const second = resolveInlineTranslations(gtFiles)!;
+
+    expect(second).toEqual(first);
+    expect(fs.existsSync(marker)).toBe(true);
+  });
+
+  it('writes new shards and removes stale ones when translations change', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const first = resolveInlineTranslations(gtFiles)!;
+    writeLocale('fr', { '05aa': 'Bonjour !' });
+
+    const second = resolveInlineTranslations(gtFiles)!;
+
+    expect(second.contentHash).not.toBe(first.contentHash);
+    expect(readShard(second.dir, '0')).toEqual({ fr: { '05aa': 'Bonjour !' } });
+    expect(fs.existsSync(path.join(cwd, first.dir))).toBe(false);
+  });
+
+  it('keeps temp directories another writer may still be filling', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const shardsRoot = path.join(cwd, '.next/cache/gt/inline');
+    fs.mkdirSync(path.join(shardsRoot, '.tmp-inflight'), { recursive: true });
+
+    const result = resolveInlineTranslations(gtFiles)!;
+
+    expect(fs.readdirSync(shardsRoot).sort()).toEqual(
+      ['.tmp-inflight', result.contentHash].sort()
+    );
+  });
+
+  it('uses the configured distDir', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const result = resolveInlineTranslations(gtFiles, { distDir: 'build' })!;
+    expect(result.dir).toBe(`build/cache/gt/inline/${result.contentHash}`);
+  });
+
+  it('returns undefined outside production builds', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    expect(resolveInlineTranslations(gtFiles)).toBeUndefined();
+    expect(fs.existsSync(path.join(cwd, '.next'))).toBe(false);
+  });
+
+  it('returns undefined when no embedded locale has a translations file', () => {
+    expect(resolveInlineTranslations(gtFiles)).toBeUndefined();
+  });
+});
+
+describe('resolveInlineTranslations with message modules', () => {
+  const modulesFiles = {
+    ...gtFiles,
+    inlineTranslations: {
+      locales: ['fr', 'es'],
+      modules: 'physical' as const,
+    },
+  };
+  // Subdirectory for the default distDir, .next
+  const modulesDir = '.gt/messages/503faf65';
+
+  const readModule = (file: string) =>
+    fs.readFileSync(path.join(cwd, modulesDir, file), 'utf8');
+
+  it('writes a module per message and returns the modules options', () => {
+    writeLocale('fr', { '05aa': 'Bonjour', ff00: 'Au revoir' });
+    writeLocale('es', { '05aa': 'Hola' });
+
+    const result = resolveInlineTranslations(modulesFiles)!;
+
+    expect(result).toMatchObject({
+      locales: ['fr', 'es'],
+      modules: {
+        dir: modulesDir,
+        importDir: 'gt-next/internal/_inline-messages',
+        hashes: ['05aa', 'ff00'],
+      },
+    });
+    expect(result.dir).toBeUndefined();
+    expect(fs.readdirSync(path.join(cwd, modulesDir)).sort()).toEqual([
+      '05aa.mjs',
+      'ff00.mjs',
+    ]);
+    expect(readModule('05aa.mjs')).toBe(
+      '// Generated by General Translation from embedded translations. Do not edit.\n' +
+        'export default (locale) => locale === "fr" ? "Bonjour" : locale === "es" ? "Hola" : undefined;\n'
+    );
+    // No shards in modules mode
+    expect(fs.existsSync(path.join(cwd, '.next'))).toBe(false);
+  });
+
+  it('uses the configured modulesDir', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const result = resolveInlineTranslations({
+      ...modulesFiles,
+      inlineTranslations: {
+        ...modulesFiles.inlineTranslations,
+        modulesDir: 'src/generated/messages',
+      },
+    })!;
+    expect(result.modules?.dir).toBe('src/generated/messages/503faf65');
+    expect(
+      fs.existsSync(path.join(cwd, 'src/generated/messages/503faf65/05aa.mjs'))
+    ).toBe(true);
+  });
+
+  it('writes into a subdirectory when modulesDir is the working directory', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const result = resolveInlineTranslations({
+      ...modulesFiles,
+      inlineTranslations: {
+        ...modulesFiles.inlineTranslations,
+        modulesDir: '.',
+      },
+    })!;
+    expect(result.modules?.dir).toBe('503faf65');
+    expect(fs.existsSync(path.join(cwd, '503faf65/05aa.mjs'))).toBe(true);
+  });
+
+  it('keeps the modules of a build into another distDir', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const next = resolveInlineTranslations(modulesFiles)!;
+    writeLocale('fr', { ff00: 'Au revoir' });
+    const other = resolveInlineTranslations(modulesFiles, {
+      distDir: 'build',
+    })!;
+
+    expect(other.modules?.dir).toBe('.gt/messages/44575cf5');
+    expect(fs.readdirSync(path.join(cwd, next.modules!.dir))).toEqual([
+      '05aa.mjs',
+    ]);
+    expect(fs.readdirSync(path.join(cwd, other.modules!.dir))).toEqual([
+      'ff00.mjs',
+    ]);
+  });
+
+  it('falls back to physical modules for virtual with a warning', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = resolveInlineTranslations({
+      ...gtFiles,
+      inlineTranslations: { locales: ['fr'], modules: 'virtual' },
+    })!;
+    expect(result.modules?.dir).toBe(modulesDir);
+    expect(readModule('05aa.mjs')).toContain('"Bonjour"');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('does not support')
+    );
+  });
+
+  it('removes modules for messages that lost their translations', () => {
+    writeLocale('fr', { '05aa': 'Bonjour', ff00: 'Au revoir' });
+    resolveInlineTranslations(modulesFiles);
+    fs.writeFileSync(path.join(cwd, modulesDir, 'abcd.mjs'), 'mine');
+    writeLocale('fr', { '05aa': 'Bonjour' });
+
+    resolveInlineTranslations(modulesFiles);
+
+    expect(fs.readdirSync(path.join(cwd, modulesDir)).sort()).toEqual([
+      '05aa.mjs',
+      'abcd.mjs',
+    ]);
+  });
+
+  it('passes the hashes with a module and their import alias to the plugin', () => {
+    writeLocale('fr', { '05aa': 'Bonjour', Custom: 'Perso' });
+    const result = resolveInlineTranslations(modulesFiles)!;
+    expect(result.modules).toEqual({
+      dir: modulesDir,
+      importDir: 'gt-next/internal/_inline-messages',
+      hashes: ['05aa'],
+    });
+    expect(fs.readdirSync(path.join(cwd, modulesDir))).toEqual(['05aa.mjs']);
+  });
+
+  it('keeps the content hash when only translation text changes', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const first = resolveInlineTranslations(modulesFiles)!;
+    writeLocale('fr', { '05aa': 'Bonjour !' });
+    const second = resolveInlineTranslations(modulesFiles)!;
+    writeLocale('fr', { '05aa': 'Bonjour !', ff00: 'Au revoir' });
+    const third = resolveInlineTranslations(modulesFiles)!;
+
+    expect(second.contentHash).toBe(first.contentHash);
+    expect(third.contentHash).not.toBe(first.contentHash);
+    expect(readModule('05aa.mjs')).toContain('"Bonjour !"');
+  });
+
+  it('warns and passes the write error to the plugin when modules cannot be written', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fs.mkdirSync(path.join(cwd, '.gt'));
+    fs.chmodSync(path.join(cwd, '.gt'), 0o555);
+    try {
+      const result = resolveInlineTranslations(modulesFiles);
+      expect(result?.modules?.dir).toBe(modulesDir);
+      expect(result?.modules?.writeError).toContain('EACCES');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('could not be written')
+      );
+    } finally {
+      fs.chmodSync(path.join(cwd, '.gt'), 0o755);
+    }
+  });
+
+  it('passes the write error when an existing modules directory cannot be updated', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    resolveInlineTranslations(modulesFiles);
+    writeLocale('fr', { '05aa': 'Bonjour !' });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fs.chmodSync(path.join(cwd, modulesDir), 0o555);
+    try {
+      const result = resolveInlineTranslations(modulesFiles);
+      expect(result?.modules?.writeError).toContain('EACCES');
+      expect(readModule('05aa.mjs')).toContain('"Bonjour"');
+    } finally {
+      fs.chmodSync(path.join(cwd, modulesDir), 0o755);
+    }
+  });
+
+  it('rejects a modulesDir outside the working directory', () => {
+    writeLocale('fr', { '05aa': 'Bonjour' });
+    expect(() =>
+      resolveInlineTranslations({
+        ...gtFiles,
+        inlineTranslations: {
+          locales: ['fr'],
+          modules: 'physical',
+          modulesDir: '../elsewhere',
+        },
+      })
+    ).toThrow('only read inside the working directory');
+  });
+});

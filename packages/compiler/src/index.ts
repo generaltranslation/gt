@@ -345,3 +345,13 @@ export const vite = gtUnplugin.vite;
 export const rollup = gtUnplugin.rollup;
 export const rspack = gtUnplugin.rspack;
 export const esbuild = gtUnplugin.esbuild;
+export {
+  loadInlineTranslations,
+  readTranslationsFile,
+  resolveInlineTranslationsFiles,
+} from './transform/injection/inline-translations/loadInlineTranslations';
+export {
+  renderInlineTranslationsModules,
+  resolveInlineTranslationsModulesDir,
+  writeInlineTranslationsModules,
+} from './transform/injection/inline-translations/inlineTranslationsModules';

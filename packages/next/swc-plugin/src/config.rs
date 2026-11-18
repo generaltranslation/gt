@@ -1,8 +1,49 @@
+use crate::inline_source::InlineSource;
 use crate::logging::LogLevel;
 use serde::Deserialize;
+use std::collections::{HashMap, HashSet};
+
+/// Translations to embed for one locale, keyed by translation hash
+pub type LocaleTranslations = HashMap<String, serde_json::Value>;
+
+/// Experimental: translations to embed at each translation call site, read
+/// from the shard files gt-next writes under the working directory, or
+/// imported from one module per message when `modules` is set.
+#[derive(Deserialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct InlineTranslationsConfig {
+  /// Locales to embed, in output order
+  #[serde(default)]
+  pub locales: Vec<String>,
+  /// Shard directory, relative to the working directory. Unused with `modules`.
+  #[serde(default)]
+  pub dir: String,
+  /// Hash of the translations, so bundler caches keyed on plugin options invalidate
+  #[serde(default)]
+  pub content_hash: String,
+  /// Import a module per message instead of embedding translations
+  #[serde(default)]
+  pub modules: Option<InlineModulesConfig>,
+}
+
+/// Experimental: gt-next writes `<dir>/<hash>.mjs` for every message with an
+/// embedded translation, and call sites import it.
+#[derive(Deserialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct InlineModulesConfig {
+  /// Module directory, relative to the working directory
+  pub dir: String,
+  /// Import specifier prefix for the modules: `<importDir>/<hash>.mjs`
+  pub import_dir: String,
+  /// Hashes gt-next wrote a module for
+  #[serde(default)]
+  pub hashes: HashSet<String>,
+  /// Why gt-next could not write the modules, which may be missing or stale
+  #[serde(default)]
+  pub write_error: Option<String>,
+}
 
 // For plugin configuration and settings
-#[derive(Debug)]
 pub struct PluginSettings {
   /// Log level for the plugin
   pub log_level: LogLevel,
@@ -16,6 +57,8 @@ pub struct PluginSettings {
   pub autoderive_jsx: bool,
   /// When true, bare variables/calls in template literals and concatenations are allowed
   pub autoderive_strings: bool,
+  /// Experimental: translations to embed at call sites
+  pub inline_translations: Option<InlineSource>,
 }
 
 impl PluginSettings {
@@ -27,6 +70,7 @@ impl PluginSettings {
       disable_build_checks,
       autoderive_jsx,
       autoderive_strings,
+      inline_translations: None,
     }
   }
 }
@@ -47,6 +91,8 @@ pub struct PluginConfig {
   pub autoderive_jsx: bool,
   #[serde(default)]
   pub autoderive_strings: bool,
+  #[serde(default)]
+  pub inline_translations: Option<InlineTranslationsConfig>,
 }
 
 impl Default for PluginConfig {
@@ -58,6 +104,7 @@ impl Default for PluginConfig {
       disable_build_checks: false,
       autoderive_jsx: false,
       autoderive_strings: false,
+      inline_translations: None,
     }
   }
 }

@@ -1,3 +1,14 @@
+#[cfg(all(feature = "swc-v49", feature = "swc-v79"))]
+compile_error!("Enable exactly one swc_core feature: build swc-v49 with --no-default-features.");
+#[cfg(not(any(feature = "swc-v49", feature = "swc-v79")))]
+compile_error!("Enable one swc_core feature: swc-v49 or swc-v79.");
+
+#[cfg(all(feature = "swc-v49", not(feature = "swc-v79")))]
+extern crate swc_core_v49 as swc_core;
+#[cfg(feature = "swc-v79")]
+extern crate swc_core_v79 as swc_core;
+
+use crate::inline_source::InlineSource;
 use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,
@@ -20,6 +31,16 @@ impl VisitMut for TransformVisitor {
   fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
     self.process_gt_import_declaration(import_decl);
     import_decl.visit_mut_children_with(self);
+  }
+
+  /// Record whether the declarators are const
+  fn visit_mut_var_decl(&mut self, var_decl: &mut VarDecl) {
+    let was_const = std::mem::replace(
+      &mut self.traversal_state.in_const_declaration,
+      var_decl.kind == VarDeclKind::Const,
+    );
+    var_decl.visit_mut_children_with(self);
+    self.traversal_state.in_const_declaration = was_const;
   }
 
   /// Process variable declarations to track assignments like: const t = useGT()
@@ -49,6 +70,12 @@ impl VisitMut for TransformVisitor {
     self.with_scope(|visitor| {
       fn_expr.visit_mut_children_with(visitor);
     })
+  }
+
+  /// Statement lists: track the names they declare before visiting them
+  fn visit_mut_stmts(&mut self, stmts: &mut Vec<Stmt>) {
+    self.track_declared_overrides(stmts);
+    stmts.visit_mut_children_with(self);
   }
 
   /// Block statements: { ... } - create scope for let/const
@@ -201,6 +228,17 @@ impl Fold for TransformVisitor {
     import_decl
   }
 
+  /// Record whether the declarators are const
+  fn fold_var_decl(&mut self, var_decl: VarDecl) -> VarDecl {
+    let was_const = std::mem::replace(
+      &mut self.traversal_state.in_const_declaration,
+      var_decl.kind == VarDeclKind::Const,
+    );
+    let var_decl = var_decl.fold_children_with(self);
+    self.traversal_state.in_const_declaration = was_const;
+    var_decl
+  }
+
   /// Process variable declarations to track assignments like: const t = useGT()
   fn fold_var_declarator(&mut self, var_declarator: VarDeclarator) -> VarDeclarator {
     // Track variable assignments before children are visited (process = useGT() first)
@@ -228,6 +266,12 @@ impl Fold for TransformVisitor {
   /// Process function expressions to ensure their bodies are traversed
   fn fold_fn_expr(&mut self, fn_expr: FnExpr) -> FnExpr {
     self.with_scope(|visitor| fn_expr.fold_children_with(visitor))
+  }
+
+  /// Statement lists: track the names they declare before visiting them
+  fn fold_stmts(&mut self, stmts: Vec<Stmt>) -> Vec<Stmt> {
+    self.track_declared_overrides(&stmts);
+    stmts.fold_children_with(self)
   }
 
   /// Block statements: { ... } - create scope for let/const
@@ -273,6 +317,13 @@ impl Fold for TransformVisitor {
   /// Switch statements: switch(val) { case 1: { let x = 1; } }
   fn fold_switch_stmt(&mut self, switch: SwitchStmt) -> SwitchStmt {
     self.with_scope(|visitor| switch.fold_children_with(visitor))
+  }
+
+  /// Embed translations in unstable gt`...` templates
+  fn fold_tagged_tpl(&mut self, tagged_tpl: TaggedTpl) -> TaggedTpl {
+    let mut tagged_tpl = tagged_tpl.fold_children_with(self);
+    self.inject_inline_translations_on_tagged_tpl(&mut tagged_tpl);
+    tagged_tpl
   }
 
   /// Process function calls to detect invalid usage of translation functions
@@ -366,6 +417,21 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     .get_context(&TransformPluginMetadataContextKind::Filename)
     .map(|f| f.to_string());
 
+  transform_program(program, config, filename)
+}
+
+/// Run both plugin passes (collection, then injection) on a program
+pub fn transform_program(program: Program, config: PluginConfig, filename: Option<String>) -> Program {
+  transform_program_in(program, config, filename, std::path::Path::new(crate::inline_shards::PLUGIN_CWD))
+}
+
+/// `transform_program` reading inline translation shards relative to `cwd`
+pub fn transform_program_in(
+  program: Program,
+  config: PluginConfig,
+  filename: Option<String>,
+  cwd: &std::path::Path,
+) -> Program {
   // Create StringCollector for the two-pass system
   let string_collector = crate::ast::StringCollector::new();
 
@@ -393,6 +459,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     );
   }
 
+  let inline_translations = config.inline_translations.map(|inline| InlineSource::open(cwd, inline));
   let collected_data = visitor.string_collector;
   let mut visitor = TransformVisitor::new(
     config.log_level,
@@ -402,13 +469,24 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     config.autoderive_jsx,
     config.autoderive_strings,
     collected_data,
-  );
-  program.fold_with(&mut visitor)
+  )
+  .with_inline_translations(inline_translations);
+  let mut program = program.fold_with(&mut visitor);
+  if let Some(InlineSource::Modules(modules)) = &visitor.settings.inline_translations {
+    modules.inject_imports(&mut program);
+  }
+  program
 }
 
 pub mod ast;
 pub mod config;
 pub mod hash;
+pub mod inline_modules;
+pub mod inline_shards;
+pub mod inline_source;
 pub mod logging;
 pub mod visitor;
 pub mod whitespace;
+
+#[cfg(test)]
+mod inline_translations_tests;
