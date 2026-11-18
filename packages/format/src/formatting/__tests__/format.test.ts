@@ -319,13 +319,7 @@ describe('_formatMessageICU', () => {
 
 describe('_formatListToParts', () => {
   it.each<
-    [
-      string,
-      Array<string | number>,
-      string[] | undefined,
-      Intl.ListFormatOptions,
-      Array<string | number>,
-    ]
+    [string, string[], string[] | undefined, Intl.ListFormatOptions, string[]]
   >([
     ['an empty list', [], ['en'], {}, []],
     ['a single item', ['apple'], ['en'], {}, ['apple']],
@@ -414,13 +408,6 @@ describe('_formatListToParts', () => {
       ['siete', ' u ', 'ocho'],
     ],
     [
-      'Spanish "or" before a number read with an "o" sound',
-      [7, 8],
-      ['es'],
-      { type: 'disjunction' },
-      [7, ' u ', 8],
-    ],
-    [
       'Hebrew "and" before a Hebrew word',
       ['אבא', 'אמא'],
       ['he'],
@@ -436,6 +423,16 @@ describe('_formatListToParts', () => {
     ],
   ])('formats %s', (_label, value, locales, options, expected) => {
     expect(_formatListToParts({ value, locales, options })).toEqual(expected);
+  });
+
+  it('chooses the connector from the text of a number item', () => {
+    expect(
+      _formatListToParts({
+        value: [7, 8],
+        locales: ['es'],
+        options: { type: 'disjunction' },
+      })
+    ).toEqual([7, ' u ', 8]);
   });
 
   it('preserves the identity and order of non-string items', () => {
