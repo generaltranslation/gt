@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { defaultInlineManifestPath } from 'generaltranslation/internal';
-import type { Plugin } from 'vite';
 import { packageName } from '../shared/protocol.js';
 import type { AnyNode } from './ast.js';
 import { prepareSvelteComponent } from './component.js';
@@ -20,19 +19,39 @@ export type GTSveltePluginOptions = {
 
 const moduleExtensions = /\.(?:[cm]?[jt]s)$/;
 
-type ResolveContext = {
+/** The part of Vite's transform context the plugin uses. */
+type TransformContext = {
   resolve(
     source: string,
     importer?: string,
     options?: { skipSelf?: boolean }
   ): Promise<{ id: string } | null>;
+  parse(code: string): unknown;
+};
+
+/**
+ * The Vite plugin shape, declared structurally so that it type-checks against
+ * whichever Vite copy the application resolves.
+ */
+export type GTSveltePlugin = {
+  name: string;
+  enforce?: 'pre';
+  configResolved?(config: { root: string; command: 'build' | 'serve' }): void;
+  transform(
+    this: TransformContext,
+    code: string,
+    id: string
+  ): Promise<{ code: string; map: string } | null>;
+  buildEnd?(error?: Error): Promise<void>;
 };
 
 /**
  * Compiles `gt()` calls and `<T>` content at build time and writes the
  * manifest of translatable entries. Place it before `svelte()`.
  */
-export function gtSvelte(options: GTSveltePluginOptions = {}): Plugin[] {
+export function gtSvelte(
+  options: GTSveltePluginOptions = {}
+): GTSveltePlugin[] {
   const manifestOption = options.manifest ?? defaultInlineManifestPath;
   const collector = new ManifestCollector();
   let root = process.cwd();
@@ -44,7 +63,7 @@ export function gtSvelte(options: GTSveltePluginOptions = {}): Plugin[] {
 
   /** Import sources that resolve to the gt-svelte runtime entry. */
   async function runtimeSources(
-    context: ResolveContext,
+    context: TransformContext,
     sources: string[],
     importer: string
   ): Promise<Set<string>> {
@@ -68,7 +87,7 @@ export function gtSvelte(options: GTSveltePluginOptions = {}): Plugin[] {
     return runtime;
   }
 
-  const components: Plugin = {
+  const components: GTSveltePlugin = {
     name: 'gt-svelte:components',
     enforce: 'pre',
     configResolved(config) {
@@ -82,7 +101,7 @@ export function gtSvelte(options: GTSveltePluginOptions = {}): Plugin[] {
       const sources = await runtimeSources(this, prepared.importSources, file);
       const result = sources.size ? prepared.compile(sources) : null;
       collector.set(file, result?.entries ?? []);
-      return result && { code: result.code, map: result.map };
+      return result && { code: result.code, map: result.map.toString() };
     },
     async buildEnd(error) {
       if (!isBuild || error || manifestOption === false) return;
@@ -90,7 +109,7 @@ export function gtSvelte(options: GTSveltePluginOptions = {}): Plugin[] {
     },
   };
 
-  const modules: Plugin = {
+  const modules: GTSveltePlugin = {
     name: 'gt-svelte:modules',
     async transform(code, id) {
       const file = sourceFile(id);
@@ -104,7 +123,7 @@ export function gtSvelte(options: GTSveltePluginOptions = {}): Plugin[] {
         ? compileModule(code, program, file, relative(file), sources)
         : null;
       collector.set(file, result?.entries ?? []);
-      return result && { code: result.code, map: result.map };
+      return result && { code: result.code, map: result.map.toString() };
     },
   };
 
