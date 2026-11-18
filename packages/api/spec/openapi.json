@@ -367,7 +367,7 @@
                         "upstream_error",
                         "internal_error"
                       ],
-                      "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                      "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                     }
                   },
                   "required": ["status", "error", "code"],
@@ -689,6 +689,10 @@
                   "force": {
                     "type": "boolean",
                     "description": "Whether to force retranslation of existing translations. Defaults to false. Retranslation may incur additional translation charges."
+                  },
+                  "saveLocalEdits": {
+                    "type": "boolean",
+                    "description": "Whether to save edits made in existing translated copies to GT before applying. Defaults to false, which overwrites those copies with the latest GT translations."
                   }
                 },
                 "required": ["projectId", "fileId", "hostApp", "targetLocales"]
@@ -8859,7 +8863,7 @@
                                   "invalid_request",
                                   "internal_error"
                                 ],
-                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                                "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                               }
                             },
                             "required": [
@@ -9299,7 +9303,7 @@
                         "newFileId": {
                           "type": "string",
                           "minLength": 1,
-                          "description": "New file ID, at most 64 characters. A longer ID fails only this move, with code `invalid_request`."
+                          "description": "New file ID, at most 64 characters. A longer one fails this move with `invalid_request`."
                         },
                         "newFileName": {
                           "type": "string",
@@ -9321,7 +9325,7 @@
         },
         "responses": {
           "200": {
-            "description": "Result for each move, in request order, even when every move fails; a failed move has `status: \"failed\"`, an `error` and a `code`. A move whose `newFileId` is longer than 64 characters fails with `invalid_request`, and one whose old file does not exist with `source_file_not_found`. Each move clones the latest source file and its translations under the new file ID and makes the new file ID current in place of the old one.",
+            "description": "One result per move, in request order, even when every move fails. `invalid_request`: `newFileId` is longer than 64 characters. `source_file_not_found`: the old file does not exist. A move clones the latest source file and its translations under the new file ID, which becomes current in place of the old one.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9382,7 +9386,7 @@
                                   "conflict",
                                   "internal_error"
                                 ],
-                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                                "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                               }
                             },
                             "required": [
@@ -11432,7 +11436,7 @@
                                             "upstream_error",
                                             "internal_error"
                                           ],
-                                          "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                                          "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                                         }
                                       },
                                       "required": [
@@ -11513,7 +11517,7 @@
                                             "upstream_error",
                                             "internal_error"
                                           ],
-                                          "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                                          "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                                         }
                                       },
                                       "required": [
@@ -11545,7 +11549,7 @@
                                   "upstream_error",
                                   "internal_error"
                                 ],
-                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                                "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                               }
                             },
                             "required": [
@@ -12043,12 +12047,12 @@
                                 "fileId": {
                                   "type": "string",
                                   "minLength": 1,
-                                  "description": "File ID, at most 64 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved."
+                                  "description": "File ID, at most 64 characters. A longer one fails this file with `invalid_request`."
                                 },
                                 "versionId": {
                                   "type": "string",
                                   "minLength": 1,
-                                  "description": "Version ID, at most 255 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved."
+                                  "description": "Version ID, at most 255 characters. A longer one fails this file with `invalid_request`."
                                 },
                                 "branchId": {
                                   "type": "string",
@@ -12057,12 +12061,12 @@
                                 "checkedOutBranchId": {
                                   "type": "string",
                                   "minLength": 1,
-                                  "description": "Branch this file's branch was created from. When the file has no version on its own branch yet, it continues from that branch's current version, so its translations are reused. A branch that does not exist fails this file with `branch_not_found`."
+                                  "description": "Branch this file's branch was created from. A file with no version on its own branch continues from that branch's current version and reuses its translations. Must exist, or this file fails with `branch_not_found`."
                                 },
                                 "incomingBranchId": {
                                   "type": "string",
                                   "minLength": 1,
-                                  "description": "Branch that was merged into this file's branch. The file is linked to that branch's current version, so translations made there are reused. A branch that does not exist fails this file with `branch_not_found`."
+                                  "description": "Branch merged into this file's branch. The file links to that branch's current version and reuses its translations. Must exist, or this file fails with `branch_not_found`."
                                 },
                                 "metadata": {
                                   "type": "object",
@@ -12120,7 +12124,7 @@
                                       "examples": [
                                         "eyJncmVldGluZyI6IkhlbGxvIn0="
                                       ],
-                                      "description": "Base64-encoded file content."
+                                      "description": "Base64-encoded file content; for LOTTIE, the .lottie ZIP archive."
                                     }
                                   },
                                   "required": ["content"]
@@ -12167,7 +12171,7 @@
         },
         "responses": {
           "200": {
-            "description": "Upload result for each source file, in request order, even when every file fails: a failed file has `status: \"failed\"`, an `error` and a `code` while the other files are saved. A file whose content is not valid base64 or does not parse in its `fileFormat`, or whose upload is missing or not that format, fails with `invalid_request`; a file larger than the API reads per file, as content or as an upload, fails with `file_too_large`; a file that names a branch that does not exist, in `branchId`, `checkedOutBranchId` or `incomingBranchId`, fails with `branch_not_found`. Retrying with the same content and identifiers is safe.",
+            "description": "One result per file, in request order, even when every file fails; one failure does not affect the other files. `invalid_request`: content that is not valid base64 or does not parse as its `fileFormat`, or an upload that is missing or another format. `file_too_large`: larger than the API reads per file. `branch_not_found`: `branchId`, `checkedOutBranchId` or `incomingBranchId` names no branch. Retrying with the same content and identifiers is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12255,7 +12259,7 @@
                                   "branch_not_found",
                                   "internal_error"
                                 ],
-                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                                "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                               }
                             },
                             "required": [
@@ -12281,14 +12285,14 @@
             }
           },
           "400": {
-            "description": "The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.",
+            "description": "The request is malformed or failed validation, or its uploaded non-media files are together too large to read (`file_too_large`). Nothing is saved.",
             "content": {
               "application/json": {
                 "examples": {
                   "invalid_request": {
                     "summary": "invalid_request",
                     "value": {
-                      "error": "The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.",
+                      "error": "The request is malformed or failed validation, or its uploaded non-media files are together too large to read (`file_too_large`). Nothing is saved.",
                       "code": "invalid_request"
                     }
                   },
@@ -13366,12 +13370,12 @@
                                 "fileId": {
                                   "type": "string",
                                   "minLength": 1,
-                                  "description": "File ID, at most 64 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved."
+                                  "description": "File ID, at most 64 characters. A longer one fails this file with `invalid_request`."
                                 },
                                 "versionId": {
                                   "type": "string",
                                   "minLength": 1,
-                                  "description": "Version ID, at most 255 characters. A longer ID fails this file's results with code `invalid_request`, and the other files are still saved."
+                                  "description": "Version ID, at most 255 characters. A longer one fails this file with `invalid_request`."
                                 },
                                 "branchId": {
                                   "type": "string",
@@ -13390,7 +13394,7 @@
                                       "examples": [
                                         "eyJncmVldGluZyI6IkhlbGxvIn0="
                                       ],
-                                      "description": "Base64-encoded file content."
+                                      "description": "Base64-encoded file content; for LOTTIE, the .lottie ZIP archive."
                                     }
                                   },
                                   "required": ["content"]
@@ -13504,7 +13508,7 @@
         },
         "responses": {
           "200": {
-            "description": "Upload result for each translation, in request order, even when every translation fails: a failed translation has `status: \"failed\"`, an `error` and a `code` while the others are saved. A translation fails with `invalid_request` when its content or its source's content is not valid base64 or does not decode or parse, when its or its source's upload is missing or not that format, or when its MESSAGE_TREE keys do not match the source; it fails with `file_too_large` when it or its source is larger than the API reads per file, as content or as an upload, and with `source_file_not_found` when its source file does not exist. Retrying with the same content is safe; translations that were already saved are saved again, which can repeat completed webhooks and revisions.",
+            "description": "One result per translation, in request order, even when every translation fails; one failure does not affect the others. `invalid_request`: its content does not decode or parse, its source's does not decode, an upload of either is missing or another format, or its MESSAGE_TREE keys do not match the source. `file_too_large`: it or its source is larger than the API reads per file. `source_file_not_found`: its source file does not exist. Retrying with the same content is safe, but saves again the translations already saved, which can repeat completed webhooks and revisions.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13599,7 +13603,7 @@
                                   "source_file_not_found",
                                   "internal_error"
                                 ],
-                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                                "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                               }
                             },
                             "required": [
@@ -13626,14 +13630,14 @@
             }
           },
           "400": {
-            "description": "The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.",
+            "description": "The request is malformed or failed validation, or its uploaded non-media files are together too large to read (`file_too_large`). Nothing is saved.",
             "content": {
               "application/json": {
                 "examples": {
                   "invalid_request": {
                     "summary": "invalid_request",
                     "value": {
-                      "error": "The request is malformed or failed validation, or its uploaded non-media files together are larger than the API reads per request (`file_too_large`). Nothing is saved.",
+                      "error": "The request is malformed or failed validation, or its uploaded non-media files are together too large to read (`file_too_large`). Nothing is saved.",
                       "code": "invalid_request"
                     }
                   },
@@ -18288,7 +18292,7 @@
         },
         "responses": {
           "200": {
-            "description": "Translation results: one result per entry in `requests`, in request order, even when every entry fails. An entry that could not be translated has `status: \"failed\"` with its `error` message and error `code`, so inspect every result. An entry whose `source` is not valid for its `dataFormat` fails with `invalid_request` and is not translated or billed.",
+            "description": "One result per entry in `requests`, in request order, even when every entry fails. An entry whose `source` is invalid for its `dataFormat` fails with `invalid_request` and is not translated or billed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -34686,7 +34690,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 10,
-                    "description": "1–10 assets. OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today, and a font's identity is its family, weight and italic style. Two assets with the same identity reject the request, counting each asset whose identity is known from `family` and `style` or, within the size limit, from the font itself. Uploading an asset with a stored identity replaces it for the whole organization."
+                    "description": "OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font's identity is its family, weight and italic style: an asset with a stored identity replaces it for the whole organization, and two assets with the same identity reject the request."
                   }
                 },
                 "required": ["assets"],
@@ -34697,7 +34701,7 @@
         },
         "responses": {
           "200": {
-            "description": "Result of each asset, in request order, as `succeeded` or as `failed` with an `error` and a `code`, even when every asset fails: an oversized asset fails with `file_too_large`, and a font with no derivable family with `invalid_request`. Assets are stored independently, and retrying a failed asset is safe.",
+            "description": "One result per asset, in request order, even when every asset fails. `file_too_large`: an oversized asset. `invalid_request`: a font whose family cannot be determined. Retrying a failed asset is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -34757,7 +34761,7 @@
                                   "invalid_request",
                                   "internal_error"
                                 ],
-                                "description": "A stable, machine-readable cause of the failure. New values may be added; fall back to `status` for values you do not recognize."
+                                "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                               }
                             },
                             "required": ["fileName", "status", "error", "code"],
@@ -34774,14 +34778,14 @@
             }
           },
           "400": {
-            "description": "The request is malformed or failed validation, or two assets have the same identity, known from `family` and `style` or, for an asset within the size limit, from the font itself; no asset is written.",
+            "description": "The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from a font within the size limit. No asset is written.",
             "content": {
               "application/json": {
                 "examples": {
                   "invalid_request": {
                     "summary": "invalid_request",
                     "value": {
-                      "error": "The request is malformed or failed validation, or two assets have the same identity, known from `family` and `style` or, for an asset within the size limit, from the font itself; no asset is written.",
+                      "error": "The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from a font within the size limit. No asset is written.",
                       "code": "invalid_request"
                     }
                   },
