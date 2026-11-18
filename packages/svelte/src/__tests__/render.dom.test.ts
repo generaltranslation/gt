@@ -76,11 +76,16 @@ describe('browser rendering', () => {
       [`native-${name}`, `t-${name}`].map(
         (id) => target.querySelector(`[data-testid="${id}"]`)!
       );
-    const [nativeSvg, translatedSvg] = pair('svg');
-    for (const selector of ['svg', 'a', 'text']) {
-      expect(translatedSvg!.querySelector(selector)!.namespaceURI).toBe(
-        nativeSvg!.querySelector(selector)!.namespaceURI
-      );
+    for (const [name, selectors] of [
+      ['svg', ['svg', 'a', 'text']],
+      ['math', ['math', 'mrow', 'mi', 'mo', 'mn']],
+    ] as const) {
+      const [native, translated] = pair(name);
+      for (const selector of selectors) {
+        expect(translated!.querySelector(selector)!.namespaceURI).toBe(
+          native!.querySelector(selector)!.namespaceURI
+        );
+      }
     }
     for (const name of ['pre', 'nbsp']) {
       const [native, translated] = pair(name);

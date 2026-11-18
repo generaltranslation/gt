@@ -690,7 +690,9 @@ function elementTag(
     return undefined;
   }
   return {
-    open: `<svelte:element this=${JSON.stringify(node.name)} xmlns=${JSON.stringify(namespaceUris[namespace])}`,
+    // A static xmlns does not reach Svelte's client namespace check, which
+    // would then create MathML elements as SVG; an expression does.
+    open: `<svelte:element this=${JSON.stringify(node.name)} xmlns={${JSON.stringify(namespaceUris[namespace])}}`,
     close: '</svelte:element>',
   };
 }

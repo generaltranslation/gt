@@ -112,7 +112,7 @@ first
       `<script>import { T } from 'gt-svelte';</script><T><svg><a href="/"><text>Hi</text></a></svg></T>`
     );
     expect(result!.code).toContain(
-      '<svelte:element this="a" xmlns="http://www.w3.org/2000/svg" href="/">'
+      '<svelte:element this="a" xmlns={"http://www.w3.org/2000/svg"} href="/">'
     );
     expect(result!.code).toContain('<svg>{@render __gt_r(__gt_c)}</svg>');
   });
