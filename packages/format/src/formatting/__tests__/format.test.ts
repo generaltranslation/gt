@@ -435,6 +435,18 @@ describe('_formatListToParts', () => {
     ).toEqual([7, ' u ', 8]);
   });
 
+  it('keeps every item when one is an empty string', () => {
+    const object = { name: 'object' };
+    const result = _formatListToParts({
+      value: ['', object, 7],
+      locales: ['en'],
+      options: {},
+    });
+
+    expect(result).toEqual(['', ', ', object, ', and ', 7]);
+    expect(result[2]).toBe(object);
+  });
+
   it('preserves the identity and order of non-string items', () => {
     const object = { name: 'object' };
     const date = new Date('2023-01-01');

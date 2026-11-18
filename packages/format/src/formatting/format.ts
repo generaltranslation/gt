@@ -158,10 +158,12 @@ export function _formatListToParts<T>({
     })
     // A connector can depend on the text after it: Spanish "y" becomes "e" before "Isabel".
     .formatToParts(
-      value.map((item) =>
-        typeof item === 'string' || typeof item === 'number'
-          ? String(item)
-          : '1'
+      value.map(
+        (item) =>
+          // Intl emits no part for an empty item, so an item without text gets a stand-in.
+          (typeof item === 'string' || typeof item === 'number'
+            ? String(item)
+            : '') || '1'
       )
     );
   let partIndex = 0;
