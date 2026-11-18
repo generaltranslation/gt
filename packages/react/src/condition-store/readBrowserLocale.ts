@@ -5,6 +5,9 @@ const navigatorLocales = oncePerTask<readonly string[]>(
   () => navigator?.languages || []
 );
 
+/** The navigator's locales as this task reads them: one array until they are read again. */
+export const getTaskNavigatorLocales = navigatorLocales.get;
+
 export function readBrowserLocale(localeCookieName: string): string[] {
   const candidates = [];
   // (1) Check cookie

@@ -6,7 +6,10 @@ import {
   type WritableConditionStoreParams,
 } from 'gt-i18n/internal';
 import { getCookieValue, setCookieValue } from './cookies';
-import { readBrowserLocale } from './readBrowserLocale';
+import {
+  getTaskNavigatorLocales,
+  readBrowserLocale,
+} from './readBrowserLocale';
 import { GetEnableI18n, GetLocale, GetRegion } from '../i18n-cache/types';
 
 type SerializedBrowserConditionStoreState = {
@@ -153,10 +156,47 @@ let lastMatch:
   | { config: unknown; candidates: string; locale: string }
   | undefined;
 
+// The cookie and the navigator are read once per task, so most calls find
+// both as they were and have nothing to match.
+let lastRead:
+  | {
+      config: unknown;
+      cookie: string | undefined;
+      languages: readonly string[];
+      locale: string;
+    }
+  | undefined;
+
 function getBrowserLocale(getLocale?: GetLocale): string {
   const i18nConfig = getI18nConfig();
-  const candidates = readBrowserLocale(i18nConfig.getLocaleCookieName());
-  if (getLocale) candidates.push(getLocale());
+  const cookieName = i18nConfig.getLocaleCookieName();
+  // A custom reader may answer differently on every call.
+  if (getLocale) {
+    const candidates = readBrowserLocale(cookieName);
+    candidates.push(getLocale());
+    return matchLocale(i18nConfig, candidates);
+  }
+  const cookie = getCookieValue({ cookieName });
+  const languages = getTaskNavigatorLocales();
+  if (
+    lastRead?.config !== i18nConfig ||
+    lastRead.cookie !== cookie ||
+    lastRead.languages !== languages
+  ) {
+    lastRead = {
+      config: i18nConfig,
+      cookie,
+      languages,
+      locale: matchLocale(i18nConfig, readBrowserLocale(cookieName)),
+    };
+  }
+  return lastRead.locale;
+}
+
+function matchLocale(
+  i18nConfig: ReturnType<typeof getI18nConfig>,
+  candidates: string[]
+): string {
   const key = candidates.join();
   if (lastMatch?.config !== i18nConfig || lastMatch.candidates !== key) {
     lastMatch = {
