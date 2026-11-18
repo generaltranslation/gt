@@ -366,10 +366,12 @@ export const TranslationView = () => {
         onClose={() => setIsRetranslateDialogOpen(false)}
         onConfirm={async () => {
           setIsRetranslateDialogOpen(false);
-          await handleTranslateAll({ force: true });
-          // Reset only once the run is enqueued: until then a completed
-          // status is the stored result this run discards, not its own.
-          alreadyCompleteRef.current = new Set();
+          const enqueuedKeys = await handleTranslateAll({ force: true });
+          // Only what this run enqueued, and only once it is enqueued: any
+          // other completed status is still a stored result, not a fresh one.
+          for (const key of enqueuedKeys) {
+            alreadyCompleteRef.current?.delete(key);
+          }
         }}
       />
 

@@ -485,8 +485,11 @@ describe('Translate All', () => {
     await act(() => context.handleTranslateAll());
     expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(true);
 
-    await act(() => latest!.handleTranslateAll({ force: true }));
+    const enqueuedKeys = await act(() =>
+      latest!.handleTranslateAll({ force: true })
+    );
 
+    expect(enqueuedKeys).toContain(frKey);
     expect(mocks.createJobs).toHaveBeenLastCalledWith(
       expect.anything(),
       expect.arrayContaining(['fr']),
@@ -495,6 +498,12 @@ describe('Translate All', () => {
     );
     expect(latest!.translationStatuses.get(frKey)?.isReady).toBeFalsy();
     expect(latest!.pendingTranslations.has(frKey)).toBe(true);
+
+    // A run that cannot be enqueued reports nothing and leaves statuses alone.
+    mocks.createJobs.mockRejectedValueOnce(new Error('unavailable'));
+    expect(
+      await act(() => latest!.handleTranslateAll({ force: true }))
+    ).toEqual([]);
   });
 });
 

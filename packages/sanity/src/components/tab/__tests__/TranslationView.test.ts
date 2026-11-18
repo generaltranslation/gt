@@ -75,7 +75,7 @@ function setTranslations({
     setAutoImport: vi.fn(),
     setAutoPatchReferences: vi.fn(),
     setAutoPublish: vi.fn(),
-    handleTranslateAll: vi.fn(),
+    handleTranslateAll: vi.fn(async () => []),
     handleUploadExistingTranslations: vi.fn(),
     handleImportDocument: vi.fn(),
     handleRefreshAll: vi.fn(),
@@ -328,6 +328,7 @@ describe('TranslationView automatic import', () => {
 
 describe('TranslationView forced retranslation', () => {
   const frKey = 'b:page:r1:fr';
+  const deKey = 'b:page:r1:de';
 
   function button(text: string, scope: ParentNode = container) {
     const found = [...scope.querySelectorAll('button')].find(
@@ -377,13 +378,13 @@ describe('TranslationView forced retranslation', () => {
 
   test('imports the fresh result, not the one it discards, for a locale that was already complete', async () => {
     setTranslations({ language: 'en', preserveExistingTranslations: false });
-    let finishEnqueue: () => void = () => {};
+    let finishEnqueue: (keys: string[]) => void = () => {};
     const importedTranslations = new Set<string>();
     Object.assign(translations.current, {
       autoImport: true,
       translationStatuses: new Map([[frKey, { isReady: true }]]),
       handleTranslateAll: vi.fn(
-        () => new Promise<void>((resolve) => (finishEnqueue = resolve))
+        () => new Promise<string[]>((resolve) => (finishEnqueue = resolve))
       ),
       // Like the provider, mark the import done so the effect settles.
       handleImportDocument: vi.fn(async () => {
@@ -405,7 +406,7 @@ describe('TranslationView forced retranslation', () => {
       ...translations.current,
       translationStatuses: new Map(),
     };
-    await act(async () => finishEnqueue());
+    await act(async () => finishEnqueue([frKey]));
     await renderView();
     expect(translations.current.handleImportDocument).not.toHaveBeenCalled();
 
@@ -422,6 +423,44 @@ describe('TranslationView forced retranslation', () => {
       'fr'
     );
   });
+
+  test.each([
+    { name: 'the run could not be enqueued', enqueuedKeys: [] },
+    { name: 'the locale was left out of the run', enqueuedKeys: [frKey] },
+  ])(
+    'keeps a stored result out of auto-import when $name',
+    async ({ enqueuedKeys }) => {
+      setTranslations({ language: 'en', preserveExistingTranslations: false });
+      Object.assign(translations.current, {
+        autoImport: true,
+        translationStatuses: new Map([
+          [frKey, { isReady: true }],
+          [deKey, { isReady: true }],
+        ]),
+        handleTranslateAll: vi.fn(async () => enqueuedKeys),
+      });
+      await renderView();
+
+      await act(async () => button('Retranslate').click());
+      await act(async () => button('Retranslate', dialog()!).click());
+      // Like the provider, drop the status of what the run enqueued.
+      translations.current = {
+        ...translations.current,
+        translationStatuses: new Map(
+          [
+            [frKey, { isReady: true }],
+            [deKey, { isReady: true }],
+          ].filter(([key]) => !enqueuedKeys.includes(key as string)) as [
+            string,
+            { isReady: boolean },
+          ][]
+        ),
+      };
+      await renderView();
+
+      expect(translations.current.handleImportDocument).not.toHaveBeenCalled();
+    }
+  );
 });
 
 describe('TranslationView without allowNonDefaultSourceLocales', () => {

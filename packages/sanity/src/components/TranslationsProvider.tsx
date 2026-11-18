@@ -195,7 +195,8 @@ interface TranslationsContextType {
   setAutoPatchReferences: (value: boolean) => void;
   setAutoPublish: (value: boolean) => void;
   setPreserveExistingTranslations: (value: boolean) => void;
-  handleTranslateAll: (options?: TranslateAllOptions) => Promise<void>;
+  /** Resolves to the status keys it enqueued, none when the run did not start. */
+  handleTranslateAll: (options?: TranslateAllOptions) => Promise<string[]>;
   handleUploadExistingTranslations: () => Promise<void>;
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
@@ -762,7 +763,7 @@ const TranslationsProviderContent: React.FC<
 
   const handleTranslateAll = useCallback(
     async ({ force = false }: TranslateAllOptions = {}) => {
-      if (!secrets || documents.length === 0) return;
+      if (!secrets || documents.length === 0) return [];
 
       setIsBusy(true);
 
@@ -772,7 +773,7 @@ const TranslationsProviderContent: React.FC<
         const sourceDocuments = allowNonDefault
           ? await getUploadableSources(documents, 'Translation was not started')
           : documents;
-        if (!sourceDocuments) return;
+        if (!sourceDocuments) return [];
 
         const availableLocaleIds = locales
           .filter((locale) => locale.enabled !== false)
@@ -932,6 +933,7 @@ const TranslationsProviderContent: React.FC<
             closable: true,
           });
         }
+        return [...enqueuedStatusKeys];
       } catch {
         toast.push({
           title:
@@ -939,6 +941,7 @@ const TranslationsProviderContent: React.FC<
           status: 'error',
           closable: true,
         });
+        return [];
       } finally {
         setIsBusy(false);
       }
