@@ -207,6 +207,8 @@ const ROUTES = {
     heading: 'Recent orders',
     orders: ['1 order is waiting', '2 orders are waiting'],
     jsx: 'Orders ship within two days.',
+    // Of a module that only the route and the panel it opens import
+    lines: 'Two lines in this order',
     badge: 'Beta Shared by every route',
     glossary: GLOSSARY,
   },
@@ -227,6 +229,8 @@ const ROUTES = {
   },
 };
 const HELP = 'Need a hand?Our team answers within one hour.';
+// A panel the Orders route opens with a dynamic import of its own
+const DETAILS = 'Order detailsTwo lines in this orderGlossary of terms';
 const EVERY_TEXT = Object.values({
   ...SHELL,
   ...ROUTES.home,
@@ -395,7 +399,7 @@ async function checkRoute(app, locale, route, added, name = locale) {
   check(`${name}: exact text on ${route}`, !wrong.length, wrong.join('; '));
 }
 
-const isTranslations = ({ path }) => /\.[0-9a-f]{8}\.json$/.test(path);
+const isTranslations = ({ path }) => /\.[0-9a-f]{8,}\.json$/.test(path);
 const isCatalog = ({ path }) => /\/(fr|de)-[\w-]+\.js$/.test(path);
 const translationsOf = (app) =>
   app.requests.filter(isTranslations).map(({ path }) => path);
@@ -596,6 +600,12 @@ async function checkLocale(url, locale, built) {
   await checkRoute(app, locale, 'home', 1);
   await app.navigate('orders');
   await checkRoute(app, locale, 'orders', 1);
+  await app.page.click('[data-nav="details"]');
+  await app.page.waitForSelector('[data-test="details"]');
+  check(
+    `${locale}: exact text in a panel the route imports`,
+    (await app.text('details')) === translate(locale, DETAILS)
+  );
   await app.navigate('settings');
   await checkRoute(app, locale, 'settings', 1);
   await app.navigate('reports');
@@ -1545,6 +1555,59 @@ if (!selected.length) {
       ) && !app.warnings.length,
       [...translationsOf(app), ...app.warnings].join(', ')
     );
+    await app.close();
+  }
+  served.close();
+}
+
+// ===== An import the bundler writes with what starts its module ===== //
+// start.html, the app started without a top-level await, in a build whose
+// modules run in order: the bundler keeps the module that the Orders route
+// and its panel share in the route's chunk, and writes the import of the
+// route as import(x).then((n) => (n.init(), n.exports)). The route is a load
+// like any other: its import asks for the files the map lists for its chunk
+// before what starts the module runs. Split at a request cost of zero, so
+// that what the route reads is in files the entry does not hold.
+if (!selected.length) {
+  prefix = '[then] ';
+  const built = readBuild(
+    build(
+      'module-then',
+      { lazy: true, shared: false, requestCost: 0 },
+      { CHECK_ENTRY: 'start.html' }
+    ).outDir
+  );
+  const imports = built.assets
+    .filter((file) => file.endsWith('.js'))
+    .map((file) => readFileSync(join(built.outDir, 'assets', file), 'utf8'))
+    .join('\n')
+    .match(/import\((["'`])\.\/Orders-[\w-]+\.js\1\)\.then\(/g);
+  check(
+    'the bundler writes the import of the route with what starts its module after it',
+    imports?.length === 1,
+    imports?.join(', ')
+  );
+  const file = built.fileOf(ROUTES.orders.heading, 'fr');
+  const served = await serve(built.outDir);
+  for (const [name, first] of [
+    ['opened first', 'orders'],
+    ['opened after another route', ''],
+  ]) {
+    const app = await open(served.url, 'fr');
+    await app.goto(`start.html${first && `#${first}`}`);
+    if (!first) await app.navigate('orders');
+    await checkRoute(app, 'fr', 'orders', 0, `the route ${name}`);
+    check(
+      `the route ${name}: its import requests a file the entry does not hold, and nothing fails`,
+      !built.entryFiles('fr').includes(file) &&
+        translationsOf(app).includes(file) &&
+        !app.warnings.length,
+      [file, ...app.warnings].join(', ')
+    );
+    await checkNoSource(`the route ${name}`, app, 'fr', [
+      ROUTES.orders.heading,
+      ROUTES.orders.lines,
+    ]);
     await app.close();
   }
   served.close();
