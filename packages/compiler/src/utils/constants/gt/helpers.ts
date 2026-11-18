@@ -33,6 +33,7 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'N',
     'Branch',
     'Plural',
+    'Ordinal',
     'GtInternalTranslateJsx',
     'GtInternalVar',
     'GtInternalNum',
@@ -74,15 +75,6 @@ export function isVariableComponent(name: string): name is VariableComponent {
  */
 export function isDeriveComponent(name: string): name is GT_COMPONENT_TYPES {
   return name === GT_COMPONENT_TYPES.Derive;
-}
-
-/**
- * Check if a name is a GT branch component
- */
-export function isBranchComponent(name: string): name is GT_COMPONENT_TYPES {
-  return (
-    [GT_COMPONENT_TYPES.Branch, GT_COMPONENT_TYPES.Plural] as string[]
-  ).includes(name);
 }
 
 /**

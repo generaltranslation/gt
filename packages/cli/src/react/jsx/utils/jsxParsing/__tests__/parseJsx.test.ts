@@ -723,6 +723,11 @@ describe('Branch/Plural props that are never rendered', () => {
       '<Plural n={2} _1e3="a thousand bottles">bottles</Plural>',
       'Ignored the _1e3 prop of <Plural> because it is not an exact number.',
     ],
+    [
+      'an exact number with a leading zero on <Ordinal>',
+      '<Ordinal n={2} _01="first">later</Ordinal>',
+      'Ignored the _01 prop of <Ordinal> because it is not an exact number.',
+    ],
   ])('warns about %s', (_name, jsx, message) => {
     const { errors, warnings } = extractUserT(page(`<T>${jsx}</T>`));
 
@@ -740,6 +745,7 @@ describe('Branch/Plural props that are never rendered', () => {
 
   it.each([
     ['Plural', '<Plural n={2} one="one bottle" other="bottles" />'],
+    ['Ordinal', '<Ordinal n={2} one="1st" other="nth" />'],
     ['Branch', '<Branch branch="open" open="Open" other="Closed" />'],
   ])('rejects an other prop on <%s>', (component, jsx) => {
     const { errors } = extractUserT(page(`<T>${jsx}</T>`));
@@ -752,9 +758,47 @@ describe('Branch/Plural props that are never rendered', () => {
   });
 });
 
+describe('<Ordinal>', () => {
+  it('is stored as an ordinal plural, which hashes apart from a plural', () => {
+    const branches = (tag: string) =>
+      extractUserT(
+        page(
+          `<T><${tag} n={place} _1="Winner" one={<><Num>{place}</Num>st</>}><Num>{place}</Num>th</${tag}></T>`
+        )
+      );
+    const b = {
+      '=1': 'Winner',
+      one: { t: 'C2', i: 2, c: [{ i: 3, v: 'n' }, 'st'] },
+      other: [{ i: 2, v: 'n' }, 'th'],
+    };
+    const [ordinal, plural] = [branches('Ordinal'), branches('Plural')];
+
+    expect(ordinal.errors).toEqual([]);
+    expect(sources(ordinal)).toEqual([
+      { t: 'Ordinal', i: 1, d: { b, t: 'o' } },
+    ]);
+    expect(sources(plural)).toEqual([{ t: 'Plural', i: 1, d: { b, t: 'p' } }]);
+    const [ordinalHash, pluralHash] = [ordinal, plural].map((result) =>
+      hashSource({ dataFormat: 'JSX', source: result.updates[0].source })
+    );
+    expect(ordinalHash).not.toBe(pluralHash);
+  });
+
+  it.each([null, false, ''])('stores no branches for a lone %j', (empty) => {
+    expect(
+      sources(
+        extractUserT(
+          page(`<T><Ordinal n={place}>{${JSON.stringify(empty)}}</Ordinal></T>`)
+        )
+      )
+    ).toEqual([{ t: 'Ordinal', i: 1 }]);
+  });
+});
+
 describe('a spread attribute on Branch/Plural', () => {
   it.each([
     ['Plural', '<Plural n={count} {...forms} />'],
+    ['Ordinal', '<Ordinal n={place} {...forms} />'],
     ['Branch', '<Branch branch={status} {...branches}>Closed</Branch>'],
   ])('is rejected on <%s> inside <T>', (component, jsx) => {
     const { updates, errors } = extractUserT(page(`<T>${jsx}</T>`));

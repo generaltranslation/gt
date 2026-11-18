@@ -25,7 +25,10 @@ import {
   warnDeriveNonConstVariableSync,
   warnDeriveDestructuringSync,
 } from '../../../../console/index.js';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import {
+  isAcceptedPluralForm,
+  isPluralComponentName,
+} from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   COUNT_NODE_TYPE,
@@ -362,7 +365,7 @@ function buildJSXTree({
 
     const props: JSXProps = {};
 
-    const elementIsPlural = componentType === 'Plural';
+    const elementIsPlural = isPluralComponentName(componentType);
     const elementIsBranch = componentType === 'Branch';
 
     element.openingElement.attributes.forEach((attr, index) => {
@@ -399,6 +402,7 @@ function buildJSXTree({
           output.warnings.add(
             warnInvalidExactPluralPropSync(
               config.file,
+              componentType,
               attrName,
               `${attr.loc?.start?.line}:${attr.loc?.start?.column}`
             )

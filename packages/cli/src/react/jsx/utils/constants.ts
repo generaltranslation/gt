@@ -21,6 +21,7 @@ export const N_COMPONENT = 'N';
 // component of the author's own called N is never taken for it.
 export const COUNT_NODE_TYPE = '#';
 export const PLURAL_COMPONENT = 'Plural';
+export const ORDINAL_COMPONENT = 'Ordinal';
 
 // GT translation functions
 export const GT_TRANSLATION_FUNCS = [
@@ -37,6 +38,7 @@ export const GT_TRANSLATION_FUNCS = [
   INTERNAL_TRANSLATION_COMPONENT,
   INTERNAL_VAR_COMPONENT,
   PLURAL_COMPONENT,
+  ORDINAL_COMPONENT,
 ];
 // Derive functions that are imported from GT
 export const GT_DERIVE_STRING_FUNCTIONS = [DERIVE_FUNCTION];

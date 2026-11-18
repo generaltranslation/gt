@@ -263,7 +263,7 @@ This does NOT apply to auto-inserted \_Var. When the pass itself inserts a \_Var
 
 ## Rule 8: Branch and Plural — \_T wraps from parent, control props untouched, content props processed
 
-Branch and Plural components trigger \_T insertion at the **parent** level. The `<T>` component already knows how to translate their branches, so static content inside Branch/Plural props and children is left alone.
+Branch and Plural components trigger \_T insertion at the **parent** level. The `<T>` component already knows how to translate their branches, so static content inside Branch/Plural props and children is left alone. Ordinal, a Plural that selects among ordinal categories, is treated as Plural is in every rule.
 
 **Control props are never modified.** These are selector/configuration props, not translatable content:
 

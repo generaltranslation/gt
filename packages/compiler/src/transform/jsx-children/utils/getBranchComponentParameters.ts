@@ -3,6 +3,7 @@ import type { NodePath } from '@babel/traverse';
 import {
   getPluralBranchKey,
   isAcceptedPluralForm,
+  isPluralComponentName,
 } from 'generaltranslation/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
@@ -16,9 +17,9 @@ export const createOtherPropError = (component: string) =>
     fix: 'Write the fallback as its children',
   });
 
-const createInvalidExactPluralPropWarning = (prop: string) =>
+const createInvalidExactPluralPropWarning = (prop: string, name: string) =>
   createDiagnosticMessage({
-    whatHappened: `Ignored the ${prop} prop of <Plural>`,
+    whatHappened: `Ignored the ${prop} prop of <${name}>`,
     why: 'it is not an exact number',
     fix: 'Write the number without a leading zero or an exponent, as in _0 or _1000',
   });
@@ -84,18 +85,21 @@ export function getBranchComponentParameters(
       ) {
         return null;
       } else if (
-        canonicalName === GT_COMPONENT_TYPES.Plural &&
+        isPluralComponentName(canonicalName) &&
         !isAcceptedPluralForm(propertyName)
       ) {
         // `_01` looks like an exact number but is not a branch.
         if (/^_\d/.test(propertyName)) {
-          warn(createInvalidExactPluralPropWarning(propertyName), property);
+          warn(
+            createInvalidExactPluralPropWarning(propertyName, canonicalName),
+            property
+          );
         }
         return null;
       }
 
       return [
-        canonicalName === GT_COMPONENT_TYPES.Plural
+        isPluralComponentName(canonicalName)
           ? getPluralBranchKey(propertyName)
           : propertyName,
         valuePath as NodePath<t.Expression>,

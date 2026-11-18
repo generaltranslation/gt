@@ -10,15 +10,13 @@ import {
   minifyVariableTypeMap,
 } from '../../../utils/getVariableName.js';
 import {
+  branchComponentTransformations,
   getPluralBranchKey,
   isAcceptedPluralForm,
+  isPluralComponentName,
 } from 'generaltranslation/internal';
 import { MultipliedTreeNode } from './types.js';
-import {
-  DATA_ATTR_PREFIX,
-  BRANCH_COMPONENT,
-  PLURAL_COMPONENT,
-} from '../constants.js';
+import { DATA_ATTR_PREFIX, BRANCH_COMPONENT } from '../constants.js';
 
 // The children of a <Plural> or a <Branch> are its `other` branch.
 function addFallbackBranch(
@@ -61,7 +59,7 @@ function constructGTProp(
   }, {});
 
   // Plural
-  if (type === PLURAL_COMPONENT) {
+  if (isPluralComponentName(type)) {
     const pluralBranches = Object.entries(props).reduce(
       (acc: Record<string, JsxChildren>, [branchName, branch]) => {
         if (isAcceptedPluralForm(branchName)) {
@@ -77,7 +75,7 @@ function constructGTProp(
     addFallbackBranch(pluralBranches, props.children, id, gtVariableNames);
     // Add plural branches to the generaltranslation
     if (Object.keys(pluralBranches).length) {
-      generaltranslation.t = 'p';
+      generaltranslation.t = branchComponentTransformations[type];
       generaltranslation.b = pluralBranches;
     }
 
@@ -177,7 +175,7 @@ export default function addGTIdentifierToSyntaxTree(
       // are a branch, constructed above.
       const currentIndex = indexObject.index;
       const children =
-        type === PLURAL_COMPONENT || type === BRANCH_COMPONENT
+        isPluralComponentName(type) || type === BRANCH_COMPONENT
           ? false
           : handleChildren(
               props?.children === undefined ? null : props?.children

@@ -315,13 +315,14 @@ export const warnBranchOtherPropSync = (
 
 export const warnInvalidExactPluralPropSync = (
   file: string,
+  componentName: string,
   attrName: string,
   location?: string
 ): string =>
   withLocation(
     file,
     createDiagnosticMessage({
-      whatHappened: `Ignored the ${attrName} prop of <Plural>`,
+      whatHappened: `Ignored the ${attrName} prop of <${componentName}>`,
       why: 'it is not an exact number',
       fix: 'Write the number without a leading zero or an exponent, as in _0 or _1000',
     }),

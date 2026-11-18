@@ -12,6 +12,7 @@ import traverseModule, { NodePath } from '@babel/traverse';
 
 const traverse: typeof traverseModule.default =
   traverseModule.default || traverseModule;
+import { isPluralComponentName } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   TRANSLATION_COMPONENT,
@@ -19,7 +20,6 @@ import {
   INTERNAL_VAR_COMPONENT,
   VARIABLE_COMPONENTS,
   BRANCH_COMPONENT,
-  PLURAL_COMPONENT,
   DEFAULT_GT_IMPORT_SOURCE,
   DERIVE_COMPONENT,
   BRANCH_CONTROL_PROPS,
@@ -168,7 +168,7 @@ function processJsxElement({
   // Must be checked BEFORE user variable check because Derive is in VARIABLE_COMPONENTS
   if (
     canonicalName === BRANCH_COMPONENT ||
-    canonicalName === PLURAL_COMPONENT ||
+    isPluralComponentName(canonicalName) ||
     canonicalName === DERIVE_COMPONENT
   ) {
     if (!insideAutoT) {
@@ -369,7 +369,7 @@ function processOpaqueComponentProps({
   // Branch/Plural children (not rendered, still extracted) — process element-by-element before marking
   if (
     insideAutoT &&
-    (canonicalName === BRANCH_COMPONENT || canonicalName === PLURAL_COMPONENT)
+    (canonicalName === BRANCH_COMPONENT || isPluralComponentName(canonicalName))
   ) {
     const childPaths = path.get('children');
     for (const childPath of childPaths) {
@@ -470,7 +470,7 @@ function isControlProp(
   if (canonicalName === BRANCH_COMPONENT) {
     return BRANCH_CONTROL_PROPS.has(propName) || propName.startsWith('data-');
   }
-  if (canonicalName === PLURAL_COMPONENT) {
+  if (isPluralComponentName(canonicalName)) {
     return PLURAL_CONTROL_PROPS.has(propName);
   }
   return false;
@@ -524,7 +524,7 @@ function hasOpaqueGTChild(
     const canonical = importAliases[typeName];
     return (
       canonical === BRANCH_COMPONENT ||
-      canonical === PLURAL_COMPONENT ||
+      isPluralComponentName(canonical) ||
       canonical === DERIVE_COMPONENT
     );
   });

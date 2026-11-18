@@ -15,6 +15,7 @@ export enum GT_COMPONENT_TYPES {
   Derive = 'Derive',
   Branch = 'Branch',
   Plural = 'Plural',
+  Ordinal = 'Ordinal',
   LocaleSelector = 'LocaleSelector',
   GtInternalTranslateJsx = 'GtInternalTranslateJsx',
   GtInternalVar = 'GtInternalVar',

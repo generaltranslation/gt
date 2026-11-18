@@ -6,6 +6,10 @@ import {
   JsxElement,
   Variable,
 } from '@generaltranslation/format';
+import {
+  branchComponentTransformations,
+  isBranchComponentName,
+} from 'generaltranslation/internal';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
@@ -20,14 +24,12 @@ import { validateChildrenFromArgs } from './validation/validateChildrenFromArgs'
 import { IdObject } from './utils/id';
 import { VariableType } from '../../state/ScopeTracker';
 import {
-  isBranchComponent,
   isDeriveComponent,
   isGTComponent,
   isVariableComponent,
 } from '../../utils/constants/gt/helpers';
 import { validateStringLiteralPropertyFromArg } from './validation/validateStringLiteralPropertyFromArg';
 import {
-  GT_COMPONENT_TYPES,
   VARIABLE_COMPONENT_TYPES,
   type VariableComponent,
 } from '../../utils/constants/gt/constants';
@@ -371,7 +373,7 @@ function constructJsxElement(
   > =
     canonicalName &&
     type === 'generaltranslation' &&
-    isBranchComponent(canonicalName)
+    isBranchComponentName(canonicalName)
       ? { errors: [] }
       : constructJsxChildrenForJsxElement(childrenValidation.value, state, id);
   errors.push(...jsxChildrenValidation.errors);
@@ -490,7 +492,7 @@ function constructGTProp(
   if (
     canonicalName &&
     type === 'generaltranslation' &&
-    isBranchComponent(canonicalName)
+    isBranchComponentName(canonicalName)
   ) {
     // The runtime reads the props a spread carries, which the source does not show.
     const spread = parameters.properties.find((property) =>
@@ -563,7 +565,7 @@ function constructGTProp(
 
     if (Object.keys(branches).length > 0) {
       value['b'] = branches;
-      value['t'] = canonicalName === GT_COMPONENT_TYPES.Branch ? 'b' : 'p';
+      value['t'] = branchComponentTransformations[canonicalName];
     }
   } else {
     // Get the html content props

@@ -1,4 +1,7 @@
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import {
+  isAcceptedPluralForm,
+  isPluralComponentName,
+} from 'generaltranslation/internal';
 import {
   ElementNode,
   ExpressionNode,
@@ -199,7 +202,7 @@ export function handleChildrenWhitespace(
   } else if (isElementNode(currentTree)) {
     // Process all props recursively
     // What if there is a different component sharing the same name?
-    const elementIsPlural = currentTree.type === 'Plural';
+    const elementIsPlural = isPluralComponentName(currentTree.type);
     const elementIsBranch = currentTree.type === 'Branch';
     const processedProps = !currentTree.props
       ? undefined
