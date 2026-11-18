@@ -1404,6 +1404,36 @@ async function checkVariant(name, variant) {
     stability.changed = changed.renamed.length;
   }
   {
+    // One statement added to a module every route imports: the bundler
+    // renames its chunk and every chunk on the way up to the entry. A file
+    // is named by the messages it holds and by no chunk, so only the maps,
+    // which say what each chunk's import needs, change.
+    const revised = compare(
+      base,
+      read(
+        build(`module-${name}-revision`, variant, { CHECK_REVISION: 'next' })
+          .outDir
+      )
+    );
+    const chunks = revised.renamed.filter((file) => file.endsWith('.js'));
+    const files = revised.renamed.filter((file) =>
+      /\.[0-9a-f]{8}\.json$/.test(file)
+    );
+    check(
+      'a change to JavaScript alone renames chunks, and no translation file but the maps',
+      chunks.length > 1 &&
+        sameSet(
+          files,
+          manifest.locales.map((locale) =>
+            files.find((file) => file.startsWith(`assets/gt-map.${locale}.`))
+          )
+        ),
+      `${chunks.length} chunks, ${files.join(', ')}`
+    );
+    stability.revised = files.length;
+    stability.revisedChunks = chunks.length;
+  }
+  {
     // One more static import: the Home route now reaches the statuses.
     // Their messages are the only ones another set of imports needs.
     const added = readBuild(
@@ -1460,7 +1490,7 @@ ${name}: ${variant.lazy ? 'modules run when first imported' : 'every module of a
   The Home route downloads ${home.bytes} B gzip of translations in ${home.files} files${byChunk ? `; split by chunk, ${byChunk.bytes} B in ${byChunk.files} files` : ''}
   Startup JavaScript: ${total(paths(startup.off, off.outDir), size)} B (${total(paths(startup.off, off.outDir), gzip)} B gzip) without, ${total(paths(startup.on, on.outDir), size)} B (${total(paths(startup.on, on.outDir), gzip)} B gzip) with
   index.html: ${size(html(off.outDir))} B (${gzip(html(off.outDir))} B gzip) without, ${size(html(on.outDir))} B (${gzip(html(on.outDir))} B gzip) with
-  Translation files renamed: ${stability.changed} by a changed translation; ${stability.added} by one more import with the previous manifest, ${stability.addedFromNothing} without it`
+  Translation files renamed: ${stability.changed} by a changed translation; ${stability.revised}, the maps, by a change to JavaScript alone that renames ${stability.revisedChunks} chunks; ${stability.added} by one more import with the previous manifest, ${stability.addedFromNothing} without it`
   );
 }
 
