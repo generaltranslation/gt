@@ -50,6 +50,7 @@ describe('gt-vue package layout', () => {
         'Currency',
         'DateTime',
         'Num',
+        'Ordinal',
         'Plural',
         'T',
         'Var',

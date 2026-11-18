@@ -9,6 +9,7 @@ export type GTComponentName =
   | 'DateTime'
   | 'Currency'
   | 'Plural'
+  | 'Ordinal'
   | 'Branch';
 
 /** Vue builtins whose runtime identity changes rich-content traversal. */

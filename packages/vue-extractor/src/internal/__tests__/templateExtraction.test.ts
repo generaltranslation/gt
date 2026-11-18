@@ -899,6 +899,24 @@ describe('Vue template audit cases', () => {
       diagnostic: 'other branch on a gt-vue <Plural>',
     },
     {
+      name: 'other prop on Ordinal, whose fallback is the default slot',
+      script: `import { Ordinal, T } from 'gt-vue';`,
+      template: `<T><Ordinal :n="2" one="1st" other="nth" /></T>`,
+      diagnostic: 'other branch on a gt-vue <Ordinal>',
+    },
+    {
+      name: 'other slot on Ordinal, whose fallback is the default slot',
+      script: `import { Ordinal, T } from 'gt-vue';`,
+      template: `<T><Ordinal :n="2" one="1st"><template #other>nth</template></Ordinal></T>`,
+      diagnostic: 'other branch on a gt-vue <Ordinal>',
+    },
+    {
+      name: 'object spread on Ordinal',
+      script: `import { Ordinal, T } from 'gt-vue'; const forms = { one: '1st' };`,
+      template: `<T><Ordinal :n="2" v-bind="forms">nth</Ordinal></T>`,
+      diagnostic: 'dynamic or spread v-bind inside a gt-vue <T>',
+    },
+    {
       name: 'source-shaping v-if',
       script: `import { T } from 'gt-vue'; const visible = true;`,
       template: `<T><b v-if="visible">Conditional</b></T>`,

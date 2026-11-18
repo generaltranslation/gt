@@ -1,4 +1,4 @@
-export { Branch, Plural } from './components/branches';
+export { Branch, Ordinal, Plural } from './components/branches';
 export { T } from './components/T';
 export { Currency, DateTime, Num, Var } from './components/variables';
 export { useLocale, useSetLocale } from './composables/locale';

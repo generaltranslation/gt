@@ -16,8 +16,11 @@ import {
   type JsxChildren,
 } from '@generaltranslation/format';
 import {
+  branchComponentTransformations,
+  type BranchComponentName,
   getPluralBranchKey,
   isAcceptedPluralForm,
+  isBranchComponentName,
 } from 'generaltranslation/internal';
 import { ElementTypes, NodeTypes } from './compilerAst.js';
 import { processVueStringCall } from './stringCalls.js';
@@ -384,8 +387,7 @@ function visitTemplateChildren(
         childBindings,
         expressionPlugins,
         context,
-        component?.originalName === 'Branch' ||
-          component?.originalName === 'Plural' ||
+        isBranchComponentName(component?.originalName) ||
           component?.originalName === 'T'
       );
     } else {
@@ -1795,9 +1797,7 @@ function serializeElement(
           shadowed,
           expressionPlugins,
           context,
-          originalName === 'Branch' || originalName === 'Plural'
-            ? 'serialize'
-            : 'opaque'
+          isBranchComponentName(originalName) ? 'serialize' : 'opaque'
         )
       : {
           defaultSlot: {
@@ -1810,17 +1810,16 @@ function serializeElement(
 
   // The default slot of a Branch or a Plural is its `other` branch, which
   // readBranches serializes.
-  const children =
-    originalName === 'Branch' || originalName === 'Plural'
-      ? []
-      : serializeChildren(
-          slotLayout.defaultSlot.children,
-          counter,
-          slotLayout.defaultSlot.shadowed,
-          bindings,
-          expressionPlugins,
-          context
-        );
+  const children = isBranchComponentName(originalName)
+    ? []
+    : serializeChildren(
+        slotLayout.defaultSlot.children,
+        counter,
+        slotLayout.defaultSlot.shadowed,
+        bindings,
+        expressionPlugins,
+        context
+      );
   if (suspense && slotLayout.defaultSlot.rootCount > 1) {
     addVueError(
       context,
@@ -1830,7 +1829,7 @@ function serializeElement(
     );
   }
 
-  if (originalName === 'Branch' || originalName === 'Plural') {
+  if (isBranchComponentName(originalName)) {
     const branches = readBranches(
       element,
       slotLayout,
@@ -1844,7 +1843,7 @@ function serializeElement(
     if (Object.keys(branches).length > 0) {
       // Plural branches are stored under ICU keys: `_0` is `=0`.
       data.b =
-        originalName === 'Plural'
+        originalName !== 'Branch'
           ? Object.fromEntries(
               Object.entries(branches).map(([name, branch]) => [
                 getPluralBranchKey(name),
@@ -1852,7 +1851,7 @@ function serializeElement(
               ])
             )
           : branches;
-      data.t = originalName === 'Plural' ? 'p' : 'b';
+      data.t = branchComponentTransformations[originalName];
     }
   }
 
@@ -2242,7 +2241,7 @@ function readBranches(
   element: ElementNode,
   slots: SlotLayout,
   branchElementId: number,
-  component: 'Branch' | 'Plural',
+  component: BranchComponentName,
   shadowed: Set<string>,
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
@@ -2263,7 +2262,7 @@ function readBranches(
       continue;
     }
     // Vue's own slot flags start with `_`; an exact plural form is `_0`.
-    if (component === 'Plural' ? !isAcceptedPluralForm(name) : name[0] === '_')
+    if (component !== 'Branch' ? !isAcceptedPluralForm(name) : name[0] === '_')
       continue;
     branches[name] = collapseChildren(
       serializeChildren(
@@ -2302,7 +2301,7 @@ function readBranches(
       key &&
       (!isBranchAttributeName(key) ||
         Object.prototype.hasOwnProperty.call(branches, key) ||
-        (component === 'Plural' && !isAcceptedPluralForm(key)))
+        (component !== 'Branch' && !isAcceptedPluralForm(key)))
     ) {
       continue;
     }
