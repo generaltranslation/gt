@@ -7,7 +7,7 @@
     "dev": "vite --port 5176 --strictPort",
     "build": "vite build",
     "translate": "node scripts/pseudo-translate.mjs",
-    "check": "node scripts/check.mjs && node scripts/check.mjs map",
+    "check": "node scripts/check.mjs && node scripts/check.mjs map && node scripts/check-module.mjs",
     "check:install": "playwright-core install chromium-headless-shell",
     "check:import-map": "CHECK_IMPORT_MAP=true pnpm run check",
     "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
