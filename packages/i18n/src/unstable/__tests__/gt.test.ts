@@ -185,14 +185,26 @@ describe('gt-i18n/unstable rendering', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it('renders the source when Intl rejects the locale of a translation without placeholders', async () => {
+  it('renders the source when Intl rejects the locale of a translation it formats', async () => {
     await setup();
-    const gt = createGT({
+    // Text reaches no formatter, so its locale is not checked.
+    const text = createGT({
       getLocale: () => 'fr_FR',
       lookupTranslation: () => 'Enregistrer',
     });
-    expect(gt`Save`).toBe('Save');
-    expect(gt`Save`).toBe('Save');
+    expect(text`Save`).toBe('Enregistrer');
+    expect(warn).not.toHaveBeenCalled();
+
+    const counted = createGT({
+      getLocale: () => 'fr_FR',
+      lookupTranslation: () => [
+        ['count', 'plural', { other: [0, ' fichiers'] }],
+      ],
+    });
+    const render = () =>
+      counted`${plural({ count: 2 }, { other: part`${n} files` })}`;
+    expect(render()).toBe('2 files');
+    expect(render()).toBe('2 files');
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0][0]).toContain(
       'Formatting the "fr_FR" translation'
