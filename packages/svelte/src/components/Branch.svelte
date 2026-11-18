@@ -19,6 +19,8 @@
   let {
     branch,
     children,
+    // `other` is not a branch: the fallback is the children.
+    other: _other,
     ...branches
   }: {
     branch?: string | number | boolean | null;
@@ -29,8 +31,6 @@
   // A branch passed as undefined counts as absent, as in gt-react.
   const selected = $derived(
     branch != null &&
-      // `other` is not a prop: the children are the `other` branch.
-      String(branch) !== 'other' &&
       Object.hasOwn(branches, String(branch)) &&
       branches[String(branch)] !== undefined
       ? branches[String(branch)]

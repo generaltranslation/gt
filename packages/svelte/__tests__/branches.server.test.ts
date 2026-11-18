@@ -96,6 +96,14 @@ describe('a branch value named other', () => {
     });
     expect(withoutComments(body).trim()).toBe('<b>Children</b>');
   });
+
+  it.each(['other', 'missing'])(
+    'renders nothing for branch=%s with an other prop and no children',
+    (branch) => {
+      const { body } = render(Branch, { props: { branch, other: 'Prop' } });
+      expect(withoutComments(body).trim()).toBe('');
+    }
+  );
 });
 
 describe('malformed branch translations', () => {

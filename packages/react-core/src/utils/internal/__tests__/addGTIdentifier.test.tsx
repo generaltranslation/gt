@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { addGTIdentifier } from '../addGTIdentifier';
 import { writeChildrenAsObjects } from '../writeChildrenAsObjects';
@@ -109,6 +109,28 @@ describe('addGTIdentifier with <RelativeTime>', () => {
     );
 
     expect(gtTag(tagged).branches).toEqual({ other: 'Children' });
+  });
+
+  it('neither stores nor renders an other prop of a Branch with no children', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const tagged = addGTIdentifier(
+      <Branch branch='missing' {...{ other: 'Prop' }}>
+        {undefined}
+      </Branch>
+    );
+
+    expect(writeChildrenAsObjects(tagged)).toEqual({ t: 'Branch', i: 1 });
+    expect(
+      renderDefaultChildren({
+        children: tagged,
+        defaultLocale: 'en',
+        enableI18n: true,
+      })
+    ).toBeUndefined();
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('<Branch> has no branch for its value')
+    );
+    error.mockRestore();
   });
 
   it('renders <RelativeTime> in <T> source content as formatted time', () => {
