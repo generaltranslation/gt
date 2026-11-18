@@ -18,6 +18,8 @@ import {
 } from '../../types/libraries.js';
 import { shouldPublishGt } from '../../utils/resolvePublish.js';
 import { planVueExtraction } from '@generaltranslation/vue-extractor/integration';
+import { logger } from '../../console/logger.js';
+import { selectUntranslatedUpdates } from '../../svelte/manifest.js';
 
 /** Resolves the inline runtime that owns this project's shared GTJSON file. */
 export function resolveInlineLibrary(
@@ -38,12 +40,15 @@ export async function collectFiles(
   reactComponents: number;
   inlineLibrary?: InlineLibrary;
   publishMap: Map<string, boolean>;
+  /** Every inline entry is already translated, so no inline file was collected. */
+  inlineUpToDate?: boolean;
 }> {
   // Aggregate files
   const { files, publishMap } = await aggregateFiles(settings);
 
   // Parse for React components
   let reactComponents = 0;
+  let inlineUpToDate = false;
   const inlineLibrary = resolveInlineLibrary(library);
   const extractionLibrary = isInlineLibrary(library)
     ? library
@@ -51,11 +56,19 @@ export async function collectFiles(
       ? Libraries.GT_VUE
       : undefined;
   if (extractionLibrary) {
-    const updates = await aggregateInlineTranslations(
+    let updates = await aggregateInlineTranslations(
       options,
       settings,
       extractionLibrary
     );
+    if (extractionLibrary === Libraries.GT_SVELTE && !options.force) {
+      const untranslated = selectUntranslatedUpdates(updates, settings);
+      logger.info(
+        `${untranslated.length} of ${updates.length} gt-svelte entries need translation`
+      );
+      inlineUpToDate = updates.length > 0 && untranslated.length === 0;
+      updates = untranslated;
+    }
     if (updates.length > 0) {
       if (!settings.publish && !settings.files?.placeholderPaths.gt) {
         logErrorAndExit(invalidConfigurationError);
@@ -126,5 +139,5 @@ export async function collectFiles(
       }
     }
   }
-  return { files, reactComponents, inlineLibrary, publishMap };
+  return { files, reactComponents, inlineLibrary, publishMap, inlineUpToDate };
 }

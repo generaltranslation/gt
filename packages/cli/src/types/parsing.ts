@@ -51,6 +51,7 @@ export type ParsingFlagsFor<K extends SupportedFileExtension> = K extends 'json'
  * @property {boolean} legacyGtReactImportSource - Whether compiler-injected gt-react imports should use gt-react/browser.
  * @property {string} viteConfigPath - Vite config used to resolve hash-affecting Vue compiler behavior.
  * @property {VueCompilerOptions} vueCompilerOptions - Hash-affecting Vue template compiler options.
+ * @property {string} svelteManifest - Manifest written by the gt-svelte Vite plugin, relative to the project root.
  */
 export type GTParsingFlags = BaseParsingFlags & {
   autoderive: boolean | { jsx?: boolean; strings?: boolean };
@@ -59,6 +60,7 @@ export type GTParsingFlags = BaseParsingFlags & {
   legacyGtReactImportSource: boolean;
   viteConfigPath?: string;
   vueCompilerOptions?: VueCompilerOptions;
+  svelteManifest?: string;
 };
 
 /**

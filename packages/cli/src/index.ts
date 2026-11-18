@@ -7,6 +7,7 @@ import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
 import { Libraries, isPythonLibrary } from './types/libraries.js';
 import { VueCLI } from './cli/vue.js';
+import { SvelteCLI } from './cli/svelte.js';
 import { logger } from './console/logger.js';
 import { registerVersionOption } from './cli/version.js';
 
@@ -33,6 +34,8 @@ export function main(program: Command) {
     cli = new NodeCLI(program, library, additionalModules);
   } else if (library === Libraries.GT_VUE) {
     cli = new VueCLI(program, additionalModules);
+  } else if (library === Libraries.GT_SVELTE) {
+    cli = new SvelteCLI(program, additionalModules);
   } else if (isPythonLibrary(library)) {
     cli = new PythonCLI(program, library, additionalModules);
   } else if (

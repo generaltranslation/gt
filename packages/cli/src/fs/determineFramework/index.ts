@@ -53,6 +53,8 @@ export function determineLibraryForCLI(): DeterminedCLILibrary {
         library = Libraries.GT_REACT_NATIVE;
       } else if (dependencies[Libraries.GT_NODE]) {
         library = Libraries.GT_NODE;
+      } else if (dependencies[Libraries.GT_SVELTE]) {
+        library = Libraries.GT_SVELTE;
       } else if (dependencies['next-intl']) {
         library = 'next-intl';
       } else if (dependencies['i18next']) {

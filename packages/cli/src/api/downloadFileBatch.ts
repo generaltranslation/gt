@@ -29,8 +29,13 @@ import { getRelative } from '../fs/findFilepath.js';
 import { encodeFileContent } from '../fs/fileContent.js';
 import {
   getInlineElementsLabel,
+  Libraries,
   type InlineLibrary,
 } from '../types/libraries.js';
+import {
+  mergeSvelteCatalog,
+  readSvelteManifestHashes,
+} from '../svelte/manifest.js';
 
 /**
  * The platform withholds unapproved review-gated GTJSON components from
@@ -433,6 +438,18 @@ export async function downloadFileBatch(
           data = mergeXcstringsLocale(file.data, locale, inputPath);
         } else {
           data = mergeWithSource(file.data, locale, inputPath, options);
+          if (
+            inlineLibrary === Libraries.GT_SVELTE &&
+            file.fileFormat === 'GTJSON'
+          ) {
+            data = mergeSvelteCatalog(
+              await fs.promises
+                .readFile(outputPath, 'utf8')
+                .catch(() => undefined),
+              data,
+              readSvelteManifestHashes(options.files?.gtJson?.parsingFlags)
+            );
+          }
 
           // Sort GTJSON keys for stable diffs
           if (file.fileFormat === 'GTJSON') {
