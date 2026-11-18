@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getI18nConfig as getBaseI18nConfig,
   I18nConfig,
@@ -33,6 +33,28 @@ describe('react i18n config', () => {
     expect(getI18nConfig()).toBe(config);
     expect(getBaseI18nConfig()).toBe(config);
     expect(getI18nConfig().getRenderStrategy()).toBe('SPA');
+  });
+
+  it('warns in development about a configured locale Intl has no data for', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      // Klingon has no locale data in Node.
+      initializeI18nConfig(
+        {
+          defaultLocale: 'en',
+          locales: ['en', 'tlh'],
+          cacheUrl: null,
+          runtimeUrl: null,
+        },
+        'SPA'
+      );
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toContain('tlh');
+    } finally {
+      warn.mockRestore();
+      vi.unstubAllEnvs();
+    }
   });
 
   it('defaults public pure initialization to server-render', () => {

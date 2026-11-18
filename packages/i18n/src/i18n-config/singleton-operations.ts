@@ -19,16 +19,23 @@ const i18nConfigSingleton = createGlobalSingleton<I18nConfig>({
 });
 
 export const getI18nConfig = i18nConfigSingleton.get;
-export const setI18nConfig = i18nConfigSingleton.set;
 export const isI18nConfigInitialized = i18nConfigSingleton.isInitialized;
+
+/**
+ * Every framework sets its config through here, its own subclass of
+ * I18nConfig included, so this is where a configuration is checked once.
+ */
+export function setI18nConfig(nextI18nConfig: I18nConfig): void {
+  i18nConfigSingleton.set(nextI18nConfig);
+  if (getRuntimeEnvironment() === 'development') {
+    warnAboutLocalesWithoutIntlData(nextI18nConfig);
+  }
+}
 
 export function initializeI18nConfig(
   params: I18nConfigParams = {}
 ): I18nConfig {
   const nextI18nConfig = new I18nConfig(params);
   setI18nConfig(nextI18nConfig);
-  if (getRuntimeEnvironment() === 'development') {
-    warnAboutLocalesWithoutIntlData(nextI18nConfig);
-  }
   return nextI18nConfig;
 }
