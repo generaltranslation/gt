@@ -21,6 +21,10 @@ export type StartupState = {
   h: Record<string, string>;
   /** The token in the name of every other file of a locale, by locale */
   v: Record<string, string>;
+  /** The key of the file that says what `v` is in the build a host serves now */
+  n?: string;
+  /** What says how the build assigned messages to files */
+  c?: string;
   /** The locale the script read, when it has a file */
   l?: string;
   /** The entry's file it requested, by locale */
@@ -446,6 +450,8 @@ function renderCall(run: (...data: never[]) => void, data: string[]): string {
  * @param maps The key of the maps, in a build that names each file by its own hash.
  * @param regions The hash in the name of each file the entry holds, by locale and key, in a build that splits by module; `entry` and `hashes` are then of the locale's map.
  * @param unsplit The key of the build's unsplit files and the hash in the name of each locale's, when it has any.
+ * @param current The key of the file that holds `tokens`, under a name that is the same in every build, when the build writes one.
+ * @param assignment What that file says of how the build assigned messages to files, when it says so.
  */
 export function renderStartupScript({
   base,
@@ -457,6 +463,8 @@ export function renderStartupScript({
   regions,
   locales,
   unsplit,
+  current,
+  assignment,
 }: {
   base: string;
   entry: string;
@@ -467,8 +475,17 @@ export function renderStartupScript({
   regions?: Record<string, Record<string, string>>;
   locales: string[];
   unsplit?: { key: string; hashes: Record<string, string> };
+  current?: string;
+  assignment?: string;
 }): string {
-  const state: StartupState = { b: base, f: entry, h: hashes, v: tokens };
+  const state: StartupState = {
+    b: base,
+    f: entry,
+    h: hashes,
+    v: tokens,
+    ...(current !== undefined && { n: current }),
+    ...(current !== undefined && assignment !== undefined && { c: assignment }),
+  };
   const shared = `window[${toScriptJson(CHUNK_TRANSLATIONS_GLOBAL)}]`;
   // A relative base is relative to the page as it loads, and the app can change the page's URL
   const resolved =

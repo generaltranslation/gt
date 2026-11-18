@@ -108,6 +108,27 @@ export type ChunkTranslationsState = {
   r?: Record<string, Promise<boolean> | undefined>;
   /** Whether the page was warned of a chunk the build named and the lists do not know */
   d?: boolean;
+  /**
+   * The key of the file that says what the locale's files are named by in
+   * the build the host serves now, and what says how this page's build
+   * assigned messages to files. The compiler writes both, as the fields
+   * above `l`.
+   */
+  n?: string;
+  c?: string;
+  /** The reading of that file that is on its way */
+  x?: Promise<void>;
+  /**
+   * In a build with maps: the lists of the map of the build that is served
+   * now, read when a file was missing, and the hash in that map's name
+   */
+  j?: ImportedFiles;
+  a?: string;
+  /**
+   * The URLs the host did not have: true where nothing is asked for in its
+   * place, false where what `j` lists for a chunk is
+   */
+  z?: Record<string, boolean | undefined>;
 };
 
 export type InitializeConfig = { loadTranslations?: unknown };

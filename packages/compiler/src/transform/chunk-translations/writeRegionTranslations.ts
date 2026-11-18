@@ -40,11 +40,13 @@ import {
 } from './unsplitTranslations';
 import {
   createIsLoadedWith,
+  CURRENT_NAMES_KEY,
   findBundledCatalogs,
   getFileHash,
   getFileName,
   loadChunkTranslationsTable,
   pickTranslations,
+  renderCurrentNames,
   renderUnsplitFiles,
   TRANSLATIONS_MAP_KEY,
   type BundleFile,
@@ -108,6 +110,13 @@ export type RegionTranslationsManifest = {
   imports: Record<string, string[]>;
   /** The map of each locale: which files each import needs, and their names */
   maps: Record<string, string>;
+  /**
+   * The one file whose name is the same in every build: the hash in the name
+   * of each locale's map. A page that stayed open while the app was deployed
+   * again reads it when a file it asks for is gone. Serve it as `index.html`
+   * is served, not cached for good.
+   */
+  current?: string;
   /**
    * The file of the translations no other file holds, by locale, which a
    * page requests with its entry's files. Left out when the build has none.
@@ -352,6 +361,16 @@ export function renderRegionTranslations(
     manifest.maps[locale] = fileName;
   }
 
+  // A build without files for any locale has no names to give
+  const current = locales.length
+    ? path.posix.join(assetsDir, CURRENT_NAMES_KEY)
+    : undefined;
+  if (current !== undefined) {
+    const names = renderCurrentNames(current, mapHashes);
+    files.push(names);
+    manifest.current = names.fileName;
+  }
+
   const startupScripts = new Map<string, (base: string) => string>();
   for (const [entry, ids] of assignment.entries) {
     const keys = getKeys(ids);
@@ -378,6 +397,7 @@ export function renderRegionTranslations(
             hashes: unsplitHashes,
           },
         }),
+        current,
       });
     startupScripts.set(entry, renderScript);
     manifest.entries[entry] = {

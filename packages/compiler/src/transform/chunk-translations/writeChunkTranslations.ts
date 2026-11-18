@@ -79,10 +79,61 @@ export type ChunkTranslationsManifest = {
    * files each dynamic import needs.
    */
   maps?: Record<string, string>;
+  /**
+   * The one file whose name is the same in every build. It holds what the
+   * names of each locale's files follow from, and what says how the build
+   * assigned messages to files. A page that stayed open while the app was
+   * deployed again reads it when a file it asks for is gone. Serve it as
+   * `index.html` is served, not cached for good.
+   */
+  current?: string;
 };
 
 /** The key of a locale's map, inside the directory of the build's assets. */
 export const TRANSLATIONS_MAP_KEY = 'gt-map';
+
+/**
+ * The key of the file that names a build's current files, inside the
+ * directory of the build's assets. See `ChunkTranslationsManifest.current`.
+ */
+export const CURRENT_NAMES_KEY = 'gt-current';
+
+/**
+ * That file, which gt-react's `readCurrentNames()` reads.
+ *
+ * @param names By locale, the token in the names of the locale's files, or in a build that names each file by its own hash, the hash in the name of the locale's map.
+ * @param assignment What says how the build assigned messages to files, see getAssignmentHash. Left out by a build that splits by module, whose lists are whole without it.
+ */
+export function renderCurrentNames(
+  key: string,
+  names: Record<string, string>,
+  assignment?: string
+): { fileName: string; source: string } {
+  return {
+    fileName: `${key}.json`,
+    source: JSON.stringify({
+      v: names,
+      ...(assignment !== undefined && { c: assignment }),
+    }),
+  };
+}
+
+/**
+ * A hash of which messages are in which file, and of which files each
+ * import needs. It is the same in two builds that differ in translations
+ * alone, and only then: a chunk's file leaves out what the entry's file
+ * holds, so a file of one build stands in for the file of the same key of
+ * another only where both builds assigned every message alike.
+ */
+export function getAssignmentHash(assignment: TranslationAssignment): string {
+  return getFileHash(
+    JSON.stringify([
+      [...assignment.entries],
+      [...assignment.files],
+      [...assignment.imports],
+    ])
+  );
+}
 
 /**
  * The key of every file a build names by its own hash alone, inside the
@@ -249,6 +300,10 @@ export function pickTranslations(
  * renderMappedFiles). The startup script holds the hash in the map's name. A
  * changed translation renames only the files it is in and the locale's map,
  * and the files of chunks are requested once the map has arrived.
+ *
+ * With `current`, one more file says what the names of each locale's files
+ * follow from, under a name that is the same in every build: see
+ * renderCurrentNames.
  */
 export function renderChunkTranslations(
   assignment: TranslationAssignment,
@@ -262,7 +317,9 @@ export function renderChunkTranslations(
     translations: Record<string, Record<string, unknown>>;
   },
   /** Set in a build that names each file by its own hash */
-  maps?: TranslationMaps
+  maps?: TranslationMaps,
+  /** The key of the file that names the build's current files */
+  current?: string
 ): {
   files: { fileName: string; source: string }[];
   manifest: ChunkTranslationsManifest;
@@ -352,6 +409,17 @@ export function renderChunkTranslations(
     }
   }
 
+  const assigned = getAssignmentHash(assignment);
+  // A build without files for any locale has no names to give
+  const names =
+    current !== undefined && locales.length
+      ? renderCurrentNames(current, tokens, assigned)
+      : undefined;
+  if (names) {
+    files.push(names);
+    manifest.current = names.fileName;
+  }
+
   const startupScripts = new Map<string, (base: string) => string>();
   for (const entry of assignment.entries.keys()) {
     const hashes = entryHashes.get(entry) ?? {};
@@ -362,6 +430,7 @@ export function renderChunkTranslations(
         hashes,
         tokens,
         ...(maps ? { maps } : { files: [...assignment.files.keys()] }),
+        ...(names && { current, assignment: assigned }),
         locales: [build.defaultLocale, ...build.locales],
         ...(unsplit &&
           unsplitFiles.length && {
@@ -558,7 +627,8 @@ export function writeChunkTranslations(
           key: path.posix.join(assetsDir, TRANSLATIONS_MAP_KEY),
           files: path.posix.join(assetsDir, CONTENT_FILES_KEY),
         }
-      : undefined
+      : undefined,
+    path.posix.join(assetsDir, CURRENT_NAMES_KEY)
   );
   for (const file of files) emitFile({ type: 'asset', ...file });
   emitFile({

@@ -86,15 +86,21 @@ export function takeArrived(
  * - A file that fails is requested again by the next import that needs it.
  * - A file that is late is not waited for again: what needs it renders the
  *   source until it arrives, and it is still read when it does.
+ * - A file the host does not have is one it answers 404 or 410 for, or
+ *   answers with something that is not JSON, as a host does that serves a
+ *   page for every path it has no file for. Only then is `recover` called,
+ *   once for a URL, and the time it takes is within this request's timeout.
  *
  * @param requested The request, when the startup script made it already.
+ * @param recover Asks for what stands in for the file: resolves to whether that arrived in time, or to undefined when nothing does.
  */
 export function request<F extends object>(
   state: ChunkTranslationsState,
   key: string,
   url: string,
   requested: Promise<unknown> | undefined,
-  read: (file: F) => void
+  read: (file: F) => void,
+  recover?: () => Promise<boolean | undefined>
 ): Promise<boolean> {
   const requests = (state.r ||= {});
   return (requests[key] ||= new Promise((resolve) => {
@@ -125,13 +131,40 @@ export function request<F extends object>(
         requests[key] = Promise.resolve(true);
         resolve(true);
       },
-      (error: unknown) => fail(String(error))
+      (error: unknown) => {
+        const details = String(error);
+        const missing = (state.z ||= {});
+        const recovered =
+          recover &&
+          missing[url] === undefined &&
+          (error instanceof SyntaxError || /HTTP 4(04|10)$/.test(details))
+            ? recover()
+            : undefined;
+        if (!recovered) {
+          fail(details);
+          return;
+        }
+        void recovered.then((arrived) => {
+          if (arrived === undefined) {
+            missing[url] = true;
+            if (!late) fail(details);
+          } else if (late) {
+            if (arrived) addArrived(state);
+          } else {
+            clearTimeout(timer);
+            resolve(arrived);
+          }
+        });
+      }
     );
   }));
 }
 
-function fetchJson(url: string): Promise<unknown> {
-  return fetch(url).then((response) => {
+export function fetchJson(
+  url: string,
+  options?: RequestInit
+): Promise<unknown> {
+  return (options ? fetch(url, options) : fetch(url)).then((response) => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   });

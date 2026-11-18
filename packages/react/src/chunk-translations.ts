@@ -37,6 +37,10 @@
  * A file that fails to load, or takes longer than the timeout, is reported
  * with a warning and its messages render their source.
  *
+ * A page that stays open while the app is deployed again asks for files by
+ * the names its own build gave them, which a host may no longer have. See
+ * `readCurrentNames()` for what it then asks for in their place.
+ *
  * Nothing here runs when a module loads, and all state is on one global
  * object, which the startup script creates before any module runs.
  */

@@ -91,7 +91,10 @@ const TYPES = {
 // Any other request for a translations file a build does not have fails.
 const filterMisses = new Map();
 const absent = [];
+// The files a check takes away on purpose, with a deploy
+const deployedOver = new Set();
 function noteAbsent(directory, pathname) {
+  if (deployedOver.has(pathname)) return;
   const chunk = /^(.+)\.[\w-]+\.[0-9a-f]{8}\.json$/.exec(pathname)?.[1];
   if (chunk === undefined) return;
   const hasChunk = statSync(join(directory, normalize(`${chunk}.js`)), {
@@ -137,19 +140,21 @@ function serve(directory) {
  * Serves a build as a static host does that caches hashed assets for good,
  * and deploys another build at the same address. Lists the paths it is
  * asked for, which are those a browser does not have.
+ *
+ * `deploy(next, keeps)` serves `next`. A host has the files of that build
+ * only, unless `keeps` says which paths of the builds before it still has.
  */
 function host(directory) {
   const requests = [];
+  const earlier = [];
   const server = createServer((request, response) => {
     const { pathname } = new URL(request.url, 'http://localhost');
-    const file = join(
-      directory,
-      normalize(pathname === '/' ? '/index.html' : pathname)
-    );
-    if (
-      !file.startsWith(directory) ||
-      !statSync(file, { throwIfNoEntry: false })?.isFile()
-    ) {
+    const name = normalize(pathname === '/' ? '/index.html' : pathname);
+    const file = [[directory, () => true], ...earlier]
+      .filter(([, keeps]) => keeps(pathname))
+      .map(([served]) => join(served, name))
+      .find((path) => statSync(path, { throwIfNoEntry: false })?.isFile());
+    if (!file || !join(directory, name).startsWith(directory)) {
       noteAbsent(directory, pathname);
       response.writeHead(404).end('Not found');
       return;
@@ -169,7 +174,10 @@ function host(directory) {
         url: `http://127.0.0.1:${server.address().port}`,
         /** The paths asked for since the last call. */
         asked: () => requests.splice(0),
-        deploy: (next) => (directory = next),
+        deploy(next, keeps) {
+          if (keeps) earlier.unshift([directory, keeps]);
+          directory = next;
+        },
         close: () => server.close(),
       })
     )
@@ -338,6 +346,25 @@ async function open(url, locale, prepare) {
       await page.waitForSelector(`[data-route="${route}"]`);
     },
   };
+}
+
+/**
+ * The heading of the Orders route after the page is loaded again, and in a
+ * new tab of the same browser: what a visitor sees once the open page is
+ * gone, with whatever the first page left in the browser.
+ */
+async function reopenOrders(page, url) {
+  const read = async (opened) => {
+    await opened.waitForSelector('[data-route]');
+    await opened.click('[data-nav="orders"]');
+    await opened.waitForSelector('[data-route="orders"]');
+    return opened.locator('[data-test="heading"]').textContent();
+  };
+  await page.reload();
+  const reloaded = await read(page);
+  const tab = await page.context().newPage();
+  await tab.goto(`${url}/`);
+  return [reloaded, await read(tab)];
 }
 
 /** Every element of a route, the shell included, against what `locale` renders. */
@@ -1378,6 +1405,277 @@ const redeploy = await (async () => {
   };
 })();
 
+// ===== A page that stays open while the app is deployed again ===== //
+// A host that has the files of one build only. The build it serves next is
+// the same app with one translation changed, of the Orders route in fr, so
+// its JavaScript is the same and the files that hold the change have other
+// names: one file and the map with maps, every fr file with tokens. A page
+// that was open before then asks for a file by the name it had, which is
+// gone. It reads the names of the build that is served now from the one
+// file every build writes under the same name, and asks once more.
+//
+// A host that keeps the files of earlier builds has nothing gone: the page
+// goes on with the build it is of, and reads no names.
+const CHANGED = buildChanged();
+{
+  const next = JSON.parse(
+    readFileSync(join(CHANGED, 'assets', 'gt-chunk-translations.json'), 'utf8')
+  );
+  const ordersKey = Object.keys(next.files).find((key) =>
+    key.startsWith('assets/Orders-')
+  );
+  const ordersBefore = `/${manifest.files[ordersKey].fr}`;
+  const ordersNow = `/${next.files[ordersKey].fr}`;
+  const current = `/${manifest.current}`;
+  const gone = (path) =>
+    isTranslationsFile(path) &&
+    !statSync(join(CHANGED, path), { throwIfNoEntry: false });
+  for (const file of assets(ON)) {
+    if (gone(`/assets/${file}`)) deployedOver.add(`/assets/${file}`);
+  }
+  check(
+    'an open page: the build writes what names its current files under a name every build has',
+    manifest.current === 'assets/gt-current.json' &&
+      next.current === manifest.current &&
+      gone(ordersBefore) &&
+      ordersNow !== ordersBefore
+  );
+
+  /**
+   * Opens Home in fr, deploys `next` when there is one, on a host that
+   * keeps the paths of the first build that `keeps` says, and goes to the
+   * Orders route. Returns the paths requested after the deploy.
+   */
+  const visit = async (next, prepare, keeps) => {
+    const deploys = await host(ON);
+    const app = await open(deploys.url, 'fr', prepare);
+    await app.goto();
+    await app.page.waitForLoadState('networkidle');
+    if (next) deploys.deploy(next, keeps);
+    const before = app.requests.length;
+    const start = Date.now();
+    await app.navigate('orders');
+    return {
+      app,
+      url: deploys.url,
+      asked: app.requests.slice(before).map(({ path }) => path),
+      elapsed: Date.now() - start,
+      close: () => Promise.all([app.close(), deploys.close()]),
+    };
+  };
+  const textOf = async (app, heading) => {
+    const wrong = [];
+    for (const [element, source] of Object.entries({
+      ...SHELL,
+      ...ROUTES.orders,
+    })) {
+      const expected =
+        element === 'heading' ? heading : translate('fr', pick(source, 0));
+      const actual = await app.text(element);
+      if (actual !== expected)
+        wrong.push(`${element}: "${actual}" != "${expected}"`);
+    }
+    return wrong.join('; ');
+  };
+
+  {
+    const name = 'an open page, after a deploy that changed a translation';
+    const { app, url, asked, close } = await visit(CHANGED);
+    const wrong = await textOf(app, 'RECENT ORDERS, AGAIN');
+    check(
+      `${name}: every text of the route is translated, the changed one as the new build has it`,
+      !wrong,
+      wrong
+    );
+    const missing = asked.filter(gone);
+    const once = (path) => asked.filter((other) => other === path).length === 1;
+    check(
+      `${name}: asks for each file that is gone once, then for the current names once, then for the file by its new name`,
+      missing.includes(ordersBefore) &&
+        missing.every(once) &&
+        (!manifest.maps || missing.length === 1) &&
+        once(current) &&
+        once(ordersNow) &&
+        asked.indexOf(ordersBefore) < asked.indexOf(current) &&
+        asked.indexOf(current) < asked.indexOf(ordersNow) &&
+        (!manifest.maps ||
+          (once(`/${next.maps.fr}`) &&
+            asked.indexOf(current) < asked.indexOf(`/${next.maps.fr}`) &&
+            asked.indexOf(`/${next.maps.fr}`) < asked.indexOf(ordersNow))),
+      asked.filter((path) => path.endsWith('.json')).join(', ')
+    );
+    await checkNoSource(name, app, 'fr', { ...SHELL, ...ROUTES.orders });
+    const reopened = await reopenOrders(app.page, url);
+    check(
+      `${name}: the page loaded again, and a new tab, show the text of the build that is served`,
+      reopened.join() === 'RECENT ORDERS, AGAIN,RECENT ORDERS, AGAIN',
+      reopened.join(' | ')
+    );
+    await close();
+  }
+
+  // What cannot be recovered renders the source of what the file held, says
+  // so, and holds nothing up
+  const failures = [
+    [
+      'an open page, when the host has no file of current names',
+      CHANGED,
+      (page) =>
+        page.route(`**${current}*`, (request) =>
+          request.fulfill({ status: 404, body: 'Not found' })
+        ),
+      ordersBefore,
+    ],
+    [
+      'an open page, when the names are those the page has',
+      undefined,
+      (page) =>
+        page.route(`**${ordersBefore}`, (request) =>
+          request.fulfill({ status: 404, body: 'Not found' })
+        ),
+      ordersBefore,
+    ],
+    [
+      'an open page, when the file is gone by its new name too',
+      CHANGED,
+      (page) =>
+        page.route(`**${ordersNow}`, (request) =>
+          request.fulfill({ status: 404, body: 'Not found' })
+        ),
+      ordersNow,
+    ],
+  ];
+  for (const [name, deployed, prepare, warned] of failures) {
+    const { app, asked, elapsed, close } = await visit(deployed, prepare);
+    const heading = await app.text('heading');
+    const title = await app.text('title');
+    check(
+      `${name}: the route loads with the source text of what the file held, at once`,
+      heading === ROUTES.orders.heading &&
+        title === translate('fr', SHELL.title) &&
+        elapsed < 3000,
+      `${heading}, ${title}, ${elapsed} ms`
+    );
+    check(
+      `${name}: warns of the file, and asks for the current names once`,
+      app.warnings.some(
+        (warning) =>
+          warning.includes('Could not load the translations') &&
+          warning.includes(warned)
+      ) && asked.filter((path) => path === current).length === 1,
+      [...app.warnings, ...asked.filter((path) => path === current)]
+        .join(' | ')
+        .slice(0, 300)
+    );
+    await close();
+  }
+
+  // A host that keeps the files of earlier builds, after the same deploy
+  // and after one that changed JavaScript alone, which renamed the chunks:
+  // the page asks for the files of its own build and finds them
+  for (const [name, deployed] of [
+    ['a translation', CHANGED],
+    ['JavaScript', join(root, '.check', `${NAMING}-revision`)],
+  ]) {
+    const title = `an open page, on a host that keeps earlier files, after a deploy that changed ${name}`;
+    const { app, url, asked, close } = await visit(
+      deployed,
+      undefined,
+      () => true
+    );
+    await checkRoute(app, 'fr', 'orders', 0, title);
+    const files = asked.filter(isTranslationsFile);
+    check(
+      `${title}: asks for the files of its own build, finds each, and reads no names`,
+      files.includes(ordersBefore) &&
+        files.every((path) =>
+          statSync(join(ON, path), { throwIfNoEntry: false })
+        ) &&
+        !asked.includes(current),
+      asked.filter((path) => path.endsWith('.json')).join(', ')
+    );
+    await checkNoSource(title, app, 'fr', { ...SHELL, ...ROUTES.orders });
+    const reopened = await reopenOrders(app.page, url);
+    const served =
+      deployed === CHANGED ? 'RECENT ORDERS, AGAIN' : 'RECENT ORDERS';
+    check(
+      `${title}: the page loaded again, and a new tab, show the text of the build that is served`,
+      reopened.join() === `${served},${served}`,
+      reopened.join(' | ')
+    );
+    await close();
+  }
+
+  // A deploy that changed JavaScript and that translation, on a host that
+  // keeps the chunks of earlier builds and not their translation files. The
+  // page runs the chunks of its own build. The build that is served now
+  // assigned messages to files differently, so no file of it stands in for
+  // one of the page's: a file that is gone renders the source of its
+  // messages, with the warning, and a file that is still there by the name
+  // the page has is found.
+  {
+    const name =
+      'an open page, after a deploy that changed JavaScript and a translation';
+    const both = join(root, '.check', `${NAMING}-both`);
+    build(
+      both,
+      true,
+      join(root, '.check', 'translations'),
+      undefined,
+      undefined,
+      'next'
+    );
+    const namesOf = (directory) =>
+      JSON.parse(
+        readFileSync(join(directory, 'assets', 'gt-current.json'), 'utf8')
+      );
+    check(
+      `${name}: that build says it assigned messages to files differently, and the build with only a changed translation that it did not`,
+      namesOf(both).c !== namesOf(ON).c && namesOf(CHANGED).c === namesOf(ON).c,
+      `${namesOf(ON).c}, ${namesOf(CHANGED).c}, ${namesOf(both).c}`
+    );
+    const { app, asked, elapsed, close } = await visit(
+      both,
+      undefined,
+      (path) => path.endsWith('.js')
+    );
+    const texts = {
+      heading: await app.text('heading'),
+      title: await app.text('title'),
+      glossary: await app.text('glossary'),
+    };
+    const files = asked.filter(isTranslationsFile);
+    const lost = files.filter(
+      (path) => !statSync(join(both, path), { throwIfNoEntry: false })
+    );
+    // With maps the glossary's file holds what it held, so it has the name
+    // it had; with tokens every file of the locale has another
+    check(
+      `${name}: the route loads with the source text of the files that are gone, and the translations of the others`,
+      texts.heading === ROUTES.orders.heading &&
+        texts.title === translate('fr', SHELL.title) &&
+        texts.glossary ===
+          (manifest.maps ? translate('fr', GLOSSARY) : GLOSSARY) &&
+        elapsed < 3000,
+      `${texts.heading}, ${texts.title}, ${texts.glossary.slice(0, 20)}, ${elapsed} ms`
+    );
+    check(
+      `${name}: asks for the files of its own build alone, warns of each that is gone, and reads the current names once`,
+      files.every((path) =>
+        statSync(join(ON, path), { throwIfNoEntry: false })
+      ) &&
+        lost.includes(ordersBefore) &&
+        app.warnings.length === lost.length &&
+        lost.every((path) =>
+          app.warnings.some((warning) => warning.includes(path))
+        ) &&
+        asked.filter((path) => path === current).length === 1,
+      [...files, ...app.warnings].join(' | ').slice(0, 300)
+    );
+    await close();
+  }
+}
+
 await browser.close();
 on.close();
 off.close();
@@ -1402,7 +1700,8 @@ function compare(before, after) {
   );
   return { renamed, rewritten, touched: [...renamed, ...rewritten] };
 }
-const stability = (() => {
+/** Builds the app with that one translation changed. Returns the directory. */
+function buildChanged() {
   const translations = join(root, '.check', 'translations');
   mkdirSync(translations, { recursive: true });
   for (const locale of manifest.locales) {
@@ -1419,6 +1718,10 @@ const stability = (() => {
   }
   const changed = join(root, '.check', `${NAMING}-changed`);
   build(changed, true, translations);
+  return changed;
+}
+const stability = (() => {
+  const changed = CHANGED;
   const { renamed, rewritten, touched } = compare(read(ON), read(changed));
   check(
     'a changed translation changes no JavaScript file and no file of another locale',
@@ -1443,8 +1746,9 @@ const stability = (() => {
     );
   }
   check(
-    'a changed translation rewrites only the page and the manifest',
-    rewritten.sort().join() === 'assets/gt-chunk-translations.json,index.html',
+    'a changed translation rewrites only the page, the manifest and the file of current names',
+    rewritten.sort().join() ===
+      'assets/gt-chunk-translations.json,assets/gt-current.json,index.html',
     rewritten.join(', ')
   );
   return { renamed, rewritten };

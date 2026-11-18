@@ -7,6 +7,7 @@ import {
   loadChunk,
   loadChunkTranslations,
   loadMappedChunk,
+  loadMappedChunkTranslations,
   loadRegionChunk,
   loadRegionChunkTranslations,
   type ChunkTranslationsState,
@@ -38,8 +39,9 @@ const FILES: Files = {
 };
 
 function serve(files: Files = FILES) {
-  const fetched = vi.fn((url: string) => {
-    const file = files[url];
+  const fetched = vi.fn((url: string, _options?: RequestInit) => {
+    // What names a build's current files is asked for past every cache
+    const file = files[url.split('?')[0]];
     if (typeof file === 'function') return file() as Promise<Response>;
     return Promise.resolve(
       file === undefined
@@ -482,6 +484,446 @@ describe('gt-react/chunk-translations', () => {
     expect(warn.mock.calls[0][0]).toContain(warning);
   });
 
+  describe('on a page that stayed open while the app was deployed again', () => {
+    // The file of each build whose name is the same in every build: what
+    // names the locale's files now, and how the build assigned its messages
+    const CURRENT = '/assets/gt-current.json';
+    const ASSIGNMENT = 'a1b2c3d4';
+    const NEXT_ORDERS_FILE = '/assets/Orders-b2.fr.99999999.json';
+    // The host has the files of the build it serves now, and the page those
+    // of the build before: the entry's, which it loaded as it started
+    const DEPLOYED: Files = {
+      '/assets/index-a1.fr.11111111.json':
+        FILES['/assets/index-a1.fr.11111111.json'],
+      [CURRENT]: { v: { fr: '99999999', de: '77777777' }, c: ASSIGNMENT },
+      [NEXT_ORDERS_FILE]: { [ORDERS]: 'Commandes, encore' },
+    };
+    const writeOpen = (state: Partial<ChunkTranslationsState> = {}) =>
+      writeState({ n: 'assets/gt-current', c: ASSIGNMENT, ...state });
+    /** The URLs requested, without what makes each reading of CURRENT new. */
+    const urls = (fetched: ReturnType<typeof serve>) =>
+      fetched.mock.calls.map(([url]) => url.split('?')[0]);
+    const state = () =>
+      (globalThis as { __GT_CHUNK_TRANSLATIONS__?: ChunkTranslationsState })
+        .__GT_CHUNK_TRANSLATIONS__!;
+
+    it('reads the names of the build that is served now when a file is missing, and requests the file by its name there', async () => {
+      const files = { ...DEPLOYED };
+      const fetched = serve(files);
+      writeOpen();
+      await start();
+      fetched.mockClear();
+
+      expect(await preloadedImport([])()).toEqual({
+        evaluated: 'Commandes, encore',
+      });
+      expect(urls(fetched)).toEqual([ORDERS_FILE, CURRENT, NEXT_ORDERS_FILE]);
+      // Past the browser's cache and, by its query, a host's
+      expect(fetched.mock.calls[1]).toEqual([
+        expect.stringMatching(/^\/assets\/gt-current\.json\?\d+$/),
+        { cache: 'no-store' },
+      ]);
+      expect(warn).not.toHaveBeenCalled();
+
+      // A file the page has yet to ask for is named as that build names it
+      fetched.mockClear();
+      files['/assets/Reports-d4.fr.99999999.json'] = {};
+      await loadChunkTranslations(['assets/Reports-d4']);
+      expect(urls(fetched)).toEqual(['/assets/Reports-d4.fr.99999999.json']);
+    });
+
+    it('reads those names once for the files of an import that are missing together', async () => {
+      const fetched = serve({
+        ...DEPLOYED,
+        '/assets/Badge-c3.fr.99999999.json': {},
+      });
+      writeOpen();
+      await start();
+      fetched.mockClear();
+
+      await loadChunkTranslations(['assets/Orders-b2', 'assets/Badge-c3']);
+      expect(urls(fetched).sort()).toEqual(
+        [
+          ORDERS_FILE,
+          '/assets/Badge-c3.fr.22222222.json',
+          CURRENT,
+          NEXT_ORDERS_FILE,
+          '/assets/Badge-c3.fr.99999999.json',
+        ].sort()
+      );
+      expect(orders()).toBe('Commandes, encore');
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('takes a page in place of the file, as a host answers that has a page for every path, for a missing file', async () => {
+      const fetched = serve({
+        ...DEPLOYED,
+        [ORDERS_FILE]: () =>
+          Promise.resolve(new Response('<!doctype html><title>App</title>')),
+      });
+      writeOpen();
+      await start();
+
+      expect(await preloadedImport([])()).toEqual({
+        evaluated: 'Commandes, encore',
+      });
+      expect(urls(fetched)).toContain(CURRENT);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['has no such file', undefined, ORDERS_FILE],
+      [
+        'names the files as the page does',
+        { v: { fr: '22222222' }, c: ASSIGNMENT },
+        ORDERS_FILE,
+      ],
+      ['is not what a build writes', ['fr'], ORDERS_FILE],
+      // A deploy that changed JavaScript: a file of the same key can hold
+      // other messages there, as where the entry now holds one of them
+      [
+        'serves a build that assigned messages to files differently',
+        { v: { fr: '99999999' }, c: 'e5f6a7b8' },
+        ORDERS_FILE,
+      ],
+      [
+        'does not say how its build assigned them',
+        { v: { fr: '99999999' } },
+        ORDERS_FILE,
+      ],
+      [
+        'names files the host does not have either',
+        { v: { fr: '88888888' }, c: ASSIGNMENT },
+        '/assets/Orders-b2.fr.88888888.json',
+      ],
+    ])(
+      'renders the source, warns once and runs the import when the host %s',
+      async (_name, current, warned) => {
+        const files = { ...DEPLOYED, [CURRENT]: current };
+        const fetched = serve(files);
+        writeOpen();
+        await start();
+        fetched.mockClear();
+
+        expect(await preloadedImport([])()).toEqual({ evaluated: 'Orders' });
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(warn.mock.calls[0][0]).toContain(
+          `Could not load the translations in ${warned}`
+        );
+        expect(urls(fetched).filter((url) => url === CURRENT)).toHaveLength(1);
+      }
+    );
+
+    it('does not read those names again for a file they gave no other name, and follows a later deploy and a return to the first build', async () => {
+      const files = {
+        ...DEPLOYED,
+        [CURRENT]: { v: { fr: '22222222' }, c: ASSIGNMENT },
+      };
+      const fetched = serve(files);
+      writeOpen();
+      await start();
+      await preloadedImport([])();
+      fetched.mockClear();
+
+      // The next import asks for the file again, and for nothing else
+      await plainImport([])();
+      expect(urls(fetched)).toEqual([ORDERS_FILE]);
+
+      // A deploy later, another file is missing: the page reads the names,
+      // and the first file is asked for by its name there
+      files[CURRENT] = DEPLOYED[CURRENT];
+      fetched.mockClear();
+      await loadChunkTranslations(['assets/Badge-c3']);
+      expect(urls(fetched)).toEqual([
+        '/assets/Badge-c3.fr.22222222.json',
+        CURRENT,
+        '/assets/Badge-c3.fr.99999999.json',
+      ]);
+      fetched.mockClear();
+      await plainImport([])();
+      expect(urls(fetched)).toEqual([NEXT_ORDERS_FILE]);
+      expect(orders()).toBe('Commandes, encore');
+
+      // The host serves the first build again
+      Object.assign(files, {
+        [CURRENT]: { v: { fr: '22222222' }, c: ASSIGNMENT },
+        '/assets/Reports-d4.fr.22222222.json': {},
+      });
+      fetched.mockClear();
+      await loadChunkTranslations(['assets/Reports-d4']);
+      expect(urls(fetched)).toEqual([
+        '/assets/Reports-d4.fr.99999999.json',
+        CURRENT,
+        '/assets/Reports-d4.fr.22222222.json',
+      ]);
+      expect(warn).toHaveBeenCalledTimes(3);
+    });
+
+    it.each([
+      ['an error of the host', new Response('Busy', { status: 503 })],
+      ['a request that fails', undefined],
+    ])('reads no names for %s', async (_name, response) => {
+      const fetched = serve({
+        ...DEPLOYED,
+        [ORDERS_FILE]: () =>
+          response
+            ? Promise.resolve(response)
+            : Promise.reject(new TypeError('Failed to fetch')),
+      });
+      writeOpen();
+      await start();
+
+      expect(await preloadedImport([])()).toEqual({ evaluated: 'Orders' });
+      expect(urls(fetched)).not.toContain(CURRENT);
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops waiting when those names do not arrive within the timeout of the file', async () => {
+      serve({ ...DEPLOYED, [CURRENT]: () => new Promise<Response>(() => {}) });
+      writeOpen({ w: 20 });
+      await start();
+
+      expect(await preloadedImport([])()).toEqual({ evaluated: 'Orders' });
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toContain('did not load within 20 ms');
+    });
+
+    it('reads nothing in a build that wrote no such file', async () => {
+      const fetched = serve(DEPLOYED);
+      writeState();
+      await start();
+      fetched.mockClear();
+
+      expect(await preloadedImport([])()).toEqual({ evaluated: 'Orders' });
+      expect(urls(fetched)).toEqual([ORDERS_FILE]);
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    describe('in a build that names each file by its own hash', () => {
+      const MAP = '/assets/gt-map.fr.22222222.json';
+      const ENTRY_FILE = '/assets/gt.fr.11111111.json';
+      const file = (hash: string) => `/assets/gt.fr.${hash}.json`;
+      const map = (name: string) => `/assets/gt-map.fr.${name}.json`;
+      // Orders needs its own file and Badge's; the others their own
+      const KEYS = [
+        'assets/Badge-c3',
+        'assets/Orders-b2',
+        'assets/Reports-d4',
+        'assets/Settings-e5',
+        'assets/Help-f6',
+      ];
+      const listed = (...hashes: (string | 0)[]) => ({
+        i: { k: KEYS, c: [0, [1, 0, 1], [1], [1], [1]], h: hashes },
+      });
+      const OWN = listed(
+        'b0000000',
+        'a0000000',
+        'c0000000',
+        'd0000000',
+        'e0000000'
+      );
+      // A deploy changed a translation of Orders, of Badge and of Help
+      const NEXT = listed(
+        'b1111111',
+        'a1111111',
+        'c0000000',
+        'd0000000',
+        'e1111111'
+      );
+      const names = (name: string) => ({ v: { fr: name }, c: ASSIGNMENT });
+      const startOpen = async (files: Files) => {
+        const fetched = serve(files);
+        writeOpen({ f: 'assets/gt', k: 'assets/gt-map' });
+        await initializeMappedChunkTranslations(initializeGTSPA, CONFIG);
+        await tick();
+        fetched.mockClear();
+        return fetched;
+      };
+      const BUILT: Files = {
+        [ENTRY_FILE]: { t: { [SAVE]: 'Enregistrer' } },
+        [MAP]: OWN,
+      };
+      const DEPLOYED_MAP: Files = {
+        ...BUILT,
+        [CURRENT]: names('99999999'),
+        [map('99999999')]: NEXT,
+        [file('a1111111')]: { [ORDERS]: 'Commandes, encore' },
+        [file('b1111111')]: { [SAVE]: 'Enregistrer, encore' },
+        [file('c0000000')]: {},
+        [file('d0000000')]: {},
+      };
+
+      it('reads the map of the build that is served now, and requests each missing file by its name there', async () => {
+        const fetched = await startOpen(DEPLOYED_MAP);
+
+        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
+          evaluated: 'Commandes, encore',
+        });
+        expect(urls(fetched)).toEqual([
+          file('a0000000'),
+          file('b0000000'),
+          CURRENT,
+          map('99999999'),
+          file('a1111111'),
+          file('b1111111'),
+        ]);
+        expect(warn).not.toHaveBeenCalled();
+        // The lists and the names the page's own build gave are untouched
+        expect(state().i).toEqual(OWN.i);
+
+        // What the page has asked for is not asked for again
+        fetched.mockClear();
+        await preloadedImport([])(loadMappedChunk);
+        expect(fetched).not.toHaveBeenCalled();
+      });
+
+      it('keeps the file it has loaded for a chunk, and asks for one it has yet to ask for by its name in that build', async () => {
+        // The page has loaded Badge's file. Settings has another name too
+        const files: Files = {
+          ...BUILT,
+          [file('b0000000')]: { [SAVE]: 'Enregistrer' },
+        };
+        const fetched = await startOpen(files);
+        await loadMappedChunkTranslations(['assets/Badge-c3']);
+        Object.assign(files, {
+          ...DEPLOYED_MAP,
+          [map('99999999')]: listed(
+            'b1111111',
+            'a1111111',
+            'c0000000',
+            'd1111111',
+            'e1111111'
+          ),
+          [file('d1111111')]: {},
+        });
+        delete files[file('b0000000')];
+        fetched.mockClear();
+
+        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
+          evaluated: 'Commandes, encore',
+        });
+        // Badge's file is not asked for by its new name
+        expect(urls(fetched)).toEqual([
+          file('a0000000'),
+          CURRENT,
+          map('99999999'),
+          file('a1111111'),
+        ]);
+        expect(save()).toBe('Enregistrer');
+
+        fetched.mockClear();
+        await loadMappedChunkTranslations([
+          'assets/Badge-c3',
+          'assets/Settings-e5',
+        ]);
+        expect(urls(fetched)).toEqual([file('d1111111')]);
+        expect(save()).toBe('Enregistrer');
+        expect(warn).not.toHaveBeenCalled();
+      });
+
+      it('follows a second deploy, and a return to an earlier build and to its own', async () => {
+        const files: Files = { ...DEPLOYED_MAP };
+        const fetched = await startOpen(files);
+        await preloadedImport([])(loadMappedChunk);
+
+        // A second deploy changed a translation of Reports and of Settings
+        Object.assign(files, {
+          [CURRENT]: names('88888888'),
+          [map('88888888')]: listed(
+            'b1111111',
+            'a1111111',
+            'c2222222',
+            'd2222222',
+            'e1111111'
+          ),
+          [file('c2222222')]: {},
+        });
+        delete files[file('c0000000')];
+        delete files[file('d0000000')];
+        fetched.mockClear();
+        await loadMappedChunkTranslations(['assets/Reports-d4']);
+        expect(urls(fetched)).toEqual([
+          file('c0000000'),
+          CURRENT,
+          map('88888888'),
+          file('c2222222'),
+        ]);
+
+        // The host serves the build of the first deploy again
+        Object.assign(files, {
+          [CURRENT]: names('99999999'),
+          [file('d0000000')]: {},
+        });
+        fetched.mockClear();
+        await loadMappedChunkTranslations(['assets/Settings-e5']);
+        expect(urls(fetched)).toEqual([
+          file('d2222222'),
+          CURRENT,
+          map('99999999'),
+          file('d0000000'),
+        ]);
+        expect(warn).not.toHaveBeenCalled();
+
+        // And then the page's own, which it holds the map of
+        Object.assign(files, {
+          [CURRENT]: names('22222222'),
+          [file('e0000000')]: {},
+        });
+        fetched.mockClear();
+        await loadMappedChunkTranslations(['assets/Help-f6']);
+        expect(urls(fetched)).toEqual([
+          file('e1111111'),
+          CURRENT,
+          file('e0000000'),
+        ]);
+        expect(state().j).toBeUndefined();
+        expect(warn).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        // A deploy that changed JavaScript: no map is read
+        [
+          'serves a build that assigned messages to files differently',
+          { [CURRENT]: { v: { fr: '99999999' }, c: 'e5f6a7b8' } },
+          [file('a0000000'), file('b0000000'), CURRENT],
+        ],
+        [
+          'has no such map',
+          { [map('99999999')]: undefined },
+          [file('a0000000'), file('b0000000'), CURRENT, map('99999999')],
+        ],
+        [
+          'names the files as the page does',
+          { [map('99999999')]: OWN },
+          [file('a0000000'), file('b0000000'), CURRENT, map('99999999')],
+        ],
+        [
+          'has no such files in the locale',
+          { [map('99999999')]: listed(0, 0, 'c0000000', 'd0000000', 0) },
+          [file('a0000000'), file('b0000000'), CURRENT, map('99999999')],
+        ],
+      ])(
+        'renders the source and warns of each file when the host %s',
+        async (_name, files, asked) => {
+          const fetched = await startOpen({ ...DEPLOYED_MAP, ...files });
+
+          expect(await preloadedImport([])(loadMappedChunk)).toEqual({
+            evaluated: 'Orders',
+          });
+          expect(urls(fetched)).toEqual(asked);
+          expect(warn.mock.calls.map(([message]) => message)).toEqual(
+            [file('a0000000'), file('b0000000')].map((url) =>
+              expect.stringContaining(
+                `Could not load the translations in ${url}`
+              )
+            )
+          );
+          expect(state().i).toEqual(OWN.i);
+        }
+      );
+    });
+  });
+
   describe('in a build that names each file by its own hash', () => {
     const MAP = '/assets/gt-map.fr.22222222.json';
     // Named by the locale and the hash of what they hold, and by no chunk
@@ -819,6 +1261,269 @@ describe('gt-react/chunk-translations', () => {
       expect(fetched).not.toHaveBeenCalled();
       expect(steps).toEqual([PRELOAD, 'import']);
       expect(links()).toEqual([]);
+    });
+
+    describe('on a page that stayed open while the app was deployed again', () => {
+      const CURRENT = '/assets/gt-current.json';
+      const NEXT_MAP = '/assets/gt-map.fr.99999999.json';
+      // The deploy changed a translation, and its build split the messages
+      // differently: the Orders chunk now needs the entry's file, which is
+      // as it was, and one file of the two it needed. That one has the key
+      // of a file the page's build had, and holds other messages
+      const NEXT_SHARED = '/assets/gt-bb.fr.77777777.json';
+      const NEXT_LISTED = {
+        k: ['assets/gt-aa', 'assets/gt-bb', 'assets/Orders-b2'],
+        c: [0, 0, [0, 0, 2]],
+        h: ['44444444', '77777777'],
+      };
+      const DEPLOYED: Files = {
+        [MAP]: SPLIT[MAP],
+        [SHELL]: SPLIT[SHELL],
+        [CURRENT]: { v: { fr: '99999999' } },
+        [NEXT_MAP]: { i: NEXT_LISTED },
+        [NEXT_SHARED]: {
+          [TITLE]: 'Aperçu, encore',
+          [ORDERS]: 'Commandes, encore',
+        },
+      };
+      const urls = (fetched: ReturnType<typeof serve>) =>
+        fetched.mock.calls.map(([url]) => url.split('?')[0]);
+      const startOpen = async (files: Files) => {
+        const fetched = serve(files);
+        writeSplitState({ n: 'assets/gt-current' });
+        await startSplit();
+        await tick();
+        fetched.mockClear();
+        return fetched;
+      };
+      const state = () =>
+        (globalThis as { __GT_CHUNK_TRANSLATIONS__?: ChunkTranslationsState })
+          .__GT_CHUNK_TRANSLATIONS__!;
+
+      it('reads the lists of the build that is served now when a file is missing, and requests what they list for the chunk', async () => {
+        const fetched = await startOpen(DEPLOYED);
+
+        expect(await preloadedImport([])(loadRegionChunk)).toEqual({
+          evaluated: 'Commandes, encore',
+        });
+        // Both files of the page's build are gone: one reading serves both
+        expect(urls(fetched)).toEqual([
+          SHARED,
+          ROUTE,
+          CURRENT,
+          NEXT_MAP,
+          NEXT_SHARED,
+        ]);
+        expect(title()).toBe('Aperçu, encore');
+        expect(warn).not.toHaveBeenCalled();
+        // The page's own lists are as they were
+        expect(state().i).toEqual(LISTED);
+
+        // The chunk is then listed by that build: nothing is asked for twice
+        fetched.mockClear();
+        await preloadedImport([])(loadRegionChunk);
+        expect(fetched).not.toHaveBeenCalled();
+      });
+
+      it('takes a file of that build for another file than the one the page has by the same key', async () => {
+        // The page has loaded the files of Orders. Reports needs one of
+        // them and one more, which is gone
+        const listed = {
+          k: [...LISTED.k, 'assets/gt-ee', 'assets/Reports-d4'],
+          c: [...LISTED.c, 0, [0, 1, 1, 5, 1]],
+          h: [...LISTED.h, 0, '12121212'],
+        };
+        const files: Files = { ...SPLIT, [MAP]: { i: listed } };
+        const fetched = await startOpen(files);
+        await preloadedImport([])(loadRegionChunk);
+        expect(title()).toBe('Aperçu');
+
+        Object.assign(files, {
+          [CURRENT]: DEPLOYED[CURRENT],
+          [NEXT_MAP]: {
+            i: {
+              k: ['assets/gt-bb', 'assets/Reports-d4'],
+              c: [0, [0, 0, 1]],
+              h: ['77777777'],
+            },
+          },
+          [NEXT_SHARED]: DEPLOYED[NEXT_SHARED],
+        });
+        fetched.mockClear();
+        await loadRegionChunk(() => Promise.resolve(), 'assets/Reports-d4.js');
+        expect(urls(fetched)).toEqual([
+          '/assets/gt-ee.fr.12121212.json',
+          CURRENT,
+          NEXT_MAP,
+          NEXT_SHARED,
+        ]);
+        expect(title()).toBe('Aperçu, encore');
+        expect(warn).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        [
+          'does not know the chunk, which a deploy that changed JavaScript renamed',
+          { k: ['assets/gt-bb', 'assets/Orders-z9'], c: [0, [0, 0, 1]] },
+        ],
+        [
+          'lists the file that is missing',
+          {
+            k: ['assets/gt-bb', 'assets/Orders-b2'],
+            c: [0, [0, 0, 1]],
+            h: ['55555555'],
+          },
+        ],
+      ])(
+        'renders the source, warns and keeps its own lists when that build %s',
+        async (_name, lists) => {
+          // The host kept the file of the route, and not the shared one
+          const fetched = await startOpen({
+            ...DEPLOYED,
+            [ROUTE]: SPLIT[ROUTE],
+            [NEXT_MAP]: { i: { h: ['77777777'], ...lists } },
+          });
+
+          expect(await preloadedImport([])(loadRegionChunk)).toEqual({
+            evaluated: 'Commandes',
+          });
+          expect(title()).toBe('Overview');
+          expect(urls(fetched)).toEqual([SHARED, ROUTE, CURRENT, NEXT_MAP]);
+          expect(warn.mock.calls.map(([message]) => message)).toEqual([
+            expect.stringContaining(
+              `Could not load the translations in ${SHARED}`
+            ),
+          ]);
+          expect(state().i).toEqual(LISTED);
+        }
+      );
+
+      it('requests what that build lists for each chunk whose imports wait for the same missing file', async () => {
+        // Orders and Reports need one file of the page's build. The build
+        // that is served now has a file for each
+        const listed = {
+          k: ['assets/gt-bb', 'assets/Orders-b2', 'assets/Reports-d4'],
+          c: [0, [0, 0, 1], [0, 0, 1]],
+          h: ['55555555'],
+        };
+        const fetched = await startOpen({
+          [MAP]: { i: listed },
+          [SHELL]: SPLIT[SHELL],
+          [CURRENT]: DEPLOYED[CURRENT],
+          [NEXT_MAP]: {
+            i: {
+              k: [
+                'assets/gt-ff',
+                'assets/gt-gg',
+                'assets/Orders-b2',
+                'assets/Reports-d4',
+              ],
+              c: [0, 0, [0, 0, 1], [0, 1, 1]],
+              h: ['12121212', '34343434'],
+            },
+          },
+          '/assets/gt-ff.fr.12121212.json': { [ORDERS]: 'Commandes, encore' },
+          '/assets/gt-gg.fr.34343434.json': { [TITLE]: 'Aperçu, encore' },
+        });
+
+        const [first, second] = await Promise.all([
+          preloadedImport([])(loadRegionChunk),
+          loadRegionChunk(
+            () => Promise.resolve({ evaluated: title() }),
+            'assets/Reports-d4.js'
+          ),
+        ]);
+        expect([first, second]).toEqual([
+          { evaluated: 'Commandes, encore' },
+          { evaluated: 'Aperçu, encore' },
+        ]);
+        expect(urls(fetched).sort()).toEqual(
+          [
+            SHARED,
+            CURRENT,
+            NEXT_MAP,
+            '/assets/gt-ff.fr.12121212.json',
+            '/assets/gt-gg.fr.34343434.json',
+          ].sort()
+        );
+        expect(warn).not.toHaveBeenCalled();
+      });
+
+      it('reads the lists again when a file they name is gone after another deploy, once', async () => {
+        const REPORTS_FILE = '/assets/gt-ee.fr.12121212.json';
+        const lists = (ordersHash: string, reportsHash: string) => ({
+          i: {
+            k: [
+              'assets/gt-cc',
+              'assets/gt-ee',
+              'assets/Orders-b2',
+              'assets/Reports-d4',
+            ],
+            c: [0, 0, [0, 0, 1], [0, 1, 1]],
+            h: [ordersHash, reportsHash],
+          },
+        });
+        // The page's build, and the build of a first deploy, which changed
+        // a translation of Orders
+        const files: Files = {
+          [MAP]: lists('66666666', '12121212'),
+          [SHELL]: SPLIT[SHELL],
+          [CURRENT]: { v: { fr: '99999999' } },
+          [NEXT_MAP]: lists('77777777', '12121212'),
+          '/assets/gt-cc.fr.77777777.json': { [ORDERS]: 'Commandes, encore' },
+          [REPORTS_FILE]: { [TITLE]: 'Aperçu' },
+        };
+        const fetched = await startOpen(files);
+        await preloadedImport([])(loadRegionChunk);
+        expect(orders()).toBe('Commandes, encore');
+
+        // A second deploy changed a translation of Reports, which the page
+        // has not opened
+        delete files[REPORTS_FILE];
+        Object.assign(files, {
+          [CURRENT]: { v: { fr: '88888888' } },
+          '/assets/gt-map.fr.88888888.json': lists('77777777', '34343434'),
+          '/assets/gt-ee.fr.34343434.json': { [TITLE]: 'Aperçu, encore' },
+        });
+        fetched.mockClear();
+        const reports = () =>
+          loadRegionChunk(
+            () => Promise.resolve({ evaluated: title() }),
+            'assets/Reports-d4.js'
+          );
+        expect(await reports()).toEqual({ evaluated: 'Aperçu, encore' });
+        expect(urls(fetched)).toEqual([
+          REPORTS_FILE,
+          CURRENT,
+          '/assets/gt-map.fr.88888888.json',
+          '/assets/gt-ee.fr.34343434.json',
+        ]);
+        expect(warn).not.toHaveBeenCalled();
+
+        // A third, whose map names a file the host does not have: the file
+        // is asked for once, with a warning, and nothing is read again
+        Object.assign(files, {
+          [CURRENT]: { v: { fr: '77777777' } },
+          '/assets/gt-map.fr.77777777.json': lists('56565656', '34343434'),
+        });
+        delete files['/assets/gt-cc.fr.77777777.json'];
+        fetched.mockClear();
+        const again = () =>
+          loadRegionChunk(
+            () => Promise.resolve({ evaluated: orders() }),
+            'assets/Orders-b2.js'
+          );
+        // What the page had loaded for the chunk stays
+        expect(await again()).toEqual({ evaluated: 'Commandes, encore' });
+        expect(urls(fetched)).toEqual([]);
+      });
+
+      it('reads nothing for files an app asks for by key', async () => {
+        const fetched = await startOpen(DEPLOYED);
+        await loadRegionChunkTranslations(['assets/gt-cc']);
+        expect(urls(fetched)).toEqual([ROUTE]);
+        expect(warn).toHaveBeenCalledTimes(1);
+      });
     });
   });
 });

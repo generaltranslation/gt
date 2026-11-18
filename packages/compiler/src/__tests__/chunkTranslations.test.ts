@@ -1247,6 +1247,71 @@ export const { a } = await import(\`./a.js\`);`,
       ]);
       expect(changed(names({ ...FR, other: 'Rien' }))).toEqual([]);
     });
+
+    it("writes each locale's token and how the build assigned its messages under a name that every build has, and gives the page both", () => {
+      const CURRENT = 'assets/gt-current.json';
+      const withCurrent = (
+        fr: Record<string, unknown> | null = FR,
+        de: Record<string, unknown> | null = { title: 'Titel' },
+        assignment: TranslationAssignment = ASSIGNMENT
+      ) => {
+        const { files, manifest } = renderChunkTranslations(
+          assignment,
+          { defaultLocale: 'en', locales: ['fr', 'de'] },
+          { ...(fr && { fr }), ...(de && { de }) },
+          '/',
+          undefined,
+          undefined,
+          'assets/gt-current'
+        );
+        const current = files.find(({ fileName }) => fileName === CURRENT);
+        return {
+          names: current && JSON.parse(current.source),
+          manifest,
+          script: manifest.entries['assets/index.js'].startupScript,
+        };
+      };
+      const { names, manifest, script } = withCurrent();
+      const tokens = Object.fromEntries(
+        ['fr', 'de'].map((locale) => [
+          locale,
+          manifest.files['assets/Home'][locale].split('.').at(-2),
+        ])
+      );
+      expect(names).toEqual({
+        v: tokens,
+        c: expect.stringMatching(/^[0-9a-f]{8}$/),
+      });
+      expect(manifest.current).toBe(CURRENT);
+      expect(script).toContain(
+        `"v":${JSON.stringify(tokens)},"n":"assets/gt-current","c":"${names.c}"}`
+      );
+
+      // A changed translation changes what it says of that locale alone
+      const changed = withCurrent({ ...FR, home: 'Maison' }).names;
+      expect(changed.v.de).toBe(tokens.de);
+      expect(changed.v.fr).not.toBe(tokens.fr);
+      expect(changed.c).toBe(names.c);
+
+      // A message that the entry's file now holds, and not the chunk's: the
+      // files have the keys they had, and the build says it assigned
+      // differently
+      const moved = withCurrent(FR, undefined, {
+        ...ASSIGNMENT,
+        entries: new Map([['assets/index.js', ['nav', 'title', 'home']]]),
+        files: new Map([
+          ['assets/Home', ['untranslated']],
+          ['assets/Orders', ['orders']],
+        ]),
+      }).names;
+      expect(moved.c).not.toBe(names.c);
+
+      // A build without files has no names to give
+      const none = withCurrent(null, null);
+      expect(none.names).toBeUndefined();
+      expect(none.manifest.current).toBeUndefined();
+      expect(none.script).not.toContain('"n"');
+    });
   });
 
   describe('the imports of a build', () => {
@@ -1500,6 +1565,29 @@ export const { a } = await import(\`./a.js\`);`,
       Object.fromEntries(
         files.map(({ fileName, source }) => [fileName, JSON.parse(source)])
       );
+
+    it("writes the hash in the name of each locale's map under a name that every build has", () => {
+      const { files, manifest } = renderChunkTranslations(
+        ASSIGNMENT,
+        { defaultLocale: 'en', locales: ['fr', 'de'] },
+        { fr: FR, de: { home: 'Start' } },
+        '/',
+        undefined,
+        { key: 'assets/gt-map', files: 'assets/gt' },
+        'assets/gt-current'
+      );
+      expect(read({ files } as ReturnType<typeof render>)).toMatchObject({
+        'assets/gt-current.json': { v: { fr: '04905701', de: '236306e2' } },
+      });
+      expect(manifest.maps).toEqual({
+        fr: 'assets/gt-map.fr.04905701.json',
+        de: 'assets/gt-map.de.236306e2.json',
+      });
+      expect(manifest.current).toBe('assets/gt-current.json');
+      expect(manifest.entries['assets/index.js'].startupScript).toContain(
+        '"v":{"fr":"04905701","de":"236306e2"},"n":"assets/gt-current","c":"'
+      );
+    });
 
     it.each([
       [undefined, undefined, 'token'],
@@ -2807,6 +2895,8 @@ export const ready = initializeGTSPA({});`,
             h: [0, '94ca6839', 0],
           },
         },
+        // The hash in the name of each map, under a name every build has
+        'assets/gt-current.json': { v: { fr: 'df659cf2', de: 'aae53460' } },
       });
       expect(unsplit).toEqual([{ locale: 'fr', count: 1, bytes: 17 }]);
       const { startupScript, ...entry } = manifest.entries['assets/index.js'];
@@ -2831,6 +2921,7 @@ export const ready = initializeGTSPA({});`,
           fr: 'assets/gt-map.fr.df659cf2.json',
           de: 'assets/gt-map.de.aae53460.json',
         },
+        current: 'assets/gt-current.json',
         unsplit: { fr: 'assets/gt-unsplit.fr.9ddbca58.json' },
         assignment: {
           files: { aa: ['title'], bb: ['home', 'picker'], cc: ['invoice'] },
@@ -2841,7 +2932,7 @@ export const ready = initializeGTSPA({});`,
       });
       // The page holds the name of the map and of the entry's files
       expect(startupScript).toContain(
-        '"f":"assets/gt-map","h":{"fr":"df659cf2","de":"aae53460"},"v":{}}'
+        '"f":"assets/gt-map","h":{"fr":"df659cf2","de":"aae53460"},"v":{},"n":"assets/gt-current"}'
       );
       expect(startupScript).toContain(
         '(window["__GT_CHUNK_TRANSLATIONS__"],{"fr":{"assets/gt-aa":"d7a4dbef"},"de":{}});'
