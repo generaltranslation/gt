@@ -631,6 +631,14 @@ async function checkLocale(url, locale, built) {
       `${locale}: never requests the whole catalog`,
       !app.requests.some(isCatalog)
     );
+    // The app imports src/versions.ts as it starts, a module without
+    // messages: its chunk needs no file, and a page has nothing to say of it
+    check(
+      `${locale}: imports a chunk without messages, which needs no file, and warns of nothing`,
+      app.requests.some(({ path }) => /\/versions-[\w-]+\.js$/.test(path)) &&
+        !app.warnings.length,
+      app.warnings.join(' | ')
+    );
 
     if (locale !== manifest.defaultLocale) {
       const first = [
@@ -1277,6 +1285,13 @@ async function checkVariant(name, variant) {
       'orders',
       0,
       'a relative base, a changed URL, fr'
+    );
+    // The bundler names the chunk relative to the importing one here
+    check(
+      'a relative base: imports a chunk without messages, which needs no file, and warns of nothing',
+      app.requests.some(({ path }) => /\/versions-[\w-]+\.js$/.test(path)) &&
+        !app.warnings.length,
+      app.warnings.join(' | ')
     );
     const requested = translationsOf(app);
     check(
