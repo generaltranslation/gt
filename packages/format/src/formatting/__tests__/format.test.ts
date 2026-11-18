@@ -391,7 +391,28 @@ describe('_formatListToParts', () => {
       ['item1', 'item2', 'item3'],
       ['es-ES', 'en-US'],
       {},
-      ['item1', ', ', 'item2', ' y ', 'item3'],
+      ['item1', ', ', 'item2', ' e ', 'item3'],
+    ],
+    [
+      'Spanish "and" before an "i" sound',
+      ['Fernando', 'Isabel'],
+      ['es'],
+      {},
+      ['Fernando', ' e ', 'Isabel'],
+    ],
+    [
+      'Spanish "or" before an "o" sound',
+      ['siete', 'ocho'],
+      ['es'],
+      { type: 'disjunction' },
+      ['siete', ' u ', 'ocho'],
+    ],
+    [
+      'Hebrew "and" before a Hebrew word',
+      ['אבא', 'אמא'],
+      ['he'],
+      {},
+      ['אבא', ' ו', 'אמא'],
     ],
     [
       'the default locale',
@@ -402,6 +423,28 @@ describe('_formatListToParts', () => {
     ],
   ])('formats %s', (_label, value, locales, options, expected) => {
     expect(_formatListToParts({ value, locales, options })).toEqual(expected);
+  });
+
+  it('chooses the connector from the text of a number item', () => {
+    expect(
+      _formatListToParts({
+        value: [7, 8],
+        locales: ['es'],
+        options: { type: 'disjunction' },
+      })
+    ).toEqual([7, ' u ', 8]);
+  });
+
+  it('keeps every item when one is an empty string', () => {
+    const object = { name: 'object' };
+    const result = _formatListToParts({
+      value: ['', object, 7],
+      locales: ['en'],
+      options: {},
+    });
+
+    expect(result).toEqual(['', ', ', object, ', and ', 7]);
+    expect(result[2]).toBe(object);
   });
 
   it('preserves the identity and order of non-string items', () => {
