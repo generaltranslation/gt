@@ -32,7 +32,17 @@ import { captureExistingTranslations } from '../translation/captureExistingTrans
 import { collectExistingTranslations } from '../translation/collectExistingTranslations';
 import { uploadTranslations } from '../translation/uploadTranslations';
 import { downloadTranslations } from '../translation/downloadTranslations';
-import { checkTranslationStatus } from '../translation/checkTranslationStatus';
+import {
+  checkTranslationStatus,
+  getCompletedResults,
+  isCompletedAfter,
+} from '../translation/checkTranslationStatus';
+import {
+  createForcedJobs,
+  fetchForcedJobStatuses,
+  settleForcedJobs,
+  trackEnqueuedJobs,
+} from '../translation/forcedJobs';
 import { importDocument } from '../translation/importDocument';
 import { commitResolvedRefs, resolveRefs } from '../sanity-api/resolveRefs';
 import { findTranslatedDocumentForLocale } from '../sanity-api/findDocuments';
@@ -195,7 +205,8 @@ interface TranslationsContextType {
   setAutoPatchReferences: (value: boolean) => void;
   setAutoPublish: (value: boolean) => void;
   setPreserveExistingTranslations: (value: boolean) => void;
-  handleTranslateAll: (options?: TranslateAllOptions) => Promise<void>;
+  /** Resolves to the status keys it enqueued, none when the run did not start. */
+  handleTranslateAll: (options?: TranslateAllOptions) => Promise<string[]>;
   handleUploadExistingTranslations: () => Promise<void>;
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
@@ -375,6 +386,10 @@ const TranslationsProviderContent: React.FC<
   >(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const pendingTranslationsRef = useRef(pendingTranslations);
+  const [forcedJobs] = useState(createForcedJobs);
+  // When each result a forced run discards was completed, by status key. GT
+  // keeps reporting that result as completed until the new one replaces it.
+  const supersededResultsRef = useRef(new Map<string, string>());
   // Changing what a refresh asks for (locales, documents, their uploaded
   // versions, the branch) starts a new refresh while an older one may still be
   // in flight. The tracker drops responses whose scope is no longer current, so
@@ -762,7 +777,7 @@ const TranslationsProviderContent: React.FC<
 
   const handleTranslateAll = useCallback(
     async ({ force = false }: TranslateAllOptions = {}) => {
-      if (!secrets || documents.length === 0) return;
+      if (!secrets || documents.length === 0) return [];
 
       setIsBusy(true);
 
@@ -772,7 +787,7 @@ const TranslationsProviderContent: React.FC<
         const sourceDocuments = allowNonDefault
           ? await getUploadableSources(documents, 'Translation was not started')
           : documents;
-        if (!sourceDocuments) return;
+        if (!sourceDocuments) return [];
 
         const availableLocaleIds = locales
           .filter((locale) => locale.enabled !== false)
@@ -836,25 +851,9 @@ const TranslationsProviderContent: React.FC<
               )
             : availableLocaleIds;
 
-        const uploadResult = await uploadFiles(transformedDocuments, secrets);
-        await initProject(uploadResult, { timeout: 600 }, secrets);
-        await createJobs(uploadResult, enqueueLocaleIds, secrets, force);
-
-        // Pin the _rev each file was uploaded under. GT status queries need the
-        // exact uploaded versionId, and the live _rev moves on (in-place array
-        // imports bump it), so status lookups go through getVersionId instead.
-        // Persisted to sessionStorage so the pins survive a page refresh.
-        const nextUploadedVersions = new Map(uploadedVersions);
-        for (const { info } of transformedDocuments) {
-          if (info.versionId) {
-            nextUploadedVersions.set(info.documentId, info.versionId);
-          }
-        }
-        writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
-        setUploadedVersions(nextUploadedVersions);
-
         const enqueuedStatusKeys = new Set<string>();
         const enqueuedStableKeys = new Set<string>();
+        const enqueuedFiles: FileProperties[] = [];
         for (const { info } of transformedDocuments) {
           for (const localeId of targetLocaleIdsByDocument?.get(
             info.documentId
@@ -870,8 +869,56 @@ const TranslationsProviderContent: React.FC<
             enqueuedStableKeys.add(
               createStableTranslationKey(branchId, info.documentId, localeId)
             );
+            if (!branchId) continue;
+            enqueuedFiles.push({
+              branchId,
+              fileId: info.documentId,
+              versionId: info.versionId ?? '',
+              locale: localeId,
+            });
           }
         }
+
+        const uploadResult = await uploadFiles(transformedDocuments, secrets);
+        await initProject(uploadResult, { timeout: 600 }, secrets);
+
+        // Recorded before the jobs exist, so a refresh that answers while they
+        // are being created cannot report a discarded result as the new one.
+        const supersededBefore = new Map(supersededResultsRef.current);
+        for (const key of enqueuedStatusKeys) {
+          supersededResultsRef.current.delete(key);
+        }
+        if (force && enqueuedFiles.length > 0) {
+          const completed = await getCompletedResults(enqueuedFiles, secrets);
+          for (const [key, completedAt] of completed) {
+            supersededResultsRef.current.set(key, completedAt);
+          }
+        }
+        let enqueueResult: Awaited<ReturnType<typeof createJobs>>;
+        try {
+          enqueueResult = await createJobs(
+            uploadResult,
+            enqueueLocaleIds,
+            secrets,
+            force
+          );
+        } catch (error) {
+          supersededResultsRef.current = supersededBefore;
+          throw error;
+        }
+
+        // Pin the _rev each file was uploaded under. GT status queries need the
+        // exact uploaded versionId, and the live _rev moves on (in-place array
+        // imports bump it), so status lookups go through getVersionId instead.
+        // Persisted to sessionStorage so the pins survive a page refresh.
+        const nextUploadedVersions = new Map(uploadedVersions);
+        for (const { info } of transformedDocuments) {
+          if (info.versionId) {
+            nextUploadedVersions.set(info.documentId, info.versionId);
+          }
+        }
+        writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
+        setUploadedVersions(nextUploadedVersions);
 
         // A key already downloaded this session is skipped by the status
         // query, so re-translating one would leave it outstanding forever:
@@ -906,6 +953,17 @@ const TranslationsProviderContent: React.FC<
           (prev) => new Set([...prev, ...enqueuedStatusKeys])
         );
 
+        // A forced run keeps the same version, so a status that was already
+        // ready describes the result being discarded and must not be imported.
+        trackEnqueuedJobs(forcedJobs, enqueuedStatusKeys, enqueueResult, force);
+        if (force) {
+          setTranslationStatuses((prev) => {
+            const next = new Map(prev);
+            for (const key of enqueuedStatusKeys) next.delete(key);
+            return next;
+          });
+        }
+
         toast.push({
           title: force
             ? `Retranslating ${sourceDocuments.length} documents from scratch`
@@ -922,6 +980,7 @@ const TranslationsProviderContent: React.FC<
             closable: true,
           });
         }
+        return [...enqueuedStatusKeys];
       } catch {
         toast.push({
           title:
@@ -929,6 +988,7 @@ const TranslationsProviderContent: React.FC<
           status: 'error',
           closable: true,
         });
+        return [];
       } finally {
         setIsBusy(false);
       }
@@ -1366,7 +1426,19 @@ const TranslationsProviderContent: React.FC<
           secrets
         );
 
+        const forcedJobStatuses = await fetchForcedJobStatuses(
+          forcedJobs,
+          secrets
+        );
+
         if (!refresh.isCurrent()) return;
+
+        // Settled only by a refresh that goes on to apply it: a discarded one
+        // would take the failure with it and leave the key pending for good.
+        const failedForcedKeys = settleForcedJobs(
+          forcedJobs,
+          forcedJobStatuses
+        );
 
         // Built here rather than inside an updater: it derives from the
         // response, not from previous state, and a state updater has to stay
@@ -1395,6 +1467,13 @@ const TranslationsProviderContent: React.FC<
               translation.versionId,
               translation.locale
             );
+            const supersededAt = supersededResultsRef.current.get(key);
+            if (supersededAt) {
+              if (!isCompletedAfter(translation.completedAt, supersededAt)) {
+                continue;
+              }
+              supersededResultsRef.current.delete(key);
+            }
             newStatuses.set(key, {
               progress: 100,
               isReady: true,
@@ -1417,8 +1496,19 @@ const TranslationsProviderContent: React.FC<
           for (const [key, status] of newStatuses) {
             if (status.isReady) next.delete(key);
           }
+          for (const key of failedForcedKeys) next.delete(key);
           return next.size === prev.size ? prev : next;
         });
+
+        if (failedForcedKeys.length > 0) {
+          toast.push({
+            title: `${failedForcedKeys.length} retranslation(s) could not be completed`,
+            description:
+              'The translations they were replacing were left as they are. Retranslate again to retry.',
+            status: 'error',
+            closable: true,
+          });
+        }
 
         if (!silent) {
           toast.push({
