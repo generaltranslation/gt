@@ -215,19 +215,22 @@ export class GTIntl {
     return options.locale || this.locale || this.defaultLocale;
   }
 
+  /**
+   * What a format call gives `Intl`: the call's `locales` as they are, or
+   * its one target locale. Only a custom alias is resolved, to its code.
+   * `Intl` picks from a list, and formats a locale it has no data for in the
+   * host's locale.
+   */
   private getFormattingLocales(
     locale: string | undefined,
     locales: string | string[] | undefined
-  ) {
-    return (
-      locales === undefined
-        ? [locale || this.locale, this.defaultLocale, defaultDefaultLocale]
-        : Array.isArray(locales)
-          ? locales
-          : [locales]
-    )
-      .filter((locale): locale is string => !!locale)
-      .map((locale) => this.resolveCanonicalLocale(locale));
+  ): string | string[] {
+    if (locales === undefined) {
+      return this.resolveCanonicalLocale(this.getTargetLocale({ locale }));
+    }
+    return typeof locales === 'string'
+      ? this.resolveCanonicalLocale(locales)
+      : locales.map((code) => this.resolveCanonicalLocale(code));
   }
 
   formatNum(

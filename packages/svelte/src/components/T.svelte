@@ -12,7 +12,6 @@
 <svelte:options preserveWhitespace={false} />
 
 <script lang="ts">
-  import { getI18nConfig } from 'gt-i18n/internal';
   import { untrack, type Snippet } from 'svelte';
   import GtNodes from './GtNodes.svelte';
   import { lookupJsxTranslation } from '../runtime/lookup';
@@ -69,7 +68,7 @@
   const renderContext: RenderContext = $derived({
     snippets,
     meta: _gtm ?? {},
-    locales: [state.locale, getI18nConfig().getDefaultLocale()],
+    locales: [state.locale],
   });
 
   const valid = $derived.by(() => {

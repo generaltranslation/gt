@@ -6,6 +6,11 @@ import { getI18nConfig } from 'gt-i18n/internal';
 
 const EMPTY_LOCALES_PROP: string[] = [];
 
+/**
+ * The locales a variable formats in: the `locales` prop as it is given, or
+ * the locale its content renders in. Source content formats in the default
+ * locale.
+ */
 export function getFormatLocales({
   locale,
   enableI18n,
@@ -15,10 +20,9 @@ export function getFormatLocales({
   enableI18n: boolean;
   localesProp?: string[];
 }): string[] {
-  const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate =
-    enableI18n && getI18nConfig().requiresTranslation({ locale });
-  return shouldTranslate
-    ? [...localesProp, locale, defaultLocale]
-    : [defaultLocale];
+  const config = getI18nConfig();
+  if (!enableI18n || !config.requiresTranslation({ locale })) {
+    return [config.getDefaultLocale()];
+  }
+  return localesProp.length ? localesProp : [locale];
 }
