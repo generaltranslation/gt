@@ -101,7 +101,12 @@ function requestMappedFile(
   const retry = () => {
     const current = getCurrent();
     return current && current !== hash
-      ? requestMappedFile(state, locale, file, true)
+      ? requestMappedFile(state, locale, file, true).then((arrived) => {
+          // What failed in the file's place is asked for again by the next
+          // import, as a file that failed is
+          if (!arrived) state.r![key] = undefined;
+          return arrived;
+        })
       : undefined;
   };
   return request(

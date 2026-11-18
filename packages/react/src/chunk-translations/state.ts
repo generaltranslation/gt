@@ -126,7 +126,8 @@ export type ChunkTranslationsState = {
   a?: string;
   /**
    * The URLs the host did not have: true where nothing is asked for in its
-   * place, false where what `j` lists for a chunk is
+   * place. In a build that splits by module, false while the lists that
+   * could stand in for the file are read, and once they do
    */
   z?: Record<string, boolean | undefined>;
 };

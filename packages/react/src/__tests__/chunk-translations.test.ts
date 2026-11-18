@@ -688,6 +688,29 @@ describe('gt-react/chunk-translations', () => {
       expect(warn.mock.calls[0][0]).toContain('did not load within 20 ms');
     });
 
+    it('asks for the file by its current name when the names arrive after its timeout, and adds it then', async () => {
+      const fetched = serve({
+        ...DEPLOYED,
+        [CURRENT]: () =>
+          new Promise<Response>((resolve) =>
+            setTimeout(
+              () => resolve(new Response(JSON.stringify(DEPLOYED[CURRENT]))),
+              90
+            )
+          ),
+      });
+      writeOpen({ w: 40 });
+      await start();
+
+      const started = Date.now();
+      expect(await preloadedImport([])()).toEqual({ evaluated: 'Orders' });
+      expect(Date.now() - started).toBeLessThan(80);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      expect(urls(fetched)).toContain(NEXT_ORDERS_FILE);
+      expect(orders()).toBe('Commandes, encore');
+    });
+
     it('reads nothing in a build that wrote no such file', async () => {
       const fetched = serve(DEPLOYED);
       writeState();
@@ -819,6 +842,28 @@ describe('gt-react/chunk-translations', () => {
         expect(urls(fetched)).toEqual([file('d1111111')]);
         expect(save()).toBe('Enregistrer');
         expect(warn).not.toHaveBeenCalled();
+      });
+
+      it('asks again for a file in place of a missing one after it failed', async () => {
+        const files: Files = {
+          ...DEPLOYED_MAP,
+          [file('a1111111')]: () =>
+            Promise.resolve(new Response('Busy', { status: 503 })),
+        };
+        const fetched = await startOpen(files);
+        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
+          evaluated: 'Orders',
+        });
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(warn.mock.calls[0][0]).toContain(file('a1111111'));
+
+        // The host has it by the next import
+        files[file('a1111111')] = DEPLOYED_MAP[file('a1111111')];
+        fetched.mockClear();
+        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
+          evaluated: 'Commandes, encore',
+        });
+        expect(urls(fetched)).toEqual([file('a1111111')]);
       });
 
       it('follows a second deploy, and a return to an earlier build and to its own', async () => {
@@ -1516,6 +1561,104 @@ describe('gt-react/chunk-translations', () => {
         // What the page had loaded for the chunk stays
         expect(await again()).toEqual({ evaluated: 'Commandes, encore' });
         expect(urls(fetched)).toEqual([]);
+      });
+
+      describe('with files of two chunks', () => {
+        const REPORTS_FILE = '/assets/gt-ee.fr.12121212.json';
+        const NEXT_ORDERS = '/assets/gt-cc.fr.77777777.json';
+        const lists = (ordersHash: string, reportsHash: string) => ({
+          i: {
+            k: [
+              'assets/gt-cc',
+              'assets/gt-ee',
+              'assets/Orders-b2',
+              'assets/Reports-d4',
+            ],
+            c: [0, 0, [0, 0, 1], [0, 1, 1]],
+            h: [ordersHash, reportsHash],
+          },
+        });
+        const reports = () =>
+          loadRegionChunk(
+            () => Promise.resolve({ evaluated: title() }),
+            'assets/Reports-d4.js'
+          );
+        /** A response that takes `ms`. */
+        const after = (ms: number, file: unknown) => () =>
+          new Promise<Response>((resolve) =>
+            setTimeout(() => resolve(new Response(JSON.stringify(file))), ms)
+          );
+        // The page's build, and a deploy that changed a translation of each
+        // chunk
+        const built = (): Files => ({
+          [MAP]: lists('66666666', '12121212'),
+          [SHELL]: SPLIT[SHELL],
+          [CURRENT]: { v: { fr: '99999999' } },
+          [NEXT_MAP]: lists('77777777', '34343434'),
+          [NEXT_ORDERS]: { [ORDERS]: 'Commandes, encore' },
+          '/assets/gt-ee.fr.34343434.json': { [TITLE]: 'Aperçu, encore' },
+        });
+
+        it("goes back to its own lists when the host serves the page's build again", async () => {
+          const files = built();
+          const fetched = await startOpen(files);
+          await preloadedImport([])(loadRegionChunk);
+          expect(orders()).toBe('Commandes, encore');
+
+          // The host serves the page's build again: Reports, which the page
+          // has not opened, has the file that build listed for it
+          delete files['/assets/gt-ee.fr.34343434.json'];
+          Object.assign(files, {
+            [CURRENT]: { v: { fr: '11111111' } },
+            [REPORTS_FILE]: { [TITLE]: 'Aperçu' },
+          });
+          fetched.mockClear();
+          expect(await reports()).toEqual({ evaluated: 'Aperçu' });
+          expect(urls(fetched)).toEqual([
+            '/assets/gt-ee.fr.34343434.json',
+            CURRENT,
+            REPORTS_FILE,
+          ]);
+          expect(warn).not.toHaveBeenCalled();
+        });
+
+        it('waits for the files in place of a missing one no longer than for the file, and adds them when they arrive', async () => {
+          // The lists take most of the file's timeout, and the file in its
+          // place longer than what is left of it
+          const files = built();
+          files[CURRENT] = after(45, { v: { fr: '99999999' } });
+          files['/assets/gt-ee.fr.34343434.json'] = after(150, {
+            [TITLE]: 'Aperçu, encore',
+          });
+          serve(files);
+          writeSplitState({ n: 'assets/gt-current', w: 60 });
+          await startSplit();
+          await tick();
+
+          const start = Date.now();
+          expect(await reports()).toEqual({ evaluated: 'Overview' });
+          expect(Date.now() - start).toBeLessThan(95);
+
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          expect(title()).toBe('Aperçu, encore');
+        });
+
+        it('asks for the files in place of a missing one when the lists arrive after its timeout', async () => {
+          const files = built();
+          files[CURRENT] = after(90, { v: { fr: '99999999' } });
+          const fetched = serve(files);
+          writeSplitState({ n: 'assets/gt-current', w: 40 });
+          await startSplit();
+          await tick();
+
+          const start = Date.now();
+          expect(await reports()).toEqual({ evaluated: 'Overview' });
+          expect(Date.now() - start).toBeLessThan(80);
+
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          expect(urls(fetched)).toContain('/assets/gt-ee.fr.34343434.json');
+          expect(title()).toBe('Aperçu, encore');
+        });
       });
 
       it('reads nothing for files an app asks for by key', async () => {

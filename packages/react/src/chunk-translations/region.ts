@@ -13,7 +13,7 @@ import {
   request,
   requestEntry,
 } from './request';
-import { readCurrentMap, readCurrentNames } from './recovery';
+import { readCurrentMap, readCurrentNames, within } from './recovery';
 import { gateChunk, listImportedFiles } from './gate';
 import { initializeCache } from './initialize';
 
@@ -120,15 +120,29 @@ function listCurrentRegionFiles(
   );
 }
 
+/** The hash in the name of a file: the one a list gave it, or the page's own build's. */
+function getRegionHash(
+  state: ChunkTranslationsState,
+  locale: string,
+  { f, h }: RegionFile
+): string | 0 | undefined {
+  const listed = state.i;
+  return h === undefined
+    ? state.e?.[locale]?.[f] || listed?.h?.[listed.k.indexOf(f)]
+    : h;
+}
+
 /**
  * Requests a file by its key, as the page's own build names it, or as
  * `listRegionFiles()` gives it. When the host does not have a file that the
  * import of a chunk needs, the page reads the lists of the build that is
- * served now, see `readCurrentNames()`, and requests what they list for the
- * chunk in its place.
+ * served now, see `readCurrentNames()`, and requests what the lists it then
+ * holds name for the chunk in its place: those of that build, or its own
+ * when its own build is served again.
  *
  * Imports of several chunks can wait for one file. It is requested once and
- * the lists are read once, and each import then gets its own chunk's files.
+ * the lists are read once, and each import then gets its own chunk's files,
+ * within the time it would have waited for the file.
  *
  * @param isRetry Whether the file is one of those, which nothing is asked for in place of.
  */
@@ -138,14 +152,16 @@ function requestRegionFile(
   file: string | RegionFile,
   isRetry?: boolean
 ): Promise<boolean> {
-  const { f, c, h }: RegionFile = typeof file === 'string' ? { f: file } : file;
-  const listed = state.i;
-  const own = state.e?.[locale]?.[f] || listed?.h?.[listed.k.indexOf(f)];
-  const hash = h === undefined ? own : h;
+  const region: RegionFile = typeof file === 'string' ? { f: file } : file;
+  const { f, c, h } = region;
+  const hash = getRegionHash(state, locale, region);
   // The map lists the files that exist
   if (!hash) return Promise.resolve(true);
   // A file of another build is another file, unless it has the same name
-  const key = hash === own ? `${locale} ${f}` : `${locale} ${f} ${hash}`;
+  const key =
+    hash === getRegionHash(state, locale, { f })
+      ? `${locale} ${f}`
+      : `${locale} ${f} ${hash}`;
   const url = getFileUrl(state, f, locale, hash);
   const requested = state.g?.[key];
   if (requested) state.g![key] = undefined;
@@ -154,22 +170,18 @@ function requestRegionFile(
   if (c === undefined || isRetry) {
     return request(state, key, url, requested, read);
   }
-  return request(state, key, url, requested, read, () => {
-    const held = state.a;
-    return readCurrentNames(state, locale, (name) =>
-      readCurrentMap(state, locale, state.f, state.h?.[locale], name)
-    ).then(() => {
-      // Other lists than those that named the file stand in for it
-      if (!state.j || (h !== undefined && state.a === held)) return undefined;
-      (state.z ||= {})[url] = false;
-      return true;
-    });
-  }).then((arrived) => {
-    if (!arrived || state.z?.[url] !== false) return arrived;
-    const files = listCurrentRegionFiles(state, c);
-    // No other files: that build does not know the chunk, or names the
+  const start = Date.now();
+  const missing = (state.z ||= {});
+  const requestInPlace = (): boolean | Promise<boolean> => {
+    const files = listRegionFiles(state, c);
+    // No other files: no list knows the chunk but the one that named the
     // file that is gone
-    if (!files || files.some((other) => other.f === f && other.h === hash)) {
+    if (
+      !files ||
+      files.some(
+        (other) => other.f === f && getRegionHash(state, locale, other) === hash
+      )
+    ) {
       console.warn(
         createFailedWarning(
           url,
@@ -181,5 +193,28 @@ function requestRegionFile(
     return Promise.all(
       files.map((other) => requestRegionFile(state, locale, other, true))
     ).then((all) => all.every(Boolean));
-  });
+  };
+  return request(state, key, url, requested, read, () => {
+    missing[url] = false;
+    const held = state.a;
+    return readCurrentNames(state, locale, (name) =>
+      readCurrentMap(state, locale, state.f, state.h?.[locale], name)
+    ).then(() => {
+      // Other lists than those that named the file stand in for it
+      if (h === undefined ? state.j : state.a !== held) return true;
+      missing[url] = true;
+      return undefined;
+    });
+  }).then((arrived) =>
+    missing[url] !== false
+      ? arrived
+      : within(
+          state,
+          start,
+          // The lists can outlast the timeout of the file
+          (state.x || Promise.resolve()).then(() =>
+            missing[url] === false ? requestInPlace() : false
+          )
+        )
+  );
 }

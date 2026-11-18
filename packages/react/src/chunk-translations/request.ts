@@ -170,6 +170,6 @@ export function fetchJson(
   });
 }
 
-function getTimeout(state: ChunkTranslationsState): number {
+export function getTimeout(state: ChunkTranslationsState): number {
   return state.w ?? 10_000;
 }

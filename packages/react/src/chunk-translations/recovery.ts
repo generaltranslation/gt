@@ -1,5 +1,5 @@
 import type { ChunkTranslationsState, EntryFile } from './state';
-import { fetchJson, getFileUrl } from './request';
+import { addArrived, fetchJson, getFileUrl, getTimeout } from './request';
 
 /** The file of current names, see the compiler's `renderCurrentNames()`. */
 type CurrentNames = { v?: Record<string, unknown>; c?: unknown };
@@ -81,4 +81,30 @@ export function readCurrentNames(
     .then(() => {
       state.x = undefined;
     }));
+}
+
+/**
+ * `loading`, or false once the timeout of a file requested at `start` has
+ * passed. What arrives after that is still added.
+ */
+export function within(
+  state: ChunkTranslationsState,
+  start: number,
+  loading: Promise<boolean>
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(
+      () => {
+        resolve(false);
+        void loading.then((arrived) => {
+          if (arrived) addArrived(state);
+        });
+      },
+      Math.max(0, start + getTimeout(state) - Date.now())
+    );
+    void loading.then((arrived) => {
+      clearTimeout(timer);
+      resolve(arrived);
+    });
+  });
 }
