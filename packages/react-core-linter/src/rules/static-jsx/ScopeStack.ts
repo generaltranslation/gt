@@ -2,7 +2,7 @@ export type Scope =
   | 'no-T' // No check
   | 'T' // Check static
   | 'Branch' // Check attrs
-  | 'Plural' // Check attrs
+  | 'Plural' // Check attrs; an Ordinal too
   | 'Branching-Attribute'; // Handle JsxExpressionContainers different
 
 /**

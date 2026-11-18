@@ -50,6 +50,7 @@ export const DATE_TIME_COMPONENT_NAME = 'DateTime';
 export const DERIVE_COMPONENT_NAME = 'Derive';
 export const BRANCH_COMPONENT_NAME = 'Branch';
 export const PLURAL_COMPONENT_NAME = 'Plural';
+export const ORDINAL_COMPONENT_NAME = 'Ordinal';
 
 // Functions
 export const USE_MESSAGES_FUNCTION_NAME = 'useMessages';
@@ -75,6 +76,7 @@ export const VARIABLE_COMPONENT_NAMES = [
 export const BRANCH_COMPONENT_NAMES = [
   BRANCH_COMPONENT_NAME,
   PLURAL_COMPONENT_NAME,
+  ORDINAL_COMPONENT_NAME,
 ];
 
 // Error: any non-string literal, number literal, boolean literal, null literal, template literal (no interpolation)
