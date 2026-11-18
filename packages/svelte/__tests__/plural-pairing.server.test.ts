@@ -5,8 +5,10 @@ import { parse } from 'svelte/compiler';
 import { render } from 'svelte/server';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Content, JsxElement } from '@generaltranslation/format';
+import BarePlural from './fixtures/BarePlural.svelte';
 import Harness from './fixtures/Harness.svelte';
 import NestedPluralForms from './fixtures/NestedPluralForms.svelte';
+import { initializeGT } from '../src/runtime/config';
 import { setupGT, withoutComments } from './helpers';
 
 const [{ hash, source }] = analyzeSvelteSource(
@@ -44,5 +46,30 @@ describe('plural forms a translation leaves out', () => {
         translations: { [hash]: translation },
       })
     ).toBe('<p>Many <b>x</b></p>');
+  });
+});
+
+describe('a <Plural> outside <T>', () => {
+  it('selects its form in the active locale alone', () => {
+    delete (globalThis as { __generaltranslation?: unknown })
+      .__generaltranslation;
+    initializeGT({
+      defaultLocale: 'fr',
+      locales: ['fr', 'co'],
+      loadTranslations: async () => ({}),
+    });
+    // Intl has no plural rules for Corsican, so it selects in the host's
+    // locale. Zero is "one" in French, the default locale, which is not
+    // tried.
+    const form = new Intl.PluralRules('co').select(0);
+    expect(
+      html({
+        component: BarePlural,
+        props: { n: 0 },
+        locale: 'co',
+        // Without translations the provider renders the default locale.
+        translations: {},
+      })
+    ).toBe(form === 'one' ? 'one item' : 'many items');
   });
 });
