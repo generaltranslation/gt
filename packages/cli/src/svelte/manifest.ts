@@ -123,6 +123,22 @@ export function selectUntranslatedUpdates(
 }
 
 /**
+ * Points the gt-svelte template at the version recorded by the last upload.
+ * That upload may have held only untranslated entries, so its version can
+ * differ from the one computed from the full manifest.
+ */
+export function withUploadedTemplateVersion<
+  File extends { fileFormat: string; versionId: string },
+>(files: File[], uploadedVersionId: string | undefined): File[] {
+  if (!uploadedVersionId) return files;
+  return files.map((file) =>
+    file.fileFormat === 'GTJSON'
+      ? { ...file, versionId: uploadedVersionId }
+      : file
+  );
+}
+
+/**
  * Adds downloaded translations to a locale's existing catalog, because the
  * download holds only the entries that were sent, and drops entries the
  * manifest no longer has.

@@ -14,7 +14,8 @@ import {
   resolveInlineLibrary,
 } from '../../formats/files/collectFiles.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
-import type { InlineLibrary } from '../../types/libraries.js';
+import { Libraries, type InlineLibrary } from '../../types/libraries.js';
+import { withUploadedTemplateVersion } from '../../svelte/manifest.js';
 
 // Downloads translations that were originally staged
 
@@ -73,7 +74,11 @@ export async function handleDownload(
     ) {
       return logErrorAndExit(noVersionIdError);
     }
-    fileVersionData = convertToFileTranslationData(files);
+    fileVersionData = convertToFileTranslationData(
+      inlineLibrary === Libraries.GT_SVELTE
+        ? withUploadedTemplateVersion(files, settings._versionId)
+        : files
+    );
   }
 
   // Check for remaining translations

@@ -17,6 +17,19 @@ function translate(api) {
   });
 }
 
+/** Runs `gt download`, which requests the version the last upload recorded. */
+function download(api, ...flags) {
+  return run(
+    'pnpm',
+    ['exec', 'gt', 'download', '--skip-version-check', ...flags],
+    {
+      GT_API_KEY: api.apiKey,
+      GT_PROJECT_ID: api.projectId,
+      GT_API_URL: api.url,
+    }
+  );
+}
+
 function log(message) {
   process.stdout.write(`${message}\n`);
 }
@@ -68,12 +81,22 @@ try {
   assert.match(output, /0 of 9 gt-svelte entries need translation/);
   assert.deepEqual(await readJson('src/_gt/fr.json'), catalog);
 
-  log('5. a catalog emptied after a download is filled again');
+  log('5. gt download restores an entry removed from the catalog');
+  const { [heading.metadata.hash]: _heading, ...withoutHeading } = catalog;
+  await writeFile(catalogPath, JSON.stringify(withoutHeading));
+  await download(api);
+  assert.deepEqual(await readJson('src/_gt/fr.json'), catalog);
+  api.requests.length = 0;
+  await download(api, '--force-download');
+  assert.ok(api.requests.includes('/v2/project/files/download'));
+  assert.deepEqual(await readJson('src/_gt/fr.json'), catalog);
+
+  log('6. a catalog emptied after a download is filled again');
   await writeFile(catalogPath, '{}\n');
   await translate(api);
   assert.deepEqual(await readJson('src/_gt/fr.json'), catalog);
 
-  log('6. changing one string sends only that entry');
+  log('7. changing one string sends only that entry');
   await writeFile(
     pagePath,
     originalPage.replace("gt('About this app')", "gt('About this test app')")
@@ -91,6 +114,12 @@ try {
     ...unchanged,
     [added.metadata.hash]: updated[added.metadata.hash],
   });
+
+  log('8. gt download restores an entry from an upload of only changed text');
+  const { [added.metadata.hash]: _added, ...beforeChange } = updated;
+  await writeFile(catalogPath, JSON.stringify(beforeChange));
+  await download(api);
+  assert.deepEqual(await readJson('src/_gt/fr.json'), updated);
   await writeFile(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`);
 
   log('End-to-end translation with the mock API passed.');

@@ -31,10 +31,19 @@ export function resolveInlineLibrary(
   return isInlineLibrary(library) ? library : undefined;
 }
 
+export type CollectFilesOptions = {
+  /**
+   * Leaves out inline entries every target catalog already translates. Only
+   * uploads use this; downloads must request the version that was uploaded.
+   */
+  untranslatedInlineOnly?: boolean;
+};
+
 export async function collectFiles(
   options: TranslateFlags,
   settings: Settings,
-  library: SupportedLibraries
+  library: SupportedLibraries,
+  { untranslatedInlineOnly = false }: CollectFilesOptions = {}
 ): Promise<{
   files: FileToUpload[];
   reactComponents: number;
@@ -61,7 +70,11 @@ export async function collectFiles(
       settings,
       extractionLibrary
     );
-    if (extractionLibrary === Libraries.GT_SVELTE && !options.force) {
+    if (
+      untranslatedInlineOnly &&
+      extractionLibrary === Libraries.GT_SVELTE &&
+      !options.force
+    ) {
       const untranslated = selectUntranslatedUpdates(updates, settings);
       logger.info(
         `${untranslated.length} of ${updates.length} gt-svelte entries need translation`

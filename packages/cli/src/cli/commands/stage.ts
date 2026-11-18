@@ -46,7 +46,9 @@ export async function handleStage(
     inlineLibrary,
     publishMap,
     inlineUpToDate,
-  } = await collectFiles(options, settings, library);
+  } = await collectFiles(options, settings, library, {
+    untranslatedInlineOnly: true,
+  });
 
   // Point at dashboard review setup when uploading review-gated content
   await warnManualReviewSetup(settings, allFiles);

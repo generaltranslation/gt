@@ -8,6 +8,7 @@ import {
   readSvelteManifest,
   readSvelteManifestHashes,
   selectUntranslatedUpdates,
+  withUploadedTemplateVersion,
 } from '../manifest.js';
 
 const updates: Updates = [
@@ -106,5 +107,23 @@ describe('mergeSvelteCatalog', () => {
         mergeSvelteCatalog('not json', JSON.stringify({ b: 'Docs' }), undefined)
       )
     ).toEqual({ b: 'Docs' });
+  });
+});
+
+describe('withUploadedTemplateVersion', () => {
+  const files = [
+    { fileFormat: 'GTJSON', versionId: 'full-manifest' },
+    { fileFormat: 'JSON', versionId: 'messages' },
+  ];
+
+  it('requests the template version the last upload recorded', () => {
+    expect(withUploadedTemplateVersion(files, 'uploaded')).toEqual([
+      { fileFormat: 'GTJSON', versionId: 'uploaded' },
+      { fileFormat: 'JSON', versionId: 'messages' },
+    ]);
+  });
+
+  it('keeps the computed version when no upload was recorded', () => {
+    expect(withUploadedTemplateVersion(files, undefined)).toBe(files);
   });
 });
