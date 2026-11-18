@@ -10,6 +10,7 @@ import {
   FileFormat,
 } from 'generaltranslation/types';
 import { createMockSettings } from '../__mocks__/settings.js';
+import { Libraries } from '../../types/libraries.js';
 import {
   findOrCreateEntry,
   readLockfile,
@@ -37,7 +38,13 @@ vi.mock('fs', () => ({
   readFileSync: vi.fn(),
   promises: {
     writeFile: vi.fn(),
+    readFile: vi.fn(),
   },
+}));
+
+vi.mock('../../svelte/manifest.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../svelte/manifest.js')>()),
+  readSvelteManifestHashes: vi.fn(() => new Set(['kept', 'added'])),
 }));
 
 vi.mock('path', async () => {
@@ -557,6 +564,73 @@ describe('downloadFileBatch', () => {
     expect(logger.error).toHaveBeenCalled();
     expect(result.successful).toHaveLength(0);
     expect(result.failed).toHaveLength(1);
+  });
+
+  it('merges a gt-svelte catalog into the existing file even when the lockfile is up to date', async () => {
+    // A gt-svelte upload holds only the entries the catalog lacked, so the
+    // same version can return while the local catalog is missing them.
+    const files: BatchedFiles = [
+      {
+        branchId: 'branch-1',
+        fileId: 'file-1',
+        versionId: 'version-1',
+        outputPath: 'src/_gt/fr.json',
+        inputPath: '__INTERNAL_GT_TEMPLATE_NAME__',
+        locale: 'fr',
+      },
+    ];
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
+      files: [
+        servedFile({
+          locale: 'fr',
+          fileFormat: 'GTJSON',
+          data: JSON.stringify({ added: 'Ajouté' }),
+          fileName: '__INTERNAL_GT_TEMPLATE_NAME__',
+        }),
+      ],
+      count: 1,
+    });
+    vi.mocked(readLockfile).mockReturnValue({
+      data: { version: 2, branchId: 'branch-1', entries: [] },
+      entryMap: new Map<string, DownloadedVersionEntry>([
+        [
+          'file-1',
+          {
+            fileId: 'file-1',
+            versionId: 'version-1',
+            fileName: '__INTERNAL_GT_TEMPLATE_NAME__',
+            translations: {
+              fr: {
+                updatedAt: '2026-01-01T00:00:00.000Z',
+                fileName: 'src/_gt/fr.json',
+              },
+            },
+          },
+        ],
+      ]),
+      originalV1: false,
+    });
+    setupFileSystemMocks({ dirExists: true });
+    vi.mocked(fs.promises.readFile).mockResolvedValue(
+      JSON.stringify({ kept: 'Gardé', stale: 'Supprimé' })
+    );
+
+    const result = await downloadFileBatch(
+      createMockFileTracker(files),
+      files,
+      createMockSettings({ locales: ['en', 'fr'] }),
+      false,
+      Libraries.GT_SVELTE
+    );
+
+    expect(result.skipped).toHaveLength(0);
+    const writeCall = vi
+      .mocked(fs.promises.writeFile)
+      .mock.calls.find(([file]) => file === 'src/_gt/fr.json');
+    expect(JSON.parse(writeCall![1] as string)).toEqual({
+      added: 'Ajouté',
+      kept: 'Gardé',
+    });
   });
 
   it('always merges composite schema files from fresh data, even when the lockfile is up to date', async () => {

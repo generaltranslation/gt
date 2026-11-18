@@ -358,8 +358,10 @@ export async function downloadFileBatch(
         const isInPlaceComposite = options.options?.jsonSchema
           ? !!validateJsonSchema(options.options, inputPath)?.composite
           : false;
+        const isSvelteCatalog =
+          inlineLibrary === Libraries.GT_SVELTE && file.fileFormat === 'GTJSON';
         const isInPlaceTranslationFile =
-          isXcstringsCatalog || isInPlaceComposite;
+          isXcstringsCatalog || isInPlaceComposite || isSvelteCatalog;
 
         if (
           !forceDownload &&
@@ -438,10 +440,7 @@ export async function downloadFileBatch(
           data = mergeXcstringsLocale(file.data, locale, inputPath);
         } else {
           data = mergeWithSource(file.data, locale, inputPath, options);
-          if (
-            inlineLibrary === Libraries.GT_SVELTE &&
-            file.fileFormat === 'GTJSON'
-          ) {
+          if (isSvelteCatalog) {
             data = mergeSvelteCatalog(
               await fs.promises
                 .readFile(outputPath, 'utf8')
