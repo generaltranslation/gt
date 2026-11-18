@@ -71,11 +71,12 @@ const createGTProp = (
         newBranches[key] = writeChildrenAsObjects(value);
       }
     );
-    newGTProp = {
-      ...newGTProp,
-      b: newBranches,
-      t: transformation === 'plural' ? 'p' : 'b',
-    };
+    if (Object.keys(newBranches).length)
+      newGTProp = {
+        ...newGTProp,
+        b: newBranches,
+        t: transformation === 'plural' ? 'p' : 'b',
+      };
   }
 
   return Object.keys(newGTProp).length ? newGTProp : undefined;

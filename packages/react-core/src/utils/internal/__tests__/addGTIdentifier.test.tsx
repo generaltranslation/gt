@@ -1,5 +1,6 @@
 import React, { type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { hashSource } from 'generaltranslation/id';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { addGTIdentifier } from '../addGTIdentifier';
 import { writeChildrenAsObjects } from '../writeChildrenAsObjects';
@@ -132,6 +133,37 @@ describe('addGTIdentifier with <RelativeTime>', () => {
     );
     error.mockRestore();
   });
+
+  // `gt` and the compiler give this source the same hash; a tag name is not hashed.
+  it.each([null, false, ''])(
+    'stores no branches for a lone empty fallback: %j',
+    (empty) => {
+      const sources = [
+        [
+          'Before ',
+          <Branch key='b' branch='x'>
+            {empty}
+          </Branch>,
+          ' after',
+        ],
+        [
+          'Before ',
+          <Plural key='p' n={2}>
+            {empty}
+          </Plural>,
+          ' after',
+        ],
+      ].map((source) => writeChildrenAsObjects(addGTIdentifier(source)));
+
+      expect(sources).toEqual([
+        ['Before ', { t: 'Branch', i: 1 }, ' after'],
+        ['Before ', { t: 'Plural', i: 1 }, ' after'],
+      ]);
+      expect(
+        sources.map((source) => hashSource({ dataFormat: 'JSX', source }))
+      ).toEqual(['b5a6ee4eef4e3071', 'b5a6ee4eef4e3071']);
+    }
+  );
 
   it('renders <RelativeTime> in <T> source content as formatted time', () => {
     initializeI18nConfig({ defaultLocale: 'en' });
