@@ -23,7 +23,6 @@ type ClientSetup = {
 const clientSetup = createGlobalSingleton<ClientSetup>({
   namespace: 'tanstackStart',
   key: 'clientSetup',
-  source: 'gt-tanstack-start',
   notInitialized: () =>
     createDiagnosticMessage({
       source: 'gt-tanstack-start',

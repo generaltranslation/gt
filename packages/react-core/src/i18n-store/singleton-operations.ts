@@ -8,7 +8,6 @@ import { getI18nConfig } from '../setup/i18nConfig';
 const i18nStoreSingleton = createGlobalSingleton<I18nStore>({
   namespace: 'reactCore',
   key: 'i18nStore',
-  source: '@generaltranslation/react-core',
   notInitialized: () => createI18nStoreNotInitializedError(),
 });
 

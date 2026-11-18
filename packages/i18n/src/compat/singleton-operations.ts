@@ -12,7 +12,6 @@ const dictionaryManagerSingleton =
   /* @__PURE__ */ createGlobalSingleton<DictionaryManager>({
     namespace: 'i18n',
     key: 'dictionaryManager',
-    source: 'gt-i18n',
     notInitialized: () =>
       createDiagnosticMessage({
         source: 'gt-i18n',

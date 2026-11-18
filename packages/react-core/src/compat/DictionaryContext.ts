@@ -27,7 +27,6 @@ const dictionaryContextSingleton = createGlobalSingleton<
 >({
   namespace: 'reactCore',
   key: 'dictionaryContext',
-  source: '@generaltranslation/react-core',
   notInitialized: () =>
     createDiagnosticMessage({
       source: '@generaltranslation/react-core',

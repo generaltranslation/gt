@@ -1,12 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { initializeI18nConfig } from '../../setup/i18nConfig';
 import type { I18nStore } from '../I18nStore';
 import { getI18nStore, setI18nStore } from '../singleton-operations';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: {
     i18n?: {
-      i18nConfig?: unknown;
       marker?: string;
       [key: string]: unknown;
     };
@@ -26,9 +24,6 @@ function resetI18nStoreGlobal() {
       'i18nStore'
     );
   }
-  if (globalObj.__generaltranslation?.i18n) {
-    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nConfig');
-  }
 }
 
 function createI18nStoreStub(): I18nStore {
@@ -37,8 +32,6 @@ function createI18nStoreStub(): I18nStore {
 
 describe('react-core i18n store singleton operations', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
-    vi.unstubAllEnvs();
     resetI18nStoreGlobal();
   });
 
@@ -56,48 +49,11 @@ describe('react-core i18n store singleton operations', () => {
   });
 
   it('replaces an existing global i18n store', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = createI18nStoreStub();
 
     setI18nStore(createI18nStoreStub());
     setI18nStore(store);
 
-    expect(warn).not.toHaveBeenCalled();
-    expect(getI18nStore()).toBe(store);
-  });
-
-  it('reports a replaced global i18n store when debug logging is enabled', () => {
-    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const store = createI18nStoreStub();
-
-    setI18nStore(createI18nStoreStub());
-    setI18nStore(store);
-
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Global i18nStore singleton instance was replaced'
-      )
-    );
-    expect(getI18nStore()).toBe(store);
-  });
-
-  it('reports a replaced global i18n store when cached config enables debug logging', () => {
-    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
-    initializeI18nConfig({ defaultLocale: 'en' });
-    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', '');
-
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const store = createI18nStoreStub();
-
-    setI18nStore(createI18nStoreStub());
-    setI18nStore(store);
-
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Global i18nStore singleton instance was replaced'
-      )
-    );
     expect(getI18nStore()).toBe(store);
   });
 

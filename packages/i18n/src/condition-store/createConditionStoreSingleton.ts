@@ -12,7 +12,6 @@ export function createConditionStoreSingleton<
   const singleton = createGlobalSingleton<T>({
     namespace: 'i18n',
     key: 'conditionStore',
-    source: 'gt-i18n',
     notInitialized: () => notInitializedMessage,
   });
 

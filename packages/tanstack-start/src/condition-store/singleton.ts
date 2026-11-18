@@ -14,7 +14,6 @@ const conditionStoreSingleton = createGlobalSingleton<AsyncLocalConditionStore>(
   {
     namespace: 'tanstackStart',
     key: 'conditionStore',
-    source: 'gt-tanstack-start',
     notInitialized: () => conditionStoreNotInitializedError,
   }
 );
