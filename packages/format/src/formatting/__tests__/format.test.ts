@@ -319,7 +319,13 @@ describe('_formatMessageICU', () => {
 
 describe('_formatListToParts', () => {
   it.each<
-    [string, string[], string[] | undefined, Intl.ListFormatOptions, string[]]
+    [
+      string,
+      Array<string | number>,
+      string[] | undefined,
+      Intl.ListFormatOptions,
+      Array<string | number>,
+    ]
   >([
     ['an empty list', [], ['en'], {}, []],
     ['a single item', ['apple'], ['en'], {}, ['apple']],
@@ -391,7 +397,35 @@ describe('_formatListToParts', () => {
       ['item1', 'item2', 'item3'],
       ['es-ES', 'en-US'],
       {},
-      ['item1', ', ', 'item2', ' y ', 'item3'],
+      ['item1', ', ', 'item2', ' e ', 'item3'],
+    ],
+    [
+      'Spanish "and" before an "i" sound',
+      ['Fernando', 'Isabel'],
+      ['es'],
+      {},
+      ['Fernando', ' e ', 'Isabel'],
+    ],
+    [
+      'Spanish "or" before an "o" sound',
+      ['siete', 'ocho'],
+      ['es'],
+      { type: 'disjunction' },
+      ['siete', ' u ', 'ocho'],
+    ],
+    [
+      'Spanish "or" before a number read with an "o" sound',
+      [7, 8],
+      ['es'],
+      { type: 'disjunction' },
+      [7, ' u ', 8],
+    ],
+    [
+      'Hebrew "and" before a Hebrew word',
+      ['אבא', 'אמא'],
+      ['he'],
+      {},
+      ['אבא', ' ו', 'אמא'],
     ],
     [
       'the default locale',

@@ -156,7 +156,14 @@ export function _formatListToParts<T>({
       style: 'long', // Default style, can be overridden via options
       ...options,
     })
-    .formatToParts(value.map(() => '1'));
+    // A connector can depend on the text after it: Spanish "y" becomes "e" before "Isabel".
+    .formatToParts(
+      value.map((item) =>
+        typeof item === 'string' || typeof item === 'number'
+          ? String(item)
+          : '1'
+      )
+    );
   let partIndex = 0;
   return formatListParts.map((part) => {
     if (part.type === 'element') return value[partIndex++];
