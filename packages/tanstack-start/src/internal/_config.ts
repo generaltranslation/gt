@@ -8,3 +8,6 @@ export const config: InitializeGTParams | undefined = undefined;
 
 export const loadTranslations: InitializeGTParams['loadTranslations'] =
   undefined;
+
+/** Whether the server has initialized GT from this evaluation of the module. */
+export const state = { initialized: false };

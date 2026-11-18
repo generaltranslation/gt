@@ -4,6 +4,7 @@ const { compatPluginModule, mockGetTranslationsInternal } = vi.hoisted(() => ({
   compatPluginModule: {
     dictionary: { greeting: 'Hello' },
     loadDictionary: async () => ({ greeting: 'Bonjour' }),
+    state: { initialized: false },
   },
   mockGetTranslationsInternal: vi.fn(async () => 'translations'),
 }));
@@ -37,6 +38,8 @@ const config = {
 describe.sequential('gt-tanstack-start/compat (server)', () => {
   beforeEach(() => {
     Reflect.deleteProperty(globalThis, '__generaltranslation');
+    compatPluginModule.dictionary = { greeting: 'Hello' };
+    compatPluginModule.state = { initialized: false };
     internalInitializeGTSRA({ ...config, loadTranslations: async () => ({}) });
     setConditionStore(new AsyncLocalConditionStore(config));
     mockGetTranslationsInternal.mockClear();
@@ -70,6 +73,22 @@ describe.sequential('gt-tanstack-start/compat (server)', () => {
 
     expect(getDictionaryManager().lookupDictionary('en', 'greeting')).toEqual({
       entry: 'Hello',
+      options: {},
+    });
+  });
+
+  it("sets the dictionary manager up again when the plugin's module is evaluated again", async () => {
+    vi.mocked(getRequest).mockReturnValue(new Request('https://example.com'));
+    await getTranslations();
+
+    // A Vite dev server restart evaluates the module, and its loader, again.
+    compatPluginModule.dictionary = { greeting: 'Hi' };
+    compatPluginModule.state = { initialized: false };
+    await getTranslations();
+    vi.mocked(getRequest).mockRestore();
+
+    expect(getDictionaryManager().lookupDictionary('en', 'greeting')).toEqual({
+      entry: 'Hi',
       options: {},
     });
   });

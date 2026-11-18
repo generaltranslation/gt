@@ -19,6 +19,7 @@ const {
     pluginModule: {
       config: undefined as Record<string, unknown> | undefined,
       loadTranslations: undefined,
+      state: { initialized: false },
     },
   };
 });
@@ -58,6 +59,7 @@ function resetConditionStoreSingleton() {
 describe('server initialization', () => {
   beforeEach(() => {
     resetConditionStoreSingleton();
+    pluginModule.state = { initialized: false };
     mockInitializeReactGT.mockReset();
     mockStoreConstructor.mockClear();
   });
@@ -73,6 +75,18 @@ describe('server initialization', () => {
       mockInitializeReactGT.mock.calls[0][0]
     );
     expect(getConditionStore()).toBe(mockConditionStore);
+  });
+
+  it("initializes again when the plugin's config module is evaluated again", () => {
+    pluginModule.config = { defaultLocale: 'en', locales: ['en', 'fr'] };
+    ensureInitialized();
+
+    // A Vite dev server restart evaluates the module, and its loader, again.
+    pluginModule.state = { initialized: false };
+    ensureInitialized();
+
+    expect(mockInitializeReactGT).toHaveBeenCalledTimes(2);
+    expect(mockStoreConstructor).toHaveBeenCalledTimes(2);
   });
 
   it('does nothing without the plugin', () => {
