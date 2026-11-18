@@ -1,6 +1,5 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from '../globals/createGlobalSingleton';
-import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { I18nConfig, type I18nConfigParams } from './I18nConfig';
 import { warnAboutLocalesWithoutIntlData } from './validation';
 
@@ -27,7 +26,8 @@ export const isI18nConfigInitialized = i18nConfigSingleton.isInitialized;
  */
 export function setI18nConfig(nextI18nConfig: I18nConfig): void {
   i18nConfigSingleton.set(nextI18nConfig);
-  if (getRuntimeEnvironment() === 'development') {
+  // Statically gated so bundlers drop it from production builds.
+  if (process.env.NODE_ENV === 'development') {
     warnAboutLocalesWithoutIntlData(nextI18nConfig);
   }
 }
