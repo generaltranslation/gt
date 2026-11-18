@@ -137,6 +137,12 @@ describe('branch selection', () => {
     expect(error).toHaveBeenCalledWith(
       expect.stringContaining('<Branch> has no branch for its value')
     );
+    expect(
+      GtInternalBranch({ branch: 'data-id', 'data-id': 'injected' })
+    ).toBeUndefined();
+    expect(error).toHaveBeenLastCalledWith(
+      expect.stringContaining('branch: data-id')
+    );
     vi.stubEnv('NODE_ENV', 'development');
     expect(() => GtInternalBranch({ branch: 'guest', admin: 'Admin' })).toThrow(
       '<Branch> has no branch for its value'

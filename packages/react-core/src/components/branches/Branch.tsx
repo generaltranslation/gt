@@ -44,13 +44,14 @@ type InternalBranchProps = {
 function GtInternalBranch({
   branch,
   children,
-  ...props
+  ...branches
 }: InternalBranchProps): ReactNode {
-  // Build tools inject data-* attributes, which are not branches.
-  const branches = Object.fromEntries(
-    Object.entries(props).filter(([prop]) => !prop.startsWith('data-'))
+  return getBranch(
+    branch,
+    { ...branches, other: children },
+    // Build tools inject data-* attributes, which are not branches.
+    String(branch).startsWith('data-') ? 'other' : undefined
   );
-  return getBranch(branch, { ...branches, other: children });
 }
 
 function Branch<V extends BranchValue>(
