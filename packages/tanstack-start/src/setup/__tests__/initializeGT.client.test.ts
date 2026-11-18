@@ -60,7 +60,10 @@ describe('initializeGT client', () => {
     const browserConfig =
       mockCreateOrUpdateBrowserConditionStore.mock.calls[0][0];
     browserConfig._reload({ locale: 'fr' });
-    expect(mockGetPathnameForLocale).toHaveBeenCalledWith('/ar/about', 'fr');
+    expect(mockGetPathnameForLocale).toHaveBeenCalledWith({
+      pathname: '/ar/about',
+      locale: 'fr',
+    });
     expect(assign).toHaveBeenCalledWith(
       'https://example.com/fr/about?view=full#bio'
     );
@@ -94,7 +97,10 @@ describe('initializeGT client', () => {
       region: undefined,
       enableI18n: true,
     });
-    expect(mockGetPathnameForLocale).toHaveBeenCalledWith('/fr/products', 'de');
+    expect(mockGetPathnameForLocale).toHaveBeenCalledWith({
+      pathname: '/fr/products',
+      locale: 'de',
+    });
     expect(assign).toHaveBeenCalledWith(
       'https://example.com/de/products?view=full#details'
     );
