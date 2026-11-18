@@ -359,7 +359,10 @@ export const TranslationView = () => {
             tone='caution'
             onClick={() => setIsRetranslateDialogOpen(true)}
             disabled={
-              isBusy || isWaitingOnTranslations || !availableLocales.length
+              isBusy ||
+              isWaitingOnTranslations ||
+              !availableLocales.length ||
+              !branchId
             }
             icon={ResetIcon}
             text='Retranslate'
