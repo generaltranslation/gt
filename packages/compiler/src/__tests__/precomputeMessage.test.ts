@@ -476,15 +476,16 @@ describe('the installed runtime', () => {
       id: string
     ) => Promise<{ code: string } | null>;
     fs.mkdirSync(directory, { recursive: true });
-    const compile = async (file: string) =>
+    const compileId = async (id: string) =>
       (
         await transform.call(
           { warn() {}, error() {}, addWatchFile() {} },
           source,
-          path.join(directory, file)
+          id
         )
       )?.code;
-    return { compile, warn };
+    const compile = (file: string) => compileId(path.join(directory, file));
+    return { compile, compileId, warn };
   };
   const TAGGED = `t({ $_hash: "${hashOf(['Hello, ', ['name'], '!'])}" })\`Hello, \${{ name }}!\``;
 
@@ -606,6 +607,19 @@ describe('the installed runtime', () => {
       expect(warn).not.toHaveBeenCalledWith(
         expect.stringMatching(/does not read precomputed|message trees are off/)
       );
+    }
+  );
+
+  it.each([
+    ['a virtual module', '\0virtual:labels.ts'],
+    ['a virtual module named after a file', '\0/abs/src/labels.ts'],
+    ['a relative path', 'src/labels.ts'],
+  ])(
+    'keeps the tagged templates of %s, whose id has no directory to find a runtime from',
+    async (_name, id) => {
+      const root = install({ 'gt-react': 'new' });
+      const { compileId } = await compileIn(root, path.join(root, 'src'));
+      expect(await compileId(id)).toContain(TAGGED);
     }
   );
 

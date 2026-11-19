@@ -81,6 +81,8 @@ export function createPrecomputedMessageSupport(): (
 ) => boolean | undefined {
   const found = new Map<string, boolean | undefined>();
   const find = (directory: string): boolean | undefined => {
+    // A virtual or relative module id has no directory to resolve from
+    if (!path.isAbsolute(directory)) return undefined;
     if (found.has(directory)) return found.get(directory);
     const parent = path.dirname(directory);
     const support =
