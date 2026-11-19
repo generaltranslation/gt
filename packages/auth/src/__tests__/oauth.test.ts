@@ -31,6 +31,7 @@ import {
   writeOAuthTokens,
   type OAuthTokens,
 } from '../credentialStore.js';
+import { UserAuthError } from '../errors.js';
 import {
   ACCOUNT_LOOKUP_TIMEOUT_MS,
   createUserTokenProvider,
@@ -683,14 +684,29 @@ describe('discovery and browser authorization', () => {
     }
   );
   it('times out even if browser opening fails', async () => {
-    await expect(
-      browserLogin({
-        openBrowser: async () => {
-          throw new Error('no browser');
-        },
-        timeoutMs: 20,
-      })
-    ).rejects.toThrow('Timed out');
+    const pending = browserLogin({
+      openBrowser: async () => {
+        throw new Error('no browser');
+      },
+      timeoutMs: 20,
+    });
+    await expect(pending).rejects.toThrow('Timed out');
+    await expect(pending).rejects.toBeInstanceOf(UserAuthError);
+  });
+  it('ends the wait for the browser when the caller aborts', async () => {
+    await writeOAuthTokens(tokens, authBaseUrl);
+    const controller = new AbortController();
+    const started = Date.now();
+    const pending = browserLogin({
+      openBrowser: async () => {
+        setTimeout(() => controller.abort(), 20);
+      },
+      signal: controller.signal,
+      timeoutMs: 10_000,
+    });
+    await expect(pending).rejects.toThrow('cancelled');
+    expect(Date.now() - started).toBeLessThan(5000);
+    expect(await readOAuthTokens(authBaseUrl)).toEqual(tokens);
   });
   it('closes the listener when publishing fails', async () => {
     let redirect = '';
@@ -1228,12 +1244,20 @@ describe('OAuth session operations', () => {
     ).toBe(false);
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
-  it('is for the public API when no baseUrl is given', async () => {
+  it('is for GT_API_URL, then the public API, when no baseUrl is given', async () => {
     await writeOAuthTokens(
       { ...tokens, resource: new URL(defaultBaseUrl).href },
       authBaseUrl
     );
     expect(await hasLogin({ authBaseUrl })).toBe(true);
+    expect(await hasLogin({ baseUrl: apiBaseUrl, authBaseUrl })).toBe(false);
+    vi.stubEnv('GT_API_URL', apiBaseUrl);
+    expect(await hasLogin({ authBaseUrl })).toBe(false);
+    await writeOAuthTokens(tokens, authBaseUrl);
+    expect(await hasLogin({ authBaseUrl })).toBe(true);
+  });
+  it('reports an obsolete stored login as no login', async () => {
+    await rawFile({ [authBaseUrl]: { ...tokens, subject: undefined } });
     expect(await hasLogin({ baseUrl: apiBaseUrl, authBaseUrl })).toBe(false);
   });
   it('refuses a login issued for a different API without refreshing it', async () => {

@@ -38,7 +38,7 @@ export type AuthOptions = {
   onWarning?: (message: string) => void;
 };
 type ApiOptions = AuthOptions & {
-  /** API the login is for; the public General Translation API when omitted. */
+  /** API the login is for; GT_API_URL, then the public General Translation API, when omitted. */
   baseUrl?: string;
 };
 export type LoginOptions = ApiOptions & {
@@ -217,8 +217,8 @@ function getAuthBaseUrl(): string {
 }
 
 /** Resource indicators are the API origin serialized as a URL href (trailing slash). */
-function toApiResource(baseUrl: string): string {
-  return new URL(baseUrl).href;
+function toApiResource(baseUrl?: string): string {
+  return new URL(baseUrl ?? (process.env.GT_API_URL || defaultBaseUrl)).href;
 }
 
 async function loginWithDeviceCode(options: LoginOptions): Promise<void> {
@@ -229,7 +229,7 @@ async function loginWithDeviceCode(options: LoginOptions): Promise<void> {
     );
   }
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
-  const resource = toApiResource(options.baseUrl ?? defaultBaseUrl);
+  const resource = toApiResource(options.baseUrl);
   const lifetime = new AbortController();
   const signal = options.signal
     ? AbortSignal.any([options.signal, lifetime.signal])
@@ -344,7 +344,7 @@ export async function login(options: LoginOptions = {}): Promise<void> {
     return loginWithDeviceCode({ ...options, noBrowser: true });
   }
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
-  const resource = toApiResource(options.baseUrl ?? defaultBaseUrl);
+  const resource = toApiResource(options.baseUrl);
   // Fired only by the account lookup's budget, after the exchange; nothing
   // else is in flight on this configuration then.
   const cancelLookup = new AbortController();
@@ -431,7 +431,14 @@ export async function login(options: LoginOptions = {}): Promise<void> {
     void (options.openBrowser ?? open)(authorizationUrl.href).catch(
       () => undefined
     );
-    await callback;
+    // No request is in flight while the user is in the browser, so the
+    // caller's abort has to end the wait itself.
+    const aborted = new Promise<never>((_, reject) => {
+      const cancel = () => reject(cancelledFailure());
+      if (options.signal?.aborted) cancel();
+      else options.signal?.addEventListener('abort', cancel, { once: true });
+    });
+    await Promise.race([callback, aborted]);
   } finally {
     loopback.close();
   }
@@ -482,13 +489,20 @@ async function validTokens(
   return refreshTokens(options);
 }
 
-/** Whether a stored login exists for this API; does not refresh or contact the server. */
+/**
+ * Whether a usable stored login exists for this API; does not refresh or
+ * contact the server. An obsolete stored login is not one.
+ */
 export async function hasLogin(options: ApiOptions = {}): Promise<boolean> {
   const tokens = await readOAuthTokens(
     options.authBaseUrl ?? getAuthBaseUrl(),
     options.onWarning
-  );
-  return tokens?.resource === toApiResource(options.baseUrl ?? defaultBaseUrl);
+  ).catch((error: unknown) => {
+    if (error instanceof UserAuthError && error.code === 'obsolete_credentials')
+      return undefined;
+    throw error;
+  });
+  return tokens?.resource === toApiResource(options.baseUrl);
 }
 
 /** Construction is deliberately free of auth/storage/discovery I/O. */
@@ -503,7 +517,7 @@ export function createUserTokenProvider(
       options.onWarning
     );
     if (!tokens) throw loginRequiredError();
-    const resource = toApiResource(options.baseUrl ?? defaultBaseUrl);
+    const resource = toApiResource(options.baseUrl);
     if (tokens.resource !== resource) {
       throw new UserAuthError(
         'resource_mismatch',

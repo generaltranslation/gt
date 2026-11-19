@@ -1,5 +1,6 @@
 import { createServer, type Server, type ServerResponse } from 'node:http';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { UserAuthError } from './errors.js';
 import {
   CALLBACK_PAGE_CSP,
   renderCallbackPage,
@@ -120,11 +121,10 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
           timedOut = true;
           server.close();
           reject(
-            new Error(
-              createDiagnosticMessage({
-                whatHappened: 'Timed out waiting for authentication',
-                fix: 'Run `gt login` again',
-              })
+            new UserAuthError(
+              'oauth',
+              'Timed out waiting for authentication',
+              'Run `gt login` again'
             )
           );
         }, timeoutMs);

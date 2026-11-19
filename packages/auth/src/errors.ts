@@ -8,8 +8,11 @@ export type UserAuthErrorCode =
 
 /** `message` is a complete `gt Error:` diagnostic; commands print it as-is. */
 export class UserAuthError extends Error {
+  // Not a parameter property: the loopback process test loads this file
+  // under Node's type stripping, which rejects them.
+  readonly code: UserAuthErrorCode;
   constructor(
-    readonly code: UserAuthErrorCode,
+    code: UserAuthErrorCode,
     whatHappened: string,
     fix?: string,
     details?: string
@@ -23,6 +26,7 @@ export class UserAuthError extends Error {
         details,
       })
     );
+    this.code = code;
     this.name = 'UserAuthError';
   }
 }

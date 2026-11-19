@@ -529,7 +529,7 @@ describe('login device prompt', () => {
 
   it('signs in to GT_API_URL over the configured base URL', async () => {
     vi.stubEnv('GT_API_URL', 'https://staging.example');
-    vi.mocked(resolveConfig).mockReturnValue({
+    vi.mocked(resolveConfig).mockReturnValueOnce({
       config: { baseUrl: 'https://api.example' },
     } as never);
     try {

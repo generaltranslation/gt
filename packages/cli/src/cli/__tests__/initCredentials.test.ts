@@ -67,7 +67,7 @@ vi.mock('../../console/logger.js', () => ({
   },
 }));
 
-import { hasLogin, login, UserAuthError } from '@generaltranslation/auth';
+import { hasLogin, login } from '@generaltranslation/auth';
 import { logger } from '../../console/logger.js';
 import {
   logErrorAndExit,
@@ -191,12 +191,6 @@ describe('init development credentials', () => {
     );
   }
 
-  const obsoleteLogin = () =>
-    new UserAuthError(
-      'obsolete_credentials',
-      'This stored login is obsolete or invalid and cannot be used safely'
-    );
-
   it('defaults the credentials prompt to Yes and says it signs in when signed out', async () => {
     vi.mocked(hasLogin).mockResolvedValue(false);
     pressEnterForCredentials();
@@ -213,23 +207,8 @@ describe('init development credentials', () => {
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
   });
 
-  it('signs in again over an obsolete stored login', async () => {
-    vi.mocked(hasLogin).mockRejectedValue(obsoleteLogin());
-    pressEnterForCredentials();
-    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
-
-    await runInit();
-
-    expect(promptConfirm).toHaveBeenCalledWith({
-      message: expect.stringContaining('sign in to General Translation'),
-      defaultValue: true,
-    });
-    expect(login).toHaveBeenCalledTimes(1);
-    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
-  });
-
   it('lets a signed-out user decline credentials without signing in', async () => {
-    vi.mocked(hasLogin).mockRejectedValue(obsoleteLogin());
+    vi.mocked(hasLogin).mockResolvedValue(false);
     vi.mocked(promptConfirm).mockImplementation(
       async ({ message }) => !message.includes('hot-reload key')
     );

@@ -54,7 +54,8 @@ const client = createApiClient({
 
 ## Notes
 
-- **One session, for one API.** A login is issued for one API origin, the public General Translation API unless you pass `baseUrl`. Logging in to another API replaces the stored session, so pass the same `baseUrl` to `login`, `hasLogin` and `createUserTokenProvider`. A session for a different API is reported as a `resource_mismatch`.
+- **One session, for one API.** A login is issued for one API origin, the public General Translation API unless you pass `baseUrl` or set `GT_API_URL`. Logging in to another API replaces the stored session, so pass the same `baseUrl` to `login`, `hasLogin` and `createUserTokenProvider`. A session for a different API is reported as a `resource_mismatch`.
 - **Messages name the `gt` CLI.** Errors and the browser page say `gt login`, since that command signs in to the shared session from any tool.
 - **Warnings.** Two non-fatal conditions (a corrupt credentials file that was reset, and a logout whose remote revocation failed) go to `onWarning`, or to `console.warn` without one.
-- **`GT_AUTH_URL`** overrides the authorization server, for local development.
+- **`GT_AUTH_URL` and `GT_API_URL`** override the authorization server and the default API, for local development. A `baseUrl` you pass wins over `GT_API_URL`.
+- **Cancelling.** `login` takes an `AbortSignal` as `signal`, and gives up after five minutes without one.

@@ -1495,13 +1495,6 @@ See https://www.npmjs.com/package/gt-vue`);
       (await hasLogin({
         baseUrl: settings.baseUrl,
         onWarning: onAuthWarning,
-      }).catch((error) => {
-        if (
-          error instanceof UserAuthError &&
-          error.code === 'obsolete_credentials'
-        )
-          return false;
-        throw error;
       }));
     const provision =
       !credentialsSet &&
