@@ -6,8 +6,8 @@ import {
 } from 'gt-i18n/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { msg } from 'gt-i18n/unstable';
-import { createUnstableGetGT, createUnstableGetMessages } from '../getGT';
+import { msg } from 'gt-i18n';
+import { createRuntime } from '../runtime';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
@@ -23,7 +23,7 @@ function createStore(locale: string): ReadonlyConditionStoreInterface {
   } as ReadonlyConditionStoreInterface;
 }
 
-describe('createUnstableGetGT', () => {
+describe('createRuntime', () => {
   beforeEach(() => {
     Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
@@ -37,7 +37,7 @@ describe('createUnstableGetGT', () => {
 
   it('returns a GT bound to the store locale at call time', async () => {
     let store = createStore('fr');
-    const getGT = createUnstableGetGT(() => store);
+    const { getGT } = createRuntime(() => store);
 
     expect((await getGT())`Save`).toBe('Enregistrer');
 
@@ -47,7 +47,7 @@ describe('createUnstableGetGT', () => {
 
   it('returns an m bound to the store locale at call time', async () => {
     let store = createStore('fr');
-    const getMessages = createUnstableGetMessages(() => store);
+    const { getMessages } = createRuntime(() => store);
 
     expect((await getMessages())(msg('Save'))).toBe('Enregistrer');
 

@@ -151,7 +151,7 @@ import { getGT } from 'gt-tanstack-start';
 export const Route = createFileRoute('/pricing')({
   loader: async () => {
     const t = await getGT();
-    return { title: t('Pricing') };
+    return { title: t`Pricing` };
   },
   head: ({ loaderData }) => ({ meta: [{ title: loaderData?.title }] }),
 });
