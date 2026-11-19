@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  getPluralCategories,
-  isExactKey,
-  isMessageTree,
-  validateMessageTree,
-  type MessageTree,
-} from '../index';
+import { isMessageTree, validateMessageTree, type MessageTree } from '../index';
 import { icuToMessage, messageTreeToIcu } from '../convert';
 
 const select = (branches: unknown) => ['x', 'select', branches];
@@ -383,35 +377,5 @@ describe('validateMessageTree', () => {
       path: [0, 2, 'k4'],
       message: 'more than 5 nodes and branches',
     });
-  });
-});
-
-describe('getPluralCategories', () => {
-  it.each([
-    ['en', 'cardinal', ['one', 'other']],
-    ['ru', 'cardinal', ['one', 'few', 'many', 'other']],
-    ['ja', 'cardinal', ['other']],
-    ['en', 'ordinal', ['one', 'two', 'few', 'other']],
-    ['fr', 'ordinal', ['one', 'other']],
-    ['cy', 'ordinal', ['zero', 'one', 'two', 'few', 'many', 'other']],
-  ] as const)(
-    'lists the %s %s categories in CLDR order',
-    (locale, type, categories) => {
-      expect(getPluralCategories(locale, type)).toEqual(categories);
-    }
-  );
-
-  it('answers nothing for a locale Intl has no plural rules for', () => {
-    expect(getPluralCategories('tlh', 'cardinal')).toBeUndefined();
-  });
-});
-
-describe('isExactKey', () => {
-  it.each(['=0', '=1', '=1000'])('accepts %s', (key) => {
-    expect(isExactKey(key)).toBe(true);
-  });
-
-  it.each(['=01', '=1.5', '=1e3', '=', 'one', '1'])('rejects %s', (key) => {
-    expect(isExactKey(key)).toBe(false);
   });
 });

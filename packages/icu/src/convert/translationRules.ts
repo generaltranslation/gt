@@ -1,9 +1,9 @@
 import {
   FALLBACK_BRANCH_KEY,
-  getPluralCategories,
   isPluralCategoryKey,
   PLURAL_CATEGORIES,
 } from '../settings/syntax';
+import { getPluralCategories } from './pluralCategories';
 
 export type CheckTranslationOptions = {
   /**

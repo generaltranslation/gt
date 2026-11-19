@@ -3,7 +3,9 @@ import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it } from 'vitest';
 import {
   checkTranslation,
+  getPluralCategories,
   icuToMessage,
+  isExactKey,
   messageToIcu,
   messageTreeToIcu,
 } from '../convert';
@@ -1141,5 +1143,35 @@ describe('checkTranslation', () => {
       // Intl would answer for the host's language.
       expect(check('{n, plural, other {# x}}', 'zz')).toBeUndefined();
     });
+  });
+});
+
+describe('getPluralCategories', () => {
+  it.each([
+    ['en', 'cardinal', ['one', 'other']],
+    ['ru', 'cardinal', ['one', 'few', 'many', 'other']],
+    ['ja', 'cardinal', ['other']],
+    ['en', 'ordinal', ['one', 'two', 'few', 'other']],
+    ['fr', 'ordinal', ['one', 'other']],
+    ['cy', 'ordinal', ['zero', 'one', 'two', 'few', 'many', 'other']],
+  ] as const)(
+    'lists the %s %s categories in CLDR order',
+    (locale, type, categories) => {
+      expect(getPluralCategories(locale, type)).toEqual(categories);
+    }
+  );
+
+  it('answers nothing for a locale Intl has no plural rules for', () => {
+    expect(getPluralCategories('tlh', 'cardinal')).toBeUndefined();
+  });
+});
+
+describe('isExactKey', () => {
+  it.each(['=0', '=1', '=1000'])('accepts %s', (key) => {
+    expect(isExactKey(key)).toBe(true);
+  });
+
+  it.each(['=01', '=1.5', '=1e3', '=', 'one', '1'])('rejects %s', (key) => {
+    expect(isExactKey(key)).toBe(false);
   });
 });

@@ -7,13 +7,13 @@ no locale-data polyfills are shipped.
 ## Entry points
 
 - `@generaltranslation/icu`: message trees, without the parser.
-  `formatMessageTree()`, `validateMessageTree()` and `isMessageTree()`, and
-  the two plural rules they share with other formats: `getPluralCategories()`
-  and `isExactKey()`.
+  `formatMessageTree()`, `validateMessageTree()` and `isMessageTree()`.
 - `@generaltranslation/icu/convert`: `icuToMessage()` reads an ICU string as
   a message, `messageToIcu()` prints a message as an ICU string,
   `messageTreeToIcu()` prints its tree alone, and `checkTranslation()` and
   `checkIcuTranslation()` check a translation against its source.
+  `getPluralCategories()` and `isExactKey()` are the two plural rules those
+  checks apply, for a format that keeps plural branches another way.
 - `@generaltranslation/icu/parser`: the ICU string parser. `parse()`,
   `formatIcu()`, `printAST()` and the syntax-tree types.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
@@ -144,7 +144,10 @@ A format that keeps plural branches another way, such as stored JSX, applies
 the same two rules through `getPluralCategories()` and `isExactKey()`:
 
 ```ts
-import { getPluralCategories, isExactKey } from '@generaltranslation/icu';
+import {
+  getPluralCategories,
+  isExactKey,
+} from '@generaltranslation/icu/convert';
 
 getPluralCategories('ru', 'cardinal'); // ['one', 'few', 'many', 'other']
 getPluralCategories('fr', 'ordinal'); // ['one', 'other']
