@@ -6,4 +6,4 @@ Build the message of each static `t` template at compile time. The template beco
 
 These calls need runtime packages (`gt-react`, `gt-next`, `gt-i18n` and the other GT runtime packages) that read them. A file's templates are precomputed when the compiler finds the GT runtime that file resolves and it reads these calls. Next to an older runtime, and where it finds no runtime, it keeps the tagged templates and says so once per build; the new `precomputeMessages` plugin option sets it either way. A build is precomputed when its chunks hold `$_tree:`.
 
-A build with `experimentalChunkTranslations` splits the translations of these calls by chunk, or by module with `experimentalChunkTranslationsSplit: 'module'`, as it splits those of tagged templates.
+A build with `experimentalSplitTranslations` splits the translations of these calls by chunk, or by module with `by: 'module'`, as it splits those of tagged templates.

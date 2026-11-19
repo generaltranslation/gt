@@ -1,6 +1,6 @@
 /**
  * What a build made with the compiler's experimental
- * `experimentalChunkTranslations` option loads its translations with. Such a
+ * `experimentalSplitTranslations` option loads its translations with. Such a
  * build writes translations into small JSON files per locale next to its
  * JavaScript chunks, so a page downloads only the translations of the code it
  * loads, in its own locale. Compiled code imports this entry; it is not
@@ -29,7 +29,7 @@
  *
  * Which messages a file holds is the compiler's choice: this entry only loads
  * files by the keys it is given. A build that splits by module (the
- * compiler's `experimentalChunkTranslationsSplit: 'module'`) has files that
+ * compiler's `experimentalSplitTranslations` with `by: 'module'`) has files that
  * hold the messages of modules from many chunks: an import needs several, the
  * entry holds several, and the file the startup script requests first is the
  * locale's map, which lists them. See `loadRegionChunk()`.
