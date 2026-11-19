@@ -255,6 +255,20 @@ describe('plural rendering', () => {
       ).toMatchObject([shows(5)]);
     });
 
+    it('is the source variable of its id where no plural gives a count', () => {
+      const result = renderTranslatedChildren({
+        source: [size, ' MB'],
+        target: [count, ' МБ'] as unknown as TranslatedChildren,
+        locales: ['ru'],
+        enableI18n: true,
+      });
+
+      expect(result).toMatchObject([
+        shows(100),
+        { props: { children: ' МБ' } },
+      ]);
+    });
+
     it('renders nothing for an n that is not a number', () => {
       const result = renderTranslatedChildren({
         source: createPluralElement('x' as unknown as number, {

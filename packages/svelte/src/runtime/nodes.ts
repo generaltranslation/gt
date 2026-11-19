@@ -24,8 +24,9 @@ export type RenderItem =
   | { kind: 'text'; key: string; text: string }
   | { kind: 'variable'; key: string; snippet: VariableSnippet }
   // As `#` is in ICU: the count of the nearest plural, which the source
-  // branch a translated branch pairs with may not have.
-  | { kind: 'count'; key: string }
+  // branch a translated branch pairs with may not have. With no plural in
+  // this `<T>`, it is the source variable of its id, like any other.
+  | { kind: 'count'; key: string; snippet?: VariableSnippet }
   | {
       kind: 'element';
       key: string;
@@ -75,7 +76,13 @@ export function toRenderItems(
       return;
     }
     if (isCount(node)) {
-      items.push({ kind: 'count', key: `n${index}` });
+      items.push({
+        kind: 'count',
+        key: `n${index}`,
+        snippet: resolve(VARIABLE_PREFIX, node.i, scopes, context)?.snippet as
+          | VariableSnippet
+          | undefined,
+      });
       return;
     }
     if (isVariable(node)) {

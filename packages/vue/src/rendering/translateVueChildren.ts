@@ -1023,14 +1023,15 @@ function renderNodes(
   }
   if (typeof target === 'string') return target;
   // As `#` is in ICU: the source branch a translated branch pairs with may
-  // have no count of its own, so it comes from the plural.
+  // have no count of its own, so it comes from the plural. With no plural in
+  // this `<T>`, a count is the source variable of its id, like any other.
+  const hasCount = typeof count === 'number' || typeof count === 'bigint';
   const renderCount = () =>
     h(Num, {
       _locale: state.getLocale(),
-      value:
-        typeof count === 'number' || typeof count === 'bigint' ? count : null,
+      value: count as number | bigint,
     });
-  if (isCount(target)) return renderCount();
+  if (hasCount && isCount(target)) return renderCount();
   const targetIsArray = Array.isArray(target);
   if (!targetIsArray && sourceCardinality === 'array') {
     // A scalar element/variable target cannot reconcile against React's array
@@ -1080,7 +1081,7 @@ function renderNodes(
 
   return targets.map((targetNode) => {
     if (typeof targetNode === 'string') return targetNode;
-    if (isCount(targetNode)) return renderCount();
+    if (hasCount && isCount(targetNode)) return renderCount();
     if (isVariable(targetNode)) {
       const variable = variables.get(targetNode.i);
       return variable

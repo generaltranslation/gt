@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Content, JsxElement } from '@generaltranslation/format';
 import BarePlural from './fixtures/BarePlural.svelte';
 import ExactPluralBranch from './fixtures/ExactPluralBranch.svelte';
+import Greeting from './fixtures/Greeting.svelte';
 import Harness from './fixtures/Harness.svelte';
 import NestedPluralForms from './fixtures/NestedPluralForms.svelte';
 import PluralCount from './fixtures/PluralCount.svelte';
@@ -101,6 +102,28 @@ describe('plural forms a translation leaves out', () => {
     expect(
       render(5, { other: [{ t: 'b', i: 2, c: count }, ' fichiers'] })
     ).toBe('<p><b>5</b> fichiers</p>');
+  });
+});
+
+describe('a count with no plural in its <T>', () => {
+  beforeEach(() => setupGT());
+
+  it('is the source variable of its id', () => {
+    const greeting = analyze('Greeting.svelte');
+    expect(
+      html({
+        component: Greeting,
+        props: { name: 'Ada' },
+        locale: 'fr',
+        translations: {
+          [greeting.hash]: [
+            'Bonjour ',
+            { t: 'b', i: 1, c: [{ i: 2, v: '#' }, ' chère'] },
+            ' !',
+          ],
+        },
+      })
+    ).toBe('Bonjour <b class="x" title="Bold">Ada chère</b> !');
   });
 });
 

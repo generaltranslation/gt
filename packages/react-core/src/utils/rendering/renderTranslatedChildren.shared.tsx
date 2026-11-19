@@ -16,6 +16,7 @@ import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import {
   getBranch,
   getPluralBranch,
+  isCount,
   selectBranchKey,
   selectPluralKey,
 } from '../plurals/getPluralBranch';
@@ -26,7 +27,7 @@ import {
 import { getGTTag } from './getGTTag';
 import type { RenderVariable } from '../types';
 
-const isCount = (child: unknown): boolean =>
+const isCountVariable = (child: unknown): boolean =>
   isVariable(child) && child.v === '#';
 
 // Shared implementation: the variable renderer is dependency-injected by a
@@ -168,14 +169,12 @@ function createRenderTranslatedChildren({
     count,
   }: RenderTranslatedChildrenArgs): ReactNode {
     // As `#` is in ICU: the source branch a translated branch pairs with may
-    // have no count of its own, so it comes from the plural.
-    const renderCount = () =>
+    // have no count of its own, so it comes from the plural. With no plural
+    // in this `<T>`, a count is the source variable of its id, like any other.
+    const renderCount = (value: number | bigint) =>
       renderVariable({
         variableType: 'n',
-        variableValue:
-          typeof count === 'number' || typeof count === 'bigint'
-            ? count
-            : undefined,
+        variableValue: value,
         variableOptions: {},
         locales,
         enableI18n,
@@ -190,7 +189,7 @@ function createRenderTranslatedChildren({
         enableI18n,
       });
     if (typeof target === 'string') return target;
-    if (isCount(target)) return renderCount();
+    if (isCountVariable(target) && isCount(count)) return renderCount(count);
 
     // Convert source to an array in case target has multiple children where source only has one
     if (Array.isArray(target) && !Array.isArray(source) && source)
@@ -257,10 +256,10 @@ function createRenderTranslatedChildren({
             </React.Fragment>
           );
 
-        if (isCount(targetChild)) {
+        if (isCountVariable(targetChild) && isCount(count)) {
           return (
             <React.Fragment key={`var_${index}`}>
-              {renderCount()}
+              {renderCount(count)}
             </React.Fragment>
           );
         }

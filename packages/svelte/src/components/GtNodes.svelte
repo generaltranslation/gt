@@ -38,11 +38,11 @@
   {:else if item.kind === 'variable'}
     {@render item.snippet()}
   {:else if item.kind === 'count'}
-    <Num
-      value={typeof count === 'number' || typeof count === 'bigint'
-        ? count
-        : null}
-    />
+    {#if typeof count === 'number' || typeof count === 'bigint'}
+      <Num value={count} />
+    {:else if item.snippet}
+      {@render item.snippet()}
+    {/if}
   {:else if item.kind === 'element'}
     {#snippet kids()}
       <GtNodes nodes={item.node.c} {scopes} {context} {count} />

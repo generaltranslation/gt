@@ -706,6 +706,25 @@ describe('Branch and Plural attributes', () => {
       ).toBe('21 файл, 100 МБ');
     });
 
+    it('is the source variable of its id where no plural gives a count', async () => {
+      const source: JsxChildren = [{ i: 1, v: 'n' }, ' MB'];
+      const plugin = createGT({
+        loadTranslations: async () => ({
+          [jsxHash(source)]: [{ i: 1, v: '#' }, ' МБ'],
+        }),
+      });
+      await plugin.setLocale('ru');
+      const Root = defineComponent({
+        setup: () => () => h(T, null, () => [h(Num, { value: 100 }), ' MB']),
+      });
+
+      expect(
+        stripFragmentMarkers(
+          await renderToString(createSSRApp(Root).use(plugin))
+        )
+      ).toBe('100 МБ');
+    });
+
     it('reaches into elements and a <Branch>, and stops at a nested <Plural>', async () => {
       const other = { default: () => 'Files' };
       expect(
