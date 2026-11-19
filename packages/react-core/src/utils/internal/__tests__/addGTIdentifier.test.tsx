@@ -18,6 +18,8 @@ import { N } from '../../../components/variables/N';
 import { RscN } from '../../../components/variables/N.rsc';
 import { Var } from '../../../components/variables/Var';
 import { renderPlural } from '../../../components/branches/Plural.shared';
+import { Num } from '../../../components/variables/Num';
+import { fillCount } from '../../plurals/fillCount';
 import type { GTTag, TaggedElement } from '../../types';
 
 function gtTag(node: unknown): GTTag {
@@ -166,6 +168,66 @@ describe('<N>, the count of its <Plural>', () => {
         vi.unstubAllEnvs();
       }
     });
+  });
+
+  // Every plural branch a <T> tags goes through fillCount, so a branch with no
+  // <N> must come back as the same object: tagging then sees what it always did.
+  it.each<[string, ReactNode]>([
+    ['text', 'files'],
+    ['NaN', NaN],
+    ['empty and falsy children', [NaN, ' items', null, false, 0, '']],
+    ['nested arrays', [['a', <b key='b'>b</b>], [<i key='i'>i</i>]]],
+    [
+      'a fragment',
+      <>
+        <b>a</b> b
+      </>,
+    ],
+    ['a function child', <div>{(() => 'x') as unknown as ReactNode}</div>],
+    [
+      'a <Branch> with a NaN prop',
+      <Branch branch={NaN as unknown as string} {...{ photo: <b>p</b> }}>
+        x
+      </Branch>,
+    ],
+    [
+      'a nested <Plural> with an <N>',
+      <Plural n={2} one='x'>
+        <N />
+      </Plural>,
+    ],
+    [
+      'a deep tree',
+      <section>
+        <ul>
+          <li>
+            <a href='/x'>
+              <Num>{3}</Num> <b>x</b>
+            </a>
+          </li>
+        </ul>
+      </section>,
+    ],
+  ])(
+    'leaves a branch with no <N> of its own untouched: %s',
+    (_name, branch) => {
+      expect(fillCount(branch, 5)).toBe(branch);
+    }
+  );
+
+  it('takes the id a <Num> in its place would', () => {
+    const tagged = (count: ReactNode) =>
+      writeChildrenAsObjects(
+        addGTIdentifier(
+          <Plural n={5} one={[<i key='i'>one</i>, count]}>
+            {[<b key='b'>{count}</b>, ' of ', <i key='i'>them</i>]}
+          </Plural>
+        )
+      );
+
+    expect(
+      JSON.parse(JSON.stringify(tagged(<N />)).replaceAll('"#"', '"n"'))
+    ).toEqual(tagged(<Num>{5}</Num>));
   });
 
   // A server component has no context, so its <Plural> hands the count over.

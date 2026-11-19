@@ -20,7 +20,8 @@ export function fillCount(branch: ReactNode, n: number | bigint): ReactNode {
   const fill = (node: ReactNode): ReactNode => {
     if (Array.isArray(node)) {
       const filled = node.map(fill);
-      return filled.every((child, index) => child === node[index])
+      // Object.is, so a NaN child does not count as a change.
+      return filled.every((child, index) => Object.is(child, node[index]))
         ? node
         : Children.toArray(filled);
     }
@@ -36,7 +37,7 @@ export function fillCount(branch: ReactNode, n: number | bigint): ReactNode {
     const names = is('branch') ? Object.keys(node.props) : ['children'];
     const filled = names
       .map((name) => [name, fill(node.props[name] as ReactNode)] as const)
-      .filter(([name, value]) => value !== node.props[name]);
+      .filter(([name, value]) => !Object.is(value, node.props[name]));
     return filled.length
       ? cloneElement(node, Object.fromEntries(filled))
       : node;
