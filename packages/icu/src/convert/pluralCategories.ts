@@ -22,31 +22,22 @@ export type PluralCategoryCounts = { counts: number[]; more: boolean };
 const SAMPLED_COUNTS = 4;
 
 /**
- * Enough counts to reach every category of CLDR's rules: they read a whole
- * number modulo 1,000 at most, Romance `many` starts at a million, and
- * Russian `other` and Czech `many` take only fractions.
+ * Enough counts to reach every category of CLDR's rules. They read a whole
+ * number modulo 1,000 at most, and Romance `many` starts at a million.
+ * Russian `other` and Czech `many` take only fractions: halves come first,
+ * then every other one- and two-digit fraction, since Sinhala `one` takes
+ * 0.1 and 0.01 and no half. CLDR reads a fraction's digits, and the whole
+ * number beside them, modulo 100 at most.
  */
-const PROBED_COUNTS: readonly number[] = [
-  ...Array.from({ length: 1001 }, (_, count) => count),
-  ...Array.from({ length: 6 }, (_, index) => (index + 1) * 1_000_000),
-  ...Array.from({ length: 1001 }, (_, count) => count + 0.5),
-];
-
-/**
- * Whether a category takes a fraction that is no half, as Sinhala `one`
- * takes 0.1 and 0.01. CLDR reads a fraction's digits, and the whole number
- * beside them, modulo 100 at most.
- */
-function takesAnotherFraction(
-  rules: Intl.PluralRules,
-  category: string
-): boolean {
+function* probedCounts(): Generator<number> {
+  for (let count = 0; count <= 1000; count++) yield count;
+  for (let million = 1; million <= 6; million++) yield million * 1_000_000;
+  for (let count = 0; count <= 1000; count++) yield count + 0.5;
   for (let whole = 0; whole < 100; whole++) {
     for (let hundredths = 1; hundredths < 100; hundredths++) {
-      if (rules.select(whole + hundredths / 100) === category) return true;
+      if (hundredths !== 50) yield whole + hundredths / 100;
     }
   }
-  return false;
 }
 
 // By the locale Intl resolves and its own categories, so input cannot grow it past CLDR's.
@@ -69,22 +60,22 @@ export function getPluralCategoryCounts(
   const { locale: resolved, pluralCategories } = rules.resolvedOptions();
   const used: readonly string[] = pluralCategories;
   if (!used.includes(category)) return { counts: [], more: false };
-  const key = JSON.stringify([resolved, type, category]);
+  const key = [resolved, type, category].join();
   const known = categoryCounts.get(key);
   if (known) return known;
   const counts: number[] = [];
   let more = false;
-  for (const count of PROBED_COUNTS) {
+  for (const count of probedCounts()) {
     if (rules.select(count) !== category) continue;
     // CLDR reads a fraction's digits modulo 10 or 100, so a category that picks one fraction picks endless others.
-    if (!Number.isInteger(count)) more = true;
-    if (counts.length === SAMPLED_COUNTS) {
+    more ||= !Number.isInteger(count);
+    // A fraction that is no half is not listed: it only tells that there are more.
+    if (counts.length === SAMPLED_COUNTS || !Number.isInteger(count * 2)) {
       more = true;
       break;
     }
     counts.push(count);
   }
-  more ||= takesAnotherFraction(rules, category);
   const found = { counts, more };
   categoryCounts.set(key, found);
   return found;

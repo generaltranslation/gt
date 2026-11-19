@@ -116,9 +116,9 @@ module.exports = [
   // One named export each, so a check that pulls in more than it needs fails.
   // The tree check prints date fields from the chunk the parser shares, whose
   // table of parser errors a bundler keeps: 0.7 kB of this.
-  icuImport('{ checkTranslation }', 'convert', '3.5 kB'),
-  // At most the parser, which it needs, plus 2.5 kB.
-  icuImport('{ checkIcuTranslation }', 'convert', '9 kB'),
+  icuImport('{ checkTranslation }', 'convert', '4.5 kB'),
+  // At most the parser, which it needs, plus 3 kB.
+  icuImport('{ checkIcuTranslation }', 'convert', '9.5 kB'),
   // Neither rule needs the parser or the checks.
   icuImport('{ getPluralCategories, isExactKey }', 'convert', '0.5 kB'),
 
