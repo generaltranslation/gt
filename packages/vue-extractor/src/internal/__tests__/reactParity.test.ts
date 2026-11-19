@@ -199,14 +199,14 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'nested static custom-component content with a dynamic Var',
-      expectedHash: '356b2ca0bdc05769',
+      expectedHash: 'a7c6015a0cb2d8a8',
       expectedSource: {
         t: 'DocsLink',
         i: 1,
         c: {
           t: 'span',
           i: 2,
-          c: ['Hello, ', { i: 3, k: '_gt_value_3', v: 'v' }, '!'],
+          c: ['Hello, ', { i: 3, v: 'v' }, '!'],
         },
       },
       sfc: templateFixture(
@@ -293,12 +293,12 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'typed and untyped variables',
-      expectedHash: '21b7659d399c89fc',
+      expectedHash: 'e34b5ce8b137519a',
       expectedSource: [
-        { i: 1, k: '_gt_value_1', v: 'v' },
-        { i: 2, k: '_gt_n_2', v: 'n' },
-        { i: 3, k: '_gt_cost_3', v: 'c' },
-        { i: 4, k: '_gt_date_4', v: 'd' },
+        { i: 1, v: 'v' },
+        { i: 2, v: 'n' },
+        { i: 3, v: 'c' },
+        { i: 4, v: 'd' },
       ],
       sfc: templateFixture(
         '<T><Var>{{ name }}</Var><Num :value="count"/><Currency currency="USD" :value="cost"/><DateTime :value="date"/></T>',
@@ -392,7 +392,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'Branch and Var inside a custom component',
-      expectedHash: 'f03eb63c00240d9e',
+      expectedHash: 'ed95d44c20f4618e',
       expectedSource: {
         t: 'Callout',
         i: 1,
@@ -401,7 +401,7 @@ describe('React-authoritative rich-content extraction contract', () => {
           i: 2,
           d: {
             b: {
-              welcome: ['Welcome, ', { i: 3, k: '_gt_value_3', v: 'v' }, '!'],
+              welcome: ['Welcome, ', { i: 3, v: 'v' }, '!'],
               other: 'Welcome!',
             },
             t: 'b',
@@ -633,16 +633,8 @@ describe('React CLI parity audit', () => {
                     i: 3,
                     d: {
                       b: {
-                        one: [
-                          'One ',
-                          { i: 4, k: '_gt_value_4', v: 'v' },
-                          { i: 5, k: '_gt_n_5', v: 'n' },
-                        ],
-                        other: [
-                          { i: 4, k: '_gt_cost_4', v: 'c' },
-                          ' on ',
-                          { i: 5, k: '_gt_date_5', v: 'd' },
-                        ],
+                        one: ['One ', { i: 4, v: 'v' }, { i: 5, v: 'n' }],
+                        other: [{ i: 4, v: 'c' }, ' on ', { i: 5, v: 'd' }],
                       },
                       t: 'p',
                     },

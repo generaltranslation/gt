@@ -1,4 +1,3 @@
-import { getVariableName } from '../variables/getVariableName';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../../utils/types';
 import { isValidTaggedElement } from '../../utils/utils';
 import {
@@ -102,11 +101,11 @@ const handleSingleChildElement = (
     const transformation = generaltranslation.transformation;
     if (transformation === 'variable') {
       const variableType = generaltranslation.variableType || 'variable';
-      const variableName = getVariableName(props, variableType);
       const minifiedVariableType = minifyVariableType(variableType);
       return {
         i: generaltranslation.id,
-        k: variableName,
+        ...(typeof props.name === 'string' &&
+          props.name !== '' && { k: props.name }),
         v: minifiedVariableType,
       };
     }

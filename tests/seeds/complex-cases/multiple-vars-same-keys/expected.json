@@ -10,19 +10,16 @@
           "First: ",
           {
             "i": 3,
-            "k": "_gt_value_3",
             "v": "v"
           },
           "Second: ",
           {
             "i": 4,
-            "k": "_gt_n_4",
             "v": "n"
           },
           "Third: ",
           {
             "i": 5,
-            "k": "_gt_cost_5",
             "v": "c"
           }
         ]
@@ -34,19 +31,16 @@
           "First: ",
           {
             "i": 3,
-            "k": "_gt_value_3",
             "v": "v"
           },
           "Second: ",
           {
             "i": 4,
-            "k": "_gt_n_4",
             "v": "n"
           },
           "Third: ",
           {
             "i": 5,
-            "k": "_gt_cost_5",
             "v": "c"
           }
         ]

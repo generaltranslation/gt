@@ -512,7 +512,7 @@ describe('GT IDs of Branch/Plural children, which are the other branch', () => {
     d: {
       b: {
         one: 'one bottle',
-        other: [{ i: 2, k: '_gt_n_2', v: 'n' }, ' bottles'],
+        other: [{ i: 2, v: 'n' }, ' bottles'],
       },
       t: 'p',
     },

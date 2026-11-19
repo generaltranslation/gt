@@ -6,12 +6,11 @@
     "i": 1,
     "t": "p"
   },
-  "c02e798cbb0680e7": {
+  "3a426e18bfa643bd": {
     "c": [
       "本段内容在 React Server Component 中翻译，并包含一个运行时值：",
       {
         "i": 2,
-        "k": "_gt_value_2",
         "v": "v"
       }
     ],

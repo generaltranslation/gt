@@ -4,13 +4,17 @@ import { hashSource } from 'generaltranslation/id';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { addGTIdentifier } from '../addGTIdentifier';
 import { writeChildrenAsObjects } from '../writeChildrenAsObjects';
-import { renderDefaultChildren } from '../../rendering/renderPipeline.rsc';
+import {
+  renderDefaultChildren,
+  renderTranslatedChildren,
+} from '../../rendering/renderPipeline.rsc';
 import { Branch } from '../../../components/branches/Branch';
 import { Plural } from '../../../components/branches/Plural';
 import {
   GtInternalRelativeTime,
   RelativeTime,
 } from '../../../components/variables/RelativeTime';
+import { Var } from '../../../components/variables/Var';
 import type { GTTag, TaggedElement } from '../../types';
 
 function gtTag(node: unknown): GTTag {
@@ -54,7 +58,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
 
     expect(writeChildrenAsObjects(tagged)).toEqual([
       'Posted ',
-      { i: 1, k: '_gt_time_1', v: 'rt' },
+      { i: 1, v: 'rt' },
     ]);
   });
 
@@ -164,6 +168,54 @@ describe('addGTIdentifier with <RelativeTime>', () => {
       ).toEqual(['b5a6ee4eef4e3071', 'b5a6ee4eef4e3071']);
     }
   );
+
+  it('stores a name only for a variable that was given one', () => {
+    const tagged = addGTIdentifier([
+      <Var key='a'>Alice</Var>,
+      ' / ',
+      <Var key='b' name='user'>
+        Bob
+      </Var>,
+      <Var key='c' name=''>
+        Eve
+      </Var>,
+    ]);
+
+    expect(writeChildrenAsObjects(tagged)).toEqual([
+      { i: 1, v: 'v' },
+      ' / ',
+      { i: 2, k: 'user', v: 'v' },
+      { i: 3, v: 'v' },
+    ]);
+  });
+
+  it('finds a translated variable by its id, so equal names do not collide', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    const source = addGTIdentifier([
+      <Var key='a' name='who'>
+        Alice
+      </Var>,
+      ' / ',
+      <Var key='b' name='who'>
+        Bob
+      </Var>,
+    ]);
+
+    expect(
+      renderText(
+        renderTranslatedChildren({
+          source,
+          target: [
+            { i: 2, k: 'who', v: 'v' },
+            ' / ',
+            { i: 1, k: 'who', v: 'v' },
+          ],
+          locales: ['fr'],
+          enableI18n: true,
+        })
+      )
+    ).toBe('Bob / Alice');
+  });
 
   it('renders <RelativeTime> in <T> source content as formatted time', () => {
     initializeI18nConfig({ defaultLocale: 'en' });

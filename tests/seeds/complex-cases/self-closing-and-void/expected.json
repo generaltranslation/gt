@@ -33,7 +33,6 @@
           "Image with ",
           {
             "i": 4,
-            "k": "_gt_value_4",
             "v": "v"
           }
         ]
@@ -52,7 +51,6 @@
           "Field with ",
           {
             "i": 4,
-            "k": "_gt_n_4",
             "v": "n"
           }
         ]

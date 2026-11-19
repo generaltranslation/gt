@@ -23,15 +23,15 @@ describe('extractFromVueSource', () => {
         t: 'p',
         i: 1,
         d: { ti: 'Greeting' },
-        c: [' Hello ', { i: 2, k: '_gt_value_2', v: 'v' }, ' ! '],
+        c: [' Hello ', { i: 2, v: 'v' }, ' ! '],
       },
       {
         t: 'Plural',
         i: 3,
         d: {
           b: {
-            one: [' one ', { i: 4, k: '_gt_value_4', v: 'v' }],
-            other: [' fallback ', { i: 4, k: '_gt_value_4', v: 'v' }],
+            one: [' one ', { i: 4, v: 'v' }],
+            other: [' fallback ', { i: 4, v: 'v' }],
           },
           t: 'p',
         },
@@ -41,17 +41,17 @@ describe('extractFromVueSource', () => {
         i: 4,
         d: {
           b: {
-            formal: [' formal ', { i: 5, k: '_gt_value_5', v: 'v' }],
-            casual: [' casual ', { i: 5, k: '_gt_value_5', v: 'v' }],
-            other: [' fallback ', { i: 5, k: '_gt_value_5', v: 'v' }],
+            formal: [' formal ', { i: 5, v: 'v' }],
+            casual: [' casual ', { i: 5, v: 'v' }],
+            other: [' fallback ', { i: 5, v: 'v' }],
           },
           t: 'b',
         },
       },
       { t: 'b', i: 5, c: 'end' },
-      { i: 6, k: '_gt_n_6', v: 'n' },
-      { i: 7, k: '_gt_date_7', v: 'd' },
-      { i: 8, k: '_gt_cost_8', v: 'c' },
+      { i: 6, v: 'n' },
+      { i: 7, v: 'd' },
+      { i: 8, v: 'c' },
       { t: 'var', i: 9, c: 'native' },
     ];
     const rich = result.updates.find((update) => update.dataFormat === 'JSX');
@@ -133,7 +133,7 @@ describe('extractFromVueSource', () => {
     expect(result.errors).toEqual([]);
     expect(result.updates).toHaveLength(1);
     expect(result.updates[0].source).toEqual([
-      { i: 1, k: '_gt_date_1', v: 'd' },
+      { i: 1, v: 'd' },
       { t: 'var', i: 2, c: 'native' },
     ]);
   });
@@ -236,7 +236,7 @@ describe('extractFromVueSource', () => {
 
     expect(result.errors).toEqual([]);
     expect(result.updates.map((update) => update.source)).toEqual([
-      [' Outer ', { i: 1, k: '_gt_value_1', v: 'v' }],
+      [' Outer ', { i: 1, v: 'v' }],
       'Inner',
     ]);
   });

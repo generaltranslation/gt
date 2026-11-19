@@ -1,18 +1,9 @@
 import type { VariableType } from '@generaltranslation/format';
 
 /**
- * These are the names of the variable components as they appear in gt-next and gt-react
+ * The variable components as they appear in gt-next and gt-react, and their minified types
  */
-export const defaultVariableNames = {
-  Var: 'value',
-  GtInternalVar: 'value',
-  Num: 'n',
-  DateTime: 'date',
-  RelativeTime: 'time',
-  Currency: 'cost',
-} as const;
-
-const minifyVariableTypeMap = {
+export const minifyVariableTypeMap = {
   Var: 'v',
   GtInternalVar: 'v',
   Num: 'n',
@@ -27,27 +18,7 @@ const minifyVariableTypeMap = {
  * @returns The minified variable type
  */
 export const minifyVariableType = (
-  variableType: keyof typeof defaultVariableNames
+  variableType: keyof typeof minifyVariableTypeMap
 ): VariableType => {
   return minifyVariableTypeMap[variableType] as VariableType;
 };
-
-export const baseVariablePrefix = '_gt_';
-
-/**
- * Get the name of a variable
- * @param props - The props of the variable
- * @param variableType - The type of the variable (Var, Num, DateTime, Currency)
- * @param id - The id of the variable
- * @returns The name of the variable
- */
-export function getVariableName(
-  props: Record<string, unknown> = {},
-  variableType: keyof typeof defaultVariableNames,
-  id: number
-): string {
-  if (typeof props.name === 'string') return props.name;
-  const baseVariableName =
-    (defaultVariableNames as Record<string, string>)[variableType] || 'value';
-  return `${baseVariablePrefix}${baseVariableName}_${id}`;
-}

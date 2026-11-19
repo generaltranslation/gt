@@ -18,17 +18,14 @@
   let {
     nodes,
     scopes,
-    parent,
     context,
   }: {
     nodes: JsxChildren | undefined;
     scopes: string[];
-    /** Scoped id of the source element these nodes are children of. */
-    parent: string;
     context: RenderContext;
   } = $props();
 
-  const items = $derived(toRenderItems(nodes, scopes, parent, context));
+  const items = $derived(toRenderItems(nodes, scopes, context));
 </script>
 
 {#each items as item (item.key)}
@@ -38,18 +35,13 @@
     {@render item.snippet()}
   {:else if item.kind === 'element'}
     {#snippet kids()}
-      <GtNodes nodes={item.node.c} {scopes} parent={item.scopedId} {context} />
+      <GtNodes nodes={item.node.c} {scopes} {context} />
     {/snippet}
     {@render item.snippet(kids, item.node.d)}
   {:else}
     {#snippet pick(value: unknown)}
       {@const branch = selectBranch(item, value, context)}
-      <GtNodes
-        nodes={branch.nodes}
-        scopes={branch.scopes}
-        parent={branch.parent}
-        {context}
-      />
+      <GtNodes nodes={branch.nodes} scopes={branch.scopes} {context} />
     {/snippet}
     {@render item.snippet(pick)}
   {/if}

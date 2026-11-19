@@ -4,12 +4,11 @@
     "i": 1,
     "t": "h1"
   },
-  "8133ca3ae17cba04": {
+  "b02fb0c95b9b823a": {
     "c": [
       "Este párrafo se traduce en el navegador en tiempo de ejecución. Incluso incluye un valor en vivo: la configuración regional actual es ",
       {
         "i": 2,
-        "k": "_gt_value_2",
         "v": "v"
       },
       ", resuelta sin una sola petición de red."

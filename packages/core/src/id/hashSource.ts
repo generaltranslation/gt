@@ -119,12 +119,7 @@ const sanitizeChild = (child: boolean | null | JsxChild): SanitizedChild => {
       }
     }
     if (isVariable(child)) {
-      return {
-        k: child.k,
-        ...(child.v && {
-          v: child.v,
-        }),
-      };
+      return { ...(child.k && { k: child.k }), v: child.v };
     }
     return newChild;
   }

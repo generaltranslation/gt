@@ -24,13 +24,13 @@ import type {
 // ===================================================================================
 // GTJSON: GT's minified translation format. A locale's dictionary maps each message HASH
 // to its translated content — a `JsxChildren` tree (string leaves, element nodes
-// `{ t, c }`, variable placeholders `{ k, v }`) or, for string messages, a bare string.
+// `{ t, c }`, variable placeholders `{ i, v }`) or, for string messages, a bare string.
 // We only read it, so the shapes are declared locally (gt-rrweb stays framework-agnostic
 // — gt-react is an OPTIONAL peer).
 // ===================================================================================
 
-/** A variable placeholder: `k` = name, `v` = minified type. Renders one text node. */
-type GtVariable = { k: string; i?: number; v?: string };
+/** A variable placeholder: `v` = minified type, `k` = its name, if any. Renders one text node. */
+type GtVariable = { i: number; v: string; k?: string };
 /** GT metadata on an element; `b` present ⇒ plural/branch (no single rendered form). */
 type GtProp = { b?: Record<string, GtJsxChildren>; t?: 'p' | 'b' };
 /** An element: `t` = tag, `c` = children. */
@@ -54,8 +54,8 @@ export type GtLeaf = { text: string } | { variable: true };
 const FIELD_SEP = /[\u001c-\u001f]/g;
 
 function isElement(node: GtElement | GtVariable): node is GtElement {
-  // A variable carries a `k` (name); an element never does.
-  return !('k' in node);
+  // A variable carries a `v` (type); an element never does.
+  return !('v' in node);
 }
 
 // HTML void elements render neither children nor text. A CHILDLESS element that isn't one

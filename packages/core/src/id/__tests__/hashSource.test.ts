@@ -26,6 +26,21 @@ describe('hashSource rich wire literals', () => {
   );
 });
 
+describe('hashSource variables', () => {
+  const hash = (variable: JsxChildren) =>
+    hashSource({ dataFormat: 'JSX', source: ['Total: ', variable].flat() });
+
+  it('hashes the type and the name of a variable, not its id', () => {
+    expect(hash({ i: 1, v: 'n' })).toBe(hash({ i: 7, v: 'n' }));
+    expect(hash({ i: 1, v: 'n' })).not.toBe(hash({ i: 1, v: 'c' }));
+    expect(hash({ i: 1, v: 'n' })).not.toBe(hash({ i: 1, k: 'count', v: 'n' }));
+  });
+
+  it('keeps the hash of a named variable', () => {
+    expect(hash({ i: 1, k: 'count', v: 'n' })).toBe('42c3509522b78e61');
+  });
+});
+
 describe('hashSource requiresReview', () => {
   it('hashes identically when requiresReview is false or absent (ICU)', () => {
     const base = hashSource({ source: 'Hello world', dataFormat: 'ICU' });

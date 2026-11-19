@@ -3,7 +3,6 @@ import {
   minifyVariableType,
 } from 'generaltranslation/internal';
 import { GTTag, VariableProps } from '../types';
-import { getVariableName } from './getVariableName';
 
 type VariableElementProps = {
   'data-_gt': GTTag & {
@@ -31,7 +30,7 @@ export function getVariableProps(props: VariableElementProps): VariableProps {
     props['data-_gt']?.variableType || 'variable';
 
   const result: VariableProps = {
-    variableName: getVariableName(props, variableType),
+    variableId: props['data-_gt'].id,
     variableType: minifyVariableType(variableType),
     injectionType: props['data-_gt']?.injectionType || 'manual',
     variableValue: (() => {

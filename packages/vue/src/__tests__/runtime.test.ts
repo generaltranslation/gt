@@ -422,13 +422,13 @@ describe('gt-vue runtime', () => {
       t: 'p',
       i: 1,
       d: { ti: 'Greeting' },
-      c: ['Hello, ', { i: 2, k: '_gt_value_2', v: 'v' }, '!'],
+      c: ['Hello, ', { i: 2, v: 'v' }, '!'],
     };
     const target: JsxChildren = {
       t: 'p',
       i: 1,
       d: { ti: 'Salutation' },
-      c: ['Bonjour, ', { i: 2, k: '_gt_value_2', v: 'v' }, ' !'],
+      c: ['Bonjour, ', { i: 2, v: 'v' }, ' !'],
     };
     const plugin = createGT({
       loadTranslations: async () => ({ [jsxHash(source, 'hero')]: target }),
@@ -608,7 +608,6 @@ describe('gt-vue runtime', () => {
       loadTranslations: async () => ({
         scoped: {
           i: 1,
-          k: '_gt_value_1',
           v: 'v',
         },
       }),
@@ -717,7 +716,6 @@ describe('gt-vue runtime', () => {
       loadTranslations: async () => ({
         scopedBranch: {
           i: 1,
-          k: '_gt_value_1',
           v: 'v',
         },
       }),
@@ -1795,7 +1793,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('selects source and target plural values with the active locale', async () => {
-    const variable = { i: 2, k: '_gt_value_2', v: 'v' } as const;
+    const variable = { i: 2, v: 'v' } as const;
     const target: JsxChildren = {
       t: 'Plural',
       i: 1,
@@ -1844,7 +1842,7 @@ describe('gt-vue runtime', () => {
       {
         t: 'h1',
         i: 1,
-        c: ['Hello, ', { i: 2, k: '_gt_value_2', v: 'v' }, '!'],
+        c: ['Hello, ', { i: 2, v: 'v' }, '!'],
       },
       { t: 'p', i: 3, c: 'Source paragraph.' },
     ];
@@ -1852,7 +1850,7 @@ describe('gt-vue runtime', () => {
       {
         t: 'h1',
         i: 1,
-        c: ['Bonjour, ', { i: 2, k: '_gt_value_2', v: 'v' }, ' !'],
+        c: ['Bonjour, ', { i: 2, v: 'v' }, ' !'],
       },
       { t: 'p', i: 3, c: 'Paragraphe traduit.' },
     ];
@@ -2022,8 +2020,8 @@ describe('gt-vue runtime', () => {
       i: 1,
       d: {
         b: {
-          one: ['one ', { i: 2, k: '_gt_value_2', v: 'v' }],
-          other: ['fallback ', { i: 2, k: '_gt_value_2', v: 'v' }],
+          one: ['one ', { i: 2, v: 'v' }],
+          other: ['fallback ', { i: 2, v: 'v' }],
         },
         t: 'p',
       },
@@ -2033,9 +2031,9 @@ describe('gt-vue runtime', () => {
       i: 2,
       d: {
         b: {
-          formal: ['formal ', { i: 3, k: '_gt_value_3', v: 'v' }],
-          casual: ['casual ', { i: 3, k: '_gt_value_3', v: 'v' }],
-          other: ['fallback ', { i: 3, k: '_gt_value_3', v: 'v' }],
+          formal: ['formal ', { i: 3, v: 'v' }],
+          casual: ['casual ', { i: 3, v: 'v' }],
+          other: ['fallback ', { i: 3, v: 'v' }],
         },
         t: 'b',
       },
@@ -2046,8 +2044,8 @@ describe('gt-vue runtime', () => {
         ...pluralSource,
         d: {
           b: {
-            one: ['un ', { i: 2, k: '_gt_value_2', v: 'v' }],
-            other: ['plusieurs ', { i: 2, k: '_gt_value_2', v: 'v' }],
+            one: ['un ', { i: 2, v: 'v' }],
+            other: ['plusieurs ', { i: 2, v: 'v' }],
           },
           t: 'p',
         },
@@ -2057,9 +2055,9 @@ describe('gt-vue runtime', () => {
         ...branchSource,
         d: {
           b: {
-            formal: ['bonjour ', { i: 3, k: '_gt_value_3', v: 'v' }],
-            casual: ['salut ', { i: 3, k: '_gt_value_3', v: 'v' }],
-            other: ['repli ', { i: 3, k: '_gt_value_3', v: 'v' }],
+            formal: ['bonjour ', { i: 3, v: 'v' }],
+            casual: ['salut ', { i: 3, v: 'v' }],
+            other: ['repli ', { i: 3, v: 'v' }],
           },
           t: 'b',
         },
@@ -2378,11 +2376,11 @@ describe('gt-vue runtime', () => {
       defaultLocale: 'en-US',
       loadTranslations: async () => ({
         formatters: [
-          { i: 1, k: '_gt_n_1', v: 'n' },
+          { i: 1, v: 'n' },
           '|',
-          { i: 2, k: '_gt_cost_2', v: 'c' },
+          { i: 2, v: 'c' },
           '|',
-          { i: 3, k: '_gt_date_3', v: 'd' },
+          { i: 3, v: 'd' },
         ],
         partial: { d: { ti: 'Titre' }, i: 1, t: 'span' },
       }),
@@ -2446,11 +2444,11 @@ describe('gt-vue runtime', () => {
       ].join('|');
     const loadTranslations = vi.fn(async () => ({
       formatters: [
-        { i: 1, k: '_gt_n_1', v: 'n' as const },
+        { i: 1, v: 'n' as const },
         '|',
-        { i: 2, k: '_gt_cost_2', v: 'c' as const },
+        { i: 2, v: 'c' as const },
         '|',
-        { i: 3, k: '_gt_date_3', v: 'd' as const },
+        { i: 3, v: 'd' as const },
       ],
       plural: {
         t: 'Plural',

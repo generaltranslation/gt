@@ -43,33 +43,30 @@
       "t": "b"
     }
   },
-  "ae0eb0c9a5f33e40": {
+  "933e66254f674890": {
     "t": "p",
     "i": 1,
     "c": [
       "Chaque paquet contient ",
       {
         "i": 2,
-        "k": "_gt_n_2",
         "v": "n"
       },
       " filtres et coûte ",
       {
         "i": 3,
-        "k": "_gt_cost_3",
         "v": "c"
       },
       "."
     ]
   },
-  "994b383e5eb01fba": {
+  "98b88b8ddf1e9cd4": {
     "t": "p",
     "i": 1,
     "c": [
       "Une bouilloire réglée sur ",
       {
         "i": 2,
-        "k": "_gt_value_2",
         "v": "v"
       },
       ", ",
@@ -95,7 +92,6 @@
                 "avec ",
                 {
                   "i": 5,
-                  "k": "_gt_n_5",
                   "v": "n"
                 },
                 " paquets de filtres"
@@ -122,71 +118,64 @@
     "i": 1,
     "c": "Modèle K1, bouilloire pour café filtre"
   },
-  "0734533760b3ebe4": {
+  "71c38326ca6cdc83": {
     "t": "h1",
     "i": 1,
     "c": [
       "Une bouilloire qui maintient l’eau à ",
       {
         "i": 2,
-        "k": "_gt_n_2",
         "v": "n"
       },
       " °C près de la cible."
     ]
   },
-  "821f5507875fe961": {
+  "c2787bad66608d0d": {
     "t": "p",
     "i": 1,
     "c": [
       "Ferro K1 chauffe ",
       {
         "i": 2,
-        "k": "_gt_n_2",
         "v": "n"
       },
       " litre à ",
       {
         "i": 3,
-        "k": "_gt_n_3",
         "v": "n"
       },
       " °C en moins de ",
       {
         "i": 4,
-        "k": "_gt_n_4",
         "v": "n"
       },
       " minutes sur un socle de ",
       {
         "i": 5,
-        "k": "_gt_n_5",
         "v": "n"
       },
       " watts. Le col de cygne verse ",
       {
         "i": 6,
-        "k": "_gt_n_6",
         "v": "n"
       },
       " millilitres par seconde."
     ]
   },
-  "bd9635efdf443fd1": {
+  "34f3f84c68ca6dac": {
     "t": "span",
     "i": 1,
     "c": [
       "Prochain lot expédié le ",
       {
         "i": 2,
-        "k": "_gt_date_2",
         "v": "d"
       }
     ]
   },
   "67dc59467536fe7a": "Configurer Votre Bouilloire",
   "6acfc14a5f27359f": "Voir Les Caractéristiques",
-  "22d08f0e7c6ae5ad": {
+  "8168ede68b5cdd77": {
     "t": "div",
     "i": 1,
     "c": [
@@ -196,7 +185,6 @@
         "c": [
           {
             "i": 3,
-            "k": "_gt_n_3",
             "v": "n"
           },
           {
@@ -213,7 +201,7 @@
       }
     ]
   },
-  "3125644da0ce16d2": {
+  "fe152dce65454f64": {
     "t": "div",
     "i": 1,
     "c": [
@@ -223,7 +211,6 @@
         "c": [
           {
             "i": 3,
-            "k": "_gt_n_3",
             "v": "n"
           },
           {
@@ -240,7 +227,7 @@
       }
     ]
   },
-  "3aff56753bba207c": {
+  "4b0328296582f693": {
     "t": "div",
     "i": 1,
     "c": [
@@ -250,7 +237,6 @@
         "c": [
           {
             "i": 3,
-            "k": "_gt_n_3",
             "v": "n"
           },
           {
@@ -267,7 +253,7 @@
       }
     ]
   },
-  "6022a99416d9cbd2": {
+  "7ea33bdb9217c8d1": {
     "t": "div",
     "i": 1,
     "c": [
@@ -277,7 +263,6 @@
         "c": [
           {
             "i": 3,
-            "k": "_gt_n_3",
             "v": "n"
           },
           {
@@ -294,7 +279,7 @@
       }
     ]
   },
-  "8f7169d6e58ce829": [
+  "2222d92fbe508f3f": [
     {
       "t": "p",
       "i": 1,
@@ -312,26 +297,23 @@
         "La bouilloire démarre à cette température. Vous pourrez la modifier ensuite avec la molette, par pas de ",
         {
           "i": 4,
-          "k": "_gt_n_4",
           "v": "n"
         },
         " °C, de ",
         {
           "i": 5,
-          "k": "_gt_n_5",
           "v": "n"
         },
         " °C à ",
         {
           "i": 6,
-          "k": "_gt_n_6",
           "v": "n"
         },
         " °C."
       ]
     }
   ],
-  "47a2889833eca921": [
+  "e9f9a37b9585ddcc": [
     {
       "t": "p",
       "i": 1,
@@ -349,14 +331,13 @@
         "Les commandes passées avant ",
         {
           "i": 4,
-          "k": "_gt_value_4",
           "v": "v"
         },
         " heure locale partent le jour même. Les droits de douane sont inclus dans le prix."
       ]
     }
   ],
-  "1ce9b750635c4b74": [
+  "68cd991e1816937e": [
     {
       "t": "blockquote",
       "i": 1,
@@ -368,19 +349,17 @@
       "c": [
         {
           "i": 3,
-          "k": "_gt_value_3",
           "v": "v"
         },
         ", Copenhague, ",
         {
           "i": 4,
-          "k": "_gt_date_4",
           "v": "d"
         }
       ]
     }
   ],
-  "e3746dfbf689c427": [
+  "1a59b8b7515f4ae3": [
     {
       "t": "blockquote",
       "i": 1,
@@ -392,13 +371,11 @@
       "c": [
         {
           "i": 3,
-          "k": "_gt_value_3",
           "v": "v"
         },
         ", Hangzhou, ",
         {
           "i": 4,
-          "k": "_gt_date_4",
           "v": "d"
         }
       ]
@@ -411,109 +388,95 @@
   "51497bd401292062": "Maintien",
   "99c7cc7c32021770": "Dimensions",
   "7d9dd949431a2743": "Poids",
-  "b2643101eb031551": [
+  "5f0cc0143842632a": [
     {
       "i": 1,
-      "k": "_gt_n_1",
       "v": "n"
     },
     " L jusqu’au trait de remplissage, ",
     {
       "i": 2,
-      "k": "_gt_n_2",
       "v": "n"
     },
     " L minimum"
   ],
-  "552ce484b187c288": [
+  "1a231153a0cb4021": [
     "Acier inoxydable 304, paroi de ",
     {
       "i": 1,
-      "k": "_gt_n_1",
       "v": "n"
     },
     " mm"
   ],
-  "15e765f9d593c237": [
+  "681a5f58a91cf868": [
     {
       "i": 1,
-      "k": "_gt_n_1",
       "v": "n"
     },
     " W en 120 V ou 230 V, câble de ",
     {
       "i": 2,
-      "k": "_gt_n_2",
       "v": "n"
     },
     " m"
   ],
-  "4782b8feaf7584e8": [
+  "bef63b47676dbae6": [
     "De ",
     {
       "i": 1,
-      "k": "_gt_n_1",
       "v": "n"
     },
     " °C à ",
     {
       "i": 2,
-      "k": "_gt_n_2",
       "v": "n"
     },
     " °C par pas de ",
     {
       "i": 3,
-      "k": "_gt_n_3",
       "v": "n"
     },
     " °C"
   ],
-  "5c4ae576a12ae6d8": [
+  "936210bc482de7a2": [
     "Jusqu’à ",
     {
       "i": 1,
-      "k": "_gt_n_1",
       "v": "n"
     },
     " minutes, puis le socle s’éteint"
   ],
-  "22170bd5f434a4c2": [
+  "5893d8726bc72a54": [
     {
       "i": 1,
-      "k": "_gt_n_1",
       "v": "n"
     },
     " × ",
     {
       "i": 2,
-      "k": "_gt_n_2",
       "v": "n"
     },
     " × ",
     {
       "i": 3,
-      "k": "_gt_n_3",
       "v": "n"
     },
     " mm"
   ],
-  "de19e66dbc6cd09b": [
+  "3e7807891a15b8ad": [
     "Bouilloire ",
     {
       "i": 1,
-      "k": "_gt_n_1",
       "v": "n"
     },
     " kg, socle ",
     {
       "i": 2,
-      "k": "_gt_n_2",
       "v": "n"
     },
     " kg"
   ],
-  "2c5e107eb7a597fe": [
+  "1aca7a2346ad541c": [
     {
       "t": "p",
       "i": 1,
@@ -531,7 +494,6 @@
         "Chaque valeur provient du dernier lot de ",
         {
           "i": 4,
-          "k": "_gt_n_4",
           "v": "n"
         },
         " bouilloires. Cette page est rendue dans le navigateur."

@@ -18,7 +18,6 @@
                   "Nested plural: ",
                   {
                     "i": 5,
-                    "k": "_gt_value_5",
                     "v": "v"
                   }
                 ]
@@ -36,7 +35,6 @@
                         "With ",
                         {
                           "i": 6,
-                          "k": "_gt_cost_6",
                           "v": "c"
                         }
                       ]

@@ -36,32 +36,32 @@ export const NON_PORTABLE_SEEDS = [
   {
     id: 'complex-cases/complex-fragment-nesting',
     reason: 'vue-text-coalescing',
-    reactHash: '7ea6fcb733e12e9b',
+    reactHash: '956e7cba6e2ade16',
     reactWireFingerprint:
-      'daa2e12cae39e9603be51cd1886f974423f5297c75d0d5aaaff66bb39ebca974',
-    vueHash: '91b4112135f7a910',
+      '86c3e27297268d70d9e2e9fb85415760203cbf0502f86a9d623512d3e5c3402d',
+    vueHash: '25ee935e49220263',
     vueWireFingerprint:
-      '3c98e72de90360b9dc52e296a443cd9e650df98e9d62b70a0f0960dfc6c65c00',
+      'f7630dfb94b97353ce2062f6afdf8bfcdab55e3222e428dcc82267e034921b17',
   },
   {
     id: 'complex-cases/deeply-nested-branch-components',
     reason: 'vue-text-coalescing',
-    reactHash: 'a3bad22afc92233b',
+    reactHash: '1f66dd317fd6b872',
     reactWireFingerprint:
-      '2d5e9902f1082b568cb7f442d7a87d8dea15d1211440c08bd89848299029c618',
-    vueHash: '106bf1290639a683',
+      '8db6bc4da03910fb79f6ea6118a619c7b04f8d9bfde29cd959d541a6afa8980a',
+    vueHash: '8ca9ca2853ea3c20',
     vueWireFingerprint:
-      '62968a6026197f9fc03ca3787c27ce7ed3638e81f3f5badf34e90abd017d68cc',
+      'd672ef588efdbfaaeddedb2a9fb296fba2ab93ddfecf8897a851eba350effdbe',
   },
   {
     id: 'complex-cases/duplicate-branches',
     reason: 'vue-text-coalescing',
-    reactHash: 'bc1400bbcd8c5a7a',
+    reactHash: 'be9d0791ffd05a5f',
     reactWireFingerprint:
-      '32107475fc754ef6e6f0bb8341adf139928e427c7f228d31e8f6319f95465013',
-    vueHash: '5a4d78a654b797d7',
+      'a21c3b6f2afb66a4af879126d9d53d14216d3a9f2854ba405cf6f9c62cbc401b',
+    vueHash: '3b7b6b9369e9abd8',
     vueWireFingerprint:
-      '6c395203131f7635a2828b89e2e3baa52d5d38aa28f35d386334b76a0b3f5e8f',
+      '65cc033075dfaa6352a2ec7c37acf45b953e5ba40b1fa1a3f1b5c4b8c0089e98',
   },
   {
     id: 'complex-cases/five-level-nesting',
@@ -69,89 +69,89 @@ export const NON_PORTABLE_SEEDS = [
     reactHash: 'a26e6d6f63ba42ad',
     reactWireFingerprint:
       '5099ce4ab7ffdf9f590b07fb08f28bfa414abda9fdf4e00729b65c2a3e395579',
-    vueHash: '36f831a5d0cf4a2b',
+    vueHash: '30fda7acef687508',
     vueWireFingerprint:
-      '8a63c1066ed7bb0585c7955ce7e1b24cebb194b0bb1b2605b225505305e279d0',
+      'a86c58be3b2ef298e3c84d24a4c1d013c1c45becc135f2783246ed4010d77b84',
   },
   {
     id: 'complex-cases/long-content-string',
     reason: 'vue-text-coalescing',
-    reactHash: 'd5fbcdfef5e87db1',
+    reactHash: '308cd5b0fc68f3aa',
     reactWireFingerprint:
-      '9a2ec011e7e8b996963c615bf6c267b3e42951bd873934394932e7a40ebb8312',
-    vueHash: '9522a83f299f74ab',
+      'aa346e37b39806334095d0df93afc7df12075804d190a03a0dfecb3c3659d3dc',
+    vueHash: '419e72a66043a4a7',
     vueWireFingerprint:
-      '718a9d356e106ebca7db3f94c541726ff891217555d91d13611e73dce71df9e4',
+      '0fe3b30a7483af2e54f762c6e1488a04153fc937aaf4c47ef1dcc40d55a8da21',
   },
   {
     id: 'complex-cases/many-edge-cases',
     reason: 'unsupported-named-variable',
-    reactHash: 'f73e372f65a7f3f6',
+    reactHash: '6f7b9c00ab5cf556',
     reactWireFingerprint:
-      'e5b373cc85c5df4e4b6917d4cc43ae61613c6150f5537b68522322f788b1e0d2',
-    vueHash: 'ff7fc1557139c3df',
+      'a4c4d70dc85800d8814c1c1427ed23806bbaa5e5cb6e9dbdaf2ccf200a50a335',
+    vueHash: '22d6ecb35b2b5a0d',
     vueWireFingerprint:
-      '87a8f6b320cdb1d0036505e6ccfeaf294c00d833de7bd29108f3bea8e863e665',
+      'b0a2783b36b3829f982522e12fbd0c48ad3d54dabac54c1ca5d85aa016e7fef2',
   },
   {
     id: 'complex-cases/mixed-component-types',
     reason: 'vue-text-coalescing',
-    reactHash: '7797f8953eed8465',
+    reactHash: 'be9e11225a827584',
     reactWireFingerprint:
-      '865ac58771958c9725b74eb1ec9753137b2dcd99e100567928f1878815e2afc6',
-    vueHash: 'd98310449b8d0b06',
+      'e848e85b53673fc3c57ede02e7b47a6f52a84a31fdd984faa969a529555fde7c',
+    vueHash: '67ae38baeb2434ff',
     vueWireFingerprint:
-      'a3ea16cbec0d9cfc2fdc13ea1f8a5860573dbaa170e637a87a7a2e9863968f54',
+      'd4b7445cb5a6538a27cde55ff2b01129c8012cb1b4a4175b8d6ca3fa7a339fd9',
   },
   {
     id: 'complex-cases/mixed-element-types-in-branches',
     reason: 'vue-text-coalescing',
-    reactHash: '539b5549fea0a070',
+    reactHash: '81849ed8eee80afa',
     reactWireFingerprint:
-      'dd9560afd9ccf742763b4eab549873c40f93ee3173df5cd78fd4de15ecbaebaa',
-    vueHash: '91b9f48a84f435eb',
+      'f8220ccc334213a4b9764c9fb6ca4b122fffb47aad4d623fe6aeb0da7aba2a05',
+    vueHash: 'e318c44be48081d8',
     vueWireFingerprint:
-      'f9ef6a4cb655baecb26fc039bd21706c56f86251901aee8dcfa686f67e2ade90',
+      '5dcf7b74401f17c9c6f2bece60976468406c9b887393e92e1a30eeb7b679b609',
   },
   {
     id: 'complex-cases/more-extreme-edge-cases',
     reason: 'unsupported-named-variable',
-    reactHash: '062813d53f023f94',
+    reactHash: 'b8a37b27f20ec0e6',
     reactWireFingerprint:
-      'cb0a7beceae6562bc75055f57dc6a0373d8ef177587f2d9ebe5c6a2c19bfa901',
-    vueHash: 'd50f668ecd2c1e7b',
+      'ecb772422ae00092ef7cefb8f797d623d2af6eff0a8b8a13b12227c419ec7dd2',
+    vueHash: 'b064ed045fed9a14',
     vueWireFingerprint:
-      '70c740f55cb9a05f8adfa2561e6801c49e6b7caeebe49f165d22fe1472c8c9ed',
+      '357361caecb47e8cbe82c56faeca823dc73524f53ab5824d34d2cacdfd7f2171',
   },
   {
     id: 'complex-cases/multiple-variable-types-in-branch',
     reason: 'unsupported-named-variable',
-    reactHash: 'a48b2e3ce736190b',
+    reactHash: 'd244021848d879cf',
     reactWireFingerprint:
-      'f806a380f74eeb594beeb41203096aad74d9fe40a7845bb87ecd4ec6bc7d7669',
-    vueHash: '55afbe10270e6e5b',
+      '96f93f8d9c6bc9a52c80b229e8115bb16dca2dd4fc93203f4a34a8b4b5583bbd',
+    vueHash: 'bcb76782676a1afb',
     vueWireFingerprint:
-      '385da4e255487cab7b63000e4b5a6b931ae9bb940c1bc25b6656f5dcfd731df1',
+      '12fd5ffd7e8ec9ce8e78fb78be5226dc93249e16b1478db91d1649e52726c839',
   },
   {
     id: 'complex-cases/whitespace',
     reason: 'vue-display-string-erasure',
-    reactHash: '58ee060a346fa9e4',
+    reactHash: '55dd803133cb5a5c',
     reactWireFingerprint:
-      '81bc354befd6e24b2dd9b066f90173a3706a82427cbbb14158771285250cbeba',
-    vueHash: 'baa1535a8df0761a',
+      '77c88ff24bde18fa069d44db9b8cfa47a845e64a19aded111baf7a6d0df9c735',
+    vueHash: '86b26f4be549877e',
     vueWireFingerprint:
-      'a827bae09e3dbaa030cbad5f79e1b40046808b4036f527017a4caa13fe2c9663',
+      'd435a45f7e41e06d46825c6f057542bf223db3d00104f4d5c89b1cf6cf9fc6cf',
   },
   {
     id: 'complex-cases/whitespace-preservation-complex-structure',
     reason: 'vue-text-coalescing',
-    reactHash: 'df2fcc8f82538d01',
+    reactHash: '3ed6a601c3a58888',
     reactWireFingerprint:
-      '6e577c042f5dacc3caa6dbaed9de10eb27b011017bac911c80a775bf0cb1fdf6',
-    vueHash: '6b60b0ab867926a4',
+      '44951ae7c0bfd2b3bbd3e1b15dafaea61de3f1effdb35a7b8160a12432aeec57',
+    vueHash: 'df2843de5ec64a69',
     vueWireFingerprint:
-      '5cc52e4f0a1f6336cf31a12351bc5ea14662cc698ad721a44e7b3250221557ff',
+      '78a6516068fb2c2d9233340aede4f49a4a5cfbdf75c9e0764dfe93ef08314dd9',
   },
   {
     id: 't-component/simple/expressions/null/fragment-null',
@@ -249,9 +249,9 @@ export const NON_PORTABLE_SEEDS = [
     reactHash: '4b9fdc8e2a028557',
     reactWireFingerprint:
       '406adffbcd6784a8701928fc7295fe8b71bfa69a5ca197b496a7effed5afbb18',
-    vueHash: '287448edce495a71',
+    vueHash: '7bb94d634114a59d',
     vueWireFingerprint:
-      '9b58ecc15713c62fd5000d975e7fed53205b6790db7a850f951ea8954fc32f3d',
+      '2a2cfd0358e70f63c3c93f9213bb074b86de54302bbed09afede0182510cc1e6',
   },
   {
     id: 'variable-components/static/ternaries',
@@ -269,9 +269,9 @@ export const NON_PORTABLE_SEEDS = [
     reactHash: '5313ec64034eb6b2',
     reactWireFingerprint:
       '7c6a5b2059e3b9e476d34008f66f700f7c662f5db0b007a164cf62b63cef06d7',
-    vueHash: '2271a4ba8a2d5cfd',
+    vueHash: 'bf3ca885fc9ed8b6',
     vueWireFingerprint:
-      'f9083abef8e21d4beb072d7b7dae702c2b1eafa43fc71bea9c5211eaddd2d9a9',
+      '86559330bd3911c6db7375a9b9296eb39411ecc09e091f92686fc04eb6d7d631',
   },
 ] as const satisfies readonly NonPortableSeed[];
 

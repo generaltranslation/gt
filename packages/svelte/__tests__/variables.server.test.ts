@@ -72,11 +72,7 @@ describe('variables whose value is their only child', () => {
         props: { count: 1234 },
         locale: 'fr',
         translations: {
-          [childrenHash]: [
-            { i: 1, k: '_gt_n_1', v: 'n' },
-            ' articles, ',
-            { i: 2, k: '_gt_value_2', v: 'v' },
-          ],
+          [childrenHash]: [{ i: 1, v: 'n' }, ' articles, ', { i: 2, v: 'v' }],
         },
       })
     ).toContain('<p>1\u202f234 articles, 1234</p>');

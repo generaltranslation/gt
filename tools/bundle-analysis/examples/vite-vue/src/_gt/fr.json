@@ -19,20 +19,18 @@
   ],
   "b2649736eefbe556": "Commencer l’essai gratuit",
   "17c0a1fe2a4bde85": "Lire la FAQ",
-  "a5aab8024f2e0f60": {
+  "ac0bc976f9bff0e0": {
     "t": "p",
     "i": 1,
     "c": [
       " La version 4.2 est sortie le ",
       {
         "i": 2,
-        "k": "_gt_date_2",
         "v": "d"
       },
       " pour ",
       {
         "i": 3,
-        "k": "_gt_n_3",
         "v": "n"
       },
       " rédacteurs. "
@@ -78,7 +76,7 @@
     "i": 1,
     "c": "Récapitulatif"
   },
-  "99bc9a2184aa5e52": {
+  "f1a796333e5b6925": {
     "t": "Plural",
     "i": 1,
     "d": {
@@ -87,7 +85,6 @@
         "other": [
           {
             "i": 2,
-            "k": "_gt_n_2",
             "v": "n"
           },
           " utilisateurs "
@@ -99,27 +96,25 @@
   "fd0682261976e63a": "Prix par utilisateur",
   "56b37609b45cf1f6": "Total",
   "0eb2111fa22f5d06": "Fin de l’essai",
-  "6bcfa88bc3323735": {
+  "c7c4f2779aa529e6": {
     "t": "p",
     "i": 1,
     "c": [
       " Les factures sont envoyées à l’espace de travail ",
       {
         "i": 2,
-        "k": "_gt_value_2",
         "v": "v"
       },
       ". Vous ne payez rien avant la fin de l’essai. "
     ]
   },
-  "2f9ae8acf75f755b": {
+  "fe0e6a67f03ae56a": {
     "t": "p",
     "i": 1,
     "c": [
       " L’essai de ",
       {
         "i": 2,
-        "k": "_gt_value_2",
         "v": "v"
       },
       " a commencé. L’inscription est désactivée dans cet exemple. "

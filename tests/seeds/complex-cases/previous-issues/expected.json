@@ -35,7 +35,6 @@
         "option2": "   padded   ",
         "option3": {
           "i": 4,
-          "k": "_gt_value_4",
           "v": "v"
         },
         "option4": {

@@ -18,10 +18,7 @@ function html(props: Record<string, unknown>): string {
 // snippets the preprocessor generates.
 const translations: Record<string, Content> = {
   [componentHash]: [{ t: 'b', i: 1, c: { t: 'Widget', i: 2 } }, ' : Astuce'],
-  [variableHash]: [
-    { t: 'b', i: 1, c: { i: 2, k: '_gt_value_2', v: 'v' } },
-    ', bonjour',
-  ],
+  [variableHash]: [{ t: 'b', i: 1, c: { i: 2, v: 'v' } }, ', bonjour'],
 };
 
 describe('snippets declared inside elements of <T>', () => {

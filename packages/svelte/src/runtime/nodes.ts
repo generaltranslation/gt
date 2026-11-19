@@ -2,7 +2,6 @@ import type {
   JsxChild,
   JsxChildren,
   JsxElement,
-  Variable,
 } from '@generaltranslation/format';
 import { getPluralForm, isVariable } from 'generaltranslation/internal';
 import type { GTRuntimeMetadata } from '@generaltranslation/svelte-extractor';
@@ -29,8 +28,6 @@ export type RenderItem =
       key: string;
       snippet: ElementSnippet;
       node: JsxElement;
-      /** Scoped id of the element, the parent of its children. */
-      scopedId: string;
     }
   | {
       kind: 'branch';
@@ -57,7 +54,6 @@ const VARIABLE_PREFIX = '__gt_v_';
 export function toRenderItems(
   nodes: JsxChildren | undefined,
   scopes: string[],
-  parent: string,
   context: RenderContext
 ): RenderItem[] {
   const items: RenderItem[] = [];
@@ -76,18 +72,18 @@ export function toRenderItems(
       return;
     }
     if (isVariable(node)) {
-      const resolved = resolveVariable(node, scopes, parent, context);
+      const resolved = resolve(VARIABLE_PREFIX, node.i, scopes, context);
       if (resolved) {
         items.push({
           kind: 'variable',
           key: uniqueKey(`v${resolved.scopedId}`),
-          snippet: resolved.snippet,
+          snippet: resolved.snippet as VariableSnippet,
         });
       }
       return;
     }
     if (!isElement(node)) return;
-    const resolved = resolveElement(node.i, scopes, context);
+    const resolved = resolve(ELEMENT_PREFIX, node.i, scopes, context);
     if (!resolved) return;
     const key = uniqueKey(`e${resolved.scopedId}`);
     if (context.meta.b?.[resolved.scopedId]) {
@@ -105,7 +101,6 @@ export function toRenderItems(
         key,
         snippet: resolved.snippet as ElementSnippet,
         node,
-        scopedId: resolved.scopedId,
       });
     }
   });
@@ -120,11 +115,11 @@ export function selectBranch(
   item: Extract<RenderItem, { kind: 'branch' }>,
   value: unknown,
   context: RenderContext
-): { nodes: JsxChildren | undefined; scopes: string[]; parent: string } {
+): { nodes: JsxChildren | undefined; scopes: string[] } {
   const { node, scopes, scopedId } = item;
   const info = context.meta.b?.[scopedId];
   const targetBranches = getBranches(node) ?? {};
-  const none = { nodes: undefined, scopes, parent: scopedId };
+  const none = { nodes: undefined, scopes };
   if (!info) return none;
 
   const branches = Object.keys(targetBranches);
@@ -136,7 +131,7 @@ export function selectBranch(
   const ownerScope = scopedId.slice(0, scopedId.length - String(node.i).length);
   return {
     nodes: targetBranches[targetBranch],
-    ...getBranchContext(
+    scopes: getBranchScopes(
       ownerScope,
       node,
       info.b,
@@ -154,17 +149,16 @@ export function selectBranch(
 export function validateTarget(
   nodes: JsxChildren | undefined,
   scopes: string[],
-  context: RenderContext,
-  parent = ''
+  context: RenderContext
 ): boolean {
   for (const node of toArray(nodes)) {
     if (typeof node === 'string') continue;
     if (isVariable(node)) {
-      if (!resolveVariable(node, scopes, parent, context)) return false;
+      if (!resolve(VARIABLE_PREFIX, node.i, scopes, context)) return false;
       continue;
     }
     if (!isElement(node)) return false;
-    const resolved = resolveElement(node.i, scopes, context);
+    const resolved = resolve(ELEMENT_PREFIX, node.i, scopes, context);
     if (!resolved) return false;
     const info = context.meta.b?.[resolved.scopedId];
     if (info) {
@@ -180,29 +174,17 @@ export function validateTarget(
         return false;
       }
       for (const [name, branch] of Object.entries(branches ?? {})) {
-        const branchContext = getBranchContext(
+        const branchScopes = getBranchScopes(
           resolved.scope,
           node,
           info.b,
           getPairedSourceBranch(info.b, name),
           scopes
         );
-        if (
-          !validateTarget(
-            branch,
-            branchContext.scopes,
-            context,
-            branchContext.parent
-          )
-        ) {
-          return false;
-        }
+        if (!validateTarget(branch, branchScopes, context)) return false;
       }
     }
-    if (
-      node.c != null &&
-      !validateTarget(node.c, scopes, context, resolved.scopedId)
-    ) {
+    if (node.c != null && !validateTarget(node.c, scopes, context)) {
       return false;
     }
   }
@@ -238,17 +220,15 @@ function getPairedSourceBranch(
 /**
  * Returns the scopes a Branch/Plural element's branch content resolves in:
  * the paired source branch first, then its siblings, then the scopes the
- * element itself resolves in. `parent` is the scoped id the content is the
- * children of: the element's id in the paired branch's scope, as the
- * preprocessor records the children that are the `other` branch.
+ * element itself resolves in.
  */
-function getBranchContext(
+function getBranchScopes(
   ownerScope: string,
   node: JsxElement,
   sourceBranches: string[],
   sourceBranch: string | undefined,
   scopes: string[]
-): { scopes: string[]; parent: string } {
+): string[] {
   // Branch scopes are named after the branch's position in the source,
   // as the preprocessor names them.
   const indexes = sourceBranches.map((_, index) => index);
@@ -260,10 +240,7 @@ function getBranchContext(
   const branchScopes = ordered.map(
     (index) => `${ownerScope}b${node.i}_${index}$`
   );
-  return {
-    scopes: [...branchScopes, ...scopes],
-    parent: `${paired === -1 ? ownerScope : branchScopes[0]}${node.i}`,
-  };
+  return [...branchScopes, ...scopes];
 }
 
 /** The branch ICU picks for `n`; anything but a number only fits `other`. */
@@ -285,55 +262,21 @@ function pickBranch(value: unknown, branches: string[]): string | undefined {
   return branches.includes('other') ? 'other' : undefined;
 }
 
-function resolveElement(
+/** Finds the snippet of the source element or variable with this id. */
+function resolve(
+  prefix: string,
   id: number | undefined,
   scopes: string[],
   context: RenderContext
 ): { snippet: unknown; scope: string; scopedId: string } | undefined {
   if (typeof id !== 'number') return undefined;
   for (const scope of scopes) {
-    const snippet = context.snippets[`${ELEMENT_PREFIX}${scope}${id}`];
+    const snippet = context.snippets[`${prefix}${scope}${id}`];
     if (typeof snippet === 'function') {
       return { snippet, scope, scopedId: `${scope}${id}` };
     }
   }
   return undefined;
-}
-
-function resolveVariable(
-  node: Variable,
-  scopes: string[],
-  parent: string,
-  context: RenderContext
-): { snippet: VariableSnippet; scopedId: string } | undefined {
-  // A key used more than once in a scope resolves among the parent's source
-  // children first, like gt-react. Scopes end in `$`, ids are digits.
-  const siblingId = getOwn(context.meta.s?.[parent], node.k);
-  if (siblingId !== undefined) {
-    const scopedId = `${parent.replace(/\d+$/, '')}${siblingId}`;
-    const snippet = context.snippets[`${VARIABLE_PREFIX}${scopedId}`];
-    if (typeof snippet === 'function') {
-      return { snippet: snippet as VariableSnippet, scopedId };
-    }
-  }
-  for (const scope of scopes) {
-    const id = getOwn(context.meta.v?.[scope], node.k);
-    if (id === undefined) continue;
-    const scopedId = `${scope}${id}`;
-    const snippet = context.snippets[`${VARIABLE_PREFIX}${scopedId}`];
-    if (typeof snippet === 'function') {
-      return { snippet: snippet as VariableSnippet, scopedId };
-    }
-  }
-  return undefined;
-}
-
-/** Reads a variable id, ignoring keys such as "toString" that are inherited. */
-function getOwn(
-  ids: Record<string, number> | undefined,
-  key: string
-): number | undefined {
-  return ids && Object.hasOwn(ids, key) ? ids[key] : undefined;
 }
 
 function toArray(nodes: JsxChildren | undefined): JsxChild[] {
