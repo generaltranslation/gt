@@ -2,13 +2,16 @@ import open from 'open';
 import * as oidc from 'openid-client';
 import type { UserTokenProvider } from '@generaltranslation/api';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { defaultDashboardUrl } from 'generaltranslation/internal';
+import {
+  defaultBaseUrl,
+  defaultDashboardUrl,
+} from 'generaltranslation/internal';
 import {
   deleteOAuthTokens,
   readOAuthTokens,
   writeOAuthTokens,
 } from './credentialStore.js';
-import type { OAuthTokens, WarningHandler } from './credentialStore.js';
+import type { OAuthTokens } from './credentialStore.js';
 import { UserAuthError, loginRequiredError } from './errors.js';
 import { startLoopbackServer } from './loopback.js';
 
@@ -27,18 +30,18 @@ export type DeviceCode = {
   verificationUriComplete?: string;
 };
 export type UserInfo = { email?: string; name?: string; sub: string };
-export type OAuthRequestOptions = {
+export type AuthOptions = {
+  /** Authorization server; GT_AUTH_URL, then the General Translation dashboard, when omitted. */
   authBaseUrl?: string;
   fetch?: typeof fetch;
-  onWarning?: WarningHandler;
+  /** Receives a complete `gt Warning:` diagnostic; `console.warn` when omitted. */
+  onWarning?: (message: string) => void;
 };
-export type UserTokenProviderOptions = OAuthRequestOptions & {
-  /** API the requests go to; must match the resource the login was issued for. */
-  baseUrl: string;
+type ApiOptions = AuthOptions & {
+  /** API the login is for; the public General Translation API when omitted. */
+  baseUrl?: string;
 };
-export type LoginOptions = OAuthRequestOptions & {
-  /** API the token is issued for. */
-  baseUrl: string;
+export type LoginOptions = ApiOptions & {
   noBrowser?: boolean;
   onDeviceCode?: (deviceCode: DeviceCode) => void;
   signal?: AbortSignal;
@@ -132,7 +135,7 @@ async function configuration(
   {
     authBaseUrl = getAuthBaseUrl(),
     fetch: fetchImplementation = globalThis.fetch,
-  }: OAuthRequestOptions,
+  }: AuthOptions,
   signal?: AbortSignal
 ): Promise<oidc.Configuration> {
   const issuer = new URL(authBaseUrl);
@@ -218,9 +221,7 @@ function toApiResource(baseUrl: string): string {
   return new URL(baseUrl).href;
 }
 
-async function loginWithDeviceCode(
-  options: LoginOptions
-): Promise<OAuthTokens> {
+async function loginWithDeviceCode(options: LoginOptions): Promise<void> {
   if (options.noBrowser && !options.onDeviceCode) {
     throw oauthFailure(
       'Device login needs a way to display the verification code',
@@ -228,7 +229,7 @@ async function loginWithDeviceCode(
     );
   }
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
-  const resource = toApiResource(options.baseUrl);
+  const resource = toApiResource(options.baseUrl ?? defaultBaseUrl);
   const lifetime = new AbortController();
   const signal = options.signal
     ? AbortSignal.any([options.signal, lifetime.signal])
@@ -284,9 +285,11 @@ async function loginWithDeviceCode(
   } finally {
     clearTimeout(timer);
   }
-  const tokens = { ...parseTokens(result), resource };
-  await writeOAuthTokens(tokens, authBaseUrl, options.onWarning);
-  return tokens;
+  await writeOAuthTokens(
+    { ...parseTokens(result), resource },
+    authBaseUrl,
+    options.onWarning
+  );
 }
 
 /** How long the callback page waits to learn the account's name. */
@@ -331,7 +334,7 @@ async function lookupAccountName(
 }
 
 /** Browser S256/loopback, or device login for SSH, --no-browser and bind failure. */
-export async function login(options: LoginOptions): Promise<OAuthTokens> {
+export async function login(options: LoginOptions = {}): Promise<void> {
   if (
     options.noBrowser ||
     process.env.SSH_CONNECTION ||
@@ -341,7 +344,7 @@ export async function login(options: LoginOptions): Promise<OAuthTokens> {
     return loginWithDeviceCode({ ...options, noBrowser: true });
   }
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
-  const resource = toApiResource(options.baseUrl);
+  const resource = toApiResource(options.baseUrl ?? defaultBaseUrl);
   // Fired only by the account lookup's budget, after the exchange; nothing
   // else is in flight on this configuration then.
   const cancelLookup = new AbortController();
@@ -413,7 +416,7 @@ export async function login(options: LoginOptions): Promise<OAuthTokens> {
         // replaced stays as it was.
         if (options.signal?.aborted) throw cancelledFailure();
         await writeOAuthTokens(tokens, authBaseUrl, options.onWarning);
-        return { tokens, account };
+        return { account };
       },
       options.timeoutMs,
       {
@@ -428,14 +431,14 @@ export async function login(options: LoginOptions): Promise<OAuthTokens> {
     void (options.openBrowser ?? open)(authorizationUrl.href).catch(
       () => undefined
     );
-    return (await callback).tokens;
+    await callback;
   } finally {
     loopback.close();
   }
 }
 
 const pendingRefreshes = new Map<string, Promise<OAuthTokens>>();
-function refreshTokens(options: OAuthRequestOptions): Promise<OAuthTokens> {
+function refreshTokens(options: AuthOptions): Promise<OAuthTokens> {
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
   const pending = pendingRefreshes.get(authBaseUrl);
   if (pending) return pending;
@@ -447,7 +450,7 @@ function refreshTokens(options: OAuthRequestOptions): Promise<OAuthTokens> {
 }
 
 async function exchangeRefreshToken(
-  options: OAuthRequestOptions & { authBaseUrl: string }
+  options: AuthOptions & { authBaseUrl: string }
 ): Promise<OAuthTokens> {
   const current = await readOAuthTokens(options.authBaseUrl, options.onWarning);
   if (!current?.refreshToken) throw loginRequiredError();
@@ -468,7 +471,7 @@ async function exchangeRefreshToken(
 }
 
 async function validTokens(
-  options: OAuthRequestOptions
+  options: AuthOptions
 ): Promise<OAuthTokens | undefined> {
   const tokens = await readOAuthTokens(
     options.authBaseUrl ?? getAuthBaseUrl(),
@@ -480,19 +483,17 @@ async function validTokens(
 }
 
 /** Whether a stored login exists for this API; does not refresh or contact the server. */
-export async function hasLogin(
-  options: UserTokenProviderOptions
-): Promise<boolean> {
+export async function hasLogin(options: ApiOptions = {}): Promise<boolean> {
   const tokens = await readOAuthTokens(
     options.authBaseUrl ?? getAuthBaseUrl(),
     options.onWarning
   );
-  return tokens?.resource === toApiResource(options.baseUrl);
+  return tokens?.resource === toApiResource(options.baseUrl ?? defaultBaseUrl);
 }
 
 /** Construction is deliberately free of auth/storage/discovery I/O. */
 export function createUserTokenProvider(
-  options: UserTokenProviderOptions
+  options: ApiOptions = {}
 ): UserTokenProvider {
   // Check the audience before any refresh so a stale mismatched login is
   // never rotated on behalf of the wrong API.
@@ -502,7 +503,7 @@ export function createUserTokenProvider(
       options.onWarning
     );
     if (!tokens) throw loginRequiredError();
-    const resource = toApiResource(options.baseUrl);
+    const resource = toApiResource(options.baseUrl ?? defaultBaseUrl);
     if (tokens.resource !== resource) {
       throw new UserAuthError(
         'resource_mismatch',
@@ -526,7 +527,7 @@ export function createUserTokenProvider(
   };
 }
 
-export async function logout(options: OAuthRequestOptions = {}): Promise<void> {
+export async function logout(options: AuthOptions = {}): Promise<void> {
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
   try {
     const tokens = await readOAuthTokens(authBaseUrl, options.onWarning);
@@ -551,9 +552,7 @@ export async function logout(options: OAuthRequestOptions = {}): Promise<void> {
   }
 }
 
-export async function whoAmI(
-  options: OAuthRequestOptions = {}
-): Promise<UserInfo> {
+export async function whoAmI(options: AuthOptions = {}): Promise<UserInfo> {
   const tokens = await validTokens(options);
   if (!tokens) throw loginRequiredError();
   try {

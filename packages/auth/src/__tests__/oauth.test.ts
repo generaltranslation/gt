@@ -13,6 +13,7 @@ import type { AddressInfo, Socket } from 'node:net';
 import * as os from 'node:os';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { defaultBaseUrl } from 'generaltranslation/internal';
 import open from 'open';
 import {
   afterEach,
@@ -38,7 +39,6 @@ import {
   logout,
   whoAmI,
   type LoginOptions,
-  type UserTokenProviderOptions,
 } from '../oauth.js';
 
 vi.mock('node:fs/promises', { spy: true });
@@ -162,7 +162,7 @@ async function callback(
   const response = await networkFetch(redirect);
   return response.text();
 }
-function browserLogin(options: Partial<LoginOptions> = {}) {
+function browserLogin(options: LoginOptions = {}) {
   return login({
     authBaseUrl,
     baseUrl: apiBaseUrl,
@@ -173,7 +173,7 @@ function browserLogin(options: Partial<LoginOptions> = {}) {
   });
 }
 /** Exercises stored tokens through the provider the API client uses. */
-function session(options: Partial<UserTokenProviderOptions> = {}) {
+function session(options: Parameters<typeof createUserTokenProvider>[0] = {}) {
   return createUserTokenProvider({
     baseUrl: apiBaseUrl,
     authBaseUrl,
@@ -380,7 +380,7 @@ describe('discovery and browser authorization', () => {
         },
       });
       if (outcome === 'success') {
-        await expect(pending).resolves.toMatchObject({ subject: 'user-1' });
+        await expect(pending).resolves.toBeUndefined();
       } else {
         await expect(pending).rejects.toThrow();
       }
@@ -409,15 +409,14 @@ describe('discovery and browser authorization', () => {
   it('uses seeded public client, S256, exact redirect/resource/scope and validates a signed subject', async () => {
     const fetcher = provider();
     let authorize!: URL;
-    const result = await browserLogin({
+    await browserLogin({
       fetch: fetcher,
       openBrowser: async (url) => {
         authorize = new URL(url);
         await callback(url);
       },
     });
-    expect(result.subject).toBe('user-1');
-    expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+    expect((await readOAuthTokens(authBaseUrl))?.subject).toBe('user-1');
     expect(authorize.searchParams.get('client_id')).toBe('gt-cli');
     expect(authorize.searchParams.get('resource')).toBe(apiResource);
     expect(authorize.searchParams.get('scope')).toBe(OAUTH_SCOPE);
@@ -485,9 +484,8 @@ describe('discovery and browser authorization', () => {
       await vi.waitFor(() => expect(sockets.size).toBe(1), { interval: 5 });
       expect(requestSignal?.aborted).toBe(false);
       await vi.advanceTimersByTimeAsync(ACCOUNT_LOOKUP_TIMEOUT_MS);
-      const result = await pending;
-      expect(result.subject).toBe('user-1');
-      expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+      await pending;
+      expect((await readOAuthTokens(authBaseUrl))?.subject).toBe('user-1');
       const html = await page;
       expect(html).toContain('Signed in to the gt CLI');
       expect(html).not.toContain('class="note"');
@@ -511,15 +509,14 @@ describe('discovery and browser authorization', () => {
     async (_case, userinfo) => {
       let page!: Promise<string>;
       const started = Date.now();
-      const result = await browserLogin({
+      await browserLogin({
         fetch: provider({ userinfo }),
         openBrowser: (url) => {
           page = callback(url);
           return page;
         },
       });
-      expect(result.subject).toBe('user-1');
-      expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+      expect((await readOAuthTokens(authBaseUrl))?.subject).toBe('user-1');
       expect(Date.now() - started).toBeLessThan(
         ACCOUNT_LOOKUP_TIMEOUT_MS + 2000
       );
@@ -632,9 +629,10 @@ describe('discovery and browser authorization', () => {
     const value = tokenResponse(await idToken());
     delete value.scope;
     delete value.refresh_token;
-    const result = await browserLogin({
+    await browserLogin({
       fetch: provider({ token: async () => json(value) }),
     });
+    const result = await readOAuthTokens(authBaseUrl);
     expect(result).toMatchObject({ scope: OAUTH_SCOPE, refreshToken: '' });
     for (const invalid of [
       { ...value, expires_in: undefined },
@@ -778,7 +776,7 @@ function deviceResponse(): Record<string, unknown> {
     expires_in: 900,
   };
 }
-function deviceLogin(options: Partial<LoginOptions> = {}) {
+function deviceLogin(options: LoginOptions = {}) {
   return login({
     authBaseUrl,
     baseUrl: apiBaseUrl,
@@ -792,7 +790,7 @@ function deviceLogin(options: Partial<LoginOptions> = {}) {
 const POLL = { interval: 2 };
 async function startDevice(
   fetcher: ReturnType<typeof provider>,
-  options: Partial<LoginOptions> = {}
+  options: LoginOptions = {}
 ) {
   const onDeviceCode = vi.fn();
   const pending = deviceLogin({ fetch: fetcher, onDeviceCode, ...options });
@@ -817,7 +815,7 @@ describe('requested scope contract', () => {
         ...(stage.endsWith('exchange') ? { token: scopeError } : {}),
         ...(stage === 'device initiation' ? { device: scopeError } : {}),
       });
-      let pending: Promise<OAuthTokens>;
+      let pending: Promise<void>;
       if (stage === 'device exchange') {
         vi.useFakeTimers();
         ({ pending } = await startDevice(fetcher));
@@ -906,9 +904,8 @@ describe('library-managed device authorization', () => {
     await vi.advanceTimersByTimeAsync(4900);
     expect(forms(fetcher)).toHaveLength(0);
     await vi.advanceTimersByTimeAsync(100);
-    const result = await pending;
-    expect(result.subject).toBe('user-1');
-    expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+    await pending;
+    expect((await readOAuthTokens(authBaseUrl))?.subject).toBe('user-1');
     expect(openBrowser).not.toHaveBeenCalled();
     expect(onDeviceCode).toHaveBeenCalledWith({
       userCode: 'ABCD-EFGH',
@@ -1030,7 +1027,9 @@ describe('library-managed device authorization', () => {
       const expectation =
         kind === 'invalid'
           ? expect(pending).rejects.toThrow()
-          : expect(pending).resolves.toMatchObject({ subject: 'user-1' });
+          : expect(
+              pending.then(() => readOAuthTokens(authBaseUrl))
+            ).resolves.toMatchObject({ subject: 'user-1' });
       await vi.advanceTimersByTimeAsync(12000);
       await expectation;
       expect(attempts).toBe(kind === 'invalid' ? 1 : 2);
@@ -1228,6 +1227,14 @@ describe('OAuth session operations', () => {
       await hasLogin({ baseUrl: 'https://other.example', authBaseUrl })
     ).toBe(false);
     expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+  it('is for the public API when no baseUrl is given', async () => {
+    await writeOAuthTokens(
+      { ...tokens, resource: new URL(defaultBaseUrl).href },
+      authBaseUrl
+    );
+    expect(await hasLogin({ authBaseUrl })).toBe(true);
+    expect(await hasLogin({ baseUrl: apiBaseUrl, authBaseUrl })).toBe(false);
   });
   it('refuses a login issued for a different API without refreshing it', async () => {
     await writeOAuthTokens({ ...tokens, expiresAt: 0 }, authBaseUrl);

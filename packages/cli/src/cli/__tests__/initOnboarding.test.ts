@@ -1151,7 +1151,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         userCode: 'ABCD-EFGH',
         verificationUri: 'https://auth.example/device',
       });
-      return {} as Awaited<ReturnType<typeof login>>;
     });
     const stdoutWrite = vi.spyOn(process.stdout, 'write');
 

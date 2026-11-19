@@ -140,12 +140,12 @@ import {
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
 import {
-  createUserAuthError,
   hasLogin,
   logout,
   UserAuthError,
   whoAmI,
 } from '@generaltranslation/auth';
+import { createUserAuthError } from '../auth/errors.js';
 import { onAuthWarning } from '../auth/warning.js';
 import { loginInteractively } from '../auth/interactiveLogin.js';
 import { resolveConfig } from '../config/resolveConfig.js';

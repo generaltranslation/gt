@@ -12,8 +12,7 @@ import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { UserAuthError } from './errors.js';
 
-/** Receives a complete `gt Warning:` diagnostic; `console.warn` when omitted. */
-export type WarningHandler = (message: string) => void;
+type WarningHandler = (message: string) => void;
 
 export type OAuthTokens = {
   accessToken: string;
