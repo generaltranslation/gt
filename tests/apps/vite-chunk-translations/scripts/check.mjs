@@ -3,8 +3,9 @@
 //   node scripts/check.mjs [token|map]
 // The argument is how the build names its files
 // (experimentalChunkTranslationsNaming); it defaults to `token`.
-// CHECK_SHORT_IDS (`true` or a number of characters) builds with
-// experimentalChunkTranslationsShortIds, and checks the ids too.
+// CHECK_MINIFY_HASHES=true builds with hash minification
+// (experimentalChunkTranslationsMinifyHashes), and checks the ids and the
+// files it writes too.
 // Prints one line per check and exits with 1 when any fails.
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
@@ -15,16 +16,17 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 import { dirname, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { chromium } from 'playwright-core';
+import { entriesOf, heldBy, isMinifiedId } from './minifiedTranslations.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const NAMING = process.argv[2] ?? 'token';
-const SHORT_IDS = process.env.CHECK_SHORT_IDS ?? '';
-const SHORT_ID_LENGTH = SHORT_IDS === 'true' ? 8 : Number(SHORT_IDS);
+const MINIFY_HASHES = process.env.CHECK_MINIFY_HASHES === 'true';
 const ON = join(root, '.check', NAMING === 'token' ? 'on' : NAMING);
 const OFF = join(root, '.check', 'off');
 // CHECK_IMPORT_MAP=true makes every build with Vite's chunk import map
@@ -96,8 +98,10 @@ function buildEnv(outDir, chunkTranslations, env) {
     NODE_ENV: 'production',
     GT_CHUNK_TRANSLATIONS: String(chunkTranslations),
     GT_CHUNK_TRANSLATIONS_NAMING: NAMING,
-    // Only a build with chunk translations can have short ids
-    GT_CHUNK_TRANSLATIONS_SHORT_IDS: chunkTranslations ? SHORT_IDS : '',
+    // Only a build with chunk translations can minify its hashes
+    GT_CHUNK_TRANSLATIONS_MINIFY_HASHES: String(
+      chunkTranslations && MINIFY_HASHES
+    ),
     CHECK_OUT_DIR: outDir,
     ...env,
   };
@@ -801,17 +805,19 @@ check(
   );
 }
 
-// ----- Short ids ----- //
-// With CHECK_SHORT_IDS, a call site the build splits passes the start of its
-// hash in another alphabet, and the file of its chunk is keyed by that. What
-// reads the unsplit file keeps its hash.
-if (SHORT_IDS) {
-  const shortId = (hash) =>
-    Buffer.from(hash, 'hex').toString('base64url').slice(0, SHORT_ID_LENGTH);
+// ----- Hash minification ----- //
+// With CHECK_MINIFY_HASHES, a call site the build splits passes the name of
+// the list of its chunk's messages and the place of its message in it, and
+// the file of its chunk holds each translation once, with the places that
+// read it. What reads the unsplit file keeps its hash.
+if (MINIFY_HASHES) {
   const isHash = (id) => /^[0-9a-f]{16}$/.test(id);
-  const isShortId = (id) =>
-    new RegExp(`^[A-Za-z0-9_-]{${SHORT_ID_LENGTH}}$`).test(id);
   const frCatalog = JSON.parse(catalog);
+  /** The ids a page reads a message by from the files of chunks. */
+  const idsOfHash = (split, hash) =>
+    Object.keys(split).filter(
+      (id) => JSON.stringify(split[id]) === JSON.stringify(frCatalog[hash])
+    );
   const idsOf = (directory) =>
     assets(directory)
       .filter((file) => file.endsWith('.js'))
@@ -823,59 +829,115 @@ if (SHORT_IDS) {
       .map((match) => match[2]);
   const unsplitOf = (directory, built) =>
     JSON.parse(readFileSync(join(directory, built.unsplit.fr), 'utf8'));
-  /** The fr translations in the files of chunks and entries, by their key. */
+  /** What each fr file of chunks and entries holds, as it is written. */
+  const filesOf = (directory, built) =>
+    [
+      ...Object.values(built.entries).map(
+        ({ translations }) => translations.fr
+      ),
+      ...Object.values(built.files).map((files) => files.fr),
+    ]
+      .filter(Boolean)
+      .map((file) => {
+        const content = JSON.parse(readFileSync(join(directory, file), 'utf8'));
+        return content.t ?? content;
+      });
+  /** The fr translations a page reads from those files, by id. */
   const splitOf = (directory, built) =>
-    Object.assign(
-      {},
-      ...[
-        ...Object.values(built.entries).map(
-          ({ translations }) => translations.fr
-        ),
-        ...Object.values(built.files).map((files) => files.fr),
-      ]
-        .filter(Boolean)
-        .map((file) => {
-          const content = JSON.parse(
-            readFileSync(join(directory, file), 'utf8')
-          );
-          return content.t ?? content;
-        })
-    );
+    Object.assign({}, ...filesOf(directory, built).map(entriesOf));
 
   const ids = idsOf(ON);
   const unsplit = unsplitOf(ON, manifest);
   const split = splitOf(ON, manifest);
   const splitHashes = Object.keys(frCatalog).filter(
-    (hash) => shortId(hash) in split
+    (hash) => idsOfHash(split, hash).length
   );
   check(
-    `short ids: call sites pass ids of ${SHORT_ID_LENGTH} characters, and a hash only for what the unsplit file holds`,
-    ids.filter(isShortId).length > 30 &&
-      ids.every((id) => isShortId(id) || isHash(id)) &&
+    'hash minification: call sites pass ids, and a hash only for what the unsplit file holds',
+    ids.filter(isMinifiedId).length > 30 &&
+      ids.every((id) => isMinifiedId(id) || isHash(id)) &&
       ids.filter(isHash).every((hash) => hash in unsplit),
-    `${ids.filter(isShortId).length} short ids, ${ids.filter(isHash).length} hashes`
+    `${ids.filter(isMinifiedId).length} ids, ${ids.filter(isHash).length} hashes`
   );
   check(
-    'short ids: the files of chunks are keyed by the short ids of their messages, the unsplit file by hashes',
-    Object.keys(split).every(isShortId) &&
-      splitHashes.length === Object.keys(split).length &&
-      splitHashes.every(
-        (hash) =>
-          JSON.stringify(split[shortId(hash)]) ===
-          JSON.stringify(frCatalog[hash])
-      ) &&
+    'hash minification: the files of chunks hold the translations of their ids, the unsplit file those of hashes',
+    Object.keys(split).every(
+      (id) =>
+        isMinifiedId(id) &&
+        splitHashes.some((hash) => idsOfHash(split, hash).includes(id))
+    ) &&
       Object.keys(unsplit).every(
         (hash) => isHash(hash) && frCatalog[hash] === unsplit[hash]
       ),
-    `${Object.keys(split).length} short ids, ${Object.keys(unsplit).length} hashes`
+    `${Object.keys(split).length} ids, ${Object.keys(unsplit).length} hashes`
   );
   check(
-    'short ids: every id a call site passes is in a file',
-    ids.filter(isShortId).every((id) => id in split)
+    'hash minification: every id a call site passes is in a file',
+    ids.filter(isMinifiedId).every((id) => id in split)
   );
+  {
+    // A file writes no id out and no translation twice: it is a list of
+    // translations and, for each list of a chunk, runs of three numbers
+    const files = filesOf(ON, manifest);
+    const repeated = files.filter((file) => {
+      const held = heldBy(file).map((translation) =>
+        JSON.stringify(translation)
+      );
+      return new Set(held).size !== held.length;
+    });
+    check(
+      'hash minification: a file holds each of its translations once, and runs of the places that read it',
+      files.length > 5 &&
+        repeated.length === 0 &&
+        files.every(
+          (file) =>
+            Array.isArray(file) &&
+            file.length === 2 &&
+            Object.values(file[1]).every(
+              (runs) => runs.length % 3 === 0 && runs.every(Number.isInteger)
+            )
+        ),
+      `${files.length} files, ${files.reduce((sum, file) => sum + heldBy(file).length, 0)} translations for ${Object.keys(split).length} ids`
+    );
+  }
+  // An id follows from content alone: the name of a list is a digest of the
+  // hashes of the messages a chunk's code names, in their order. Read back
+  // here from the translations the files hold for each number, for every
+  // list whose messages are all still in the code.
+  {
+    const lists = new Map();
+    for (const id of ids.filter(isMinifiedId)) {
+      const [name, place] = id.split('.');
+      if (!lists.has(name)) lists.set(name, []);
+      lists.get(name)[Number(place)] = id;
+    }
+    const nameOf = (hashes) =>
+      createHash('sha256')
+        .update(JSON.stringify(hashes))
+        .digest('base64url')
+        .slice(0, 8);
+    /** Whether some message of each translation, taken in order, makes the list of this name. */
+    const isListOf = (name, list, hashes = []) =>
+      hashes.length === list.length
+        ? nameOf(hashes) === name
+        : Object.keys(frCatalog)
+            .filter(
+              (hash) =>
+                JSON.stringify(frCatalog[hash]) ===
+                JSON.stringify(split[list[hashes.length]])
+            )
+            .some((hash) => isListOf(name, list, [...hashes, hash]));
+    const whole = [...lists].filter(([, list]) => !list.includes(undefined));
+    const wrong = whole.filter(([name, list]) => !isListOf(name, list));
+    check(
+      'hash minification: the name of each list is the digest of the hashes of its messages, in the order of their numbers',
+      whole.length > 5 && wrong.length === 0,
+      `${whole.length} of ${lists.size} lists read back${wrong.length ? `, not ${wrong.map(([name]) => name).join(', ')}` : ''}`
+    );
+  }
 
-  // One message read through a t template, whose chunk's file holds it under
-  // its short id, and through a msg, which reads the unsplit file by hash.
+  // One message read through a t template, whose chunk's file holds it for
+  // its id, and through a msg, which reads the unsplit file by hash.
   // And three read through a t template and through a t that hashes them
   // when it runs, which reads by hash too: with no options, with the options
   // of the compiled call site, and with a value named as that one names it.
@@ -889,8 +951,8 @@ if (SHORT_IDS) {
       ([, translation]) => translation === 'MAINTENANCE STARTS TONIGHT'
     );
     check(
-      'short ids: a message read through t and through msg is in the file of a chunk under its short id and in the unsplit file under its hash',
-      splitOf(outDir, built)[shortId(hash)] === 'MAINTENANCE STARTS TONIGHT' &&
+      'hash minification: a message read through t and through msg is in the file of a chunk for its id and in the unsplit file under its hash',
+      idsOfHash(splitOf(outDir, built), hash).length > 0 &&
         unsplitOf(outDir, built)[hash] === 'MAINTENANCE STARTS TONIGHT'
     );
     const hashedAtRuntime = [
@@ -899,14 +961,13 @@ if (SHORT_IDS) {
       '["HELLO, ",["name"],"!"]',
     ];
     check(
-      'short ids: messages read through a compiled t and through a t hashed at runtime are in both files too',
+      'hash minification: messages read through a compiled t and through a t hashed at runtime are in both files too',
       hashedAtRuntime.every((translation) => {
         const [found] = Object.entries(frCatalog).find(
           ([, value]) => JSON.stringify(value) === translation
         );
         return (
-          JSON.stringify(splitOf(outDir, built)[shortId(found)]) ===
-            translation &&
+          idsOfHash(splitOf(outDir, built), found).length > 0 &&
           JSON.stringify(unsplitOf(outDir, built)[found]) === translation
         );
       })
@@ -922,7 +983,7 @@ if (SHORT_IDS) {
         await app.page.evaluate(() => window.__notice()),
       ];
       check(
-        `short ids, ${locale}: a message read through t and through msg renders the same translation`,
+        `hash minification, ${locale}: a message read through t and through msg renders the same translation`,
         read.every((text) => text === expected),
         read.join(' / ')
       );
@@ -932,7 +993,7 @@ if (SHORT_IDS) {
         window.__hello({ name: 'Ada' }),
       ]);
       check(
-        `short ids, ${locale}: messages read through a compiled t and through a t hashed at runtime render their translation there too`,
+        `hash minification, ${locale}: messages read through a compiled t and through a t hashed at runtime render their translation there too`,
         [await app.text('heading'), ...hashed].join(' / ') ===
           ['Account settings', 'Account settings', 'Save', 'Hello, Ada!']
             .map((text) => translate(locale, text))
@@ -944,33 +1005,15 @@ if (SHORT_IDS) {
     shared.close();
   }
 
-  // Two messages that would share an id fail the build, which names them
   {
-    const output = failBuild(`${NAMING}-collision`, true, {
-      GT_CHUNK_TRANSLATIONS_SHORT_IDS: '1',
-    });
-    const pair = /([0-9a-f]{16}) and ([0-9a-f]{16}) share "([\w-])"/.exec(
-      output ?? ''
-    );
-    check(
-      'short ids: a build in which two messages share an id fails and names both',
-      output?.includes('the same id of 1 character ') &&
-        pair !== null &&
-        pair[1] !== pair[2] &&
-        Buffer.from(pair[1], 'hex').toString('base64url')[0] === pair[3] &&
-        Buffer.from(pair[2], 'hex').toString('base64url')[0] === pair[3],
-      pair?.[0] ?? output?.slice(0, 200) ?? 'the build did not fail'
-    );
-  }
-  {
-    const output = failBuild(`${NAMING}-short-ids-alone`, false, {
-      GT_CHUNK_TRANSLATIONS_SHORT_IDS: SHORT_IDS,
+    const output = failBuild(`${NAMING}-minify-hashes-alone`, false, {
+      GT_CHUNK_TRANSLATIONS_MINIFY_HASHES: 'true',
     });
     const failed = output?.includes(
-      'experimentalChunkTranslationsShortIds is set in a build without experimentalChunkTranslations'
+      'experimentalChunkTranslationsMinifyHashes is set in a build without experimentalChunkTranslations'
     );
     check(
-      'short ids: a build without chunk translations fails',
+      'hash minification: a build without chunk translations fails',
       failed,
       failed ? '' : (output?.slice(0, 200) ?? 'the build did not fail')
     );
@@ -1311,12 +1354,14 @@ const ROUTE_FAILED = {
 // The entry's file also says which files each import needs, so without it
 // every chunk renders the source; the unsplit file needs nothing of it. In a
 // build with maps the map says that, so only the entry's own message, which
-// the application root also reads, renders the source.
+// the application root also reads, renders the source. With hash
+// minification the root reads it by an id of its own chunk, from that
+// chunk's file.
 const ENTRY_FAILED = manifest.maps
   ? {
       frame: SHELL.frame,
       title: 'WORKSPACE OVERVIEW',
-      footer: `${SHELL.frame}: ALL SYSTEMS OPERATIONAL (OPEN, CLOSED)`,
+      footer: `${MINIFY_HASHES ? 'ACME WORKSPACE' : SHELL.frame}: ALL SYSTEMS OPERATIONAL (OPEN, CLOSED)`,
       heading: 'WELCOME HOME',
       msg: 'MAINTENANCE STARTS TONIGHT',
     }
@@ -2237,7 +2282,9 @@ const ownerOf = (file) =>
   owners.get(`assets/${file}`)?.join(' + ') ?? file.split('.')[0];
 const hashesOf = (file) => {
   const content = JSON.parse(readFileSync(join(ON, 'assets', file), 'utf8'));
-  return Object.keys(entryNames.includes(file) ? content.t : content);
+  return Object.keys(
+    entriesOf(entryNames.includes(file) ? content.t : content)
+  );
 };
 const uses = new Map();
 for (const file of frFiles) {
