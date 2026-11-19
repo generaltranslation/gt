@@ -119,12 +119,11 @@ export function OrderPanel() {
               n={filters}
               zero={<>no filters</>}
               one={<>one filter pack</>}
-              other={
-                <>
-                  <Num>{filters}</Num> filter packs
-                </>
-              }
-            />
+            >
+              <>
+                <Num>{filters}</Num> filter packs
+              </>
+            </Plural>
             .
           </p>
         </T>

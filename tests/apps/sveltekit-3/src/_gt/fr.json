@@ -7,7 +7,7 @@
       "c": "SvelteKit"
     }
   ],
-  "b178963f85fde351": [
+  "9e82e2733a671788": [
     "Lisez la ",
     {
       "t": "a",
@@ -20,12 +20,11 @@
     ", ",
     {
       "i": 1,
-      "k": "_gt_value_1",
       "v": "v"
     },
     " !"
   ],
-  "837dc98051553ff3": {
+  "c2ba221a4b26acf9": {
     "t": "Plural",
     "i": 1,
     "d": {
@@ -43,38 +42,31 @@
             " message"
           ]
         },
-        "other": {
-          "t": "C2",
-          "i": 2,
-          "c": [
-            "Vous avez ",
-            {
-              "t": "b",
+        "other": [
+          "Vous avez ",
+          {
+            "t": "b",
+            "i": 2,
+            "c": {
               "i": 3,
-              "c": {
-                "i": 4,
-                "k": "_gt_n_4",
-                "v": "n"
-              }
-            },
-            " messages"
-          ]
-        }
+              "v": "n"
+            }
+          },
+          " messages"
+        ]
       },
       "t": "p"
     }
   },
-  "855313f4b7d612ab": [
+  "b2d02b82394fb992": [
     "Vous pouvez préparer ",
     {
       "i": 1,
-      "k": "_gt_n_1",
       "v": "n"
     },
     " recettes sur ",
     {
       "i": 2,
-      "k": "_gt_n_2",
       "v": "n"
     }
   ],

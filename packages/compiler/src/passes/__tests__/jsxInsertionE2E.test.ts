@@ -74,8 +74,8 @@ describe('JSX insertion -> collection E2E', () => {
     expect(manifest).toEqual({ '': ['Hello ', { t: 'Derive', i: 1 }] });
   });
 
-  // Branch/Plural prop values and children are separate branches: both start
-  // counting from the branching element's id rather than sharing a counter.
+  // Branch/Plural prop values and children are separate branches: the
+  // children are `other`, and each starts counting from the element's id.
   it.each([
     [
       '<Plural n={n} one={<><strong>one</strong></>}><>other</></Plural>',
@@ -88,10 +88,12 @@ describe('JSX insertion -> collection E2E', () => {
         t: 'Plural',
         i: 1,
         d: {
-          b: { one: { t: 'C2', i: 2, c: { t: 'strong', i: 3, c: 'one' } } },
+          b: {
+            one: { t: 'C2', i: 2, c: { t: 'strong', i: 3, c: 'one' } },
+            other: { t: 'C2', i: 2, c: 'other' },
+          },
           t: 'p',
         },
-        c: { t: 'C2', i: 2, c: 'other' },
       },
     ],
     [
@@ -104,8 +106,13 @@ describe('JSX insertion -> collection E2E', () => {
       {
         t: 'Branch',
         i: 1,
-        d: { b: { a: { t: 'span', i: 2, c: 'Option A' } }, t: 'b' },
-        c: { t: 'C2', i: 2, c: 'Default' },
+        d: {
+          b: {
+            a: { t: 'span', i: 2, c: 'Option A' },
+            other: { t: 'C2', i: 2, c: 'Default' },
+          },
+          t: 'b',
+        },
       },
     ],
   ])('numbers the branches of %s independently', (_jsx, code, children) => {

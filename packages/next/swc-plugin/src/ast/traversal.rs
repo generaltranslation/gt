@@ -1,4 +1,4 @@
-use crate::ast::constants::PLURAL_FORMS;
+use crate::ast::constants::{plural_branch_key, FALLBACK_BRANCH_KEY};
 use crate::ast::utilities::{
   build_sanitized_text_content, extract_html_content_props, filter_jsx_children, get_tag_name,
   get_variable_type, js_number_to_string,
@@ -295,28 +295,43 @@ impl<'a> JsxTraversal<'a> {
       d: None,
     };
 
-    // Build children directly as sanitized
+    let is_branching = component_info.is_gt_component
+      && (self.is_plural_component(&tag_name) || self.is_branch_component(&tag_name));
+
+    // Build children directly as sanitized. The children of a Branch or a
+    // Plural are its `other` branch, counted from the element's id like one.
+    let mut fallback = None;
     if !element.children.is_empty() {
-      sanitized_element.c = self
-        .build_sanitized_children(&element.children)
-        .map(Box::new);
+      if is_branching {
+        fallback = self
+          .build_sanitized_children_with_counter(&element.children, self.id_counter)
+          .filter(|children| !is_empty_text(children));
+      } else {
+        sanitized_element.c = self
+          .build_sanitized_children(&element.children)
+          .map(Box::new);
+      }
     }
 
     // Handle different component types
     if component_info.is_gt_component {
-      if self.is_plural_component(&tag_name) {
-        if !self.is_valid_plural_component(element, &component_info) {
+      if is_branching {
+        let is_valid = if self.is_plural_component(&tag_name) {
+          self.is_valid_plural_component(element, &component_info)
+        } else {
+          self.is_valid_branch_component(element, &component_info)
+        };
+        if !is_valid {
           return None;
         }
-        if let Some(branches) = component_info.branches {
-          sanitized_element.b = Some(branches);
+        let mut branches = component_info.branches.unwrap_or_default();
+        if let Some(children) = fallback {
+          branches.insert(
+            FALLBACK_BRANCH_KEY.to_string(),
+            Box::new(SanitizedChild::Fragment(Box::new(children))),
+          );
         }
-        sanitized_element.t = component_info.transformation;
-      } else if self.is_branch_component(&tag_name) {
-        if !self.is_valid_branch_component(element, &component_info) {
-          return None;
-        }
-        if let Some(branches) = component_info.branches {
+        if !branches.is_empty() {
           sanitized_element.b = Some(branches);
         }
         sanitized_element.t = component_info.transformation;
@@ -344,11 +359,8 @@ impl<'a> JsxTraversal<'a> {
     let component_info = self.analyze_gt_component(&tag_name, &element.opening.attrs);
 
     if let Some(var_type) = component_info.variable_type {
-      // Extract variable name from children or attributes with proper prefix
-      let variable_key = self.extract_variable_key(element, &var_type);
-
       Some(SanitizedVariable {
-        k: Some(variable_key),
+        k: Self::extract_variable_name(element),
         v: Some(var_type),
         t: None,
       })
@@ -357,16 +369,15 @@ impl<'a> JsxTraversal<'a> {
     }
   }
 
-  /// Extract variable key from JSX element (from children or name attribute)
-  fn extract_variable_key(&mut self, element: &JSXElement, var_type: &VariableType) -> String {
-    // First, check for a 'name' attribute
+  /// The name a variable was given: a non-empty `name` string attribute
+  fn extract_variable_name(element: &JSXElement) -> Option<String> {
     for attr in &element.opening.attrs {
       if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
         if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
           if name_ident.sym.as_ref() == "name" {
             if let Some(JSXAttrValue::Str(str_lit)) = &jsx_attr.value {
               if !str_lit.value.is_empty() {
-                return str_lit.value.to_string_lossy().to_string();
+                return Some(str_lit.value.to_string_lossy().to_string());
               }
             }
           }
@@ -374,15 +385,7 @@ impl<'a> JsxTraversal<'a> {
       }
     }
 
-    // Fallback: generate proper key based on variable type with current counter
-    match var_type {
-      VariableType::Number => format!("_gt_n_{}", self.id_counter),
-      VariableType::Currency => format!("_gt_cost_{}", self.id_counter),
-      VariableType::Date => format!("_gt_date_{}", self.id_counter),
-      VariableType::RelativeTime => format!("_gt_time_{}", self.id_counter),
-      VariableType::Variable => format!("_gt_value_{}", self.id_counter),
-      VariableType::Static => format!("_gt_static_{}", self.id_counter),
-    }
+    None
   }
 
   /// Check if this is a Branch component
@@ -532,8 +535,8 @@ impl<'a> JsxTraversal<'a> {
         if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
           let prop_name = name_ident.sym.as_ref();
 
-          // Skip special props
-          if matches!(prop_name, "branch") || prop_name.starts_with("data-") {
+          // Skip special props. `other` is not a prop: it is the children.
+          if matches!(prop_name, "branch" | FALLBACK_BRANCH_KEY) || prop_name.starts_with("data-") {
             continue;
           }
 
@@ -566,11 +569,11 @@ impl<'a> JsxTraversal<'a> {
         if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
           let prop_name = name_ident.sym.as_ref();
 
-          // Only include valid plural forms
-          if PLURAL_FORMS.contains(prop_name) {
+          // Only include plural branches
+          if let Some(key) = plural_branch_key(prop_name) {
             if let Some(value) = &jsx_attr.value {
               if let Some(sanitized_children) = self.build_sanitized_child_from_attr_value(value) {
-                branches.insert(prop_name.to_string(), Box::new(sanitized_children));
+                branches.insert(key, Box::new(sanitized_children));
               }
             }
           }
@@ -726,6 +729,11 @@ impl<'a> JsxTraversal<'a> {
 use crate::visitor::expr_utils::is_allowed_dynamic_content;
 
 /// Recursively check if any JSX descendant contains a dynamic expression
+/// An empty string as the only child is no fallback content, as in the runtime
+fn is_empty_text(children: &SanitizedChildren) -> bool {
+  matches!(children, SanitizedChildren::Single(child) if matches!(child.as_ref(), SanitizedChild::Text(text) if text.is_empty()))
+}
+
 fn has_dynamic_content_recursive(children: &[JSXElementChild]) -> bool {
   children.iter().any(|child| match child {
     JSXElementChild::JSXExprContainer(container) => {
@@ -969,33 +977,6 @@ mod tests {
     }
   }
 
-  mod extract_variable_key {
-    use super::*;
-
-    #[test]
-    fn generates_fallback_keys() {
-      let visitor = create_test_visitor();
-      let mut traversal = JsxTraversal::new(&visitor);
-      let element = create_jsx_element("Var");
-
-      // Test different variable types generate different keys
-      let number_key = traversal.extract_variable_key(&element, &VariableType::Number);
-      assert!(number_key.starts_with("_gt_n_"));
-
-      let currency_key = traversal.extract_variable_key(&element, &VariableType::Currency);
-      assert!(currency_key.starts_with("_gt_cost_"));
-
-      let date_key = traversal.extract_variable_key(&element, &VariableType::Date);
-      assert!(date_key.starts_with("_gt_date_"));
-
-      let var_key = traversal.extract_variable_key(&element, &VariableType::Variable);
-      assert!(var_key.starts_with("_gt_value_"));
-
-      let static_key = traversal.extract_variable_key(&element, &VariableType::Static);
-      assert!(static_key.starts_with("_gt_static_"));
-    }
-  }
-
   mod build_sanitized_child_from_jsx_expr {
     use super::*;
 
@@ -1181,6 +1162,18 @@ mod tests {
       })
     }
 
+    #[test]
+    fn reads_only_an_authored_variable_name() {
+      let mut element = create_jsx_element("Var");
+      assert_eq!(JsxTraversal::extract_variable_name(&element), None);
+
+      element.opening.attrs = vec![create_string_attr("name", "user")];
+      assert_eq!(
+        JsxTraversal::extract_variable_name(&element),
+        Some("user".to_string())
+      );
+    }
+
     fn create_number_attr(name: &str, value: f64) -> JSXAttrOrSpread {
       JSXAttrOrSpread::JSXAttr(JSXAttr {
         span: DUMMY_SP,
@@ -1241,6 +1234,38 @@ mod tests {
       assert_eq!(traversal.calculate_element_hash(&with_context).0, "e1642f3069257bf7");
       // hashSource({ source: 'Book', dataFormat: 'JSX' }): `$context` is not read
       assert_eq!(traversal.calculate_element_hash(&with_prefixed_context).0, "0706372c13931291");
+    }
+
+    #[test]
+    fn children_of_a_plural_are_its_other_branch() {
+      let mut visitor = create_test_visitor();
+      visitor.import_tracker.scope_tracker.track_variable(
+        Atom::new("Plural"),
+        Atom::new("Plural"),
+        true,
+        0,
+      );
+      let mut traversal = JsxTraversal::new(&visitor);
+      let mut plural = create_jsx_element_with_children("Plural", vec![create_jsx_text_child("Many")]);
+      plural.opening.attrs = vec![
+        create_number_attr("n", 2.0),
+        create_string_attr("one", "One"),
+        // `other` is not a prop
+        create_string_attr("other", "Ignored"),
+      ];
+      let element = create_jsx_element_with_children(
+        "T",
+        vec![JSXElementChild::JSXElement(Box::new(plural))],
+      );
+
+      let (hash, json_string) = traversal.calculate_element_hash(&element);
+
+      assert_eq!(
+        json_string,
+        r#"{"dataFormat":"JSX","source":{"b":{"one":"One","other":"Many"},"t":"p"}}"#
+      );
+      // hashSource({ source: { t: 'Plural', i: 1, d: { b: { one: 'One', other: 'Many' }, t: 'p' } }, dataFormat: 'JSX' })
+      assert_eq!(hash, "50e2943adf4fe3dd");
     }
 
     #[test]

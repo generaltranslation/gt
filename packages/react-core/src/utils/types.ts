@@ -61,7 +61,7 @@ export type VariableProps = {
     | Intl.NumberFormatOptions
     | Intl.DateTimeFormatOptions
     | RelativeTimeFormatOptions;
-  variableName: string;
+  variableId: number;
   injectionType: InjectionType;
 };
 
@@ -72,7 +72,7 @@ export type RenderVariable = ({
   locales,
   enableI18n,
   injectionType,
-}: Omit<VariableProps, 'variableName'> & {
+}: Omit<VariableProps, 'variableId'> & {
   locales: string[];
   enableI18n: boolean;
 }) => React.ReactNode;

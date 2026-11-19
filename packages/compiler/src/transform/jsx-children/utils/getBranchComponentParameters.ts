@@ -1,17 +1,39 @@
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import {
+  getPluralBranchKey,
+  isAcceptedPluralForm,
+} from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
   BRANCH_CONTROL_PROPS,
   GT_COMPONENT_TYPES,
 } from '../../../utils/constants/gt/constants';
 
+export const createOtherPropError = (component: string) =>
+  createDiagnosticMessage({
+    whatHappened: `<${component}> has no other prop`,
+    fix: 'Write the fallback as its children',
+  });
+
+const createInvalidExactPluralPropWarning = (prop: string) =>
+  createDiagnosticMessage({
+    whatHappened: `Ignored the ${prop} prop of <Plural>`,
+    why: 'it is not an exact number',
+    fix: 'Write the number without a leading zero or an exponent, as in _0 or _1000',
+  });
+
 /**
- * Given an object expression path, get branch component argument paths.
+ * Given an object expression path, get branch component argument paths,
+ * each with the key its branch is stored under: the children are the `other`
+ * branch. `warn` is called for a property that is ignored, and `fail` for an
+ * `other` prop.
  */
 export function getBranchComponentParameters(
   parametersPath: NodePath<t.ObjectExpression>,
-  canonicalName: string
+  canonicalName: string,
+  warn: (diagnostic: string, node: t.Node) => void = () => {},
+  fail: (diagnostic: string, node: t.Node) => void = () => {}
 ): [string, NodePath<t.Expression>][] {
   // Get the args
   return parametersPath
@@ -38,8 +60,12 @@ export function getBranchComponentParameters(
         return null;
       }
 
-      // Avoid children property
+      // The children are the fallback
       if (propertyName === 'children') {
+        return ['other', valuePath as NodePath<t.Expression>];
+      }
+      if (propertyName === 'other') {
+        fail(createOtherPropError(canonicalName), property);
         return null;
       }
 
@@ -61,10 +87,19 @@ export function getBranchComponentParameters(
         canonicalName === GT_COMPONENT_TYPES.Plural &&
         !isAcceptedPluralForm(propertyName)
       ) {
+        // `_01` looks like an exact number but is not a branch.
+        if (/^_\d/.test(propertyName)) {
+          warn(createInvalidExactPluralPropWarning(propertyName), property);
+        }
         return null;
       }
 
-      return [propertyName, valuePath as NodePath<t.Expression>];
+      return [
+        canonicalName === GT_COMPONENT_TYPES.Plural
+          ? getPluralBranchKey(propertyName)
+          : propertyName,
+        valuePath as NodePath<t.Expression>,
+      ];
     })
     .filter((arg) => arg !== null) as [string, NodePath<t.Expression>][];
 }

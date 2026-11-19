@@ -1,4 +1,3 @@
-import { getVariableName } from '../variables/getVariableName';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../../utils/types';
 import { isValidTaggedElement } from '../../utils/utils';
 import {
@@ -62,14 +61,21 @@ const createGTProp = (
     const newBranches: Record<string, JsxChildren> = {};
     Object.entries(branches).forEach(
       ([key, value]: [string, TaggedChildren]) => {
+        // Empty children render as the fallback, but are no content to store.
+        if (
+          key === 'other' &&
+          (value == null || value === false || value === '')
+        )
+          return;
         newBranches[key] = writeChildrenAsObjects(value);
       }
     );
-    newGTProp = {
-      ...newGTProp,
-      b: newBranches,
-      t: transformation === 'plural' ? 'p' : 'b',
-    };
+    if (Object.keys(newBranches).length)
+      newGTProp = {
+        ...newGTProp,
+        b: newBranches,
+        t: transformation === 'plural' ? 'p' : 'b',
+      };
   }
 
   return Object.keys(newGTProp).length ? newGTProp : undefined;
@@ -95,11 +101,11 @@ const handleSingleChildElement = (
     const transformation = generaltranslation.transformation;
     if (transformation === 'variable') {
       const variableType = generaltranslation.variableType || 'variable';
-      const variableName = getVariableName(props, variableType);
       const minifiedVariableType = minifyVariableType(variableType);
       return {
         i: generaltranslation.id,
-        k: variableName,
+        ...(typeof props.name === 'string' &&
+          props.name !== '' && { k: props.name }),
         v: minifiedVariableType,
       };
     }

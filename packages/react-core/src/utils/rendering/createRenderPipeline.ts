@@ -19,10 +19,9 @@ import type { RenderVariable } from '../types';
 
 // Factory binding variable components to the shared rendering logic. The
 // renderVariable dependency injection stays internal to this factory: callsites
-// import a pre-instantiated pipeline (renderPipeline for the hook-based
-// variable components, renderPipeline.rsc for the RSC ones) instead of
-// threading renderVariable through every rendering call. This keeps shared
-// rendering code free of static imports of either variable implementation.
+// import a pre-instantiated pipeline (renderPipeline.rsc) instead of threading
+// renderVariable through every rendering call. This keeps shared rendering
+// code free of static imports of a variable implementation.
 
 type RenderPipeline = {
   renderVariable: RenderVariable;

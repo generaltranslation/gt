@@ -689,7 +689,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -748,9 +748,9 @@
                       "column": 24,
                       "index": 729
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,

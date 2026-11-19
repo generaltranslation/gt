@@ -88,7 +88,7 @@ describe('planSvelteExtraction', () => {
       },
       {
         dataFormat: 'JSX',
-        source: ['Hello ', { i: 1, k: '_gt_value_1', v: 'v' }],
+        source: ['Hello ', { i: 1, v: 'v' }],
         context: 'greeting',
         filePaths: ['src/lib/Other.svelte', 'src/routes/+page.svelte'],
       },

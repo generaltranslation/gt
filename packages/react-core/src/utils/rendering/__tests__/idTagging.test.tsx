@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderPreparedT } from '../renderPipeline';
+import { renderPreparedT } from '../renderPipeline.rsc';
 import type { TaggedChildren } from '../../types';
 
 // Opt-in id-tagging: renderPreparedT wraps the <T> output in a layout-neutral

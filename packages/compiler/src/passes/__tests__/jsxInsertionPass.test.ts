@@ -401,8 +401,8 @@ describe('jsxInsertionPass', () => {
         { t: 1, var: 0 },
       ],
       [
-        '<div><Plural n={count} one={<span>One item</span>} other={<span>Many items</span>} /></div>',
-        `jsx("div", { children: jsx(Plural, { n: count, one: jsx("span", { children: "One item" }), other: jsx("span", { children: "Many items" }) }) })`,
+        '<div><Plural n={count} one={<span>One item</span>}><span>Many items</span></Plural></div>',
+        `jsx("div", { children: jsx(Plural, { n: count, one: jsx("span", { children: "One item" }), children: jsx("span", { children: "Many items" }) }) })`,
         { t: 1, var: 0 },
       ],
       [
@@ -411,8 +411,8 @@ describe('jsxInsertionPass', () => {
         { t: 1, var: 0 },
       ],
       [
-        '<div>Label: <Branch branch="x">fb</Branch><Plural n={c} one="1" other="n" /></div>',
-        `jsxs("div", { children: ["Label: ", jsx(Branch, { branch: "x", children: "fb" }), jsx(Plural, { n: c, one: "1", other: "n" })] })`,
+        '<div>Label: <Branch branch="x">fb</Branch><Plural n={c} one="1">n</Plural></div>',
+        `jsxs("div", { children: ["Label: ", jsx(Branch, { branch: "x", children: "fb" }), jsx(Plural, { n: c, one: "1", children: "n" })] })`,
         { t: 1, var: 0 },
       ],
       [
@@ -474,9 +474,9 @@ describe('jsxInsertionPass', () => {
     });
 
     it('never wraps the Plural selector prop in _Var', () => {
-      // <div><Plural n={count} one="item" other="items" /></div>
+      // <div><Plural n={count} one="item">items</Plural></div>
       const { output, tCalls, varCalls } = insert(
-        `${IMPORTS}jsx("div", { children: jsx(Plural, { n: count, one: "item", other: "items" }) });`
+        `${IMPORTS}jsx("div", { children: jsx(Plural, { n: count, one: "item", children: "items" }) });`
       );
       expect(tCalls).toHaveLength(1);
       expect(varCalls).toHaveLength(0);

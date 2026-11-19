@@ -35,9 +35,7 @@ export default function CheckoutSummary() {
       <div>
         <strong>Total: $<Num>{total}</Num></strong>
       </div>
-      <Branch branch="payment" card="Pay with Card" paypal="Pay with PayPal">
-        Select payment method
-      </Branch>
+      <Branch branch={'payment' as string} card="Pay with Card" paypal="Pay with PayPal">Select payment method</Branch>
     </div>
   );
 }

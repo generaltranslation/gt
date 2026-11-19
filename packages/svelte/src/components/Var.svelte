@@ -18,7 +18,7 @@
     children,
   }: {
     children?: Snippet;
-    /** Variable key used in translations. Must be a static string. */
+    /** Name shown to translators. Must be a static string. */
     name?: string;
   } = $props();
 </script>

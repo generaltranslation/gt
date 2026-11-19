@@ -36,8 +36,8 @@
     "i": 6,
     "d": {
       "b": {
-        "singular": "",
-        "plural": "Files"
+        "=1": "",
+        "=2": "Files"
       },
       "t": "p"
     }
@@ -47,8 +47,8 @@
     "i": 7,
     "d": {
       "b": {
-        "singular": "   File   ",
-        "plural": "   Files   "
+        "=1": "   File   ",
+        "=2": "   Files   "
       },
       "t": "p"
     }
@@ -94,13 +94,11 @@
   "User:",
   {
     "i": 13,
-    "k": "_gt_value_13",
     "v": "v"
   },
   "has",
   {
     "i": 14,
-    "k": "_gt_n_14",
     "v": "n"
   },
   "items",
@@ -118,8 +116,8 @@
     "i": 16,
     "d": {
       "b": {
-        "singular": "  1 item  ",
-        "plural": "  2 items  "
+        "=1": "  1 item  ",
+        "=2": "  2 items  "
       },
       "t": "p"
     }
@@ -127,7 +125,6 @@
   "Total: ",
   {
     "i": 17,
-    "k": "_gt_cost_17",
     "v": "c"
   },
   " available",
@@ -137,8 +134,8 @@
     "i": 18,
     "d": {
       "b": {
-        "singular": true,
-        "plural": false
+        "=1": true,
+        "=2": false
       },
       "t": "p"
     }
@@ -149,8 +146,8 @@
     "i": 19,
     "d": {
       "b": {
-        "singular": null,
-        "plural": "Active"
+        "=1": null,
+        "=2": "Active"
       },
       "t": "p"
     }
@@ -170,13 +167,11 @@
   "Hello ",
   {
     "i": 22,
-    "k": "_gt_value_22",
     "v": "v"
   },
   ", you have ",
   {
     "i": 23,
-    "k": "_gt_n_23",
     "v": "n"
   },
   " new messages.",
@@ -185,8 +180,8 @@
     "i": 24,
     "d": {
       "b": {
-        "singular": "1 file",
-        "plural": "2 files"
+        "=1": "1 file",
+        "=2": "2 files"
       },
       "t": "p"
     }
@@ -230,13 +225,11 @@
             "Very long text with ",
             {
               "i": 31,
-              "k": "_gt_value_31",
               "v": "v"
             },
             " that continues for a very long time and includes multiple ",
             {
               "i": 32,
-              "k": "_gt_n_32",
               "v": "n"
             },
             " ",
@@ -244,7 +237,6 @@
             " ",
             {
               "i": 33,
-              "k": "_gt_cost_33",
               "v": "c"
             },
             " monetary amounts spread throughout the content to test how the algorithm handles very large content blocks with mixed variable types."
@@ -268,8 +260,8 @@
     "i": 32,
     "d": {
       "b": {
-        "singular": true,
-        "dual": {
+        "=1": true,
+        "=3": {
           "t": "C33",
           "i": 33,
           "c": []
@@ -283,8 +275,8 @@
     "i": 33,
     "d": {
       "b": {
-        "singular": true,
-        "dual": {
+        "=1": true,
+        "=3": {
           "t": "C34",
           "i": 34,
           "c": true
@@ -329,7 +321,7 @@
     "i": 40,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "t": "C41",
           "i": 41,
           "c": [
@@ -341,7 +333,7 @@
             "More text"
           ]
         },
-        "plural": {
+        "=2": {
           "t": "C41",
           "i": 41,
           "c": [

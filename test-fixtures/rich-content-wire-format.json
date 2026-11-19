@@ -22,23 +22,21 @@
   },
   {
     "id": "typed-variables",
-    "description": "Variable identifiers and generated names follow source order.",
+    "description": "Variable identifiers follow source order.",
     "source": [
       "Hello ",
       {
         "i": 1,
-        "k": "_gt_value_1",
         "v": "v"
       },
       ", you have ",
       {
         "i": 2,
-        "k": "_gt_n_2",
         "v": "n"
       },
       " messages."
     ],
-    "hash": "d7e2eed57565bcd8"
+    "hash": "ad1d467dd30f93d2"
   },
   {
     "id": "independent-branch-numbering",
@@ -58,7 +56,6 @@
               " ",
               {
                 "i": 3,
-                "k": "_gt_value_3",
                 "v": "v"
               }
             ],
@@ -71,14 +68,13 @@
               " ",
               {
                 "i": 3,
-                "k": "_gt_value_3",
                 "v": "v"
               }
-            ]
+            ],
+            "other": "Fallback"
           },
           "t": "b"
-        },
-        "c": "Fallback"
+        }
       },
       {
         "t": "span",
@@ -86,7 +82,7 @@
         "c": "After"
       }
     ],
-    "hash": "b2a3f3f7f2bdac6f"
+    "hash": "ed8ae5a527b746b1"
   },
   {
     "id": "independent-plural-numbering",
@@ -101,7 +97,6 @@
               "One ",
               {
                 "i": 2,
-                "k": "_gt_n_2",
                 "v": "n"
               }
             ],
@@ -109,14 +104,12 @@
               "Many ",
               {
                 "i": 2,
-                "k": "_gt_n_2",
                 "v": "n"
               }
             ]
           },
           "t": "p"
-        },
-        "c": "Fallback"
+        }
       },
       {
         "t": "span",
@@ -124,6 +117,6 @@
         "c": "After"
       }
     ],
-    "hash": "6155c9e9b46b73ad"
+    "hash": "2fe3421fb7db4dfe"
   }
 ]

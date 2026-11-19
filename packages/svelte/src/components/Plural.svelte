@@ -1,11 +1,12 @@
 <!--
   @component
-  Renders the plural form of `n` for the active locale, or its children when
-  no form matches. Forms are string props or snippets.
+  Renders the branch for `n` as ICU does: an exact number such as `_0`, then
+  the active locale's plural category, then its children. Branches are string
+  props or snippets.
 
   ```svelte
-  <Plural n={count} one="One item">
-    {#snippet other()}<Num value={count} /> items{/snippet}
+  <Plural n={count} _0="No items" one="One item">
+    <Num value={count} /> items
   </Plural>
   ```
 -->
@@ -13,7 +14,10 @@
 <svelte:options preserveWhitespace={false} />
 
 <script lang="ts">
-  import { getPluralForm } from 'generaltranslation/internal';
+  import {
+    getPluralBranchKey,
+    getPluralForm,
+  } from 'generaltranslation/internal';
   import type { PluralType } from 'generaltranslation';
   import type { Snippet } from 'svelte';
   import { useContentLocale } from '../runtime/source';
@@ -21,20 +25,30 @@
   let {
     n,
     children,
-    ...forms
+    ...branches
   }: {
-    n?: number | null;
-    children?: Snippet;
-  } & Partial<Record<PluralType, string | Snippet>> = $props();
+    n: number | bigint;
+    /** The fallback, as `other` is in `plural()`. */
+    children: Snippet;
+  } & Partial<
+    Record<Exclude<PluralType, 'other'> | `_${number}`, string | Snippet>
+  > = $props();
 
   const contentLocale = useContentLocale();
   const selected = $derived.by(() => {
-    if (typeof n !== 'number') return undefined;
-    // Untyped callers can still pass other props; getPluralForm ignores
-    // names that are not plural forms.
-    const available = Object.keys(forms) as PluralType[];
-    const form = getPluralForm(n, available, [contentLocale.current]);
-    return form ? forms[form] : undefined;
+    // Untyped callers can still pass other props, which match no key. A
+    // branch passed as undefined counts as absent, as in gt-react.
+    const all: Record<string, unknown> = branches;
+    // `other` is not a prop: the children are ICU's `other`.
+    const names = Object.keys(all).filter(
+      (name) => name !== 'other' && all[name] !== undefined
+    );
+    const keys = names.map(getPluralBranchKey);
+    const key =
+      typeof n === 'number' || typeof n === 'bigint'
+        ? getPluralForm(n, [...keys, 'other'], [contentLocale.current])
+        : 'other';
+    return key === 'other' ? children : all[names[keys.indexOf(key)]];
   });
 </script>
 
@@ -42,6 +56,4 @@
     {@render (selected as Snippet)()}
 {:else if typeof selected === 'string'}
     {selected}
-{:else}
-    {@render children?.()}
 {/if}

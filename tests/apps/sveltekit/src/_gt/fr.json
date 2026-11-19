@@ -3,7 +3,7 @@
     "Bienvenue dans l’application de test ",
     { "t": "b", "i": 1, "c": "SvelteKit" }
   ],
-  "b178963f85fde351": [
+  "9e82e2733a671788": [
     "Lisez la ",
     {
       "t": "a",
@@ -12,10 +12,10 @@
       "d": { "ti": "Documentation (FR)" }
     },
     ", ",
-    { "i": 1, "k": "_gt_value_1", "v": "v" },
+    { "i": 1, "v": "v" },
     " !"
   ],
-  "837dc98051553ff3": {
+  "c2ba221a4b26acf9": {
     "t": "Plural",
     "i": 1,
     "d": {
@@ -25,19 +25,15 @@
           "i": 2,
           "c": ["Vous avez ", { "t": "b", "i": 3, "c": "un" }, " message"]
         },
-        "other": {
-          "t": "C2",
-          "i": 2,
-          "c": [
-            "Vous avez ",
-            {
-              "t": "b",
-              "i": 3,
-              "c": { "i": 4, "k": "_gt_n_4", "v": "n" }
-            },
-            " messages"
-          ]
-        }
+        "other": [
+          "Vous avez ",
+          {
+            "t": "b",
+            "i": 2,
+            "c": { "i": 3, "v": "n" }
+          },
+          " messages"
+        ]
       },
       "t": "p"
     }

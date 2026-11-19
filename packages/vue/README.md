@@ -233,8 +233,11 @@ const m = useMessages();
 - `<Var>` preserves a dynamic slot value inside `<T>`.
 - `<Num>`, `<DateTime>`, and `<Currency>` require typed runtime values through
   `:value`; formatter slot children are not supported.
-- `<Plural :n="count">` selects named slots such as `#one` and `#other`.
-- `<Branch :branch="key">` selects an arbitrary named slot.
+- `<Plural :n="count">` selects a named slot as ICU does: an exact number such
+  as `#_0`, then the locale's plural category such as `#one`, then the default
+  slot.
+- `<Branch :branch="key">` selects an arbitrary named slot, or the default slot
+  when no slot matches.
 
 Use the required `value` prop for every formatting value.
 
@@ -244,12 +247,13 @@ Use the required `value` prop for every formatting value.
 <DateTime :value="createdAt" :options="{ dateStyle: 'medium' }" />
 ```
 
-When the active locale is the configured default, formatting ignores explicit
-`locales` and uses only that default locale. Otherwise, an explicit `locales`
-list on a standalone formatter is tried first, followed by the active locale
-and then the default locale. Inside `<T>`, the rich translation pipeline owns
-formatting locales: source fallbacks use the default locale, while translated
-content uses the active locale followed by the default.
+`<DateTime>` uses the medium date style unless `options` sets a style or a
+date or time field.
+
+A standalone formatter uses the active locale, then the default locale. Inside
+`<T>`, the rich translation pipeline owns formatting locales: source fallbacks
+use the default locale, while translated content uses the active locale
+followed by the default.
 
 Pass `customMapping` to `createGT()` when a catalog uses a locale alias that
 should format with a canonical locale. The alias remains the catalog loader,

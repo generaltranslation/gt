@@ -115,30 +115,27 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
     tsx: `<T>line<br />break<span></span></T>`,
   },
   {
-    name: 'plural with snippet branches and fallback',
+    name: 'plural with a snippet branch and fallback children',
     svelte: `<T>
       <Plural n={count}>
         {#snippet one()}<b>One</b> item for <Var>{name}</Var>{/snippet}
-        {#snippet other()}
-          <Num value={count} /> items for <Var>{name}</Var>
-        {/snippet}
-        No items
+        <Num value={count} /> items for <Var>{name}</Var>
       </Plural>
       <span>after</span>
     </T>`,
-    tsx: `<T><Plural n={count} one={<><b>One</b> item for <Var>{name}</Var></>} other={<><Num>{count}</Num> items for <Var>{name}</Var></>}>No items</Plural> <span>after</span></T>`,
+    tsx: `<T><Plural n={count} one={<><b>One</b> item for <Var>{name}</Var></>}><Num>{count}</Num> items for <Var>{name}</Var></Plural> <span>after</span></T>`,
   },
   {
     name: 'plural with string branches',
-    svelte: `<T><Plural n={count} one="One item" other="Many items" /></T>`,
-    tsx: `<T><Plural n={count} one="One item" other="Many items" /></T>`,
+    svelte: `<T><Plural n={count} _0="No items" one="One item">Many items</Plural></T>`,
+    tsx: `<T><Plural n={count} _0="No items" one="One item">Many items</Plural></T>`,
   },
   {
     name: 'branch with string, snippet, and nested plural',
     svelte: `<T>
       <Branch branch={status} inactive="Inactive">
         {#snippet active()}
-          <i>Active</i> with <Plural n={count} one="one task" other="many tasks" />
+          <i>Active</i> with <Plural n={count} one="one task">many tasks</Plural>
         {/snippet}
         Unknown
       </Branch>
@@ -148,7 +145,7 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
         branch={status}
         inactive="Inactive"
         active={<>
-          <i>Active</i> with <Plural n={count} one="one task" other="many tasks" />
+          <i>Active</i> with <Plural n={count} one="one task">many tasks</Plural>
         </>}
       >
         Unknown

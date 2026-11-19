@@ -30,10 +30,10 @@ export default function SocialPostCard() {
 
       <footer>
         <button>
-          <Plural n={post.replies} zero="Reply" one="1 reply" other="replies" />
+          <Plural n={post.replies} zero="Reply" one="1 reply">replies</Plural>
         </button>
         <button>
-          <Plural n={post.reposts} zero="Repost" one="1 repost" other="reposts" />
+          <Plural n={post.reposts} zero="Repost" one="1 repost">reposts</Plural>
         </button>
         <button>
           {post.isLiked ? 'Unlike' : 'Like'} ({post.likes})

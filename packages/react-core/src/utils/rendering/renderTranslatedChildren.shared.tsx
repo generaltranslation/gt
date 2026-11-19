@@ -13,7 +13,12 @@ import {
 import { createRenderDefaultChildren } from './renderDefaultChildren.shared';
 import { isVariable } from 'generaltranslation/internal';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
-import { getPluralBranch } from '../plurals/getPluralBranch';
+import {
+  getBranch,
+  getPluralBranch,
+  selectBranchKey,
+  selectPluralKey,
+} from '../plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
@@ -22,9 +27,9 @@ import { getGTTag } from './getGTTag';
 import type { RenderVariable } from '../types';
 
 // Shared implementation: the variable renderer is dependency-injected by a
-// factory so neither code path statically imports the other's variable
-// components. Callsites use the pre-instantiated renderPipeline /
-// renderPipeline.rsc modules instead of importing this directly.
+// factory so this module statically imports no variable components.
+// Callsites use the pre-instantiated renderPipeline.rsc module instead of
+// importing this directly.
 
 type RenderTranslatedChildrenArgs = {
   source: TaggedChildren;
@@ -71,52 +76,38 @@ function createRenderTranslatedChildren({
       });
     }
 
-    // plural (choose a branch)
+    // The translation chooses a branch; when it has none for the value, the
+    // source chooses its own, which then renders untranslated.
     if (transformation === 'plural') {
       const n = sourceElement.props.n;
-      if (typeof n !== 'number') {
-        return renderDefaultChildren({
-          children: sourceElement,
-          defaultLocale: locales[0],
-          enableI18n,
-        });
-      }
-      const sourceBranches = sourceGT.branches || {};
-      const resolvedSourceBranch = getPluralBranch(n, locales, sourceBranches);
-      const sourceBranch =
-        resolvedSourceBranch != null
-          ? resolvedSourceBranch
-          : sourceElement.props.children;
       const targetBranches = targetElement.d?.b || {};
-      const resolvedTargetBranch = getPluralBranch(n, locales, targetBranches);
-      const targetBranch =
-        resolvedTargetBranch != null ? resolvedTargetBranch : targetElement.c;
+      const key = selectPluralKey(n, locales, targetBranches);
+      const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
-        source: sourceBranch as TaggedChildren,
-        target: targetBranch as TranslatedChildren,
+        source: getPluralBranch(
+          n,
+          locales,
+          sourceGT.branches || {},
+          target === undefined ? undefined : key
+        ),
+        target,
         locales,
         enableI18n,
       });
     }
 
-    // branch (choose a branch)
     if (transformation === 'branch') {
-      const { branch, children } = sourceProps;
-      const branchKey =
-        branch == null || branch === '' ? undefined : branch.toString();
-      const sourceBranches = sourceGT.branches || {};
+      const { branch } = sourceProps;
       const targetBranches = targetElement.d?.b || {};
-      const sourceBranch =
-        branchKey && sourceBranches[branchKey] !== undefined
-          ? sourceBranches[branchKey]
-          : children;
-      const targetBranch =
-        branchKey && targetBranches[branchKey] !== undefined
-          ? targetBranches[branchKey]
-          : targetElement.c;
+      const key = selectBranchKey(branch, targetBranches);
+      const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
-        source: sourceBranch as TaggedChildren,
-        target: targetBranch as TranslatedChildren,
+        source: getBranch(
+          branch,
+          sourceGT.branches || {},
+          target === undefined ? undefined : key
+        ),
+        target,
         locales,
         enableI18n,
       });
@@ -180,11 +171,11 @@ function createRenderTranslatedChildren({
     // Multiple children
     if (Array.isArray(source) && Array.isArray(target)) {
       // Track the variables
-      const variables: Record<string, VariableProps['variableValue']> = {};
-      const variablesOptions: Record<string, VariableProps['variableOptions']> =
+      const variables: Record<number, VariableProps['variableValue']> = {};
+      const variablesOptions: Record<number, VariableProps['variableOptions']> =
         {};
       const variableInjectionTypes: Record<
-        string,
+        number,
         VariableProps['injectionType']
       > = {};
 
@@ -196,14 +187,14 @@ function createRenderTranslatedChildren({
           if (React.isValidElement(sourceChild)) {
             if (isVariableElementProps(sourceChild.props)) {
               const {
-                variableName,
+                variableId,
                 variableValue,
                 variableOptions,
                 injectionType,
               } = getVariableProps(sourceChild.props);
-              variables[variableName] = variableValue;
-              variablesOptions[variableName] = variableOptions;
-              variableInjectionTypes[variableName] = injectionType;
+              variables[variableId] = variableValue;
+              variablesOptions[variableId] = variableOptions;
+              variableInjectionTypes[variableId] = injectionType;
             } else {
               return true;
             }
@@ -243,13 +234,13 @@ function createRenderTranslatedChildren({
           return (
             <React.Fragment key={`var_${index}`}>
               {renderVariable({
-                variableType: targetChild.v || 'v',
-                variableValue: variables[targetChild.k],
-                variableOptions: variablesOptions[targetChild.k],
+                variableType: targetChild.v,
+                variableValue: variables[targetChild.i],
+                variableOptions: variablesOptions[targetChild.i],
                 locales,
                 enableI18n,
                 injectionType:
-                  variableInjectionTypes[targetChild.k] || 'manual',
+                  variableInjectionTypes[targetChild.i] || 'manual',
               })}
             </React.Fragment>
           );

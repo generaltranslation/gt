@@ -438,7 +438,7 @@ describe('Vue compiler option parity', () => {
     expect(result.results).toEqual([
       expect.objectContaining({
         dataFormat: 'JSX',
-        source: ['Hello ', { i: 1, k: '_gt_value_1', v: 'v' }],
+        source: ['Hello ', { i: 1, v: 'v' }],
       }),
     ]);
   });

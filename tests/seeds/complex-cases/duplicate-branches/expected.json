@@ -10,14 +10,12 @@
           "Identical content with ",
           {
             "i": 3,
-            "k": "_gt_value_3",
             "v": "v"
           },
           " and",
           " ",
           {
             "i": 4,
-            "k": "_gt_n_4",
             "v": "n"
           }
         ]
@@ -29,14 +27,12 @@
           "Identical content with ",
           {
             "i": 3,
-            "k": "_gt_value_3",
             "v": "v"
           },
           " and",
           " ",
           {
             "i": 4,
-            "k": "_gt_n_4",
             "v": "n"
           }
         ]
@@ -48,14 +44,12 @@
           "Different content with ",
           {
             "i": 3,
-            "k": "_gt_value_3",
             "v": "v"
           },
           " and",
           " ",
           {
             "i": 4,
-            "k": "_gt_n_4",
             "v": "n"
           }
         ]

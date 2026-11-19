@@ -1,3 +1,7 @@
+import {
+  getPluralBranchKey,
+  isAcceptedPluralForm,
+} from 'generaltranslation/internal';
 import { getPluralBranch } from '../../utils/plurals/getPluralBranch';
 import type { ReactNode } from 'react';
 import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
@@ -7,37 +11,39 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 // components-rsc entrypoint.
 
 type PluralProps = {
-  children?: ReactNode;
-  n: number;
-  locales?: string[];
-  _locale?: string;
-  _enableI18n?: boolean;
-  [key: string]: ReactNode;
-};
+  n: number | bigint;
+  /** The fallback, as `other` is in `plural()`. */
+  children: ReactNode;
+} & Partial<
+  // `_0` is the exact number 0: ICU's `=0`, which JSX cannot spell.
+  Record<Exclude<Intl.LDMLPluralRule, 'other'> | `_${number}`, ReactNode>
+>;
 
-type ResolvedPluralProps = PluralProps & {
+type PluralConditions = {
   _locale: string;
   _enableI18n: boolean;
 };
 
+type ResolvedPluralProps = PluralProps & PluralConditions;
+
 function renderPlural({
   _enableI18n,
   _locale,
-  children,
   n,
-  locales: localesProp = [],
-  ...branches
+  children,
+  ...props
 }: ResolvedPluralProps): ReactNode {
   const locales = getFormatLocales({
     locale: _locale,
     enableI18n: _enableI18n,
-    localesProp,
   });
-  if (typeof n !== 'number') {
-    return children;
-  }
-  const resolvedBranch = getPluralBranch(n, locales, branches);
-  return resolvedBranch != null ? resolvedBranch : children;
+  const branches = Object.fromEntries([
+    ...Object.entries(props)
+      .filter(([prop]) => isAcceptedPluralForm(prop))
+      .map(([prop, branch]) => [getPluralBranchKey(prop), branch]),
+    ['other', children],
+  ]);
+  return getPluralBranch(n, locales, branches);
 }
 
 export { renderPlural };

@@ -12,7 +12,7 @@ export default function CommerceWishlist() {
       <header>
         <h1>My Wishlist</h1>
         <p>
-          <Plural n={totalItems} zero="No saved items" one="1 saved item" other="saved items" />
+          <Plural n={totalItems} zero="No saved items" one="1 saved item">saved items</Plural>
         </p>
       </header>
 

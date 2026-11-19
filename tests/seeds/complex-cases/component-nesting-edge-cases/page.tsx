@@ -11,12 +11,12 @@ export default function Home() {
           <div>
             <Plural
               n={count}
-              singular={
+              _1={
                 <span>
                   Nested plural: <Var>single</Var>
                 </span>
               }
-              plural={
+              _2={
                 <Branch
                   branch="inner"
                   option1="Double nested!"

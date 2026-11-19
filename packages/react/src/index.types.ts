@@ -73,6 +73,7 @@ export {
 
 // ===== Types ===== //
 export type {
+  BranchProps,
   CurrencyProps,
   DateTimeProps,
   JsxTranslationOptions,

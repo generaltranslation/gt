@@ -30,9 +30,7 @@ export default function SocialProfileHeader() {
             online={<span>Online</span>}
             away={<span>Away</span>}
             offline={<span>Offline</span>}
-          >
-            <span>Unknown</span>
-          </Branch>
+          ><span>Unknown</span></Branch>
         </div>
 
         {!user.isOwnProfile && (
@@ -54,14 +52,14 @@ export default function SocialProfileHeader() {
       <div>
         <a href="/followers">
           <strong><Num>{user.followers}</Num></strong>{' '}
-          <Plural n={user.followers} one="follower" other="followers" />
+          <Plural n={user.followers} one="follower">followers</Plural>
         </a>
         <a href="/following">
           <strong><Num>{user.following}</Num></strong> following
         </a>
         <span>
           <strong><Num>{user.posts}</Num></strong>{' '}
-          <Plural n={user.posts} one="post" other="posts" />
+          <Plural n={user.posts} one="post">posts</Plural>
         </span>
       </div>
     </header>

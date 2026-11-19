@@ -76,16 +76,9 @@ describe('getFormatLocales', () => {
   beforeEach(resetGTGlobals);
   afterEach(resetGTGlobals);
 
-  it('uses the explicit locales as they are, or the locale alone, when translation is required', () => {
+  it('uses the locale alone when translation is required', () => {
     setup({ locale: 'en' });
 
-    expect(
-      getFormatLocales({
-        locale: 'fr',
-        enableI18n: true,
-        localesProp: ['fr-CA'],
-      })
-    ).toEqual(['fr-CA']);
     expect(getFormatLocales({ locale: 'fr', enableI18n: true })).toEqual([
       'fr',
     ]);
@@ -94,24 +87,16 @@ describe('getFormatLocales', () => {
   it('returns only the default locale when explicit locale does not require translation', () => {
     setup({ locale: 'de', locales: ['en', 'fr', 'de'] });
 
-    expect(
-      getFormatLocales({
-        locale: 'en',
-        enableI18n: true,
-        localesProp: ['fr-CA'],
-      })
-    ).toEqual(['en']);
+    expect(getFormatLocales({ locale: 'en', enableI18n: true })).toEqual([
+      'en',
+    ]);
   });
 
   it('returns only the default locale when translation is disabled', () => {
     setup({ locale: 'fr', enableI18n: false });
 
-    expect(
-      getFormatLocales({
-        locale: 'fr',
-        enableI18n: false,
-        localesProp: ['fr-CA'],
-      })
-    ).toEqual(['en']);
+    expect(getFormatLocales({ locale: 'fr', enableI18n: false })).toEqual([
+      'en',
+    ]);
   });
 });

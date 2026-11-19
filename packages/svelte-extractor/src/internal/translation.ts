@@ -7,6 +7,7 @@ import type {
 } from '@generaltranslation/format';
 import { HTML_CONTENT_PROPS } from '@generaltranslation/format';
 import {
+  getPluralBranchKey,
   isAcceptedPluralForm,
   minifyVariableType,
 } from 'generaltranslation/internal';
@@ -35,15 +36,6 @@ const VARIABLE_TYPES = {
   Currency: 'currency',
   DateTime: 'datetime',
   RelativeTime: 'relativetime',
-} as const;
-
-/** Default variable key bases, matching React's `getVariableName`. */
-const DEFAULT_VARIABLE_NAMES = {
-  variable: 'value',
-  number: 'n',
-  datetime: 'date',
-  currency: 'cost',
-  relativetime: 'time',
 } as const;
 
 /** Elements whose contents are code rather than text. */
@@ -112,11 +104,8 @@ const PROTO_BRANCH_PROBLEM = '"__proto__" cannot be used as a branch name';
 
 type Counter = { index: number };
 
-/** Where converted children live: what contains them, and its scoped id. */
-type Parent = { kind: 'T' | 'element' | 'branch'; id: string };
-
-/** A variable's key and id, with the scope and parent it was declared in. */
-type VariableSite = { scope: string; parent: string; key: string; id: number };
+/** What contains the converted children. */
+type Parent = { kind: 'T' | 'element' | 'branch' };
 
 /**
  * Analyzes one `<T>` component and builds its serialized JSX children,
@@ -150,7 +139,6 @@ class TranslationBuilder {
   private snippets: string[] = [];
   private edits: TextEdit[] = [];
   private runtimeMetadata: GTRuntimeMetadata = {};
-  private variables: VariableSite[] = [];
   /**
    * Per enclosing element or branch body, the snippets declared directly in
    * it, by name. Generated snippets are declared directly under `<T>`, so
@@ -174,10 +162,9 @@ class TranslationBuilder {
       node.fragment.nodes,
       '',
       { index: 0 },
-      { kind: 'T', id: '' },
+      { kind: 'T' },
       whitespace
     );
-    this.addVariableMetadata();
 
     if (this.problems.length > 0) {
       return { ok: false, problems: this.problems };
@@ -405,7 +392,7 @@ class TranslationBuilder {
       return undefined;
     }
     if (kind && kind in VARIABLE_TYPES) {
-      return this.convertVariable(node, kind, scope, counter, parent);
+      return this.convertVariable(node, kind, scope, counter);
     }
     if (kind === 'Branch' || kind === 'Plural') {
       return this.convertBranch(node, kind, scope, counter, whitespace);
@@ -471,7 +458,7 @@ class TranslationBuilder {
         node.fragment.nodes,
         scope,
         counter,
-        { kind: 'element', id: `${scope}${id}` },
+        { kind: 'element' },
         getChildWhitespace(whitespace, node)
       )
     );
@@ -527,34 +514,32 @@ class TranslationBuilder {
     node: SvelteElementNode,
     kind: GTComponentKind,
     scope: string,
-    counter: Counter,
-    parent: Parent
+    counter: Counter
   ): Variable | undefined {
     const id = ++counter.index;
     const variableType = VARIABLE_TYPES[kind as keyof typeof VARIABLE_TYPES];
-    let key = `_gt_${DEFAULT_VARIABLE_NAMES[variableType]}_${id}`;
     const nameAttribute = findAttribute(node, 'name');
-    if (nameAttribute) {
-      const name = getStaticString(nameAttribute);
-      if (name === undefined) {
-        this.problem(
-          nameAttribute.start,
-          `The "name" prop on <${node.name}> must be a static string inside <T>`
-        );
-        return undefined;
-      }
-      key = name;
+    const name = nameAttribute && getStaticString(nameAttribute);
+    if (nameAttribute && name === undefined) {
+      this.problem(
+        nameAttribute.start,
+        `The "name" prop on <${node.name}> must be a static string inside <T>`
+      );
+      return undefined;
     }
     if (containsComponent(node.fragment, this.bindings, 'T')) {
       this.problem(node.start, '<T> cannot be nested inside another <T>');
       return undefined;
     }
 
-    this.variables.push({ scope, parent: parent.id, key, id });
     this.snippets.push(
       `{#snippet ${RESERVED_PREFIX}v_${scope}${id}()}${this.enclosingSnippets()}${this.slice(node.start, node.end)}{/snippet}`
     );
-    return { i: id, k: key, v: minifyVariableType(variableType) };
+    return {
+      i: id,
+      ...(name && { k: name }),
+      v: minifyVariableType(variableType),
+    };
   }
 
   // ===== Branch / Plural ===== //
@@ -569,10 +554,13 @@ class TranslationBuilder {
     const id = ++counter.index;
     // No inherited keys, so names like "constructor" are ordinary branches.
     const branches: Record<string, JsxChildren> = Object.create(null);
-    // Branch names in declaration order. A branch's scope is named after its
+    // Branch keys in declaration order. A branch's scope is named after its
     // position here, because joining raw names, which may contain `$`, could
     // give two different branches the same scope.
     const branchNames: string[] = [];
+    // Plural branches are stored under ICU keys: `_0` is `=0`.
+    const keyOf = (name: string) =>
+      kind === 'Plural' ? getPluralBranchKey(name) : name;
 
     // Attribute branches: static strings, like React string props.
     for (const attribute of node.attributes) {
@@ -585,6 +573,10 @@ class TranslationBuilder {
       }
       if (attribute.type !== 'Attribute') continue;
       const { name } = attribute as SvelteAttribute;
+      if (name === 'other') {
+        this.problem(attribute.start, createOtherBranchProblem(node.name));
+        continue;
+      }
       if (!isBranchName(kind, name)) continue;
       if (name === '__proto__') {
         this.problem(attribute.start, PROTO_BRANCH_PROBLEM);
@@ -598,8 +590,8 @@ class TranslationBuilder {
         );
         continue;
       }
-      branches[name] = value;
-      branchNames.push(name);
+      branches[keyOf(name)] = value;
+      branchNames.push(keyOf(name));
     }
 
     // Snippet branches: each body is a fragment numbered from the branch id.
@@ -610,6 +602,10 @@ class TranslationBuilder {
         continue;
       }
       const name = getSnippetName(child);
+      if (name === 'other') {
+        this.problem(child.start, createOtherBranchProblem(node.name));
+        continue;
+      }
       if (!name || !isBranchName(kind, name)) {
         this.problem(
           child.start,
@@ -630,7 +626,7 @@ class TranslationBuilder {
         this.problem(child.start, PROTO_BRANCH_PROBLEM);
         continue;
       }
-      if (Object.hasOwn(branches, name)) {
+      if (Object.hasOwn(branches, keyOf(name))) {
         this.problem(
           child.start,
           `The "${name}" branch of <${node.name}> is declared twice`
@@ -638,7 +634,7 @@ class TranslationBuilder {
         continue;
       }
       const branchScope = `${scope}b${id}_${branchNames.length}$`;
-      branchNames.push(name);
+      branchNames.push(keyOf(name));
       const branchCounter = { index: id };
       const fragmentId = ++branchCounter.index;
       const body = child.body as { nodes: SvelteNode[] };
@@ -647,7 +643,7 @@ class TranslationBuilder {
           body.nodes,
           branchScope,
           branchCounter,
-          { kind: 'branch', id: `${branchScope}${fragmentId}` },
+          { kind: 'branch' },
           getChildWhitespace(whitespace, child)
         )
       );
@@ -656,7 +652,22 @@ class TranslationBuilder {
       this.snippets.push(
         `{#snippet ${RESERVED_PREFIX}e_${branchScope}${fragmentId}(${RESERVED_PREFIX}kids)}{@render ${RESERVED_PREFIX}kids()}{/snippet}`
       );
-      branches[name] = fragment;
+      branches[keyOf(name)] = fragment;
+    }
+
+    // The children are the fallback: the `other` branch, numbered from the
+    // branch id in a scope of its own, like React's.
+    const fallbackScope = `${scope}b${id}_${branchNames.length}$`;
+    const fallback = this.convertChildren(
+      childNodes,
+      fallbackScope,
+      { index: id },
+      { kind: 'branch' },
+      getChildWhitespace(whitespace, node)
+    );
+    if (fallback !== undefined && fallback !== '') {
+      branches.other = fallback;
+      branchNames.push('other');
     }
 
     const element: JsxElement = { t: getTagName(node), i: id };
@@ -668,15 +679,6 @@ class TranslationBuilder {
         t: kind === 'Plural' ? 'p' : 'b',
       };
     }
-    // Fallback children keep the running counter, like React.
-    const children = this.convertChildren(
-      childNodes,
-      scope,
-      counter,
-      { kind: 'element', id: `${scope}${id}` },
-      getChildWhitespace(whitespace, node)
-    );
-    if (children !== undefined) element.c = children;
     if (d) element.d = d;
 
     const selector = findAttribute(node, kind === 'Plural' ? 'n' : 'branch');
@@ -691,28 +693,6 @@ class TranslationBuilder {
       })}{/snippet}`
     );
     return element;
-  }
-
-  /**
-   * Records each scope's variable keys. A key used more than once in a scope
-   * also gets a per-parent entry, because gt-react resolves a translated
-   * variable among the source children of the same parent.
-   */
-  private addVariableMetadata() {
-    const counts = new Map<string, number>();
-    for (const { scope, key } of this.variables) {
-      const scopeKey = JSON.stringify([scope, key]);
-      counts.set(scopeKey, (counts.get(scopeKey) ?? 0) + 1);
-    }
-    const metadata: GTRuntimeMetadata = {};
-    for (const { scope, parent, key, id } of this.variables) {
-      // Variable names are keys, so the maps have no inherited properties.
-      ((metadata.v ??= {})[scope] ??= Object.create(null))[key] = id;
-      if ((counts.get(JSON.stringify([scope, key])) ?? 0) > 1) {
-        ((metadata.s ??= {})[parent] ??= Object.create(null))[key] = id;
-      }
-    }
-    this.runtimeMetadata = { ...metadata, ...this.runtimeMetadata };
   }
 
   /** Converts `nodes` with the snippets declared among them in scope. */
@@ -778,6 +758,9 @@ function escapeText(text: string): string {
 const CONTENT_PROP_NAMES = new Map<string, string>(
   Object.entries(HTML_CONTENT_PROPS).map(([minified, full]) => [full, minified])
 );
+
+const createOtherBranchProblem = (component: string) =>
+  `<${component}> has no other branch. Write the fallback as its children`;
 
 function isBranchName(kind: 'Branch' | 'Plural', name: string): boolean {
   if (kind === 'Plural') return isAcceptedPluralForm(name);

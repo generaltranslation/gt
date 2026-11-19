@@ -189,13 +189,12 @@ const fixtures: ContractFixture[] = [
         {
           n: 2,
           one: createElement('span', null, 'One item'),
-          other: createElement('span', null, 'Many items'),
         },
         createElement('span', null, 'Items')
       ),
     vue: {
       template:
-        '<T><Plural :n="2"><template #one><span>One item</span></template><template #other><span>Many items</span></template><span>Items</span></Plural></T>',
+        '<T><Plural :n="2"><template #one><span>One item</span></template><span>Items</span></Plural></T>',
     },
   },
   {
@@ -1085,13 +1084,13 @@ const catalogCases = {
       ' messages.',
     ],
     target: [
-      { k: '_gt_n_2', v: 'n' },
+      { i: 2, v: 'n' },
       ' messages pour ',
-      { k: '_gt_value_1', v: 'v' },
+      { i: 1, v: 'v' },
       '; encore ',
-      { k: '_gt_n_2', v: 'n' },
+      { i: 2, v: 'n' },
       ' pour ',
-      { k: '_gt_value_1', v: 'v' },
+      { i: 1, v: 'v' },
       '.',
     ],
     expectedHtml: '<main>3 messages pour Ada; encore 3 pour Ada.</main>',
@@ -1102,12 +1101,12 @@ const catalogCases = {
         Branch,
         { branch: alternate ? 'casual' : 'formal' },
         {
+          default: () => 'Fallback',
           casual: () => [
             h('em', null, 'Hi'),
             ' ',
             h(Var, null, { default: () => 'Ada' }),
           ],
-          default: () => 'Fallback',
           formal: () => [
             h('strong', null, 'Hello'),
             ' ',
@@ -1126,21 +1125,17 @@ const catalogCases = {
         d: {
           t: 'b',
           b: {
-            casual: [
-              { k: '_gt_value_3', v: 'v' },
-              ' dit ',
-              { t: 'x', i: 2, c: 'Salut' },
-            ],
+            casual: [{ i: 3, v: 'v' }, ' dit ', { t: 'x', i: 2, c: 'Salut' }],
             formal: [
-              { k: '_gt_value_3', v: 'v' },
+              { i: 3, v: 'v' },
               ' dit ',
               { t: 'x', i: 2, c: 'Bonjour' },
               ' et ',
               { t: 'x', i: 2, c: 'salut' },
             ],
+            other: 'Secours',
           },
         },
-        c: 'Secours',
       },
       ' | ',
       { t: 'x', i: 2, c: 'Après' },
@@ -1156,9 +1151,8 @@ const catalogCases = {
         Plural,
         { n: alternate ? 1 : 2 },
         {
-          default: () => 'Fallback',
           one: () => ['One ', h(Num, { value: 1 })],
-          other: () => ['Many ', h(Num, { value: 2 })],
+          default: () => ['Many ', h(Num, { value: 2 })],
         }
       ),
       h('span', null, 'After'),
@@ -1172,15 +1166,10 @@ const catalogCases = {
         d: {
           t: 'p',
           b: {
-            one: ['Un: ', { k: '_gt_n_2', v: 'n' }],
-            other: [
-              { k: '_gt_n_2', v: 'n' },
-              ' éléments + ',
-              { k: '_gt_n_2', v: 'n' },
-            ],
+            one: ['Un: ', { i: 2, v: 'n' }],
+            other: [{ i: 2, v: 'n' }, ' éléments + ', { i: 2, v: 'n' }],
           },
         },
-        c: 'Secours',
       },
       ' | ',
       { t: 'x', i: 2, c: 'Fin' },

@@ -21,8 +21,6 @@ import { validateChildrenFromArgs } from './validation/validateChildrenFromArgs'
 import { IdObject } from './utils/id';
 import { VariableType } from '../../state/ScopeTracker';
 import {
-  defaultVariableNames,
-  getVariableName,
   isBranchComponent,
   isDeriveComponent,
   isGTComponent,
@@ -39,11 +37,19 @@ import {
   generateDynamicContentErrorMessage,
 } from '../../utils/errors';
 import { validateJsxCall } from './validation/validateJsxCall';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
   JsxValidationError,
   dynamicContentError,
   structuralError,
 } from './errors';
+
+const createSpreadOnBranchError = (component: string) =>
+  createDiagnosticMessage({
+    whatHappened: `<${component}> cannot take a spread attribute`,
+    why: 'its props are read from the source',
+    fix: 'Write each prop out on the component',
+  });
 
 /**
  * Given the children of a <T> component, constructs a JsxChildren object.
@@ -80,6 +86,11 @@ export function constructJsxChildren(
     // Handle ArrayExpression
     value = [];
     const elementPaths = childrenPath.get('elements');
+    // Autoderive drops dynamic-content errors, so a structural error in a
+    // later sibling still has to be found.
+    const keepLooking = () =>
+      state.settings.autoderive.jsx &&
+      errors.every((error) => error.type === 'dynamic-content');
 
     for (let i = 0; i < children.elements.length; i++) {
       const child = children.elements[i];
@@ -91,6 +102,7 @@ export function constructJsxChildren(
               (child && createErrorLocation(child))
           )
         );
+        if (keepLooking()) continue;
         return { errors };
       }
 
@@ -106,12 +118,16 @@ export function constructJsxChildren(
       const validation = constructJsxChild(childPath, state, id);
       errors.push(...validation.errors);
       if (errors.length > 0) {
+        if (keepLooking()) continue;
         return { errors };
       }
       containsDerive ||= !!validation.containsDerive;
       // Skip if no value
       if (validation.value === undefined) continue;
       (value as JsxChild[]).push(validation.value);
+    }
+    if (errors.length > 0) {
+      return { errors };
     }
   } else {
     // Handle single child
@@ -346,14 +362,16 @@ function constructJsxElement(
     return { errors };
   }
 
-  // Construct JsxChildren
-  // Number Branch/Plural children with the running counter like any other
-  // children (only branch props restart), to match the runtime's addGTIdentifier.
-  const jsxChildrenValidation = constructJsxChildrenForJsxElement(
-    childrenValidation.value,
-    state,
-    id
-  );
+  // Construct JsxChildren. The children of a Branch or a Plural are its
+  // `other` branch, which constructGTProp constructs.
+  const jsxChildrenValidation: ReturnType<
+    typeof constructJsxChildrenForJsxElement
+  > =
+    canonicalName &&
+    type === 'generaltranslation' &&
+    isBranchComponent(canonicalName)
+      ? { errors: [] }
+      : constructJsxChildrenForJsxElement(childrenValidation.value, state, id);
   errors.push(...jsxChildrenValidation.errors);
   if (jsxChildrenValidation.errors.length > 0) {
     return { errors };
@@ -472,16 +490,55 @@ function constructGTProp(
     type === 'generaltranslation' &&
     isBranchComponent(canonicalName)
   ) {
+    // The runtime reads the props a spread carries, which the source does not show.
+    const spread = parameters.properties.find((property) =>
+      t.isSpreadElement(property)
+    );
+    if (spread) {
+      errors.push(
+        structuralError(
+          createSpreadOnBranchError(canonicalName) + createErrorLocation(spread)
+        )
+      );
+      return { errors };
+    }
     // Get the branching parameters
     const branchingParameters = getBranchComponentParameters(
       parametersPath as NodePath<t.ObjectExpression>,
-      canonicalName
+      canonicalName,
+      (diagnostic, node) =>
+        state.logger.logWarning(
+          (diagnostic + createErrorLocation(node)).replace(
+            '{filename}',
+            state.settings.filename || '{filename}'
+          )
+        ),
+      (diagnostic, node) =>
+        errors.push(structuralError(diagnostic + createErrorLocation(node)))
     );
+    if (errors.length > 0) {
+      return { errors };
+    }
     // Add branch component branches
     const branches = {} as Record<string, JsxChildren>;
 
     for (const [name, parameterPath] of branchingParameters) {
       const parameter = parameterPath.node;
+      // The fallback is read as children are: null and false are no content.
+      if (name === 'other') {
+        const validation = constructJsxChildrenForJsxElement(
+          parameterPath,
+          state,
+          id.copy()
+        );
+        errors.push(...validation.errors);
+        if (validation.errors.length > 0) {
+          return { errors };
+        }
+        containsDerive ||= !!validation.containsDerive;
+        if (validation.value) branches[name] = validation.value;
+        continue;
+      }
       // Special exceptions for branches:
       if (t.isNullLiteral(parameter)) {
         branches[name] = null as unknown as JsxChildren;
@@ -564,11 +621,7 @@ function constructVariable(
   // Check for name field
   const value: Variable = {
     i: id.get(),
-    k: getVariableName(
-      canonicalName as keyof typeof defaultVariableNames,
-      id.get(),
-      name
-    ),
+    ...(name ? { k: name } : {}),
     v: minifyCanonicalName(canonicalName) as GTVariableType,
   };
 

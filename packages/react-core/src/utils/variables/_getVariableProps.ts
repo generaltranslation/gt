@@ -3,7 +3,6 @@ import {
   minifyVariableType,
 } from 'generaltranslation/internal';
 import { GTTag, VariableProps } from '../types';
-import { getVariableName } from './getVariableName';
 
 type VariableElementProps = {
   'data-_gt': GTTag & {
@@ -31,12 +30,11 @@ export function getVariableProps(props: VariableElementProps): VariableProps {
     props['data-_gt']?.variableType || 'variable';
 
   const result: VariableProps = {
-    variableName: getVariableName(props, variableType),
+    variableId: props['data-_gt'].id,
     variableType: minifyVariableType(variableType),
     injectionType: props['data-_gt']?.injectionType || 'manual',
     variableValue: (() => {
       if (typeof props.value !== 'undefined') return props.value;
-      if (typeof props.date !== 'undefined') return props.date;
       if (typeof props['data-_gt-unformatted-value'] !== 'undefined')
         return props['data-_gt-unformatted-value'];
       if (typeof props.children !== 'undefined') return props.children;
@@ -44,9 +42,6 @@ export function getVariableProps(props: VariableElementProps): VariableProps {
     })(),
     variableOptions: (() => {
       const variableOptions = {
-        ...(typeof props.currency !== 'undefined' && {
-          currency: props.currency,
-        }),
         ...(typeof props.unit !== 'undefined' && {
           unit: props.unit,
         }),
@@ -54,6 +49,9 @@ export function getVariableProps(props: VariableElementProps): VariableProps {
           baseDate: props.baseDate,
         }),
         ...(typeof props.options !== 'undefined' && props.options),
+        ...(typeof props.currency !== 'undefined' && {
+          currency: props.currency,
+        }),
       };
       if (Object.keys(variableOptions).length) return variableOptions;
       if (typeof props['data-_gt-variable-options'] === 'string')

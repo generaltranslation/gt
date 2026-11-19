@@ -9,8 +9,7 @@ export default function Home() {
         two={-1}
         few={3.14159}
         many={1e6}
-        other={0xff}
-      />
+      >{0xff}</Plural>
       <Branch
         branch="status"
         active={true}
@@ -20,10 +19,9 @@ export default function Home() {
       />
       <Plural
         n={1}
-        singular="Single 'quotes' inside"
-        plural={'Double "quotes" inside'}
-        other={`Template with 'both' "types"`}
-      />
+        _1="Single 'quotes' inside"
+        _2={'Double "quotes" inside'}
+      >{`Template with 'both' "types"`}</Plural>
     </T>
 
   );

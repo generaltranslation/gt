@@ -12,7 +12,7 @@ export default function UserProfile() {
       </header>
       <section>
         <p>
-          <Plural n={posts} one="one post" other="many posts" /> published
+          <Plural n={posts} one="one post">many posts</Plural> published
         </p>
       </section>
     </div>

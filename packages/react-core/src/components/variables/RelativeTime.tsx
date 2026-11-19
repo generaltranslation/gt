@@ -6,15 +6,11 @@ import {
 
 // ===== Component ===== //
 
-function GtInternalRelativeTime({
-  _enableI18n,
-  _locale,
-  ...props
-}: RelativeTimeProps): string | null {
+function GtInternalRelativeTime(props: RelativeTimeProps): string | null {
   return computeRelativeTime({
     ...props,
-    _enableI18n: _enableI18n ?? useEnableI18n(),
-    _locale: _locale ?? useLocale(),
+    _enableI18n: useEnableI18n(),
+    _locale: useLocale(),
   });
 }
 

@@ -3,7 +3,7 @@
   "i": 1,
   "d": {
     "b": {
-      "singular": {
+      "=1": {
         "t": "C2",
         "i": 2,
         "c": [
@@ -15,7 +15,7 @@
           " fragment"
         ]
       },
-      "plural": "files"
+      "=2": "files"
     },
     "t": "p"
   }

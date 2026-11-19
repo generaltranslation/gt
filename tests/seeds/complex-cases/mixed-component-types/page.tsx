@@ -8,7 +8,7 @@ export default function Home() {
       <div className="container">
         <Plural
           n={count}
-          singular={
+          _1={
             <div>
               You have <Num>{count}</Num> item costing{" "}
               <Currency currency="USD">{amount}</Currency>
@@ -20,7 +20,7 @@ export default function Home() {
               />
             </div>
           }
-          plural={
+          _2={
             <div>
               You have <Num>{count}</Num> items costing{" "}
               <Currency currency="USD">{amount * count}</Currency>

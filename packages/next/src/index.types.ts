@@ -85,8 +85,8 @@ export function GTProvider(
  * ```jsx
  * // Translating a plural
  * <T id="item_count">
- *  <Plural n={3} singular={<>You have <Num children={n}/> item.</>}>
- *      You have <Num children={n}/> items.
+ *  <Plural n={n} one={<>You have <Num>{n}</Num> item.</>}>
+ *    You have <Num>{n}</Num> items.
  *  </Plural>
  * </T>
  * ```
@@ -118,12 +118,12 @@ GtInternalTranslateJsx._gtt = 'translate-client-automatic';
  * <Currency
  *    currency="USD"
  * >
- *    1000
+ *    {1000}
  * </Currency>
  * ```
  *
- * @param {any} [children] - Optional content to render inside the currency component.
- * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
+ * @param {number | bigint} [children] - The amount to format.
+ * @param {string} currency - The currency type (e.g., USD, EUR, etc.).
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {React.JSX.Element} The formatted currency component.
  */
@@ -144,8 +144,8 @@ Currency._gtt = 'variable-currency';
  * </DateTime>
  * ```
  *
- * @param {any} [children] - Optional content (typically a date) to render inside the component.
- * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
+ * @param {Date | number} [children] - The date to format, or its timestamp.
+ * @param {Intl.DateTimeFormatOptions} [options] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications. Without a style or a date or time field, the medium date style.
  * @returns {Promise<React.JSX.Element>} The formatted date or time component.
  */
 export const DateTime: typeof _DateTime = () => {
@@ -160,10 +160,10 @@ DateTime._gtt = 'variable-datetime';
  *
  * @example
  * ```jsx
- * <RelativeTime date={someDate} />
+ * <RelativeTime>{someDate}</RelativeTime>
  * ```
  *
- * @param {Date} [date] - A date to compute relative time from now.
+ * @param {Date} [children] - A date to compute relative time from now.
  * @param {number} [value] - Explicit numeric value. Requires `unit`.
  * @param {Intl.RelativeTimeFormatUnit} [unit] - The unit of time.
  * @param {Date} [baseDate] - Base date for computing relative time. Defaults to `new Date()` at render time. Required for hydration safety.
@@ -185,11 +185,11 @@ RelativeTime._gtt = 'variable-relativetime';
  * <Num
  *    options={{ style: "decimal", maximumFractionDigits: 2 }}
  * >
- *    1000
+ *    {1000}
  * </Num>
  * ```
  *
- * @param {any} [children] - Optional content (typically a number) to render inside the component.
+ * @param {number | bigint} [children] - The number to format.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {React.JSX.Element} The formatted number component.
  */
@@ -271,20 +271,19 @@ Derive._gtt = 'derive';
  * @example
  * ```jsx
  * <Branch
- *  branch="summary"
- * summary={<p>This is a summary</p>}
- * details={<p>Details here</p>}
+ *  branch={view}
+ *  summary={<p>This is a summary</p>}
+ *  details={<p>Details here</p>}
  * >
- *   <p>Fallback content</p>
+ *  <p>Fallback content</p>
  * </Branch>
  * ```
- * If the `branch` prop is set to `"summary"`, it will render `<p>This is a summary</p>`. If the `branch` is not set or does not match any keys in the branches object, it renders the fallback content `<p>Fallback content</p>`.
+ * If `view` is `"summary"`, it renders `<p>This is a summary</p>`. If `view` matches none of the branches, it renders the children, `<p>Fallback content</p>`.
  *
- * @param {any} [children] - Fallback content to render if no matching branch is found.
- * @param {string} [name="branch"] - Optional name for the component, used for metadata or tracking purposes.
- * @param {string} [branch] - The name of the branch to render. The component looks for this key in the `...branches` object.
- * @param {...{[key: string]: any}} [branches] - A spread object containing possible branches as keys and their corresponding content as values.
- * @returns {React.JSX.Element} The rendered branch or fallback content.
+ * @param {string | number | boolean} branch - The value that names the branch to render.
+ * @param {any} [children] - The content to render when no branch matches. Required unless the branches cover every value `branch` can have.
+ * @param {...{[key: string]: any}} [branches] - The possible branches as keys and their content as values.
+ * @returns {React.JSX.Element} The rendered branch.
  */
 export const Branch: typeof _Branch = () => {
   throw new Error(typesFileError);
@@ -293,29 +292,24 @@ export const Branch: typeof _Branch = () => {
 Branch._gtt = 'branch';
 
 /**
- * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
- * It determines which content to display by matching the value of `n` to the appropriate pluralization branch,
- * based on the current locale or a default locale. If no matching plural branch is found, the component renders
- * the fallback `children` content.
+ * The `<Plural>` component renders the branch that fits the number `n`, chosen as ICU does: an exact
+ * branch such as `_0` first, then the plural category of `n` in the current locale (`zero`, `one`, `two`,
+ * `few`, `many`), then the children.
  *
  * @example
  * ```jsx
- * <Plural
- *  n={1}
- *  one="There is 1 item"
- *  other="There are {n} items"
- * />
+ * <Plural n={count} _0="There are no items" one="There is 1 item">
+ *  There are many items
+ * </Plural>
  * ```
- * In this example, if `n` is 1, it renders `"There is 1 item"`. If `n` is a different number, it renders
- * `"There are {n} items"`.
+ * In this example, if `count` is 0, it renders `"There are no items"`. In English, if `count` is 1, it renders
+ * `"There is 1 item"`, and for any other number `"There are many items"`.
  *
- * @param {any} [children] - Fallback content to render if no matching plural branch is found.
- * @param {number} [n] - The number used to determine the plural form. This is required for pluralization to work.
- * @param {string} [locale] - Optional parameter, the locale to use for pluralization format.
- * @param {...{[key: string]: any}} [branches] - A spread object containing possible plural branches, typically including `one` for singular
- * and `other` for plural forms, but it may vary depending on the locale.
- * @returns {React.JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
- * @throws {Error} If `n` is not provided or not a valid number.
+ * @param {number | bigint} n - The number that picks the branch.
+ * @param {any} children - The content to render when no branch fits.
+ * @param {...{[key: string]: any}} [branches] - Branches for the plural categories `zero`, `one`, `two`, `few` and `many`,
+ * and for exact numbers, written `_0`, `_1` and so on.
+ * @returns {React.JSX.Element} The rendered content of the branch that fits `n`.
  */
 export const Plural: typeof _Plural = () => {
   throw new Error(typesFileError);

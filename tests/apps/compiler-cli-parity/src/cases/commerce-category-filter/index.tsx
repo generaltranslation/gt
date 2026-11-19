@@ -27,7 +27,7 @@ export default function CommerceCategoryFilter() {
               <label>
                 <input type="checkbox" />
                 <span>{cat.name}</span>
-                <span> (<Plural n={cat.count} one="1 item" other="items" />)</span>
+                <span> (<Plural n={cat.count} one="1 item">items</Plural>)</span>
               </label>
               <ul>
                 {cat.subcategories.map((sub) => (

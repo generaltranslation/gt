@@ -17,63 +17,57 @@
     "i": 1,
     "c": "Modèle H2, lampe de bureau"
   },
-  "5c4574430d40bbae": {
+  "324631be5d7fbd4c": {
     "t": "h1",
     "i": 1,
     "c": [
       "Une lampe de bureau, réglable de ",
       {
         "i": 2,
-        "k": "_gt_n_2",
         "v": "n"
       },
       " K à ",
       {
         "i": 3,
-        "k": "_gt_n_3",
         "v": "n"
       },
       " K."
     ]
   },
-  "98c837036f6399dd": {
+  "f614f788a0ded44f": {
     "t": "p",
     "i": 1,
     "c": [
       "Halden H2 place ",
       {
         "i": 2,
-        "k": "_gt_n_2",
         "v": "n"
       },
       " LED derrière un seul diffuseur. Elle consomme ",
       {
         "i": 3,
-        "k": "_gt_n_3",
         "v": "n"
       },
       " watts à pleine puissance et ",
       {
         "i": 4,
-        "k": "_gt_n_4",
         "v": "n"
       },
       " watt en veille."
     ]
   },
-  "bd9635efdf443fd1": {
+  "34f3f84c68ca6dac": {
     "t": "span",
     "i": 1,
     "c": [
       "Prochain lot expédié le ",
       {
         "i": 2,
-        "k": "_gt_date_2",
         "v": "d"
       }
     ]
   },
-  "50d6c0719f5b3b3f": {
+  "fdef2973eaa6d8b0": {
     "t": "div",
     "i": 1,
     "c": [
@@ -83,7 +77,6 @@
         "c": [
           {
             "i": 3,
-            "k": "_gt_n_3",
             "v": "n"
           },
           {
@@ -100,7 +93,7 @@
       }
     ]
   },
-  "f3eaf8e0c8238110": {
+  "a02d65e6b1ca4dd2": {
     "t": "div",
     "i": 1,
     "c": [
@@ -110,7 +103,6 @@
         "c": [
           {
             "i": 3,
-            "k": "_gt_n_3",
             "v": "n"
           },
           {
@@ -127,7 +119,7 @@
       }
     ]
   },
-  "84f2190779cd0874": {
+  "33015c9e2040828c": {
     "t": "div",
     "i": 1,
     "c": [
@@ -137,7 +129,6 @@
         "c": [
           {
             "i": 3,
-            "k": "_gt_n_3",
             "v": "n"
           },
           {
@@ -154,7 +145,7 @@
       }
     ]
   },
-  "4ad24697855dd864": {
+  "ca5ca7e3ffcb570d": {
     "t": "div",
     "i": 1,
     "c": [
@@ -164,7 +155,6 @@
         "c": [
           {
             "i": 3,
-            "k": "_gt_n_3",
             "v": "n"
           },
           {
@@ -181,7 +171,7 @@
       }
     ]
   },
-  "08832e624ec61331": [
+  "9a8da35515320013": [
     {
       "t": "p",
       "i": 1,
@@ -199,20 +189,18 @@
         "Chaque lampe est livrée avec un bloc d’alimentation USB-C de ",
         {
           "i": 4,
-          "k": "_gt_n_4",
           "v": "n"
         },
         " watts et une garantie de ",
         {
           "i": 5,
-          "k": "_gt_n_5",
           "v": "n"
         },
         " ans. La tête et le bras sont des pièces remplaçables."
       ]
     }
   ],
-  "47a2889833eca921": [
+  "e9f9a37b9585ddcc": [
     {
       "t": "p",
       "i": 1,
@@ -230,14 +218,13 @@
         "Les commandes passées avant ",
         {
           "i": 4,
-          "k": "_gt_value_4",
           "v": "v"
         },
         " heure locale partent le jour même. Les droits de douane sont inclus dans le prix."
       ]
     }
   ],
-  "647ceb1ea4c65558": [
+  "b44aa012d782c1c9": [
     {
       "t": "p",
       "i": 1,
@@ -250,20 +237,18 @@
         "Noté ",
         {
           "i": 3,
-          "k": "_gt_n_3",
           "v": "n"
         },
         " sur 5 par ",
         {
           "i": 4,
-          "k": "_gt_n_4",
           "v": "n"
         },
         " propriétaires."
       ]
     }
   ],
-  "c6a9761baf4bc979": [
+  "2ec387b50c920ec9": [
     {
       "t": "blockquote",
       "i": 1,
@@ -275,19 +260,17 @@
       "c": [
         {
           "i": 3,
-          "k": "_gt_value_3",
           "v": "v"
         },
         ", Lisbonne, ",
         {
           "i": 4,
-          "k": "_gt_date_4",
           "v": "d"
         }
       ]
     }
   ],
-  "a20bbc5e79eaf600": [
+  "73b2145a030e77b6": [
     {
       "t": "blockquote",
       "i": 1,
@@ -299,19 +282,17 @@
       "c": [
         {
           "i": 3,
-          "k": "_gt_value_3",
           "v": "v"
         },
         ", Shenzhen, ",
         {
           "i": 4,
-          "k": "_gt_date_4",
           "v": "d"
         }
       ]
     }
   ],
-  "c8d742b14531cc21": [
+  "ad29aeb06fd5d878": [
     {
       "t": "blockquote",
       "i": 1,
@@ -323,13 +304,11 @@
       "c": [
         {
           "i": 3,
-          "k": "_gt_value_3",
           "v": "v"
         },
         ", Lyon, ",
         {
           "i": 4,
-          "k": "_gt_date_4",
           "v": "d"
         }
       ]
@@ -350,7 +329,7 @@
   "dba25d3fe774a633": "Ajouter Au Panier",
   "abc8252be8e5d46b": "{count, plural, one {# lampe} other {# lampes}} dans votre panier.",
   "9e80675e16b92678": "Expédié depuis Rotterdam et Shenzhen.",
-  "c1df322c1335526d": {
+  "0a88107e14e799ab": {
     "t": "Branch",
     "i": 1,
     "d": {
@@ -369,30 +348,29 @@
           "t": "p",
           "i": 2,
           "c": "Bras en titane microbillé avec un pied graphite."
+        },
+        "other": {
+          "t": "p",
+          "i": 2,
+          "c": "Bras en acier et tête en aluminium."
         }
       },
       "t": "b"
-    },
-    "c": {
-      "t": "p",
-      "i": 2,
-      "c": "Bras en acier et tête en aluminium."
     }
   },
-  "5ef4bff9f66fb154": {
+  "7522335c5871a385": {
     "t": "p",
     "i": 1,
     "c": [
       "Livraison offerte à partir de ",
       {
         "i": 2,
-        "k": "_gt_n_2",
         "v": "n"
       },
       " lampes."
     ]
   },
-  "f009032c1db23265": {
+  "2fdc50688f613ba9": {
     "t": "p",
     "i": 1,
     "c": [
@@ -412,7 +390,6 @@
               "c": [
                 {
                   "i": 4,
-                  "k": "_gt_n_4",
                   "v": "n"
                 },
                 " lampes"
@@ -425,13 +402,11 @@
       " en finition ",
       {
         "i": 3,
-        "k": "_gt_value_3",
         "v": "v"
       },
       ". Livraison ",
       {
         "i": 4,
-        "k": "_gt_cost_4",
         "v": "c"
       },
       "."

@@ -6,27 +6,24 @@
     "i": 2,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "t": "div",
           "i": 3,
           "c": [
             "You have ",
             {
               "i": 4,
-              "k": "_gt_n_4",
               "v": "n"
             },
             " item costing",
             " ",
             {
               "i": 5,
-              "k": "_gt_cost_5",
               "v": "c"
             },
             "on ",
             {
               "i": 6,
-              "k": "_gt_date_6",
               "v": "d"
             },
             " in the",
@@ -47,21 +44,19 @@
             }
           ]
         },
-        "plural": {
+        "=2": {
           "t": "div",
           "i": 3,
           "c": [
             "You have ",
             {
               "i": 4,
-              "k": "_gt_n_4",
               "v": "n"
             },
             " items costing",
             " ",
             {
               "i": 5,
-              "k": "_gt_cost_5",
               "v": "c"
             },
             {

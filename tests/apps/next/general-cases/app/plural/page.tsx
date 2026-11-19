@@ -5,11 +5,9 @@ export default function Page() {
 
   return (
     <T>
-      <Plural
-        n={count}
-        singular='You have one item'
-        plural='You have some items'
-      />
+      <Plural n={count} one='You have one item'>
+        You have some items
+      </Plural>
     </T>
   );
 }

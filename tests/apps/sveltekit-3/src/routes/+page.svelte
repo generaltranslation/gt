@@ -23,7 +23,7 @@
     <T>
       <Plural n={count}>
         {#snippet one()}You have <b>one</b> message{/snippet}
-        {#snippet other()}You have <b><Num value={count} /></b> messages{/snippet}
+        You have <b><Num value={count} /></b> messages
       </Plural>
     </T>
   </p>

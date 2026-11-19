@@ -52,7 +52,7 @@ export function SidebarUserNav({ user }: { user: User }) {
                 onSelect={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               >
                 {/* <Var>{`Toggle ${theme === 'light' ? 'dark' : 'light'} mode`}</Var> */}
-                <Branch branch={theme} light={'Toggle dark mode'}>
+                <Branch branch={theme ?? 'system'} light={'Toggle dark mode'}>
                   Toggle dark mode
                 </Branch>
               </DropdownMenuItem>

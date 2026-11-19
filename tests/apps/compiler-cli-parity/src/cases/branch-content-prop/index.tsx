@@ -4,9 +4,7 @@ export default function BranchContentProp() {
   const name = 'Alice';
   return (
     <div>
-      <Branch branch="mode" Ernest={<>Hello {name}</>}>
-        Fallback
-      </Branch>
+      <Branch branch={'mode' as string} Ernest={<>Hello {name}</>}>Fallback</Branch>
     </div>
   );
 }

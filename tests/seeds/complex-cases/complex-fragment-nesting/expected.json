@@ -3,7 +3,7 @@
   "i": 1,
   "d": {
     "b": {
-      "singular": {
+      "=1": {
         "t": "C2",
         "i": 2,
         "c": [
@@ -15,7 +15,6 @@
               "Nested fragment with ",
               {
                 "i": 4,
-                "k": "_gt_value_4",
                 "v": "v"
               },
               {
@@ -25,7 +24,6 @@
                   "Deep nested with ",
                   {
                     "i": 6,
-                    "k": "_gt_n_6",
                     "v": "n"
                   },
                   {
@@ -40,7 +38,7 @@
           "Back to outer"
         ]
       },
-      "plural": {
+      "=2": {
         "t": "div",
         "i": 2,
         "c": [
@@ -60,7 +58,6 @@
                 " ",
                 {
                   "i": 6,
-                  "k": "_gt_cost_6",
                   "v": "c"
                 }
               ]

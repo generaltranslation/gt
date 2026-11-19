@@ -12,10 +12,10 @@ const count = 5;
       <template #nested>
         <div>
           <Plural :n="count">
-            <template #singular>
+            <template #_1>
               <span>Nested plural: <Var>single</Var></span>
             </template>
-            <template #plural>
+            <template #_2>
               <Branch branch="inner" option1="Double nested!">
                 <template #option2>
                   <Fragment>With <Currency :value="amount" currency="USD" /></Fragment>

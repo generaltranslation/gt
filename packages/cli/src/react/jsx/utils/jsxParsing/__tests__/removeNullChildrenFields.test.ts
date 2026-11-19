@@ -17,7 +17,7 @@ describe('removeNullChildrenFields', () => {
     ],
     ['keeps an empty array', [], []],
     ['drops null entries of an array', ['a', null, undefined, 'b'], ['a', 'b']],
-    ['keeps a variable', { k: 'count' }, { k: 'count' }],
+    ['keeps a variable', { i: 1, v: 'n' }, { i: 1, v: 'n' }],
     ['removes a null c', { t: 'div', c: null }, { t: 'div' }],
     ['removes an undefined c', { t: 'div', c: undefined }, { t: 'div' }],
     ['removes a null d', { t: 'div', d: null }, { t: 'div' }],

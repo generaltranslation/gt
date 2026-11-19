@@ -103,9 +103,9 @@ export const BRANCH_CONTROL_PROPS = new Set(['branch']);
 
 /**
  * Plural control props — not translatable content.
- * `n` is the count, `locales` is the locale hint.
+ * `n` is the count.
  */
-export const PLURAL_CONTROL_PROPS = new Set(['n', 'locales']);
+export const PLURAL_CONTROL_PROPS = new Set(['n']);
 
 /**
  * Fields that must be string literals for useGT_callback / getGT_callback

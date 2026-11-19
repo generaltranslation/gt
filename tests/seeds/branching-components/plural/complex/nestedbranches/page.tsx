@@ -4,9 +4,8 @@ export default function Home() {
     <T>
       <Plural
         n={1}
-        one={<Plural n={1} one="Good morning" other="Good evening" />}
-        other="Good evening"
-      />
+        one={<Plural n={1} one="Good morning">Good evening</Plural>}
+      >Good evening</Plural>
     </T>
   );
 }

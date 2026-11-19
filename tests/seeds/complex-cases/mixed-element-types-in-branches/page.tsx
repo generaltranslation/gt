@@ -7,7 +7,7 @@ export default function Home() {
     <T>
       <Plural
         n={count}
-        singular={
+        _1={
           <article>
             <h1>Single Item</h1>
             <p>
@@ -23,7 +23,7 @@ export default function Home() {
             </footer>
           </article>
         }
-        plural={
+        _2={
           <section>
             <header>
               <h2>

@@ -23,7 +23,6 @@
     unit,
     baseDate,
     options = {},
-    locales,
   }: {
     value?: Date | number | null | undefined;
     /**
@@ -36,9 +35,7 @@
     /** Date to measure from. Defaults to now. */
     baseDate?: Date;
     options?: Intl.RelativeTimeFormatOptions;
-    /** Locales to try before the active locale. */
-    locales?: string[];
-    /** Variable key used in translations. Must be a static string. */
+    /** Name shown to translators. Must be a static string. */
     name?: string;
   } = $props();
 
@@ -46,7 +43,7 @@
   const formatted = $derived.by(() => {
     if (value == null) return null;
     const formatOptions = {
-      locales: getFormatLocales(contentLocale.current, locales),
+      locales: getFormatLocales(contentLocale.current),
       numeric: options.numeric,
       style: options.style,
       localeMatcher: options.localeMatcher,

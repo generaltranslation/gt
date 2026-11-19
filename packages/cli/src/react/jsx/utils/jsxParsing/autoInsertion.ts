@@ -365,7 +365,7 @@ function processOpaqueComponentProps({
   path: NodePath<t.JSXElement>;
   canonicalName: string | undefined;
 } & InsertionContext): void {
-  // Branch/Plural children (fallback content) — process element-by-element before marking
+  // Branch/Plural children (not rendered, still extracted) — process element-by-element before marking
   if (
     insideAutoT &&
     (canonicalName === BRANCH_COMPONENT || canonicalName === PLURAL_COMPONENT)

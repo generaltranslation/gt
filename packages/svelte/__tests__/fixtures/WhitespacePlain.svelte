@@ -13,7 +13,7 @@
 <div><Passthrough>Hello <b>world </b>again</Passthrough></div>
 <div><Passthrough>x<b> </b>y</Passthrough></div>
 <div><Passthrough>Run <code>  npm  i  </code> now</Passthrough></div>
-<div><Passthrough><Num value={count} /><Plural n={count}>{#snippet one()} item{/snippet}{#snippet other()} items{/snippet}</Plural></Passthrough></div>
+<div><Passthrough><Num value={count} /><Plural n={count}>{#snippet one()} item{/snippet}{' items'}</Plural></Passthrough></div>
 <div><Passthrough>Status:<Branch branch={status}>{#snippet active()} <i>active</i>{/snippet}unknown</Branch></Passthrough></div>
 <div><Passthrough><Branch branch={status}>Hello </Branch>world</Passthrough></div>
 <div><Passthrough>&#32;Hello&#32;</Passthrough></div>

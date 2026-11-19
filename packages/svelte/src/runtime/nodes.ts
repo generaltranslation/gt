@@ -2,13 +2,8 @@ import type {
   JsxChild,
   JsxChildren,
   JsxElement,
-  Variable,
 } from '@generaltranslation/format';
-import {
-  getPluralForm,
-  isAcceptedPluralForm,
-  isVariable,
-} from 'generaltranslation/internal';
+import { getPluralForm, isVariable } from 'generaltranslation/internal';
 import type { GTRuntimeMetadata } from '@generaltranslation/svelte-extractor';
 import type { Snippet } from 'svelte';
 
@@ -33,8 +28,6 @@ export type RenderItem =
       key: string;
       snippet: ElementSnippet;
       node: JsxElement;
-      /** Scoped id of the element, the parent of its children. */
-      scopedId: string;
     }
   | {
       kind: 'branch';
@@ -61,7 +54,6 @@ const VARIABLE_PREFIX = '__gt_v_';
 export function toRenderItems(
   nodes: JsxChildren | undefined,
   scopes: string[],
-  parent: string,
   context: RenderContext
 ): RenderItem[] {
   const items: RenderItem[] = [];
@@ -80,18 +72,18 @@ export function toRenderItems(
       return;
     }
     if (isVariable(node)) {
-      const resolved = resolveVariable(node, scopes, parent, context);
+      const resolved = resolve(VARIABLE_PREFIX, node.i, scopes, context);
       if (resolved) {
         items.push({
           kind: 'variable',
           key: uniqueKey(`v${resolved.scopedId}`),
-          snippet: resolved.snippet,
+          snippet: resolved.snippet as VariableSnippet,
         });
       }
       return;
     }
     if (!isElement(node)) return;
-    const resolved = resolveElement(node.i, scopes, context);
+    const resolved = resolve(ELEMENT_PREFIX, node.i, scopes, context);
     if (!resolved) return;
     const key = uniqueKey(`e${resolved.scopedId}`);
     if (context.meta.b?.[resolved.scopedId]) {
@@ -109,7 +101,6 @@ export function toRenderItems(
         key,
         snippet: resolved.snippet as ElementSnippet,
         node,
-        scopedId: resolved.scopedId,
       });
     }
   });
@@ -128,84 +119,72 @@ export function selectBranch(
   const { node, scopes, scopedId } = item;
   const info = context.meta.b?.[scopedId];
   const targetBranches = getBranches(node) ?? {};
-  const fallback = { nodes: node.c, scopes };
-  if (!info) return fallback;
+  const none = { nodes: undefined, scopes };
+  if (!info) return none;
 
-  let sourceBranch: string | undefined;
-  let targetBranch: string | undefined;
-  if (info.t === 'p') {
-    if (typeof value !== 'number') return fallback;
-    targetBranch = pickPluralForm(
-      value,
-      Object.keys(targetBranches),
-      context.locales
-    );
-    // Pair the form with its same-named source form, as validateTarget()
-    // does, and only fall back to the source form for `n` when the source
-    // has no such form.
-    sourceBranch =
-      targetBranch !== undefined && info.b.includes(targetBranch)
-        ? targetBranch
-        : pickPluralForm(value, info.b, context.locales);
-  } else {
-    const key = value == null || value === '' ? undefined : String(value);
-    sourceBranch = key && info.b.includes(key) ? key : undefined;
-    targetBranch = key && Object.hasOwn(targetBranches, key) ? key : undefined;
-  }
-
-  if (targetBranch === undefined) return fallback;
+  const branches = Object.keys(targetBranches);
+  const targetBranch =
+    info.t === 'p'
+      ? pickPluralForm(value, branches, context.locales)
+      : pickBranch(value, branches);
+  if (targetBranch === undefined) return none;
   const ownerScope = scopedId.slice(0, scopedId.length - String(node.i).length);
   return {
     nodes: targetBranches[targetBranch],
-    scopes: getBranchScopes(ownerScope, node, info.b, sourceBranch, scopes),
+    scopes: getBranchScopes(
+      ownerScope,
+      node,
+      info.b,
+      getPairedSourceBranch(info.b, targetBranch),
+      scopes
+    ),
   };
 }
 
 /**
  * Checks that every element and variable in a translation resolves to a
- * generated snippet. Branch content is checked in the scopes of every
- * source branch selectBranch() can pair it with.
+ * generated snippet. Branch content is checked in the scopes of the source
+ * branch selectBranch() pairs it with.
  */
 export function validateTarget(
   nodes: JsxChildren | undefined,
   scopes: string[],
-  context: RenderContext,
-  parent = ''
+  context: RenderContext
 ): boolean {
   for (const node of toArray(nodes)) {
     if (typeof node === 'string') continue;
     if (isVariable(node)) {
-      if (!resolveVariable(node, scopes, parent, context)) return false;
+      if (!resolve(VARIABLE_PREFIX, node.i, scopes, context)) return false;
       continue;
     }
     if (!isElement(node)) return false;
-    const resolved = resolveElement(node.i, scopes, context);
+    const resolved = resolve(ELEMENT_PREFIX, node.i, scopes, context);
     if (!resolved) return false;
     const info = context.meta.b?.[resolved.scopedId];
     if (info) {
       const branches = getBranches(node);
       if (branches === null) return false;
+      // A translation that could leave a value without a branch is not
+      // rendered: it needs `other`, or every branch of the source.
+      const names = Object.keys(branches ?? {});
+      if (
+        !names.includes('other') &&
+        !info.b.every((name) => names.includes(name))
+      ) {
+        return false;
+      }
       for (const [name, branch] of Object.entries(branches ?? {})) {
-        for (const pairing of getPairedSourceBranches(info, name)) {
-          const branchScopes = getBranchScopes(
-            resolved.scope,
-            node,
-            info.b,
-            pairing,
-            scopes
-          );
-          if (
-            !validateTarget(branch, branchScopes, context, resolved.scopedId)
-          ) {
-            return false;
-          }
-        }
+        const branchScopes = getBranchScopes(
+          resolved.scope,
+          node,
+          info.b,
+          getPairedSourceBranch(info.b, name),
+          scopes
+        );
+        if (!validateTarget(branch, branchScopes, context)) return false;
       }
     }
-    if (
-      node.c != null &&
-      !validateTarget(node.c, scopes, context, resolved.scopedId)
-    ) {
+    if (node.c != null && !validateTarget(node.c, scopes, context)) {
       return false;
     }
   }
@@ -228,16 +207,14 @@ function getBranches(
 }
 
 /**
- * Returns the source branches selectBranch() can pair a translated branch
- * with: its same-named source branch, or for a plural form the source does
- * not have, any source form `n` can select. `undefined` pairs with none.
+ * Returns the source branch a translated branch pairs with: the same-named
+ * one, or `other` when the source has no branch of that name.
  */
-function getPairedSourceBranches(
-  info: { t: 'p' | 'b'; b: string[] },
+function getPairedSourceBranch(
+  sourceBranches: string[],
   name: string
-): (string | undefined)[] {
-  if (info.b.includes(name)) return [name];
-  return info.t === 'p' ? [...info.b, undefined] : [undefined];
+): string | undefined {
+  return [name, 'other'].find((branch) => sourceBranches.includes(branch));
 }
 
 /**
@@ -260,71 +237,46 @@ function getBranchScopes(
     paired === -1
       ? indexes
       : [paired, ...indexes.filter((index) => index !== paired)];
-  return [
-    ...ordered.map((index) => `${ownerScope}b${node.i}_${index}$`),
-    ...scopes,
-  ];
+  const branchScopes = ordered.map(
+    (index) => `${ownerScope}b${node.i}_${index}$`
+  );
+  return [...branchScopes, ...scopes];
 }
 
+/** The branch ICU picks for `n`; anything but a number only fits `other`. */
 function pickPluralForm(
-  n: number,
+  n: unknown,
   branches: string[],
   locales: string[]
 ): string | undefined {
-  const forms = branches.filter(isAcceptedPluralForm);
-  if (forms.length === 0) return undefined;
-  return getPluralForm(n, forms, locales) || undefined;
+  if (typeof n !== 'number' && typeof n !== 'bigint') {
+    return pickBranch(undefined, branches);
+  }
+  return getPluralForm(n, branches, locales) || undefined;
 }
 
-function resolveElement(
+/** The branch named by the value, then `other`. */
+function pickBranch(value: unknown, branches: string[]): string | undefined {
+  const key = value == null ? 'other' : String(value);
+  if (branches.includes(key)) return key;
+  return branches.includes('other') ? 'other' : undefined;
+}
+
+/** Finds the snippet of the source element or variable with this id. */
+function resolve(
+  prefix: string,
   id: number | undefined,
   scopes: string[],
   context: RenderContext
 ): { snippet: unknown; scope: string; scopedId: string } | undefined {
   if (typeof id !== 'number') return undefined;
   for (const scope of scopes) {
-    const snippet = context.snippets[`${ELEMENT_PREFIX}${scope}${id}`];
+    const snippet = context.snippets[`${prefix}${scope}${id}`];
     if (typeof snippet === 'function') {
       return { snippet, scope, scopedId: `${scope}${id}` };
     }
   }
   return undefined;
-}
-
-function resolveVariable(
-  node: Variable,
-  scopes: string[],
-  parent: string,
-  context: RenderContext
-): { snippet: VariableSnippet; scopedId: string } | undefined {
-  // A key used more than once in a scope resolves among the parent's source
-  // children first, like gt-react. Scopes end in `$`, ids are digits.
-  const siblingId = getOwn(context.meta.s?.[parent], node.k);
-  if (siblingId !== undefined) {
-    const scopedId = `${parent.replace(/\d+$/, '')}${siblingId}`;
-    const snippet = context.snippets[`${VARIABLE_PREFIX}${scopedId}`];
-    if (typeof snippet === 'function') {
-      return { snippet: snippet as VariableSnippet, scopedId };
-    }
-  }
-  for (const scope of scopes) {
-    const id = getOwn(context.meta.v?.[scope], node.k);
-    if (id === undefined) continue;
-    const scopedId = `${scope}${id}`;
-    const snippet = context.snippets[`${VARIABLE_PREFIX}${scopedId}`];
-    if (typeof snippet === 'function') {
-      return { snippet: snippet as VariableSnippet, scopedId };
-    }
-  }
-  return undefined;
-}
-
-/** Reads a variable id, ignoring keys such as "toString" that are inherited. */
-function getOwn(
-  ids: Record<string, number> | undefined,
-  key: string
-): number | undefined {
-  return ids && Object.hasOwn(ids, key) ? ids[key] : undefined;
 }
 
 function toArray(nodes: JsxChildren | undefined): JsxChild[] {

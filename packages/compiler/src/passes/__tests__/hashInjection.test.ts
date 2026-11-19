@@ -59,8 +59,8 @@ describe('<T> hash injection', () => {
       `jsx(T, { children: jsx(Branch, { branch: cond, a: jsx(Derive, { children: getX() }), b: "fallback" }) })`,
     ],
     [
-      '<T><Plural n={count} one={<Derive>{getX()}</Derive>} other="many" /></T>',
-      `jsx(T, { children: jsx(Plural, { n: count, one: jsx(Derive, { children: getX() }), other: "many" }) })`,
+      '<T><Plural n={count} one={<Derive>{getX()}</Derive>}>many</Plural></T>',
+      `jsx(T, { children: jsx(Plural, { n: count, one: jsx(Derive, { children: getX() }), children: "many" }) })`,
     ],
     [
       '<T context={derive(getMeaning())}>Book</T>',
@@ -203,24 +203,29 @@ describe('<T> with dynamic content (autoderive)', () => {
  * JSX ids must match the runtime's addGTIdentifier numbering, which keeps a
  * shared counter through Branch/Plural children. Branch props start their own
  * counter from the branching element's id. Element ids are not hashed, but
- * variable keys (_gt_value_<id>) are, so these cases end in a variable.
+ * variable keys (_gt_<id>) are, so these cases end in a variable.
  *
  * https://github.com/generaltranslation/gt/issues/2449
  */
-describe('JSX ids after Branch/Plural element children', () => {
+describe('JSX ids of Branch/Plural children, which are the other branch', () => {
   const PLURAL = `jsxs(Plural, { n: 2, one: "one bottle", children: [jsx(Num, { children: 2 }), " bottles"] })`;
   const pluralChildren = {
     t: 'Plural',
     i: 1,
-    d: { b: { one: 'one bottle' }, t: 'p' as const },
-    c: [{ i: 2, k: '_gt_n_2', v: 'n' as const }, ' bottles'],
+    d: {
+      b: {
+        one: 'one bottle',
+        other: [{ i: 2, v: 'n' as const }, ' bottles'],
+      },
+      t: 'p' as const,
+    },
   };
 
   it.each<[source: string, compiled: string, children: JsxChildren]>([
     [
       '<T><Plural n={2} one="one bottle"><Num>{2}</Num> bottles</Plural><Var>{name}</Var></T>',
       `jsxs(T, { children: [${PLURAL}, jsx(Var, { children: name })] })`,
-      [pluralChildren, { i: 3, k: '_gt_value_3', v: 'v' }],
+      [pluralChildren, { i: 2, v: 'v' }],
     ],
     [
       '<T><Branch branch="open" open="Open"><span>Closed</span></Branch><Var>{name}</Var></T>',
@@ -232,10 +237,12 @@ describe('JSX ids after Branch/Plural element children', () => {
         {
           t: 'Branch',
           i: 1,
-          d: { b: { open: 'Open' }, t: 'b' },
-          c: { t: 'span', i: 2, c: 'Closed' },
+          d: {
+            b: { open: 'Open', other: { t: 'span', i: 2, c: 'Closed' } },
+            t: 'b',
+          },
         },
-        { i: 3, k: '_gt_value_3', v: 'v' },
+        { i: 2, v: 'v' },
       ],
     ],
     [
@@ -248,9 +255,11 @@ describe('JSX ids after Branch/Plural element children', () => {
         pluralChildren,
         {
           t: 'Branch',
-          i: 3,
-          d: { b: { open: { i: 4, k: '_gt_value_4', v: 'v' } }, t: 'b' },
-          c: 'Closed',
+          i: 2,
+          d: {
+            b: { open: { i: 3, v: 'v' }, other: 'Closed' },
+            t: 'b',
+          },
         },
       ],
     ],
@@ -258,6 +267,60 @@ describe('JSX ids after Branch/Plural element children', () => {
     const { errors, code } = transform(`${JSX_IMPORTS}${compiled};`);
     expect(errors).toEqual([]);
     expect(code).toContain(`_hash: "${jsxHash(children)}"`);
+  });
+});
+
+describe('an other prop on Branch/Plural', () => {
+  it.each(['Plural', 'Branch'])('is an error on <%s>', (component) => {
+    const { errors, code } = transform(
+      `${JSX_IMPORTS}jsx(T, { children: jsx(${component}, { n: count, branch: status, one: "One", other: "Many" }) });`
+    );
+    expect(errors).toEqual([
+      expect.stringContaining(
+        `<${component}> has no other prop. Write the fallback as its children.`
+      ),
+    ]);
+    expect(code).not.toContain('_hash');
+  });
+});
+
+describe('a spread on Branch/Plural', () => {
+  it.each([
+    ['Plural', '<Plural n={count} {...forms} />', '{ n: count, ...forms }'],
+    [
+      'Branch',
+      '<Branch branch={status} {...branches}>Closed</Branch>',
+      '{ branch: status, ...branches, children: "Closed" }',
+    ],
+  ])('is rejected on <%s> inside <T>: %s', (component, _source, props) => {
+    const { errors, code } = transform(
+      `${JSX_IMPORTS}jsx(T, { children: jsx(${component}, ${props}) });`
+    );
+    expect(errors).toEqual([
+      expect.stringContaining(
+        `<${component}> cannot take a spread attribute because its props are read from the source. Write each prop out on the component.`
+      ),
+    ]);
+    expect(code).not.toContain('_hash');
+  });
+
+  it('is rejected after a dynamic sibling that autoderive allows', () => {
+    // <T>{name}<Plural n={count} {...forms} /></T>
+    const { errors } = transform(
+      `${JSX_IMPORTS}jsxs(T, { children: [name, jsx(Plural, { n: count, ...forms })] });`,
+      { autoderive: true }
+    );
+    expect(errors).toEqual([
+      expect.stringContaining('<Plural> cannot take a spread attribute'),
+    ]);
+  });
+
+  it('is left alone outside translated content', () => {
+    const { errors, code } = transform(
+      `${JSX_IMPORTS}jsx(Plural, { n: count, ...forms });`
+    );
+    expect(errors).toEqual([]);
+    expect(code).not.toContain('_hash');
   });
 });
 

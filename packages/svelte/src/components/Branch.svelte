@@ -19,6 +19,8 @@
   let {
     branch,
     children,
+    // `other` is not a branch: the fallback is the children.
+    other: _other,
     ...branches
   }: {
     branch?: string | number | boolean | null;
@@ -26,17 +28,18 @@
     [branch: string]: unknown;
   } = $props();
 
-  const selected = $derived.by(() => {
-    if (branch == null || branch === '') return undefined;
-    const key = String(branch);
-    return branches[key];
-  });
+  // A branch passed as undefined counts as absent, as in gt-react.
+  const selected = $derived(
+    branch != null &&
+      Object.hasOwn(branches, String(branch)) &&
+      branches[String(branch)] !== undefined
+      ? branches[String(branch)]
+      : children
+  );
 </script>
 
 {#if typeof selected === 'function'}
     {@render (selected as Snippet)()}
 {:else if typeof selected === 'string'}
     {selected}
-{:else}
-    {@render children?.()}
 {/if}

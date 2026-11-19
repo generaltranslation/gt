@@ -7,11 +7,9 @@
 <p>
   <T
     ><Plural {n}
-      >{#snippet one()}One <Plural n={m} one="a" other="b" />{/snippet}{#snippet other()}Many <Plural
-          n={m}
-          >{#snippet one()}<b>x</b>{/snippet}{#snippet other()}<i>y</i
-          >{/snippet}</Plural
-        >{/snippet}</Plural
+      >{#snippet one()}One <Plural n={m} one="a">b</Plural>{/snippet}Many <Plural
+        n={m}>{#snippet one()}<b>x</b>{/snippet}<i>y</i></Plural
+      ></Plural
     ></T
   >
 </p>

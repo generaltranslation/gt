@@ -7,7 +7,7 @@
 
 <T>
   <Branch branch={gender}>
-    {#snippet male()}He has <Plural n={count} one="one cat" other="cats" />{/snippet}
-    {#snippet female()}She has <Plural n={count}>{#snippet one()}one cat{/snippet}{#snippet other()}cats{/snippet}</Plural>{/snippet}
+    {#snippet male()}He has <Plural n={count} one="one cat">cats</Plural>{/snippet}
+    {#snippet female()}She has <Plural n={count}>{#snippet one()}one cat{/snippet}cats</Plural>{/snippet}
   </Branch>
 </T>

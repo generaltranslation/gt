@@ -181,9 +181,9 @@
                       "column": 24,
                       "index": 362
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -242,9 +242,9 @@
                       "column": 22,
                       "index": 394
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -739,9 +739,9 @@
                       "column": 24,
                       "index": 666
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -800,9 +800,9 @@
                       "column": 22,
                       "index": 698
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1018,9 +1018,9 @@
                       "column": 24,
                       "index": 806
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1075,9 +1075,9 @@
                       "column": 22,
                       "index": 836
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1289,9 +1289,9 @@
                       "column": 24,
                       "index": 947
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1345,9 +1345,9 @@
                       "column": 22,
                       "index": 977
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1563,9 +1563,9 @@
                       "column": 24,
                       "index": 1090
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1644,9 +1644,9 @@
                       "column": 22,
                       "index": 1122
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1882,9 +1882,9 @@
                       "column": 24,
                       "index": 1235
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1943,9 +1943,9 @@
                       "column": 22,
                       "index": 1267
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -2161,9 +2161,9 @@
                       "column": 24,
                       "index": 1375
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -2357,9 +2357,9 @@
                       "column": 22,
                       "index": 1495
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -2710,9 +2710,9 @@
                       "column": 24,
                       "index": 1698
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -2909,9 +2909,9 @@
                       "column": 22,
                       "index": 1815
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -3265,9 +3265,9 @@
                       "column": 24,
                       "index": 2015
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -3458,9 +3458,9 @@
                       "column": 22,
                       "index": 2124
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -4477,9 +4477,9 @@
                       "column": 24,
                       "index": 2853
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -4670,9 +4670,9 @@
                       "column": 22,
                       "index": 2962
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -5356,9 +5356,9 @@
                       "column": 24,
                       "index": 3472
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -5698,9 +5698,9 @@
                                           "column": 32,
                                           "index": 3656
                                         },
-                                        "identifierName": "singular"
+                                        "identifierName": "_1"
                                       },
-                                      "name": "singular"
+                                      "name": "_1"
                                     },
                                     "computed": false,
                                     "shorthand": false,
@@ -5894,9 +5894,9 @@
                                           "column": 30,
                                           "index": 3807
                                         },
-                                        "identifierName": "plural"
+                                        "identifierName": "_2"
                                       },
-                                      "name": "plural"
+                                      "name": "_2"
                                     },
                                     "computed": false,
                                     "shorthand": false,
@@ -6201,9 +6201,9 @@
                       "column": 22,
                       "index": 4038
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -6419,9 +6419,9 @@
                       "column": 24,
                       "index": 4170
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -6480,9 +6480,9 @@
                       "column": 22,
                       "index": 4198
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -6698,9 +6698,9 @@
                       "column": 24,
                       "index": 4311
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -6759,9 +6759,9 @@
                       "column": 22,
                       "index": 4343
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -6977,9 +6977,9 @@
                       "column": 24,
                       "index": 4451
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -7038,9 +7038,9 @@
                       "column": 22,
                       "index": 4489
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -7256,9 +7256,9 @@
                       "column": 24,
                       "index": 4608
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -7337,9 +7337,9 @@
                       "column": 22,
                       "index": 4686
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -7555,9 +7555,9 @@
                       "column": 24,
                       "index": 4799
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -7616,9 +7616,9 @@
                       "column": 22,
                       "index": 4855
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -8615,9 +8615,9 @@
                                           "column": 32,
                                           "index": 5465
                                         },
-                                        "identifierName": "singular"
+                                        "identifierName": "_1"
                                       },
-                                      "name": "singular"
+                                      "name": "_1"
                                     },
                                     "computed": false,
                                     "shorthand": false,
@@ -9200,9 +9200,9 @@
                                           "column": 30,
                                           "index": 5904
                                         },
-                                        "identifierName": "plural"
+                                        "identifierName": "_2"
                                       },
-                                      "name": "plural"
+                                      "name": "_2"
                                     },
                                     "computed": false,
                                     "shorthand": false,

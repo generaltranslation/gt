@@ -35,7 +35,7 @@ describe('transformSvelteSource', () => {
         let name = $state('Ada');
       </script>
 
-      <Translate _hash="8eab79643759a9cf" _gtm={{"v":{"":{"_gt_value_2":2}}}} context="greeting">Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!{#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
+      <Translate _hash="894af089daa035e6" context="greeting">Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!{#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
       "
     `);
     expect(() =>
@@ -82,12 +82,10 @@ describe('transformSvelteSource', () => {
   import { T, Plural, Num } from 'gt-svelte';
   let count = $state(1);
 </script>
-<T><Plural n={count}>{#snippet one()}<b>One</b>{/snippet}{#snippet other()}<Num value={count} /> items{/snippet}</Plural></T>`);
+<T><Plural n={count}>{#snippet one()}<b>One</b>{/snippet}<Num value={count} /> items</Plural></T>`);
     expect(result?.errors).toEqual([]);
     const code = result!.code;
-    expect(code).toContain(
-      '_gtm={{"v":{"b1_1$":{"_gt_n_3":3}},"b":{"1":{"t":"p","b":["one","other"]}}}}'
-    );
+    expect(code).toContain('_gtm={{"b":{"1":{"t":"p","b":["one","other"]}}}}');
     expect(code).toContain(
       '{#snippet __gt_e_b1_0$2(__gt_kids)}{@render __gt_kids()}{/snippet}'
     );
@@ -95,7 +93,7 @@ describe('transformSvelteSource', () => {
       '{#snippet __gt_e_b1_0$3(__gt_kids, __gt_d)}<b>{@render __gt_kids()}</b>{/snippet}'
     );
     expect(code).toContain(
-      '{#snippet __gt_v_b1_1$3()}<Num value={count} />{/snippet}'
+      '{#snippet __gt_v_b1_1$2()}<Num value={count} />{/snippet}'
     );
     expect(code).toContain(
       '{#snippet __gt_e_1(__gt_pick)}{@render __gt_pick((count))}{/snippet}'
@@ -103,16 +101,14 @@ describe('transformSvelteSource', () => {
     expect(() => compile(code, { filename: 'Fixture.svelte' })).not.toThrow();
   });
 
-  it('maps repeated variable names to the variables of each parent', () => {
+  it('needs no runtime metadata for repeated variable names', () => {
     const result = transform(`<script>
   import { T, Var } from 'gt-svelte';
   let { first, second } = $props();
 </script>
 <T><b><Var name="who">{first}</Var></b> and <Var name="who">{second}</Var> <Var>{first}</Var></T>`);
     expect(result?.errors).toEqual([]);
-    expect(result?.code).toContain(
-      '_gtm={{"v":{"":{"who":3,"_gt_value_4":4}},"s":{"1":{"who":2},"":{"who":3}}}}'
-    );
+    expect(result?.code).not.toContain('_gtm');
   });
 
   it('extracts the whitespace Svelte renders', () => {
@@ -133,9 +129,9 @@ describe('transformSvelteSource', () => {
 </T>`)
     ).toEqual([
       'You can make ',
-      { i: 1, k: '_gt_n_1', v: 'n' },
+      { i: 1, v: 'n' },
       ' of ',
-      { i: 2, k: '_gt_n_2', v: 'n' },
+      { i: 2, v: 'n' },
       ' recipes',
     ]);
     // Whitespace at the edges of a fragment is removed.
@@ -293,13 +289,13 @@ let items = [1];</script>
   import { T, Num, Plural } from 'gt-svelte';
   let count = 3;
 </script>
-<T><Plural n={count}>{#snippet other()}<Num>{count}</Num> items{/snippet}</Plural></T>`);
+<T><Plural n={count}><Num>{count}</Num> items</Plural></T>`);
     expect(result?.errors).toEqual([]);
     expect(result?.code).toContain(
-      '{#snippet other()}<Num value={count}></Num> items{/snippet}'
+      '<Plural n={count}><Num value={count}></Num> items</Plural>'
     );
     expect(result?.code).toContain(
-      '{#snippet __gt_v_b1_0$3()}<Num value={count}></Num>{/snippet}'
+      '{#snippet __gt_v_b1_0$2()}<Num value={count}></Num>{/snippet}'
     );
   });
 
@@ -501,6 +497,23 @@ describe('errors', () => {
     expect(Object.keys((translations[0].source as JsxElement).d!.b!)).toEqual([
       'constructor',
       'toString',
+      'other',
+    ]);
+  });
+
+  it('rejects an other branch, whose content is the children', () => {
+    expect(
+      errorsFor('<T><Plural n={n} one="One" other="Many" /></T>', 'let n = 1;')
+    ).toEqual([
+      '<Plural> has no other branch. Write the fallback as its children',
+    ]);
+    expect(
+      errorsFor(
+        '<T><Branch branch={s} a="A">{#snippet other()}B{/snippet}</Branch></T>',
+        'let s;'
+      )
+    ).toEqual([
+      '<Branch> has no other branch. Write the fallback as its children',
     ]);
   });
 
@@ -515,22 +528,6 @@ describe('errors', () => {
         'let s;'
       )
     ).toEqual([problem]);
-  });
-
-  it('keeps a variable named __proto__ in the runtime metadata', () => {
-    const result = transformSvelteSource(
-      `<script>import { T, Var } from 'gt-svelte'; let a;</script>
-<T>Hi <Var name="__proto__">{a}</Var></T>`,
-      { parse, filename: 'Fixture.svelte' }
-    );
-    const literal = result!.code.match(
-      /_gtm=\{JSON\.parse\(("(?:[^"\\]|\\.)*")\)\}/
-    )![1];
-    const meta = JSON.parse(JSON.parse(literal)) as {
-      v: Record<string, Record<string, number>>;
-    };
-    expect(Object.hasOwn(meta.v[''], '__proto__')).toBe(true);
-    expect(meta.v[''].__proto__).toBe(1);
   });
 
   it('rejects reserved identifiers', () => {

@@ -4,8 +4,8 @@
     "i": 1,
     "d": {
       "b": {
-        "singular": "File",
-        "plural": "Files"
+        "=1": "File",
+        "=2": "Files"
       },
       "t": "p"
     }
@@ -26,8 +26,8 @@
     "i": 3,
     "d": {
       "b": {
-        "singular": "File",
-        "plural": "42"
+        "=1": "File",
+        "=2": "42"
       },
       "t": "p"
     }
@@ -37,8 +37,8 @@
     "i": 4,
     "d": {
       "b": {
-        "singular": true,
-        "plural": false
+        "=1": true,
+        "=2": false
       },
       "t": "p"
     }
@@ -48,8 +48,8 @@
     "i": 5,
     "d": {
       "b": {
-        "singular": null,
-        "plural": "Files"
+        "=1": null,
+        "=2": "Files"
       },
       "t": "p"
     }
@@ -59,8 +59,8 @@
     "i": 6,
     "d": {
       "b": {
-        "singular": "File",
-        "plural": "Files"
+        "=1": "File",
+        "=2": "Files"
       },
       "t": "p"
     }
@@ -70,8 +70,8 @@
     "i": 7,
     "d": {
       "b": {
-        "singular": "File",
-        "plural": "42"
+        "=1": "File",
+        "=2": "42"
       },
       "t": "p"
     }
@@ -81,12 +81,12 @@
     "i": 8,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "t": "C9",
           "i": 9,
           "c": "Single file"
         },
-        "plural": {
+        "=2": {
           "t": "C9",
           "i": 9,
           "c": "Multiple files"
@@ -100,12 +100,12 @@
     "i": 9,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "t": "span",
           "i": 10,
           "c": "Single file"
         },
-        "plural": {
+        "=2": {
           "t": "span",
           "i": 10,
           "c": "Multiple files"
@@ -119,19 +119,17 @@
     "i": 10,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "i": 11,
-          "k": "_gt_value_11",
           "v": "v"
         },
-        "plural": {
+        "=2": {
           "t": "C11",
           "i": 11,
           "c": [
             "Multiple ",
             {
               "i": 12,
-              "k": "_gt_value_12",
               "v": "v"
             },
             "s"
@@ -152,7 +150,6 @@
       },
       {
         "i": 13,
-        "k": "_gt_value_13",
         "v": "v"
       }
     ]
@@ -162,12 +159,11 @@
     "i": 14,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "i": 15,
-          "k": "_gt_value_15",
           "v": "v"
         },
-        "plural": {
+        "=2": {
           "t": "div",
           "i": 15,
           "c": {
@@ -177,7 +173,6 @@
               "Multiple ",
               {
                 "i": 17,
-                "k": "_gt_value_17",
                 "v": "v"
               },
               "s"
@@ -193,7 +188,7 @@
     "i": 15,
     "d": {
       "b": {
-        "singular": {
+        "=1": {
           "t": "f",
           "i": 16,
           "d": {
@@ -203,12 +198,12 @@
                 "i": 17,
                 "d": {
                   "b": {
-                    "singular": {
+                    "=1": {
                       "t": "C18",
                       "i": 18,
                       "c": "Single nested file"
                     },
-                    "plural": "Multiple nested files"
+                    "=2": "Multiple nested files"
                   },
                   "t": "p"
                 }
@@ -222,7 +217,7 @@
             "t": "b"
           }
         },
-        "plural": "Multiple top-level items"
+        "=2": "Multiple top-level items"
       },
       "t": "p"
     }
@@ -232,8 +227,8 @@
     "i": 16,
     "d": {
       "b": {
-        "singular": "",
-        "plural": "Files"
+        "=1": "",
+        "=2": "Files"
       },
       "t": "p"
     }
@@ -243,8 +238,8 @@
     "i": 17,
     "d": {
       "b": {
-        "singular": "File",
-        "plural": ""
+        "=1": "File",
+        "=2": ""
       },
       "t": "p"
     }
@@ -254,8 +249,8 @@
     "i": 18,
     "d": {
       "b": {
-        "singular": "   File   ",
-        "plural": "   Files   "
+        "=1": "   File   ",
+        "=2": "   Files   "
       },
       "t": "p"
     }
@@ -265,8 +260,8 @@
     "i": 19,
     "d": {
       "b": {
-        "singular": "\n            Multiline\n            File\n          ",
-        "plural": "Files"
+        "=1": "\n            Multiline\n            File\n          ",
+        "=2": "Files"
       },
       "t": "p"
     }
@@ -276,8 +271,8 @@
     "i": 20,
     "d": {
       "b": {
-        "singular": "File with emoji 📁",
-        "plural": "Files with emoji 📁📂"
+        "=1": "File with emoji 📁",
+        "=2": "Files with emoji 📁📂"
       },
       "t": "p"
     }
@@ -313,7 +308,7 @@
                 "i": 25,
                 "d": {
                   "b": {
-                    "singular": {
+                    "=1": {
                       "t": "f",
                       "i": 26,
                       "d": {
@@ -325,26 +320,23 @@
                           },
                           "option2": {
                             "i": 27,
-                            "k": "_gt_value_27",
                             "v": "v"
                           }
                         },
                         "t": "b"
                       }
                     },
-                    "plural": {
+                    "=2": {
                       "t": "f",
                       "i": 26,
                       "d": {
                         "b": {
                           "option1": {
                             "i": 27,
-                            "k": "_gt_cost_27",
                             "v": "c"
                           },
                           "option2": {
                             "i": 27,
-                            "k": "_gt_date_27",
                             "v": "d"
                           }
                         },

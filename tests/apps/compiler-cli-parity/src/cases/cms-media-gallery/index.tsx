@@ -17,7 +17,7 @@ export default function CmsMediaGallery() {
         <div>
           <span>
             <Num>{totalFiles}</Num>{' '}
-            <Plural n={totalFiles} one="file" other="files" />
+            <Plural n={totalFiles} one="file">files</Plural>
           </span>
           <span> — </span>
           <span>{storageUsed} GB of {storageLimit} GB used</span>

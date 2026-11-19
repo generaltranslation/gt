@@ -51,7 +51,6 @@ describe('rsc component wrappers', () => {
   });
 
   it.each([
-    ['Branch', () => import('../branches/Branch'), mockComponents.Branch],
     [
       'Currency',
       () => import('../variables/Currency'),
@@ -114,7 +113,7 @@ describe('rsc component wrappers', () => {
     expect(module.Currency).toBeTypeOf('function');
     expect(module.DateTime).toBeTypeOf('function');
     expect(module.RelativeTime).toBeTypeOf('function');
-    expect(module.Branch).toBeTypeOf('function');
+    expect(module.Branch).toBe(mockComponents.Branch);
     expect(module.Plural).toBeTypeOf('function');
     expect(module.LocaleSelector).toBe(mockComponents.LocaleSelector);
     expect(module.Derive).toBe(mockComponents.Derive);

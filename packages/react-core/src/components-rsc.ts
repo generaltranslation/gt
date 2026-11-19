@@ -48,7 +48,9 @@ export {
 export type {
   JsxTranslationOptions,
   PreparedT,
+  TProps,
 } from './utils/translation/prepareT.shared';
+export type { BranchProps } from './components/branches/Branch';
 export type {
   PluralProps,
   ResolvedPluralProps,

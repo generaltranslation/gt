@@ -15,9 +15,9 @@ const date = new Date();
       <template #option3><Fragment>{{ '' }}<span>element</span>{{ '' }}</Fragment></template>
     </Branch>
     <Plural :n="count">
-      <template #singular><Fragment>Text<Fragment />More text</Fragment></template>
-      <template #plural><Fragment><Fragment>Fragment</Fragment>content</Fragment></template>
-      <template #other><Fragment><Fragment /></Fragment></template>
+      <template #_1><Fragment>Text<Fragment />More text</Fragment></template>
+      <template #_2><Fragment><Fragment>Fragment</Fragment>content</Fragment></template>
+      <template #default><Fragment><Fragment /></Fragment></template>
     </Plural>
     <Branch branch="bool">
       <template #true_val><Fragment>{{ true }}</Fragment></template>
@@ -26,13 +26,13 @@ const date = new Date();
       <template #mixed_false><Fragment>Before {{ false }} after</Fragment></template>
       <template #multiple><Fragment>{{ true }}{{ false }}{{ true }}</Fragment></template>
     </Branch>
-    <Plural :n="1" other="normal">
+    <Plural :n="1">
       <template #zero><Fragment>{{ null }}</Fragment></template>
       <template #one><Fragment>{{ undefined }}</Fragment></template>
       <template #two><Fragment>{{ false }}</Fragment></template>
       <template #few><Fragment>{{ true }}{{ null }}{{ undefined }}</Fragment></template>
       <template #many><Fragment>Mixed {{ false }} and {{ null }}</Fragment></template>
-    </Plural>
+    <template #default>normal</template></Plural>
     <Branch
       branch="precision"
       :tiny="1e-324"
@@ -42,7 +42,7 @@ const date = new Date();
       :not_quite_two="1.9999999999999998"
       :close_to_pi="3.141592653589793"
     />
-    <Plural :n="count" :zero="1.0" :one="1.0" :two="1.0" :few="5.0e10" :many="5.0e10" :other="5.0e-10" />
+    <Plural :n="count" :zero="1.0" :one="1.0" :two="1.0" :few="5.0e10" :many="5.0e10">{{ 5.0e-10 }}</Plural>
     <Branch branch="space">
       <template #zero_width><Fragment>word1​word2</Fragment></template>
       <template #thin_space><Fragment>word1 word2</Fragment></template>
@@ -52,9 +52,9 @@ const date = new Date();
       <template #normal><Fragment>word1 word2</Fragment></template>
     </Branch>
     <Plural :n="1">
-      <template #singular><Fragment>Line1\nLine2</Fragment></template>
-      <template #plural><Fragment>Line1\r\nLine2</Fragment></template>
-      <template #other><Fragment>Line1\rLine2</Fragment></template>
+      <template #_1><Fragment>Line1\nLine2</Fragment></template>
+      <template #_2><Fragment>Line1\r\nLine2</Fragment></template>
+      <template #default><Fragment>Line1\rLine2</Fragment></template>
     </Plural>
     <Branch branch="nested">
       <template #option1>
@@ -63,22 +63,22 @@ const date = new Date();
       <template #option2><Fragment><Fragment><Fragment><Fragment><Fragment>Flat</Fragment></Fragment>&nbsp;</Fragment></Fragment></Fragment></template>
     </Branch>
     <Plural :n="count">
-      <template #singular><Fragment><Fragment />Content<Fragment />More<Fragment />End</Fragment></template>
-      <template #plural><Fragment>Start<Fragment />Middle<Fragment />End</Fragment></template>
-      <template #other><Fragment><Fragment />Text<Fragment><Fragment /></Fragment></Fragment></template>
+      <template #_1><Fragment><Fragment />Content<Fragment />More<Fragment />End</Fragment></template>
+      <template #_2><Fragment>Start<Fragment />Middle<Fragment />End</Fragment></template>
+      <template #default><Fragment><Fragment />Text<Fragment><Fragment /></Fragment></Fragment></template>
     </Plural>
     <Branch branch="names" option2="normal">
       <template #option1><Fragment><Var></Var><Var></Var><Var></Var><Var></Var><Var></Var><Var></Var><Var></Var></Fragment></template>
     </Branch>
     <Plural :n="1">
-      <template #singular>
+      <template #_1>
         <Fragment><Var>v1</Var><Num value="1" /><Currency value="1" currency="USD" /><DateTime :value="new Date(2023)" /><Var>v2</Var><Num value="2" /><Currency value="2" currency="EUR" /><DateTime :value="new Date(2023)" /><Var>v3</Var><Num value="3" /><Currency value="3" currency="JPY" /><DateTime :value="new Date(2023)" /></Fragment>
       </template>
-      <template #plural>
+      <template #_2>
         <Fragment><DateTime :value="new Date(2023)" /><Currency value="3" currency="JPY" /><Num value="3" /><Var>v3</Var><DateTime :value="new Date(2023)" /><Currency value="2" currency="EUR" /><Num value="2" /><Var>v2</Var><DateTime :value="new Date(2023)" /><Currency value="1" currency="USD" /><Num value="1" /><Var>v1</Var></Fragment>
       </template>
     </Plural>
-    <Plural :n="1" singular="é" plural="é" other="ñ vs ñ" />
+    <Plural :n="1" _1="é" _2="é">ñ vs ñ</Plural>
     <Branch
       branch="emoji"
       basic="👍"
@@ -87,7 +87,7 @@ const date = new Date();
       flag="🇺🇸"
       text_vs_emoji="©️ vs ©"
     />
-    <Plural :n="1" singular="\x41" plural="\u0041" other="\101" />
+    <Plural :n="1" _1="\x41" _2="\u0041">{{ '\\101' }}</Plural>
     <Branch
       branch="many"
       a1="1"
@@ -155,7 +155,7 @@ const date = new Date();
         </Branch>
       </template>
     </Branch>
-    <Plural :n="count" :zero="0" :one="1" :two="-1" :few="Infinity" :other="NaN" />
+    <Plural :n="count" :zero="0" :one="1" :two="-1" :few="Infinity">{{ NaN }}</Plural>
     <Branch
       branch="json"
       object='{"key": "value"}'
@@ -164,10 +164,10 @@ const date = new Date();
       escaped='{"quote": "He said \\"hello\\""}'
     />
     <Plural :n="count">
-      <template #singular>
+      <template #_1>
         <Fragment>Text content<Fragment>Nested fragment with <Var>variable1</Var><Fragment>Deeply nested with <Num :value="count" /><Fragment /><span>Element</span><Fragment>Final nested</Fragment></Fragment></Fragment>Back to top level</Fragment>
       </template>
-      <template #plural>
+      <template #_2>
         <div><Fragment>Fragment in div</Fragment> with <Var>variable2</Var><span><Fragment>Deep fragment with{{ ' ' }}<Currency :value="amount" currency="USD" /></Fragment>{{ null }}{{ undefined }}{{ false }}</span></div>
       </template>
     </Plural>
@@ -180,7 +180,7 @@ const date = new Date();
             <template #two><Fragment>Two with{{ ' ' }}<Currency :value="amount" currency="USD" />{{ ' ' }}{{ Infinity }}</Fragment></template>
             <template #few><Fragment>Few with <DateTime :value="date" /></Fragment></template>
             <template #many><Branch branch="nested"><template #c><Fragment>{{ 0xff }} and {{ 0o755 }} and {{ 0b1111 }}</Fragment></template></Branch></template>
-            <template #other><Fragment>Other {{ +0 }} vs {{ -0 }}{{ +1 }} vs {{ -1 }}</Fragment></template>
+            <template #default><Fragment>Other {{ +0 }} vs {{ -0 }}{{ +1 }} vs {{ -1 }}</Fragment></template>
           </Plural>
           End {{ '' }}<Fragment />
         </Fragment>

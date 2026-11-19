@@ -1,7 +1,7 @@
 import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
-import { renderPreparedT } from '../../utils/rendering/renderPipeline';
+import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
 import type { TProps } from '../../utils/translation/prepareT.shared';
 import { usePrepareT } from '../../utils/translation/usePrepareT';
 
@@ -29,9 +29,6 @@ export { GtInternalTranslateJsx, T };
  */
 function useComputeT({
   children: sourceChildren,
-  _locale,
-  _enableI18n,
-  _renderPreparedT = renderPreparedT,
   ...params
 }: TProps): ReactNode {
   // Prepare our source children for rendering
@@ -46,8 +43,6 @@ function useComputeT({
   } = usePrepareT({
     sourceChildren,
     params,
-    _locale,
-    _enableI18n,
   });
 
   // Lookup translation in cache
@@ -70,7 +65,7 @@ function useComputeT({
     return prev.current;
   }
 
-  const result = _renderPreparedT({
+  const result = renderPreparedT({
     taggedSourceChildren,
     targetJsxChildren,
     locale,

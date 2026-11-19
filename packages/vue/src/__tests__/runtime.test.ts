@@ -264,12 +264,17 @@ describe('gt-vue runtime', () => {
     const slots = {
       default: () => [],
       one: () => [],
+      two: () => [],
+      // The default slot is the fallback: `other` names no branch.
       other: () => [],
     } as Slots;
 
     expect(
-      getBranchNames({ one: 'attribute', 'data-note': 'ignored' }, slots)
-    ).toEqual(['one', 'other']);
+      getBranchNames(
+        { one: 'attribute', other: 'attribute', 'data-note': 'ignored' },
+        slots
+      )
+    ).toEqual(['one', 'two']);
   });
 
   it('loads and caches plain STRING translations, then rerenders on locale changes', async () => {
@@ -417,13 +422,13 @@ describe('gt-vue runtime', () => {
       t: 'p',
       i: 1,
       d: { ti: 'Greeting' },
-      c: ['Hello, ', { i: 2, k: '_gt_value_2', v: 'v' }, '!'],
+      c: ['Hello, ', { i: 2, v: 'v' }, '!'],
     };
     const target: JsxChildren = {
       t: 'p',
       i: 1,
       d: { ti: 'Salutation' },
-      c: ['Bonjour, ', { i: 2, k: '_gt_value_2', v: 'v' }, ' !'],
+      c: ['Bonjour, ', { i: 2, v: 'v' }, ' !'],
     };
     const plugin = createGT({
       loadTranslations: async () => ({ [jsxHash(source, 'hero')]: target }),
@@ -603,7 +608,6 @@ describe('gt-vue runtime', () => {
       loadTranslations: async () => ({
         scoped: {
           i: 1,
-          k: '_gt_value_1',
           v: 'v',
         },
       }),
@@ -712,7 +716,6 @@ describe('gt-vue runtime', () => {
       loadTranslations: async () => ({
         scopedBranch: {
           i: 1,
-          k: '_gt_value_1',
           v: 'v',
         },
       }),
@@ -1360,7 +1363,7 @@ describe('gt-vue runtime', () => {
                 { n: n.value },
                 {
                   one: () => h(Stateful, { label: 'one' }),
-                  other: () => h(Stateful, { label: 'other' }),
+                  default: () => h(Stateful, { label: 'other' }),
                 }
               ),
             ],
@@ -1790,7 +1793,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('selects source and target plural values with the active locale', async () => {
-    const variable = { i: 2, k: '_gt_value_2', v: 'v' } as const;
+    const variable = { i: 2, v: 'v' } as const;
     const target: JsxChildren = {
       t: 'Plural',
       i: 1,
@@ -1820,7 +1823,7 @@ describe('gt-vue runtime', () => {
                   { locales: ['en'], n: 0 },
                   {
                     one: () => h(Var, null, { default: () => 'ONE' }),
-                    other: () => h(Var, null, { default: () => 'OTHER' }),
+                    default: () => h(Var, null, { default: () => 'OTHER' }),
                   }
                 ),
             }
@@ -1839,7 +1842,7 @@ describe('gt-vue runtime', () => {
       {
         t: 'h1',
         i: 1,
-        c: ['Hello, ', { i: 2, k: '_gt_value_2', v: 'v' }, '!'],
+        c: ['Hello, ', { i: 2, v: 'v' }, '!'],
       },
       { t: 'p', i: 3, c: 'Source paragraph.' },
     ];
@@ -1847,7 +1850,7 @@ describe('gt-vue runtime', () => {
       {
         t: 'h1',
         i: 1,
-        c: ['Bonjour, ', { i: 2, k: '_gt_value_2', v: 'v' }, ' !'],
+        c: ['Bonjour, ', { i: 2, v: 'v' }, ' !'],
       },
       { t: 'p', i: 3, c: 'Paragraphe traduit.' },
     ];
@@ -2017,24 +2020,23 @@ describe('gt-vue runtime', () => {
       i: 1,
       d: {
         b: {
-          one: ['one ', { i: 2, k: '_gt_value_2', v: 'v' }],
-          other: ['other ', { i: 2, k: '_gt_value_2', v: 'v' }],
+          one: ['one ', { i: 2, v: 'v' }],
+          other: ['fallback ', { i: 2, v: 'v' }],
         },
         t: 'p',
       },
-      c: ['fallback ', { i: 2, k: '_gt_value_2', v: 'v' }],
     };
     const branchSource: JsxChildren = {
       t: 'Branch',
-      i: 3,
+      i: 2,
       d: {
         b: {
-          formal: ['formal ', { i: 4, k: '_gt_value_4', v: 'v' }],
-          casual: ['casual ', { i: 4, k: '_gt_value_4', v: 'v' }],
+          formal: ['formal ', { i: 3, v: 'v' }],
+          casual: ['casual ', { i: 3, v: 'v' }],
+          other: ['fallback ', { i: 3, v: 'v' }],
         },
         t: 'b',
       },
-      c: ['fallback ', { i: 4, k: '_gt_value_4', v: 'v' }],
     };
     const source: JsxChildren = [pluralSource, ' / ', branchSource];
     const target: JsxChildren = [
@@ -2042,8 +2044,8 @@ describe('gt-vue runtime', () => {
         ...pluralSource,
         d: {
           b: {
-            one: ['un ', { i: 2, k: '_gt_value_2', v: 'v' }],
-            other: ['plusieurs ', { i: 2, k: '_gt_value_2', v: 'v' }],
+            one: ['un ', { i: 2, v: 'v' }],
+            other: ['plusieurs ', { i: 2, v: 'v' }],
           },
           t: 'p',
         },
@@ -2053,8 +2055,9 @@ describe('gt-vue runtime', () => {
         ...branchSource,
         d: {
           b: {
-            formal: ['bonjour ', { i: 4, k: '_gt_value_4', v: 'v' }],
-            casual: ['salut ', { i: 4, k: '_gt_value_4', v: 'v' }],
+            formal: ['bonjour ', { i: 3, v: 'v' }],
+            casual: ['salut ', { i: 3, v: 'v' }],
+            other: ['repli ', { i: 3, v: 'v' }],
           },
           t: 'b',
         },
@@ -2080,10 +2083,6 @@ describe('gt-vue runtime', () => {
                   one: () => [
                     'one ',
                     h(Var, null, { default: () => 'article' }),
-                  ],
-                  other: () => [
-                    'other ',
-                    h(Var, null, { default: () => 'articles' }),
                   ],
                 }
               ),
@@ -2120,14 +2119,12 @@ describe('gt-vue runtime', () => {
     const source: JsxChildren = {
       t: 'Branch',
       i: 1,
-      d: { b: { formal: 'Hello' }, t: 'b' },
-      c: 'Fallback',
+      d: { b: { formal: 'Hello', other: 'Fallback' }, t: 'b' },
     };
     const target: JsxChildren = {
       t: 'Branch',
       i: 1,
-      d: { b: { formal: 'Bonjour' }, t: 'b' },
-      c: 'Repli',
+      d: { b: { formal: 'Bonjour', other: 'Repli' }, t: 'b' },
     };
     const plugin = createGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
@@ -2166,21 +2163,16 @@ describe('gt-vue runtime', () => {
       setup() {
         return () =>
           h('div', [
-            h(Num, { locales: ['en-US'], value: '1234.5' }),
+            h(Num, { value: 1234.5 }),
             '|',
-            h(Currency, { currency: 'USD', locales: ['en-US'], value: '12' }),
+            h(Currency, { currency: 'USD', value: 12 }),
             '|',
             h(DateTime, {
-              locales: ['en-US'],
               options: { timeZone: 'UTC', year: 'numeric' },
-              value: '2024-01-01T00:00:00.000Z',
+              value: new Date('2024-01-01T00:00:00.000Z'),
             }),
             '|',
-            h(
-              Plural,
-              { n: 2, other: 'items' },
-              { one: () => 'item', default: () => 'fallback' }
-            ),
+            h(Plural, { n: 2 }, { one: () => 'item', default: () => 'items' }),
             '|',
             h(
               Branch,
@@ -2211,15 +2203,18 @@ describe('gt-vue runtime', () => {
             'B',
             h(T, { _hash: 'missing' }, { default: () => 'source' }),
             'C',
-            h(Num, { value: 'number' }),
+            h(Num, { value: 1 }),
             'D',
             h(Num, { value: null }),
             'E',
-            h(Currency, { value: 'currency' }),
+            h(Currency, { currency: 'EUR', value: 2 }),
             'F',
-            h(Currency, { value: null }),
+            h(Currency, { currency: 'EUR', value: null }),
             'G',
-            h(DateTime, { value: 'date' }),
+            h(DateTime, {
+              options: { timeZone: 'UTC', year: 'numeric' },
+              value: 0,
+            }),
             'H',
             h(DateTime, { value: null }),
             'I',
@@ -2227,9 +2222,9 @@ describe('gt-vue runtime', () => {
             'J',
             h(Branch, { branch: 'empty', empty: null }),
             'K',
-            h(Plural, { n: 2, other: 'plural' }),
+            h(Plural, { n: 2 }, { default: () => 'plural' }),
             'L',
-            h(Plural, { n: 2, other: null }),
+            h(Plural, { n: 1, one: null }),
             'M',
             h(Var, null, { default: () => 'variable' }),
             'N',
@@ -2238,7 +2233,7 @@ describe('gt-vue runtime', () => {
     });
 
     expect(await renderWithPlugin(Root, plugin)).toBe(
-      '<div>A<!--[-->target<!--]-->B<!--[-->source<!--]-->C<!--[-->number<!--]-->D<!--[--><!--]-->E<!--[-->currency<!--]-->F<!--[--><!--]-->G<!--[-->date<!--]-->H<!--[--><!--]-->I<!--[-->branch<!--]-->J<!--[--><!--]-->K<!--[-->plural<!--]-->L<!--[--><!--]-->M<!--[-->variable<!--]-->N</div>'
+      '<div>A<!--[-->target<!--]-->B<!--[-->source<!--]-->C<!--[-->1<!--]-->D<!--[--><!--]-->E<!--[-->2,00\u00A0€<!--]-->F<!--[--><!--]-->G<!--[-->1970<!--]-->H<!--[--><!--]-->I<!--[-->branch<!--]-->J<!--[--><!--]-->K<!--[-->plural<!--]-->L<!--[--><!--]-->M<!--[-->variable<!--]-->N</div>'
     );
   });
 
@@ -2319,7 +2314,7 @@ describe('gt-vue runtime', () => {
     expect(html).not.toContain('alt="Portrait traduit"');
   });
 
-  it('uses pipeline locales instead of public preferences for rich formatters', async () => {
+  it('uses pipeline locales for rich formatters', async () => {
     const date = new Date('2024-01-02T00:00:00.000Z');
     const dateOptions = {
       day: 'numeric',
@@ -2328,19 +2323,11 @@ describe('gt-vue runtime', () => {
       year: 'numeric',
     } as const;
     const renderFormatters = () => [
-      h(Num, { locales: ['de-DE'], value: 1234.5 }),
+      h(Num, { value: 1234.5 }),
       '|',
-      h(Currency, {
-        currency: 'EUR',
-        locales: ['de-DE'],
-        value: 1234.5,
-      }),
+      h(Currency, { currency: 'EUR', value: 1234.5 }),
       '|',
-      h(DateTime, {
-        locales: ['de-DE'],
-        options: dateOptions,
-        value: date,
-      }),
+      h(DateTime, { options: dateOptions, value: date }),
     ];
     const expected = (locale: string) =>
       [
@@ -2349,9 +2336,7 @@ describe('gt-vue runtime', () => {
           currency: 'EUR',
           style: 'currency',
         }).format(1234.5),
-        new Intl.DateTimeFormat(locale, dateOptions)
-          .format(date)
-          .replace(/[\u200F\u202B\u202E]/g, ''),
+        new Intl.DateTimeFormat(locale, dateOptions).format(date),
       ].join('|');
 
     const missingPlugin = createGT({
@@ -2372,7 +2357,7 @@ describe('gt-vue runtime', () => {
                   { n: 0 },
                   {
                     one: () => 'one',
-                    other: () => 'other',
+                    default: () => 'other',
                   }
                 ),
                 '|',
@@ -2391,11 +2376,11 @@ describe('gt-vue runtime', () => {
       defaultLocale: 'en-US',
       loadTranslations: async () => ({
         formatters: [
-          { i: 1, k: '_gt_n_1', v: 'n' },
+          { i: 1, v: 'n' },
           '|',
-          { i: 2, k: '_gt_cost_2', v: 'c' },
+          { i: 2, v: 'c' },
           '|',
-          { i: 3, k: '_gt_date_3', v: 'd' },
+          { i: 3, v: 'd' },
         ],
         partial: { d: { ti: 'Titre' }, i: 1, t: 'span' },
       }),
@@ -2455,17 +2440,15 @@ describe('gt-vue runtime', () => {
           currency: 'EUR',
           style: 'currency',
         }).format(1234.5),
-        new Intl.DateTimeFormat(locale, dateOptions)
-          .format(date)
-          .replace(/[\u200F\u202B\u202E]/g, ''),
+        new Intl.DateTimeFormat(locale, dateOptions).format(date),
       ].join('|');
     const loadTranslations = vi.fn(async () => ({
       formatters: [
-        { i: 1, k: '_gt_n_1', v: 'n' as const },
+        { i: 1, v: 'n' as const },
         '|',
-        { i: 2, k: '_gt_cost_2', v: 'c' as const },
+        { i: 2, v: 'c' as const },
         '|',
-        { i: 3, k: '_gt_date_3', v: 'd' as const },
+        { i: 3, v: 'd' as const },
       ],
       plural: {
         t: 'Plural',
@@ -2485,7 +2468,7 @@ describe('gt-vue runtime', () => {
     await french.loadTranslations('pirate');
     const pluralSlots = {
       one: () => 'one',
-      other: () => 'other',
+      default: () => 'other',
     };
     const Root = defineComponent({
       setup() {

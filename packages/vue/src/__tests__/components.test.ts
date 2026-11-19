@@ -6,7 +6,6 @@ import {
   renderTranslatedChildren as renderReactTranslatedChildren,
 } from '@generaltranslation/react-core/components-rsc';
 import { initializeI18nConfig as initializeReactI18nConfig } from '@generaltranslation/react-core/pure';
-import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import type { JsxChildren } from '@generaltranslation/format';
 import * as React from 'react';
 import {
@@ -73,7 +72,7 @@ const BRANCH_TARGET_CASES = [
   },
   {
     label: 'single variable',
-    value: { i: 3, k: '_gt_value_3', v: 'v' },
+    value: { i: 3, v: 'v' },
   },
 ] as const satisfies ReadonlyArray<{
   label: string;
@@ -153,7 +152,6 @@ describe('Branch and Plural attributes', () => {
           few: '',
           many: '0',
           one: true,
-          other: 'false',
           two: null,
           zero: false,
         },
@@ -186,14 +184,15 @@ describe('Branch and Plural attributes', () => {
       {
         t: 'Branch',
         i: 1,
-        d: { b: { formal: 'Named slot' }, t: 'b' },
-        c: 'Fallback',
+        d: { b: { formal: 'Named slot', other: 'Fallback' }, t: 'b' },
       },
       {
         t: 'Plural',
         i: 2,
-        d: { b: { one: 'Named plural slot' }, t: 'p' },
-        c: 'Plural fallback',
+        d: {
+          b: { one: 'Named plural slot', other: 'Plural fallback' },
+          t: 'p',
+        },
       },
     ]);
   });
@@ -218,7 +217,7 @@ describe('Branch and Plural attributes', () => {
           few: () => [false],
           many: () => [null],
           one: () => [],
-          other: () => [true],
+          two: () => [true],
         }
       ),
     ]);
@@ -236,7 +235,7 @@ describe('Branch and Plural attributes', () => {
         t: 'Plural',
         i: 2,
         d: {
-          b: { few: false, many: null, one: [], other: true },
+          b: { few: false, many: null, one: [], two: true },
           t: 'p',
         },
       },
@@ -279,7 +278,6 @@ describe('Branch and Plural attributes', () => {
       ['style', 'color: red'],
       ['style', { color: 'red' }],
       ['n', 2],
-      ['locales', 'fr'],
       ['key', 'stable'],
       ['ref', 'component'],
       ['ref-for', true],
@@ -301,6 +299,8 @@ describe('Branch and Plural attributes', () => {
     expect(
       attributes.filter(([name, value]) => isBranchAttribute(name, value))
     ).toEqual([]);
+    // Plural has no locales prop, so the name is a branch as in React.
+    expect(isBranchAttribute('locales', 'fr')).toBe(true);
   });
 
   it.each([
@@ -396,7 +396,7 @@ describe('Branch and Plural attributes', () => {
     expect(html).not.toContain('Fallback');
   });
 
-  it('keeps empty Branch slots selected and lets null Plural slots fall back', async () => {
+  it('keeps empty Branch slots and null Plural slots selected', async () => {
     const Root = defineComponent({
       setup() {
         return () =>
@@ -420,7 +420,7 @@ describe('Branch and Plural attributes', () => {
     });
 
     expect(stripFragmentMarkers(await renderWithPlugin(Root, createGT()))).toBe(
-      'beforeafter|Plural fallback'
+      'beforeafter|'
     );
   });
 
@@ -448,14 +448,21 @@ describe('Branch and Plural attributes', () => {
     const source: JsxChildren = {
       t: 'Branch',
       i: 1,
-      d: { b: { 'data-note': 'Source named slot' }, t: 'b' },
-      c: 'Source fallback',
+      d: {
+        b: { 'data-note': 'Source named slot', other: 'Source fallback' },
+        t: 'b',
+      },
     };
     const target: JsxChildren = {
       t: 'Branch',
       i: 1,
-      d: { b: { 'data-note': 'Translated named slot' }, t: 'b' },
-      c: 'Translated fallback',
+      d: {
+        b: {
+          'data-note': 'Translated named slot',
+          other: 'Translated fallback',
+        },
+        t: 'b',
+      },
     };
     const plugin = createGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
@@ -485,10 +492,10 @@ describe('Branch and Plural attributes', () => {
           large: '12',
           flag: false,
           empty: null,
+          other: 'Fallback',
         },
         t: 'b',
       },
-      c: 'Fallback',
     };
     const target: JsxChildren = {
       t: 'Branch',
@@ -500,10 +507,10 @@ describe('Branch and Plural attributes', () => {
           large: 'grand',
           flag: false,
           empty: null,
+          other: 'Repli',
         },
         t: 'b',
       },
-      c: 'Repli',
     };
     const plugin = createGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
@@ -546,14 +553,32 @@ describe('Branch and Plural attributes', () => {
     expect(html).not.toContain('>false<');
   });
 
-  it('uses the standalone Plural default for a null form', async () => {
+  it('treats a standalone Plural null form as present and empty', async () => {
     const html = await renderTemplate(
       '<div>before<Plural :n="1" :one="null">Fallback</Plural>after</div>'
     );
 
-    expect(html).toContain('beforeFallbackafter');
+    expect(html).toContain('beforeafter');
     expect(html).not.toContain('>null<');
   });
+
+  it.each([
+    [0, 'None'],
+    [1, 'Exactly one'],
+    [5, 'Fallback'],
+    ['guest', 'Someone'],
+  ])(
+    'renders standalone exact and fallback branches for %s',
+    async (value, expected) => {
+      const html = await renderTemplate(
+        typeof value === 'number'
+          ? `<Plural :n="${value}" _0="None" one="One"><template #_1>Exactly one</template>Fallback</Plural>`
+          : `<Branch branch="${value}" admin="Admin">Someone</Branch>`
+      );
+
+      expect(html).toContain(expected);
+    }
+  );
 
   it('prefers a named Plural slot over an attribute with the same name', async () => {
     const html = await renderTemplate(
@@ -567,7 +592,7 @@ describe('Branch and Plural attributes', () => {
 
   it('uses the default plural rules when the default locale is active', async () => {
     const html = await renderTemplate(
-      '<Plural :n="0" :locales="[\'fr\']"><template #one>French one</template><template #other>English other</template></Plural>',
+      '<Plural :n="0"><template #one>French one</template><template #default>English other</template></Plural>',
       () => ({}),
       createGT({ defaultLocale: 'en' })
     );
@@ -580,7 +605,7 @@ describe('Branch and Plural attributes', () => {
     const plugin = createGT({ defaultLocale: 'en' });
     await plugin.setLocale('fr');
     const html = await renderTemplate(
-      '<Plural :n="0"><template #one>French one</template><template #other>English other</template></Plural>',
+      '<Plural :n="0"><template #one>French one</template><template #default>English other</template></Plural>',
       () => ({}),
       plugin
     );
@@ -589,18 +614,75 @@ describe('Branch and Plural attributes', () => {
     expect(html).not.toContain('English other');
   });
 
+  it('pairs the branch a translation picks with the source other branch', async () => {
+    const source: JsxChildren = {
+      t: 'Plural',
+      i: 1,
+      d: { b: { '=0': 'None', other: { t: 'b', i: 2, c: 'items' } }, t: 'p' },
+    };
+    // Russian has no =0 branch and counts 0 as "many", which English lacks.
+    const target: JsxChildren = {
+      t: 'Plural',
+      i: 1,
+      d: {
+        b: {
+          one: { t: 'b', i: 2, c: 'элемент' },
+          few: { t: 'b', i: 2, c: 'элемента' },
+          many: { t: 'b', i: 2, c: 'элементов' },
+          other: { t: 'b', i: 2, c: 'элемента' },
+        },
+        t: 'p',
+      },
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({ [jsxHash(source)]: target }),
+    });
+    await plugin.setLocale('ru');
+
+    expect(
+      await renderTemplate(
+        '<T><Plural :n="0" _0="None"><template #default><b>items</b></template></Plural></T>',
+        undefined,
+        plugin
+      )
+    ).toBe('<b>элементов</b>');
+  });
+
+  it('lets the source pick when the translation has no branch for the value', async () => {
+    const source: JsxChildren = {
+      t: 'Branch',
+      i: 1,
+      d: { b: { a: 'A', b: 'B', other: 'Other' }, t: 'b' },
+    };
+    const target: JsxChildren = {
+      t: 'Branch',
+      i: 1,
+      d: { b: { b: 'B traduit' }, t: 'b' },
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({ [jsxHash(source)]: target }),
+    });
+    await plugin.setLocale('fr');
+
+    expect(
+      await renderTemplate(
+        '<T><Branch branch="a" a="A" b="B">Other</Branch></T>',
+        undefined,
+        plugin
+      )
+    ).toBe('A');
+  });
+
   it('uses the same filtered inputs for a rich Plural hash', async () => {
     const source: JsxChildren = {
       t: 'Plural',
       i: 1,
       d: { b: { other: 'Other' }, t: 'p' },
-      c: 'Fallback',
     };
     const target: JsxChildren = {
       t: 'Plural',
       i: 1,
       d: { b: { other: 'Autres' }, t: 'p' },
-      c: 'Repli',
     };
     const plugin = createGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
@@ -608,7 +690,7 @@ describe('Branch and Plural attributes', () => {
     await plugin.setLocale('fr');
 
     const html = await renderTemplate(
-      '<T><Plural :n="2" class="secret" :style="{ color: \'red\' }" @click="handler" :one="payload" other="Other" data-note="private" aria-label="Items">Fallback</Plural></T>',
+      '<T><Plural :n="2" class="secret" :style="{ color: \'red\' }" @click="handler" :one="payload" data-note="private" aria-label="Items">Other</Plural></T>',
       () => ({
         handler: () => 'secret listener',
         payload: { label: 'secret object' },
@@ -730,37 +812,39 @@ describe('Branch and Plural attributes', () => {
 });
 
 describe('gt-vue formatting components', () => {
-  it('formats typed number, currency, Date, and epoch values', async () => {
+  it('formats number, bigint, currency, Date, and epoch values', async () => {
     const Root = defineComponent({
       setup() {
         return () =>
           h('div', [
-            h(Num, { locales: ['en-US'], value: 1234.5 }),
+            h(Num, { value: 1234.5 }),
             '|',
-            h(Currency, {
-              currency: 'USD',
-              locales: ['en-US'],
-              value: 12,
-            }),
+            h(Num, { value: 12345678901234567890n }),
+            '|',
+            h(Currency, { currency: 'USD', value: 12 }),
             '|',
             h(DateTime, {
-              locales: ['en-US'],
               options: { timeZone: 'UTC', year: 'numeric' },
               value: new Date('2024-01-01T00:00:00.123Z'),
             }),
             '|',
             h(DateTime, {
-              locales: ['en-US'],
               options: { timeZone: 'UTC', year: 'numeric' },
               value: 1704067200000,
             }),
+            '|',
+            h(DateTime, { options: { timeZone: 'UTC' }, value: 1704067200000 }),
           ]);
       },
     });
+    const warnings: string[] = [];
+    const app = createSSRApp(Root).use(createGT());
+    app.config.warnHandler = (message) => warnings.push(message);
 
-    expect(
-      stripFragmentMarkers(await renderWithPlugin(Root, createGT()))
-    ).toContain('1,234.5|$12.00|2024|2024');
+    expect(stripFragmentMarkers(await renderToString(app))).toContain(
+      '1,234.5|12,345,678,901,234,567,890|$12.00|2024|2024|Jan 1, 2024'
+    );
+    expect(warnings).toEqual([]);
   });
 
   it('does not treat formatter slot children as values', async () => {
@@ -769,12 +853,11 @@ describe('gt-vue formatting components', () => {
       setup() {
         return () =>
           h('div', [
-            h(Num, { locales: ['en-US'], value: 2 }, { default: slot }),
-            h(Currency, { locales: ['en-US'], value: 3 }, { default: slot }),
+            h(Num, { value: 2 }, { default: slot }),
+            h(Currency, { currency: 'USD', value: 3 }, { default: slot }),
             h(
               DateTime,
               {
-                locales: ['en-US'],
                 options: { timeZone: 'UTC', year: 'numeric' },
                 value: 1704067200000,
               },
@@ -790,49 +873,23 @@ describe('gt-vue formatting components', () => {
     expect(slot).not.toHaveBeenCalled();
   });
 
-  it('returns partially parseable value strings unchanged', async () => {
-    const Root = defineComponent({
-      setup() {
-        return () =>
-          h('div', [
-            h(Num, { locales: ['en-US'], value: '1,234.5' }),
-            '|',
-            h(Currency, {
-              currency: 'USD',
-              locales: ['en-US'],
-              value: '12 dollars',
-            }),
-          ]);
-      },
-    });
-
-    expect(
-      stripFragmentMarkers(await renderWithPlugin(Root, createGT()))
-    ).toContain('1,234.5|12 dollars');
-  });
-
   it('returns invalid dates unchanged', async () => {
     const Root = defineComponent({
       setup() {
-        return () => h(DateTime, { value: 'definitely-not-a-date' as string });
+        return () => h(DateTime, { value: new Date('definitely-not-a-date') });
       },
     });
 
-    expect(await renderWithPlugin(Root, createGT())).toContain(
-      'definitely-not-a-date'
-    );
+    expect(await renderWithPlugin(Root, createGT())).toContain('Invalid Date');
   });
 
-  it('renders nullish and whitespace-only values as empty without prop warnings', async () => {
+  it('renders null values as empty without prop warnings', async () => {
     const Root = defineComponent({
       setup() {
         return () =>
           h('div', [
-            h(Num, { value: '   ' }),
-            h(Currency, { value: '\n' }),
-            h(DateTime, { value: '\t' }),
             h(Num, { value: null }),
-            h(Currency, { value: null }),
+            h(Currency, { currency: 'USD', value: null }),
             h(DateTime, { value: null }),
           ]);
       },
@@ -843,40 +900,6 @@ describe('gt-vue formatting components', () => {
 
     expect(stripFragmentMarkers(await renderToString(app))).toBe('<div></div>');
     expect(warnings).toEqual([]);
-  });
-
-  it('uses only the default locale when it is active', () => {
-    expect(getFormatLocales(['fr-CA'], 'en', 'en')).toEqual(['en']);
-    expect(getFormatLocales(['fr-CA'], defaultDefaultLocale)).toEqual([
-      defaultDefaultLocale,
-    ]);
-  });
-
-  it('ignores explicit formatter locales when the default locale is active', async () => {
-    const Root = defineComponent({
-      setup() {
-        return () => h(Num, { locales: ['de-DE'], value: 1234.5 });
-      },
-    });
-
-    expect(stripFragmentMarkers(await renderWithPlugin(Root, createGT()))).toBe(
-      '1,234.5'
-    );
-  });
-
-  it('prefers explicit locales for standalone formatters at a non-default locale', async () => {
-    const Root = defineComponent({
-      setup() {
-        return () => h(Num, { locales: ['de'], value: 1234.5 });
-      },
-    });
-    const app = createSSRApp(Root).use(
-      createGT({ defaultLocale: 'en', locale: 'fr' })
-    );
-
-    expect(stripFragmentMarkers(await renderToString(app))).toBe(
-      new Intl.NumberFormat('de').format(1234.5)
-    );
   });
 
   it('formats with Latin digits and the Gregorian calendar, as gt-react does', async () => {
@@ -899,7 +922,7 @@ describe('gt-vue formatting components', () => {
     );
 
     expect(stripFragmentMarkers(await renderToString(app))).toBe(
-      `${new Intl.NumberFormat('fa-IR', { numberingSystem: 'latn' }).format(1234.5)} ${new Intl.DateTimeFormat('fa-IR', { calendar: 'gregory', dateStyle: 'short', numberingSystem: 'latn', timeZone: 'UTC' }).format(date).replace(/[\u200F\u202B\u202E]/g, '')}`
+      `${new Intl.NumberFormat('fa-IR', { numberingSystem: 'latn' }).format(1234.5)} ${new Intl.DateTimeFormat('fa-IR', { calendar: 'gregory', dateStyle: 'short', numberingSystem: 'latn', timeZone: 'UTC' }).format(date)}`
     );
   });
 
@@ -915,7 +938,6 @@ describe('gt-vue formatting components', () => {
           return () =>
             h(Currency, {
               currency: 'EUR',
-              locales: ['en-US'],
               options,
               value: 12,
             });
@@ -928,14 +950,8 @@ describe('gt-vue formatting components', () => {
     }
   );
 
-  it('uses explicit locales as they are, or the active locale, while translating', () => {
-    expect(getFormatLocales(['fr-CA', 'fr', 'en'], 'fr', 'en')).toEqual([
-      'fr-CA',
-      'fr',
-      'en',
-    ]);
-    expect(getFormatLocales(['fr-CA'], 'fr', 'en')).toEqual(['fr-CA']);
-    expect(getFormatLocales(undefined, 'fr', 'en')).toEqual(['fr']);
+  it('uses the active locale', () => {
+    expect(getFormatLocales('fr')).toEqual(['fr']);
   });
 
   it('ignores fallthrough attributes without warning for unwrapped values', async () => {
@@ -956,16 +972,14 @@ describe('gt-vue formatting components', () => {
             h(Var, fallthrough, {
               default: () => h('span', { id: 'inner' }, 'Grace'),
             }),
-            h(Num, { ...fallthrough, locales: ['en-US'], value: 2 }),
+            h(Num, { ...fallthrough, value: 2 }),
             h(Currency, {
               ...fallthrough,
               currency: 'USD',
-              locales: ['en-US'],
               value: 3,
             }),
             h(DateTime, {
               ...fallthrough,
-              locales: ['en-US'],
               options: { timeZone: 'UTC', year: 'numeric' },
               value: 1704067200000,
             }),

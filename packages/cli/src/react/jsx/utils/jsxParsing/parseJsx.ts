@@ -18,6 +18,9 @@ import {
   warnInvalidDeriveInitSync,
   warnRecursiveFunctionCallSync,
   warnDataAttrOnBranch,
+  warnBranchOtherPropSync,
+  warnInvalidExactPluralPropSync,
+  warnSpreadOnBranchSync,
   warnNestedInternalTComponent,
   warnDeriveNonConstVariableSync,
   warnDeriveDestructuringSync,
@@ -376,6 +379,29 @@ function buildJSXTree({
             warnDataAttrOnBranch(config.file, attrName, location)
           );
         }
+        if ((elementIsPlural || elementIsBranch) && attrName === 'other') {
+          output.errors.push(
+            warnBranchOtherPropSync(
+              config.file,
+              componentType,
+              `${attr.loc?.start?.line}:${attr.loc?.start?.column}`
+            )
+          );
+        }
+        // `_01` looks like an exact number but is not a branch.
+        if (
+          elementIsPlural &&
+          /^_\d/.test(attrName) &&
+          !isAcceptedPluralForm(attrName)
+        ) {
+          output.warnings.add(
+            warnInvalidExactPluralPropSync(
+              config.file,
+              attrName,
+              `${attr.loc?.start?.line}:${attr.loc?.start?.column}`
+            )
+          );
+        }
         if (attr.value) {
           if (t.isStringLiteral(attr.value)) {
             attrValue = attr.value.value;
@@ -393,6 +419,7 @@ function buildJSXTree({
               (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
               (elementIsBranch &&
                 attrName !== 'branch' &&
+                attrName !== 'other' &&
                 !attrName.startsWith(DATA_ATTR_PREFIX))
             ) {
               // Make sure that variable strings like {`I have ${count} book`} are invalid!
@@ -436,6 +463,15 @@ function buildJSXTree({
           }
         }
         props[attrName] = attrValue;
+      } else if (elementIsPlural || elementIsBranch) {
+        // The runtime reads the props a spread carries, which the source does not show.
+        output.errors.push(
+          warnSpreadOnBranchSync(
+            config.file,
+            componentType,
+            `${attr.loc?.start?.line}:${attr.loc?.start?.column}`
+          )
+        );
       }
     });
 

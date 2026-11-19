@@ -17,7 +17,7 @@ export default function CommerceReviewList() {
           <span> — </span>
           <span>
             Based on <Num>{totalReviews}</Num>{' '}
-            <Plural n={totalReviews} one="review" other="reviews" />
+            <Plural n={totalReviews} one="review">reviews</Plural>
           </span>
         </div>
       </header>

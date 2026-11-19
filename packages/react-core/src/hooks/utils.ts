@@ -4,21 +4,12 @@ import { useEnableI18n, useLocale } from './condition-store';
 import { getFormatLocales } from './utils/getFormatLocales';
 import { getI18nConfig } from 'gt-i18n/internal';
 
-const EMPTY_LOCALES_PROP: string[] = [];
-
-export function useFormatLocales(
-  localesProp: string[] = EMPTY_LOCALES_PROP
-): string[] {
+export function useFormatLocales(): string[] {
   const locale = useLocale();
   const enableI18n = useEnableI18n();
   return useMemo(
-    () =>
-      getFormatLocales({
-        locale,
-        enableI18n,
-        localesProp,
-      }),
-    [locale, enableI18n, localesProp]
+    () => getFormatLocales({ locale, enableI18n }),
+    [locale, enableI18n]
   );
 }
 

@@ -55,4 +55,14 @@ describe('addGTIdentifierToSyntaxTree', () => {
       expect(element.d.b).toHaveProperty('inactive');
     });
   });
+
+  it('does not store an other prop of a Branch with no children', () => {
+    const tree: MultipliedTreeNode = {
+      nodeType: 'element',
+      type: 'Branch',
+      props: { branch: 'status', other: 'Prop' },
+    } as unknown;
+
+    expect(addGTIdentifierToSyntaxTree(tree)).toEqual({ t: 'Branch', i: 1 });
+  });
 });

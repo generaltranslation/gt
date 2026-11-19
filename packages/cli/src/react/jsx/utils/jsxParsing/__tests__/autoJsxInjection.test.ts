@@ -40,7 +40,7 @@ const DYNAMIC_CHILDREN =
   '<T> component has children that could change at runtime';
 
 /** The variable an auto-injected (or user) Var produces at GT id `i`. */
-const variable = (i: number) => ({ i, k: `_gt_value_${i}`, v: 'v' });
+const variable = (i: number) => ({ i, v: 'v' });
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -146,7 +146,7 @@ describe('injection pass', () => {
     ['a Branch', '<div><Branch branch="test">Fallback</Branch></div>', 1, 0],
     [
       'a Plural (n is a control prop)',
-      '<div><Plural n={count} one="item" other="items" /></div>',
+      '<div><Plural n={count} one="item">items</Plural></div>',
       1,
       0,
     ],
@@ -158,7 +158,7 @@ describe('injection pass', () => {
     ],
     [
       'elements in Plural forms',
-      '<div><Plural n={c} one={<span>One item</span>} other={<span>Many items</span>} /></div>',
+      '<div><Plural n={c} one={<span>One item</span>}><span>Many items</span></Plural></div>',
       1,
       0,
     ],
@@ -200,7 +200,7 @@ describe('injection pass', () => {
     ],
     [
       'Branch and Plural siblings next to text',
-      '<div>Label: <Branch branch="x">fb</Branch><Plural n={c} one="1" other="n" /></div>',
+      '<div>Label: <Branch branch="x">fb</Branch><Plural n={c} one="1">n</Plural></div>',
       1,
       0,
     ],
@@ -396,6 +396,7 @@ describe('injection pass', () => {
 
 describe('injection and extraction', () => {
   const plural = { b: { one: 'item', other: 'items' }, t: 'p' };
+  const fallback = { b: { other: 'fallback' }, t: 'b' };
 
   // [description, code, sources of the extracted updates]
   it.each<[string, string, unknown[]]>([
@@ -508,26 +509,19 @@ describe('injection and extraction', () => {
     [
       'a user Num',
       page('<div>Price: <Num>{price}</Num></div>'),
-      [['Price: ', { i: 1, k: '_gt_n_1', v: 'n' }]],
+      [['Price: ', { i: 1, v: 'n' }]],
     ],
     [
       'a user RelativeTime',
       page('<div>Updated: <RelativeTime>{date}</RelativeTime></div>'),
-      [['Updated: ', { i: 1, k: '_gt_time_1', v: 'rt' }]],
+      [['Updated: ', { i: 1, v: 'rt' }]],
     ],
     [
       'a user Currency and DateTime',
       page(
         '<div>Paid <Currency>{amount}</Currency> on <DateTime>{date}</DateTime></div>'
       ),
-      [
-        [
-          'Paid ',
-          { i: 1, k: '_gt_cost_1', v: 'c' },
-          ' on ',
-          { i: 2, k: '_gt_date_2', v: 'd' },
-        ],
-      ],
+      [['Paid ', { i: 1, v: 'c' }, ' on ', { i: 2, v: 'd' }]],
     ],
     [
       'nothing from a JSX ternary inside a user Var',
@@ -595,16 +589,16 @@ describe('injection and extraction', () => {
             b: {
               a: { t: 'span', i: 2, c: 'A' },
               b: { t: 'span', i: 2, c: 'B' },
+              other: 'Fallback',
             },
             t: 'b',
           },
-          c: 'Fallback',
         },
       ],
     ],
     [
       'a Plural with string forms',
-      page('<div><Plural n={count} one="item" other="items" /></div>'),
+      page('<div><Plural n={count} one="item">items</Plural></div>'),
       [{ t: 'Plural', i: 1, d: plural }],
     ],
     [
@@ -615,14 +609,24 @@ describe('injection and extraction', () => {
       [
         [
           'Hello, my good friend ',
-          { t: 'Branch', i: 1, c: ['Fallback with Var ', variable(2)] },
+          {
+            t: 'Branch',
+            i: 1,
+            d: { b: { other: ['Fallback with Var ', variable(2)] }, t: 'b' },
+          },
         ],
       ],
     ],
     [
       'dynamic content in Plural children',
       page('<div><Plural n={count}>You have {count} items</Plural></div>'),
-      [{ t: 'Plural', i: 1, c: ['You have ', variable(2), ' items'] }],
+      [
+        {
+          t: 'Plural',
+          i: 1,
+          d: { b: { other: ['You have ', variable(2), ' items'] }, t: 'p' },
+        },
+      ],
     ],
     [
       'dynamic content in a JSX Branch prop',
@@ -634,10 +638,12 @@ describe('injection and extraction', () => {
           t: 'Branch',
           i: 1,
           d: {
-            b: { Ernest: { t: 'C2', i: 2, c: ['Hello ', variable(3)] } },
+            b: {
+              Ernest: { t: 'C2', i: 2, c: ['Hello ', variable(3)] },
+              other: 'Fallback',
+            },
             t: 'b',
           },
-          c: 'Fallback',
         },
       ],
     ],
@@ -650,8 +656,7 @@ describe('injection and extraction', () => {
         {
           t: 'Branch',
           i: 1,
-          d: { b: { summary: variable(2) }, t: 'b' },
-          c: 'Fallback',
+          d: { b: { summary: variable(2), other: 'Fallback' }, t: 'b' },
         },
         'Option A',
         'Option B',
@@ -660,7 +665,7 @@ describe('injection and extraction', () => {
     [
       'the branches of a JSX ternary in a Plural form',
       page(
-        '<div><Plural n={n} one={flag ? <b>single</b> : <b>solo</b>} other="many" /></div>'
+        '<div><Plural n={n} one={flag ? <b>single</b> : <b>solo</b>}>many</Plural></div>'
       ),
       [
         {
@@ -672,7 +677,8 @@ describe('injection and extraction', () => {
         'solo',
       ],
     ],
-    // Branch/Plural children share the id counter with the following siblings
+    // Branch/Plural children are a branch: the following siblings count on
+    // from the branching element's id
     [
       'an element after Branch children with the next id',
       page(
@@ -683,10 +689,15 @@ describe('injection and extraction', () => {
           {
             t: 'Branch',
             i: 1,
-            d: { b: { draft: { t: 'span', i: 2, c: 'Draft' } }, t: 'b' },
-            c: { t: 'span', i: 2, c: 'Unknown' },
+            d: {
+              b: {
+                draft: { t: 'span', i: 2, c: 'Draft' },
+                other: { t: 'span', i: 2, c: 'Unknown' },
+              },
+              t: 'b',
+            },
           },
-          { t: 'span', i: 3, c: ['Last saved ', variable(4)] },
+          { t: 'span', i: 2, c: ['Last saved ', variable(3)] },
         ],
       ],
     ],
@@ -700,10 +711,15 @@ describe('injection and extraction', () => {
           {
             t: 'Plural',
             i: 1,
-            d: { b: { one: { t: 'span', i: 2, c: 'one' } }, t: 'p' },
-            c: { t: 'span', i: 2, c: 'other' },
+            d: {
+              b: {
+                one: { t: 'span', i: 2, c: 'one' },
+                other: { t: 'span', i: 2, c: 'other' },
+              },
+              t: 'p',
+            },
           },
-          { t: 'span', i: 3, c: ['Total: ', variable(4)] },
+          { t: 'span', i: 2, c: ['Total: ', variable(3)] },
         ],
       ],
     ],
@@ -715,10 +731,12 @@ describe('injection and extraction', () => {
           t: 'Plural',
           i: 1,
           d: {
-            b: { one: { t: 'C2', i: 2, c: { t: 'strong', i: 3, c: 'one' } } },
+            b: {
+              one: { t: 'C2', i: 2, c: { t: 'strong', i: 3, c: 'one' } },
+              other: { t: 'C2', i: 2, c: 'other' },
+            },
             t: 'p',
           },
-          c: { t: 'C2', i: 2, c: 'other' },
         },
       ],
     ],
@@ -823,15 +841,15 @@ describe('injection and extraction', () => {
       [
         [
           'Hello ',
-          { t: 'Derive', i: 1, c: { t: 'Branch', i: 2, c: 'fallback' } },
+          { t: 'Derive', i: 1, c: { t: 'Branch', i: 2, d: fallback } },
         ],
-        { t: 'Branch', i: 1, c: 'fallback' },
+        { t: 'Branch', i: 1, d: fallback },
       ],
     ],
     [
       'a Plural inside a Derive, also on its own',
       page(
-        '<div>Hello <Derive><Plural n={n} one="item" other="items" /></Derive></div>'
+        '<div>Hello <Derive><Plural n={n} one="item">items</Plural></Derive></div>'
       ),
       [
         ['Hello ', { t: 'Derive', i: 1, c: { t: 'Plural', i: 2, d: plural } }],

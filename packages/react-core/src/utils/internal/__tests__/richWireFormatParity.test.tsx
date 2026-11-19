@@ -29,13 +29,13 @@ const sources = {
     'Hello ',
     <Var key='name'>Ada</Var>,
     ', you have ',
-    <Num key='count'>3</Num>,
+    <Num key='count'>{3}</Num>,
     ' messages.',
   ],
   'independent-branch-numbering': [
     <Branch
       key='branch'
-      branch='formal'
+      branch={'formal' as string}
       formal={[
         <strong key='strong'>Hello</strong>,
         ' ',
@@ -48,13 +48,8 @@ const sources = {
     <span key='after'>After</span>,
   ],
   'independent-plural-numbering': [
-    <Plural
-      key='plural'
-      n={2}
-      one={['One ', <Num key='count'>1</Num>]}
-      other={['Many ', <Num key='count'>2</Num>]}
-    >
-      Fallback
+    <Plural key='plural' n={2} one={['One ', <Num key='count'>{1}</Num>]}>
+      Many <Num key='count'>{2}</Num>
     </Plural>,
     <span key='after'>After</span>,
   ],

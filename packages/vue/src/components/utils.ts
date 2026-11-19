@@ -1,4 +1,3 @@
-import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import {
   type Component,
   type DefineComponent,
@@ -10,8 +9,9 @@ const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
   'branch',
   'class',
   'key',
-  'locales',
   'n',
+  // The fallback is the default slot, so `other` names no branch.
+  'other',
   'ref',
   'ref-for',
   'ref-key',
@@ -38,21 +38,16 @@ export function withGTMetadata<Props = {}>(
 }
 
 /**
- * The locales a variable formats in and a plural is selected in: the
- * `locales` it is given, as they are, or the active locale. When the active
- * locale is the default locale, that locale alone, as in the React runtime.
+ * The locales a variable formats in and a plural is selected in: the active
+ * locale.
  *
  * @internal
  */
 export function getFormatLocales(
-  locales: string[] | undefined,
   locale: string,
-  defaultLocale: string = defaultDefaultLocale,
   resolveLocale: (locale: string) => string = identityLocale
 ): string[] {
-  const resolvedLocale = resolveLocale(locale);
-  if (resolvedLocale === resolveLocale(defaultLocale)) return [resolvedLocale];
-  return locales?.length ? locales.map(resolveLocale) : [resolvedLocale];
+  return [resolveLocale(locale)];
 }
 
 function identityLocale(locale: string): string {
@@ -111,7 +106,7 @@ export function isBranchAttribute(
   );
 }
 
-/** @internal */
+/** Names of the attributes and slots that can be branches. @internal */
 export function getBranchNames(
   attrs: Record<string, unknown>,
   slots: Slots
@@ -122,28 +117,27 @@ export function getBranchNames(
         .filter(([name, value]) => isBranchAttribute(name, value))
         .map(([name]) => name),
       ...Object.keys(slots).filter(
-        (key) => key !== 'default' && !key.startsWith('_')
+        (key) => key !== 'default' && key !== 'other'
       ),
     ]),
   ];
 }
 
-/** @internal */
+/** The content of a branch, which is empty for a branch there is not. @internal */
 export function getBranchContent(
-  branch: string | undefined,
+  branch: string,
   attrs: Record<string, unknown>,
   slots: Slots
 ) {
   if (
-    branch &&
     Object.prototype.hasOwnProperty.call(slots, branch) &&
     typeof slots[branch] === 'function'
   ) {
     return slots[branch]();
   }
-  const value = branch ? attrs[branch] : undefined;
-  if (branch && isBranchAttribute(branch, value)) {
+  const value = attrs[branch];
+  if (isBranchAttribute(branch, value)) {
     return value === null || typeof value === 'boolean' ? null : String(value);
   }
-  return slots.default?.() ?? null;
+  return null;
 }

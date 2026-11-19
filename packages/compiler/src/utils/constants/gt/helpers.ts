@@ -184,33 +184,3 @@ export function minifyCanonicalName(canonicalName: GT_COMPONENT_TYPES): string {
     ] || canonicalName
   );
 }
-
-/**
- * Default variable names
- */
-export const defaultVariableNames = {
-  [GT_COMPONENT_TYPES.Var]: 'value',
-  [GT_COMPONENT_TYPES.GtInternalVar]: 'value',
-  [GT_COMPONENT_TYPES.Num]: 'n',
-  [GT_COMPONENT_TYPES.GtInternalNum]: 'n',
-  [GT_COMPONENT_TYPES.DateTime]: 'date',
-  [GT_COMPONENT_TYPES.GtInternalDateTime]: 'date',
-  [GT_COMPONENT_TYPES.RelativeTime]: 'time',
-  [GT_COMPONENT_TYPES.Currency]: 'cost',
-  [GT_COMPONENT_TYPES.GtInternalCurrency]: 'cost',
-  [GT_COMPONENT_TYPES.Derive]: 'static',
-} as const;
-const baseVariablePrefix = '_gt_';
-
-/**
- * Get the variable name
- */
-export function getVariableName(
-  variableType: keyof typeof defaultVariableNames,
-  id: number,
-  name?: string
-): string {
-  if (name) return name;
-  const baseVariableName = defaultVariableNames[variableType] || 'value';
-  return `${baseVariablePrefix}${baseVariableName}_${id}`;
-}

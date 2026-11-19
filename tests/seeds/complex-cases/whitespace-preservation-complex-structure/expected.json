@@ -10,7 +10,6 @@
           "No spaces",
           {
             "i": 3,
-            "k": "_gt_value_3",
             "v": "v"
           },
           "at all"
@@ -24,7 +23,6 @@
           "Lots of spaces ",
           {
             "i": 3,
-            "k": "_gt_value_3",
             "v": "v"
           },
           " everywhere",
@@ -44,7 +42,6 @@
           "more text",
           {
             "i": 4,
-            "k": "_gt_value_4",
             "v": "v"
           },
           "final text"

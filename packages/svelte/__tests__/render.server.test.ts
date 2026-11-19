@@ -45,7 +45,7 @@ describe('<T> server rendering', () => {
             t: 'b',
             i: 1,
             d: { ti: 'Gras' },
-            c: [{ i: 2, k: '_gt_value_2', v: 'v' }, ' chère'],
+            c: [{ i: 2, v: 'v' }, ' chère'],
           },
           ' !',
         ],
@@ -60,11 +60,7 @@ describe('<T> server rendering', () => {
   it('renders a variable referenced twice', async () => {
     setupGT({
       fr: {
-        [greetingHash]: [
-          { i: 2, k: '_gt_value_2', v: 'v' },
-          ', ',
-          { i: 2, k: '_gt_value_2', v: 'v' },
-        ],
+        [greetingHash]: [{ i: 2, v: 'v' }, ', ', { i: 2, v: 'v' }],
       },
     });
     const gt = await loadTranslations('fr');
@@ -95,7 +91,7 @@ describe('<T> server rendering', () => {
       fr: {
         [hash]: [
           'Bonjour ',
-          { i: 2, k: '_gt_value_2', v: 'v' },
+          { i: 2, v: 'v' },
           ' ',
           { t: 'b', i: 1, c: 'chère' },
         ],
@@ -143,11 +139,7 @@ describe('<T> server rendering', () => {
                 i: 2,
                 c: [{ t: 'b', i: 3, c: 'Un' }, ' message'],
               },
-              other: {
-                t: 'C2',
-                i: 2,
-                c: [{ i: 3, k: '_gt_n_3', v: 'n' }, ' messages'],
-              },
+              other: [{ i: 2, v: 'n' }, ' messages'],
             },
           },
         },
@@ -164,12 +156,12 @@ describe('<T> server rendering', () => {
                 c: [
                   { t: 'i', i: 3, c: 'En ligne' },
                   ' en tant que ',
-                  { i: 4, k: '_gt_value_4', v: 'v' },
+                  { i: 4, v: 'v' },
                 ],
               },
+              other: 'Inconnu',
             },
           },
-          c: 'Inconnu',
         },
       },
     });
@@ -245,9 +237,9 @@ describe('strings and formatting', () => {
 
   it('formats variables for the active locale', async () => {
     setupGT();
-    expect(html({ component: Formats, locale: 'en' })).toContain(
-      '<span class="num">1,234.5</span>'
-    );
+    const source = html({ component: Formats, locale: 'en' });
+    expect(source).toContain('<span class="num">1,234.5</span>');
+    expect(source).toContain('<span class="date">Jan 1, 1970</span>');
     const gt = await loadTranslations('fr');
     expect(html({ component: Formats, ...gt })).toMatch(
       /<span class="num">1\s234,5<\/span>/

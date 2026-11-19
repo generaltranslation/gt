@@ -1,10 +1,13 @@
+import { createRawSnippet } from 'svelte';
 import { render } from 'svelte/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Content } from '@generaltranslation/format';
+import Branch from '../src/components/Branch.svelte';
 import BareBranch from './fixtures/BareBranch.svelte';
 import Harness from './fixtures/Harness.svelte';
 import NestedBranches from './fixtures/NestedBranches.svelte';
 import StatusBranch from './fixtures/StatusBranch.svelte';
+import UndefinedBranch from './fixtures/UndefinedBranch.svelte';
 import { hashesOf, setupGT, withoutComments } from './helpers';
 
 const [statusHash] = hashesOf('StatusBranch.svelte');
@@ -25,9 +28,9 @@ const statusTranslation = {
     b: {
       away: 'Absent',
       online: { t: 'C2', i: 2, c: { t: 'i', i: 3, c: 'En ligne' } },
+      other: 'Inconnu',
     },
   },
-  c: 'Inconnu',
 } satisfies Content;
 
 const renderFr = (status: unknown, translation: Content = statusTranslation) =>
@@ -73,6 +76,36 @@ describe('<Branch> values that name Object.prototype members', () => {
   );
 });
 
+describe('a branch passed as undefined', () => {
+  beforeEach(() => setupGT());
+
+  it('renders the other branch', () => {
+    expect(html({ component: UndefinedBranch, props: {} })).toBe(
+      'UnknownItems'
+    );
+  });
+});
+
+describe('a branch value named other', () => {
+  it('renders the children, not an other prop', () => {
+    const children = createRawSnippet(() => ({
+      render: () => '<b>Children</b>',
+    }));
+    const { body } = render(Branch, {
+      props: { branch: 'other', other: 'Prop', children },
+    });
+    expect(withoutComments(body).trim()).toBe('<b>Children</b>');
+  });
+
+  it.each(['other', 'missing'])(
+    'renders nothing for branch=%s with an other prop and no children',
+    (branch) => {
+      const { body } = render(Branch, { props: { branch, other: 'Prop' } });
+      expect(withoutComments(body).trim()).toBe('');
+    }
+  );
+});
+
 describe('malformed branch translations', () => {
   beforeEach(() => setupGT());
 
@@ -91,6 +124,19 @@ describe('malformed branch translations', () => {
         c: 'x',
       } as unknown as Content)
     ).toBe('<i>Online</i>');
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('falls back to the source when the translation has no other branch', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(
+      renderFr('away', {
+        t: 'Branch',
+        i: 1,
+        d: { t: 'b', b: { online: 'En ligne' } },
+      })
+    ).toBe('Away');
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -133,7 +179,7 @@ describe('nested branches in sibling snippets', () => {
                   t: 'p',
                   b: {
                     one: { t: 'C4', i: 4, c: 'un chat' },
-                    other: { t: 'C4', i: 4, c: 'des chats' },
+                    other: 'des chats',
                   },
                 },
               },
@@ -157,5 +203,22 @@ describe('nested branches in sibling snippets', () => {
     expect(renderNested({ gender: 'male', count: 1 })).toBe('Il a un chat');
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
+  });
+
+  it('renders a translated other for a source that has none', () => {
+    expect(
+      html({
+        component: NestedBranches,
+        props: { gender: 'female', count: 2 },
+        locale: 'fr',
+        translations: {
+          [nestedHash]: {
+            t: 'Branch',
+            i: 1,
+            d: { t: 'b', b: { other: 'Des chats' } },
+          },
+        },
+      })
+    ).toBe('Des chats');
   });
 });

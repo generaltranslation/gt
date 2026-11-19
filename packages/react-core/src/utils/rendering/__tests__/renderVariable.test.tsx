@@ -4,7 +4,7 @@ import {
   renderDefaultChildren,
   renderTranslatedChildren,
   renderVariable,
-} from '../renderPipeline';
+} from '../renderPipeline.rsc';
 import type { TaggedElement } from '../../types';
 
 function createNumberVariable(value: number): TaggedElement {
@@ -116,7 +116,7 @@ describe('renderVariable locale handling', () => {
   it('passes the target locale when rendering translated variables', () => {
     const result = renderTranslatedChildren({
       source: createNumberVariable(5),
-      target: { k: 'count', v: 'n' },
+      target: { i: 1, v: 'n' },
       locales: ['fr', 'en'],
       enableI18n: true,
     });

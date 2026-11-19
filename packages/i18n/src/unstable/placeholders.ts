@@ -28,7 +28,7 @@ type HoleValue = Exclude<Primitive, Date>;
 type DateHoleError = 'a Date needs date() to be formatted: ${date({ due })}';
 
 /** Branch text: a string, or a `part` template that contains placeholders. */
-export type Branch = string | Fragment;
+export type Branch = string | Part;
 
 type DerivePlaceholder = {
   readonly [PLACEHOLDER]: 'derive';
@@ -60,15 +60,15 @@ type ChoicePlaceholder<UsesDyn extends boolean = boolean> = {
   readonly branches: Readonly<Record<string, Branch | undefined>>;
   readonly [USES_DYN]?: UsesDyn;
 };
-// Type-only: whether a fragment uses `n`, so places where ICU has no
+// Type-only: whether a part uses `n`, so places where ICU has no
 // plural count can reject it. No runtime object has this key.
-// shortcut: a value annotated as plain `Fragment` loses the flag and is checked
+// shortcut: a value annotated as plain `Part` loses the flag and is checked
 // only at runtime; infer the type from part`...` to keep the check.
 declare const USES_PLURAL_COUNT: unique symbol;
 // Type-only, the same way: whether a part or branch holds dyn() text, so t
 // and msg can reject it wherever it is nested.
 declare const USES_DYN: unique symbol;
-export type Fragment<
+export type Part<
   UsesPluralCount extends boolean = boolean,
   UsesDyn extends boolean = boolean,
 > = {
@@ -83,7 +83,7 @@ export type Placeholder =
   | NumberPlaceholder
   | DateTimePlaceholder
   | ChoicePlaceholder
-  | Fragment;
+  | Part;
 
 /**
  * The count of the nearest `plural()` or `selectordinal()`, formatted for the
@@ -106,15 +106,12 @@ type OneKey<O> = keyof O extends never
     ? never
     : O;
 // `n`, or a part that uses it.
-type PluralCountHole = typeof n | Fragment<true>;
+type PluralCountHole = typeof n | Part<true>;
 // dyn() text, or a part or plural/select that holds it.
-type DynHole =
-  | DynPlaceholder
-  | Fragment<boolean, true>
-  | ChoicePlaceholder<true>;
+type DynHole = DynPlaceholder | Part<boolean, true> | ChoicePlaceholder<true>;
 /**
  * ICU has a plural count only inside a plural or selectordinal branch, so a
- * message (`AllowsPluralCount` false) rejects `n` and fragments that
+ * message (`AllowsPluralCount` false) rejects `n` and parts that
  * use it, while a part may hold them for the branch it ends up in.
  */
 type CheckHole<H, AllowsPluralCount extends boolean> = H extends PluralCountHole
@@ -223,7 +220,7 @@ type InvalidKey = '' | `${string}${IcuSyntaxChar}${string}`;
 
 // `${string}` rather than string keeps a template literal's holes in its type:
 // `from ${name}` stays `from ${string}` instead of widening to string.
-type BranchInput = `${string}` | Fragment;
+type BranchInput = `${string}` | Part;
 // Record<T, 1> of a type with holes (or of string) is an index signature,
 // which {} satisfies; a literal like 'No messages' is a required key.
 type HasValues<T> = {} extends Record<T & string, 1> ? true : false;
@@ -250,7 +247,7 @@ type CheckBranch<T, AllowsPluralCount extends boolean> = [T] extends [string]
     : T
   : AllowsPluralCount extends true
     ? T
-    : T extends Fragment<true>
+    : T extends Part<true>
       ? 'n is not the plural count inside select, as in ICU: use number({ count }) instead'
       : T;
 // A key as the string a value is compared with: the computed key
@@ -519,7 +516,7 @@ function dateTime(
 export function part<const H extends readonly unknown[]>(
   strings: TemplateStringsArray,
   ...holes: CheckHoles<H, true, true>
-): Fragment<SomeHoleIs<H, PluralCountHole>, SomeHoleIs<H, DynHole>> {
+): Part<SomeHoleIs<H, PluralCountHole>, SomeHoleIs<H, DynHole>> {
   return { [PLACEHOLDER]: 'fragment', strings, holes };
 }
 

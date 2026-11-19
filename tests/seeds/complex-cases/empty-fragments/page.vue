@@ -5,6 +5,6 @@ import { Fragment } from 'vue';
 
 <template>
   <T>
-    <Plural :n="1" plural="files"><template #singular><Fragment /></template></Plural>
+    <Plural :n="1" _2="files"><template #_1><Fragment /></template></Plural>
   </T>
 </template>

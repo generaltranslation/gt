@@ -19,18 +19,15 @@
   let {
     value,
     options = {},
-    locales,
   }: {
-    value?: number | string | null | undefined;
+    value?: number | bigint | null | undefined;
     /**
      * The value as a single `{expression}` child, as in gt-react. The
      * gt-svelte preprocessor passes it as `value`.
      */
     children?: Snippet;
     options?: Intl.NumberFormatOptions;
-    /** Locales to try before the active locale. */
-    locales?: string[];
-    /** Variable key used in translations. Must be a static string. */
+    /** Name shown to translators. Must be a static string. */
     name?: string;
   } = $props();
 
@@ -38,10 +35,10 @@
   const formatted = $derived(
     value == null
       ? null
-      : getI18nConfig().formatNum(
-          typeof value === 'string' ? parseFloat(value) : value,
-          { locales: getFormatLocales(contentLocale.current, locales), ...options }
-        )
+      : getI18nConfig().formatNum(value, {
+          locales: getFormatLocales(contentLocale.current),
+          ...options,
+        })
   );
 </script>
 

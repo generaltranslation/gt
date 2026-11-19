@@ -6,10 +6,10 @@ import { Fragment } from 'vue';
 <template>
   <T>
     <Plural :n="1">
-      <template #singular>
+      <template #_1>
         <Fragment><Var>var1</Var> and <Num value="num1" /></Fragment>
       </template>
-      <template #plural>
+      <template #_2>
         <div><Var>var1</Var> and <Num value="num1" /></div>
       </template>
     </Plural>

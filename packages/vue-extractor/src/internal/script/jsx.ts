@@ -7,7 +7,10 @@ import {
   type JsxChildren,
 } from '@generaltranslation/format';
 import { isHTMLTag, isSVGTag } from '@vue/shared';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import {
+  getPluralBranchKey,
+  isAcceptedPluralForm,
+} from 'generaltranslation/internal';
 import type {
   ExtractionLocation,
   GTComponentName,
@@ -107,7 +110,6 @@ const NON_BRANCH_PROP_NAMES = new Set([
   'branch',
   'class',
   'key',
-  'locales',
   'n',
   'ref',
   'ref-for',
@@ -688,15 +690,19 @@ function serializeElement(
     component === 'Currency'
   ) {
     validateVariableElement(element, component, context);
-    const variable =
-      component === 'Num'
-        ? { name: 'n', type: 'n' as const }
-        : component === 'DateTime'
-          ? { name: 'date', type: 'd' as const }
-          : component === 'Currency'
-            ? { name: 'cost', type: 'c' as const }
-            : { name: 'value', type: 'v' as const };
-    return [{ i: id, k: `_gt_${variable.name}_${id}`, v: variable.type }];
+    return [
+      {
+        i: id,
+        v:
+          component === 'Num'
+            ? 'n'
+            : component === 'DateTime'
+              ? 'd'
+              : component === 'Currency'
+                ? 'c'
+                : 'v',
+      },
+    ];
   }
   if (component === 'Branch' || component === 'Plural') {
     return [
@@ -1263,12 +1269,13 @@ function serializeBranchElement(
     );
   }
 
+  // The children are the fallback, stored as the `other` branch.
   const childResult: SerializedSlotResult = slots.defaultSlot
-    ? serializeSlotFunction(slots.defaultSlot, counter, context, analysis)
+    ? serializeSlotFunction(slots.defaultSlot, { value: id }, context, analysis)
     : {
         children: serializeChildren(
           slots.defaultChildren,
-          counter,
+          { value: id },
           scope,
           context,
           analysis
@@ -1276,8 +1283,13 @@ function serializeBranchElement(
       };
   const branches: Record<string, JsxChildren> = {};
   for (const [name, slot] of slots.namedSlots) {
-    if (name.startsWith('_')) continue;
-    if (component === 'Plural' && !isAcceptedPluralForm(name)) continue;
+    if (name === 'other') {
+      addOtherBranchError(context, element.openingElement.loc, component);
+      continue;
+    }
+    // Vue's own slot flags start with `_`; an exact plural form is `_0`.
+    if (component === 'Plural' ? !isAcceptedPluralForm(name) : name[0] === '_')
+      continue;
     const result = serializeSlotFunction(
       slot,
       { value: id },
@@ -1296,6 +1308,18 @@ function serializeBranchElement(
     analysis
   );
 
+  if (
+    shouldIncludeElementChildren(
+      element,
+      childResult.children,
+      scope,
+      analysis,
+      childResult.slotTruthy
+    )
+  ) {
+    branches.other = collapseChildren(childResult.children);
+  }
+
   const data = readContentProps(
     element.openingElement,
     scope,
@@ -1303,21 +1327,36 @@ function serializeBranchElement(
     analysis
   );
   if (Object.keys(branches).length > 0) {
-    data.b = branches;
+    // Plural branches are stored under ICU keys: `_0` is `=0`.
+    data.b =
+      component === 'Plural'
+        ? Object.fromEntries(
+            Object.entries(branches).map(([name, branch]) => [
+              getPluralBranchKey(name),
+              branch,
+            ])
+          )
+        : branches;
     data.t = component === 'Plural' ? 'p' : 'b';
   }
   return {
     t: component,
     i: id,
     ...(Object.keys(data).length > 0 && { d: data }),
-    ...(shouldIncludeElementChildren(
-      element,
-      childResult.children,
-      scope,
-      analysis,
-      childResult.slotTruthy
-    ) && { c: collapseChildren(childResult.children) }),
   };
+}
+
+function addOtherBranchError(
+  context: VueExtractionContext,
+  location: babel.SourceLocation | null | undefined,
+  component: 'Branch' | 'Plural'
+): void {
+  addVueError(
+    context,
+    babelLocation(location),
+    `Found an other branch on a gt-vue <${component}> component`,
+    'Write the fallback as the children'
+  );
 }
 
 /** Reconstructs the slots object emitted by the Vue JSX transform. */
@@ -1634,6 +1673,10 @@ function readBranchAttributeSources(
   for (const attribute of element.attributes) {
     if (attribute.type !== 'JSXAttribute') continue;
     const name = readAttributeName(attribute.name);
+    if (name === 'other') {
+      addOtherBranchError(context, attribute.loc, component);
+      continue;
+    }
     if (
       !isBranchPropName(name) ||
       (component === 'Plural' && !isAcceptedPluralForm(name))
