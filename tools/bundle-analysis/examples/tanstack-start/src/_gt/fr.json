@@ -112,7 +112,13 @@
   "563da118c011b423": "Chine et Japon",
   "0210f87a55423ac9": "Bouilloire col de cygne Ferro K1",
   "ad342a70f70268b5": "Une bouilloire col de cygne qui maintient l’eau à 1 °C près de la cible pendant 60 minutes au plus.",
-  "18235e10c4140d21": "{days, plural, one {# jour ouvré} other {# jours ouvrés}}",
+  "f04e708a317c8bf7": [
+    [
+      "days",
+      "plural",
+      { "one": [0, " jour ouvré"], "other": [0, " jours ouvrés"] }
+    ]
+  ],
   "ee570428ac4c8e78": {
     "t": "p",
     "i": 1,

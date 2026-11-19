@@ -11,7 +11,13 @@
   "70c637fa0b96f88b": "Chine et Singapour",
   "dd64f93c26451a30": "Configurer Votre Lampe",
   "f86ef140077ec45f": "Lire La Fiche Technique",
-  "18235e10c4140d21": "{days, plural, one {# jour ouvré} other {# jours ouvrés}}",
+  "f04e708a317c8bf7": [
+    [
+      "days",
+      "plural",
+      { "one": [0, " jour ouvré"], "other": [0, " jours ouvrés"] }
+    ]
+  ],
   "7ad6497d825f991e": {
     "t": "p",
     "i": 1,
@@ -327,7 +333,10 @@
   "8febff280c3d85f3": "Retirer une lampe",
   "50420ba793fa0c92": "Ajouter une lampe",
   "98b9ea16c811cdce": "Ajouter Au Panier",
-  "abc8252be8e5d46b": "{count, plural, one {# lampe} other {# lampes}} dans votre panier.",
+  "ff607c36c4dc1cdd": [
+    ["count", "plural", { "one": [0, " lampe"], "other": [0, " lampes"] }],
+    " dans votre panier."
+  ],
   "8c5a89e43fd2c544": "Expédié depuis Rotterdam et Shenzhen.",
   "0a88107e14e799ab": {
     "t": "Branch",
