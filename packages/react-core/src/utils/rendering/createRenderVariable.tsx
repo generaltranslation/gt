@@ -63,7 +63,7 @@ function createRenderVariable({
       _enableI18n: enableI18n,
     };
 
-    if (variableType === 'n') {
+    if (variableType === 'n' || variableType === '#') {
       const Num = injectionType === 'automatic' ? GtExternalNum : GtInternalNum;
       const numOptions = variableOptions as
         | Intl.NumberFormatOptions
