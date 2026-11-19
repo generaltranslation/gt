@@ -589,7 +589,7 @@ describe('createInlineUpdates: tagged templates', () => {
     it('warns about uses it cannot follow', async () => {
       const result = await extract(`
         import { t, useGT } from 'gt-react';
-        register(t);
+        register('label', t);
         t.call(null, ['Hi']);
         export { t };
         export const exported = t;
@@ -873,6 +873,48 @@ describe('createInlineUpdates: tagged templates', () => {
       '2',
       '3',
     ]);
+    expect(treeUpdates(result)).toEqual([]);
+  });
+
+  it('does not warn about an awaited import() that takes no message helper', async () => {
+    const result = await extract(`
+      export async function load() {
+        const { T } = await import('gt-react');
+        const { t } = await import('gt-react');
+        return [T, t];
+      }
+    `);
+
+    const unsupported = result.warnings.filter((w) =>
+      w.includes('through require()')
+    );
+    expect(unsupported.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
+      '4',
+    ]);
+  });
+
+  it('names a string call as one, since only tagged templates are extracted', async () => {
+    const result = await extract(`
+      import { t, useGT } from 'gt-react';
+      t('Hello');
+      function Component() {
+        const translate = useGT();
+        translate(\`Hello\`);
+        return useGT()('Hello');
+      }
+    `);
+
+    const stringCalls = result.warnings.filter((w) =>
+      w.includes('Skipped a string call')
+    );
+    expect(stringCalls.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
+      '3',
+      '6',
+      '7',
+    ]);
+    expect(
+      result.warnings.filter((w) => w.includes('Could not follow this use'))
+    ).toEqual([]);
     expect(treeUpdates(result)).toEqual([]);
   });
 

@@ -155,6 +155,20 @@ export const warnUntrackedMessageTagSync = (
     location
   );
 
+export const warnStringMessageCallSync = (
+  file: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: 'Skipped a string call of a translation function',
+      why: 'messages are tagged templates, so a string argument is not extracted',
+      fix: 'Write the message as a tagged template, as in t`Hello, ${{ name }}!`',
+    }),
+    location
+  );
+
 export const warnNonLiteralMsgCallSync = (
   file: string,
   location?: string

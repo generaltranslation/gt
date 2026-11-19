@@ -69,8 +69,11 @@ export async function extractMessageTrees(
       const [source] = args;
       if (!isLoader || !t.isStringLiteral(source)) return;
       if (!isExtractedSource(source.value)) return;
-      // const { T } = require('gt-react') takes no message helper.
-      const { parent } = path;
+      // const { T } = require('gt-react'), or await import('gt-react'), takes
+      // no message helper.
+      const parent = t.isAwaitExpression(path.parent)
+        ? path.parentPath.parent
+        : path.parent;
       if (
         t.isVariableDeclarator(parent) &&
         t.isObjectPattern(parent.id) &&
