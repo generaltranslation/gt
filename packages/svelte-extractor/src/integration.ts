@@ -4,9 +4,14 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { Updates } from 'generaltranslation';
-import { analyzeSvelteSource } from './internal/source.js';
+import {
+  analyzeModuleSource,
+  analyzeSvelteSource,
+  type AnalyzeModuleSourceOptions,
+} from './internal/source.js';
 import type {
   SourceCodeContext,
+  SvelteAnalysis,
   SvelteExtractionError,
   SvelteParse,
 } from './internal/types.js';
@@ -57,6 +62,12 @@ export type SvelteProjectExtractionOptions = {
   /** Include the source lines around each site in its metadata. */
   includeSourceCodeContext?: boolean;
 };
+
+export type SvelteModuleExtractionOptions = SvelteProjectExtractionOptions &
+  Pick<AnalyzeModuleSourceOptions, 'parse'> & {
+    /** The module's path from the project root. */
+    relativePath: string;
+  };
 
 export type SvelteExtractionPlan =
   | { readonly handled: false }
@@ -129,33 +140,71 @@ export async function extractFromSvelteProject(
       output.errors.push(`${relativePath}: ${String(error)}`);
       continue;
     }
-    for (const error of analysis.errors) {
-      output.errors.push(formatProblem(relativePath, error));
-    }
-    for (const warning of analysis.warnings) {
-      output.warnings.push(formatProblem(relativePath, warning));
-    }
-    const sites = [
-      ...analysis.translations.map((site) => ({ ...site, dataFormat: 'JSX' })),
-      ...analysis.strings,
-    ];
-    for (const site of sites) {
-      output.updates.push({
-        dataFormat: site.dataFormat,
-        source: site.source,
-        metadata: {
-          ...site.metadata,
-          hash: site.hash,
-          filePaths: [relativePath],
-          ...(site.sourceCode && {
-            sourceCode: { [relativePath]: [site.sourceCode] },
-          }),
-        },
-      } as Updates[number]);
-    }
+    addAnalysis(output, relativePath, analysis);
   }
   output.updates = mergeUpdates([], output.updates);
   return output;
+}
+
+/**
+ * Extracts every string call from a JavaScript or TypeScript module, which
+ * the host CLI reads and parses.
+ */
+export function extractFromSvelteModule(
+  source: string,
+  {
+    relativePath,
+    parse,
+    includeSourceCodeContext = false,
+  }: SvelteModuleExtractionOptions
+): InlineExtractionOutput {
+  const output: InlineExtractionOutput = {
+    updates: [],
+    errors: [],
+    warnings: [],
+  };
+  addAnalysis(
+    output,
+    relativePath,
+    analyzeModuleSource(source, {
+      parse,
+      ...(includeSourceCodeContext && {
+        surroundingLineCount: SURROUNDING_LINE_COUNT,
+      }),
+    })
+  );
+  return output;
+}
+
+function addAnalysis(
+  output: InlineExtractionOutput,
+  relativePath: string,
+  analysis: SvelteAnalysis
+): void {
+  for (const error of analysis.errors) {
+    output.errors.push(formatProblem(relativePath, error));
+  }
+  for (const warning of analysis.warnings) {
+    output.warnings.push(formatProblem(relativePath, warning));
+  }
+  const sites = [
+    ...analysis.translations.map((site) => ({ ...site, dataFormat: 'JSX' })),
+    ...analysis.strings,
+  ];
+  for (const site of sites) {
+    output.updates.push({
+      dataFormat: site.dataFormat,
+      source: site.source,
+      metadata: {
+        ...site.metadata,
+        hash: site.hash,
+        filePaths: [relativePath],
+        ...(site.sourceCode && {
+          sourceCode: { [relativePath]: [site.sourceCode] },
+        }),
+      },
+    } as Updates[number]);
+  }
 }
 
 function formatProblem(

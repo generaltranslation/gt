@@ -1,5 +1,7 @@
 import fs from 'node:fs';
+import nodePath from 'node:path';
 import { Updates } from 'generaltranslation';
+import { extractFromSvelteModule } from '@generaltranslation/svelte-extractor/integration';
 
 import { parse } from '@babel/parser';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
@@ -17,6 +19,7 @@ import type { ParsingConfig } from '../jsx/utils/stringParsing/types.js';
 import {
   GTLibrary,
   GT_LIBRARIES_UPSTREAM,
+  Libraries,
   REACT_LIBRARIES,
   ReactLibrary,
 } from '../../types/libraries.js';
@@ -85,6 +88,22 @@ export async function createInlineUpdates(
       errors,
       warnings,
     });
+
+    // gt-svelte's string API. Its extractor reads ESTree, as in a .svelte file's scripts
+    if (pkg === Libraries.GT_SVELTE) {
+      const strings = extractFromSvelteModule(code, {
+        relativePath: nodePath.relative(process.cwd(), file),
+        parse: (source) =>
+          parse(source, {
+            sourceType: 'module',
+            plugins: ['estree', 'jsx', 'typescript'],
+          }).program,
+        includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
+      });
+      updates.push(...strings.updates);
+      errors.push(...strings.errors);
+      for (const warning of strings.warnings) warnings.add(warning);
+    }
 
     // Parse <T> components — PASS 1: user-written T
     if (REACT_LIBRARIES.includes(pkg as ReactLibrary)) {
