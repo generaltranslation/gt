@@ -1,7 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Branch, Currency, Num, Plural, T, useGT, Var } from 'gt-next';
+import {
+  Branch,
+  Currency,
+  n,
+  Num,
+  part,
+  plural,
+  Plural,
+  T,
+  useGT,
+  Var,
+} from 'gt-next';
 
 const UNIT_PRICE = 189;
 const FREE_SHIPPING_FROM = 2;
@@ -17,9 +28,9 @@ export function OrderPanel() {
   const [added, setAdded] = useState(0);
 
   const finishNames: Record<Finish, string> = {
-    graphite: t('Graphite'),
-    paper: t('Paper'),
-    titanium: t('Titanium'),
+    graphite: t`Graphite`,
+    paper: t`Paper`,
+    titanium: t`Titanium`,
   };
   const shipping = quantity >= FREE_SHIPPING_FROM ? 0 : SHIPPING;
   const total = quantity * UNIT_PRICE + shipping;
@@ -28,7 +39,7 @@ export function OrderPanel() {
     <div className='order'>
       <div className='order-group' role='group' aria-labelledby='finish-label'>
         <p className='gt-label' id='finish-label'>
-          {t('Finish')}
+          {t`Finish`}
         </p>
         <div className='finishes'>
           {FINISHES.map((option) => (
@@ -74,12 +85,12 @@ export function OrderPanel() {
         aria-labelledby='quantity-label'
       >
         <p className='gt-label' id='quantity-label'>
-          {t('Quantity')}
+          {t`Quantity`}
         </p>
         <div className='stepper'>
           <button
             type='button'
-            aria-label={t('Remove one lamp')}
+            aria-label={t`Remove one lamp`}
             disabled={quantity <= 1}
             onClick={() => setQuantity(quantity - 1)}
           >
@@ -88,7 +99,7 @@ export function OrderPanel() {
           <output aria-live='polite'>{quantity}</output>
           <button
             type='button'
-            aria-label={t('Add one lamp')}
+            aria-label={t`Add one lamp`}
             disabled={quantity >= 9}
             onClick={() => setQuantity(quantity + 1)}
           >
@@ -125,14 +136,15 @@ export function OrderPanel() {
           className='gt-button'
           onClick={() => setAdded(added + quantity)}
         >
-          {t('Add To Cart')}
+          {t`Add To Cart`}
         </button>
         <p className='gt-label' aria-live='polite'>
           {added > 0
-            ? t('{count, plural, one {# lamp} other {# lamps}} in your cart.', {
-                count: added,
-              })
-            : t('Ships from Rotterdam and Shenzhen.')}
+            ? t`${plural(
+                { count: added },
+                { one: part`${n} lamp`, other: part`${n} lamps` }
+              )} in your cart.`
+            : t`Ships from Rotterdam and Shenzhen.`}
         </p>
       </div>
     </div>

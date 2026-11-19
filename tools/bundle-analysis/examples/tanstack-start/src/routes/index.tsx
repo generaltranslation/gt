@@ -1,6 +1,16 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
-import { Currency, DateTime, getGT, Num, T, Var } from 'gt-tanstack-start';
+import {
+  Currency,
+  DateTime,
+  getGT,
+  n,
+  Num,
+  part,
+  plural,
+  T,
+  Var,
+} from 'gt-tanstack-start';
 import { KettleDrawing } from '../components/KettleDrawing';
 import { OrderPanel } from '../components/OrderPanel';
 import { Crosses } from '../components/Crosses';
@@ -17,21 +27,20 @@ const DATE_FORMAT: Intl.DateTimeFormatOptions = {
 const loadProductPage = createServerFn({ method: 'GET' }).handler(async () => {
   const t = await getGT();
   const regions = [
-    { name: t('United States and Canada'), days: 5, cost: 15, from: 'RTM' },
-    { name: t('European Union and UK'), days: 2, cost: 8, from: 'RTM' },
-    { name: t('China and Japan'), days: 3, cost: 8, from: 'SZX' },
+    { name: t`United States and Canada`, days: 5, cost: 15, from: 'RTM' },
+    { name: t`European Union and UK`, days: 2, cost: 8, from: 'RTM' },
+    { name: t`China and Japan`, days: 3, cost: 8, from: 'SZX' },
   ];
 
   return {
-    title: t('Ferro K1 pour-over kettle'),
-    description: t(
-      'A gooseneck kettle that holds water within 1 °C of the target for up to 60 minutes.'
-    ),
+    title: t`Ferro K1 pour-over kettle`,
+    description: t`A gooseneck kettle that holds water within 1 °C of the target for up to 60 minutes.`,
     regions: regions.map((region) => ({
       ...region,
-      eta: t('{days, plural, one {# business day} other {# business days}}', {
-        days: region.days,
-      }),
+      eta: t`${plural(
+        { days: region.days },
+        { one: part`${n} business day`, other: part`${n} business days` }
+      )}`,
     })),
   };
 });

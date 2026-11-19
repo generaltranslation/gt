@@ -44,11 +44,11 @@ function Nav() {
           <GtMark />
           <span>Ferro</span>
         </Link>
-        <nav className='nav-links' aria-label={t('Pages')}>
+        <nav className='nav-links' aria-label={t`Pages`}>
           <Link to='/' activeOptions={{ exact: true }}>
-            {t('Overview')}
+            {t`Overview`}
           </Link>
-          <Link to='/specs'>{t('Specs')}</Link>
+          <Link to='/specs'>{t`Specs`}</Link>
         </nav>
       </div>
       <LocaleSelector className='locale-select' />

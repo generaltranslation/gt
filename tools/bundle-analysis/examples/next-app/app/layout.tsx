@@ -10,10 +10,8 @@ const INTER_STYLESHEET =
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getGT();
   return {
-    title: t('Halden H2 desk lamp'),
-    description: t(
-      'A desk lamp tuned from 2700 K to 6500 K. 96 LEDs, one diffuser, 9 watts.'
-    ),
+    title: t`Halden H2 desk lamp`,
+    description: t`A desk lamp tuned from 2700 K to 6500 K. 96 LEDs, one diffuser, 9 watts.`,
   };
 }
 
@@ -46,11 +44,11 @@ export default function RootLayout({
                   <GtMark />
                   <span>Halden</span>
                 </a>
-                <nav className='nav-links' aria-label={t('Sections')}>
-                  <a href='#specs'>{t('Specs')}</a>
-                  <a href='#order'>{t('Order')}</a>
-                  <a href='#shipping'>{t('Shipping')}</a>
-                  <a href='#reviews'>{t('Reviews')}</a>
+                <nav className='nav-links' aria-label={t`Sections`}>
+                  <a href='#specs'>{t`Specs`}</a>
+                  <a href='#order'>{t`Order`}</a>
+                  <a href='#shipping'>{t`Shipping`}</a>
+                  <a href='#reviews'>{t`Reviews`}</a>
                 </nav>
               </div>
               <LocaleSelector className='locale-select' />
