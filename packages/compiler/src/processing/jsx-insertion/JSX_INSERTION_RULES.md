@@ -250,6 +250,8 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 - Branch: `branch` (selector key), `data-*` (HTML attributes, ignored at runtime)
 - Plural: `n` (count)
 
+**No spread attributes.** Both tools read the props of Branch and Plural from the source, so a spread attribute on one inside a `<T>` or a \_T region, as in `<Plural n={count} {...forms} />`, is an extraction error.
+
 **Content props** (branch value keys like `Ernest`, `summary`, plural categories like `one`, exact numbers like `_0`, and `children`, the fallback) are processed:
 
 - **Static content prop values** (direct JSX like `summary={<p>Text</p>}`) are left untouched — no \_T inside.
