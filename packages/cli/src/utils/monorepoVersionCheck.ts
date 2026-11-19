@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import fg from 'fast-glob';
+import YAML from 'yaml';
 import chalk from 'chalk';
 import { logErrorAndExit } from '../console/logging.js';
 import { Libraries, type GTLibrary } from '../types/libraries.js';
@@ -12,6 +13,7 @@ interface PackageJson {
   version?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
+  workspaces?: unknown;
 }
 
 interface VersionInfo {
@@ -63,16 +65,87 @@ function findMonorepoRoot(startDir: string): string | null {
   }
 }
 
-/**
- * Scan for all directories containing package.json under the root.
- */
-function scanForPackageDirs(rootDir: string): string[] {
-  const matches = fg.sync('**/package.json', {
+function readPnpmWorkspacePackages(rootDir: string): unknown {
+  const pnpmWorkspace = path.join(rootDir, 'pnpm-workspace.yaml');
+  if (!fs.existsSync(pnpmWorkspace)) return undefined;
+  try {
+    return YAML.parse(fs.readFileSync(pnpmWorkspace, 'utf8'))?.packages;
+  } catch {
+    return undefined;
+  }
+}
+
+function readPackageJsonWorkspaces(rootPkg: PackageJson | null): unknown {
+  const workspaces = rootPkg?.workspaces;
+  if (Array.isArray(workspaces) || !workspaces) return workspaces;
+  return typeof workspaces === 'object' && 'packages' in workspaces
+    ? workspaces.packages
+    : undefined;
+}
+
+function globPackageJsons(
+  rootDir: string,
+  patterns: string[],
+  excluded: string[] = []
+): string[] {
+  if (patterns.length === 0) return [];
+  return fg.sync(patterns, {
     cwd: rootDir,
     absolute: true,
     onlyFiles: true,
-    ignore: ['**/node_modules/**'],
+    ignore: ['**/node_modules/**', ...excluded],
   });
+}
+
+/**
+ * Resolves package.json workspace patterns the way npm and bun agree on: a
+ * negation excludes its matches from every glob, and a package named without
+ * a glob stays included unless a later negation excludes it.
+ */
+function globPackageJsonWorkspaces(
+  rootDir: string,
+  patterns: string[]
+): string[] {
+  const matches = new Set<string>();
+  patterns.forEach((pattern, index) => {
+    if (pattern.startsWith('!')) return;
+    const isGlob = fg.isDynamicPattern(pattern);
+    const excluded = patterns
+      .filter(
+        (other, otherIndex) =>
+          other.startsWith('!') && (isGlob || otherIndex > index)
+      )
+      .map((other) => other.slice(1));
+    for (const match of globPackageJsons(rootDir, [pattern], excluded)) {
+      matches.add(match);
+    }
+  });
+  return [...matches];
+}
+
+/**
+ * Scan for the directories of the packages the root declares as workspaces,
+ * or of every package under the root when it declares none.
+ */
+function scanForPackageDirs(
+  rootDir: string,
+  readPkgJson: PackageJsonReader
+): string[] {
+  const pnpmPackages = readPnpmWorkspacePackages(rootDir);
+  const declared =
+    pnpmPackages ?? readPackageJsonWorkspaces(readPkgJson(rootDir));
+  let matches: string[];
+  if (!Array.isArray(declared)) {
+    matches = globPackageJsons(rootDir, ['**/package.json']);
+  } else {
+    const patterns = declared
+      .filter((pattern) => typeof pattern === 'string')
+      .map((pattern) => `${pattern.trim().replace(/\/+$/, '')}/package.json`);
+    matches =
+      pnpmPackages == null
+        ? globPackageJsonWorkspaces(rootDir, patterns)
+        : globPackageJsons(rootDir, patterns);
+  }
 
   return matches.map((m) => path.dirname(m)).filter((dir) => dir !== rootDir);
 }
@@ -348,10 +421,10 @@ export function checkMonorepoVersionConsistency(
   const rootDir = findMonorepoRoot(cwd);
   if (!rootDir) return; // No lockfile found — nothing to check
 
-  const workspaceDirs = scanForPackageDirs(rootDir);
+  const readPkgJson = createPackageJsonReader();
+  const workspaceDirs = scanForPackageDirs(rootDir, readPkgJson);
   if (workspaceDirs.length <= 1) return; // Single package — no mismatches possible
 
-  const readPkgJson = createPackageJsonReader();
   const mismatches = findVersionMismatches(
     workspaceDirs,
     readPkgJson,
