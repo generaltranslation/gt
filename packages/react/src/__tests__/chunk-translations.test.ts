@@ -12,6 +12,7 @@ import {
   loadRegionChunkTranslations,
   type ChunkTranslationsState,
 } from '../chunk-translations';
+import { resolveChunkUrl } from '../chunk-translations/gate';
 import { getReactI18nCache, t } from '@generaltranslation/react-core/pure';
 import { initializeGTSPA } from '../setup/initializeGTSPA';
 
@@ -85,6 +86,27 @@ const links = () =>
   [...document.querySelectorAll('link')].map(
     (link) => `${link.rel} ${new URL(link.href).pathname}`
   );
+
+/**
+ * A browser's `import.meta.resolve` in a page with the import map `imports`,
+ * for a key that is a path from the root or a specifier as it is written.
+ * Without `imports`, that of a browser that has none.
+ */
+const resolveWith =
+  (imports: Record<string, string> | undefined) => (specifier: string) => {
+    if (!imports) throw new TypeError('import.meta.resolve is not a function');
+    const url = (path: string) => new URL(path, document.baseURI).href;
+    const isUrl = URL.canParse(specifier) || specifier.startsWith('/');
+    const file = Object.entries(imports).find(([key]) =>
+      key.startsWith('/')
+        ? isUrl && url(key) === url(specifier)
+        : key === specifier
+    )?.[1];
+    if (file === undefined && !isUrl) {
+      throw new TypeError(`Failed to resolve module specifier "${specifier}"`);
+    }
+    return url(file ?? specifier);
+  };
 
 /** A response to send by hand, as a file that takes its time. */
 function hold(file: unknown) {
@@ -318,6 +340,35 @@ describe('gt-react/chunk-translations', () => {
     expect(await plainImport([])()).toEqual({ evaluated: 'Commandes' });
 
     expect(links()).toEqual(['modulepreload /assets/Orders-b2.js']);
+  });
+
+  it.each([
+    [
+      'its path from the base in a build without an import map',
+      {},
+      ORDERS_CHUNK,
+      'http://localhost:3000/assets/Orders-b2.js',
+    ],
+    [
+      'the file an import map has for its path from the base',
+      { '/assets/Orders-n1.js': '/assets/Orders-b2.js' },
+      'assets/Orders-n1.js',
+      'http://localhost:3000/assets/Orders-b2.js',
+    ],
+    [
+      'the file an import map has for a name that is not a path',
+      { 'r:Orders-n1.js': '/assets/Orders-b2.js' },
+      'r:Orders-n1.js',
+      'http://localhost:3000/assets/Orders-b2.js',
+    ],
+    [
+      'its path from the base where the browser resolves no specifier',
+      undefined,
+      ORDERS_CHUNK,
+      '/assets/Orders-b2.js',
+    ],
+  ])('preloads a chunk from %s', (_name, imports, chunk, url) => {
+    expect(resolveChunkUrl(`/${chunk}`, chunk, resolveWith(imports))).toBe(url);
   });
 
   it.each([

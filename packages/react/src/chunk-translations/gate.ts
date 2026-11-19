@@ -122,6 +122,31 @@ export function listImportedFiles(
 }
 
 /**
+ * The URL a page imports a chunk from, for a link, which no import map
+ * applies to. `chunk` is what the build names the chunk by: a specifier the
+ * page's import map has, or the chunk's path from the build's base, which
+ * the import map can have after the base, as `url` is. Without an import
+ * map, and where nothing resolves a specifier, that is `url`.
+ * @param resolve The page's `import.meta.resolve`.
+ */
+export function resolveChunkUrl(
+  url: string,
+  chunk: string,
+  resolve: (specifier: string) => string
+): string {
+  try {
+    return resolve(chunk);
+  } catch {
+    // A path, which is no specifier as it is written
+  }
+  try {
+    return resolve(new URL(url, document.baseURI).href);
+  } catch {
+    return url;
+  }
+}
+
+/**
  * Downloads a chunk without running it, as a `modulepreload` link does, so
  * the `import()` that waits for translations finds it loaded. A page that
  * preloads the chunk already keeps its own link.
@@ -131,7 +156,12 @@ function preloadChunk(state: ChunkTranslationsState, chunk: string): void {
   link.rel = 'modulepreload';
   // Requested as the import() requests it
   link.crossOrigin = '';
-  link.href = (state.b || '') + chunk;
+  link.href = resolveChunkUrl(
+    (state.b || '') + chunk,
+    chunk,
+    // Not a function in an older browser, nor in the CommonJS build
+    (specifier) => import.meta.resolve(specifier)
+  );
   const links = document.getElementsByTagName('link');
   for (let index = 0; index < links.length; index++) {
     if (links[index].href === link.href) return;
