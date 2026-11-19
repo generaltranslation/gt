@@ -1,0 +1,176 @@
+{
+  "002c822e1ceb12f7": "save",
+  "00d854ec6f202008": "recent orders",
+  "00ded6772a1fec80": "welcome home",
+  "0263a57f196139e2": "receipt",
+  "035b5fd56610ac91": "tracking number",
+  "049fbd0d8c580c1c": "glossary of terms",
+  "0a9725453707110e": "shared by every route",
+  "0f035465de6aab15": ["nobody greets ", ["name"], " here"],
+  "0ff824fc7ea177f7": "payment method",
+  "184c9605dde81513": "orders",
+  "1ca262f4e9beb41c": [
+    [
+      "count",
+      "plural",
+      {
+        "one": [0, " order is waiting"],
+        "other": [0, " orders are waiting"]
+      }
+    ]
+  ],
+  "207bf8b695edf147": [
+    [
+      "role",
+      "select",
+      {
+        "admin": "you manage this workspace",
+        "other": "you are a member"
+      }
+    ]
+  ],
+  "2086b2e194437134": "revenue",
+  "2198a5b44fa02420": "delivery window",
+  "24f77e711d6673ed": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "everything your team needs, in ",
+      {
+        "t": "i",
+        "i": 2,
+        "c": "one place"
+      },
+      "."
+    ]
+  },
+  "2a95749c0083500a": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "orders ship within ",
+      {
+        "t": "b",
+        "i": 2,
+        "c": "two days"
+      },
+      "."
+    ]
+  },
+  "2dd57d5530fa09e7": "shipping address",
+  "2fd2f1577305b442": "restocking fee",
+  "3397edd116045b8b": "shipment",
+  "3a0b5786297d181f": "reports",
+  "3f85538d4b215b91": "workspace overview",
+  "4f8ef41f1c486434": "sales tax",
+  "50827a9d5662a3c2": "growth",
+  "5c9546c1890c92e4": "settings",
+  "64ae0134f47c754f": "discount code",
+  "673f5f7be7564f44": "maintenance starts tonight",
+  "6e742860d9da9c21": "customs form",
+  "6e8ccd40970e5552": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "our team answers within ",
+      {
+        "t": "b",
+        "i": 2,
+        "c": "one hour"
+      },
+      "."
+    ]
+  },
+  "715dde6125c08bf5": "help",
+  "73bdaa50d2f3dd0b": "two lines in this order",
+  "770a4bf2603eab98": "store credit",
+  "777378a6dbb3bd53": "quarterly reports",
+  "79e3979367e5bdf1": "all systems operational",
+  "7a612057d629f31b": "this element is never rendered either",
+  "7b0aa21dde485b57": "open",
+  "7fb014c6aea0678b": "this banner is never rendered",
+  "80318b0ca48e6155": "order total",
+  "8eed42abd6108146": "warehouse",
+  "915c92ecde05b381": "pending",
+  "937b7f25a549ac5a": "region",
+  "93d09b982a05c1cd": "delivered",
+  "97040363f1f62ee7": "show details",
+  "9d32746c0e493ffb": "beta",
+  "9e179754a5161562": [
+    [
+      "role",
+      "select",
+      {
+        "admin": "full access",
+        "other": "read only"
+      }
+    ]
+  ],
+  "a1fa60e6ba9ea5b8": "gift message",
+  "aa658f8082424da2": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "changes apply to ",
+      {
+        "t": "i",
+        "i": 2,
+        "c": "every member"
+      },
+      " at once."
+    ]
+  },
+  "aed88dcc14c25c17": "billing address",
+  "b217d5e37561b871": [
+    [
+      "count",
+      "plural",
+      {
+        "one": [0, " file needs review"],
+        "other": [0, " files need review"]
+      }
+    ]
+  ],
+  "b4cb46b469ba1dbb": "carrier",
+  "b6dcaa0d13a6d1c7": "packing slip",
+  "b785eb9d5af50191": ["hello, ", ["name"], "!"],
+  "bbf9419b8e6f5802": "home",
+  "c090e784e7f90755": "invoice",
+  "c2f411668ffbcf03": "refund",
+  "c543324cf83495f8": "shipped",
+  "d08766e4a10a21c1": "add one",
+  "d507ee6caf81d7fd": "closed",
+  "dc096214c9acd5c7": "account settings",
+  "e1a1857d9f164ced": "backorder",
+  "e5cbf55fe9985f7a": "order details",
+  "e715a699d8053bde": "acme workspace",
+  "f41519b9ae721f11": "billing moved to a new page",
+  "f57c98f4c171f4a2": "subtotal",
+  "f6a582dac1fbc95e": "return label",
+  "f9d543cc06b98f43": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "read the ",
+      {
+        "t": "b",
+        "i": 2,
+        "c": "release notes"
+      },
+      " before you upgrade."
+    ]
+  },
+  "fad3dc6338fdcd70": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "signed in as ",
+      {
+        "i": 2,
+        "v": "v"
+      }
+    ]
+  },
+  "fb0b3d50ebba01dc": "need a hand?",
+  "fdb3911f894668b9": "order status"
+}

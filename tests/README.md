@@ -22,6 +22,7 @@ dependencies, so no manual linking or per-app install is required.
 | `gt-node-express`                          | Express                         | `gt-node`           |
 | `react-native`                             | Expo + React Native             | `gt-react-native`   |
 | `vite-react`                               | Vite + React                    | `gt-react`          |
+| `vite-chunk-translations`                  | Vite + React, files per chunk   | `gt-react`          |
 | `webpack-react`                            | webpack + React                 | `gt-react`          |
 | `rollup-react`                             | Rollup + React                  | `gt-react`          |
 | `rolldown-react`                           | Rolldown + React                | `gt-react`          |
@@ -43,6 +44,15 @@ The two `next-latest-locale-switch-*` apps are dedicated scheduled compatibility
 fixtures. Their workflow installs `next@latest` at runtime and separately checks
 a proxy-free app plus locale routing with both default-prefix settings; see each
 app's README for details.
+
+`vite-chunk-translations` checks the compiler's experimental
+`experimentalChunkTranslations` option with its own script, which builds the
+app with and without the option and drives both builds in headless Chromium:
+
+```bash
+pnpm --filter gt-test-vite-chunk-translations check:install
+pnpm --filter gt-test-vite-chunk-translations check
+```
 
 Run the browser automation for every browser-capable development app, or select
 a comma-separated subset. The React Native app remains a manual native test:

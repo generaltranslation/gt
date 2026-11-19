@@ -1,4 +1,4 @@
-import { createUnplugin } from 'unplugin';
+import { createUnplugin, type UnpluginOptions } from 'unplugin';
 import fs from 'node:fs';
 import path from 'node:path';
 import * as parser from '@babel/parser';
@@ -19,6 +19,45 @@ import { collectionPass } from './passes/collectionPass';
 import { injectionPass } from './passes/injectionPass';
 import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
+import {
+  describeChunks,
+  getChunkImportMapOptions,
+  readChunkImportMap,
+} from './transform/chunk-translations/chunkImportMap';
+import {
+  CHUNK_TRANSLATIONS_SOURCE,
+  UNSPLIT_LOADER_PLACEHOLDER,
+  getChunkTranslations,
+  getChunkTranslationsNaming,
+  resolveChunkTranslations,
+} from './transform/chunk-translations/resolveChunkTranslations';
+import {
+  canImportChunkTranslations,
+  finishChunkTranslationsFile,
+  wrapDynamicImports,
+} from './transform/chunk-translations/chunkTranslationsModule';
+import {
+  UNSTARTED_APP_WARNING,
+  createBundledCatalogsWarning,
+  createMissingTranslationsWarning,
+  createUngatedImportsWarning,
+  createUnreadImportsError,
+  loadChunkTranslationsTable,
+  writeChunkTranslations,
+} from './transform/chunk-translations/writeChunkTranslations';
+import {
+  findImportedChunks,
+  findUngatedImports,
+  passPreloads,
+  replaceImportedChunks,
+  type UngatedImports,
+} from './transform/chunk-translations/assignTranslations';
+import {
+  createUnsplitTranslationsMessage,
+  getUnsplitTranslations,
+  replaceUnsplitLoader,
+} from './transform/chunk-translations/unsplitTranslations';
+import { getPageBase } from './transform/chunk-translations/startupScript';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
@@ -74,6 +113,10 @@ export interface GTUnpluginOptions extends PluginConfig, GTConfig {}
 
 export const MISSING_GT_CONFIG_WARNING =
   '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
+
+function isDependency(id: string): boolean {
+  return /[\\/]node_modules[\\/]/.test(id);
+}
 
 function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
   return logLevel !== 'silent' && logLevel !== 'error';
@@ -185,11 +228,26 @@ function resolveGTConfig(options: GTUnpluginOptions): GTConfigLoadResult {
  * that works across webpack, Vite, Rollup, and other bundlers.
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
-  (options = {}) => {
+  (options = {}, meta) => {
     const gtConfigLoadResult = resolveGTConfig(options);
     const loadedGTConfig =
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
+        : undefined;
+    const chunkTranslationsResolution = getChunkTranslations(
+      options.experimentalChunkTranslations
+    )
+      ? resolveChunkTranslations(loadedGTConfig, {
+          framework: meta.framework,
+          compileTimeHash: options.compileTimeHash !== false,
+          naming: getChunkTranslationsNaming(
+            options.experimentalChunkTranslationsNaming
+          ),
+        })
+      : undefined;
+    const chunkTranslations =
+      chunkTranslationsResolution && !('error' in chunkTranslationsResolution)
+        ? chunkTranslationsResolution
         : undefined;
     const resolvedOptions: GTUnpluginOptions = {
       ...options,
@@ -217,8 +275,21 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       ? new Map<string, unknown>()
       : undefined;
 
-    return {
+    const gtFiles = resolvedOptions.gtConfig?.files?.gt;
+    // Vite's build() sets NODE_ENV after plugins are created, so read it when each hook runs, as transforms do
+    const isProduction = () => process.env.NODE_ENV === 'production';
+
+    const plugin: UnpluginOptions = {
       name: '@generaltranslation/GT_PLUGIN',
+      buildStart() {
+        if (
+          isProduction() &&
+          chunkTranslationsResolution &&
+          'error' in chunkTranslationsResolution
+        ) {
+          throw new Error(chunkTranslationsResolution.error);
+        }
+      },
       transformInclude(id: string) {
         // Only transform TSX and JSX files
         return (
@@ -230,7 +301,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
       transform(code: string, id: string) {
         // Initialize processing state
-        const state = initializeState(resolvedOptions, id);
+        const state = initializeState(resolvedOptions, id, chunkTranslations);
         if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
@@ -248,6 +319,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             allowImportExportEverywhere: true,
             allowReturnOutsideFunction: true,
           });
+
+          if (
+            state.settings.chunkTranslations &&
+            canImportChunkTranslations(ast.program, code)
+          ) {
+            state.chunkTranslations = { imports: new Set() };
+          }
 
           // Pass 1: Jsx insertion
           if (state.settings.enableAutoJsxInjection) {
@@ -281,8 +359,14 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, runtimeTranslatePass(state));
           }
 
+          const chunkTranslationsChanged = finishChunkTranslationsFile(
+            ast,
+            state
+          );
+
           // Generate code if any pass modified the AST
           if (
+            !chunkTranslationsChanged &&
             !injectionRan &&
             state.statistics.jsxInsertionsCount === 0 &&
             state.statistics.runtimeTranslateCount === 0 &&
@@ -323,6 +407,179 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         }
       },
     };
+    if (!chunkTranslations || !gtFiles) return plugin;
+
+    // What writes the startup script of each entry chunk the last build wrote, by its file
+    let startupScripts = new Map<string, (base: string) => string>();
+    // The chunks whose dynamic import needs a translations file
+    let imported = new Set<string>();
+    // Whether loading the first chunk loads the second
+    let isLoadedWith: (chunk: string, other: string) => boolean = () => false;
+    // Where the build's files are served from and its assets go: Vite's `base` and `build.assetsDir`
+    let base = '';
+    let assetsDir = '';
+    function generateBundle(
+      this: { emitFile: (file: never) => unknown },
+      _outputOptions: unknown,
+      bundle: Record<string, { type: string }>
+    ): void {
+      if (!isProduction()) return;
+      const written = writeChunkTranslations(bundle, chunkTranslations!, {
+        gtFiles: gtFiles!,
+        base,
+        assetsDir,
+        emitFile: (file) => this.emitFile(file as never),
+      });
+      startupScripts = written.startupScripts;
+      imported = written.imported;
+      isLoadedWith = written.isLoadedWith;
+      if (!shouldWarn(options.logLevel)) return;
+      if (written.missingLocales.length) {
+        console.warn(createMissingTranslationsWarning(written.missingLocales));
+      }
+      if (!chunkTranslations!.starts) {
+        console.warn(UNSTARTED_APP_WARNING);
+      } else if (written.bundledCatalogs.length) {
+        console.warn(createBundledCatalogsWarning(written.bundledCatalogs));
+      }
+      if (written.unsplit.length) {
+        console.warn(createUnsplitTranslationsMessage(written.unsplit));
+      }
+    }
+    // Chunks are rendered once every module is compiled, so every call site is known
+    function renderChunk(code: string): string | null {
+      if (!isProduction()) return null;
+      const passed = passPreloads(code);
+      if (!passed.includes(UNSPLIT_LOADER_PLACEHOLDER)) {
+        return passed === code ? null : passed;
+      }
+      const unsplit = getUnsplitTranslations(
+        loadChunkTranslationsTable(gtFiles!, chunkTranslations!),
+        chunkTranslations!
+      );
+      return (
+        replaceUnsplitLoader(passed, Object.keys(unsplit).length > 0) ?? null
+      );
+    }
+    // The bundler's options say whether it writes a chunk import map
+    const readBundlerOptions = (bundlerOptions: unknown): null => {
+      chunkTranslations.importMap = getChunkImportMapOptions(bundlerOptions);
+      return null;
+    };
+    // After Vite has listed the chunks each dynamic import preloads
+    const nameImportedChunks = {
+      order: 'post',
+      handler(
+        _outputOptions: unknown,
+        bundle: Record<
+          string,
+          {
+            type: string;
+            fileName: string;
+            code?: string;
+            dynamicImports?: string[];
+          }
+        >
+      ): void {
+        if (!isProduction()) return;
+        const needsFiles = (target: string) => imported.has(target);
+        const importMap = readChunkImportMap(
+          bundle,
+          chunkTranslations.importMap
+        );
+        const describeChunk = describeChunks(importMap);
+        // An import that loads translations and that nothing gates: one the
+        // build could not read is its failure, one it never wrapped is not
+        const unread: UngatedImports[] = [];
+        const unwrapped: UngatedImports[] = [];
+        for (const chunk of Object.values(bundle)) {
+          if (chunk.type !== 'chunk' || typeof chunk.code !== 'string')
+            continue;
+          const source = { fileName: chunk.fileName, code: chunk.code };
+          const ungated = findUngatedImports(
+            chunk,
+            findImportedChunks(source, importMap),
+            needsFiles,
+            isLoadedWith
+          );
+          const replaced = replaceImportedChunks(source, needsFiles, importMap);
+          if (replaced.code !== chunk.code) chunk.code = replaced.code;
+          if (ungated) {
+            (replaced.unread ? unread : unwrapped).push({
+              ...ungated,
+              targets: ungated.targets.map(describeChunk),
+            });
+          }
+        }
+        if (unread.length) throw new Error(createUnreadImportsError(unread));
+        if (unwrapped.length && shouldWarn(options.logLevel)) {
+          console.warn(createUngatedImportsWarning(unwrapped));
+        }
+      },
+    };
+    return [
+      {
+        ...plugin,
+        vite: {
+          ...plugin.vite,
+          configResolved(config: {
+            base: string;
+            build: { assetsDir: string };
+          }) {
+            base = config.base;
+            assetsDir = config.build.assetsDir;
+          },
+          renderChunk,
+          generateBundle,
+          transformIndexHtml: {
+            order: 'post',
+            handler(
+              _html: string,
+              context: { path: string; chunk?: { fileName: string } }
+            ) {
+              const renderScript =
+                context.chunk && startupScripts.get(context.chunk.fileName);
+              return renderScript
+                ? [
+                    {
+                      tag: 'script',
+                      children: renderScript(getPageBase(base, context.path)),
+                      injectTo: 'head-prepend',
+                    },
+                  ]
+                : undefined;
+            },
+          },
+        },
+      },
+      {
+        // After the plugins that write dynamic imports, such as Vite's glob imports
+        name: '@generaltranslation/GT_PLUGIN:chunk-translations',
+        enforce: 'post',
+        vite: {
+          options: readBundlerOptions,
+          generateBundle: nameImportedChunks,
+        },
+        transformInclude(id: string) {
+          return !isDependency(id);
+        },
+        async transform(code: string, id: string) {
+          if (!isProduction() || !code.includes('import(')) return null;
+          // A module that cannot reach gt-react keeps its imports as they are
+          const { resolve } = this as unknown as {
+            resolve?: (source: string, importer: string) => Promise<unknown>;
+          };
+          if (
+            resolve &&
+            !(await resolve.call(this, CHUNK_TRANSLATIONS_SOURCE, id))
+          ) {
+            return null;
+          }
+          return (wrapDynamicImports(code, id, chunkTranslations.naming) ??
+            null) as never;
+        },
+      },
+    ] as UnpluginOptions[];
   }
 );
 

@@ -6,6 +6,7 @@ import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
 import { ErrorTracker } from '../ErrorTracker';
 import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
+import type { ChunkTranslations } from '../../transform/chunk-translations/resolveChunkTranslations';
 
 const DEFAULT_SETTINGS: PluginSettings = {
   logLevel: 'warn',
@@ -26,7 +27,8 @@ const DEFAULT_SETTINGS: PluginSettings = {
  */
 export function initializeState(
   options: GTUnpluginOptions,
-  filename: string
+  filename: string,
+  chunkTranslations?: ChunkTranslations
 ): TransformState {
   // Pull enableAutoJsxInjection from gtConfig if provided
   const gtConfig = options.gtConfig;
@@ -41,7 +43,13 @@ export function initializeState(
 
   // Spread options but exclude already-resolved fields
   // eslint-disable-next-line no-unused-vars
-  const { autoderive: _a, devHotReload: _b, ...restOptions } = options;
+  const {
+    autoderive: _a,
+    devHotReload: _b,
+    experimentalChunkTranslations: _g,
+    experimentalChunkTranslationsNaming: _h,
+    ...restOptions
+  } = options;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
@@ -52,6 +60,9 @@ export function initializeState(
     // An explicit undefined in the options must not erase the default.
     autoJsxImportSource:
       options.autoJsxImportSource ?? DEFAULT_SETTINGS.autoJsxImportSource,
+    // Dev builds keep loading translations at runtime
+    chunkTranslations:
+      process.env.NODE_ENV === 'production' ? chunkTranslations : undefined,
     filename,
   };
 
