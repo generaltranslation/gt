@@ -2,7 +2,6 @@ import {
   VariableTransformationSuffix,
   minifyVariableType,
 } from 'generaltranslation/internal';
-import type { VariableType } from '@generaltranslation/format';
 import { GTTag, VariableProps } from '../types';
 
 type VariableElementProps = {
@@ -11,9 +10,6 @@ type VariableElementProps = {
   };
   [key: string]: unknown;
 };
-
-/** The type of a count variable, which is to its plural what `#` is in ICU. */
-export const COUNT_VARIABLE_TYPE = '#' satisfies VariableType;
 
 export function isVariableElementProps(
   props: unknown

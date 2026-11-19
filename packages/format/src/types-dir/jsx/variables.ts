@@ -1,10 +1,15 @@
-export type VariableType =
-  | 'v' // Variable
-  | 'n' // Number
-  | 'd' // Date
-  | 'c' // Currency
-  | 'rt' // Relative Time
-  | '#'; // The count of the nearest plural, as `#` is in ICU
+/** The code each kind of variable is stored with. */
+export const VARIABLE_TYPES = {
+  variable: 'v',
+  number: 'n',
+  datetime: 'd',
+  currency: 'c',
+  relativetime: 'rt',
+  // The count of the nearest plural, as `#` is in ICU
+  count: '#',
+} as const;
+
+export type VariableType = (typeof VARIABLE_TYPES)[keyof typeof VARIABLE_TYPES];
 
 /**
  * A variable is found by its id. `k` is the name its author gave it, if any.

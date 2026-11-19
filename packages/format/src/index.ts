@@ -38,6 +38,7 @@ export type { LocaleProperties } from './locales/getLocaleProperties';
 export type { CustomRegionMapping } from './locales/getRegionProperties';
 export type { CustomMapping } from './locales/customLocaleMapping';
 export type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
+export { VARIABLE_TYPES } from './types-dir/jsx/variables';
 export type { Variable, VariableType } from './types-dir/jsx/variables';
 export type {
   Content,

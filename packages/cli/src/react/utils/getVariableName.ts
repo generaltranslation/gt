@@ -1,17 +1,19 @@
-import type { VariableType } from '@generaltranslation/format';
+import { VARIABLE_TYPES, type VariableType } from '@generaltranslation/format';
+
+import { COUNT_NODE_TYPE } from '../jsx/utils/constants.js';
 
 /**
  * The variable components as they appear in gt-next and gt-react, and their minified types
  */
 export const minifyVariableTypeMap = {
-  Var: 'v',
-  GtInternalVar: 'v',
-  Num: 'n',
-  DateTime: 'd',
-  RelativeTime: 'rt',
-  Currency: 'c',
-  // An <N> imported from GT: see COUNT_NODE_TYPE.
-  '#': '#',
+  Var: VARIABLE_TYPES.variable,
+  GtInternalVar: VARIABLE_TYPES.variable,
+  Num: VARIABLE_TYPES.number,
+  DateTime: VARIABLE_TYPES.datetime,
+  RelativeTime: VARIABLE_TYPES.relativetime,
+  Currency: VARIABLE_TYPES.currency,
+  // An <N> imported from GT.
+  [COUNT_NODE_TYPE]: VARIABLE_TYPES.count,
 } as const satisfies Record<string, VariableType>;
 
 /**

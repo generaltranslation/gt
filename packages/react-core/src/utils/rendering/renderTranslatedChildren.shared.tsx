@@ -7,7 +7,6 @@ import {
   VariableProps,
 } from '../types';
 import {
-  COUNT_VARIABLE_TYPE,
   getVariableProps,
   isVariableElementProps,
 } from '../variables/_getVariableProps';
@@ -24,12 +23,13 @@ import {
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
+  VARIABLE_TYPES,
 } from '@generaltranslation/format';
 import { getGTTag } from './getGTTag';
 import type { RenderVariable } from '../types';
 
 const isCountVariable = (child: unknown): boolean =>
-  isVariable(child) && child.v === COUNT_VARIABLE_TYPE;
+  isVariable(child) && child.v === VARIABLE_TYPES.count;
 
 // Shared implementation: the variable renderer is dependency-injected by a
 // factory so this module statically imports no variable components.
@@ -175,7 +175,7 @@ function createRenderTranslatedChildren({
     // in this `<T>`, a count is the source variable of its id, like any other.
     const renderCount = (value: number | bigint) =>
       renderVariable({
-        variableType: 'n',
+        variableType: VARIABLE_TYPES.number,
         variableValue: value,
         variableOptions: {},
         locales,

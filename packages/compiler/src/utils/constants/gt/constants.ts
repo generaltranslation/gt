@@ -1,4 +1,4 @@
-import type { VariableType } from '@generaltranslation/format';
+import { VARIABLE_TYPES, type VariableType } from '@generaltranslation/format';
 
 /**
  * Different gt components
@@ -74,16 +74,16 @@ export enum TRANSLATION_OPTION_KEYS {
  * The variable components, each with the type its variable is stored as
  */
 export const VARIABLE_COMPONENT_TYPES = {
-  [GT_COMPONENT_TYPES.Var]: 'v',
-  [GT_COMPONENT_TYPES.GtInternalVar]: 'v',
-  [GT_COMPONENT_TYPES.Num]: 'n',
-  [GT_COMPONENT_TYPES.GtInternalNum]: 'n',
-  [GT_COMPONENT_TYPES.Currency]: 'c',
-  [GT_COMPONENT_TYPES.GtInternalCurrency]: 'c',
-  [GT_COMPONENT_TYPES.DateTime]: 'd',
-  [GT_COMPONENT_TYPES.GtInternalDateTime]: 'd',
-  [GT_COMPONENT_TYPES.RelativeTime]: 'rt',
-  [GT_COMPONENT_TYPES.N]: '#',
+  [GT_COMPONENT_TYPES.Var]: VARIABLE_TYPES.variable,
+  [GT_COMPONENT_TYPES.GtInternalVar]: VARIABLE_TYPES.variable,
+  [GT_COMPONENT_TYPES.Num]: VARIABLE_TYPES.number,
+  [GT_COMPONENT_TYPES.GtInternalNum]: VARIABLE_TYPES.number,
+  [GT_COMPONENT_TYPES.Currency]: VARIABLE_TYPES.currency,
+  [GT_COMPONENT_TYPES.GtInternalCurrency]: VARIABLE_TYPES.currency,
+  [GT_COMPONENT_TYPES.DateTime]: VARIABLE_TYPES.datetime,
+  [GT_COMPONENT_TYPES.GtInternalDateTime]: VARIABLE_TYPES.datetime,
+  [GT_COMPONENT_TYPES.RelativeTime]: VARIABLE_TYPES.relativetime,
+  [GT_COMPONENT_TYPES.N]: VARIABLE_TYPES.count,
 } as const satisfies Partial<Record<GT_COMPONENT_TYPES, VariableType>>;
 
 export type VariableComponent = keyof typeof VARIABLE_COMPONENT_TYPES;

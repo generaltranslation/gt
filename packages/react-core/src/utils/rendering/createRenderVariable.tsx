@@ -3,7 +3,7 @@ import type { ResolvedDateTimeProps } from '../../components/variables/DateTime.
 import type { ResolvedNumProps } from '../../components/variables/Num.shared';
 import type { ResolvedRelativeTimeProps } from '../../components/variables/RelativeTime.shared';
 import type { RelativeTimeFormatOptions, RenderVariable } from '../types';
-import { COUNT_VARIABLE_TYPE } from '../variables/_getVariableProps';
+import { VARIABLE_TYPES } from '@generaltranslation/format';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { ReactNode } from 'react';
 
@@ -64,7 +64,10 @@ function createRenderVariable({
       _enableI18n: enableI18n,
     };
 
-    if (variableType === 'n' || variableType === COUNT_VARIABLE_TYPE) {
+    if (
+      variableType === VARIABLE_TYPES.number ||
+      variableType === VARIABLE_TYPES.count
+    ) {
       const Num = injectionType === 'automatic' ? GtExternalNum : GtInternalNum;
       const numOptions = variableOptions as
         | Intl.NumberFormatOptions
@@ -75,7 +78,7 @@ function createRenderVariable({
         </Num>
       );
     }
-    if (variableType === 'd') {
+    if (variableType === VARIABLE_TYPES.datetime) {
       const DateTime =
         injectionType === 'automatic' ? GtExternalDateTime : GtInternalDateTime;
       const dateTimeOptions = variableOptions as
@@ -87,7 +90,7 @@ function createRenderVariable({
         </DateTime>
       );
     }
-    if (variableType === 'c') {
+    if (variableType === VARIABLE_TYPES.currency) {
       const Currency =
         injectionType === 'automatic' ? GtExternalCurrency : GtInternalCurrency;
       const currencyOptions = variableOptions as
@@ -103,7 +106,7 @@ function createRenderVariable({
         </Currency>
       );
     }
-    if (variableType === 'rt') {
+    if (variableType === VARIABLE_TYPES.relativetime) {
       const RelativeTime =
         injectionType === 'automatic'
           ? GtExternalRelativeTime
