@@ -97,8 +97,7 @@ function build(name, { lazy, shared, requestCost }, env = {}) {
         GT_SPLIT_TRANSLATIONS: 'true',
         GT_SPLIT_TRANSLATIONS_BY: 'module',
         GT_MINIFY_HASHES: String(MINIFY_HASHES),
-        // vite.config.ts passes these as keys of the option, which turns the
-        // feature on by being there
+        // vite.config.ts passes these as keys of the option
         CHECK_NAMING: '',
         CHECK_PREVIOUS: '',
         CHECK_REQUEST_COST:

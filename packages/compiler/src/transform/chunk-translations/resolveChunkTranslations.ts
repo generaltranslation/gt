@@ -10,9 +10,9 @@ import {
 } from './hashMinification';
 
 /**
- * Environment variable read when the `experimentalSplitTranslations` option
- * is not set, so a build script can turn it on without changing the bundler
- * config.
+ * Environment variable read when `enabled` of the
+ * `experimentalSplitTranslations` option is not set, so a build script can
+ * turn the split on or off without changing the bundler config.
  */
 export const CHUNK_TRANSLATIONS_ENV_VAR = 'GT_SPLIT_TRANSLATIONS';
 
@@ -62,7 +62,7 @@ const SUPPORTED_FRAMEWORKS = new Set(['vite']);
 const FILE_NAME_LOCALE = /^[A-Za-z0-9_-]+$/;
 
 const ENV_TRUE_VALUES = new Set(['true', '1']);
-const ENV_FALSE_VALUES = new Set(['false', '0', '']);
+const ENV_FALSE_VALUES = new Set(['false', '0']);
 
 /** What a build that writes translations per chunk shares between its hooks. */
 export type ChunkTranslations = {
@@ -289,11 +289,12 @@ const createInvalidBooleanEnvError = (name: string, value: string) =>
     fix: `Set ${name} to true or false`,
   });
 
-/** A boolean environment variable, or undefined when it is not set. */
+/** A boolean environment variable, or undefined when it is not set or empty. */
 function readBooleanEnv(name: string): boolean | undefined {
   const raw = process.env[name];
   if (raw === undefined) return undefined;
   const value = raw.trim().toLowerCase();
+  if (value === '') return undefined;
   if (ENV_TRUE_VALUES.has(value)) return true;
   if (ENV_FALSE_VALUES.has(value)) return false;
   throw new Error(createInvalidBooleanEnvError(name, raw));
@@ -310,16 +311,18 @@ const createChunkTranslationsError = (why: string, fix: string) =>
   });
 
 /**
- * Whether this build writes translations per chunk: the
- * `experimentalSplitTranslations` option when it is set, which is on unless
- * its `enabled` is false, else the `GT_SPLIT_TRANSLATIONS` environment
- * variable.
+ * Whether this build writes translations per chunk: `enabled` of the
+ * `experimentalSplitTranslations` option, else the `GT_SPLIT_TRANSLATIONS`
+ * environment variable, else whether the option is set.
  */
 export function getChunkTranslations(
   option: SplitTranslationsOptions | undefined
 ): boolean {
-  if (option) return option.enabled ?? true;
-  return readBooleanEnv(CHUNK_TRANSLATIONS_ENV_VAR) ?? false;
+  return (
+    option?.enabled ??
+    readBooleanEnv(CHUNK_TRANSLATIONS_ENV_VAR) ??
+    option !== undefined
+  );
 }
 
 /**

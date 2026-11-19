@@ -21,8 +21,9 @@ export type GTConfig = Partial<SharedGTConfig>;
 /** The keys of the `experimentalSplitTranslations` option. */
 export type SplitTranslationsOptions = {
   /**
-   * Whether the build splits translations. True when the option is set;
-   * false keeps the split off, also when `GT_SPLIT_TRANSLATIONS` is `true`.
+   * Whether the build splits translations. Defaults to the
+   * `GT_SPLIT_TRANSLATIONS` environment variable (`true` or `false`), else
+   * to true.
    */
   enabled?: boolean;
   /**
@@ -159,13 +160,12 @@ export interface PluginConfig
    * adds serves a stale copy: the page then finds no current name, and the
    * messages of the missing file render the source text, with a warning.
    *
-   * Setting the option turns the split on, unless its `enabled` is false.
-   * Left out, the split is on when the `GT_SPLIT_TRANSLATIONS` environment
-   * variable is `true`. A key set here overrides its environment variable,
-   * which is read only for a key that is left out: `GT_SPLIT_TRANSLATIONS`
-   * for `enabled`, which the option sets by being there,
+   * A key set here overrides its environment variable, which is read only
+   * for a key that is left out: `GT_SPLIT_TRANSLATIONS` for `enabled`,
    * `GT_SPLIT_TRANSLATIONS_BY` for `by` and `GT_MINIFY_HASHES` for
-   * `minifyHashes`. The other keys have no environment variable.
+   * `minifyHashes`. The other keys have no environment variable. An empty
+   * variable is not set. With neither `enabled` nor `GT_SPLIT_TRANSLATIONS`
+   * set, the split is on when the option is set and off when it is not.
    */
   experimentalSplitTranslations?: SplitTranslationsOptions;
   /**

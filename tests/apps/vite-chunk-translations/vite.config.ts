@@ -12,8 +12,7 @@ const messagesFile = process.env.CHECK_MESSAGES;
 
 // The keys of experimentalSplitTranslations that have no environment
 // variable: the scripts set CHECK_NAMING, CHECK_REQUEST_COST and
-// CHECK_PREVIOUS, and only for a build with the feature on, as the option
-// turns it on by being there. The compiler reads the other keys from
+// CHECK_PREVIOUS. The compiler reads the other keys from
 // GT_SPLIT_TRANSLATIONS, GT_SPLIT_TRANSLATIONS_BY and GT_MINIFY_HASHES.
 const splitTranslations = {
   ...(process.env.CHECK_NAMING && {

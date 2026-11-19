@@ -214,30 +214,47 @@ describe('experimentalSplitTranslations', () => {
 
   describe('the option', () => {
     it.each([
+      // Without the option, the variable decides, and off is the default
       [undefined, 'true', true],
       [undefined, '1', true],
       [undefined, 'false', false],
       [undefined, undefined, false],
-      [{ enabled: false }, 'true', false],
-      [{ enabled: true }, 'false', true],
-      [{}, 'false', true],
+      [undefined, '', false],
+      // With the option and no enabled, the variable decides, and on is the default
+      [{}, 'true', true],
+      [{}, 'false', false],
+      [{}, '0', false],
       [{}, undefined, true],
-      [{ enabled: undefined, by: 'module' }, 'false', true],
+      [{}, '', true],
+      [{ naming: 'map' }, 'false', false],
+      [{ naming: 'map' }, undefined, true],
+      [{ enabled: undefined, by: 'module' }, 'false', false],
+      [{ enabled: undefined, by: 'module' }, '', true],
+      // enabled overrides the variable
+      [{ enabled: true }, 'true', true],
+      [{ enabled: true }, 'false', true],
+      [{ enabled: true }, undefined, true],
+      [{ enabled: true }, '', true],
+      [{ enabled: false }, 'true', false],
+      [{ enabled: false }, 'false', false],
+      [{ enabled: false }, undefined, false],
+      [{ enabled: false }, '', false],
     ] as const)(
-      'is %j with GT_SPLIT_TRANSLATIONS=%s: %s',
+      'is %j with GT_SPLIT_TRANSLATIONS=%j: %s',
       (option, env, expected) => {
-        if (env !== undefined) vi.stubEnv('GT_SPLIT_TRANSLATIONS', env);
-        else vi.stubEnv('GT_SPLIT_TRANSLATIONS', undefined as never);
+        vi.stubEnv('GT_SPLIT_TRANSLATIONS', env as never);
         expect(getChunkTranslations(option)).toBe(expected);
       }
     );
 
-    it('rejects an environment value that is not a boolean, which it reads only without the option', () => {
+    it('rejects an environment value that is not a boolean, which it reads only when enabled is left out', () => {
       vi.stubEnv('GT_SPLIT_TRANSLATIONS', 'yes');
-      expect(() => getChunkTranslations(undefined)).toThrow(
-        'GT_SPLIT_TRANSLATIONS is set to "yes", which is not a boolean'
-      );
-      expect(getChunkTranslations({})).toBe(true);
+      const error =
+        'GT_SPLIT_TRANSLATIONS is set to "yes", which is not a boolean. Set GT_SPLIT_TRANSLATIONS to true or false.';
+      expect(() => getChunkTranslations(undefined)).toThrow(error);
+      expect(() => getChunkTranslations({ naming: 'map' })).toThrow(error);
+      expect(getChunkTranslations({ enabled: true })).toBe(true);
+      expect(getChunkTranslations({ enabled: false })).toBe(false);
     });
 
     const BUILD = {
@@ -344,6 +361,20 @@ describe('experimentalSplitTranslations', () => {
           experimentalSplitTranslations: { enabled: false },
         }).plugins
       ).toHaveLength(1);
+
+      vi.stubEnv('GT_SPLIT_TRANSLATIONS', 'false');
+      expect(
+        createPlugins({
+          gtConfig: GT_CONFIG,
+          experimentalSplitTranslations: { naming: 'map' },
+        }).plugins
+      ).toHaveLength(1);
+      expect(
+        createPlugins({
+          gtConfig: GT_CONFIG,
+          experimentalSplitTranslations: { enabled: true },
+        }).plugins
+      ).toHaveLength(2);
     });
   });
 

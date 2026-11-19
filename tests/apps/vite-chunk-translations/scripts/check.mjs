@@ -97,8 +97,7 @@ function buildEnv(outDir, chunkTranslations, env) {
     ...process.env,
     NODE_ENV: 'production',
     GT_SPLIT_TRANSLATIONS: String(chunkTranslations),
-    // vite.config.ts passes the naming as a key of the option, which turns
-    // the feature on by being there
+    // vite.config.ts passes the naming as a key of the option
     CHECK_NAMING: chunkTranslations ? NAMING : '',
     // Only a build with chunk translations can minify its hashes
     GT_MINIFY_HASHES: String(chunkTranslations && MINIFY_HASHES),
