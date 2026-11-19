@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { vite as gtCompiler } from '@generaltranslation/compiler';
 import { defineConfig, type Plugin } from 'vite';
 import { collectMessages } from './scripts/collectMessages.mjs';
-import { rewriteImportMap } from './scripts/rewriteImportMap.mjs';
+import { prefixedImportMap } from './scripts/prefixedImportMap.mjs';
 
 // GT_CHUNK_TRANSLATIONS=true turns the feature on; scripts/check.mjs builds
 // the app both ways. CHECK_MESSAGES is set by scripts/pseudo-translate.mjs,
@@ -18,11 +18,15 @@ const translations = process.env.CHECK_TRANSLATIONS ?? resolve('src/_gt');
 // CHECK_IMPORT_MAP=true builds with Vite's chunk import map
 // (`build.chunkImportMap`): chunks import each other by a name that stays
 // when a chunk's content changes, which the page's import map resolves.
-// CHECK_IMPORT_MAP=rewritten adds a plugin of the app that has chunks import
-// each other by a name of its own and rewrites that import map for it, in
-// part after the compiler has read it: see scripts/rewriteImportMap.mjs.
+// CHECK_IMPORT_MAP=prefixed builds with that and with a plugin of the app
+// after which chunks import each other by a specifier that is not a path.
+// CHECK_IMPORT_MAP=rewritten is the same app, whose plugin gives the import
+// map those specifiers only after the compiler has read it. See
+// scripts/prefixedImportMap.mjs.
 const rewrittenImportMap = process.env.CHECK_IMPORT_MAP === 'rewritten';
-const importMap = rewrittenImportMap || process.env.CHECK_IMPORT_MAP === 'true';
+const prefixed =
+  rewrittenImportMap || process.env.CHECK_IMPORT_MAP === 'prefixed';
+const importMap = prefixed || process.env.CHECK_IMPORT_MAP === 'true';
 
 // scripts/check.mjs also builds the app with a change to its JavaScript
 // alone, in a module every route imports, which renames their chunks. With
@@ -84,6 +88,7 @@ export default defineConfig({
     }),
     react(),
     messagesFile !== undefined && collectMessages(messagesFile),
+    prefixed && prefixedImportMap({ late: rewrittenImportMap }),
     revision !== undefined && {
       name: 'check-revision',
       transform: (code: string, id: string) =>
@@ -91,7 +96,6 @@ export default defineConfig({
           ? `${code}\nwindow.__revision = ${JSON.stringify(revision)};`
           : null,
     },
-    rewrittenImportMap && rewriteImportMap(),
   ],
   resolve: {
     // pnpm installs gt-react's React peer into the workspace package, so its
@@ -104,6 +108,10 @@ export default defineConfig({
   build: {
     outDir: process.env.CHECK_OUT_DIR ?? 'dist',
     chunkImportMap: importMap,
+    // CHECK_MODULE_PRELOAD=false: Vite preloads no chunk of a dynamic import
+    ...(process.env.CHECK_MODULE_PRELOAD === 'false' && {
+      modulePreload: false,
+    }),
     // plain.html is the app without messages that are not split by chunk,
     // start.html the app started without a top-level await
     rollupOptions: {

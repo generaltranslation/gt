@@ -49,13 +49,18 @@ const SOURCE_SLACK_MS = 5;
 const SOURCE_LOADS = 9;
 // CHECK_IMPORT_MAP=true makes every build with Vite's chunk import map
 // (`build.chunkImportMap`), by which chunks import each other.
-// CHECK_IMPORT_MAP=rewritten makes them with a plugin of the app too, which
-// has chunks import each other by a name of its own and rewrites that import
-// map for it, in part after the build has read it: every run also checks one
-// such build of each variant, see "An import map another plugin rewrites".
+// CHECK_IMPORT_MAP=prefixed makes it with that and with a plugin of the app
+// after which they do so by a specifier that is not a path.
+// CHECK_IMPORT_MAP=rewritten is the same app, whose plugin gives the import
+// map those specifiers only after the build has read it: every run also
+// checks one such build of each variant, see "An import map another plugin
+// rewrites". See scripts/prefixedImportMap.mjs.
 const REWRITTEN_IMPORT_MAP = process.env.CHECK_IMPORT_MAP === 'rewritten';
-const IMPORT_MAP =
-  REWRITTEN_IMPORT_MAP || process.env.CHECK_IMPORT_MAP === 'true';
+const PREFIXED =
+  REWRITTEN_IMPORT_MAP || process.env.CHECK_IMPORT_MAP === 'prefixed';
+const IMPORT_MAP = PREFIXED || process.env.CHECK_IMPORT_MAP === 'true';
+// What a chunk's code writes before the name of a chunk it imports
+const IMPORTED = PREFIXED ? 'r:' : './';
 
 /**
  * The builds. `lazy` is Rolldown's `strictExecutionOrder`: a module runs when
@@ -348,8 +353,8 @@ const browser = await chromium.launch();
 
 /**
  * Opens the app in a new browser context of one locale, recording every
- * request with the time it started, every console warning, and every text
- * the app has shown.
+ * request with the time it started, every one that failed, every console
+ * warning and error, and every text the app has shown.
  */
 async function open(url, locale, prepare) {
   const context = await browser.newContext({ locale });
@@ -357,17 +362,33 @@ async function open(url, locale, prepare) {
   const requests = [];
   const responses = [];
   const warnings = [];
+  const failures = [];
   const session = await context.newCDPSession(page);
   await session.send('Network.enable');
   session.on('Network.requestWillBeSent', ({ request, timestamp }) =>
     requests.push({ path: new URL(request.url).pathname, time: timestamp })
   );
-  session.on('Network.responseReceived', ({ response, timestamp }) =>
-    responses.push({ path: new URL(response.url).pathname, time: timestamp })
-  );
+  session.on('Network.responseReceived', ({ response, timestamp }) => {
+    const { pathname } = new URL(response.url);
+    responses.push({ path: pathname, time: timestamp });
+    if (response.status >= 400) failures.push(`${response.status} ${pathname}`);
+  });
   page.on('console', (entry) => {
     if (entry.type() === 'warning') warnings.push(entry.text());
+    // What the browser says of a response that is already in `failures`
+    if (
+      entry.type() === 'error' &&
+      !entry.text().startsWith('Failed to load resource')
+    ) {
+      failures.push(entry.text());
+    }
   });
+  page.on('pageerror', (error) => failures.push(String(error)));
+  page.on('requestfailed', (request) =>
+    failures.push(
+      `${request.failure()?.errorText} ${new URL(request.url()).pathname}`
+    )
+  );
   await page.addInitScript(() => {
     window.__shown = new Set();
     const record = () => {
@@ -388,6 +409,8 @@ async function open(url, locale, prepare) {
     requests,
     responses,
     warnings,
+    /** The requests that failed and the errors of the console. */
+    failures,
     text,
     shown: () => page.evaluate(() => [...window.__shown]),
     /** When each module that reads translations as it is evaluated ran, in the page's time. */
@@ -746,6 +769,11 @@ async function checkLocale(url, locale, built) {
       app.warnings.join(' | ')
     );
   }
+  check(
+    `${locale}: no request fails, and the console has no error`,
+    !app.failures.length,
+    app.failures.join(' | ')
+  );
   const preloads = await app.page.evaluate(() =>
     [...document.querySelectorAll('link[rel="modulepreload"]')].map((link) =>
       new URL(link.href).pathname.replace(/-[\w-]{8}\.js$/, '')
@@ -1373,6 +1401,65 @@ async function checkVariant(name, variant) {
   served.close();
   servedOff.close();
 
+  // ----- A build that preloads no modules ----- //
+  // `build.modulePreload: false`: Vite lists no chunk for an import, so the
+  // build names the chunk of each import that needs files, and gt-react adds
+  // the link that downloads it while those files do. No import map applies
+  // to a link: with one, gt-react has to name the file the import map has
+  // for the chunk. Checked where a route's import needs a file of its own.
+  if (variant.requestCost === 0) {
+    const unpreloaded = readBuild(
+      build(`module-${name}-unpreloaded`, variant, {
+        CHECK_MODULE_PRELOAD: 'false',
+      }).outDir
+    );
+    const chunk = unpreloaded.chunkOf('Reports');
+    // A file that the import of the route is the first to need
+    const earlier = new Set([
+      ...unpreloaded.entryFiles('fr'),
+      ...unpreloaded.listOf('App', 'fr'),
+      ...unpreloaded.listOf('Home', 'fr'),
+    ]);
+    const file = unpreloaded
+      .listOf('Reports', 'fr')
+      .find((path) => !earlier.has(path));
+    const named = new RegExp(
+      `import\\((["'\`])${IMPORTED.replace('.', '\\.')}Reports-[\\w-]+\\.js\\1\\),"([^"]+)",[\\w$]+,\\[\\]`
+    ).exec(
+      readFileSync(
+        join(unpreloaded.outDir, unpreloaded.chunkOf('App').slice(1)),
+        'utf8'
+      )
+    );
+    check(
+      'no preloads: the bundler lists no chunk for an import that needs a file of its own, and the build names its chunk',
+      named !== null && file !== undefined,
+      `${named?.[2]} needs ${file}`
+    );
+    const label = 'no preloads, a file of a route held back';
+    const servedUnpreloaded = await serve(unpreloaded.outDir);
+    const app = await open(servedUnpreloaded.url, 'fr', delay(file));
+    await app.goto();
+    await app.navigate('reports');
+    await checkRoute(app, 'fr', 'reports', 0, 'no preloads, fr');
+    const wait = (app.started(chunk) - app.started(file)) * 1000;
+    check(
+      `${label}: its chunk starts downloading with its translation files`,
+      wait < TOGETHER_MS,
+      `${wait.toFixed(1)} ms after the file`
+    );
+    await checkEarly(label, app, chunk, file);
+    checkOnce(label, app, [chunk, file]);
+    await checkNoSource(label, app, 'fr');
+    check(
+      `${label}: no request fails, and the console has no error`,
+      !app.failures.length,
+      app.failures.join(' | ')
+    );
+    await app.close();
+    servedUnpreloaded.close();
+  }
+
   // ----- A relative base ----- //
   // The page is in a directory: the map and every file it lists are found
   // from the build's assets, also once the app has changed the page's URL.
@@ -1422,7 +1509,7 @@ async function checkVariant(name, variant) {
   // ----- An import map another plugin rewrites ----- //
   // A plugin of the app has chunks import each other by a bare name, and
   // gives the bundler's import map that name only after the build has
-  // listed which files each import needs (scripts/rewriteImportMap.mjs).
+  // listed which files each import needs (scripts/prefixedImportMap.mjs, `late`).
   // What the build then writes at an import must be a name the map of each
   // locale knows the chunk by, or a lazily loaded chunk renders its source.
   {
@@ -1469,19 +1556,28 @@ async function checkVariant(name, variant) {
         ? unlisted.map(({ written }) => written).join(', ')
         : `${named.length} imports`
     );
-    // Vite's own names for the chunks, which no import of this build is written with
-    const unused = Object.keys(imports)
-      .filter((imported) => imported.startsWith('/assets/'))
-      .map((imported) => imported.slice(1))
-      .filter(isListed);
+    // The names Vite gives the chunks, which its preload lists hold and no
+    // import of this build is written with
+    const viteNames = [
+      ...new Set(
+        [...code.matchAll(/\bm\.f\s*=\s*(\[[^\]]*\])/g)].flatMap(([, list]) =>
+          JSON.parse(list)
+        )
+      ),
+    ].filter(
+      (imported) =>
+        imported.endsWith('.js') &&
+        !rewritten.assets.includes(imported.split('/').pop())
+    );
+    const unused = viteNames.filter(isListed);
     check(
       'a rewritten import map: the map of a locale lists a chunk under no name that nothing is written with',
-      !unused.length,
+      viteNames.length > 0 && !unused.length,
       unused.join(', ')
     );
     check(
-      'a rewritten import map: each import is written with the name the page imports the chunk by, and is one whose chunks Vite lists',
-      named.every(({ isPreloaded }) => isPreloaded) &&
+      'a rewritten import map: each import is written with the name the page imports the chunk by, whether Vite lists its chunks or not',
+      named.some(({ isPreloaded }) => isPreloaded) &&
         named.every(({ specifier, written }) => written === specifier),
       named
         .filter(({ specifier, written }) => written !== specifier)
@@ -1510,6 +1606,11 @@ async function checkVariant(name, variant) {
       await app.navigate('settings');
       await checkRoute(app, locale, 'settings', 0, title);
       await checkNoSource(title, app, locale);
+      check(
+        `${title}: no request fails, and the console has no error`,
+        !app.failures.length,
+        app.failures.join(' | ')
+      );
       await app.close();
     }
     served.close();
@@ -1932,8 +2033,12 @@ if (!selected.length) {
     .filter((file) => file.endsWith('.js'))
     .map((file) => readFileSync(join(built.outDir, 'assets', file), 'utf8'))
     .join('\n')
-    // By the bare name too, which a rewritten import map has for the chunk
-    .match(/import\((["'`])(?:\.\/|r:)Orders-[\w-]+\.js\1\)\.then\(/g);
+    .match(
+      new RegExp(
+        `import\\((["'\`])${IMPORTED.replace('.', '\\.')}Orders-[\\w-]+\\.js\\1\\)\\.then\\(`,
+        'g'
+      )
+    );
   check(
     'the bundler writes the import of the route with what starts its module after it',
     imports?.length === 1,
