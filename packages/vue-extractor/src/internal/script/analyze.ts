@@ -481,6 +481,7 @@ export function parseVueScript(
         value?.type === 'component' &&
         (value.name === 'Var' ||
           value.name === 'Num' ||
+          value.name === 'N' ||
           value.name === 'DateTime' ||
           value.name === 'Currency')
       ) {

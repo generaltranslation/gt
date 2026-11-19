@@ -49,6 +49,7 @@ describe('gt-vue package layout', () => {
         'Branch',
         'Currency',
         'DateTime',
+        'N',
         'Num',
         'Plural',
         'T',

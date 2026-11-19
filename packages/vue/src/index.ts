@@ -1,6 +1,6 @@
 export { Branch, Plural } from './components/branches';
 export { T } from './components/T';
-export { Currency, DateTime, Num, Var } from './components/variables';
+export { Currency, DateTime, N, Num, Var } from './components/variables';
 export { useLocale, useSetLocale } from './composables/locale';
 export { useGT, useMessages } from './composables/strings';
 export { msg } from './messages/msg';

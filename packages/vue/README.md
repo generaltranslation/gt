@@ -260,6 +260,9 @@ const m = useMessages();
 - `<Plural :n="count">` selects a named slot as ICU does: an exact number such
   as `#_0`, then the locale's plural category such as `#one`, then the default
   slot.
+- `<N />` is the count of the `<Plural>` it is in, formatted as a number. Use it
+  for the count instead of `<Num>`, so a translation can show the count in any
+  branch.
 - `<Branch :branch="key">` selects an arbitrary named slot, or the default slot
   when no slot matches.
 

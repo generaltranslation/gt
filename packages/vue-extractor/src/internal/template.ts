@@ -358,6 +358,7 @@ function visitTemplateChildren(
     if (
       component?.originalName === 'Var' ||
       component?.originalName === 'Num' ||
+      component?.originalName === 'N' ||
       component?.originalName === 'DateTime' ||
       component?.originalName === 'Currency'
     ) {
@@ -1764,6 +1765,7 @@ function serializeElement(
   if (
     originalName === 'Var' ||
     originalName === 'Num' ||
+    originalName === 'N' ||
     originalName === 'DateTime' ||
     originalName === 'Currency'
   ) {
@@ -1773,11 +1775,13 @@ function serializeElement(
       v:
         originalName === 'Num'
           ? 'n'
-          : originalName === 'DateTime'
-            ? 'd'
-            : originalName === 'Currency'
-              ? 'c'
-              : 'v',
+          : originalName === 'N'
+            ? '#'
+            : originalName === 'DateTime'
+              ? 'd'
+              : originalName === 'Currency'
+                ? 'c'
+                : 'v',
     };
   }
 
@@ -2124,12 +2128,27 @@ function validateRichElement(
 /** Enforces the one supported public shape for every variable component. */
 function validateVariableComponentShape(
   element: ElementNode,
-  component: 'Currency' | 'DateTime' | 'Num' | 'Var',
+  component: 'Currency' | 'DateTime' | 'N' | 'Num' | 'Var',
   context: VueExtractionContext
 ): void {
   if (context.validatedVariableComponents.has(element)) return;
   context.validatedVariableComponents.add(element);
 
+  // <N> takes nothing: its <Plural> gives it the count.
+  if (component === 'N') {
+    if (
+      element.props.length ||
+      hasMeaningfulSlotContent(element.children, context)
+    ) {
+      addVueError(
+        context,
+        element.loc,
+        'Found props or children on a gt-vue <N> component',
+        'Use <N /> as it is: the <Plural> it is in gives it the count'
+      );
+    }
+    return;
+  }
   if (component !== 'Var') {
     if (!hasTemplateProp(element, 'value')) {
       addVueError(

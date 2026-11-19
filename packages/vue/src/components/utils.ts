@@ -1,6 +1,7 @@
 import {
   type Component,
   type DefineComponent,
+  type InjectionKey,
   type Slots,
   type VNodeChild,
 } from 'vue';
@@ -28,6 +29,27 @@ export type GTComponent<Props = {}> = DefineComponent<Props> & {
   /** @internal */
   _gtt: string;
 };
+
+/**
+ * The `n` of the nearest `<Plural>`, which `<N>` shows.
+ *
+ * @internal
+ */
+export const pluralCountKey = Symbol('gt-vue.plural-count') as InjectionKey<
+  () => PluralCount
+>;
+
+/** The `n` of a plural, or nothing when it is no number. */
+export type PluralCount = number | bigint | undefined;
+
+/**
+ * An `n` as it was passed, which may be no number.
+ *
+ * @internal
+ */
+export function toPluralCount(n: unknown): PluralCount {
+  return typeof n === 'number' || typeof n === 'bigint' ? n : undefined;
+}
 
 /** @internal */
 export function withGTMetadata<Props = {}>(

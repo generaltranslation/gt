@@ -104,6 +104,7 @@ const RESERVED_T_PROPS = new Set(['key', 'ref']);
 const FORMAT_COMPONENTS = new Set<GTComponentName>([
   'Currency',
   'DateTime',
+  'N',
   'Num',
 ]);
 const NON_BRANCH_PROP_NAMES = new Set([
@@ -364,7 +365,7 @@ export function resolveVueJSXElementIdentity(
 /** Enforces the one supported public shape for a gt-vue variable component. */
 export function validateVueJSXVariableComponent(
   element: babel.JSXElement,
-  component: 'Currency' | 'DateTime' | 'Num' | 'Var',
+  component: 'Currency' | 'DateTime' | 'N' | 'Num' | 'Var',
   context: VueExtractionContext
 ): void {
   validateVariableElement(element, component, context);
@@ -686,6 +687,7 @@ function serializeElement(
   if (
     component === 'Var' ||
     component === 'Num' ||
+    component === 'N' ||
     component === 'DateTime' ||
     component === 'Currency'
   ) {
@@ -696,11 +698,13 @@ function serializeElement(
         v:
           component === 'Num'
             ? 'n'
-            : component === 'DateTime'
-              ? 'd'
-              : component === 'Currency'
-                ? 'c'
-                : 'v',
+            : component === 'N'
+              ? '#'
+              : component === 'DateTime'
+                ? 'd'
+                : component === 'Currency'
+                  ? 'c'
+                  : 'v',
       },
     ];
   }
@@ -1788,11 +1792,27 @@ function isMeaningfulJSXChild(
 
 function validateVariableElement(
   element: babel.JSXElement,
-  component: 'Currency' | 'DateTime' | 'Num' | 'Var',
+  component: 'Currency' | 'DateTime' | 'N' | 'Num' | 'Var',
   context: VueExtractionContext
 ): void {
   if (context.validatedVariableComponents.has(element)) return;
   context.validatedVariableComponents.add(element);
+
+  // <N> takes nothing: its <Plural> gives it the count.
+  if (component === 'N') {
+    if (
+      element.openingElement.attributes.length ||
+      hasMeaningfulChildren(element.children)
+    ) {
+      addVueError(
+        context,
+        babelLocation(element.loc),
+        'Found props or children on a gt-vue <N> component',
+        'Use <N /> as it is: the <Plural> it is in gives it the count'
+      );
+    }
+    return;
+  }
 
   const explicitProps = new Set<string>();
   let hasSpread = false;

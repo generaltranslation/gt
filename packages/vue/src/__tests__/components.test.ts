@@ -20,7 +20,7 @@ import {
 import { renderToString } from 'vue/server-renderer';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { getFormatLocales, isBranchAttribute } from '../components/utils';
-import { Branch, Currency, DateTime, Num, Plural, T, Var } from '../index';
+import { Branch, Currency, DateTime, N, Num, Plural, T, Var } from '../index';
 import { serializeVueChildren } from '../rendering/translateVueChildren';
 import {
   createTestGT,
@@ -415,9 +415,9 @@ describe('Branch and Plural attributes', () => {
       },
     });
 
-    expect(stripFragmentMarkers(await renderWithPlugin(Root, createTestGT()))).toBe(
-      'beforeafter|'
-    );
+    expect(
+      stripFragmentMarkers(await renderWithPlugin(Root, createTestGT()))
+    ).toBe('beforeafter|');
   });
 
   it('selects a data-* named slot without treating the matching attribute as content', async () => {
@@ -644,6 +644,101 @@ describe('Branch and Plural attributes', () => {
     ).toBe('<b>элементов</b>');
   });
 
+  describe('a count in a translated branch', () => {
+    // Russian picks "one" for 21 too, so its branch shows the count, which
+    // the English "one" branch leaves out.
+    const count = { i: 2, v: '#' } as const;
+    const render = async (
+      branches: Record<string, JsxChildren>,
+      one: JsxChildren,
+      props: Record<string, unknown>,
+      slots: Record<string, () => VNodeChild>
+    ) => {
+      const source: JsxChildren = {
+        t: 'Plural',
+        i: 1,
+        d: { b: branches, t: 'p' },
+      };
+      const target: JsxChildren = {
+        t: 'Plural',
+        i: 1,
+        d: { b: { one }, t: 'p' },
+      };
+      const plugin = createTestGT({
+        loadTranslations: async () => ({ [jsxHash(source)]: target }),
+      });
+      await plugin.setLocale('ru');
+      const Root = defineComponent({
+        setup: () => () =>
+          h(T, null, () => h(Plural, { n: 21, ...props }, slots)),
+      });
+      return stripFragmentMarkers(
+        await renderToString(createSSRApp(Root).use(plugin))
+      );
+    };
+
+    it('is the n of the plural, which the source branch need not show', async () => {
+      const branches = { one: 'One file', other: 'Files' };
+      const props = { one: 'One file' };
+      const slots = { default: () => 'Files' };
+
+      expect(await render(branches, [count, ' файл'], props, slots)).toBe(
+        '21 файл'
+      );
+      expect(await render(branches, count, props, slots)).toBe('21');
+    });
+
+    it('is not the variable of the same id in the source branch', async () => {
+      expect(
+        await render(
+          { one: [{ i: 2, v: 'n' }, ' MB file'], other: 'Files' },
+          [count, ' файл, ', { i: 2, v: 'n' }, ' МБ'],
+          {},
+          {
+            one: () => [h(Num, { value: 100 }), ' MB file'],
+            default: () => 'Files',
+          }
+        )
+      ).toBe('21 файл, 100 МБ');
+    });
+
+    it('reaches into elements and a <Branch>, and stops at a nested <Plural>', async () => {
+      const other = { default: () => 'Files' };
+      expect(
+        await render(
+          { one: { t: 'b', i: 2, c: 'One file' }, other: 'Files' },
+          { t: 'b', i: 2, c: [count, ' файл'] },
+          {},
+          { one: () => h('b', 'One file'), ...other }
+        )
+      ).toBe('<b>21 файл</b>');
+
+      expect(
+        await render(
+          {
+            one: { t: 'Branch', i: 2, d: { b: { a: 'file' }, t: 'b' } },
+            other: 'Files',
+          },
+          { t: 'Branch', i: 2, d: { b: { a: [count, ' файл'] }, t: 'b' } },
+          {},
+          { one: () => h(Branch, { branch: 'a', a: 'file' }), ...other }
+        )
+      ).toBe('21 файл');
+
+      expect(
+        await render(
+          {
+            one: { t: 'Plural', i: 2, d: { b: { other: 'files' }, t: 'p' } },
+            other: 'Files',
+          },
+          { t: 'Plural', i: 2, d: { b: { many: [count, ' файлов'] }, t: 'p' } },
+          {},
+          { one: () => h(Plural, { n: 5 }, () => 'files'), ...other }
+        )
+      ).toBe('5 файлов');
+    });
+  });
+
   it('lets the source pick when the translation has no branch for the value', async () => {
     const source: JsxChildren = {
       t: 'Branch',
@@ -807,6 +902,113 @@ describe('Branch and Plural attributes', () => {
   );
 });
 
+describe('<N>, the count of its <Plural>', () => {
+  // The same source as gt-react and the extractors write.
+  const source: JsxChildren = {
+    t: 'Plural',
+    i: 1,
+    d: {
+      b: {
+        one: 'One file',
+        other: [{ t: 'b', i: 2, c: { i: 3, v: '#' } }, ' files'],
+      },
+      t: 'p',
+    },
+  };
+  const files = (n: number) =>
+    h(Plural, { n, one: 'One file' }, () => [h('b', null, h(N)), ' files']);
+  const render = async (
+    root: () => VNodeChild,
+    locale = 'en',
+    translations: Record<string, JsxChildren> = {}
+  ) => {
+    const plugin = createTestGT({ loadTranslations: async () => translations });
+    await plugin.setLocale(locale);
+    return stripFragmentMarkers(
+      await renderToString(
+        createSSRApp(defineComponent({ setup: () => root })).use(plugin)
+      )
+    );
+  };
+
+  it('renders the count in a <Plural> outside <T>', async () => {
+    expect(await render(() => files(1234))).toBe('<b>1,234</b> files');
+    expect(await render(() => files(1))).toBe('One file');
+  });
+
+  it('renders the count in the source of a <T>', async () => {
+    expect(await render(() => h(T, null, () => files(1234)))).toBe(
+      '<b>1,234</b> files'
+    );
+  });
+
+  it('renders the count where a translation puts it', async () => {
+    // Russian picks "one" for 21 too, so it shows the count there.
+    const count = { i: 3, v: '#' } as const;
+    const translations = {
+      [jsxHash(source)]: {
+        t: 'Plural',
+        i: 1,
+        d: {
+          b: {
+            one: [count, ' файл'],
+            other: [{ t: 'b', i: 2, c: count }, ' файла'],
+          },
+          t: 'p',
+        },
+      } satisfies JsxChildren,
+    };
+    const translated = (n: number) =>
+      render(() => h(T, null, () => files(n)), 'ru', translations);
+
+    expect(await translated(21)).toBe('21 файл');
+    expect(await translated(22)).toBe('<b>22</b> файла');
+  });
+
+  it('renders the count in the translation of a <T> inside its <Plural>', async () => {
+    const inner: JsxChildren = [{ i: 1, v: '#' }, ' files'];
+    expect(
+      await render(
+        () => h(Plural, { n: 5 }, () => h(T, null, () => [h(N), ' files'])),
+        'ru',
+        { [jsxHash(inner)]: [{ i: 1, v: '#' }, ' файлов'] }
+      )
+    ).toBe('5 файлов');
+  });
+
+  it('renders nothing outside a <Plural>', async () => {
+    expect(await render(() => ['Total: ', h(N)])).toBe('Total: ');
+  });
+
+  // <T> renders a plural's branch without mounting the <Plural>.
+  describe('rendered by another component', () => {
+    const Count = defineComponent({ setup: () => () => h(N) });
+    const counted = () =>
+      h(T, null, () => h(Plural, { n: 1234 }, () => [h(Count), ' files']));
+
+    it('renders the count in the source of a <T>', async () => {
+      expect(await render(counted)).toBe('1,234 files');
+    });
+
+    it('renders the count in a translation', async () => {
+      const source: JsxChildren = {
+        t: 'Plural',
+        i: 1,
+        d: { b: { other: [{ t: 'C2', i: 2 }, ' files'] }, t: 'p' },
+      };
+      expect(
+        await render(counted, 'fr', {
+          [jsxHash(source)]: {
+            t: 'Plural',
+            i: 1,
+            d: { b: { other: [{ t: 'C2', i: 2 }, ' fichiers'] }, t: 'p' },
+          },
+        })
+      ).toBe('1\u202f234 fichiers');
+    });
+  });
+});
+
 describe('gt-vue formatting components', () => {
   it('formats number, bigint, currency, Date, and epoch values', async () => {
     const Root = defineComponent({
@@ -876,7 +1078,9 @@ describe('gt-vue formatting components', () => {
       },
     });
 
-    expect(await renderWithPlugin(Root, createTestGT())).toContain('Invalid Date');
+    expect(await renderWithPlugin(Root, createTestGT())).toContain(
+      'Invalid Date'
+    );
   });
 
   it('renders null values as empty without prop warnings', async () => {

@@ -1521,6 +1521,28 @@ describe('Vue variable component interface validation', () => {
     expect(output.errors.join('\n')).toContain('unsupported value prop');
   });
 
+  it.each([
+    ['/project/src/View.vue', '<N :value="count" />'],
+    ['/project/src/View.vue', '<N>5</N>'],
+    ['/project/src/View.tsx', '<N value={count} />'],
+    ['/project/src/View.tsx', '<N>5</N>'],
+  ])('rejects props or children on <N> in %s: %s', async (file, n) => {
+    const script = `import { N, Plural, T } from 'gt-vue'; const count = getCount();`;
+    const plural = file.endsWith('.vue')
+      ? `<T><Plural :n="count">${n} files</Plural></T>`
+      : `<T><Plural n={count}>${n} files</Plural></T>`;
+    const output = await extractFromVueSource(
+      file.endsWith('.vue')
+        ? `<script setup lang="ts">${script}</script><template>${plural}</template>`
+        : `${script} export const View = () => ${plural};`,
+      file
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toHaveLength(1);
+    expect(output.errors[0]).toContain('props or children on a gt-vue <N>');
+  });
+
   it('reports each invalid SFC use inside T only once', async () => {
     const output = await extractFromVueSource(
       `

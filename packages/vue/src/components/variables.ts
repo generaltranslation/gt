@@ -1,4 +1,4 @@
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent, inject, type PropType } from 'vue';
 import {
   formatCurrency,
   formatDateTime,
@@ -6,7 +6,12 @@ import {
   withDefaultDateStyle,
 } from 'generaltranslation/internal';
 import { useGTState } from '../runtime/state';
-import { asFragmentRoot, getFormatLocales, withGTMetadata } from './utils';
+import {
+  asFragmentRoot,
+  getFormatLocales,
+  pluralCountKey,
+  withGTMetadata,
+} from './utils';
 
 type NumberFormatProps = {
   /** Options forwarded to `Intl.NumberFormat`. */
@@ -85,6 +90,38 @@ export const Num = /* @__PURE__ */ withGTMetadata<NumberFormatProps>(
     },
   }),
   'variable-number'
+);
+
+/**
+ * The count of the `<Plural>` it is in, formatted as a number, as `#` is in
+ * ICU. A translation can show it in any branch of that plural.
+ *
+ * @example
+ * ```vue
+ * <Plural :n="count" one="One file"><N /> files</Plural>
+ * ```
+ */
+export const N = /* @__PURE__ */ withGTMetadata(
+  /* @__PURE__ */ defineComponent({
+    inheritAttrs: false,
+    name: 'N',
+    props: {
+      /** @internal Locale selected by an owning rich translation pipeline. */
+      _locale: String,
+    },
+    setup(props) {
+      const state = useGTState();
+      const getPluralCount = inject(pluralCountKey, undefined);
+      return () => {
+        const count = getPluralCount?.();
+        if (count === undefined) return asFragmentRoot(null);
+        return asFragmentRoot(
+          formatNum(count, { locales: getVariableFormatLocales(props, state) })
+        );
+      };
+    },
+  }),
+  'variable-count'
 );
 
 /**

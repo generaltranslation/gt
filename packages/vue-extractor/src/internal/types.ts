@@ -6,6 +6,7 @@ export type GTComponentName =
   | 'T'
   | 'Var'
   | 'Num'
+  | 'N'
   | 'DateTime'
   | 'Currency'
   | 'Plural'
