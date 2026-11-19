@@ -63,7 +63,7 @@ describe('hashContent', () => {
       $requiresReview: false,
     });
 
-    expect(hash).toBe('bbf922aaa31b32e2');
+    expect(hash).toBe('u_kiqqMbMuI');
     expect(hash).toBe(
       hashContent('Hello {name}!', {
         $format: 'ICU',

@@ -8,21 +8,40 @@ import type {
 } from '@generaltranslation/format';
 import { stableStringify as stringify } from '../utils/stableStringify';
 import { sha256 } from '@noble/hashes/sha2.js';
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
+import { utf8ToBytes } from '@noble/hashes/utils.js';
 import { isVariable } from '../utils/isVariable';
 import { HashMetadata } from './types';
 
 // ----- FUNCTIONS ----- //
+const BASE64URL_ALPHABET =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+
+/** Unpadded base64url of the bytes. */
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let encoded = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const group =
+      (bytes[i] << 16) | ((bytes[i + 1] ?? 0) << 8) | (bytes[i + 2] ?? 0);
+    const chars = Math.min(3, bytes.length - i) + 1;
+    for (let c = 0; c < chars; c++) {
+      encoded += BASE64URL_ALPHABET[(group >> (18 - 6 * c)) & 63];
+    }
+  }
+  return encoded;
+}
+
 /**
  * Calculates a unique hash for a given string using SHA-256.
  *
- * First 16 characters of hash, hex encoded.
+ * The first 64 bits of the digest, as 11 unpadded base64url characters. It
+ * encodes the same bits as the 16 hex characters of earlier versions, so an
+ * old hash converts to its new one without the source.
  *
  * @param {string} string - The string to be hashed.
- * @returns {string} The resulting hash as a hexadecimal string.
+ * @returns {string} The resulting hash as a base64url string.
  */
 export function hashString(string: string): string {
-  return bytesToHex(sha256(utf8ToBytes(string))).slice(0, 16);
+  return bytesToBase64Url(sha256(utf8ToBytes(string)).subarray(0, 8));
 }
 
 /**

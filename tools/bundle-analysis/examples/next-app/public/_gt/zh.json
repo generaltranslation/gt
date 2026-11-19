@@ -1,23 +1,23 @@
 {
-  "6ba7b1163521d7aa": "Halden H2 台灯",
-  "ed0daceaa24e7a20": "一盏色温可在 2700 K 至 6500 K 之间调节的台灯。96 颗 LED，一个扩散罩，9 瓦。",
-  "3df9c49976cb55bf": "页面导航",
-  "5968bf00c195f99d": "规格",
-  "e26b47701bf45c70": "订购",
-  "5c40e348dc73ad17": "配送",
-  "c84af77ebd768014": "评价",
-  "af2b279c15ce6579": "美国和加拿大",
-  "eb23db54e0511897": "欧盟和英国",
-  "9ae4d0c081ffe7ca": "中国和新加坡",
-  "096aa4fee24f8a50": "配置台灯",
-  "24eb8f5407280920": "查看规格",
-  "18235e10c4140d21": "{days, plural, other {# 个工作日}}",
-  "7ad6497d825f991e": {
+  "a6exFjUh16o": "Halden H2 台灯",
+  "7Q2s6qJOeiA": "一盏色温可在 2700 K 至 6500 K 之间调节的台灯。96 颗 LED，一个扩散罩，9 瓦。",
+  "PfnEmXbLVb8": "页面导航",
+  "WWi_AMGV-Z0": "规格",
+  "4mtHcBv0XHA": "订购",
+  "XEDjSNxzrRc": "配送",
+  "yEr3fr12gBQ": "评价",
+  "rysnnBXOZXk": "美国和加拿大",
+  "6yPbVOBRGJc": "欧盟和英国",
+  "muTQwIH_58o": "中国和新加坡",
+  "CWqk_uJPilA": "配置台灯",
+  "JOuPVAcoCSA": "查看规格",
+  "GCNeEMQUDSE": "{days, plural, other {# 个工作日}}",
+  "etZJfYJfmR4": {
     "t": "p",
     "i": 1,
     "c": "H2 型，台灯"
   },
-  "324631be5d7fbd4c": {
+  "MkYxvl1_vUw": {
     "t": "h1",
     "i": 1,
     "c": [
@@ -34,7 +34,7 @@
       " K。"
     ]
   },
-  "f614f788a0ded44f": {
+  "9hT3iKDe1E8": {
     "t": "p",
     "i": 1,
     "c": [
@@ -56,7 +56,7 @@
       " 瓦。"
     ]
   },
-  "34f3f84c68ca6dac": {
+  "NPP4TGjKbaw": {
     "t": "span",
     "i": 1,
     "c": [
@@ -68,7 +68,7 @@
       " 发货"
     ]
   },
-  "fdef2973eaa6d8b0": {
+  "_e8pc-qm2LA": {
     "t": "div",
     "i": 1,
     "c": [
@@ -94,7 +94,7 @@
       }
     ]
   },
-  "a02d65e6b1ca4dd2": {
+  "oC1l5rHKTdI": {
     "t": "div",
     "i": 1,
     "c": [
@@ -120,7 +120,7 @@
       }
     ]
   },
-  "33015c9e2040828c": {
+  "MwFcniBAgow": {
     "t": "div",
     "i": 1,
     "c": [
@@ -146,7 +146,7 @@
       }
     ]
   },
-  "ca5ca7e3ffcb570d": {
+  "ylyn4__LVw0": {
     "t": "div",
     "i": 1,
     "c": [
@@ -172,7 +172,7 @@
       }
     ]
   },
-  "9a8da35515320013": [
+  "mo2jVRUyABM": [
     {
       "t": "p",
       "i": 1,
@@ -201,7 +201,7 @@
       ]
     }
   ],
-  "e9f9a37b9585ddcc": [
+  "6fmje5WF3cw": [
     {
       "t": "p",
       "i": 1,
@@ -225,7 +225,7 @@
       ]
     }
   ],
-  "b44aa012d782c1c9": [
+  "tEqgEteCwck": [
     {
       "t": "p",
       "i": 1,
@@ -248,7 +248,7 @@
       ]
     }
   ],
-  "2ec387b50c920ec9": [
+  "LsOHtQySDsk": [
     {
       "t": "blockquote",
       "i": 1,
@@ -270,7 +270,7 @@
       ]
     }
   ],
-  "73b2145a030e77b6": [
+  "c7IUWgMOd7Y": [
     {
       "t": "blockquote",
       "i": 1,
@@ -292,7 +292,7 @@
       ]
     }
   ],
-  "ad29aeb06fd5d878": [
+  "rSmusG_V2Hg": [
     {
       "t": "blockquote",
       "i": 1,
@@ -314,22 +314,22 @@
       ]
     }
   ],
-  "a49cebea6b7b81a7": {
+  "pJzr6mt7gac": {
     "t": "p",
     "i": 1,
     "c": "Halden 是虚构产品。本页面是用于测量 General Translation 包体积的示例应用。"
   },
-  "f9a7da8c221623c5": "石墨黑",
-  "cad1ecd8f9d9fd95": "纸白",
-  "a3db3a199de686c0": "钛灰",
-  "1ca2facc399b6d4c": "表面处理",
-  "7637a571ff5e01b1": "数量",
-  "9af22759bf1ef04d": "减少一盏",
-  "f8254ccf88f921b2": "增加一盏",
-  "dba25d3fe774a633": "加入购物车",
-  "abc8252be8e5d46b": "购物车中有 {count, plural, other {# 盏台灯}}。",
-  "9e80675e16b92678": "从鹿特丹和深圳发货。",
-  "0a88107e14e799ab": {
+  "-afajCIWI8U": "石墨黑",
+  "ytHs2PnZ_ZU": "纸白",
+  "o9s6GZ3mhsA": "钛灰",
+  "HKL6zDmbbUw": "表面处理",
+  "djelcf9eAbE": "数量",
+  "mvInWb8e8E0": "减少一盏",
+  "-CVMz4j5IbI": "增加一盏",
+  "26JdP-d0pjM": "加入购物车",
+  "q8glK-jl1Gs": "购物车中有 {count, plural, other {# 盏台灯}}。",
+  "noBnXha5Jng": "从鹿特丹和深圳发货。",
+  "CogQfhTnmas": {
     "t": "Branch",
     "i": 1,
     "d": {
@@ -358,7 +358,7 @@
       "t": "b"
     }
   },
-  "7522335c5871a385": {
+  "dSIzXFhxo4U": {
     "t": "p",
     "i": 1,
     "c": [
@@ -370,7 +370,7 @@
       " 盏免运费。"
     ]
   },
-  "2fdc50688f613ba9": {
+  "L9xQaI9hO6k": {
     "t": "p",
     "i": 1,
     "c": [

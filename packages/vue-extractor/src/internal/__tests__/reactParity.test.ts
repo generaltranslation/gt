@@ -127,7 +127,7 @@ describe('React-authoritative rich-content extraction contract', () => {
 
   const reactCommentBoundaryFixture = {
     name: 'text boundaries separated by a source comment',
-    expectedHash: '3bcc07b273d94f01',
+    expectedHash: 'O8wHsnPZTwE',
     expectedSource: {
       t: 'p',
       i: 1,
@@ -153,7 +153,7 @@ describe('React-authoritative rich-content extraction contract', () => {
   const reactOracleFixtures = [
     {
       name: 'nested intrinsic elements and exact text boundaries',
-      expectedHash: '3c9fbfe0bd03e332',
+      expectedHash: 'PJ-_4L0D4zI',
       expectedSource: {
         t: 'p',
         i: 1,
@@ -166,7 +166,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'static custom-component children',
-      expectedHash: 'f7cdc234abd75e9f',
+      expectedHash: '983CNKvXXp8',
       expectedSource: {
         t: 'DocsLink',
         i: 1,
@@ -183,7 +183,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'self-closing custom component excludes implementation content',
-      expectedHash: 'a013c005483cdd19',
+      expectedHash: 'oBPABUg83Rk',
       expectedSource: {
         t: 'DocsLink',
         i: 1,
@@ -199,7 +199,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'nested static custom-component content with a dynamic Var',
-      expectedHash: 'a7c6015a0cb2d8a8',
+      expectedHash: 'p8YBWgyy2Kg',
       expectedSource: {
         t: 'DocsLink',
         i: 1,
@@ -222,7 +222,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'nested custom components',
-      expectedHash: '1784f420869fcf17',
+      expectedHash: 'F4T0IIafzxc',
       expectedSource: {
         t: 'Callout',
         i: 1,
@@ -243,7 +243,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'authored semantic Fragment',
-      expectedHash: 'b7817326e13971eb',
+      expectedHash: 't4FzJuE5ces',
       expectedSource: {
         t: 'C1',
         i: 1,
@@ -260,7 +260,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'authored semantic Fragment explicit default slot',
-      expectedHash: '41b3977504b974f9',
+      expectedHash: 'QbOXdQS5dPk',
       expectedSource: {
         t: 'C1',
         i: 1,
@@ -277,7 +277,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'empty authored semantic Fragment',
-      expectedHash: 'a013c005483cdd19',
+      expectedHash: 'oBPABUg83Rk',
       expectedSource: {
         t: 'C1',
         i: 1,
@@ -293,7 +293,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'typed and untyped variables',
-      expectedHash: 'e34b5ce8b137519a',
+      expectedHash: '40tc6LE3UZo',
       expectedSource: [
         { i: 1, v: 'v' },
         { i: 2, v: 'n' },
@@ -313,7 +313,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'Branch alternatives and fallback content',
-      expectedHash: 'a634a53ae6f90df6',
+      expectedHash: 'pjSlOub5DfY',
       expectedSource: {
         t: 'Branch',
         i: 1,
@@ -338,7 +338,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'Plural alternatives and fallback content',
-      expectedHash: '014fdbdd90e93e6b',
+      expectedHash: 'AU_b3ZDpPms',
       expectedSource: {
         t: 'Plural',
         i: 1,
@@ -363,7 +363,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'custom components inside Branch alternatives',
-      expectedHash: '44a0464f3d6adcdd',
+      expectedHash: 'RKBGTz1q3N0',
       expectedSource: {
         t: 'Branch',
         i: 1,
@@ -392,7 +392,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'Branch and Var inside a custom component',
-      expectedHash: 'ed95d44c20f4618e',
+      expectedHash: '7ZXUTCD0YY4',
       expectedSource: {
         t: 'Callout',
         i: 1,
@@ -424,7 +424,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'statically translatable content props',
-      expectedHash: '2d16822a26dda28b',
+      expectedHash: 'LRaCKibdoos',
       expectedSource: {
         t: 'button',
         i: 1,
@@ -445,7 +445,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     {
       name: 'static context',
       context: 'account navigation',
-      expectedHash: '772a8ad7b7535db5',
+      expectedHash: 'dyqK17dTXbU',
       expectedSource: { t: 'nav', i: 1, c: 'Account' },
       sfc: templateFixture(
         '<T context="account navigation"><nav>Account</nav></T>'

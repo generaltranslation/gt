@@ -1,20 +1,20 @@
 {
-  "7f042bab276bc277": {
+  "fwQrqydrwnc": {
     "t": "p",
     "i": 1,
     "c": "Ferro est un produit fictif. Cette page est une application d’exemple pour mesurer la taille des bundles General Translation."
   },
-  "bb8e4c176a4b1b87": "Thé vert",
-  "916cc39f9f695368": "Oolong",
-  "b50c3aa1f7442a73": "Café",
-  "6961664f9757aa21": "Préréglage par défaut",
-  "597be0dc6e41a5a2": "Paquets de filtres en papier",
-  "bc9bbaca608f5bb1": "Retirer un paquet",
-  "fe024f3c46fe85f1": "Ajouter un paquet",
-  "dba25d3fe774a633": "Ajouter Au Panier",
-  "c7a9185f5681092b": "Ajouté. Votre préréglage est enregistré dans la bouilloire au premier démarrage.",
-  "d0a14530e91df22b": "Chaque bouilloire est livrée avec une garantie de 2 ans.",
-  "9d9eeba49801c21c": {
+  "u45MF2pLG4c": "Thé vert",
+  "kWzDn59pU2g": "Oolong",
+  "tQw6ofdEKnM": "Café",
+  "aWFmT5dXqiE": "Préréglage par défaut",
+  "WXvg3G5BpaI": "Paquets de filtres en papier",
+  "vJu6ymCPW7E": "Retirer un paquet",
+  "_gJPPEb-hfE": "Ajouter un paquet",
+  "26JdP-d0pjM": "Ajouter Au Panier",
+  "x6kYX1aBCSs": "Ajouté. Votre préréglage est enregistré dans la bouilloire au premier démarrage.",
+  "0KFFMOkd8is": "Chaque bouilloire est livrée avec une garantie de 2 ans.",
+  "nZ7rpJgBwhw": {
     "t": "Branch",
     "i": 1,
     "d": {
@@ -43,7 +43,7 @@
       "t": "b"
     }
   },
-  "933e66254f674890": {
+  "kz5mJU9nSJA": {
     "t": "p",
     "i": 1,
     "c": [
@@ -60,7 +60,7 @@
       "."
     ]
   },
-  "98b88b8ddf1e9cd4": {
+  "mLiLjd8enNQ": {
     "t": "p",
     "i": 1,
     "c": [
@@ -104,21 +104,21 @@
       "."
     ]
   },
-  "0cc5fb86efb38e0b": "Pages",
-  "c83fb5e64f34fb1a": "Présentation",
-  "5968bf00c195f99d": "Caractéristiques",
-  "af2b279c15ce6579": "États-Unis et Canada",
-  "eb23db54e0511897": "Union européenne et Royaume-Uni",
-  "6676370c937fb899": "Chine et Japon",
-  "0fe6516f4642ddc4": "Bouilloire col de cygne Ferro K1",
-  "dd8491480a68ec69": "Une bouilloire col de cygne qui maintient l’eau à 1 °C près de la cible pendant 60 minutes au plus.",
-  "18235e10c4140d21": "{days, plural, one {# jour ouvré} other {# jours ouvrés}}",
-  "ee570428ac4c8e78": {
+  "DMX7hu-zjgs": "Pages",
+  "yD-15k80-xo": "Présentation",
+  "WWi_AMGV-Z0": "Caractéristiques",
+  "rysnnBXOZXk": "États-Unis et Canada",
+  "6yPbVOBRGJc": "Union européenne et Royaume-Uni",
+  "ZnY3DJN_uJk": "Chine et Japon",
+  "D-ZRb0ZC3cQ": "Bouilloire col de cygne Ferro K1",
+  "3YSRSApo7Gk": "Une bouilloire col de cygne qui maintient l’eau à 1 °C près de la cible pendant 60 minutes au plus.",
+  "GCNeEMQUDSE": "{days, plural, one {# jour ouvré} other {# jours ouvrés}}",
+  "7lcEKKxMjng": {
     "t": "p",
     "i": 1,
     "c": "Modèle K1, bouilloire pour café filtre"
   },
-  "71c38326ca6cdc83": {
+  "ccODJsps3IM": {
     "t": "h1",
     "i": 1,
     "c": [
@@ -130,7 +130,7 @@
       " °C près de la cible."
     ]
   },
-  "c2787bad66608d0d": {
+  "wnh7rWZgjQ0": {
     "t": "p",
     "i": 1,
     "c": [
@@ -162,7 +162,7 @@
       " millilitres par seconde."
     ]
   },
-  "34f3f84c68ca6dac": {
+  "NPP4TGjKbaw": {
     "t": "span",
     "i": 1,
     "c": [
@@ -173,9 +173,9 @@
       }
     ]
   },
-  "67dc59467536fe7a": "Configurer Votre Bouilloire",
-  "6acfc14a5f27359f": "Voir Les Caractéristiques",
-  "8168ede68b5cdd77": {
+  "Z9xZRnU2_no": "Configurer Votre Bouilloire",
+  "as_BSl8nNZ8": "Voir Les Caractéristiques",
+  "gWjt5otc3Xc": {
     "t": "div",
     "i": 1,
     "c": [
@@ -201,7 +201,7 @@
       }
     ]
   },
-  "fe152dce65454f64": {
+  "_hUtzmVFT2Q": {
     "t": "div",
     "i": 1,
     "c": [
@@ -227,7 +227,7 @@
       }
     ]
   },
-  "4b0328296582f693": {
+  "SwMoKWWC9pM": {
     "t": "div",
     "i": 1,
     "c": [
@@ -253,7 +253,7 @@
       }
     ]
   },
-  "7ea33bdb9217c8d1": {
+  "fqM725IXyNE": {
     "t": "div",
     "i": 1,
     "c": [
@@ -279,7 +279,7 @@
       }
     ]
   },
-  "2222d92fbe508f3f": [
+  "IiLZL75Qjz8": [
     {
       "t": "p",
       "i": 1,
@@ -313,7 +313,7 @@
       ]
     }
   ],
-  "e9f9a37b9585ddcc": [
+  "6fmje5WF3cw": [
     {
       "t": "p",
       "i": 1,
@@ -337,7 +337,7 @@
       ]
     }
   ],
-  "68cd991e1816937e": [
+  "aM2ZHhgWk34": [
     {
       "t": "blockquote",
       "i": 1,
@@ -359,7 +359,7 @@
       ]
     }
   ],
-  "1a59b8b7515f4ae3": [
+  "Glm4t1FfSuM": [
     {
       "t": "blockquote",
       "i": 1,
@@ -381,14 +381,14 @@
       ]
     }
   ],
-  "30a2345ec0556094": "Capacité",
-  "4f1d3ffa2da32c93": "Corps",
-  "377ad4d85264d855": "Socle chauffant",
-  "9890c9c64ce59b86": "Plage de température",
-  "51497bd401292062": "Maintien",
-  "99c7cc7c32021770": "Dimensions",
-  "7d9dd949431a2743": "Poids",
-  "5f0cc0143842632a": [
+  "MKI0XsBVYJQ": "Capacité",
+  "Tx0_-i2jLJM": "Corps",
+  "N3rU2FJk2FU": "Socle chauffant",
+  "mJDJxkzlm4Y": "Plage de température",
+  "UUl71AEpIGI": "Maintien",
+  "mcfMfDICF3A": "Dimensions",
+  "fZ3ZSUMaJ0M": "Poids",
+  "XwzAFDhCYyo": [
     {
       "i": 1,
       "v": "n"
@@ -400,7 +400,7 @@
     },
     " L minimum"
   ],
-  "1a231153a0cb4021": [
+  "GiMRU6DLQCE": [
     "Acier inoxydable 304, paroi de ",
     {
       "i": 1,
@@ -408,7 +408,7 @@
     },
     " mm"
   ],
-  "681a5f58a91cf868": [
+  "aBpfWKkc-Gg": [
     {
       "i": 1,
       "v": "n"
@@ -420,7 +420,7 @@
     },
     " m"
   ],
-  "bef63b47676dbae6": [
+  "vvY7R2dtuuY": [
     "De ",
     {
       "i": 1,
@@ -438,7 +438,7 @@
     },
     " °C"
   ],
-  "936210bc482de7a2": [
+  "k2IQvEgt56I": [
     "Jusqu’à ",
     {
       "i": 1,
@@ -446,7 +446,7 @@
     },
     " minutes, puis le socle s’éteint"
   ],
-  "5893d8726bc72a54": [
+  "WJPYcmvHKlQ": [
     {
       "i": 1,
       "v": "n"
@@ -463,7 +463,7 @@
     },
     " mm"
   ],
-  "3e7807891a15b8ad": [
+  "PngHiRoVuK0": [
     "Bouilloire ",
     {
       "i": 1,
@@ -476,7 +476,7 @@
     },
     " kg"
   ],
-  "1aca7a2346ad541c": [
+  "Gsp6I0atVBw": [
     {
       "t": "p",
       "i": 1,

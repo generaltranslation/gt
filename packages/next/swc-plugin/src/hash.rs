@@ -108,16 +108,33 @@ pub struct SanitizedData {
   pub data_format: Option<String>,
 }
 
+const BASE64URL_ALPHABET: &[u8; 64] =
+  b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+fn bytes_to_base64url(bytes: &[u8]) -> String {
+  let mut encoded = String::with_capacity(bytes.len().div_ceil(3) * 4);
+  for chunk in bytes.chunks(3) {
+    let group = (u32::from(chunk[0]) << 16)
+      | (u32::from(*chunk.get(1).unwrap_or(&0)) << 8)
+      | u32::from(*chunk.get(2).unwrap_or(&0));
+    for c in 0..=chunk.len() {
+      encoded.push(BASE64URL_ALPHABET[((group >> (18 - 6 * c)) & 63) as usize] as char);
+    }
+  }
+  encoded
+}
+
 /// Hash calculator for JSX content
 pub struct JsxHasher;
 
 impl JsxHasher {
-  /// Hash a string using SHA256 and return first 16 hex characters
+  /// Hash a string using SHA256 and return its first 64 bits as 11
+  /// unpadded base64url characters, matching `hashString` in generaltranslation
   pub fn hash_string(input: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(input.as_bytes());
     let result = hasher.finalize();
-    format!("{result:x}")[..16].to_string()
+    bytes_to_base64url(&result[..8])
   }
 
   /// Check if the sanitized children contain any static components
@@ -238,13 +255,17 @@ mod tests {
     let hash2 = JsxHasher::hash_string(input);
 
     assert_eq!(hash1, hash2, "Hash should be consistent for same input");
-    assert_eq!(hash1.len(), 16, "Hash should be 16 characters long");
+    assert_eq!(hash1, "1VecRt_Mfxg", "Hash should match generaltranslation");
+  }
 
-    // Verify it's hex
-    assert!(
-      hash1.chars().all(|c| c.is_ascii_hexdigit()),
-      "Hash should only contain hex characters"
+  #[test]
+  fn test_hash_string_encodes_the_bits_of_the_hex_hash() {
+    // The 16 hex characters d5579c46dfcc7f18 of earlier versions
+    assert_eq!(
+      bytes_to_base64url(&[0xd5, 0x57, 0x9c, 0x46, 0xdf, 0xcc, 0x7f, 0x18]),
+      "1VecRt_Mfxg"
     );
+    assert_eq!(bytes_to_base64url(&[0xfb, 0xff]), "-_8");
   }
 
   #[test]
@@ -379,7 +400,7 @@ mod tests {
     let json_string = JsxHasher::stable_stringify(&sanitized_data).unwrap();
     let hash = JsxHasher::hash_string(&json_string);
 
-    assert_eq!(hash.len(), 16, "Hash should be 16 characters");
+    assert_eq!(hash.len(), 11, "Hash should be 11 characters");
 
     // Same input should produce same hash
     let json_string2 = JsxHasher::stable_stringify(&sanitized_data).unwrap();
@@ -471,7 +492,7 @@ mod tests {
     println!("Empty Branch JSON: {json_string}");
 
     // This should match the runtime hash for empty Branch components
-    assert_eq!(hash.len(), 16, "Hash should be 16 characters");
+    assert_eq!(hash.len(), 11, "Hash should be 11 characters");
 
     // The expected hash for empty JSX structure should be consistent
     let expected_json = r#"{"dataFormat":"JSX","source":[]}"#;
@@ -502,7 +523,7 @@ mod tests {
     };
 
     let hash = JsxHasher::hash_string(&JsxHasher::stable_stringify(&data).unwrap());
-    assert_eq!(hash.len(), 16);
+    assert_eq!(hash.len(), 11);
 
     // Create same structure - should hash the same
     let children2 = SanitizedChildren::Multiple(vec![

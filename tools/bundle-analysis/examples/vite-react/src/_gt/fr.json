@@ -1,22 +1,22 @@
 {
-  "31b339eccc36d936": "Alimentation transmise à votre ordinateur portable",
-  "478e4760193a9042": "Ports USB-C, tous à pleine vitesse",
-  "7138a9fec73f867f": "Bande passante de données partagée",
-  "3743a90483f06f0a": "Poids sans le câble",
-  "f9a7da8c221623c5": "Graphite",
-  "fb08597714c8afd3": "Argent",
-  "9d6a84dcb34cb1d2": "Panier ({count})",
-  "a5c657d3ca1226e3": "Configurer la vôtre",
-  "24eb8f5407280920": "Lire la fiche technique",
-  "1ca2facc399b6d4c": "Finition",
-  "7637a571ff5e01b1": "Quantité",
-  "4b71561e661a9664": "Diminuer la quantité",
-  "6f9647f746db650d": "Augmenter la quantité",
-  "b227a54bbdb9b6cf": "Articles",
-  "f17b1e80db62c71d": "Sous-total",
-  "03d5f624d2a51612": "Expédition",
-  "dba25d3fe774a633": "Ajouter au panier",
-  "6ed27ff3a6de97a2": [
+  "MbM57Mw22TY": "Alimentation transmise à votre ordinateur portable",
+  "R45HYBk6kEI": "Ports USB-C, tous à pleine vitesse",
+  "cTip_sc_hn8": "Bande passante de données partagée",
+  "N0OpBIPwbwo": "Poids sans le câble",
+  "-afajCIWI8U": "Graphite",
+  "-whZdxTIr9M": "Argent",
+  "nWqE3LNMsdI": "Panier ({count})",
+  "pcZX08oSJuM": "Configurer la vôtre",
+  "JOuPVAcoCSA": "Lire la fiche technique",
+  "HKL6zDmbbUw": "Finition",
+  "djelcf9eAbE": "Quantité",
+  "S3FWHmYalmQ": "Diminuer la quantité",
+  "b5ZH90bbZQ0": "Augmenter la quantité",
+  "sielS725ts8": "Articles",
+  "8XsegNtixx0": "Sous-total",
+  "A9X2JNKlFhI": "Expédition",
+  "26JdP-d0pjM": "Ajouter au panier",
+  "btJ_86bel6I": [
     {
       "t": "p",
       "i": 1,
@@ -33,7 +33,7 @@
       "c": "Halyard est une station d’accueil USB-C à quatre ports. Elle transmet 100 W à votre ordinateur portable et tient dans une poche de veste."
     }
   ],
-  "593164c3e67a07b2": {
+  "WTFkw-Z6B7I": {
     "t": "p",
     "i": 1,
     "c": [
@@ -51,7 +51,7 @@
       "."
     ]
   },
-  "46ae1289afb8f474": [
+  "Rq4Sia-49HQ": [
     {
       "t": "p",
       "i": 1,
@@ -63,7 +63,7 @@
       "c": "Choisissez une finition et une quantité."
     }
   ],
-  "d8ae221ac1986012": {
+  "2K4iGsGYYBI": {
     "t": "p",
     "i": 1,
     "c": {
@@ -87,12 +87,12 @@
       }
     }
   },
-  "eda6de344fac9922": {
+  "7abeNE-smSI": {
     "t": "p",
     "i": 1,
     "c": "Votre commande"
   },
-  "5865702bf330203a": {
+  "WGVwK_MwIDo": {
     "t": "Plural",
     "i": 1,
     "d": {
@@ -117,7 +117,7 @@
       "t": "p"
     }
   },
-  "cff351f5a881e801": {
+  "z_NR9aiB6AE": {
     "t": "p",
     "i": 1,
     "c": {
@@ -146,7 +146,7 @@
       }
     }
   },
-  "7efb8bae4e5810bc": {
+  "fvuLrk5YELw": {
     "t": "p",
     "i": 1,
     "c": [
@@ -158,7 +158,7 @@
       " ajoutée à votre panier. Le paiement est désactivé dans cet exemple."
     ]
   },
-  "5126a81a448fa55d": [
+  "USaoGkSPpV0": [
     {
       "t": "h3",
       "i": 1,
@@ -170,7 +170,7 @@
       "c": "La station, un câble USB-C tressé de 1 m et un patin en feutre pour le dessous."
     }
   ],
-  "a7da62bdf614bdbe": [
+  "p9pivfYUvb4": [
     {
       "t": "h3",
       "i": 1,
@@ -182,7 +182,7 @@
       "c": "Compatible avec tout ordinateur portable USB-C ou Thunderbolt. Aucun pilote à installer."
     }
   ],
-  "0cc257c0d0732a69": [
+  "DMJXwNBzKmk": [
     {
       "t": "h3",
       "i": 1,
@@ -194,7 +194,7 @@
       "c": "Deux ans sur les pièces et la main-d’œuvre. Les réparations sont renvoyées sous cinq jours ouvrés."
     }
   ],
-  "4dcdc30b389b12b8": {
+  "Tc3DCzibErg": {
     "t": "p",
     "i": 1,
     "c": "Halyard est un produit fictif. Cette page est un exemple gt-react."

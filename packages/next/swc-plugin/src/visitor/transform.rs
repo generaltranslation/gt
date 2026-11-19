@@ -2370,10 +2370,10 @@ mod tests {
       assert!(translation_jsx.is_some(), "expected translation JSX to be stored");
       let hash = &translation_jsx.unwrap().hash;
       assert!(!hash.is_empty(), "expected non-empty hash for static content");
-      assert_eq!(hash.len(), 16, "expected hash to be 16 hex characters");
+      assert_eq!(hash.len(), 11, "expected hash to be 11 base64url characters");
       assert!(
-        hash.chars().all(|c| c.is_ascii_hexdigit()),
-        "expected hash to contain only hex characters, got: {hash}"
+        hash.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'),
+        "expected hash to contain only base64url characters, got: {hash}"
       );
     }
 
@@ -2597,7 +2597,7 @@ mod tests {
       assert!(translation_jsx.is_some());
       let hash = &translation_jsx.unwrap().hash;
       assert!(!hash.is_empty(), "number literal is allowed content — should produce non-empty hash");
-      assert_eq!(hash.len(), 16);
+      assert_eq!(hash.len(), 11);
     }
 
     #[test]

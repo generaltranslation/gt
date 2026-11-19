@@ -462,7 +462,7 @@ describe('React-authoritative rich runtime shape', () => {
         React.createElement('span', null, 'Fragment child')
       ),
       [h(Fragment, null, [h('span', null, 'Fragment child')])],
-      '602b5785aa5dc023'
+      'YCtXhapdwCM'
     );
   });
 
@@ -480,7 +480,7 @@ describe('React-authoritative rich runtime shape', () => {
           h('em', null, [createTextVNode('World')]),
         ]),
       ],
-      '575ba7a0e3903be4'
+      'V1unoOOQO-Q'
     );
   });
 
@@ -488,16 +488,16 @@ describe('React-authoritative rich runtime shape', () => {
     expectParity(
       React.createElement(React.Fragment, null, []),
       [h(Fragment, null, [[]])],
-      '9ff224ca1118e4df'
+      'n_IkyhEY5N8'
     );
   });
 
   it('preserves compiler structural Fragments as transparent arrays', () => {
-    expectParity([], [createVNode(Fragment, null, [], 64)], 'bdb7cc7686d0e468');
+    expectParity([], [createVNode(Fragment, null, [], 64)], 'vbfMdobQ5Gg');
     expectParity(
       [React.createElement('span', { key: 'one' }, 'One')],
       [createVNode(Fragment, null, [h('span', { key: 'one' }, 'One')], 64)],
-      'db8f4cf2c0cbdeea'
+      '249M8sDL3uo'
     );
     expectParity(
       [
@@ -512,7 +512,7 @@ describe('React-authoritative rich runtime shape', () => {
           64
         ),
       ],
-      'da0189970ce80427'
+      '2gGJlwzoBCc'
     );
   });
 
@@ -556,9 +556,9 @@ describe('React-authoritative rich runtime shape', () => {
 
     const translated = createGT({
       loadTranslations: async () => ({
-        bdb7cc7686d0e468: ['Translated empty'],
-        db8f4cf2c0cbdeea: [{ t: 'span', i: 1, c: 'Un' }],
-        da0189970ce80427: [
+        vbfMdobQ5Gg: ['Translated empty'],
+        '249M8sDL3uo': [{ t: 'span', i: 1, c: 'Un' }],
+        '2gGJlwzoBCc': [
           { t: 'span', i: 2, c: 'Deux' },
           { t: 'span', i: 1, c: 'Un' },
         ],
@@ -575,30 +575,30 @@ describe('React-authoritative rich runtime shape', () => {
     expectParity(
       React.createElement(React.Fragment, null, 0),
       [h(Fragment, null, [0])],
-      'a013c005483cdd19'
+      'oBPABUg83Rk'
     );
     expectParity(
       React.createElement(React.Fragment, null, '0'),
       [h(Fragment, null, ['0'])],
-      '246d388a23db9248'
+      'JG04iiPbkkg'
     );
     // The same scalars authored through a Fragment default slot.
     expectParity(
       React.createElement(React.Fragment, null, 0),
       [h(Fragment, null, { default: () => 0 })],
-      'a013c005483cdd19'
+      'oBPABUg83Rk'
     );
     expectParity(
       React.createElement(React.Fragment, null, '0'),
       [h(Fragment, null, { default: () => '0' })],
-      '246d388a23db9248'
+      'JG04iiPbkkg'
     );
   });
 
   it('distinguishes a missing slot from an explicit empty root array', () => {
-    expectParity(undefined, undefined, '309dc626c8db3d4c');
-    expectParity(undefined, [], '309dc626c8db3d4c');
-    expectParity([], [[]], 'bdb7cc7686d0e468');
+    expectParity(undefined, undefined, 'MJ3GJsjbPUw');
+    expectParity(undefined, [], 'MJ3GJsjbPUw');
+    expectParity([], [[]], 'vbfMdobQ5Gg');
   });
 
   it('preserves scalar boolean and null wire values but drops array members', () => {
@@ -637,8 +637,8 @@ describe('React-authoritative rich runtime shape', () => {
   it('looks up missing and explicit-empty T slots with distinct hashes', async () => {
     const plugin = createGT({
       loadTranslations: async () => ({
-        '309dc626c8db3d4c': 'Missing slot',
-        bdb7cc7686d0e468: 'Empty array',
+        MJ3GJsjbPUw: 'Missing slot',
+        vbfMdobQ5Gg: 'Empty array',
       }),
     });
     await plugin.setLocale('fr');
@@ -667,19 +667,19 @@ describe('React-authoritative rich runtime shape', () => {
   });
 
   it('reads the raw T slot before Vue erases root JSX shape', async () => {
-    expectParity('x', ['x'], '05fe82bcca221d7f');
-    expectParity(['x'], [['x']], '18d8d88a83f23215');
+    expectParity('x', ['x'], 'Bf6CvMoiHX8');
+    expectParity(['x'], [['x']], 'GNjYioPyMhU');
     expectParity(
       React.createElement(React.Fragment, null, 'x'),
       [h(Fragment, null, ['x'])],
-      '0fe162f7e63e2abe'
+      'D-Fi9-Y-Kr4'
     );
 
     const plugin = createGT({
       loadTranslations: async () => ({
-        '05fe82bcca221d7f': 'Scalar',
-        '18d8d88a83f23215': 'Array',
-        '0fe162f7e63e2abe': 'Fragment',
+        Bf6CvMoiHX8: 'Scalar',
+        GNjYioPyMhU: 'Array',
+        'D-Fi9-Y-Kr4': 'Fragment',
       }),
     });
     await plugin.setLocale('fr');
@@ -703,8 +703,8 @@ describe('React-authoritative rich runtime shape', () => {
   it('preserves programmatic non-slot array cardinality', async () => {
     const plugin = createGT({
       loadTranslations: async () => ({
-        '05fe82bcca221d7f': 'Scalar',
-        '18d8d88a83f23215': 'Array',
+        Bf6CvMoiHX8: 'Scalar',
+        GNjYioPyMhU: 'Array',
       }),
     });
     await plugin.setLocale('fr');
@@ -731,17 +731,17 @@ describe('React-authoritative rich runtime shape', () => {
     expectParity(
       React.createElement('div', null, []),
       [h('div', null, [[]])],
-      '9ff224ca1118e4df'
+      'n_IkyhEY5N8'
     );
     expectParity(
       React.createElement('div', null, ['x']),
       [h('div', null, [['x']])],
-      '101bcee0069a7b83'
+      'EBvO4Aaae4M'
     );
     expectParity(
       React.createElement('div', null, [0]),
       [h('div', null, [[0]])],
-      'c9c9cd7f3378429f'
+      'ycnNfzN4Qp8'
     );
   });
 
@@ -772,13 +772,13 @@ describe('React-authoritative rich runtime shape', () => {
           default: () => h('b', null, [createTextVNode('Hello')]),
         }),
       ],
-      '1c3760937a26bcbd'
+      'HDdgk3omvL0'
     );
     // A default slot returning an array collapses the same way.
     expectParity(
       React.createElement(Card, null, React.createElement('b', null, 'Hello')),
       [h(VueCard, null, { default: () => [h('b', null, 'Hello')] })],
-      '1c3760937a26bcbd'
+      'HDdgk3omvL0'
     );
   });
 

@@ -1,10 +1,10 @@
 {
-  "0cce35480b454441": {
+  "DM41SAtFREE": {
     "c": "Traductions côté client, sans framework",
     "i": 1,
     "t": "h1"
   },
-  "b02fb0c95b9b823a": {
+  "sC-wyVubgjo": {
     "c": [
       "Ce paragraphe est traduit dans le navigateur au moment de l’exécution. Il porte même une valeur en direct : la locale actuelle est ",
       {
@@ -16,7 +16,7 @@
     "i": 1,
     "t": "p"
   },
-  "9099dcd519c2f2e4": {
+  "kJnc1RnC8uQ": {
     "c": [
       {
         "c": "Le plugin de compilation Rollup extrait chaque message au moment du build.",
@@ -37,5 +37,5 @@
     "i": 1,
     "t": "ol"
   },
-  "1908b459437de74c": "Internationalisé au moment du build, traduit dans le navigateur."
+  "GQi0WUN950w": "Internationalisé au moment du build, traduit dans le navigateur."
 }

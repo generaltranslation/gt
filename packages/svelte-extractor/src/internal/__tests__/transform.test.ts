@@ -35,7 +35,7 @@ describe('transformSvelteSource', () => {
         let name = $state('Ada');
       </script>
 
-      <Translate _hash="894af089daa035e6" context="greeting">Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!{#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
+      <Translate _hash="iUrwidqgNeY" context="greeting">Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!{#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
       "
     `);
     expect(() =>

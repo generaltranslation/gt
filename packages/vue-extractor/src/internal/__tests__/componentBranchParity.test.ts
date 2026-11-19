@@ -485,13 +485,13 @@ describe('Branch attribute runtime parity', () => {
         dataFormat: 'JSX',
         source: richSources(branchOutput)[0],
       })
-    ).toBe('d82f8a17e0903307');
+    ).toBe('2C-KF-CQMwc');
     expect(
       hashSource({
         dataFormat: 'JSX',
         source: richSources(pluralOutput)[0],
       })
-    ).toBe('e92f3c8633d764dc');
+    ).toBe('6S88hjPXZNw');
   });
 
   it.each([
@@ -551,7 +551,7 @@ describe('Branch attribute runtime parity', () => {
 
     expect(output.errors).toEqual([]);
     expect(source).toEqual(testCase.source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('dec9c092fa934698');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('3snAkvqTRpg');
   });
 
   function branchSource(
@@ -961,7 +961,7 @@ describe('component slot runtime parity', () => {
       i: 1,
       c: { t: 'main', i: 2, c: 'Source' },
     });
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('bb63de9e2be66ffe');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('u2Penivmb_4');
   });
 
   it('resolves Options API Suspense registration through object spreads and static selectors', async () => {
@@ -986,7 +986,7 @@ describe('component slot runtime parity', () => {
       i: 1,
       c: { t: 'main', i: 2, c: 'Source' },
     });
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('bb63de9e2be66ffe');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('u2Penivmb_4');
   });
 
   it.each([

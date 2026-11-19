@@ -1,23 +1,23 @@
 {
-  "6ba7b1163521d7aa": "Lampe de bureau Halden H2",
-  "ed0daceaa24e7a20": "Une lampe de bureau réglable de 2700 K à 6500 K. 96 LED, un seul diffuseur, 9 watts.",
-  "3df9c49976cb55bf": "Sections",
-  "5968bf00c195f99d": "Caractéristiques",
-  "e26b47701bf45c70": "Commander",
-  "5c40e348dc73ad17": "Livraison",
-  "c84af77ebd768014": "Avis",
-  "af2b279c15ce6579": "États-Unis et Canada",
-  "eb23db54e0511897": "Union européenne et Royaume-Uni",
-  "9ae4d0c081ffe7ca": "Chine et Singapour",
-  "096aa4fee24f8a50": "Configurer Votre Lampe",
-  "24eb8f5407280920": "Lire La Fiche Technique",
-  "18235e10c4140d21": "{days, plural, one {# jour ouvré} other {# jours ouvrés}}",
-  "7ad6497d825f991e": {
+  "a6exFjUh16o": "Lampe de bureau Halden H2",
+  "7Q2s6qJOeiA": "Une lampe de bureau réglable de 2700 K à 6500 K. 96 LED, un seul diffuseur, 9 watts.",
+  "PfnEmXbLVb8": "Sections",
+  "WWi_AMGV-Z0": "Caractéristiques",
+  "4mtHcBv0XHA": "Commander",
+  "XEDjSNxzrRc": "Livraison",
+  "yEr3fr12gBQ": "Avis",
+  "rysnnBXOZXk": "États-Unis et Canada",
+  "6yPbVOBRGJc": "Union européenne et Royaume-Uni",
+  "muTQwIH_58o": "Chine et Singapour",
+  "CWqk_uJPilA": "Configurer Votre Lampe",
+  "JOuPVAcoCSA": "Lire La Fiche Technique",
+  "GCNeEMQUDSE": "{days, plural, one {# jour ouvré} other {# jours ouvrés}}",
+  "etZJfYJfmR4": {
     "t": "p",
     "i": 1,
     "c": "Modèle H2, lampe de bureau"
   },
-  "324631be5d7fbd4c": {
+  "MkYxvl1_vUw": {
     "t": "h1",
     "i": 1,
     "c": [
@@ -34,7 +34,7 @@
       " K."
     ]
   },
-  "f614f788a0ded44f": {
+  "9hT3iKDe1E8": {
     "t": "p",
     "i": 1,
     "c": [
@@ -56,7 +56,7 @@
       " watt en veille."
     ]
   },
-  "34f3f84c68ca6dac": {
+  "NPP4TGjKbaw": {
     "t": "span",
     "i": 1,
     "c": [
@@ -67,7 +67,7 @@
       }
     ]
   },
-  "fdef2973eaa6d8b0": {
+  "_e8pc-qm2LA": {
     "t": "div",
     "i": 1,
     "c": [
@@ -93,7 +93,7 @@
       }
     ]
   },
-  "a02d65e6b1ca4dd2": {
+  "oC1l5rHKTdI": {
     "t": "div",
     "i": 1,
     "c": [
@@ -119,7 +119,7 @@
       }
     ]
   },
-  "33015c9e2040828c": {
+  "MwFcniBAgow": {
     "t": "div",
     "i": 1,
     "c": [
@@ -145,7 +145,7 @@
       }
     ]
   },
-  "ca5ca7e3ffcb570d": {
+  "ylyn4__LVw0": {
     "t": "div",
     "i": 1,
     "c": [
@@ -171,7 +171,7 @@
       }
     ]
   },
-  "9a8da35515320013": [
+  "mo2jVRUyABM": [
     {
       "t": "p",
       "i": 1,
@@ -200,7 +200,7 @@
       ]
     }
   ],
-  "e9f9a37b9585ddcc": [
+  "6fmje5WF3cw": [
     {
       "t": "p",
       "i": 1,
@@ -224,7 +224,7 @@
       ]
     }
   ],
-  "b44aa012d782c1c9": [
+  "tEqgEteCwck": [
     {
       "t": "p",
       "i": 1,
@@ -248,7 +248,7 @@
       ]
     }
   ],
-  "2ec387b50c920ec9": [
+  "LsOHtQySDsk": [
     {
       "t": "blockquote",
       "i": 1,
@@ -270,7 +270,7 @@
       ]
     }
   ],
-  "73b2145a030e77b6": [
+  "c7IUWgMOd7Y": [
     {
       "t": "blockquote",
       "i": 1,
@@ -292,7 +292,7 @@
       ]
     }
   ],
-  "ad29aeb06fd5d878": [
+  "rSmusG_V2Hg": [
     {
       "t": "blockquote",
       "i": 1,
@@ -314,22 +314,22 @@
       ]
     }
   ],
-  "a49cebea6b7b81a7": {
+  "pJzr6mt7gac": {
     "t": "p",
     "i": 1,
     "c": "Halden est un produit fictif. Cette page est une application d’exemple pour mesurer la taille des bundles General Translation."
   },
-  "f9a7da8c221623c5": "Graphite",
-  "cad1ecd8f9d9fd95": "Papier",
-  "a3db3a199de686c0": "Titane",
-  "1ca2facc399b6d4c": "Finition",
-  "7637a571ff5e01b1": "Quantité",
-  "9af22759bf1ef04d": "Retirer une lampe",
-  "f8254ccf88f921b2": "Ajouter une lampe",
-  "dba25d3fe774a633": "Ajouter Au Panier",
-  "abc8252be8e5d46b": "{count, plural, one {# lampe} other {# lampes}} dans votre panier.",
-  "9e80675e16b92678": "Expédié depuis Rotterdam et Shenzhen.",
-  "0a88107e14e799ab": {
+  "-afajCIWI8U": "Graphite",
+  "ytHs2PnZ_ZU": "Papier",
+  "o9s6GZ3mhsA": "Titane",
+  "HKL6zDmbbUw": "Finition",
+  "djelcf9eAbE": "Quantité",
+  "mvInWb8e8E0": "Retirer une lampe",
+  "-CVMz4j5IbI": "Ajouter une lampe",
+  "26JdP-d0pjM": "Ajouter Au Panier",
+  "q8glK-jl1Gs": "{count, plural, one {# lampe} other {# lampes}} dans votre panier.",
+  "noBnXha5Jng": "Expédié depuis Rotterdam et Shenzhen.",
+  "CogQfhTnmas": {
     "t": "Branch",
     "i": 1,
     "d": {
@@ -358,7 +358,7 @@
       "t": "b"
     }
   },
-  "7522335c5871a385": {
+  "dSIzXFhxo4U": {
     "t": "p",
     "i": 1,
     "c": [
@@ -370,7 +370,7 @@
       " lampes."
     ]
   },
-  "2fdc50688f613ba9": {
+  "L9xQaI9hO6k": {
     "t": "p",
     "i": 1,
     "c": [

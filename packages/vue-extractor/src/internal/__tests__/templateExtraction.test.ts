@@ -1248,7 +1248,7 @@ describe('consumer Vue template compiler parity', () => {
       },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '1ff5d7c491cd1c5e'
+      'H_XXxJHNHF4'
     );
   });
 
@@ -1342,7 +1342,7 @@ describe('consumer Vue template compiler parity', () => {
       { t: 'i', i: 7, c: 'After' },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '11c8429caf23f3a6'
+      'EchCnK8j86Y'
     );
   });
 
@@ -1391,13 +1391,13 @@ describe('consumer Vue template compiler parity', () => {
     ).toEqual(
       testVueCompilerVersion.startsWith('3.3.')
         ? [
-            'a8185ffa69c52a38',
-            '8b1bc70354f4f9c8',
-            '8470e15e6781ad38',
-            '6071dde7f57b0e41',
-            '2079b23dabf73021',
+            'qBhf-mnFKjg',
+            'ixvHA1T0-cg',
+            'hHDhXmeBrTg',
+            'YHHd5_V7DkE',
+            'IHmyPav3MCE',
           ]
-        : ['f73a68d80f5caa68']
+        : ['9zpo2A9cqmg']
     );
   });
 
@@ -1427,7 +1427,7 @@ describe('consumer Vue template compiler parity', () => {
     ).toEqual(
       testVueCompilerVersion.startsWith('3.3.')
         ? []
-        : ['a4bdb5962dd37992', 'cdeda1c0b7a4bf7d']
+        : ['pL21li3TeZI', 'ze2hwLekv30']
     );
   });
 
@@ -1465,7 +1465,7 @@ describe('consumer Vue template compiler parity', () => {
       },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '1fc85d4b54bced88'
+      'H8hdS1S87Yg'
     );
   });
 });

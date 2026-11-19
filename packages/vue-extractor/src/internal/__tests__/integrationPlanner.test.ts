@@ -478,7 +478,7 @@ import { LocalT } from '@local/gt';
               t: 'b',
             },
           },
-          metadata: expect.objectContaining({ hash: '875c3ad2a25d6d46' }),
+          metadata: expect.objectContaining({ hash: 'h1w60qJdbUY' }),
         }),
       ]);
     }

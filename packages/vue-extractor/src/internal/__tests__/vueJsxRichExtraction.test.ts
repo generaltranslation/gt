@@ -32,7 +32,7 @@ describe('Vue JSX rich extraction', () => {
         dataFormat: 'JSX',
         source: output.results[0]!.source,
       })
-    ).toBe('fcd7d4e98f673df0');
+    ).toBe('_NfU6Y9nPfA');
   });
 
   it('preserves a nested static T component alias', async () => {
@@ -194,19 +194,19 @@ describe('Vue JSX rich extraction', () => {
         dataFormat: 'JSX',
         source: output.results[0]!.source,
       })
-    ).toBe('ba8853225ad095d2');
+    ).toBe('uohTIlrQldI');
   });
 
   it.each([
     {
       child: `<>{0}</>`,
-      hash: 'a013c005483cdd19',
+      hash: 'oBPABUg83Rk',
       name: 'a semantic Fragment with scalar zero',
       source: { i: 1, t: 'C1' },
     },
     {
       child: `<><span>Child</span></>`,
-      hash: 'af6e1f5c580048d9',
+      hash: 'r24fXFgASNk',
       name: 'a semantic Fragment with an element',
       source: { c: { c: 'Child', i: 2, t: 'span' }, i: 1, t: 'C1' },
     },
@@ -232,37 +232,37 @@ describe('Vue JSX rich extraction', () => {
   it.each([
     {
       child: `{['x']}`,
-      hash: '18d8d88a83f23215',
+      hash: 'GNjYioPyMhU',
       name: 'a singleton array',
       source: ['x'],
     },
     {
       child: `{[[['x']]]}`,
-      hash: '18d8d88a83f23215',
+      hash: 'GNjYioPyMhU',
       name: 'nested arrays flattened by React.Children',
       source: ['x'],
     },
     {
       child: `{/* boundary */}{['x']}`,
-      hash: '18d8d88a83f23215',
+      hash: 'GNjYioPyMhU',
       name: 'an array following a JSX comment boundary',
       source: ['x'],
     },
     {
       child: `{[]}`,
-      hash: 'bdb7cc7686d0e468',
+      hash: 'vbfMdobQ5Gg',
       name: 'an empty array',
       source: [],
     },
     {
       child: `{[false, true, null]}`,
-      hash: 'bdb7cc7686d0e468',
+      hash: 'vbfMdobQ5Gg',
       name: 'boolean and null values removed from an authored array',
       source: [],
     },
     {
       child: `{false}{true}{null}`,
-      hash: 'bdb7cc7686d0e468',
+      hash: 'vbfMdobQ5Gg',
       name: 'boolean and null values removed from multiple children',
       source: [],
     },
@@ -288,19 +288,19 @@ describe('Vue JSX rich extraction', () => {
   it.each([
     {
       child: '{false}',
-      hash: 'd98d8886a31c98f3',
+      hash: '2Y2IhqMcmPM',
       name: 'false',
       source: false,
     },
     {
       child: '{true}',
-      hash: '73b6b211a4122ba8',
+      hash: 'c7ayEaQSK6g',
       name: 'true',
       source: true,
     },
     {
       child: '{null}',
-      hash: '471b9124c31817e9',
+      hash: 'RxuRJMMYF-k',
       name: 'null',
       source: null,
     },
@@ -339,7 +339,7 @@ describe('Vue JSX rich extraction', () => {
         dataFormat: output.results[0]!.dataFormat,
         source: output.results[0]!.source,
       })
-    ).toBe('309dc626c8db3d4c');
+    ).toBe('MJ3GJsjbPUw');
   });
 
   it('mirrors React truthiness gates for ordinary element children', async () => {
@@ -371,7 +371,7 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual(source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('f0b316370c61fd25');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('8LMWNwxh_SU');
   });
 
   it('preserves nested-array cardinality for zero inside an element', async () => {
@@ -386,7 +386,7 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual(source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('c9c9cd7f3378429f');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('ycnNfzN4Qp8');
   });
 
   it('distinguishes an absent component slot from an explicit empty array', async () => {
@@ -488,7 +488,7 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual(source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('0401db2633fc35ff');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('BAHbJjP8Nf8');
   });
 
   it('omits undefined Branch slots while retaining authored empty arrays', async () => {
@@ -667,7 +667,7 @@ describe('Vue JSX rich extraction', () => {
         dataFormat: 'JSX',
         source: output.results[0]!.source,
       })
-    ).toBe('63915234a0275689');
+    ).toBe('Y5FSNKAnVok');
   });
 
   it('serializes static children inside arbitrary custom components', async () => {
@@ -719,7 +719,7 @@ describe('Vue JSX rich extraction', () => {
     });
     expect(
       hashSource({ dataFormat: 'JSX', source: output.results[0]!.source })
-    ).toBe('3bcc07b273d94f01');
+    ).toBe('O8wHsnPZTwE');
   });
 
   it('preserves React-compatible boundaries between adjacent string expressions', async () => {
@@ -744,7 +744,7 @@ describe('Vue JSX rich extraction', () => {
       output.results.map(({ source }) =>
         hashSource({ dataFormat: 'JSX', source })
       )
-    ).toEqual(['0998d2c300882cb5', '9bbc5cefc482e24c']);
+    ).toEqual(['CZjSwwCILLU', 'm7xc78SC4kw']);
   });
 
   it('serializes static children of Vue helpers used as JSX component tags', async () => {
@@ -925,9 +925,7 @@ describe('Vue JSX rich extraction', () => {
       };
       expect(output.errors).toEqual([]);
       expect(output.results[0]?.source).toEqual(source);
-      expect(hashSource({ dataFormat: 'JSX', source })).toBe(
-        '1c3760937a26bcbd'
-      );
+      expect(hashSource({ dataFormat: 'JSX', source })).toBe('HDdgk3omvL0');
     }
   );
 
@@ -1004,7 +1002,7 @@ describe('Vue JSX rich extraction', () => {
       },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      'a5b5d264ac1dd95d'
+      'pbXSZKwd2V0'
     );
   });
 
@@ -1185,7 +1183,7 @@ describe('Vue JSX rich extraction', () => {
           dataFormat: 'JSX',
           source: output.results[0]!.source,
         })
-      ).toBe('a100a94c819867a1');
+      ).toBe('oQCpTIGYZ6E');
     }
   );
 
@@ -1219,7 +1217,7 @@ describe('Vue JSX rich extraction', () => {
     };
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toStrictEqual(source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('dd8f74483bcb5654');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('3Y90SDvLVlQ');
   });
 
   it('keeps named JSX slots ahead of direct boolean and null props', async () => {

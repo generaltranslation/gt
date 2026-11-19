@@ -1,22 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import type { JsxChildren } from '@generaltranslation/format';
-import { hashSource } from '../hashSource';
+import { hashSource, hashString } from '../hashSource';
+
+describe('hashString', () => {
+  it.each([
+    ['test string', 'd5579c46dfcc7f18', '1VecRt_Mfxg'],
+    ['', 'e3b0c44298fc1c14', '47DEQpj8HBQ'],
+  ])(
+    'encodes the 64 bits of the earlier hex hash of %j as base64url',
+    (input, hex, hash) => {
+      expect(hashString(input)).toBe(hash);
+      expect(Buffer.from(hex, 'hex').toString('base64url')).toBe(hash);
+    }
+  );
+});
 
 describe('hashSource rich wire literals', () => {
   it.each([
-    [false, 'd98d8886a31c98f3'],
-    [true, '73b6b211a4122ba8'],
-    [null, '471b9124c31817e9'],
-    [{ t: 'div', i: 1, c: false }, 'a013c005483cdd19'],
-    [{ t: 'div', i: 1, c: true }, '200db4fbcabc7d06'],
-    [{ t: 'div', i: 1, c: { t: 'span', i: 2, c: null } }, 'd8ef2c2b0a384ae8'],
+    [false, '2Y2IhqMcmPM'],
+    [true, 'c7ayEaQSK6g'],
+    [null, 'RxuRJMMYF-k'],
+    [{ t: 'div', i: 1, c: false }, 'oBPABUg83Rk'],
+    [{ t: 'div', i: 1, c: true }, 'IA20-8q8fQY'],
+    [{ t: 'div', i: 1, c: { t: 'span', i: 2, c: null } }, '2O8sKwo4Sug'],
     [
       {
         t: 'Branch',
         i: 1,
         d: { t: 'b', b: { active: false, empty: null } },
       },
-      'f385da3e793d958b',
+      '84XaPnk9lYs',
     ],
   ] satisfies ReadonlyArray<readonly [JsxChildren, string]>)(
     'preserves the React hash for %j',
@@ -37,7 +50,7 @@ describe('hashSource variables', () => {
   });
 
   it('keeps the hash of a named variable', () => {
-    expect(hash({ i: 1, k: 'count', v: 'n' })).toBe('42c3509522b78e61');
+    expect(hash({ i: 1, k: 'count', v: 'n' })).toBe('QsNQlSK3jmE');
   });
 });
 
@@ -99,11 +112,11 @@ describe('hashSource requiresReview', () => {
     // Pinned pre-requiresReview hashes: if these change, every existing
     // project would retranslate on upgrade.
     expect(hashSource({ source: 'Hello world', dataFormat: 'ICU' })).toBe(
-      '05a87bce151d258b'
+      'Bah7zhUdJYs'
     );
     expect(
       hashSource({ source: ['Hello ', { c: ['world'] }], dataFormat: 'JSX' })
-    ).toBe('2ef012fb27e5f019');
+    ).toBe('LvAS-yfl8Bk');
   });
 });
 

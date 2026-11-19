@@ -332,7 +332,7 @@ describe('React and Vue seed runtime parity', () => {
         ]),
         runtime,
         expected,
-        '3bfbeb8ed305dcfb'
+        'O_vrjtMF3Ps'
       );
     });
   });

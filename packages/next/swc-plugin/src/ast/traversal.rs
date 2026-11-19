@@ -1231,9 +1231,9 @@ mod tests {
       with_prefixed_context.opening.attrs = vec![create_string_attr("$context", "A noun")];
 
       // hashSource({ source: 'Book', context: 'A noun', dataFormat: 'JSX' }) from generaltranslation/id
-      assert_eq!(traversal.calculate_element_hash(&with_context).0, "e1642f3069257bf7");
+      assert_eq!(traversal.calculate_element_hash(&with_context).0, "4WQvMGkle_c");
       // hashSource({ source: 'Book', dataFormat: 'JSX' }): `$context` is not read
-      assert_eq!(traversal.calculate_element_hash(&with_prefixed_context).0, "0706372c13931291");
+      assert_eq!(traversal.calculate_element_hash(&with_prefixed_context).0, "BwY3LBOTEpE");
     }
 
     #[test]
@@ -1265,7 +1265,7 @@ mod tests {
         r#"{"dataFormat":"JSX","source":{"b":{"one":"One","other":"Many"},"t":"p"}}"#
       );
       // hashSource({ source: { t: 'Plural', i: 1, d: { b: { one: 'One', other: 'Many' }, t: 'p' } }, dataFormat: 'JSX' })
-      assert_eq!(hash, "50e2943adf4fe3dd");
+      assert_eq!(hash, "UOKUOt9P490");
     }
 
     #[test]
@@ -1281,7 +1281,7 @@ mod tests {
       
       // Should have a non-empty hash since no static components
       assert!(!hash.is_empty(), "Hash should not be empty for text-only content");
-      assert_eq!(hash.len(), 16, "Hash should be 16 characters long");
+      assert_eq!(hash.len(), 11, "Hash should be 11 characters long");
       assert!(!json_string.is_empty(), "JSON string should not be empty");
       assert!(json_string.contains("Hello world"), "JSON should contain the text content");
     }
@@ -1333,7 +1333,7 @@ mod tests {
       
       // Should have normal hash since no static components
       assert!(!hash.is_empty(), "Hash should not be empty for regular variables");
-      assert_eq!(hash.len(), 16, "Hash should be 16 characters long");
+      assert_eq!(hash.len(), 11, "Hash should be 11 characters long");
       assert!(!json_string.is_empty(), "JSON string should not be empty");
     }
 
@@ -1348,7 +1348,7 @@ mod tests {
       
       // Should use fallback path with empty element structure
       assert!(!hash.is_empty(), "Hash should not be empty for empty children");
-      assert_eq!(hash.len(), 16, "Hash should be 16 characters long");
+      assert_eq!(hash.len(), 11, "Hash should be 11 characters long");
       assert!(!json_string.is_empty(), "JSON string should not be empty");
     }
 
@@ -1372,7 +1372,7 @@ mod tests {
       
       // Should have normal hash for nested regular elements
       assert!(!hash.is_empty(), "Hash should not be empty for nested regular elements");
-      assert_eq!(hash.len(), 16, "Hash should be 16 characters long");
+      assert_eq!(hash.len(), 11, "Hash should be 11 characters long");
       assert!(!json_string.is_empty(), "JSON string should still be generated");
     }
 

@@ -67,33 +67,33 @@ describe('extractFromVueProject', () => {
       {
         context: undefined,
         dataFormat: 'STRING',
-        hash: 'f7333e2142c92464',
+        hash: '9zM-IULJJGQ',
         source: 'Module greeting',
       },
       {
         context: 'toolbar action',
         dataFormat: 'STRING',
-        hash: 'e811c9263249a811',
+        hash: '6BHJJjJJqBE',
         source: 'Module greeting',
       },
       {
         context: undefined,
         dataFormat: 'STRING',
-        hash: '1eddffaf048e42ac',
+        hash: 'Ht3_rwSOQqw',
         source: 'Literal {name} — 你好\nnext',
       },
     ]);
 
     expect(
       hashSource({ dataFormat: 'STRING', source: 'Module greeting' })
-    ).toBe('f7333e2142c92464');
+    ).toBe('9zM-IULJJGQ');
     expect(
       hashSource({
         context: 'toolbar action',
         dataFormat: 'STRING',
         source: 'Module greeting',
       })
-    ).toBe('e811c9263249a811');
+    ).toBe('6BHJJjJJqBE');
   });
 
   it('uses explicit source patterns as a replacement for defaults', async () => {
@@ -312,7 +312,7 @@ const t = useGT();
         hash: metadata.hash,
         source,
       }))
-    ).toEqual([{ hash: '309dc626c8db3d4c', source: undefined }]);
+    ).toEqual([{ hash: 'MJ3GJsjbPUw', source: undefined }]);
 
     const emptyRoot = createVueFixture({
       'src/Empty.tsx': `
@@ -328,7 +328,7 @@ const t = useGT();
         hash: metadata.hash,
         source,
       }))
-    ).toEqual([{ hash: 'bdb7cc7686d0e468', source: [] }]);
+    ).toEqual([{ hash: 'vbfMdobQ5Gg', source: [] }]);
   });
 
   it('deduplicates hashes while merging unique file and source metadata', async () => {

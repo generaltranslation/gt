@@ -218,10 +218,10 @@ describe('Derive resolution across files', () => {
         ])
       )
     ).toEqual({
-      '837be41703617441': ['test ', { t: 'Derive', i: 1, c: 'utils3-a' }],
-      '6c4330bad929001a': ['test ', { t: 'Derive', i: 1, c: 'utils3-b' }],
-      '40d52de32ba666ce': ['test ', { t: 'Derive', i: 1, c: 'utils1-a' }],
-      '081fa70a614caa27': ['test ', { t: 'Derive', i: 1, c: 'utils1-b' }],
+      g3vkFwNhdEE: ['test ', { t: 'Derive', i: 1, c: 'utils3-a' }],
+      bEMwutkpABo: ['test ', { t: 'Derive', i: 1, c: 'utils3-b' }],
+      QNUt4yumZs4: ['test ', { t: 'Derive', i: 1, c: 'utils1-a' }],
+      'CB-nCmFMqic': ['test ', { t: 'Derive', i: 1, c: 'utils1-b' }],
     });
     expect(result.filesRead).toEqual([
       'libs/utils1.ts',

@@ -1,9 +1,9 @@
 {
-  "464cf4b5fd1a9034": [
+  "Rkz0tf0akDQ": [
     "Bienvenue dans l’application de test ",
     { "t": "b", "i": 1, "c": "SvelteKit" }
   ],
-  "9e82e2733a671788": [
+  "noLiczpnF4g": [
     "Lisez la ",
     {
       "t": "a",
@@ -15,7 +15,7 @@
     { "i": 1, "v": "v" },
     " !"
   ],
-  "c2ba221a4b26acf9": {
+  "wroiGksmrPk": {
     "t": "Plural",
     "i": 1,
     "d": {
@@ -38,6 +38,6 @@
       "t": "p"
     }
   },
-  "9683fd40e0ecd2ee": "Ajouter un message",
-  "a0382323b1806463": "Une chaîne traduite à l’aide de useGT."
+  "loP9QODs0u4": "Ajouter un message",
+  "oDgjI7GAZGM": "Une chaîne traduite à l’aide de useGT."
 }

@@ -4,7 +4,7 @@
     "template": "t`Save`",
     "options": {},
     "tree": "Save",
-    "hash": "ab72d114d0d156a9"
+    "hash": "q3LRFNDRVqk"
   },
   {
     "name": "context",
@@ -13,14 +13,14 @@
       "context": "button"
     },
     "tree": "Save",
-    "hash": "3638c6269a914b05"
+    "hash": "NjjGJpqRSwU"
   },
   {
     "name": "one-argument",
     "template": "t`Hello, ${{ name }}!`",
     "options": {},
     "tree": ["Hello, ", ["name"], "!"],
-    "hash": "b785eb9d5af50191"
+    "hash": "t4XrnVr1AZE"
   },
   {
     "name": "max-chars",
@@ -29,7 +29,7 @@
       "maxChars": 12
     },
     "tree": "Read more about pricing",
-    "hash": "ebb62b7d36df296e"
+    "hash": "67YrfTbfKW4"
   },
   {
     "name": "max-chars-negative",
@@ -38,7 +38,7 @@
       "maxChars": -12
     },
     "tree": "Read more about pricing",
-    "hash": "ebb62b7d36df296e"
+    "hash": "67YrfTbfKW4"
   },
   {
     "name": "nested-plural-pound-select",
@@ -76,7 +76,7 @@
         }
       ]
     ],
-    "hash": "2ce6cb2fcd65379b"
+    "hash": "LObLL81lN5s"
   },
   {
     "name": "plural-exact-key-order",
@@ -93,7 +93,7 @@
         }
       ]
     ],
-    "hash": "0e19cec014da66bd"
+    "hash": "DhnOwBTaZr0"
   },
   {
     "name": "selectordinal",
@@ -113,21 +113,21 @@
       ],
       "!"
     ],
-    "hash": "3991c8c60ac6dc1c"
+    "hash": "OZHIxgrG3Bw"
   },
   {
     "name": "number-intl-options",
     "template": "t`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`",
     "options": {},
     "tree": ["Total: ", ["price", "number", "currency"]],
-    "hash": "d0a156bbfb4a8267"
+    "hash": "0KFWu_tKgmc"
   },
   {
     "name": "number-currency-dynamic",
     "template": "t`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`",
     "options": {},
     "tree": ["Total: ", ["price", "number", "currency"]],
-    "hash": "d0a156bbfb4a8267"
+    "hash": "0KFWu_tKgmc"
   },
   {
     "name": "number-unit",
@@ -144,28 +144,28 @@
       ],
       " away"
     ],
-    "hash": "7c832f40b1d5f62c"
+    "hash": "fIMvQLHV9iw"
   },
   {
     "name": "date",
     "template": "t`Due ${date({ due }, { style: 'medium' })}`",
     "options": {},
     "tree": ["Due ", ["due", "date", "medium"]],
-    "hash": "84910212b94cc11b"
+    "hash": "hJECErlMwRs"
   },
   {
     "name": "date-style-dynamic-time-zone",
     "template": "t`Due ${date({ due }, { style: 'medium', timeZone })}`",
     "options": {},
     "tree": ["Due ", ["due", "date", "medium"]],
-    "hash": "84910212b94cc11b"
+    "hash": "hJECErlMwRs"
   },
   {
     "name": "time-style",
     "template": "t`Starts at ${time({ start }, { style: 'short' })}`",
     "options": {},
     "tree": ["Starts at ", ["start", "time", "short"]],
-    "hash": "401c5ce0c936b517"
+    "hash": "QBxc4Mk2tRc"
   },
   {
     "name": "date-fields-hour",
@@ -185,7 +185,7 @@
         }
       ]
     ],
-    "hash": "6457e1f18f4d9c24"
+    "hash": "ZFfh8Y9NnCQ"
   },
   {
     "name": "time-fractional-seconds",
@@ -203,7 +203,7 @@
         }
       ]
     ],
-    "hash": "c07fa4bc51aee45b"
+    "hash": "wH-kvFGu5Fs"
   },
   {
     "name": "time-day-period",
@@ -220,28 +220,28 @@
         }
       ]
     ],
-    "hash": "617d46ff7ab4a3b5"
+    "hash": "YX1G_3q0o7U"
   },
   {
     "name": "derive",
     "template": "t`Welcome ${derive('back')}, ${{ user }}!`",
     "options": {},
     "tree": ["Welcome back, ", ["user"], "!"],
-    "hash": "7866dbd0773f8dea"
+    "hash": "eGbb0Hc_jeo"
   },
   {
     "name": "anonymous",
     "template": "t`Hi ${name}!`",
     "options": {},
     "tree": ["Hi ", ["_gt_1"], "!"],
-    "hash": "067ccea6cfb338fd"
+    "hash": "BnzOps-zOP0"
   },
   {
     "name": "anonymous-numbering",
     "template": "t`${first} meets ${second} today`",
     "options": {},
     "tree": [["_gt_1"], " meets ", ["_gt_2"], " today"],
-    "hash": "19a57bdc700c786f"
+    "hash": "GaV73HAMeG8"
   },
   {
     "name": "anonymous-helper-values",
@@ -272,14 +272,14 @@
       " from ",
       ["_gt_5"]
     ],
-    "hash": "aa63ab12d9712f30"
+    "hash": "qmOrEtlxLzA"
   },
   {
     "name": "literal-icu-syntax",
     "template": "t`Don't stop, '{team}' ${derive(\"O'Brien {x} #1\")} and ${{ name }}`",
     "options": {},
     "tree": ["Don't stop, '{team}' O'Brien {x} #1 and ", ["name"]],
-    "hash": "6b3613e07d084640"
+    "hash": "azYT4H0IRkA"
   },
   {
     "name": "part-in-branch",
@@ -296,7 +296,7 @@
         }
       ]
     ],
-    "hash": "544daf4c816df850"
+    "hash": "VE2vTIFt-FA"
   },
   {
     "name": "select-integer-like-keys",
@@ -313,7 +313,7 @@
         }
       ]
     ],
-    "hash": "fd2a80cdf70888fc"
+    "hash": "_SqAzfcIiPw"
   },
   {
     "name": "requires-review",
@@ -322,6 +322,6 @@
       "requiresReview": true
     },
     "tree": "Delete account",
-    "hash": "dedfcaa38764e985"
+    "hash": "3t_Ko4dk6YU"
   }
 ]

@@ -165,7 +165,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
       ]);
       expect(
         sources.map((source) => hashSource({ dataFormat: 'JSX', source }))
-      ).toEqual(['b5a6ee4eef4e3071', 'b5a6ee4eef4e3071']);
+      ).toEqual(['tabuTu9OMHE', 'tabuTu9OMHE']);
     }
   );
 
