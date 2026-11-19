@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockGetGTInternal, mockGetMessagesInternal } = vi.hoisted(() => ({
-  mockGetGTInternal: vi.fn(async () => 'gt'),
-  mockGetMessagesInternal: vi.fn(async () => 'messages'),
+const { mockGetGT, mockGetMessages } = vi.hoisted(() => ({
+  mockGetGT: vi.fn(async () => 'gt'),
+  mockGetMessages: vi.fn(async () => 'messages'),
 }));
 
 vi.mock('gt-i18n/internal', async (importOriginal) => ({
   ...(await importOriginal<typeof import('gt-i18n/internal')>()),
-  getGTInternal: mockGetGTInternal,
-  getMessagesInternal: mockGetMessagesInternal,
+  getGT: mockGetGT,
+  getMessages: mockGetMessages,
 }));
 
 vi.mock('@tanstack/react-start/server', () => ({
@@ -59,8 +59,8 @@ describe.sequential('server translation functions', () => {
     resetSingletons();
     initializeI18nConfig(config);
     setConditionStore(new AsyncLocalConditionStore(config));
-    mockGetGTInternal.mockClear();
-    mockGetMessagesInternal.mockClear();
+    mockGetGT.mockClear();
+    mockGetMessages.mockClear();
   });
 
   it('requires a TanStack Start request', () => {
@@ -70,8 +70,6 @@ describe.sequential('server translation functions', () => {
   });
 
   it('passes request conditions to the internal translation functions', async () => {
-    const messages = [{ message: 'Hello' }];
-
     vi.mocked(getRequest).mockReturnValue(
       new Request('https://example.com', {
         headers: {
@@ -83,15 +81,15 @@ describe.sequential('server translation functions', () => {
 
     expect(getLocale()).toBe('fr');
     expect(getEnableI18n()).toBe(false);
-    await expect(getGT(messages)).resolves.toBe('gt');
+    await expect(getGT()).resolves.toBe('gt');
     await expect(getMessages()).resolves.toBe('messages');
     vi.mocked(getRequest).mockRestore();
 
-    expect(mockGetGTInternal).toHaveBeenCalledWith(
-      { locale: 'fr', enableI18n: false },
-      messages
-    );
-    expect(mockGetMessagesInternal).toHaveBeenCalledWith({
+    expect(mockGetGT).toHaveBeenCalledWith({
+      locale: 'fr',
+      enableI18n: false,
+    });
+    expect(mockGetMessages).toHaveBeenCalledWith({
       locale: 'fr',
       enableI18n: false,
     });

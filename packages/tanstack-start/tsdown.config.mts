@@ -31,8 +31,6 @@ const entries: Record<string, string> = {
   'index.server': 'src/index.server.ts',
   'compat.client': 'src/compat.client.ts',
   'compat.server': 'src/compat.server.ts',
-  'unstable.client': 'src/unstable.client.ts',
-  'unstable.server': 'src/unstable.server.ts',
   'plugin/vite': 'src/plugin/vite.ts',
   'internal/initializeGT.server': 'src/setup/initializeGT.server.ts',
   'internal/_config': 'src/internal/_config.ts',

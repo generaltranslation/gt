@@ -1,6 +1,8 @@
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
-import { describe, test, expect, vi } from 'vitest';
+import { afterAll, describe, test, expect, vi } from 'vitest';
+import { extractFromSvelteProject } from '@generaltranslation/svelte-extractor/integration';
 import { createInlineUpdates } from '../createInlineUpdates.js';
 import { matchFiles } from '../../../fs/matchFiles.js';
 import { hashSource } from 'generaltranslation/id';
@@ -154,5 +156,93 @@ describe('<T> props', () => {
         result.errors.some((e) => e.toLowerCase().includes('maxchars'))
       ).toBe(true);
     });
+  });
+});
+
+describe('gt-svelte string calls in JavaScript and TypeScript modules', () => {
+  const CALLS = `import { msg, useGT } from 'gt-svelte';
+export const save = msg('Save');
+export function label() {
+  const t = useGT();
+  return t('Hello, {name}!', { name: 'Ada' });
+}
+export const close = msg('Close', { $context: 'button', $id: 'close' });
+`;
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-svelte-cli-'));
+  const moduleFile = path.join(projectDir, 'messages.ts');
+  fs.writeFileSync(moduleFile, CALLS);
+  fs.writeFileSync(
+    path.join(projectDir, 'Messages.svelte'),
+    `<script module lang="ts">${CALLS}</script>`
+  );
+  afterAll(() => fs.rmSync(projectDir, { recursive: true, force: true }));
+
+  const filePaths = [path.relative(process.cwd(), moduleFile)];
+
+  test('are extracted in a gt-svelte project', async () => {
+    const result = await scan(Libraries.GT_SVELTE, [moduleFile]);
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.updates).toEqual([
+      {
+        dataFormat: 'ICU',
+        source: 'Save',
+        metadata: {
+          hash: hashSource({ source: 'Save', dataFormat: 'ICU' }),
+          filePaths,
+        },
+      },
+      {
+        dataFormat: 'ICU',
+        source: 'Hello, {name}!',
+        metadata: {
+          hash: hashSource({ source: 'Hello, {name}!', dataFormat: 'ICU' }),
+          filePaths,
+        },
+      },
+      {
+        dataFormat: 'ICU',
+        source: 'Close',
+        metadata: {
+          context: 'button',
+          id: 'close',
+          hash: hashSource({
+            source: 'Close',
+            context: 'button',
+            dataFormat: 'ICU',
+          }),
+          filePaths,
+        },
+      },
+    ]);
+  });
+
+  test('match the same calls in a .svelte file', async () => {
+    const fromModule = await scan(Libraries.GT_SVELTE, [moduleFile]);
+    const fromComponent = await extractFromSvelteProject(projectDir, [
+      'Messages.svelte',
+    ]);
+
+    expect(fromComponent.updates).toHaveLength(3);
+    expect(
+      fromModule.updates.map((update) => ({
+        ...update,
+        metadata: { ...update.metadata, filePaths: ['Messages.svelte'] },
+      }))
+    ).toEqual(fromComponent.updates);
+  });
+
+  test('are not extracted in a React project', async () => {
+    const reactFile = path.join(projectDir, 'react.ts');
+    fs.writeFileSync(reactFile, CALLS.replace('gt-svelte', 'gt-react'));
+
+    expect((await scan(Libraries.GT_REACT, [moduleFile])).updates).toEqual([]);
+    // msg('Save') is a message tree there; the calls with options are not.
+    expect(
+      (await scan(Libraries.GT_REACT, [reactFile])).updates.map(
+        ({ dataFormat, source }) => ({ dataFormat, source })
+      )
+    ).toEqual([{ dataFormat: 'MESSAGE_TREE', source: 'Save' }]);
   });
 });

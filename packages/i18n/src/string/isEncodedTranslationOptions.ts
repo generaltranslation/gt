@@ -1,0 +1,14 @@
+import type { EncodedTranslationOptions } from './types';
+
+/**
+ * Given a decoded options object, validate that includes required decoded options
+ * These required options are added by msg() during the encoding process.
+ */
+export function isEncodedTranslationOptions(
+  decodedOptions: Record<string, unknown> // TODO: next major version, this should be Record<string, string>
+): decodedOptions is EncodedTranslationOptions {
+  return (
+    typeof decodedOptions.$_hash === 'string' &&
+    typeof decodedOptions.$_source === 'string'
+  );
+}

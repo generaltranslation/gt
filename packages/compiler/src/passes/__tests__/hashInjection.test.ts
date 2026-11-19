@@ -3,15 +3,15 @@
  * are injected.
  *
  * Content that maps to several translation variants (a <Derive> child, a
- * derive() message or $context, autoderive dynamic content) is resolved by
- * the CLI, so it must get NO compile-time hash: an injected hash (or an
- * empty one, which is used as the lookup hash) would pin the lookup to a
- * key that matches none of the variants. Skipping a call must also never
- * shift the hashes of its siblings.
+ * derive() context, autoderive dynamic content) is resolved by the CLI, so
+ * it must get NO compile-time hash: an injected hash (or an empty one, which
+ * is used as the lookup hash) would pin the lookup to a key that matches none
+ * of the variants. Skipping a <T> must also never shift the hashes of its
+ * siblings.
  */
 import { describe, it, expect } from 'vitest';
 import type { JsxChildren } from '@generaltranslation/format';
-import { runPasses, findCalls, literalValue } from './testHelpers';
+import { runPasses } from './testHelpers';
 import hashSource from '../../utils/calculateHash';
 
 function transform(code: string, options: Record<string, unknown> = {}) {
@@ -20,7 +20,6 @@ function transform(code: string, options: Record<string, unknown> = {}) {
 
 const jsxHash = (source: JsxChildren) =>
   hashSource({ source, dataFormat: 'JSX' });
-const icuHash = (source: string) => hashSource({ source, dataFormat: 'ICU' });
 
 const JSX_IMPORTS = `
   import { jsx, jsxs } from 'react/jsx-runtime';
@@ -81,6 +80,26 @@ describe('<T> hash injection', () => {
     const { errors, code } = transform(`${JSX_IMPORTS}${compiled};`, options);
     expect(errors).toEqual([]);
     expect(code).not.toContain('_hash');
+  });
+
+  it.each([
+    ['a parameter named T', 'function f(T) { jsx(T, { children: "Hello" }); }'],
+    [
+      'a local named T',
+      'function f() { const T = Other; jsx(T, { children: "Hello" }); }',
+    ],
+  ])('leaves %s without a hash', (_name, compiled) => {
+    const { errors, code } = transform(`${JSX_IMPORTS}${compiled}`);
+    expect(errors).toEqual([]);
+    expect(code).not.toContain('_hash');
+  });
+
+  it('a label named T does not shadow the import', () => {
+    const { errors, code } = transform(
+      `${JSX_IMPORTS}T: while (cond) { jsx(T, { children: "Hello" }); break T; }`
+    );
+    expect(errors).toEqual([]);
+    expect(code).toContain(`_hash: "${jsxHash('Hello')}"`);
   });
 
   it('a Derive <T> does not shift the hash of a sibling <T>', () => {
@@ -157,16 +176,6 @@ describe('<T> with dynamic content (autoderive)', () => {
 
   it.each([
     ['autoderive: true', { autoderive: true }, true],
-    [
-      'autoderive: { jsx: true, strings: false }',
-      { autoderive: { jsx: true, strings: false } },
-      true,
-    ],
-    [
-      'autoderive: { jsx: false, strings: true }',
-      { autoderive: { jsx: false, strings: true } },
-      false,
-    ],
     ['autoderive: false', { autoderive: false }, false],
     ['no autoderive option', {}, false],
   ])('%s -> dynamic content allowed: %s', (_name, options, allowed) => {
@@ -321,176 +330,5 @@ describe('a spread on Branch/Plural', () => {
     );
     expect(errors).toEqual([]);
     expect(code).not.toContain('_hash');
-  });
-});
-
-/**
- * Two regressions covered here:
- *
- * 1. Counter misalignment: collection skipped useGT() t() calls whose message
- *    could not be statically resolved WITHOUT reserving a counter slot, while the
- *    injection pass increments the counter for every t() call. Every t()
- *    call after a derive call was injected with the hash of the PREVIOUS call.
- *
- * 2. Empty-hash injection: t() calls with $context: derive(...) registered
- *    an empty hash which was injected as $_hash: "".
- */
-describe('useGT() callback hash injection', () => {
-  const USE_GT = `
-    import { useGT, derive } from 'gt-react';
-    const t = useGT();
-  `;
-  const injectedHashes = (code: string) =>
-    code.match(/"\$_hash": "[^"]*"/g) ?? [];
-
-  it('injects $_hash into a static t() call', () => {
-    const { errors, code } = transform(`${USE_GT}t("Hello world");`);
-    expect(errors).toEqual([]);
-    expect(code).toContain(`"$_hash": "${icuHash('Hello world')}"`);
-  });
-
-  it.each([
-    ['derive() in the message', 't(`Hello ${derive(getName())}`);'],
-    ['$context: derive(...)', `t("Book", { $context: derive(getMeaning()) });`],
-  ])('injects no $_hash for %s', (_name, call) => {
-    const { errors, code } = transform(`${USE_GT}${call}`);
-    expect(errors).toEqual([]);
-    expect(code).not.toContain('$_hash');
-  });
-
-  it.each([
-    ['a derive() message', 't(`Hello ${derive(getName())}`);', 'derive(', {}],
-    [
-      'autoderive dynamic content',
-      't(`Hello ${name}`);',
-      '${name}',
-      { autoderive: true },
-    ],
-  ])(
-    '%s does not shift hashes onto sibling calls',
-    (_name, call, marker, options) => {
-      const { errors, code } = transform(
-        `${USE_GT}${call}\nt("Static message");`,
-        options
-      );
-      expect(errors).toEqual([]);
-      expect(injectedHashes(code)).toEqual([
-        `"$_hash": "${icuHash('Static message')}"`,
-      ]);
-      // The hash is attached to the static call, not the skipped one
-      const skippedCall = code.split('\n').find((l) => l.includes(marker));
-      expect(skippedCall).toBeDefined();
-      expect(skippedCall).not.toContain('$_hash');
-    }
-  );
-
-  it('excludes derive entries from the useGT() prefetch array', () => {
-    const { errors, code } = transform(`${USE_GT}
-      t("Book", { $context: derive(getMeaning()) });
-      t("Static message");
-    `);
-    expect(errors).toEqual([]);
-    expect(code).toContain('useGT([');
-    expect(code).toContain('message: "Static message"');
-    expect(code).not.toContain('message: "Book"');
-    expect(code).not.toContain('$_hash: ""');
-  });
-
-  it('leaves useGT() without arguments when every call is derived', () => {
-    const { errors, code } = transform(
-      USE_GT + 't(`Hello ${derive(getName())}`);'
-    );
-    expect(errors).toEqual([]);
-    expect(code).toContain('useGT()');
-    expect(code).not.toContain('$_hash');
-  });
-
-  it('keeps hash alignment when a standalone t() appears before the callback', () => {
-    const { ast } = transform(`
-      import { useGT, t } from 'gt-react';
-      const standalone = t("Standalone string");
-      const gt = useGT();
-      const callback = gt("Callback string");
-    `);
-    const [tCall] = findCalls(ast, 't');
-    const [gtCall] = findCalls(ast, 'gt');
-    expect(literalValue(tCall.arguments[1])).toEqual({
-      $_hash: icuHash('Standalone string'),
-    });
-    expect(literalValue(gtCall.arguments[1])).toEqual({
-      $_hash: icuHash('Callback string'),
-    });
-  });
-
-  it('resolves a local t = useGT() that shadows an imported t to the callback', () => {
-    const { errors, code } = transform(`
-      import { useGT, t } from 'gt-react';
-      const standalone = t("Standalone string");
-      function Component() {
-        const t = useGT();
-        return t("Callback string");
-      }
-    `);
-    expect(errors).toEqual([]);
-    expect(code).toContain('useGT([');
-    expect(code).toContain('message: "Callback string"');
-    expect(code).not.toContain('message: "Standalone string"');
-    expect(code).toContain(`"$_hash": "${icuHash('Callback string')}"`);
-  });
-});
-
-describe('standalone string function hash injection', () => {
-  it('injects $_hash into t() and keeps its options', () => {
-    const { ast } = transform(`
-      import { t } from 'gt-react';
-      const msg = t("Hello world", { $context: "greeting" });
-    `);
-    const calls = findCalls(ast, 't');
-    expect(calls).toHaveLength(1);
-    expect(literalValue(calls[0].arguments[1])).toEqual({
-      $context: 'greeting',
-      $_hash: hashSource({
-        source: 'Hello world',
-        context: 'greeting',
-        dataFormat: 'ICU',
-      }),
-    });
-  });
-
-  it('does not inject $_hash into msg()', () => {
-    const { ast } = transform(`
-      import { msg } from 'gt-react';
-      const value = msg("Hello world");
-    `);
-    const calls = findCalls(ast, 'msg');
-    expect(calls).toHaveLength(1);
-    expect(calls[0].arguments).toHaveLength(1);
-  });
-
-  it('injects getGT() preload messages with TranslationMetadata keys', () => {
-    const { ast } = transform(`
-      import { getGT } from 'gt-next/server';
-      async function Page() {
-        const t = await getGT();
-        return t("Hello", { $context: "nav", $id: "greet", $maxChars: 50, $format: "STRING" });
-      }
-    `);
-    const getGTCalls = findCalls(ast, 'getGT');
-    expect(getGTCalls).toHaveLength(1);
-    expect(literalValue(getGTCalls[0].arguments[0])).toEqual([
-      {
-        message: 'Hello',
-        $context: 'nav',
-        $id: 'greet',
-        $maxChars: 50,
-        $format: 'STRING',
-        $_hash: hashSource({
-          source: 'Hello',
-          context: 'nav',
-          maxChars: 50,
-          dataFormat: 'STRING',
-        }),
-      },
-    ]);
   });
 });

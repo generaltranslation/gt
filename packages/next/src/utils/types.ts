@@ -1,12 +1,8 @@
+import type { Tx } from 'gt-react';
 import { ReactNode } from 'react';
 
 export type GTProviderProps = {
   children?: ReactNode;
 };
 
-export type TxProps = Record<string, ReactNode> & {
-  children: ReactNode;
-  context?: string;
-  maxChars?: number;
-  locale?: string;
-};
+export type TxProps = Parameters<typeof Tx>[0];

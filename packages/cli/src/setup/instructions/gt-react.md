@@ -36,15 +36,17 @@ import { T } from 'gt-react';
 
 ## Translating simple strings
 
-Use the `t` function returned by the `useGT()` hook to translate strings directly.
+Use the `t` tagged template returned by the `useGT()` hook to translate strings directly.
 
 ```js
 import { useGT } from 'gt-react';
 const t = useGT();
-t('Hello, world!'); // returns "Hola, mundo"
+t`Hello, world!`; // returns "Hola, mundo"
+t`Hello, ${{ name }}!`;
 ```
 
-- Just like with the children of the `<T>` component, all strings passed to `t()` must be static string literals. No variables or template literals.
+- Just like with the children of the `<T>` component, the text of a `t` template must be static. Pass each dynamic value as a named variable, as in `${{ name }}`.
+- Options go in a call before the template: ``t({ context: 'button' })`Save` ``.
 
 ## Translating shared or out-of-scope strings
 
@@ -61,8 +63,8 @@ export default function Greeting() {
 }
 ```
 
-- All strings passed to `msg()` must be static string literals. No variables or template literals.
-- `useMessages()` / `getMessages()` take no arguments.
+- `msg()` takes one static string literal. For a message with variables or options, use it as a tagged template like `t`: ``msg`Hello, ${{ name }}!` ``.
+- `useMessages()` takes no arguments.
 
 ## Dynamic content inside `<T>`
 

@@ -4,14 +4,13 @@
 
 ## Architecture
 
-The compiler uses a **4-pass Babel pipeline** on `.tsx/.jsx/.ts/.js` files:
+The compiler uses a **3-pass Babel pipeline** on `.tsx/.jsx/.ts/.js` files:
 
 1. **JSX Insertion Pass** — Auto-wraps translatable JSX in `_T` / `_Var` components (when `enableAutoJsxInjection` is enabled)
-2. **Macro Expansion Pass** — Transforms `t`\`...\``tagged templates and`t("...")` calls
-3. **Collection Pass** — Collects translation data, computes hashes, validates usage
-4. **Injection Pass** — Injects hashes and metadata into the AST
+2. **Collection Pass** — Collects `<T>` content, computes hashes, validates usage
+3. **Injection Pass** — Injects `<T>` hashes into the AST
 
-With `compileTimeHash`, files importing an `/unstable` entry point also run the **Unstable Hash Injection Pass**, which hashes and rewrites each static tagged template in one visit (no collection counters). Its walker mirrors the CLI's `extractMessageTrees`; `test-fixtures/message-tree-wire-format.json` keeps their hashes equal.
+With `compileTimeHash`, files importing a message helper entry (`isGTMessageImportSource` in `generaltranslation/internal`) also run the **Tagged Template Hash Injection Pass**, which hashes and rewrites each static tagged template in one visit (no collection counters): `` t`...` `` becomes `` t({ $_hash })`...` `` for an imported `t` or `msg` and for the tag returned by `useGT()` / `getGT()`. The tag stays a tagged template; nothing rewrites it into a string call. Its walker mirrors the CLI's `extractMessageTrees`; `test-fixtures/message-tree-wire-format.json` keeps their hashes equal.
 
 Entry point: `src/index.ts` (creates the unplugin).
 
@@ -23,9 +22,9 @@ src/
 ├── config.ts             # PluginConfig / PluginSettings types
 ├── passes/               # Babel visitor passes (one per pipeline stage)
 │   ├── jsxInsertionPass.ts
-│   ├── macroExpansionPass.ts
 │   ├── collectionPass.ts
 │   ├── injectionPass.ts
+│   ├── taggedTemplateHashInjectionPass.ts
 │   └── __tests__/
 ├── processing/           # Core logic invoked by passes
 │   ├── jsx-insertion/    # JSX auto-insertion logic + rules doc
@@ -54,10 +53,9 @@ Key concepts:
 Key flags in `PluginConfig` (`src/config.ts`):
 
 - `enableAutoJsxInjection` — enables JSX insertion pass
-- `enableMacroTransform` — enables t\`\` macro expansion
 - `compileTimeHash` — enables hash generation
 - `disableBuildChecks` — skips validation checks
-- `autoDerive` — treats interpolated values as `derive()` calls
+- `autoderive` — treats interpolated values in `<T>` as `derive()` calls
 
 Can be set via `gt.config.json` under `files.gt.parsingFlags.enableAutoJsxInjection`.
 
@@ -71,8 +69,10 @@ Test suites in `src/passes/__tests__/`:
 
 - `jsxInsertionPass.test.ts` — JSX insertion behavior, edge cases and regressions
 - `jsxInsertionE2E.test.ts` — end-to-end pipeline tests
-- `hashInjection.test.ts` — hash injection for derive, Branch/Plural ids and `useGT()` callbacks
+- `hashInjection.test.ts` — `<T>` hash injection for derive and Branch/Plural ids
 - `testHelpers.ts` — shared parse/traverse/generate pipeline for pass tests
+
+`src/__tests__/taggedTemplateHashInjectionPass.test.ts` covers the tagged template hashes through the real plugin transform.
 
 ## Important Invariants
 

@@ -1,143 +1,109 @@
+import { hashSource } from 'generaltranslation/id';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setReadonlyConditionStore } from '../../../condition-store/singleton-operations';
 import type { ReactI18nCache } from '../../../i18n-cache/ReactI18nCache';
 import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
-import { setReadonlyConditionStore } from '../../../condition-store/singleton-operations';
-import {
-  initializeI18nConfig,
-  type RenderStrategy,
-} from '../../../setup/i18nConfig';
+import { initializeI18nConfig } from '../../../setup/i18nConfig';
 import { t } from '../t';
 
-type TestGlobal = typeof globalThis & {
-  __generaltranslation?: unknown;
+type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
+
+const saveTree = 'Save';
+const translations: Record<string, unknown> = {
+  [hashSource({ source: saveTree, dataFormat: 'MESSAGE_TREE' })]: 'Enregistrer',
+  [hashSource({
+    source: saveTree,
+    dataFormat: 'MESSAGE_TREE',
+    context: 'button',
+  })]: 'Sauvegarder',
 };
 
-function resetGTGlobals() {
-  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
-}
-
-const lookupTranslation = vi.fn();
-
-function setup(renderStrategy: RenderStrategy = 'SPA', locale = 'en') {
-  initializeI18nConfig(
-    {
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-    },
-    renderStrategy
-  );
-  setConditions(locale);
-  setReactI18nCache({
-    lookupTranslation,
-  } as unknown as ReactI18nCache);
-}
-
-function setConditions(locale: string) {
+function setConditions(locale: string, enableI18n = true) {
   setReadonlyConditionStore({
     getLocale: () => locale,
     getRegion: () => undefined,
-    getEnableI18n: () => true,
+    getEnableI18n: () => enableI18n,
     setLocale: () => {},
     setRegion: () => {},
     setEnableI18n: () => {},
   });
 }
 
-describe('t', () => {
+describe('react-core t', () => {
   beforeEach(() => {
-    resetGTGlobals();
-    lookupTranslation.mockReset();
-    setup();
+    Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+    setReactI18nCache({
+      lookupTranslation: vi.fn(
+        (locale: string, message: string, options: { $context?: string }) =>
+          locale === 'fr'
+            ? translations[
+                hashSource({
+                  source: message,
+                  dataFormat: 'MESSAGE_TREE',
+                  context: options.$context,
+                })
+              ]
+            : undefined
+      ),
+    } as unknown as ReactI18nCache);
   });
 
-  it('interpolates source strings when translation is not required', () => {
-    expect(t('hello, {name}', { name: 'brian' })).toBe('hello, brian');
+  it('translates with the condition store locale', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    setConditions('fr');
+
+    expect(t`Save`).toBe('Enregistrer');
+    expect(t({ context: 'button' })`Save`).toBe('Sauvegarder');
   });
 
-  it('keeps tagged template literal lookup in string format', () => {
-    t`hello, ${'brian'}`;
+  it('renders the source when i18n is disabled', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    setConditions('fr', false);
 
-    expect(lookupTranslation).toHaveBeenCalledWith('en', 'hello, brian', {
-      $format: 'STRING',
-    });
+    expect(t`Save`).toBe('Save');
   });
-});
 
-describe('t outside a client-rendered (SPA) app', () => {
-  beforeEach(() => {
-    resetGTGlobals();
-    lookupTranslation.mockReset();
-    lookupTranslation.mockReturnValue('Bonjour, {name} !');
+  it('works at module level in an SPA, before any request scope', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    setConditions('fr');
+
+    // A module-level constant, evaluated once at import time.
+    const label = t`Save`;
+    expect(label).toBe('Enregistrer');
+  });
+
+  it('rejects every call in server-rendered apps in development', () => {
+    vi.stubEnv('NODE_ENV', 'development');
     initializeI18nConfig(
       { defaultLocale: 'en', locales: ['en', 'fr'] },
       'server-render'
     );
-  });
+    setConditions('fr');
 
-  it.each([
-    ['at module level, before GT has a locale', () => {}],
-    ['once the condition store is initialized', () => setConditions('fr')],
-  ])('throws in development %s', (_, arrange) => {
-    vi.stubEnv('NODE_ENV', 'development');
-    arrange();
     try {
-      expect(() => t('Hello, {name}!', { name: 'Ann' })).toThrow(
-        /only available in client-rendered \(SPA\) apps/
-      );
-      expect(() => t`Hello, ${'Ann'}!`).toThrow(/Message: "Hello, !"/);
+      expect(() => t`Save`).toThrow(/only available in client-rendered/);
+      expect(() => t({ context: 'button' })`Save`).toThrow(/Message: "Save"/);
     } finally {
       vi.unstubAllEnvs();
     }
   });
 
-  it('logs each call and renders the interpolated source in production', () => {
+  it('logs and renders the source in server-rendered apps in production', () => {
     vi.stubEnv('NODE_ENV', 'production');
+    initializeI18nConfig(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      'server-render'
+    );
     setConditions('fr');
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
     try {
-      expect(t('Hello, {name}!', { name: 'Ann' })).toBe('Hello, Ann!');
-      expect(t`Hello, ${'Ann'}!`).toBe('Hello, Ann!');
+      expect(t`Save`).toBe('Save');
+      expect(t({ context: 'button' })`Save`).toBe('Save');
       expect(error).toHaveBeenCalledTimes(2);
       expect(error).toHaveBeenCalledWith(
-        expect.stringContaining('use useGT() in components')
+        expect.stringContaining('use useGT()')
       );
-      expect(lookupTranslation).not.toHaveBeenCalled();
-    } finally {
-      error.mockRestore();
-      vi.unstubAllEnvs();
-    }
-  });
-
-  it('renders the quotes and braces of a tagged template as written in production', () => {
-    vi.stubEnv('NODE_ENV', 'production');
-    setConditions('fr');
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    try {
-      expect(t`Hello '${'Ann'}'`).toBe("Hello 'Ann'");
-      expect(t`Use {name} for ${'Ann'}`).toBe('Use {name} for Ann');
-    } finally {
-      error.mockRestore();
-      vi.unstubAllEnvs();
-    }
-  });
-});
-
-describe('t in a client-rendered (SPA) app', () => {
-  beforeEach(() => {
-    resetGTGlobals();
-    lookupTranslation.mockReset();
-    setup('SPA', 'fr');
-  });
-
-  it('translates at module level without reporting', () => {
-    vi.stubEnv('NODE_ENV', 'development');
-    lookupTranslation.mockReturnValue('Bonjour, {name} !');
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    try {
-      // A module-level constant, evaluated once at import time.
-      const greeting = t('Hello, {name}!', { name: 'Ann' });
-      expect(greeting).toBe('Bonjour, Ann !');
-      expect(error).not.toHaveBeenCalled();
     } finally {
       error.mockRestore();
       vi.unstubAllEnvs();

@@ -26,7 +26,7 @@ export default async function Home() {
             runtime value: <Var>{renderedAt}</Var>
           </p>
         </T>
-        <p>{t('A server-translated string from getGT.')}</p>
+        <p>{t`A server-translated string from getGT.`}</p>
       </section>
 
       <ClientDemo />

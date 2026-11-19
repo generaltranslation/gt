@@ -4,7 +4,7 @@ import { templateToMessage } from '@generaltranslation/icu/internal';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { randomUUID } from 'node:crypto';
 import { warnNonStaticMessageTreeSync } from '../../../../../console/index.js';
-import { extractStringEntryMetadata } from '../processTranslationCall/extractStringEntryMetadata.js';
+import { extractStringEntryMetadata } from './extractStringEntryMetadata.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { NonStaticMessageError, formatLocation } from './diagnostics.js';
 import { parseMessageOptions } from './parseMessageOptions.js';
@@ -27,11 +27,7 @@ export function processMessage(
     const hashMetadata = parseMessageOptions(options, tagged.node);
     const variants = templateVariants(tagged.get('quasi'), context);
     const metadata = {
-      ...extractStringEntryMetadata({
-        output,
-        config,
-        nodeLoc: tagged.node.loc,
-      }),
+      ...extractStringEntryMetadata({ config, nodeLoc: tagged.node.loc }),
       ...hashMetadata,
       ...(context.usesDerive && {
         staticId: `derive-temp-id-${randomUUID()}`,

@@ -14,7 +14,7 @@ import wireFormatCases from '../../../../../../test-fixtures/message-tree-wire-f
 
 vi.mock('../../../fs/matchFiles.js', () => ({ matchFiles: vi.fn() }));
 
-const UNSTABLE_HELPERS =
+const MESSAGE_HELPERS =
   'msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
 
 // The fixtures' free variables, typed as in fixtureParity.test.ts: the CLI
@@ -22,17 +22,17 @@ const UNSTABLE_HELPERS =
 const FIXTURE_VALUES =
   'declare const first: string, second: string, count: number, role: string, price: number, due: Date;';
 
-// The CLI reads value types with TypeScript, so every /unstable import in the
-// project resolves to the real gt-i18n/unstable types.
+// The CLI reads value types with TypeScript, so every gt-* import in the
+// project resolves to the real gt-i18n types.
 const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-message-tree-'));
-const i18nUnstable = path.resolve(
+const i18nEntry = path.resolve(
   import.meta.dirname,
-  '../../../../../i18n/src/unstable'
+  '../../../../../i18n/src/index'
 );
 fs.writeFileSync(
-  path.join(projectDir, 'unstable.d.ts'),
-  `export * from '${i18nUnstable}';
-import type { GT } from '${i18nUnstable}';
+  path.join(projectDir, 'gt.d.ts'),
+  `export * from '${i18nEntry}';
+import type { GT } from '${i18nEntry}';
 export declare function useGT(): GT;
 export declare function getGT(): Promise<GT>;
 `
@@ -44,7 +44,7 @@ fs.writeFileSync(
     compilerOptions: {
       strict: true,
       jsx: 'preserve',
-      paths: { 'gt-*': ['./unstable.d.ts'] },
+      paths: { 'gt-*': ['./gt.d.ts'] },
     },
   })
 );
@@ -59,7 +59,7 @@ fs.writeFileSync(
     compilerOptions: {
       strict: false,
       jsx: 'preserve',
-      paths: { 'gt-*': ['../unstable.d.ts'] },
+      paths: { 'gt-*': ['../gt.d.ts'] },
     },
   })
 );
@@ -104,7 +104,7 @@ async function extract(
 const treeUpdates = (result: Awaited<ReturnType<typeof extract>>) =>
   result.updates.filter((update) => update.dataFormat === 'MESSAGE_TREE');
 
-describe('createInlineUpdates: unstable tagged templates', () => {
+describe('createInlineUpdates: tagged templates', () => {
   // `t` in each fixture template becomes the tag under test.
   const forms: Record<string, (template: string) => string> = {
     t: (template) => template,
@@ -120,7 +120,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       '%s',
       async (_name, testCase) => {
         const result = await extract(
-          `import { ${form === 't' ? 't, ' : ''}${UNSTABLE_HELPERS} } from 'gt-i18n/unstable';\n${FIXTURE_VALUES}\n${forms[form](testCase.template)};\n`
+          `import { ${form === 't' ? 't, ' : ''}${MESSAGE_HELPERS} } from 'gt-i18n';\n${FIXTURE_VALUES}\n${forms[form](testCase.template)};\n`
         );
 
         expect(result.errors).toEqual([]);
@@ -134,34 +134,30 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     );
   });
 
-  it('routes gt-react/unstable t and useGT to the tree path only', async () => {
-    const result = await extract(`
-      import { t, useGT } from 'gt-react/unstable';
-      import { t as legacyT, useGT as useLegacyGT } from 'gt-react';
-      export function Component({ name }) {
-        const gt = useGT();
-        const legacy = useLegacyGT();
-        legacy('Hello, world!');
-        legacyT\`Hello, \${name}!\`;
-        gt({ context: 'button' })\`Save\`;
-        return t\`Hello, \${{ name }}!\`;
-      }
-    `);
+  it.each([
+    "import { useGT } from 'gt-react';\nexport function Component() {\n  const t = useGT();\n  return t`Hello`;\n}\n",
+    "import { getGT } from 'gt-next/server';\nexport async function load() {\n  const t = await getGT();\n  return t`Hello`;\n}\n",
+    "import { t } from 'gt-react';\nt`Hello`;\n",
+  ])('extracts a message once from a bare stable import', async (code) => {
+    const result = await extract(code);
 
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual([]);
-    expect(
-      result.updates.filter((u) => u.dataFormat === 'ICU').map((u) => u.source)
-    ).toEqual(expect.arrayContaining(['Hello, world!', 'Hello, {0}!']));
-    expect(treeUpdates(result).map((u) => u.metadata.context)).toEqual(
-      expect.arrayContaining(['button', undefined])
+    expect(result.updates.map((u) => [u.dataFormat, u.source])).toEqual([
+      ['MESSAGE_TREE', templateToMessage(['Hello'], []).tree],
+    ]);
+  });
+
+  it('does not read gt-react-native as gt-react', async () => {
+    const result = await extract(
+      "import { t, T } from 'gt-react-native';\nt`Hello`;\n<T>Hello</T>;\n"
     );
-    expect(result.updates).toHaveLength(4);
+    expect(result.updates).toEqual([]);
   });
 
   it('stores maxChars and requiresReview options in metadata and the hash', async () => {
     const result = await extract(`
-      import { t } from 'gt-react/unstable';
+      import { t } from 'gt-react';
       t({ maxChars: -12, requiresReview: true })\`Read more\`;
     `);
 
@@ -182,7 +178,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('skips a message with an unsupported option', async () => {
     const result = await extract(`
-      import { t } from 'gt-react/unstable';
+      import { t } from 'gt-react';
       t({ locale: 'fr' })\`Save\`;
       t\`Still extracted\`;
     `);
@@ -197,7 +193,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('follows aliased imports and same-file const part references', async () => {
     const result = await extract(`
-      import { t as translate, plural as p, part as fragment, n as pound } from 'gt-react/unstable';
+      import { t as translate, plural as p, part as fragment, n as pound } from 'gt-react';
       const from = fragment\`from \${{ who }}\`;
       translate\`\${p({ count }, { one: fragment\`\${pound} message \${from}\`, other: from })}\`;
     `);
@@ -216,7 +212,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('emits one linked entry per derive() variant', async () => {
     const result = await extract(`
-      import { t, derive } from 'gt-react/unstable';
+      import { t, derive } from 'gt-react';
       const isMorning = Math.random() > 0.5;
       t\`Good \${derive(isMorning ? 'morning' : 'evening')}\`;
     `);
@@ -232,7 +228,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('skips non-static messages with a warning and keeps extracting', async () => {
     const result = await extract(`
-      import { t, plural, derive } from 'gt-react/unstable';
+      import { t, plural, derive } from 'gt-react';
       export function Component({ ctx, branches, role }) {
         const hoisted = derive(role);
         t\`Hi \${hoisted}\`;
@@ -259,9 +255,9 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     expect(skipped.join('\n')).toContain('built outside the template');
   });
 
-  it('ignores unstable sources outside the configured library', async () => {
+  it('ignores sources outside the configured library', async () => {
     const result = await extract(
-      `import { t } from 'gt-react/unstable';\nt\`Hello\`;\n`,
+      `import { t } from 'gt-react';\nt\`Hello\`;\n`,
       Libraries.GT_NODE
     );
     expect(result.updates).toEqual([]);
@@ -280,7 +276,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       ],
     ])('skips derive() of %s', async (_name, code) => {
       const result = await extract(
-        `import { t, derive } from 'gt-react/unstable';\n${code}\nt\`Still extracted\`;\n`
+        `import { t, derive } from 'gt-react';\n${code}\nt\`Still extracted\`;\n`
       );
 
       expect(treeUpdates(result).map((u) => u.source)).toEqual([
@@ -293,7 +289,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     // A host such as getValidateJson() can extract twice in one process.
     it('reads the types of an edited file on the next run', async () => {
-      const header = `import { t, derive } from 'gt-react/unstable';\ndeclare const txt: string;\n`;
+      const header = `import { t, derive } from 'gt-react';\ndeclare const txt: string;\n`;
       const specifier = writeModule(`${header}t\`${'$'}{derive('A')}\`;\n`);
       const file = path.join(projectDir, `${specifier}.tsx`);
       vi.mocked(matchFiles).mockReturnValue([file]);
@@ -320,7 +316,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     it('skips derive() of a value that is not a string', async () => {
       const result = await extract(`
-        import { t, derive } from 'gt-react/unstable';
+        import { t, derive } from 'gt-react';
         declare const flag: boolean;
         t\`\${derive(flag ? 1 : 2)}\`;
       `);
@@ -333,7 +329,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     it('extracts every return of a helper', async () => {
       const result = await extract(`
-        import { t, derive } from 'gt-react/unstable';
+        import { t, derive } from 'gt-react';
         function label(user?: { name: string }) {
           if (!user) return 'Guest';
           return 'Member';
@@ -354,7 +350,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
         'ts'
       );
       const result = await extract(`
-        import { t, derive } from 'gt-react/unstable';
+        import { t, derive } from 'gt-react';
         import { labels } from '${labels}';
         declare const role: keyof typeof labels;
         t\`\${derive(labels[role])}\`;
@@ -370,13 +366,11 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     it('hashes derived text like text written in the template', async () => {
       const [derived] = treeUpdates(
         await extract(
-          "import { t, derive } from 'gt-react/unstable';\nt`Hello ${derive('world')}`;\n"
+          "import { t, derive } from 'gt-react';\nt`Hello ${derive('world')}`;\n"
         )
       );
       const [written] = treeUpdates(
-        await extract(
-          "import { t } from 'gt-react/unstable';\nt`Hello world`;\n"
-        )
+        await extract("import { t } from 'gt-react';\nt`Hello world`;\n")
       );
 
       expect(derived.source).toEqual('Hello world');
@@ -418,7 +412,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     ],
   ])('skips a value typed as a placeholder: %s', async (_name, code) => {
     const result = await extract(
-      `import { t, plural, number, part, select, n } from 'gt-react/unstable';\n${code}\n`
+      `import { t, plural, number, part, select, n } from 'gt-react';\n${code}\n`
     );
 
     expect(treeUpdates(result)).toEqual([]);
@@ -439,7 +433,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     ],
   ])('skips a message with %s', async (_name, code, warning) => {
     const result = await extract(
-      `import { t, plural, part, n } from 'gt-react/unstable';\n${code}\n`
+      `import { t, plural, part, n } from 'gt-react';\n${code}\n`
     );
 
     expect(treeUpdates(result)).toEqual([]);
@@ -448,7 +442,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('reads branches wrapped in type assertions', async () => {
     const result = await extract(
-      "import { t, select, part } from 'gt-react/unstable';\nt`${select({ s }, { a: 'A' as const, b: part`B` satisfies object, other: 'C'! })}`;\n"
+      "import { t, select, part } from 'gt-react';\nt`${select({ s }, { a: 'A' as const, b: part`B` satisfies object, other: 'C'! })}`;\n"
     );
 
     expect(result.warnings).toEqual([]);
@@ -457,7 +451,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('reads a destructured value as an anonymous value', async () => {
     const result = await extract(
-      "import { t } from 'gt-react/unstable';\nconst { name } = { name: 'Ada' };\nt`Hi ${name}`;\n"
+      "import { t } from 'gt-react';\nconst { name } = { name: 'Ada' };\nt`Hi ${name}`;\n"
     );
 
     expect(result.warnings).toEqual([]);
@@ -468,7 +462,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('reads a value typed as a template literal type as an anonymous value', async () => {
     const result = await extract(
-      "import { t } from 'gt-react/unstable';\ndeclare const id: `id-${string}`;\nt`Item ${id}`;\n"
+      "import { t } from 'gt-react';\ndeclare const id: `id-${string}`;\nt`Item ${id}`;\n"
     );
 
     expect(result.warnings).toEqual([]);
@@ -479,7 +473,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('reads a type-asserted object as a named variable', async () => {
     const result = await extract(
-      "import { t } from 'gt-react/unstable';\nt`Hi ${{ name } as const}`;\n"
+      "import { t } from 'gt-react';\nt`Hi ${{ name } as const}`;\n"
     );
 
     expect(treeUpdates(result).map((u) => u.source)).toEqual([
@@ -489,7 +483,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('reads a Date subclass passed to date()', async () => {
     const result = await extract(
-      "import { t, date } from 'gt-react/unstable';\nclass CustomDate extends Date {}\nconst due = new CustomDate(0);\nt`Due ${date(due)}`;\n"
+      "import { t, date } from 'gt-react';\nclass CustomDate extends Date {}\nconst due = new CustomDate(0);\nt`Due ${date(due)}`;\n"
     );
 
     expect(result.warnings).toEqual([]);
@@ -500,7 +494,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('reads a generic Date subclass passed to date()', async () => {
     const result = await extract(
-      "import { t, date } from 'gt-react/unstable';\nclass CustomDate<T> extends Date { extra?: T }\nt`Due ${date(new CustomDate<number>(0))}`;\n"
+      "import { t, date } from 'gt-react';\nclass CustomDate<T> extends Date { extra?: T }\nt`Due ${date(new CustomDate<number>(0))}`;\n"
     );
 
     expect(result.warnings).toEqual([]);
@@ -512,7 +506,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
   // The runtime names an object's key, so `any` could be `{ name }`.
   it('skips a value typed any, whose shape is unknown', async () => {
     const result = await extract(
-      'import { t } from \'gt-react/unstable\';\nconst hole = JSON.parse(\'{"name":"Ada"}\');\nt`Hi ${hole}`;\n'
+      'import { t } from \'gt-react\';\nconst hole = JSON.parse(\'{"name":"Ada"}\');\nt`Hi ${hole}`;\n'
     );
 
     expect(treeUpdates(result)).toEqual([]);
@@ -521,7 +515,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('skips a bare Date, which needs date() to be formatted', async () => {
     const result = await extract(
-      "import { t } from 'gt-react/unstable';\ndeclare const due: Date | string;\nt`Due ${due}`;\n"
+      "import { t } from 'gt-react';\ndeclare const due: Date | string;\nt`Due ${due}`;\n"
     );
 
     expect(treeUpdates(result)).toEqual([]);
@@ -534,7 +528,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     // Without strictNullChecks, labels.text reads as 'A' though it can be
     // undefined, which derive() renders as no text.
     const result = await extract(
-      "import { t, derive } from 'gt-react/unstable';\ndeclare const flag: boolean;\nconst labels = flag ? { text: 'A' as const } : {};\nt`Label ${derive((labels as { text: 'A' }).text)}`;\n",
+      "import { t, derive } from 'gt-react';\ndeclare const flag: boolean;\nconst labels = flag ? { text: 'A' as const } : {};\nt`Label ${derive((labels as { text: 'A' }).text)}`;\n",
       Libraries.GT_NEXT,
       {} as GTParsingFlags,
       looseDir
@@ -547,69 +541,10 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     ]);
   });
 
-  // Both APIs export derive(), so an editor can auto-import the wrong one.
-  describe('helpers mixed between t() and unstable messages', () => {
-    it.each([
-      ['inline', '`dear ${declareVar(name)}`'],
-      ['through a function', 'label(name)'],
-    ])(
-      'skips an unstable message with a legacy declareVar() %s',
-      async (_how, argument) => {
-        const result = await extract(`
-          import { t, derive } from 'gt-react/unstable';
-          import { declareVar } from 'gt-react';
-          function label(name) { return \`dear \${declareVar(name)}\`; }
-          t\`Hi \${derive(${argument})}\`;
-        `);
-
-        expect(treeUpdates(result)).toEqual([]);
-        expect(result.warnings.join('\n')).toContain(
-          'the derive() value is typed as any string'
-        );
-      }
-    );
-
-    it('names the legacy import of a helper used in an unstable message', async () => {
-      const result = await extract(`
-        import { t } from 'gt-react/unstable';
-        import { derive } from 'gt-react';
-        t\`Role: \${derive(admin ? 'admin' : 'guest')}\`;
-      `);
-
-      expect(treeUpdates(result)).toEqual([]);
-      expect(result.warnings.join('\n')).toContain(
-        'derive() is imported from gt-react, which only works with t() messages'
-      );
-    });
-
-    it.each([
-      [
-        'an unstable derive()',
-        "import { derive } from 'gt-react/unstable';",
-        't(`Role: ${derive(admin ? "a" : "b")}`)',
-        'derive()',
-      ],
-    ])('reports %s in a t() message', async (_name, imports, call, helper) => {
-      const result = await extract(`
-        import { useGT } from 'gt-react';
-        ${imports}
-        export function Component({ name, admin }) {
-          const t = useGT();
-          return ${call};
-        }
-      `);
-
-      expect(result.updates).toEqual([]);
-      expect(result.errors.join('\n')).toContain(
-        `${helper} is imported from an unstable entry, which only works inside tagged t\`...\` messages`
-      );
-    });
-  });
-
   describe('tag aliases', () => {
     it('follows const aliases of t and the useGT() result', async () => {
       const result = await extract(`
-        import { t, useGT } from 'gt-react/unstable';
+        import { t, useGT } from 'gt-react';
         const translate = t;
         translate\`Hello\`;
         export function Component() {
@@ -628,7 +563,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     it('applies the options of a configured tag', async () => {
       const result = await extract(`
-        import { t, useGT } from 'gt-react/unstable';
+        import { t, useGT } from 'gt-react';
         const save = t({ context: 'button' });
         const alsoSave = save;
         alsoSave\`Save\`;
@@ -653,8 +588,8 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     it('warns about uses it cannot follow', async () => {
       const result = await extract(`
-        import { t, useGT } from 'gt-react/unstable';
-        register(t);
+        import { t, useGT } from 'gt-react';
+        register('label', t);
         t.call(null, ['Hi']);
         export { t };
         export const exported = t;
@@ -685,7 +620,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
   describe('msg', () => {
     it('extracts a literal call as literal text', async () => {
       const result = await extract(`
-        import { msg } from 'gt-react/unstable';
+        import { msg } from 'gt-react';
         msg('Save');
         msg(\`Hello {name}\`);
         msg('');
@@ -706,7 +641,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     it('extracts tagged and options forms like t', async () => {
       const result = await extract(`
-        import { msg } from 'gt-react/unstable';
+        import { msg } from 'gt-react';
         msg\`Save\`;
         msg({ context: 'button' })\`Save\`;
       `);
@@ -724,7 +659,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     it('follows aliases and configured tags', async () => {
       const result = await extract(`
-        import { msg as message } from 'gt-react/unstable';
+        import { msg as message } from 'gt-react';
         const mm = message;
         mm('Hi');
         mm\`Bye\`;
@@ -744,7 +679,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     it('warns about a call it cannot extract', async () => {
       const result = await extract(`
-        import { msg } from 'gt-react/unstable';
+        import { msg } from 'gt-react';
         msg(label);
         msg('a', 'b');
         msg(\`Hi \${name}\`);
@@ -765,7 +700,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     it('does not extract m() calls', async () => {
       const result = await extract(`
-        import { msg, useMessages } from 'gt-react/unstable';
+        import { msg, useMessages } from 'gt-react';
         export function Component({ label }) {
           const m = useMessages();
           return [m(msg('Save')), m('Other'), m(label)];
@@ -779,7 +714,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('skips a reserved variable name with a warning and keeps extracting', async () => {
     const result = await extract(`
-      import { t } from 'gt-react/unstable';
+      import { t } from 'gt-react';
       t\`Hello \${{ _gt_name }}\`;
       t\`Still extracted\`;
     `);
@@ -798,7 +733,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
   describe('Intl options', () => {
     const extractTrees = async (message: string) => {
       const result = await extract(
-        `import { t, number, date, time } from 'gt-react/unstable';\ndeclare const zone: string, code: () => string;\n${message};\n`
+        `import { t, number, date, time } from 'gt-react';\ndeclare const zone: string, code: () => string;\n${message};\n`
       );
       return { warnings: result.warnings, updates: treeUpdates(result) };
     };
@@ -898,7 +833,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       ', '
     );
     const result = await extract(`
-      import { t, part, select, derive } from 'gt-react/unstable';
+      import { t, part, select, derive } from 'gt-react';
       const shared = part\`\${derive(flag ? 'Ready' : 'Waiting')}\`;
       t\`\${select({ status }, { ${branches}, other: 'Other' })}\`;
       t\`Still extracted\`;
@@ -912,7 +847,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('skips one derive() with too many variants', async () => {
     const result = await extract(`
-      import { t, derive } from 'gt-react/unstable';
+      import { t, derive } from 'gt-react';
       type D = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'x';
       declare const code: \`\${D}\${D}\${D}\`;
       t\`\${derive(code)}\`;
@@ -925,17 +860,15 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     ]);
   });
 
-  it('warns about require() and import() of unstable sources', async () => {
+  it('warns about require() and import() that can take a message helper', async () => {
     const result = await extract(`
-      const { t } = require('gt-react/unstable');
-      const lazy = import('gt-react/unstable');
-      const legacy = require('gt-react');
+      const { t } = require('gt-react');
+      const lazy = import('gt-react');
+      const { T } = require('gt-react');
       t\`Hello\`;
     `);
 
-    const unsupported = result.warnings.filter((w) =>
-      w.includes('gt-react/unstable')
-    );
+    const unsupported = result.warnings.filter((w) => w.includes('gt-react'));
     expect(unsupported.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
       '2',
       '3',
@@ -943,9 +876,51 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     expect(treeUpdates(result)).toEqual([]);
   });
 
+  it('does not warn about an awaited import() that takes no message helper', async () => {
+    const result = await extract(`
+      export async function load() {
+        const { T } = await import('gt-react');
+        const { t } = await import('gt-react');
+        return [T, t];
+      }
+    `);
+
+    const unsupported = result.warnings.filter((w) =>
+      w.includes('through require()')
+    );
+    expect(unsupported.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
+      '4',
+    ]);
+  });
+
+  it('names a string call as one, since only tagged templates are extracted', async () => {
+    const result = await extract(`
+      import { t, useGT } from 'gt-react';
+      t('Hello');
+      function Component() {
+        const translate = useGT();
+        translate(\`Hello\`);
+        return useGT()('Hello');
+      }
+    `);
+
+    const stringCalls = result.warnings.filter((w) =>
+      w.includes('Skipped a string call')
+    );
+    expect(stringCalls.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
+      '3',
+      '6',
+      '7',
+    ]);
+    expect(
+      result.warnings.filter((w) => w.includes('Could not follow this use'))
+    ).toEqual([]);
+    expect(treeUpdates(result)).toEqual([]);
+  });
+
   it('warns about a hook used without calling it', async () => {
     const result = await extract(`
-      import { useGT } from 'gt-react/unstable';
+      import { useGT } from 'gt-react';
       const useTranslate = useGT;
       type Hook = typeof useGT;
       function Component() {
@@ -960,18 +935,16 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     expect(unfollowed.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual(['3']);
   });
 
-  it('warns about namespace imports and re-exports of unstable sources', async () => {
+  it('warns about namespace imports and re-exports of message helpers', async () => {
     const result = await extract(`
-      import * as GT from 'gt-react/unstable';
-      export { t } from 'gt-react/unstable';
-      export * from 'gt-react/unstable';
-      import * as legacy from 'gt-react';
+      import * as GT from 'gt-react';
+      export { t } from 'gt-react';
+      export * from 'gt-react';
+      export { T } from 'gt-react';
       GT.t\`Hello\`;
     `);
 
-    const unsupported = result.warnings.filter((w) =>
-      w.includes('gt-react/unstable')
-    );
+    const unsupported = result.warnings.filter((w) => w.includes('gt-react'));
     expect(unsupported.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
       '2',
       '3',
@@ -987,7 +960,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       'skips a %s with the branch %s, which is not a plural category',
       async (helper, key) => {
         const result = await extract(`
-          import { t, ${helper} } from 'gt-react/unstable';
+          import { t, ${helper} } from 'gt-react';
           declare const count: number;
           t\`\${${helper}({ count }, { ${key}: 'One file', other: 'Many files' })}\`;
           t\`Still extracted\`;
@@ -1006,7 +979,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       'accepts =0 and the six categories in %s',
       async (helper) => {
         const result = await extract(`
-          import { t, ${helper} } from 'gt-react/unstable';
+          import { t, ${helper} } from 'gt-react';
           declare const count: number;
           t\`\${${helper}({ count }, { '=0': 'a', zero: 'b', one: 'c', two: 'd', few: 'e', many: 'f', other: 'g' })}\`;
         `);
@@ -1020,7 +993,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
   describe('select branches', () => {
     const extractSelect = (call: string, dir?: string) =>
       extract(
-        `import { t, select } from 'gt-react/unstable';\ndeclare const role: 'admin' | 'member' | 'guest';\ndeclare const blank: 'admin' | '';\ndeclare const maybe: 'admin' | 'member' | undefined;\ndeclare const name: string;\nt\`\${${call}}\`;\n`,
+        `import { t, select } from 'gt-react';\ndeclare const role: 'admin' | 'member' | 'guest';\ndeclare const blank: 'admin' | '';\ndeclare const maybe: 'admin' | 'member' | undefined;\ndeclare const name: string;\nt\`\${${call}}\`;\n`,
         undefined,
         undefined,
         dir
@@ -1082,7 +1055,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   it('fails gt validate when a message is skipped', async () => {
     const specifier = writeModule(
-      "import { t } from 'gt-react/unstable';\nt`Hi ${{ a, b }}`;\nt`Still extracted`;\n"
+      "import { t } from 'gt-react';\nt`Hi ${{ a, b }}`;\nt`Still extracted`;\n"
     );
     const file = path.join(projectDir, `${specifier}.tsx`);
     vi.mocked(matchFiles).mockReturnValue([file]);
@@ -1120,7 +1093,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       'ignores a %s branch with a warning, like the runtime',
       async (branch) => {
         const result = await extract(`
-          import { t, select } from 'gt-react/unstable';
+          import { t, select } from 'gt-react';
           t\`\${select({ role }, { ${branch}, admin: 'Admin', other: 'Guest' })}\`;
         `);
 
@@ -1135,7 +1108,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     it("keeps a computed ['__proto__'] branch", async () => {
       const result = await extract(`
-        import { t, select } from 'gt-react/unstable';
+        import { t, select } from 'gt-react';
         t\`\${select({ role }, { ['__proto__']: 'Proto', other: 'Guest' })}\`;
       `);
 

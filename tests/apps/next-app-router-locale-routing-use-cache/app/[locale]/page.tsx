@@ -25,7 +25,7 @@ async function CachedServerPanel({ locale }: { locale: string }) {
           a cached locale value: <Var>{locale}</Var>
         </p>
       </T>
-      <p>{t('A server-translated string from a cached component.')}</p>
+      <p>{t`A server-translated string from a cached component.`}</p>
     </section>
   );
 }

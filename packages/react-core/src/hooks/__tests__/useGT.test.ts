@@ -1,55 +1,88 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useEnableI18n } from '../condition-store';
 import { useTrackedTranslationResolver } from '../external-store/useTrackedTranslationResolver';
-import { useDefaultLocale } from '../i18n-config';
 import { useTranslationConditions } from '../utils';
+import { initializeI18nConfig } from '../../setup/i18nConfig';
 import { useGT } from '../useGT';
 
 vi.mock('react', () => ({
-  useCallback: <T extends (...args: unknown[]) => unknown>(callback: T) =>
-    callback,
+  useMemo: <T>(factory: () => T): T => factory(),
 }));
 
 vi.mock('../external-store/useTrackedTranslationResolver', () => ({
   useTrackedTranslationResolver: vi.fn(),
 }));
 
-vi.mock('../i18n-config', () => ({
-  useDefaultLocale: vi.fn(),
+vi.mock('../condition-store', () => ({
+  useEnableI18n: vi.fn(),
 }));
 
 vi.mock('../utils', () => ({
   useTranslationConditions: vi.fn(),
 }));
 
-describe('useGT', () => {
+type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
+
+const name = 'Ada';
+const hello = ['Hello, ', ['name'], '!'];
+const resolveTranslation = vi.fn();
+
+describe('react-core useGT', () => {
   beforeEach(() => {
-    vi.mocked(useDefaultLocale).mockReturnValue('en');
-    vi.mocked(useTranslationConditions).mockReturnValue({
-      locale: 'en',
-      shouldTranslate: false,
-    });
-    vi.mocked(useTrackedTranslationResolver).mockReturnValue(vi.fn());
-  });
-
-  it('interpolates source strings when translation is not required', () => {
-    const t = useGT();
-
-    expect(t('hello, {name}', { name: 'brian' })).toBe('hello, brian');
-  });
-
-  it('reuses the resolved translation conditions in the tracked resolver', () => {
-    const messages = [{ message: 'hello' }];
+    Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
     vi.mocked(useTranslationConditions).mockReturnValue({
       locale: 'fr',
       shouldTranslate: true,
     });
-
-    useGT(messages);
-
-    expect(useTrackedTranslationResolver).toHaveBeenCalledWith(
-      messages,
-      'fr',
-      true
+    vi.mocked(useEnableI18n).mockReturnValue(true);
+    resolveTranslation.mockReset();
+    vi.mocked(useTrackedTranslationResolver).mockReturnValue(
+      resolveTranslation
     );
+  });
+
+  it('resolves trees through the tracked resolver', () => {
+    resolveTranslation.mockReturnValue(['Bonjour, ', ['name'], ' !']);
+
+    expect(useGT()({ context: 'greeting' })`Hello, ${{ name }}!`).toBe(
+      'Bonjour, Ada !'
+    );
+    expect(useTrackedTranslationResolver).toHaveBeenCalledWith(true);
+    expect(resolveTranslation).toHaveBeenCalledWith({
+      locale: 'fr',
+      content: hello,
+      options: expect.objectContaining({
+        $format: 'MESSAGE_TREE',
+        $locale: 'fr',
+        $context: 'greeting',
+      }),
+    });
+  });
+
+  it("passes the page's shouldTranslate to the tracked resolver", () => {
+    vi.mocked(useTranslationConditions).mockReturnValue({
+      locale: 'en',
+      shouldTranslate: false,
+    });
+
+    expect(useGT()`Hello, ${{ name }}!`).toBe('Hello, Ada!');
+    expect(useTrackedTranslationResolver).toHaveBeenCalledWith(false);
+  });
+
+  it('renders the source, validated, when the resolver returns no tree', () => {
+    resolveTranslation.mockReturnValue({ text: 'not a tree' });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    expect(useGT()`Hello, ${{ name }}!`).toBe('Hello, Ada!');
+    expect(warn.mock.calls[0][0]).toContain('is not a message tree');
+    warn.mockRestore();
+  });
+
+  it('skips lookups when i18n is disabled', () => {
+    vi.mocked(useEnableI18n).mockReturnValue(false);
+
+    expect(useGT()`Hello, ${{ name }}!`).toBe('Hello, Ada!');
+    expect(resolveTranslation).not.toHaveBeenCalled();
   });
 });

@@ -1,29 +1,9 @@
 /**
  * String Collector - Manages translation content across two-pass transformation
  *
- * Pass 1: Collects translation strings, JSX content, and hash data
- * Pass 2: Injects collected data back into useGT()/getGT() calls
+ * Pass 1: Collects the JSX content and hash of each <T>
+ * Pass 2: Injects the collected hashes back into the <T> calls
  */
-
-/**
- * Content extracted from a t() function call
- */
-export interface TranslationContent {
-  /** The string message: t("Hello world") → "Hello world" */
-  message: string;
-  /** Pre-calculated hash for this content */
-  hash: string;
-  /** Optional ID from options: t("text", {$id: "greeting"}) → "greeting" */
-  id?: string;
-  /** Optional context from options: t("text", {$context: "nav"}) → "nav" */
-  context?: string;
-  /** Optional maxChars from options: t("text", {$maxChars: 10}) → 10 */
-  maxChars?: number;
-  /** Optional format from options: t("text", {$format: "STRING"}) → "STRING" */
-  format?: string;
-  /** Optional requiresReview from options: t("text", {$requiresReview: true}) → true */
-  requiresReview?: boolean;
-}
 
 /**
  * Content extracted from JSX translation components like <T>
@@ -41,18 +21,8 @@ export interface TranslationJsx {
   requiresReview?: boolean;
 }
 
-/**
- * Just a hash value for simple hash injection
- */
-export interface TranslationHash {
-  /** The hash value to inject */
-  hash: string;
-}
-
 type SerializedStringCollector = {
-  contentAggregators: Record<string, TranslationContent[]>;
   jsxAggregators: Record<string, TranslationJsx>;
-  hashAggregators: Record<string, TranslationHash>;
   globalCallCounter: number;
 };
 
@@ -60,17 +30,13 @@ type SerializedStringCollector = {
  * String collector for two-pass transformation system
  */
 export class StringCollector {
-  /** Vector of translation calls indexed by counter ID */
-  private contentAggregators: Map<number, TranslationContent[]> = new Map();
+  /** JSX translation content indexed by counter ID */
   private jsxAggregators: Map<number, TranslationJsx> = new Map();
-  private hashAggregators: Map<number, TranslationHash> = new Map();
-  /** Global counter incremented for each useGT/getGT call encountered */
+  /** Global counter incremented for each <T> encountered */
   private globalCallCounter: number = 0;
-  /** Runtime-only entries for standalone strings consumed by runtime translate */
-  private runtimeOnlyEntries: TranslationContent[] = [];
 
   /**
-   * Increment counter and return the current counter ID for a useGT/getGT call
+   * Increment counter and return the current counter ID for a <T>
    * These IDs are deterministic
    */
   incrementCounter(): number {
@@ -86,67 +52,11 @@ export class StringCollector {
   }
 
   /**
-   * Pass 1: Add translation content from a t() call to a specific useGT/getGT aggregator
-   * Multiple content items can be added to the same call
-   */
-  pushTranslationContent(counterId: number, content: TranslationContent): void {
-    if (counterId === -1) {
-      throw new Error(
-        'Cannot have a counterId of -1. This likely means you are trying to register content from a namespace method invocation.'
-      );
-    }
-    // Get the agreggator
-    let aggregator = this.contentAggregators.get(counterId);
-    if (!aggregator) {
-      aggregator = [content];
-      this.contentAggregators.set(counterId, aggregator);
-    } else {
-      aggregator.push(content);
-    }
-  }
-
-  /**
-   * Pass 1: Set JSX translation content for a specific useGT/getGT
+   * Pass 1: Set JSX translation content for a specific <T>
    * Only one JSX item can be set per call (overwrites if called multiple times)
    */
   setTranslationJsx(counterId: number, jsx: TranslationJsx): void {
     this.jsxAggregators.set(counterId, jsx);
-  }
-
-  /**
-   * Pass 1: Set hash-only content for a specific useGT/getGT
-   * Only one hash can be set per call (overwrites if called multiple times)
-   */
-  setTranslationHash(counterId: number, hash: TranslationHash): void {
-    this.hashAggregators.set(counterId, hash);
-  }
-
-  /**
-   * Pass 2: Get translation call data for injection into a specific useGT/getGT call
-   */
-  getTranslationData(counterId: number):
-    | {
-        type: 'content' | 'jsx' | 'hash';
-        value: TranslationContent[] | TranslationJsx | TranslationHash;
-      }
-    | undefined {
-    if (this.contentAggregators.has(counterId)) {
-      return {
-        type: 'content',
-        value: this.contentAggregators.get(counterId)!,
-      };
-    } else if (this.jsxAggregators.has(counterId)) {
-      return { type: 'jsx', value: this.jsxAggregators.get(counterId)! };
-    } else if (this.hashAggregators.has(counterId)) {
-      return { type: 'hash', value: this.hashAggregators.get(counterId)! };
-    }
-  }
-
-  /**
-   * Get the translation content for a specific useGT/getGT call
-   */
-  getTranslationContent(counterId: number): TranslationContent[] | undefined {
-    return this.contentAggregators.get(counterId);
   }
 
   /**
@@ -157,20 +67,10 @@ export class StringCollector {
   }
 
   /**
-   * Get the translation hash for a specific other call
-   */
-  getTranslationHash(counterId: number): TranslationHash | undefined {
-    return this.hashAggregators.get(counterId);
-  }
-
-  /**
    * Reset all state (useful for testing)
    */
   clear(): void {
-    this.contentAggregators.clear();
     this.jsxAggregators.clear();
-    this.hashAggregators.clear();
-    this.runtimeOnlyEntries = [];
     this.globalCallCounter = 0;
   }
 
@@ -185,20 +85,7 @@ export class StringCollector {
    * Has content
    */
   hasContent(): boolean {
-    return (
-      this.contentAggregators.size +
-        this.jsxAggregators.size +
-        this.hashAggregators.size +
-        this.runtimeOnlyEntries.length >
-      0
-    );
-  }
-
-  /**
-   * Get all translation content entries (flattened across all aggregators)
-   */
-  getAllTranslationContent(): TranslationContent[] {
-    return Array.from(this.contentAggregators.values()).flat();
+    return this.jsxAggregators.size > 0;
   }
 
   /**
@@ -209,27 +96,11 @@ export class StringCollector {
   }
 
   /**
-   * Add a runtime-only translation entry for the runtime translate pass.
-   */
-  pushRuntimeOnlyContent(content: TranslationContent): void {
-    this.runtimeOnlyEntries.push(content);
-  }
-
-  /**
-   * Get all runtime-only translation entries
-   */
-  getRuntimeOnlyContent(): TranslationContent[] {
-    return this.runtimeOnlyEntries;
-  }
-
-  /**
    * Helper convert to string
    */
   serialize(): SerializedStringCollector {
     const output = {
-      contentAggregators: Object.fromEntries(this.contentAggregators),
       jsxAggregators: Object.fromEntries(this.jsxAggregators),
-      hashAggregators: Object.fromEntries(this.hashAggregators),
       globalCallCounter: this.globalCallCounter,
     };
     return output;
@@ -239,24 +110,12 @@ export class StringCollector {
    * Helper to repopulate
    */
   unserialize(input: SerializedStringCollector): void {
-    this.contentAggregators = Object.entries(
-      input.contentAggregators as Record<number, TranslationContent[]>
-    ).reduce((acc, [key, value]) => {
-      acc.set(Number(key), value);
-      return acc;
-    }, new Map<number, TranslationContent[]>());
     this.jsxAggregators = Object.entries(
       input.jsxAggregators as Record<number, TranslationJsx>
     ).reduce((acc, [key, value]) => {
       acc.set(Number(key), value);
       return acc;
     }, new Map<number, TranslationJsx>());
-    this.hashAggregators = Object.entries(
-      input.hashAggregators as Record<number, TranslationHash>
-    ).reduce((acc, [key, value]) => {
-      acc.set(Number(key), value);
-      return acc;
-    }, new Map<number, TranslationHash>());
     this.globalCallCounter = input.globalCallCounter;
   }
 }

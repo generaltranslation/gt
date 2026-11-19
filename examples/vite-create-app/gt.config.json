@@ -2,10 +2,7 @@
   "locales": ["zh", "fr", "es", "ja"],
   "files": {
     "gt": {
-      "output": "src/_gt/[locale].json",
-      "parsingFlags": {
-        "devHotReload": true
-      }
+      "output": "src/_gt/[locale].json"
     }
   },
   "_versionId": "caa9b8b12adbbbb32de94da8f36413fbba0ad7722c3f81be9d47226eb60fd612"

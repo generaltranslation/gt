@@ -12,7 +12,6 @@ const runtimeEntryNames = [
   'components-rsc',
   'hooks',
   'pure',
-  'unstable',
 ];
 // Each public entrypoint is emitted as a thin re-export barrel in both module
 // formats, plus a type declaration for each format.
@@ -77,19 +76,19 @@ describe('@generaltranslation/react-core package exports', () => {
             ]) {
               for (const [name, exportName] of [
                 ['pure', 't'],
+                ['pure', 'm'],
                 ['components', 'T'],
                 ['hooks', 'useGT'],
+                ['hooks', 'useMessages'],
                 ['components-rsc', 'Branch'],
-                ['unstable', 't'],
-                ['unstable', 'm'],
-                ['unstable', 'useGT'],
-                ['unstable', 'useMessages'],
               ]) {
                 const mod = await load(name);
                 assert.equal(typeof mod[exportName], 'function', format + ' ' + name);
               }
               // gt-i18n owns the message helpers; react-core does not re-export them.
-              assert.equal('msg' in (await load('unstable')), false, format);
+              for (const name of ['pure', 'hooks']) {
+                assert.equal('msg' in (await load(name)), false, format + ' ' + name);
+              }
             }
           })().catch((error) => {
             console.error(error);

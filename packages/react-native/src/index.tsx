@@ -32,26 +32,33 @@ export {
 export { useLocaleSelector, useRegionSelector } from './hooks/selectors';
 
 // ===== Functions ===== //
+// No t or m: React Native registers no global locale store for them to read
+// (the provider keeps it in context). Use useGT() and useMessages().
 export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 export {
-  decodeMsg,
-  decodeOptions,
+  msg,
+  mFallback,
+  derive,
+  plural,
+  selectordinal,
+  select,
+  number,
+  date,
+  time,
+  part,
+  n,
   getDefaultLocale,
   getLocaleProperties,
   getLocales,
   resolveCanonicalLocale,
   getVersionId,
-  gtFallback,
-  mFallback,
-  msg,
 } from 'gt-i18n';
-export { decodeVars, declareVar, derive } from 'generaltranslation';
 export { getLocaleFromNativeStore } from './utils/nativeStore';
 export { getLocale } from './utils/getLocale';
 export { internalInitializeGTSRA as initializeGT } from '@generaltranslation/react-core/pure';
 
 // ===== Types ===== //
-export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-i18n';
+export type { GT, GTOptions, M, Msg, Part, Placeholder } from 'gt-i18n';
 export type { GTProviderProps } from './provider/GTProvider';
 export type { GetLocaleParams } from './utils/getLocale';
 export type { ReactInitializeGTParams as InitializeGTParams } from '@generaltranslation/react-core/pure';

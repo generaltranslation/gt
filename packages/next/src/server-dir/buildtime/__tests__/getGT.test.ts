@@ -1,0 +1,73 @@
+import { hashSource } from 'generaltranslation/id';
+import {
+  I18nCache,
+  initializeI18nConfig,
+  setI18nCache,
+} from 'gt-i18n/internal';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { msg } from 'gt-i18n';
+import { getGT, getMessages, useGT, useMessages } from '../getGT';
+
+const { mockGetRequestConditions } = vi.hoisted(() => ({
+  mockGetRequestConditions: vi.fn(),
+}));
+
+vi.mock('../../../request/getRequestConditions', () => ({
+  getRequestConditions: mockGetRequestConditions,
+}));
+
+vi.mock('../../../utils/use', () => ({
+  // Lets useGT() be awaited outside a React render.
+  use: <T>(value: T) => value,
+}));
+
+type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
+
+const saveTree = 'Save';
+const frenchTranslations = {
+  [hashSource({ source: saveTree, dataFormat: 'MESSAGE_TREE' })]: 'Enregistrer',
+};
+
+describe('gt-next getGT', () => {
+  beforeEach(() => {
+    Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    setI18nCache(
+      new I18nCache({
+        loadTranslations: async (locale: string) =>
+          locale === 'fr' ? frenchTranslations : {},
+      })
+    );
+    mockGetRequestConditions.mockResolvedValue({
+      _locale: 'fr',
+      _enableI18n: true,
+    });
+  });
+
+  it('translates with the request locale', async () => {
+    const t = await getGT();
+    const rscGT = await useGT();
+
+    expect(t`Save`).toBe('Enregistrer');
+    expect(rscGT`Save`).toBe('Enregistrer');
+  });
+
+  it('renders msg() messages with the request locale', async () => {
+    const m = await getMessages();
+    const rscM = await useMessages();
+
+    expect(m(msg('Save'))).toBe('Enregistrer');
+    expect(rscM(msg('Save'))).toBe('Enregistrer');
+  });
+
+  it('renders the source when the request disables i18n', async () => {
+    mockGetRequestConditions.mockResolvedValue({
+      _locale: 'fr',
+      _enableI18n: false,
+    });
+
+    const t = await getGT();
+
+    expect(t`Save`).toBe('Save');
+  });
+});

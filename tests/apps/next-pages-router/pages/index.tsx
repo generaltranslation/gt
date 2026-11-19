@@ -44,7 +44,7 @@ export default function Home({ renderedAt, nextLocalePreference }: HomeProps) {
         <T>
           <p>This paragraph is translated via gt-next in the Pages Router.</p>
         </T>
-        <p>{t('A string translated with useGT from gt-next.')}</p>
+        <p>{t`A string translated with useGT from gt-next.`}</p>
       </section>
     </main>
   );

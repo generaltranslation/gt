@@ -24,3 +24,8 @@ context, such as a `currency`, a `timeZone` or digit options, may be dynamic
 and is neither in the tree nor hashed: `number-intl-options` and
 `number-currency-dynamic`, and `date` and `date-style-dynamic-time-zone`, are
 pairs that differ only in context and share their tree and hash.
+
+`derive-context.json` pins the catalog keys of a `<T>` whose `context` is a
+`derive()` call: one per value. The CLI extracts an update with each hash from
+the `jsx`, and the runtime looks up the same hash when `derive()` holds that
+value.

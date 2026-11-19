@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { formatIcu, parse } from '@generaltranslation/icu/parser';
-import { GTIntl } from '../../index';
 import { declareVar } from '../declareVar';
-import { decodeVars } from '../decodeVars';
-import { extractVars } from '../extractVars';
 import { indexVars } from '../indexVars';
 import { sanitizeVar } from '../utils/sanitizeVar';
 
@@ -64,8 +61,8 @@ describe('declareVar', () => {
     expect(() => parse(encoded)).not.toThrow();
   });
 
-  // Whatever the value contains, it must survive as one literal: rendered by
-  // ICU, decoded back, and extracted as the first variable.
+  // Whatever the value contains, it must survive as one literal when ICU
+  // renders it.
   it.each([
     ['plain text', 'hello world'],
     ['single space', ' '],
@@ -93,67 +90,6 @@ describe('declareVar', () => {
     expect(
       formatIcu(encoded, 'en', { _gt_: 'placeholder' }, { timeZone: 'UTC' })
     ).toBe(value);
-    expect(decodeVars(`before ${encoded} after`)).toBe(`before ${value} after`);
-    expect(extractVars(encoded)).toEqual({ _gt_1: value });
-  });
-});
-
-describe('extractVars', () => {
-  it.each([
-    ['empty string', '', {}],
-    ['plain text', 'Plain text without any variables', {}],
-    ['regular select', 'Hello {name, select, other {World}}', {}],
-    ['select with another _gt_ name', '{_gt_a, select, other {value}}', {}],
-    ['indexed select', '{_gt_1x, select, other {value}}', {}],
-    ['_gt_ argument', 'Hello {_gt_1}', {}],
-    ['_gt_ plural', '{_gt_1, plural, other {items}}', {}],
-    ['non-literal other option', '{_gt_, select, other {{name}}}', {}],
-    [
-      'single variable',
-      'Hello {_gt_, select, other {World}}',
-      { _gt_1: 'World' },
-    ],
-    ['empty other option', '{_gt_, select, other {}}', { _gt_1: '' }],
-    [
-      'sequential indexes',
-      '{_gt_, select, other {first}} then {_gt_, select, other {second}} then {_gt_, select, other {third}}',
-      { _gt_1: 'first', _gt_2: 'second', _gt_3: 'third' },
-    ],
-    [
-      'other option among several',
-      '{_gt_, select, zero {no items} one {one item} other {many items}}',
-      { _gt_1: 'many items' },
-    ],
-    [
-      'quoted ICU syntax in the value',
-      "{_gt_, select, other {'{name}' says hello}}",
-      { _gt_1: '{name} says hello' },
-    ],
-    [
-      'variables between regular arguments and selects',
-      'User {username} has {name, select, other {Hello}} {_gt_, select, other {World}} {count} {_gt_, select, other {!}}',
-      { _gt_1: 'World', _gt_2: '!' },
-    ],
-    [
-      'unicode text and newlines',
-      '我在{_gt_, select, other {公园}}\n跟{_gt_, select, other {玩具 café}}去玩儿',
-      { _gt_1: '公园', _gt_2: '玩具 café' },
-    ],
-  ])('%s', (_name, input, expected) => {
-    expect(extractVars(input)).toEqual(expected);
-  });
-
-  it('supplies the variables a condensed translation needs', () => {
-    const source =
-      'I play with my friend {_gt_, select, other {Brian}} at the {_gt_, select, other {}}';
-    const target = 'Je joue avec mon ami {_gt_1} au {_gt_2}';
-
-    expect(
-      new GTIntl().formatMessage(target, {
-        locales: ['fr'],
-        variables: extractVars(source),
-      })
-    ).toBe('Je joue avec mon ami Brian au ');
   });
 });
 
@@ -236,85 +172,5 @@ describe('indexVars', () => {
 
     expect(result).toBe(expected);
     expect(() => parse(result)).not.toThrow();
-  });
-});
-
-describe('decodeVars', () => {
-  it.each([
-    ['empty string', '', ''],
-    [
-      'no GT variables',
-      'Hello {name} with {count, plural, one {item} other {items}}',
-      'Hello {name} with {count, plural, one {item} other {items}}',
-    ],
-    ['single variable', '{_gt_, select, other {Hello World}}', 'Hello World'],
-    ['empty variable', '{_gt_, select, other {}}', ''],
-    [
-      'variables at start and end',
-      '{_gt_, select, other {Start}} middle text {_gt_, select, other {End}}',
-      'Start middle text End',
-    ],
-    [
-      'surrounding and inner whitespace',
-      '  {_gt_, select, other {  spaced content  }}  ',
-      '    spaced content    ',
-    ],
-    [
-      'other ICU elements are untouched',
-      '{count, number} items and {_gt_, select, other {variable}} with {date, date, short}',
-      '{count, number} items and variable with {date, date, short}',
-    ],
-    [
-      'escaped quotes, braces and tags',
-      "{_gt_, select, other {User''s ''data'': '{id: 123} <status>active</status>'}}",
-      "User's 'data': {id: 123} <status>active</status>",
-    ],
-    [
-      'variables nested in plurals',
-      `{count, plural,
-      =0 {No {_gt_, select, other {messages}}}
-      other {# {_gt_, select, other {messages}}}
-    }`,
-      `{count, plural,
-      =0 {No messages}
-      other {# messages}
-    }`,
-    ],
-    [
-      'variables nested in selects',
-      '{gender, select, male {He has {_gt_, select, other {book}}} other {They have {_gt_, select, other {books}}}}',
-      '{gender, select, male {He has book} other {They have books}}',
-    ],
-    [
-      'variables inside tags',
-      '<bold>{_gt_, select, other {important}}</bold> and {_gt_, select, other {normal}}',
-      '<bold>important</bold> and normal',
-    ],
-    [
-      'unicode content',
-      '{_gt_, select, other {你好世界 🌍 café naïve}}',
-      '你好世界 🌍 café naïve',
-    ],
-    [
-      'named variables',
-      `Navigate to ${declareVar('User Profile', { $name: 'profile_section' })} page`,
-      'Navigate to User Profile page',
-    ],
-  ])('%s', (_name, input, expected) => {
-    expect(decodeVars(input)).toBe(expected);
-  });
-
-  it('decodes thousands of captured variables', () => {
-    const count = 2_000;
-    const input = Array.from(
-      { length: count },
-      (_, index) => `{_gt_, select, other {value${index}}}`
-    ).join(' ');
-    const expected = Array.from(
-      { length: count },
-      (_, index) => `value${index}`
-    ).join(' ');
-
-    expect(decodeVars(input)).toBe(expected);
   });
 });

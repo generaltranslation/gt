@@ -1504,9 +1504,6 @@ importers:
 
   packages/react-core-linter:
     dependencies:
-      '@generaltranslation/icu':
-        specifier: workspace:*
-        version: link:../icu
       '@typescript-eslint/utils':
         specifier: ^8.50.1
         version: 8.50.1(eslint@9.36.0(jiti@2.7.0))(typescript@5.9.3)
@@ -1514,6 +1511,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@generaltranslation/icu':
+        specifier: workspace:*
+        version: link:../icu
       '@types/eslint':
         specifier: ^8.56.0
         version: 8.56.12

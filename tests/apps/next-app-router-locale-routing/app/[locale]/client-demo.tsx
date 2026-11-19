@@ -16,7 +16,7 @@ export function ClientDemo() {
       <T>
         <p>This paragraph is translated in a client component.</p>
       </T>
-      <p>{t('A client-translated string from useGT.')}</p>
+      <p>{t`A client-translated string from useGT.`}</p>
     </section>
   );
 }

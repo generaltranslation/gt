@@ -27,41 +27,6 @@ export type TranslationMetadata = {
 export type TranslationOptions = TranslationVariables & TranslationMetadata;
 
 /**
- * User-provided options accepted by t().
- *
- * interp vars + $context, $id, $format, $locale, $_hash, $maxChars
- */
-export type GTTranslationOptions = TranslationVariables &
-  Pick<
-    TranslationMetadata,
-    | '$context'
-    | '$id'
-    | '$format'
-    | '$locale'
-    | '$_hash'
-    | '$maxChars'
-    | '$requiresReview'
-  >;
-
-/**
- * Options for string registration
- * Used by the msg() function
- */
-export type EncodedTranslationOptions = GTTranslationOptions & {
-  $_hash: string;
-  $_source: string;
-};
-
-/**
- * Options for runtime translation
- * Used by the tx() function
- */
-export type RuntimeTranslationOptions = TranslationVariables &
-  Omit<TranslationMetadata, '$id' | '$format'> & {
-    $format?: DataFormat;
-  };
-
-/**
  * Options for JSX translation
  * Used by the resolveJsx() function
  */

@@ -4,13 +4,10 @@
 
 `@generaltranslation/react-core/pure` no longer re-exports names that `gt-i18n`, `generaltranslation`, or `@generaltranslation/format` own. Import them from their owner:
 
-- `msg`, `decodeMsg`, `decodeOptions`, `mFallback`, `gtFallback`, `getDefaultLocale`, `getLocaleProperties`, `getLocales`, `resolveCanonicalLocale`, `getVersionId`: import from `gt-i18n`.
-- `derive`, `declareVar`, `decodeVars`: import from `generaltranslation` (or `gt-i18n`).
+- `msg`, `mFallback`, `getDefaultLocale`, `getLocaleProperties`, `getLocales`, `resolveCanonicalLocale`, `getVersionId`: import from `gt-i18n`, which also exports the other message helpers (`derive`, `plural`, `select`, `selectordinal`, `part`, `number`, `n`, `date`) and their types.
+- `declareVar`, `decodeVars`, the `derive` that returns its argument, `decodeMsg`, `decodeOptions`, `gtFallback` and the types `GTTranslationOptions`, `GTFunctionType`, `MFunctionType`, `RuntimeTranslationOptions`: removed with the string functions (see the tagged-template API changeset).
 - `ReadonlyConditionStore`: import from `gt-i18n/internal`.
 - `defaultLocaleCookieName`, `defaultRegionCookieName`, `defaultEnableI18nCookieName`, `defaultResetLocaleCookieName`: import from `gt-i18n/internal/cookies`.
-- Types `GTTranslationOptions`, `GTFunctionType`, `MFunctionType`, `RuntimeTranslationOptions`: import from `gt-i18n`.
 - Type `GTProp`: import from `@generaltranslation/format`.
 
-`@generaltranslation/react-core/unstable` now exports only `t`, `useGT`, and `useMessages`. Import the message helpers (`msg`, `mFallback`, `derive`, `plural`, `select`, `selectordinal`, `part`, `number`, `n`, `date`) and their types from `gt-i18n/unstable`.
-
-`gt-react`, `gt-react-native`, `gt-next`, and `gt-tanstack-start` still export the same user-facing names.
+`gt-react`, `gt-react-native`, `gt-next`, and `gt-tanstack-start` still export the user-facing names that remain.

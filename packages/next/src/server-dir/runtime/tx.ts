@@ -1,55 +1,14 @@
-import type { FormatVariables, StringFormat } from '@generaltranslation/format';
-import { txInternal } from 'gt-i18n/internal';
+import { createTx, type TX } from 'gt-i18n/internal';
 import { getRequestConditions } from '../../request/getRequestConditions';
 
-type TxOptions = FormatVariables & {
-  $locale?: string;
-  $context?: string;
-  $maxChars?: number;
-  $format?: StringFormat;
-};
-
 /**
- * Translates the provided content string based on the specified locale and options.
- * If no translation is required, it renders the content as is. Otherwise, it fetches the
- * required translations or falls back to on-demand translation if enabled.
- *
- * @async
- * @function tx (translate)
- *
- * @param {string} content - The content string that needs to be translated.
- * @param {Object} [options] - Translation options.
- * @param {string} [options.$locale] - The target locale for translation. Defaults to the current locale if not provided.
- * @param {string} [options.$context] - Additional context for the translation process, which may influence the translation's outcome.
- * @param {number} [options.$maxChars] - The maximum number of characters to translate.
- * @param {string|number|boolean|Date} [options.<variable>] - Variables to interpolate into the message, passed as top-level keys (e.g. `{ price: 29.99 }`).
- * @param {StringFormat} [options.$format] - The data format for the message. ICU formatting is only applied when explicitly requested with `$format: 'ICU'`.
- *
- * @returns {Promise<string>} - A promise that resolves to the translated content string, or the original content if no translation is needed.
- *
- * @throws {Error} - Throws an error if the translation process fails or if there are issues with fetching necessary data.
+ * Translates in the request locale, sending a missing translation for
+ * runtime translation and waiting for it.
  *
  * @example
- * // Basic usage with default locale detection
- * const translation = await tx("Hello, world!");
- *
- * @example
- * // Providing specific translation options
- * const translation = await tx("Hello, world!", { $locale: 'es', $context: 'Translate informally' });
- *
- * @example
- * // Using variables in the content string
- * const translation = await tx("The price is {price}", { $locale: 'es-MX', price: 29.99 });
+ * const label = await tx({ context: 'button' })`Save`;
  */
-export async function tx(
-  message: string,
-  options: TxOptions = {}
-): Promise<string> {
-  const { _locale, _enableI18n } = await getRequestConditions();
-  return txInternal({
-    locale: _locale,
-    enableI18n: _enableI18n,
-    content: message,
-    options,
-  });
-}
+export const tx: TX = /* @__PURE__ */ createTx(async () => {
+  const conditions = await getRequestConditions();
+  return { locale: conditions._locale, enableI18n: conditions._enableI18n };
+});

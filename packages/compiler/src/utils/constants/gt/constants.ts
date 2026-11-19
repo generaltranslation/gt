@@ -21,67 +21,17 @@ export enum GT_COMPONENT_TYPES {
 }
 
 /**
- * GT functions that produce callbacks
- */
-export enum GT_FUNCTIONS_WITH_CALLBACKS {
-  useGT = 'useGT',
-  getGT = 'getGT',
-  useMessages = 'useMessages',
-  getMessages = 'getMessages',
-}
-
-/**
  * Other GT functions
  */
 export enum GT_OTHER_FUNCTIONS {
-  msg = 'msg',
-  t = 't',
   derive = 'derive',
-  GtInternalRuntimeTranslateString = 'GtInternalRuntimeTranslateString',
   GtInternalRuntimeTranslateJsx = 'GtInternalRuntimeTranslateJsx',
 }
 
 /**
- * Different gt functions
+ * All gt functions and components
  */
-export type GT_FUNCTIONS = GT_FUNCTIONS_WITH_CALLBACKS | GT_OTHER_FUNCTIONS;
-/**
- * gt callback functions
- */
-export enum GT_CALLBACK_FUNCTIONS {
-  useGT_callback = 'useGT_callback',
-  getGT_callback = 'getGT_callback',
-  useMessages_callback = 'useMessages_callback',
-  getMessages_callback = 'getMessages_callback',
-}
-
-/**
- * Maps GT Functions to their callback functions
- */
-export const GT_FUNCTIONS_TO_CALLBACKS: Record<
-  GT_FUNCTIONS_WITH_CALLBACKS,
-  GT_CALLBACK_FUNCTIONS
-> = {
-  [GT_FUNCTIONS_WITH_CALLBACKS.useGT]: GT_CALLBACK_FUNCTIONS.useGT_callback,
-  [GT_FUNCTIONS_WITH_CALLBACKS.getGT]: GT_CALLBACK_FUNCTIONS.getGT_callback,
-  [GT_FUNCTIONS_WITH_CALLBACKS.useMessages]:
-    GT_CALLBACK_FUNCTIONS.useMessages_callback,
-  [GT_FUNCTIONS_WITH_CALLBACKS.getMessages]:
-    GT_CALLBACK_FUNCTIONS.getMessages_callback,
-};
-
-/**
- * GT derive functions
- */
-export const GT_DERIVE_STRING_FUNCTIONS = [GT_OTHER_FUNCTIONS.derive] as const;
-
-/**
- * All gt functions (both regular and callback functions)
- */
-export type GT_ALL_FUNCTIONS =
-  | GT_FUNCTIONS
-  | GT_CALLBACK_FUNCTIONS
-  | GT_COMPONENT_TYPES;
+export type GT_ALL_FUNCTIONS = GT_OTHER_FUNCTIONS | GT_COMPONENT_TYPES;
 
 /**
  * GT import sources
@@ -108,14 +58,12 @@ export const BRANCH_CONTROL_PROPS = new Set(['branch']);
 export const PLURAL_CONTROL_PROPS = new Set(['n']);
 
 /**
- * Fields that must be string literals for useGT_callback / getGT_callback
+ * Option keys the compiler writes into injected calls
  */
-export enum USEGT_CALLBACK_OPTIONS {
+export enum TRANSLATION_OPTION_KEYS {
   $id = '$id',
   $context = '$context',
-  $maxChars = '$maxChars',
   $_hash = '$_hash',
-  $format = '$format',
   $requiresReview = '$requiresReview',
 }
 

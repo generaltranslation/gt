@@ -354,11 +354,11 @@ ruleTester.run('static-jsx: imports', staticJsx, {
     {
       name: 'Var added to the React import after a core import',
       code: component(
-        "import { derive } from 'generaltranslation';\nimport { T } from 'gt-react';",
+        "import { formatNum } from 'generaltranslation';\nimport { T } from 'gt-react';",
         '<T>{name}</T>'
       ),
       output: component(
-        "import { derive } from 'generaltranslation';\nimport { T, Var } from 'gt-react';",
+        "import { formatNum } from 'generaltranslation';\nimport { T, Var } from 'gt-react';",
         '<T><Var>{name}</Var></T>'
       ),
       errors: errors(),

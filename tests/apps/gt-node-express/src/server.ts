@@ -41,7 +41,7 @@ app.get('/', async (_req, res) => {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${escapeHtml(t('gt-node Express'))}</title>
+    <title>${escapeHtml(t`gt-node Express`)}</title>
     <style>
       body {
         margin: 0;
@@ -76,10 +76,10 @@ app.get('/', async (_req, res) => {
   </head>
   <body>
     <main>
-      <h1>${escapeHtml(t('Hello, world!'))}</h1>
-      <p>${escapeHtml(t('Welcome, {name}!', { name: 'Ada' }))}</p>
-      <p>${escapeHtml(t('Current locale: {locale}', { locale }))}</p>
-      <p><a href="/api/greeting">${escapeHtml(t('Open the JSON greeting endpoint.'))}</a></p>
+      <h1>${escapeHtml(t`Hello, world!`)}</h1>
+      <p>${escapeHtml(t`Welcome, ${{ name: 'Ada' }}!`)}</p>
+      <p>${escapeHtml(t`Current locale: ${{ locale }}`)}</p>
+      <p><a href="/api/greeting">${escapeHtml(t`Open the JSON greeting endpoint.`)}</a></p>
       <p><code>curl -H "Accept-Language: fr" http://localhost:${port}/api/greeting</code></p>
     </main>
   </body>
@@ -90,8 +90,8 @@ app.get('/api/greeting', async (_req, res) => {
   const t = await getGT();
 
   res.json({
-    message: t('Hello, world!'),
-    welcome: t('Welcome, {name}!', { name: 'Ada' }),
+    message: t`Hello, world!`,
+    welcome: t`Welcome, ${{ name: 'Ada' }}!`,
     locale: getLocale(),
     defaultLocale: getDefaultLocale(),
     supportedLocales: getLocales(),

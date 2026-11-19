@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { hashSource } from 'generaltranslation/id';
 import { useTranslations } from '@generaltranslation/react-core/compat';
 import {
   initializeDictionaryManager,
@@ -74,6 +75,33 @@ describe.each([
     );
 
     expect(html).toBe('<p>Bonjour</p>');
+  });
+
+  it('renders an entry missing from the target dictionary with its translation', () => {
+    initialize();
+    const source = 'Hello, {name}!';
+
+    function NamedGreeting() {
+      const t = useTranslations();
+      return <p>{t('greeting', { name: 'Ada' })}</p>;
+    }
+    const render = (locale: string) =>
+      renderToStaticMarkup(
+        <GTProvider
+          locale={locale}
+          translations={{
+            fr: {
+              [hashSource({ source, dataFormat: 'ICU' })]: 'Bonjour, {name} !',
+            },
+          }}
+          dictionaries={{ en: { greeting: source } }}
+        >
+          <NamedGreeting />
+        </GTProvider>
+      );
+
+    expect(render('en')).toBe('<p>Hello, Ada!</p>');
+    expect(render('fr')).toBe('<p>Bonjour, Ada !</p>');
   });
 
   it('falls back to the dictionary manager without dictionaries', () => {

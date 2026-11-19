@@ -8,14 +8,10 @@ import {
   type TemplateFragment,
   type TemplateHole,
 } from '@generaltranslation/icu/internal';
-import {
-  GT_LIBRARIES,
-  isLegacyGTImportSource,
-} from '../../../../../types/libraries.js';
 import { DERIVE_FUNCTION } from '../../constants.js';
 import { product } from './combinations.js';
 import { NonStaticMessageError } from './diagnostics.js';
-import { getHelperName, getNamedImport } from './imports.js';
+import { getHelperName } from './imports.js';
 import {
   getIntlOptions,
   getPropertyKey,
@@ -30,12 +26,9 @@ import {
 } from './typedValues.js';
 import type { TreeContext } from './types.js';
 
-// The compiler mirrors this walker without derive() in
-// packages/compiler/src/transform/injection/injectUnstableTaggedTemplateHash.ts;
-// test-fixtures/message-tree-wire-format.json keeps both on the same hashes.
-
-const USE_UNSTABLE_HELPERS_FIX =
-  'Import derive() from the same unstable entry as t, useGT, or getGT';
+// The compiler's tagged-template hash injection mirrors this walker without
+// derive(); test-fixtures/message-tree-wire-format.json keeps both on the same
+// hashes.
 
 export function templateVariants(
   quasi: NodePath<t.TemplateLiteral>,
@@ -124,15 +117,6 @@ function holeVariants(
           strings: [value],
           holes: [],
         }));
-    }
-    const imported = getNamedImport(callee);
-    if (imported && isLegacyGTImportSource(imported.source, GT_LIBRARIES)) {
-      throw new NonStaticMessageError(
-        `${imported.name}() is imported from ${imported.source}, which only works with t() messages`,
-        expression.node,
-        undefined,
-        USE_UNSTABLE_HELPERS_FIX
-      );
     }
   }
   assertPlainValue(

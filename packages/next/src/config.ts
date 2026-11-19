@@ -6,7 +6,6 @@ import {
   describeConfigIssues,
   describeConfigParseError,
   gtConfigFilePaths,
-  resolveAutoderive,
 } from 'generaltranslation/config-schema';
 import { GTNextConfigSchema } from './config-dir/schema';
 import { credentialEnvNames } from 'generaltranslation/internal';
@@ -638,14 +637,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     mergedConfig.experimentalCompilerOptions || {};
 
   // The SWC plugin reads autoderive only from gt.config.json parsingFlags.
-  const autoderive = resolveAutoderive(
-    loadedConfig.files?.gt?.parsingFlags?.autoderive
-  );
 
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
-    autoderiveJsx: autoderive.jsx,
-    autoderiveStrings: autoderive.strings,
+    autoderiveJsx: loadedConfig.files?.gt?.parsingFlags?.autoderive ?? false,
   };
 
   const swcPluginEntry: [string, Record<string, unknown>] | null =

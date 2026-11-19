@@ -185,25 +185,8 @@
               "type": "object",
               "properties": {
                 "autoderive": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "jsx": {
-                          "type": "boolean"
-                        },
-                        "strings": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [],
-                      "additionalProperties": false
-                    }
-                  ],
-                  "description": "Treat interpolated and concatenated values as derive() calls. true or false applies to JSX and strings; the object form enables each separately."
+                  "type": "boolean",
+                  "description": "Treat interpolated values in <T> as derive() calls"
                 },
                 "includeSourceCodeContext": {
                   "type": "boolean",
@@ -214,25 +197,15 @@
                   "description": "Automatically wrap translatable JSX"
                 },
                 "devHotReload": {
-                  "anyOf": [
-                    {
+                  "type": "object",
+                  "properties": {
+                    "jsx": {
                       "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "jsx": {
-                          "type": "boolean"
-                        },
-                        "strings": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [],
-                      "additionalProperties": false
                     }
-                  ],
-                  "description": "Translate new content at runtime during development. true or false applies to JSX and strings; the object form enables each separately."
+                  },
+                  "required": [],
+                  "additionalProperties": false,
+                  "description": "Compiler option for development hot reload: { jsx: true } injects runtime translation calls for <T> content"
                 },
                 "viteConfigPath": {
                   "type": "string",

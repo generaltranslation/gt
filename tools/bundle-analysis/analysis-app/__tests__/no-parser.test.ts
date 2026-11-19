@@ -41,59 +41,66 @@ async function expectParser(
   included: boolean
 ) {
   const code = await bundle(join(fixturesDir, fixture), conditions);
-  expect(code).toContain('gt-i18n.unstable.placeholder');
+  expect(code).toContain('gt-i18n.placeholder');
   expect(code.includes(PARSER_MARKER)).toBe(included);
 }
 
-describe('gt-i18n/unstable bundle', () => {
+describe('gt-i18n bundle', () => {
   it('does not include the ICU string parser', async () => {
     const parser = await bundle(join(packagesDir, 'icu/dist/parser.mjs'));
     expect(parser).toContain(PARSER_MARKER);
-    const code = await bundle(join(packagesDir, 'i18n/dist/unstable.mjs'));
-    expect(code).toContain('gt-i18n.unstable.placeholder');
+    const code = await bundle(join(packagesDir, 'i18n/dist/index.mjs'));
+    expect(code).toContain('gt-i18n.placeholder');
     expect(code).not.toContain(PARSER_MARKER);
   });
 });
 
-describe('framework /unstable bundles', () => {
+describe('gt-i18n/internal/string bundle', () => {
+  it('does not include the ICU string parser in what gt-vue imports', async () => {
+    const code = await bundle(join(fixturesDir, 'gt-vue-strings.ts'));
+    expect(code).toContain('hashStringMessage');
+    expect(code).not.toContain(PARSER_MARKER);
+  });
+});
+
+// Each fixture names the entry's message API: `export *` would also bundle
+// setup functions such as initializeGT, which reach the parser through chain A.
+describe('framework message API bundles', () => {
   it.each([
-    ['gt-react/unstable (react-server)', 'gt-react.ts', ['react-server']],
-    ['gt-node/unstable', 'gt-node.ts', ['node']],
+    ['gt-react (react-server)', 'gt-react-rsc.ts', ['react-server']],
+    ['gt-node', 'gt-node.ts', ['node']],
   ])('%s does not include the ICU string parser', (_, fixture, conditions) =>
     expectParser(fixture, conditions, false)
   );
 
-  // Known leaks, both static chains into @generaltranslation/icu/parser:
-  // A: I18nConfig extends LocaleConfig, whose formatMessage method calls
-  //    formatIcu; class methods are never tree-shaken.
-  // B: gt-i18n hashContent -> generaltranslation/internal indexVars ->
-  //    traverseIcu -> parse, via getTranslateListenerKey (react-core tracked
-  //    resolver) or TranslationsCache.getCacheKey.
+  // Known leak, a static chain into @generaltranslation/icu/parser:
+  // A: I18nConfig extends GTIntl, whose formatMessage method calls formatIcu;
+  //    class methods are never tree-shaken.
   // These assert the parser IS bundled, so a broken build still fails and a
-  // fix flips them; once both chains are cut, move them to the list above.
+  // fix flips them; once the chain is cut, move them to the list above.
   it.each([
-    // A + B
-    ['@generaltranslation/react-core/unstable', 'react-core.ts', ['browser']],
-    // A + B
-    ['gt-react/unstable (client)', 'gt-react.ts', ['browser']],
-    // A + B
-    ['gt-next/unstable (client)', 'gt-next.ts', ['browser']],
-    // A + B
-    ['gt-next/unstable (ssr)', 'gt-next.ts', ['node']],
-    // A + B
-    ['gt-next/unstable (react-server)', 'gt-next.ts', ['react-server']],
-    // A + B
-    ['gt-next/unstable/server', 'gt-next-server.ts', ['react-server']],
-    // A + B
-    ['gt-react-native/unstable', 'gt-react-native.ts', ['react-native']],
-    // A + B
+    // A
     [
-      'gt-tanstack-start/unstable (client)',
-      'gt-tanstack-start.ts',
+      '@generaltranslation/react-core/pure and /hooks',
+      'react-core.ts',
       ['browser'],
     ],
-    // A + B
-    ['gt-tanstack-start/unstable (server)', 'gt-tanstack-start.ts', ['node']],
+    // A
+    ['gt-react (client)', 'gt-react.ts', ['browser']],
+    // A
+    ['gt-next (client)', 'gt-next.ts', ['browser']],
+    // A
+    ['gt-next (ssr)', 'gt-next.ts', ['node']],
+    // A
+    ['gt-next (react-server)', 'gt-next.ts', ['react-server']],
+    // A
+    ['gt-next/server', 'gt-next-server.ts', ['react-server']],
+    // A
+    ['gt-react-native', 'gt-react-native.ts', ['react-native']],
+    // A
+    ['gt-tanstack-start (client)', 'gt-tanstack-start.ts', ['browser']],
+    // A
+    ['gt-tanstack-start (server)', 'gt-tanstack-start.ts', ['node']],
   ])('%s still includes the ICU string parser', (_, fixture, conditions) =>
     expectParser(fixture, conditions, true)
   );

@@ -15,21 +15,6 @@ pub fn is_branch_name(name: &Atom) -> bool {
   matches!(name.as_ref(), "Branch" | "Plural")
 }
 
-/// Check if a name is a GT translation function
-pub fn is_translation_function_name(name: &Atom) -> bool {
-  matches!(name.as_ref(), "useGT" | "getGT")
-}
-
-/// Check if its a translation function callback const t = useGT()
-pub fn is_translation_function_callback(name: &Atom) -> bool {
-  matches!(name.as_ref(), "useGT_callback" | "getGT_callback")
-}
-
-/// Check if a name is derive
-pub fn is_derive_name(name: &Atom) -> bool {
-  matches!(name.as_ref(), "derive")
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -139,55 +124,13 @@ mod tests {
     }
   }
 
-  mod is_translation_function_name {
-    use super::*;
-
-    #[test]
-    fn recognizes_translation_functions() {
-      let functions = ["useGT", "getGT"];
-      for function in &functions {
-        let name = Atom::new(*function);
-        assert!(
-          is_translation_function_name(&name),
-          "Should recognize '{function}' as translation function"
-        );
-      }
-    }
-
-    #[test]
-    fn rejects_non_translation_functions() {
-      let functions = [
-        "useT",
-        "getT",
-        "useTranslation",
-        "t",
-        "translate",
-        "USEGT",
-        "usegt",
-      ];
-      for function in &functions {
-        let name = Atom::new(*function);
-        assert!(
-          !is_translation_function_name(&name),
-          "Should not recognize '{function}' as translation function"
-        );
-      }
-    }
-
-    #[test]
-    fn handles_empty_string() {
-      let name = Atom::new("");
-      assert!(!is_translation_function_name(&name));
-    }
-  }
-
   mod comprehensive_validation {
     use super::*;
 
     #[test]
     fn no_overlap_between_categories() {
       let all_names = [
-        "T", "Var", "Num", "Currency", "Derive", "DateTime", "RelativeTime", "Branch", "Plural", "useGT", "getGT",
+        "T", "Var", "Num", "Currency", "Derive", "DateTime", "RelativeTime", "Branch", "Plural",
       ];
 
       for name_str in &all_names {
@@ -195,10 +138,9 @@ mod tests {
         let is_translation = is_translation_component_name(&name);
         let is_variable = is_variable_component_name(&name);
         let is_branch = is_branch_name(&name);
-        let is_function = is_translation_function_name(&name);
 
         // Each name should only match one category
-        let matches = [is_translation, is_variable, is_branch, is_function];
+        let matches = [is_translation, is_variable, is_branch];
         let match_count = matches.iter().filter(|&&x| x).count();
 
         assert_eq!(

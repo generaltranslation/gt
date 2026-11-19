@@ -38,6 +38,16 @@ export type AnalyzeSvelteSourceOptions = {
   surroundingLineCount?: number;
 };
 
+export type AnalyzeModuleSourceOptions = {
+  /**
+   * Parses a module into an ESTree `Program`, as `svelte/compiler` does for
+   * a component's scripts. Its offsets index the source.
+   */
+  parse: (source: string) => unknown;
+  /** As in {@link AnalyzeSvelteSourceOptions}. */
+  surroundingLineCount?: number;
+};
+
 export type TransformSvelteSourceOptions = AnalyzeSvelteSourceOptions;
 
 export type TransformSvelteSourceResult = {
@@ -99,6 +109,44 @@ export function analyzeSvelteSource(
     });
   }
 
+  addStringSites(analysis, parsed, surroundingLineCount);
+  return analysis;
+}
+
+/**
+ * Extracts every string call from a JavaScript or TypeScript module, by the
+ * rules that apply to a component's scripts.
+ */
+export function analyzeModuleSource(
+  source: string,
+  { parse, surroundingLineCount }: AnalyzeModuleSourceOptions
+): SvelteAnalysis {
+  const analysis: SvelteAnalysis = {
+    translations: [],
+    strings: [],
+    errors: [],
+    warnings: [],
+  };
+  if (!source.includes(GT_SVELTE_PACKAGE)) return analysis;
+  const root: SvelteRoot = {
+    fragment: { type: 'Fragment', nodes: [] },
+    module: { content: parse(source) as { body: SvelteNode[] } },
+  };
+  const bindings = collectGTBindings(root);
+  if (!hasGTBindings(bindings)) return analysis;
+  addStringSites(
+    analysis,
+    { source, bomLength: 0, root, bindings, lineStarts: getLineStarts(source) },
+    surroundingLineCount
+  );
+  return analysis;
+}
+
+function addStringSites(
+  analysis: SvelteAnalysis,
+  parsed: ParsedSource,
+  surroundingLineCount: number | undefined
+): void {
   const { calls, problems, warnings } = collectStringCalls(
     parsed.root,
     parsed.bindings
@@ -128,7 +176,6 @@ export function analyzeSvelteSource(
   });
   analysis.errors.push(...problems.map(toError));
   analysis.warnings.push(...warnings.map(toError));
-  return analysis;
 }
 
 /**

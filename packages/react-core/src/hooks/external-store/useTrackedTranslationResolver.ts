@@ -1,16 +1,10 @@
-import { type RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
-import {
-  createLookupOptions,
-  getI18nConfig,
-  getTranslateListenerKey,
-} from 'gt-i18n/internal';
+import { useCallback, useRef } from 'react';
+import { getI18nConfig, getTranslateListenerKey } from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format';
 import type {
   TranslateLookup,
   TranslateSnapshot,
 } from '../../i18n-store/storeTypes';
-import type { RegisteredMessage } from 'gt-i18n';
-import type { StringFormat } from '@generaltranslation/format';
 import {
   useI18nStore,
   useTranslationsSnapshot,
@@ -39,8 +33,6 @@ export type TrackedTranslationResolver = <T extends Content>(
  */
 
 export function useTrackedTranslationResolver(
-  messages: RegisteredMessage[] = [],
-  locale: string,
   shouldTranslate: boolean
 ): TrackedTranslationResolver {
   const translationsSnapshot = useTranslationsSnapshot();
@@ -58,9 +50,6 @@ export function useTrackedTranslationResolver(
   if (trackedKeysRef.current == null) {
     trackedKeysRef.current = new Set();
   }
-
-  // (optimization) Pre-subscribe to compiler-injected lookups
-  usePreloadCompilerLookups(messages, trackedKeysRef, locale, shouldTranslate);
 
   // (tx hot reload) Subscribe to translation updates
   const trackedLookupsVersion = useSubscribeToTrackedLookups(
@@ -103,73 +92,4 @@ export function useTrackedTranslationResolver(
       trackedLookupsVersion,
     ]
   );
-}
-
-/**
- * Pre-subscribe to compiler-injected lookups
- * trigger translations for them
- *
- * This ref mutation is safe because this is translation hot reload only
- * and effects are deterministic
- */
-function usePreloadCompilerLookups(
-  messages: RegisteredMessage[],
-  trackedKeysRef: RefObject<Set<string> | null>,
-  locale: string,
-  shouldTranslate: boolean
-) {
-  const i18nStore = useI18nStore();
-  const devHotReloadEnabled =
-    process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled();
-  const translationsSnapshot = useTranslationsSnapshot();
-  const txHotReloadEnabled = useMemo(() => {
-    return messages?.length > 0 && shouldTranslate && devHotReloadEnabled;
-  }, [messages, shouldTranslate, devHotReloadEnabled]);
-
-  // Precompute as much as we can
-  const lookups: [TranslateLookup<string>, string][] = useMemo(() => {
-    if (!txHotReloadEnabled) return [];
-    return messages.map(({ message, ...options }) => {
-      const targetLocale = options.$locale ?? locale;
-      const lookupOptions = createLookupOptions<StringFormat>(
-        targetLocale,
-        options,
-        'ICU'
-      );
-      const lookup = {
-        locale: targetLocale,
-        content: message,
-        options: lookupOptions,
-      };
-      return [lookup, getTranslateListenerKey(lookup)];
-    });
-  }, [locale, txHotReloadEnabled, messages]);
-
-  // Pre-subscribe to the lookups
-  if (txHotReloadEnabled) {
-    lookups.forEach(([, lookupKey]) => {
-      trackedKeysRef.current!.add(lookupKey);
-    });
-  }
-
-  /**
-   * Delegate non-pure operations to post commit
-   *
-   * (Optimization) Trigger a hot reload if the translation is not found
-   * for compiler-injected lookups
-   *
-   * TODO: for use() + suspense strategy, use a Promise.all()
-   * TODO: server side translation invocation
-   */
-  useEffect(() => {
-    if (!txHotReloadEnabled) return;
-
-    lookups
-      .filter(
-        ([lookup]) =>
-          i18nStore.getTranslateSnapshot(lookup, translationsSnapshot) == null
-      )
-      .forEach(([lookup]) => i18nStore.translate(lookup));
-  }, [txHotReloadEnabled, i18nStore, lookups, translationsSnapshot]);
 }

@@ -29,6 +29,8 @@ import {
   Plural as _Plural,
   Derive as _Derive,
   useLocaleDirection as _useLocaleDirection,
+  useGT,
+  useMessages,
 } from 'gt-react';
 import {
   LocaleSelector as _LocaleSelector,
@@ -39,22 +41,29 @@ import {
 import { GTProvider as _GTProvider } from 'gt-react';
 import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import {
-  msg,
-  decodeMsg,
-  decodeOptions,
+  date,
+  derive,
   mFallback,
-  gtFallback,
+  msg,
+  n,
+  number,
+  part,
+  plural,
+  select,
+  selectordinal,
+  time,
   getDefaultLocale,
   getLocaleProperties,
   getLocales,
   resolveCanonicalLocale,
   getVersionId,
-  type GTTranslationOptions,
-  type RegisteredMessage,
-  type RuntimeTranslationOptions,
+  type GT,
+  type GTOptions,
+  type M,
+  type Msg,
+  type Part,
+  type Placeholder,
 } from 'gt-i18n';
-import type { StringFormat } from '@generaltranslation/format';
-import { derive, declareVar, decodeVars } from 'generaltranslation';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -382,35 +391,6 @@ export function isLocaleSupported(_: unknown): boolean {
 }
 
 /**
- * Returns the string translation function `t`.
- *
- * @returns {Function} A translation function that accepts an ICU format string and returns that ICU format string translated.
- * @param {GTTranslationOptions} [options] - Translation options including variables and special `$`-prefixed options.
- * @param {string} [options.$context] - Additional context for the translation.
- * @param {string} [options.$id] - Optional identifier for the translation string.
- * @param {number} [options.$maxChars] - Maximum number of characters for the translated message.
- * @param {boolean} [options.$requiresReview] - Whether the translated message requires approval before use. Must be a boolean literal.
- * @param {StringFormat} [options.$format] - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
- *
- * @example
- * const t = useGT();
- * console.log(t('To be or not to be...'));
- *
- * const t = useGT();
- * return (<>
- *  {
- *     t('My name is {customName}', { customName: "Brian" } )
- *  }
- * </>);
- *
- */
-export const useGT: (
-  _messages?: RegisteredMessage[]
-) => (message: string, options?: GTTranslationOptions) => string = () => {
-  throw new Error(typesFileError);
-};
-
-/**
  * Returns the user's current locale.
  *
  * @returns {string} BCP 47 locale tag, e.g., 'en-US'.
@@ -515,65 +495,31 @@ export const useLocaleDirection: typeof _useLocaleDirection = () => {
   throw new Error(typesFileError);
 };
 
-/**
- * Registers a message to be translated. Returns the message unchanged if no options are provided.
- * @param {string | string[]} message The message to encode.
- * @param {GTTranslationOptions} [options] The options to encode.
- * @returns The message or array of messages.
- *
- * @note - This function registers the message before the build process. The actual translation does not
- * occur until the m() function is invoked.
- *
- * @note - Message format
- * A message is broken into two parts separated by colons:
- * - interpolated content - the content with interpolated variables
- * - hash + options - a unique identifier for the source content and options for the translation
- *
- * @example - Basic usage
- *
- * const message1 = msg('Hello, World!');
- * console.log(message1); // "Hello, World!"
- *
- * const message2 = msg('Hello, {name}!', { name: 'Brian' });
- * console.log(message2); // "Hello, Brian:eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9"
- *
- * @example - Array usage
- *
- * const messages = msg(['Hello, Alice!', 'Hello, Bob!']);
- * console.log(messages); // ["Hello, Alice!", "Hello, Bob!"]
- *
- * @example - When specifying an id for an array, each message will have a unique id of `${id}.${index}`
- * const messages = msg(['Hello, Alice!', 'Hello, Bob!'], { $id: 'greetings' });
- * // "Hello, Alice!" id: "greetings.0"
- * // "Hello, Bob!" id: "greetings.1"
- */
-export const useMessages: (
-  _messages?: RegisteredMessage[]
-) => <T extends string | null | undefined>(
-  encodedMsg: T,
-  options?: GTTranslationOptions
-) => T extends string ? string : T = () => {
-  throw new Error(typesFileError);
-};
-
 export type {
-  GTTranslationOptions,
-  RuntimeTranslationOptions,
+  GT,
+  GTOptions,
+  M,
+  Msg,
+  Part,
+  Placeholder,
   WithGTServerSideProps,
   WithGTStaticProps,
 };
 
-export type { StringFormat };
-
 export {
-  msg,
-  decodeMsg,
-  decodeOptions,
-  mFallback,
-  gtFallback,
+  useGT,
+  useMessages,
+  date,
   derive,
-  declareVar,
-  decodeVars,
+  mFallback,
+  msg,
+  n,
+  number,
+  part,
+  plural,
+  select,
+  selectordinal,
+  time,
   getTranslationsSnapshot,
   getDefaultLocale,
   getLocaleProperties,

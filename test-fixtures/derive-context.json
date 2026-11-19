@@ -1,0 +1,8 @@
+{
+  "jsx": "<T context={derive(getFormality())}>Hello</T>",
+  "source": "Hello",
+  "variants": [
+    { "context": "formal", "hash": "49bd7d7e80ddd750" },
+    { "context": "casual", "hash": "00629d3ba5eadebe" }
+  ]
+}

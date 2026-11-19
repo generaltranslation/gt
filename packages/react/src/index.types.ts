@@ -55,20 +55,26 @@ export {
 // ===== Functions ===== //
 export {
   msg,
-  decodeMsg,
-  decodeOptions,
   mFallback,
-  gtFallback,
+  derive,
+  plural,
+  selectordinal,
+  select,
+  number,
+  date,
+  time,
+  part,
+  n,
   getDefaultLocale,
   getLocaleProperties,
   getLocales,
   resolveCanonicalLocale,
   getVersionId,
 } from 'gt-i18n';
-export { derive, declareVar, decodeVars } from 'generaltranslation';
 export {
   getTranslationsSnapshot,
   t,
+  m,
 } from '@generaltranslation/react-core/pure';
 
 // ===== Types ===== //
@@ -93,8 +99,5 @@ export type {
 } from '@generaltranslation/react-core/pure';
 
 export type { SharedGTProviderProps } from './provider/GTProviderProps';
-export {
-  GtInternalRuntimeTranslateJsx,
-  GtInternalRuntimeTranslateString,
-} from 'gt-i18n/internal';
-export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-i18n';
+export { GtInternalRuntimeTranslateJsx } from 'gt-i18n/internal';
+export type { GT, GTOptions, M, Msg, Part, Placeholder } from 'gt-i18n';

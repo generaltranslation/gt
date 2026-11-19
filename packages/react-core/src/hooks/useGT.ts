@@ -1,58 +1,36 @@
-import { useCallback } from 'react';
-import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
-import { useTranslationConditions } from './utils';
-import type {
-  GTFunctionType,
-  GTTranslationOptions,
-  RegisteredMessage,
-} from 'gt-i18n';
-import type { StringFormat } from '@generaltranslation/format';
-import { useDefaultLocale } from './i18n-config';
+import { useMemo } from 'react';
+import type { GT } from 'gt-i18n';
+import { createGT } from 'gt-i18n/internal';
+import { useEnableI18n } from './condition-store';
 import { useTrackedTranslationResolver } from './external-store/useTrackedTranslationResolver';
+import { useTranslationConditions } from './utils';
 
-// ===== Hook ===== //
-
-export function useGT(_messages?: RegisteredMessage[]): GTFunctionType {
+/**
+ * Returns a GT bound to the render locale. It reads the provider's
+ * translations snapshot, then the I18nCache, and in dev hot reload sends
+ * misses for runtime translation and re-renders when they arrive. Other
+ * misses render the source.
+ *
+ * @example
+ * const t = useGT();
+ * t`Hello, ${{ name }}!`;
+ */
+export function useGT(): GT {
   const { locale, shouldTranslate } = useTranslationConditions();
-  const defaultLocale = useDefaultLocale();
-  const resolveTranslation = useTrackedTranslationResolver(
-    _messages,
-    locale,
-    shouldTranslate
-  );
-
-  /**
-   * t() string translation callback
-   */
-  return useCallback(
-    (message: string, options: GTTranslationOptions = {}) => {
-      const lookupOptions = createLookupOptions<StringFormat>(
-        options.$locale ?? locale,
-        options,
-        'ICU'
-      );
-
-      if (!shouldTranslate) {
-        return interpolateMessage({
-          options: lookupOptions,
-          source: message,
-          sourceLocale: defaultLocale,
-        });
-      }
-
-      const translation = resolveTranslation({
-        locale: lookupOptions.$locale,
-        content: message,
-        options: lookupOptions,
-      });
-
-      return interpolateMessage({
-        source: message,
-        target: translation,
-        options: lookupOptions,
-        sourceLocale: defaultLocale,
-      });
-    },
-    [defaultLocale, locale, shouldTranslate, resolveTranslation]
+  const enableI18n = useEnableI18n();
+  const resolveTranslation = useTrackedTranslationResolver(shouldTranslate);
+  return useMemo(
+    () =>
+      createGT({
+        getLocale: () => locale,
+        getEnableI18n: () => enableI18n,
+        lookupTranslation: (tree, options) =>
+          resolveTranslation({
+            locale: options.$locale,
+            content: tree,
+            options,
+          }),
+      }),
+    [locale, enableI18n, resolveTranslation]
   );
 }

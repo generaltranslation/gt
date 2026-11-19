@@ -177,9 +177,9 @@ function PureMultimodalInput({
           };
         }
         const { error } = (await response.json()) as { error?: string };
-        toast.error(error ?? t('Upload failed'));
+        toast.error(error ?? t`Upload failed`);
       } catch {
-        toast.error(t('Failed to upload file, please try again!'));
+        toast.error(t`Failed to upload file, please try again!`);
       }
     },
     [t]
@@ -250,7 +250,7 @@ function PureMultimodalInput({
 
       <Textarea
         ref={setTextareaRef}
-        placeholder={t('Send a message...')}
+        placeholder={t`Send a message...`}
         value={input}
         onChange={handleInput}
         className={cx(
@@ -263,9 +263,7 @@ function PureMultimodalInput({
             event.preventDefault();
 
             if (isLoading) {
-              toast.error(
-                t('Please wait for the model to finish its response!')
-              );
+              toast.error(t`Please wait for the model to finish its response!`);
             } else {
               submitForm();
             }

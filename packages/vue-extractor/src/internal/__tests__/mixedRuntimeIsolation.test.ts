@@ -18,12 +18,20 @@ const OTHER_NON_VUE_GT_RUNTIMES = [
     usage: `
       const t = useGT();
       const m = useMessages();
-      t('React core function');
+      t\`React core message, \${{ name }}\`;
       m('React core message');
     `,
   },
-  { importNames: 'msg', source: 'gt-node', usage: `msg('Node message');` },
-  { importNames: 'msg', source: 'gt-i18n', usage: `msg('i18n message');` },
+  {
+    importNames: 'msg',
+    source: 'gt-node',
+    usage: `msg\`Node message, \${{ name }}\`; msg('Node message');`,
+  },
+  {
+    importNames: 'msg',
+    source: 'gt-i18n',
+    usage: `msg\`i18n message, \${{ name }}\`; msg('i18n message');`,
+  },
 ] as const;
 
 let fixtureRoot: string;
@@ -42,12 +50,14 @@ describe('mixed-runtime isolation', () => {
     async (runtime) => {
       const output = await extractFromVueSource(
         `
-          import { T, msg, t, useGT, useMessages } from '${runtime}';
-          const gt = useGT();
+          import { T, msg, t as translate, useGT, useMessages } from '${runtime}';
+          const t = useGT();
           const m = useMessages();
-          gt('React-family function');
+          t\`React-family message, \${{ name }}\`;
+          t({ context: 'button' })\`Save\`;
+          m(msg\`React-family deferred message, \${{ name }}\`);
           m(msg('React-family message'));
-          t('React-family immediate translation');
+          translate\`React-family immediate translation\`;
           export const View = () => <T>React-family rich text</T>;
         `,
         path.join(fixtureRoot, 'View.tsx'),

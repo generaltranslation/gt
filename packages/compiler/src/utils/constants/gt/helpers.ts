@@ -4,9 +4,7 @@
 
 import {
   GT_ALL_FUNCTIONS,
-  GT_CALLBACK_FUNCTIONS,
   GT_COMPONENT_TYPES,
-  GT_FUNCTIONS_WITH_CALLBACKS,
   GT_IMPORT_SOURCES,
   MINIFY_CANONICAL_NAME_MAP,
 } from './constants';
@@ -22,17 +20,7 @@ import {
  */
 export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
   return [
-    'useGT',
-    'getGT',
-    'useMessages',
-    'getMessages',
-    'msg',
-    't',
     'derive',
-    'useGT_callback',
-    'getGT_callback',
-    'useMessages_callback',
-    'getMessages_callback',
     'T',
     'Tx',
     'Var',
@@ -49,17 +37,6 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'GtInternalCurrency',
     'GtInternalDateTime',
   ].includes(name);
-}
-
-/**
- * Check if a name is a GT function with callbacks
- * @param name - The name to check
- * @returns True if the name is a GT function with callbacks
- */
-export function isGTFunctionWithCallbacks(
-  name: string
-): name is GT_FUNCTIONS_WITH_CALLBACKS {
-  return ['useGT', 'getGT', 'useMessages', 'getMessages'].includes(name);
 }
 
 /**
@@ -119,27 +96,6 @@ export function isBranchComponent(name: string): name is GT_COMPONENT_TYPES {
 }
 
 /**
- * Check if a name is a GT translation function
- */
-export function isTranslationFunction(name: string): name is 'useGT' | 'getGT' {
-  return ['useGT', 'getGT'].includes(name);
-}
-
-/**
- * Check if it's a translation function callback (const t = useGT())
- */
-export function isTranslationFunctionCallback(
-  name: string
-): name is GT_CALLBACK_FUNCTIONS {
-  return [
-    'useGT_callback',
-    'getGT_callback',
-    'useMessages_callback',
-    'getMessages_callback',
-  ].includes(name);
-}
-
-/**
  * Check if it's a GT import source
  */
 export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
@@ -152,15 +108,6 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
       GT_IMPORT_SOURCES.GT_TANSTACK_START,
     ] as string[]
   ).includes(name);
-}
-
-/**
- * Check if a source exports gt-react's string translation `t`.
- */
-export function isGTReactImportSource(
-  name: string
-): name is GT_IMPORT_SOURCES.GT_REACT {
-  return name === GT_IMPORT_SOURCES.GT_REACT;
 }
 
 /**

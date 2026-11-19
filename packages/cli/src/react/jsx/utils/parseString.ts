@@ -9,7 +9,6 @@ import fs from 'node:fs';
 import {
   warnDeriveFunctionNoResultsSync,
   warnFunctionNotFoundSync,
-  warnInvalidDeclareVarNameSync,
   warnDeriveNonConstVariableSync,
   warnDeriveUnresolvableValueSync,
   warnDeriveOptionalChainingSync,
@@ -18,10 +17,6 @@ import {
 } from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
-import { DECLARE_VAR_FUNCTION } from '../../jsx/utils/constants.js';
-import { GTLibrary, GT_LIBRARIES } from '../../../types/libraries.js';
-import { declareVar } from 'generaltranslation';
-import { isStaticExpression } from '../evaluateJsx.js';
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -1065,55 +1060,6 @@ export function parseStringExpression(
       }
 
       const importPath = importedFunctionsMap.get(functionName)!;
-
-      // Handle declareVar function
-      if (
-        originalName === DECLARE_VAR_FUNCTION &&
-        GT_LIBRARIES.includes(importPath as GTLibrary)
-      ) {
-        // check for name field eg declareVar('test', { $name: 'test' })
-        if (
-          node.arguments.length > 1 &&
-          t.isObjectExpression(node.arguments[1])
-        ) {
-          const name = node.arguments[1].properties
-            .filter((prop) => t.isObjectProperty(prop))
-            .find(
-              (prop) => t.isIdentifier(prop.key) && prop.key.name === '$name'
-            )?.value;
-          if (name) {
-            if (!t.isExpression(name)) {
-              warnings.add(
-                warnInvalidDeclareVarNameSync(
-                  file,
-                  generate(name).code,
-                  `${node.arguments[1].loc?.start?.line}:${node.arguments[1].loc?.start?.column}`
-                )
-              );
-              return null;
-            }
-            const staticResult = isStaticExpression(name);
-            if (!staticResult.isStatic) {
-              warnings.add(
-                warnInvalidDeclareVarNameSync(
-                  file,
-                  generate(name).code,
-                  `${node.arguments[1].loc?.start?.line}:${node.arguments[1].loc?.start?.column}`
-                )
-              );
-              return null;
-            }
-            return {
-              type: 'text',
-              text: declareVar('', { $name: staticResult.value }),
-            };
-          }
-        }
-        return {
-          type: 'text',
-          text: declareVar(''),
-        };
-      }
 
       const filePath = resolveImportPath(
         file,

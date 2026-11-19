@@ -39,14 +39,14 @@ export function VisibilitySelector({
     () => [
       {
         id: 'private',
-        label: t('Private'),
-        description: t('Only you can access this chat'),
+        label: t`Private`,
+        description: t`Only you can access this chat`,
         icon: <LockIcon />,
       },
       {
         id: 'public',
-        label: t('Public'),
-        description: t('Anyone with the link can access this chat'),
+        label: t`Public`,
+        description: t`Anyone with the link can access this chat`,
         icon: <GlobeIcon />,
       },
     ],

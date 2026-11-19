@@ -98,7 +98,6 @@ describe('rsc component wrappers', () => {
   it('exports the package root RSC surface', async () => {
     const module = await import('../index.rsc');
     const gtI18n = await import('gt-i18n');
-    const core = await import('generaltranslation');
 
     expect(module.GTProvider).toBeTypeOf('function');
     expect(module.T).toBeTypeOf('function');
@@ -117,14 +116,32 @@ describe('rsc component wrappers', () => {
     expect(module.Plural).toBeTypeOf('function');
     expect(module.LocaleSelector).toBe(mockComponents.LocaleSelector);
     expect(module.Derive).toBe(mockComponents.Derive);
-    expect(module.msg).toBe(gtI18n.msg);
-    expect(module.decodeMsg).toBe(gtI18n.decodeMsg);
-    expect(module.decodeOptions).toBe(gtI18n.decodeOptions);
-    expect(module.declareVar).toBe(core.declareVar);
-    expect(module.decodeVars).toBe(core.decodeVars);
-    expect(module.derive).toBe(core.derive);
-    expect(module.mFallback).toBe(gtI18n.mFallback);
-    expect(module.gtFallback).toBe(gtI18n.gtFallback);
+    for (const name of [
+      'msg',
+      'mFallback',
+      'derive',
+      'plural',
+      'selectordinal',
+      'select',
+      'number',
+      'date',
+      'time',
+      'part',
+      'n',
+    ] as const) {
+      expect(module[name], name).toBe(gtI18n[name]);
+    }
+    for (const name of [
+      'decodeMsg',
+      'decodeOptions',
+      'gtFallback',
+      'declareVar',
+      'decodeVars',
+      't',
+      'm',
+    ]) {
+      expect(module, name).not.toHaveProperty(name);
+    }
     expect(module.useGT).toBeTypeOf('function');
     expect(module).not.toHaveProperty('useTranslations');
     expect(module.useMessages).toBeTypeOf('function');

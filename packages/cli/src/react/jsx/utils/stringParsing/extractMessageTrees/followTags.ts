@@ -1,6 +1,9 @@
 import type { Binding, NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { warnUntrackedMessageTagSync } from '../../../../../console/index.js';
+import {
+  warnStringMessageCallSync,
+  warnUntrackedMessageTagSync,
+} from '../../../../../console/index.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { formatLocation } from './diagnostics.js';
 import { processMessage } from './processMessage.js';
@@ -20,9 +23,12 @@ export function processHookReference(
     warnUntrackedTag(hookRef.node, config, output);
     return;
   }
-  const declarator = call.parentPath?.isAwaitExpression()
-    ? call.parentPath.parentPath
-    : call.parentPath;
+  const created = call.parentPath?.isAwaitExpression() ? call.parentPath : call;
+  const declarator = created.parentPath;
+  // useGT()('Hello')
+  if (declarator && warnStringCall(declarator, created.node, config, output)) {
+    return;
+  }
   const binding =
     declarator?.isVariableDeclarator() && t.isIdentifier(declarator.node.id)
       ? declarator.scope.getBinding(declarator.node.id.name)
@@ -70,6 +76,10 @@ function processTagReference(
     processMessage(parent, configuredOptions, config, output);
     return;
   }
+  // t('Hello')
+  if (!isMsg && parent && warnStringCall(parent, ref.node, config, output)) {
+    return;
+  }
   if (
     !configuredOptions &&
     parent?.isCallExpression() &&
@@ -113,6 +123,24 @@ function getConstAliasBinding(
     return;
   }
   return path.scope.getBinding(path.node.id.name);
+}
+
+/** Warns when `path` calls `callee`, a translation function, with a string. */
+function warnStringCall(
+  path: NodePath,
+  callee: t.Node,
+  config: ParsingConfig,
+  output: ParsingOutput
+): boolean {
+  if (!path.isCallExpression() || path.node.callee !== callee) return false;
+  const [message] = path.node.arguments;
+  if (!t.isStringLiteral(message) && !t.isTemplateLiteral(message)) {
+    return false;
+  }
+  output.warnings.add(
+    warnStringMessageCallSync(config.file, formatLocation(path.node))
+  );
+  return true;
 }
 
 function warnUntrackedTag(

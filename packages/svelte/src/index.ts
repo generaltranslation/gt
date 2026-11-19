@@ -24,10 +24,10 @@ export {
   useMessages,
   useSetLocale,
 } from './runtime/strings';
-export { msg } from 'gt-i18n';
+export { msg } from 'gt-i18n/internal/string';
 export type { LocaleProperties } from '@generaltranslation/format';
 export type {
   GTFunctionType,
   GTTranslationOptions,
   MFunctionType,
-} from 'gt-i18n';
+} from 'gt-i18n/internal/string';

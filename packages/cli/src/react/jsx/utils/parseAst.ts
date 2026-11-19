@@ -7,7 +7,7 @@ const traverse = traverseModule.default || traverseModule;
 import { ParseResult } from '@babel/parser';
 import * as babel from '@babel/types';
 import { ImportDeclaration, VariableDeclaration } from '@babel/types';
-import { GTLibrary, isLegacyGTImportSource } from '../../../types/libraries.js';
+import { GTLibrary, isGTImportSource } from '../../../types/libraries.js';
 
 type NodeWithParentBody = t.Node & {
   parent?: {
@@ -288,7 +288,7 @@ export function extractImportName(
 
   if (node.type === 'ImportDeclaration') {
     // Handle ES6 imports
-    if (isLegacyGTImportSource(node.source.value, pkgs)) {
+    if (isGTImportSource(node.source.value, pkgs)) {
       for (const specifier of node.specifiers) {
         if (
           specifier.type === 'ImportSpecifier' &&
@@ -311,7 +311,7 @@ export function extractImportName(
         declaration.init.callee.type === 'Identifier' &&
         declaration.init.callee.name === 'require' &&
         declaration.init.arguments[0]?.type === 'StringLiteral' &&
-        isLegacyGTImportSource(
+        isGTImportSource(
           (
             (declaration!.init as t.CallExpression)
               .arguments[0] as t.StringLiteral

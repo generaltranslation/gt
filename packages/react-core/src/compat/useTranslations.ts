@@ -1,17 +1,17 @@
 import { useCallback, useMemo } from 'react';
-import { extractVariables } from 'gt-i18n/internal';
+import type { TranslationVariables } from 'gt-i18n/internal';
 import {
   renderDictionaryEntry,
   renderDictionaryObject,
   resolveDictionaryLookupOptions,
+  type DictionaryEntry,
   type DictionaryObjectTranslation,
   type TFunctionType,
 } from 'gt-i18n/internal/compat';
 import { useLocale } from '../hooks/condition-store';
-import { useGT } from '../hooks/useGT';
-import type { TranslationVariables } from 'gt-i18n';
 import { useDefaultLocale } from '../hooks/i18n-config';
 import { useShouldTranslate } from '../hooks/utils';
+import { useTrackedTranslationResolver } from '../hooks/external-store/useTrackedTranslationResolver';
 import { useTrackedDictionaryResolver } from './useTrackedDictionaryResolver';
 import { useTrackedDictionaryObjResolver } from './useTrackedDictionaryObjResolver';
 
@@ -21,7 +21,7 @@ export function useTranslations(rootId?: string): TFunctionType {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const t = useGT();
+  const renderEntry = useRenderDictionaryEntry();
   const resolveDictionaryEntry = useTrackedDictionaryResolver();
   const translateObject = useTranslationsObj(rootId);
 
@@ -36,34 +36,24 @@ export function useTranslations(rootId?: string): TFunctionType {
       if (sourceEntry === undefined) {
         throw new Error(`Dictionary entry ${id} cannot be found`);
       }
-      const sourceOptions = resolveDictionaryLookupOptions(sourceEntry.options);
-      if (!shouldTranslate) {
-        return t(sourceEntry.entry, {
-          ...sourceOptions,
-          ...extractVariables(options),
-          $locale: defaultLocale,
-        });
-      }
-
-      const targetEntry = resolveDictionaryEntry({ locale, id });
-      if (targetEntry?.entry != null) {
-        return renderDictionaryEntry({
-          sourceLocale: defaultLocale,
-          targetLocale: locale,
-          sourceEntry,
-          target: targetEntry.entry,
-          dictionaryOptions: sourceOptions,
-          options,
-        });
-      }
-
-      return t(sourceEntry.entry, {
-        ...sourceOptions,
-        ...extractVariables(options),
-        $locale: locale,
-      });
+      const target = shouldTranslate
+        ? resolveDictionaryEntry({ locale, id })?.entry
+        : undefined;
+      return renderEntry(
+        sourceEntry,
+        resolveDictionaryLookupOptions(sourceEntry.options),
+        target,
+        options
+      );
     },
-    [defaultLocale, t, rootId, locale, resolveDictionaryEntry, shouldTranslate]
+    [
+      defaultLocale,
+      renderEntry,
+      rootId,
+      locale,
+      resolveDictionaryEntry,
+      shouldTranslate,
+    ]
   );
 
   // Wrap instead of mutating translateEntry, so the returned function changes
@@ -83,7 +73,7 @@ function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const t = useGT();
+  const renderEntry = useRenderDictionaryEntry();
   const resolveDictionaryObject = useTrackedDictionaryObjResolver();
 
   return useCallback(
@@ -107,13 +97,54 @@ function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
         sourceObject,
         targetObject,
         translate: (sourceEntry, dictionaryOptions) =>
-          t(sourceEntry.entry, {
-            ...dictionaryOptions,
-            $locale: shouldTranslate ? locale : defaultLocale,
-          }),
+          renderEntry(sourceEntry, dictionaryOptions),
       });
     },
-    [defaultLocale, rootId, locale, resolveDictionaryObject, shouldTranslate, t]
+    [
+      defaultLocale,
+      rootId,
+      locale,
+      resolveDictionaryObject,
+      shouldTranslate,
+      renderEntry,
+    ]
+  );
+}
+
+/**
+ * Renders a source entry in the render locale: with `target` when the target
+ * dictionary has the entry, else with the entry's translation from the
+ * translations snapshot or cache, else from the source.
+ */
+function useRenderDictionaryEntry() {
+  const locale = useLocale();
+  const defaultLocale = useDefaultLocale();
+  const shouldTranslate = useShouldTranslate();
+  const resolveTranslation = useTrackedTranslationResolver(shouldTranslate);
+
+  return useCallback(
+    (
+      sourceEntry: DictionaryEntry,
+      dictionaryOptions: ReturnType<typeof resolveDictionaryLookupOptions>,
+      target?: string,
+      options?: TranslationVariables
+    ): string =>
+      renderDictionaryEntry({
+        sourceLocale: defaultLocale,
+        targetLocale: shouldTranslate ? locale : defaultLocale,
+        sourceEntry,
+        target: shouldTranslate
+          ? (target ??
+            resolveTranslation({
+              locale,
+              content: sourceEntry.entry,
+              options: { ...dictionaryOptions, $locale: locale },
+            }))
+          : undefined,
+        dictionaryOptions,
+        options,
+      }),
+    [defaultLocale, locale, shouldTranslate, resolveTranslation]
   );
 }
 

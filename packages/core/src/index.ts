@@ -31,9 +31,6 @@ import {
 export type { LocaleConfig } from '@generaltranslation/format';
 export type { GTAccountConfig } from './client/clientConfig';
 export type { BatchWriteResponse, BatchWriteResult } from './client/apiClient';
-export { decodeVars } from './derive/decodeVars';
-export { declareVar } from './derive/declareVar';
-export { derive } from './derive/derive';
 
 // `@generaltranslation/format` takes every argument. These resolve what a
 // caller leaves out, and nothing outside this package does.

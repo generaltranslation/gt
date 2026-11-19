@@ -30,7 +30,7 @@ export default async function Home() {
             generated value: <Var>{generatedAt}</Var>
           </p>
         </T>
-        <p>{t('A server-translated string from getGT.')}</p>
+        <p>{t`A server-translated string from getGT.`}</p>
       </section>
 
       <ClientDemo />

@@ -1,9 +1,10 @@
 import fs from 'node:fs';
+import nodePath from 'node:path';
 import { Updates } from 'generaltranslation';
+import { extractFromSvelteModule } from '@generaltranslation/svelte-extractor/integration';
 
 import { parse } from '@babel/parser';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
-import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { logger } from '../../console/logger.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
@@ -11,13 +12,13 @@ import type {
   ParsingConfigOptions,
   ResolvedGTParsingFlags,
 } from '../../types/parsing.js';
-import { resolveAutoderive } from 'generaltranslation/config-schema';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import { extractMessageTrees } from '../jsx/utils/stringParsing/extractMessageTrees/index.js';
 import type { ParsingConfig } from '../jsx/utils/stringParsing/types.js';
 import {
   GTLibrary,
   GT_LIBRARIES_UPSTREAM,
+  Libraries,
   REACT_LIBRARIES,
   ReactLibrary,
 } from '../../types/libraries.js';
@@ -50,8 +51,6 @@ export async function createInlineUpdates(
 
   const pkgs = getUpstreamPackages(pkg);
 
-  const autoderive = resolveAutoderive(parsingFlags.autoderive);
-
   // Use the provided app directory or default to the current directory
   const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
 
@@ -69,43 +68,39 @@ export async function createInlineUpdates(
     }
 
     // First pass: collect imports and process translation functions
-    const { importAliases, inlineTranslationPaths, translationComponentPaths } =
-      getPathsAndAliases(ast, pkgs);
+    const { importAliases, translationComponentPaths } = getPathsAndAliases(
+      ast,
+      pkgs
+    );
 
     const stringParsingConfig: ParsingConfig = {
-      parsingOptions,
       file,
-      ignoreInlineMetadata: false,
-      ignoreDynamicContent: false,
-      ignoreInvalidIcu: false,
-      ignoreInlineListContent: false,
       includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
-      ignoreTaggedTemplates: false,
-      ignoreGlobalTaggedTemplates: false,
       skippedMessagesAreErrors: validate,
-      // User configurable, otherwise default to AUTO
-      autoderiveMethod: autoderive.strings ? 'AUTO' : 'DISABLED',
     };
 
-    // Process translation functions asynchronously
-    for (const {
-      localName: name,
-      originalName,
-      path,
-    } of inlineTranslationPaths) {
-      parseStrings(name, originalName, path, stringParsingConfig, {
-        updates,
-        errors,
-        warnings,
-      });
-    }
-
-    // Unstable tagged-template messages, extracted as message trees
+    // Tagged-template messages, extracted as message trees
     await extractMessageTrees(ast, pkgs, stringParsingConfig, {
       updates,
       errors,
       warnings,
     });
+
+    // gt-svelte's string API. Its extractor reads ESTree, as in a .svelte file's scripts
+    if (pkg === Libraries.GT_SVELTE) {
+      const strings = extractFromSvelteModule(code, {
+        relativePath: nodePath.relative(process.cwd(), file),
+        parse: (source) =>
+          parse(source, {
+            sourceType: 'module',
+            plugins: ['estree', 'jsx', 'typescript'],
+          }).program,
+        includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
+      });
+      updates.push(...strings.updates);
+      errors.push(...strings.errors);
+      for (const warning of strings.warnings) warnings.add(warning);
+    }
 
     // Parse <T> components — PASS 1: user-written T
     if (REACT_LIBRARIES.includes(pkg as ReactLibrary)) {
@@ -121,7 +116,7 @@ export async function createInlineUpdates(
             pkgs,
             file,
             includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
-            autoderive: autoderive.jsx,
+            autoderive: parsingFlags.autoderive,
           },
           output: {
             errors,
@@ -183,7 +178,7 @@ export async function createInlineUpdates(
               file,
               includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
               enableAutoJsxInjection: true,
-              autoderive: autoderive.jsx,
+              autoderive: parsingFlags.autoderive,
             },
             output: {
               errors,

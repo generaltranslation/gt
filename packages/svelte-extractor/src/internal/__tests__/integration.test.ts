@@ -1,8 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { parseSync } from '@babel/core';
+import { hashSource } from 'generaltranslation/id';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  extractFromSvelteModule,
   extractFromSvelteProject,
   planSvelteExtraction,
 } from '../../integration.js';
@@ -246,5 +249,110 @@ describe('planSvelteExtraction', () => {
     expect(
       await sourcesFor(['node_modules/pkg/Listed.svelte', '!**/Listed.svelte'])
     ).toEqual([]);
+  });
+});
+
+describe('extractFromSvelteModule', () => {
+  // The ESTree output the host CLI passes for JavaScript and TypeScript.
+  const parse = (source: string) =>
+    parseSync(source, {
+      configFile: false,
+      babelrc: false,
+      sourceType: 'module',
+      parserOpts: { plugins: ['estree', 'typescript'] },
+    })!.program;
+  const relativePath = 'src/lib/messages.ts';
+
+  it('extracts the string calls a component script supports', () => {
+    const output = extractFromSvelteModule(
+      `import * as GT from 'gt-svelte';
+import { msg as register, type GTFunctionType } from 'gt-svelte';
+export const labels = register(['Save', 'Close' as string], { $id: 'labels' });
+export function greet(name: string): string {
+  const t: GTFunctionType = GT.useGT();
+  return t('Hello, ' + '{name}!', { name, $context: 'greeting', $maxChars: 20 });
+}
+export const raw = register('{braces}', { $format: 'STRING' });
+`,
+      { relativePath, parse }
+    );
+
+    expect(output.warnings).toEqual([]);
+    expect(output.errors).toEqual([
+      'src/lib/messages.ts (3:41): Translated strings must be string literals. Pass a string literal and supply dynamic values as ICU variables in the options.',
+    ]);
+    expect(output.updates).toEqual([
+      {
+        dataFormat: 'ICU',
+        source: 'Save',
+        metadata: {
+          id: 'labels.0',
+          hash: hashSource({ source: 'Save', dataFormat: 'ICU' }),
+          filePaths: [relativePath],
+        },
+      },
+      {
+        dataFormat: 'ICU',
+        source: 'Hello, {name}!',
+        metadata: {
+          context: 'greeting',
+          maxChars: 20,
+          hash: hashSource({
+            source: 'Hello, {name}!',
+            context: 'greeting',
+            maxChars: 20,
+            dataFormat: 'ICU',
+          }),
+          filePaths: [relativePath],
+        },
+      },
+      {
+        dataFormat: 'STRING',
+        source: '{braces}',
+        metadata: {
+          hash: hashSource({ source: '{braces}', dataFormat: 'STRING' }),
+          filePaths: [relativePath],
+        },
+      },
+    ]);
+  });
+
+  it('includes source code context when asked', () => {
+    const source = `import { msg } from 'gt-svelte';
+
+export const save = msg('Save');
+`;
+    const [update] = extractFromSvelteModule(source, {
+      relativePath,
+      parse,
+      includeSourceCodeContext: true,
+    }).updates;
+    expect(update.metadata.sourceCode).toEqual({
+      [relativePath]: [
+        {
+          before: "import { msg } from 'gt-svelte';\n",
+          target: "export const save = msg('Save');",
+          after: '',
+        },
+      ],
+    });
+  });
+
+  it('skips modules that do not import gt-svelte', () => {
+    const parseModule = vi.fn(parse);
+    const empty = { updates: [], errors: [], warnings: [] };
+    expect(
+      extractFromSvelteModule(`export const save = msg('Save');`, {
+        relativePath,
+        parse: parseModule,
+      })
+    ).toEqual(empty);
+    expect(parseModule).not.toHaveBeenCalled();
+    expect(
+      extractFromSvelteModule(
+        `import { msg } from 'gt-react'; // not gt-svelte\nmsg('Save');`,
+        { relativePath, parse }
+      )
+    ).toEqual(empty);
   });
 });

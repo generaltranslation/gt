@@ -2,18 +2,10 @@ import traverseModule from '@babel/traverse';
 import { NodePath } from '@babel/traverse';
 import {
   GT_TRANSLATION_FUNCS,
-  INLINE_TRANSLATION_HOOK,
-  INLINE_TRANSLATION_HOOK_ASYNC,
-  INLINE_MESSAGE_HOOK,
-  INLINE_MESSAGE_HOOK_ASYNC,
-  MSG_REGISTRATION_FUNCTION,
-  T_REGISTRATION_FUNCTION,
   TRANSLATION_COMPONENT,
   INTERNAL_TRANSLATION_COMPONENT,
-  T_GLOBAL_REGISTRATION_FUNCTION,
-  T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
 } from '../../jsx/utils/constants.js';
-import { GTLibrary, isLegacyGTImportSource } from '../../../types/libraries.js';
+import { GTLibrary, isGTImportSource } from '../../../types/libraries.js';
 import { extractImportName } from './parseAst.js';
 import * as t from '@babel/types';
 
@@ -22,7 +14,6 @@ const traverse = traverseModule.default || traverseModule;
 
 /**
  * Constructs tracking for gt related variables of interest
- * inlineTranslationPaths: these are string-related translation functions
  * translationComponentPaths: these are just <T> components
  * importAliases: any other GT related imports
  */
@@ -31,11 +22,6 @@ export function getPathsAndAliases(
   pkgs: GTLibrary[]
 ): {
   importAliases: Record<string, string>;
-  inlineTranslationPaths: Array<{
-    localName: string;
-    path: NodePath;
-    originalName: string;
-  }>;
   translationComponentPaths: Array<{
     localName: string;
     path: NodePath;
@@ -44,12 +30,6 @@ export function getPathsAndAliases(
 } {
   // First pass: collect imports and process translation functions
   const importAliases: Record<string, string> = {};
-  const inlineTranslationPaths: Array<{
-    localName: string;
-    path: NodePath;
-    originalName: string;
-  }> = [];
-
   const translationComponentPaths: Array<{
     localName: string;
     path: NodePath;
@@ -57,23 +37,8 @@ export function getPathsAndAliases(
   }> = [];
 
   traverse(ast, {
-    // extract global t tagged template
-    TaggedTemplateExpression(path) {
-      if (
-        t.isIdentifier(path.node.tag, {
-          name: T_GLOBAL_REGISTRATION_FUNCTION,
-        }) &&
-        !path.scope.hasBinding(T_GLOBAL_REGISTRATION_FUNCTION)
-      ) {
-        inlineTranslationPaths.push({
-          localName: T_GLOBAL_REGISTRATION_FUNCTION,
-          path: path.get('tag') as NodePath,
-          originalName: T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
-        });
-      }
-    },
     ImportDeclaration(path) {
-      if (isLegacyGTImportSource(path.node.source.value, pkgs)) {
+      if (isGTImportSource(path.node.source.value, pkgs)) {
         const importName = extractImportName(
           path.node,
           pkgs,
@@ -81,19 +46,6 @@ export function getPathsAndAliases(
         );
         for (const name of importName) {
           if (
-            name.original === INLINE_TRANSLATION_HOOK ||
-            name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
-            name.original === INLINE_MESSAGE_HOOK ||
-            name.original === INLINE_MESSAGE_HOOK_ASYNC ||
-            name.original === MSG_REGISTRATION_FUNCTION ||
-            name.original === T_REGISTRATION_FUNCTION
-          ) {
-            inlineTranslationPaths.push({
-              localName: name.local,
-              path,
-              originalName: name.original,
-            });
-          } else if (
             name.original === TRANSLATION_COMPONENT ||
             name.original === INTERNAL_TRANSLATION_COMPONENT
           ) {
@@ -120,7 +72,7 @@ export function getPathsAndAliases(
         if (
           args.length === 1 &&
           args[0].type === 'StringLiteral' &&
-          isLegacyGTImportSource((args[0] as t.StringLiteral).value, pkgs)
+          isGTImportSource((args[0] as t.StringLiteral).value, pkgs)
         ) {
           const parentPath = path.parentPath;
           if (parentPath.isVariableDeclaration()) {
@@ -131,17 +83,6 @@ export function getPathsAndAliases(
             );
             for (const name of importName) {
               if (
-                name.original === INLINE_TRANSLATION_HOOK ||
-                name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
-                name.original === INLINE_MESSAGE_HOOK ||
-                name.original === INLINE_MESSAGE_HOOK_ASYNC
-              ) {
-                inlineTranslationPaths.push({
-                  localName: name.local,
-                  path: parentPath,
-                  originalName: name.original,
-                });
-              } else if (
                 name.original === TRANSLATION_COMPONENT ||
                 name.original === INTERNAL_TRANSLATION_COMPONENT
               ) {
@@ -161,7 +102,6 @@ export function getPathsAndAliases(
   });
   return {
     importAliases,
-    inlineTranslationPaths,
     translationComponentPaths,
   };
 }

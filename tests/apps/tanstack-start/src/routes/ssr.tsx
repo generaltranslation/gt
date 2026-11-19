@@ -10,10 +10,8 @@ const loadSsrData = createServerFn({ method: 'GET' }).handler(async () => {
 
   return {
     value: `SSR loader ran at ${new Date().toISOString()} for ${locale} (i18n: ${enableI18n})`,
-    title: t('Server rendering | gt-tanstack-start'),
-    description: t(
-      'Test gt-tanstack-start with server-rendered loader data and route HTML.'
-    ),
+    title: t`Server rendering | gt-tanstack-start`,
+    description: t`Test gt-tanstack-start with server-rendered loader data and route HTML.`,
   };
 });
 

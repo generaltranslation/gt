@@ -1,36 +1,35 @@
-import { useCallback } from 'react';
-import {
-  decodeOptions,
-  type GTTranslationOptions,
-  type MFunctionType,
-  type RegisteredMessage,
-} from 'gt-i18n';
-import { useGT } from './useGT';
-import { isEncodedTranslationOptions } from 'gt-i18n/internal/string';
+import { useMemo } from 'react';
+import type { M } from 'gt-i18n';
+import { createMessages } from 'gt-i18n/internal';
+import { useEnableI18n } from './condition-store';
+import { useTrackedTranslationResolver } from './external-store/useTrackedTranslationResolver';
+import { useTranslationConditions } from './utils';
 
-// ===== Hook ===== //
-
-export function useMessages(_messages?: RegisteredMessage[]): MFunctionType {
-  const t = useGT(_messages);
-
-  return useCallback(
-    <T extends string | null | undefined>(
-      encodedMsg: T,
-      options: GTTranslationOptions = {}
-    ): T extends string ? string : T => {
-      if (encodedMsg == null) {
-        return encodedMsg as T extends string ? string : T;
-      }
-
-      const decodedOptions = decodeOptions(encodedMsg) ?? {};
-      if (isEncodedTranslationOptions(decodedOptions)) {
-        return t(decodedOptions.$_source, decodedOptions) as T extends string
-          ? string
-          : T;
-      }
-
-      return t(encodedMsg, options) as T extends string ? string : T;
-    },
-    [t]
+/**
+ * Returns an m bound to the render locale, which renders messages from msg().
+ * Like useGT(), it reads the provider's translations snapshot, then the
+ * I18nCache, and in dev hot reload sends misses for runtime translation.
+ *
+ * @example
+ * const m = useMessages();
+ * m(msg`Hello, ${{ name }}!`);
+ */
+export function useMessages(): M {
+  const { locale, shouldTranslate } = useTranslationConditions();
+  const enableI18n = useEnableI18n();
+  const resolveTranslation = useTrackedTranslationResolver(shouldTranslate);
+  return useMemo(
+    () =>
+      createMessages({
+        getLocale: () => locale,
+        getEnableI18n: () => enableI18n,
+        lookupTranslation: (tree, options) =>
+          resolveTranslation({
+            locale: options.$locale,
+            content: tree,
+            options,
+          }),
+      }),
+    [locale, enableI18n, resolveTranslation]
   );
 }

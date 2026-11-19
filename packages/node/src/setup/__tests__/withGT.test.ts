@@ -2,8 +2,6 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { getLocale } from 'gt-i18n';
 import { initializeGT } from '../initializeGT';
 import { withGT } from '../withGT';
-import { tx } from 'gt-i18n/internal';
-import { hashSource } from 'generaltranslation/id';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
@@ -47,20 +45,5 @@ describe('withGT', () => {
     const locale = withGT('pt-BR', () => getLocale());
 
     expect(locale).toBe('pt-BR');
-  });
-
-  it('allows explicit runtime locale to override the callback context', async () => {
-    resetGTGlobals();
-    initializeGT({
-      defaultLocale: 'en-US',
-      locales: ['en-US', 'fr'],
-      loadTranslations: () => ({
-        [hashSource({ source: 'Hello', dataFormat: 'STRING' })]: 'Bonjour',
-      }),
-    });
-
-    await expect(
-      withGT('en-US', () => tx('Hello', { $locale: 'fr' }))
-    ).resolves.toBe('Bonjour');
   });
 });
