@@ -251,6 +251,13 @@ const CASES: [
     undefined,
   ],
   [
+    'a count kept by one of two uses of a plural with different exact branches',
+    `{m, plural, one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    `{m, plural, =1 {${SOME_FILES}} one {${ONE_FILE}} other {${ONE_FILE}}} {m, plural, one {${ONE_FILE}} other {${SOME_FILES}}}`,
+    'en',
+    undefined,
+  ],
+  [
     'a count of another offset in place of the count',
     ATTENDEES,
     '{n, plural, one {# Teilnehmer} other {# Teilnehmer}}: du {n, plural, offset:1 one {und eine weitere Person} other {und eine weitere Person}}',

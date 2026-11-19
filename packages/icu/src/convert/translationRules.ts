@@ -368,9 +368,10 @@ type Readers = Map<string, string>;
 /** A select or plural variable, and the branch keys a reader can have for it. */
 type BranchChoice = {
   variable: string;
-  name: string;
   placeholder: BranchingPlaceholder;
   keys: string[];
+  /** Whether it is a plural written more than once, with different exact branches. */
+  uneven: boolean;
 };
 
 // shortcut: a message with more combinations of branches than this is not checked for placement; raise it if a real message needs more.
@@ -423,7 +424,10 @@ function placementProblems(
       if (shown.has(key) || !translationFacts.variables.has(key)) continue;
       if (problems.has(key)) continue;
       const when = selects
-        .map(({ variable, name }) => `${name} is ${selected.get(variable)}`)
+        .map(
+          ({ variable, placeholder }) =>
+            `${placeholder.name} is ${selected.get(variable)}`
+        )
         .join(' and ');
       problems.set(
         key,
@@ -470,6 +474,14 @@ function countProblems(
     if (
       placeholder.kind === 'select' ||
       !sourceNumbers.some((choice) => choice.variable === variable)
+    ) {
+      continue;
+    }
+    // shortcut: beside a plural whose uses differ in their exact branches, a count is not checked: a reader has one branch of each plural, where such a number takes its category at a use with no exact branch. Pick the branch at each use if a real message needs it.
+    if (
+      [...sourceNumbers, ...numbers].some(
+        (choice) => choice.variable !== variable && choice.uneven
+      )
     ) {
       continue;
     }
@@ -595,15 +607,26 @@ function branchChoices(
         : plurals?.categories(ruleType(placeholder.kind));
     choices.push({
       variable,
-      name: placeholder.name,
       placeholder,
       keys: [...keys].filter(
         (key) => !has || !isPluralCategoryKey(key) || has.has(key)
+      ),
+      uneven: facts.pluralPlaceholders.some(
+        (plural) =>
+          variableKey(plural) === variable &&
+          exactKeys(plural) !== exactKeys(placeholder)
       ),
     });
   }
   return choices;
 }
+
+const exactKeys = ({ branches }: BranchingPlaceholder): string =>
+  branches
+    .map(([key]) => key)
+    .filter((key) => key[0] === '=')
+    .sort()
+    .join();
 
 /** Every way to pick one key for each choice. */
 function combinations(choices: BranchChoice[]): Readers[] {
