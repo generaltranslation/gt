@@ -8,12 +8,15 @@ import { PLURAL_CATEGORIES } from '../settings/syntax';
 export function getPluralCategories(
   locale: string,
   type: Intl.PluralRuleType
-): string[] | undefined {
+): Intl.LDMLPluralRule[] | undefined {
   if (!Intl.PluralRules.supportedLocalesOf(locale).length) return undefined;
-  const used: readonly string[] = new Intl.PluralRules(locale, {
+  const { pluralCategories } = new Intl.PluralRules(locale, {
     type,
-  }).resolvedOptions().pluralCategories;
-  return [...PLURAL_CATEGORIES].filter((category) => used.includes(category));
+  }).resolvedOptions();
+  const order = [...PLURAL_CATEGORIES];
+  return [...pluralCategories].sort(
+    (a, b) => order.indexOf(a) - order.indexOf(b)
+  );
 }
 
 /** The first counts a locale picks a plural category for, and whether it picks it for more. */
