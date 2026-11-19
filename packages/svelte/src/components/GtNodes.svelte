@@ -47,7 +47,7 @@
       <GtNodes
         nodes={branch.nodes}
         scopes={branch.scopes}
-        parent={item.scopedId}
+        parent={branch.parent}
         {context}
       />
     {/snippet}

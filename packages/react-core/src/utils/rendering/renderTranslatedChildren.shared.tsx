@@ -13,7 +13,12 @@ import {
 import { createRenderDefaultChildren } from './renderDefaultChildren.shared';
 import { isVariable } from 'generaltranslation/internal';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
-import { getPluralBranch } from '../plurals/getPluralBranch';
+import {
+  getBranch,
+  getPluralBranch,
+  selectBranchKey,
+  selectPluralKey,
+} from '../plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
@@ -71,52 +76,38 @@ function createRenderTranslatedChildren({
       });
     }
 
-    // plural (choose a branch)
+    // The translation chooses a branch; when it has none for the value, the
+    // source chooses its own, which then renders untranslated.
     if (transformation === 'plural') {
       const n = sourceElement.props.n;
-      if (typeof n !== 'number') {
-        return renderDefaultChildren({
-          children: sourceElement,
-          defaultLocale: locales[0],
-          enableI18n,
-        });
-      }
-      const sourceBranches = sourceGT.branches || {};
-      const resolvedSourceBranch = getPluralBranch(n, locales, sourceBranches);
-      const sourceBranch =
-        resolvedSourceBranch != null
-          ? resolvedSourceBranch
-          : sourceElement.props.children;
       const targetBranches = targetElement.d?.b || {};
-      const resolvedTargetBranch = getPluralBranch(n, locales, targetBranches);
-      const targetBranch =
-        resolvedTargetBranch != null ? resolvedTargetBranch : targetElement.c;
+      const key = selectPluralKey(n, locales, targetBranches);
+      const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
-        source: sourceBranch as TaggedChildren,
-        target: targetBranch as TranslatedChildren,
+        source: getPluralBranch(
+          n,
+          locales,
+          sourceGT.branches || {},
+          target === undefined ? undefined : key
+        ),
+        target,
         locales,
         enableI18n,
       });
     }
 
-    // branch (choose a branch)
     if (transformation === 'branch') {
-      const { branch, children } = sourceProps;
-      const branchKey =
-        branch == null || branch === '' ? undefined : branch.toString();
-      const sourceBranches = sourceGT.branches || {};
+      const { branch } = sourceProps;
       const targetBranches = targetElement.d?.b || {};
-      const sourceBranch =
-        branchKey && sourceBranches[branchKey] !== undefined
-          ? sourceBranches[branchKey]
-          : children;
-      const targetBranch =
-        branchKey && targetBranches[branchKey] !== undefined
-          ? targetBranches[branchKey]
-          : targetElement.c;
+      const key = selectBranchKey(branch, targetBranches);
+      const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
-        source: sourceBranch as TaggedChildren,
-        target: targetBranch as TranslatedChildren,
+        source: getBranch(
+          branch,
+          sourceGT.branches || {},
+          target === undefined ? undefined : key
+        ),
+        target,
         locales,
         enableI18n,
       });

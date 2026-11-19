@@ -16,6 +16,9 @@ export {
   DATE_TIME_CONTEXT_OPTIONS,
   NUMBER_CONTEXT_OPTIONS,
 } from './settings/formatOptions';
-export { DEFAULT_DATE_TIME_STYLE } from './formatter/formatMessageTree';
+export {
+  DEFAULT_DATE_TIME_STYLE,
+  toPluralRulesNumber,
+} from './formatter/formatMessageTree';
 export { forEachPlaceholder } from './tree/walk';
 export { IntlCache, intlCache } from './cache/IntlCache';

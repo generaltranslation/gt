@@ -244,7 +244,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -523,7 +523,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -822,7 +822,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1085,67 +1085,6 @@
                       "tail": true
                     }
                   ]
-                }
-              },
-              {
-                "type": "ObjectProperty",
-                "start": 768,
-                "end": 789,
-                "loc": {
-                  "start": {
-                    "line": 24,
-                    "column": 16,
-                    "index": 768
-                  },
-                  "end": {
-                    "line": 24,
-                    "column": 37,
-                    "index": 789
-                  }
-                },
-                "method": false,
-                "key": {
-                  "type": "Identifier",
-                  "start": 768,
-                  "end": 773,
-                  "loc": {
-                    "start": {
-                      "line": 24,
-                      "column": 16,
-                      "index": 768
-                    },
-                    "end": {
-                      "line": 24,
-                      "column": 21,
-                      "index": 773
-                    },
-                    "identifierName": "other"
-                  },
-                  "name": "other"
-                },
-                "computed": false,
-                "shorthand": false,
-                "value": {
-                  "type": "StringLiteral",
-                  "start": 775,
-                  "end": 789,
-                  "loc": {
-                    "start": {
-                      "line": 24,
-                      "column": 23,
-                      "index": 775
-                    },
-                    "end": {
-                      "line": 24,
-                      "column": 37,
-                      "index": 789
-                    }
-                  },
-                  "extra": {
-                    "rawValue": "Good evening",
-                    "raw": "\"Good evening\""
-                  },
-                  "value": "Good evening"
                 }
               },
               {
@@ -1445,67 +1384,6 @@
                       "tail": true
                     }
                   ]
-                }
-              },
-              {
-                "type": "ObjectProperty",
-                "start": 959,
-                "end": 980,
-                "loc": {
-                  "start": {
-                    "line": 30,
-                    "column": 16,
-                    "index": 959
-                  },
-                  "end": {
-                    "line": 30,
-                    "column": 37,
-                    "index": 980
-                  }
-                },
-                "method": false,
-                "key": {
-                  "type": "Identifier",
-                  "start": 959,
-                  "end": 964,
-                  "loc": {
-                    "start": {
-                      "line": 30,
-                      "column": 16,
-                      "index": 959
-                    },
-                    "end": {
-                      "line": 30,
-                      "column": 21,
-                      "index": 964
-                    },
-                    "identifierName": "other"
-                  },
-                  "name": "other"
-                },
-                "computed": false,
-                "shorthand": false,
-                "value": {
-                  "type": "StringLiteral",
-                  "start": 966,
-                  "end": 980,
-                  "loc": {
-                    "start": {
-                      "line": 30,
-                      "column": 23,
-                      "index": 966
-                    },
-                    "end": {
-                      "line": 30,
-                      "column": 37,
-                      "index": 980
-                    }
-                  },
-                  "extra": {
-                    "rawValue": "Good evening",
-                    "raw": "\"Good evening\""
-                  },
-                  "value": "Good evening"
                 }
               },
               {

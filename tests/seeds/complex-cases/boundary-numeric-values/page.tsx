@@ -9,9 +9,8 @@ export default function Home() {
         one={1e-323} // Smallest positive number
         two={5e-324} // Smallest subnormal
         few={1.7976931348623157e308} // Largest finite
-        many={-1.7976931348623157e308} // Largest negative finite
-        other={2.2250738585072014e-308} // Smallest normal positive
-      />
+        many={-1.7976931348623157e308} // Largest negative finite // Smallest normal positive
+      >{2.2250738585072014e-308}</Plural>
     </T>
   );
 }

@@ -27,7 +27,7 @@ const rows = [{ value: 'row' }];
   <T>
     <Plural :n="1">
       <template #one>One</template>
-      <template #other>Other</template>
+      <template #default>Other</template>
     </Plural>
   </T>
 </template>

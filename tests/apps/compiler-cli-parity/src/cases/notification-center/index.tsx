@@ -11,15 +11,13 @@ export default function NotificationCenter() {
       <header>
         <h2>Notifications</h2>
         <span>
-          <Plural n={unread} zero="No new notifications" one="1 new notification" other="new notifications" />
+          <Plural n={unread} zero="No new notifications" one="1 new notification">new notifications</Plural>
         </span>
       </header>
       <ul>
         {notifications.map((n) => (
           <li key={n.id}>
-            <Branch branch={n.type} order="Order Update" promo="Promotion" system="System Alert">
-              Notification
-            </Branch>
+            <Branch branch={n.type} order="Order Update" promo="Promotion" system="System Alert">Notification</Branch>
             <p>{n.message}</p>
           </li>
         ))}

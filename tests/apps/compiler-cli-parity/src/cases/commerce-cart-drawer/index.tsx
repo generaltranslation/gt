@@ -16,7 +16,7 @@ export default function CommerceCartDrawer() {
       <header>
         <h2>Your Cart</h2>
         <span>
-          (<Plural n={itemCount} one="1 item" other="items" />)
+          (<Plural n={itemCount} one="1 item">items</Plural>)
         </span>
         <button aria-label="Close cart">X</button>
       </header>

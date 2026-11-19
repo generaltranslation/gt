@@ -6,6 +6,8 @@ import {
   renderTranslatedChildren,
 } from '../renderPipeline.rsc';
 import { renderPlural } from '../../../components/branches/Plural.shared';
+import { Branch } from '../../../components/branches/Branch';
+import { Plural } from '../../../components/branches/Plural';
 import type {
   TaggedElement,
   TaggedElementProps,
@@ -37,14 +39,13 @@ function createBranchElement(
       branches,
     },
     branch,
-    children: 'Fallback',
   } as unknown as TaggedElementProps;
   return React.createElement('span', props) as TaggedElement;
 }
 
 function createPluralElement(
   n: number,
-  branches: Record<string, string | number | boolean | undefined>
+  branches: Record<string, React.ReactNode>
 ): TaggedElement {
   const props = {
     'data-_gt': {
@@ -54,7 +55,6 @@ function createPluralElement(
       branches,
     },
     n,
-    children: 'Fallback',
   } as unknown as TaggedElementProps;
   return React.createElement('span', props) as TaggedElement;
 }
@@ -64,7 +64,6 @@ function createTranslatedPluralTarget(
 ): TranslatedChildren {
   return {
     d: { b: { other: branch } },
-    c: 'Fallback translation',
   } as unknown as TranslatedChildren;
 }
 
@@ -83,13 +82,30 @@ describe('branch rendering', () => {
       source: createBranchElement(false, { false: 'Off' }),
       target: {
         d: { b: { false: 'Apagado' } },
-        c: 'Fallback translation',
       },
       locales: ['es'],
       enableI18n: true,
     });
 
     expect(result).toBe('Apagado');
+  });
+
+  it('renders the other branch for a value with no branch', () => {
+    const source = createBranchElement('guest', {
+      admin: 'Admin',
+      other: 'Someone',
+    });
+    expect(renderDefaultChildren({ ...renderArgs, children: source })).toBe(
+      'Someone'
+    );
+    expect(
+      renderTranslatedChildren({
+        source,
+        target: { d: { b: { admin: 'Administrador', other: 'Alguien' } } },
+        locales: ['es'],
+        enableI18n: true,
+      })
+    ).toBe('Alguien');
   });
 });
 
@@ -114,24 +130,71 @@ describe('plural rendering', () => {
     expect(result).toBe(false);
   });
 
-  it('falls back for undefined branch content when rendering default children', () => {
-    const result = renderDefaultChildren({
-      ...renderArgs,
-      children: createPluralElement(2, { other: undefined }),
+  it('picks an exact branch before a category in source and translation', () => {
+    const source = createPluralElement(0, {
+      '=0': 'No items',
+      other: 'Items',
     });
-
-    expect(result).toBe('Fallback');
+    expect(renderDefaultChildren({ ...renderArgs, children: source })).toBe(
+      'No items'
+    );
+    expect(
+      renderTranslatedChildren({
+        source,
+        target: {
+          d: { b: { '=0': 'Sin elementos', other: 'Elementos' } },
+        } as unknown as TranslatedChildren,
+        locales: ['es'],
+        enableI18n: true,
+      })
+    ).toBe('Sin elementos');
   });
 
-  it('falls back for undefined branch content when rendering translated children', () => {
+  it('pairs the branch a translation picks with the source other branch', () => {
+    // Russian has no =0 branch and counts 0 as "many", which English lacks.
+    const items = React.createElement('b', { 'data-_gt': { id: 2 } }, 'items');
     const result = renderTranslatedChildren({
-      source: createPluralElement(2, { other: undefined }),
+      source: createPluralElement(0, { '=0': 'None', other: items }),
+      target: {
+        d: {
+          b: {
+            one: { i: 2, c: 'элемент' },
+            few: { i: 2, c: 'элемента' },
+            many: { i: 2, c: 'элементов' },
+            other: { i: 2, c: 'элемента' },
+          },
+        },
+      } as unknown as TranslatedChildren,
+      locales: ['ru'],
+      enableI18n: true,
+    });
+
+    expect(result).toMatchObject({
+      type: 'b',
+      props: { children: 'элементов' },
+    });
+  });
+
+  it('renders the source branch when the translation has no branch', () => {
+    const result = renderTranslatedChildren({
+      source: createPluralElement(2, { other: 'Items' }),
       target: createTranslatedPluralTarget(undefined),
       locales: ['en'],
       enableI18n: true,
     });
 
-    expect(result).toBe('Fallback translation');
+    expect(result).toBe('Items');
+  });
+
+  it('lets the source pick when the translation has no branch for the value', () => {
+    const result = renderTranslatedChildren({
+      source: createBranchElement('a', { a: 'A', b: 'B' }),
+      target: { d: { b: { b: 'B traduit' } } } as unknown as TranslatedChildren,
+      locales: ['fr'],
+      enableI18n: true,
+    });
+
+    expect(result).toBe('A');
   });
 });
 
@@ -148,31 +211,56 @@ describe('shared plural component renderer', () => {
       renderPlural({
         _enableI18n: true,
         _locale: 'en',
-        children: 'Fallback',
         n: 2,
-        other: 0,
+        children: 0,
       })
     ).toBe(0);
     expect(
       renderPlural({
         _enableI18n: true,
         _locale: 'en',
-        children: 'Fallback',
         n: 2,
-        other: false,
+        children: false,
       })
     ).toBe(false);
   });
+});
 
-  it('falls back for undefined content in the shared plural component renderer', () => {
-    expect(
-      renderPlural({
-        _enableI18n: true,
-        _locale: 'en',
-        children: 'Fallback',
-        n: 2,
-        other: undefined,
-      })
-    ).toBe('Fallback');
+describe('branch component prop types', () => {
+  it('accepts complete branches and rejects the rest at compile time', () => {
+    const status = 'admin' as 'admin' | 'guest';
+    const name = 'admin' as string;
+    const isAdmin = true as boolean;
+    const gender = 'other' as 'female' | 'other';
+    const elements = [
+      <Branch key={0} branch={status} admin='A' guest='G' />,
+      <Branch key={1} branch={status} admin='A' children='O' />,
+      <Branch key={2} branch={isAdmin} true='A' false='G' />,
+      <Branch key={3} branch={name} admin='A' children='O' />,
+      // @ts-expect-error a finite union needs a branch for every value, or children
+      <Branch key={4} branch={status} admin='A' />,
+      // @ts-expect-error any string needs children
+      <Branch key={5} branch={name} admin='A' />,
+      // @ts-expect-error not a value of the union
+      <Branch key={6} branch={status} owner='O' children='O' />,
+      <Plural key={8} n={1} _0='None' one='One' children='Many' />,
+      <Plural key={9} n={1n} children='Many' />,
+      // @ts-expect-error children are required
+      <Plural key={10} n={1} one='One' />,
+      // @ts-expect-error singular is not a plural category
+      <Plural key={11} n={1} singular='One' children='Many' />,
+      // @ts-expect-error locales is not a prop
+      <Plural key={12} n={1} locales={['en']} children='Many' />,
+      // @ts-expect-error _locale is internal
+      <Plural key={13} n={1} _locale='en' children='Many' />,
+      // @ts-expect-error n is a number or a bigint
+      <Plural key={14} n='1' children='Many' />,
+      // @ts-expect-error other is not a prop: the fallback is the children
+      <Plural key={15} n={1} other='Many' children='Fallback' />,
+      <Branch key={16} branch={gender} female='F' children='O' />,
+      // @ts-expect-error the value other has no prop, so children are required
+      <Branch key={17} branch={gender} female='F' />,
+    ];
+    expect(elements).toHaveLength(17);
   });
 });

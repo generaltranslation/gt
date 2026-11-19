@@ -80,7 +80,7 @@ ruleTester.run('static-jsx: scope', staticJsx, {
       ),
     },
     {
-      name: 'Branch: branch prop is not checked, static props and children',
+      name: 'Branch: branch prop is not checked, static props',
       code: t(
         '<Branch branch={gender} male="Mr." female="Ms.">Mx.</Branch>',
         'T, Branch'
@@ -251,7 +251,10 @@ ruleTester.run('static-jsx: imports', staticJsx, {
     {
       name: 'aliased Branch for a logical AND',
       code: t('{active && "Active"}', 'T, Branch as If'),
-      output: t('<If branch={!!active} true="Active" />', 'T, Branch as If'),
+      output: t(
+        '<If branch={!!active} true="Active">{null}</If>',
+        'T, Branch as If'
+      ),
       errors: errors(),
     },
     {
@@ -429,9 +432,9 @@ ruleTester.run('static-jsx: ternary to Branch', staticJsx, {
         '<Branch branch={cond} true={<a href={url}>Link</a>}>text</Branch>',
       ],
       [
-        'null alternate is a self-closing Branch',
+        'null alternate is braced children',
         '{cond ? "visible" : null}',
-        '<Branch branch={cond} true="visible" />',
+        '<Branch branch={cond} true="visible">{null}</Branch>',
       ],
       [
         'null consequent is a braced prop value',
@@ -439,14 +442,14 @@ ruleTester.run('static-jsx: ternary to Branch', staticJsx, {
         '<Branch branch={cond} true={null}>text</Branch>',
       ],
       [
-        'non-string literal alternate is braced children',
+        'non-string literal alternate is braced',
         '{cond ? "text" : 42}',
         '<Branch branch={cond} true="text">{42}</Branch>',
       ],
       [
         'empty string alternate',
         '{cond ? "yes" : ""}',
-        '<Branch branch={cond} true="yes"></Branch>',
+        '<Branch branch={cond} true="yes">{""}</Branch>',
       ],
       [
         'empty string consequent',
@@ -459,19 +462,34 @@ ruleTester.run('static-jsx: ternary to Branch', staticJsx, {
         `<Branch branch={cond} true="it's">they're</Branch>`,
       ],
       [
-        'double quotes in the prop, & and < in children are escaped',
+        'double quotes, & and < are braced',
         String.raw`{cond ? "say \"hi\"" : "a & b < c"}`,
-        String.raw`<Branch branch={cond} true={"say \"hi\""}>a &amp; b &lt; c</Branch>`,
+        String.raw`<Branch branch={cond} true={"say \"hi\""}>{"a & b < c"}</Branch>`,
       ],
       [
-        'curly braces are kept in the prop and escaped in children',
+        'an entity is braced, so it stays text',
+        '{cond ? "yes" : "&amp;"}',
+        '<Branch branch={cond} true="yes">{"&amp;"}</Branch>',
+      ],
+      [
+        'curly braces are braced as children',
         '{cond ? "{value}" : "{braces}"}',
-        '<Branch branch={cond} true="{value}">&#123;braces&#125;</Branch>',
+        '<Branch branch={cond} true="{value}">{"{braces}"}</Branch>',
       ],
       [
         'escape sequences are written as their cooked value',
         String.raw`{cond ? "path\\to\\file" : "other"}`,
         String.raw`<Branch branch={cond} true="path\to\file">other</Branch>`,
+      ],
+      [
+        'a tab is braced, as JSX text would read it as a space',
+        String.raw`{cond ? "yes" : "a\tb"}`,
+        String.raw`<Branch branch={cond} true="yes">{"a\tb"}</Branch>`,
+      ],
+      [
+        'a carriage return is braced, as JSX text would read it as a space',
+        String.raw`{cond ? "yes" : "a\rb"}`,
+        String.raw`<Branch branch={cond} true="yes">{"a\rb"}</Branch>`,
       ],
       [
         'nested ternary in the consequent',
@@ -486,7 +504,7 @@ ruleTester.run('static-jsx: ternary to Branch', staticJsx, {
       [
         'logical AND in the alternate',
         '{cond ? "a" : x && "b"}',
-        '<Branch branch={cond} true="a"><Branch branch={!!x} true="b" /></Branch>',
+        '<Branch branch={cond} true="a"><Branch branch={!!x} true="b">{null}</Branch></Branch>',
       ],
     ]),
     ...fixes('T, Var', [
@@ -618,6 +636,11 @@ ruleTester.run('static-jsx: ternary test to branch prop', staticJsx, {
     ],
     // Literals that are not valid JSX prop names keep the whole test.
     [
+      'the literal "other" would be the fallback branch',
+      '{x === "other" ? "a" : "b"}',
+      '<Branch branch={x === "other"} true="a">b</Branch>',
+    ],
+    [
       'number literal',
       '{x === 42 ? "a" : "b"}',
       '<Branch branch={x === 42} true="a">b</Branch>',
@@ -715,7 +738,7 @@ ruleTester.run('static-jsx: chained ternaries', staticJsx, {
       [
         'collapsed with null fallback is self-closing',
         '{x === "a" ? "Alpha" : x === "b" ? "Beta" : null}',
-        '<Branch branch={x} a="Alpha" b="Beta" />',
+        '<Branch branch={x} a="Alpha" b="Beta">{null}</Branch>',
       ],
       [
         'outer !== swaps before collapsing',
@@ -785,53 +808,53 @@ ruleTester.run('static-jsx: logical expressions', staticJsx, {
       [
         'AND with a string',
         '{x && "text"}',
-        '<Branch branch={!!x} true="text" />',
+        '<Branch branch={!!x} true="text">{null}</Branch>',
       ],
       [
         'AND with a JSX element',
         '{x && <div>Content</div>}',
-        '<Branch branch={!!x} true={<div>Content</div>} />',
+        '<Branch branch={!!x} true={<div>Content</div>}>{null}</Branch>',
       ],
       [
         'AND with a fragment',
         '{x && <>Fragment content</>}',
-        '<Branch branch={!!x} true={<>Fragment content</>} />',
+        '<Branch branch={!!x} true={<>Fragment content</>}>{null}</Branch>',
       ],
       [
         'AND with a static template literal',
         '{x && `hello`}',
-        '<Branch branch={!!x} true="hello" />',
+        '<Branch branch={!!x} true="hello">{null}</Branch>',
       ],
       [
         'AND with an empty string',
         '{x && ""}',
-        '<Branch branch={!!x} true="" />',
+        '<Branch branch={!!x} true="">{null}</Branch>',
       ],
       [
         'AND with a nested ternary',
         '{show && (type === "a" ? "Alpha" : "Beta")}',
-        '<Branch branch={!!show} true={<Branch branch={type} a="Alpha">Beta</Branch>} />',
+        '<Branch branch={!!show} true={<Branch branch={type} a="Alpha">Beta</Branch>}>{null}</Branch>',
       ],
       [
         'AND with a nested AND',
         '{x && (y && "nested")}',
-        '<Branch branch={!!x} true={<Branch branch={!!y} true="nested" />} />',
+        '<Branch branch={!!x} true={<Branch branch={!!y} true="nested">{null}</Branch>}>{null}</Branch>',
       ],
       // The left side is prefixed with !! as written, without parentheses.
       [
         'chained AND',
         '{a && b && "both"}',
-        '<Branch branch={!!a && b} true="both" />',
+        '<Branch branch={!!a && b} true="both">{null}</Branch>',
       ],
       [
         'comparison on the left',
         '{count > 0 && "Has items"}',
-        '<Branch branch={!!count > 0} true="Has items" />',
+        '<Branch branch={!!count > 0} true="Has items">{null}</Branch>',
       ],
       [
         'parenthesized OR on the left',
         '{(a || b) && "text"}',
-        '<Branch branch={!!a || b} true="text" />',
+        '<Branch branch={!!a || b} true="text">{null}</Branch>',
       ],
     ]),
     ...fixes('T, Var', [
@@ -859,7 +882,7 @@ ruleTester.run('static-jsx: logical expressions', staticJsx, {
       output: [
         t('{x && <span><Var>{name}</Var></span>}', 'T, Var'),
         t(
-          '<Branch branch={!!x} true={<span><Var>{name}</Var></span>} />',
+          '<Branch branch={!!x} true={<span><Var>{name}</Var></span>}>{null}</Branch>',
           'T, Var, Branch'
         ),
       ],

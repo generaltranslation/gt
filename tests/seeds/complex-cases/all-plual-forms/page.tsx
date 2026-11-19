@@ -11,10 +11,9 @@ export default function Home() {
         two="two items"
         few="few items"
         many="many items"
-        other="other items"
-        singular="singular form"
-        plural="plural form"
-      />
+        _1="singular form"
+        _2="plural form"
+      >other items</Plural>
     </T>  
   );
 }

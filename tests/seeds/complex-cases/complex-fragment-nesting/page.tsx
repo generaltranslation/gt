@@ -7,7 +7,7 @@ export default function Home() {
   return (<T>
     <Plural
       n={count}
-      singular={
+      _1={
         <>
           Outer fragment
           <>
@@ -21,7 +21,7 @@ export default function Home() {
           Back to outer
         </>
       }
-      plural={
+      _2={
         <div>
           <>Fragment in div</>
           <span>

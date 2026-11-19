@@ -4,11 +4,7 @@ import type {
   JsxElement,
   Variable,
 } from '@generaltranslation/format';
-import {
-  getPluralForm,
-  isAcceptedPluralForm,
-  isVariable,
-} from 'generaltranslation/internal';
+import { getPluralForm, isVariable } from 'generaltranslation/internal';
 import type { GTRuntimeMetadata } from '@generaltranslation/svelte-extractor';
 import type { Snippet } from 'svelte';
 
@@ -124,47 +120,36 @@ export function selectBranch(
   item: Extract<RenderItem, { kind: 'branch' }>,
   value: unknown,
   context: RenderContext
-): { nodes: JsxChildren | undefined; scopes: string[] } {
+): { nodes: JsxChildren | undefined; scopes: string[]; parent: string } {
   const { node, scopes, scopedId } = item;
   const info = context.meta.b?.[scopedId];
   const targetBranches = getBranches(node) ?? {};
-  const fallback = { nodes: node.c, scopes };
-  if (!info) return fallback;
+  const none = { nodes: undefined, scopes, parent: scopedId };
+  if (!info) return none;
 
-  let sourceBranch: string | undefined;
-  let targetBranch: string | undefined;
-  if (info.t === 'p') {
-    if (typeof value !== 'number') return fallback;
-    targetBranch = pickPluralForm(
-      value,
-      Object.keys(targetBranches),
-      context.locales
-    );
-    // Pair the form with its same-named source form, as validateTarget()
-    // does, and only fall back to the source form for `n` when the source
-    // has no such form.
-    sourceBranch =
-      targetBranch !== undefined && info.b.includes(targetBranch)
-        ? targetBranch
-        : pickPluralForm(value, info.b, context.locales);
-  } else {
-    const key = value == null || value === '' ? undefined : String(value);
-    sourceBranch = key && info.b.includes(key) ? key : undefined;
-    targetBranch = key && Object.hasOwn(targetBranches, key) ? key : undefined;
-  }
-
-  if (targetBranch === undefined) return fallback;
+  const branches = Object.keys(targetBranches);
+  const targetBranch =
+    info.t === 'p'
+      ? pickPluralForm(value, branches, context.locales)
+      : pickBranch(value, branches);
+  if (targetBranch === undefined) return none;
   const ownerScope = scopedId.slice(0, scopedId.length - String(node.i).length);
   return {
     nodes: targetBranches[targetBranch],
-    scopes: getBranchScopes(ownerScope, node, info.b, sourceBranch, scopes),
+    ...getBranchContext(
+      ownerScope,
+      node,
+      info.b,
+      getPairedSourceBranch(info.b, targetBranch),
+      scopes
+    ),
   };
 }
 
 /**
  * Checks that every element and variable in a translation resolves to a
- * generated snippet. Branch content is checked in the scopes of every
- * source branch selectBranch() can pair it with.
+ * generated snippet. Branch content is checked in the scopes of the source
+ * branch selectBranch() pairs it with.
  */
 export function validateTarget(
   nodes: JsxChildren | undefined,
@@ -185,20 +170,32 @@ export function validateTarget(
     if (info) {
       const branches = getBranches(node);
       if (branches === null) return false;
+      // A translation that could leave a value without a branch is not
+      // rendered: it needs `other`, or every branch of the source.
+      const names = Object.keys(branches ?? {});
+      if (
+        !names.includes('other') &&
+        !info.b.every((name) => names.includes(name))
+      ) {
+        return false;
+      }
       for (const [name, branch] of Object.entries(branches ?? {})) {
-        for (const pairing of getPairedSourceBranches(info, name)) {
-          const branchScopes = getBranchScopes(
-            resolved.scope,
-            node,
-            info.b,
-            pairing,
-            scopes
-          );
-          if (
-            !validateTarget(branch, branchScopes, context, resolved.scopedId)
-          ) {
-            return false;
-          }
+        const branchContext = getBranchContext(
+          resolved.scope,
+          node,
+          info.b,
+          getPairedSourceBranch(info.b, name),
+          scopes
+        );
+        if (
+          !validateTarget(
+            branch,
+            branchContext.scopes,
+            context,
+            branchContext.parent
+          )
+        ) {
+          return false;
         }
       }
     }
@@ -228,30 +225,30 @@ function getBranches(
 }
 
 /**
- * Returns the source branches selectBranch() can pair a translated branch
- * with: its same-named source branch, or for a plural form the source does
- * not have, any source form `n` can select. `undefined` pairs with none.
+ * Returns the source branch a translated branch pairs with: the same-named
+ * one, or `other` when the source has no branch of that name.
  */
-function getPairedSourceBranches(
-  info: { t: 'p' | 'b'; b: string[] },
+function getPairedSourceBranch(
+  sourceBranches: string[],
   name: string
-): (string | undefined)[] {
-  if (info.b.includes(name)) return [name];
-  return info.t === 'p' ? [...info.b, undefined] : [undefined];
+): string | undefined {
+  return [name, 'other'].find((branch) => sourceBranches.includes(branch));
 }
 
 /**
  * Returns the scopes a Branch/Plural element's branch content resolves in:
  * the paired source branch first, then its siblings, then the scopes the
- * element itself resolves in.
+ * element itself resolves in. `parent` is the scoped id the content is the
+ * children of: the element's id in the paired branch's scope, as the
+ * preprocessor records the children that are the `other` branch.
  */
-function getBranchScopes(
+function getBranchContext(
   ownerScope: string,
   node: JsxElement,
   sourceBranches: string[],
   sourceBranch: string | undefined,
   scopes: string[]
-): string[] {
+): { scopes: string[]; parent: string } {
   // Branch scopes are named after the branch's position in the source,
   // as the preprocessor names them.
   const indexes = sourceBranches.map((_, index) => index);
@@ -260,20 +257,32 @@ function getBranchScopes(
     paired === -1
       ? indexes
       : [paired, ...indexes.filter((index) => index !== paired)];
-  return [
-    ...ordered.map((index) => `${ownerScope}b${node.i}_${index}$`),
-    ...scopes,
-  ];
+  const branchScopes = ordered.map(
+    (index) => `${ownerScope}b${node.i}_${index}$`
+  );
+  return {
+    scopes: [...branchScopes, ...scopes],
+    parent: `${paired === -1 ? ownerScope : branchScopes[0]}${node.i}`,
+  };
 }
 
+/** The branch ICU picks for `n`; anything but a number only fits `other`. */
 function pickPluralForm(
-  n: number,
+  n: unknown,
   branches: string[],
   locales: string[]
 ): string | undefined {
-  const forms = branches.filter(isAcceptedPluralForm);
-  if (forms.length === 0) return undefined;
-  return getPluralForm(n, forms, locales) || undefined;
+  if (typeof n !== 'number' && typeof n !== 'bigint') {
+    return pickBranch(undefined, branches);
+  }
+  return getPluralForm(n, branches, locales) || undefined;
+}
+
+/** The branch named by the value, then `other`. */
+function pickBranch(value: unknown, branches: string[]): string | undefined {
+  const key = value == null ? 'other' : String(value);
+  if (branches.includes(key)) return key;
+  return branches.includes('other') ? 'other' : undefined;
 }
 
 function resolveElement(

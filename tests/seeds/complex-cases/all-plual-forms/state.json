@@ -468,7 +468,7 @@
                 },
                 "identifierName": "other"
               },
-              "name": "other"
+              "name": "children"
             },
             "computed": false,
             "shorthand": false,
@@ -527,9 +527,9 @@
                   "column": 20,
                   "index": 451
                 },
-                "identifierName": "singular"
+                "identifierName": "_1"
               },
-              "name": "singular"
+              "name": "_1"
             },
             "computed": false,
             "shorthand": false,
@@ -588,9 +588,9 @@
                   "column": 18,
                   "index": 488
                 },
-                "identifierName": "plural"
+                "identifierName": "_2"
               },
-              "name": "plural"
+              "name": "_2"
             },
             "computed": false,
             "shorthand": false,

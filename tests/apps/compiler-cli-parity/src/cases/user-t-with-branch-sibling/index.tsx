@@ -5,7 +5,7 @@ export default function UserTWithBranchSibling() {
     <div>
       <T>Manual text</T>
       <div>
-        <Branch branch="x" a="Option A">Default</Branch>
+        <Branch branch={'x' as string} a="Option A">Default</Branch>
       </div>
     </div>
   );

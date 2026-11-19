@@ -182,7 +182,7 @@ async function changeLocale(event: Event) {
                   <template #yearly>
                     Billed once a year. Two months are free.
                   </template>
-                  Billed per seat.
+                  <template #default>Billed per seat.</template>
                 </Branch>
               </p>
             </T>
@@ -226,7 +226,7 @@ async function changeLocale(event: Event) {
                 <T>
                   <Plural :n="seats">
                     <template #one>One seat</template>
-                    <template #other>
+                    <template #default>
                       <Num :value="seats" />
                       seats
                     </template>

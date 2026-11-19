@@ -5,7 +5,7 @@
  * - Ternaries:    {cond ? "yes" : "no"}        → <Branch branch={cond} true="yes">no</Branch>
  * - Equality:     {x === "a" ? "A" : "other"}  → <Branch branch={x} a="A">other</Branch>
  * - Negation:     {!cond ? "no" : "yes"}        → <Branch branch={cond} true="yes">no</Branch>
- * - Logical AND:  {x && "Active"}               → <Branch branch={!!x} true="Active" />
+ * - Logical AND:  {x && "Active"}               → <Branch branch={!!x} true="Active">{null}</Branch>
  * - Nested:       {a ? "x" : b ? "y" : "z"}    → <Branch branch={a} true="x"><Branch ...>...</Branch></Branch>
  */
 
@@ -62,7 +62,8 @@ export function extractBranchInfo(
         literal.value != null
       ) {
         const propName = String(literal.value);
-        if (VALID_JSX_PROP_NAME.test(propName)) {
+        // `other` is not a prop: the fallback is the children.
+        if (propName !== 'other' && VALID_JSX_PROP_NAME.test(propName)) {
           return {
             branchExpr: sourceCode.getText(variable),
             propName,
@@ -91,7 +92,9 @@ export function formatAsPropValue(
 ): string {
   const str = staticStringValue(expr);
   if (str !== null) {
-    if (str.includes('"')) return `{${JSON.stringify(str)}}`;
+    // A JSX attribute string cannot escape a quote, and decodes entities.
+    if (str.includes('"') || /&[#\w]+;/.test(str))
+      return `{${JSON.stringify(str)}}`;
     return `"${str}"`;
   }
   if (isBranchableConditional(expr))
@@ -101,25 +104,23 @@ export function formatAsPropValue(
   return `{${sourceCode.getText(expr)}}`;
 }
 
+// Text with no markup, entity or brace, and no whitespace JSX would trim or
+// collapse: only spaces, and only inside.
+const RAW_JSX_TEXT = /^[^\s{}<>&]( *[^\s{}<>&])*$/;
+
 /**
  * Formats an expression as JSX children text.
- * Strings become raw text, null returns null (self-closing tag),
- * JSX passes through, and dynamic expressions become {expr}.
+ * A string becomes raw text when JSX reads that text back as the same
+ * string, JSX passes through, and anything else, null included, is {expr}.
  */
 export function formatAsChildren(
   expr: TSESTree.Expression,
   branchTag: string,
   sourceCode: SourceCode
-): string | null {
-  if (expr.type === TSESTree.AST_NODE_TYPES.Literal && expr.value === null)
-    return null;
+): string {
   const str = staticStringValue(expr);
   if (str !== null)
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/{/g, '&#123;')
-      .replace(/}/g, '&#125;');
+    return RAW_JSX_TEXT.test(str) ? str : `{${JSON.stringify(str)}}`;
   if (
     expr.type === TSESTree.AST_NODE_TYPES.JSXElement ||
     expr.type === TSESTree.AST_NODE_TYPES.JSXFragment
@@ -177,14 +178,12 @@ export function generateBranch(
 
   const propsStr = props.map((p) => `${p.name}=${p.value}`).join(' ');
   const children = formatAsChildren(tail, branchTag, sourceCode);
-  if (children === null)
-    return `<${branchTag} branch={${branchExpr}} ${propsStr} />`;
   return `<${branchTag} branch={${branchExpr}} ${propsStr}>${children}</${branchTag}>`;
 }
 
 /**
- * Generates <Branch branch={!!expr} true=value /> source text
- * from a LogicalExpression (&&).
+ * Generates <Branch branch={!!expr} true=value>{null}</Branch> source text
+ * from a LogicalExpression (&&): a falsy value renders nothing.
  */
 export function generateLogicalAnd(
   expr: TSESTree.LogicalExpression,
@@ -193,5 +192,5 @@ export function generateLogicalAnd(
 ): string {
   const leftText = sourceCode.getText(expr.left);
   const propValue = formatAsPropValue(expr.right, branchTag, sourceCode);
-  return `<${branchTag} branch={!!${leftText}} true=${propValue} />`;
+  return `<${branchTag} branch={!!${leftText}} true=${propValue}>{null}</${branchTag}>`;
 }

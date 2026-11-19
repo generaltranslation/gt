@@ -38,11 +38,11 @@
     "d": {
       "b": {
         "morning": "Good morning",
-        "evening": "Good evening"
+        "evening": "Good evening",
+        "other": "default"
       },
       "t": "b"
-    },
-    "c": "default"
+    }
   },
   {
     "t": "f",
@@ -50,10 +50,10 @@
     "d": {
       "b": {
         "morning": "Good morning",
-        "evening": "Good evening"
+        "evening": "Good evening",
+        "other": "default"
       },
       "t": "b"
-    },
-    "c": "default"
+    }
   }
 ]

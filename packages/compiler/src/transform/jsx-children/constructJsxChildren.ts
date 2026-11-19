@@ -346,14 +346,16 @@ function constructJsxElement(
     return { errors };
   }
 
-  // Construct JsxChildren
-  // Number Branch/Plural children with the running counter like any other
-  // children (only branch props restart), to match the runtime's addGTIdentifier.
-  const jsxChildrenValidation = constructJsxChildrenForJsxElement(
-    childrenValidation.value,
-    state,
-    id
-  );
+  // Construct JsxChildren. The children of a Branch or a Plural are its
+  // `other` branch, which constructGTProp constructs.
+  const jsxChildrenValidation: ReturnType<
+    typeof constructJsxChildrenForJsxElement
+  > =
+    canonicalName &&
+    type === 'generaltranslation' &&
+    isBranchComponent(canonicalName)
+      ? { errors: [] }
+      : constructJsxChildrenForJsxElement(childrenValidation.value, state, id);
   errors.push(...jsxChildrenValidation.errors);
   if (jsxChildrenValidation.errors.length > 0) {
     return { errors };
@@ -475,13 +477,40 @@ function constructGTProp(
     // Get the branching parameters
     const branchingParameters = getBranchComponentParameters(
       parametersPath as NodePath<t.ObjectExpression>,
-      canonicalName
+      canonicalName,
+      (diagnostic, node) =>
+        state.logger.logWarning(
+          (diagnostic + createErrorLocation(node)).replace(
+            '{filename}',
+            state.settings.filename || '{filename}'
+          )
+        ),
+      (diagnostic, node) =>
+        errors.push(structuralError(diagnostic + createErrorLocation(node)))
     );
+    if (errors.length > 0) {
+      return { errors };
+    }
     // Add branch component branches
     const branches = {} as Record<string, JsxChildren>;
 
     for (const [name, parameterPath] of branchingParameters) {
       const parameter = parameterPath.node;
+      // The fallback is read as children are: null and false are no content.
+      if (name === 'other') {
+        const validation = constructJsxChildrenForJsxElement(
+          parameterPath,
+          state,
+          id.copy()
+        );
+        errors.push(...validation.errors);
+        if (validation.errors.length > 0) {
+          return { errors };
+        }
+        containsDerive ||= !!validation.containsDerive;
+        if (validation.value) branches[name] = validation.value;
+        continue;
+      }
       // Special exceptions for branches:
       if (t.isNullLiteral(parameter)) {
         branches[name] = null as unknown as JsxChildren;

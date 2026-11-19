@@ -187,7 +187,7 @@ describe('gt-vue runtime state', () => {
         const locale = useLocale();
         const pluralSlots = {
           one: () => 'one',
-          other: () => 'other',
+          default: () => 'other',
         };
         return () =>
           h('p', [

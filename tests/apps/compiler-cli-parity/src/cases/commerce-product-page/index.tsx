@@ -69,20 +69,17 @@ export default function CommerceProductPage() {
           </div>
 
           <Branch
-            branch="stock"
+            branch={'stock' as string}
             inStock={<button>Add to Cart</button>}
             lowStock={<button>Add to Cart — Only a few left!</button>}
-          >
-            <button disabled>Out of Stock</button>
-          </Branch>
+          ><button disabled>Out of Stock</button></Branch>
 
           <p>
             <Plural
               n={product.inventoryQuantity}
               zero="Out of stock"
               one="Only 1 left in stock"
-              other="items in stock"
-            />
+            >items in stock</Plural>
           </p>
 
           <details>

@@ -26,8 +26,7 @@ export default function Home() {
           branch={true ? 'yes' : 'no'}
           yes={<>yes</>}
           no={<>no</>}
-          other="yo"
-        />
+        >yo</Branch>
       </Derive>
     </T>
   </div>;

@@ -189,13 +189,12 @@ const fixtures: ContractFixture[] = [
         {
           n: 2,
           one: createElement('span', null, 'One item'),
-          other: createElement('span', null, 'Many items'),
         },
         createElement('span', null, 'Items')
       ),
     vue: {
       template:
-        '<T><Plural :n="2"><template #one><span>One item</span></template><template #other><span>Many items</span></template><span>Items</span></Plural></T>',
+        '<T><Plural :n="2"><template #one><span>One item</span></template><span>Items</span></Plural></T>',
     },
   },
   {
@@ -1102,12 +1101,12 @@ const catalogCases = {
         Branch,
         { branch: alternate ? 'casual' : 'formal' },
         {
+          default: () => 'Fallback',
           casual: () => [
             h('em', null, 'Hi'),
             ' ',
             h(Var, null, { default: () => 'Ada' }),
           ],
-          default: () => 'Fallback',
           formal: () => [
             h('strong', null, 'Hello'),
             ' ',
@@ -1138,9 +1137,9 @@ const catalogCases = {
               ' et ',
               { t: 'x', i: 2, c: 'salut' },
             ],
+            other: 'Secours',
           },
         },
-        c: 'Secours',
       },
       ' | ',
       { t: 'x', i: 2, c: 'Après' },
@@ -1156,9 +1155,8 @@ const catalogCases = {
         Plural,
         { n: alternate ? 1 : 2 },
         {
-          default: () => 'Fallback',
           one: () => ['One ', h(Num, { value: 1 })],
-          other: () => ['Many ', h(Num, { value: 2 })],
+          default: () => ['Many ', h(Num, { value: 2 })],
         }
       ),
       h('span', null, 'After'),
@@ -1180,7 +1178,6 @@ const catalogCases = {
             ],
           },
         },
-        c: 'Secours',
       },
       ' | ',
       { t: 'x', i: 2, c: 'Fin' },

@@ -8,7 +8,7 @@
   <T>
     <Plural n={count}>
       {#snippet one()}<b>One</b> message{/snippet}
-      {#snippet other()}<Num value={count} /> messages{/snippet}
+      <Num value={count} /> messages
     </Plural>
   </T>
 </p>

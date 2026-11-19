@@ -372,6 +372,35 @@ export const warnDataAttrOnBranch = (
     location
   );
 
+export const warnBranchOtherPropSync = (
+  file: string,
+  componentName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: `<${componentName}> has no other prop`,
+      fix: 'Write the fallback as its children',
+    }),
+    location
+  );
+
+export const warnInvalidExactPluralPropSync = (
+  file: string,
+  attrName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: `Ignored the ${attrName} prop of <Plural>`,
+      why: 'it is not an exact number',
+      fix: 'Write the number without a leading zero or an exponent, as in _0 or _1000',
+    }),
+    location
+  );
+
 export const warnRecursiveFunctionCallSync = (
   file: string,
   functionName: string,

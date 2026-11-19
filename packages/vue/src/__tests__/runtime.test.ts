@@ -264,12 +264,17 @@ describe('gt-vue runtime', () => {
     const slots = {
       default: () => [],
       one: () => [],
+      two: () => [],
+      // The default slot is the fallback: `other` names no branch.
       other: () => [],
     } as Slots;
 
     expect(
-      getBranchNames({ one: 'attribute', 'data-note': 'ignored' }, slots)
-    ).toEqual(['one', 'other']);
+      getBranchNames(
+        { one: 'attribute', other: 'attribute', 'data-note': 'ignored' },
+        slots
+      )
+    ).toEqual(['one', 'two']);
   });
 
   it('loads and caches plain STRING translations, then rerenders on locale changes', async () => {
@@ -1360,7 +1365,7 @@ describe('gt-vue runtime', () => {
                 { n: n.value },
                 {
                   one: () => h(Stateful, { label: 'one' }),
-                  other: () => h(Stateful, { label: 'other' }),
+                  default: () => h(Stateful, { label: 'other' }),
                 }
               ),
             ],
@@ -1820,7 +1825,7 @@ describe('gt-vue runtime', () => {
                   { locales: ['en'], n: 0 },
                   {
                     one: () => h(Var, null, { default: () => 'ONE' }),
-                    other: () => h(Var, null, { default: () => 'OTHER' }),
+                    default: () => h(Var, null, { default: () => 'OTHER' }),
                   }
                 ),
             }
@@ -2018,23 +2023,22 @@ describe('gt-vue runtime', () => {
       d: {
         b: {
           one: ['one ', { i: 2, k: '_gt_value_2', v: 'v' }],
-          other: ['other ', { i: 2, k: '_gt_value_2', v: 'v' }],
+          other: ['fallback ', { i: 2, k: '_gt_value_2', v: 'v' }],
         },
         t: 'p',
       },
-      c: ['fallback ', { i: 2, k: '_gt_value_2', v: 'v' }],
     };
     const branchSource: JsxChildren = {
       t: 'Branch',
-      i: 3,
+      i: 2,
       d: {
         b: {
-          formal: ['formal ', { i: 4, k: '_gt_value_4', v: 'v' }],
-          casual: ['casual ', { i: 4, k: '_gt_value_4', v: 'v' }],
+          formal: ['formal ', { i: 3, k: '_gt_value_3', v: 'v' }],
+          casual: ['casual ', { i: 3, k: '_gt_value_3', v: 'v' }],
+          other: ['fallback ', { i: 3, k: '_gt_value_3', v: 'v' }],
         },
         t: 'b',
       },
-      c: ['fallback ', { i: 4, k: '_gt_value_4', v: 'v' }],
     };
     const source: JsxChildren = [pluralSource, ' / ', branchSource];
     const target: JsxChildren = [
@@ -2053,8 +2057,9 @@ describe('gt-vue runtime', () => {
         ...branchSource,
         d: {
           b: {
-            formal: ['bonjour ', { i: 4, k: '_gt_value_4', v: 'v' }],
-            casual: ['salut ', { i: 4, k: '_gt_value_4', v: 'v' }],
+            formal: ['bonjour ', { i: 3, k: '_gt_value_3', v: 'v' }],
+            casual: ['salut ', { i: 3, k: '_gt_value_3', v: 'v' }],
+            other: ['repli ', { i: 3, k: '_gt_value_3', v: 'v' }],
           },
           t: 'b',
         },
@@ -2080,10 +2085,6 @@ describe('gt-vue runtime', () => {
                   one: () => [
                     'one ',
                     h(Var, null, { default: () => 'article' }),
-                  ],
-                  other: () => [
-                    'other ',
-                    h(Var, null, { default: () => 'articles' }),
                   ],
                 }
               ),
@@ -2120,14 +2121,12 @@ describe('gt-vue runtime', () => {
     const source: JsxChildren = {
       t: 'Branch',
       i: 1,
-      d: { b: { formal: 'Hello' }, t: 'b' },
-      c: 'Fallback',
+      d: { b: { formal: 'Hello', other: 'Fallback' }, t: 'b' },
     };
     const target: JsxChildren = {
       t: 'Branch',
       i: 1,
-      d: { b: { formal: 'Bonjour' }, t: 'b' },
-      c: 'Repli',
+      d: { b: { formal: 'Bonjour', other: 'Repli' }, t: 'b' },
     };
     const plugin = createGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
@@ -2175,11 +2174,7 @@ describe('gt-vue runtime', () => {
               value: new Date('2024-01-01T00:00:00.000Z'),
             }),
             '|',
-            h(
-              Plural,
-              { n: 2, other: 'items' },
-              { one: () => 'item', default: () => 'fallback' }
-            ),
+            h(Plural, { n: 2 }, { one: () => 'item', default: () => 'items' }),
             '|',
             h(
               Branch,
@@ -2229,9 +2224,9 @@ describe('gt-vue runtime', () => {
             'J',
             h(Branch, { branch: 'empty', empty: null }),
             'K',
-            h(Plural, { n: 2, other: 'plural' }),
+            h(Plural, { n: 2 }, { default: () => 'plural' }),
             'L',
-            h(Plural, { n: 2, other: null }),
+            h(Plural, { n: 1, one: null }),
             'M',
             h(Var, null, { default: () => 'variable' }),
             'N',
@@ -2364,7 +2359,7 @@ describe('gt-vue runtime', () => {
                   { n: 0 },
                   {
                     one: () => 'one',
-                    other: () => 'other',
+                    default: () => 'other',
                   }
                 ),
                 '|',
@@ -2475,7 +2470,7 @@ describe('gt-vue runtime', () => {
     await french.loadTranslations('pirate');
     const pluralSlots = {
       one: () => 'one',
-      other: () => 'other',
+      default: () => 'other',
     };
     const Root = defineComponent({
       setup() {

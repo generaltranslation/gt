@@ -4,7 +4,7 @@ export default function PluralInsideDerive() {
   const count = 3;
   return (
     <div>
-      Hello <Derive><Plural n={count} one="item" other="items" /></Derive>
+      Hello <Derive><Plural n={count} one="item">items</Plural></Derive>
     </div>
   );
 }

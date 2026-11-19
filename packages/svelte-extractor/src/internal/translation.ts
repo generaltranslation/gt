@@ -7,6 +7,7 @@ import type {
 } from '@generaltranslation/format';
 import { HTML_CONTENT_PROPS } from '@generaltranslation/format';
 import {
+  getPluralBranchKey,
   isAcceptedPluralForm,
   minifyVariableType,
 } from 'generaltranslation/internal';
@@ -569,10 +570,13 @@ class TranslationBuilder {
     const id = ++counter.index;
     // No inherited keys, so names like "constructor" are ordinary branches.
     const branches: Record<string, JsxChildren> = Object.create(null);
-    // Branch names in declaration order. A branch's scope is named after its
+    // Branch keys in declaration order. A branch's scope is named after its
     // position here, because joining raw names, which may contain `$`, could
     // give two different branches the same scope.
     const branchNames: string[] = [];
+    // Plural branches are stored under ICU keys: `_0` is `=0`.
+    const keyOf = (name: string) =>
+      kind === 'Plural' ? getPluralBranchKey(name) : name;
 
     // Attribute branches: static strings, like React string props.
     for (const attribute of node.attributes) {
@@ -585,6 +589,10 @@ class TranslationBuilder {
       }
       if (attribute.type !== 'Attribute') continue;
       const { name } = attribute as SvelteAttribute;
+      if (name === 'other') {
+        this.problem(attribute.start, createOtherBranchProblem(node.name));
+        continue;
+      }
       if (!isBranchName(kind, name)) continue;
       if (name === '__proto__') {
         this.problem(attribute.start, PROTO_BRANCH_PROBLEM);
@@ -598,8 +606,8 @@ class TranslationBuilder {
         );
         continue;
       }
-      branches[name] = value;
-      branchNames.push(name);
+      branches[keyOf(name)] = value;
+      branchNames.push(keyOf(name));
     }
 
     // Snippet branches: each body is a fragment numbered from the branch id.
@@ -610,6 +618,10 @@ class TranslationBuilder {
         continue;
       }
       const name = getSnippetName(child);
+      if (name === 'other') {
+        this.problem(child.start, createOtherBranchProblem(node.name));
+        continue;
+      }
       if (!name || !isBranchName(kind, name)) {
         this.problem(
           child.start,
@@ -630,7 +642,7 @@ class TranslationBuilder {
         this.problem(child.start, PROTO_BRANCH_PROBLEM);
         continue;
       }
-      if (Object.hasOwn(branches, name)) {
+      if (Object.hasOwn(branches, keyOf(name))) {
         this.problem(
           child.start,
           `The "${name}" branch of <${node.name}> is declared twice`
@@ -638,7 +650,7 @@ class TranslationBuilder {
         continue;
       }
       const branchScope = `${scope}b${id}_${branchNames.length}$`;
-      branchNames.push(name);
+      branchNames.push(keyOf(name));
       const branchCounter = { index: id };
       const fragmentId = ++branchCounter.index;
       const body = child.body as { nodes: SvelteNode[] };
@@ -656,7 +668,22 @@ class TranslationBuilder {
       this.snippets.push(
         `{#snippet ${RESERVED_PREFIX}e_${branchScope}${fragmentId}(${RESERVED_PREFIX}kids)}{@render ${RESERVED_PREFIX}kids()}{/snippet}`
       );
-      branches[name] = fragment;
+      branches[keyOf(name)] = fragment;
+    }
+
+    // The children are the fallback: the `other` branch, numbered from the
+    // branch id in a scope of its own, like React's.
+    const fallbackScope = `${scope}b${id}_${branchNames.length}$`;
+    const fallback = this.convertChildren(
+      childNodes,
+      fallbackScope,
+      { index: id },
+      { kind: 'branch', id: `${fallbackScope}${id}` },
+      getChildWhitespace(whitespace, node)
+    );
+    if (fallback !== undefined && fallback !== '') {
+      branches.other = fallback;
+      branchNames.push('other');
     }
 
     const element: JsxElement = { t: getTagName(node), i: id };
@@ -668,15 +695,6 @@ class TranslationBuilder {
         t: kind === 'Plural' ? 'p' : 'b',
       };
     }
-    // Fallback children keep the running counter, like React.
-    const children = this.convertChildren(
-      childNodes,
-      scope,
-      counter,
-      { kind: 'element', id: `${scope}${id}` },
-      getChildWhitespace(whitespace, node)
-    );
-    if (children !== undefined) element.c = children;
     if (d) element.d = d;
 
     const selector = findAttribute(node, kind === 'Plural' ? 'n' : 'branch');
@@ -778,6 +796,9 @@ function escapeText(text: string): string {
 const CONTENT_PROP_NAMES = new Map<string, string>(
   Object.entries(HTML_CONTENT_PROPS).map(([minified, full]) => [full, minified])
 );
+
+const createOtherBranchProblem = (component: string) =>
+  `<${component}> has no other branch. Write the fallback as its children`;
 
 function isBranchName(kind: 'Branch' | 'Plural', name: string): boolean {
   if (kind === 'Plural') return isAcceptedPluralForm(name);

@@ -25,7 +25,8 @@ export type HtmlContentPropValuesRecord = Partial<
  * note, transformations are only read on the server side if they are 'plural' or 'branch'
  */
 export type GTProp = {
-  b?: Record<string, JsxChildren>; // Branches
+  // Branches. `other` is the fallback; a plural's exact number N is `=N`.
+  b?: Record<string, JsxChildren>;
   t?: 'p' | 'b'; // Branch Transformation
 } & HtmlContentPropKeysRecord;
 

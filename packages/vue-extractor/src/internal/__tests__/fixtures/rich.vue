@@ -42,10 +42,6 @@ function shadowed(t: (value: string) => string) {
         one
         <Value>{{ item }}</Value>
       </template>
-      <template #other>
-        other
-        <Value>{{ item }}</Value>
-      </template>
       fallback
       <Value>{{ item }}</Value>
     </Plural>

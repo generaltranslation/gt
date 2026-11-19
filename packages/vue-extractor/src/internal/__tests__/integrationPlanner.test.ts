@@ -469,12 +469,16 @@ import { LocalT } from '@local/gt';
             t: 'Branch',
             i: 1,
             d: {
-              b: { active: true, inactive: false, unknown: null },
+              b: {
+                active: true,
+                inactive: false,
+                unknown: null,
+                other: 'Fallback',
+              },
               t: 'b',
             },
-            c: 'Fallback',
           },
-          metadata: expect.objectContaining({ hash: '3b82a72a2e3538d6' }),
+          metadata: expect.objectContaining({ hash: '875c3ad2a25d6d46' }),
         }),
       ]);
     }

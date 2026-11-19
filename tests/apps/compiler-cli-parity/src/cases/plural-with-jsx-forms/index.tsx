@@ -4,7 +4,7 @@ export default function PluralWithJsxForms() {
   const count = 3;
   return (
     <div>
-      <Plural n={count} one={<b>one item</b>} other={<b>many items</b>} />
+      <Plural n={count} one={<b>one item</b>}><b>many items</b></Plural>
     </div>
   );
 }

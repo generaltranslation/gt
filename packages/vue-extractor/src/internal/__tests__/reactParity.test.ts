@@ -313,15 +313,17 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'Branch alternatives and fallback content',
-      expectedHash: '3bf7c973bd1e6ca3',
+      expectedHash: 'a634a53ae6f90df6',
       expectedSource: {
         t: 'Branch',
         i: 1,
         d: {
-          b: { online: { t: 'strong', i: 2, c: 'Online' } },
+          b: {
+            online: { t: 'strong', i: 2, c: 'Online' },
+            other: { t: 'span', i: 2, c: 'Unknown' },
+          },
           t: 'b',
         },
-        c: { t: 'span', i: 2, c: 'Unknown' },
       },
       sfc: templateFixture(
         '<T><Branch branch="online"><template #online><strong>Online</strong></template><span>Unknown</span></Branch></T>',
@@ -336,33 +338,32 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'Plural alternatives and fallback content',
-      expectedHash: 'f440fc6969acdbc8',
+      expectedHash: '014fdbdd90e93e6b',
       expectedSource: {
         t: 'Plural',
         i: 1,
         d: {
           b: {
             one: { t: 'span', i: 2, c: 'One item' },
-            other: { t: 'span', i: 2, c: 'Many items' },
+            other: { t: 'span', i: 2, c: 'Items' },
           },
           t: 'p',
         },
-        c: { t: 'span', i: 2, c: 'Items' },
       },
       sfc: templateFixture(
-        '<T><Plural :n="2"><template #one><span>One item</span></template><template #other><span>Many items</span></template><span>Items</span></Plural></T>',
+        '<T><Plural :n="2"><template #one><span>One item</span></template><span>Items</span></Plural></T>',
         '',
         'Plural, T'
       ),
       jsx: jsxFixture(
-        '<T><Plural n={2} v-slots={{ one: () => <span>One item</span>, other: () => <span>Many items</span>, default: () => <span>Items</span> }}/></T>',
+        '<T><Plural n={2} v-slots={{ one: () => <span>One item</span>, default: () => <span>Items</span> }}/></T>',
         '',
         'Plural, T'
       ),
     },
     {
       name: 'custom components inside Branch alternatives',
-      expectedHash: 'edf0e94a93bc4cad',
+      expectedHash: '44a0464f3d6adcdd',
       expectedSource: {
         t: 'Branch',
         i: 1,
@@ -373,10 +374,10 @@ describe('React-authoritative rich-content extraction contract', () => {
               i: 2,
               c: 'Read the docs',
             },
+            other: { t: 'span', i: 2, c: 'No destination' },
           },
           t: 'b',
         },
-        c: { t: 'span', i: 2, c: 'No destination' },
       },
       sfc: templateFixture(
         '<T><Branch branch="docs"><template #docs><DocsLink to="/docs">Read the docs</DocsLink></template><span>No destination</span></Branch></T>',
@@ -391,7 +392,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'Branch and Var inside a custom component',
-      expectedHash: '954d847862e22fe8',
+      expectedHash: 'f03eb63c00240d9e',
       expectedSource: {
         t: 'Callout',
         i: 1,
@@ -401,10 +402,10 @@ describe('React-authoritative rich-content extraction contract', () => {
           d: {
             b: {
               welcome: ['Welcome, ', { i: 3, k: '_gt_value_3', v: 'v' }, '!'],
+              other: 'Welcome!',
             },
             t: 'b',
           },
-          c: 'Welcome!',
         },
       },
       sfc: templateFixture(
@@ -610,7 +611,7 @@ describe('React CLI parity audit', () => {
         const price = 12;
         const createdAt = new Date();
       `,
-        `<T><Branch branch="formal"><template #formal><section><Plural :n="count"><template #one>One <Var>{{ name }}</Var><Num :value="count" /></template><template #other><Currency :value="price" /> on <DateTime :value="createdAt" /></template>Plural fallback</Plural></section></template><template #casual>Casual</template>Branch fallback</Branch><hr /><br /></T>`
+        `<T><Branch branch="formal"><template #formal><section><Plural :n="count"><template #one>One <Var>{{ name }}</Var><Num :value="count" /></template><Currency :value="price" /> on <DateTime :value="createdAt" /></Plural></section></template><template #casual>Casual</template>Branch fallback</Branch><hr /><br /></T>`
       );
       assertVueCompiles(source, 'nested-formatters');
 
@@ -645,14 +646,13 @@ describe('React CLI parity audit', () => {
                       },
                       t: 'p',
                     },
-                    c: 'Plural fallback',
                   },
                 },
                 casual: 'Casual',
+                other: 'Branch fallback',
               },
               t: 'b',
             },
-            c: 'Branch fallback',
           },
           { t: 'hr', i: 2 },
           { t: 'br', i: 3 },
@@ -691,18 +691,18 @@ describe('React CLI parity audit', () => {
               nothing: null,
               unicode: '你好',
               control: '\n\t',
+              other: 'Fallback',
             },
             t: 'b',
           },
-          c: 'Fallback',
         } as unknown as JsxChildren,
       ]);
     });
 
-    it('extracts legacy and CLDR plural forms together', async () => {
+    it('extracts exact and CLDR plural forms together', async () => {
       const source = createSfc(
         `import { Plural, T } from 'gt-vue';`,
-        `<T><Plural :n="2" singular="Single" dual="Double" plural="Plural" zero="Zero" one="One" two="Two" few="Few" many="Many" other="Other">Fallback</Plural></T>`
+        `<T><Plural :n="2" _0="None" singular="Ignored" zero="Zero" one="One" two="Two" few="Few" many="Many"><template #_12>Dozen</template>Other</Plural></T>`
       );
       assertVueCompiles(source, 'plural-forms');
 
@@ -715,9 +715,8 @@ describe('React CLI parity audit', () => {
           i: 1,
           d: {
             b: {
-              singular: 'Single',
-              dual: 'Double',
-              plural: 'Plural',
+              '=0': 'None',
+              '=12': 'Dozen',
               zero: 'Zero',
               one: 'One',
               two: 'Two',
@@ -727,7 +726,6 @@ describe('React CLI parity audit', () => {
             },
             t: 'p',
           },
-          c: 'Fallback',
         },
       ]);
     });
@@ -1075,14 +1073,14 @@ describe('shared rich-content wire format', () => {
     import { Branch, T, Var } from 'gt-vue';
     const name = 'Ada';
     </script>
-    <template><T><Branch branch="formal"><template #formal><strong>Hello</strong> <Var>{{ name }}</Var></template><template #casual><em>Hi</em> <Var>{{ name }}</Var></template><template #default>Fallback</template></Branch><span>After</span></T></template>
+    <template><T><Branch branch="formal"><template #formal><strong>Hello</strong> <Var>{{ name }}</Var></template><template #casual><em>Hi</em> <Var>{{ name }}</Var></template>Fallback</Branch><span>After</span></T></template>
   `,
     'independent-plural-numbering': `
     <script setup>
     import { Num, Plural, T } from 'gt-vue';
     const count = 2;
     </script>
-    <template><T><Plural :n="count"><template #one>One <Num :value="1" /></template><template #other>Many <Num :value="count" /></template><template #default>Fallback</template></Plural><span>After</span></T></template>
+    <template><T><Plural :n="count"><template #one>One <Num :value="1" /></template>Many <Num :value="count" /></Plural><span>After</span></T></template>
   `,
   } satisfies Record<string, string>;
 

@@ -57,12 +57,15 @@ function handleSingleChildElement(
 
     // (2) If the element is a branching component, explore respective branches
     else if (componentType === 'branch') {
-      // Traverse into each branch (this also includes the children property)
+      // Traverse into each branch
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
       >((acc, [branchName, branch]) => {
         if (branchName !== 'branch' && !branchName.startsWith('data-')) {
-          acc[branchName] = handleSingleChild(branch, derivationDepth);
+          acc[branchName] = handleChildren(
+            branch as ReactNode,
+            derivationDepth
+          );
         } else {
           // Skip recursion on non-translated branches
           acc[branchName] = branch;
@@ -74,12 +77,16 @@ function handleSingleChildElement(
         ...newProps,
       });
     } else if (componentType === 'plural') {
-      // Traverse into each branch (this also includes the children property)
+      // Traverse into each branch
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
       >((acc, [branchName, branch]) => {
+        // The children are the fallback branch.
         if (isAcceptedPluralForm(branchName) || branchName === 'children') {
-          acc[branchName] = handleSingleChild(branch, derivationDepth);
+          acc[branchName] = handleChildren(
+            branch as ReactNode,
+            derivationDepth
+          );
         } else {
           // Skip Recursion on non-translated branches
           acc[branchName] = branch;

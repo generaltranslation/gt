@@ -181,9 +181,9 @@
                       "column": 24,
                       "index": 285
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -242,9 +242,9 @@
                       "column": 22,
                       "index": 335
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -305,7 +305,7 @@
                     },
                     "identifierName": "other"
                   },
-                  "name": "other"
+                  "name": "children"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1064,9 +1064,9 @@
                       "column": 24,
                       "index": 940
                     },
-                    "identifierName": "singular"
+                    "identifierName": "_1"
                   },
-                  "name": "singular"
+                  "name": "_1"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1145,9 +1145,9 @@
                       "column": 22,
                       "index": 983
                     },
-                    "identifierName": "plural"
+                    "identifierName": "_2"
                   },
-                  "name": "plural"
+                  "name": "_2"
                 },
                 "computed": false,
                 "shorthand": false,

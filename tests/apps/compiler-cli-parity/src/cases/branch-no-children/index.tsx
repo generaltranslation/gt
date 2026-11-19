@@ -3,7 +3,7 @@ import { Branch } from 'gt-react';
 export default function BranchNoChildren() {
   return (
     <div>
-      <Branch branch="mode" a="Option A" b="Option B" />
+      <Branch branch={'mode' as string} a="Option A" b="Option B">Another option</Branch>
     </div>
   );
 }

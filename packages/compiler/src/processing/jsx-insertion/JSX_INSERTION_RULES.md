@@ -248,9 +248,9 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 **Control props are never modified.** These are selector/configuration props, not translatable content:
 
 - Branch: `branch` (selector key), `data-*` (HTML attributes, ignored at runtime)
-- Plural: `n` (count), `locales` (locale hint)
+- Plural: `n` (count)
 
-**Content props** (branch value keys like `Ernest`, `summary`, plural forms like `one`, `other`, and `children` as fallback) are processed:
+**Content props** (branch value keys like `Ernest`, `summary`, plural categories like `one`, exact numbers like `_0`, and `children`, the fallback) are processed:
 
 - **Static content prop values** (direct JSX like `summary={<p>Text</p>}`) are left untouched — no \_T inside.
 - **Dynamic non-JSX content prop values** (variables, function calls, etc.) get \_Var wrapped.
@@ -263,9 +263,9 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 <div><_T><Branch branch="mode" summary={<p>Summary</p>}>Fallback</Branch></_T></div>
 // `branch` is a control prop → never Var-wrapped, even if dynamic
 
-// Plural as only child — _T wraps at parent, `n` and `locales` untouched
-<div><Plural n={count} one="item" other="items" /></div>
-<div><_T><Plural n={count} one="item" other="items" /></_T></div>
+// Plural as only child — _T wraps at parent, `n` untouched
+<div><Plural n={count} one="item">items</Plural></div>
+<div><_T><Plural n={count} one="item">items</Plural></_T></div>
 // `n` is a control prop → never Var-wrapped, even though `count` is dynamic
 
 // Branch with static JSX in prop arguments — NO _T inside the props
@@ -274,8 +274,8 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 // Only 1 _T at div — "Summary text" and "Details text" are static, left alone
 
 // Plural with static JSX in prop arguments — NO _T inside the props
-<div><Plural n={count} one={<span>One item</span>} other={<span>Many items</span>} /></div>
-<div><_T><Plural n={count} one={<span>One item</span>} other={<span>Many items</span>} /></_T></div>
+<div><Plural n={count} one={<span>One item</span>}><span>Many items</span></Plural></div>
+<div><_T><Plural n={count} one={<span>One item</span>}><span>Many items</span></Plural></_T></div>
 // Only 1 _T at div — "One item" and "Many items" are static, left alone
 
 // Branch with nested JSX children — NO _T inside children either
@@ -504,7 +504,7 @@ When Branch, Plural, or other opaque GT components appear inside Derive's childr
 
 // Produces 2 hash entries:
 //   1. ["Hello ", { t: "Derive", i: 1 }]  (outer _T — contains Derive)
-//   2. { t: "Branch", i: 1, c: "fallback" }  (inner _T — standalone Branch)
+//   2. { t: "Branch", i: 1, d: { b: { other: "fallback" }, t: "b" } }  (inner _T — standalone Branch; its children are stored as the `other` branch)
 //
 // At runtime, removeInjectedT strips the inner _T, but the standalone hash
 // entry is still needed for translation resolution.

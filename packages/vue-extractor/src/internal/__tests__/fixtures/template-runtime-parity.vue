@@ -20,6 +20,6 @@ const value = 'attribute';
     <Branch branch="formal"><template #formal>First</template> <template #casual>Second</template></Branch>
   </T>
   <T>
-    <Plural :n="1"><template #one>One</template> <template #other>Other</template></Plural>
+    <Plural :n="1"><template #one>One</template> <template #default>Other</template></Plural>
   </T>
 </template>

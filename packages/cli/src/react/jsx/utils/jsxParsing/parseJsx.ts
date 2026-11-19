@@ -18,6 +18,8 @@ import {
   warnInvalidDeriveInitSync,
   warnRecursiveFunctionCallSync,
   warnDataAttrOnBranch,
+  warnBranchOtherPropSync,
+  warnInvalidExactPluralPropSync,
   warnNestedInternalTComponent,
   warnDeriveNonConstVariableSync,
   warnDeriveDestructuringSync,
@@ -376,6 +378,29 @@ function buildJSXTree({
             warnDataAttrOnBranch(config.file, attrName, location)
           );
         }
+        if ((elementIsPlural || elementIsBranch) && attrName === 'other') {
+          output.errors.push(
+            warnBranchOtherPropSync(
+              config.file,
+              componentType,
+              `${attr.loc?.start?.line}:${attr.loc?.start?.column}`
+            )
+          );
+        }
+        // `_01` looks like an exact number but is not a branch.
+        if (
+          elementIsPlural &&
+          /^_\d/.test(attrName) &&
+          !isAcceptedPluralForm(attrName)
+        ) {
+          output.warnings.add(
+            warnInvalidExactPluralPropSync(
+              config.file,
+              attrName,
+              `${attr.loc?.start?.line}:${attr.loc?.start?.column}`
+            )
+          );
+        }
         if (attr.value) {
           if (t.isStringLiteral(attr.value)) {
             attrValue = attr.value.value;
@@ -393,6 +418,7 @@ function buildJSXTree({
               (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
               (elementIsBranch &&
                 attrName !== 'branch' &&
+                attrName !== 'other' &&
                 !attrName.startsWith(DATA_ATTR_PREFIX))
             ) {
               // Make sure that variable strings like {`I have ${count} book`} are invalid!

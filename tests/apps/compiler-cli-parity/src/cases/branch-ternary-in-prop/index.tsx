@@ -4,9 +4,7 @@ export default function BranchTernaryInProp() {
   const flag = true;
   return (
     <div>
-      <Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>
-        Fallback
-      </Branch>
+      <Branch branch={'mode' as string} summary={flag ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch>
     </div>
   );
 }

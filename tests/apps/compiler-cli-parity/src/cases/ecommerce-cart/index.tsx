@@ -22,7 +22,7 @@ export default function EcommerceCart() {
       <hr />
       <div>
         <p>
-          <Plural n={itemCount} one="1 item" other="items" /> in your cart
+          <Plural n={itemCount} one="1 item">items</Plural> in your cart
         </p>
         <p>
           Subtotal: $<Var>{total.toFixed(2)}</Var>

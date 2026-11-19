@@ -4,12 +4,12 @@ export default function Home() {
     <T>
       <Plural
         n={1}
-        singular={
+        _1={
           <>
             <Var>var1</Var> and <Num>num1</Num>
           </>
         }
-        plural={
+        _2={
           <div>
             <Var>var1</Var> and <Num>num1</Num>
           </div>

@@ -20,8 +20,8 @@ const count = 1;
       multiple spaces
     </Fragment>
     Hello World with spaces
-    <Plural :n="1" singular="" plural="Files" />
-    <Plural :n="1" singular="   File   " plural="   Files   " />
+    <Plural :n="1" _1="" _2="Files" />
+    <Plural :n="1" _1="   File   " _2="   Files   " />
     <Branch branch="1" option1="" option2="   Padded   ">
       <template #option3><span>JSX content</span></template>
     </Branch>
@@ -39,13 +39,13 @@ const count = 1;
     items Click
     <a href="#">here</a>
     to continue. Line 1 Line 2 with tabs Line 3 with spaces You have
-    <Plural :n="5" singular="  1 item  " plural="  2 items  " />
+    <Plural :n="5" _1="  1 item  " _2="  2 items  " />
     Total:
     <Currency :value="amount" currency="USD" />
     available Status:
-    <Plural :n="1" :singular="true" :plural="false" />
+    <Plural :n="1" :_1="true" :_2="false" />
     -
-    <Plural :n="0" :singular="null" plural="Active" />
+    <Plural :n="0" :_1="null" _2="Active" />
     <div>Content</div>
     {{ '   ' }}
     <div>More content</div>
@@ -54,7 +54,7 @@ const count = 1;
     , you have
     <Num value="5" />
     new messages.
-    <Plural :n="count" singular="1 file" plural="2 files" />
+    <Plural :n="count" _1="1 file" _2="2 files" />
     <div>
       Welcome
       <strong>user</strong>
@@ -87,13 +87,13 @@ const count = 1;
     <div />
     <div />
     {{ true }}
-    <Plural :n="1" :singular="true">
-      <template #dual>
+    <Plural :n="1" :_1="true">
+      <template #_3>
         <Fragment>{{ false }}{{ true }}</Fragment>
       </template>
     </Plural>
-    <Plural :n="1" :singular="true">
-      <template #dual>
+    <Plural :n="1" :_1="true">
+      <template #_3>
         <Fragment>{{ true }}</Fragment>
       </template>
     </Plural>
@@ -107,20 +107,20 @@ const count = 1;
     <div>there</div>
     <div>there</div>
     <Plural :n="count">
-      <template #singular>
+      <template #_1>
         <Fragment>
           Text
           <Fragment />
           More text
         </Fragment>
       </template>
-      <template #plural>
+      <template #_2>
         <Fragment>
           <Fragment>Fragment</Fragment>
           content
         </Fragment>
       </template>
-      <template #other>
+      <template #default>
         <Fragment><Fragment /></Fragment>
       </template>
     </Plural>

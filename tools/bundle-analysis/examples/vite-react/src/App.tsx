@@ -232,15 +232,11 @@ export default function App() {
                 <dt>{t('Items')}</dt>
                 <dd>
                   <T>
-                    <Plural
-                      n={quantity}
-                      one={<>One dock</>}
-                      other={
-                        <>
-                          <Num>{quantity}</Num> docks
-                        </>
-                      }
-                    />
+                    <Plural n={quantity} one={<>One dock</>}>
+                      <>
+                        <Num>{quantity}</Num> docks
+                      </>
+                    </Plural>
                   </T>
                 </dd>
               </div>
@@ -261,15 +257,11 @@ export default function App() {
             </dl>
             <T>
               <p className='note'>
-                <Plural
-                  n={stock}
-                  one={<>One unit left in this finish.</>}
-                  other={
-                    <>
-                      <Num>{stock}</Num> units left in this finish.
-                    </>
-                  }
-                />
+                <Plural n={stock} one={<>One unit left in this finish.</>}>
+                  <>
+                    <Num>{stock}</Num> units left in this finish.
+                  </>
+                </Plural>
               </p>
             </T>
             <button

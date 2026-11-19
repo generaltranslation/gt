@@ -4,7 +4,7 @@ export default function PluralBasic() {
   const count = 3;
   return (
     <div>
-      <Plural n={count} one="item" other="items" />
+      <Plural n={count} one="item">items</Plural>
     </div>
   );
 }

@@ -1,42 +1,34 @@
 import { getCachedPluralRules } from '@generaltranslation/format/internal';
+import { toPluralRulesNumber } from '@generaltranslation/icu/internal';
 
-import { pluralForms, PluralType } from '../settings/plurals';
+import { pluralForms } from '../settings/plurals';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 
 /**
- * Given a number and a list of allowed plural forms, return the plural form that best fits the number.
+ * Picks a plural branch as ICU does: the exact key `=n`, then the locale's
+ * plural category for `n`, then `other`.
  *
- * @param {number} n - The number to determine the plural form for.
- * @param {PluralType[]} forms - The allowed plural forms.
- * @returns {PluralType} The determined plural form, or an empty string if none fit.
+ * @param n - The number to pick a branch for.
+ * @param forms - The keys of the branches there are.
+ * @returns The key of the branch, or an empty string if none fit.
  */
 export function getPluralForm(
-  n: number,
-  forms: readonly PluralType[] = pluralForms,
+  n: number | bigint,
+  forms: readonly string[] = pluralForms,
   locales: string[] = [defaultDefaultLocale]
-): PluralType | '' {
-  const pluralRules = getCachedPluralRules(locales);
-  const provisionalBranchName = pluralRules.select(n);
-  // aliases
-  const absN = Math.abs(n);
-  // 0
-  if (absN === 0 && forms.includes('zero')) return 'zero'; // override
-  // 1
-  if (absN === 1) {
-    if (forms.includes('singular')) return 'singular'; // override
-    if (forms.includes('one')) return 'one'; // override
+): string {
+  const exact = `=${n}`;
+  if (forms.includes(exact)) return exact;
+  // As in ICU, only a category branch needs the number's category, and a
+  // bigint too large to have one throws.
+  const categories = forms.filter(
+    (form) => form !== 'other' && form[0] !== '='
+  );
+  if (categories.length) {
+    const category = getCachedPluralRules(locales).select(
+      toPluralRulesNumber(n)
+    );
+    if (categories.includes(category)) return category;
   }
-  if (provisionalBranchName === 'one' && forms.includes('singular'))
-    return 'singular';
-  // 2
-  if (absN === 2) {
-    if (forms.includes('dual')) return 'dual'; // override
-    if (forms.includes('two')) return 'two'; // override
-  }
-  if (provisionalBranchName === 'two' && forms.includes('dual')) return 'dual';
-  // fallbacks
-  if (forms.includes(provisionalBranchName)) return provisionalBranchName;
-  if (forms.includes('plural')) return 'plural';
-  if (forms.includes('other')) return 'other';
-  return '';
+  return forms.includes('other') ? 'other' : '';
 }

@@ -9,8 +9,8 @@
       "few": "few items",
       "many": "many items",
       "other": "other items",
-      "singular": "singular form",
-      "plural": "plural form"
+      "=1": "singular form",
+      "=2": "plural form"
     },
     "t": "p"
   }

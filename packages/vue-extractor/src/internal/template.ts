@@ -15,7 +15,10 @@ import {
   type JsxChild,
   type JsxChildren,
 } from '@generaltranslation/format';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import {
+  getPluralBranchKey,
+  isAcceptedPluralForm,
+} from 'generaltranslation/internal';
 import { ElementTypes, NodeTypes } from './compilerAst.js';
 import { processVueStringCall } from './stringCalls.js';
 import {
@@ -140,7 +143,6 @@ const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
   'branch',
   'class',
   'n',
-  'locales',
   'key',
   'ref',
   'ref_for',
@@ -1808,14 +1810,19 @@ function serializeElement(
           namedSlots: new Map<string, SlotContent>(),
         };
 
-  const children = serializeChildren(
-    slotLayout.defaultSlot.children,
-    counter,
-    slotLayout.defaultSlot.shadowed,
-    bindings,
-    expressionPlugins,
-    context
-  );
+  // The default slot of a Branch or a Plural is its `other` branch, which
+  // readBranches serializes.
+  const children =
+    originalName === 'Branch' || originalName === 'Plural'
+      ? []
+      : serializeChildren(
+          slotLayout.defaultSlot.children,
+          counter,
+          slotLayout.defaultSlot.shadowed,
+          bindings,
+          expressionPlugins,
+          context
+        );
   if (suspense && slotLayout.defaultSlot.rootCount > 1) {
     addVueError(
       context,
@@ -1837,7 +1844,16 @@ function serializeElement(
       context
     );
     if (Object.keys(branches).length > 0) {
-      data.b = branches;
+      // Plural branches are stored under ICU keys: `_0` is `=0`.
+      data.b =
+        originalName === 'Plural'
+          ? Object.fromEntries(
+              Object.entries(branches).map(([name, branch]) => [
+                getPluralBranchKey(name),
+                branch,
+              ])
+            )
+          : branches;
       data.t = originalName === 'Plural' ? 'p' : 'b';
     }
   }
@@ -2235,10 +2251,22 @@ function readBranches(
   context: VueExtractionContext
 ): Record<string, JsxChildren> {
   const branches: Record<string, JsxChildren> = {};
+  const rejectOther = (loc: Parameters<typeof addVueError>[1]) =>
+    addVueError(
+      context,
+      loc,
+      `Found an other branch on a gt-vue <${component}> component`,
+      'Write the fallback as the default slot'
+    );
 
   for (const [name, slot] of slots.namedSlots) {
-    if (name.startsWith('_')) continue;
-    if (component === 'Plural' && !isAcceptedPluralForm(name)) continue;
+    if (name === 'other') {
+      rejectOther(element.loc);
+      continue;
+    }
+    // Vue's own slot flags start with `_`; an exact plural form is `_0`.
+    if (component === 'Plural' ? !isAcceptedPluralForm(name) : name[0] === '_')
+      continue;
     branches[name] = collapseChildren(
       serializeChildren(
         slot.children,
@@ -2266,6 +2294,10 @@ function readBranches(
     // Vue compiles v-on directives to listener props, which gt-vue always
     // excludes from branch content regardless of the handler expression.
     if (property.type === NodeTypes.DIRECTIVE && property.name === 'on') {
+      continue;
+    }
+    if (key === 'other') {
+      rejectOther(property.loc);
       continue;
     }
     if (
@@ -2319,6 +2351,19 @@ function readBranches(
     if (value.value === undefined) continue;
     branches[key] = branchPropToChildren(value.value);
   }
+
+  // The default slot is the fallback, stored as the `other` branch. As for
+  // React's children, an empty one is no fallback.
+  const fallback = serializeChildren(
+    slots.defaultSlot.children,
+    { value: branchElementId },
+    slots.defaultSlot.shadowed,
+    bindings,
+    expressionPlugins,
+    context
+  );
+  const other = fallback.length > 0 && collapseChildren(fallback);
+  if (other) branches.other = other;
   return branches;
 }
 

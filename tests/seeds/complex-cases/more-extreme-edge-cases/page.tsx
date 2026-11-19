@@ -41,13 +41,13 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={count}
-          singular={
+          _1={
             <>
               Text{}
               <></>More text
             </>
           }
-          plural={
+          _2={
             <>
               <>
                 {}Fragment{}
@@ -55,15 +55,14 @@ export default function ExtremeEdgeCases() {
               content{}
             </>
           }
-          other={
+        >{
             <>
               <>
                 {}
                 {}
               </>
             </>
-          }
-        />
+          }</Plural>
       
 
       {/* ========== BOOLEAN CONTEXT EDGE CASES ========== */}
@@ -105,8 +104,7 @@ export default function ExtremeEdgeCases() {
               Mixed {false} and {null}
             </>
           }
-          other="normal"
-        />
+        >normal</Plural>
       
 
       {/* ========== NUMERIC PRECISION EDGE CASES ========== */}
@@ -133,8 +131,7 @@ export default function ExtremeEdgeCases() {
           two={1.0}
           few={5.0e10}
           many={5.0e10}
-          other={5.0e-10}
-        />
+        >{5.0e-10}</Plural>
       
 
       {/* ========== WHITESPACE PATHOLOGICAL CASES ========== */}
@@ -156,10 +153,9 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={1}
-          singular={<>Line1\nLine2</>} /* Unix LF */
-          plural={<>Line1\r\nLine2</>} /* Windows CRLF */
-          other={<>Line1\rLine2</>} /* Old Mac CR */
-        />
+          _1={<>Line1\nLine2</>} /* Unix LF */
+          _2={<>Line1\r\nLine2</>} /* Windows CRLF */ /* Old Mac CR */
+        >{<>Line1\rLine2</>}</Plural>
       
 
       {/* ========== FRAGMENT PATHOLOGICAL NESTING ========== */}
@@ -203,25 +199,24 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={count}
-          singular={
+          _1={
             <>
               <></>Content<></>More<></>End
             </>
           }
-          plural={
+          _2={
             <>
               Start<></>Middle<></>End
             </>
           }
-          other={
+        >{
             <>
               <></>Text
               <>
                 <></>
               </>
             </>
-          }
-        />
+          }</Plural>
       
 
       {/* ========== VARIABLE COMPONENT STRESS TESTS ========== */}
@@ -249,7 +244,7 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={1}
-          singular={
+          _1={
             <>
               <Var>v1</Var>
               <Num>1</Num>
@@ -265,7 +260,7 @@ export default function ExtremeEdgeCases() {
               <DateTime>{new Date(2023)}</DateTime>
             </>
           }
-          plural={
+          _2={
             <>
               <DateTime>{new Date(2023)}</DateTime>
               <Currency currency="JPY">3</Currency>
@@ -292,10 +287,9 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={1}
-          singular="é" /* Pre-composed */
-          plural="é" /* Decomposed (e + combining acute) */
-          other="ñ vs ñ" /* Different normalizations */
-        />
+          _1="é" /* Pre-composed */
+          _2="é" /* Decomposed (e + combining acute) */ /* Different normalizations */
+        >ñ vs ñ</Plural>
       
 
       {/* Surrogate pairs and emoji variations */}
@@ -318,10 +312,9 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={1}
-          singular={`\\x41`} /* Hex escape */
-          plural={`\\u0041`} /* Unicode escape */
-          other={`\\101`} /* Octal escape */
-        />
+          _1={`\\x41`} /* Hex escape */
+          _2={`\\u0041`} /* Unicode escape */ /* Octal escape */
+        >{`\\101`}</Plural>
       
 
       {/* ========== BOUNDARY OVERFLOW CONDITIONS ========== */}
@@ -456,8 +449,7 @@ export default function ExtremeEdgeCases() {
           one={1}
           two={-1}
           few={Infinity}
-          other={NaN}
-        />
+        >{NaN}</Plural>
       
 
       {/* String values that look like JSON */}
@@ -477,7 +469,7 @@ export default function ExtremeEdgeCases() {
       
         <Plural
           n={count}
-          singular={
+          _1={
             <>
               Text content
               <>
@@ -495,7 +487,7 @@ export default function ExtremeEdgeCases() {
               Back to top level
             </>
           }
-          plural={
+          _2={
             <div>
               <>Fragment in div</> with <Var>variable2</Var>
               <span>
@@ -556,13 +548,12 @@ export default function ExtremeEdgeCases() {
                     }
                   />
                 }
-                other={
+              >{
                   <>
                     Other {+0} vs {-0}
                     {+1} vs {-1}
                   </>
-                }
-              />
+                }</Plural>
               End {} <></>
             </>
           }

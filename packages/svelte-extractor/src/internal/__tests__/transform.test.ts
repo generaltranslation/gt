@@ -82,11 +82,11 @@ describe('transformSvelteSource', () => {
   import { T, Plural, Num } from 'gt-svelte';
   let count = $state(1);
 </script>
-<T><Plural n={count}>{#snippet one()}<b>One</b>{/snippet}{#snippet other()}<Num value={count} /> items{/snippet}</Plural></T>`);
+<T><Plural n={count}>{#snippet one()}<b>One</b>{/snippet}<Num value={count} /> items</Plural></T>`);
     expect(result?.errors).toEqual([]);
     const code = result!.code;
     expect(code).toContain(
-      '_gtm={{"v":{"b1_1$":{"_gt_n_3":3}},"b":{"1":{"t":"p","b":["one","other"]}}}}'
+      '_gtm={{"v":{"b1_1$":{"_gt_n_2":2}},"b":{"1":{"t":"p","b":["one","other"]}}}}'
     );
     expect(code).toContain(
       '{#snippet __gt_e_b1_0$2(__gt_kids)}{@render __gt_kids()}{/snippet}'
@@ -95,7 +95,7 @@ describe('transformSvelteSource', () => {
       '{#snippet __gt_e_b1_0$3(__gt_kids, __gt_d)}<b>{@render __gt_kids()}</b>{/snippet}'
     );
     expect(code).toContain(
-      '{#snippet __gt_v_b1_1$3()}<Num value={count} />{/snippet}'
+      '{#snippet __gt_v_b1_1$2()}<Num value={count} />{/snippet}'
     );
     expect(code).toContain(
       '{#snippet __gt_e_1(__gt_pick)}{@render __gt_pick((count))}{/snippet}'
@@ -293,13 +293,13 @@ let items = [1];</script>
   import { T, Num, Plural } from 'gt-svelte';
   let count = 3;
 </script>
-<T><Plural n={count}>{#snippet other()}<Num>{count}</Num> items{/snippet}</Plural></T>`);
+<T><Plural n={count}><Num>{count}</Num> items</Plural></T>`);
     expect(result?.errors).toEqual([]);
     expect(result?.code).toContain(
-      '{#snippet other()}<Num value={count}></Num> items{/snippet}'
+      '<Plural n={count}><Num value={count}></Num> items</Plural>'
     );
     expect(result?.code).toContain(
-      '{#snippet __gt_v_b1_0$3()}<Num value={count}></Num>{/snippet}'
+      '{#snippet __gt_v_b1_0$2()}<Num value={count}></Num>{/snippet}'
     );
   });
 
@@ -501,6 +501,23 @@ describe('errors', () => {
     expect(Object.keys((translations[0].source as JsxElement).d!.b!)).toEqual([
       'constructor',
       'toString',
+      'other',
+    ]);
+  });
+
+  it('rejects an other branch, whose content is the children', () => {
+    expect(
+      errorsFor('<T><Plural n={n} one="One" other="Many" /></T>', 'let n = 1;')
+    ).toEqual([
+      '<Plural> has no other branch. Write the fallback as its children',
+    ]);
+    expect(
+      errorsFor(
+        '<T><Branch branch={s} a="A">{#snippet other()}B{/snippet}</Branch></T>',
+        'let s;'
+      )
+    ).toEqual([
+      '<Branch> has no other branch. Write the fallback as its children',
     ]);
   });
 

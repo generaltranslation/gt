@@ -1,7 +1,7 @@
 import { T, Branch } from 'gt-next';
 
 export default function Page() {
-  const status = 'active';
+  const status = 'active' as 'active' | 'inactive';
 
   return (
     <T>

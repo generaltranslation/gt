@@ -4,12 +4,12 @@ export default function Home() {
     <T>
       <Plural
         n={1}
-        singular={
+        _1={
           <>
             <>nested</> fragment
           </>
         }
-        plural="files"
+        _2="files"
       />
     </T>
   );
