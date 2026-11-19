@@ -57,6 +57,9 @@ pnpm --filter gt-test-vite-chunk-translations check:install
 pnpm --filter gt-test-vite-chunk-translations check
 ```
 
+`check:short-ids` runs the same checks on builds with
+`experimentalChunkTranslationsShortIds`, and checks the ids the build wrote.
+
 Run the browser automation for every browser-capable development app, or select
 a comma-separated subset. The React Native app remains a manual native test:
 

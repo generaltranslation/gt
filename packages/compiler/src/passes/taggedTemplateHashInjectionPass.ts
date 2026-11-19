@@ -3,9 +3,11 @@ import * as t from '@babel/types';
 import { isGTMessageImportSource } from 'generaltranslation/internal';
 import { TransformState } from '../state/types';
 import { injectTaggedTemplateHash } from '../transform/injection/injectTaggedTemplateHash';
+import type { MessageTree } from '@generaltranslation/icu';
 import {
   keepUnsplit,
   recordChunkHash,
+  recordRuntimeReader,
 } from '../transform/chunk-translations/chunkTranslationsModule';
 
 /**
@@ -24,8 +26,15 @@ export function taggedTemplateHashInjectionPass(
   // A build with chunk translations splits t templates by chunk; m() renders
   // a msg away from its call site, so its translation stays unsplit
   const onHash = state.settings.chunkTranslations
-    ? (hash: string, isMsg: boolean) =>
-        isMsg ? keepUnsplit(hash, state) : recordChunkHash(hash, state)
+    ? (hash: string, isMsg: boolean, tree: MessageTree) => {
+        if (!isMsg) return recordChunkHash(hash, state, tree);
+        keepUnsplit(hash, state);
+        return hash;
+      }
+    : undefined;
+  // A build with short ids keeps what a template hashed at runtime can read
+  const onRuntimeTree = state.settings.chunkTranslations?.runtimeReaders
+    ? (tree: MessageTree | undefined) => recordRuntimeReader(tree, state)
     : undefined;
   let found: boolean | undefined;
   const precompute = findPrecompute
@@ -33,7 +42,7 @@ export function taggedTemplateHashInjectionPass(
     : () => state.settings.precomputeMessages;
   return {
     TaggedTemplateExpression(path) {
-      if (injectTaggedTemplateHash(path, onHash, precompute)) {
+      if (injectTaggedTemplateHash(path, onHash, precompute, onRuntimeTree)) {
         state.statistics.taggedTemplateHashInjectionsCount += 1;
       }
     },

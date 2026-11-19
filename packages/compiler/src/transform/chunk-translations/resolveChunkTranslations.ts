@@ -3,6 +3,10 @@ import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { ChunkImportMapOptions } from './chunkImportMap';
 import type { GTConfig } from '../../config';
 import { DEFAULT_REQUEST_COST } from './assignTranslationsByRegion';
+import {
+  SHORT_IDS_WITH_TAGGED_IDS_ERROR,
+  type RuntimeReaders,
+} from './shortIds';
 
 /**
  * Environment variable read when the `experimentalChunkTranslations` option
@@ -88,6 +92,16 @@ export type ChunkTranslations = {
    * reach, not by chunk (see assignTranslationsByRegion).
    */
   regions?: RegionSplit;
+  /**
+   * Set when the call sites the build splits pass a short id of this many
+   * characters, and the files of chunks are keyed by it (see shortIds.ts).
+   */
+  shortIdLength?: number;
+  /**
+   * In a build with short ids: what the call sites that hash their message
+   * when they run can read, which stays under its hash.
+   */
+  runtimeReaders?: RuntimeReaders;
 };
 
 /** What a build that splits by module is given. */
@@ -318,11 +332,13 @@ export function resolveChunkTranslations(
     compileTimeHash,
     naming = defaultChunkTranslationsNaming,
     regions,
+    shortIdLength,
   }: {
     framework: string;
     compileTimeHash: boolean;
     naming?: ChunkTranslationsNaming;
     regions?: RegionSplit;
+    shortIdLength?: number;
   }
 ): ChunkTranslations | { error: string } {
   if (!SUPPORTED_FRAMEWORKS.has(framework)) {
@@ -371,6 +387,9 @@ export function resolveChunkTranslations(
       ),
     };
   }
+  if (shortIdLength !== undefined && gtConfig?._tagIds === true) {
+    return { error: SHORT_IDS_WITH_TAGGED_IDS_ERROR };
+  }
   return {
     defaultLocale,
     locales,
@@ -379,5 +398,13 @@ export function resolveChunkTranslations(
     unsplit: new Set(),
     naming,
     ...(regions && { regions }),
+    ...(shortIdLength !== undefined && {
+      shortIdLength,
+      runtimeReaders: {
+        compiled: new Map(),
+        shapes: new Set(),
+        unknown: new Set(),
+      },
+    }),
   };
 }

@@ -44,15 +44,21 @@ function nonStatic(): never {
  * values the call could evaluate differently, keep the form above.
  * `precompute` is called only for a static `t` template.
  *
- * `onHash` is called with the hash of each rewritten template, in either
- * form, and whether it is a `msg`, which `m()` renders away from its call
- * site.
+ * `onHash` is called with the hash and the tree of each rewritten template,
+ * in either form, and whether it is a `msg`, which `m()` renders away from
+ * its call site. It returns what the call site passes as its `$_hash`.
+ *
+ * `onRuntimeTree` is called for each template that is left to the runtime to
+ * hash, with the tree it builds there when each value the compiler cannot be
+ * sure of is a primitive, or with undefined when nothing says what it
+ * builds, as with `derive()`.
  * Returns whether the template was rewritten.
  */
 export function injectTaggedTemplateHash(
   path: NodePath<t.TaggedTemplateExpression>,
-  onHash?: (hash: string, isMsg: boolean) => void,
-  precompute: () => boolean = () => false
+  onHash?: (hash: string, isMsg: boolean, tree: MessageTree) => string,
+  precompute: () => boolean = () => false,
+  onRuntimeTree?: (tree: MessageTree | undefined) => void
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
@@ -76,34 +82,55 @@ export function injectTaggedTemplateHash(
   } catch {
     // Non-static or invalid (e.g. a reserved `_gt_` name): skip only this
     // template; the runtime hashes it and reports any error.
+    onRuntimeTree?.(getLikelyRuntimeTree(path));
     return false;
   }
+  const passed = onHash?.(hash, kind === 'msg', message.tree) ?? hash;
   // msg templates are rendered by m() away from their call site.
   if (kind === 'gt' && precompute()) {
     const call = buildPrecomputedCall({
       callee: callee as t.Identifier,
-      hash,
+      hash: passed,
       metadata,
       tree: message.tree,
       bindings: message.bindings,
     });
     if (call) {
       path.replaceWith(call);
-      onHash?.(hash, false);
       return true;
     }
   }
   const hashProperty = t.objectProperty(
     t.identifier(TRANSLATION_OPTION_KEYS.$_hash),
-    t.stringLiteral(hash)
+    t.stringLiteral(passed)
   );
   if (t.isCallExpression(tag)) {
     (tag.arguments[0] as t.ObjectExpression).properties.push(hashProperty);
   } else {
     path.node.tag = t.callExpression(tag, [t.objectExpression([hashProperty])]);
   }
-  onHash?.(hash, kind === 'msg');
   return true;
+}
+
+// Set while a template is read as the runtime most likely reads it.
+let assumesPrimitives = false;
+
+/**
+ * The tree the runtime builds for a template the compiler does not hash,
+ * when each value it cannot prove a primitive is one. Undefined when the
+ * template has no such reading.
+ */
+function getLikelyRuntimeTree(
+  path: NodePath<t.TaggedTemplateExpression>
+): MessageTree | undefined {
+  assumesPrimitives = true;
+  try {
+    return buildStaticMessage(path.node.quasi, path.scope).tree;
+  } catch {
+    return undefined;
+  } finally {
+    assumesPrimitives = false;
+  }
 }
 
 /**
@@ -241,7 +268,9 @@ function getHole(
   const fragment = getFragment(expression, scope, bindings);
   if (fragment) return { kind: 'fragment', ...fragment };
   if (!t.isCallExpression(expression) || !t.isIdentifier(expression.callee)) {
-    if (!isPrimitive(expression, scope, newWalk())) nonStatic();
+    if (!assumesPrimitives && !isPrimitive(expression, scope, newWalk())) {
+      nonStatic();
+    }
     const binding: Binding = { value: hole as t.Expression };
     bindings.push(binding);
     return { kind: 'anonymous', value: binding };
@@ -278,10 +307,14 @@ function getHole(
         ...(options && { options }),
       } as TemplateHole;
     }
-    default:
+    default: {
       // derive(), other helpers and other calls: the runtime computes the
       // hash, since a call may return an object or a placeholder.
-      nonStatic();
+      if (!assumesPrimitives || helper !== undefined) nonStatic();
+      const binding: Binding = { value: hole as t.Expression };
+      bindings.push(binding);
+      return { kind: 'anonymous', value: binding };
+    }
   }
 }
 
@@ -466,7 +499,9 @@ function getHoleVariable(
     binding = { name, value: getVariableValue(value as t.ObjectExpression) };
   } else {
     // An object here is a { name: value } binding at runtime.
-    if (!isPrimitive(value, scope, newWalk())) nonStatic();
+    if (!assumesPrimitives && !isPrimitive(value, scope, newWalk())) {
+      nonStatic();
+    }
     binding = { value: node as t.Expression };
   }
   bindings.push(binding);
