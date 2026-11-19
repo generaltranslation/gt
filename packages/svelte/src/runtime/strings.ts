@@ -1,16 +1,18 @@
-import { decodeOptions } from 'gt-i18n';
 import {
   createLookupOptions,
   getI18nCache,
   getI18nConfig,
-  interpolateMessage,
 } from 'gt-i18n/internal';
-import { isEncodedTranslationOptions } from 'gt-i18n/internal/string';
+import {
+  decodeOptions,
+  interpolateMessage,
+  isEncodedTranslationOptions,
+} from 'gt-i18n/internal/string';
 import type {
   GTFunctionType,
   GTTranslationOptions,
   MFunctionType,
-} from 'gt-i18n';
+} from 'gt-i18n/internal/string';
 import type {
   LocaleProperties,
   StringFormat,

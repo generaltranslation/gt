@@ -1,4 +1,4 @@
-import { createTx, type TX } from 'gt-i18n/unstable/internal';
+import { createTx, type TX } from 'gt-i18n/internal';
 import { getAsyncConditionStore } from '../async-i18n-cache/singleton-operations';
 
 /**
