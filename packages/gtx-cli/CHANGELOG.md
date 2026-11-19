@@ -115,6 +115,13 @@
 - Updated dependencies [e6dac30]
   - gt@3.0.0-samsara.0
 
+## 2.28.3
+
+### Patch Changes
+
+- Updated dependencies [[`903fb03`](https://github.com/generaltranslation/gt/commit/903fb0384f1a13778e769cd9b5bd60142b7c398f)]:
+  - gt@2.28.3
+
 ## 2.28.2
 
 ### Patch Changes
