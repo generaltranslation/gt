@@ -128,12 +128,13 @@ like German `one`, may say it in words:
 import { checkIcuTranslation } from '@generaltranslation/icu/convert';
 
 checkIcuTranslation(
-  '{n, plural, one {One file} other {# files}}',
-  '{n, plural, one {Один файл} few {# файла} many {# файлов} other {# файла}}',
+  '{count, plural, one {One file} other {# files}}',
+  '{count, plural, one {Один файл} few {# файла} many {# файлов} other {# файла}}',
   { locale: 'ru' }
 );
-// 'The translation does not match its source: "n" is not shown in the plural
-//  branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source.'
+// 'The translation does not match its source: "count" is not shown in the
+//  plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the
+//  source.'
 ```
 
 Word order is the translation's, so a variable may repeat, and may move into
