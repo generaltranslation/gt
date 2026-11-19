@@ -175,6 +175,55 @@ describe('plural rendering', () => {
     });
   });
 
+  it('pairs a branch with the source other branch for a variable its own lacks', () => {
+    // Russian picks "one" for 21 too, so its branch shows the count, which
+    // the English "one" branch leaves out.
+    const variable = (variableType: string, value: unknown) =>
+      React.createElement(
+        'span',
+        {
+          'data-_gt': {
+            id: 2,
+            injectionType: 'manual',
+            transformation: 'variable',
+            variableType,
+          },
+        },
+        value as React.ReactNode
+      );
+    const count = { i: 2, v: 'n' };
+    const target = {
+      d: {
+        b: {
+          one: [count, ' файл'],
+          few: [count, ' файла'],
+          many: [count, ' файлов'],
+          other: [count, ' файла'],
+        },
+      },
+    } as unknown as TranslatedChildren;
+    const render = (one: React.ReactNode) =>
+      renderTranslatedChildren({
+        source: createPluralElement(21, {
+          one,
+          other: [variable('number', 21), ' files'],
+        }),
+        target,
+        locales: ['ru'],
+        enableI18n: true,
+      });
+    const rendered = [
+      { props: { children: { props: { children: 21 } } } },
+      { props: { children: ' файл' } },
+    ];
+
+    expect(render('One file')).toMatchObject(rendered);
+    // The same id names a different variable in the source "one" branch.
+    expect(render([variable('variable', 'Ada'), ': one file'])).toMatchObject(
+      rendered
+    );
+  });
+
   it('renders the source branch when the translation has no branch', () => {
     const result = renderTranslatedChildren({
       source: createPluralElement(2, { other: 'Items' }),

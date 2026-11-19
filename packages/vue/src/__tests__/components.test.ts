@@ -648,6 +648,50 @@ describe('Branch and Plural attributes', () => {
     ).toBe('<b>элементов</b>');
   });
 
+  it('pairs a branch with the source other branch for a variable its own lacks', async () => {
+    const source: JsxChildren = {
+      t: 'Plural',
+      i: 1,
+      d: {
+        b: { one: 'One file', other: [{ i: 2, v: 'n' }, ' files'] },
+        t: 'p',
+      },
+    };
+    // Russian picks "one" for 21 too, so its branch shows the count, which
+    // the English "one" branch leaves out.
+    const count = { i: 2, v: 'n' } as const;
+    const target: JsxChildren = {
+      t: 'Plural',
+      i: 1,
+      d: {
+        b: {
+          one: [count, ' файл'],
+          few: [count, ' файла'],
+          many: [count, ' файлов'],
+          other: [count, ' файла'],
+        },
+        t: 'p',
+      },
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({ [jsxHash(source)]: target }),
+    });
+    await plugin.setLocale('ru');
+    const Root = defineComponent({
+      setup: () => () =>
+        h(T, null, () =>
+          h(Plural, { n: 21, one: 'One file' }, () => [
+            h(Num, { value: 21 }),
+            ' files',
+          ])
+        ),
+    });
+
+    expect(
+      stripFragmentMarkers(await renderToString(createSSRApp(Root).use(plugin)))
+    ).toBe('21 файл');
+  });
+
   it('lets the source pick when the translation has no branch for the value', async () => {
     const source: JsxChildren = {
       t: 'Branch',

@@ -26,6 +26,48 @@ import {
 import { getGTTag } from './getGTTag';
 import type { RenderVariable } from '../types';
 
+// Ids restart in every branch, so a nested <Plural> or <Branch> is not entered.
+function addSourceVariables(source: TaggedChildren, found: Set<string>) {
+  if (Array.isArray(source)) {
+    source.forEach((child) => addSourceVariables(child, found));
+  } else if (React.isValidElement(source)) {
+    const props = source.props;
+    if (isVariableElementProps(props)) {
+      const { variableId, variableType } = getVariableProps(props);
+      found.add(`${variableId}:${variableType}`);
+    } else if (!props['data-_gt']?.branches) {
+      addSourceVariables(props.children, found);
+    }
+  }
+}
+
+function showsVariableOutside(
+  target: TranslatedChildren | undefined,
+  known: Set<string>
+): boolean {
+  if (Array.isArray(target)) {
+    return target.some((child) => showsVariableOutside(child, known));
+  }
+  if (!target || typeof target !== 'object') return false;
+  if (isVariable(target)) return !known.has(`${target.i}:${target.v}`);
+  return !target.d?.b && showsVariableOutside(target.c, known);
+}
+
+/**
+ * The source branch a translated plural branch pairs with: its own, or `other`
+ * when it shows a variable its own lacks. Russian picks `one` for 21 too, so
+ * its branch shows the count that the English "One file" leaves out.
+ */
+function getPluralSourceKey(
+  branches: Record<string, TaggedChildren>,
+  key: string,
+  target: TranslatedChildren
+): string {
+  const known = new Set<string>();
+  if (Object.hasOwn(branches, key)) addSourceVariables(branches[key], known);
+  return showsVariableOutside(target, known) ? 'other' : key;
+}
+
 // Shared implementation: the variable renderer is dependency-injected by a
 // factory so this module statically imports no variable components.
 // Callsites use the pre-instantiated renderPipeline.rsc module instead of
@@ -81,14 +123,17 @@ function createRenderTranslatedChildren({
     if (transformation === 'plural') {
       const n = sourceElement.props.n;
       const targetBranches = targetElement.d?.b || {};
+      const sourceBranches = sourceGT.branches || {};
       const key = selectPluralKey(n, locales, targetBranches);
       const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
         source: getPluralBranch(
           n,
           locales,
-          sourceGT.branches || {},
-          target === undefined ? undefined : key
+          sourceBranches,
+          target === undefined
+            ? undefined
+            : getPluralSourceKey(sourceBranches, key, target)
         ),
         target,
         locales,
