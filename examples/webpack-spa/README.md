@@ -48,9 +48,9 @@ To regenerate translations after you change source text, sign in with `npx gt lo
 
 ### Runtime setup
 
-The app calls `initializeGTSPA` once in `src/index.ts` before anything renders, then dynamically imports the rest of the app. This is the SPA pattern from the [React SPA Quickstart](https://generaltranslation.com/docs/react/react-spa-quickstart): no `GTProvider` is needed, and because initialization finishes first, module-level `t()` calls resolve correctly.
+The app calls `initializeGTSPA` once in `src/index.ts` before anything renders, then dynamically imports the rest of the app. This is the SPA pattern from the [React SPA Quickstart](https://generaltranslation.com/docs/react/react-spa-quickstart): no `GTProvider` is needed, and because initialization finishes first, module-level `` t`...` `` strings resolve correctly.
 
-Text is marked for translation with the `<T>` component, one-off strings use `t()`, and users change languages with `<LocaleSelector />`.
+Text is marked for translation with the `<T>` component, one-off strings use `` t`...` ``, and users change languages with `<LocaleSelector />`.
 
 ### Build-time compiler
 
@@ -62,7 +62,7 @@ import { webpack as gtCompiler } from '@generaltranslation/compiler';
 plugins: [gtCompiler({ ...gtConfig }) /* ... */];
 ```
 
-The compiler prepares your `<T>` and `t()` content at build time.
+The compiler prepares your `<T>` and `` t`...` `` content at build time.
 
 ### Credentials
 

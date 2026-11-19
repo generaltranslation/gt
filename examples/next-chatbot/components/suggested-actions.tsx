@@ -16,24 +16,24 @@ function PureSuggestedActions({ chatId, append }: SuggestedActionsProps) {
   const t = useGT();
   const suggestedActions = [
     {
-      title: t('What are the advantages'),
-      label: t('of using Next.js?'),
-      action: t('What are the advantages of using Next.js?'),
+      title: t`What are the advantages`,
+      label: t`of using Next.js?`,
+      action: t`What are the advantages of using Next.js?`,
     },
     {
-      title: t('Write code to'),
-      label: t("demonstrate djikstra's algorithm"),
-      action: t("Write code to demonstrate djikstra's algorithm"),
+      title: t`Write code to`,
+      label: t`demonstrate djikstra's algorithm`,
+      action: t`Write code to demonstrate djikstra's algorithm`,
     },
     {
-      title: t('Help me write an essay'),
-      label: t('about silicon valley'),
-      action: t('Help me write an essay about silicon valley'),
+      title: t`Help me write an essay`,
+      label: t`about silicon valley`,
+      action: t`Help me write an essay about silicon valley`,
     },
     {
-      title: t('What is the weather'),
-      label: t('in San Francisco?'),
-      action: t('What is the weather in San Francisco?'),
+      title: t`What is the weather`,
+      label: t`in San Francisco?`,
+      action: t`What is the weather in San Francisco?`,
     },
   ];
 

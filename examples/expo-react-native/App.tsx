@@ -28,9 +28,7 @@ function LocaleDemo() {
   const t = useGT();
   const setLocale = useSetLocale();
   const locales = [gtConfig.defaultLocale, ...gtConfig.locales];
-  const gtMessage = t('This line is translated with t().', {
-    $_hash: 'tMessage',
-  });
+  const gtMessage = t`This line is translated with t().`;
 
   return (
     <View style={styles.container}>
