@@ -4,13 +4,18 @@ import traverse, { type NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { validateTranslationComponentArgs } from '../validateTranslationComponentArgs';
 import { initializeState } from '../../../state/utils/initializeState';
+import { GT_OTHER_FUNCTIONS } from '../../../utils/constants/gt/constants';
 
 /**
  * Parses `source` and returns the path of its first call expression plus a
- * fresh state.
+ * fresh state with derive() registered as a GT function.
  */
 function setup(source: string) {
   const state = initializeState({ logLevel: 'silent' }, 'test.tsx');
+  state.scopeTracker.trackTranslationVariable(
+    GT_OTHER_FUNCTIONS.derive,
+    GT_OTHER_FUNCTIONS.derive
+  );
   const ast = parser.parse(source, { sourceType: 'module' });
   let callPath!: NodePath<t.CallExpression>;
   traverse(ast, {
@@ -44,5 +49,51 @@ describe('validateTranslationComponentArgs requiresReview', () => {
       state
     );
     expect({ errors, requiresReview }).toEqual(expected);
+  });
+});
+
+describe('validateTranslationComponentArgs context', () => {
+  const validate = (context: string) => {
+    const { callPath, state } = setup(
+      `async () => jsx(T, { children: "some text", context: ${context} })`
+    );
+    const {
+      errors,
+      context: value,
+      hasDeriveContext,
+    } = validateTranslationComponentArgs(callPath, 'T', state);
+    return { errors, value, hasDeriveContext };
+  };
+
+  it.each(['"greeting"', '`greeting`'])('reads the literal %s', (context) => {
+    expect(validate(context)).toEqual({
+      errors: [],
+      value: 'greeting',
+      hasDeriveContext: false,
+    });
+  });
+
+  it.each([
+    'derive(getTone())',
+    'derive(await getTone())',
+    'derive(formal ? "formal" : "casual")',
+    'derive(tone)',
+  ])('accepts %s as a derive context', (context) => {
+    expect(validate(context)).toEqual({ errors: [], hasDeriveContext: true });
+  });
+
+  it.each([
+    '"tone: " + derive(getTone())',
+    '`tone: ${derive(getTone())}`',
+    'formal ? derive(getTone()) : "casual"',
+    'derive()',
+    'derive(getTone(), "casual")',
+    'derive(...tones)',
+    'getTone()',
+    'tone',
+  ])('rejects %s', (context) => {
+    expect(validate(context).errors).toEqual([
+      'The <T> component must have a string literal or one derive() call in its context field',
+    ]);
   });
 });

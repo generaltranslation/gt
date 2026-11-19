@@ -10,7 +10,7 @@ import {
 } from './resolveFunctionVariants.js';
 import { extractImports } from './extractImports.js';
 import { resolveImportPath } from './resolveImport.js';
-import { declareVar } from 'generaltranslation';
+import { declareVar } from 'generaltranslation/internal';
 
 type ParseContext = {
   rootNode: SyntaxNode;

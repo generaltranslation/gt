@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { formatIcu, parse } from '@generaltranslation/icu/parser';
 import { declareVar } from '../declareVar';
-import { decodeVars } from '../decodeVars';
 import { indexVars } from '../indexVars';
 import { sanitizeVar } from '../utils/sanitizeVar';
 
@@ -62,8 +61,8 @@ describe('declareVar', () => {
     expect(() => parse(encoded)).not.toThrow();
   });
 
-  // Whatever the value contains, it must survive as one literal: rendered by
-  // ICU, decoded back, and extracted as the first variable.
+  // Whatever the value contains, it must survive as one literal when ICU
+  // renders it.
   it.each([
     ['plain text', 'hello world'],
     ['single space', ' '],
@@ -91,7 +90,6 @@ describe('declareVar', () => {
     expect(
       formatIcu(encoded, 'en', { _gt_: 'placeholder' }, { timeZone: 'UTC' })
     ).toBe(value);
-    expect(decodeVars(`before ${encoded} after`)).toBe(`before ${value} after`);
   });
 });
 
@@ -174,85 +172,5 @@ describe('indexVars', () => {
 
     expect(result).toBe(expected);
     expect(() => parse(result)).not.toThrow();
-  });
-});
-
-describe('decodeVars', () => {
-  it.each([
-    ['empty string', '', ''],
-    [
-      'no GT variables',
-      'Hello {name} with {count, plural, one {item} other {items}}',
-      'Hello {name} with {count, plural, one {item} other {items}}',
-    ],
-    ['single variable', '{_gt_, select, other {Hello World}}', 'Hello World'],
-    ['empty variable', '{_gt_, select, other {}}', ''],
-    [
-      'variables at start and end',
-      '{_gt_, select, other {Start}} middle text {_gt_, select, other {End}}',
-      'Start middle text End',
-    ],
-    [
-      'surrounding and inner whitespace',
-      '  {_gt_, select, other {  spaced content  }}  ',
-      '    spaced content    ',
-    ],
-    [
-      'other ICU elements are untouched',
-      '{count, number} items and {_gt_, select, other {variable}} with {date, date, short}',
-      '{count, number} items and variable with {date, date, short}',
-    ],
-    [
-      'escaped quotes, braces and tags',
-      "{_gt_, select, other {User''s ''data'': '{id: 123} <status>active</status>'}}",
-      "User's 'data': {id: 123} <status>active</status>",
-    ],
-    [
-      'variables nested in plurals',
-      `{count, plural,
-      =0 {No {_gt_, select, other {messages}}}
-      other {# {_gt_, select, other {messages}}}
-    }`,
-      `{count, plural,
-      =0 {No messages}
-      other {# messages}
-    }`,
-    ],
-    [
-      'variables nested in selects',
-      '{gender, select, male {He has {_gt_, select, other {book}}} other {They have {_gt_, select, other {books}}}}',
-      '{gender, select, male {He has book} other {They have books}}',
-    ],
-    [
-      'variables inside tags',
-      '<bold>{_gt_, select, other {important}}</bold> and {_gt_, select, other {normal}}',
-      '<bold>important</bold> and normal',
-    ],
-    [
-      'unicode content',
-      '{_gt_, select, other {你好世界 🌍 café naïve}}',
-      '你好世界 🌍 café naïve',
-    ],
-    [
-      'named variables',
-      `Navigate to ${declareVar('User Profile', { $name: 'profile_section' })} page`,
-      'Navigate to User Profile page',
-    ],
-  ])('%s', (_name, input, expected) => {
-    expect(decodeVars(input)).toBe(expected);
-  });
-
-  it('decodes thousands of captured variables', () => {
-    const count = 2_000;
-    const input = Array.from(
-      { length: count },
-      (_, index) => `{_gt_, select, other {value${index}}}`
-    ).join(' ');
-    const expected = Array.from(
-      { length: count },
-      (_, index) => `value${index}`
-    ).join(' ');
-
-    expect(decodeVars(input)).toBe(expected);
   });
 });

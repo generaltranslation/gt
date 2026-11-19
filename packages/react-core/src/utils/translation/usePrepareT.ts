@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { useDefaultLocale } from '../../hooks/i18n-config';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig, resolveDerivableText } from 'gt-i18n/internal';
 import {
   prepareT,
   type JsxTranslationOptions,
@@ -26,8 +26,10 @@ function usePrepareT({
   const defaultLocale = useDefaultLocale();
   const shouldTranslate =
     enableI18n && getI18nConfig().requiresTranslation({ locale });
-  // The component passes a new params object on every render.
-  const { context, id, _hash, format, maxChars, requiresReview } = params;
+  // The component passes a new params object on every render, and derive() a
+  // new placeholder.
+  const { id, _hash, format, maxChars, requiresReview } = params;
+  const context = resolveDerivableText(params.context);
   const prepared = useMemo(
     () =>
       prepareT({

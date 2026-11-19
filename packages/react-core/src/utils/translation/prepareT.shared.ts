@@ -1,7 +1,11 @@
 import { addGTIdentifier } from '../internal/addGTIdentifier';
 import { removeInjectedT } from '../internal/removeInjectedT';
 import { writeChildrenAsObjects } from '../internal/writeChildrenAsObjects';
-import type { JsxTranslationOptions as JsxLookupOptions } from 'gt-i18n/internal';
+import {
+  resolveDerivableText,
+  type DerivableText,
+  type JsxTranslationOptions as JsxLookupOptions,
+} from 'gt-i18n/internal';
 import type { JsxChildren } from '@generaltranslation/format';
 import type { ReactNode } from 'react';
 import type { RenderPreparedTParams } from '../rendering/renderPreparedT.shared';
@@ -16,7 +20,10 @@ type StripDollarPrefix<T> = {
   [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
 };
 
-type JsxTranslationOptions = StripDollarPrefix<JsxLookupOptions>;
+type JsxTranslationOptions = Omit<
+  StripDollarPrefix<JsxLookupOptions>,
+  'context'
+> & { context?: DerivableText };
 
 type PreparedT = {
   taggedSourceChildren: TaggedChildren;
@@ -94,7 +101,7 @@ function normalizeParameters(
   return {
     ...parameters,
     $format: 'JSX',
-    $context: parameters.context,
+    $context: resolveDerivableText(parameters.context),
     $id: parameters.id,
     $_hash: parameters._hash,
     $maxChars: parameters.maxChars,

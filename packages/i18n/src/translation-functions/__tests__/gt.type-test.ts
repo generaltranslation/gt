@@ -29,6 +29,12 @@ declare const digits: number;
 declare const percentOrCurrency: 'percent' | 'currency';
 declare const meterUnit: `${string}meter`;
 const labels = { admin: 'Admin', member: 'Member' } as const;
+function getRole() {
+  return flag ? 'admin' : 'member';
+}
+function getRoleLabel() {
+  return `role: ${getRole()}` as const;
+}
 enum Plan {
   Free = 'free',
   Pro = 'pro',
@@ -71,6 +77,8 @@ export function validUsage(): string[] {
     gt`${select({ status }, { done: 'Done', other: 'Running' })}`,
     gt`Signed in as ${derive(role)}`,
     gt`Signed in as ${derive(labels[role])}`,
+    gt`Signed in as ${derive(getRole())}`,
+    gt`Signed in as ${derive(getRoleLabel())}`,
     gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`,
     gt`Due ${date({ due }, { style: 'medium' })}`,
     gt`${plural(count, { one: 'One file', other: part`${n} files` })}`,

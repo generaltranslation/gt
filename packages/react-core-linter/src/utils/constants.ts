@@ -1,6 +1,6 @@
 import { TSESTree } from '@typescript-eslint/utils';
 
-/** Exports derive() and declareVar(), but no components. */
+/** Exports no components. */
 export const CORE_LIBRARY = 'generaltranslation';
 
 export const GT_LIBRARIES = [

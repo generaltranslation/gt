@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import nodePath from 'node:path';
 import { hashSource } from 'generaltranslation/id';
 import { resolveImportPath } from '../../resolveImportPath.js';
+import { calculateHashes } from '../../../../../extraction/postProcess.js';
+import deriveContext from '../../../../../../../../test-fixtures/derive-context.json' with { type: 'json' };
 import {
   extractUserT,
   mockFiles,
@@ -431,6 +433,94 @@ describe('derive in the context prop', () => {
     ]);
     expect(updates[0].metadata.staticId).toEqual(expect.any(String));
     expect(new Set(updates.map((u) => u.metadata.staticId)).size).toBe(1);
+  });
+
+  it('hashes each derived context as the runtime does', async () => {
+    const { updates, errors } = extractUserT(
+      page(deriveContext.jsx, { outer: getFormality })
+    );
+    await calculateHashes(updates);
+
+    expect(errors).toEqual([]);
+    expect(
+      updates.map(({ source, metadata: { context, hash } }) => ({
+        source,
+        context,
+        hash,
+      }))
+    ).toEqual(
+      deriveContext.variants.map((variant) => ({
+        source: deriveContext.source,
+        ...variant,
+      }))
+    );
+  });
+
+  it.each([
+    ['a call', 'derive(getFormality())', ['formal', 'casual']],
+    ['an awaited call', 'derive(await getFormality())', ['formal', 'casual']],
+    [
+      'a conditional',
+      'derive(isFormal ? "formal" : "casual")',
+      ['formal', 'casual'],
+    ],
+    ['a const', 'derive(tone)', ['formal', 'casual']],
+    [
+      'a call that builds the full text',
+      'derive(getTone())',
+      ['tone: formal', 'tone: casual'],
+    ],
+  ])('follows %s inside derive()', (_name, context, contexts) => {
+    const { updates, errors } = extractUserT(
+      page(`<T context={${context}}>Hello</T>`, {
+        outer: `${getFormality}
+          function getTone() { return \`tone: \${getFormality()}\` as const; }`,
+        body: 'const tone = isFormal ? "formal" : "casual";',
+      }).replace('function Page', 'async function Page')
+    );
+
+    expect(errors).toEqual([]);
+    expect(updates.map((u) => u.metadata.context)).toEqual(contexts);
+  });
+
+  const NOT_WHOLE = 'reads derive() only as its whole context';
+  const UNRESOLVED_DERIVE = 'derive() rules violation: Could not resolve';
+
+  it.each([
+    ['text joined to derive()', '"tone: " + derive(getFormality())', NOT_WHOLE],
+    [
+      'derive() in a template literal',
+      '`tone: ${derive(getFormality())}`',
+      NOT_WHOLE,
+    ],
+    [
+      'derive() in one branch of a conditional',
+      'isFormal ? derive(getFormality()) : "casual"',
+      NOT_WHOLE,
+    ],
+    [
+      'derive() of a value it cannot follow',
+      'derive(props.tone)',
+      UNRESOLVED_DERIVE,
+    ],
+    ['derive() without an argument', 'derive()', UNRESOLVED_DERIVE],
+    [
+      'derive() with two arguments',
+      'derive(getFormality(), "casual")',
+      UNRESOLVED_DERIVE,
+    ],
+    [
+      'a call joined to text inside derive()',
+      'derive("tone: " + getFormality())',
+      UNRESOLVED_DERIVE,
+    ],
+  ])('rejects %s', (_name, context, error) => {
+    const { updates, errors } = extractUserT(
+      page(`<T context={${context}}>Hello</T>`, { outer: getFormality })
+    );
+
+    expect(updates).toEqual([]);
+    expect(errors).toContainEqual(expect.stringContaining(error));
   });
 
   it('keeps a static string context', () => {

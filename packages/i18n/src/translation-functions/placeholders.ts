@@ -527,13 +527,26 @@ type IsOpen<T> = T extends unknown ? HasValues<T> : never;
  * a union type, a string enum, or an `as const` lookup. In JavaScript files
  * this is best effort: the CLI reads the types TypeScript infers or JSDoc
  * declares, and skips the message with a warning when they are too wide.
+ *
+ * As the whole `context` of a `<T>`, as in `<T context={derive(getTone())}>`,
+ * the CLI instead follows the argument through the code: a call to a function
+ * that returns string literals, a `const`, or a conditional of them.
  */
 export function derive<const T extends string>(
   value: true extends IsOpen<T>
     ? 'derive() needs a finite set of strings: use a union type, a string enum, or as const'
     : T
-): Placeholder {
+): DerivePlaceholder {
   return { [PLACEHOLDER]: 'derive', value };
+}
+
+/** Text the CLI extracts: a string, or the derive() call that chooses it. */
+export type DerivableText = string | DerivePlaceholder;
+
+export function resolveDerivableText(
+  text: DerivableText | undefined
+): string | undefined {
+  return isPlaceholder(text) ? text.value : text;
 }
 
 /**

@@ -9,7 +9,7 @@ import { constructJsxChildren } from '../jsx-children/constructJsxChildren';
 import { validateChildrenPropertyFromObjectExpression } from '../../utils/validation/validateChildrenFromObjectExpression';
 import { validateExpressionIsNumericLiteral } from '../../utils/validation/validateExpressionIsNumericLiteral';
 import { validateExpressionIsBooleanLiteral } from '../../utils/validation/validateExpressionIsBooleanLiteral';
-import { validateDerive } from './validateDerive';
+import { isDeriveCall } from './isDeriveCall';
 import { JsxValidationError } from '../jsx-children/errors';
 /**
  * Given a translation component, validate the arguments
@@ -194,8 +194,8 @@ export function validateChildrenProperty(
 // String Literal Functions
 
 /**
- * Will validate and retrieve property from object expression and also try prefixing with a $
- *
+ * Will validate and retrieve property from object expression. With a state, the
+ * property may also be one derive() call.
  */
 function validateStringProperty(
   args: t.ObjectExpression,
@@ -220,17 +220,22 @@ function validateStringProperty(
     return { errors, value: validation.value };
   }
 
-  // String validation failed — check if it's a valid derive() expression
-  if (state && t.isObjectProperty(property) && t.isExpression(property.value)) {
-    const deriveErrors: string[] = [];
-    validateDerive(property.value, state, deriveErrors);
-    if (deriveErrors.length === 0) {
-      return { errors, hasDeriveExpression: true };
-    }
+  if (!state) {
+    errors.push(...validation.errors);
+    return { errors };
   }
 
-  // Neither string nor derive — return original errors
-  errors.push(...validation.errors);
+  if (
+    t.isObjectProperty(property) &&
+    t.isExpression(property.value) &&
+    isDeriveCall(property.value, state)
+  ) {
+    return { errors, hasDeriveExpression: true };
+  }
+
+  errors.push(
+    `The <${GT_COMPONENT_TYPES.T}> component must have a string literal or one derive() call in its ${name} field`
+  );
   return { errors };
 }
 

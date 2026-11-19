@@ -80,7 +80,7 @@ describe('handleDerivation', () => {
       sequence(text('A'), text('B')),
       0,
     ],
-    ['unknown', { skipDeriveInvocation: true }, null, 1],
+    ['unknown', { skipDeriveInvocation: true }, null, 0],
     ['foo()', { skipDeriveInvocation: true }, null, 1],
   ])('%s with %j', (code, options, expected, errorCount) => {
     const { result, errors } = derive(code, options);

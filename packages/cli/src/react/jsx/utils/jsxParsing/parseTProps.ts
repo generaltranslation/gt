@@ -7,6 +7,7 @@ const generate = generateModule.default || generateModule;
 import { GT_ATTRIBUTES } from '../constants.js';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
+  warnDeriveContextNotWholeSync,
   warnInvalidMaxCharsSync,
   warnInvalidRequiresReviewSync,
   warnVariablePropSync,
@@ -94,7 +95,19 @@ export function parseTProps({
               t.isExpression(expr) &&
               containsDeriveCall(expr)
             ) {
-              metadata._contextDeriveExpr = expr;
+              // derive() returns a placeholder, which <T> reads only as its
+              // whole context: joined to text, it would render as an object.
+              if (t.isCallExpression(expr)) {
+                metadata._contextDeriveExpr = expr;
+              } else {
+                componentErrors.push(
+                  warnDeriveContextNotWholeSync(
+                    file,
+                    code,
+                    `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+                  )
+                );
+              }
             } else {
               componentErrors.push(
                 warnVariablePropSync(

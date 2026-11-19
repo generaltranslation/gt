@@ -49,4 +49,5 @@ export { decode, encode } from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
 
 // derive
+export { declareVar } from './derive/declareVar';
 export { indexVars } from './derive/indexVars';

@@ -10,7 +10,11 @@ export {
   type TX,
   type TxConditions,
 } from './translation-functions/tx';
-export { dyn } from './translation-functions/placeholders';
+export {
+  dyn,
+  resolveDerivableText,
+  type DerivableText,
+} from './translation-functions/placeholders';
 export { GtInternalRuntimeTranslateJsx } from './translation-functions/internal/runtime-translate';
 export { createLookupOptions } from './translation-functions/internal/helpers';
 export { I18nCache } from './i18n-cache/I18nCache';

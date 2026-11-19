@@ -248,17 +248,6 @@ export const warnFunctionNotFoundSync = (
     location
   );
 
-export const warnInvalidDeclareVarNameSync = (
-  file: string,
-  value: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    `Found invalid declareVar() $name tag. Must be a derivable (statically analyzable) expression. Received: ${colorizeContent(value)}.`,
-    location
-  );
-
 export const warnDuplicateFunctionDefinitionSync = (
   file: string,
   functionName: string,
@@ -366,6 +355,22 @@ export const warnDeriveFunctionNotWrappedSync = (
     location
   );
 
+export const warnDeriveContextNotWholeSync = (
+  file: string,
+  value: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: `Skipped a ${colorizeComponent('<T>')} whose context wraps derive() in another expression`,
+      why: `${colorizeComponent('<T>')} reads derive() only as its whole context`,
+      fix: 'Pass one derive() call as the context, and return the full text from the function it calls',
+      details: colorizeContent(value),
+    }),
+    location
+  );
+
 export const warnDeriveNonConstVariableSync = (
   file: string,
   varName: string,
@@ -388,19 +393,8 @@ export const warnDeriveFunctionNoResultsSync = (
   withLocation(
     file,
     withDeriveFunctionError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. derive() can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. derive() takes a call to a function that returns string literals, a const, or a conditional of them, and cannot use undefined values or looped calls to construct its result.`
     ),
-    location
-  );
-
-export const warnAutoderiveNoResultsSync = (
-  file: string,
-  expression: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    `Autoderive could not resolve ${colorizeFunctionName(formatCodeClamp(expression))}. Only function calls with statically determinable return values can be used directly in t(). Consider wrapping with derive() for explicit derivation, or use an interpolation variable instead.`,
     location
   );
 

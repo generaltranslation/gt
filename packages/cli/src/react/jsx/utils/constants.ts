@@ -1,4 +1,3 @@
-export const DECLARE_VAR_FUNCTION = 'declareVar';
 export const DERIVE_FUNCTION = 'derive';
 export const MSG_REGISTRATION_FUNCTION = 'msg';
 export const T_REGISTRATION_FUNCTION = 't';
@@ -21,7 +20,6 @@ export const PLURAL_COMPONENT = 'Plural';
 
 // GT translation functions
 export const GT_TRANSLATION_FUNCS = [
-  DECLARE_VAR_FUNCTION,
   DERIVE_FUNCTION,
   TRANSLATION_COMPONENT,
   DERIVE_COMPONENT,

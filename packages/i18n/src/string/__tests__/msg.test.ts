@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { msg } from '../msg';
 import { decodeOptions } from '../decodeOptions';
-import { derive, declareVar } from 'generaltranslation';
+import { declareVar } from 'generaltranslation/internal';
 import type { RegisterableMessages } from '../types';
 import { hashStringMessage } from '../hashStringMessage';
 
@@ -84,19 +84,19 @@ describe('msg function integration', () => {
 
 describe('msg function integration with variables', () => {
   it('should format messages with simple string variables', () => {
-    const result = msg('Hello ' + derive(declareVar('World')));
+    const result = msg('Hello ' + declareVar('World'));
     const decoded = decodeMsg(result);
     expect(decoded).toBe('Hello {_gt_, select, other {World}}');
   });
 
   it('should format messages with variables containing special characters', () => {
-    const result = msg('Hello ' + derive(declareVar('{}')));
+    const result = msg('Hello ' + declareVar('{}'));
     const decoded = decodeMsg(result);
     expect(decoded).toBe("Hello {_gt_, select, other {'{}'}}");
   });
 
   it('should format messages with variables containing special characters', () => {
-    const result = msg('Hello {name}' + derive(declareVar('{}')), {
+    const result = msg('Hello {name}' + declareVar('{}'), {
       name: 'World',
     });
     const decoded = decodeMsg(result);
