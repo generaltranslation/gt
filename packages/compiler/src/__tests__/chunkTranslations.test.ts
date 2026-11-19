@@ -1513,7 +1513,7 @@ export const { a } = await import(\`./a.js\`);`,
         };
         name();
         expect(bundle['assets/index.js'].code).toBe(
-          `e(()=>import("r:Orders-name.js"),${JSON.stringify(written)})`
+          'e(()=>import("r:Orders-name.js"),"r:Orders-name.js")'
         );
         // The chunk's file and what the import is written with, and not the
         // name Vite has for the chunk, which nothing looks up
