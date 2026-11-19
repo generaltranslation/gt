@@ -12,24 +12,18 @@ import type { ReactNode } from 'react';
 function usePrepareT({
   sourceChildren,
   params,
-  _locale,
-  _enableI18n,
 }: {
   sourceChildren: ReactNode;
   params: JsxTranslationOptions;
-  _locale?: string;
-  _enableI18n?: boolean;
 }): PreparedT & {
   defaultLocale: string;
   locale: string;
   enableI18n: boolean;
   shouldTranslate: boolean;
 } {
-  const contextLocale = useLocale();
-  const contextEnableI18n = useEnableI18n();
+  const locale = useLocale();
+  const enableI18n = useEnableI18n();
   const defaultLocale = useDefaultLocale();
-  const locale = _locale ?? contextLocale;
-  const enableI18n = _enableI18n ?? contextEnableI18n;
   const shouldTranslate =
     enableI18n && getI18nConfig().requiresTranslation({ locale });
   // The component passes a new params object on every render.

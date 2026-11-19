@@ -14,7 +14,9 @@ const {
   mockUse: vi.fn(),
 }));
 
-vi.mock('gt-react', () => ({ T: mockRscT }));
+vi.mock('@generaltranslation/react-core/components-rsc', () => ({
+  T: mockRscT,
+}));
 
 vi.mock('../renderPipeline', () => ({ renderPreparedT: vi.fn() }));
 
@@ -40,7 +42,7 @@ describe('buildtime translation helpers', () => {
     });
   });
 
-  it('T passes request conditions to gt-react T', async () => {
+  it('T passes request conditions to the RSC T', async () => {
     mockRscT.mockResolvedValue('Bonjour');
     const { T } = await import('../T');
 

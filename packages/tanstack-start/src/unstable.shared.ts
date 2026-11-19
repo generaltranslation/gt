@@ -11,10 +11,10 @@ export {
   select,
   selectordinal,
   time,
-  type Fragment,
   type GT,
   type GTOptions,
   type M,
   type Msg,
+  type Part,
   type Placeholder,
 } from 'gt-i18n/unstable';
