@@ -67,10 +67,10 @@ ruleTester.run('static-string', staticString, {
       ['no argument', 'msg()'],
       ['a second argument', "msg('Save', { $context: 'button' })"],
     ]),
-    {
-      name: 'msg from gt-next',
-      code: msg('msg(label)', 'gt-next'),
-      errors: [{ messageId: 'staticStringRequired' }],
-    },
+    ...['gt-next', 'gt-tanstack-start'].map((source) => ({
+      name: `msg from ${source}`,
+      code: msg('msg(label)', source),
+      errors: [{ messageId: 'staticStringRequired' as const }],
+    })),
   ],
 });

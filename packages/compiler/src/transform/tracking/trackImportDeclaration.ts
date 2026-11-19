@@ -40,11 +40,10 @@ function handleImportSpecifier(
   if (isGTImportSource(importSource)) {
     state.scopeTracker.trackTranslationVariable(
       alias,
-      originalName as GT_ALL_FUNCTIONS,
-      0
+      originalName as GT_ALL_FUNCTIONS
     );
   } else if (isReactImportSource(importSource)) {
-    state.scopeTracker.trackReactVariable(alias, originalName, 0);
+    state.scopeTracker.trackReactVariable(alias, originalName);
   }
 }
 

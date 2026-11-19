@@ -20,6 +20,7 @@ const entrypoints = [
   'packages/react-core/src/components-rsc.ts',
   'packages/react/src/index.rsc.ts',
   'packages/react/src/compat.rsc.ts',
+  'packages/next/src/index.rsc.ts',
   'packages/next/src/index.server.ts',
   'packages/next/src/server.ts',
   'packages/next/src/compat.rsc.ts',

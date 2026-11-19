@@ -42,7 +42,7 @@ describe('react-core useGT', () => {
     );
   });
 
-  it('resolves trees through the tracked resolver, like the legacy useGT', () => {
+  it('resolves trees through the tracked resolver', () => {
     resolveTranslation.mockReturnValue(['Bonjour, ', ['name'], ' !']);
 
     expect(useGT()({ context: 'greeting' })`Hello, ${{ name }}!`).toBe(

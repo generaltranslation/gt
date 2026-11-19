@@ -19,32 +19,32 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     // Route loaders, head data and server functions
     `${imports}
     export const Route = createFileRoute('/pricing')({
-      loader: async () => ({ title: (await getGT())('Pricing') }),
+      loader: async () => ({ title: (await getGT())\`Pricing\` }),
       beforeLoad: () => { if (getLocale() === 'de') throw redirect({ to: '/' }); },
     });`,
     `${imports}
     const sendReceipt = createServerFn().handler(async () => {
       const t = await getGT();
-      return t('Your receipt');
+      return t\`Your receipt\`;
     });`,
     `${imports}
     async function loadTitle() {
-      return (await getGT())('Pricing');
+      return (await getGT())\`Pricing\`;
     }`,
     // An event handler inside a component runs after render
     `${imports}
     function SaveButton() {
-      return <button onClick={async () => toast((await getGT())('Saved'))} />;
+      return <button onClick={async () => toast((await getGT())\`Saved\`)} />;
     }`,
     // useCallback stores its callback for later, like an event handler
     `${imports}
     function SaveButton() {
-      const save = useCallback(async () => toast((await getGT())('Saved')), []);
+      const save = useCallback(async () => toast((await getGT())\`Saved\`), []);
       return <button onClick={save} />;
     }`,
     `import * as i18n from 'gt-tanstack-start';
     export const Route = createFileRoute('/')({
-      loader: async () => (await i18n.getGT())('Title'),
+      loader: async () => (await i18n.getGT())\`Title\`,
     });`,
     `import * as server from 'gt-next/server';
     const t = await server.getGT();`,
@@ -59,7 +59,7 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     // An anonymous default export that doesn't render isn't a component
     `${imports}
     export default async function () {
-      return (await getGT())('Title');
+      return (await getGT())\`Title\`;
     }`,
   ],
   invalid: [
@@ -211,7 +211,7 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       ],
     },
     {
-      code: `${imports}export default memo(() => use(getGT())('Card'));`,
+      code: `${imports}export default memo(() => use(getGT())\`Card\`);`,
       errors: [
         {
           messageId: 'inComponent',
@@ -259,7 +259,7 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     },
     {
       code: `import { getGT as translator } from 'gt-tanstack-start';
-      const title = translator().then((t) => t('Pricing'));`,
+      const title = translator().then((t) => t\`Pricing\`);`,
       errors: [{ messageId: 'moduleScope', data: { name: 'getGT' } }],
     },
     {
@@ -309,7 +309,7 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     {
       code: `${imports}
       const Card = memo(function () {
-        return use(getGT())('Card');
+        return use(getGT())\`Card\`;
       });`,
       errors: [
         {

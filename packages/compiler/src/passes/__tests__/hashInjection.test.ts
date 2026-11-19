@@ -82,6 +82,26 @@ describe('<T> hash injection', () => {
     expect(code).not.toContain('_hash');
   });
 
+  it.each([
+    ['a parameter named T', 'function f(T) { jsx(T, { children: "Hello" }); }'],
+    [
+      'a local named T',
+      'function f() { const T = Other; jsx(T, { children: "Hello" }); }',
+    ],
+  ])('leaves %s without a hash', (_name, compiled) => {
+    const { errors, code } = transform(`${JSX_IMPORTS}${compiled}`);
+    expect(errors).toEqual([]);
+    expect(code).not.toContain('_hash');
+  });
+
+  it('a label named T does not shadow the import', () => {
+    const { errors, code } = transform(
+      `${JSX_IMPORTS}T: while (cond) { jsx(T, { children: "Hello" }); break T; }`
+    );
+    expect(errors).toEqual([]);
+    expect(code).toContain(`_hash: "${jsxHash('Hello')}"`);
+  });
+
   it('a Derive <T> does not shift the hash of a sibling <T>', () => {
     const { errors, code } = transform(`${JSX_IMPORTS}
       jsx(T, { children: jsx(Derive, { children: cond ? "a" : "b" }) });

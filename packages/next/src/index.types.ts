@@ -64,7 +64,6 @@ import {
   type Part,
   type Placeholder,
 } from 'gt-i18n';
-import type { StringFormat } from '@generaltranslation/format';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -506,8 +505,6 @@ export type {
   WithGTServerSideProps,
   WithGTStaticProps,
 };
-
-export type { StringFormat };
 
 export {
   useGT,

@@ -35,8 +35,6 @@ export interface ScopedVariable {
   /** The variable name (t, translationFunction, etc.) */
   aliasName: string;
   type: VariableType;
-  /** The identifier for the variable */
-  identifier: number;
 }
 
 export interface ScopedGTFunction extends ScopedVariable {
@@ -147,15 +145,13 @@ export class ScopeTracker {
   trackVariable(
     aliasName: string,
     canonicalName: string,
-    type: VariableType,
-    identifier: number
+    type: VariableType
   ): void {
     const scopedVar: ScopedVariable = {
       scopeId: this.currentScope,
       canonicalName,
       aliasName,
       type,
-      identifier,
     };
 
     const existingVars = this.scopedVariables.get(aliasName) || [];
@@ -168,33 +164,23 @@ export class ScopeTracker {
    */
   trackTranslationVariable(
     aliasName: string,
-    canonicalName: GT_ALL_FUNCTIONS,
-    identifier: number
+    canonicalName: GT_ALL_FUNCTIONS
   ): void {
-    this.trackVariable(
-      aliasName,
-      canonicalName,
-      'generaltranslation',
-      identifier
-    );
+    this.trackVariable(aliasName, canonicalName, 'generaltranslation');
   }
 
   /**
    * Track react variable
    */
-  trackReactVariable(
-    variableName: string,
-    assignedValue: string,
-    identifier: number
-  ): void {
-    this.trackVariable(variableName, assignedValue, 'react', identifier);
+  trackReactVariable(variableName: string, assignedValue: string): void {
+    this.trackVariable(variableName, assignedValue, 'react');
   }
 
   /**
    * Track a non-translation variable (convenience method)
    */
   trackRegularVariable(variableName: string, assignedValue: string): void {
-    this.trackVariable(variableName, assignedValue, 'other', 0); // 0 because we don't care about the identifier
+    this.trackVariable(variableName, assignedValue, 'other');
   }
 
   /* =============================== */
