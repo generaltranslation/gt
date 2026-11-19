@@ -3,6 +3,7 @@ import type { ResolvedDateTimeProps } from '../../components/variables/DateTime.
 import type { ResolvedNumProps } from '../../components/variables/Num.shared';
 import type { ResolvedRelativeTimeProps } from '../../components/variables/RelativeTime.shared';
 import type { RelativeTimeFormatOptions, RenderVariable } from '../types';
+import { COUNT_VARIABLE_TYPE } from '../variables/_getVariableProps';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { ReactNode } from 'react';
 
@@ -63,7 +64,7 @@ function createRenderVariable({
       _enableI18n: enableI18n,
     };
 
-    if (variableType === 'n' || variableType === '#') {
+    if (variableType === 'n' || variableType === COUNT_VARIABLE_TYPE) {
       const Num = injectionType === 'automatic' ? GtExternalNum : GtInternalNum;
       const numOptions = variableOptions as
         | Intl.NumberFormatOptions

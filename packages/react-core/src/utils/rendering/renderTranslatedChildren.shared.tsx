@@ -7,6 +7,7 @@ import {
   VariableProps,
 } from '../types';
 import {
+  COUNT_VARIABLE_TYPE,
   getVariableProps,
   isVariableElementProps,
 } from '../variables/_getVariableProps';
@@ -28,7 +29,7 @@ import { getGTTag } from './getGTTag';
 import type { RenderVariable } from '../types';
 
 const isCountVariable = (child: unknown): boolean =>
-  isVariable(child) && child.v === '#';
+  isVariable(child) && child.v === COUNT_VARIABLE_TYPE;
 
 // Shared implementation: the variable renderer is dependency-injected by a
 // factory so this module statically imports no variable components.

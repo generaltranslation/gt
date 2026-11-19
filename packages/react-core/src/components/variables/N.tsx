@@ -1,5 +1,6 @@
+import { reportMissingCount } from '../../utils/plurals/getPluralBranch';
 import { GtInternalNum } from './Num';
-import { toNumProps, type NProps } from './N.shared';
+import type { NProps } from './N.shared';
 
 // ===== Component ===== //
 
@@ -7,8 +8,9 @@ import { toNumProps, type NProps } from './N.shared';
  * The count of the `<Plural>` it is in, formatted as a number, as `#` is in
  * ICU. A translation can show it in any branch of that plural.
  */
-function N(props: NProps): React.JSX.Element {
-  return <GtInternalNum {...toNumProps(props)} />;
+function N({ _count }: NProps): React.JSX.Element {
+  if (_count === undefined) reportMissingCount();
+  return <GtInternalNum>{_count}</GtInternalNum>;
 }
 
 /** @internal _gtt - The GT transformation for the component. */

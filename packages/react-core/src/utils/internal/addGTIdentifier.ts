@@ -7,7 +7,7 @@ import {
   VariableTransformationSuffix,
 } from 'generaltranslation/internal';
 import { fillCount } from '../plurals/fillCount';
-import { reportMissingCount } from '../plurals/getPluralBranch';
+import { isCount, reportMissingCount } from '../plurals/getPluralBranch';
 import {
   GTTag,
   TaggedChild,
@@ -72,29 +72,28 @@ export function addGTIdentifier(
           (transformationParts?.[1] as VariableTransformationSuffix) ||
           'variable';
         // A plural fills its branches before they are tagged.
-        if (result.variableType === 'count' && props.children == null) {
+        if (result.variableType === 'count' && props._count === undefined) {
           reportMissingCount();
         }
       }
       if (transformationParts[0] === 'plural') {
+        const { n } = props;
+        const fill = (branch: unknown) =>
+          isCount(n)
+            ? fillCount(branch as ReactNode, n)
+            : (branch as ReactNode);
         const pluralBranches = Object.entries(props).reduce(
           (acc, [branchName, branch]) => {
             if (isAcceptedPluralForm(branchName)) {
               (acc as Record<string, TaggedChildren>)[
                 getPluralBranchKey(branchName)
-              ] = addGTIdentifier(
-                fillCount(branch as ReactNode, props.n),
-                index
-              );
+              ] = addGTIdentifier(fill(branch), index);
             }
             return acc;
           },
           {} as Record<string, TaggedChildren>
         );
-        addFallbackBranch(
-          pluralBranches,
-          fillCount(props.children as ReactNode, props.n)
-        );
+        addFallbackBranch(pluralBranches, fill(props.children));
         if (Object.keys(pluralBranches).length)
           result.branches = pluralBranches;
       }

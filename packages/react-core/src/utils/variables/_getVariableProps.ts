@@ -2,6 +2,7 @@ import {
   VariableTransformationSuffix,
   minifyVariableType,
 } from 'generaltranslation/internal';
+import type { VariableType } from '@generaltranslation/format';
 import { GTTag, VariableProps } from '../types';
 
 type VariableElementProps = {
@@ -10,6 +11,9 @@ type VariableElementProps = {
   };
   [key: string]: unknown;
 };
+
+/** The type of a count variable, which is to its plural what `#` is in ICU. */
+export const COUNT_VARIABLE_TYPE = '#' satisfies VariableType;
 
 export function isVariableElementProps(
   props: unknown
@@ -38,6 +42,8 @@ export function getVariableProps(props: VariableElementProps): VariableProps {
       if (typeof props['data-_gt-unformatted-value'] !== 'undefined')
         return props['data-_gt-unformatted-value'];
       if (typeof props.children !== 'undefined') return props.children;
+      // An `<N>` keeps the count its `<Plural>` gave it here.
+      if (typeof props._count !== 'undefined') return props._count;
       return undefined;
     })(),
     variableOptions: (() => {
