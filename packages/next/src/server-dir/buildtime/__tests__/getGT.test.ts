@@ -5,18 +5,18 @@ import {
   setI18nCache,
 } from 'gt-i18n/internal';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { msg } from 'gt-i18n/unstable';
+import { msg } from 'gt-i18n';
 import { getGT, getMessages, useGT, useMessages } from '../getGT';
 
 const { mockGetRequestConditions } = vi.hoisted(() => ({
   mockGetRequestConditions: vi.fn(),
 }));
 
-vi.mock('../../request/getRequestConditions', () => ({
+vi.mock('../../../request/getRequestConditions', () => ({
   getRequestConditions: mockGetRequestConditions,
 }));
 
-vi.mock('../../utils/use', () => ({
+vi.mock('../../../utils/use', () => ({
   // Lets useGT() be awaited outside a React render.
   use: <T>(value: T) => value,
 }));
@@ -28,7 +28,7 @@ const frenchTranslations = {
   [hashSource({ source: saveTree, dataFormat: 'MESSAGE_TREE' })]: 'Enregistrer',
 };
 
-describe('gt-next unstable getGT', () => {
+describe('gt-next getGT', () => {
   beforeEach(() => {
     Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });

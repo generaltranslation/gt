@@ -645,7 +645,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
     autoderiveJsx: autoderive.jsx,
-    autoderiveStrings: autoderive.strings,
   };
 
   const swcPluginEntry: [string, Record<string, unknown>] | null =

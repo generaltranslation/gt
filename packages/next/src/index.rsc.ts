@@ -33,7 +33,7 @@ export { useLocale } from './request/getLocale';
 export { useRegion } from './request/getRegion';
 export { useLocaleDirection } from './request/getLocaleDirection';
 export { useLocalizeHref } from './link/getLocalizeHref';
-export { useMessages, useGT } from './server-dir/buildtime/strings';
+export { useMessages, useGT } from './server-dir/buildtime/getGT';
 
 // ===== Client Boundary ===== //
 
@@ -93,20 +93,25 @@ export { useDefaultLocale, useLocaleProperties, useLocales } from 'gt-react';
 
 // ===== Functions ===== //
 export {
-  decodeMsg,
-  decodeOptions,
+  date,
+  derive,
   getDefaultLocale,
   getLocaleProperties,
   getLocales,
   resolveCanonicalLocale,
   getVersionId,
-  gtFallback,
   mFallback,
   msg,
+  n,
+  number,
+  part,
+  plural,
+  select,
+  selectordinal,
+  time,
 } from 'gt-i18n';
-export { decodeVars, declareVar, derive } from 'generaltranslation';
 export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
-export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-i18n';
+export type { GT, GTOptions, M, Msg, Part, Placeholder } from 'gt-i18n';
 export type { WithGTServerSideProps, WithGTStaticProps };

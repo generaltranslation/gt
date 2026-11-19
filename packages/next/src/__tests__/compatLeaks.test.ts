@@ -9,7 +9,8 @@ import { getRuntimeImports, resolveRelative } from './utils/importGraph';
 // Native code never imports the dictionary (compat) machinery, so apps that
 // only use native APIs never ship it. Two checks:
 // 1. Source: native runtime modules never reach a compat/ module, the compat
-//    internal subpaths or the dictionary aliases through relative imports.
+//    internal subpaths or the dictionary aliases through relative imports,
+//    nor the ICU-string helpers behind gt-i18n/internal/string.
 // 2. Built output: bundling everything a native entry exports leaves every
 //    compat module out, for both the ESM and the CommonJS builds. CommonJS
 //    require() cannot tree-shake, so the CommonJS bundles also prove that the
@@ -23,6 +24,8 @@ const repoRoot = resolve(packageRoot, '../..');
 
 const nativeModules = [
   // Public native entries
+  'packages/i18n/src/index.ts',
+  'packages/i18n/src/internal.ts',
   'packages/node/src/index.ts',
   'packages/react/src/index.client.ts',
   'packages/react/src/index.server.ts',
@@ -39,9 +42,13 @@ const nativeModules = [
   // Native internals
   'packages/i18n/src/i18n-cache/I18nCache.ts',
   'packages/i18n/src/i18n-cache/singleton-operations.ts',
-  'packages/i18n/src/translation-functions/internal/getGT.ts',
-  'packages/i18n/src/translation-functions/internal/getMessages.ts',
-  'packages/i18n/src/translation-functions/internal/tx.ts',
+  'packages/i18n/src/translation-functions/gt.ts',
+  'packages/i18n/src/translation-functions/messages.ts',
+  'packages/i18n/src/translation-functions/tx.ts',
+  'packages/react-core/src/pure.ts',
+  'packages/react-core/src/hooks.ts',
+  'packages/react-core/src/components.ts',
+  'packages/react-core/src/components-rsc.ts',
   'packages/react-core/src/i18n-store/I18nStore.ts',
   'packages/react-core/src/context/context.ts',
   'packages/react-core/src/context/InternalGTProvider.tsx',
@@ -52,7 +59,8 @@ const nativeModules = [
   'packages/next/src/setup/initGT.ts',
   'packages/next/src/setup/initGT.server.ts',
   'packages/next/src/setup/initGT.client.ts',
-  'packages/next/src/server-dir/buildtime/strings.ts',
+  'packages/next/src/server-dir/buildtime/getGT.ts',
+  'packages/next/src/server-dir/runtime/tx.ts',
   'packages/tanstack-start/src/internal/_config.ts',
   'packages/tanstack-start/src/functions/runtime.ts',
 ];
@@ -69,6 +77,11 @@ const compatSpecifiers = [
 
 // compat/ modules and the compat.* entries
 const isCompatModule = (file: string) => /[\\/]compat[\\/.]/.test(file);
+
+// The ICU-string helpers that only compat, gt-svelte and gt-vue use
+const stringSpecifier = 'gt-i18n/internal/string';
+const isStringModule = (file: string) =>
+  /[\\/]i18n[\\/]src[\\/]string[\\/]/.test(file);
 
 function findCompatLeaks(): string[] {
   const leaks: string[] = [];
@@ -90,14 +103,17 @@ function findCompatLeaks(): string[] {
     const file = queue.shift()!;
     const code = readFileSync(join(repoRoot, file), 'utf8');
     for (const specifier of getRuntimeImports(code)) {
-      if (compatSpecifiers.includes(specifier)) {
+      if (
+        compatSpecifiers.includes(specifier) ||
+        specifier === stringSpecifier
+      ) {
         leaks.push(`${chainTo(file)} -> ${specifier}`);
         continue;
       }
       if (!specifier.startsWith('.')) continue;
       const resolved = resolveRelative(repoRoot, specifier, file);
       if (!resolved) continue;
-      if (isCompatModule(resolved)) {
+      if (isCompatModule(resolved) || isStringModule(resolved)) {
         leaks.push(`${chainTo(file)} -> ${resolved}`);
         continue;
       }
@@ -263,7 +279,7 @@ const nativeBundles = [
 ];
 
 describe('gt compat leak enforcement', () => {
-  it('native runtime modules never reach compat modules', () => {
+  it('native runtime modules never reach compat or ICU-string modules', () => {
     const leaks = findCompatLeaks();
     expect(leaks, leaks.join('\n')).toEqual([]);
   });

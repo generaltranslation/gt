@@ -778,7 +778,7 @@ mod tests {
       statistics: Statistics::default(),
       traversal_state: TraversalState::default(),
       import_tracker: ImportTracker::default(),
-      settings: PluginSettings::new(LogLevel::Silent, false, None, false, false, false),
+      settings: PluginSettings::new(LogLevel::Silent, false, None, false, false),
       logger: Logger::new(LogLevel::Silent),
       string_collector: crate::ast::StringCollector::new(),
     }
@@ -1243,7 +1243,6 @@ mod tests {
         Atom::new("Plural"),
         Atom::new("Plural"),
         true,
-        0,
       );
       let mut traversal = JsxTraversal::new(&visitor);
       let mut plural = create_jsx_element_with_children("Plural", vec![create_jsx_text_child("Many")]);
@@ -1668,7 +1667,7 @@ mod tests {
         statistics: Statistics::default(),
         traversal_state: TraversalState::default(),
         import_tracker: ImportTracker::default(),
-        settings: PluginSettings::new(LogLevel::Silent, false, None, false, true, false),
+        settings: PluginSettings::new(LogLevel::Silent, false, None, false, true),
         logger: Logger::new(LogLevel::Silent),
         string_collector: crate::ast::StringCollector::new(),
       }

@@ -1,11 +1,7 @@
 use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,
-  visitor::{
-    analysis::{is_translation_function_callback, is_translation_function_name},
-    errors::create_dynamic_content_warning,
-    expr_utils::{get_callee_expr_function_name, is_allowed_dynamic_content},
-  },
+  visitor::{errors::create_dynamic_content_warning, expr_utils::is_allowed_dynamic_content},
 };
 use swc_core::{
   ecma::{
@@ -22,7 +18,7 @@ impl VisitMut for TransformVisitor {
     import_decl.visit_mut_children_with(self);
   }
 
-  /// Process variable declarations to track assignments like: const t = useGT()
+  /// Process variable declarations to track variables that shadow gt-next imports
   fn visit_mut_var_declarator(&mut self, var_declarator: &mut VarDeclarator) {
     self.track_variable_assignment(var_declarator);
     var_declarator.visit_mut_children_with(self);
@@ -114,33 +110,6 @@ impl VisitMut for TransformVisitor {
     })
   }
 
-  /// Call expressions: t()
-  fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
-    if let Some(function_name) = get_callee_expr_function_name(call_expr) {
-      if let Some(translation_variable) = self
-        .import_tracker
-        .scope_tracker
-        .get_translation_variable(&function_name)
-      {
-        // Register the useGT/getGT as aggregators on the string collector
-        let original_name = translation_variable.original_name.clone();
-        let identifier = translation_variable.identifier;
-
-        // Detect t() calls
-        if is_translation_function_callback(&original_name) {
-          if let Some(string) = call_expr.args.first() {
-            // Check for violations
-            self.check_call_expr_for_violations(string, &function_name);
-
-            // Track the t() function call
-            self.track_translation_callback(call_expr, string, identifier);
-          }
-        }
-      }
-    }
-    call_expr.visit_mut_children_with(self);
-  }
-
   /// Process JSX expression containers to detect unwrapped dynamic content
   fn visit_mut_jsx_expr_container(&mut self, expr_container: &mut JSXExprContainer) {
     // Only check for violations if we're in a translation component and NOT in a JSX attribute
@@ -201,9 +170,8 @@ impl Fold for TransformVisitor {
     import_decl
   }
 
-  /// Process variable declarations to track assignments like: const t = useGT()
+  /// Process variable declarations to track variables that shadow gt-next imports
   fn fold_var_declarator(&mut self, var_declarator: VarDeclarator) -> VarDeclarator {
-    // Track variable assignments before children are visited (process = useGT() first)
     self.track_variable_assignment(&var_declarator);
 
     var_declarator.fold_children_with(self)
@@ -273,39 +241,6 @@ impl Fold for TransformVisitor {
   /// Switch statements: switch(val) { case 1: { let x = 1; } }
   fn fold_switch_stmt(&mut self, switch: SwitchStmt) -> SwitchStmt {
     self.with_scope(|visitor| switch.fold_children_with(visitor))
-  }
-
-  /// Process function calls to detect invalid usage of translation functions
-  /// Inject hash attributes on translation components
-  fn fold_call_expr(&mut self, call_expr: CallExpr) -> CallExpr {
-    if let Some(function_name) = get_callee_expr_function_name(&call_expr) {
-      if let Some(translation_variable) = self
-        .import_tracker
-        .scope_tracker
-        .get_translation_variable(&function_name)
-      {
-        // Register the useGT/getGT as aggregators on the string collector
-        let original_name = translation_variable.original_name.clone();
-
-        // Detect useGT/getGT calls
-        if is_translation_function_name(&original_name) {
-          if let Some(modified_call_expr) =
-            self.inject_content_array_on_translation_function_call(&call_expr)
-          {
-            return modified_call_expr.fold_children_with(self);
-          }
-        }
-        // Detect t() calls
-        else if is_translation_function_callback(&original_name) {
-          if let Some(modified_call_expr) =
-            self.inject_hash_attributes_on_translation_function_call(&call_expr)
-          {
-            return modified_call_expr.fold_children_with(self);
-          }
-        }
-      }
-    }
-    call_expr.fold_children_with(self)
   }
 
   /// Process JSX attributes to track context and avoid flagging attribute expressions
@@ -381,7 +316,6 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     filename.clone(),
     config.disable_build_checks,
     config.autoderive_jsx,
-    config.autoderive_strings,
     string_collector,
   );
   program.visit_mut_with(&mut visitor);
@@ -400,7 +334,6 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     filename,
     config.disable_build_checks,
     config.autoderive_jsx,
-    config.autoderive_strings,
     collected_data,
   );
   program.fold_with(&mut visitor)

@@ -1,44 +1,53 @@
+import { hashSource } from 'generaltranslation/id';
+import {
+  I18nCache,
+  initializeI18nConfig,
+  setI18nCache,
+} from 'gt-i18n/internal';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { tx } from '../tx';
 
-const { mockTxInternal } = vi.hoisted(() => ({
-  mockTxInternal: vi.fn(),
-}));
-
-vi.mock('gt-i18n/internal', () => ({
-  txInternal: mockTxInternal,
+const { mockGetRequestConditions } = vi.hoisted(() => ({
+  mockGetRequestConditions: vi.fn(),
 }));
 
 vi.mock('../../../request/getRequestConditions', () => ({
-  getRequestConditions: vi.fn().mockResolvedValue({
-    _locale: 'fr',
-    _enableI18n: true,
-  }),
+  getRequestConditions: mockGetRequestConditions,
 }));
 
-describe('tx', () => {
+type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
+
+const saveTree = 'Save';
+const frenchTranslations = {
+  [hashSource({ source: saveTree, dataFormat: 'MESSAGE_TREE' })]: 'Enregistrer',
+};
+
+describe('gt-next tx', () => {
   beforeEach(() => {
-    mockTxInternal.mockReset();
+    Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    setI18nCache(
+      new I18nCache({
+        loadTranslations: async (locale: string) =>
+          locale === 'fr' ? frenchTranslations : {},
+      })
+    );
+    mockGetRequestConditions.mockResolvedValue({
+      _locale: 'fr',
+      _enableI18n: true,
+    });
   });
 
-  it('forwards request conditions and options to txInternal', async () => {
-    mockTxInternal.mockResolvedValue('Bonjour');
+  it('translates with the request locale', async () => {
+    expect(await tx`Save`).toBe('Enregistrer');
+  });
 
-    await expect(
-      tx('Hello', {
-        $locale: 'fr',
-        $maxChars: -12,
-      })
-    ).resolves.toBe('Bonjour');
-
-    expect(mockTxInternal).toHaveBeenCalledWith({
-      locale: 'fr',
-      enableI18n: true,
-      content: 'Hello',
-      options: {
-        $locale: 'fr',
-        $maxChars: -12,
-      },
+  it('renders the source when the request disables i18n', async () => {
+    mockGetRequestConditions.mockResolvedValue({
+      _locale: 'fr',
+      _enableI18n: false,
     });
+
+    expect(await tx`Save`).toBe('Save');
   });
 });

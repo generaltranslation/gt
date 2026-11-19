@@ -21,4 +21,5 @@ export { getRegion } from './request/getRegion';
 // Translation
 export { tx } from './server-dir/runtime/tx';
 export { Tx } from './server-dir/runtime/_Tx';
-export { getMessages, getGT } from './server-dir/buildtime/strings';
+export { getMessages, getGT } from './server-dir/buildtime/getGT';
+export { dyn } from 'gt-i18n/internal';

@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
@@ -38,6 +39,55 @@ function collectStaticModuleGraph(entryPath: string): Set<string> {
   return new Set(
     [...modules].map((modulePath) => relative(packageRoot, modulePath))
   );
+}
+
+/** Names a source entry exports, read from its top-level statements. */
+function getExportedNames(entryPath: string): {
+  values: string[];
+  types: string[];
+} {
+  const sourceFile = ts.createSourceFile(
+    entryPath,
+    readFileSync(entryPath, 'utf8'),
+    ts.ScriptTarget.Latest
+  );
+  const values: string[] = [];
+  const types: string[] = [];
+  for (const statement of sourceFile.statements) {
+    if (ts.isExportDeclaration(statement)) {
+      if (
+        !statement.exportClause ||
+        !ts.isNamedExports(statement.exportClause)
+      ) {
+        throw new Error(`${entryPath} has an export this test cannot read`);
+      }
+      for (const element of statement.exportClause.elements) {
+        const isType = statement.isTypeOnly || element.isTypeOnly;
+        (isType ? types : values).push(element.name.text);
+      }
+    } else if (
+      ts.canHaveModifiers(statement) &&
+      ts
+        .getModifiers(statement)
+        ?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      if (ts.isFunctionDeclaration(statement) && statement.name) {
+        values.push(statement.name.text);
+      } else if (ts.isVariableStatement(statement)) {
+        for (const declaration of statement.declarationList.declarations) {
+          values.push(declaration.name.getText(sourceFile));
+        }
+      } else if (
+        ts.isTypeAliasDeclaration(statement) ||
+        ts.isInterfaceDeclaration(statement)
+      ) {
+        types.push(statement.name.text);
+      } else {
+        throw new Error(`${entryPath} has an export this test cannot read`);
+      }
+    }
+  }
+  return { values: values.sort(), types: types.sort() };
 }
 
 type TypedTargets = Record<'import' | 'default', { types: string }>;
@@ -170,185 +220,108 @@ describe('gt-next package exports', () => {
     ]);
   });
 
-  it('mirrors the root conditions for gt-next/unstable', () => {
-    const { exports, sideEffects } = JSON.parse(
+  it('exposes exactly the supported subpaths', () => {
+    const { exports } = JSON.parse(
       readFileSync(join(packageRoot, 'package.json'), 'utf8')
-    ) as { exports: Record<string, unknown>; sideEffects: string[] };
-    const toUnstable = (value: unknown) =>
-      JSON.parse(JSON.stringify(value).replaceAll('/index.', '/unstable.'));
+    ) as { exports: Record<string, unknown> };
 
-    expect(exports['./unstable']).toEqual(toUnstable(exports['.']));
-    expect(exports['./unstable/server']).toEqual({
-      import: {
-        types: './dist/unstable/server.d.mts',
-        default: './dist/unstable/server.mjs',
-      },
-      default: {
-        types: './dist/unstable/server.d.ts',
-        default: './dist/unstable/server.js',
-      },
-    });
-    expect(sideEffects).toEqual(
-      expect.arrayContaining([
-        './dist/unstable.server.*',
-        './dist/unstable.rsc.*',
-        './dist/unstable.client.*',
-        './dist/unstable/server.*',
-      ])
-    );
-  });
-
-  it('exports the same names from every gt-next/unstable entry', () => {
-    const exportedNames = (file: string) =>
-      [
-        ...readFileSync(join(packageRoot, 'src', file), 'utf8').matchAll(
-          /export\s*{([^}]*)}/g
-        ),
-      ]
-        .flatMap(([, names]) => names.split(','))
-        .map((name) => name.trim())
-        .filter(Boolean)
-        .sort();
-
-    // The types entry is what TypeScript users see; the runtime entries must match it.
-    const expected = exportedNames('unstable.types.ts');
-    for (const file of [
-      'unstable.client.ts',
-      'unstable.server.ts',
-      'unstable.rsc.ts',
-    ]) {
-      expect(exportedNames(file), file).toEqual(expected);
-    }
-  });
-
-  it.each([
-    [[], 'unstable.server.mjs'],
-    [['browser'], 'unstable.client.mjs'],
-    [['workerd', 'browser'], 'unstable.server.mjs'],
-    [['react-server', 'worker', 'browser'], 'unstable.rsc.mjs'],
-  ])('resolves gt-next/unstable with conditions %j', (conditions, file) => {
-    runNode([
-      ...conditions.map((condition) => `--conditions=${condition}`),
-      '--input-type=module',
-      '--eval',
-      `
-        import assert from 'node:assert/strict';
-        import { basename } from 'node:path';
-        import { fileURLToPath } from 'node:url';
-
-        assert.equal(
-          basename(fileURLToPath(import.meta.resolve('gt-next/unstable'))),
-          ${JSON.stringify(file)}
-        );
-      `,
+    expect(Object.keys(exports)).toEqual([
+      '.',
+      './compat',
+      './config',
+      './server',
+      './compat/server',
+      './middleware',
+      './link',
+      './internal/_dictionary',
+      './internal/_load-translations',
+      './internal/_load-dictionary',
+      './internal/_getLocale',
+      './internal/_getRegion',
     ]);
   });
 
-  const distUnstableIt = existsSync(
-    join(packageRoot, 'dist/unstable.types.d.ts')
-  )
-    ? it
-    : it.skip;
-
-  const distFile = (file: string) =>
-    pathToFileURL(join(packageRoot, 'dist', file)).href;
-  // Plain Node cannot load server-only or Next's react-server React, so the
-  // RSC barrels are imported by path and server-only is stubbed.
-  const stubServerOnly = `data:text/javascript,${encodeURIComponent(`
-    import { register } from 'node:module';
-    register('data:text/javascript,' + encodeURIComponent(
-      'export const resolve = (specifier, context, next) => specifier === "server-only" ? { url: "data:text/javascript,", shortCircuit: true } : next(specifier, context);'
-    ));
-  `)}`;
-
-  distUnstableIt.each([
-    [
-      'client',
-      ['--conditions=browser'],
-      'gt-next',
-      'gt-next/unstable',
-      'useMessages',
-    ],
-    ['server', [], 'gt-next', 'gt-next/unstable', 'useMessages'],
-    [
-      'rsc',
-      [],
-      distFile('index.rsc.mjs'),
-      distFile('unstable.rsc.mjs'),
-      'useMessages',
-    ],
-    ['/server', [], 'gt-next/server', 'gt-next/unstable/server', 'getMessages'],
-  ])(
-    'keeps the %s root cache when the unstable entry loads later',
-    (_runtime, conditions, rootEntry, unstableEntry, messagesExport) => {
-      const result = spawnSync(
-        process.execPath,
-        [
-          `--import=${stubServerOnly}`,
-          ...conditions,
-          '--input-type=module',
-          '--eval',
-          `
-            import assert from 'node:assert/strict';
-            await import(${JSON.stringify(rootEntry)});
-            const { getI18nCache } = await import('gt-i18n/internal');
-            const cache = getI18nCache();
-            const tree = ['Enregistrer'];
-            cache.updateTranslations({ fr: { save: tree } });
-
-            const unstable = await import(${JSON.stringify(unstableEntry)});
-
-            // No global sync locale store backs a t tag or m in gt-next.
-            assert.equal(unstable.t, undefined);
-            assert.equal(unstable.m, undefined);
-            assert.equal(typeof unstable[${JSON.stringify(messagesExport)}], 'function');
-            // tx, and dyn for its runtime text, are server-only.
-            assert.equal(typeof unstable.tx, ${JSON.stringify(
-              unstableEntry === 'gt-next/unstable/server'
-                ? 'function'
-                : 'undefined'
-            )});
-            assert.equal(typeof unstable.dyn, typeof unstable.tx);
-            assert.equal(getI18nCache(), cache);
-            assert.deepEqual(getI18nCache().lookupTranslation('fr', ['Save'], { $format: 'MESSAGE_TREE', $_hash: 'save' }), tree);
-          `,
-        ],
-        {
-          cwd: packageRoot,
-          encoding: 'utf8',
-          env: {
-            ...process.env,
-            NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS: JSON.stringify({
-              defaultLocale: 'en',
-              locales: ['en', 'fr'],
-            }),
-          },
-        }
-      );
-
-      expect(result.status, result.stderr).toBe(0);
-    }
+  // No `t` or `m`: Next has no synchronous global locale store (RSC's is async).
+  const rootExports = [
+    'Branch',
+    'Currency',
+    'DateTime',
+    'Derive',
+    'GTProvider',
+    'GtInternalTranslateJsx',
+    'GtInternalVar',
+    'LocaleSelector',
+    'Num',
+    'Plural',
+    'RegionSelector',
+    'RelativeTime',
+    'T',
+    'Var',
+    'date',
+    'derive',
+    'getDefaultLocale',
+    'getLocaleProperties',
+    'getLocales',
+    'getTranslationsSnapshot',
+    'getVersionId',
+    'isLocaleSupported',
+    'mFallback',
+    'msg',
+    'n',
+    'number',
+    'parseLocale',
+    'part',
+    'plural',
+    'resolveCanonicalLocale',
+    'select',
+    'selectordinal',
+    'time',
+    'useDefaultLocale',
+    'useGT',
+    'useLocale',
+    'useLocaleDirection',
+    'useLocaleProperties',
+    'useLocaleSelector',
+    'useLocales',
+    'useLocalizeHref',
+    'useMessages',
+    'useRegion',
+    'useSetLocale',
+    'withGTServerSideProps',
+    'withGTStaticProps',
+  ];
+  // Server Components cannot set the locale.
+  const rscExports = rootExports.filter(
+    (name) => name !== 'useLocaleSelector' && name !== 'useSetLocale'
   );
+  const serverExports = [
+    'Tx',
+    'dyn',
+    'getGT',
+    'getLocale',
+    'getLocaleDirection',
+    'getLocalizeHref',
+    'getMessages',
+    'getRegion',
+    'registerLocale',
+    'tx',
+  ];
+  const messageTypes = ['GT', 'GTOptions', 'M', 'Msg', 'Part', 'Placeholder'];
 
-  // Re-running init is safe: GT's global singletons keep the first instance.
-  // Side-effect imports of the root barrels would be dropped by the build.
-  distUnstableIt.each([
-    ['unstable.client', 'initializeGTClient'],
-    ['unstable.server', 'initializeGT'],
-    ['unstable.rsc', 'initializeGTServer'],
-    ['unstable/server', 'initializeGTServer'],
-  ])('initializes GT from the built %s barrel', (entry, init) => {
-    for (const extension of ['mjs', 'js']) {
-      expect(
-        readFileSync(join(packageRoot, 'dist', `${entry}.${extension}`), 'utf8')
-      ).toMatch(new RegExp(`\\b${init}\\)?\\(\\)`));
+  it.each([
+    // The types entry is what TypeScript users see outside Server Components.
+    ['index.types.ts', rootExports],
+    ['index.client.ts', rootExports],
+    ['index.server.ts', rootExports],
+    ['index.rsc.ts', rscExports],
+    ['server.ts', serverExports],
+  ])('exports the tagged-template message API from %s', (file, expected) => {
+    const { values, types } = getExportedNames(join(packageRoot, 'src', file));
+
+    expect(values).toEqual(expected);
+    if (file !== 'server.ts') {
+      expect(types).toEqual(expect.arrayContaining(messageTypes));
     }
-  });
-
-  distUnstableIt('ships declarations for the unstable server entry', () => {
-    expect(existsSync(join(packageRoot, 'dist', 'unstable/server.d.ts'))).toBe(
-      true
-    );
   });
 
   const distIt = existsSync(distInitGTServerPath) ? it : it.skip;
@@ -359,6 +332,59 @@ describe('gt-next package exports', () => {
 
   swcPluginIt('ships the SWC plugin WASM alongside the built config', () => {
     expect(existsSync(distSwcPluginPath)).toBe(true);
+  });
+
+  const distFile = (file: string) =>
+    pathToFileURL(join(packageRoot, 'dist', file)).href;
+  // Plain Node cannot load server-only or Next's react-server React, so the
+  // RSC barrel is imported by path and server-only is stubbed.
+  const stubServerOnly = `data:text/javascript,${encodeURIComponent(`
+    import { register } from 'node:module';
+    register('data:text/javascript,' + encodeURIComponent(
+      'export const resolve = (specifier, context, next) => specifier === "server-only" ? { url: "data:text/javascript,", shortCircuit: true } : next(specifier, context);'
+    ));
+  `)}`;
+
+  distIt.each([
+    ['client', ['--conditions=browser'], 'gt-next', rootExports],
+    ['server', [], 'gt-next', rootExports],
+    ['rsc', [], distFile('index.rsc.mjs'), rscExports],
+    ['/server', [], 'gt-next/server', serverExports],
+  ])(
+    'loads the tagged-template message API from the built %s entry',
+    (_runtime, conditions, entry, expected) => {
+      runNode([
+        `--import=${stubServerOnly}`,
+        ...conditions,
+        '--input-type=module',
+        '--eval',
+        `
+          import assert from 'node:assert/strict';
+          const entry = await import(${JSON.stringify(entry)});
+          const i18n = await import('gt-i18n');
+
+          assert.deepEqual(Object.keys(entry).sort(), ${JSON.stringify(expected)});
+          if (entry.msg) {
+            for (const name of ['msg', 'mFallback', 'derive', 'plural', 'part', 'n']) {
+              assert.equal(entry[name], i18n[name], name);
+            }
+          }
+        `,
+      ]);
+    }
+  );
+
+  distIt.each([
+    ['index.client', 'initializeGTClient'],
+    ['index.server', 'initializeGT'],
+    ['index.rsc', 'initializeGTServer'],
+    ['server', 'initializeGTServer'],
+  ])('initializes GT from the built %s barrel', (entry, init) => {
+    for (const extension of ['mjs', 'js']) {
+      expect(
+        readFileSync(join(packageRoot, 'dist', `${entry}.${extension}`), 'utf8')
+      ).toMatch(new RegExp(`\\b${init}\\)?\\(\\)`));
+    }
   });
 
   distIt('keeps custom request functions visible to bundler aliases', () => {

@@ -76,22 +76,27 @@ export {
 
 // ===== Functions ===== //
 export {
-  decodeMsg,
-  decodeOptions,
+  date,
+  derive,
   getDefaultLocale,
   getLocaleProperties,
   getLocales,
   resolveCanonicalLocale,
   getVersionId,
-  gtFallback,
   mFallback,
   msg,
+  n,
+  number,
+  part,
+  plural,
+  select,
+  selectordinal,
+  time,
 } from 'gt-i18n';
-export { decodeVars, declareVar, derive } from 'generaltranslation';
 export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 export { useLocalizeHref } from './link/useLocalizeHref';
 export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
-export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-i18n';
+export type { GT, GTOptions, M, Msg, Part, Placeholder } from 'gt-i18n';
 export type { WithGTServerSideProps, WithGTStaticProps };
