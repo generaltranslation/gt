@@ -11,10 +11,15 @@ import {
 /**
  * Tagged template hash injection pass — injects `$_hash` into statically
  * analyzable tagged templates (t`...`). Each template is hashed and rewritten
- * in the same visit, so this pass needs no collection counters.
+ * in the same visit, so this pass needs no collection counters. With
+ * `precomputeMessages`, a static t template is replaced by a call that
+ * passes its precomputed message. `findPrecompute` decides that where the
+ * option is left out: it is asked once, at the file's first static t
+ * template, since every file that imports a GT entry runs this pass.
  */
 export function taggedTemplateHashInjectionPass(
-  state: TransformState
+  state: TransformState,
+  findPrecompute?: () => boolean
 ): TraverseOptions {
   // A build with chunk translations splits t templates by chunk; m() renders
   // a msg away from its call site, so its translation stays unsplit
@@ -22,9 +27,13 @@ export function taggedTemplateHashInjectionPass(
     ? (hash: string, isMsg: boolean) =>
         isMsg ? keepUnsplit(hash, state) : recordChunkHash(hash, state)
     : undefined;
+  let found: boolean | undefined;
+  const precompute = findPrecompute
+    ? () => (found ??= findPrecompute())
+    : () => state.settings.precomputeMessages;
   return {
     TaggedTemplateExpression(path) {
-      if (injectTaggedTemplateHash(path, onHash)) {
+      if (injectTaggedTemplateHash(path, onHash, precompute)) {
         state.statistics.taggedTemplateHashInjectionsCount += 1;
       }
     },

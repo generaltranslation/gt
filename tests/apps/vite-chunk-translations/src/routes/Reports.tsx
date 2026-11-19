@@ -1,7 +1,7 @@
 import { t } from 'gt-react';
 import { Badge } from '../shared/Badge';
 import { glossaryTitle } from '../shared/Glossary';
-import { STATUS_LABELS, statusHeading } from '../shared/statuses';
+import { STATUS_LABELS, statusHeading, statusOwner } from '../shared/statuses';
 
 // This module, and the two shared ones above, read translations as they are
 // evaluated and keep what they read, so the chunk must not run before its
@@ -17,7 +17,7 @@ export default function Reports() {
       <h2 data-test='heading'>{title}</h2>
       <p data-test='columns'>{COLUMNS.join(', ')}</p>
       <p data-test='statuses'>
-        {statusHeading}: {STATUS_LABELS.join(', ')}
+        {statusHeading}: {STATUS_LABELS.join(', ')} ({statusOwner})
       </p>
       <p data-test='glossary-title'>{glossaryTitle}</p>
       <Badge />

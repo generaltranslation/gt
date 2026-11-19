@@ -8,6 +8,7 @@
     "build": "vite build",
     "translate": "node scripts/pseudo-translate.mjs",
     "check": "node scripts/check.mjs && node scripts/check.mjs map && node scripts/check-module.mjs",
+    "check:templates": "CHECK_PRECOMPUTE=false pnpm run check",
     "check:install": "playwright-core install chromium-headless-shell",
     "check:import-map": "CHECK_IMPORT_MAP=true pnpm run check",
     "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",

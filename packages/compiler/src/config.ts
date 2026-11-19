@@ -119,6 +119,15 @@ export interface PluginConfig
    * the `GT_CHUNK_TRANSLATIONS_PREVIOUS` environment variable.
    */
   experimentalChunkTranslationsPrevious?: string;
+  /**
+   * Replaces each static `t` template with a call
+   * that passes its message, built at compile time and written at the call,
+   * so the call site builds no message tree when it renders. An older
+   * `t` does not read these calls, so the default is true only for a file
+   * whose GT runtime is found and reads them; false keeps the tagged
+   * templates and only injects their hashes.
+   */
+  precomputeMessages?: boolean;
 }
 
 /**
@@ -141,6 +150,8 @@ export interface PluginSettings {
   devHotReload: { jsx: boolean };
   /** Set when a build writes translations per chunk, which the build then splits */
   chunkTranslations?: ChunkTranslations;
+  /** Replace static t templates with calls that read a precomputed message */
+  precomputeMessages: boolean;
 }
 
 /**

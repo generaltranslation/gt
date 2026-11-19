@@ -5,6 +5,10 @@ export {
 } from './translation-functions/gt';
 export { createMessages, getMessages } from './translation-functions/messages';
 export {
+  isPrecomputedMessage,
+  type PrecomputedMessage,
+} from './translation-functions/renderMessage';
+export {
   createTx,
   type TX,
   type TxConditions,

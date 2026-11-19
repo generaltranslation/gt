@@ -120,6 +120,7 @@
       " AT ONCE."
     ]
   },
+  "ada70bc638821ded": ["MANAGED BY ", ["name"]],
   "aed88dcc14c25c17": "BILLING ADDRESS",
   "b217d5e37561b871": [
     [
@@ -137,6 +138,7 @@
   "bbf9419b8e6f5802": "HOME",
   "c090e784e7f90755": "INVOICE",
   "c2f411668ffbcf03": "REFUND",
+  "c52e87a61eaaccc7": ["ARCHIVED BY ", ["name"]],
   "c543324cf83495f8": "SHIPPED",
   "d08766e4a10a21c1": "ADD ONE",
   "d507ee6caf81d7fd": "CLOSED",

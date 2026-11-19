@@ -1031,6 +1031,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
+      esbuild:
+        specifier: ^0.28.1
+        version: 0.28.1
       gt-react:
         specifier: workspace:*
         version: link:../react

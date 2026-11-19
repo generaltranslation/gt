@@ -169,7 +169,7 @@ const SHELL = {
   hook: 'Billing moved to a new page',
   footer: 'Acme workspace: All systems operational (Open, Closed)',
 };
-const STATUSES = 'Order status: Pending, Shipped, Delivered';
+const STATUSES = 'Order status: Pending, Shipped, Delivered (Managed by Ada)';
 const GLOSSARY_TERMS = [
   'Invoice',
   'Receipt',
@@ -246,14 +246,14 @@ const EVERY_TEXT = Object.values({
 const MODULE_READS = {
   app: ['All systems operational', 'Open', 'Closed', 'Acme workspace'],
   reports: ['Quarterly reports', 'Region', 'Revenue', 'Growth'],
-  statuses: ['Order status', 'Pending', 'Shipped', 'Delivered'],
+  statuses: ['Order status', 'Pending', 'Shipped', 'Delivered', 'Managed by '],
   glossary: ['Glossary of terms'],
 };
 const REPORTS_MODULES = ['reports', 'statuses', 'glossary'];
 
 // What an element renders, as the messages in it and the text between them.
 // A message is its source text, or that and a part of it that is written the
-// same in its translation's file, for a message with a plural.
+// same in its translation's file, for a message with a plural or a value.
 const message = (text, part = text) => ({ text, part });
 const ELEMENTS = {
   frame: [message('Acme workspace')],
@@ -280,6 +280,9 @@ const ELEMENTS = {
     message('Shipped'),
     ', ',
     message('Delivered'),
+    ' (',
+    message('Managed by Ada', 'Managed by '),
+    ')',
   ],
   'glossary-title': [message('Glossary of terms')],
   columns: [
@@ -853,7 +856,7 @@ async function checkVariant(name, variant) {
       `${counts.size} messages in ${Object.keys(manifest.files).length} files, ${unsplit.length} unsplit`
     );
   }
-  const DEAD = ['never rendered', 'Nobody greets'];
+  const DEAD = ['never rendered', 'Nobody greets', 'Archived by'];
   const written = built.assets
     .filter((file) => /\.[0-9a-f]{8}\.json$/.test(file))
     .map((file) => readFileSync(join(on.outDir, 'assets', file), 'utf8'))
@@ -868,6 +871,31 @@ async function checkVariant(name, variant) {
       ) &&
       written.includes('WELCOME HOME')
   );
+
+  // A t template is a call that passes its precomputed message, unless
+  // CHECK_PRECOMPUTE=false keeps the template. Either way its translation
+  // is in a file of the split, also when it has a value.
+  const precomputed = process.env.CHECK_PRECOMPUTE !== 'false';
+  const homeChunk = built.assets.find((file) => /^Home-[\w-]+\.js$/.test(file));
+  check(
+    `t templates are ${precomputed ? 'calls with a precomputed message' : 'tagged templates'}`,
+    readFileSync(join(on.outDir, 'assets', homeChunk), 'utf8').includes(
+      '$_tree:'
+    ) === precomputed
+  );
+  {
+    const split = Object.values(manifest.files)
+      .map((files) => JSON.stringify(built.contentOf(`/${files.fr}`)))
+      .join('\n');
+    check(
+      'messages with values are in the files of the split, and the unsplit file holds only the msg',
+      split.includes('"HELLO, "') &&
+        split.includes('"MANAGED BY "') &&
+        Object.values(built.contentOf(built.unsplitOf('fr')))
+          .sort()
+          .join() === 'MAINTENANCE STARTS TONIGHT'
+    );
+  }
 
   // ----- Text, requests and flashes ----- //
   const served = await serve(on.outDir);
@@ -1347,7 +1375,12 @@ async function checkVariant(name, variant) {
   // against what Home can reach: the entry, the root, the route and the
   // badge. The glossary and the statuses are in the same chunk as the badge
   // in a build with `shared`, and Home imports neither.
-  const UNREACHED = [...GLOSSARY_TERMS, 'Glossary of terms', 'Order status'];
+  const UNREACHED = [
+    ...GLOSSARY_TERMS,
+    'Glossary of terms',
+    'Order status',
+    'Managed by ',
+  ];
   const downloadOfHome = async (outDir) => {
     const server = await serve(outDir);
     const app = await open(server.url, 'fr');

@@ -2,7 +2,7 @@ import { T, select, t } from 'gt-react';
 import type { RouteProps } from '../App';
 import { Badge } from '../shared/Badge';
 import { Glossary } from '../shared/Glossary';
-import { STATUS_LABELS, statusHeading } from '../shared/statuses';
+import { STATUS_LABELS, statusHeading, statusOwner } from '../shared/statuses';
 
 export default function Settings({ userRole: role }: RouteProps) {
   return (
@@ -17,7 +17,7 @@ export default function Settings({ userRole: role }: RouteProps) {
         </p>
       </T>
       <p data-test='statuses'>
-        {statusHeading}: {STATUS_LABELS.join(', ')}
+        {statusHeading}: {STATUS_LABELS.join(', ')} ({statusOwner})
       </p>
       <Badge />
       <Glossary />
