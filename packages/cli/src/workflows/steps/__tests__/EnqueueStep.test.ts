@@ -42,4 +42,15 @@ describe('EnqueueStep', () => {
     expect(spinner.start).not.toHaveBeenCalled();
     expect(spinner.stop).not.toHaveBeenCalled();
   });
+
+  it('stops the spinner before rethrowing an enqueue failure', async () => {
+    const error = new Error('Spend limit reached');
+    gt.enqueueFiles.mockRejectedValueOnce(error);
+    const step = new EnqueueStep(gt, settings);
+
+    await expect(
+      step.run([{ fileId: 'file-1', versionId: 'version-1' }])
+    ).rejects.toBe(error);
+    expect(spinner.stop).toHaveBeenCalledOnce();
+  });
 });

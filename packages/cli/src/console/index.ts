@@ -468,5 +468,33 @@ export const xcstringsSourceLanguageMismatchError = (
 export const fileEncodingSkipReason = (error: unknown): string =>
   `File could not be decoded: ${error instanceof Error ? error.message : String(error)}`;
 
+export const billingLimitDownloadWarning = (serverMessage: string): string =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Warning',
+    whatHappened: 'New translations could not be queued',
+    why: 'the organization has reached a billing limit',
+    reassurance:
+      'Existing translations will still be downloaded because --fallback-download is set',
+    details: serverMessage,
+  });
+
+export const billingLimitError = (
+  dashboardUrl: string,
+  serverMessage: string,
+  suggestFallbackDownload: boolean
+): string =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened: 'New translations could not be queued',
+    why: 'the organization has reached a billing limit',
+    fix: `Raise the spend limit or add credits in the dashboard (${dashboardUrl}), then run the command again`,
+    wayOut: suggestFallbackDownload
+      ? 'pass --fallback-download to download existing translations instead'
+      : undefined,
+    details: serverMessage,
+  });
+
 export const withOriginalError = (message: string, error: unknown): string =>
   error != null ? `${message} Original error: ${String(error)}` : message;

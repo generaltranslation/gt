@@ -27,12 +27,18 @@ export class EnqueueStep {
 
     this.spinner.start('Enqueuing translations...');
 
-    const result = await this.gt.enqueueFiles(files, {
-      sourceLocale: this.settings.defaultLocale,
-      targetLocales: this.settings.locales,
-      modelProvider: this.settings.modelProvider,
-      force: this.force,
-    });
+    let result: EnqueueFilesResult;
+    try {
+      result = await this.gt.enqueueFiles(files, {
+        sourceLocale: this.settings.defaultLocale,
+        targetLocales: this.settings.locales,
+        modelProvider: this.settings.modelProvider,
+        force: this.force,
+      });
+    } catch (error) {
+      this.spinner.stop(chalk.red('Failed to enqueue translations'));
+      throw error;
+    }
     this.spinner.stop(chalk.green('Translations enqueued successfully'));
     return result;
   }

@@ -56,6 +56,9 @@ vi.mock('../../console/logger.js', () => ({
 vi.mock('../commands/download.js', () => ({
   handleDownload: vi.fn(),
 }));
+vi.mock('../commands/stage.js', () => ({
+  handleStage: vi.fn(),
+}));
 vi.mock('../commands/translate.js', () => ({
   handleTranslate: vi.fn(),
   postProcessTranslations: vi.fn(),
@@ -90,7 +93,12 @@ import { mirrorAssetsToLocales } from '../../utils/sharedStaticAssets.js';
 import { splitMintlifyLanguageRefs } from '../../utils/splitMintlifyLanguageRefs.js';
 import { BaseCLI } from '../base.js';
 import { handleDownload } from '../commands/download.js';
-import { postProcessTranslations } from '../commands/translate.js';
+import { handleStage } from '../commands/stage.js';
+import {
+  handleTranslate,
+  postProcessTranslations,
+} from '../commands/translate.js';
+import { ApiError } from 'generaltranslation/errors';
 
 const settings = {
   apiKey: 'gtx-api-key',
@@ -516,5 +524,55 @@ describe('gt download', () => {
     expect(handleDownload).toHaveBeenCalledOnce();
     expect(postProcessTranslations).not.toHaveBeenCalled();
     expect(mirrorAssetsToLocales).toHaveBeenCalledWith(settings);
+  });
+});
+
+describe('gt translate billing limits', () => {
+  const settings = { files: { resolvedPaths: {} } };
+
+  function createProgram(): Command {
+    const program = new Command();
+    new BaseCLI(program, 'gt-react').init();
+    return program;
+  }
+
+  beforeEach(() => {
+    vi.mocked(generateSettings).mockResolvedValue(settings as never);
+    vi.mocked(getNeedsPostprocessing).mockReturnValue(new Set());
+  });
+
+  it('downloads existing translations without publishing when the fallback is used', async () => {
+    vi.mocked(handleStage).mockResolvedValue({
+      fileVersionData: {},
+      jobData: undefined,
+      branchData: undefined,
+      publishMap: new Map([['file-1', true]]),
+      billingLimitError: new ApiError(
+        'Spend limit reached',
+        402,
+        'Spend limit reached'
+      ),
+    });
+
+    await createProgram().parseAsync(['translate', '--fallback-download'], {
+      from: 'user',
+    });
+
+    expect(handleStage).toHaveBeenCalledWith(
+      expect.objectContaining({ fallbackDownload: true }),
+      settings,
+      'gt-react',
+      false
+    );
+    expect(handleTranslate).toHaveBeenCalledWith(
+      expect.anything(),
+      settings,
+      {},
+      undefined,
+      undefined,
+      undefined,
+      undefined
+    );
+    expect(displayTranslateSummary).toHaveBeenCalledOnce();
   });
 });

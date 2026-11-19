@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { BaseCLI } from './base.js';
 import { SupportedLibraries, TranslateFlags, Options } from '../types/index.js';
 import {
+  attachFallbackDownloadFlag,
   attachInlineTranslateFlags,
   attachTranslateFlags,
   attachValidateFlags,
@@ -68,12 +69,14 @@ export class InlineCLI extends BaseCLI {
 
   protected setupTranslateCommand(): void {
     attachInlineTranslateFlags(
-      attachTranslateFlags(
-        this.program
-          .command('translate')
-          .description(
-            'Scans the project for a dictionary and inline translations and sends the updates to the General Translation API for translation.'
-          )
+      attachFallbackDownloadFlag(
+        attachTranslateFlags(
+          this.program
+            .command('translate')
+            .description(
+              'Scans the project for a dictionary and inline translations and sends the updates to the General Translation API for translation.'
+            )
+        )
       ),
       this.getInlineSourceHelp()
     ).action(async (options: TranslateFlags) => {

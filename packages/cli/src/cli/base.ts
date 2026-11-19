@@ -90,7 +90,11 @@ import {
   type OnboardingSession,
 } from '../setup/onboarding.js';
 import { upload } from './commands/upload.js';
-import { attachSharedFlags, attachTranslateFlags } from './flags.js';
+import {
+  attachFallbackDownloadFlag,
+  attachSharedFlags,
+  attachTranslateFlags,
+} from './flags.js';
 import { handleStage } from './commands/stage.js';
 import { handleSetupProject } from './commands/setupProject.js';
 import { handleDownload } from './commands/download.js';
@@ -389,10 +393,12 @@ export class BaseCLI {
   }
 
   protected setupTranslateCommand(): void {
-    attachTranslateFlags(
-      this.program
-        .command('translate')
-        .description('Translate your project using General Translation')
+    attachFallbackDownloadFlag(
+      attachTranslateFlags(
+        this.program
+          .command('translate')
+          .description('Translate your project using General Translation')
+      )
     ).action(async (initOptions: TranslateFlags) => {
       displayHeader('Starting translation...');
       await this.handleTranslate(initOptions);
@@ -801,7 +807,7 @@ export class BaseCLI {
           results.fileVersionData,
           results.jobData,
           results.branchData,
-          results.publishMap,
+          results.billingLimitError ? undefined : results.publishMap,
           results.inlineLibrary
         );
       }

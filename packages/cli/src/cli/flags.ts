@@ -156,6 +156,14 @@ function attachInlineContentParsingFlags(
     );
 }
 
+export function attachFallbackDownloadFlag(command: Command) {
+  return command.option(
+    '--fallback-download',
+    'If a billing limit stops new translations from being queued, download existing translations and exit successfully instead of failing.',
+    false
+  );
+}
+
 /**
  * Attaches flags necessary for validating a project
  * @param command

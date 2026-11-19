@@ -1,5 +1,13 @@
 import { logger } from '../../console/logger.js';
-import { exitSync, logCollectedFiles } from '../../console/logging.js';
+import {
+  exitSync,
+  logCollectedFiles,
+  logErrorAndExit,
+} from '../../console/logging.js';
+import {
+  billingLimitDownloadWarning,
+  billingLimitError as billingLimitErrorMessage,
+} from '../../console/index.js';
 import {
   Settings,
   SupportedLibraries,
@@ -8,6 +16,7 @@ import {
 import { runStageFilesWorkflow } from '../../workflows/stage.js';
 import { writeStagedEntries } from '../../fs/config/downloadedVersions.js';
 import type { EnqueueFilesResult } from 'generaltranslation/types';
+import type { ApiError } from 'generaltranslation/errors';
 import updateConfig from '../../fs/config/updateConfig.js';
 import { FileTranslationData } from '../../workflows/download.js';
 import { BranchData } from '../../types/branch.js';
@@ -30,6 +39,7 @@ export async function handleStage(
   branchData: BranchData | undefined;
   publishMap: Map<string, boolean>;
   inlineLibrary?: InlineLibrary;
+  billingLimitError?: ApiError;
 } | null> {
   if (!hasValidLocales(settings, { forApi: !options.dryRun }))
     return exitSync(1);
@@ -68,17 +78,38 @@ export async function handleStage(
   let jobData: EnqueueFilesResult | undefined;
   let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
-    const { branchData: branchDataResult, enqueueResult } =
-      await runStageFilesWorkflow({
-        files: allFiles,
-        options,
-        settings,
-        inlineLibrary,
-      });
-    jobData = enqueueResult;
-    branchData = branchDataResult;
-
+    const stageResult = await runStageFilesWorkflow({
+      files: allFiles,
+      options,
+      settings,
+      inlineLibrary,
+    });
+    branchData = stageResult.branchData;
     fileVersionData = convertToFileTranslationData(allFiles);
+
+    // Returns before the lockfile and pinned config IDs change, like any failed run.
+    if ('billingLimitError' in stageResult) {
+      const { billingLimitError } = stageResult;
+      if (stage || !options.fallbackDownload) {
+        return logErrorAndExit(
+          billingLimitErrorMessage(
+            settings.dashboardUrl,
+            billingLimitError.message,
+            !stage
+          )
+        );
+      }
+      logger.warn(billingLimitDownloadWarning(billingLimitError.message));
+      return {
+        fileVersionData,
+        jobData: undefined,
+        branchData,
+        publishMap,
+        inlineLibrary,
+        billingLimitError,
+      };
+    }
+    jobData = stageResult.enqueueResult;
 
     // Write staged entries to the lockfile
     if (stage) {

@@ -11,6 +11,9 @@ import { collectFiles } from '../../../formats/files/collectFiles.js';
 import { runStageFilesWorkflow } from '../../../workflows/stage.js';
 import updateConfig from '../../../fs/config/updateConfig.js';
 import { collectParaglideContext } from '../../../paraglide/collectParaglideContext.js';
+import { writeStagedEntries } from '../../../fs/config/downloadedVersions.js';
+import { logger } from '../../../console/logger.js';
+import { ApiError } from 'generaltranslation/errors';
 
 vi.mock('../../../formats/files/collectFiles.js', () => ({
   collectFiles: vi.fn(),
@@ -45,12 +48,16 @@ vi.mock('../../../console/logger.js', () => ({
   logger: {
     error: vi.fn(),
     success: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
 vi.mock('../../../console/logging.js', () => ({
   exitSync: vi.fn(),
   logCollectedFiles: vi.fn(),
+  logErrorAndExit: vi.fn((message: string) => {
+    throw new Error(message);
+  }),
 }));
 
 const branchData = {
@@ -228,5 +235,74 @@ describe('handleStage config ids', () => {
     await handleStage(options, settings(), 'gt-react', false);
 
     expect(collectParaglideContext).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleStage billing limits', () => {
+  const billingLimitError = new ApiError(
+    'Spend limit reached',
+    402,
+    'Spend limit reached'
+  );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(collectFiles).mockResolvedValue({
+      files: [templateFile],
+      reactComponents: 1,
+      publishMap: new Map(),
+    });
+    vi.mocked(runStageFilesWorkflow).mockResolvedValue({
+      branchData,
+      billingLimitError,
+    });
+  });
+
+  it('fails translate by default and points at --fallback-download', async () => {
+    await expect(
+      handleStage(options, settings(), 'gt-react', false)
+    ).rejects.toThrow(
+      /New translations could not be queued.*--fallback-download/
+    );
+
+    expect(updateConfig).not.toHaveBeenCalled();
+  });
+
+  it('returns file versions for a fallback download without pinning config ids', async () => {
+    const result = await handleStage(
+      { ...options, fallbackDownload: true },
+      settings(),
+      'gt-react',
+      false
+    );
+
+    expect(result).toMatchObject({
+      jobData: undefined,
+      branchData,
+      billingLimitError,
+      fileVersionData: {
+        [TEMPLATE_FILE_ID]: { versionId: 'version-1' },
+      },
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Existing translations will still be downloaded')
+    );
+    expect(updateConfig).not.toHaveBeenCalled();
+  });
+
+  it('fails staging without writing staged entries', async () => {
+    const thrown = await handleStage(
+      { ...options, fallbackDownload: true },
+      settings(),
+      'gt-react',
+      true
+    ).catch((error: Error) => error);
+
+    expect((thrown as Error).message).toMatch(
+      /New translations could not be queued/
+    );
+    expect((thrown as Error).message).not.toContain('--fallback-download');
+    expect(writeStagedEntries).not.toHaveBeenCalled();
+    expect(updateConfig).not.toHaveBeenCalled();
   });
 });

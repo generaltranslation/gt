@@ -39,11 +39,11 @@ vi.mock('../steps/UploadSourcesStep.js', () => ({
 vi.mock('../steps/SetupStep.js', () => ({
   SetupStep: vi.fn(() => ({ run: vi.fn(), wait: vi.fn() })),
 }));
+const { enqueueRun } = vi.hoisted(() => ({
+  enqueueRun: vi.fn(async () => ({ message: 'enqueued', jobData: {} })),
+}));
 vi.mock('../steps/EnqueueStep.js', () => ({
-  EnqueueStep: vi.fn(() => ({
-    run: vi.fn(async () => ({ message: 'enqueued', jobData: {} })),
-    wait: vi.fn(),
-  })),
+  EnqueueStep: vi.fn(() => ({ run: enqueueRun, wait: vi.fn() })),
 }));
 vi.mock('../steps/TagStep.js', () => ({
   TagStep: vi.fn(() => ({ run: vi.fn(), wait: vi.fn() })),
@@ -66,6 +66,7 @@ import { collectFonts } from '../../formats/files/collectFonts.js';
 import { logger } from '../../console/logger.js';
 import { loginRequiredError } from '../../auth/errors.js';
 import { filterFilesForEnqueue } from '../utils/filterFilesForEnqueue.js';
+import { ApiError } from 'generaltranslation/errors';
 
 const files: FileToUpload[] = [
   {
@@ -207,5 +208,38 @@ describe('runStageFilesWorkflow errors', () => {
     ).rejects.toThrow(
       /^Files could not be sent for translation\..*Original error: Error: server down$/
     );
+  });
+});
+
+describe('runStageFilesWorkflow billing limits', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(collectFonts).mockResolvedValue([]);
+  });
+
+  it('returns the billing error instead of exiting when enqueue is rejected with 402', async () => {
+    const error = new ApiError(
+      'Spend limit reached',
+      402,
+      'Spend limit reached'
+    );
+    enqueueRun.mockRejectedValueOnce(error);
+
+    const result = await runStageFilesWorkflow({ files, options, settings });
+
+    expect(result).toEqual({
+      branchData: { currentBranch: { id: 'branch-1' } },
+      billingLimitError: error,
+    });
+  });
+
+  it('still exits for other enqueue failures', async () => {
+    enqueueRun.mockRejectedValueOnce(
+      new ApiError('Forbidden', 403, 'Forbidden')
+    );
+
+    await expect(
+      runStageFilesWorkflow({ files, options, settings })
+    ).rejects.toThrow(/^Files could not be sent for translation\./);
   });
 });

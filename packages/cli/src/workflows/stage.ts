@@ -5,6 +5,7 @@ import { logger } from '../console/logger.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { api } from '../utils/api.js';
 import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
+import { ApiError } from 'generaltranslation/errors';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
 import { EnqueueStep } from './steps/EnqueueStep.js';
@@ -34,10 +35,10 @@ export async function runStageFilesWorkflow({
   options: TranslateFlags;
   settings: Settings;
   inlineLibrary?: InlineLibrary;
-}): Promise<{
-  branchData: BranchData;
-  enqueueResult: EnqueueFilesResult;
-}> {
+}): Promise<
+  | { branchData: BranchData; enqueueResult: EnqueueFilesResult }
+  | { branchData: BranchData; billingLimitError: ApiError }
+> {
   try {
     // Log files to be translated
     logCollectedFiles(files, undefined, inlineLibrary);
@@ -97,9 +98,13 @@ export async function runStageFilesWorkflow({
       );
     }
 
-    const enqueueResult = await enqueueStep.run(filesToEnqueue);
-
-    return { branchData, enqueueResult };
+    try {
+      const enqueueResult = await enqueueStep.run(filesToEnqueue);
+      return { branchData, enqueueResult };
+    } catch (error) {
+      if (!isBillingLimitError(error)) throw error;
+      return { branchData, billingLimitError: error };
+    }
   } catch (error) {
     // A sign-in failure is already a complete diagnostic that names `gt login`.
     return logErrorAndExit(
@@ -111,4 +116,9 @@ export async function runStageFilesWorkflow({
           )
     );
   }
+}
+
+// The enqueue endpoint answers 402 only when billing rejects new translation work.
+function isBillingLimitError(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.code === 402;
 }
