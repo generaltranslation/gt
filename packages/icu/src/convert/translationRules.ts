@@ -453,7 +453,7 @@ function placementProblems(
  * `one {Один файл}` reads "one file" for 21 files. A category picked for one
  * number only, like German `one`, may say that number in words. Which source
  * category a number takes is not compared, since the source's locale is not
- * known; its exact branches are, since the translation keeps them.
+ * known; exact branches are, since one is the same number in both messages.
  */
 function countProblems(
   source: CheckedPlaceholder[],
@@ -473,12 +473,23 @@ function countProblems(
     ) {
       continue;
     }
+    // An exact branch of another plural is one number in both messages, whichever of them writes it.
     const others = combinations(
       sourceNumbers
         .filter((choice) => choice.variable !== variable)
         .map((choice) => ({
           ...choice,
-          keys: [...choice.keys.filter((key) => key[0] === '='), ANY_CATEGORY],
+          keys: [
+            ...new Set(
+              [
+                ...choice.keys,
+                ...numbers
+                  .filter((other) => other.variable === choice.variable)
+                  .flatMap((other) => other.keys),
+              ].filter((key) => key[0] === '=')
+            ),
+            ANY_CATEGORY,
+          ],
         }))
     );
     for (const key of keys) {
@@ -517,7 +528,7 @@ function countProblems(
   return problems;
 }
 
-/** A reader's branch of a plural other than the one checked: any category, where it is not one of the source's exact branches. */
+/** A reader's branch of a plural other than the one checked: any category, where it is not an exact branch of either message. */
 const ANY_CATEGORY = '';
 
 /**
@@ -537,10 +548,10 @@ function seenAt(
     if (choice.variable === variable) return { ...choice, keys: [key] };
     const other = others.get(choice.variable);
     if (other === undefined) return choice;
-    const keys =
-      other === ANY_CATEGORY
-        ? choice.keys.filter((branch) => branch[0] !== '=')
-        : [other];
+    // A number with no exact branch of its own here takes one of the categories.
+    const keys = choice.keys.includes(other)
+      ? [other]
+      : choice.keys.filter((branch) => branch[0] !== '=');
     return { ...choice, keys };
   });
   return combinations(pinned)

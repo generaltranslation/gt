@@ -12,6 +12,7 @@ const FILES = '{n, plural, one {# file} other {# files}}';
 const GENDER = '{g, select, male {He} female {She} other {They}}';
 const ITEMS = '{n, plural, one {# item} other {# items}}';
 const ONE_FILE = '{n, plural, one {One file} other {# files}}';
+const SOME_FILES = '{n, plural, one {One file} other {Some files}}';
 const ATTENDEES =
   '{n, plural, one {# attendee} other {# attendees}}: you {n, plural, offset:1 one {and one other} other {and # others}}';
 const IN_FOLDER =
@@ -225,6 +226,29 @@ const CASES: [
     mismatch(
       '"n" is not shown in the plural branch other, which de uses for 0, 2, 3, 4, …, as it is in the source'
     ),
+  ],
+  [
+    'a count hidden under an enclosing exact branch the translation adds',
+    `{m, plural, one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    `{m, plural, =0 {${SOME_FILES}} one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    'en',
+    mismatch(
+      '"n" is not shown in the plural branch other, which en uses for 0, 2, 3, 4, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count kept under an enclosing exact branch the translation adds',
+    `{m, plural, one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    `{m, plural, =0 {${ONE_FILE}} one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    'en',
+    undefined,
+  ],
+  [
+    'a count an added exact branch hides where the source may hide it',
+    `{m, plural, one {${ONE_FILE}} other {${SOME_FILES}}}`,
+    `{m, plural, =0 {${SOME_FILES}} one {${ONE_FILE}} other {${SOME_FILES}}}`,
+    'en',
+    undefined,
   ],
   [
     'a count of another offset in place of the count',

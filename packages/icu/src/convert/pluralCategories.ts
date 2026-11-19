@@ -32,6 +32,23 @@ const PROBED_COUNTS: readonly number[] = [
   ...Array.from({ length: 1001 }, (_, count) => count + 0.5),
 ];
 
+/**
+ * Whether a category takes a fraction that is no half, as Sinhala `one`
+ * takes 0.1 and 0.01. CLDR reads a fraction's digits, and the whole number
+ * beside them, modulo 100 at most.
+ */
+function takesAnotherFraction(
+  rules: Intl.PluralRules,
+  category: string
+): boolean {
+  for (let whole = 0; whole < 100; whole++) {
+    for (let hundredths = 1; hundredths < 100; hundredths++) {
+      if (rules.select(whole + hundredths / 100) === category) return true;
+    }
+  }
+  return false;
+}
+
 // By the locale Intl resolves and its own categories, so input cannot grow it past CLDR's.
 const categoryCounts = new Map<string, PluralCategoryCounts>();
 
@@ -67,6 +84,7 @@ export function getPluralCategoryCounts(
     }
     counts.push(count);
   }
+  more ||= takesAnotherFraction(rules, category);
   const found = { counts, more };
   categoryCounts.set(key, found);
   return found;
