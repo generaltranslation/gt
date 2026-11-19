@@ -32,6 +32,7 @@ import {
   wrapDynamicImports,
 } from './transform/chunk-translations/chunkTranslationsModule';
 import {
+  UNSTARTED_APP_WARNING,
   createBundledCatalogsWarning,
   createMissingTranslationsWarning,
   createUngatedImportsWarning,
@@ -431,7 +432,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       if (written.missingLocales.length) {
         console.warn(createMissingTranslationsWarning(written.missingLocales));
       }
-      if (written.bundledCatalogs.length) {
+      if (!chunkTranslations!.starts) {
+        console.warn(UNSTARTED_APP_WARNING);
+      } else if (written.bundledCatalogs.length) {
         console.warn(createBundledCatalogsWarning(written.bundledCatalogs));
       }
       if (written.unsplit.length) {

@@ -115,6 +115,17 @@ export const createMissingTranslationsWarning = (locales: string[]) =>
     fix: 'Add their translation files and build again',
   });
 
+export const UNSTARTED_APP_WARNING = createDiagnosticMessage({
+  source: '@generaltranslation/compiler',
+  severity: 'Warning',
+  whatHappened:
+    'experimentalChunkTranslations did not find the initializeGTSPA that starts the app',
+  why: "no module the build compiled imports it by name, as import { initializeGTSPA } from 'gt-react': a namespace import, a re-export or an import through another module is not read",
+  reassurance:
+    "initializeGTSPA then still calls the app's loadTranslations, so a page loads its locale's whole catalog as well as the files of its chunks",
+  fix: "Import initializeGTSPA by name from 'gt-react' in the module that calls it",
+});
+
 export const createBundledCatalogsWarning = (files: string[]) =>
   createDiagnosticMessage({
     source: '@generaltranslation/compiler',

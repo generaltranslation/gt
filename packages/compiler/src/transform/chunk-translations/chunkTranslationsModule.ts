@@ -119,6 +119,9 @@ export function finishChunkTranslationsFile(
         )
       );
       file.imports.add('initialize');
+      if (state.settings.chunkTranslations) {
+        state.settings.chunkTranslations.starts++;
+      }
     }
   }
   if (!file.imports.size) return false;

@@ -170,6 +170,7 @@ describe('experimentalChunkTranslations', () => {
         defaultLocale: 'en',
         locales: ['fr', 'de'],
         hashes: new Set(),
+        starts: 0,
         unsplit: new Set(),
         naming: 'token',
       });
@@ -1027,7 +1028,7 @@ export const { a } = await import(\`./a.js\`);`,
         'translations/de.json': JSON.stringify({ [SAVED]: 'Speichern' }),
       });
       await transform(
-        `import { t } from 'gt-react';\nexport const save = () => t\`Save\`;`,
+        `import { initializeGTSPA, t } from 'gt-react';\nexport const ready = initializeGTSPA({});\nexport const save = () => t\`Save\`;`,
         ON,
         created
       );
@@ -1612,6 +1613,63 @@ export const unused = (name) => t\`Hello, \${{ name }}!\`;`,
         expect.stringContaining('2 for "fr" (0.1 kB)')
       );
     });
+
+    it.each([
+      [
+        'a namespace import',
+        `import * as gt from 'gt-react';
+export const ready = gt.initializeGTSPA({});`,
+      ],
+      ['a re-export', `export { initializeGTSPA } from 'gt-react';`],
+      [
+        "an import through the app's own module",
+        `import { initializeGTSPA } from './i18n';
+export const ready = initializeGTSPA({});`,
+      ],
+    ])(
+      'says that the app starts without the files when initializeGTSPA is only %s, and not that nothing loads a bundled catalog',
+      async (_name, code) => {
+        const created = createPlugins(ON, 'vite', {
+          'translations/fr.json': JSON.stringify({}),
+        });
+        await transform(code, ON, created);
+        const vite = created.plugins[0].vite as {
+          configResolved: (config: object) => void;
+          generateBundle: (
+            this: object,
+            options: object,
+            bundle: object
+          ) => void;
+        };
+        vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
+        vite.generateBundle.call(
+          { emitFile() {} },
+          {},
+          {
+            'assets/index.js': {
+              type: 'chunk',
+              fileName: 'assets/index.js',
+              code: '',
+              imports: [],
+              dynamicImports: [],
+              isEntry: true,
+              moduleIds: [
+                path.join(created.cwd, 'App.jsx'),
+                `${path.join(created.cwd, 'translations/fr.json')}?import`,
+              ],
+            },
+          }
+        );
+        expect(console.warn).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'did not find the initializeGTSPA that starts the app because no module the build compiled imports it by name'
+          )
+        );
+        expect(console.warn).not.toHaveBeenCalledWith(
+          expect.stringContaining('The build still bundles')
+        );
+      }
+    );
   });
 
   describe('the startup script', () => {

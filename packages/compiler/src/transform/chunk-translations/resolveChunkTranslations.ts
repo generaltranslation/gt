@@ -65,6 +65,11 @@ export type ChunkTranslations = {
   /** Every hash a call site reads from the files, across the build's modules */
   hashes: Set<string>;
   /**
+   * How many imports of `initializeGTSPA` the build has made start the app
+   * with the files it writes, across its modules
+   */
+  starts: number;
+  /**
    * The hashes of call sites the build saw and could not make read from the
    * files, such as `msg` templates. Their translations stay in the unsplit
    * file, also when another call site reads the same hash from a chunk's.
@@ -230,6 +235,7 @@ export function resolveChunkTranslations(
     defaultLocale,
     locales,
     hashes: new Set(),
+    starts: 0,
     unsplit: new Set(),
     naming,
   };
