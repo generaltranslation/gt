@@ -258,6 +258,32 @@ const CASES: [
     undefined,
   ],
   [
+    'a count hidden in an enclosing category that some number takes beside its exact branch',
+    `{m, plural, one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    // 1 takes `=1`, but -1 and 1.0001 take `one`.
+    `{m, plural, =1 {${ONE_FILE}} one {${SOME_FILES}} other {${ONE_FILE}}}`,
+    'en',
+    mismatch(
+      '"n" is not shown in the plural branch other, which en uses for 0, 2, 3, 4, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count spelled out beside a plural that prints it by name in one branch',
+    '{n, plural, one {# файл} few {# файла} many {# файлов} other {# файла}} {m, plural, one {} few {} many {} other {{n}}}',
+    '{n, plural, one {Один файл} few {# файла} many {# файлов} other {# файла}} {m, plural, one {} few {} many {} other {{n}}}',
+    'ru',
+    mismatch(
+      '"n" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count shown by either the ordinal or the cardinal of one variable',
+    '{n, selectordinal, few {} other {#}} {n, plural, one {{n}} few {{n}} many {{n}} other {}}',
+    '{n, selectordinal, few {} other {#}} {n, plural, one {{n}} few {{n}} many {{n}} other {}}',
+    'uk',
+    undefined,
+  ],
+  [
     'a count of another offset in place of the count',
     ATTENDEES,
     '{n, plural, one {# Teilnehmer} other {# Teilnehmer}}: du {n, plural, offset:1 one {und eine weitere Person} other {und eine weitere Person}}',

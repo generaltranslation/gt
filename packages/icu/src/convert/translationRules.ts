@@ -477,11 +477,15 @@ function countProblems(
     ) {
       continue;
     }
+    const beside = [...sourceNumbers, ...numbers].filter(
+      (choice) => choice.variable !== variable
+    );
     // shortcut: beside a plural whose uses differ in their exact branches, a count is not checked: a reader has one branch of each plural, where such a number takes its category at a use with no exact branch. Pick the branch at each use if a real message needs it.
+    if (beside.some((choice) => choice.uneven)) continue;
+    // shortcut: a plural with no offset is not checked beside another plural of its variable: the two read one number, and the other can print it by name, but a reader has a branch of each on its own. Read both by number if a real message needs it.
     if (
-      [...sourceNumbers, ...numbers].some(
-        (choice) => choice.variable !== variable && choice.uneven
-      )
+      !placeholder.offset &&
+      beside.some((choice) => choice.placeholder.name === placeholder.name)
     ) {
       continue;
     }
