@@ -216,7 +216,7 @@ export const GTConfigSchema = looseObject({
   ),
   cacheExpiryTime: optionalDescribed(
     number(),
-    'How long a server caches translations before loading them again, in milliseconds'
+    'How long a server caches translations before loading them again, in milliseconds. In gt-svelte it also applies in the browser.'
   ),
   modelProvider: optionalDescribed(
     picklist(Object.values(ModelProvider)),
