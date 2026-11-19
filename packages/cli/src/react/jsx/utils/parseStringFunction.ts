@@ -338,7 +338,9 @@ function processFunctionInFile(
     const code = fs.readFileSync(filePath, 'utf8');
     const ast = parse(code, {
       sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
+      // 'decorators-legacy' so imported helpers in files with decorated
+      // classes (e.g. NestJS controllers) still parse during extraction.
+      plugins: ['jsx', 'typescript', 'decorators-legacy'],
     });
 
     let found = false;
