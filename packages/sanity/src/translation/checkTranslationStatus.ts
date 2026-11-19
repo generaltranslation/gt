@@ -48,12 +48,12 @@ export async function checkTranslationStatus(
     const { results } = await projectFor(secrets).queryFiles(currentQueryData);
 
     // Results follow the selector order; keep the completed translations.
-    const readyTranslations = currentQueryData.filter((_, index) => {
-      const result = results[index];
-      return result.status === 'found' && result.completedAt;
+    return currentQueryData.flatMap((file, index) => {
+      const { status, completedAt } = results[index];
+      return status === 'found' && completedAt
+        ? [{ ...file, completedAt }]
+        : [];
     });
-
-    return readyTranslations;
   } catch (error) {
     // Only a failure that may clear reads as "nothing ready yet"; others surface.
     if (!isTransientApiError(error)) throw error;
@@ -67,23 +67,22 @@ export async function getCompletedResults(
   fileQueryData: FileProperties[],
   secrets: Secrets
 ): Promise<Map<string, string>> {
-  overrideConfig(secrets);
-  const responseData = await api.queryFileData({
-    translatedFiles: fileQueryData,
-  });
+  const { results } = await projectFor(secrets).queryFiles(fileQueryData);
   const completed = new Map<string, string>();
-  for (const translation of responseData.translatedFiles || []) {
-    if (!translation.completedAt) continue;
+  // Results follow the selector order.
+  fileQueryData.forEach((file, index) => {
+    const { status, completedAt } = results[index];
+    if (status !== 'found' || !completedAt) return;
     completed.set(
       createTranslationStatusKey(
-        translation.branchId,
-        translation.fileId,
-        translation.versionId,
-        translation.locale
+        file.branchId,
+        file.fileId,
+        file.versionId,
+        file.locale
       ),
-      translation.completedAt
+      completedAt
     );
-  }
+  });
   return completed;
 }
 

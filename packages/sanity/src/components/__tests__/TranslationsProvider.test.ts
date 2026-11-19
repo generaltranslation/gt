@@ -28,6 +28,9 @@ const mocks = vi.hoisted(() => ({
   uploadTranslations: vi.fn(),
   initProject: vi.fn(),
   createJobs: vi.fn(),
+  getDefaultBranchId: vi.fn(),
+  queryFiles: vi.fn(),
+  queryJobs: vi.fn(),
   collectExistingTranslations: vi.fn(),
   resolvePreviewUrls: vi.fn(),
   updateTranslationPreviewUrls: vi.fn(),
@@ -53,8 +56,14 @@ vi.mock('../../adapter/getLocales', () => ({
   ]),
 }));
 vi.mock('../../adapter/getDefaultBranchId', () => ({
-  // No branch: nothing refreshes statuses in the background.
-  getDefaultBranchId: () => new Promise(() => {}),
+  getDefaultBranchId: mocks.getDefaultBranchId,
+}));
+vi.mock('../../adapter/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../adapter/core')>()),
+  projectFor: () => ({
+    queryFiles: mocks.queryFiles,
+    queryJobs: mocks.queryJobs,
+  }),
 }));
 vi.mock('../../translation/strategy', () => ({
   getTranslationStrategy: () => ({
@@ -107,6 +116,19 @@ function uploadResult(
       status: 'succeeded',
     })),
   };
+}
+
+/** GT holds a fr translation completed at `completedAt` for each file asked about, or nothing without one. */
+function reportCompleted(completedAt?: string) {
+  return mocks.queryFiles.mockImplementation(
+    async (files: { locale?: string }[]) => ({
+      results: files.map((file) =>
+        completedAt && file.locale === 'fr'
+          ? { ...file, status: 'found', completedAt }
+          : { ...file, status: 'not_found' }
+      ),
+    })
+  );
 }
 
 let container: HTMLDivElement;
@@ -163,6 +185,11 @@ beforeEach(() => {
     { type: 'page' },
   ]);
   vi.spyOn(console, 'error').mockImplementation(() => {});
+  // No branch: nothing refreshes statuses in the background.
+  mocks.getDefaultBranchId.mockReturnValue(new Promise(() => {}));
+  reportCompleted();
+  mocks.queryJobs.mockResolvedValue({ results: [] });
+  mocks.createJobs.mockResolvedValue({ jobs: [] });
   mocks.uploadFiles.mockImplementation(
     async (documents: { info: { documentId: string; versionId?: string } }[]) =>
       uploadResult(documents)
@@ -541,18 +568,8 @@ describe('Translate All', () => {
     mocks.client = Object.assign(client, {
       config: () => ({ projectId: 'p', dataset: 'd' }),
     });
-    vi.spyOn(api, 'createBranch').mockResolvedValue({
-      branch: { id: 'b' },
-    } as Awaited<ReturnType<typeof api.createBranch>>);
-    const frFile = {
-      branchId: 'b',
-      fileId: 'page-en',
-      versionId: 'r1',
-      locale: 'fr',
-    };
-    vi.spyOn(api, 'queryFileData').mockResolvedValue({
-      translatedFiles: [{ ...frFile, completedAt: '2026-01-01T00:00:00Z' }],
-    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    mocks.getDefaultBranchId.mockResolvedValue('b');
+    reportCompleted('2026-01-01T00:00:00Z');
     const frKey = 'b:page-en:r1:fr';
 
     const context = await renderProvider(page('page-en', 'en'));
@@ -580,9 +597,7 @@ describe('Translate All', () => {
     expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(false);
     expect(latest!.pendingTranslations.has(frKey)).toBe(true);
 
-    vi.spyOn(api, 'queryFileData').mockResolvedValue({
-      translatedFiles: [{ ...frFile, completedAt: '2026-01-01T00:05:00Z' }],
-    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    reportCompleted('2026-01-01T00:05:00Z');
     await act(() => latest!.handleRefreshAll({ silent: true }));
     expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(true);
     expect(latest!.pendingTranslations.has(frKey)).toBe(false);
@@ -608,28 +623,13 @@ describe('Translate All', () => {
     mocks.client = Object.assign(client, {
       config: () => ({ projectId: 'p', dataset: 'd' }),
     });
-    vi.spyOn(api, 'createBranch').mockResolvedValue({
-      branch: { id: 'b' },
-    } as Awaited<ReturnType<typeof api.createBranch>>);
-    const stored = {
-      translatedFiles: [
-        {
-          branchId: 'b',
-          fileId: 'page-en',
-          versionId: 'r1',
-          locale: 'fr',
-          completedAt: '2026-01-01T00:00:00Z',
-        },
-      ],
-    } as Awaited<ReturnType<typeof api.queryFileData>>;
-    const queryFileData = vi
-      .spyOn(api, 'queryFileData')
-      .mockResolvedValue(stored);
+    mocks.getDefaultBranchId.mockResolvedValue('b');
+    const queryFiles = reportCompleted('2026-01-01T00:00:00Z');
     const frKey = 'b:page-en:r1:fr';
     const context = await renderProvider(page('page-en', 'en'));
     await act(() => context.handleTranslateAll({ force: true }));
 
-    queryFileData.mockRejectedValueOnce(new Error('unavailable'));
+    queryFiles.mockRejectedValueOnce(new Error('unavailable'));
     const retried = await act(() =>
       latest!.handleTranslateAll({ force: true })
     );
@@ -645,20 +645,8 @@ describe('Translate All', () => {
     mocks.client = Object.assign(client, {
       config: () => ({ projectId: 'p', dataset: 'd' }),
     });
-    vi.spyOn(api, 'createBranch').mockResolvedValue({
-      branch: { id: 'b' },
-    } as Awaited<ReturnType<typeof api.createBranch>>);
-    vi.spyOn(api, 'queryFileData').mockResolvedValue({
-      translatedFiles: [
-        {
-          branchId: 'b',
-          fileId: 'page-en',
-          versionId: 'r1',
-          locale: 'fr',
-          completedAt: '2026-01-01T00:00:00Z',
-        },
-      ],
-    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    mocks.getDefaultBranchId.mockResolvedValue('b');
+    reportCompleted('2026-01-01T00:00:00Z');
     const frKey = 'b:page-en:r1:fr';
     const context = await renderProvider(page('page-en', 'en'));
     mocks.createJobs.mockRejectedValueOnce(new Error('unavailable'));
@@ -683,35 +671,26 @@ describe('Translate All', () => {
       mocks.client = Object.assign(client, {
         config: () => ({ projectId: 'p', dataset: 'd' }),
       });
-      vi.spyOn(api, 'createBranch').mockResolvedValue({
-        branch: { id: 'b' },
-      } as Awaited<ReturnType<typeof api.createBranch>>);
-      const reportCompleted = (completedAt: string) =>
-        vi.spyOn(api, 'queryFileData').mockResolvedValue({
-          translatedFiles: [
-            {
+      mocks.getDefaultBranchId.mockResolvedValue('b');
+      reportCompleted('2026-01-01T00:00:00Z');
+      mocks.createJobs.mockResolvedValue({
+        jobs: [
+          {
+            id: 'job-1',
+            status: 'queued',
+            subject: {
+              type: 'file_translation',
               branchId: 'b',
               fileId: 'page-en',
               versionId: 'r1',
               locale: 'fr',
-              completedAt,
             },
-          ],
-        } as Awaited<ReturnType<typeof api.queryFileData>>);
-      reportCompleted('2026-01-01T00:00:00Z');
-      mocks.createJobs.mockResolvedValue({
-        jobData: {
-          'job-1': {
-            branchId: 'b',
-            fileId: 'page-en',
-            versionId: 'r1',
-            targetLocale: 'fr',
           },
-        },
+        ],
       });
-      const checkJobStatus = vi
-        .spyOn(api, 'checkJobStatus')
-        .mockResolvedValue([{ jobId: 'job-1', status: 'processing' }]);
+      const queryJobs = mocks.queryJobs.mockResolvedValue({
+        results: [{ id: 'job-1', status: 'processing' }],
+      });
       const frKey = 'b:page-en:r1:fr';
       const failureToasts = () =>
         mocks.toastPush.mock.calls.filter(([toast]) =>
@@ -724,19 +703,21 @@ describe('Translate All', () => {
       await act(() => latest!.handleTranslateAll({ force: true }));
       await act(() => latest!.handleRefreshAll({ silent: true }));
 
-      expect(checkJobStatus).toHaveBeenLastCalledWith(['job-1']);
+      expect(queryJobs).toHaveBeenLastCalledWith(['job-1']);
       expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(false);
       expect(latest!.pendingTranslations.has(frKey)).toBe(true);
 
-      checkJobStatus.mockResolvedValue([{ jobId: 'job-1', status: jobStatus }]);
+      queryJobs.mockResolvedValue({
+        results: [{ id: 'job-1', status: jobStatus }],
+      });
       // Only a job that completed replaces the stored result.
       if (jobStatus === 'completed') reportCompleted('2026-01-01T00:05:00Z');
       await act(() => latest!.handleRefreshAll({ silent: true }));
       // A settled job is not asked about again.
-      checkJobStatus.mockClear();
+      queryJobs.mockClear();
       await act(() => latest!.handleRefreshAll({ silent: true }));
 
-      expect(checkJobStatus).not.toHaveBeenCalled();
+      expect(queryJobs).not.toHaveBeenCalled();
       expect(latest!.translationStatuses.get(frKey)?.isReady).toBe(isReady);
       expect(latest!.pendingTranslations.has(frKey)).toBe(false);
       expect(failureToasts()).toBe(toasts);
@@ -748,35 +729,34 @@ describe('Translate All', () => {
     mocks.client = Object.assign(client, {
       config: () => ({ projectId: 'p', dataset: 'd' }),
     });
-    vi.spyOn(api, 'createBranch').mockResolvedValue({
-      branch: { id: 'b' },
-    } as Awaited<ReturnType<typeof api.createBranch>>);
-    vi.spyOn(api, 'queryFileData').mockResolvedValue({
-      translatedFiles: [],
-      sourceFiles: [],
-    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    mocks.getDefaultBranchId.mockResolvedValue('b');
     mocks.createJobs.mockResolvedValue({
-      jobData: {
-        'job-1': {
-          branchId: 'b',
-          fileId: 'page-en',
-          versionId: 'r1',
-          targetLocale: 'fr',
+      jobs: [
+        {
+          id: 'job-1',
+          status: 'queued',
+          subject: {
+            type: 'file_translation',
+            branchId: 'b',
+            fileId: 'page-en',
+            versionId: 'r1',
+            locale: 'fr',
+          },
         },
-      },
+      ],
     });
-    const failed = [{ jobId: 'job-1', status: 'failed' as const }];
+    const failed = { results: [{ id: 'job-1', status: 'failed' as const }] };
     let answerReplacedRefresh: (statuses: typeof failed) => void = () => {};
-    const checkJobStatus = vi
-      .spyOn(api, 'checkJobStatus')
-      .mockResolvedValue([{ jobId: 'job-1', status: 'processing' }]);
+    const queryJobs = mocks.queryJobs.mockResolvedValue({
+      results: [{ id: 'job-1', status: 'processing' }],
+    });
     const frKey = 'b:page-en:r1:fr';
 
     await renderProvider(page('page-en', 'en'));
     await act(() => latest!.handleTranslateAll({ force: true }));
     await flush();
 
-    checkJobStatus.mockReturnValueOnce(
+    queryJobs.mockReturnValueOnce(
       new Promise((resolve) => (answerReplacedRefresh = resolve))
     );
     let replacedRefresh: Promise<void> = Promise.resolve();
@@ -798,7 +778,7 @@ describe('Translate All', () => {
     });
     expect(latest!.pendingTranslations.has(frKey)).toBe(true);
 
-    checkJobStatus.mockResolvedValue(failed);
+    queryJobs.mockResolvedValue(failed);
     await act(() => latest!.handleRefreshAll({ silent: true }));
 
     expect(latest!.pendingTranslations.has(frKey)).toBe(false);

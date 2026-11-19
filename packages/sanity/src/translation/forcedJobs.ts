@@ -1,5 +1,6 @@
 import type { Secrets } from '../types';
-import { api, overrideConfig } from '../adapter/core';
+import type { QueryJobsResponse } from '@generaltranslation/api';
+import { projectFor } from '../adapter/core';
 import { createTranslationStatusKey } from '../utils/documentIds';
 import type { createJobs } from './createJobs';
 
@@ -22,23 +23,21 @@ export function trackEnqueuedJobs(
 ) {
   for (const key of enqueuedKeys) forcedJobs.running.delete(key);
   if (!force) return;
-  for (const [jobId, job] of Object.entries(enqueueResult?.jobData ?? {})) {
+  for (const { id, subject } of enqueueResult?.jobs ?? []) {
+    if (subject.type !== 'file_translation') continue;
     forcedJobs.running.set(
       createTranslationStatusKey(
-        job.branchId,
-        job.fileId,
-        job.versionId,
-        api.resolveAliasLocale(job.targetLocale)
+        subject.branchId,
+        subject.fileId,
+        subject.versionId,
+        subject.locale
       ),
-      jobId
+      id
     );
   }
 }
 
-type JobStatuses = Map<
-  string,
-  Awaited<ReturnType<typeof api.checkJobStatus>>[number]['status']
->;
+type JobStatuses = Map<string, QueryJobsResponse['results'][number]['status']>;
 
 /** Asks for the status of the running jobs, by job id. Changes nothing. */
 export async function fetchForcedJobStatuses(
@@ -47,10 +46,9 @@ export async function fetchForcedJobStatuses(
 ): Promise<JobStatuses> {
   const jobIds = [...forcedJobs.running.values()];
   if (jobIds.length === 0) return new Map();
-  overrideConfig(secrets);
   try {
-    const statuses = await api.checkJobStatus(jobIds);
-    return new Map(statuses.map((job) => [job.jobId, job.status]));
+    const { results } = await projectFor(secrets).queryJobs(jobIds);
+    return new Map(results.map((job) => [job.id, job.status]));
   } catch (error) {
     // Still unknown: keep waiting and ask again on the next refresh.
     console.error('Error checking translation job status', error);
@@ -71,7 +69,7 @@ export function settleForcedJobs(
     const status = statuses.get(jobId);
     if (status === 'completed') {
       forcedJobs.running.delete(key);
-    } else if (status === 'failed' || status === 'unknown') {
+    } else if (status === 'failed' || status === 'not_found') {
       forcedJobs.running.delete(key);
       newlyFailed.push(key);
     }
