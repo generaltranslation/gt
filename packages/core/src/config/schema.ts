@@ -52,7 +52,6 @@ const enabledParts = union([
   boolean(),
   strictObject({
     jsx: optional(boolean()),
-    strings: optional(boolean()),
   }),
 ]);
 
@@ -61,7 +60,7 @@ export const GTParsingFlagsSchema = pipe(
   looseObject({
     autoderive: optionalDescribed(
       enabledParts,
-      'Treat interpolated and concatenated values as derive() calls. true or false applies to JSX and strings; the object form enables each separately.'
+      'Treat interpolated values in <T> as derive() calls. true and { jsx: true } both enable it.'
     ),
     includeSourceCodeContext: optionalDescribed(
       boolean(),
@@ -73,7 +72,7 @@ export const GTParsingFlagsSchema = pipe(
     ),
     devHotReload: optionalDescribed(
       enabledParts,
-      'Translate new content at runtime during development. true or false applies to JSX and strings; the object form enables each separately.'
+      'Compiler option for development hot reload. { jsx: true } injects runtime translation calls for <T> content; a boolean injects nothing.'
     ),
     viteConfigPath: optional(
       pipe(

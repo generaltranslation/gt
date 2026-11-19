@@ -115,7 +115,7 @@ describe('GT config schema parsing flags', () => {
       validate(
         withParsingFlags({
           autoderive: { jsx: true },
-          devHotReload: { strings: true },
+          devHotReload: { jsx: true },
           vueCompilerOptions: { whitespace: 'preserve' },
         })
       )

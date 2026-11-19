@@ -124,9 +124,8 @@ describe('devHotReload config resolution', () => {
     [false, { jsx: false }],
     [undefined, { jsx: false }],
     [{}, { jsx: false }],
-    [{ strings: true }, { jsx: false }],
+    [{ jsx: false }, { jsx: false }],
     [{ jsx: true }, { jsx: true }],
-    [{ strings: true, jsx: true }, { jsx: true }],
   ])('resolveDevHotReload(%j) -> %j', (value, expected) => {
     expect(resolveDevHotReload(value)).toEqual(expected);
   });

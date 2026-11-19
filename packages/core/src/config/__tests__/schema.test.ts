@@ -68,6 +68,21 @@ describe('describeConfigIssues', () => {
       'files.gt.parsingFlags.autoderive.jsxx: Invalid key'
     );
   });
+
+  it.each(['autoderive', 'devHotReload'])(
+    'rejects the removed strings key of %s',
+    (flag) => {
+      const message = diagnosticFor({
+        files: {
+          gt: { parsingFlags: { [flag]: { jsx: true, strings: true } } },
+        },
+      });
+
+      expect(message).toContain(
+        `files.gt.parsingFlags.${flag}.strings: Invalid key`
+      );
+    }
+  );
 });
 
 describe('validateGTConfig', () => {

@@ -69,9 +69,15 @@ A tagged template is stored as a message tree, not as an ICU string, and its has
 
 - The `enableMacroTransform` and `stringTranslationMacro` options are removed, with no replacement: the compiler no longer rewrites `` t`...` `` into a string call, and no longer adds an import for a `t` that has none. Import `t` from `gt-react`.
 - It no longer hashes string calls, passes the collected messages to `useGT()` and `getGT()`, or translates strings in dev hot reload. With `compileTimeHash`, it injects `$_hash` into the tagged templates of `t`, `msg`, `useGT()` and `getGT()` imported from a main entry.
-- `autoderive` and `devHotReload` apply to JSX only. The `strings` key of `files.gt.parsingFlags.autoderive` and `files.gt.parsingFlags.devHotReload` is still accepted, and nothing reads it. A boolean `devHotReload` injects nothing: only `{ jsx: true }` does.
+- `autoderive` and `devHotReload` apply to JSX only, and the `strings` key of both is removed, from the plugin options and from `gt.config.json` (below). A boolean `devHotReload` injects nothing: only `{ jsx: true }` does.
 - The `context` of a `<T>` is a string literal or one `derive()` call with one argument. The argument no longer has to be a call: `derive(tone)` and `derive(formal ? 'formal' : 'casual')` are accepted.
 - gt-next's SWC plugin (`experimentalCompilerOptions.type: 'swc'`) handles `<T>` only. It leaves tagged templates as they are, and the runtime hashes them.
+
+**`gt.config.json`:** `files.gt.parsingFlags.autoderive` and `files.gt.parsingFlags.devHotReload` take `true`, `false` or `{ "jsx": ... }`. Their `strings` key is removed, and a config that sets it is invalid: the CLI and gt-next stop with `files.gt.parsingFlags.autoderive.strings: Invalid key`, and the compiler warns and builds without the file. What the other forms do is unchanged.
+
+- `"autoderive": { "jsx": true, "strings": true }` → `"autoderive": { "jsx": true }`, or `"autoderive": true`, which does the same.
+- `"devHotReload": { "jsx": true, "strings": true }` → `"devHotReload": { "jsx": true }`. Not `true`: with a boolean the compiler injects nothing.
+- `{ "strings": true }` alone, on either flag → remove the flag.
 
 **`@generaltranslation/react-core-linter`:** `static-string` now checks only `msg()`, whose argument must be a single string literal, as in `msg('Save')`. It no longer checks the string passed to the function from `useGT()` or `getGT()`, no longer validates ICU syntax, and has no autofix.
 

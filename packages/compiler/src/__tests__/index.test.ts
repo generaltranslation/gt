@@ -276,7 +276,7 @@ describe('pass gating by plugin options', () => {
     ],
     [
       'useGT()',
-      { devHotReload: { strings: true, jsx: true } },
+      { devHotReload: { jsx: true } },
       { has: ['t({ $_hash: "'], lacks: ['GtInternalRuntimeTranslate'] },
     ],
   ])('%s with options %j', async (code, options, expected) => {

@@ -193,16 +193,13 @@
                       "properties": {
                         "jsx": {
                           "type": "boolean"
-                        },
-                        "strings": {
-                          "type": "boolean"
                         }
                       },
                       "required": [],
                       "additionalProperties": false
                     }
                   ],
-                  "description": "Treat interpolated and concatenated values as derive() calls. true or false applies to JSX and strings; the object form enables each separately."
+                  "description": "Treat interpolated values in <T> as derive() calls. true and { jsx: true } both enable it."
                 },
                 "includeSourceCodeContext": {
                   "type": "boolean",
@@ -222,16 +219,13 @@
                       "properties": {
                         "jsx": {
                           "type": "boolean"
-                        },
-                        "strings": {
-                          "type": "boolean"
                         }
                       },
                       "required": [],
                       "additionalProperties": false
                     }
                   ],
-                  "description": "Translate new content at runtime during development. true or false applies to JSX and strings; the object form enables each separately."
+                  "description": "Compiler option for development hot reload. { jsx: true } injects runtime translation calls for <T> content; a boolean injects nothing."
                 },
                 "viteConfigPath": {
                   "type": "string",

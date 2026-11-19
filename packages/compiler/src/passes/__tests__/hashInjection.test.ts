@@ -176,16 +176,8 @@ describe('<T> with dynamic content (autoderive)', () => {
 
   it.each([
     ['autoderive: true', { autoderive: true }, true],
-    [
-      'autoderive: { jsx: true, strings: false }',
-      { autoderive: { jsx: true, strings: false } },
-      true,
-    ],
-    [
-      'autoderive: { jsx: false, strings: true }',
-      { autoderive: { jsx: false, strings: true } },
-      false,
-    ],
+    ['autoderive: { jsx: true }', { autoderive: { jsx: true } }, true],
+    ['autoderive: { jsx: false }', { autoderive: { jsx: false } }, false],
     ['autoderive: false', { autoderive: false }, false],
     ['no autoderive option', {}, false],
   ])('%s -> dynamic content allowed: %s', (_name, options, allowed) => {
