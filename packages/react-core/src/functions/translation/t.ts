@@ -2,17 +2,16 @@ import type { GT, GTOptions } from 'gt-i18n';
 import {
   createGT,
   isPrecomputedMessage,
+  renderCachedMessage,
   type PrecomputedMessage,
 } from 'gt-i18n/internal';
 import { getReadonlyConditionStore } from '../../condition-store/singleton-operations';
+import { getI18nConfig } from '../../setup/i18nConfig';
 import { isSpa, reportServerRenderedUse } from './spaOnly';
 
 type LooseTag = (strings: TemplateStringsArray, ...holes: unknown[]) => string;
-type PrecomputedTag = (
-  site: PrecomputedMessage,
-  values: unknown,
-  formats: unknown
-) => string;
+type PrecomputedValues = Parameters<typeof renderCachedMessage>[1];
+type PrecomputedFormats = Parameters<typeof renderCachedMessage>[2];
 
 const gt = /* @__PURE__ */ createGT({
   getLocale: () => getReadonlyConditionStore().getLocale(),
@@ -55,14 +54,26 @@ export const t = ((
 ) => {
   // A compiler passes the call site's precomputed message with its values.
   if (isPrecomputedMessage(first)) {
-    if (!isSpa()) {
+    // Read once here, where a GT would read each through a function.
+    const config = getI18nConfig();
+    const spa = config.getRenderStrategy() === 'SPA';
+    if (!spa) {
       reportServerRenderedUse({
         name: 't',
         fix: 'In components, use useGT(); on the server, use getGT()',
         message: sourceText(first.$_tree),
       });
     }
-    return (gt as unknown as PrecomputedTag)(first, holes[0], holes[1]);
+    // Outside an SPA, t renders the source once the misuse is reported.
+    const store = spa ? getReadonlyConditionStore() : undefined;
+    const enabled = store !== undefined && store.getEnableI18n();
+    return renderCachedMessage(
+      first,
+      holes[0] as PrecomputedValues,
+      holes[1] as PrecomputedFormats,
+      enabled ? store.getLocale() : config.getDefaultLocale(),
+      enabled
+    );
   }
   if (Array.isArray(first)) {
     return translate(gt, first as unknown as TemplateStringsArray, holes);

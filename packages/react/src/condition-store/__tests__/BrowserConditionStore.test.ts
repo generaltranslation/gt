@@ -112,6 +112,64 @@ describe('BrowserConditionStore', () => {
     expect(conditionStore.getLocale()).toBe('fr');
   });
 
+  it('follows the cookie and a custom reader within a task', () => {
+    const cookieName = configure().getLocaleCookieName();
+    let custom = 'es';
+    const conditionStore = new BrowserConditionStore({ locale: 'en' });
+    const withGetter = new BrowserConditionStore({
+      locale: 'en',
+      _getLocale: () => custom,
+    });
+
+    expect(conditionStore.getLocale()).toBe('en');
+    cookieValues.set(cookieName, 'fr');
+    expect(conditionStore.getLocale()).toBe('fr');
+    expect(withGetter.getLocale()).toBe('fr');
+
+    cookieValues.delete(cookieName);
+    expect(conditionStore.getLocale()).toBe('en');
+    expect(withGetter.getLocale()).toBe('es');
+    custom = 'fr';
+    expect(withGetter.getLocale()).toBe('fr');
+    expect(conditionStore.getLocale()).toBe('en');
+  });
+
+  it('follows the navigator from one task to the next', async () => {
+    const cookieName = configure().getLocaleCookieName();
+    const conditionStore = new BrowserConditionStore({ locale: 'en' });
+    cookieValues.delete(cookieName);
+    await Promise.resolve();
+
+    vi.stubGlobal('navigator', { languages: ['fr-CA'] });
+    expect(conditionStore.getLocale()).toBe('fr');
+    vi.stubGlobal('navigator', { languages: ['es-MX'] });
+    expect(conditionStore.getLocale()).toBe('fr');
+    await Promise.resolve();
+    expect(conditionStore.getLocale()).toBe('es');
+  });
+
+  it('reads the locale of a browser that keeps no cookie, from its first read', async () => {
+    vi.resetModules();
+    const fresh = await import('../BrowserConditionStore');
+    const cookieName = configure().getLocaleCookieName();
+    vi.stubGlobal('navigator', { languages: ['es-MX'] });
+    const conditionStore = new fresh.BrowserConditionStore({ locale: 'fr' });
+    cookieValues.delete(cookieName);
+
+    expect(conditionStore.getLocale()).toBe('es');
+  });
+
+  it('matches the locale again for another config', () => {
+    const cookieName = configure().getLocaleCookieName();
+    const conditionStore = new BrowserConditionStore({ locale: 'en' });
+    cookieValues.set(cookieName, 'es');
+    expect(conditionStore.getLocale()).toBe('es');
+
+    Reflect.deleteProperty(globalThis, '__generaltranslation');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    expect(conditionStore.getLocale()).toBe('en');
+  });
+
   it('falls back to _getEnableI18n, then true, when the enableI18n cookie is missing', () => {
     const cookieName = configure().getEnableI18nCookieName();
     const withGetter = new BrowserConditionStore({

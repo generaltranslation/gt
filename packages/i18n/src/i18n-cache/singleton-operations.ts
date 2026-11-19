@@ -42,3 +42,7 @@ export function setI18nCache<TranslationValue extends Content>(
 ): void {
   i18nCacheSingleton.set(i18nCacheInstance as unknown as I18nCache);
 }
+
+export function isI18nCacheInitialized(): boolean {
+  return i18nCacheSingleton.isInitialized();
+}

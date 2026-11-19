@@ -2,7 +2,10 @@ import { hashSource } from 'generaltranslation/id';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setReadonlyConditionStore } from '../../../condition-store/singleton-operations';
 import type { ReactI18nCache } from '../../../i18n-cache/ReactI18nCache';
-import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
+import {
+  getReactI18nCache,
+  setReactI18nCache,
+} from '../../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../../setup/i18nConfig';
 import { t } from '../t';
 
@@ -31,14 +34,16 @@ const save = {
 const greeting = { $_hash: 'greeting', $_tree: ['Hello, ', ['name'], '!'] };
 
 function setConditions(locale: string, enableI18n = true) {
-  setReadonlyConditionStore({
-    getLocale: () => locale,
+  const store = {
+    getLocale: vi.fn(() => locale),
     getRegion: () => undefined,
-    getEnableI18n: () => enableI18n,
+    getEnableI18n: vi.fn(() => enableI18n),
     setLocale: () => {},
     setRegion: () => {},
     setEnableI18n: () => {},
-  });
+  };
+  setReadonlyConditionStore(store);
+  return store;
 }
 
 describe('react-core t', () => {
@@ -77,6 +82,33 @@ describe('react-core t', () => {
     expect(t`Save`).toBe('Save');
     expect(precomputed(save)).toBe('Save');
   });
+
+  it('renders a precomputed message in the default locale without a lookup', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    setConditions('en');
+
+    expect(precomputed(save)).toBe('Save');
+    expect(precomputed(greeting, { name: 'Ada' })).toBe('Hello, Ada!');
+    expect(getReactI18nCache().lookupTranslation).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['enabled', true, 1],
+    ['disabled', false, 0],
+  ])(
+    'reads the conditions of a precomputed message once when i18n is %s',
+    (_name, enableI18n, localeReads) => {
+      initializeI18nConfig(
+        { defaultLocale: 'en', locales: ['en', 'fr'] },
+        'SPA'
+      );
+      const store = setConditions('fr', enableI18n);
+
+      expect(precomputed(save)).toBe(enableI18n ? 'Enregistrer' : 'Save');
+      expect(store.getEnableI18n).toHaveBeenCalledTimes(1);
+      expect(store.getLocale).toHaveBeenCalledTimes(localeReads);
+    }
+  );
 
   it('works at module level in an SPA, before any request scope', () => {
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');

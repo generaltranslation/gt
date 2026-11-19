@@ -9,6 +9,7 @@ import {
 } from 'generaltranslation/id';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { formatCutoff } from 'generaltranslation/internal';
+import { isI18nCacheInitialized } from '../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import logger from '../logs/logger';
@@ -131,24 +132,33 @@ export function renderPrecomputedMessage(
   formats: MessageFormats = site.$_formats ?? NO_FORMATS,
   locale: string,
   enabled: boolean,
-  lookupTranslation: LookupTreeTranslation
+  lookupTranslation: LookupTreeTranslation,
+  readsCache: boolean
 ): string {
   const tree = site.$_tree;
   const hash = site.$_hash;
+  const config = getI18nConfig();
+  const defaultLocale = config.getDefaultLocale();
+  let translation: MessageTree | undefined;
   // Disabled skips every lookup, including custom ones with default-locale entries.
-  const entry = enabled
-    ? lookupTranslation(
+  if (enabled) {
+    // A cache that was never set up goes to its lookup, which throws.
+    if (readsCache && locale === defaultLocale && isI18nCacheInitialized()) {
+      // The I18nCache gives a message in the default locale back as its own
+      // entry, so there is nothing to look up.
+      translation = tree;
+    } else {
+      const entry = lookupTranslation(
         tree,
         createMessageTreeLookupOptions(tree, locale, site)
-      )
-    : undefined;
-  // The compiler built the site's own tree, the default locale's entry.
-  const translation =
-    entry === tree ? tree : lookupTreeTranslation(entry, locale, hash);
+      );
+      // The compiler built the site's own tree, the default locale's entry.
+      translation =
+        entry === tree ? tree : lookupTreeTranslation(entry, locale, hash);
+    }
+  }
 
-  const config = getI18nConfig();
   const { maxChars } = site;
-  const defaultLocale = config.getDefaultLocale();
   let outputLocale = defaultLocale;
   let output: string | undefined;
   // An empty translation is the text '', not a missing one.

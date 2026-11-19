@@ -77,6 +77,7 @@ export function createGT(params: CreateGTParams): GT {
     getEnableI18n,
     lookupTranslation = defaultLookupTranslation,
   } = params;
+  const readsCache = lookupTranslation === defaultLookupTranslation;
   const render = (
     options: GTOptions & Pick<MessageTreeMetadata, '$_hash'>,
     strings: TemplateStringsArray,
@@ -102,7 +103,8 @@ export function createGT(params: CreateGTParams): GT {
         holes[1] as MessageFormats | undefined,
         enabled ? getLocale() : getI18nConfig().getDefaultLocale(),
         enabled,
-        lookupTranslation
+        lookupTranslation,
+        readsCache
       );
     }
     return isTemplateStringsArray(first)
@@ -183,6 +185,29 @@ const defaultLookupTranslation = /* @__PURE__ */ withDevHotReload(
   (tree, options) =>
     getI18nCache().lookupTranslation(options.$locale, tree, options)
 );
+
+/**
+ * Renders a precomputed message from the I18nCache, as the GT of a createGT()
+ * without `lookupTranslation` does once it has read `locale` and `enabled`;
+ * a disabled caller passes the default locale.
+ */
+export function renderCachedMessage(
+  site: PrecomputedMessage,
+  values: Record<string, unknown> | undefined,
+  formats: MessageFormats | undefined,
+  locale: string,
+  enabled: boolean
+): string {
+  return renderPrecomputedMessage(
+    site,
+    values,
+    formats,
+    locale,
+    enabled,
+    defaultLookupTranslation,
+    true
+  );
+}
 
 /** Global GT reading the current locale from the condition store. */
 export const t: GT = /* @__PURE__ */ createGT({

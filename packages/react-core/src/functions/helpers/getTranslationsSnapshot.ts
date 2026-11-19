@@ -18,16 +18,31 @@ export async function getTranslationsSnapshot(
   try {
     return { [locale]: await i18nCache.loadTranslations(locale) };
   } catch (error) {
-    console.warn(
-      createDiagnosticMessage({
-        source: '@generaltranslation/react-core',
-        severity: 'Warning',
-        whatHappened: `Could not load translations for locale "${locale}", so content for this locale renders untranslated`,
-        why: 'the translation loader failed, usually because translations for this locale have not been generated yet',
-        fix: 'Generate translations for this locale, or check your loadTranslations configuration.',
-        details: formatDiagnosticErrorDetails(error),
-      })
-    );
+    console.warn(createLoadWarning(locale, error));
     return {};
   }
+}
+
+/**
+ * Loads a locale's translations into the cache and copies nothing out, for a
+ * caller that only waits for them. A failed load warns like
+ * getTranslationsSnapshot, and a later lookup retries.
+ */
+export async function preloadTranslations(locale: Locale): Promise<void> {
+  try {
+    await getReactI18nCache().getLookupTranslation(locale);
+  } catch (error) {
+    console.warn(createLoadWarning(locale, error));
+  }
+}
+
+function createLoadWarning(locale: Locale, error: unknown): string {
+  return createDiagnosticMessage({
+    source: '@generaltranslation/react-core',
+    severity: 'Warning',
+    whatHappened: `Could not load translations for locale "${locale}", so content for this locale renders untranslated`,
+    why: 'the translation loader failed, usually because translations for this locale have not been generated yet',
+    fix: 'Generate translations for this locale, or check your loadTranslations configuration.',
+    details: formatDiagnosticErrorDetails(error),
+  });
 }
