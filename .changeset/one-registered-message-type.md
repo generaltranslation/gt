@@ -3,4 +3,4 @@
 '@generaltranslation/react-core': patch
 ---
 
-`gt-next` and `@generaltranslation/react-core` use `RegisteredMessage` from `gt-i18n` instead of declaring their own copies. The copy in `gt-next` had fallen behind, so the messages passed to its `useGT()` and `useMessages()` now also accept `$format`, `$locale` and `$requiresReview`.
+`gt-next` and `@generaltranslation/react-core` no longer declare their own copies of the type of a message passed to `useGT()` and `useMessages()`.
