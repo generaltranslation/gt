@@ -1,0 +1,148 @@
+import { describe, it, expect } from 'vitest';
+import { msg } from '../msg';
+import { decodeOptions } from '../decodeOptions';
+import { derive, declareVar } from 'generaltranslation';
+import type { RegisterableMessages } from '../types';
+import { hashStringMessage } from '../hashStringMessage';
+
+const decodeMsg = (encodedMsg: string) =>
+  encodedMsg.lastIndexOf(':') === -1
+    ? encodedMsg
+    : encodedMsg.slice(0, encodedMsg.lastIndexOf(':'));
+
+describe('msg function integration', () => {
+  it('should not format messages without variables', () => {
+    const result = msg('Plain text message');
+    const decoded = decodeMsg(result);
+    expect(decoded).toBe('Plain text message');
+  });
+
+  it('should format messages with variables', () => {
+    const result = msg('Hello {name}', { name: 'World' });
+    const decoded = decodeMsg(result);
+    expect(decoded).toBe('Hello World');
+  });
+
+  it('should format explicit ICU messages with variables', () => {
+    const result = msg('Hello {name}', {
+      $format: 'ICU',
+      name: 'World',
+    });
+    const decoded = decodeMsg(result);
+    expect(decoded).toBe('Hello World');
+  });
+
+  it('should preserve variables in STRING messages and encode the options', () => {
+    const message = 'Hello {name}';
+    const options = {
+      $format: 'STRING' as const,
+      $context: 'Greeting shown on the home page',
+      $id: 'home.greeting',
+      $locale: 'en-US',
+      $maxChars: 40,
+      $requiresReview: true,
+      name: 'Ada',
+    };
+    const result = msg(message, options);
+
+    expect(decodeMsg(result)).toBe(message);
+    expect(decodeOptions(result)).toEqual({
+      ...options,
+      $_source: message,
+      $_hash: hashStringMessage(message, options),
+    });
+  });
+
+  it('should not format variables in quoted text', () => {
+    const result = msg("'Hello {name}'");
+    const decoded = decodeMsg(result);
+    expect(decoded).toBe("'Hello {name}'"); // The quotes are preserved in the output
+  });
+
+  it('should handle complex ICU messages', () => {
+    const result = msg(
+      '{count, plural, =0 {no items} =1 {one item} other {{count} items}}',
+      { count: 5 }
+    );
+    const decoded = decodeMsg(result);
+    expect(decoded).toBe('5 items');
+  });
+
+  it.each([
+    ['2', 'exact'],
+    ['02', 'exact'],
+    ['2.5', '2.5 items'],
+  ])('formats numeric-string plural %j', (count, expected) => {
+    const result = msg(
+      '{count, plural, =2 {exact} one {one item} other {# items}}',
+      { count }
+    );
+
+    expect(decodeMsg(result)).toBe(expected);
+  });
+});
+
+describe('msg function integration with variables', () => {
+  it('should format messages with simple string variables', () => {
+    const result = msg('Hello ' + derive(declareVar('World')));
+    const decoded = decodeMsg(result);
+    expect(decoded).toBe('Hello {_gt_, select, other {World}}');
+  });
+
+  it('should format messages with variables containing special characters', () => {
+    const result = msg('Hello ' + derive(declareVar('{}')));
+    const decoded = decodeMsg(result);
+    expect(decoded).toBe("Hello {_gt_, select, other {'{}'}}");
+  });
+
+  it('should format messages with variables containing special characters', () => {
+    const result = msg('Hello {name}' + derive(declareVar('{}')), {
+      name: 'World',
+    });
+    const decoded = decodeMsg(result);
+    expect(decoded).toBe('Hello World{}');
+  });
+});
+
+describe('msg function with arrays', () => {
+  it('should return the array unchanged when no options are provided', () => {
+    const input: RegisterableMessages = ['Hello', 'World'];
+    const result = msg(input);
+    expect(result).toBe(input); // same reference
+  });
+
+  it('should apply options to each string in the array', () => {
+    const result = msg(['Hello {name}', 'Goodbye {name}'], { name: 'Alice' });
+    expect(Array.isArray(result)).toBe(true);
+    const decoded = (result as string[]).map(decodeMsg);
+    expect(decoded).toEqual(['Hello Alice', 'Goodbye Alice']);
+  });
+
+  it('should preserve literal STRING arrays and suffix their ids', () => {
+    const messages = ['Hello {name}', 'Goodbye {name}'];
+    const result = msg(messages, {
+      $format: 'STRING',
+      $id: 'greetings',
+      name: 'Ada',
+    });
+
+    expect(result.map(decodeMsg)).toEqual(messages);
+    expect(result.map(decodeOptions)).toEqual([
+      expect.objectContaining({
+        $format: 'STRING',
+        $id: 'greetings.0',
+        $_source: messages[0],
+      }),
+      expect.objectContaining({
+        $format: 'STRING',
+        $id: 'greetings.1',
+        $_source: messages[1],
+      }),
+    ]);
+  });
+
+  it('should handle an empty array', () => {
+    const result = msg([], { name: 'Alice' });
+    expect(result).toEqual([]);
+  });
+});

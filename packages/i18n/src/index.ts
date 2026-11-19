@@ -1,13 +1,19 @@
+export { t, type GT, type GTOptions } from './translation-functions/gt';
 export {
-  t,
-  type TemplateSyncResolutionFunction,
-} from './translation-functions/t';
-export { msg } from './translation-functions/msg/msg';
-export { decodeMsg } from './translation-functions/msg/decodeMsg';
-export { decodeOptions } from './translation-functions/msg/decodeOptions';
-export { derive, declareVar, decodeVars } from 'generaltranslation';
-export { gtFallback } from './translation-functions/fallbacks/gtFallback';
-export { mFallback } from './translation-functions/fallbacks/mFallback';
+  date,
+  derive,
+  n,
+  number,
+  part,
+  plural,
+  select,
+  selectordinal,
+  time,
+  type Part,
+  type Placeholder,
+} from './translation-functions/placeholders';
+export { msg, type Msg } from './translation-functions/msg';
+export { m, mFallback, type M } from './translation-functions/messages';
 export {
   getLocale,
   getRegion,
@@ -17,21 +23,3 @@ export {
   resolveCanonicalLocale,
 } from './helpers/locale';
 export { getVersionId } from './helpers/versionId';
-
-// Translation functions
-export type {
-  SyncResolutionFunction,
-  SyncResolutionFunctionWithFallback,
-  GTFunctionType,
-  MFunctionType,
-} from './translation-functions/types/functions';
-export type { RegisterableMessages } from './translation-functions/types/message';
-export type { RegisteredMessage } from './translation-functions/internal/getGT';
-export type {
-  TranslationVariables,
-  GTTranslationOptions,
-  EncodedTranslationOptions,
-  JsxTranslationOptions,
-  LookupOptionsFor,
-  RuntimeTranslationOptions,
-} from './translation-functions/types/options';

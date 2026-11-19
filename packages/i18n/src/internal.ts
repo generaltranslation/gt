@@ -1,13 +1,17 @@
-export { getGT, getGTInternal } from './translation-functions/internal/getGT';
 export {
-  getMessages,
-  getMessagesInternal,
-} from './translation-functions/internal/getMessages';
-export { tx, txInternal } from './translation-functions/internal/tx';
+  createGT,
+  getGT,
+  type CreateGTParams,
+} from './translation-functions/gt';
+export { createMessages, getMessages } from './translation-functions/messages';
 export {
-  GtInternalRuntimeTranslateString,
-  GtInternalRuntimeTranslateJsx,
-} from './translation-functions/internal/runtime-translate';
+  createTx,
+  tx,
+  type TX,
+  type TxConditions,
+} from './translation-functions/tx';
+export { dyn } from './translation-functions/placeholders';
+export { GtInternalRuntimeTranslateJsx } from './translation-functions/internal/runtime-translate';
 export { createLookupOptions } from './translation-functions/internal/helpers';
 export { I18nCache } from './i18n-cache/I18nCache';
 export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
@@ -17,8 +21,6 @@ export { WritableConditionStore } from './condition-store/WritableConditionStore
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
 export type { LocaleCandidates } from './i18n-config/I18nConfig';
 export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
-export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
-export { extractVariables } from './utils/extractVariables';
 export { getTranslateListenerKey } from './utils/listenerKeys';
 export type { TranslateListenerLookup } from './utils/listenerKeys';
 
@@ -47,10 +49,12 @@ export type {
 } from './i18n-cache/types';
 export type { TranslationsLoader } from './i18n-cache/translations-manager/translations-loaders/types';
 export type {
+  JsxTranslationOptions,
   LookupOptions,
   NormalizedLookupOptions,
   TranslationMetadata,
   TranslationOptions,
+  TranslationVariables,
 } from './translation-functions/types/options';
 export type {
   Hash,

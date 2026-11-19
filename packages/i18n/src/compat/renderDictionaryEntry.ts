@@ -1,6 +1,6 @@
 import { createLookupOptions } from '../translation-functions/internal/helpers';
-import { extractVariables } from '../utils/extractVariables';
-import { interpolateMessage } from '../translation-functions/utils/interpolation/interpolateMessage';
+import { extractVariables } from '../string/extractVariables';
+import { interpolateMessage } from '../string/interpolateMessage';
 import type { TranslationVariables } from '../translation-functions/types/options';
 import type { DictionaryEntry, DictionaryLookupOptions } from './types';
 import type { StringFormat } from '@generaltranslation/format';

@@ -36,11 +36,11 @@ export type {
   VariableTransformationSuffix,
 } from './types-dir/transformations';
 export {
-  isUnstableGTHelperName,
-  isUnstableGTImportSource,
-  UNSTABLE_GT_HELPER_NAMES,
-  type UnstableGTHelperName,
-} from './settings/unstableImportSources';
+  isGTMessageHelperName,
+  isGTMessageImportSource,
+  GT_MESSAGE_HELPER_NAMES,
+  type GTMessageHelperName,
+} from './settings/messageImportSources';
 
 export { getPluralForm } from './locales/getPluralForm';
 export { isVariable } from './utils/isVariable';
@@ -50,5 +50,3 @@ export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTra
 
 // derive
 export { indexVars } from './derive/indexVars';
-export { extractVars } from './derive/extractVars';
-export { condenseVars } from './derive/condenseVars';

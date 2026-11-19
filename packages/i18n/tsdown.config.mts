@@ -9,15 +9,13 @@ export default defineConfig(
       'src/internal-cookies.ts',
       'src/internal-string.ts',
       'src/internal.ts',
-      'src/unstable.ts',
-      'src/unstable-internal.ts',
     ]).map((config) => ({
       ...config,
-      // Keep decodeOptions out of the shared runtime chunk so importing it from the root stays small (gt-vue).
+      // Keep decodeOptions out of the shared runtime chunk so importing it from gt-i18n/internal/string stays small (gt-vue).
       outputOptions: {
         codeSplitting: {
           groups: [
-            { name: 'decodeOptions', test: /msg[\\/]decodeOptions\.ts$/ },
+            { name: 'decodeOptions', test: /string[\\/]decodeOptions\.ts$/ },
           ],
         },
       },

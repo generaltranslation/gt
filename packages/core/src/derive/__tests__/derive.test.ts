@@ -1,9 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { formatIcu, parse } from '@generaltranslation/icu/parser';
-import { GTIntl } from '../../index';
 import { declareVar } from '../declareVar';
 import { decodeVars } from '../decodeVars';
-import { extractVars } from '../extractVars';
 import { indexVars } from '../indexVars';
 import { sanitizeVar } from '../utils/sanitizeVar';
 
@@ -94,66 +92,6 @@ describe('declareVar', () => {
       formatIcu(encoded, 'en', { _gt_: 'placeholder' }, { timeZone: 'UTC' })
     ).toBe(value);
     expect(decodeVars(`before ${encoded} after`)).toBe(`before ${value} after`);
-    expect(extractVars(encoded)).toEqual({ _gt_1: value });
-  });
-});
-
-describe('extractVars', () => {
-  it.each([
-    ['empty string', '', {}],
-    ['plain text', 'Plain text without any variables', {}],
-    ['regular select', 'Hello {name, select, other {World}}', {}],
-    ['select with another _gt_ name', '{_gt_a, select, other {value}}', {}],
-    ['indexed select', '{_gt_1x, select, other {value}}', {}],
-    ['_gt_ argument', 'Hello {_gt_1}', {}],
-    ['_gt_ plural', '{_gt_1, plural, other {items}}', {}],
-    ['non-literal other option', '{_gt_, select, other {{name}}}', {}],
-    [
-      'single variable',
-      'Hello {_gt_, select, other {World}}',
-      { _gt_1: 'World' },
-    ],
-    ['empty other option', '{_gt_, select, other {}}', { _gt_1: '' }],
-    [
-      'sequential indexes',
-      '{_gt_, select, other {first}} then {_gt_, select, other {second}} then {_gt_, select, other {third}}',
-      { _gt_1: 'first', _gt_2: 'second', _gt_3: 'third' },
-    ],
-    [
-      'other option among several',
-      '{_gt_, select, zero {no items} one {one item} other {many items}}',
-      { _gt_1: 'many items' },
-    ],
-    [
-      'quoted ICU syntax in the value',
-      "{_gt_, select, other {'{name}' says hello}}",
-      { _gt_1: '{name} says hello' },
-    ],
-    [
-      'variables between regular arguments and selects',
-      'User {username} has {name, select, other {Hello}} {_gt_, select, other {World}} {count} {_gt_, select, other {!}}',
-      { _gt_1: 'World', _gt_2: '!' },
-    ],
-    [
-      'unicode text and newlines',
-      '我在{_gt_, select, other {公园}}\n跟{_gt_, select, other {玩具 café}}去玩儿',
-      { _gt_1: '公园', _gt_2: '玩具 café' },
-    ],
-  ])('%s', (_name, input, expected) => {
-    expect(extractVars(input)).toEqual(expected);
-  });
-
-  it('supplies the variables a condensed translation needs', () => {
-    const source =
-      'I play with my friend {_gt_, select, other {Brian}} at the {_gt_, select, other {}}';
-    const target = 'Je joue avec mon ami {_gt_1} au {_gt_2}';
-
-    expect(
-      new GTIntl().formatMessage(target, {
-        locales: ['fr'],
-        variables: extractVars(source),
-      })
-    ).toBe('Je joue avec mon ami Brian au ');
   });
 });
 

@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { hashSource } from 'generaltranslation/id';
-import { indexVars } from 'generaltranslation/internal';
 import { hashContent } from '../hashContent';
-import { hashStringMessage } from '../hashStringMessage';
+import { hashStringMessage } from '../../string/hashStringMessage';
 
 describe('hashContent', () => {
   // ===== REGRESSION ===== //
@@ -24,16 +23,11 @@ describe('hashContent', () => {
 
   // ===== NEW BEHAVIOR ===== //
 
-  it('applies indexVars only for ICU format', () => {
+  it('hashes an ICU string as written', () => {
     const source = 'Hello {_gt_, select, other {Ada}}!';
-    const indexed = indexVars(source);
-    expect(indexed).not.toBe(source);
 
     expect(hashContent(source, { $format: 'ICU' })).toBe(
-      hashSource({ source: indexed, dataFormat: 'ICU' })
-    );
-    expect(hashContent(source, { $format: 'STRING' })).toBe(
-      hashSource({ source, dataFormat: 'STRING' })
+      hashSource({ source, dataFormat: 'ICU' })
     );
   });
 
