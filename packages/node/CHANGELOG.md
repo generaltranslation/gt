@@ -1,5 +1,37 @@
 # gt-node
 
+## 2.0.0-samsara.10
+
+### Minor Changes
+
+- 99a2528: Tidy the `<T>` props and the `/unstable` type exports:
+  - `<T>` no longer declares or reads the internal props `_locale`, `_enableI18n`, and `_renderPreparedT`; it always renders in the locale from context. The RSC `T` and `Tx` from `@generaltranslation/react-core/components-rsc` still take them, and gt-next passes them there.
+  - `gt-i18n/unstable` and the framework `/unstable` entries export the type of a `` part`...` `` value as `Part` instead of `Fragment`, which collided with React's `Fragment`.
+
+### Patch Changes
+
+- 5e95a50: `initializeGT()` takes effect when it runs again. gt-i18n kept the first configuration and translation cache it was given, so after a Vite dev server restart the server kept calling the `loadTranslations` of the closed module runner, and every non-default locale failed with `Vite module runner has been closed` until the process restarted.
+
+  A second `initializeGT()` in `gt-svelte`, `gt-react`, `gt-react-native` or `gt-node` now replaces the configuration and the translation cache, and cached translations load again through the new loader. Call it once per module, not once per request. `gt-next` initializes itself on import and keeps its first initialization, as before.
+
+  gt-i18n no longer logs when a second instance is set, and no longer reads the `_GENERALTRANSLATION_LOG_LEVEL` environment variable, which only gated that log.
+
+- Updated dependencies [2c3f4f6]
+- Updated dependencies [2c3f4f6]
+- Updated dependencies [cdee423]
+- Updated dependencies [5e95a50]
+- Updated dependencies [cdee423]
+- Updated dependencies [550e8ca]
+- Updated dependencies [550e8ca]
+- Updated dependencies [5cb51b4]
+- Updated dependencies [c0f8d3d]
+- Updated dependencies [b078069]
+- Updated dependencies [7d49a34]
+- Updated dependencies [99a2528]
+- Updated dependencies [28a2e47]
+  - generaltranslation@10.0.0-samsara.10
+  - gt-i18n@2.0.0-samsara.10
+
 ## 2.0.0-samsara.9
 
 ### Major Changes
