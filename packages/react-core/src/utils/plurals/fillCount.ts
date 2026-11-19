@@ -1,11 +1,12 @@
+import type { Transformation } from 'generaltranslation/internal';
 import { Children, cloneElement, isValidElement, type ReactNode } from 'react';
 import { isCount } from './getPluralBranch';
 
-function getTransformation(type: unknown): string | undefined {
+function getTransformation(type: unknown): Transformation | undefined {
   // Reading a property of a client reference throws in a server component.
   try {
     return typeof type === 'function'
-      ? (type as { _gtt?: string })._gtt
+      ? (type as { _gtt?: Transformation })._gtt
       : undefined;
   } catch {
     return undefined;
@@ -27,14 +28,14 @@ export function fillCount(branch: ReactNode, n: unknown): ReactNode {
     }
     if (!isValidElement<Record<string, unknown>>(node)) return node;
     const transformation = getTransformation(node.type);
-    if (transformation?.startsWith('variable-count')) {
-      return cloneElement(node, { children: n });
-    }
-    if (transformation?.startsWith('plural')) return node;
+    // The component, or the one the compiler inserts for it.
+    const is = (component: Transformation) =>
+      transformation === component ||
+      transformation === `${component}-automatic`;
+    if (is('variable-count')) return cloneElement(node, { children: n });
+    if (is('plural')) return node;
     // A <Branch> keeps its named branches in its props.
-    const names = transformation?.startsWith('branch')
-      ? Object.keys(node.props)
-      : ['children'];
+    const names = is('branch') ? Object.keys(node.props) : ['children'];
     const filled = names
       .map((name) => [name, fill(node.props[name] as ReactNode)] as const)
       .filter(([name, value]) => value !== node.props[name]);
