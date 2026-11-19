@@ -179,6 +179,18 @@ describe('experimentalChunkTranslations', () => {
     it.each([
       ['webpack', GT_CONFIG, { ...BUILD, framework: 'webpack' }, 'webpack'],
       [
+        'Rollup without Vite',
+        GT_CONFIG,
+        { ...BUILD, framework: 'rollup' },
+        'which it does not do with rollup',
+      ],
+      [
+        'Rolldown without Vite',
+        GT_CONFIG,
+        { ...BUILD, framework: 'rolldown' },
+        'which it does not do with rolldown',
+      ],
+      [
         'compileTimeHash: false',
         GT_CONFIG,
         { ...BUILD, compileTimeHash: false },

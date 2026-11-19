@@ -49,7 +49,7 @@ export const CHUNK_TRANSLATIONS_IMPORTS = {
 export type ChunkTranslationsImport = keyof typeof CHUNK_TRANSLATIONS_IMPORTS;
 
 // Bundlers whose output this build reads after chunking
-const SUPPORTED_FRAMEWORKS = new Set(['vite', 'rollup', 'rolldown']);
+const SUPPORTED_FRAMEWORKS = new Set(['vite']);
 
 // A locale is part of a file name and of a URL
 const FILE_NAME_LOCALE = /^[A-Za-z0-9_-]+$/;
@@ -189,7 +189,7 @@ export function resolveChunkTranslations(
     return {
       error: createChunkTranslationsError(
         `it reads the chunks a bundler wrote, which it does not do with ${framework}`,
-        'Build with Vite, Rollup or Rolldown, or turn the option off'
+        'Build with Vite, or turn the option off'
       ),
     };
   }

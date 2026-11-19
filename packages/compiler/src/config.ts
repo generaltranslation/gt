@@ -33,7 +33,7 @@ export interface PluginConfig
   _debugHashManifest?: boolean;
   /**
    * Experimental, for production builds of single-page apps on `gt-react`
-   * with Vite, Rollup or Rolldown: writes the translations of each JavaScript
+   * with Vite: writes the translations of each JavaScript
    * chunk into a JSON file per locale next to the chunk, read from the
    * translation files at `files.gt.output`. A page then loads only the
    * translations of the chunks it loads, in its own locale, and a page in the

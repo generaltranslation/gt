@@ -531,16 +531,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             },
           },
         },
-        rollup: { renderChunk, generateBundle },
-        rolldown: { renderChunk, generateBundle },
       },
       {
         // After the plugins that write dynamic imports, such as Vite's glob imports
         name: '@generaltranslation/GT_PLUGIN:chunk-translations',
         enforce: 'post',
         vite: { generateBundle: nameImportedChunks },
-        rollup: { generateBundle: nameImportedChunks },
-        rolldown: { generateBundle: nameImportedChunks },
         transformInclude(id: string) {
           return !isDependency(id);
         },
