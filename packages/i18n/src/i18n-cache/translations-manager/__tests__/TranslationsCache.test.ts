@@ -128,6 +128,39 @@ describe('TranslationsCache', () => {
     });
   });
 
+  it('update() does not read or list the entries the cache already holds', () => {
+    const held = makeKey('Hello');
+    const added = makeKey('Goodbye');
+    const operations: string[] = [];
+    const clone = structuredClone;
+    const cloneSpy = vi
+      .spyOn(globalThis, 'structuredClone')
+      .mockImplementationOnce(
+        (value) =>
+          new Proxy(clone(value), {
+            ownKeys(table) {
+              operations.push('ownKeys');
+              return Reflect.ownKeys(table);
+            },
+            get(table, hash, receiver) {
+              operations.push(`get ${String(hash)}`);
+              return Reflect.get(table, hash, receiver);
+            },
+          })
+      );
+    const cache = new TranslationsCache<string>({
+      init: { [held.hash]: 'Bonjour' },
+      translateMany: mockTranslateMany,
+    });
+    cloneSpy.mockRestore();
+
+    cache.update({ [added.hash]: 'Au revoir' });
+
+    expect(operations).toEqual([]);
+    expect(cache.get(held)).toBe('Bonjour');
+    expect(cache.get(added)).toBe('Au revoir');
+  });
+
   // ===== NEW BEHAVIOR TESTS ===== //
 
   it('miss() batches multiple requests within BATCH_INTERVAL', async () => {

@@ -136,6 +136,8 @@ export class TranslationsCache<TranslationValue extends Content> {
     batchConfig?: TranslationBatchConfig;
     onMiss?: TranslationsCacheMissCallback<TranslationValue>;
   }) {
+    // update() merges into this table, so it is a copy no caller holds, and
+    // gt-svelte tells a reloaded locale by its values being new objects.
     this.cache = structuredClone(init);
     this.translateMany = translateMany;
     this.batchConfig = normalizeBatchConfig(batchConfig);
@@ -195,7 +197,8 @@ export class TranslationsCache<TranslationValue extends Content> {
   }
 
   public update(translations: Record<Hash, TranslationValue>): void {
-    this.cache = { ...this.cache, ...translations };
+    // A loader that resolved nothing leaves no table, whatever its type says.
+    this.cache = Object.assign(this.cache ?? {}, translations);
   }
 
   private flushNow(): void {

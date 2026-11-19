@@ -118,7 +118,7 @@ gtTanstackStart({
 });
 ```
 
-Changes to `gt.config.json` or these options apply after the dev server restarts.
+`cacheExpiryTime` applies on the server; translations in the browser never expire. Changes to `gt.config.json` or these options apply after the dev server restarts.
 
 To run the experimental GT compiler, which adds build-time hashes and build checks, pass `gtTanstackStart({ experimentalCompilerOptions: { type: 'babel' } })`. It is off by default, as in gt-next.
 

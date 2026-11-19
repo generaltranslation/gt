@@ -19,7 +19,7 @@ export function ensureDictionaryManager(): void {
     dictionary,
     loadDictionary,
     // Dictionaries expire with the translations cache set up at
-    // initialization, which never expires in the browser unless configured.
+    // initialization, which never expires in the browser.
     cacheExpiryTime: getI18nCache().getCacheExpiryTime(),
   });
 }

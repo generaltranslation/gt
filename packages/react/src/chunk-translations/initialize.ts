@@ -24,8 +24,8 @@ export function initializeChunkTranslations<C extends InitializeConfig>(
 
 /**
  * Starts gt-react with a cache that loads the locale with what has arrived so
- * far, and keeps it for good: the files a build wrote do not change. The
- * condition store exists once `initialize` returns.
+ * far; `initializeGTSPA()` keeps it for good. The condition store exists once
+ * `initialize` returns.
  */
 export function initializeCache<C extends InitializeConfig>(
   initialize: (config: C) => Promise<void>,
@@ -34,7 +34,6 @@ export function initializeCache<C extends InitializeConfig>(
 ): Promise<void> {
   return initialize({
     ...config,
-    cacheExpiryTime: null,
     loadTranslations: (locale: string) =>
       Promise.resolve(takeArrived(state, locale)),
   }).then(() => {

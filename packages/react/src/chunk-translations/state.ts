@@ -110,10 +110,7 @@ export type ChunkTranslationsState = {
   d?: boolean;
 };
 
-export type InitializeConfig = {
-  loadTranslations?: unknown;
-  cacheExpiryTime?: number | null;
-};
+export type InitializeConfig = { loadTranslations?: unknown };
 
 export function getState(): ChunkTranslationsState {
   const scope = globalThis as {

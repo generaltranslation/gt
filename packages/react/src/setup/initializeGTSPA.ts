@@ -26,12 +26,18 @@ export type InitializeGTSPAParams = I18nConfigParams &
  * - i18nStore
  *
  * This is SPA for browser runtime
+ *
+ * Translations never expire in the browser, so `cacheExpiryTime` is ignored.
  */
 export async function initializeGTSPA(config: InitializeGTSPAParams) {
   const runtimeConfig = addRuntimeCredentials(config);
   initializeI18nConfig(runtimeConfig, 'SPA');
 
-  const i18nCache = new BrowserI18nCache(runtimeConfig);
+  const i18nCache = new BrowserI18nCache({
+    ...runtimeConfig,
+    // Lookups are synchronous, so an expired locale would render untranslated.
+    cacheExpiryTime: null,
+  });
   setReactI18nCache(i18nCache);
 
   createOrUpdateBrowserConditionStore(runtimeConfig);
