@@ -1,8 +1,8 @@
-import type { GT, M } from 'gt-i18n/unstable';
+import type { GT, M } from 'gt-i18n';
 import {
   getGT as getGTForLocale,
   getMessages as getMessagesForLocale,
-} from 'gt-i18n/unstable/internal';
+} from 'gt-i18n/internal';
 import { getAsyncConditionStore } from '../async-i18n-cache/singleton-operations';
 
 /**

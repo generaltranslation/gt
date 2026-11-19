@@ -2,7 +2,7 @@ import { hashSource } from 'generaltranslation/id';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initializeGT } from '../setup/initializeGT';
 import { withGT } from '../setup/withGT';
-import { getGT, getMessages, msg, tx } from '../unstable';
+import { getGT, getMessages, msg, tx } from '../index';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
@@ -11,7 +11,7 @@ const frenchTranslations = {
   [hashSource({ source: saveTree, dataFormat: 'MESSAGE_TREE' })]: 'Enregistrer',
 };
 
-describe.sequential('gt-node/unstable', () => {
+describe.sequential('gt-node', () => {
   beforeEach(() => {
     Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
     initializeGT({

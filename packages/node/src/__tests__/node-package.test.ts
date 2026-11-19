@@ -6,11 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-const unstableArtifacts = [
-  'unstable.cjs',
-  'unstable.mjs',
-  'unstable.d.cts',
-  'unstable.d.mts',
+const rootArtifacts = [
+  'index.cjs',
+  'index.mjs',
+  'index.d.cts',
+  'index.d.mts',
 ].map((artifact) => join(packageRoot, 'dist', artifact));
 
 function buildPackage(): void {
@@ -30,37 +30,38 @@ function node(args: string[]): void {
 
 describe('gt-node package exports', () => {
   beforeAll(() => {
-    if (unstableArtifacts.every((artifact) => existsSync(artifact))) return;
+    if (rootArtifacts.every((artifact) => existsSync(artifact))) return;
     buildPackage();
   }, 60_000);
 
-  it('loads gt-node/unstable from the built CJS entrypoint', () => {
+  it('loads gt-node from the built CJS entrypoint', () => {
     node([
       '-e',
       `
         const assert = require('node:assert/strict');
-        const unstable = require('gt-node/unstable');
+        const gtNode = require('gt-node');
 
-        // Like the root entry, no t: getGT() loads the withGT() locale first.
-        assert.equal(unstable.t, undefined);
-        assert.equal(typeof unstable.getGT, 'function');
-        assert.equal(typeof unstable.tx, 'function');
-        assert.equal(typeof unstable.dyn, 'function');
-        assert.equal(typeof unstable.plural, 'function');
-        assert.equal(typeof unstable.time, 'function');
-        assert.equal(typeof unstable.getMessages, 'function');
-        assert.equal(typeof unstable.msg, 'function');
+        // No t or m: getGT() and getMessages() load the withGT() locale first.
+        assert.equal(gtNode.t, undefined);
+        assert.equal(gtNode.m, undefined);
+        assert.equal(typeof gtNode.getGT, 'function');
+        assert.equal(typeof gtNode.tx, 'function');
+        assert.equal(typeof gtNode.dyn, 'function');
+        assert.equal(typeof gtNode.plural, 'function');
+        assert.equal(typeof gtNode.time, 'function');
+        assert.equal(typeof gtNode.getMessages, 'function');
+        assert.equal(typeof gtNode.msg, 'function');
       `,
     ]);
   });
 
-  it('loads gt-node/unstable from the built ESM entrypoint', () => {
+  it('loads gt-node from the built ESM entrypoint', () => {
     node([
       '--input-type=module',
       '-e',
       `
         import assert from 'node:assert/strict';
-        import { derive, getGT, getMessages, mFallback, msg, tx } from 'gt-node/unstable';
+        import { derive, getGT, getMessages, mFallback, msg, tx } from 'gt-node';
 
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof tx, 'function');
