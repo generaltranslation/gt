@@ -26,7 +26,12 @@ import {
   CHUNK_TRANSLATIONS_MANIFEST,
   type ChunkTranslations,
 } from './resolveChunkTranslations';
-import { createShortId, createShortIds } from './shortIds';
+import {
+  findChunkIds,
+  readMinifiedIds,
+  sortIds,
+  type MinifiedIds,
+} from './hashMinification';
 import { renderStartupScript } from './startupScript';
 import {
   getUnsplitTranslations,
@@ -259,23 +264,25 @@ function getContentHash(source: string): string {
 
 /**
  * The translations of `hashes` that `locale` has, in their order, keyed as
- * the call sites pass them: by hash, or by the short id of `shortIdLength`
- * characters.
+ * the call sites pass them.
+ *
+ * In a build with hash minification, `hashes` are the ids themselves, since
+ * a message has one in each chunk that reads it, and `minified` says which
+ * message each is. They are then in the order of their lists and numbers.
  */
 export function pickTranslations(
   translations: Record<string, unknown>,
   hashes: string[],
-  shortIdLength?: number
+  minified?: MinifiedIds
 ): Record<string, unknown> {
   const picked: Record<string, unknown> = {};
-  for (const hash of hashes) {
+  for (const key of minified ? sortIds([...hashes]) : hashes) {
+    const hash = minified ? (minified.hashes.get(key) ?? key) : key;
     if (
       Object.prototype.hasOwnProperty.call(translations, hash) &&
       translations[hash] != null
     ) {
-      picked[
-        shortIdLength === undefined ? hash : createShortId(hash, shortIdLength)
-      ] = translations[hash];
+      picked[key] = translations[hash];
     }
   }
   return picked;
@@ -316,7 +323,7 @@ export function pickTranslations(
  */
 export function renderChunkTranslations(
   assignment: TranslationAssignment,
-  build: Pick<ChunkTranslations, 'defaultLocale' | 'locales' | 'shortIdLength'>,
+  build: Pick<ChunkTranslations, 'defaultLocale' | 'locales' | 'minifiedIds'>,
   table: TranslationsTable,
   base: string,
   unsplit?: {
@@ -373,7 +380,7 @@ export function renderChunkTranslations(
         [
           key,
           JSON.stringify(
-            pickTranslations(table[locale], hashes, build.shortIdLength)
+            pickTranslations(table[locale], hashes, build.minifiedIds)
           ),
         ] as const
     );
@@ -383,7 +390,7 @@ export function renderChunkTranslations(
         [
           entry,
           JSON.stringify({
-            t: pickTranslations(table[locale], hashes, build.shortIdLength),
+            t: pickTranslations(table[locale], hashes, build.minifiedIds),
             ...(imported && !maps && { i: imported }),
           }),
         ] as const
@@ -611,10 +618,9 @@ export function writeChunkTranslations(
   );
   const importMap = readChunkImportMap(bundle, build.importMap);
   const table = loadChunkTranslationsTable(gtFiles, build);
-  const shortIds =
-    build.shortIdLength === undefined
-      ? undefined
-      : createShortIds(build.shortIdLength, build, table);
+  const ids =
+    build.minifiedIds &&
+    readMinifiedIds(build.minifiedIds, build, table, chunks);
   const assigned: AssignedChunk[] = chunks.map(
     ({ fileName, code, imports, dynamicImports, isEntry }) => {
       const loaded = findImportedChunks({ fileName, code }, importMap).filter(
@@ -622,7 +628,11 @@ export function writeChunkTranslations(
       );
       return {
         fileName,
-        hashes: findChunkHashes(code, build.hashes, shortIds),
+        // With hash minification a message has an id in each chunk that
+        // reads it, so there the ids are what is assigned to files
+        hashes: ids
+          ? findChunkIds(code, ids)
+          : findChunkHashes(code, build.hashes),
         imports,
         dynamicImports: [...new Set([...dynamicImports, ...loaded])],
         isEntry,

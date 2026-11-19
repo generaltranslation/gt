@@ -4,9 +4,10 @@ import type { ChunkImportMapOptions } from './chunkImportMap';
 import type { GTConfig } from '../../config';
 import { DEFAULT_REQUEST_COST } from './assignTranslationsByRegion';
 import {
-  SHORT_IDS_WITH_TAGGED_IDS_ERROR,
+  MINIFY_HASHES_WITH_TAGGED_IDS_ERROR,
+  type MinifiedIds,
   type RuntimeReaders,
-} from './shortIds';
+} from './hashMinification';
 
 /**
  * Environment variable read when the `experimentalChunkTranslations` option
@@ -93,13 +94,14 @@ export type ChunkTranslations = {
    */
   regions?: RegionSplit;
   /**
-   * Set when the call sites the build splits pass a short id of this many
-   * characters, and the files of chunks are keyed by it (see shortIds.ts).
+   * Set in a build with hash minification: the call sites the build splits
+   * pass an id in place of their hash, and the files are keyed by it (see
+   * hashMinification.ts).
    */
-  shortIdLength?: number;
+  minifiedIds?: MinifiedIds;
   /**
-   * In a build with short ids: what the call sites that hash their message
-   * when they run can read, which stays under its hash.
+   * In a build with hash minification: what the call sites that hash their
+   * message when they run can read, which stays under its hash.
    */
   runtimeReaders?: RuntimeReaders;
 };
@@ -289,13 +291,23 @@ const MAPPED_EXPORTS: Partial<Record<ChunkTranslationsImport, string>> = {
   initialize: 'initializeMappedChunkTranslations',
 };
 
-const createInvalidChunkTranslationsEnvError = (value: string) =>
+const createInvalidBooleanEnvError = (name: string, value: string) =>
   createDiagnosticMessage({
     source: '@generaltranslation/compiler',
     severity: 'Error',
-    whatHappened: `${CHUNK_TRANSLATIONS_ENV_VAR} is set to "${value}", which is not a boolean`,
-    fix: `Set ${CHUNK_TRANSLATIONS_ENV_VAR} to true or false`,
+    whatHappened: `${name} is set to "${value}", which is not a boolean`,
+    fix: `Set ${name} to true or false`,
   });
+
+/** A boolean environment variable, or undefined when it is not set. */
+function readBooleanEnv(name: string): boolean | undefined {
+  const raw = process.env[name];
+  if (raw === undefined) return undefined;
+  const value = raw.trim().toLowerCase();
+  if (ENV_TRUE_VALUES.has(value)) return true;
+  if (ENV_FALSE_VALUES.has(value)) return false;
+  throw new Error(createInvalidBooleanEnvError(name, raw));
+}
 
 const createChunkTranslationsError = (why: string, fix: string) =>
   createDiagnosticMessage({
@@ -313,13 +325,26 @@ const createChunkTranslationsError = (why: string, fix: string) =>
  * environment variable.
  */
 export function getChunkTranslations(option: boolean | undefined): boolean {
-  if (option !== undefined) return option;
-  const raw = process.env[CHUNK_TRANSLATIONS_ENV_VAR];
-  if (raw === undefined) return false;
-  const value = raw.trim().toLowerCase();
-  if (ENV_TRUE_VALUES.has(value)) return true;
-  if (ENV_FALSE_VALUES.has(value)) return false;
-  throw new Error(createInvalidChunkTranslationsEnvError(raw));
+  return option ?? readBooleanEnv(CHUNK_TRANSLATIONS_ENV_VAR) ?? false;
+}
+
+/**
+ * Environment variable read when the
+ * `experimentalChunkTranslationsMinifyHashes` option is not set.
+ */
+export const CHUNK_TRANSLATIONS_MINIFY_HASHES_ENV_VAR =
+  'GT_CHUNK_TRANSLATIONS_MINIFY_HASHES';
+
+/**
+ * Whether this build minifies the hashes its call sites pass (see
+ * hashMinification.ts): the `experimentalChunkTranslationsMinifyHashes`
+ * option, else the `GT_CHUNK_TRANSLATIONS_MINIFY_HASHES` environment
+ * variable.
+ */
+export function getMinifyHashes(option: boolean | undefined): boolean {
+  return (
+    option ?? readBooleanEnv(CHUNK_TRANSLATIONS_MINIFY_HASHES_ENV_VAR) ?? false
+  );
 }
 
 /**
@@ -332,13 +357,13 @@ export function resolveChunkTranslations(
     compileTimeHash,
     naming = defaultChunkTranslationsNaming,
     regions,
-    shortIdLength,
+    minifyHashes = false,
   }: {
     framework: string;
     compileTimeHash: boolean;
     naming?: ChunkTranslationsNaming;
     regions?: RegionSplit;
-    shortIdLength?: number;
+    minifyHashes?: boolean;
   }
 ): ChunkTranslations | { error: string } {
   if (!SUPPORTED_FRAMEWORKS.has(framework)) {
@@ -387,8 +412,8 @@ export function resolveChunkTranslations(
       ),
     };
   }
-  if (shortIdLength !== undefined && gtConfig?._tagIds === true) {
-    return { error: SHORT_IDS_WITH_TAGGED_IDS_ERROR };
+  if (minifyHashes && gtConfig?._tagIds === true) {
+    return { error: MINIFY_HASHES_WITH_TAGGED_IDS_ERROR };
   }
   return {
     defaultLocale,
@@ -398,8 +423,8 @@ export function resolveChunkTranslations(
     unsplit: new Set(),
     naming,
     ...(regions && { regions }),
-    ...(shortIdLength !== undefined && {
-      shortIdLength,
+    ...(minifyHashes && {
+      minifiedIds: { hashes: new Map() },
       runtimeReaders: {
         compiled: new Map(),
         shapes: new Set(),

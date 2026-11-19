@@ -43,6 +43,7 @@ import {
   CHUNK_TRANSLATIONS_IMPORTS,
   chunkTranslationsNamings,
   getChunkTranslations,
+  getMinifyHashes,
   getChunkTranslationsNaming,
   getChunkTranslationsSplit,
   getEntryExport,
@@ -58,12 +59,15 @@ import {
   type RegionTranslationsManifest,
 } from '../transform/chunk-translations/writeRegionTranslations';
 import {
-  createShortId,
-  createShortIds,
-  findShortIdCollisions,
+  createIdPlaceholder,
+  findChunkIds,
+  getListName,
   getMessageShape,
-  getShortIdLength,
-} from '../transform/chunk-translations/shortIds';
+  minifyChunk,
+  minifyHashes,
+  readMinifiedIds,
+  type MinifiedIds,
+} from '../transform/chunk-translations/hashMinification';
 import {
   getPageBase,
   renderStartupScript,
@@ -73,7 +77,10 @@ import {
   getUnsplitTranslations,
   replaceUnsplitLoader,
 } from '../transform/chunk-translations/unsplitTranslations';
-import { renderChunkTranslations } from '../transform/chunk-translations/writeChunkTranslations';
+import {
+  getAssignmentHash,
+  renderChunkTranslations,
+} from '../transform/chunk-translations/writeChunkTranslations';
 
 const GT_FILES = { gt: { output: 'translations/[locale].json' } };
 const GT_CONFIG = {
@@ -135,6 +142,37 @@ async function transform(
     path.join(cwd, 'App.jsx')
   );
   return result && typeof result === 'object' ? result.code : result;
+}
+
+/**
+ * What the translation files a build emitted for `fr` hold, each by what a
+ * call site passes: the files of chunks and of entries, and the unsplit file.
+ */
+function readTranslationFiles(
+  emitted: Record<string, string>
+): Record<string, unknown>[] {
+  return Object.entries(emitted)
+    .filter(
+      ([file]) =>
+        /\.fr(\.|$)/.test(file) && !path.basename(file).startsWith('gt-map.')
+    )
+    .map(([, source]) => {
+      const content = JSON.parse(source);
+      return content.t ?? content;
+    });
+}
+
+/**
+ * What a page reads for each id its call sites pass, from files it holds
+ * together in one cache, as gt-react holds them: undefined where no file
+ * has the id, which renders the source.
+ */
+function readAsPage(
+  ids: ReadonlyMap<string, string>,
+  files: Record<string, unknown>[]
+): Map<string, unknown> {
+  const cache: Record<string, unknown> = Object.assign({}, ...files);
+  return new Map([...ids.keys()].map((id) => [id, cache[id]]));
 }
 
 const MODULE = `import { jsx } from 'react/jsx-runtime';
@@ -2831,182 +2869,272 @@ export const ready = initializeGTSPA({});`,
     });
   });
 
-  describe('short ids', () => {
-    const SHORT: GTUnpluginOptions = {
+  describe('hash minification', () => {
+    const MINIFIED: GTUnpluginOptions = {
       ...ON,
-      experimentalChunkTranslationsShortIds: true,
+      experimentalChunkTranslationsMinifyHashes: true,
     };
-    // t`Save` and t`Print`, whose hashes start with the same 6 bits
+    // t`Save` and t`Print`
     const SAVE_TEXT = 'ab72d114d0d156a9';
     const PRINT_TEXT = 'aae8cb2668d0cb74';
+    const idsOf = (hashes: string[]) => [...minifyHashes(hashes).values()];
+    const minifiedIds = (): MinifiedIds => ({ hashes: new Map() });
+    const site = (hash: string) => `t({$_hash:"${createIdPlaceholder(hash)}"})`;
+    type Vite = {
+      configResolved: (config: object) => void;
+      renderChunk: (code: string) => string | null;
+      generateBundle: (this: object, options: object, bundle: object) => void;
+    };
+    /** Renders each chunk and writes the build's files, by file without its hash. */
+    function writeBundle(
+      vite: Vite,
+      chunks: Record<string, { code: string; [key: string]: unknown }>
+    ) {
+      vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
+      const emitted: Record<string, string> = {};
+      const rendered = Object.fromEntries(
+        Object.entries(chunks).map(([fileName, chunk]) => [
+          fileName,
+          {
+            type: 'chunk',
+            fileName,
+            imports: [],
+            dynamicImports: [],
+            isEntry: false,
+            ...chunk,
+            code: vite.renderChunk(chunk.code) ?? chunk.code,
+          },
+        ])
+      );
+      vite.generateBundle.call(
+        {
+          emitFile: (file: { fileName: string; source: string }) =>
+            (emitted[file.fileName.replace(/\.[0-9a-f]{8}\.json$/, '')] =
+              file.source),
+        },
+        {},
+        rendered
+      );
+      return { emitted, rendered };
+    }
 
     it.each([
-      [undefined, undefined, undefined],
-      [undefined, '', undefined],
-      [undefined, 'false', undefined],
-      [undefined, 'true', 8],
-      [undefined, '7', 7],
-      [true, 'false', 8],
-      [false, 'true', undefined],
-      [10, '7', 10],
-      [1, undefined, 1],
+      [undefined, undefined, false],
+      [undefined, '', false],
+      [undefined, 'false', false],
+      [undefined, '0', false],
+      [undefined, 'true', true],
+      [undefined, ' TRUE ', true],
+      [undefined, '1', true],
+      [true, 'false', true],
+      [false, 'true', false],
     ] as const)(
-      'are chosen by the option %s, then GT_CHUNK_TRANSLATIONS_SHORT_IDS=%s: %s characters',
+      'is chosen by the option %s, then GT_CHUNK_TRANSLATIONS_MINIFY_HASHES=%s: %s',
       (option, env, expected) => {
-        vi.stubEnv('GT_CHUNK_TRANSLATIONS_SHORT_IDS', env as never);
-        expect(getShortIdLength(option)).toBe(expected);
+        vi.stubEnv('GT_CHUNK_TRANSLATIONS_MINIFY_HASHES', env as never);
+        expect(getMinifyHashes(option)).toBe(expected);
       }
     );
 
-    it.each([
-      [0, undefined],
-      [11, undefined],
-      [7.5, undefined],
-      [undefined, 'yes'],
-      [undefined, '0'],
-      [undefined, '11'],
-      [undefined, '8.5'],
-    ])('reject the length %s and the variable %s', (option, env) => {
-      vi.stubEnv('GT_CHUNK_TRANSLATIONS_SHORT_IDS', env as never);
-      expect(() => getShortIdLength(option)).toThrow(
-        'which is not true, false or a number of characters from 1 to 10'
+    it('rejects a variable that is not a boolean', () => {
+      vi.stubEnv('GT_CHUNK_TRANSLATIONS_MINIFY_HASHES', '8');
+      expect(() => getMinifyHashes(undefined)).toThrow(
+        'GT_CHUNK_TRANSLATIONS_MINIFY_HASHES is set to "8", which is not a boolean. Set GT_CHUNK_TRANSLATIONS_MINIFY_HASHES to true or false.'
       );
     });
 
-    it('fail a production build without chunk translations, and leave a dev build alone', () => {
+    it('fails a production build without chunk translations, and leaves a dev build alone', () => {
       const { plugins } = createPlugins({
         gtConfig: GT_CONFIG,
-        experimentalChunkTranslationsShortIds: true,
+        experimentalChunkTranslationsMinifyHashes: true,
       });
       expect(plugins).toHaveLength(1);
       const buildStart = plugins[0].buildStart as () => void;
       expect(buildStart).toThrow(
-        'experimentalChunkTranslationsShortIds is set in a build without experimentalChunkTranslations'
+        'experimentalChunkTranslationsMinifyHashes is set in a build without experimentalChunkTranslations'
       );
       vi.stubEnv('NODE_ENV', 'development');
       expect(buildStart).not.toThrow();
     });
 
-    it('fail a build that writes the id of a <T> into its output', () => {
+    it('fails a build that writes the id of a <T> into its output', () => {
       const build = { framework: 'vite', compileTimeHash: true };
       const tagged = { ...GT_CONFIG, _tagIds: true };
       const resolved = resolveChunkTranslations(tagged, {
         ...build,
-        shortIdLength: 8,
+        minifyHashes: true,
       });
       expect('error' in resolved && resolved.error).toContain(
-        'experimentalChunkTranslationsShortIds cannot be used with _tagIds'
+        'experimentalChunkTranslationsMinifyHashes cannot be used with _tagIds'
       );
       expect(resolveChunkTranslations(tagged, build)).not.toHaveProperty(
         'error'
       );
       expect(
-        resolveChunkTranslations(GT_CONFIG, { ...build, shortIdLength: 7 })
-      ).toMatchObject({ shortIdLength: 7 });
+        resolveChunkTranslations(GT_CONFIG, { ...build, minifyHashes: true })
+      ).toMatchObject({ minifiedIds: { hashes: new Map() } });
+    });
+
+    it("gives a message the name of the list of its chunk's messages, then its place in it", () => {
+      expect(getListName([SAVE_TEXT, HELLO])).toBe('2bFNA3qJ');
+      expect(minifyHashes([SAVE_TEXT, HELLO])).toEqual(
+        new Map([
+          [SAVE_TEXT, '2bFNA3qJ.0'],
+          [HELLO, '2bFNA3qJ.1'],
+        ])
+      );
+      // Wherever a chunk's code names them, and however often
+      expect(minifyHashes([HELLO, SAVE_TEXT, HELLO])).toEqual(
+        minifyHashes([SAVE_TEXT, HELLO])
+      );
     });
 
     it.each([
-      [SAVE_TEXT, 8, 'q3LRFNDR'],
-      [SAVE_TEXT, 7, 'q3LRFND'],
-      [SAVE_TEXT, 10, 'q3LRFNDRVq'],
-      [HELLO, 8, 't4XrnVr1'],
-      // The two characters base64url has and base64 does not
-      ['fbff000000000000', 2, '-_'],
+      ['16 hexadecimal characters', [SAVE_TEXT, HELLO], '2bFNA3qJ'],
+      ['11 base64url characters', ['q3LRFNDRVqk', 't4XrnVr1AZE'], 'Rze57V1q'],
     ])(
-      'are the start of the hash %s in %i characters: %s',
-      (hash, length, id) => {
-        expect(createShortId(hash, length)).toBe(id);
+      'minifies the hashes of a chunk in the order of the hashes, whatever a hash is made of: %s',
+      (_format, [first, second], name) => {
+        const minified = minifiedIds();
+        const code = [
+          `e(T,{children:"Hello",_hash:'${createIdPlaceholder(second)}'})`,
+          `t({$_hash:"${createIdPlaceholder(first)}",$_tree:"Save"})`,
+          `t({$_hash:\`${createIdPlaceholder(first)}\`})\`Save\``,
+          // A call site that reads the unsplit file by its hash
+          `msg({$_hash:"${first}"})\`Save\``,
+        ].join(';');
+        expect(minifyChunk(code, minified)).toBe(
+          [
+            `e(T,{children:"Hello",_hash:'${name}.1'})`,
+            `t({$_hash:"${name}.0",$_tree:"Save"})`,
+            `t({$_hash:\`${name}.0\`})\`Save\``,
+            `msg({$_hash:"${first}"})\`Save\``,
+          ].join(';')
+        );
+        expect(minified.hashes).toEqual(
+          new Map([
+            [`${name}.0`, first],
+            [`${name}.1`, second],
+          ])
+        );
+        // No id is a string a hash of either format can be
+        for (const id of minified.hashes.keys()) {
+          expect(id).not.toMatch(/^(?:[0-9a-f]{16}|[A-Za-z0-9_-]{11})$/);
+        }
+        expect(minifyChunk(`msg({$_hash:"${first}"})`, minified)).toBe(
+          undefined
+        );
       }
     );
 
+    // What a page of one build can meet in a file of another: an id of a
+    // chunk whose messages changed is no id of the chunk as it is now
     it.each([
-      ['share their first characters', [SAVE_TEXT, PRINT_TEXT], 1, 'q'],
+      ['gains a message', [SAVE_TEXT, HELLO], [PRINT_TEXT, SAVE_TEXT, HELLO]],
       [
-        'differ only after the bits an id holds',
-        ['0000000000000001', '0000000000000002'],
-        10,
-        'AAAAAAAAAA',
+        'loses a message',
+        [SAVE_TEXT, HELLO, PRINT_TEXT],
+        [SAVE_TEXT, PRINT_TEXT],
       ],
-      [
-        'are a hash and a key of the catalogs that is its short id',
-        [SAVE_TEXT, 'q3LRFNDR'],
-        8,
-        'q3LRFNDR',
-      ],
-    ])('collide for two messages that %s', (_name, keys, length, id) => {
-      expect(findShortIdCollisions(keys, length)).toEqual({
-        collisions: [{ id, keys }],
-        reserved: [],
-      });
+      ['has a message edited', [SAVE_TEXT, HELLO], [SAVE_TEXT, PRINT_TEXT]],
+    ])(
+      'shares no id between a chunk and the same chunk of a build in which it %s',
+      (_change, before, after) => {
+        const old = idsOf(before);
+        expect(idsOf(after).filter((id) => old.includes(id))).toEqual([]);
+      }
+    );
+
+    it('gives a chunk the same ids in every build that leaves its messages alone, and two chunks with the same messages the same ids', () => {
+      const minified = minifiedIds();
+      const home = `${site(SAVE_TEXT)};${site(HELLO)}`;
+      const first = minifyChunk(home, minified)!;
+      // Other code around the same call sites, and another chunk of the build
+      expect(minifyChunk(`var revision=2;${home}`, minified)).toBe(
+        `var revision=2;${first}`
+      );
+      // The same call sites the other way round, as when the bundler
+      // orders the chunk's modules differently
+      expect(minifyChunk(`${site(HELLO)};${site(SAVE_TEXT)}`, minified)).toBe(
+        first.split(';').reverse().join(';')
+      );
+      minifyChunk(site(PRINT_TEXT), minified);
+      expect([...minified.hashes]).toEqual([
+        ['2bFNA3qJ.0', SAVE_TEXT],
+        ['2bFNA3qJ.1', HELLO],
+        [`${getListName([PRINT_TEXT])}.0`, PRINT_TEXT],
+      ]);
     });
 
-    it('do not collide for hashes that differ within the bits an id holds, or for keys that are no hashes', () => {
-      expect(
-        findShortIdCollisions(
-          [SAVE_TEXT, PRINT_TEXT, HELLO, 'greeting', 'q4'],
-          2
-        )
-      ).toEqual({ collisions: [], reserved: [] });
-    });
-
-    it('fail the build for two messages that share an id, and name both and what to do', () => {
-      const build = {
-        hashes: new Set([SAVE_TEXT]),
-        unsplit: new Set<string>(),
+    it('fails the build when two lists of messages share a name, and names both messages', () => {
+      const minified: MinifiedIds = {
+        hashes: new Map([['2bFNA3qJ.0', PRINT_TEXT]]),
       };
-      const table = { fr: { [PRINT_TEXT]: 'Imprimer' }, de: {} };
-      expect(() => createShortIds(1, build, table)).toThrow(
-        `experimentalChunkTranslationsShortIds gives two messages the same id of 1 character because their hashes start with the same bits, and a page would render the translation of one for the other. Set experimentalChunkTranslationsShortIds or GT_CHUNK_TRANSLATIONS_SHORT_IDS to more characters, up to 10, or turn the option off. Details: ${PRINT_TEXT} and ${SAVE_TEXT} share "q".`
-      );
-      expect(createShortIds(2, build, table).hashes).toEqual(
-        new Map([['q3', SAVE_TEXT]])
-      );
       expect(() =>
-        createShortIds(
-          10,
-          { hashes: new Set(['0000000000000001']), unsplit: new Set() },
-          { fr: { '0000000000000002': 'Deux' } }
-        )
-      ).toThrow('Turn experimentalChunkTranslationsShortIds off.');
-    });
-
-    it('fail the build for an id that names a property of every object', () => {
-      // The hash whose first 48 bits are `toString` in base64url
-      const hash = 'b684adae29e00000';
-      const build = { hashes: new Set([hash]), unsplit: new Set<string>() };
-      expect(() => createShortIds(8, build, {})).toThrow(
-        `Details: ${hash} is "toString".`
-      );
-      expect(createShortIds(7, build, {}).hashes).toEqual(
-        new Map([['toStrin', hash]])
+        minifyChunk(`${site(SAVE_TEXT)};${site(HELLO)}`, minified)
+      ).toThrow(
+        `Hash minification gives two messages the id "2bFNA3qJ.0" because the lists of messages of two chunks have the same digest, and a page would render the translation of one message for the other. Turn experimentalChunkTranslationsMinifyHashes off. Details: ${PRINT_TEXT} and ${SAVE_TEXT}.`
       );
     });
 
-    it('are read out of a chunk in place of the hashes, in any quotes', () => {
-      const hashes = new Set([SAVE_TEXT, HELLO]);
-      const shortIds = createShortIds(8, { hashes, unsplit: new Set() }, {});
+    it.each([
+      ['a key of the translation files', { fr: { '2bFNA3qJ.1': 'Autre' } }, []],
+      ['an id written by hand', {}, ['2bFNA3qJ.1']],
+    ])('fails the build when an id is also %s', (_name, table, unsplit) => {
+      const minified = minifiedIds();
+      const code = minifyChunk(`${site(SAVE_TEXT)};${site(HELLO)}`, minified)!;
+      const chunks = [{ fileName: 'assets/index.js', code }];
+      expect(() =>
+        readMinifiedIds(minified, { unsplit: new Set(unsplit) }, table, chunks)
+      ).toThrow(
+        'Hash minification gives a message an id that the translations already hold because a key of the translation files, or an id written by hand, is the same string, and a page would render one message for the other. Turn experimentalChunkTranslationsMinifyHashes off. Details: 2bFNA3qJ.1.'
+      );
       expect(
-        findChunkHashes(
-          't({$_hash:`t4XrnVr1`,$_tree:[`Hello, `,[`name`],`!`]},{name:e});e(T,{children:"Save",_hash:\'q3LRFNDR\'})',
-          hashes,
-          shortIds
-        )
-      ).toEqual([SAVE_TEXT, HELLO]);
+        readMinifiedIds(minified, { unsplit: new Set() }, {}, chunks).hashes
+      ).toBe(minified.hashes);
+    });
+
+    it('fails the build when a chunk reaches the output with a placeholder at its call sites', () => {
+      expect(() =>
+        readMinifiedIds(minifiedIds(), { unsplit: new Set() }, {}, [
+          { fileName: 'assets/worker.js', code: site(SAVE_TEXT) },
+          { fileName: 'assets/index.js', code: 't({$_hash:"2bFNA3qJ.0"})' },
+        ])
+      ).toThrow(
+        'Hash minification did not reach the call sites of a chunk because the bundler wrote them without rendering them through this plugin, so their call sites still hold a placeholder and would render the source text. Turn experimentalChunkTranslationsMinifyHashes off. Details: assets/worker.js.'
+      );
+    });
+
+    it("reads the ids out of a chunk's final code in any quotes, by their list and then their number", () => {
+      const minified = minifiedIds();
+      const hashes = Array.from({ length: 11 }, (_, place) =>
+        place.toString(16).padStart(16, '0')
+      );
+      minifyChunk(hashes.map(site).join(';'), minified);
+      minifyChunk(site(SAVE_TEXT), minified);
+      const ids = readMinifiedIds(minified, { unsplit: new Set() }, {}, []);
+      const [list] = idsOf(hashes)[0].split('.');
+      const other = idsOf([SAVE_TEXT])[0];
+      const code = [
+        `t({$_hash:\`${list}.10\`,$_tree:[\`Hello, \`,[\`name\`],\`!\`]},{name:e})`,
+        `e(T,{children:"Save",_hash:'${list}.9'})`,
+        `t({ "$_hash": "${other}" })`,
+        `t({$_hash:"${list}.2"})`,
+        // A call site that reads the unsplit file by its hash
+        `msg({$_hash:"${SAVE_TEXT}"})\`Save\``,
+        // An id that is not a call site option, of no message, or of no list
+        `var ids={save:"${list}.3"}`,
+        `t({$_hash:"${list}.11"})`,
+        't({$_hash:"AAAAAAAA.0"})',
+        `t({$_hash:"${list}0"})`,
+      ].join(';');
+      const found = [`${list}.2`, `${list}.9`, `${list}.10`];
+      expect(findChunkIds(code, ids)).toEqual(
+        list < other ? [...found, other] : [other, ...found]
+      );
       expect(
-        findChunkHashes(
-          [
-            // A call site that reads the unsplit file by its hash
-            `msg({$_hash:"${SAVE_TEXT}"})\`Save\``,
-            // An id that is not a call site option, of another length, or of no message
-            'var ids={save:"q3LRFNDR"}',
-            't({$_hash:"q3LRFND"})',
-            't({$_hash:"q3LRFNDRV"})',
-            't({$_hash:"AAAAAAAA"})',
-          ].join(';'),
-          hashes,
-          shortIds
-        )
-      ).toEqual([]);
+        findChunkHashes(code, new Set([...hashes, SAVE_TEXT]), ids)
+      ).toEqual([hashes[2], hashes[9], hashes[10], SAVE_TEXT].sort());
     });
 
     const SOURCE = `import { jsx } from 'react/jsx-runtime';
@@ -3025,7 +3153,7 @@ export const Written = () => jsx(T, { _hash: '0123456789abcdef', children: 'Writ
       ['calls with a precomputed message', true],
       ['tagged templates', false],
     ])(
-      'are passed by the call sites the build splits, written as %s, and key the files of chunks',
+      'writes a placeholder at the call sites the build splits, written as %s, and keys the files of chunks by the ids their chunk is rendered with',
       async (_name, precomputeMessages) => {
         const off = (await transform(SOURCE, { ...ON, precomputeMessages }))!;
         // The t templates and the <T> without a hash of its own
@@ -3040,7 +3168,7 @@ export const Written = () => jsx(T, { _hash: '0123456789abcdef', children: 'Writ
         const notice = 'd186602f8b37cd9e';
         const spread = '8a745136bd12b483';
 
-        const options = { ...SHORT, precomputeMessages };
+        const options = { ...MINIFIED, precomputeMessages };
         const translations = Object.fromEntries(
           [...split, notice, spread, '0123456789abcdef', PRINT_TEXT].map(
             (hash) => [hash, `fr ${hash}`]
@@ -3055,54 +3183,30 @@ export const Written = () => jsx(T, { _hash: '0123456789abcdef', children: 'Writ
         expect(on).toBe(
           split.reduce(
             (code, hash) =>
-              code.replace(`"${hash}"`, `"${createShortId(hash, 8)}"`),
+              code.replace(`"${hash}"`, `"${createIdPlaceholder(hash)}"`),
             off
           )
         );
-        expect(on.match(/_hash: ["'][\w-]+["']/g)).toEqual([
-          '_hash: "q3LRFNDR"',
-          '_hash: "t4XrnVr1"',
-          '_hash: "NjjGJpqR"',
+        const ids = minifyHashes(split);
+        const { emitted, rendered } = writeBundle(
+          created.plugins[0].vite as Vite,
+          { 'assets/index.js': { code: on, isEntry: true } }
+        );
+        expect(
+          rendered['assets/index.js'].code.match(/_hash: ["'][\w.-]+["']/g)
+        ).toEqual([
+          `_hash: "${ids.get(SAVE_TEXT)}"`,
+          `_hash: "${ids.get(HELLO)}"`,
+          `_hash: "${ids.get('3638c6269a914b05')}"`,
           `_hash: "${notice}"`,
           `_hash: "${SAVE_TEXT}"`,
-          '_hash: "CpclRTcH"',
+          `_hash: "${ids.get('0a9725453707110e')}"`,
           `_hash: "${spread}"`,
           "_hash: '0123456789abcdef'",
         ]);
-
-        const vite = created.plugins[0].vite as {
-          configResolved: (config: object) => void;
-          renderChunk: (code: string) => string | null;
-          generateBundle: (
-            this: object,
-            options: object,
-            bundle: object
-          ) => void;
-        };
-        vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
-        const emitted: Record<string, string> = {};
-        vite.generateBundle.call(
-          {
-            emitFile: (file: { fileName: string; source: string }) =>
-              (emitted[file.fileName.replace(/\.[0-9a-f]{8}\.json$/, '')] =
-                file.source),
-          },
-          {},
-          {
-            'assets/index.js': {
-              type: 'chunk',
-              fileName: 'assets/index.js',
-              code: vite.renderChunk(on),
-              imports: [],
-              dynamicImports: [],
-              isEntry: true,
-              moduleIds: [path.join(created.cwd, 'App.jsx')],
-            },
-          }
-        );
         expect(JSON.parse(emitted['assets/index.fr'])).toEqual({
           t: Object.fromEntries(
-            split.map((hash) => [createShortId(hash, 8), `fr ${hash}`])
+            split.map((hash) => [ids.get(hash), `fr ${hash}`])
           ),
         });
         // A message a t template and a msg share is in both files
@@ -3116,7 +3220,7 @@ export const Written = () => jsx(T, { _hash: '0123456789abcdef', children: 'Writ
       }
     );
 
-    it('are passed by a template that stays tagged in a build that precomputes messages', async () => {
+    it('writes a placeholder at a template that stays tagged in a build that precomputes messages', async () => {
       // One name for two values: the call could not pass both
       const source = `import { t } from 'gt-react';
 export const save = () => t\`Save\`;
@@ -3128,27 +3232,22 @@ export const pair = (a, b) => t\`\${{ name: a }} and \${{ name: b }}\`;`;
       expect(off).toContain(`t({ $_hash: "${SAVE_TEXT}", $_tree: "Save" })`);
       const [, hash] = /t\(\{ \$_hash: "([0-9a-f]{16})" \}\)`/.exec(off)!;
       expect(
-        await transform(source, { ...SHORT, precomputeMessages: true })
+        await transform(source, { ...MINIFIED, precomputeMessages: true })
       ).toBe(
-        off.replace(SAVE_TEXT, 'q3LRFNDR').replace(hash, createShortId(hash, 8))
+        off
+          .replace(SAVE_TEXT, createIdPlaceholder(SAVE_TEXT))
+          .replace(hash, createIdPlaceholder(hash))
       );
     });
 
-    it('are not written in a dev build, which runtime translation reads hashes from', async () => {
+    it('leaves a dev build alone, which runtime translation reads hashes from', async () => {
       vi.stubEnv('NODE_ENV', 'development');
-      const compiled = (await transform(SOURCE, SHORT))!;
-      expect(compiled.match(/_hash: "[\w-]+"/g)).toEqual([
-        `_hash: "${SAVE_TEXT}"`,
-        `_hash: "${HELLO}"`,
-        '_hash: "3638c6269a914b05"',
-        '_hash: "d186602f8b37cd9e"',
-        `_hash: "${SAVE_TEXT}"`,
-        '_hash: "0a9725453707110e"',
-        '_hash: "8a745136bd12b483"',
-      ]);
+      expect(await transform(SOURCE, MINIFIED)).toBe(
+        await transform(SOURCE, ON)
+      );
     });
 
-    it('keep every compiled message that a template hashed at runtime can read in the unsplit file, and name the modules that say nothing of it', async () => {
+    it('keeps every compiled message that a template hashed at runtime can read in the unsplit file, and names the modules that say nothing of it', async () => {
       // t`Total: ${1 + 1}`, whose value is a primitive wherever it is written
       const TOTAL = '52008f74e891635c';
       // t({ context: 'button' })`Save`
@@ -3160,7 +3259,7 @@ export const pair = (a, b) => t\`\${{ name: a }} and \${{ name: b }}\`;`;
         [TOTAL]: ['Total : ', ['_gt_1']],
       };
       const translations = { ...split, [PRINT_TEXT]: 'Imprimer' };
-      const created = createPlugins(SHORT, 'vite', {
+      const created = createPlugins(MINIFIED, 'vite', {
         'translations/fr.json': JSON.stringify(translations),
       });
       const compiled = (await transform(
@@ -3175,7 +3274,7 @@ export const saveWith = (options) => t(options)\`Save\`;
 export const totalOf = (count) => t\`Total: \${count}\`;
 export const totalBy = (count) => t\`Total: \${format(count)}\`;
 export const derived = () => t\`Hello, \${derive(getName())}\`;`,
-        SHORT,
+        MINIFIED,
         created
       ))!;
       // Left to the runtime, which hashes what the options and the values
@@ -3184,35 +3283,15 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       expect(compiled).toContain('t(options)`Save`');
       expect(compiled).toContain('t`Total: ${count}`');
       expect(compiled).toContain('t`Total: ${format(count)}`');
-      const vite = created.plugins[0].vite as {
-        configResolved: (config: object) => void;
-        generateBundle: (this: object, options: object, bundle: object) => void;
-      };
-      vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
-      const emitted: Record<string, string> = {};
-      vite.generateBundle.call(
-        {
-          emitFile: (file: { fileName: string; source: string }) =>
-            (emitted[file.fileName.replace(/\.[0-9a-f]{8}\.json$/, '')] =
-              file.source),
-        },
-        {},
-        {
-          'assets/index.js': {
-            type: 'chunk',
-            fileName: 'assets/index.js',
-            code: compiled,
-            imports: [],
-            dynamicImports: [],
-            isEntry: true,
-          },
-        }
-      );
-      // The compiled call sites read the entry's file by short id
+      const { emitted } = writeBundle(created.plugins[0].vite as Vite, {
+        'assets/index.js': { code: compiled, isEntry: true },
+      });
+      // The compiled call sites read the entry's file by their ids
+      const ids = minifyHashes(Object.keys(translations));
       expect(JSON.parse(emitted['assets/index.fr'])).toEqual({
         t: Object.fromEntries(
           Object.entries(translations).map(([hash, translation]) => [
-            createShortId(hash, 8),
+            ids.get(hash),
             translation,
           ])
         ),
@@ -3223,7 +3302,7 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       expect(JSON.parse(emitted['assets/gt-unsplit.fr'])).toEqual(split);
       expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining(
-          'experimentalChunkTranslationsShortIds cannot tell which messages a module reads by a hash computed when the app runs'
+          'Hash minification cannot tell which messages a module reads by a hash computed when the app runs'
         )
       );
       expect(console.warn).toHaveBeenCalledWith(
@@ -3231,7 +3310,7 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       );
     });
 
-    it('give trees that differ only in the names of their values one shape', () => {
+    it('gives trees that differ only in the names of their values one shape', () => {
       const plural = (name: string) =>
         JSON.parse(
           JSON.stringify([
@@ -3252,52 +3331,122 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       );
     });
 
+    it("gives a message that two chunks read an id in each, and each chunk's file the ids of its own call sites", async () => {
+      const created = createPlugins(MINIFIED, 'vite', {
+        'translations/fr.json': JSON.stringify({
+          [SAVE_TEXT]: 'Enregistrer',
+          [HELLO]: 'Bonjour',
+        }),
+      });
+      const { emitted } = writeBundle(created.plugins[0].vite as Vite, {
+        'assets/index.js': {
+          code: site(SAVE_TEXT),
+          isEntry: true,
+          dynamicImports: ['assets/Home.js'],
+        },
+        'assets/Home.js': { code: `${site(HELLO)};${site(SAVE_TEXT)}` },
+      });
+      const home = minifyHashes([HELLO, SAVE_TEXT]);
+      expect(JSON.parse(emitted['assets/index.fr']).t).toEqual({
+        [minifyHashes([SAVE_TEXT]).get(SAVE_TEXT)!]: 'Enregistrer',
+      });
+      // The entry's file holds the message under another id, so the
+      // route's file does not leave it out
+      expect(emitted['assets/Home.fr']).toBe(
+        JSON.stringify({
+          [home.get(SAVE_TEXT)!]: 'Enregistrer',
+          [home.get(HELLO)!]: 'Bonjour',
+        })
+      );
+    });
+
     it.each(chunkTranslationsNamings)(
-      'fail the build named by %s in which two messages share an id',
-      async (naming) => {
+      'gives a page of one build, in the files of the next build named by %s, the message of its own id or nothing',
+      (naming) => {
         const options = {
-          ...ON,
+          ...MINIFIED,
           experimentalChunkTranslationsNaming: naming,
-          experimentalChunkTranslationsShortIds: 1,
         };
-        const created = createPlugins(options, 'vite', {
-          'translations/fr.json': '{}',
+        /** A build of two chunks, and each id its call sites pass with its hash. */
+        const build = (home: string[], catalog: Record<string, string>) => {
+          const created = createPlugins(options, 'vite', {
+            'translations/fr.json': JSON.stringify(catalog),
+          });
+          const { emitted } = writeBundle(created.plugins[0].vite as Vite, {
+            'assets/index.js': {
+              code: site(SAVE_TEXT),
+              isEntry: true,
+              dynamicImports: ['assets/Home.js'],
+            },
+            'assets/Home.js': { code: home.map(site).join(';') },
+          });
+          return {
+            files: readTranslationFiles(emitted),
+            ids: new Map(
+              [[SAVE_TEXT], home].flatMap((hashes) =>
+                [...minifyHashes(hashes)].map(([hash, id]) => [id, hash])
+              )
+            ),
+          };
+        };
+        const page = build([HELLO, SAVE_TEXT], {
+          [SAVE_TEXT]: 'Enregistrer',
+          [HELLO]: 'Bonjour',
         });
-        const compiled = await transform(
-          `import { t } from 'gt-react';
-export const save = () => t\`Save\`;
-export const print = () => t\`Print\`;`,
-          options,
-          created
-        );
-        expect(compiled).toContain('$_hash: "q"');
-        const vite = created.plugins[0].vite as {
-          generateBundle: (
-            this: object,
-            options: object,
-            bundle: object
-          ) => void;
+        // The deploy added a message to the route and changed a translation
+        const next = {
+          [SAVE_TEXT]: 'Sauvegarder',
+          [HELLO]: 'Bonjour',
+          [PRINT_TEXT]: 'Imprimer',
         };
-        const emitFile = vi.fn();
-        expect(() =>
-          vite.generateBundle.call(
-            { emitFile },
-            {},
-            {
-              'assets/index.js': {
-                type: 'chunk',
-                fileName: 'assets/index.js',
-                code: compiled,
-                imports: [],
-                dynamicImports: [],
-                isEntry: true,
-              },
-            }
+        const deployed = build([HELLO, SAVE_TEXT, PRINT_TEXT], next);
+        const [entryId] = idsOf([SAVE_TEXT]);
+        // The entry chunk is as it was and reads its message as it is now;
+        // the route's ids are in no file of that build
+        expect(readAsPage(page.ids, deployed.files)).toEqual(
+          new Map(
+            [...page.ids.keys()].map((id) => [
+              id,
+              id === entryId ? 'Sauvegarder' : undefined,
+            ])
           )
-        ).toThrow(`${PRINT_TEXT} and ${SAVE_TEXT} share "q"`);
-        expect(emitFile).not.toHaveBeenCalled();
+        );
+        // And a page of the build that is served reads every message
+        expect(readAsPage(deployed.ids, deployed.files)).toEqual(
+          new Map(
+            [...deployed.ids].map(([id, hash]) => [
+              id,
+              next[hash as keyof typeof next],
+            ])
+          )
+        );
       }
     );
+
+    it("assigns alike, for a page that reads the files of another build, only where no chunk's messages changed", () => {
+      const assign = (home: string[]) =>
+        getAssignmentHash(
+          assignTranslationsByChunk([
+            {
+              fileName: 'assets/index.js',
+              hashes: idsOf([SAVE_TEXT]),
+              imports: [],
+              dynamicImports: ['assets/Home.js'],
+              isEntry: true,
+            },
+            {
+              fileName: 'assets/Home.js',
+              hashes: idsOf(home),
+              imports: [],
+              dynamicImports: [],
+              isEntry: false,
+            },
+          ])
+        );
+      expect(assign([HELLO])).toBe(assign([HELLO]));
+      expect(assign([HELLO, PRINT_TEXT])).not.toBe(assign([HELLO]));
+      expect(assign([PRINT_TEXT])).not.toBe(assign([HELLO]));
+    });
   });
 
   describe('split by module', () => {
@@ -3676,7 +3825,7 @@ export const print = () => t\`Print\`;`,
       cwd = createPlugins(ON, 'vite', {
         'translations/fr.json': JSON.stringify(CATALOG),
       }).cwd,
-      shortIdLength,
+      minifiedIds,
     }: {
       isLazy?: boolean;
       requestCost?: number;
@@ -3684,7 +3833,7 @@ export const print = () => t\`Print\`;`,
       graph?: typeof GRAPH;
       bundle?: typeof BUNDLE;
       cwd?: string;
-      shortIdLength?: number;
+      minifiedIds?: MinifiedIds;
     } = {}) {
       const emitted: Record<string, string> = {};
       const written = writeRegionTranslations(
@@ -3696,7 +3845,7 @@ export const print = () => t\`Print\`;`,
           unsplit: new Set(),
           naming: 'map',
           regions: { requestCost, previous },
-          ...(shortIdLength !== undefined && { shortIdLength }),
+          ...(minifiedIds && { minifiedIds }),
         },
         {
           gtFiles: GT_FILES.gt,
@@ -4024,53 +4173,112 @@ export const print = () => t\`Print\`;`,
       });
     });
 
-    it('reads short ids out of each module, and keys the same files by them', () => {
-      const shorten = (code: string) =>
+    describe('with hash minification', () => {
+      const placeholders = (code: string) =>
         Object.values(HASH).reduce(
-          (text, hash) => text.replaceAll(hash, createShortId(hash, 8)),
+          (text, hash) => text.replaceAll(hash, createIdPlaceholder(hash)),
           code
         );
-      const bundle = Object.fromEntries(
-        Object.entries(BUNDLE).map(([fileName, file]) => [
-          fileName,
-          {
-            ...file,
-            code: shorten(file.code),
-            modules: Object.fromEntries(
-              Object.entries(file.modules).map(([id, { code }]) => [
-                id,
-                { code: shorten(code) },
-              ])
-            ),
-          },
-        ])
-      );
-      const hashed = write();
-      const short = write({ bundle, shortIdLength: 8 });
-      expect(short.manifest.assignment).toEqual(hashed.manifest.assignment);
-      expect(short.manifest.imports).toEqual(hashed.manifest.imports);
-      for (const [key, { fr }] of Object.entries(hashed.manifest.files)) {
-        expect(JSON.parse(short.emitted[short.manifest.files[key].fr])).toEqual(
-          Object.fromEntries(
-            Object.entries(JSON.parse(hashed.emitted[fr])).map(
-              ([hash, translation]) => [createShortId(hash, 8), translation]
+      /**
+       * BUNDLE with a Billing route that reads `billing`, as hashes and as
+       * the bundler renders it with hash minification: ids in a chunk's
+       * code, placeholders in the code of each module.
+       */
+      function render(...billing: (keyof typeof HASH)[]) {
+        const hashed = {
+          ...BUNDLE,
+          'assets/Billing.js': chunk(
+            'assets/Billing.js',
+            { '/billing.js': site(...billing) },
+            { imports: ['assets/shared.js'] }
+          ),
+        };
+        const minifiedIds: MinifiedIds = { hashes: new Map() };
+        const bundle = Object.fromEntries(
+          Object.entries(hashed).map(([fileName, file]) => [
+            fileName,
+            {
+              ...file,
+              code: minifyChunk(placeholders(file.code), minifiedIds)!,
+              modules: Object.fromEntries(
+                Object.entries(file.modules).map(([id, { code }]) => [
+                  id,
+                  { code: placeholders(code) },
+                ])
+              ),
+            },
+          ])
+        );
+        return { hashed, bundle, minifiedIds };
+      }
+
+      it('reads ids out of each chunk and placeholders out of each module, and keys the same files by every id of their messages', () => {
+        // Billing also reads the date picker, which then has an id in two chunks
+        const { hashed, bundle, minifiedIds } = render('billing', 'picker');
+        const plain = write({ bundle: hashed });
+        const minified = write({ bundle, minifiedIds });
+        // The manifest still lists hashes, as a later build reads them from it
+        expect(minified.manifest.assignment).toEqual(plain.manifest.assignment);
+        expect(minified.manifest.imports).toEqual(plain.manifest.imports);
+        const idsOf = (hash: string) =>
+          [...minifiedIds.hashes]
+            .filter(([, named]) => named === hash)
+            .map(([id]) => id);
+        expect(idsOf(HASH.picker)).toHaveLength(2);
+        for (const [key, { fr }] of Object.entries(plain.manifest.files)) {
+          expect(
+            JSON.parse(minified.emitted[minified.manifest.files[key].fr])
+          ).toEqual(
+            Object.fromEntries(
+              Object.entries(JSON.parse(plain.emitted[fr])).flatMap(
+                ([hash, translation]) =>
+                  idsOf(hash).map((id) => [id, translation])
+              )
             )
+          );
+        }
+        expect(() =>
+          write({
+            bundle: {
+              ...bundle,
+              'assets/Admin.js': {
+                ...bundle['assets/Admin.js'],
+                code: placeholders(hashed['assets/Admin.js'].code),
+              },
+            },
+            minifiedIds,
+          })
+        ).toThrow('Details: assets/Admin.js.');
+      });
+
+      it('gives a page of one build, in the files of the next, the message of its own id or nothing', () => {
+        const page = render('billing', 'picker');
+        // The deploy added a message to the Billing route
+        const deployed = render('billing', 'picker', 'panel');
+        const files = readTranslationFiles(
+          write({
+            bundle: deployed.bundle,
+            minifiedIds: deployed.minifiedIds,
+          }).emitted
+        );
+        const changed = new Set(
+          minifyHashes([HASH.billing, HASH.picker]).values()
+        );
+        // A page reads these files when the ones of its own build are gone
+        // (see listRegionFiles in gt-react): every chunk that is as it was
+        // reads its messages, the changed route's ids are in no file
+        expect(readAsPage(page.minifiedIds.hashes, files)).toEqual(
+          new Map(
+            [...page.minifiedIds.hashes].map(([id, hash]) => [
+              id,
+              changed.has(id) ? undefined : CATALOG[hash],
+            ])
           )
         );
-      }
-      // A chunk whose call sites pass hashes holds nothing such a build splits
-      expect(Object.keys(write({ shortIdLength: 8 }).manifest.files)).toEqual(
-        []
-      );
-      const { cwd } = createPlugins(ON, 'vite', {
-        'translations/fr.json': JSON.stringify({
-          ...CATALOG,
-          '1100000000000000': 'Autre',
-        }),
+        expect(
+          [...changed].every((id) => page.minifiedIds.hashes.has(id))
+        ).toBe(true);
       });
-      expect(() => write({ bundle, shortIdLength: 1, cwd })).toThrow(
-        `${HASH.title} and 1100000000000000 share "E"`
-      );
     });
 
     it('gives a route what every module of its chunks reads when a chunk runs all of its modules, and counts those messages', () => {

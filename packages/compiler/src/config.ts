@@ -133,22 +133,32 @@ export interface PluginConfig
    */
   experimentalChunkTranslationsPrevious?: string;
   /**
-   * Experimental, with `experimentalChunkTranslations`: the call sites the
-   * build splits by chunk, `<T>` and `t` templates from `gt-react`,
-   * pass a short id in place of their hash of 16 characters, and the files
-   * of chunks are keyed by it, which makes both smaller. `true` is 8
-   * characters, 48 bits of the hash; a number from 1 to 10 is that many
-   * characters. The build fails when two messages of the app or of its
-   * translation files would share an id, and names them. The hash of a
-   * message stays what it is everywhere else: in the translation files at
-   * `files.gt.output`, in the unsplit file, and at every call site that
-   * reads from it. A call site whose hash is computed when it runs finds a
-   * message that a compiled call site also reads only where the build could
-   * tell which message that is; it warns of the modules where it could not.
-   * Cannot be used with `_tagIds`. Defaults to the
-   * `GT_CHUNK_TRANSLATIONS_SHORT_IDS` environment variable.
+   * Experimental, for builds with `experimentalChunkTranslations`: hash
+   * minification. A hash is random and does not compress, and it is most of
+   * what a message costs a page beyond its text. With this on, the call
+   * sites the build splits by chunk or by module pass an id in place of
+   * their hash, and the translation files of chunks are keyed by it, which
+   * makes both smaller. An id is 8 characters that name the list of its
+   * chunk's messages, a digest of their hashes in the order of the hashes,
+   * then a `.` and the place of its message in that list, as `kR3_x0Qa.12`.
+   * Every call site of a chunk repeats those characters, so they compress
+   * to little. An id still follows from content alone: the same id names
+   * the same message in every build. A chunk's ids change only when the set
+   * of its own messages does, and a message that several chunks read has an
+   * id in each.
+   *
+   * The hash of a message stays what it is everywhere else: in the
+   * translation files at `files.gt.output`, in the unsplit file, and at
+   * every call site that reads from it. A call site whose hash is computed
+   * when it runs finds a message that a compiled call site also reads only
+   * where the build could tell which message that is; it warns of the
+   * modules where it could not. The build fails when two lists of messages
+   * would share a name, when an id is already a key of the translation
+   * files, and when a chunk reaches the output with its hashes not
+   * minified. Cannot be used with `_tagIds`. Defaults to the
+   * `GT_CHUNK_TRANSLATIONS_MINIFY_HASHES` environment variable.
    */
-  experimentalChunkTranslationsShortIds?: boolean | number;
+  experimentalChunkTranslationsMinifyHashes?: boolean;
   /**
    * Replaces each static `t` template with a call
    * that passes its message, built at compile time and written at the call,

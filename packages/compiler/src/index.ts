@@ -28,6 +28,7 @@ import {
   CHUNK_TRANSLATIONS_SOURCE,
   UNSPLIT_LOADER_PLACEHOLDER,
   getChunkTranslations,
+  getMinifyHashes,
   getChunkTranslationsNaming,
   getChunkTranslationsSplit,
   getRegionSplit,
@@ -65,9 +66,9 @@ import {
 } from './transform/chunk-translations/createRegionGraph';
 import {
   createRuntimeHashesWarning,
-  getShortIdLength,
-  SHORT_IDS_WITHOUT_CHUNK_TRANSLATIONS_ERROR,
-} from './transform/chunk-translations/shortIds';
+  MINIFY_HASHES_WITHOUT_CHUNK_TRANSLATIONS_ERROR,
+  minifyChunk,
+} from './transform/chunk-translations/hashMinification';
 import {
   createUnsplitTranslationsMessage,
   getUnsplitTranslations,
@@ -256,8 +257,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
         : undefined;
-    const shortIdLength = getShortIdLength(
-      options.experimentalChunkTranslationsShortIds
+    const minifyHashes = getMinifyHashes(
+      options.experimentalChunkTranslationsMinifyHashes
     );
     const resolveChunkTranslationsOptions = () => {
       const split = getChunkTranslationsSplit(
@@ -274,15 +275,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           requestCost: options.experimentalChunkTranslationsRequestCost,
           previous: options.experimentalChunkTranslationsPrevious,
         }),
-        shortIdLength,
+        minifyHashes,
       });
     };
     const chunkTranslationsResolution = getChunkTranslations(
       options.experimentalChunkTranslations
     )
       ? resolveChunkTranslationsOptions()
-      : shortIdLength !== undefined
-        ? { error: SHORT_IDS_WITHOUT_CHUNK_TRANSLATIONS_ERROR }
+      : minifyHashes
+        ? { error: MINIFY_HASHES_WITHOUT_CHUNK_TRANSLATIONS_ERROR }
         : undefined;
     const chunkTranslations =
       chunkTranslationsResolution && !('error' in chunkTranslationsResolution)
@@ -605,7 +606,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     // Chunks are rendered once every module is compiled, so every call site is known
     function renderChunk(code: string): string | null {
       if (!isProduction()) return null;
-      const passed = passPreloads(code);
+      // Before the chunk is named, so its name follows from its ids
+      const minified = chunkTranslations!.minifiedIds
+        ? (minifyChunk(code, chunkTranslations!.minifiedIds) ?? code)
+        : code;
+      const passed = passPreloads(minified);
       if (!passed.includes(UNSPLIT_LOADER_PLACEHOLDER)) {
         return passed === code ? null : passed;
       }

@@ -72,7 +72,7 @@ export function injectTComponentParameters(
  * the computed hash) for a build with chunk translations. A spread or computed
  * key could carry another, so then the translation stays unsplit. Returns
  * what the compiler writes as the `_hash` of a <T> without one: the computed
- * hash, or its short id when the build splits it with short ids.
+ * hash, or the placeholder of its id in a build with hash minification.
  */
 function recordTHash(
   props: t.ObjectExpression,
