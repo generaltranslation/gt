@@ -5,6 +5,7 @@
 import type {
   ChunkTranslations,
   ChunkTranslationsNaming,
+  ChunkTranslationsSplit,
 } from './transform/chunk-translations/resolveChunkTranslations';
 import type {
   GTCompilerOptions,
@@ -74,6 +75,50 @@ export interface PluginConfig
    * Defaults to the `GT_CHUNK_TRANSLATIONS_NAMING` environment variable.
    */
   experimentalChunkTranslationsNaming?: ChunkTranslationsNaming;
+  /**
+   * Experimental, with `experimentalChunkTranslations`: what decides which
+   * messages share a translations file.
+   *
+   * - `'chunk'` (the default): the chunk their call sites are in. A page
+   *   loads the translations of every chunk it loads, whole.
+   * - `'module'`: the modules each entry and each dynamic import can reach
+   *   through static imports. A page loads the translations of the modules it
+   *   reaches and not of the others the bundler packed into the same chunks,
+   *   in files that hold what the same imports need, merged while a request
+   *   saved is worth the bytes it adds (see
+   *   `experimentalChunkTranslationsRequestCost`). Such a build names its
+   *   files by `'map'`, and each locale's map says which files an import
+   *   needs. It gains the most when a module runs when it is first imported
+   *   (Rolldown's `output.strictExecutionOrder`); when every module of a
+   *   chunk runs as the chunk loads, a page also loads what those modules
+   *   could read then, and the build says so.
+   *
+   * Defaults to the `GT_CHUNK_TRANSLATIONS_SPLIT` environment variable.
+   */
+  experimentalChunkTranslationsSplit?: ChunkTranslationsSplit;
+  /**
+   * Experimental, with `experimentalChunkTranslationsSplit: 'module'`: what
+   * one more request for a translations file is worth, in bytes of a
+   * compressed download. Two files are merged while that saves a page more
+   * than the bytes it then downloads without needing them.
+   *
+   * A lower cost is not a better split. At zero nothing is merged that
+   * costs a page a byte, so an app has many small files: a page makes many
+   * more requests, and every translated page downloads a larger map, which
+   * names them all. Lower it only after measuring what pages then load.
+   *
+   * Defaults to the `GT_CHUNK_TRANSLATIONS_REQUEST_COST` environment
+   * variable, else to 8192.
+   */
+  experimentalChunkTranslationsRequestCost?: number;
+  /**
+   * Experimental, with `experimentalChunkTranslationsSplit: 'module'`: the
+   * path of the `gt-chunk-translations.json` that the build before this one
+   * wrote. Messages then stay in the file they were in where that still
+   * fits, so a change to the app renames few translation files. Defaults to
+   * the `GT_CHUNK_TRANSLATIONS_PREVIOUS` environment variable.
+   */
+  experimentalChunkTranslationsPrevious?: string;
 }
 
 /**

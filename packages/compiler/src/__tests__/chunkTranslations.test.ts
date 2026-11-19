@@ -44,12 +44,19 @@ import {
   chunkTranslationsNamings,
   getChunkTranslations,
   getChunkTranslationsNaming,
+  getChunkTranslationsSplit,
   getEntryExport,
+  getRegionSplit,
   IMPORTED_CHUNKS_PLACEHOLDER,
   type ChunkTranslationsImport,
   resolveChunkTranslations,
   UNSPLIT_LOADER_PLACEHOLDER,
 } from '../transform/chunk-translations/resolveChunkTranslations';
+import {
+  renderRegionTranslations,
+  writeRegionTranslations,
+  type RegionTranslationsManifest,
+} from '../transform/chunk-translations/writeRegionTranslations';
 import {
   getPageBase,
   renderStartupScript,
@@ -1973,6 +1980,7 @@ export const ready = initializeGTSPA({});`,
         unsplit,
         files = [],
         maps,
+        regions,
         responses = {},
         links = [],
         base = '/',
@@ -1982,6 +1990,7 @@ export const ready = initializeGTSPA({});`,
         unsplit?: { key: string; hashes: Record<string, string> };
         files?: string[];
         maps?: { key: string };
+        regions?: Record<string, Record<string, string>>;
         responses?: Record<string, unknown>;
         links?: object[];
         base?: string;
@@ -1997,6 +2006,7 @@ export const ready = initializeGTSPA({});`,
         q?: object;
         g?: object;
         r?: object;
+        e?: object;
       };
       const window: { MutationObserver?: object } & Record<string, State> = {};
       const script = renderStartupScript({
@@ -2006,6 +2016,7 @@ export const ready = initializeGTSPA({});`,
         tokens: TOKENS,
         files,
         maps,
+        regions,
         locales: ['en', 'fr', 'pt-BR', 'ja'],
         unsplit,
       });
@@ -2451,6 +2462,77 @@ export const ready = initializeGTSPA({});`,
       }
     );
 
+    // The map of a build that splits by module, which is the file the script
+    // names: the entry holds gt-aa, the import of Orders needs gt-bb, gt-cc
+    // (which fr has no translations for) and gt-aa, the one of Help gt-dd
+    const REGION_MAP = {
+      i: {
+        k: [
+          'assets/gt-bb',
+          'assets/gt-cc',
+          'assets/gt-aa',
+          'assets/gt-dd',
+          'assets/Help-e5',
+          'assets/Orders-b2',
+        ],
+        c: [0, 0, 0, 0, [0, 3, 1], [0, 0, 3]],
+        h: ['88888888', 0, '77777777', '99999999'],
+      },
+    };
+    const REGIONS = { fr: { 'assets/gt-aa': '77777777' } };
+
+    it("split by module, requests the entry's files with the map, then the files the map lists for the imports of preloaded chunks", async () => {
+      const { fetched, state, add, page } = run('', ['fr'], {
+        regions: REGIONS,
+        links: [
+          link('https://app.test/assets/Orders-b2.js'),
+          // A chunk that only other chunks import, and not a preload
+          link('https://app.test/assets/shared-d4.js'),
+          link('https://app.test/assets/Help-e5.js', 'stylesheet'),
+        ],
+        responses: { '/assets/index-a1.fr.11111111.json': REGION_MAP },
+      });
+      expect(fetched).toEqual([
+        '/assets/index-a1.fr.11111111.json',
+        '/assets/gt-aa.fr.77777777.json',
+      ]);
+      expect(state).toMatchObject({
+        e: REGIONS,
+        g: { 'fr assets/gt-aa': expect.any(Promise) },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve));
+      expect(fetched.slice(2)).toEqual(['/assets/gt-bb.fr.88888888.json']);
+
+      // The parser adds a link below the script, under another path
+      add(link('https://cdn.test/v1/app/assets/Help-e5.js?x=1'));
+      add(link('https://app.test/assets/Orders-b2.js'));
+      add(link('https://app.test/assets/gt-bb.js'));
+      add({ nodeName: 'SCRIPT' });
+      expect(fetched.slice(3)).toEqual(['/assets/gt-dd.fr.99999999.json']);
+
+      expect(page.observing).toBe(true);
+      page.parsed();
+      expect(page.observing).toBe(false);
+    });
+
+    it('split by module, requests no file gt-react has requested, and none for a locale without a map', async () => {
+      const { fetched, state, add } = run('', ['fr'], {
+        regions: REGIONS,
+        responses: { '/assets/index-a1.fr.11111111.json': REGION_MAP },
+      });
+      await new Promise((resolve) => setTimeout(resolve));
+      const before = fetched.length;
+      state.r = { 'fr assets/gt-bb': Promise.resolve(true) };
+      add(link('https://app.test/assets/Orders-b2.js'));
+      expect(fetched.slice(before)).toEqual([]);
+
+      const other = run('', ['ja'], { regions: REGIONS });
+      expect(other.fetched).toEqual([]);
+      expect(other.state).toMatchObject({ e: REGIONS });
+      expect(other.state.g).toBeUndefined();
+    });
+
     it('names what gt-react exports', async () => {
       const entry = (await import('gt-react/chunk-translations')) as Record<
         string,
@@ -2461,7 +2543,826 @@ export const ready = initializeGTSPA({});`,
           const name = getEntryExport(kind as ChunkTranslationsImport, naming);
           expect(entry[name], name).toBeTypeOf('function');
         }
+        const name = getEntryExport(
+          kind as ChunkTranslationsImport,
+          'map',
+          true
+        );
+        expect(entry[name], name).toBeTypeOf('function');
       }
+    });
+  });
+
+  describe('split by module', () => {
+    const SPLIT: GTUnpluginOptions = {
+      ...ON,
+      experimentalChunkTranslationsSplit: 'module',
+    };
+
+    it.each([
+      [undefined, undefined, 'chunk'],
+      [undefined, 'module', 'module'],
+      ['chunk', 'module', 'chunk'],
+      ['module', undefined, 'module'],
+    ] as const)(
+      'is chosen by the option %s, then GT_CHUNK_TRANSLATIONS_SPLIT=%s: %s',
+      (option, env, expected) => {
+        vi.stubEnv('GT_CHUNK_TRANSLATIONS_SPLIT', env as never);
+        expect(getChunkTranslationsSplit(option)).toBe(expected);
+      }
+    );
+
+    it('rejects a split it does not have', () => {
+      vi.stubEnv('GT_CHUNK_TRANSLATIONS_SPLIT', 'route');
+      expect(() => getChunkTranslationsSplit(undefined)).toThrow(
+        '"route", which is not one of chunk, module'
+      );
+    });
+
+    it('names its files by map, and fails a build that asks for tokens', () => {
+      expect(getChunkTranslationsNaming(undefined, 'module')).toBe('map');
+      expect(getChunkTranslationsNaming('map', 'module')).toBe('map');
+      expect(() => getChunkTranslationsNaming('token', 'module')).toThrow(
+        'Chunk translations that are split by module cannot be named by token'
+      );
+      vi.stubEnv('GT_CHUNK_TRANSLATIONS_NAMING', 'token');
+      expect(() => createPlugins(SPLIT)).toThrow('cannot be named by token');
+    });
+
+    it.each([
+      [undefined, undefined, undefined, undefined, 8192, undefined],
+      [0, '4096', 'a.json', 'b.json', 0, 'a.json'],
+      [undefined, '2048', undefined, 'b.json', 2048, 'b.json'],
+      [undefined, '', undefined, '', 8192, undefined],
+    ])(
+      'takes the request cost %s, then GT_CHUNK_TRANSLATIONS_REQUEST_COST=%s, and the previous manifest %s, then GT_CHUNK_TRANSLATIONS_PREVIOUS=%s',
+      (cost, costEnv, file, fileEnv, requestCost, previous) => {
+        vi.stubEnv('GT_CHUNK_TRANSLATIONS_REQUEST_COST', costEnv as never);
+        vi.stubEnv('GT_CHUNK_TRANSLATIONS_PREVIOUS', fileEnv as never);
+        const options = { requestCost: cost, previous: file };
+        expect(getRegionSplit('module', options)).toEqual({
+          requestCost,
+          previous,
+        });
+        expect(getRegionSplit('chunk', options)).toBeUndefined();
+      }
+    );
+
+    it.each([-1, Number.NaN, 'much' as never])(
+      'rejects the request cost %s',
+      (requestCost) => {
+        expect(() =>
+          getRegionSplit('module', { requestCost, previous: undefined })
+        ).toThrow('which is not a number of bytes');
+      }
+    );
+
+    it('compiles the app to read the map for what an import needs, and nothing else differently', async () => {
+      const compiled = await transform(MODULE, SPLIT);
+      expect(compiled).toContain(
+        'initializeRegionChunkTranslations as __gt_chunk_initialize'
+      );
+      expect(
+        compiled!.replace(
+          'initializeRegionChunkTranslations',
+          'initializeChunkTranslations'
+        )
+      ).toBe(await transform(MODULE));
+      expect(
+        wrapDynamicImports(`import('./a.js');`, '/a.js', 'map', true)?.code
+      ).toBe(
+        `import { loadRegionChunk as __gt_chunk_load } from "gt-react/chunk-translations";__gt_chunk_load(() => import('./a.js'), "__GT_CHUNK_TRANSLATIONS_IMPORT__");`
+      );
+      // It keeps what the bundler's options say about when a module runs
+      expect(Object.keys(createPlugins(SPLIT).plugins[0].vite ?? {})).toEqual([
+        'configResolved',
+        'options',
+        'outputOptions',
+        'renderChunk',
+        'generateBundle',
+        'transformIndexHtml',
+      ]);
+    });
+
+    const FR = {
+      title: 'Titre',
+      home: 'Accueil',
+      picker: 'Date',
+      invoice: 'Facture',
+    };
+    const renderRegions = (fr: Record<string, unknown> = FR) =>
+      renderRegionTranslations(
+        {
+          files: new Map([
+            ['aa', ['title']],
+            ['bb', ['home', 'picker']],
+            ['cc', ['invoice']],
+          ]),
+          entries: new Map([['assets/index.js', ['aa']]]),
+          imports: new Map([
+            ['assets/Home.js', ['aa', 'bb']],
+            ['assets/Billing.js', ['aa', 'cc']],
+          ]),
+        },
+        { defaultLocale: 'en', locales: ['fr', 'de'] },
+        { fr, de: { home: 'Start' } },
+        {
+          base: '/',
+          assetsDir: 'assets',
+          samples: [[100, 60]],
+          unsplit: { fr: { msg: 'Message' } },
+        }
+      );
+
+    it("writes each file once per locale that translates it, the locale's map of what each import needs, and the manifest", () => {
+      const { files, manifest, unsplit } = renderRegions();
+      expect(
+        Object.fromEntries(
+          files.map(({ fileName, source }) => [fileName, JSON.parse(source)])
+        )
+      ).toEqual({
+        'assets/gt-unsplit.fr.9ddbca58.json': { msg: 'Message' },
+        'assets/gt-aa.fr.d7a4dbef.json': { title: 'Titre' },
+        'assets/gt-bb.fr.ff88a5f0.json': { home: 'Accueil', picker: 'Date' },
+        'assets/gt-cc.fr.e29516b9.json': { invoice: 'Facture' },
+        // The files every import needs first, then the imported chunks
+        'assets/gt-map.fr.df659cf2.json': {
+          i: {
+            k: [
+              'assets/gt-aa',
+              'assets/gt-bb',
+              'assets/gt-cc',
+              'assets/Billing',
+              'assets/Home',
+            ],
+            c: [0, 0, 0, [0, 0, 1, 2, 1], [0, 0, 2]],
+            h: ['d7a4dbef', 'ff88a5f0', 'e29516b9'],
+          },
+        },
+        // de translates one message: its other files are not written
+        'assets/gt-bb.de.94ca6839.json': { home: 'Start' },
+        'assets/gt-map.de.aae53460.json': {
+          i: {
+            k: [
+              'assets/gt-aa',
+              'assets/gt-bb',
+              'assets/gt-cc',
+              'assets/Billing',
+              'assets/Home',
+            ],
+            c: [0, 0, 0, [0, 0, 1, 2, 1], [0, 0, 2]],
+            h: [0, '94ca6839', 0],
+          },
+        },
+      });
+      expect(unsplit).toEqual([{ locale: 'fr', count: 1, bytes: 17 }]);
+      const { startupScript, ...entry } = manifest.entries['assets/index.js'];
+      expect({ ...manifest, entries: { 'assets/index.js': entry } }).toEqual({
+        split: 'module',
+        defaultLocale: 'en',
+        locales: ['fr', 'de'],
+        entries: { 'assets/index.js': { files: ['assets/gt-aa'] } },
+        files: {
+          'assets/gt-aa': { fr: 'assets/gt-aa.fr.d7a4dbef.json' },
+          'assets/gt-bb': {
+            fr: 'assets/gt-bb.fr.ff88a5f0.json',
+            de: 'assets/gt-bb.de.94ca6839.json',
+          },
+          'assets/gt-cc': { fr: 'assets/gt-cc.fr.e29516b9.json' },
+        },
+        imports: {
+          'assets/Home.js': ['assets/gt-aa', 'assets/gt-bb'],
+          'assets/Billing.js': ['assets/gt-aa', 'assets/gt-cc'],
+        },
+        maps: {
+          fr: 'assets/gt-map.fr.df659cf2.json',
+          de: 'assets/gt-map.de.aae53460.json',
+        },
+        unsplit: { fr: 'assets/gt-unsplit.fr.9ddbca58.json' },
+        assignment: {
+          files: { aa: ['title'], bb: ['home', 'picker'], cc: ['invoice'] },
+          samples: [[100, 60]],
+        },
+      } satisfies Omit<RegionTranslationsManifest, 'entries'> & {
+        entries: object;
+      });
+      // The page holds the name of the map and of the entry's files
+      expect(startupScript).toContain(
+        '"f":"assets/gt-map","h":{"fr":"df659cf2","de":"aae53460"},"v":{}}'
+      );
+      expect(startupScript).toContain(
+        '(window["__GT_CHUNK_TRANSLATIONS__"],{"fr":{"assets/gt-aa":"d7a4dbef"},"de":{}});'
+      );
+      expect(startupScript).toContain('"assets/gt-unsplit",{"fr":"9ddbca58"}');
+      expect(startupScript).not.toContain('startMappedTranslations');
+      expect(startupScript).not.toContain('startPreloadedTranslations');
+    });
+
+    it('renames only the file a translation is in, and the map', () => {
+      const names = (fr: Record<string, unknown>) =>
+        renderRegions(fr)
+          .files.map(({ fileName }) => fileName)
+          .sort();
+      const before = names(FR);
+      expect(
+        names({ ...FR, home: 'Maison' }).filter(
+          (name) => !before.includes(name)
+        )
+      ).toEqual([
+        expect.stringMatching(/^assets\/gt-bb\.fr\./),
+        expect.stringMatching(/^assets\/gt-map\.fr\./),
+      ]);
+    });
+
+    it('fails a build whose chunk would share a key with a file', () => {
+      expect(() =>
+        renderRegionTranslations(
+          {
+            files: new Map([['aa', ['title']]]),
+            entries: new Map(),
+            imports: new Map([['assets/gt-aa.js', ['aa']]]),
+          },
+          { defaultLocale: 'en', locales: ['fr'] },
+          { fr: FR },
+          { base: '/', assetsDir: 'assets', samples: [], unsplit: {} }
+        )
+      ).toThrow('A translations file and a chunk would share the key');
+    });
+
+    it('lists an imported chunk under its names in the chunk import map too, which cannot share a key with a file either', () => {
+      const render = (name: string) =>
+        renderRegionTranslations(
+          {
+            files: new Map([['aa', ['title']]]),
+            entries: new Map(),
+            imports: new Map([['assets/Home-file.js', ['aa']]]),
+            importMap: new Map([[name, 'assets/Home-file.js']]),
+          },
+          { defaultLocale: 'en', locales: ['fr'] },
+          { fr: FR },
+          { base: '/', assetsDir: 'assets', samples: [], unsplit: {} }
+        );
+      const { files, manifest } = render('assets/Home-name.js');
+      // A page preloads the chunk by its file and imports it by its name
+      expect(
+        JSON.parse(
+          files.find(({ fileName }) => fileName === manifest.maps.fr)!.source
+        ).i
+      ).toEqual({
+        k: ['assets/gt-aa', 'assets/Home-file', 'assets/Home-name'],
+        c: [0, [0, 0, 1], [0, 0, 1]],
+        h: ['d7a4dbef'],
+      });
+      expect(manifest.imports).toEqual({
+        'assets/Home-file.js': ['assets/gt-aa'],
+      });
+      expect(() => render('assets/gt-aa.js')).toThrow(
+        'A translations file and a chunk would share the key assets/gt-aa'
+      );
+    });
+
+    // A shared chunk holds a date picker that Home uses, an invoice table
+    // that only Billing uses and a panel that only Admin uses.
+    const HASH = {
+      title: '1000000000000001',
+      home: '2000000000000002',
+      billing: '3000000000000003',
+      admin: '4000000000000004',
+      picker: '5000000000000005',
+      invoice: '6000000000000006',
+      panel: '7000000000000007',
+    };
+    // A call site as a bundler prints it, where findChunkHashes reads its hash
+    const callSite = (hash: string) => `t({$_hash:"${hash}"})`;
+    const site = (...names: (keyof typeof HASH)[]) =>
+      names.map((name) => callSite(HASH[name])).join(';');
+    const chunk = (
+      fileName: string,
+      modules: Record<string, string>,
+      rest: object = {}
+    ) => ({
+      type: 'chunk',
+      fileName,
+      code: Object.values(modules).join(';'),
+      isEntry: false,
+      facadeModuleId: Object.keys(modules)[0],
+      imports: [] as string[],
+      dynamicImports: [] as string[],
+      modules: Object.fromEntries(
+        Object.entries(modules).map(([id, code]) => [id, { code }])
+      ),
+      ...rest,
+    });
+    const BUNDLE = Object.fromEntries(
+      [
+        chunk(
+          'assets/index.js',
+          { '/main.js': site('title') },
+          { isEntry: true }
+        ),
+        chunk(
+          'assets/Home.js',
+          { '/home.js': site('home') },
+          { imports: ['assets/shared.js'] }
+        ),
+        chunk(
+          'assets/Billing.js',
+          { '/billing.js': site('billing') },
+          { imports: ['assets/shared.js'] }
+        ),
+        chunk(
+          'assets/Admin.js',
+          { '/admin.js': site('admin') },
+          { imports: ['assets/shared.js'] }
+        ),
+        chunk(
+          'assets/shared.js',
+          {
+            '/picker.js': site('picker'),
+            '/invoice.js': site('invoice'),
+            '/panel.js': site('panel'),
+          },
+          { facadeModuleId: null }
+        ),
+      ].map((file) => [file.fileName, file])
+    );
+    const GRAPH: Record<string, { imports?: string[]; dynamic?: string[] }> = {
+      '/main.js': { dynamic: ['/home.js', '/billing.js', '/admin.js'] },
+      '/home.js': { imports: ['/picker.js'] },
+      '/billing.js': { imports: ['/invoice.js'] },
+      '/admin.js': { imports: ['/panel.js'] },
+    };
+    const getModuleInfo =
+      (
+        graph: typeof GRAPH
+      ): Parameters<typeof writeRegionTranslations>[2]['getModuleInfo'] =>
+      (id) => ({
+        importedIds: graph[id]?.imports ?? [],
+        dynamicallyImportedIds: graph[id]?.dynamic ?? [],
+      });
+    const CATALOG = Object.fromEntries(
+      Object.entries(HASH).map(([name, hash]) => [hash, name.toUpperCase()])
+    );
+
+    /** Writes the build of BUNDLE, and returns what it emitted by file key. */
+    function write({
+      isLazy = true,
+      requestCost = 0,
+      previous,
+      graph = GRAPH,
+      bundle = BUNDLE,
+      cwd = createPlugins(ON, 'vite', {
+        'translations/fr.json': JSON.stringify(CATALOG),
+      }).cwd,
+    }: {
+      isLazy?: boolean;
+      requestCost?: number;
+      previous?: string;
+      graph?: typeof GRAPH;
+      bundle?: typeof BUNDLE;
+      cwd?: string;
+    } = {}) {
+      const emitted: Record<string, string> = {};
+      const written = writeRegionTranslations(
+        bundle,
+        {
+          defaultLocale: 'en',
+          locales: ['fr'],
+          hashes: new Set(Object.values(HASH)),
+          unsplit: new Set(),
+          naming: 'map',
+          regions: { requestCost, previous },
+        },
+        {
+          gtFiles: GT_FILES.gt,
+          base: '/',
+          assetsDir: 'assets',
+          emitFile: ({ fileName, source }) => (emitted[fileName] = source),
+          getModuleInfo: getModuleInfo(graph),
+          isLazy,
+        }
+      );
+      const manifest = JSON.parse(
+        emitted['assets/gt-chunk-translations.json']
+      ) as RegionTranslationsManifest;
+      const messagesIn = (keys: string[]) =>
+        keys
+          .flatMap((key) =>
+            Object.values(JSON.parse(emitted[manifest.files[key].fr]))
+          )
+          .sort();
+      /** The messages in the files the import of a chunk needs. */
+      const messagesOf = (chunk: string) => messagesIn(manifest.imports[chunk]);
+      /** The messages in the files a page holds before any code runs. */
+      const messagesOfEntry = (chunk: string) =>
+        messagesIn(manifest.entries[chunk].files);
+      return { written, emitted, manifest, messagesOf, messagesOfEntry, cwd };
+    }
+
+    it('gives a route the translations of the modules it reaches, not of the others in a chunk it loads', () => {
+      const { written, manifest, messagesOf } = write();
+      expect(messagesOf('assets/Home.js')).toEqual(['HOME', 'PICKER']);
+      expect(messagesOf('assets/Billing.js')).toEqual(['BILLING', 'INVOICE']);
+      expect(messagesOf('assets/Admin.js')).toEqual(['ADMIN', 'PANEL']);
+      // The shared chunk is the target of no import
+      expect(Object.keys(manifest.imports)).toEqual([
+        'assets/Home.js',
+        'assets/Billing.js',
+        'assets/Admin.js',
+      ]);
+      expect(written.imported).toEqual(new Set(Object.keys(manifest.imports)));
+      expect(manifest.entries['assets/index.js'].files).toHaveLength(1);
+      expect(Object.values(manifest.assignment.files).flat().sort()).toEqual(
+        Object.values(HASH)
+      );
+      expect(written.stats).toMatchObject({
+        loads: 4,
+        files: 4,
+        isConservative: false,
+        conservativeMessages: 0,
+      });
+    });
+
+    it("reads the build's chunk import map from the bundle", () => {
+      createPlugins(ON, 'vite', {
+        'translations/fr.json': JSON.stringify(CATALOG),
+      });
+      const emitted: Record<string, string> = {};
+      writeRegionTranslations(
+        {
+          ...BUNDLE,
+          'importmap.json': {
+            type: 'asset',
+            source: JSON.stringify({
+              imports: { '/assets/Home-name.js': '/assets/Home.js' },
+            }),
+          } as unknown as (typeof BUNDLE)[string],
+        },
+        {
+          defaultLocale: 'en',
+          locales: ['fr'],
+          hashes: new Set(Object.values(HASH)),
+          unsplit: new Set(),
+          importMap: { fileName: 'importmap.json', baseUrl: '/' },
+          naming: 'map',
+          regions: { requestCost: 0, previous: undefined },
+        },
+        {
+          gtFiles: GT_FILES.gt,
+          base: '/',
+          assetsDir: 'assets',
+          emitFile: ({ fileName, source }) => (emitted[fileName] = source),
+          getModuleInfo: getModuleInfo(GRAPH),
+          isLazy: true,
+        }
+      );
+      const manifest = JSON.parse(
+        emitted['assets/gt-chunk-translations.json']
+      ) as RegionTranslationsManifest;
+      const lists = JSON.parse(emitted[manifest.maps.fr]).i;
+      // Which a page holds once the import of the route has run
+      const needed = ['assets/gt-20000000'];
+      expect(manifest.imports['assets/Home.js']).toEqual(needed);
+      expect(readImportedFiles(lists, 'assets/Home.js')).toEqual(needed);
+      expect(readImportedFiles(lists, 'assets/Home-name.js')).toEqual(needed);
+    });
+
+    describe('an import of a module in the chunk of the module that imports it, which the bundler writes without an import()', () => {
+      const bundleOf = (...chunks: ReturnType<typeof chunk>[]) =>
+        Object.fromEntries(chunks.map((file) => [file.fileName, file]));
+
+      it.each([true, false])(
+        'gives its translations to the entry whose chunk holds both, with isLazy %s',
+        (isLazy) => {
+          const { manifest, messagesOf, messagesOfEntry } = write({
+            isLazy,
+            bundle: bundleOf(
+              chunk(
+                'assets/index.js',
+                {
+                  '/main.js': site('title'),
+                  '/home.js': site('home'),
+                  '/picker.js': site('picker'),
+                },
+                { isEntry: true, dynamicImports: ['assets/index.js'] }
+              ),
+              chunk('assets/Billing.js', { '/billing.js': site('billing') })
+            ),
+            graph: {
+              '/main.js': { dynamic: ['/home.js', '/billing.js'] },
+              '/home.js': { imports: ['/picker.js'] },
+            },
+          });
+          // Nothing imports the entry's chunk, so no list of it is ever read
+          expect(Object.keys(manifest.imports)).toEqual(['assets/Billing.js']);
+          expect(messagesOfEntry('assets/index.js')).toEqual(
+            expect.arrayContaining(['HOME', 'PICKER', 'TITLE'])
+          );
+          expect(messagesOf('assets/Billing.js')).toContain('BILLING');
+        }
+      );
+
+      it('gives its translations to the import that loads their chunk with another', () => {
+        // Home's chunk imports the shared chunk, where a helper imports the
+        // panel: only the list of Home's chunk is read when Home loads
+        const { manifest, messagesOf } = write({
+          bundle: bundleOf(
+            chunk(
+              'assets/index.js',
+              { '/main.js': site('title') },
+              { isEntry: true }
+            ),
+            chunk(
+              'assets/Home.js',
+              { '/home.js': site('home') },
+              { imports: ['assets/shared.js'] }
+            ),
+            chunk(
+              'assets/shared.js',
+              { '/picker.js': site('picker'), '/panel.js': site('panel') },
+              { facadeModuleId: null, dynamicImports: ['assets/shared.js'] }
+            )
+          ),
+          graph: {
+            '/main.js': { dynamic: ['/home.js'] },
+            '/home.js': { imports: ['/picker.js'] },
+            '/picker.js': { dynamic: ['/panel.js'] },
+          },
+        });
+        expect(Object.keys(manifest.imports)).toEqual(['assets/Home.js']);
+        expect(messagesOf('assets/Home.js')).toEqual(
+          expect.arrayContaining(['HOME', 'PANEL', 'PICKER'])
+        );
+      });
+
+      it('still lists the files of a module whose import loads a chunk that is made for it', () => {
+        // As Rolldown writes it where modules do not run in order: Home's
+        // import of the picker loads a chunk that passes on what Home's holds
+        const { manifest, messagesOf } = write({
+          bundle: bundleOf(
+            chunk(
+              'assets/index.js',
+              { '/main.js': site('title') },
+              { isEntry: true }
+            ),
+            chunk(
+              'assets/Home.js',
+              { '/home.js': site('home'), '/picker.js': site('picker') },
+              { dynamicImports: ['assets/Picker.js'] }
+            ),
+            chunk(
+              'assets/Picker.js',
+              {},
+              { facadeModuleId: '/picker.js', imports: ['assets/Home.js'] }
+            )
+          ),
+          graph: {
+            '/main.js': { dynamic: ['/home.js'] },
+            '/home.js': { dynamic: ['/picker.js'] },
+          },
+        });
+        expect(Object.keys(manifest.imports).sort()).toEqual([
+          'assets/Home.js',
+          'assets/Picker.js',
+        ]);
+        expect(messagesOf('assets/Picker.js')).toContain('PICKER');
+      });
+
+      it('still lists the files of a module that another chunk imports too', () => {
+        const { messagesOf } = write({
+          bundle: bundleOf(
+            chunk(
+              'assets/index.js',
+              { '/main.js': site('title') },
+              { isEntry: true }
+            ),
+            chunk('assets/Home.js', {
+              '/home.js': site('home'),
+              '/picker.js': site('picker'),
+            }),
+            chunk('assets/Billing.js', { '/billing.js': site('billing') })
+          ),
+          graph: {
+            '/main.js': { dynamic: ['/home.js', '/billing.js'] },
+            '/home.js': { dynamic: ['/picker.js'] },
+            '/billing.js': { dynamic: ['/picker.js'] },
+          },
+        });
+        // Billing's import of the picker loads Home's chunk
+        expect(messagesOf('assets/Home.js')).toEqual(
+          expect.arrayContaining(['HOME', 'PICKER'])
+        );
+        expect(messagesOf('assets/Billing.js')).toContain('BILLING');
+      });
+    });
+
+    it('gives a route what every module of its chunks reads when a chunk runs all of its modules, and counts those messages', () => {
+      const { written, messagesOf } = write({ isLazy: false });
+      expect(messagesOf('assets/Home.js')).toEqual(
+        expect.arrayContaining(['HOME', 'INVOICE', 'PANEL', 'PICKER'])
+      );
+      expect(written.stats).toMatchObject({
+        isConservative: true,
+        conservativeMessages: 3,
+      });
+    });
+
+    it('merges files while a request is worth more than the bytes it adds', () => {
+      expect(write({ requestCost: 1e6 }).written.stats.files).toBeLessThan(4);
+    });
+
+    it('keeps the files of the manifest it is given, and builds from nothing when there is none', () => {
+      const first = write();
+      const file = path.join(first.cwd, 'previous.json');
+      fs.writeFileSync(
+        file,
+        first.emitted['assets/gt-chunk-translations.json']
+      );
+
+      const again = write({ previous: file, cwd: first.cwd });
+      expect(again.emitted).toEqual(first.emitted);
+      expect(again.written.missingPrevious).toBe(false);
+
+      // Home now reaches the invoice table too. The table's message stays
+      // in the file it was in, which Home now needs, so no file changes;
+      // built from nothing, it moves to where Home and Billing pay least
+      const graph = {
+        ...GRAPH,
+        '/home.js': { imports: ['/picker.js', '/invoice.js'] },
+      };
+      const changed = write({ previous: file, cwd: first.cwd, graph });
+      expect(changed.manifest.assignment).toEqual(first.manifest.assignment);
+      expect(changed.manifest.files).toEqual(first.manifest.files);
+      expect(changed.messagesOf('assets/Home.js')).toEqual([
+        'BILLING',
+        'HOME',
+        'INVOICE',
+        'PICKER',
+      ]);
+      const fromNothing = write({ cwd: first.cwd, graph });
+      expect(fromNothing.manifest.files).not.toEqual(first.manifest.files);
+
+      const missing = write({
+        previous: path.join(first.cwd, 'none.json'),
+        cwd: first.cwd,
+      });
+      expect(missing.written.missingPrevious).toBe(true);
+      expect(missing.emitted).toEqual(first.emitted);
+    });
+
+    it.each([
+      ['not JSON', 'not json'],
+      ['the manifest of a build that splits by chunk', '{"files":{}}'],
+      [
+        'files that are not named as the build names them',
+        '{"assignment":{"files":{"../a":["x"]},"samples":[]}}',
+      ],
+    ])('fails a build whose previous manifest is %s', (_name, content) => {
+      const { cwd } = createPlugins(ON, 'vite', {
+        'translations/fr.json': JSON.stringify(CATALOG),
+        'previous.json': content,
+      });
+      expect(() =>
+        write({ previous: path.join(cwd, 'previous.json'), cwd })
+      ).toThrow('Could not read the previous chunk translations');
+    });
+
+    it('reads when modules run from the options of the bundler, and says what a build that runs every module of a chunk loads', async () => {
+      const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const created = createPlugins(
+        {
+          ...SPLIT,
+          experimentalChunkTranslationsRequestCost: 0,
+          logLevel: 'debug',
+        },
+        'vite',
+        { 'translations/fr.json': JSON.stringify(CATALOG) }
+      );
+      const vite = created.plugins[0].vite as {
+        configResolved: (config: object) => void;
+        options: (options: object) => null;
+        outputOptions: (options: object) => null;
+        generateBundle: (this: object, options: object, bundle: object) => void;
+      };
+      vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
+      // The hashes the build knows are those of the modules it compiled
+      await transform(MODULE, SPLIT, created);
+      const bundle = Object.fromEntries(
+        [
+          chunk(
+            'assets/index.js',
+            { '/main.js': callSite(SAVE) },
+            { isEntry: true }
+          ),
+          chunk(
+            'assets/Home.js',
+            { '/home.js': '' },
+            { imports: ['assets/shared.js'] }
+          ),
+          chunk(
+            'assets/shared.js',
+            { '/picker.js': '', '/panel.js': callSite(HELLO) },
+            { facadeModuleId: null }
+          ),
+        ].map((file) => [file.fileName, file])
+      );
+      const generate = () => {
+        const emitted: Record<string, string> = {};
+        vite.generateBundle.call(
+          {
+            emitFile: (file: { fileName: string; source: string }) =>
+              (emitted[file.fileName] = file.source),
+            getModuleInfo: getModuleInfo({
+              '/main.js': { dynamic: ['/home.js'] },
+              '/home.js': { imports: ['/picker.js'] },
+            }),
+          },
+          {},
+          bundle
+        );
+        return JSON.parse(emitted['assets/gt-chunk-translations.json'])
+          .imports as Record<string, string[]>;
+      };
+
+      // Rolldown's default: the panel runs when Home loads its chunk
+      expect(generate()['assets/Home.js']).toHaveLength(1);
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'pages load 1 messages of modules they never import'
+        )
+      );
+      vi.mocked(console.warn).mockClear();
+
+      vite.options({});
+      vite.outputOptions({ strictExecutionOrder: true });
+      log.mockClear();
+      expect(generate()['assets/Home.js']).toBeUndefined();
+      expect(console.warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('they never import')
+      );
+      // The panel's message, which no load reaches, so the entry holds it
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'The files every page requests as it starts hold 1 messages (0 B), of which the entries read 1 (0 B). Replayed every entry'
+        )
+      );
+    });
+
+    it('fails the build when an import would lack a message its modules read', async () => {
+      vi.resetModules();
+      vi.doMock(
+        '../transform/chunk-translations/assignTranslationsByRegion',
+        async (original) => {
+          const actual =
+            await original<
+              typeof import('../transform/chunk-translations/assignTranslationsByRegion')
+            >();
+          return {
+            ...actual,
+            // An assignment whose imports list nothing
+            assignTranslationsByRegion: (
+              ...given: Parameters<typeof actual.assignTranslationsByRegion>
+            ) => ({
+              ...actual.assignTranslationsByRegion(...given),
+              demands: new Map(),
+            }),
+          };
+        }
+      );
+      onTestFinished(() => {
+        vi.doUnmock(
+          '../transform/chunk-translations/assignTranslationsByRegion'
+        );
+        vi.resetModules();
+      });
+      createPlugins(ON, 'vite', {
+        'translations/fr.json': JSON.stringify(CATALOG),
+      });
+      const broken =
+        await import('../transform/chunk-translations/writeRegionTranslations');
+      expect(() =>
+        broken.writeRegionTranslations(
+          BUNDLE,
+          {
+            defaultLocale: 'en',
+            locales: ['fr'],
+            hashes: new Set(Object.values(HASH)),
+            unsplit: new Set(),
+            naming: 'map',
+            regions: { requestCost: 0, previous: undefined },
+          },
+          {
+            gtFiles: GT_FILES.gt,
+            base: '/',
+            assetsDir: 'assets',
+            emitFile: () => undefined,
+            getModuleInfo: getModuleInfo(GRAPH),
+            isLazy: true,
+          }
+        )
+      ).toThrow(
+        'would leave 12 messages without their translation when the code that reads them runs'
+      );
     });
   });
 });

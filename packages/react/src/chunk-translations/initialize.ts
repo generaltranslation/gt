@@ -27,7 +27,7 @@ export function initializeChunkTranslations<C extends InitializeConfig>(
  * far, and keeps it for good: the files a build wrote do not change. The
  * condition store exists once `initialize` returns.
  */
-function initializeCache<C extends InitializeConfig>(
+export function initializeCache<C extends InitializeConfig>(
   initialize: (config: C) => Promise<void>,
   config: C,
   state: ChunkTranslationsState

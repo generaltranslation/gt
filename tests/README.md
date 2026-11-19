@@ -46,8 +46,11 @@ a proxy-free app plus locale routing with both default-prefix settings; see each
 app's README for details.
 
 `vite-chunk-translations` checks the compiler's experimental
-`experimentalChunkTranslations` option with its own script, which builds the
-app with and without the option and drives both builds in headless Chromium:
+`experimentalChunkTranslations` option with its own scripts, which build the
+app with and without the option and drive the builds in headless Chromium:
+split by chunk in each naming (`scripts/check.mjs`), and split by module
+(`scripts/check-module.mjs`) in builds that run a module when it is first
+imported and builds that run every module of a chunk as it loads:
 
 ```bash
 pnpm --filter gt-test-vite-chunk-translations check:install
