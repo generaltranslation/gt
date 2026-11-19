@@ -38,21 +38,23 @@ import { T } from 'gt-next';
 
 ## Translating simple strings
 
-Use the `t` function returned by the `useGT()` hook to translate strings directly. Invoke `useGT()` in synchronous components or `await getGT()` in async components only.
+Use the `t` tagged template returned by the `useGT()` hook to translate strings directly. Invoke `useGT()` in synchronous components or `await getGT()` in async components only.
 
 ```js
 import { useGT } from 'gt-next';
 const t = useGT();
-t('Hello, world!'); // returns "Hola, mundo"
+t`Hello, world!`; // returns "Hola, mundo"
+t`Hello, ${{ name }}!`;
 ```
 
 ```js
 import { getGT } from 'gt-next/server';
 const t = await getGT(); // use await version in async components only
-t('Hello, world!');
+t`Hello, world!`;
 ```
 
-- Just like with the children of the `<T>` component, all strings passed to `t()` must be static string literals. No variables or template literals.
+- Just like with the children of the `<T>` component, the text of a `t` template must be static. Pass each dynamic value as a named variable, as in `${{ name }}`.
+- Options go in a call before the template: ``t({ context: 'button' })`Save` ``.
 
 ## Translating shared or out-of-scope strings
 
@@ -69,8 +71,8 @@ export default function Greeting() {
 }
 ```
 
-- All strings passed to `msg()` must be static string literals. No variables or template literals.
-- Use the equivalent `await getMessages()` for async components.
+- `msg()` takes one static string literal. For a message with variables or options, use it as a tagged template like `t`: ``msg`Hello, ${{ name }}!` ``.
+- Use the equivalent `await getMessages()` from `gt-next/server` for async components.
 - `useMessages()` / `getMessages()` take no arguments.
 
 ## Dynamic content inside `<T>`

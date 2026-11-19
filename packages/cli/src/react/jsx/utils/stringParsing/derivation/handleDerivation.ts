@@ -12,9 +12,7 @@ import {
   warnDeriveFunctionNoResultsSync,
   warnDeriveFunctionNotWrappedSync,
   warnAutoderiveNoResultsSync,
-  warnUnstableHelperInLegacyMessageSync,
 } from '../../../../../console/index.js';
-import { isUnstableGTImportSource } from 'generaltranslation/internal';
 
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
@@ -45,14 +43,8 @@ const processFunctionCache = new Map<string, StringNode | null>();
  * @param file - Current file path
  * @param parsingOptions - Parsing configuration
  * @param errors - Errors to add to
- * @param runtimeInterpolationState - When provided, non-derive dynamic expressions become {n} placeholders instead of errors. Pass { index: 0 } at the entry point for template macros.
  * @param skipDeriveInvocation - If true, skip derive invocation check
  * @returns Node | null - The parsed node, or null if invalid
- *
- * @note runtimeInterpolationState
- *  - Only provide at entry for template macros, otherwise omit
- *  - t`Hello {nonDerivableValue}` -> t`Hello {0}`
- *
  */
 export function handleDerivation({
   expr,
@@ -61,7 +53,6 @@ export function handleDerivation({
   parsingOptions,
   errors,
   warnings,
-  runtimeInterpolationState,
   skipDeriveInvocation,
 }: {
   expr: t.Expression;
@@ -70,7 +61,6 @@ export function handleDerivation({
   parsingOptions: ParsingConfigOptions;
   errors: string[];
   warnings: Set<string>;
-  runtimeInterpolationState?: { index: number };
   skipDeriveInvocation?: boolean;
 }): StringNode | null {
   if (!expr) {
@@ -109,10 +99,7 @@ export function handleDerivation({
       return null;
     }
     // Non-derive call
-    if (runtimeInterpolationState) {
-      return { type: 'text', text: `{${runtimeInterpolationState.index++}}` };
-    }
-    errors.push(warnUnwrappedCall(file, expr, tPath));
+    errors.push(warnUnwrappedCall(file, expr));
     return null;
   }
 
@@ -133,7 +120,7 @@ export function handleDerivation({
       const exprNode = expr.expressions[index];
       if (exprNode && t.isExpression(exprNode)) {
         if (isDeriveCall({ expr: exprNode, tPath })) {
-          // Derive — resolve fully (no runtime interpolation forwarding)
+          // Derive — resolve fully
           const result = handleDerivation({
             expr: exprNode,
             tPath,
@@ -145,7 +132,7 @@ export function handleDerivation({
           if (result === null) return null;
           parts.push(result);
         } else {
-          // Non-derive — recurse with runtime interpolation forwarded
+          // Non-derive — recurse
           const result = handleDerivation({
             expr: exprNode,
             tPath,
@@ -153,7 +140,6 @@ export function handleDerivation({
             parsingOptions,
             errors,
             warnings,
-            runtimeInterpolationState,
             skipDeriveInvocation,
           });
           if (result === null) return null;
@@ -183,7 +169,6 @@ export function handleDerivation({
       parsingOptions,
       errors,
       warnings,
-      runtimeInterpolationState,
       skipDeriveInvocation,
     });
     const rightResult = handleDerivation({
@@ -193,7 +178,6 @@ export function handleDerivation({
       parsingOptions,
       errors,
       warnings,
-      runtimeInterpolationState,
       skipDeriveInvocation,
     });
 
@@ -213,7 +197,6 @@ export function handleDerivation({
       parsingOptions,
       errors,
       warnings,
-      runtimeInterpolationState,
       skipDeriveInvocation,
     });
   }
@@ -284,9 +267,6 @@ export function handleDerivation({
   }
 
   // Not a derivable expression
-  if (runtimeInterpolationState) {
-    return { type: 'text', text: `{${runtimeInterpolationState.index++}}` };
-  }
   return null;
 }
 
@@ -319,7 +299,7 @@ function getDeriveVariants<T extends t.CallExpression = t.CallExpression>({
 
   // Must be a derive(...) call or an alias of it
   if (!isDeriveCall({ expr: call, tPath })) {
-    errors.push(warnUnwrappedCall(file, call, tPath));
+    errors.push(warnUnwrappedCall(file, call));
     return null;
   }
 
@@ -369,28 +349,8 @@ function getDeriveVariants<T extends t.CallExpression = t.CallExpression>({
   return null;
 }
 
-/** Unstable helpers only work in tagged messages, so asking to wrap them in derive() would mislead. */
-function warnUnwrappedCall(
-  file: string,
-  call: t.CallExpression,
-  tPath: NodePath
-): string {
+function warnUnwrappedCall(file: string, call: t.CallExpression): string {
   const location = `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`;
-  const binding = t.isIdentifier(call.callee)
-    ? tPath.scope.getBinding(call.callee.name)
-    : undefined;
-  if (
-    binding?.path.isImportSpecifier() &&
-    binding.path.parentPath.isImportDeclaration() &&
-    isUnstableGTImportSource(binding.path.parentPath.node.source.value)
-  ) {
-    const { imported } = binding.path.node;
-    return warnUnstableHelperInLegacyMessageSync(
-      file,
-      t.isIdentifier(imported) ? imported.name : imported.value,
-      location
-    );
-  }
   const calleeName = t.isIdentifier(call.callee)
     ? call.callee.name
     : generate(call.callee).code;

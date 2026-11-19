@@ -1,26 +1,26 @@
 import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
-  isUnstableGTHelperName,
-  isUnstableGTImportSource,
-  type UnstableGTHelperName,
+  isGTMessageHelperName,
+  isGTMessageImportSource,
+  type GTMessageHelperName,
 } from 'generaltranslation/internal';
 
-/** Original name of the unstable helper a callee or tag refers to. */
+/** Original name of the message helper a callee or tag refers to. */
 export function getHelperName(
   callee: NodePath
-): UnstableGTHelperName | undefined {
+): GTMessageHelperName | undefined {
   const imported = getNamedImport(callee);
   if (
     imported &&
-    isUnstableGTImportSource(imported.source) &&
-    isUnstableGTHelperName(imported.name)
+    isGTMessageImportSource(imported.source) &&
+    isGTMessageHelperName(imported.name)
   ) {
     return imported.name;
   }
 }
 
-export function getNamedImport(
+function getNamedImport(
   callee: NodePath
 ): { name: string; source: string } | undefined {
   if (!callee.isIdentifier()) return;

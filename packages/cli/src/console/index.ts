@@ -111,20 +111,6 @@ export const warnNestedInternalTComponent = (
     location
   );
 
-export const warnNonStaticExpressionSync = (
-  file: string,
-  attrName: string,
-  value: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    `Found non-static expression for attribute ${colorizeIdString(
-      attrName
-    )}: ${colorizeContent(value)}. Change "${colorizeIdString(attrName)}" to ensure this content is translated.`,
-    location
-  );
-
 export const warnInvalidMaxCharsSync = (
   file: string,
   value: string,
@@ -141,7 +127,7 @@ export const warnNonStaticMessageTreeSync = (
   reason: string,
   location?: string,
   details?: string,
-  fix = 'Use static text, ${{ name }} variables, unstable helpers with literal arguments, and literal t({ ... }) options so the message can be extracted and translated'
+  fix = 'Use static text, ${{ name }} variables, helpers with literal arguments, and literal t({ ... }) options so the message can be extracted and translated'
 ): string =>
   withLocation(
     file,
@@ -162,7 +148,7 @@ export const warnUntrackedMessageTagSync = (
     file,
     createDiagnosticMessage({
       whatHappened:
-        'Could not follow this use of an unstable translation function (t, msg, useGT, or getGT)',
+        'Could not follow this use of a translation function (t, msg, useGT, or getGT)',
       why: 'it is passed, exported, reassigned, or accessed as an object, so the messages it translates cannot be found statically',
       fix: 'Call it directly (as a tagged template for t), or alias it with const',
     }),
@@ -183,7 +169,7 @@ export const warnNonLiteralMsgCallSync = (
     location
   );
 
-export const warnUnfollowedUnstableImportSync = (
+export const warnUnfollowedMessageImportSync = (
   file: string,
   source: string,
   location?: string
@@ -192,23 +178,8 @@ export const warnUnfollowedUnstableImportSync = (
     file,
     createDiagnosticMessage({
       whatHappened: `Could not extract tagged-template messages that use ${source} through require(), import(), a namespace import, or a re-export`,
-      why: 'only named imports of unstable entry points are followed',
-      fix: `Use import { t, useGT, getGT } from '${source}' in each file that translates`,
-    }),
-    location
-  );
-
-export const warnUnstableHelperInLegacyMessageSync = (
-  file: string,
-  helper: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    createDiagnosticMessage({
-      whatHappened: `Could not resolve ${helper}() in this message`,
-      why: `${helper}() is imported from an unstable entry, which only works inside tagged t\`...\` messages`,
-      fix: `Import ${helper}() from the same entry as the translation function, or write the message as an unstable tagged t\`...\``,
+      why: 'only named imports are followed',
+      fix: `Import t, msg, useGT, or getGT by name from '${source}' in each file that translates`,
     }),
     location
   );
@@ -224,17 +195,6 @@ export const warnIgnoredProtoPropertySync = (
       why: 'a non-computed __proto__ key sets the object prototype instead of adding a branch or option',
       fix: "Use a computed ['__proto__'] key to add a branch with that name, or remove the property",
     }),
-    location
-  );
-
-export const warnInvalidFormatSync = (
-  file: string,
-  value: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    `Found invalid $format value: ${colorizeContent(value)}. Must be one of: 'ICU', 'STRING', 'I18NEXT'.`,
     location
   );
 
@@ -261,42 +221,6 @@ export const warnInvalidIcuSync = (
       `Found invalid ICU string: ${colorizeContent(value)}. Change the value to a valid ICU to ensure this content is translated. Error message: ${error}.`,
       location
     )
-  );
-
-export const warnTemplateLiteralSync = (
-  file: string,
-  value: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    `Found template literal with quasis (${colorizeContent(value)}). Change the template literal to a string to ensure this content is translated.`,
-    location
-  );
-
-export const warnNonStringSync = (
-  file: string,
-  value: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    `Found non-string literal (${colorizeContent(value)}). Change the value to a string literal to ensure this content is translated.`,
-    location
-  );
-
-export const warnAsyncUseGT = (file: string, location?: string): string =>
-  withLocation(
-    file,
-    `Found useGT() in an async function. Use getGT() instead, or make the function synchronous.`,
-    location
-  );
-
-export const warnSyncGetGT = (file: string, location?: string): string =>
-  withLocation(
-    file,
-    `Found getGT() in a synchronous function. Use useGT() instead, or make the function async.`,
-    location
   );
 
 export const warnTernarySync = (file: string, location?: string): string =>
@@ -529,18 +453,6 @@ export const warnDeriveOptionalChainingSync = (
     withDeriveFunctionError(
       `Optional chaining (${colorizeFunctionName(formatCodeClamp(code))}) is not supported in derive(). Optional chaining implies the value could be undefined, which cannot be resolved statically. Use a non-optional access instead.`
     ),
-    location
-  );
-
-export const warnUnresolvedImportSync = (
-  file: string,
-  functionName: string,
-  importPath: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    `Could not resolve import ${colorizeFunctionName(importPath)} for function ${colorizeFunctionName(functionName)}. Translation strings inside this function will not be extracted.`,
     location
   );
 

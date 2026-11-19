@@ -33,7 +33,7 @@ export function assertPlainValue(
   }
   if (!plain) {
     throw new NonStaticMessageError(
-      'the value is not typed as a primitive (it is an object, a symbol, any, unknown, or an unstable helper result built outside the template), so the runtime may not render it as a plain value',
+      'the value is not typed as a primitive (it is an object, a symbol, any, unknown, or a helper result built outside the template), so the runtime may not render it as a plain value',
       expression,
       undefined,
       fix
