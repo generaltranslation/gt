@@ -175,6 +175,116 @@ describe('plural rendering', () => {
     });
   });
 
+  describe('a count in a translated branch', () => {
+    // Russian picks "one" for 21 too, so its branch shows the count, which
+    // the English "one" branch leaves out.
+    const count = { i: 2, v: '#' };
+    const tagged = (id: number, tag: object, props: object = {}) =>
+      ({
+        'data-_gt': { id, injectionType: 'manual', ...tag },
+        ...props,
+      }) as unknown as TaggedElementProps;
+    const size = React.createElement(
+      'span',
+      tagged(2, { transformation: 'variable', variableType: 'number' }),
+      100
+    );
+    const render = (
+      n: unknown,
+      branches: Record<string, React.ReactNode>,
+      one: unknown
+    ) =>
+      renderTranslatedChildren({
+        source: createPluralElement(n as number, branches),
+        target: { d: { b: { one } } } as unknown as TranslatedChildren,
+        locales: ['ru'],
+        enableI18n: true,
+      });
+    const shows = (value: unknown) => ({
+      props: { children: { props: { children: value } } },
+    });
+
+    it('is the n of the plural, which the source branch need not show', () => {
+      expect(
+        render(21, { one: 'One file', other: 'Files' }, [count, ' файл'])
+      ).toMatchObject([shows(21), { props: { children: ' файл' } }]);
+      expect(render(21, { one: 'One file' }, count)).toMatchObject(
+        shows(21).props.children
+      );
+    });
+
+    it('is not the variable of the same id in the source branch', () => {
+      expect(
+        render(21, { one: [size, ' MB file'] }, [count, { i: 2, v: 'n' }])
+      ).toMatchObject([shows(21), shows(100)]);
+    });
+
+    it('reaches into elements and a <Branch>, and stops at a nested <Plural>', () => {
+      const bold = React.createElement('b', tagged(2, {}), 'One file');
+      expect(render(21, { one: bold }, { i: 2, c: [count] })).toMatchObject({
+        type: 'b',
+        props: { children: [shows(21)] },
+      });
+
+      const branch = React.createElement(
+        'span',
+        tagged(
+          2,
+          { transformation: 'branch', branches: { a: 'file' } },
+          {
+            branch: 'a',
+          }
+        )
+      );
+      expect(
+        render(21, { one: branch }, { i: 2, d: { b: { a: [count] } } })
+      ).toMatchObject([shows(21)]);
+
+      const plural = React.createElement(
+        'span',
+        tagged(
+          2,
+          { transformation: 'plural', branches: { other: 'files' } },
+          {
+            n: 5,
+          }
+        )
+      );
+      expect(
+        render(21, { one: plural }, { i: 2, d: { b: { many: [count] } } })
+      ).toMatchObject([shows(5)]);
+    });
+
+    it('is the source variable of its id where no plural gives a count', () => {
+      const result = renderTranslatedChildren({
+        source: [size, ' MB'],
+        target: [count, ' МБ'] as unknown as TranslatedChildren,
+        locales: ['ru'],
+        enableI18n: true,
+      });
+
+      expect(result).toMatchObject([
+        shows(100),
+        { props: { children: ' МБ' } },
+      ]);
+    });
+
+    it('renders nothing for an n that is not a number', () => {
+      const result = renderTranslatedChildren({
+        source: createPluralElement('x' as unknown as number, {
+          other: 'Files',
+        }),
+        target: {
+          d: { b: { other: [count] } },
+        } as unknown as TranslatedChildren,
+        locales: ['ru'],
+        enableI18n: true,
+      });
+
+      expect(result).toMatchObject([shows(undefined)]);
+    });
+  });
+
   it('renders the source branch when the translation has no branch', () => {
     const result = renderTranslatedChildren({
       source: createPluralElement(2, { other: 'Items' }),
