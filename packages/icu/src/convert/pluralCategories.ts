@@ -56,6 +56,8 @@ export function getPluralCategoryCounts(
   let more = false;
   for (const count of PROBED_COUNTS) {
     if (rules.select(count) !== category) continue;
+    // CLDR reads a fraction's digits modulo 10 or 100, so a category that picks one fraction picks endless others.
+    if (!Number.isInteger(count)) more = true;
     if (counts.length === SAMPLED_COUNTS) {
       more = true;
       break;
