@@ -120,8 +120,6 @@ describe('runtimeTranslatePass', () => {
 
 describe('devHotReload config resolution', () => {
   it.each([
-    [true, { jsx: false }],
-    [false, { jsx: false }],
     [undefined, { jsx: false }],
     [{}, { jsx: false }],
     [{ jsx: false }, { jsx: false }],
@@ -140,13 +138,13 @@ describe('devHotReload config resolution', () => {
       initializeState({ gtConfig }, 'test.tsx').settings.devHotReload
     ).toEqual({ jsx: true });
     expect(
-      initializeState({ gtConfig, devHotReload: false }, 'test.tsx').settings
-        .devHotReload
+      initializeState({ gtConfig, devHotReload: { jsx: false } }, 'test.tsx')
+        .settings.devHotReload
     ).toEqual({ jsx: false });
     expect(
       initializeState(
         {
-          gtConfig: gtConfigWith({ devHotReload: false }),
+          gtConfig: gtConfigWith({ devHotReload: { jsx: false } }),
           devHotReload: { jsx: true },
         },
         'test.tsx'

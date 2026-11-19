@@ -114,7 +114,7 @@ describe('GT config schema parsing flags', () => {
     expect(
       validate(
         withParsingFlags({
-          autoderive: { jsx: true },
+          autoderive: true,
           devHotReload: { jsx: true },
           vueCompilerOptions: { whitespace: 'preserve' },
         })
@@ -123,7 +123,7 @@ describe('GT config schema parsing flags', () => {
     expect(
       validate(
         withParsingFlags({
-          devHotReload: true,
+          devHotReload: { jsx: true },
           vueCompilerOptions: { unsupportedVueOption: true },
         })
       )

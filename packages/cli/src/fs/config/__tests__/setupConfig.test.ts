@@ -26,7 +26,7 @@ describe('createOrUpdateConfig', () => {
         locales: ['fr'],
         files: {
           md: { include: ['docs/**/*.md'] },
-          gt: { parsingFlags: { devHotReload: true } },
+          gt: { parsingFlags: { devHotReload: { jsx: true } } },
         },
       })
     );
@@ -42,7 +42,7 @@ describe('createOrUpdateConfig', () => {
     expect(config.framework).toBe('vite');
     expect(config.files.md).toEqual({ include: ['docs/**/*.md'] });
     expect(config.files.gt).toEqual({
-      parsingFlags: { devHotReload: true },
+      parsingFlags: { devHotReload: { jsx: true } },
       output: 'src/_gt/[locale].json',
     });
   });

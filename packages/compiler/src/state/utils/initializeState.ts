@@ -1,6 +1,5 @@
 import { GTUnpluginOptions } from '../..';
 import { TransformState } from '../types';
-import { resolveAutoderive } from 'generaltranslation/config-schema';
 import { PluginSettings, resolveDevHotReload } from '../../config';
 import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
@@ -33,18 +32,11 @@ export function initializeState(
   const gtConfig = options.gtConfig;
   const enableAutoJsxInjection =
     gtConfig?.files?.gt?.parsingFlags?.enableAutoJsxInjection ?? false;
-  const rawDevHotReload =
-    gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? false;
-  const rawAutoderive = gtConfig?.files?.gt?.parsingFlags?.autoderive ?? false;
-
-  const { jsx: autoderiveJsx } = resolveAutoderive(
-    options.autoderive ?? rawAutoderive
-  );
-
-  // Resolve devHotReload (options override gtConfig)
-  const rawOptionsDevHotReload = options.devHotReload ?? undefined;
+  const parsingFlags = gtConfig?.files?.gt?.parsingFlags;
+  // Options override gtConfig
+  const autoderiveJsx = options.autoderive ?? parsingFlags?.autoderive ?? false;
   const devHotReload = resolveDevHotReload(
-    rawOptionsDevHotReload ?? rawDevHotReload
+    options.devHotReload ?? parsingFlags?.devHotReload
   );
 
   // Spread options but exclude already-resolved fields

@@ -12,7 +12,6 @@ import type {
   ParsingConfigOptions,
   ResolvedGTParsingFlags,
 } from '../../types/parsing.js';
-import { resolveAutoderive } from 'generaltranslation/config-schema';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import { extractMessageTrees } from '../jsx/utils/stringParsing/extractMessageTrees/index.js';
 import type { ParsingConfig } from '../jsx/utils/stringParsing/types.js';
@@ -51,8 +50,6 @@ export async function createInlineUpdates(
   const warnings: Set<string> = new Set();
 
   const pkgs = getUpstreamPackages(pkg);
-
-  const autoderive = resolveAutoderive(parsingFlags.autoderive);
 
   // Use the provided app directory or default to the current directory
   const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
@@ -119,7 +116,7 @@ export async function createInlineUpdates(
             pkgs,
             file,
             includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
-            autoderive: autoderive.jsx,
+            autoderive: parsingFlags.autoderive,
           },
           output: {
             errors,
@@ -181,7 +178,7 @@ export async function createInlineUpdates(
               file,
               includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
               enableAutoJsxInjection: true,
-              autoderive: autoderive.jsx,
+              autoderive: parsingFlags.autoderive,
             },
             output: {
               errors,

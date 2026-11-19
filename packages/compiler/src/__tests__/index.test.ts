@@ -185,7 +185,7 @@ describe('gtUnplugin config loading', () => {
       parsingFlags({
         enableAutoJsxInjection: false,
         autoderive: false,
-        devHotReload: false,
+        devHotReload: { jsx: false },
       }),
       undefined,
       false,
@@ -266,7 +266,7 @@ describe('pass gating by plugin options', () => {
     ['useGT()', { compileTimeHash: false, disableBuildChecks: true }, null],
     [
       '<T>',
-      { devHotReload: true },
+      { devHotReload: { jsx: false } },
       { has: ['_hash: "'], lacks: ['GtInternalRuntimeTranslate'] },
     ],
     [

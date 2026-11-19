@@ -184,22 +184,8 @@
               "type": "object",
               "properties": {
                 "autoderive": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "jsx": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [],
-                      "additionalProperties": false
-                    }
-                  ],
-                  "description": "Treat interpolated values in <T> as derive() calls. true and { jsx: true } both enable it."
+                  "type": "boolean",
+                  "description": "Treat interpolated values in <T> as derive() calls"
                 },
                 "includeSourceCodeContext": {
                   "type": "boolean",
@@ -210,22 +196,15 @@
                   "description": "Automatically wrap translatable JSX"
                 },
                 "devHotReload": {
-                  "anyOf": [
-                    {
+                  "type": "object",
+                  "properties": {
+                    "jsx": {
                       "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "jsx": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [],
-                      "additionalProperties": false
                     }
-                  ],
-                  "description": "Compiler option for development hot reload. { jsx: true } injects runtime translation calls for <T> content; a boolean injects nothing."
+                  },
+                  "required": [],
+                  "additionalProperties": false,
+                  "description": "Compiler option for development hot reload: { jsx: true } injects runtime translation calls for <T> content"
                 },
                 "viteConfigPath": {
                   "type": "string",

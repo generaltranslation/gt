@@ -60,29 +60,23 @@ describe('describeConfigIssues', () => {
   });
 
   it('names the invalid key inside a union option', () => {
-    const message = diagnosticFor({
-      files: { gt: { parsingFlags: { autoderive: { jsxx: true } } } },
-    });
+    const message = diagnosticFor({ customMapping: { cn: { code: 5 } } });
 
-    expect(message).toContain(
-      'files.gt.parsingFlags.autoderive.jsxx: Invalid key'
-    );
+    expect(message).toContain('customMapping.cn.code: Invalid type');
   });
 
-  it.each(['autoderive', 'devHotReload'])(
-    'rejects the removed strings key of %s',
-    (flag) => {
-      const message = diagnosticFor({
-        files: {
-          gt: { parsingFlags: { [flag]: { jsx: true, strings: true } } },
-        },
-      });
+  it.each([
+    [{ autoderive: { jsx: true } }, 'autoderive: Invalid type'],
+    [{ devHotReload: true }, 'devHotReload: Invalid type'],
+    [
+      { devHotReload: { jsx: true, strings: true } },
+      'devHotReload.strings: Invalid key',
+    ],
+  ])('rejects the removed parsing flag form %j', (parsingFlags, issue) => {
+    const message = diagnosticFor({ files: { gt: { parsingFlags } } });
 
-      expect(message).toContain(
-        `files.gt.parsingFlags.${flag}.strings: Invalid key`
-      );
-    }
-  );
+    expect(message).toContain(`files.gt.parsingFlags.${issue}`);
+  });
 });
 
 describe('validateGTConfig', () => {

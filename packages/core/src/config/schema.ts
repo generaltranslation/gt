@@ -48,19 +48,12 @@ function optionalDescribed<
   );
 }
 
-const enabledParts = union([
-  boolean(),
-  strictObject({
-    jsx: optional(boolean()),
-  }),
-]);
-
 /** `files.gt.parsingFlags`: options shared by the CLI, compiler, and runtimes. */
 export const GTParsingFlagsSchema = pipe(
   looseObject({
     autoderive: optionalDescribed(
-      enabledParts,
-      'Treat interpolated values in <T> as derive() calls. true and { jsx: true } both enable it.'
+      boolean(),
+      'Treat interpolated values in <T> as derive() calls'
     ),
     includeSourceCodeContext: optionalDescribed(
       boolean(),
@@ -71,8 +64,8 @@ export const GTParsingFlagsSchema = pipe(
       'Automatically wrap translatable JSX'
     ),
     devHotReload: optionalDescribed(
-      enabledParts,
-      'Compiler option for development hot reload. { jsx: true } injects runtime translation calls for <T> content; a boolean injects nothing.'
+      strictObject({ jsx: optional(boolean()) }),
+      'Compiler option for development hot reload: { jsx: true } injects runtime translation calls for <T> content'
     ),
     viteConfigPath: optional(
       pipe(

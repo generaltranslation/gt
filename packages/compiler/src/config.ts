@@ -50,12 +50,12 @@ export interface PluginSettings {
 }
 
 /**
- * Resolves the devHotReload config value. Only `{ jsx: true }` injects runtime
- * translate calls; with `true`, JSX is translated at runtime through Suspense
+ * Resolves the devHotReload config value. `{ jsx: true }` injects runtime
+ * translate calls; without it, JSX is translated at runtime through Suspense
  * and needs no compiler injection.
  */
 export function resolveDevHotReload(value: GTParsingFlags['devHotReload']): {
   jsx: boolean;
 } {
-  return { jsx: typeof value === 'object' && value.jsx === true };
+  return { jsx: value?.jsx === true };
 }
