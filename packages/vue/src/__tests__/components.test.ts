@@ -730,37 +730,39 @@ describe('Branch and Plural attributes', () => {
 });
 
 describe('gt-vue formatting components', () => {
-  it('formats typed number, currency, Date, and epoch values', async () => {
+  it('formats number, bigint, currency, Date, and epoch values', async () => {
     const Root = defineComponent({
       setup() {
         return () =>
           h('div', [
-            h(Num, { locales: ['en-US'], value: 1234.5 }),
+            h(Num, { value: 1234.5 }),
             '|',
-            h(Currency, {
-              currency: 'USD',
-              locales: ['en-US'],
-              value: 12,
-            }),
+            h(Num, { value: 12345678901234567890n }),
+            '|',
+            h(Currency, { currency: 'USD', value: 12 }),
             '|',
             h(DateTime, {
-              locales: ['en-US'],
               options: { timeZone: 'UTC', year: 'numeric' },
               value: new Date('2024-01-01T00:00:00.123Z'),
             }),
             '|',
             h(DateTime, {
-              locales: ['en-US'],
               options: { timeZone: 'UTC', year: 'numeric' },
               value: 1704067200000,
             }),
+            '|',
+            h(DateTime, { options: { timeZone: 'UTC' }, value: 1704067200000 }),
           ]);
       },
     });
+    const warnings: string[] = [];
+    const app = createSSRApp(Root).use(createGT());
+    app.config.warnHandler = (message) => warnings.push(message);
 
-    expect(
-      stripFragmentMarkers(await renderWithPlugin(Root, createGT()))
-    ).toContain('1,234.5|$12.00|2024|2024');
+    expect(stripFragmentMarkers(await renderToString(app))).toContain(
+      '1,234.5|12,345,678,901,234,567,890|$12.00|2024|2024|Jan 1, 2024'
+    );
+    expect(warnings).toEqual([]);
   });
 
   it('does not treat formatter slot children as values', async () => {
@@ -769,12 +771,11 @@ describe('gt-vue formatting components', () => {
       setup() {
         return () =>
           h('div', [
-            h(Num, { locales: ['en-US'], value: 2 }, { default: slot }),
-            h(Currency, { locales: ['en-US'], value: 3 }, { default: slot }),
+            h(Num, { value: 2 }, { default: slot }),
+            h(Currency, { currency: 'USD', value: 3 }, { default: slot }),
             h(
               DateTime,
               {
-                locales: ['en-US'],
                 options: { timeZone: 'UTC', year: 'numeric' },
                 value: 1704067200000,
               },
@@ -790,49 +791,23 @@ describe('gt-vue formatting components', () => {
     expect(slot).not.toHaveBeenCalled();
   });
 
-  it('returns partially parseable value strings unchanged', async () => {
-    const Root = defineComponent({
-      setup() {
-        return () =>
-          h('div', [
-            h(Num, { locales: ['en-US'], value: '1,234.5' }),
-            '|',
-            h(Currency, {
-              currency: 'USD',
-              locales: ['en-US'],
-              value: '12 dollars',
-            }),
-          ]);
-      },
-    });
-
-    expect(
-      stripFragmentMarkers(await renderWithPlugin(Root, createGT()))
-    ).toContain('1,234.5|12 dollars');
-  });
-
   it('returns invalid dates unchanged', async () => {
     const Root = defineComponent({
       setup() {
-        return () => h(DateTime, { value: 'definitely-not-a-date' as string });
+        return () => h(DateTime, { value: new Date('definitely-not-a-date') });
       },
     });
 
-    expect(await renderWithPlugin(Root, createGT())).toContain(
-      'definitely-not-a-date'
-    );
+    expect(await renderWithPlugin(Root, createGT())).toContain('Invalid Date');
   });
 
-  it('renders nullish and whitespace-only values as empty without prop warnings', async () => {
+  it('renders null values as empty without prop warnings', async () => {
     const Root = defineComponent({
       setup() {
         return () =>
           h('div', [
-            h(Num, { value: '   ' }),
-            h(Currency, { value: '\n' }),
-            h(DateTime, { value: '\t' }),
             h(Num, { value: null }),
-            h(Currency, { value: null }),
+            h(Currency, { currency: 'USD', value: null }),
             h(DateTime, { value: null }),
           ]);
       },
@@ -850,33 +825,6 @@ describe('gt-vue formatting components', () => {
     expect(getFormatLocales(['fr-CA'], defaultDefaultLocale)).toEqual([
       defaultDefaultLocale,
     ]);
-  });
-
-  it('ignores explicit formatter locales when the default locale is active', async () => {
-    const Root = defineComponent({
-      setup() {
-        return () => h(Num, { locales: ['de-DE'], value: 1234.5 });
-      },
-    });
-
-    expect(stripFragmentMarkers(await renderWithPlugin(Root, createGT()))).toBe(
-      '1,234.5'
-    );
-  });
-
-  it('prefers explicit locales for standalone formatters at a non-default locale', async () => {
-    const Root = defineComponent({
-      setup() {
-        return () => h(Num, { locales: ['de'], value: 1234.5 });
-      },
-    });
-    const app = createSSRApp(Root).use(
-      createGT({ defaultLocale: 'en', locale: 'fr' })
-    );
-
-    expect(stripFragmentMarkers(await renderToString(app))).toBe(
-      new Intl.NumberFormat('de').format(1234.5)
-    );
   });
 
   it('formats with Latin digits and the Gregorian calendar, as gt-react does', async () => {
@@ -899,7 +847,7 @@ describe('gt-vue formatting components', () => {
     );
 
     expect(stripFragmentMarkers(await renderToString(app))).toBe(
-      `${new Intl.NumberFormat('fa-IR', { numberingSystem: 'latn' }).format(1234.5)} ${new Intl.DateTimeFormat('fa-IR', { calendar: 'gregory', dateStyle: 'short', numberingSystem: 'latn', timeZone: 'UTC' }).format(date).replace(/[\u200F\u202B\u202E]/g, '')}`
+      `${new Intl.NumberFormat('fa-IR', { numberingSystem: 'latn' }).format(1234.5)} ${new Intl.DateTimeFormat('fa-IR', { calendar: 'gregory', dateStyle: 'short', numberingSystem: 'latn', timeZone: 'UTC' }).format(date)}`
     );
   });
 
@@ -915,7 +863,6 @@ describe('gt-vue formatting components', () => {
           return () =>
             h(Currency, {
               currency: 'EUR',
-              locales: ['en-US'],
               options,
               value: 12,
             });
@@ -956,16 +903,14 @@ describe('gt-vue formatting components', () => {
             h(Var, fallthrough, {
               default: () => h('span', { id: 'inner' }, 'Grace'),
             }),
-            h(Num, { ...fallthrough, locales: ['en-US'], value: 2 }),
+            h(Num, { ...fallthrough, value: 2 }),
             h(Currency, {
               ...fallthrough,
               currency: 'USD',
-              locales: ['en-US'],
               value: 3,
             }),
             h(DateTime, {
               ...fallthrough,
-              locales: ['en-US'],
               options: { timeZone: 'UTC', year: 'numeric' },
               value: 1704067200000,
             }),

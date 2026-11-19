@@ -6,16 +6,12 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 // components-rsc entrypoint.
 
 type RelativeTimeProps = {
-  date?: Date | null | undefined;
   children?: Date | null | undefined;
   name?: string;
   value?: number;
   unit?: Intl.RelativeTimeFormatUnit;
   baseDate?: Date;
-  locales?: string[];
   options?: Intl.RelativeTimeFormatOptions;
-  _locale?: string;
-  _enableI18n?: boolean;
 };
 
 type ResolvedRelativeTimeProps = RelativeTimeProps & {
@@ -26,21 +22,17 @@ type ResolvedRelativeTimeProps = RelativeTimeProps & {
 function computeRelativeTime({
   _enableI18n,
   _locale,
-  date,
   children,
   value,
   unit,
   baseDate,
-  locales: localesProp = [],
   options = {},
 }: ResolvedRelativeTimeProps): string | null {
   const locales = getFormatLocales({
     locale: _locale,
     enableI18n: _enableI18n,
-    localesProp,
   });
   const i18nConfig = getI18nConfig();
-  const resolvedDate = date ?? children;
 
   if (process.env.NODE_ENV === 'development' && value !== undefined && !unit) {
     // eslint-disable-next-line no-console
@@ -58,8 +50,8 @@ function computeRelativeTime({
     });
   }
 
-  if (resolvedDate != null) {
-    return i18nConfig.formatRelativeTimeFromDate(resolvedDate, {
+  if (children != null) {
+    return i18nConfig.formatRelativeTimeFromDate(children, {
       locales,
       baseDate: baseDate ?? new Date(),
       numeric: options.numeric,

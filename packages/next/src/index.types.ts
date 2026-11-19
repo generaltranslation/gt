@@ -118,12 +118,12 @@ GtInternalTranslateJsx._gtt = 'translate-client-automatic';
  * <Currency
  *    currency="USD"
  * >
- *    1000
+ *    {1000}
  * </Currency>
  * ```
  *
- * @param {any} [children] - Optional content to render inside the currency component.
- * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
+ * @param {number | bigint} [children] - The amount to format.
+ * @param {string} currency - The currency type (e.g., USD, EUR, etc.).
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {React.JSX.Element} The formatted currency component.
  */
@@ -144,8 +144,8 @@ Currency._gtt = 'variable-currency';
  * </DateTime>
  * ```
  *
- * @param {any} [children] - Optional content (typically a date) to render inside the component.
- * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
+ * @param {Date | number} [children] - The date to format, or its timestamp.
+ * @param {Intl.DateTimeFormatOptions} [options] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications. Without a style or a date or time field, the medium date style.
  * @returns {Promise<React.JSX.Element>} The formatted date or time component.
  */
 export const DateTime: typeof _DateTime = () => {
@@ -160,10 +160,10 @@ DateTime._gtt = 'variable-datetime';
  *
  * @example
  * ```jsx
- * <RelativeTime date={someDate} />
+ * <RelativeTime>{someDate}</RelativeTime>
  * ```
  *
- * @param {Date} [date] - A date to compute relative time from now.
+ * @param {Date} [children] - A date to compute relative time from now.
  * @param {number} [value] - Explicit numeric value. Requires `unit`.
  * @param {Intl.RelativeTimeFormatUnit} [unit] - The unit of time.
  * @param {Date} [baseDate] - Base date for computing relative time. Defaults to `new Date()` at render time. Required for hydration safety.
@@ -185,11 +185,11 @@ RelativeTime._gtt = 'variable-relativetime';
  * <Num
  *    options={{ style: "decimal", maximumFractionDigits: 2 }}
  * >
- *    1000
+ *    {1000}
  * </Num>
  * ```
  *
- * @param {any} [children] - Optional content (typically a number) to render inside the component.
+ * @param {number | bigint} [children] - The number to format.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {React.JSX.Element} The formatted number component.
  */

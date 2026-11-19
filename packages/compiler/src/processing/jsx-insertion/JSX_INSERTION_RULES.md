@@ -233,8 +233,8 @@ This does NOT apply to auto-inserted \_Var. When the pass itself inserts a \_Var
 <div><_T>Price: <Num>{price}</Num></_T></div>
 
 // User Currency
-<div>Cost: <Currency>{amount}</Currency></div>
-<div><_T>Cost: <Currency>{amount}</Currency></_T></div>
+<div>Cost: <Currency currency="USD">{amount}</Currency></div>
+<div><_T>Cost: <Currency currency="USD">{amount}</Currency></_T></div>
 
 // User DateTime
 <div>Date: <DateTime>{date}</DateTime></div>

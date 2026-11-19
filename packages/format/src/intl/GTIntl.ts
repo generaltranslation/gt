@@ -234,7 +234,7 @@ export class GTIntl {
   }
 
   formatNum(
-    value: number,
+    value: number | bigint,
     options: WithLocales<Intl.NumberFormatOptions> = {}
   ) {
     const { locale, locales, ...intlOptions } = options;
@@ -246,7 +246,7 @@ export class GTIntl {
   }
 
   formatDateTime(
-    value: Date,
+    value: Date | number,
     options: WithLocales<Intl.DateTimeFormatOptions> = {}
   ) {
     const { locale, locales, ...intlOptions } = options;
@@ -261,7 +261,7 @@ export class GTIntl {
   }
 
   formatCurrency(
-    value: number,
+    value: number | bigint,
     currency: string,
     options: WithLocales<Intl.NumberFormatOptions> = {}
   ) {

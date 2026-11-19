@@ -3,15 +3,11 @@ import { computeDateTime, type DateTimeProps } from './DateTime.shared';
 
 // ===== Component ===== //
 
-function GtInternalDateTime({
-  _enableI18n,
-  _locale,
-  ...props
-}: DateTimeProps): string | null {
+function GtInternalDateTime(props: DateTimeProps): string | null {
   return computeDateTime({
     ...props,
-    _enableI18n: _enableI18n ?? useEnableI18n(),
-    _locale: _locale ?? useLocale(),
+    _enableI18n: useEnableI18n(),
+    _locale: useLocale(),
   });
 }
 

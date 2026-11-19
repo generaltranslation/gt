@@ -10,9 +10,9 @@ import { getPluralBranch } from '../plurals/getPluralBranch';
 import type { RenderVariable } from '../types';
 
 // Shared implementation: the variable renderer is dependency-injected by a
-// factory so neither code path statically imports the other's variable
-// components. Callsites use the pre-instantiated renderPipeline /
-// renderPipeline.rsc modules instead of importing this directly.
+// factory so this module statically imports no variable components.
+// Callsites use the pre-instantiated renderPipeline.rsc module instead of
+// importing this directly.
 
 type RenderDefaultChildrenArgs = {
   children: TaggedChildren;

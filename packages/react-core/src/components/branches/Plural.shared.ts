@@ -9,7 +9,6 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 type PluralProps = {
   children?: ReactNode;
   n: number;
-  locales?: string[];
   _locale?: string;
   _enableI18n?: boolean;
   [key: string]: ReactNode;
@@ -25,13 +24,11 @@ function renderPlural({
   _locale,
   children,
   n,
-  locales: localesProp = [],
   ...branches
 }: ResolvedPluralProps): ReactNode {
   const locales = getFormatLocales({
     locale: _locale,
     enableI18n: _enableI18n,
-    localesProp,
   });
   if (typeof n !== 'number') {
     return children;

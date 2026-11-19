@@ -1,3 +1,4 @@
+import { withDefaultDateStyle } from 'generaltranslation/internal';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
@@ -6,12 +7,9 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 // components-rsc entrypoint.
 
 type DateTimeProps = {
-  children: Date | null | undefined;
-  locales?: string[];
+  children: Date | number | null | undefined;
   options?: Intl.DateTimeFormatOptions;
   name?: string;
-  _locale?: string;
-  _enableI18n?: boolean;
 };
 
 type ResolvedDateTimeProps = DateTimeProps & {
@@ -23,20 +21,19 @@ function computeDateTime({
   _enableI18n,
   _locale,
   children,
-  options = {},
-  locales: localesProp = [],
+  options,
 }: ResolvedDateTimeProps): string | null {
   const locales = getFormatLocales({
     locale: _locale,
     enableI18n: _enableI18n,
-    localesProp,
   });
   // TODO: theres a world in which we don't need the i18n cache, if user passes their own params
   const i18nConfig = getI18nConfig();
   if (children == null) return null;
-  return i18nConfig
-    .formatDateTime(children, { locales, ...options })
-    .replace(/[\u200F\u202B\u202E]/g, '');
+  return i18nConfig.formatDateTime(children, {
+    locales,
+    ...withDefaultDateStyle(options),
+  });
 }
 
 export { computeDateTime };

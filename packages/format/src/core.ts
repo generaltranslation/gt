@@ -130,13 +130,13 @@ export function formatMessage(message: string, options: MessageFormatOptions) {
 /**
  * Formats a number according to the specified locales and options.
  * @param {Object} params - The parameters for the number formatting.
- * @param {number} params.value - The number to format.
+ * @param {number | bigint} params.value - The number to format.
  * @param {Intl.NumberFormatOptions} [params.options] - Additional options for number formatting.
  * @param {string | string[]} [params.options.locales] - The locales to use for formatting.
  * @returns {string} The formatted number.
  */
 export function formatNum(
-  number: number,
+  number: number | bigint,
   options: LocalesOption & Intl.NumberFormatOptions
 ): string {
   const { locales, ...intlOptions } = options;
@@ -150,13 +150,13 @@ export function formatNum(
 /**
  * Formats a date according to the specified languages and options.
  * @param {Object} params - The parameters for the date formatting.
- * @param {Date} params.value - The date to format.
+ * @param {Date | number} params.value - The date to format, or its timestamp.
  * @param {ZonedDateTimeFormatOptions} params.options - Options for date formatting, with the time zone.
  * @param {string | string[]} [params.options.locales] - The languages to use for formatting.
  * @returns {string} The formatted date.
  */
 export function formatDateTime(
-  date: Date,
+  date: Date | number,
   options: LocalesOption & ZonedDateTimeFormatOptions
 ): string {
   const { locales, ...intlOptions } = options;
@@ -170,14 +170,14 @@ export function formatDateTime(
 /**
  * Formats a currency value according to the specified languages, currency, and options.
  * @param {Object} params - The parameters for the currency formatting.
- * @param {number} params.value - The currency value to format.
+ * @param {number | bigint} params.value - The currency value to format.
  * @param {string} params.currency - The currency code (e.g., 'USD').
  * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for currency formatting.
  * @param {string | string[]} [params.options.locales] - The locale codes to use for formatting.
  * @returns {string} The formatted currency value.
  */
 export function formatCurrency(
-  value: number,
+  value: number | bigint,
   currency: string,
   options: LocalesOption & Intl.NumberFormatOptions
 ): string {

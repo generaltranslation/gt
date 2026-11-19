@@ -3,15 +3,11 @@ import { computeCurrency, type CurrencyProps } from './Currency.shared';
 
 // ===== Component ===== //
 
-function GtInternalCurrency({
-  _enableI18n,
-  _locale,
-  ...props
-}: CurrencyProps): string | null {
+function GtInternalCurrency(props: CurrencyProps): string | null {
   return computeCurrency({
     ...props,
-    _enableI18n: _enableI18n ?? useEnableI18n(),
-    _locale: _locale ?? useLocale(),
+    _enableI18n: useEnableI18n(),
+    _locale: useLocale(),
   });
 }
 

@@ -28,7 +28,7 @@ export default function ServerExportsPage() {
       <Num>{1234.5}</Num>
       <Currency currency='USD'>{10}</Currency>
       <DateTime>{new Date(0)}</DateTime>
-      <RelativeTime date={new Date(0)} />
+      <RelativeTime>{new Date(0)}</RelativeTime>
       <LocaleSelector />
     </main>
   );
