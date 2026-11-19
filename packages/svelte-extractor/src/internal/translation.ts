@@ -33,6 +33,7 @@ const RESERVED_T_PROPS = new Set(['_hash', '_gtm', '_source']);
 const VARIABLE_TYPES = {
   Var: 'variable',
   Num: 'number',
+  N: 'count',
   Currency: 'currency',
   DateTime: 'datetime',
   RelativeTime: 'relativetime',

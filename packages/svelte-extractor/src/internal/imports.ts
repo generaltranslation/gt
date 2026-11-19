@@ -7,6 +7,7 @@ export type GTComponentKind =
   | 'T'
   | 'Var'
   | 'Num'
+  | 'N'
   | 'Currency'
   | 'DateTime'
   | 'RelativeTime'
@@ -20,6 +21,7 @@ const COMPONENT_EXPORTS = new Set<string>([
   'T',
   'Var',
   'Num',
+  'N',
   'Currency',
   'DateTime',
   'RelativeTime',
