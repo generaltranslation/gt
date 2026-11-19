@@ -3,7 +3,6 @@ import traverse from '@babel/traverse';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import { jsxInsertionPass } from '../jsxInsertionPass';
-import { macroExpansionPass } from '../macroExpansionPass';
 import { collectionPass } from '../collectionPass';
 import { injectionPass } from '../injectionPass';
 import { runtimeTranslatePass } from '../runtimeTranslatePass';
@@ -12,7 +11,6 @@ import type { TransformState } from '../../state/types';
 
 const PASSES = {
   jsxInsertion: jsxInsertionPass,
-  macroExpansion: macroExpansionPass,
   collection: collectionPass,
   injection: injectionPass,
   runtimeTranslate: runtimeTranslatePass,

@@ -1,18 +1,8 @@
 import { NodePath, VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
-import {
-  isTranslationComponent,
-  isTranslationFunctionCallback,
-} from '../../utils/constants/gt/helpers';
+import { isTranslationComponent } from '../../utils/constants/gt/helpers';
 import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
-import {
-  GT_ALL_FUNCTIONS,
-  GT_CALLBACK_FUNCTIONS,
-  GT_OTHER_FUNCTIONS,
-} from '../../utils/constants/gt/constants';
-import { validateTranslationFunction } from '../../transform/validation/validateTranslationFunction';
-import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { isReactFunction } from '../../utils/constants/react/helpers';
 import { validateTranslationComponentArgs } from '../../transform/validation/validateTranslationComponentArgs';
@@ -20,13 +10,10 @@ import { registerTranslationComponent } from '../../transform/registration/regis
 import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-children/utils/getCalleeNameFromJsxExpressionParam';
 import { createErrorLocation } from '../../utils/errors';
 import hashSource from '../../utils/calculateHash';
-import { registerStandaloneTranslation } from '../../transform/registration/registerStandaloneTranslation';
 
 /**
  * Process call expressions
- * - register content from GT callback functions invocations (useGT_callback, etc.)
  * - register <T> + other component content (via jsxDev, jsx, jsxs invocations)
- * - register msg() function invocations?
  * - generally validate content
  */
 export function processCallExpression(
@@ -44,7 +31,7 @@ export function processCallExpression(
     }
 
     // Get the canonical function name
-    const { canonicalName, identifier, type } = getTrackedVariable(
+    const { canonicalName, type } = getTrackedVariable(
       state.scopeTracker,
       namespaceName,
       functionName
@@ -53,34 +40,9 @@ export function processCallExpression(
       return;
     }
 
-    // Handle each respective case
-    if (
-      type === 'generaltranslation' &&
-      isTranslationFunctionCallback(canonicalName)
-    ) {
-      // Handle translation function callbacks (useGT_callback, etc.)
-      handleTranslationCallbackInvocation(
-        callExprPath,
-        state,
-        canonicalName,
-        identifier!
-      );
-    } else if (type === 'react' && isReactFunction(canonicalName)) {
+    if (type === 'react' && isReactFunction(canonicalName)) {
       // Handle react variables (jsxDEV, etc.)
       handleReactInvocation(callExprPath, state);
-    } else if (
-      type === 'generaltranslation' &&
-      canonicalName === GT_OTHER_FUNCTIONS.msg
-    ) {
-      // msg() is runtime-only content; it must not advance the injection counter.
-      handleStandaloneTranslation(callExprPath, state, { injectHash: false });
-    } else if (
-      type === 'generaltranslation' &&
-      canonicalName === GT_OTHER_FUNCTIONS.t
-    ) {
-      // Standalone t() receives an injected $_hash, so collection reserves a
-      // matching counter slot for the injection pass.
-      handleStandaloneTranslation(callExprPath, state, { injectHash: true });
     }
   };
 }
@@ -88,69 +50,6 @@ export function processCallExpression(
 /* =============================== */
 /* Handlers */
 /* =============================== */
-
-/**
- * Handle general translation variables
- * useGTCallback(), useMessagesCallback(), etc.
- */
-function handleTranslationCallbackInvocation(
-  callExprPath: NodePath<t.CallExpression>,
-  state: TransformState,
-  canonicalName: GT_ALL_FUNCTIONS,
-  identifier: number
-) {
-  // Handle translation function callbacks ()
-  switch (canonicalName) {
-    case GT_CALLBACK_FUNCTIONS.useGT_callback:
-    case GT_CALLBACK_FUNCTIONS.getGT_callback:
-      handleUseGTCallback(callExprPath, state, identifier);
-      break;
-    default:
-      return;
-  }
-}
-
-/**
- * Handle useGT_callback / getGT_callback
- */
-function handleUseGTCallback(
-  callExprPath: NodePath<t.CallExpression>,
-  state: TransformState,
-  identifier: number
-) {
-  // Check for violations
-  const useGTCallbackParams = validateTranslationFunction(callExprPath, state);
-  state.errorTracker.addErrors(useGTCallbackParams.errors);
-  if (useGTCallbackParams.errors.length > 0) {
-    return;
-  }
-
-  // Derive content (explicit derive() in the message, autoderive dynamic
-  // content) and derive $context cannot be hashed at compile time — the CLI
-  // resolves the variants and the runtime hashes the resolved values.
-  // Reserve the counter slot without a hash so the injection pass stays
-  // aligned and skips this call; register no prefetch entry.
-  if (
-    useGTCallbackParams.content === undefined ||
-    useGTCallbackParams.hasDeriveContext
-  ) {
-    state.stringCollector.incrementCounter();
-    return;
-  }
-
-  // Track the function call
-  registerUseGTCallback({
-    identifier,
-    state,
-    content: useGTCallbackParams.content,
-    context: useGTCallbackParams.context,
-    id: useGTCallbackParams.id,
-    maxChars: useGTCallbackParams.maxChars,
-    requiresReview: useGTCallbackParams.requiresReview,
-    hash: useGTCallbackParams.hash,
-    format: useGTCallbackParams.format,
-  });
-}
 
 /**
  * Handle react function invocations
@@ -252,39 +151,5 @@ function handleReactInvocation(
     id,
     context,
     requiresReview,
-  });
-}
-
-/**
- * Handle standalone translation functions: t() and msg()
- * Same argument structure as useGT_callback (message string + options object).
- */
-function handleStandaloneTranslation(
-  callExprPath: NodePath<t.CallExpression>,
-  state: TransformState,
-  { injectHash }: { injectHash: boolean }
-) {
-  // Reuse the same validation as useGT_callback (identical argument structure)
-  const params = validateTranslationFunction(callExprPath, state);
-  state.errorTracker.addErrors(params.errors);
-  if (params.errors.length > 0 || params.content === undefined) {
-    return;
-  }
-
-  // Skip derive content
-  if (params.hasDeriveContext) {
-    return;
-  }
-
-  registerStandaloneTranslation({
-    state,
-    content: params.content,
-    hash: params.hash,
-    id: params.id,
-    context: params.context,
-    maxChars: params.maxChars,
-    requiresReview: params.requiresReview,
-    format: params.format,
-    injectHash,
   });
 }

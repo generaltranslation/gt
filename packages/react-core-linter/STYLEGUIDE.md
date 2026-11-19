@@ -36,7 +36,7 @@ All GT-aware checks follow this flow:
 3. **Validate** the imported name matches the target (handles aliasing)
 4. **Check** the import source is in the configured `libs` list
 
-Use `isGTFunction()` or its wrappers (`isMsgFunction`, `isGTCallbackFunction`, etc.) -- never check identifier names directly.
+Use `isGTFunction()` or its wrappers (`isTComponent`, `isMsgFunction`, etc.) -- never check identifier names directly.
 
 ## Code Conventions
 
@@ -57,7 +57,7 @@ Use `isGTFunction()` or its wrappers (`isMsgFunction`, `isGTCallbackFunction`, e
 
 - `messageId`-based. All messages defined in `meta.messages`.
 - Messages should guide the user toward the fix: state what's wrong AND show the correct pattern.
-- Format: `"Registration functions (the t returned by useGT() or getGT(), and msg) can only accept static strings. Use ICU-style variable interpolation instead (e.g. t(\"Hello {name}!\", { name: value }))."`
+- Format: ``"msg() takes a single string literal, so the message can be extracted. Pass a string literal, as in msg('Save'), or write the message as a tagged msg`...` template."``
 
 ### Auto-Fix Rules
 
@@ -65,7 +65,7 @@ Use `isGTFunction()` or its wrappers (`isMsgFunction`, `isGTCallbackFunction`, e
 2. Return an array of `fixer` operations when multiple edits are needed (e.g., import + code replacement).
 3. Use `import-utils.ts` for adding component/function imports.
 4. Never generate fixes that would produce syntactically invalid code.
-5. When producing string output for fixes, escape special characters appropriately for the target context (JSX children need HTML entity escaping; ICU strings need brace escaping).
+5. When producing string output for fixes, escape special characters appropriately for the target context (JSX children need HTML entity escaping).
 
 ## Test Conventions
 
@@ -111,7 +111,6 @@ const ruleTester = new RuleTester({
 ### Test Quality
 
 - **Exact output matching**: every `invalid` case with a fix must have an `output` field showing the complete transformed source.
-- **Both functions**: test with both `t()` (via `const t = useGT()`) and `msg()` where applicable.
 - **Both libraries**: test with at least `gt-react` and `@generaltranslation/react-core`.
 - **Aliasing**: include at least one test with aliased imports.
 
@@ -119,36 +118,3 @@ const ruleTester = new RuleTester({
 
 - Don't test non-GT library code (e.g., random function calls). One "valid" case with non-GT code is enough.
 - Don't test ESLint infrastructure behavior (parsing, scoping). Trust the framework.
-
-## ICU Format Conventions
-
-When generating ICU-formatted strings in auto-fixes:
-
-### Variable Interpolation
-
-- Use `{var0}`, `{var1}`, `{var2}` for auto-generated variable names.
-- Counter increments left-to-right through the expression.
-- The options object maps variable names to the original expression: `{ var0: expr0, var1: expr1 }`.
-
-### Select Statements (Ternaries)
-
-- Format: `{varN, select, true {consequent} other {alternate}}`
-- The condition expression becomes the variable value.
-- `true` branch is the consequent; `other` is the alternate.
-- Equality comparisons use the compared value as the select key: `x === "foo"` -> `{var0, select, foo {consequent} other {alternate}}`
-
-### String Concatenation to ICU
-
-When converting concatenation (`"A" + expr + "B"`) or template literals (`` `A${expr}B` ``):
-
-1. Walk the expression tree left-to-right.
-2. Accumulate static string parts verbatim.
-3. Replace each dynamic part with `{varN}` (or `{varN, select, ...}` for ternaries).
-4. Build the options object with all variable mappings.
-5. The result is a single string literal with ICU placeholders + an options object as second argument.
-
-### Output Format
-
-- Always produce a regular string literal (`"..."`) as output, even when input was a template literal.
-- The options object uses shorthand where the key matches the value identifier: `{ var0: name }` (not `{ "var0": name }`).
-- Preserve the original expression exactly as source text for option values.

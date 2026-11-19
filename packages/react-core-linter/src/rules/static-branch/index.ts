@@ -1,5 +1,5 @@
 /**
- * Static branch rule for the /unstable plural, selectordinal, and select.
+ * Static branch rule for plural, selectordinal, and select.
  *
  * A branch is extracted as written, so it must be static text or a part`...`
  * template. A plain template literal with values turns them into text before
@@ -21,8 +21,8 @@ import type {
 } from '@typescript-eslint/utils/ts-eslint';
 import type { BranchingKind } from '@generaltranslation/icu/internal';
 import {
-  isUnstableGTImportSource,
-  type UnstableGTHelperName,
+  isGTMessageImportSource,
+  type GTMessageHelperName,
 } from 'generaltranslation/internal';
 import { RULE_URL } from '../../utils/constants.js';
 
@@ -36,7 +36,7 @@ const CHOICE_HELPERS: ReadonlySet<string> = new Set([
   'selectordinal',
   'select',
 ] satisfies BranchingKind[]);
-const PART_HELPER = 'part' satisfies UnstableGTHelperName;
+const PART_HELPER = 'part' satisfies GTMessageHelperName;
 
 /** Whether a specifier imports only a type, which can't run as a tag. */
 function isTypeOnly(specifier: TSESTree.ImportSpecifier): boolean {
@@ -46,8 +46,8 @@ function isTypeOnly(specifier: TSESTree.ImportSpecifier): boolean {
   );
 }
 
-/** The value specifier an identifier is imported through from an unstable entry. */
-function getUnstableImport(
+/** The value specifier an identifier is imported through from a GT message entry. */
+function getHelperImport(
   context: Context,
   node: TSESTree.Node
 ): TSESTree.ImportSpecifier | undefined {
@@ -61,7 +61,7 @@ function getUnstableImport(
     def?.type !== 'ImportBinding' ||
     def.node.type !== AST_NODE_TYPES.ImportSpecifier ||
     def.parent.type !== AST_NODE_TYPES.ImportDeclaration ||
-    !isUnstableGTImportSource(def.parent.source.value) ||
+    !isGTMessageImportSource(def.parent.source.value) ||
     isTypeOnly(def.node)
   ) {
     return undefined;
@@ -78,9 +78,9 @@ function getImportedName(specifier: TSESTree.ImportSpecifier): string {
 function isHelper(
   context: Context,
   node: TSESTree.Node,
-  name: UnstableGTHelperName
+  name: GTMessageHelperName
 ) {
-  const specifier = getUnstableImport(context, node);
+  const specifier = getHelperImport(context, node);
   return specifier !== undefined && getImportedName(specifier) === name;
 }
 
@@ -128,7 +128,7 @@ function isExtractableBranch(context: Context, node: TSESTree.Node): boolean {
 }
 
 /**
- * The local name for part at `node`: an existing unstable value import, or
+ * The local name for part at `node`: an existing value import, or
  * `part` added to the helper's import. Undefined when `part` means something
  * else there, including a type-only import, so no fix is offered.
  */
@@ -143,7 +143,7 @@ function getPartName(
   for (const statement of context.sourceCode.ast.body) {
     if (
       statement.type !== AST_NODE_TYPES.ImportDeclaration ||
-      !isUnstableGTImportSource(statement.source.value)
+      !isGTMessageImportSource(statement.source.value)
     ) {
       continue;
     }
@@ -171,13 +171,13 @@ function getPartName(
   return PART_HELPER;
 }
 
-export const unstableStaticBranch = createRule<[], MessageIds>({
-  name: 'unstable-static-branch',
+export const staticBranch = createRule<[], MessageIds>({
+  name: 'static-branch',
   meta: {
     type: 'problem',
     docs: {
       description:
-        'Require /unstable plural, selectordinal, and select branches to be static text or part`...`.',
+        'Require plural, selectordinal, and select branches to be static text or part`...`.',
     },
     hasSuggestions: true,
     schema: [],
@@ -193,7 +193,7 @@ export const unstableStaticBranch = createRule<[], MessageIds>({
   create(context) {
     return {
       CallExpression(node) {
-        const helperImport = getUnstableImport(context, node.callee);
+        const helperImport = getHelperImport(context, node.callee);
         if (
           !helperImport ||
           !CHOICE_HELPERS.has(getImportedName(helperImport))

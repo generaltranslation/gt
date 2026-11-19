@@ -17,23 +17,21 @@ import { GTConfig, PluginConfig } from './config';
 // Import passes
 import { collectionPass } from './passes/collectionPass';
 import { injectionPass } from './passes/injectionPass';
-import { macroExpansionPass } from './passes/macroExpansionPass';
 import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
-  importsUnstableSource,
-  unstableHashInjectionPass,
-} from './passes/unstableHashInjectionPass';
+  importsMessageSource,
+  taggedTemplateHashInjectionPass,
+} from './passes/taggedTemplateHashInjectionPass';
 
 /**
  * Architecture:
  *
  * Pass Pipeline:
- * - Pass 0: Macro expansion — transforms t`...` tagged templates and t(`...`) template/concatenation args
  * - Pass 1: Collection — collect + calculate all data, check for violations, register + track
- * - Pass 2: Injection — inject all data (hashes, messages, etc.)
+ * - Pass 2: Injection — inject the collected hashes
  *
  * Babel functions:
  * - 1-to-1 relationship with processing functions
@@ -256,12 +254,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, jsxInsertionPass(state));
           }
 
-          // Pass 2: Macro expansion
-          if (state.settings.enableMacroTransform) {
-            traverse(ast, macroExpansionPass(state));
-          }
-
-          // Pass 3: Collection
+          // Pass 2: Collection
           traverse(ast, collectionPass(state));
 
           // Handle errors
@@ -269,8 +262,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          // Pass 4: Injection (hashes + useGT prefetch parameters), gated on
-          // the compileTimeHash setting
+          // Pass 3: Injection (<T> hashes), gated on the compileTimeHash setting
           const hasCollectionContent = state.stringCollector.hasContent();
           const injectionRan =
             hasCollectionContent && state.settings.compileTimeHash;
@@ -279,26 +271,22 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, injectionPass(state));
           }
 
-          // Pass 4b: $_hash injection for unstable tagged templates
-          if (state.settings.compileTimeHash && importsUnstableSource(ast)) {
-            traverse(ast, unstableHashInjectionPass(state));
+          // Pass 3b: $_hash injection for tagged templates
+          if (state.settings.compileTimeHash && importsMessageSource(ast)) {
+            traverse(ast, taggedTemplateHashInjectionPass(state));
           }
 
-          // Pass 5: Runtime translate (dev hot reload)
-          const devHotReloadActive =
-            state.settings.devHotReload.strings ||
-            state.settings.devHotReload.jsx;
-          if (devHotReloadActive && hasCollectionContent) {
+          // Pass 4: Runtime translate (dev hot reload)
+          if (state.settings.devHotReload.jsx && hasCollectionContent) {
             traverse(ast, runtimeTranslatePass(state));
           }
 
           // Generate code if any pass modified the AST
           if (
             !injectionRan &&
-            state.statistics.macroExpansionsCount === 0 &&
             state.statistics.jsxInsertionsCount === 0 &&
             state.statistics.runtimeTranslateCount === 0 &&
-            state.statistics.unstableHashInjectionsCount === 0
+            state.statistics.taggedTemplateHashInjectionsCount === 0
           ) {
             return null;
           }

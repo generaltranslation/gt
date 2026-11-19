@@ -8,10 +8,10 @@
 
 import type { ESLint, Rule } from 'eslint';
 import { noDataAttrsOnBranch } from './rules/no-data-attrs-on-branch/index.js';
+import { staticBranch } from './rules/static-branch/index.js';
 import { staticJsx } from './rules/static-jsx/index.js';
 import { staticString } from './rules/static-string/index.js';
 import { translationFunctionPlacement } from './rules/translation-function-placement/index.js';
-import { unstableStaticBranch } from './rules/unstable-static-branch/index.js';
 
 const plugin: ESLint.Plugin = {
   meta: {
@@ -21,12 +21,11 @@ const plugin: ESLint.Plugin = {
   rules: {
     'no-data-attrs-on-branch':
       noDataAttrsOnBranch as unknown as Rule.RuleModule,
+    'static-branch': staticBranch as unknown as Rule.RuleModule,
     'static-jsx': staticJsx as unknown as Rule.RuleModule,
     'static-string': staticString as unknown as Rule.RuleModule,
     'translation-function-placement':
       translationFunctionPlacement as unknown as Rule.RuleModule,
-    'unstable-static-branch':
-      unstableStaticBranch as unknown as Rule.RuleModule,
   },
   configs: {
     recommended: {
@@ -34,11 +33,11 @@ const plugin: ESLint.Plugin = {
       rules: {
         '@generaltranslation/react-core-linter/no-data-attrs-on-branch':
           'error',
+        '@generaltranslation/react-core-linter/static-branch': 'error',
         '@generaltranslation/react-core-linter/static-jsx': 'error',
         '@generaltranslation/react-core-linter/static-string': 'error',
         '@generaltranslation/react-core-linter/translation-function-placement':
           'error',
-        '@generaltranslation/react-core-linter/unstable-static-branch': 'error',
       },
     },
   },
@@ -49,11 +48,11 @@ plugin.configs = {
     plugins: { '@generaltranslation/react-core-linter': plugin },
     rules: {
       '@generaltranslation/react-core-linter/no-data-attrs-on-branch': 'error',
+      '@generaltranslation/react-core-linter/static-branch': 'error',
       '@generaltranslation/react-core-linter/static-jsx': 'error',
       '@generaltranslation/react-core-linter/static-string': 'error',
       '@generaltranslation/react-core-linter/translation-function-placement':
         'error',
-      '@generaltranslation/react-core-linter/unstable-static-branch': 'error',
     },
   },
 };

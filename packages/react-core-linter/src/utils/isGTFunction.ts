@@ -8,9 +8,7 @@ import {
   BRANCH_COMPONENT_NAME,
   BRANCH_COMPONENT_NAMES,
   DERIVE_COMPONENT_NAME,
-  DERIVE_FUNCTION_NAME,
   MSG_FUNCTION_NAME,
-  GT_CALLBACK_DECLARATOR_FUNCTION_NAMES,
   isGTLibrarySource,
 } from './constants.js';
 import { RuleContext, Scope } from '@typescript-eslint/utils/ts-eslint';
@@ -195,19 +193,6 @@ export function isBranchingComponent({
   });
 }
 
-export function isDeriveFunction({
-  context,
-  node,
-  libs,
-}: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
-  return isGTFunction({
-    context,
-    node,
-    libs,
-    targetName: DERIVE_FUNCTION_NAME,
-  });
-}
-
 export function isMsgFunction({
   context,
   node,
@@ -219,70 +204,4 @@ export function isMsgFunction({
     libs,
     targetName: MSG_FUNCTION_NAME,
   });
-}
-
-export function isGTCallbackFunction({
-  context,
-  node,
-  libs,
-}: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
-  // -- Step 1: Get binding for the t identifier -- //
-  const identifierName = getIdentifierName(node);
-  if (identifierName === null) return false;
-
-  // Find the variable declaration in scope
-  let scope: Scope.Scope | null = context.sourceCode.getScope(node);
-  let variable: Scope.Variable | undefined;
-  while (scope) {
-    variable = scope.set.get(identifierName);
-    if (variable) break;
-    scope = scope.upper;
-  }
-  if (!variable) {
-    return false;
-  }
-
-  // -- Step 2: Check if the variable was declared with useGT() or await getGT() -- //
-  // Helper function
-  function isGTDeclaratorCallExpression(
-    node: TSESTree.CallExpression
-  ): boolean {
-    return isGTFunction({
-      context,
-      node,
-      libs,
-      targetName: GT_CALLBACK_DECLARATOR_FUNCTION_NAMES,
-    });
-  }
-
-  // Find the first variable declarator definition (const t = ...)
-  const variableDef = variable.defs.find(
-    (def) =>
-      def.type === 'Variable' &&
-      def.node.type === AST_NODE_TYPES.VariableDeclarator
-  ) as Scope.Definitions.VariableDefinition | undefined;
-  const init = variableDef?.node.init;
-  if (!init) return false;
-
-  // -- Step 3: Check the import -- //
-
-  // Case 1: const t = useGT()
-  if (
-    init.type === AST_NODE_TYPES.CallExpression &&
-    isGTDeclaratorCallExpression(init)
-  ) {
-    return true;
-  }
-
-  // Case 2: const t = await getGT()
-  if (
-    libs.includes('gt-next') &&
-    init.type === AST_NODE_TYPES.AwaitExpression &&
-    init.argument.type === AST_NODE_TYPES.CallExpression &&
-    isGTDeclaratorCallExpression(init.argument)
-  ) {
-    return true;
-  }
-
-  return false;
 }

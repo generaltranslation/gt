@@ -7,12 +7,11 @@ import {
 import { processProgram } from '../processing/runtime-translate/processProgram';
 
 /**
- * Runtime translate pass — injects GtInternalRuntimeTranslateString and
- * GtInternalRuntimeTranslateJsx calls at the module level for dev hot reload.
+ * Runtime translate pass — injects GtInternalRuntimeTranslateJsx calls at the
+ * module level for dev hot reload.
  *
- * For each extracted string/JSX, injects:
+ * For each extracted <T>, injects:
  * await Promise.all([
- *   GtInternalRuntimeTranslateString("msg", { $context, $_hash, ... }),
  *   GtInternalRuntimeTranslateJsx(children, { $context, $id }),
  * ])
  *
@@ -20,28 +19,18 @@ import { processProgram } from '../processing/runtime-translate/processProgram';
  * reset ScopeTracker/StringCollector state via processProgram.
  */
 export function runtimeTranslatePass(state: TransformState): TraverseOptions {
-  let alreadyImportedString = false;
-  let alreadyImportedJsx = false;
+  let alreadyImported = false;
   const importAnchor: ImportAnchor = { path: null };
 
-  const onStringFound = () => {
-    alreadyImportedString = true;
-  };
-
-  const onJsxFound = () => {
-    alreadyImportedJsx = true;
+  const onImportFound = () => {
+    alreadyImported = true;
   };
 
   return {
-    ImportDeclaration: processImportDeclaration(
-      onStringFound,
-      onJsxFound,
-      importAnchor
-    ),
+    ImportDeclaration: processImportDeclaration(onImportFound, importAnchor),
     Program: processProgram({
       state,
-      isStringAlreadyImported: () => alreadyImportedString,
-      isJsxAlreadyImported: () => alreadyImportedJsx,
+      isAlreadyImported: () => alreadyImported,
       importAnchor,
     }),
   };
