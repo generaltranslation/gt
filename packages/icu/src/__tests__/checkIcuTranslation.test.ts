@@ -12,6 +12,7 @@ const FILES = '{n, plural, one {# file} other {# files}}';
 const GENDER = '{g, select, male {He} female {She} other {They}}';
 const ITEMS = '{n, plural, one {# item} other {# items}}';
 const ONE_FILE = '{n, plural, one {One file} other {# files}}';
+const N_FILES = '{n, plural, one {{n} file} other {{n} files}}';
 const ATTENDEES =
   '{n, plural, one {# attendee} other {# attendees}}: you {n, plural, offset:1 one {and one other} other {and # others}}';
 const IN_FOLDER =
@@ -209,6 +210,36 @@ const CASES: [
     mismatch(
       '"n" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source'
     ),
+  ],
+  [
+    "the plural's own variable said in words where German picks one number",
+    N_FILES,
+    '{n, plural, one {Eine Datei} other {{n} Dateien}}',
+    'de',
+    undefined,
+  ],
+  [
+    "the plural's own variable said in words in an added exact branch",
+    N_FILES,
+    '{n, plural, =0 {Keine Dateien} one {{n} Datei} other {{n} Dateien}}',
+    'de',
+    undefined,
+  ],
+  [
+    "the plural's own variable dropped where Russian picks several numbers",
+    N_FILES,
+    '{n, plural, one {Один файл} few {{n} файла} many {{n} файлов} other {{n} файла}}',
+    'ru',
+    mismatch(
+      '"n" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
+  ],
+  [
+    'another variable dropped where German picks one number',
+    IN_FOLDER,
+    '{n, plural, one {Eine Datei} other {# Dateien in {folder}}}',
+    'de',
+    mismatch('"folder" is not shown in every branch, as it is in the source'),
   ],
   [
     'a count an enclosing exact branch hides in both',

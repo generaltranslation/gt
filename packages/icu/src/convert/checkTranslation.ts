@@ -54,7 +54,8 @@ import {
  *
  * and each category the locale picks for more than one number shows a count
  * the source shows in `other`: Russian `one` is also 21, so `Один файл` there
- * reads wrong.
+ * reads wrong. A branch only one number takes, like German `one` or `=0`,
+ * may say its number in words, whether the source writes `#` or `{n}`.
  *
  * For ICU strings from any library, use `checkIcuTranslation`, which applies
  * the same rules.
