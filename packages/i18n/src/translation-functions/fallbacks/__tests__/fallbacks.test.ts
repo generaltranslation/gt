@@ -5,7 +5,7 @@ import { mFallback } from '../mFallback';
 describe.each([
   ['gtFallback', gtFallback],
   ['mFallback', mFallback],
-])('%s', (_name, fallback) => {
+])('%s', (name, fallback) => {
   it('returns a message unchanged without options and interpolates variables', () => {
     expect(fallback('Hello, world!')).toBe('Hello, world!');
     expect(fallback('Hello, {name}!', { name: 'Alice' })).toBe('Hello, Alice!');
@@ -14,6 +14,65 @@ describe.each([
   it('passes null and undefined messages through', () => {
     expect(fallback(null as unknown as string)).toBeNull();
     expect(fallback(undefined as unknown as string)).toBeUndefined();
+  });
+
+  // A cutoff longer than any message forces full ICU formatting without truncating.
+  const formatFully = { $maxChars: Number.MAX_SAFE_INTEGER };
+
+  it.each([
+    ["it's plain", "it's plain"],
+    ["it''s escaped", "it's escaped"],
+    ["'{literal}' braces", '{literal} braces'],
+    ["a '<b>' tag", 'a <b> tag'],
+    ["a quoted '>' arrow", 'a quoted > arrow'],
+    ["'#' and | outside a plural", "'#' and | outside a plural"],
+    ["trailing apostrophe'", "trailing apostrophe'"],
+  ])('formats %j to %j like full ICU formatting', (message, expected) => {
+    expect(fallback(message)).toBe(expected);
+    expect(fallback(message, formatFully)).toBe(expected);
+  });
+
+  it('matches full ICU formatting for random messages', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let seed = 7;
+    const random = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
+    const alphabet = [
+      ..."''''##||>>::  ",
+      ...'aZ9é漢\n\\"%$-_.',
+      '<',
+      '{',
+      '}',
+    ];
+    for (let index = 0; index < 5000; index++) {
+      let message = '';
+      const length = 1 + Math.floor(random() * 12);
+      for (let char = 0; char < length; char++) {
+        message += alphabet[Math.floor(random() * alphabet.length)];
+      }
+      expect(fallback(message), JSON.stringify(message)).toBe(
+        fallback(message, formatFully)
+      );
+    }
+    vi.restoreAllMocks();
+  });
+
+  it('does not touch Intl for plain text without a cutoff', () => {
+    const supportedLocalesOf = vi.spyOn(
+      Intl.NumberFormat,
+      'supportedLocalesOf'
+    );
+    const canonicalize = vi.spyOn(Intl, 'getCanonicalLocales');
+    try {
+      // A locale no other test uses, so a full format could not hit a resolved-locale cache.
+      const $locale = name === 'gtFallback' ? 'kok-IN' : 'mai-IN';
+      expect(fallback("Plain footer label, it's fine", { $locale })).toBe(
+        "Plain footer label, it's fine"
+      );
+      expect(supportedLocalesOf).not.toHaveBeenCalled();
+      expect(canonicalize).not.toHaveBeenCalled();
+    } finally {
+      vi.restoreAllMocks();
+    }
   });
 });
 

@@ -8,9 +8,9 @@ export function interpolateStringMessage(
   encodedMsg: string,
   options: TranslationOptions
 ): string {
-  const cutoffMessage = formatCutoff(encodedMsg, {
+  if (options.$maxChars == null) return encodedMsg;
+  return formatCutoff(encodedMsg, {
     locales: options.$locale,
     maxChars: options.$maxChars,
   });
-  return cutoffMessage;
 }
