@@ -293,6 +293,15 @@ const CASES: [
     ),
   ],
   [
+    'a count dropped beside a plural of its variable that does not print it',
+    ATTENDEES,
+    '{n, plural, one {# attendee} other {Some attendees}}: you {n, plural, offset:1 one {and one other} other {and # others}}',
+    'en',
+    mismatch(
+      '"n" is not shown in the plural branch other, which en uses for 0, 2, 3, 4, …, as it is in the source'
+    ),
+  ],
+  [
     'a count of another offset in place of the count',
     ATTENDEES,
     '{n, plural, one {# Teilnehmer} other {# Teilnehmer}}: du {n, plural, offset:1 one {und eine weitere Person} other {und eine weitere Person}}',

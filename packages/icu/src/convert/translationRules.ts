@@ -372,6 +372,8 @@ type BranchChoice = {
   keys: string[];
   /** Whether it is a plural written more than once, with different exact branches. */
   uneven: boolean;
+  /** Whether it is a plural with its variable in a branch other than as its count: by name, or in another plural of it. */
+  holdsVariable: boolean;
 };
 
 // shortcut: a message with more combinations of branches than this is not checked for placement; raise it if a real message needs more.
@@ -477,13 +479,14 @@ function countProblems(
     ) {
       continue;
     }
-    // shortcut: a plural with no offset is not checked beside another plural of its variable: the two read one number, and the other can print it by name, but a reader has a branch of each on its own. Read both by number if a real message needs it.
+    // shortcut: a plural with no offset is not checked beside another plural of its variable that holds the variable in a branch: the two read one number, and that branch can show the count, but a reader has a branch of each on its own. Read both by number if a real message needs it.
     if (
       !placeholder.offset &&
       [...sourceNumbers, ...numbers].some(
         (choice) =>
           choice.variable !== variable &&
-          choice.placeholder.name === placeholder.name
+          choice.placeholder.name === placeholder.name &&
+          choice.holdsVariable
       )
     ) {
       continue;
@@ -625,10 +628,25 @@ function branchChoices(
           variableKey(plural) === variable &&
           exactKeys(plural) !== exactKeys(placeholder)
       ),
+      holdsVariable: facts.pluralPlaceholders.some(
+        (plural) =>
+          variableKey(plural) === variable &&
+          plural.branches.some(([, branch]) => holds(branch, plural.name))
+      ),
     });
   }
   return choices;
 }
+
+/** Whether a variable of this name stands among these placeholders, other than as a plural's count. */
+const holds = (placeholders: CheckedPlaceholder[], name: string): boolean =>
+  placeholders.some((placeholder) =>
+    placeholder.kind === 'tag'
+      ? holds(placeholder.children, name)
+      : (placeholder.kind !== 'count' && placeholder.name === name) ||
+        (isBranching(placeholder) &&
+          placeholder.branches.some(([, branch]) => holds(branch, name)))
+  );
 
 const exactKeys = ({ branches }: BranchingPlaceholder): string =>
   branches
