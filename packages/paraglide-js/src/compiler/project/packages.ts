@@ -4,9 +4,14 @@ import { pathToFileURL } from 'node:url';
 import type { LanguageContext } from '../languages/language.js';
 import { resolvePackage } from '../utils/resolve-package.js';
 
+export type ProjectPackages = LanguageContext & {
+  /** Also true when importing it fails. */
+  isInstalled(specifier: string): Promise<boolean>;
+};
+
 /**
  * Imports packages installed in the project, once each; undefined if one is
- * not installed.
+ * not installed, or fails to load.
  *
  * A tool the project does not depend on itself is often a dependency of its
  * dependencies: `svelte2tsx` of `svelte-check` or `@astrojs/svelte`,
@@ -14,7 +19,7 @@ import { resolvePackage } from '../utils/resolve-package.js';
  * language server. Strict installs (pnpm) hide those from the project, so they
  * are looked up two dependency levels deep too.
  */
-export function projectPackages(projectRoot: string): LanguageContext {
+export function projectPackages(projectRoot: string): ProjectPackages {
   const loaded = new Map<string, Promise<unknown>>();
   let levels: Promise<string[][]> | undefined;
 
@@ -56,6 +61,7 @@ export function projectPackages(projectRoot: string): LanguageContext {
 
       return module as Promise<T | undefined>;
     },
+    isInstalled: async (specifier) => (await find(specifier)) !== undefined,
   };
 }
 

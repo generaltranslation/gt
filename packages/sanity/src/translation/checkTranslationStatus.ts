@@ -48,16 +48,47 @@ export async function checkTranslationStatus(
     const { results } = await projectFor(secrets).queryFiles(currentQueryData);
 
     // Results follow the selector order; keep the completed translations.
-    const readyTranslations = currentQueryData.filter((_, index) => {
-      const result = results[index];
-      return result.status === 'found' && result.completedAt;
+    return currentQueryData.flatMap((file, index) => {
+      const { status, completedAt } = results[index];
+      return status === 'found' && completedAt
+        ? [{ ...file, completedAt }]
+        : [];
     });
-
-    return readyTranslations;
   } catch (error) {
     // Only a failure that may clear reads as "nothing ready yet"; others surface.
     if (!isTransientApiError(error)) throw error;
     console.error('Error checking translation status', error);
     return [];
   }
+}
+
+/** When GT completed the result it currently holds for each file, by status key. Files without a completed result are left out. */
+export async function getCompletedResults(
+  fileQueryData: FileProperties[],
+  secrets: Secrets
+): Promise<Map<string, string>> {
+  const { results } = await projectFor(secrets).queryFiles(fileQueryData);
+  const completed = new Map<string, string>();
+  // Results follow the selector order.
+  fileQueryData.forEach((file, index) => {
+    const { status, completedAt } = results[index];
+    if (status !== 'found' || !completedAt) return;
+    completed.set(
+      createTranslationStatusKey(
+        file.branchId,
+        file.fileId,
+        file.versionId,
+        file.locale
+      ),
+      completedAt
+    );
+  });
+  return completed;
+}
+
+export function isCompletedAfter(
+  completedAt: string | null | undefined,
+  supersededAt: string
+): boolean {
+  return !!completedAt && Date.parse(completedAt) > Date.parse(supersededAt);
 }

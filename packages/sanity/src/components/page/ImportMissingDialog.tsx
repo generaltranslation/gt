@@ -28,7 +28,7 @@ export const ImportMissingDialog: React.FC<ImportMissingDialogProps> = ({
       onClose={onClose}
       footer={
         <Box padding={3}>
-          <Flex gap={2}>
+          <Flex gap={2} justify='flex-end'>
             <Button text='Cancel' mode='ghost' onClick={onClose} />
             <Button text='Import Missing' onClick={handleConfirm} />
           </Flex>

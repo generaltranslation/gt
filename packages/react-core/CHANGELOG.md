@@ -323,6 +323,13 @@
   - @generaltranslation/format@1.0.0-samsara.1
   - gt-i18n@2.0.0-samsara.0
 
+## 11.4.23
+
+### Patch Changes
+
+- Updated dependencies [[`25a88c9`](https://github.com/generaltranslation/gt/commit/25a88c9ffd6c8b6c68adc871e8b572ce590c0d9c)]:
+  - gt-i18n@1.0.44
+
 ## 11.4.22
 
 ### Patch Changes

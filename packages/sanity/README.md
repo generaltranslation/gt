@@ -156,7 +156,10 @@ use **Save Local Edits**. It uploads the source files it needs, but does not
 enqueue any translation.
 
 To regenerate translations and deliberately discard existing ones for a single
-run, use **Retranslate from scratch** in the Translate All dialog.
+run, use **Retranslate from scratch** in the Translate All dialog. To do the
+same for one document, use **Retranslate** in the Translate dialog on that
+document: it retranslates the selected locales even when the document has not
+changed, which is how to replace a stored translation that came back wrong.
 
 ## Translating From Other Locales
 

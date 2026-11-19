@@ -12,7 +12,6 @@ import type { ParaglideUsage } from '../analysis/types.js';
 import {
   isSourceFile,
   parseSource,
-  type LanguageContext,
   type ParseFailure,
   type ParseFunction,
   type SourceLanguage,
@@ -27,7 +26,7 @@ import {
   type AutoImportOptions,
 } from '../project/auto-imports.js';
 import type { FileSelection } from '../project/files.js';
-import { projectPackages } from '../project/packages.js';
+import { projectPackages, type ProjectPackages } from '../project/packages.js';
 import { warningMessage, type Diagnostic } from '../utils/diagnostics.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
 import { checkCatalog, unknownMessagesWarning } from './catalog-check.js';
@@ -88,7 +87,7 @@ const parse: ParseFunction = (file, code, lang) =>
 /** Analyzes the project's source files and writes their usages to the messages' metadata files. */
 export class ContextCollector {
   private readonly settings: CollectorSettings;
-  private readonly packages: LanguageContext;
+  private readonly packages: ProjectPackages;
 
   private readonly moduleGraph: ModuleGraph;
   private readonly outdirDetector: OutdirDetector;
@@ -218,19 +217,22 @@ export class ContextCollector {
       this.settings.languages,
       this.packages
     );
-    if ('module' in parsed) return parsed.module;
+    if (!('module' in parsed)) {
+      this.reportSkipped(file, parsed);
+      return undefined;
+    }
 
-    this.reportSkipped(file, parsed);
+    if (parsed.skipped) this.reportSkipped(file, parsed.skipped);
 
-    return undefined;
+    return parsed.module;
   }
 
   private reportSkipped(file: string, failure: ParseFailure): void {
-    const { language, missing: requires, reason } = failure;
+    const { language, missing: requires, reason, part } = failure;
 
     // Unavailable tools get one warning per language, after the scan.
     if (language && requires) {
-      this.missingTools.add(file, { language, requires, reason });
+      this.missingTools.add(file, { language, requires, reason, part });
       return;
     }
 
