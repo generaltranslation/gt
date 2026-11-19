@@ -11,7 +11,6 @@ const entries = [
   'src/components.ts',
   'src/components-rsc.ts',
   'src/compat.ts',
-  'src/unstable.ts',
 ];
 
 const cjs = createTsdownUnbundleConfig({

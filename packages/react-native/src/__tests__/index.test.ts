@@ -30,4 +30,41 @@ describe('gt-react-native package exports', () => {
     expect(properties.languageCode).toBe('de');
     expect(properties.regionCode).toBe('AT');
   });
+
+  it('matches the gt-react client entry apart from platform-specific exports', async () => {
+    const reactOnly = [
+      // Client-rendered (SPA) only: they read a global locale store, which
+      // React Native does not register.
+      't',
+      'm',
+      'initializeGTSPA',
+      'createOrUpdateBrowserConditionStore',
+      // DOM UI and browser request parsing.
+      'LocaleSelector',
+      'RegionSelector',
+      'parseLocale',
+      // Server-rendered and compiler-injected.
+      'Tx',
+      'GtInternalTranslateJsx',
+      'GtInternalVar',
+      'GtInternalRuntimeTranslateJsx',
+    ];
+    const reactNativeOnly = ['getLocale', 'getLocaleFromNativeStore'];
+
+    const reactNative = await import('../index');
+    const react = await import('../../../react/src/index.client');
+
+    expect(
+      Object.keys(reactNative)
+        .filter((name) => !reactNativeOnly.includes(name))
+        .sort()
+    ).toEqual(
+      Object.keys(react)
+        .filter((name) => !reactOnly.includes(name))
+        .sort()
+    );
+    for (const name of ['useGT', 'useMessages', 'msg', 'derive'] as const) {
+      expect(reactNative[name]).toBe(react[name]);
+    }
+  });
 });

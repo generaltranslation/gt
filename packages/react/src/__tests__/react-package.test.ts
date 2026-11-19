@@ -19,10 +19,6 @@ const runtimeArtifactNames = [
   'compat.client.mjs',
   'compat.server.cjs',
   'compat.server.mjs',
-  'unstable.cjs',
-  'unstable.mjs',
-  'unstable.rsc.cjs',
-  'unstable.rsc.mjs',
 ].sort();
 const builtArtifacts = runtimeArtifactNames.map((artifact) =>
   join(packageRoot, 'dist', artifact)
@@ -52,7 +48,7 @@ function isAllowedExternalizedSubpath(
 ): boolean {
   // Entries keep shared React context and singletons external.
   return (
-    (/^(?:index|compat)\./.test(file) || file.startsWith('unstable')) &&
+    /^(?:index|compat)\./.test(file) &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );
@@ -82,14 +78,15 @@ describe('gt-react package exports', () => {
                 'T',
                 'parseLocale',
                 'GtInternalVar',
-                'GtInternalRuntimeTranslateString',
+                'GtInternalRuntimeTranslateJsx',
                 'initializeGTSPA',
                 'createOrUpdateBrowserConditionStore',
               ]) {
                 assert.equal(typeof react[name], 'function', format + ' ' + name);
               }
-              // t is client-rendered (SPA) only, so the server entry lacks it.
+              // t and m are client-rendered (SPA) only, so the server entry lacks them.
               assert.equal('t' in react, false, format);
+              assert.equal('m' in react, false, format);
               await assert.rejects(
                 () => react.initializeGTSPA({}),
                 /server runtime entry point/,
@@ -109,17 +106,18 @@ describe('gt-react package exports', () => {
     ]);
   });
 
-  it('exports the condition-store factory and t from the browser entrypoint', () => {
+  it('exports the condition-store factory, t and m from the browser entrypoint', () => {
     node([
       '--conditions=browser',
       '--input-type=module',
       '-e',
       `
           import assert from 'node:assert/strict';
-          import { createOrUpdateBrowserConditionStore, t } from 'gt-react';
+          import { createOrUpdateBrowserConditionStore, t, m } from 'gt-react';
 
           assert.equal(typeof createOrUpdateBrowserConditionStore, 'function');
           assert.equal(typeof t, 'function');
+          assert.equal(typeof m, 'function');
         `,
     ]);
   });
@@ -149,7 +147,7 @@ describe('gt-react package exports', () => {
     }
   );
 
-  it('prefers the RSC implementation, which lacks t, over worker and browser conditions', () => {
+  it('prefers the RSC implementation, which lacks t and m, over worker and browser conditions', () => {
     node([
       '--conditions=react-server',
       '--conditions=workerd',
@@ -163,68 +161,56 @@ describe('gt-react package exports', () => {
             true
           );
           assert.equal('t' in require('gt-react'), false);
+          assert.equal('m' in require('gt-react'), false);
         `,
     ]);
   });
 
-  it('resolves gt-react/unstable with the same conditions as the root entry', () => {
-    const resolve = (conditions: string[]) =>
-      execFileSync(
-        process.execPath,
-        [
-          ...conditions.map((condition) => `--conditions=${condition}`),
-          '--input-type=module',
-          '-e',
-          "process.stdout.write(import.meta.resolve('gt-react/unstable'))",
-        ],
-        { cwd: packageRoot }
-      )
-        .toString()
-        .replace(/^.*\/dist\//, '');
-
-    expect(resolve([])).toBe('unstable.mjs');
-    expect(resolve(['browser'])).toBe('unstable.mjs');
-    expect(resolve(['workerd', 'browser'])).toBe('unstable.mjs');
-    expect(resolve(['react-server', 'worker', 'browser'])).toBe(
-      'unstable.rsc.mjs'
-    );
-  });
-
-  it('loads the gt-react/unstable client and RSC surfaces', () => {
+  it('exposes the message API on the client, server and RSC entries', () => {
     node([
       '-e',
       `
           const assert = require('node:assert/strict');
-          const client = require('gt-react/unstable');
-          const rsc = require('./dist/unstable.rsc.cjs');
-          const core = require('@generaltranslation/react-core/unstable');
-          const i18n = require('gt-i18n/unstable');
+          const client = require('./dist/index.client.cjs');
+          const server = require('./dist/index.server.cjs');
+          const rsc = require('./dist/index.rsc.cjs');
+          const pure = require('@generaltranslation/react-core/pure');
+          const hooks = require('@generaltranslation/react-core/hooks');
+          const i18n = require('gt-i18n');
 
-          // react-core's hooks plus gt-i18n's message helpers (not its own t or m).
-          // gt-react-native/unstable is checked against the same surface.
-          assert.deepEqual(
-            Object.keys(client).sort(),
-            [
-              ...Object.keys(core),
-              ...Object.keys(i18n).filter((name) => name !== 't' && name !== 'm'),
-            ].sort()
-          );
-          assert.equal(client.msg, i18n.msg);
-          // t and m are client-rendered (SPA) only, so server components lack them.
+          for (const [entryName, entry] of Object.entries({ client, server, rsc })) {
+            for (const name of [
+              'msg', 'mFallback', 'derive', 'plural', 'selectordinal', 'select',
+              'number', 'date', 'time', 'part', 'n',
+            ]) {
+              assert.equal(entry[name], i18n[name], entryName + ' ' + name);
+            }
+            for (const name of [
+              'decodeMsg', 'decodeOptions', 'gtFallback', 'declareVar',
+              'decodeVars', 'GtInternalRuntimeTranslateString',
+            ]) {
+              assert.equal(name in entry, false, entryName + ' ' + name);
+            }
+          }
+
+          // t and m are client-rendered (SPA) only, and they are react-core's
+          // guarded ones, not gt-i18n's.
+          assert.equal(client.t, pure.t);
+          assert.equal(client.m, pure.m);
           assert.deepEqual(
             Object.keys(client).filter((name) => name !== 't' && name !== 'm').sort(),
-            Object.keys(rsc).sort()
+            Object.keys(server).sort()
           );
-          assert.equal(typeof client.useGT, 'function');
-          assert.equal(typeof client.t, 'function');
-          assert.equal(rsc.t, undefined);
-          assert.equal(typeof client.m, 'function');
-          assert.equal(client.m, core.m);
-          assert.equal(rsc.m, undefined);
-          assert.notEqual(client.useGT, rsc.useGT);
-          assert.equal(typeof client.useMessages, 'function');
-          assert.notEqual(client.useMessages, rsc.useMessages);
-          assert.equal(client.msg, rsc.msg);
+          assert.equal('t' in rsc, false);
+          assert.equal('m' in rsc, false);
+
+          for (const name of ['useGT', 'useMessages']) {
+            assert.equal(client[name], hooks[name], name);
+            assert.equal(server[name], hooks[name], name);
+            // Server components load the request locale instead of reading context.
+            assert.equal(typeof rsc[name], 'function', name);
+            assert.notEqual(rsc[name], hooks[name], name);
+          }
         `,
     ]);
   });
@@ -278,8 +264,6 @@ describe('gt-react package exports', () => {
       'dist/compat.client.mjs',
       'dist/compat.server.cjs',
       'dist/compat.server.mjs',
-      'dist/unstable.cjs',
-      'dist/unstable.mjs',
     ]) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/

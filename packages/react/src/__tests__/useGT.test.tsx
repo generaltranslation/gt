@@ -6,11 +6,8 @@ import { createConditionStoreSingleton } from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServerGTProvider } from '../provider/ServerGTProvider';
-import { msg, useGT, useMessages } from '../unstable';
-import {
-  useGT as useRscGT,
-  useMessages as useRscMessages,
-} from '../unstable.rsc';
+import { msg, useGT, useMessages } from '../index.server';
+import { useGT as useRscGT, useMessages as useRscMessages } from '../index.rsc';
 
 vi.mock('react', async (importOriginal) => {
   const react = await importOriginal<typeof import('react')>();
@@ -54,7 +51,7 @@ function renderHello(
   );
 }
 
-describe('gt-react/unstable', () => {
+describe('gt-react useGT and useMessages', () => {
   beforeEach(resetI18nGlobals);
   afterEach(resetI18nGlobals);
 

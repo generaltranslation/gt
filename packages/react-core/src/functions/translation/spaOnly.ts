@@ -1,6 +1,6 @@
 import { getRuntimeEnvironment } from 'gt-i18n/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { getI18nConfig } from '../setup/i18nConfig';
+import { getI18nConfig } from '../../setup/i18nConfig';
 
 // Only a client-rendered app knows its locale and has its catalog loaded
 // wherever t and m run, module level included. Server renders use the hooks

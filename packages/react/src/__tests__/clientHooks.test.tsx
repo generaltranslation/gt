@@ -11,7 +11,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { GTProvider, initializeGT, useGT } from '../index.client';
-import type { GTFunctionType } from 'gt-i18n';
+import type { GT } from 'gt-i18n';
 
 type TestGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 
@@ -41,7 +41,7 @@ function stubRuntimeApi(
             success: true,
             translation: translations[source],
             locale: 'fr',
-            dataFormat: 'ICU',
+            dataFormat: 'MESSAGE_TREE',
           },
         ])
     );
@@ -90,7 +90,7 @@ describe('client hooks', () => {
           const [label, setLabel] = useState('');
           useEffect(() => {
             effectRuns++;
-            setLabel(t('Loaded'));
+            setLabel(t`Loaded`);
           }, [t]);
           return <span>{label}</span>;
         }
@@ -137,14 +137,14 @@ describe('client hooks', () => {
 
       function Greeting() {
         const t = useGT();
-        const direct = t('Hello');
-        const memoized = useMemo(() => t('Hello'), [t]);
+        const direct = t`Hello`;
+        const memoized = useMemo(() => t`Hello`, [t]);
         const [fromEffect, setFromEffect] = useState('');
         const [effectOnly, setEffectOnly] = useState('');
         useEffect(() => {
-          setFromEffect(t('Hello'));
+          setFromEffect(t`Hello`);
           // Only ever looked up outside of render
-          setEffectOnly(t('Goodbye'));
+          setEffectOnly(t`Goodbye`);
         }, [t]);
         return (
           <span>{[direct, memoized, fromEffect, effectOnly].join('|')}</span>
@@ -181,7 +181,7 @@ describe('client hooks', () => {
       function Greeting() {
         const t = useGT();
         // Strict mode reuses this result in its second render
-        const label = useMemo(() => t('Memoized'), [t]);
+        const label = useMemo(() => t`Memoized`, [t]);
         return <span>{label}</span>;
       }
 
@@ -217,9 +217,9 @@ describe('client hooks', () => {
         return <Child t={t} />;
       }
 
-      function Child({ t }: { t: GTFunctionType }) {
+      function Child({ t }: { t: GT }) {
         events.push('child');
-        return <span>{t('Child-only')}</span>;
+        return <span>{t`Child-only`}</span>;
       }
 
       startTransition(() => {

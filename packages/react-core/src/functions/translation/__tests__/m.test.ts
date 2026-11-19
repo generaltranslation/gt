@@ -1,21 +1,21 @@
 import { hashSource } from 'generaltranslation/id';
+import { msg } from 'gt-i18n';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
-import type { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
-import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
-import { initializeI18nConfig } from '../../setup/i18nConfig';
-import { t } from '../t';
+import { setReadonlyConditionStore } from '../../../condition-store/singleton-operations';
+import type { ReactI18nCache } from '../../../i18n-cache/ReactI18nCache';
+import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
+import { initializeI18nConfig } from '../../../setup/i18nConfig';
+import { m } from '../m';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
-const saveTree = 'Save';
+const keyOf = (source: unknown) =>
+  hashSource({ source: source as string, dataFormat: 'MESSAGE_TREE' });
+
+const name = 'Ada';
 const translations: Record<string, unknown> = {
-  [hashSource({ source: saveTree, dataFormat: 'MESSAGE_TREE' })]: 'Enregistrer',
-  [hashSource({
-    source: saveTree,
-    dataFormat: 'MESSAGE_TREE',
-    context: 'button',
-  })]: 'Sauvegarder',
+  [keyOf('Save')]: 'Enregistrer',
+  [keyOf(msg`Hello, ${{ name }}!`.tree)]: ['Bonjour, ', ['name'], ' !'],
 };
 
 function setConditions(locale: string, enableI18n = true) {
@@ -29,47 +29,32 @@ function setConditions(locale: string, enableI18n = true) {
   });
 }
 
-describe('react-core/unstable t', () => {
+describe('react-core m', () => {
   beforeEach(() => {
     Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
     setReactI18nCache({
-      lookupTranslation: vi.fn(
-        (locale: string, message: string, options: { $context?: string }) =>
-          locale === 'fr'
-            ? translations[
-                hashSource({
-                  source: message,
-                  dataFormat: 'MESSAGE_TREE',
-                  context: options.$context,
-                })
-              ]
-            : undefined
+      lookupTranslation: vi.fn((locale: string, message: unknown) =>
+        locale === 'fr' ? translations[keyOf(message)] : undefined
       ),
     } as unknown as ReactI18nCache);
   });
 
-  it('translates with the condition store locale', () => {
+  it('renders messages from msg() with the condition store locale', () => {
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
     setConditions('fr');
 
-    expect(t`Save`).toBe('Enregistrer');
-    expect(t({ context: 'button' })`Save`).toBe('Sauvegarder');
+    const greeting = msg`Hello, ${{ name }}!`;
+    expect(m(msg('Save'))).toBe('Enregistrer');
+    expect(m(greeting)).toBe('Bonjour, Ada !');
+    expect(m(greeting, { name: 'Bo' })).toBe('Bonjour, Bo !');
+    expect(m(null)).toBeNull();
   });
 
   it('renders the source when i18n is disabled', () => {
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
     setConditions('fr', false);
 
-    expect(t`Save`).toBe('Save');
-  });
-
-  it('works at module level in an SPA, before any request scope', () => {
-    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
-    setConditions('fr');
-
-    // A module-level constant, evaluated once at import time.
-    const label = t`Save`;
-    expect(label).toBe('Enregistrer');
+    expect(m(msg('Save'))).toBe('Save');
   });
 
   it('rejects every call in server-rendered apps in development', () => {
@@ -81,8 +66,8 @@ describe('react-core/unstable t', () => {
     setConditions('fr');
 
     try {
-      expect(() => t`Save`).toThrow(/only available in client-rendered/);
-      expect(() => t({ context: 'button' })`Save`).toThrow(/Message: "Save"/);
+      expect(() => m(msg('Save'))).toThrow(/only available in client-rendered/);
+      expect(() => m(msg`Hello, ${{ name }}!`)).toThrow(/Message: "Hello, !"/);
     } finally {
       vi.unstubAllEnvs();
     }
@@ -98,11 +83,11 @@ describe('react-core/unstable t', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     try {
-      expect(t`Save`).toBe('Save');
-      expect(t({ context: 'button' })`Save`).toBe('Save');
+      expect(m(msg('Save'))).toBe('Save');
+      expect(m(msg`Hello, ${{ name }}!`)).toBe('Hello, Ada!');
       expect(error).toHaveBeenCalledTimes(2);
       expect(error).toHaveBeenCalledWith(
-        expect.stringContaining('use useGT()')
+        expect.stringContaining('use useMessages()')
       );
     } finally {
       error.mockRestore();

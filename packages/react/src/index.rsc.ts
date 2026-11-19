@@ -1,11 +1,14 @@
-// React Server Component context surface.
+// React Server Component context surface. No t or m: they are client-rendered
+// (SPA) only, and a server component's useGT() and useMessages() load the
+// request locale first.
 
 export { parseLocale } from './functions/parseLocale';
 
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { CustomMapping } from '@generaltranslation/format';
+import { getReadonlyConditionStore } from '@generaltranslation/react-core/pure';
 import { getGT, getI18nConfig, getMessages } from 'gt-i18n/internal';
-import { getLocale, getRegion } from 'gt-i18n';
+import { getLocale, getRegion, type GT, type M } from 'gt-i18n';
 import { use } from 'react';
 
 // ===== Error for client components ===== //
@@ -46,11 +49,25 @@ export {
 
 // ===== Hooks (cannot reference context) ===== //
 
-export function useGT() {
-  return use(getGT());
+/** Returns a GT bound to the request locale once its translations load. */
+export function useGT(): GT {
+  const conditionStore = getReadonlyConditionStore();
+  return use(
+    getGT({
+      locale: conditionStore.getLocale(),
+      enableI18n: conditionStore.getEnableI18n(),
+    })
+  );
 }
-export function useMessages() {
-  return use(getMessages());
+/** Returns an m bound to the request locale once its translations load. */
+export function useMessages(): M {
+  const conditionStore = getReadonlyConditionStore();
+  return use(
+    getMessages({
+      locale: conditionStore.getLocale(),
+      enableI18n: conditionStore.getEnableI18n(),
+    })
+  );
 }
 export function useLocale() {
   return getLocale();
@@ -84,18 +101,23 @@ export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 
 // ===== Functions ===== //
 export {
-  decodeMsg,
-  decodeOptions,
-  gtFallback,
-  mFallback,
   msg,
+  mFallback,
+  derive,
+  plural,
+  selectordinal,
+  select,
+  number,
+  date,
+  time,
+  part,
+  n,
   getDefaultLocale,
   getLocaleProperties,
   getLocales,
   resolveCanonicalLocale,
   getVersionId,
 } from 'gt-i18n';
-export { decodeVars, declareVar, derive } from 'generaltranslation';
 
 // ===== Setup ===== //
 export { initializeGTSRA as initializeGT } from './setup/initializeGTSRA';
@@ -122,8 +144,5 @@ export type {
 } from '@generaltranslation/react-core/pure';
 
 export type { SharedGTProviderProps } from './provider/GTProviderProps';
-export {
-  GtInternalRuntimeTranslateJsx,
-  GtInternalRuntimeTranslateString,
-} from 'gt-i18n/internal';
-export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-i18n';
+export { GtInternalRuntimeTranslateJsx } from 'gt-i18n/internal';
+export type { GT, GTOptions, M, Msg, Part, Placeholder } from 'gt-i18n';

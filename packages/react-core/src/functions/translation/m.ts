@@ -1,6 +1,6 @@
-import type { M, Msg } from 'gt-i18n/unstable';
-import { createMessages } from 'gt-i18n/unstable/internal';
-import { getReadonlyConditionStore } from '../condition-store/singleton-operations';
+import type { M, Msg } from 'gt-i18n';
+import { createMessages } from 'gt-i18n/internal';
+import { getReadonlyConditionStore } from '../../condition-store/singleton-operations';
 import { isSpa, reportServerRenderedUse } from './spaOnly';
 
 const messages = /* @__PURE__ */ createMessages({

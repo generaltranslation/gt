@@ -86,16 +86,6 @@
         "default": "./dist/components-rsc.mjs"
       }
     },
-    "./unstable": {
-      "require": {
-        "types": "./dist/unstable.d.ts",
-        "default": "./dist/unstable.cjs"
-      },
-      "import": {
-        "types": "./dist/unstable.d.mts",
-        "default": "./dist/unstable.mjs"
-      }
-    },
     "./compat": {
       "require": {
         "types": "./dist/compat.d.ts",
