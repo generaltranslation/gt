@@ -13,6 +13,8 @@ import {
   createSSRApp,
   defineComponent,
   h,
+  nextTick,
+  ref,
   type Component,
   type VNode,
   type VNodeChild,
@@ -25,8 +27,10 @@ import { serializeVueChildren } from '../rendering/translateVueChildren';
 import {
   createTestGT,
   jsxHash,
+  mount,
   renderWithPlugin,
   stripFragmentMarkers,
+  textContent,
 } from './testUtils';
 
 type BranchTransformation = 'branch' | 'plural';
@@ -1006,6 +1010,47 @@ describe('<N>, the count of its <Plural>', () => {
         })
       ).toBe('1\u202f234 fichiers');
     });
+
+    it.each(['en', 'fr'])(
+      'stays mounted when the count changes in %s',
+      async (locale) => {
+        let setupCount = 0;
+        const Stateful = defineComponent({
+          setup() {
+            setupCount += 1;
+            return () => h(N);
+          },
+        });
+        const source: JsxChildren = {
+          t: 'Plural',
+          i: 1,
+          d: { b: { other: [{ t: 'C2', i: 2 }, ' files'] }, t: 'p' },
+        };
+        const plugin = createTestGT({
+          loadTranslations: async () => ({ [jsxHash(source)]: source }),
+        });
+        await plugin.setLocale(locale);
+        const n = ref(1234);
+        const mounted = mount(
+          defineComponent({
+            setup: () => () =>
+              h(T, null, () =>
+                h(Plural, { n: n.value }, () => [h(Stateful), ' files'])
+              ),
+          }),
+          plugin
+        );
+
+        n.value = 2345;
+        await nextTick();
+
+        expect(textContent(mounted.root)).toBe(
+          `${new Intl.NumberFormat(locale).format(2345)} files`
+        );
+        expect(setupCount).toBe(1);
+        mounted.app.unmount();
+      }
+    );
   });
 });
 

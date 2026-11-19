@@ -1520,7 +1520,13 @@ function isCount(value: unknown): boolean {
 
 /** Renders a plural's branch where every `<N>` in it finds the plural's count. */
 function withPluralCount(n: unknown, render: () => VNodeChild): VNode {
-  return h(PluralCountScope, { n: toPluralCount(n) }, { default: render });
+  // Rendered now: the keys of a branch rendered later would already be swept.
+  const branch = render();
+  return h(
+    PluralCountScope,
+    { n: toPluralCount(n) },
+    { default: () => branch }
+  );
 }
 
 function isVariable(value: unknown): value is Variable {
