@@ -1166,21 +1166,16 @@ function renderElement(
         : getPluralKey(source.vnode.props?.n, Object.keys(branches), state);
     const targetBranch = selectKey(targetBranches);
     // The translation picks the branch. The source pairs with it by key, or
-    // with `other` when it has no branch of that name or a plural branch shows
-    // a variable its own lacks. A translation with no branch for the value
+    // with `other` when it has no branch of that name or the translation made
+    // the branch from `other`. A translation with no branch for the value
     // leaves the choice to the source.
+    const fromOther = target.d?.o;
     const selectedSource = getSelectedSourceBranch(
       source,
       !Object.hasOwn(targetBranches, targetBranch)
         ? selectKey(source.branches)
         : Object.hasOwn(source.branches, targetBranch) &&
-            !(
-              source.transformation === 'plural' &&
-              showsVariableOutside(
-                targetBranches[targetBranch],
-                source.branches[targetBranch]
-              )
-            )
+            !(Array.isArray(fromOther) && fromOther.includes(targetBranch))
           ? targetBranch
           : 'other'
     );
@@ -1237,41 +1232,6 @@ function getPluralKey(
     branches,
     getFormatLocales(locale, state.resolveFormattingLocale)
   );
-}
-
-// Ids restart in every branch, so a nested <Plural> or <Branch> is not entered.
-function addSourceVariables(nodes: SourceNode[], found: Set<string>) {
-  for (const node of nodes) {
-    if (!isSourceElement(node)) continue;
-    if (node.transformation === 'variable') {
-      found.add(`${node.id}:${node.variableType ?? 'v'}`);
-    } else if (
-      node.transformation !== 'branch' &&
-      node.transformation !== 'plural'
-    ) {
-      addSourceVariables(node.children, found);
-    }
-  }
-}
-
-/**
- * Whether a translated branch shows a variable its source branch lacks.
- * Russian picks `one` for 21 too, so its branch shows the count that the
- * English "One file" leaves out.
- */
-function showsVariableOutside(
-  target: JsxChildren | undefined,
-  source: SourceNode[]
-): boolean {
-  const known = new Set<string>();
-  addSourceVariables(source, known);
-  const shows = (node: JsxChildren | undefined): boolean => {
-    if (Array.isArray(node)) return node.some(shows);
-    if (!node || typeof node !== 'object') return false;
-    if (isVariable(node)) return !known.has(`${node.i}:${node.v}`);
-    return !node.d?.b && shows(node.c);
-  };
-  return shows(target);
 }
 
 function getSelectedSourceBranch(

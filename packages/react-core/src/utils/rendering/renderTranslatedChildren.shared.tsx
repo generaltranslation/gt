@@ -26,46 +26,11 @@ import {
 import { getGTTag } from './getGTTag';
 import type { RenderVariable } from '../types';
 
-// Ids restart in every branch, so a nested <Plural> or <Branch> is not entered.
-function addSourceVariables(source: TaggedChildren, found: Set<string>) {
-  if (Array.isArray(source)) {
-    source.forEach((child) => addSourceVariables(child, found));
-  } else if (React.isValidElement(source)) {
-    const props = source.props;
-    if (isVariableElementProps(props)) {
-      const { variableId, variableType } = getVariableProps(props);
-      found.add(`${variableId}:${variableType}`);
-    } else if (!props['data-_gt']?.branches) {
-      addSourceVariables(props.children, found);
-    }
-  }
-}
-
-function showsVariableOutside(
-  target: TranslatedChildren | undefined,
-  known: Set<string>
-): boolean {
-  if (Array.isArray(target)) {
-    return target.some((child) => showsVariableOutside(child, known));
-  }
-  if (!target || typeof target !== 'object') return false;
-  if (isVariable(target)) return !known.has(`${target.i}:${target.v}`);
-  return !target.d?.b && showsVariableOutside(target.c, known);
-}
-
-/**
- * The source branch a translated plural branch pairs with: its own, or `other`
- * when it shows a variable its own lacks. Russian picks `one` for 21 too, so
- * its branch shows the count that the English "One file" leaves out.
- */
-function getPluralSourceKey(
-  branches: Record<string, TaggedChildren>,
-  key: string,
-  target: TranslatedChildren
-): string {
-  const known = new Set<string>();
-  if (Object.hasOwn(branches, key)) addSourceVariables(branches[key], known);
-  return showsVariableOutside(target, known) ? 'other' : key;
+// Ids restart in every branch, so only the translation knows which source
+// branch a branch of its own was made from.
+function getSourceKey(target: TranslatedElement, key: string): string {
+  const fromOther = target.d?.o;
+  return Array.isArray(fromOther) && fromOther.includes(key) ? 'other' : key;
 }
 
 // Shared implementation: the variable renderer is dependency-injected by a
@@ -118,22 +83,20 @@ function createRenderTranslatedChildren({
       });
     }
 
-    // The translation chooses a branch; when it has none for the value, the
-    // source chooses its own, which then renders untranslated.
+    // The translation chooses a branch and names the source branch it pairs
+    // with; when it has none for the value, the source chooses its own, which
+    // then renders untranslated.
     if (transformation === 'plural') {
       const n = sourceElement.props.n;
       const targetBranches = targetElement.d?.b || {};
-      const sourceBranches = sourceGT.branches || {};
       const key = selectPluralKey(n, locales, targetBranches);
       const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
         source: getPluralBranch(
           n,
           locales,
-          sourceBranches,
-          target === undefined
-            ? undefined
-            : getPluralSourceKey(sourceBranches, key, target)
+          sourceGT.branches || {},
+          target === undefined ? undefined : getSourceKey(targetElement, key)
         ),
         target,
         locales,
@@ -150,7 +113,7 @@ function createRenderTranslatedChildren({
         source: getBranch(
           branch,
           sourceGT.branches || {},
-          target === undefined ? undefined : key
+          target === undefined ? undefined : getSourceKey(targetElement, key)
         ),
         target,
         locales,

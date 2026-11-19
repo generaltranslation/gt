@@ -175,53 +175,103 @@ describe('plural rendering', () => {
     });
   });
 
-  it('pairs a branch with the source other branch for a variable its own lacks', () => {
+  describe('a branch the translation made from the source other branch', () => {
     // Russian picks "one" for 21 too, so its branch shows the count, which
     // the English "one" branch leaves out.
-    const variable = (variableType: string, value: unknown) =>
+    const number = (value: number, id = 2) =>
       React.createElement(
         'span',
         {
           'data-_gt': {
-            id: 2,
+            id,
             injectionType: 'manual',
             transformation: 'variable',
-            variableType,
+            variableType: 'number',
           },
         },
-        value as React.ReactNode
+        value
       );
     const count = { i: 2, v: 'n' };
-    const target = {
-      d: {
-        b: {
-          one: [count, ' файл'],
-          few: [count, ' файла'],
-          many: [count, ' файлов'],
-          other: [count, ' файла'],
-        },
-      },
-    } as unknown as TranslatedChildren;
-    const render = (one: React.ReactNode) =>
+    const branches = {
+      one: [count, ' файл'],
+      few: [count, ' файла'],
+      many: [count, ' файлов'],
+      other: [count, ' файла'],
+    };
+    const render = (one: React.ReactNode, data: object) =>
       renderTranslatedChildren({
         source: createPluralElement(21, {
           one,
-          other: [variable('number', 21), ' files'],
+          other: [number(21), ' files'],
         }),
-        target,
+        target: { d: data } as unknown as TranslatedChildren,
         locales: ['ru'],
         enableI18n: true,
       });
-    const rendered = [
-      { props: { children: { props: { children: 21 } } } },
+    const shows = (value: number) => [
+      { props: { children: { props: { children: value } } } },
       { props: { children: ' файл' } },
     ];
 
-    expect(render('One file')).toMatchObject(rendered);
-    // The same id names a different variable in the source "one" branch.
-    expect(render([variable('variable', 'Ada'), ': one file'])).toMatchObject(
-      rendered
-    );
+    it('renders with the variables of the source other branch', () => {
+      expect(render('One file', { b: branches, o: ['one'] })).toMatchObject(
+        shows(21)
+      );
+    });
+
+    it('does not take a variable of the same id from its own source branch', () => {
+      const one = [number(100), ' MB file'];
+      expect(render(one, { b: branches, o: ['one'] })).toMatchObject(shows(21));
+      expect(render(one, { b: branches })).toMatchObject(shows(100));
+    });
+
+    it('renders a nested branch with the one in the source other branch', () => {
+      const nested = React.createElement('span', {
+        'data-_gt': {
+          id: 2,
+          injectionType: 'manual',
+          transformation: 'branch',
+          branches: { a: [number(21, 3), ' files'] },
+        },
+        branch: 'a',
+      } as unknown as TaggedElementProps);
+      const result = renderTranslatedChildren({
+        source: createPluralElement(21, { one: 'One file', other: nested }),
+        target: {
+          d: {
+            b: {
+              one: { i: 2, d: { b: { a: [{ i: 3, v: 'n' }, ' файл'] } } },
+            },
+            o: ['one'],
+          },
+        } as unknown as TranslatedChildren,
+        locales: ['ru'],
+        enableI18n: true,
+      });
+
+      expect(result).toMatchObject(shows(21));
+    });
+
+    it('applies to a <Branch> too', () => {
+      const result = renderTranslatedChildren({
+        source: React.createElement('span', {
+          'data-_gt': {
+            id: 1,
+            injectionType: 'manual',
+            transformation: 'branch',
+            branches: { a: 'One file', other: [number(21), ' files'] },
+          },
+          branch: 'a',
+        } as unknown as TaggedElementProps),
+        target: {
+          d: { b: { a: [count, ' файл'] }, o: ['a'] },
+        } as unknown as TranslatedChildren,
+        locales: ['ru'],
+        enableI18n: true,
+      });
+
+      expect(result).toMatchObject(shows(21));
+    });
   });
 
   it('renders the source branch when the translation has no branch', () => {

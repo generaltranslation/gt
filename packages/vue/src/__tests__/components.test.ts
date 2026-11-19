@@ -648,48 +648,102 @@ describe('Branch and Plural attributes', () => {
     ).toBe('<b>элементов</b>');
   });
 
-  it('pairs a branch with the source other branch for a variable its own lacks', async () => {
-    const source: JsxChildren = {
-      t: 'Plural',
-      i: 1,
-      d: {
-        b: { one: 'One file', other: [{ i: 2, v: 'n' }, ' files'] },
-        t: 'p',
-      },
-    };
+  describe('a branch the translation made from the source other branch', () => {
     // Russian picks "one" for 21 too, so its branch shows the count, which
     // the English "one" branch leaves out.
     const count = { i: 2, v: 'n' } as const;
-    const target: JsxChildren = {
-      t: 'Plural',
-      i: 1,
-      d: {
-        b: {
-          one: [count, ' файл'],
-          few: [count, ' файла'],
-          many: [count, ' файлов'],
-          other: [count, ' файла'],
-        },
-        t: 'p',
-      },
+    const render = async (
+      source: JsxChildren,
+      branches: Record<string, JsxChildren>,
+      fromOther: string[] | undefined,
+      slots: Record<string, () => VNodeChild>,
+      one?: string
+    ) => {
+      const target: JsxChildren = {
+        t: 'Plural',
+        i: 1,
+        d: { b: branches, t: 'p', ...(fromOther && { o: fromOther }) },
+      };
+      const plugin = createGT({
+        loadTranslations: async () => ({ [jsxHash(source)]: target }),
+      });
+      await plugin.setLocale('ru');
+      const Root = defineComponent({
+        setup: () => () =>
+          h(T, null, () => h(Plural, { n: 21, ...(one && { one }) }, slots)),
+      });
+      return stripFragmentMarkers(
+        await renderToString(createSSRApp(Root).use(plugin))
+      );
     };
-    const plugin = createGT({
-      loadTranslations: async () => ({ [jsxHash(source)]: target }),
-    });
-    await plugin.setLocale('ru');
-    const Root = defineComponent({
-      setup: () => () =>
-        h(T, null, () =>
-          h(Plural, { n: 21, one: 'One file' }, () => [
-            h(Num, { value: 21 }),
-            ' files',
-          ])
-        ),
+    const files = () => [h(Num, { value: 21 }), ' files'];
+
+    it('renders with the variables of the source other branch', async () => {
+      expect(
+        await render(
+          {
+            t: 'Plural',
+            i: 1,
+            d: { b: { one: 'One file', other: [count, ' files'] }, t: 'p' },
+          },
+          { one: [count, ' файл'], other: [count, ' файла'] },
+          ['one'],
+          { default: files },
+          'One file'
+        )
+      ).toBe('21 файл');
     });
 
-    expect(
-      stripFragmentMarkers(await renderToString(createSSRApp(Root).use(plugin)))
-    ).toBe('21 файл');
+    it('does not take a variable of the same id from its own source branch', async () => {
+      const source: JsxChildren = {
+        t: 'Plural',
+        i: 1,
+        d: {
+          b: { one: [count, ' MB file'], other: [count, ' files'] },
+          t: 'p',
+        },
+      };
+      const branches = { one: [count, ' файл'], other: [count, ' файла'] };
+      const slots = {
+        one: () => [h(Num, { value: 100 }), ' MB file'],
+        default: files,
+      };
+
+      expect(await render(source, branches, ['one'], slots)).toBe('21 файл');
+      expect(await render(source, branches, undefined, slots)).toBe('100 файл');
+    });
+
+    it('renders a nested branch with the one in the source other branch', async () => {
+      expect(
+        await render(
+          {
+            t: 'Plural',
+            i: 1,
+            d: {
+              b: {
+                one: 'One file',
+                other: {
+                  t: 'Branch',
+                  i: 2,
+                  d: { b: { a: [{ i: 3, v: 'n' }, ' files'] }, t: 'b' },
+                },
+              },
+              t: 'p',
+            },
+          },
+          {
+            one: {
+              t: 'Branch',
+              i: 2,
+              d: { b: { a: [{ i: 3, v: 'n' }, ' файл'] }, t: 'b' },
+            },
+          },
+          ['one'],
+          { default: () => h(Branch, { branch: 'a' }, { a: files }) },
+          'One file'
+        )
+      ).toBe('21 файл');
+    });
   });
 
   it('lets the source pick when the translation has no branch for the value', async () => {

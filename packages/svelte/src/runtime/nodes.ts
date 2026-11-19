@@ -135,7 +135,7 @@ export function selectBranch(
       ownerScope,
       node,
       info.b,
-      getPairedSourceBranch(info.b, targetBranch),
+      getPairedSourceBranch(info.b, targetBranch, node),
       scopes
     ),
   };
@@ -178,7 +178,7 @@ export function validateTarget(
           resolved.scope,
           node,
           info.b,
-          getPairedSourceBranch(info.b, name),
+          getPairedSourceBranch(info.b, name, node),
           scopes
         );
         if (!validateTarget(branch, branchScopes, context)) return false;
@@ -208,13 +208,18 @@ function getBranches(
 
 /**
  * Returns the source branch a translated branch pairs with: the same-named
- * one, or `other` when the source has no branch of that name.
+ * one, or `other` when the source has no branch of that name or the
+ * translation made the branch from `other`.
  */
 function getPairedSourceBranch(
   sourceBranches: string[],
-  name: string
+  name: string,
+  node: JsxElement
 ): string | undefined {
-  return [name, 'other'].find((branch) => sourceBranches.includes(branch));
+  const fromOther = node.d?.o;
+  const own =
+    Array.isArray(fromOther) && fromOther.includes(name) ? [] : [name];
+  return [...own, 'other'].find((branch) => sourceBranches.includes(branch));
 }
 
 /**

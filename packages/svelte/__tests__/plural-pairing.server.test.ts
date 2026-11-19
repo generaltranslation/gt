@@ -8,8 +8,8 @@ import type { Content, JsxElement } from '@generaltranslation/format';
 import BarePlural from './fixtures/BarePlural.svelte';
 import ExactPluralBranch from './fixtures/ExactPluralBranch.svelte';
 import Harness from './fixtures/Harness.svelte';
-import Inbox from './fixtures/Inbox.svelte';
 import NestedPluralForms from './fixtures/NestedPluralForms.svelte';
+import PluralCount from './fixtures/PluralCount.svelte';
 import { initializeGT } from '../src/runtime/config';
 import { setupGT, withoutComments } from './helpers';
 
@@ -69,27 +69,31 @@ describe('plural forms a translation leaves out', () => {
     ).toBe('<p><b>Items</b></p>');
   });
 
-  it('render a variable the same-named source form lacks from the source other form', () => {
-    // French counts 0 as "one", so its form shows the count, which the
-    // English "one" form leaves out.
-    const inbox = analyze('Inbox.svelte');
-    const plural = inbox.source as JsxElement;
-    const count = { i: 2, v: 'n' };
-    const translation = {
-      ...plural,
-      d: {
-        ...plural.d,
-        b: { one: [count, ' message'], other: [count, ' messages'] },
-      },
-    } as Content;
-    expect(
+  it('render a form the translation made from the source other form with it', () => {
+    // French counts 0 as "one", so its form is made from "other", which
+    // shows the count. The source "one" form has a size under the same id.
+    const sized = analyze('PluralCount.svelte');
+    const plural = sized.source as JsxElement;
+    const { other } = plural.d!.b as Record<string, Content>;
+    const render = (fromOther?: string[]) =>
       html({
-        component: Inbox,
-        props: { count: 0, status: 'away', name: 'Ada' },
+        component: PluralCount,
+        props: { count: 0, size: 100 },
         locale: 'fr',
-        translations: { [inbox.hash]: translation },
-      })
-    ).toContain('<p class="plural">0 message</p>');
+        translations: {
+          [sized.hash]: {
+            ...plural,
+            d: {
+              ...plural.d,
+              b: { one: other, other },
+              ...(fromOther && { o: fromOther }),
+            },
+          } as Content,
+        },
+      });
+
+    expect(render(['one'])).toBe('<p><b>0</b> files</p>');
+    expect(render()).toBe('<p>100 files</p>');
   });
 });
 
