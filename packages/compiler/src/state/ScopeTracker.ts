@@ -1,16 +1,11 @@
 /**
  * Scope Tracker - Handles variable scoping and import tracking
  *
- * Tracks useGT/getGT variable assignments across nested scopes
- * Manages variable shadowing and GT component imports
+ * Tracks GT and React imports across nested scopes
+ * Manages variable shadowing
  */
 
-import {
-  GT_ALL_FUNCTIONS,
-  GT_CALLBACK_FUNCTIONS,
-} from '../utils/constants/gt/constants';
-
-// TODO: separate callback funtions and imported functions
+import { GT_ALL_FUNCTIONS } from '../utils/constants/gt/constants';
 
 /**
  * Information about a scope
@@ -174,27 +169,6 @@ export class ScopeTracker {
   trackTranslationVariable(
     aliasName: string,
     canonicalName: GT_ALL_FUNCTIONS,
-    identifier: number
-  ): void {
-    this.trackVariable(
-      aliasName,
-      canonicalName,
-      'generaltranslation',
-      identifier
-    );
-  }
-
-  /**
-   * Track a translation callback function variable
-   * const useGT_callback = useGT()
-   * @param aliasName - The alias name of callback variable
-   * @param canonicalName - The canonical name of the callback function
-   * @param identifier - The identifier of the callback function
-   * TODO: canonicalName might have to be shifted to the name of the RValue eg useGT in t = useGT() so you can properly map back to the original function
-   */
-  trackTranslationCallbackVariable(
-    aliasName: string,
-    canonicalName: GT_CALLBACK_FUNCTIONS,
     identifier: number
   ): void {
     this.trackVariable(

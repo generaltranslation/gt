@@ -1,7 +1,6 @@
 /**
  * gt-tanstack-start re-exports gt-react's components and hooks, so the
- * compiler must treat those imports exactly like imports from gt-react. It
- * does not export `t`, which is client-rendered (SPA) only.
+ * compiler must treat those imports exactly like imports from gt-react.
  * These tests run through the real unplugin transform (index.ts) because
  * import tracking gates every pass.
  */
@@ -22,29 +21,16 @@ describe('gt-tanstack-start import source', () => {
     expect(output).toContain('_hash: "');
   });
 
-  it('injects $_hash into useGT() imported from gt-tanstack-start', async () => {
+  it('injects $_hash into the useGT() tag imported from gt-tanstack-start', async () => {
     const output = await transformWithPlugin(
       undefined,
       `
       import { useGT } from 'gt-tanstack-start';
       const t = useGT();
-      t("Hello world");
+      t\`Hello world\`;
     `
     );
-    expect(output).not.toBeNull();
-    expect(output).toContain('"$_hash": "');
-    expect(output).toContain('useGT([');
-  });
-
-  it('leaves t`...` imported from gt-tanstack-start unexpanded', async () => {
-    const output = await transformWithPlugin(
-      undefined,
-      `
-      import { t } from 'gt-tanstack-start';
-      const message = t\`Hello \${name}\`;
-    `
-    );
-    expect(output).toBeNull();
+    expect(output).toContain('t({ $_hash: "');
   });
 
   // No autoJsxImportSource override here: the override alone also accepts

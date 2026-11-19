@@ -6,35 +6,15 @@ import {
 } from '../../utils/constants/gt/constants';
 
 /**
- * Inject runtime translate import with only the specifiers needed.
- * `import { GtInternalRuntimeTranslateString, GtInternalRuntimeTranslateJsx } from 'gt-react'`
+ * Inject the runtime translate import.
+ * `import { GtInternalRuntimeTranslateJsx } from 'gt-react'`
  */
 export function injectRuntimeTranslateImport(
-  path: NodePath<t.Program>,
-  {
-    needsString,
-    needsJsx,
-  }: {
-    needsString: boolean;
-    needsJsx: boolean;
-  }
-): NodePath<t.ImportDeclaration> | null {
-  const specifiers: t.ImportSpecifier[] = [];
-
-  if (needsString) {
-    const name = GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateString;
-    specifiers.push(t.importSpecifier(t.identifier(name), t.identifier(name)));
-  }
-
-  if (needsJsx) {
-    const name = GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateJsx;
-    specifiers.push(t.importSpecifier(t.identifier(name), t.identifier(name)));
-  }
-
-  if (specifiers.length === 0) return null;
-
+  path: NodePath<t.Program>
+): NodePath<t.ImportDeclaration> {
+  const name = GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateJsx;
   const importDecl = t.importDeclaration(
-    specifiers,
+    [t.importSpecifier(t.identifier(name), t.identifier(name))],
     t.stringLiteral(GT_IMPORT_SOURCES.GT_REACT)
   );
 

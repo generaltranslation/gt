@@ -4,24 +4,21 @@ import type { JsxChildren } from '@generaltranslation/format';
 import hashSource from '../calculateHash';
 
 describe('calculateHash', () => {
-  it.each(['ICU', 'I18NEXT'] as const)(
-    'delegates %s strings to the shared hasher with every hashed option',
-    (dataFormat) => {
-      const params = {
-        source: 'Hello world',
-        context: 'greeting',
-        maxChars: 20,
-        requiresReview: true,
-        dataFormat,
-      };
-      expect(hashSource(params)).toBe(sharedHashSource(params));
-      for (const option of ['context', 'maxChars', 'requiresReview']) {
-        expect(hashSource({ ...params, [option]: undefined })).not.toBe(
-          hashSource(params)
-        );
-      }
+  it('delegates to the shared hasher with every hashed option', () => {
+    const params = {
+      source: 'Hello world',
+      context: 'greeting',
+      maxChars: 20,
+      requiresReview: true,
+      dataFormat: 'JSX' as const,
+    };
+    expect(hashSource(params)).toBe(sharedHashSource(params));
+    for (const option of ['context', 'maxChars', 'requiresReview']) {
+      expect(hashSource({ ...params, [option]: undefined })).not.toBe(
+        hashSource(params)
+      );
     }
-  );
+  });
 
   // it.each spreads array rows, so each source is wrapped in a { source } case
   const cases = (sources: JsxChildren[]) =>

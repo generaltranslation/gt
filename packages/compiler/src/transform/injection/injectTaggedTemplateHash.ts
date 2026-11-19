@@ -13,11 +13,11 @@ import {
   type MessageTreeHashMetadata,
 } from 'generaltranslation/id';
 import {
-  isUnstableGTHelperName,
-  isUnstableGTImportSource,
-  type UnstableGTHelperName,
+  isGTMessageHelperName,
+  isGTMessageImportSource,
+  type GTMessageHelperName,
 } from 'generaltranslation/internal';
-import { USEGT_CALLBACK_OPTIONS } from '../../utils/constants/gt/constants';
+import { TRANSLATION_OPTION_KEYS } from '../../utils/constants/gt/constants';
 
 type OptionKey = keyof MessageTreeHashMetadata;
 
@@ -27,22 +27,22 @@ type OptionKey = keyof MessageTreeHashMetadata;
 
 /** Thrown when a template is not plainly static; the runtime hashes it. */
 function nonStatic(): never {
-  throw new Error('Non-static unstable tagged template');
+  throw new Error('Non-static tagged template');
 }
 
 /**
- * Rewrites a statically analyzable unstable tagged template so the runtime
+ * Rewrites a statically analyzable tagged template so the runtime
  * skips hashing: t`...` -> t({ $_hash })`...` and
  * t({ context })`...` -> t({ context, $_hash })`...`, for an imported `t`
  * or `msg` and for the result of `const t = useGT()` / `const t = await getGT()`.
  * Returns whether the template was rewritten.
  */
-export function injectUnstableTaggedTemplateHash(
+export function injectTaggedTemplateHash(
   path: NodePath<t.TaggedTemplateExpression>
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
-  if (!t.isIdentifier(callee) || !isUnstableGT(callee.name, path.scope)) {
+  if (!t.isIdentifier(callee) || !isMessageTag(callee.name, path.scope)) {
     return false;
   }
   let hash: string;
@@ -62,7 +62,7 @@ export function injectUnstableTaggedTemplateHash(
     return false;
   }
   const hashProperty = t.objectProperty(
-    t.identifier(USEGT_CALLBACK_OPTIONS.$_hash),
+    t.identifier(TRANSLATION_OPTION_KEYS.$_hash),
     t.stringLiteral(hash)
   );
   if (t.isCallExpression(tag)) {
@@ -74,10 +74,10 @@ export function injectUnstableTaggedTemplateHash(
 }
 
 /**
- * `t` or `msg` imported from an unstable source, or
+ * `t` or `msg` imported from a GT message source, or
  * `const t = [await] useGT/getGT()`.
  */
-function isUnstableGT(name: string, scope: Scope): boolean {
+function isMessageTag(name: string, scope: Scope): boolean {
   const helper = getHelperName(name, scope);
   if (helper === 't' || helper === 'msg') return true;
   const binding = scope.getBinding(name);
@@ -95,16 +95,16 @@ function isUnstableGT(name: string, scope: Scope): boolean {
   return hook === 'useGT' || hook === 'getGT';
 }
 
-/** Original name of a helper imported from an unstable source. */
+/** Original name of a helper imported from a GT message source. */
 function getHelperName(
   name: string,
   scope: Scope
-): UnstableGTHelperName | undefined {
+): GTMessageHelperName | undefined {
   const binding = scope.getBinding(name);
   if (
     !binding?.path.isImportSpecifier() ||
     !binding.path.parentPath.isImportDeclaration() ||
-    !isUnstableGTImportSource(binding.path.parentPath.node.source.value)
+    !isGTMessageImportSource(binding.path.parentPath.node.source.value)
   ) {
     return;
   }
@@ -112,7 +112,7 @@ function getHelperName(
   const importedName = t.isIdentifier(imported)
     ? imported.name
     : imported.value;
-  return isUnstableGTHelperName(importedName) ? importedName : undefined;
+  return isGTMessageHelperName(importedName) ? importedName : undefined;
 }
 
 function parseMessageOptions(

@@ -36,10 +36,10 @@ const T_COMPONENT_CODE = `
 const USEGT_CODE = `
   import { useGT } from 'gt-react';
   const t = useGT();
-  t("Hello world");
+  t\`Hello world\`;
 `;
 
-const TAGGED_TEMPLATE_CODE = `
+const UNBOUND_TAG_CODE = `
   import { useGT } from 'gt-react';
   const gt = useGT();
   const message = t\`Hello world\`;
@@ -237,13 +237,13 @@ describe('gtUnplugin config loading', () => {
 /**
  * compileTimeHash must actually gate hash injection, and each flag governs
  * only its own feature: disableBuildChecks disables validation, not hashing,
- * and macro expansion / dev hot reload run independently of both.
+ * and dev hot reload runs independently of both.
  */
 describe('pass gating by plugin options', () => {
   const CODE = {
     '<T>': T_COMPONENT_CODE,
     'useGT()': USEGT_CODE,
-    't`` macro': TAGGED_TEMPLATE_CODE,
+    'unbound t``': UNBOUND_TAG_CODE,
   };
 
   it.each<
@@ -253,33 +253,31 @@ describe('pass gating by plugin options', () => {
       expected: { has?: string[]; lacks?: string[] } | null,
     ]
   >([
-    // Defaults: hashes injected, useGT() prefetch entries, macros expanded
+    // Defaults: hashes injected, and the tag stays a tagged template
     ['<T>', undefined, { has: ['_hash: "'] }],
-    [
-      'useGT()',
-      undefined,
-      {
-        has: ['"$_hash": "', 'useGT(['],
-        lacks: ['GtInternalRuntimeTranslateString'],
-      },
-    ],
-    ['t`` macro', undefined, { has: ['$_hash'], lacks: ['t`'] }],
+    ['useGT()', undefined, { has: ['t({ $_hash: "', '`Hello world`'] }],
+    // A t without an import is not a GT tag: no rewrite, no injected import
+    ['unbound t``', undefined, null],
     // compileTimeHash: false -> no injection; untouched files return null
     ['<T>', { compileTimeHash: false }, null],
     ['useGT()', { compileTimeHash: false }, null],
-    [
-      't`` macro',
-      { compileTimeHash: false },
-      { has: ['t("Hello world")'], lacks: ['t`', '$_hash'] },
-    ],
     ['<T>', { disableBuildChecks: true }, { has: ['_hash: "'] }],
     ['<T>', { compileTimeHash: false, disableBuildChecks: true }, null],
     ['useGT()', { compileTimeHash: false, disableBuildChecks: true }, null],
-    ['t`` macro', { compileTimeHash: false, disableBuildChecks: true }, null],
+    [
+      '<T>',
+      { devHotReload: true },
+      { has: ['_hash: "'], lacks: ['GtInternalRuntimeTranslate'] },
+    ],
+    [
+      '<T>',
+      { devHotReload: { jsx: true } },
+      { has: ['GtInternalRuntimeTranslateJsx', '_hash: "'] },
+    ],
     [
       'useGT()',
-      { devHotReload: true },
-      { has: ['GtInternalRuntimeTranslateString', '"$_hash": "'] },
+      { devHotReload: { strings: true, jsx: true } },
+      { has: ['t({ $_hash: "'], lacks: ['GtInternalRuntimeTranslate'] },
     ],
   ])('%s with options %j', async (code, options, expected) => {
     const { outputs } = await runPlugin(options, CODE[code]);

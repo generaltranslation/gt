@@ -10,6 +10,7 @@ import { processClassMethod } from '../processing/processClassMethod';
 import { processClassPrivateMethod } from '../processing/processClassPrivateMethod';
 import { processImportDeclaration } from '../processing/processImportDeclaration';
 import { processAssignmentExpression } from '../processing/processAssignmentExpression';
+import { processVariableDeclarator } from '../processing/processVariableDeclarator';
 import { processClassDeclaration } from '../processing/processClassDeclaration';
 import { processForInStatement } from '../processing/processForInStatement';
 import { processForOfStatement } from '../processing/processForOfStatement';
@@ -56,6 +57,8 @@ export function basePass(state: TransformState): TraverseOptions {
     // --- Other Processing --- //
     // import T from '...'
     ImportDeclaration: processImportDeclaration(state),
+    // const T = "Hello"
+    VariableDeclarator: processVariableDeclarator(state),
     // let t = useGT(); t = undefined;
     AssignmentExpression: processAssignmentExpression(state),
     // class T { ... }

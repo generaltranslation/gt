@@ -16,11 +16,11 @@ describe('dictionary API', () => {
       const t = useTranslations('user');
       const gt = useGT();
       t('name');
-      gt("Hello world");
+      gt\`Hello world\`;
     `
     );
     expect(output).not.toBeNull();
-    expect(output).toContain('"$_hash": "');
+    expect(output).toContain('gt({ $_hash: "');
     expect(output).toMatch(/useTranslations\(["']user["']\)/);
     expect(output).toMatch(/\bt\(["']name["']\)/);
   });

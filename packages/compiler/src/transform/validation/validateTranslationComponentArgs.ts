@@ -9,7 +9,7 @@ import { constructJsxChildren } from '../jsx-children/constructJsxChildren';
 import { validateChildrenPropertyFromObjectExpression } from '../../utils/validation/validateChildrenFromObjectExpression';
 import { validateExpressionIsNumericLiteral } from '../../utils/validation/validateExpressionIsNumericLiteral';
 import { validateExpressionIsBooleanLiteral } from '../../utils/validation/validateExpressionIsBooleanLiteral';
-import { validateDerive } from './validateTranslationFunction';
+import { validateDerive } from './validateDerive';
 import { JsxValidationError } from '../jsx-children/errors';
 /**
  * Given a translation component, validate the arguments

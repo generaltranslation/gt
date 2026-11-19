@@ -3,10 +3,10 @@ import { hashSource } from 'generaltranslation/id';
 import { transformWithPlugin } from './transformWithPlugin';
 import wireFormatCases from '../../../../test-fixtures/message-tree-wire-format.json';
 
-const UNSTABLE_HELPERS =
+const HELPERS =
   't, msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
 /** For sources that bind `t` to useGT() or getGT() instead of importing it. */
-const HOOK_HELPERS = UNSTABLE_HELPERS.replace(/^t, /, '');
+const HOOK_HELPERS = HELPERS.replace(/^t, /, '');
 
 // The fixtures' free variables, as local values like fixtureParity.test.ts:
 // only a provably primitive value is hashed as an unnamed variable.
@@ -27,35 +27,39 @@ const consoleError = vi.spyOn(console, 'error');
 async function compile(
   body: string,
   options?: { compileTimeHash: boolean },
-  helpers = UNSTABLE_HELPERS
+  helpers = HELPERS,
+  source = 'gt-react'
 ) {
   return transformWithPlugin(
     options,
-    `import { ${helpers} } from 'gt-i18n/unstable';\n${body}\n`
+    `import { ${helpers} } from '${source}';\n${body}\n`
   );
 }
 
-describe('unstableHashInjectionPass', () => {
+describe('taggedTemplateHashInjectionPass', () => {
   // The `t` tag of each fixture template becomes the tag under test.
   const FIXTURE_TAG = /^t(?=[`(])/;
   const forms: Record<
     string,
-    [wrap: (template: string) => string, helpers: string]
+    [wrap: (template: string) => string, helpers: string, source: string]
   > = {
-    t: [(template) => `${template};`, UNSTABLE_HELPERS],
+    t: [(template) => `${template};`, HELPERS, 'gt-react'],
     msg: [
       (template) => `${template.replace(FIXTURE_TAG, 'msg')};`,
-      UNSTABLE_HELPERS,
+      HELPERS,
+      'gt-i18n',
     ],
     useGT: [
       (template) =>
         `export function Component() {\n  const t = useGT();\n  return ${template};\n}`,
       HOOK_HELPERS,
+      'gt-react',
     ],
     getGT: [
       (template) =>
         `export async function load() {\n  const t = await getGT();\n  return ${template};\n}`,
       HOOK_HELPERS,
+      'gt-next/server',
     ],
   };
 
@@ -64,11 +68,12 @@ describe('unstableHashInjectionPass', () => {
       '%s',
       async (_name, testCase) => {
         expect(testCase.template).toMatch(FIXTURE_TAG);
-        const [wrap, helpers] = forms[form];
+        const [wrap, helpers, source] = forms[form];
         const output = await compile(
           `${FIXTURE_VALUES}\n${wrap(testCase.template)}`,
           undefined,
-          helpers
+          helpers,
+          source
         );
         if (testCase.template.includes('derive(')) {
           // derive() values are resolved by the runtime, which hashes them.
@@ -87,10 +92,19 @@ describe('unstableHashInjectionPass', () => {
       dataFormat: 'MESSAGE_TREE',
       context: 'button',
     });
-    const output = await compile("t`Save`;\nt({ context: 'button' })`Save`;");
+    const greeting = hashSource({
+      source: ['Hello ', ['name']],
+      dataFormat: 'MESSAGE_TREE',
+    });
+    const output = await compile(
+      "t`Save`;\nt({ context: 'button' })`Save`;\nt`Hello ${{ name }}`;"
+    );
     expect(output).toContain(`t({ $_hash: "${save}" })\`Save\``);
     expect(output).toContain(
       `t({ context: 'button', $_hash: "${button}" })\`Save\``
+    );
+    expect(output).toContain(
+      `t({ $_hash: "${greeting}" })\`Hello \${{ name }}\``
     );
   });
 
@@ -323,11 +337,15 @@ describe('unstableHashInjectionPass', () => {
     expect(await compile('t`Save`;', { compileTimeHash: false })).toBeNull();
   });
 
-  it('ignores the same names imported from legacy sources', async () => {
-    const output = await transformWithPlugin(
-      undefined,
-      "import { useGT } from 'gt-react';\nimport { msg } from 'gt-i18n/unstable';\nconst t = useGT();\nt`Save`;"
-    );
-    expect(output).toBeNull();
+  it.each([
+    ['i18next', "import { t } from 'i18next';\nt`Save`;"],
+    ['a compat entry', "import { t } from 'gt-react/compat';\nt`Save`;"],
+    ['no import', 't`Save`;'],
+    [
+      'no import next to a hook from a GT entry',
+      "import { useGT } from 'gt-react';\nconst gt = useGT();\nt`Save`;",
+    ],
+  ])('leaves a t tag from %s untouched', async (_name, code) => {
+    expect(await transformWithPlugin(undefined, code)).toBeNull();
   });
 });

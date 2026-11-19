@@ -52,12 +52,9 @@ export const BRANCH_COMPONENT_NAME = 'Branch';
 export const PLURAL_COMPONENT_NAME = 'Plural';
 
 // Functions
-export const USE_GT_FUNCTION_NAME = 'useGT';
-export const GET_GT_FUNCTION_NAME = 'getGT';
 export const USE_MESSAGES_FUNCTION_NAME = 'useMessages';
 export const GET_MESSAGES_FUNCTION_NAME = 'getMessages';
 export const MSG_FUNCTION_NAME = 'msg';
-export const DERIVE_FUNCTION_NAME = 'derive';
 
 export const GT_COMPONENT_NAMES = [
   T_COMPONENT_NAME,
@@ -80,12 +77,6 @@ export const BRANCH_COMPONENT_NAMES = [
   PLURAL_COMPONENT_NAME,
 ];
 
-// const t = useGT(); const t = await getGT();
-export const GT_CALLBACK_DECLARATOR_FUNCTION_NAMES = [
-  USE_GT_FUNCTION_NAME,
-  GET_GT_FUNCTION_NAME,
-];
-
 // Error: any non-string literal, number literal, boolean literal, null literal, template literal (no interpolation)
 export const ALLOWED_JSX_EXPRESSIONS = [
   TSESTree.AST_NODE_TYPES.Literal,
@@ -99,24 +90,6 @@ export const ALLOWED_BRANCH_ATTRIBUTE_JSX_EXPRESSIONS = [
   TSESTree.AST_NODE_TYPES.JSXElement,
   TSESTree.AST_NODE_TYPES.JSXFragment,
 ];
-
-// Sugar variables (options object metadata keys)
-export const CONTEXT_OPTION_NAME = '$context';
-export const ID_OPTION_NAME = '$id';
-export const FORMAT_OPTION_NAME = '$format';
-export const MAX_CHARS_OPTION_NAME = '$maxChars';
-export const REQUIRES_REVIEW_OPTION_NAME = '$requiresReview';
-
-export const SUGAR_VARIABLE_NAMES = [
-  CONTEXT_OPTION_NAME,
-  ID_OPTION_NAME,
-  FORMAT_OPTION_NAME,
-  MAX_CHARS_OPTION_NAME,
-  REQUIRES_REVIEW_OPTION_NAME,
-] as const;
-
-// Format option values
-export const ICU_FORMAT = 'ICU';
 
 export const RULE_URL =
   'https://generaltranslation.com/docs/react-core-linter/rules/';

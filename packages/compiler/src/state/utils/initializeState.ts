@@ -6,10 +6,7 @@ import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
 import { ErrorTracker } from '../ErrorTracker';
-import {
-  GT_IMPORT_SOURCES,
-  GT_OTHER_FUNCTIONS,
-} from '../../utils/constants/gt/constants';
+import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
 
 const DEFAULT_SETTINGS: PluginSettings = {
   logLevel: 'warn',
@@ -18,17 +15,11 @@ const DEFAULT_SETTINGS: PluginSettings = {
   // ran unconditionally
   compileTimeHash: true,
   disableBuildChecks: false,
-  enableMacroTransform: true,
-  stringTranslationMacro: GT_OTHER_FUNCTIONS.t,
-  enableTaggedTemplate: true,
-  enableTemplateLiteralArg: true,
-  enableConcatenationArg: true,
-  enableMacroImportInjection: true,
   enableAutoJsxInjection: false,
   autoJsxImportSource: GT_IMPORT_SOURCES.GT_REACT,
-  autoderive: { jsx: false, strings: false },
+  autoderive: { jsx: false },
   _debugHashManifest: false,
-  devHotReload: { strings: false, jsx: false },
+  devHotReload: { jsx: false },
 };
 
 /**
@@ -46,7 +37,9 @@ export function initializeState(
     gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? false;
   const rawAutoderive = gtConfig?.files?.gt?.parsingFlags?.autoderive ?? false;
 
-  const autoderive = resolveAutoderive(options.autoderive ?? rawAutoderive);
+  const { jsx: autoderiveJsx } = resolveAutoderive(
+    options.autoderive ?? rawAutoderive
+  );
 
   // Resolve devHotReload (options override gtConfig)
   const rawOptionsDevHotReload = options.devHotReload ?? undefined;
@@ -61,7 +54,7 @@ export function initializeState(
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
     enableAutoJsxInjection, // can be overridden by options.enableAutoJsxInjection
-    autoderive,
+    autoderive: { jsx: autoderiveJsx },
     devHotReload,
     ...restOptions,
     // An explicit undefined in the options must not erase the default.
@@ -79,10 +72,9 @@ export function initializeState(
     statistics: {
       jsxElementCount: 0,
       dynamicContentViolations: 0,
-      macroExpansionsCount: 0,
       jsxInsertionsCount: 0,
       runtimeTranslateCount: 0,
-      unstableHashInjectionsCount: 0,
+      taggedTemplateHashInjectionsCount: 0,
     },
   };
 }

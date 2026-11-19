@@ -23,10 +23,6 @@ export interface PluginConfig
     Pick<GTParsingFlags, 'autoderive' | 'devHotReload'> {
   /** GT Configuration object — pass the parsed gt.config.json to sync settings */
   gtConfig?: GTConfig;
-  /** Enable macro transform (t`...`, t(`...`), t("a" + b)) */
-  enableMacroTransform?: boolean;
-  /** Name of the string translation macro function */
-  stringTranslationMacro?: string;
   /** Package source for components inserted by Auto JSX Injection */
   autoJsxImportSource?: string;
   /** Debug: write a hash → jsxChildren manifest file on build */
@@ -41,36 +37,25 @@ export interface PluginSettings {
   compileTimeHash: boolean;
   disableBuildChecks: boolean;
   filename?: string;
-  enableMacroTransform: boolean;
-  stringTranslationMacro: string;
-  enableTaggedTemplate: boolean;
-  enableTemplateLiteralArg: boolean;
-  enableConcatenationArg: boolean;
-  enableMacroImportInjection: boolean;
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection: boolean;
   /** Package source for components inserted by Auto JSX Injection */
   autoJsxImportSource: string;
-  /** Automatically treat interpolated/concatenated values as derive() calls */
-  autoderive: { jsx: boolean; strings: boolean };
+  /** Automatically treat interpolated values in <T> as derive() calls */
+  autoderive: { jsx: boolean };
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest: boolean;
-  /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
-  devHotReload: { strings: boolean; jsx: boolean };
+  /** Dev hot reload: inject runtime translate calls for <T> content */
+  devHotReload: { jsx: boolean };
 }
 
 /**
- * Resolves the devHotReload config value into separate strings and jsx flags.
- * - `true` enables strings only (JSX is handled at runtime via Suspense, no compiler injection needed)
- * - `false` disables both
- * - `{ strings?: boolean; jsx?: boolean }` enables selectively (missing keys default to false)
+ * Resolves the devHotReload config value. Only `{ jsx: true }` injects runtime
+ * translate calls; with `true`, JSX is translated at runtime through Suspense
+ * and needs no compiler injection.
  */
 export function resolveDevHotReload(value: GTParsingFlags['devHotReload']): {
-  strings: boolean;
   jsx: boolean;
 } {
-  if (value === undefined || typeof value === 'boolean') {
-    return { strings: !!value, jsx: false };
-  }
-  return { strings: value.strings ?? false, jsx: value.jsx ?? false };
+  return { jsx: typeof value === 'object' && value.jsx === true };
 }

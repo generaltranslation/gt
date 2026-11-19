@@ -1,10 +1,6 @@
 import { VisitNode } from '@babel/traverse';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
-import {
-  GT_CALLBACK_FUNCTIONS,
-  GT_OTHER_FUNCTIONS,
-} from '../../utils/constants/gt/constants';
 import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { isTranslationComponent } from '../../utils/constants/gt/helpers';
@@ -12,8 +8,6 @@ import { isReactFunction } from '../../utils/constants/react/helpers';
 import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-children/utils/getCalleeNameFromJsxExpressionParam';
 import { injectTComponentParameters } from '../../transform/injection/injectTComponentParameters';
 import { createErrorLocation } from '../../utils/errors';
-import { injectUseGTCallbackParameters } from '../../transform/injection/callbacks/injectUseGTCallbackParameters';
-import { injectStandaloneTFunctionParameters } from '../../transform/injection/injectStandaloneTFunctionParameters';
 
 /**
  * Process call expression:
@@ -42,21 +36,9 @@ export function processCallExpression(
       return;
     }
 
-    // Handle each respective case
-    if (
-      type === 'generaltranslation' &&
-      (canonicalName === GT_CALLBACK_FUNCTIONS.useGT_callback ||
-        canonicalName === GT_CALLBACK_FUNCTIONS.getGT_callback)
-    ) {
-      injectUseGTCallbackParameters(callExprPath, state);
-    } else if (type === 'react' && isReactFunction(canonicalName)) {
+    if (type === 'react' && isReactFunction(canonicalName)) {
       // Handle react variables (jsxDEV, etc.)
       handleReactInvocation(callExpr, state);
-    } else if (
-      type === 'generaltranslation' &&
-      canonicalName === GT_OTHER_FUNCTIONS.t
-    ) {
-      injectStandaloneTFunctionParameters(callExprPath, state);
     }
   };
 }
