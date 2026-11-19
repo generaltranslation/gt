@@ -1639,6 +1639,7 @@ export const unused = (name) => t\`Hello, \${{ name }}!\`;`,
         links = [],
         base = '/',
         baseURI = 'https://app.test/',
+        readyState = 'loading',
       }: {
         unsplit?: { key: string; hashes: Record<string, string> };
         files?: string[];
@@ -1648,6 +1649,7 @@ export const unused = (name) => t\`Hello, \${{ name }}!\`;`,
         base?: string;
         /** The page's URL */
         baseURI?: string;
+        readyState?: DocumentReadyState;
       } = {}
     ) {
       const fetched: string[] = [];
@@ -1690,7 +1692,7 @@ export const unused = (name) => t\`Hello, \${{ name }}!\`;`,
         {
           cookie,
           baseURI,
-          readyState: 'loading',
+          readyState,
           querySelectorAll: () => links,
           addEventListener: (_name: string, parsed: () => void) =>
             (page.parsed = parsed),
@@ -2079,6 +2081,35 @@ export const unused = (name) => t\`Hello, \${{ name }}!\`;`,
         add(link('https://app.test/assets/Glossary-c3.js'));
 
         expect(fetched.slice(before)).toEqual([file]);
+      }
+    );
+
+    it.each([
+      [
+        'one token per locale',
+        { files: FILES },
+        '/assets/Orders-b2.fr.44444444.json',
+      ],
+      [
+        'a map per locale',
+        {
+          maps: { key: 'assets/gt-map' },
+          responses: { '/assets/gt-map.fr.44444444.json': MAP },
+        },
+        '/assets/index-a1.fr.aaaaaaaa.json',
+      ],
+    ])(
+      'with %s, reads the links of a page that is already parsed and watches for no more',
+      async (_name, build, file) => {
+        const { fetched, page } = run('', ['fr'], {
+          ...build,
+          readyState: 'interactive',
+          links: [link('https://app.test/assets/Orders-b2.js')],
+        });
+        await new Promise((resolve) => setTimeout(resolve));
+
+        expect(fetched[fetched.length - 1]).toBe(file);
+        expect(page.observing).toBe(false);
       }
     );
 

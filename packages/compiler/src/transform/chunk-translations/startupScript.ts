@@ -198,6 +198,7 @@ function startPreloadedTranslations(
     }
   };
   document.querySelectorAll('link').forEach(request);
+  if (document.readyState !== 'loading') return;
   const observer = new window.MutationObserver((records) => {
     for (const record of records) {
       record.addedNodes.forEach((node) => {
