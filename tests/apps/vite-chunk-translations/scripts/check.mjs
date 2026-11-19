@@ -193,7 +193,7 @@ const SHELL = {
   footer: 'Acme workspace: All systems operational (Open, Closed)',
 };
 // What a shared module read as it was evaluated
-const STATUSES = 'Order status: Pending, Shipped, Delivered';
+const STATUSES = 'Order status: Pending, Shipped, Delivered (Managed by Ada)';
 const GLOSSARY =
   'InvoiceReceiptRefundShipmentWarehouseCarrierTracking numberDelivery windowBilling addressShipping addressPayment methodDiscount codeSubtotalSales taxOrder totalBackorderReturn labelGift messagePacking slipCustoms formRestocking feeStore credit';
 const ROUTES = {
@@ -661,7 +661,7 @@ if (IMPORT_MAP) {
 }
 
 // Messages of code the bundler dropped: in the catalogs, in no file
-const DEAD = ['never rendered', 'Nobody greets'];
+const DEAD = ['never rendered', 'Nobody greets', 'Archived by'];
 const catalog = readFileSync(join(root, 'src', '_gt', 'fr.json'), 'utf8');
 const written = assets(ON)
   .filter(isTranslationsFile)
@@ -673,6 +673,29 @@ check(
     !DEAD.some((text) => written.toLowerCase().includes(text.toLowerCase())) &&
     written.includes('WELCOME HOME')
 );
+
+// A t template is a call that passes its precomputed message, unless
+// CHECK_PRECOMPUTE=false keeps the template. Either way its translation is
+// in the file of its chunk, also when it has a value.
+const PRECOMPUTED = process.env.CHECK_PRECOMPUTE !== 'false';
+check(
+  `on: t templates are ${PRECOMPUTED ? 'calls with a precomputed message' : 'tagged templates'}`,
+  readFileSync(join(ON, 'assets', chunk('Home')), 'utf8').includes(
+    '$_tree:'
+  ) === PRECOMPUTED
+);
+{
+  const unsplit = readFileSync(join(ON, manifest.unsplit.fr), 'utf8');
+  const home = readFileSync(join(ON, fileOf('Home', 'fr')), 'utf8');
+  const reports = readFileSync(join(ON, fileOf('Reports', 'fr')), 'utf8');
+  check(
+    'on: messages with values are in the files of their chunks, and the unsplit file holds only the msg',
+    home.includes('"HELLO, "') &&
+      reports.includes('"MANAGED BY "') &&
+      Object.values(JSON.parse(unsplit)).sort().join() ===
+        'MAINTENANCE STARTS TONIGHT'
+  );
+}
 
 // ----- Text, requests and flashes ----- //
 

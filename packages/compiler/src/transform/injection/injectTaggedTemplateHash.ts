@@ -1,5 +1,6 @@
 import type { NodePath, Scope } from '@babel/traverse';
 import * as t from '@babel/types';
+import type { MessageTree } from '@generaltranslation/icu';
 import {
   templateToMessage,
   DATE_TIME_CONTEXT_OPTIONS,
@@ -18,6 +19,7 @@ import {
   type GTMessageHelperName,
 } from 'generaltranslation/internal';
 import { TRANSLATION_OPTION_KEYS } from '../../utils/constants/gt/constants';
+import { buildPrecomputedCall, type Binding } from './precomputeMessage';
 
 type OptionKey = keyof MessageTreeHashMetadata;
 
@@ -35,13 +37,22 @@ function nonStatic(): never {
  * skips hashing: t`...` -> t({ $_hash })`...` and
  * t({ context })`...` -> t({ context, $_hash })`...`, for an imported `t`
  * or `msg` and for the result of `const t = useGT()` / `const t = await getGT()`.
- * `onHash` is called with the hash of each rewritten template, and whether it
- * is a `msg`, which `m()` renders away from its call site.
+ *
+ * Where `precompute` returns true, a `t` template becomes a call that passes
+ * its message, built here (see buildPrecomputedCall): t`Hello, ${{ name }}!` ->
+ * t({ $_hash, $_tree }, { name }). `msg` templates, and templates whose
+ * values the call could evaluate differently, keep the form above.
+ * `precompute` is called only for a static `t` template.
+ *
+ * `onHash` is called with the hash of each rewritten template, in either
+ * form, and whether it is a `msg`, which `m()` renders away from its call
+ * site.
  * Returns whether the template was rewritten.
  */
 export function injectTaggedTemplateHash(
   path: NodePath<t.TaggedTemplateExpression>,
-  onHash?: (hash: string, isMsg: boolean) => void
+  onHash?: (hash: string, isMsg: boolean) => void,
+  precompute: () => boolean = () => false
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
@@ -50,13 +61,15 @@ export function injectTaggedTemplateHash(
     : undefined;
   if (!kind) return false;
   let hash: string;
+  let metadata: MessageTreeHashMetadata;
+  let message: StaticMessage;
   try {
-    const metadata = t.isCallExpression(tag)
+    metadata = t.isCallExpression(tag)
       ? parseMessageOptions(tag.arguments)
       : {};
-    const { strings, holes } = templateFragment(quasi, path.scope);
+    message = buildStaticMessage(quasi, path.scope);
     hash = hashSource({
-      source: templateToMessage(strings, holes).tree,
+      source: message.tree,
       dataFormat: 'MESSAGE_TREE',
       ...metadata,
     });
@@ -64,6 +77,21 @@ export function injectTaggedTemplateHash(
     // Non-static or invalid (e.g. a reserved `_gt_` name): skip only this
     // template; the runtime hashes it and reports any error.
     return false;
+  }
+  // msg templates are rendered by m() away from their call site.
+  if (kind === 'gt' && precompute()) {
+    const call = buildPrecomputedCall({
+      callee: callee as t.Identifier,
+      hash,
+      metadata,
+      tree: message.tree,
+      bindings: message.bindings,
+    });
+    if (call) {
+      path.replaceWith(call);
+      onHash?.(hash, false);
+      return true;
+    }
   }
   const hashProperty = t.objectProperty(
     t.identifier(TRANSLATION_OPTION_KEYS.$_hash),
@@ -161,20 +189,48 @@ function parseMessageOptions(
   return metadata;
 }
 
-function templateFragment(
+type StaticMessage = TemplateFragment & {
+  tree: MessageTree;
+  /** The values the template binds, in the order it evaluates them. */
+  bindings: Binding[];
+};
+
+/** A static template's tree, with the expression of each of its variables. */
+function buildStaticMessage(
   quasi: t.TemplateLiteral,
   scope: Scope
+): StaticMessage {
+  const bindings: Binding[] = [];
+  const fragment = templateFragment(quasi, scope, bindings);
+  const built = templateToMessage(fragment.strings, fragment.holes);
+  // The builder numbers each value without a name, in tree order.
+  for (const [name, binding] of built.values) (binding as Binding).name = name;
+  return { ...fragment, tree: built.tree, bindings };
+}
+
+function templateFragment(
+  quasi: t.TemplateLiteral,
+  scope: Scope,
+  bindings: Binding[]
 ): TemplateFragment {
   return {
     strings: quasi.quasis.map(({ value }) => value.cooked ?? nonStatic()),
-    holes: quasi.expressions.map((expression) => getHole(expression, scope)),
+    holes: quasi.expressions.map((expression) =>
+      getHole(expression, scope, bindings)
+    ),
   };
 }
 
-function getHole(hole: t.Expression | t.TSType, scope: Scope): TemplateHole {
+function getHole(
+  hole: t.Expression | t.TSType,
+  scope: Scope,
+  bindings: Binding[]
+): TemplateHole {
   const expression = unwrapTypeScript(hole);
   if (t.isObjectExpression(expression)) {
-    return { kind: 'argument', name: getVariableName(expression) };
+    const name = getVariableName(expression);
+    bindings.push({ name, value: getVariableValue(expression) });
+    return { kind: 'argument', name };
   }
   if (
     t.isIdentifier(expression) &&
@@ -182,11 +238,13 @@ function getHole(hole: t.Expression | t.TSType, scope: Scope): TemplateHole {
   ) {
     return { kind: 'pound' };
   }
-  const fragment = getFragment(expression, scope);
+  const fragment = getFragment(expression, scope, bindings);
   if (fragment) return { kind: 'fragment', ...fragment };
   if (!t.isCallExpression(expression) || !t.isIdentifier(expression.callee)) {
     if (!isPrimitive(expression, scope, newWalk())) nonStatic();
-    return { kind: 'anonymous' };
+    const binding: Binding = { value: hole as t.Expression };
+    bindings.push(binding);
+    return { kind: 'anonymous', value: binding };
   }
   const helper = getHelperName(expression.callee.name, scope);
   const args = expression.arguments;
@@ -196,25 +254,27 @@ function getHole(hole: t.Expression | t.TSType, scope: Scope): TemplateHole {
     case 'select': {
       const [variable, branchesArg] = args;
       if (args.length !== 2 || !t.isObjectExpression(branchesArg)) nonStatic();
-      const holeVariable = getHoleVariable(variable, scope);
+      const binding = getHoleVariable(variable, scope, bindings);
       const branches: Record<string, TemplateBranch> = {};
       for (const property of branchesArg.properties) {
         branches[getPropertyKey(property)] = getBranch(
           (property as t.ObjectProperty).value,
-          scope
+          scope,
+          bindings
         );
       }
-      return { kind: helper, ...holeVariable, branches };
+      return { kind: helper, name: binding.name, value: binding, branches };
     }
     case 'number':
     case 'date':
     case 'time': {
       if (args.length < 1 || args.length > 2) nonStatic();
-      const holeVariable = getHoleVariable(args[0], scope);
-      const options = args[1] && getIntlOptions(args[1], helper);
+      const binding = getHoleVariable(args[0], scope, bindings);
+      const options = args[1] && getIntlOptions(args[1], helper, binding);
       return {
         kind: helper,
-        ...holeVariable,
+        name: binding.name,
+        value: binding,
         ...(options && { options }),
       } as TemplateHole;
     }
@@ -359,18 +419,26 @@ function everyAssignedValue(
   return proven;
 }
 
-function getBranch(value: t.Node, scope: Scope): TemplateBranch {
+function getBranch(
+  value: t.Node,
+  scope: Scope,
+  bindings: Binding[]
+): TemplateBranch {
   if (t.isStringLiteral(value) || t.isTemplateLiteral(value)) {
     return getStaticText(value);
   }
-  return getFragment(value, scope) ?? nonStatic();
+  return getFragment(value, scope, bindings) ?? nonStatic();
 }
 
 /**
  * An inline part`...`; undefined otherwise. Fragments referenced through an
  * identifier are left to the runtime: the object can be mutated before use.
  */
-function getFragment(node: t.Node, scope: Scope): TemplateFragment | undefined {
+function getFragment(
+  node: t.Node,
+  scope: Scope,
+  bindings: Binding[]
+): TemplateFragment | undefined {
   if (
     !t.isTaggedTemplateExpression(node) ||
     !t.isIdentifier(node.tag) ||
@@ -378,7 +446,7 @@ function getFragment(node: t.Node, scope: Scope): TemplateFragment | undefined {
   ) {
     return;
   }
-  return templateFragment(node.quasi, scope);
+  return templateFragment(node.quasi, scope, bindings);
 }
 
 /** Name of `{ name }` / `{ name: value }`: an object literal with one key. */
@@ -388,15 +456,26 @@ function getFragment(node: t.Node, scope: Scope): TemplateFragment | undefined {
  */
 function getHoleVariable(
   node: t.Node | undefined,
-  scope: Scope
-): { name?: string } {
+  scope: Scope,
+  bindings: Binding[]
+): Binding {
   const value = node && unwrapTypeScript(node);
+  let binding: Binding;
   if (!t.isExpression(value) || t.isObjectExpression(value)) {
-    return { name: getVariableName(value) };
+    const name = getVariableName(value);
+    binding = { name, value: getVariableValue(value as t.ObjectExpression) };
+  } else {
+    // An object here is a { name: value } binding at runtime.
+    if (!isPrimitive(value, scope, newWalk())) nonStatic();
+    binding = { value: node as t.Expression };
   }
-  // An object here is a { name: value } binding at runtime.
-  if (!isPrimitive(value, scope, newWalk())) nonStatic();
-  return {};
+  bindings.push(binding);
+  return binding;
+}
+
+/** The value of `{ name }` / `{ name: value }`, once getVariableName accepts it. */
+function getVariableValue(node: t.ObjectExpression): t.Expression {
+  return (node.properties[0] as t.ObjectProperty).value as t.Expression;
 }
 
 function getVariableName(node: t.Node | undefined): string {
@@ -452,7 +531,8 @@ function getNumber(node: t.Node): number | undefined {
  */
 function getIntlOptions(
   node: t.Node,
-  kind: 'number' | 'date' | 'time'
+  kind: 'number' | 'date' | 'time',
+  binding: Binding
 ): Record<string, string | number | boolean> {
   if (!t.isObjectExpression(node)) nonStatic();
   const contextKeys: readonly string[] =
@@ -460,8 +540,11 @@ function getIntlOptions(
   const options: Record<string, string | number | boolean> = {};
   for (const property of node.properties) {
     const key = getPropertyKey(property);
-    if (contextKeys.includes(key)) continue;
     const value = (property as t.ObjectProperty).value;
+    if (contextKeys.includes(key)) {
+      (binding.context ??= []).push({ key, value: value as t.Expression });
+      continue;
+    }
     const number = getNumber(value);
     if (number != null) options[key] = number;
     else if (t.isBooleanLiteral(value)) options[key] = value.value;

@@ -71,6 +71,11 @@ import {
 import { getPageBase } from './transform/chunk-translations/startupScript';
 import { Logger } from './state/Logger';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
+import {
+  createPrecomputedMessageSupport,
+  createRuntimeNotFoundWarning,
+  PRECOMPUTED_MESSAGES_UNSUPPORTED_WARNING,
+} from './transform/injection/precomputedMessageSupport';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
   importsMessageSource,
@@ -276,6 +281,30 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       ...options,
       ...(loadedGTConfig ? { gtConfig: loadedGTConfig } : {}),
     };
+    const findPrecomputedMessageSupport = createPrecomputedMessageSupport();
+    // Each said once per build
+    const warnedOfRuntime = { older: false, missing: false };
+    /**
+     * Whether a file's messages are precomputed when the option is left out:
+     * only when the GT runtime the file resolves is known to read them.
+     */
+    const precomputesMessages = (id: string): boolean => {
+      const directory = path.dirname(id);
+      const support = findPrecomputedMessageSupport(directory);
+      if (support === true) return true;
+      const reason = support === false ? 'older' : 'missing';
+      if (!warnedOfRuntime[reason]) {
+        warnedOfRuntime[reason] = true;
+        if (shouldWarn(options.logLevel)) {
+          console.warn(
+            support === false
+              ? PRECOMPUTED_MESSAGES_UNSUPPORTED_WARNING
+              : createRuntimeNotFoundWarning(directory)
+          );
+        }
+      }
+      return false;
+    };
 
     if (shouldWarn(options.logLevel)) {
       if (gtConfigLoadResult.status === 'missing') {
@@ -374,7 +403,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
 
           // Pass 3b: $_hash injection for tagged templates
           if (state.settings.compileTimeHash && importsMessageSource(ast)) {
-            traverse(ast, taggedTemplateHashInjectionPass(state));
+            traverse(
+              ast,
+              taggedTemplateHashInjectionPass(
+                state,
+                resolvedOptions.precomputeMessages === undefined
+                  ? () => precomputesMessages(id)
+                  : undefined
+              )
+            );
           }
 
           // Pass 4: Runtime translate (dev hot reload)

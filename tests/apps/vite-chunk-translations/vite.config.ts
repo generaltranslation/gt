@@ -49,6 +49,11 @@ export default defineConfig({
       files: { gt: { output: `${translations}/[locale].json` } },
       // CHECK_GT_LOG=debug prints what the build did with the translations
       ...(process.env.CHECK_GT_LOG === 'debug' && { logLevel: 'debug' }),
+      // CHECK_PRECOMPUTE=false keeps the tagged templates of t, which the
+      // compiler otherwise replaces with calls that pass a precomputed message
+      ...(process.env.CHECK_PRECOMPUTE === 'false' && {
+        precomputeMessages: false,
+      }),
     }),
     react(),
     messagesFile !== undefined && collectMessages(messagesFile),

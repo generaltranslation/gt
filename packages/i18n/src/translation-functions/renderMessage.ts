@@ -100,6 +100,78 @@ export function renderMessage(
       });
 }
 
+/**
+ * A call site whose message a compiler built ahead of time: its hash, source
+ * tree and literal options, written at the call and passed to the GT with the
+ * values in place of the template.
+ */
+export type PrecomputedMessage = MessageTreeHashMetadata & {
+  $_hash: string;
+  $_tree: MessageTree;
+  /** The formatting context of the tree's variables, when it is static. */
+  $_formats?: MessageFormats;
+};
+
+const NO_VALUES: Record<string, unknown> = {};
+const NO_FORMATS: MessageFormats = {};
+
+export function isPrecomputedMessage(
+  value: object
+): value is PrecomputedMessage {
+  return (value as PrecomputedMessage).$_tree !== undefined;
+}
+
+/**
+ * Renders a precomputed message like renderMessage renders its template:
+ * the same lookup, validation, formatting, fallback and cutoff.
+ */
+export function renderPrecomputedMessage(
+  site: PrecomputedMessage,
+  values: Record<string, unknown> = NO_VALUES,
+  formats: MessageFormats = site.$_formats ?? NO_FORMATS,
+  locale: string,
+  enabled: boolean,
+  lookupTranslation: LookupTreeTranslation
+): string {
+  const tree = site.$_tree;
+  const hash = site.$_hash;
+  // Disabled skips every lookup, including custom ones with default-locale entries.
+  const entry = enabled
+    ? lookupTranslation(
+        tree,
+        createMessageTreeLookupOptions(tree, locale, site)
+      )
+    : undefined;
+  // The compiler built the site's own tree, the default locale's entry.
+  const translation =
+    entry === tree ? tree : lookupTreeTranslation(entry, locale, hash);
+
+  const config = getI18nConfig();
+  const { maxChars } = site;
+  const defaultLocale = config.getDefaultLocale();
+  let outputLocale = defaultLocale;
+  let output: string | undefined;
+  // An empty translation is the text '', not a missing one.
+  if (translation !== undefined) {
+    try {
+      output = formatTree(translation, locale, values, formats);
+      outputLocale = locale;
+    } catch (error) {
+      warnOnce(
+        `format:${locale}:${hash}`,
+        createTranslationFormatWarning(locale, hash, error)
+      );
+    }
+  }
+  output ??= formatTree(tree, defaultLocale, values, formats);
+  return maxChars == null
+    ? output
+    : formatCutoff(output, {
+        locales: config.resolveCanonicalLocale(outputLocale),
+        maxChars,
+      });
+}
+
 /** The lookup options of a tree in `locale`, hashing it unless `$_hash` is set. */
 export function createMessageTreeLookupOptions(
   tree: MessageTree,
