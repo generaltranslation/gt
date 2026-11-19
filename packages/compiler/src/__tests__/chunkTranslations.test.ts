@@ -33,6 +33,11 @@ import {
   type AssignedChunk,
   type TranslationAssignment,
 } from '../transform/chunk-translations/assignTranslations';
+import {
+  describeChunks,
+  getChunkImportMapOptions,
+  readChunkImportMap,
+} from '../transform/chunk-translations/chunkImportMap';
 import { wrapDynamicImports } from '../transform/chunk-translations/chunkTranslationsModule';
 import {
   CHUNK_TRANSLATIONS_IMPORTS,
@@ -665,6 +670,206 @@ export const { a } = await import(\`./a.js\`);`,
       ).toBeUndefined();
     });
 
+    describe('with a chunk import map', () => {
+      // As Rolldown writes it for Vite's `build.chunkImportMap`: chunks
+      // import each other, and Vite's lists name them, by a name whose hash
+      // stays when a chunk's content changes
+      const IMPORTS = {
+        'assets/Home-name.js': 'assets/Home-file.js',
+        'assets/Help-name.js': 'assets/Help-file.js',
+        'chunks/Orders-name.js': 'chunks/Orders-file.js',
+      };
+      const asset = (imports: object, baseUrl = '/') => ({
+        type: 'asset',
+        source: JSON.stringify({
+          imports: Object.fromEntries(
+            Object.entries(imports).map(([name, file]) => [
+              `${baseUrl}${name}`,
+              `${baseUrl}${file}`,
+            ])
+          ),
+        }),
+      });
+      const WRITTEN = { fileName: 'importmap.json', baseUrl: '/' };
+      const importMap = new Map(Object.entries(IMPORTS));
+      const NAMED = `const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/Home-name.js","assets/shared.js"])))=>i.map(i=>d[i]);\n`;
+      const needsNamedFiles = (target: string) =>
+        target !== 'assets/Help-file.js';
+
+      it.each([
+        ['no options', undefined, undefined],
+        ['options without it', { experimental: {} }, undefined],
+        ['it off', { experimental: { chunkImportMap: false } }, undefined],
+        ['it on', { experimental: { chunkImportMap: true } }, WRITTEN],
+        [
+          "a file and Vite's base",
+          {
+            experimental: {
+              chunkImportMap: {
+                fileName: 'maps/chunks.json',
+                baseUrl: '/app/',
+              },
+            },
+          },
+          { fileName: 'maps/chunks.json', baseUrl: '/app/' },
+        ],
+        [
+          'values that are not strings',
+          { experimental: { chunkImportMap: { fileName: '', baseUrl: 1 } } },
+          WRITTEN,
+        ],
+        ['options that are no object', 'experimental', undefined],
+      ])(
+        'reads where the bundler writes it from %s',
+        (_name, options, expected) => {
+          expect(getChunkImportMapOptions(options)).toEqual(expected);
+        }
+      );
+
+      it.each([
+        ['the root', '/', 'importmap.json', (source: string) => source],
+        ['a base', '/app/', 'importmap.json', (source: string) => source],
+        [
+          'a CDN',
+          'https://cdn.example/app/',
+          'importmap.json',
+          (source: string) => source,
+        ],
+        ['a relative base', './', 'importmap.json', (source: string) => source],
+        [
+          'a file the build names',
+          '/',
+          'maps/chunks.json',
+          (source: string) => source,
+        ],
+        [
+          'bytes',
+          '/',
+          'importmap.json',
+          (source: string) => new TextEncoder().encode(source),
+        ],
+      ])(
+        'reads it from the bundle, written for %s',
+        (_name, baseUrl, fileName, encode) => {
+          const { type, source } = asset(IMPORTS, baseUrl);
+          expect(
+            readChunkImportMap(
+              { [fileName]: { type, source: encode(source) } },
+              { fileName, baseUrl }
+            )
+          ).toEqual(importMap);
+        }
+      );
+
+      it('reads none from a build that writes none, or from a bundle without one, as of a build no chunk of which has a hash in its name', () => {
+        expect(
+          readChunkImportMap({ 'importmap.json': asset(IMPORTS) }, undefined)
+        ).toBeUndefined();
+        expect(readChunkImportMap({}, WRITTEN)).toBeUndefined();
+        expect(
+          readChunkImportMap({ 'importmap.json': { type: 'chunk' } }, WRITTEN)
+        ).toBeUndefined();
+      });
+
+      it.each([
+        ['is not JSON', '{'],
+        ['has no imports', '{}'],
+        ['lists its imports', '{"imports":["/assets/Home-file.js"]}'],
+        ['names what is not a file', '{"imports":{"/assets/Home-name.js":1}}'],
+      ])('fails the build when the file %s', (_name, source) => {
+        expect(() =>
+          readChunkImportMap(
+            { 'importmap.json': { type: 'asset', source } },
+            WRITTEN
+          )
+        ).toThrow(
+          /could not read the chunk import map importmap\.json because it is not an import map as the bundler writes one/
+        );
+      });
+
+      it('reads the file of the chunk an import names, and leaves the name in the code', () => {
+        const chunk = {
+          fileName: 'assets/index-file.js',
+          code: `${NAMED}e(()=>import(\`./Home-name.js\`),\`${P}\`,a,__vite__mapDeps([0,1]));e(()=>import("../chunks/Orders-name.js"),"${P}",a,[]);e(()=>import("./Help-name.js"),"${P}",a,[]);e(()=>import("./plain.js"),"${P}")`,
+        };
+        expect(findImportedChunks(chunk, importMap)).toEqual([
+          'assets/Home-file.js',
+          'chunks/Orders-file.js',
+          'assets/Help-file.js',
+          // In no import map: a chunk without a hash in its name
+          'assets/plain.js',
+        ]);
+        // The file of another chunk in a chunk's code would change with that
+        // chunk's content, while the name of its own file stays
+        expect(
+          replaceImportedChunks(chunk, needsNamedFiles, importMap)
+        ).toEqual({
+          code: `${NAMED}e(()=>import(\`./Home-name.js\`),0,a,__vite__mapDeps([0,1]));e(()=>import("../chunks/Orders-name.js"),"chunks/Orders-name.js",a,[]);e(()=>import("./Help-name.js"),0,a,[]);e(()=>import("./plain.js"),"assets/plain.js")`,
+          unread: 0,
+        });
+        // Without the import map no chunk is found for a name
+        expect(findImportedChunks(chunk)).toEqual([
+          'assets/Home-name.js',
+          'chunks/Orders-name.js',
+          'assets/Help-name.js',
+          'assets/plain.js',
+        ]);
+      });
+
+      it('reads an import by a name that is not a path', () => {
+        const names = new Map([['route:Home', 'assets/Home-file.js']]);
+        const chunk = {
+          fileName: 'assets/index-file.js',
+          code: `e(()=>import("route:Home"),"${P}",a,[])`,
+        };
+        expect(findImportedChunks(chunk, names)).toEqual([
+          'assets/Home-file.js',
+        ]);
+        expect(replaceImportedChunks(chunk, needsNamedFiles, names).code).toBe(
+          `e(()=>import("route:Home"),"route:Home",a,[])`
+        );
+      });
+
+      it('lists what an import needs under the file of its chunk and under its names', () => {
+        const lists = renderImportedFiles(
+          new Map([
+            ['assets/Home-file.js', ['assets/Home-file', 'assets/a']],
+            ['assets/Help-file.js', []],
+            ['assets/plain.js', ['assets/plain']],
+          ]),
+          importMap
+        );
+        expect(lists).toEqual({
+          k: [
+            'assets/a',
+            'assets/Home-file',
+            'assets/Home-name',
+            'assets/plain',
+          ],
+          c: [0, [1, 0, 1], [0, 0, 2], [1]],
+        });
+        // A page preloads a chunk by its file and imports it by its name
+        for (const chunk of ['assets/Home-file.js', 'assets/Home-name.js']) {
+          expect(readImportedFiles(lists, chunk)?.sort()).toEqual([
+            'assets/Home-file',
+            'assets/a',
+          ]);
+        }
+        expect(readImportedFiles(lists, 'assets/Help-name.js')).toBeUndefined();
+      });
+
+      it('names a chunk in a diagnostic by its file and by what the code imports it by', () => {
+        const describeChunk = describeChunks(importMap);
+        expect(describeChunk('assets/Home-file.js')).toBe(
+          'assets/Home-file.js (imported as assets/Home-name.js)'
+        );
+        expect(describeChunk('assets/plain.js')).toBe('assets/plain.js');
+        expect(describeChunks(undefined)('assets/Home.js')).toBe(
+          'assets/Home.js'
+        );
+      });
+    });
+
     it.each([
       [
         'as Rolldown prints it',
@@ -1033,8 +1238,16 @@ export const { a } = await import(\`./a.js\`);`,
       ...rest,
     });
 
-    /** Builds a bundle whose entry holds `code`, and returns what the build wrote and warned. */
-    async function build(code: string, dynamicImports: string[]) {
+    /**
+     * Builds a bundle whose entry holds `code`, and returns what the build
+     * wrote and warned. With `importMap`, the bundler writes that chunk
+     * import map.
+     */
+    async function build(
+      code: string,
+      dynamicImports: string[],
+      importMap?: string
+    ) {
       const created = createPlugins(ON, 'vite', {
         'translations/fr.json': JSON.stringify({ [SAVED]: 'Enregistrer' }),
         'translations/de.json': JSON.stringify({ [SAVED]: 'Speichern' }),
@@ -1047,10 +1260,14 @@ export const { a } = await import(\`./a.js\`);`,
       const [first, second] = created.plugins as unknown as {
         vite: {
           configResolved?: (config: object) => void;
+          options?: (options: object) => null;
           generateBundle: unknown;
         };
       }[];
       first.vite.configResolved!({ base: '/', build: { assetsDir: 'assets' } });
+      second.vite.options!({
+        experimental: { chunkImportMap: importMap !== undefined },
+      });
       const bundle: Bundle = {
         'assets/index.js': file('assets/index.js', code, {
           isEntry: true,
@@ -1068,6 +1285,12 @@ export const { a } = await import(\`./a.js\`);`,
           `t({$_hash:"${SAVED}"})\`Save\``
         ),
       };
+      if (importMap !== undefined) {
+        (bundle as Record<string, object>)['importmap.json'] = {
+          type: 'asset',
+          source: importMap,
+        };
+      }
       const emitted: Record<string, string> = {};
       (
         first.vite.generateBundle as (
@@ -1113,6 +1336,51 @@ export const { a } = await import(\`./a.js\`);`,
         `e(()=>import("./Orders-facade.js"),"assets/Orders-facade.js")`
       );
       expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    // The bundler's chunk import map: the route's chunk is imported by a
+    // name that no file has
+    const IMPORT_MAP = JSON.stringify({
+      imports: { '/assets/Orders-name.js': '/assets/Orders.js' },
+    });
+
+    it('finds the chunk an import names through the chunk import map, and lists its files under that name too', async () => {
+      const { bundle, emitted, name } = await build(
+        `e(()=>import("./Orders-name.js"),"${P}")`,
+        ['assets/Orders.js'],
+        IMPORT_MAP
+      );
+      const manifest = JSON.parse(emitted['assets/gt-chunk-translations.json']);
+      expect(manifest.imports['assets/Orders.js']).toEqual(['assets/Orders']);
+      expect(JSON.parse(emitted['assets/index.fr']).i).toEqual({
+        k: ['assets/Orders', 'assets/Orders-name'],
+        c: [[1], [0, 0, 1]],
+      });
+      name();
+      expect(bundle['assets/index.js'].code).toBe(
+        `e(()=>import("./Orders-name.js"),"assets/Orders-name.js")`
+      );
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('says by which name the code imports a chunk that an import it did not wrap loads', async () => {
+      const { name } = await build(
+        `import("./Orders-name.js")`,
+        ['assets/Orders.js'],
+        IMPORT_MAP
+      );
+      name();
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /Nothing waits for the translations of assets\/Orders\.js \(imported as assets\/Orders-name\.js\).*assets\/index\.js imports assets\/Orders\.js \(imported as assets\/Orders-name\.js\)/s
+        )
+      );
+    });
+
+    it('fails when the chunk import map of the build is not one', async () => {
+      await expect(
+        build(`e(()=>import("./Orders-name.js"),"${P}")`, [], '[]')
+      ).rejects.toThrow('could not read the chunk import map importmap.json');
     });
 
     it('fails when it cannot read an import that loads translations', async () => {

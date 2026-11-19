@@ -23,6 +23,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const NAMING = process.argv[2] ?? 'token';
 const ON = join(root, '.check', NAMING === 'token' ? 'on' : NAMING);
 const OFF = join(root, '.check', 'off');
+// CHECK_IMPORT_MAP=true makes every build with Vite's chunk import map
+// (`build.chunkImportMap`), by which chunks import each other
+const IMPORT_MAP = process.env.CHECK_IMPORT_MAP === 'true';
 // gt-react's default; the app waits this long for a file that never arrives
 const TIMEOUT_MS = 10_000;
 // How long a check holds a translations file back
@@ -631,8 +634,31 @@ check(
 );
 check(
   'on: every file is in the assets directory',
-  readdirSync(ON).sort().join() === 'assets,index.html'
+  // The import map is the bundler's, which the page holds a copy of
+  readdirSync(ON).sort().join() ===
+    (IMPORT_MAP ? 'assets,importmap.json,index.html' : 'assets,index.html')
 );
+if (IMPORT_MAP) {
+  // What the bundler wrote: a name for each chunk whose file has a hash,
+  // which other chunks import it by and which no file has
+  const { imports } = JSON.parse(
+    readFileSync(join(ON, 'importmap.json'), 'utf8')
+  );
+  const page = readFileSync(join(ON, 'index.html'), 'utf8');
+  const [name, file] = Object.entries(imports).find(([, file]) =>
+    file.startsWith('/assets/Home-')
+  );
+  const importer = readFileSync(join(ON, 'assets', chunk('App')), 'utf8');
+  check(
+    'an import map: the page holds it, and chunks import each other by a name that no file has',
+    page.includes('<script type="importmap">') &&
+      !assets(ON).includes(name.split('/').pop()) &&
+      assets(ON).includes(file.split('/').pop()) &&
+      importer.includes(`./${name.split('/').pop()}`) &&
+      !importer.includes(file.split('/').pop()),
+    `${name} is ${file}`
+  );
+}
 
 // Messages of code the bundler dropped: in the catalogs, in no file
 const DEAD = ['never rendered', 'Nobody greets'];
@@ -784,12 +810,20 @@ if (manifest.maps) {
 {
   const preload = (name) =>
     `<link rel="modulepreload" crossorigin href="${chunkOf(name)}">`;
-  /** The build's page with a link for each chunk, above and below the startup script. */
+  /**
+   * The build's page with a link for each chunk, above and below the startup
+   * script. A page cannot preload a module above its import map, which the
+   * bundler writes below the startup script: with one, the first links are
+   * right below it.
+   */
   const writePreloaded = (page, above, below) =>
     writeFileSync(
       join(ON, page),
       readFileSync(join(ON, 'index.html'), 'utf8')
-        .replace('<head>', `<head>${above.map(preload).join('')}`)
+        .replace(
+          IMPORT_MAP ? /<script type="importmap">.*?<\/script>/s : '<head>',
+          (before) => `${before}${above.map(preload).join('')}`
+        )
         .replace('</head>', `${below.map(preload).join('')}</head>`)
     );
   writePreloaded('preloaded.html', ['App', 'Orders'], ['Glossary', 'Badge']);
@@ -1159,8 +1193,10 @@ if (manifest.maps) {
 
 // A build with a relative base, whose page is in a directory: Vite writes
 // the page's own URLs a directory up, and the translation files are there
-// too, also once the app has changed the page's URL.
-{
+// too, also once the app has changed the page's URL. Not with an import
+// map: Vite writes its names relative to the page, where no chunk is, so
+// such a page does not load with or without chunk translations.
+if (!IMPORT_MAP) {
   const outDir = join(root, '.check', `${NAMING}-relative`);
   build(outDir, true, undefined, 'pages/nested.html', './');
   const relative = await serve(outDir);
@@ -1201,6 +1237,10 @@ if (manifest.maps) {
 // The bundler names a chunk by its content and by the names of the chunks it
 // imports, so the change renames every chunk on the way up to the entry, and
 // no translation changes.
+// With an import map the statement is added to the Home route, and renames
+// its chunk alone: the chunks that import it name it as before, and so does
+// the copy of them a returning visitor holds. What they name it by has to
+// find its translation files in the next build too.
 // - With one token per locale a file's name follows from its chunk's, so the
 //   translation files are renamed with their chunks and a returning visitor
 //   requests them again.
@@ -1210,19 +1250,29 @@ const redeploy = await (async () => {
   const changed = join(root, '.check', `${NAMING}-revision`);
   build(changed, true, undefined, undefined, undefined, 'next');
   const [before, after] = [read(ON), read(changed)];
-  const { renamed } = compare(before, after);
+  const { renamed, rewritten } = compare(before, after);
   const chunks = renamed.filter((file) => file.endsWith('.js'));
   const files = renamed.filter(isTranslationsFile);
   const held = new Set(before.values());
   const unchanged = files.filter((file) => held.has(after.get(file)));
   const next = JSON.parse(after.get('assets/gt-chunk-translations.json'));
-  check(
-    'a change to JavaScript alone renames the chunks on the way up to the entry',
-    ['Badge', 'Home', 'Orders', 'Reports', 'Settings', 'App', 'index'].every(
-      (name) => chunks.some((file) => file.startsWith(`assets/${name}-`))
-    ),
-    `${chunks.length} of ${[...after.keys()].filter((file) => file.endsWith('.js')).length} chunks`
-  );
+  if (IMPORT_MAP) {
+    check(
+      'an import map: a change to JavaScript alone renames the chunk it is in, and the code of no other chunk changes',
+      chunks.length === 1 &&
+        chunks[0].startsWith('assets/Home-') &&
+        !rewritten.some((file) => file.endsWith('.js')),
+      [...chunks, ...rewritten].join(', ')
+    );
+  } else {
+    check(
+      'a change to JavaScript alone renames the chunks on the way up to the entry',
+      ['Badge', 'Home', 'Orders', 'Reports', 'Settings', 'App', 'index'].every(
+        (name) => chunks.some((file) => file.startsWith(`assets/${name}-`))
+      ),
+      `${chunks.length} of ${[...after.keys()].filter((file) => file.endsWith('.js')).length} chunks`
+    );
+  }
   if (manifest.maps) {
     check(
       'a change to JavaScript alone renames no file that holds translations, only the maps',
@@ -1257,6 +1307,13 @@ const redeploy = await (async () => {
   const first = await visit('a first visit, fr');
   deploys.deploy(changed);
   const again = await visit('a visit after only JavaScript changed, fr');
+  if (IMPORT_MAP) {
+    check(
+      'an import map: the chunks a returning visitor holds find the files of the renamed one',
+      !app.warnings.length,
+      app.warnings.join(' | ')
+    );
+  }
   await app.close();
   deploys.close();
   const requested = again.filter(isTranslationsFile);

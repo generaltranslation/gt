@@ -20,6 +20,11 @@ import { injectionPass } from './passes/injectionPass';
 import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import {
+  describeChunks,
+  getChunkImportMapOptions,
+  readChunkImportMap,
+} from './transform/chunk-translations/chunkImportMap';
+import {
   CHUNK_TRANSLATIONS_SOURCE,
   UNSPLIT_LOADER_PLACEHOLDER,
   getChunkTranslations,
@@ -456,6 +461,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         replaceUnsplitLoader(passed, Object.keys(unsplit).length > 0) ?? null
       );
     }
+    // The bundler's options say whether it writes a chunk import map
+    const readBundlerOptions = (bundlerOptions: unknown): null => {
+      chunkTranslations.importMap = getChunkImportMapOptions(bundlerOptions);
+      return null;
+    };
     // After Vite has listed the chunks each dynamic import preloads
     const nameImportedChunks = {
       order: 'post',
@@ -473,6 +483,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       ): void {
         if (!isProduction()) return;
         const needsFiles = (target: string) => imported.has(target);
+        const importMap = readChunkImportMap(
+          bundle,
+          chunkTranslations.importMap
+        );
+        const describeChunk = describeChunks(importMap);
         // An import that loads translations and that nothing gates: one the
         // build could not read is its failure, one it never wrapped is not
         const unread: UngatedImports[] = [];
@@ -483,13 +498,18 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           const source = { fileName: chunk.fileName, code: chunk.code };
           const ungated = findUngatedImports(
             chunk,
-            findImportedChunks(source),
+            findImportedChunks(source, importMap),
             needsFiles,
             isLoadedWith
           );
-          const replaced = replaceImportedChunks(source, needsFiles);
+          const replaced = replaceImportedChunks(source, needsFiles, importMap);
           if (replaced.code !== chunk.code) chunk.code = replaced.code;
-          if (ungated) (replaced.unread ? unread : unwrapped).push(ungated);
+          if (ungated) {
+            (replaced.unread ? unread : unwrapped).push({
+              ...ungated,
+              targets: ungated.targets.map(describeChunk),
+            });
+          }
         }
         if (unread.length) throw new Error(createUnreadImportsError(unread));
         if (unwrapped.length && shouldWarn(options.logLevel)) {
@@ -536,7 +556,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         // After the plugins that write dynamic imports, such as Vite's glob imports
         name: '@generaltranslation/GT_PLUGIN:chunk-translations',
         enforce: 'post',
-        vite: { generateBundle: nameImportedChunks },
+        vite: {
+          options: readBundlerOptions,
+          generateBundle: nameImportedChunks,
+        },
         transformInclude(id: string) {
           return !isDependency(id);
         },

@@ -1,4 +1,5 @@
 import path from 'node:path';
+import type { ChunkImportMap } from './chunkImportMap';
 import { IMPORTED_CHUNKS_PLACEHOLDER } from './resolveChunkTranslations';
 
 /** A chunk the bundler wrote, with the messages its final code can render. */
@@ -35,6 +36,12 @@ export type TranslationAssignment = {
    * file, on a page that started from an entry.
    */
   imports: Map<string, string[]>;
+  /**
+   * The chunk import map of the build, when it has one: the lists a page is
+   * sent then know an imported chunk by its names there too (see
+   * renderImportedFiles).
+   */
+  importMap?: ChunkImportMap;
 };
 
 /**
@@ -381,15 +388,38 @@ export type ImportedFiles = {
 };
 
 /**
+ * `imports` with each chunk also under every name the chunk import map has
+ * for it. gt-react finds an import's files by what the importing chunk's
+ * code says of the imported one, which with an import map is its name: the
+ * code of a chunk cannot hold the file of another, or it would change with
+ * that chunk's content while the name of its own file stays.
+ */
+export function addChunkNames<Keys>(
+  imports: ReadonlyMap<string, Keys>,
+  importMap: ChunkImportMap | undefined
+): Map<string, Keys> {
+  const named = new Map(imports);
+  for (const [name, file] of importMap ?? []) {
+    const keys = imports.get(file);
+    if (keys !== undefined && !named.has(name)) named.set(name, keys);
+  }
+  return named;
+}
+
+/**
  * Undefined when no import needs a file. A chunk whose import needs none is
  * in no list, which is how gt-react finds nothing to request for it.
+ *
+ * With a chunk import map, a chunk is listed under its file, as a page
+ * preloads it, and under its names, as a page imports it: see addChunkNames.
  */
 export function renderImportedFiles(
-  imports: ReadonlyMap<string, readonly string[]>
+  imports: ReadonlyMap<string, readonly string[]>,
+  importMap?: ChunkImportMap
 ): ImportedFiles | undefined {
   const uses = new Map<string, number>();
   const needs: [string, readonly string[]][] = [];
-  for (const [target, keys] of imports) {
+  for (const [target, keys] of addChunkNames(imports, importMap)) {
     if (!keys.length) continue;
     const own = getChunkKey(target);
     needs.push([own, keys]);
@@ -505,21 +535,38 @@ const WRAPPED_IMPORT = new RegExp(
 );
 
 /**
+ * What a dynamic import in a chunk of `directory` names, and the file of the
+ * chunk it loads: the same without an import map.
+ */
+function resolveImportedChunk(
+  directory: string,
+  specifier: string,
+  importMap: ChunkImportMap | undefined
+): { name: string; file: string } {
+  const joined = path.posix.join(directory, specifier);
+  // A specifier that is not a path is a name as it is written
+  const name =
+    importMap?.has(specifier) && !importMap.has(joined) ? specifier : joined;
+  return { name, file: importMap?.get(name) ?? name };
+}
+
+/**
  * The files of the chunks that the wrapped dynamic imports in a chunk's
  * final code load, read from the code itself. That is what a page imports,
  * whatever the bundler reports as the chunk's dynamic imports: an import can
  * load a chunk that only passes another chunk's exports on.
+ * @param importMap The chunk import map of the build, when it has one.
  */
-export function findImportedChunks(chunk: {
-  fileName: string;
-  code: string;
-}): string[] {
+export function findImportedChunks(
+  chunk: { fileName: string; code: string },
+  importMap?: ChunkImportMap
+): string[] {
   if (!chunk.code.includes(IMPORTED_CHUNKS_PLACEHOLDER)) return [];
   const directory = path.posix.dirname(chunk.fileName);
   return [
     ...new Set(
-      [...chunk.code.matchAll(WRAPPED_IMPORT)].map((match) =>
-        path.posix.join(directory, match[3])
+      [...chunk.code.matchAll(WRAPPED_IMPORT)].map(
+        (match) => resolveImportedChunk(directory, match[3], importMap).file
       )
     ),
   ];
@@ -542,7 +589,9 @@ const PRELOADED_CHUNKS = /\bm\.f\s*=\s*(\[[^\]]*\])/;
  * lists. So an import costs a page no more than Vite's own.
  *
  * Runs after Vite has written its lists. The import is read from the code
- * itself, where it names the chunk the bundler wrote.
+ * itself, where it names the chunk the bundler wrote. In a build with a
+ * chunk import map the code and Vite's lists hold the chunk's name there,
+ * and so does what replaces the placeholder: see addChunkNames.
  *
  * A wrapped import the code shows no chunk for gets 0 and runs without
  * waiting. Where the bundler put the imported module into a chunk the page
@@ -551,10 +600,12 @@ const PRELOADED_CHUNKS = /\bm\.f\s*=\s*(\[[^\]]*\])/;
  * read. See findUngatedImports.
  *
  * @param needsFiles Whether the import of a chunk needs any file.
+ * @param importMap The chunk import map of the build, when it has one.
  */
 export function replaceImportedChunks(
   chunk: { fileName: string; code: string },
-  needsFiles: (target: string) => boolean
+  needsFiles: (target: string) => boolean,
+  importMap?: ChunkImportMap
 ): { code: string; unread: number } {
   if (!chunk.code.includes(IMPORTED_CHUNKS_PLACEHOLDER)) {
     return { code: chunk.code, unread: 0 };
@@ -577,9 +628,13 @@ export function replaceImportedChunks(
       after = '',
       first?: string
     ) => {
-      const target = path.posix.join(directory, specifier);
-      const listed = first !== undefined && preloaded[Number(first)] === target;
-      return `${before}${listed || !needsFiles(target) ? '0' : JSON.stringify(target)}${after}`;
+      const { name, file } = resolveImportedChunk(
+        directory,
+        specifier,
+        importMap
+      );
+      const listed = first !== undefined && preloaded[Number(first)] === name;
+      return `${before}${listed || !needsFiles(file) ? '0' : JSON.stringify(name)}${after}`;
     }
   );
   return {

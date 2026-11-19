@@ -20,6 +20,7 @@ import {
   type UncoveredChunkMessage,
   type UngatedImports,
 } from './assignTranslations';
+import { readChunkImportMap } from './chunkImportMap';
 import {
   CHUNK_TRANSLATIONS_MANIFEST,
   type ChunkTranslations,
@@ -307,7 +308,10 @@ export function renderChunkTranslations(
     });
   }
 
-  const imported = renderImportedFiles(assignment.imports);
+  const imported = renderImportedFiles(
+    assignment.imports,
+    assignment.importMap
+  );
   const tokens: Record<string, string> = {};
   for (const locale of locales) {
     const sources = [...assignment.files].map(
@@ -431,10 +435,11 @@ function getFileName(key: string, locale: string, hash: string): string {
  * entry chunk, by its file, the locales without a translations file, the
  * unsplit files it wrote, and the chunks whose dynamic import needs a file.
  *
- * A dynamic import loads the chunk its final code names, so those chunks are
- * import targets next to the ones the bundler reports. The build fails when
- * the lists it is about to write leave a load without a message it runs
- * (see findUncoveredChunkMessages).
+ * A dynamic import loads the chunk its final code names, through the chunk
+ * import map when the build has one, so those chunks are import targets next
+ * to the ones the bundler reports. The build fails when the lists it is
+ * about to write leave a load without a message it runs (see
+ * findUncoveredChunkMessages).
  */
 export function writeChunkTranslations(
   bundle: Record<string, BundleFile>,
@@ -472,10 +477,11 @@ export function writeChunkTranslations(
     ): file is BundleFile & Omit<AssignedChunk, 'hashes'> & { code: string } =>
       file.type === 'chunk' && typeof file.code === 'string'
   );
+  const importMap = readChunkImportMap(bundle, build.importMap);
   const table = loadChunkTranslationsTable(gtFiles, build);
   const assigned: AssignedChunk[] = chunks.map(
     ({ fileName, code, imports, dynamicImports, isEntry }) => {
-      const loaded = findImportedChunks({ fileName, code }).filter(
+      const loaded = findImportedChunks({ fileName, code }, importMap).filter(
         (file) => bundle[file]?.type === 'chunk'
       );
       return {
@@ -487,11 +493,11 @@ export function writeChunkTranslations(
       };
     }
   );
-  const assignment = assignTranslationsByChunk(assigned);
+  const assignment = { ...assignTranslationsByChunk(assigned), importMap };
   const uncovered = findUncoveredChunkMessages(
     assigned,
     assignment,
-    renderImportedFiles(assignment.imports)
+    renderImportedFiles(assignment.imports, importMap)
   );
   if (uncovered.length) {
     throw new Error(createUncoveredChunkMessagesError(uncovered));

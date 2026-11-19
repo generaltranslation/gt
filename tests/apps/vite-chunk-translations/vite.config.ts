@@ -14,9 +14,17 @@ const messagesFile = process.env.CHECK_MESSAGES;
 // more from a copy with a changed translation.
 const translations = process.env.CHECK_TRANSLATIONS ?? resolve('src/_gt');
 
+// CHECK_IMPORT_MAP=true builds with Vite's chunk import map
+// (`build.chunkImportMap`): chunks import each other by a name that stays
+// when a chunk's content changes, which the page's import map resolves.
+const importMap = process.env.CHECK_IMPORT_MAP === 'true';
+
 // scripts/check.mjs also builds the app with a change to its JavaScript
-// alone, in a module every route imports, which renames their chunks.
+// alone, in a module every route imports, which renames their chunks. With
+// an import map the change renames only its own chunk, so it is in a route
+// there, whose chunk has a translations file.
 const revision = process.env.CHECK_REVISION;
+const revised = importMap ? 'routes/Home.tsx' : 'shared/Badge.tsx';
 
 export default defineConfig({
   plugins: [
@@ -29,7 +37,7 @@ export default defineConfig({
     revision !== undefined && {
       name: 'check-revision',
       transform: (code: string, id: string) =>
-        id.endsWith('/src/shared/Badge.tsx')
+        id.endsWith(`/src/${revised}`)
           ? `${code}\nwindow.__revision = ${JSON.stringify(revision)};`
           : null,
     },
@@ -44,6 +52,7 @@ export default defineConfig({
   base: process.env.CHECK_BASE,
   build: {
     outDir: process.env.CHECK_OUT_DIR ?? 'dist',
+    chunkImportMap: importMap,
     // plain.html is the app without messages that are not split by chunk,
     // start.html the app started without a top-level await
     rollupOptions: {

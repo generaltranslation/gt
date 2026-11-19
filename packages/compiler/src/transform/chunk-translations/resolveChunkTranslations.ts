@@ -1,5 +1,6 @@
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import type { ChunkImportMapOptions } from './chunkImportMap';
 import type { GTConfig } from '../../config';
 
 /**
@@ -75,6 +76,11 @@ export type ChunkTranslations = {
    * file, also when another call site reads the same hash from a chunk's.
    */
   unsplit: Set<string>;
+  /**
+   * Where the bundler writes its chunk import map, when it writes one: set
+   * from the bundler's options, once the build has them.
+   */
+  importMap?: ChunkImportMapOptions;
   naming: ChunkTranslationsNaming;
 };
 
