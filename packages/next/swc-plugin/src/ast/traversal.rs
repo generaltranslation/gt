@@ -783,7 +783,7 @@ mod tests {
   fn create_jsx_text(content: &str) -> JSXText {
     JSXText {
       span: DUMMY_SP,
-      value: Atom::new(content),
+      value: Atom::new(content).into(),
       raw: Atom::new(content),
     }
   }

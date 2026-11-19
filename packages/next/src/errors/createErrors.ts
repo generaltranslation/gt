@@ -167,7 +167,12 @@ export const customGetRegionUnresolvedWarning = createGtNextDiagnostic({
 
 export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
   type === 'swc'
-    ? `gt-next (plugin): The GT swc compiler is compatible with < next@${SWC_PLUGIN_SUPPORT}. Skipping compiler optimizations.`
+    ? createGtNextPluginDiagnostic({
+        severity: 'Warning',
+        whatHappened: `The GT SWC compiler requires next@${SWC_PLUGIN_SUPPORT} or newer`,
+        wayOut: 'Compiler optimizations are skipped for this build',
+        fix: `Update Next.js to ${SWC_PLUGIN_SUPPORT} or newer, or set experimentalCompilerOptions: { type: 'babel' }`,
+      })
     : `gt-next (plugin): The GT babel compiler requires react@${BABEL_PLUGIN_SUPPORT} or newer. Skipping compiler optimizations.`;
 
 export const babelCompilerTurbopackUnavailableWarning =
@@ -175,5 +180,3 @@ export const babelCompilerTurbopackUnavailableWarning =
   `To use compiler optimizations with Turbopack, set experimentalCompilerOptions: { type: 'swc' }.`;
 
 export const disablingCompileTimeHashWarning = `gt-next (plugin): Compile-time hash is disabled. Compiler optimizations are inactive.`;
-
-export const swcPluginCompatibilityChangeWarning = `gt-next (plugin): As of gt-next@6.12.4, SWC plugin support is disabled for Next.js versions prior to ${SWC_PLUGIN_SUPPORT}. Update to the latest version of Next.js.`;
