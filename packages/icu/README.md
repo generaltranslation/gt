@@ -12,6 +12,8 @@ no locale-data polyfills are shipped.
   a message, `messageToIcu()` prints a message as an ICU string,
   `messageTreeToIcu()` prints its tree alone, and `checkTranslation()` and
   `checkIcuTranslation()` check a translation against its source.
+  `getPluralCategories()` and `isExactKey()` are the two plural rules those
+  checks apply, for a format that keeps plural branches another way.
 - `@generaltranslation/icu/parser`: the ICU string parser. `parse()`,
   `formatIcu()`, `printAST()` and the syntax-tree types.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
@@ -136,6 +138,22 @@ checkTranslation(
 );
 // 'The translation does not match its source: "n" is not shown when g is
 //  other, as it is in the source.'
+```
+
+A format that keeps plural branches another way, such as stored JSX, applies
+the same two rules through `getPluralCategories()` and `isExactKey()`:
+
+```ts
+import {
+  getPluralCategories,
+  isExactKey,
+} from '@generaltranslation/icu/convert';
+
+getPluralCategories('ru', 'cardinal'); // ['one', 'few', 'many', 'other']
+getPluralCategories('fr', 'ordinal'); // ['one', 'other']
+getPluralCategories('tlh', 'cardinal'); // undefined: Intl has no rules for it
+isExactKey('=1'); // true
+isExactKey('=01'); // false
 ```
 
 Use `checkTranslation()` for a message tree, and `checkIcuTranslation()` for

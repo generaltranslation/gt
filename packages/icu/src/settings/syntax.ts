@@ -44,8 +44,10 @@ export function isTagName(name: string): boolean {
 // can be split between the two groups in every way, which takes quadratic time.
 export const DECIMAL_NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
 
-// `=N` as the parser writes it: a safe integer spelled one way, so `=1` and
-// not `=01`.
+/**
+ * Whether a plural branch key is an exact number as the parser writes it: a
+ * safe integer spelled one way, so `=1` and not `=01`.
+ */
 export function isExactKey(key: string): boolean {
   const number = Number(key.slice(1));
   return key === `=${number}` && Number.isSafeInteger(number);

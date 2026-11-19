@@ -3,6 +3,7 @@ import {
   isPluralCategoryKey,
   PLURAL_CATEGORIES,
 } from '../settings/syntax';
+import { getPluralCategories } from './pluralCategories';
 
 export type CheckTranslationOptions = {
   /**
@@ -579,10 +580,7 @@ type PluralLocale = {
   categories: (type: Intl.PluralRuleType) => ReadonlySet<string>;
 };
 
-/**
- * A locale's plural categories, or nothing when Intl has no rules for it:
- * Intl would answer with the host's language instead.
- */
+/** A locale's plural categories, or nothing when Intl has no rules for it. */
 function pluralLocale(locale: string | undefined): PluralLocale | undefined {
   if (!locale || !Intl.PluralRules.supportedLocalesOf(locale).length) {
     return undefined;
@@ -594,8 +592,7 @@ function pluralLocale(locale: string | undefined): PluralLocale | undefined {
     categories: (type) => {
       let categories = built.get(type);
       if (!categories) {
-        const rules = new Intl.PluralRules(locale, { type });
-        categories = new Set(rules.resolvedOptions().pluralCategories);
+        categories = new Set(getPluralCategories(locale, type));
         built.set(type, categories);
       }
       return categories;

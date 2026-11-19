@@ -119,6 +119,8 @@ module.exports = [
   icuImport('{ checkTranslation }', 'convert', '3.5 kB'),
   // At most the parser, which it needs, plus 2.5 kB.
   icuImport('{ checkIcuTranslation }', 'convert', '9 kB'),
+  // Neither rule needs the parser or the checks.
+  icuImport('{ getPluralCategories, isExactKey }', 'convert', '0.5 kB'),
 
   i18n('gt-i18n', 'index'),
   i18n('gt-i18n/internal', 'internal'),
