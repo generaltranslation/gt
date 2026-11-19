@@ -1,8 +1,8 @@
 import { LocaleSelector, T, Var, t, useLocale } from 'gt-react';
 
-// A module-level t() call. It resolves because src/index.ts awaits
+// A module-level t`...` string. It resolves because src/index.ts awaits
 // initializeGTSPA before this module is imported.
-const tagline = t('Runtime i18n, bundled by webpack.');
+const tagline = t`Runtime i18n, bundled by webpack.`;
 
 function Demo() {
   const locale = useLocale();

@@ -35,18 +35,18 @@ export function ModelSelector({
     () => [
       {
         id: 'chat-model-small',
-        name: t('Small model'),
-        description: t('Small model for fast, lightweight tasks'),
+        name: t`Small model`,
+        description: t`Small model for fast, lightweight tasks`,
       },
       {
         id: 'chat-model-large',
-        name: t('Large model'),
-        description: t('Large model for complex, multi-step tasks'),
+        name: t`Large model`,
+        description: t`Large model for complex, multi-step tasks`,
       },
       {
         id: 'chat-model-reasoning',
-        name: t('Reasoning model'),
-        description: t('Uses advanced reasoning'),
+        name: t`Reasoning model`,
+        description: t`Uses advanced reasoning`,
       },
     ],
     [t]
