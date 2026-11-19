@@ -2789,6 +2789,38 @@ export const ready = initializeGTSPA({});`,
       ).toThrow('A translations file and a chunk would share the key');
     });
 
+    it('lists an imported chunk under its names in the chunk import map too, which cannot share a key with a file either', () => {
+      const render = (name: string) =>
+        renderRegionTranslations(
+          {
+            files: new Map([['aa', ['title']]]),
+            entries: new Map(),
+            imports: new Map([['assets/Home-file.js', ['aa']]]),
+            importMap: new Map([[name, 'assets/Home-file.js']]),
+          },
+          { defaultLocale: 'en', locales: ['fr'] },
+          { fr: FR },
+          { base: '/', assetsDir: 'assets', samples: [], unsplit: {} }
+        );
+      const { files, manifest } = render('assets/Home-name.js');
+      // A page preloads the chunk by its file and imports it by its name
+      expect(
+        JSON.parse(
+          files.find(({ fileName }) => fileName === manifest.maps.fr)!.source
+        ).i
+      ).toEqual({
+        k: ['assets/gt-aa', 'assets/Home-file', 'assets/Home-name'],
+        c: [0, [0, 0, 1], [0, 0, 1]],
+        h: ['d7a4dbef'],
+      });
+      expect(manifest.imports).toEqual({
+        'assets/Home-file.js': ['assets/gt-aa'],
+      });
+      expect(() => render('assets/gt-aa.js')).toThrow(
+        'A translations file and a chunk would share the key assets/gt-aa'
+      );
+    });
+
     // A shared chunk holds a date picker that Home uses, an invoice table
     // that only Billing uses and a panel that only Admin uses.
     const HASH = {
@@ -2949,6 +2981,50 @@ export const ready = initializeGTSPA({});`,
         isConservative: false,
         conservativeMessages: 0,
       });
+    });
+
+    it("reads the build's chunk import map from the bundle", () => {
+      createPlugins(ON, 'vite', {
+        'translations/fr.json': JSON.stringify(CATALOG),
+      });
+      const emitted: Record<string, string> = {};
+      writeRegionTranslations(
+        {
+          ...BUNDLE,
+          'importmap.json': {
+            type: 'asset',
+            source: JSON.stringify({
+              imports: { '/assets/Home-name.js': '/assets/Home.js' },
+            }),
+          } as unknown as (typeof BUNDLE)[string],
+        },
+        {
+          defaultLocale: 'en',
+          locales: ['fr'],
+          hashes: new Set(Object.values(HASH)),
+          unsplit: new Set(),
+          importMap: { fileName: 'importmap.json', baseUrl: '/' },
+          naming: 'map',
+          regions: { requestCost: 0, previous: undefined },
+        },
+        {
+          gtFiles: GT_FILES.gt,
+          base: '/',
+          assetsDir: 'assets',
+          emitFile: ({ fileName, source }) => (emitted[fileName] = source),
+          getModuleInfo: getModuleInfo(GRAPH),
+          isLazy: true,
+        }
+      );
+      const manifest = JSON.parse(
+        emitted['assets/gt-chunk-translations.json']
+      ) as RegionTranslationsManifest;
+      const lists = JSON.parse(emitted[manifest.maps.fr]).i;
+      // Which a page holds once the import of the route has run
+      const needed = ['assets/gt-20000000'];
+      expect(manifest.imports['assets/Home.js']).toEqual(needed);
+      expect(readImportedFiles(lists, 'assets/Home.js')).toEqual(needed);
+      expect(readImportedFiles(lists, 'assets/Home-name.js')).toEqual(needed);
     });
 
     describe('an import of a module in the chunk of the module that imports it, which the bundler writes without an import()', () => {

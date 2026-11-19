@@ -37,6 +37,9 @@ const TOGETHER_MS = 10;
 // between the medians of SOURCE_LOADS loads
 const SOURCE_SLACK_MS = 5;
 const SOURCE_LOADS = 9;
+// CHECK_IMPORT_MAP=true makes every build with Vite's chunk import map
+// (`build.chunkImportMap`), by which chunks import each other
+const IMPORT_MAP = process.env.CHECK_IMPORT_MAP === 'true';
 
 /**
  * The builds. `lazy` is Rolldown's `strictExecutionOrder`: a module runs when
@@ -821,7 +824,9 @@ async function checkVariant(name, variant) {
   );
   check(
     'every file is in the assets directory',
-    readdirSync(on.outDir).sort().join() === 'assets,index.html'
+    // The import map is the bundler's, which the page holds a copy of
+    readdirSync(on.outDir).sort().join() ===
+      (IMPORT_MAP ? 'assets,importmap.json,index.html' : 'assets,index.html')
   );
   check(
     "the app's catalogs are not chunks of the build",
@@ -1007,11 +1012,17 @@ async function checkVariant(name, variant) {
     const shared = ['shared', 'Glossary', 'Badge', 'statuses'].filter(
       built.hasChunk
     );
+    // A page cannot preload a module above its import map, which the
+    // bundler writes below the startup script: with one, the first links
+    // are right below it
     const writePreloaded = (page, above, below) =>
       writeFileSync(
         join(on.outDir, page),
         readFileSync(join(on.outDir, 'index.html'), 'utf8')
-          .replace('<head>', `<head>${above.map(link).join('')}`)
+          .replace(
+            IMPORT_MAP ? /<script type="importmap">.*?<\/script>/s : '<head>',
+            (before) => `${before}${above.map(link).join('')}`
+          )
           .replace('</head>', `${below.map(link).join('')}</head>`)
       );
     const listed = (...chunks) => [
@@ -1288,7 +1299,10 @@ async function checkVariant(name, variant) {
   // ----- A relative base ----- //
   // The page is in a directory: the map and every file it lists are found
   // from the build's assets, also once the app has changed the page's URL.
-  {
+  // Not with an import map: Vite writes its names relative to the page,
+  // where no chunk is, so such a page does not load with or without chunk
+  // translations.
+  if (!IMPORT_MAP) {
     const relative = await serve(
       build(`module-${name}-relative`, variant, {
         CHECK_ENTRY: 'pages/nested.html',
@@ -1455,7 +1469,10 @@ async function checkVariant(name, variant) {
     // One statement added to a module every route imports: the bundler
     // renames its chunk and every chunk on the way up to the entry. A file
     // is named by the messages it holds and by no chunk, so only the maps,
-    // which say what each chunk's import needs, change.
+    // which say what each chunk's import needs, change. With an import map
+    // the statement is added to the Home route and renames its chunk alone:
+    // the chunks that import it name it as before, so their code must not
+    // change.
     const revised = compare(
       base,
       read(
@@ -1469,7 +1486,10 @@ async function checkVariant(name, variant) {
     );
     check(
       'a change to JavaScript alone renames chunks, and no translation file but the maps',
-      chunks.length > 1 &&
+      (IMPORT_MAP
+        ? chunks.length === 1 &&
+          !revised.rewritten.some((file) => file.endsWith('.js'))
+        : chunks.length > 1) &&
         sameSet(
           files,
           manifest.locales.map((locale) =>

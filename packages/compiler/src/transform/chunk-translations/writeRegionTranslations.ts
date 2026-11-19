@@ -5,8 +5,10 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
+import { readChunkImportMap, type ChunkImportMap } from './chunkImportMap';
 import type { TranslationsTable } from './loadTranslationFiles';
 import {
+  addChunkNames,
   getChunkKey,
   renderImportedFiles,
   type ImportedFiles,
@@ -255,6 +257,8 @@ export function renderRegionTranslations(
     files: ReadonlyMap<string, readonly string[]>;
     entries: ReadonlyMap<string, readonly string[]>;
     imports: ReadonlyMap<string, readonly string[]>;
+    /** The chunk import map of the build, when it has one */
+    importMap?: ChunkImportMap;
   },
   build: Pick<ChunkTranslations, 'defaultLocale' | 'locales'>,
   table: TranslationsTable,
@@ -305,12 +309,17 @@ export function renderRegionTranslations(
     manifest
   );
   const fileKeys = new Set([...assignment.files.keys()].map(getKey));
-  for (const chunk of assignment.imports.keys()) {
+  // The lists know a chunk by its file and by its names in the import map
+  const listed = addChunkNames(
+    new Map(Object.entries(manifest.imports)),
+    assignment.importMap
+  );
+  for (const chunk of listed.keys()) {
     if (fileKeys.has(getChunkKey(chunk))) {
       throw new Error(createFileKeyClashError(getChunkKey(chunk)));
     }
   }
-  const lists = renderImportedFiles(new Map(Object.entries(manifest.imports)));
+  const lists = renderImportedFiles(listed);
   const mapKey = path.posix.join(assetsDir, TRANSLATIONS_MAP_KEY);
   const mapHashes: Record<string, string> = {};
   const fileHashes: Record<string, Record<string, string>> = {};
@@ -492,6 +501,7 @@ export function writeRegionTranslations(
       typeof file.code === 'string' &&
       file.modules !== undefined
   );
+  const importMap = readChunkImportMap(bundle, build.importMap);
   const table = loadChunkTranslationsTable(gtFiles, build);
   const previous =
     build.regions.previous === undefined
@@ -548,6 +558,7 @@ export function writeRegionTranslations(
         )
       ),
       imports: imports.byChunk,
+      importMap,
     },
     build,
     table,
