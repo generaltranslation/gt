@@ -22,7 +22,7 @@ function Demo() {
             <Var>{String(new Date().getFullYear())}</Var>
           </p>
         </T>
-        <p>{t('A string translated with useGT.')}</p>
+        <p>{t`A string translated with useGT.`}</p>
       </section>
     </main>
   );

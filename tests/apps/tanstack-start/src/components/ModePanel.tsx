@@ -46,7 +46,7 @@ export function ModePanel({
         <p>
           <T>Hello from the root provider.</T>
         </p>
-        <p>{t('A runtime t() string call.')}</p>
+        <p>{t`A runtime t() string call.`}</p>
       </section>
     </main>
   );
