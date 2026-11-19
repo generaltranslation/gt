@@ -1,5 +1,5 @@
 /**
- * experimentalChunkTranslations: a production build writes the translations
+ * experimentalSplitTranslations: a production build writes the translations
  * of each chunk into a file per locale, which call sites read through
  * `gt-react/chunk-translations`. How those files load in a browser is checked
  * by tests/apps/vite-chunk-translations.
@@ -123,7 +123,7 @@ function createPlugins(
 
 const ON: GTUnpluginOptions = {
   gtConfig: GT_CONFIG,
-  experimentalChunkTranslations: true,
+  experimentalSplitTranslations: {},
   // The files compiled here resolve no GT runtime, which a build would say
   precomputeMessages: false,
 };
@@ -202,10 +202,10 @@ export const hello = (name) => t\`Hello, \${{ name }}!\`;
 export const short = () => t({ maxChars: 4 })\`Save\`;
 export const Shared = () => jsx(T, { children: 'Shared by every route' });`;
 
-describe('experimentalChunkTranslations', () => {
+describe('experimentalSplitTranslations', () => {
   beforeEach(() => {
     vi.stubEnv('NODE_ENV', 'production');
-    vi.stubEnv('GT_CHUNK_TRANSLATIONS', '');
+    vi.stubEnv('GT_SPLIT_TRANSLATIONS', '');
   });
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -218,19 +218,26 @@ describe('experimentalChunkTranslations', () => {
       [undefined, '1', true],
       [undefined, 'false', false],
       [undefined, undefined, false],
-      [false, 'true', false],
-      [true, 'false', true],
-    ])('is %s with GT_CHUNK_TRANSLATIONS=%s: %s', (option, env, expected) => {
-      if (env !== undefined) vi.stubEnv('GT_CHUNK_TRANSLATIONS', env);
-      else vi.stubEnv('GT_CHUNK_TRANSLATIONS', undefined as never);
-      expect(getChunkTranslations(option)).toBe(expected);
-    });
+      [{ enabled: false }, 'true', false],
+      [{ enabled: true }, 'false', true],
+      [{}, 'false', true],
+      [{}, undefined, true],
+      [{ enabled: undefined, by: 'module' }, 'false', true],
+    ] as const)(
+      'is %j with GT_SPLIT_TRANSLATIONS=%s: %s',
+      (option, env, expected) => {
+        if (env !== undefined) vi.stubEnv('GT_SPLIT_TRANSLATIONS', env);
+        else vi.stubEnv('GT_SPLIT_TRANSLATIONS', undefined as never);
+        expect(getChunkTranslations(option)).toBe(expected);
+      }
+    );
 
-    it('rejects an environment value that is not a boolean', () => {
-      vi.stubEnv('GT_CHUNK_TRANSLATIONS', 'yes');
+    it('rejects an environment value that is not a boolean, which it reads only without the option', () => {
+      vi.stubEnv('GT_SPLIT_TRANSLATIONS', 'yes');
       expect(() => getChunkTranslations(undefined)).toThrow(
-        'GT_CHUNK_TRANSLATIONS is set to "yes", which is not a boolean'
+        'GT_SPLIT_TRANSLATIONS is set to "yes", which is not a boolean'
       );
+      expect(getChunkTranslations({})).toBe(true);
     });
 
     const BUILD = {
@@ -300,7 +307,7 @@ describe('experimentalChunkTranslations', () => {
     it('fails a production build it cannot be used in, and leaves a dev build alone', () => {
       const { plugins } = createPlugins({
         gtConfig: { ...GT_CONFIG, locales: [] },
-        experimentalChunkTranslations: true,
+        experimentalSplitTranslations: {},
       });
       const buildStart = plugins[0].buildStart as () => void;
       expect(buildStart).toThrow('lists no locale other than the default');
@@ -316,7 +323,7 @@ describe('experimentalChunkTranslations', () => {
 
       const on = createPlugins({
         gtConfig: GT_CONFIG,
-        experimentalChunkTranslations: true,
+        experimentalSplitTranslations: {},
       }).plugins;
       expect(on.map(({ name, enforce }) => [name, enforce])).toEqual([
         ['@generaltranslation/GT_PLUGIN', undefined],
@@ -328,6 +335,15 @@ describe('experimentalChunkTranslations', () => {
         'generateBundle',
         'transformIndexHtml',
       ]);
+
+      vi.stubEnv('GT_SPLIT_TRANSLATIONS', 'true');
+      expect(createPlugins({ gtConfig: GT_CONFIG }).plugins).toHaveLength(2);
+      expect(
+        createPlugins({
+          gtConfig: GT_CONFIG,
+          experimentalSplitTranslations: { enabled: false },
+        }).plugins
+      ).toHaveLength(1);
     });
   });
 
@@ -450,7 +466,7 @@ export const { a } = await import(\`./a.js\`);`,
     it('wraps the dynamic imports of a production build in its second plugin', async () => {
       const { plugins, cwd } = createPlugins({
         gtConfig: GT_CONFIG,
-        experimentalChunkTranslations: true,
+        experimentalSplitTranslations: {},
       });
       const [, { transform: hook, transformInclude }] = plugins as [
         RawPlugin,
@@ -1744,29 +1760,24 @@ export const { a } = await import(\`./a.js\`);`,
     });
 
     it.each([
-      [undefined, undefined, 'token'],
-      [undefined, 'map', 'map'],
-      ['token', 'map', 'token'],
-      ['map', undefined, 'map'],
-    ] as const)(
-      'is chosen by the option %s, then GT_CHUNK_TRANSLATIONS_NAMING=%s: %s',
-      (option, env, expected) => {
-        vi.stubEnv('GT_CHUNK_TRANSLATIONS_NAMING', env as never);
-        expect(getChunkTranslationsNaming(option)).toBe(expected);
-      }
-    );
+      [undefined, 'token'],
+      ['' as never, 'token'],
+      ['token', 'token'],
+      ['map', 'map'],
+    ] as const)('is chosen by the option %s: %s', (option, expected) => {
+      expect(getChunkTranslationsNaming(option)).toBe(expected);
+    });
 
     it('rejects a naming it does not have', () => {
-      vi.stubEnv('GT_CHUNK_TRANSLATIONS_NAMING', 'hash');
-      expect(() => getChunkTranslationsNaming(undefined)).toThrow(
-        '"hash", which is not one of token, map'
+      expect(() => getChunkTranslationsNaming('hash' as never)).toThrow(
+        'The naming of chunk translations is set to "hash", which is not one of token, map. Set experimentalSplitTranslations.naming to one of them.'
       );
     });
 
     it('compiles the app to read the maps, and nothing else differently', async () => {
       const MAPPED = {
         ...ON,
-        experimentalChunkTranslationsNaming: 'map' as const,
+        experimentalSplitTranslations: { naming: 'map' as const },
       };
       const compiled = await transform(MODULE, MAPPED);
       expect(compiled).toContain(
@@ -2891,7 +2902,7 @@ export const ready = initializeGTSPA({});`,
   describe('hash minification', () => {
     const MINIFIED: GTUnpluginOptions = {
       ...ON,
-      experimentalChunkTranslationsMinifyHashes: true,
+      experimentalSplitTranslations: { minifyHashes: true },
     };
     // t`Save` and t`Print`
     const SAVE_TEXT = 'ab72d114d0d156a9';
@@ -2948,33 +2959,40 @@ export const ready = initializeGTSPA({});`,
       [true, 'false', true],
       [false, 'true', false],
     ] as const)(
-      'is chosen by the option %s, then GT_CHUNK_TRANSLATIONS_MINIFY_HASHES=%s: %s',
+      'is chosen by the option %s, then GT_MINIFY_HASHES=%s: %s',
       (option, env, expected) => {
-        vi.stubEnv('GT_CHUNK_TRANSLATIONS_MINIFY_HASHES', env as never);
+        vi.stubEnv('GT_MINIFY_HASHES', env as never);
         expect(getMinifyHashes(option)).toBe(expected);
       }
     );
 
     it('rejects a variable that is not a boolean', () => {
-      vi.stubEnv('GT_CHUNK_TRANSLATIONS_MINIFY_HASHES', '8');
+      vi.stubEnv('GT_MINIFY_HASHES', '8');
       expect(() => getMinifyHashes(undefined)).toThrow(
-        'GT_CHUNK_TRANSLATIONS_MINIFY_HASHES is set to "8", which is not a boolean. Set GT_CHUNK_TRANSLATIONS_MINIFY_HASHES to true or false.'
+        'GT_MINIFY_HASHES is set to "8", which is not a boolean. Set GT_MINIFY_HASHES to true or false.'
       );
     });
 
-    it('fails a production build without chunk translations, and leaves a dev build alone', () => {
-      const { plugins } = createPlugins({
-        gtConfig: GT_CONFIG,
-        experimentalChunkTranslationsMinifyHashes: true,
-      });
-      expect(plugins).toHaveLength(1);
-      const buildStart = plugins[0].buildStart as () => void;
-      expect(buildStart).toThrow(
-        'experimentalChunkTranslationsMinifyHashes is set in a build without experimentalChunkTranslations'
-      );
-      vi.stubEnv('NODE_ENV', 'development');
-      expect(buildStart).not.toThrow();
-    });
+    it.each([
+      ['the option', { enabled: false, minifyHashes: true }, undefined],
+      ['GT_MINIFY_HASHES', undefined, 'true'],
+    ])(
+      'fails a production build without chunk translations that sets it by %s, and leaves a dev build alone',
+      (_, experimentalSplitTranslations, env) => {
+        vi.stubEnv('GT_MINIFY_HASHES', env as never);
+        const { plugins } = createPlugins({
+          gtConfig: GT_CONFIG,
+          experimentalSplitTranslations,
+        });
+        expect(plugins).toHaveLength(1);
+        const buildStart = plugins[0].buildStart as () => void;
+        expect(buildStart).toThrow(
+          'experimentalSplitTranslations.minifyHashes is set in a build without experimentalSplitTranslations because hash minification replaces the key of a message in the translation files that only such a build writes. Turn experimentalSplitTranslations on, or turn experimentalSplitTranslations.minifyHashes off.'
+        );
+        vi.stubEnv('NODE_ENV', 'development');
+        expect(buildStart).not.toThrow();
+      }
+    );
 
     it('fails a build that writes the id of a <T> into its output', () => {
       const build = { framework: 'vite', compileTimeHash: true };
@@ -2984,7 +3002,7 @@ export const ready = initializeGTSPA({});`,
         minifyHashes: true,
       });
       expect('error' in resolved && resolved.error).toContain(
-        'experimentalChunkTranslationsMinifyHashes cannot be used with _tagIds'
+        'experimentalSplitTranslations.minifyHashes cannot be used with _tagIds'
       );
       expect(resolveChunkTranslations(tagged, build)).not.toHaveProperty(
         'error'
@@ -3003,7 +3021,7 @@ export const ready = initializeGTSPA({});`,
       ],
       [
         'by chunk, named by map',
-        { experimentalChunkTranslationsNaming: 'map' },
+        { naming: 'map' },
         ['loadMappedChunk', 'loadMinifiedMappedChunk'],
         [
           'initializeMappedChunkTranslations',
@@ -3012,7 +3030,7 @@ export const ready = initializeGTSPA({});`,
       ],
       [
         'by module',
-        { experimentalChunkTranslationsSplit: 'module' },
+        { by: 'module' },
         ['loadRegionChunk', 'loadMinifiedRegionChunk'],
         [
           'initializeRegionChunkTranslations',
@@ -3039,15 +3057,16 @@ export const ready = initializeGTSPA({});`,
             (code) => / (\w+) as __gt_chunk_\w+ /.exec(code ?? '')?.[1]
           );
         };
-        expect(await imported({ ...MINIFIED, ...split })).toEqual([
-          load[1],
-          initialize[1],
-        ]);
+        expect(
+          await imported({
+            ...ON,
+            experimentalSplitTranslations: { ...split, minifyHashes: true },
+          })
+        ).toEqual([load[1], initialize[1]]);
         // A build without hash minification imports what it did
-        expect(await imported({ ...ON, ...split })).toEqual([
-          load[0],
-          initialize[0],
-        ]);
+        expect(
+          await imported({ ...ON, experimentalSplitTranslations: split })
+        ).toEqual([load[0], initialize[0]]);
         const entry = (await import('gt-react/chunk-translations')) as Record<
           string,
           unknown
@@ -3157,7 +3176,7 @@ export const ready = initializeGTSPA({});`,
       expect(() =>
         minifyChunk(`${site(SAVE_TEXT)};${site(HELLO)}`, minified)
       ).toThrow(
-        `Hash minification gives two messages the id "2bFNA3qJ.0" because the lists of messages of two chunks have the same digest, and a page would render the translation of one message for the other. Turn experimentalChunkTranslationsMinifyHashes off. Details: ${PRINT_TEXT} and ${SAVE_TEXT}.`
+        `Hash minification gives two messages the id "2bFNA3qJ.0" because the lists of messages of two chunks have the same digest, and a page would render the translation of one message for the other. Turn experimentalSplitTranslations.minifyHashes off. Details: ${PRINT_TEXT} and ${SAVE_TEXT}.`
       );
     });
 
@@ -3171,7 +3190,7 @@ export const ready = initializeGTSPA({});`,
       expect(() =>
         readMinifiedIds(minified, { unsplit: new Set(unsplit) }, table, chunks)
       ).toThrow(
-        'Hash minification gives a message an id that the translations already hold because a key of the translation files, or an id written by hand, is the same string, and a page would render one message for the other. Turn experimentalChunkTranslationsMinifyHashes off. Details: 2bFNA3qJ.1.'
+        'Hash minification gives a message an id that the translations already hold because a key of the translation files, or an id written by hand, is the same string, and a page would render one message for the other. Turn experimentalSplitTranslations.minifyHashes off. Details: 2bFNA3qJ.1.'
       );
       expect(
         readMinifiedIds(minified, { unsplit: new Set() }, {}, chunks).hashes
@@ -3185,7 +3204,7 @@ export const ready = initializeGTSPA({});`,
           { fileName: 'assets/index.js', code: 't({$_hash:"2bFNA3qJ.0"})' },
         ])
       ).toThrow(
-        'Hash minification did not reach the call sites of a chunk because the bundler wrote them without rendering them through this plugin, so their call sites still hold a placeholder and would render the source text. Turn experimentalChunkTranslationsMinifyHashes off. Details: assets/worker.js.'
+        'Hash minification did not reach the call sites of a chunk because the bundler wrote them without rendering them through this plugin, so their call sites still hold a placeholder and would render the source text. Turn experimentalSplitTranslations.minifyHashes off. Details: assets/worker.js.'
       );
     });
 
@@ -3554,7 +3573,7 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       (naming) => {
         const options = {
           ...MINIFIED,
-          experimentalChunkTranslationsNaming: naming,
+          experimentalSplitTranslations: { minifyHashes: true, naming },
         };
         /** A build of two chunks, and each id its call sites pass with its hash. */
         const build = (home: string[], catalog: Record<string, string>) => {
@@ -3641,7 +3660,7 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
   describe('split by module', () => {
     const SPLIT: GTUnpluginOptions = {
       ...ON,
-      experimentalChunkTranslationsSplit: 'module',
+      experimentalSplitTranslations: { by: 'module' },
     };
 
     it.each([
@@ -3650,17 +3669,17 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       ['chunk', 'module', 'chunk'],
       ['module', undefined, 'module'],
     ] as const)(
-      'is chosen by the option %s, then GT_CHUNK_TRANSLATIONS_SPLIT=%s: %s',
+      'is chosen by the option %s, then GT_SPLIT_TRANSLATIONS_BY=%s: %s',
       (option, env, expected) => {
-        vi.stubEnv('GT_CHUNK_TRANSLATIONS_SPLIT', env as never);
+        vi.stubEnv('GT_SPLIT_TRANSLATIONS_BY', env as never);
         expect(getChunkTranslationsSplit(option)).toBe(expected);
       }
     );
 
     it('rejects a split it does not have', () => {
-      vi.stubEnv('GT_CHUNK_TRANSLATIONS_SPLIT', 'route');
+      vi.stubEnv('GT_SPLIT_TRANSLATIONS_BY', 'route');
       expect(() => getChunkTranslationsSplit(undefined)).toThrow(
-        '"route", which is not one of chunk, module'
+        'The split of chunk translations is set to "route", which is not one of chunk, module. Set experimentalSplitTranslations.by or GT_SPLIT_TRANSLATIONS_BY to one of them.'
       );
     });
 
@@ -3670,20 +3689,25 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       expect(() => getChunkTranslationsNaming('token', 'module')).toThrow(
         'Chunk translations that are split by module cannot be named by token'
       );
-      vi.stubEnv('GT_CHUNK_TRANSLATIONS_NAMING', 'token');
-      expect(() => createPlugins(SPLIT)).toThrow('cannot be named by token');
+      expect(() =>
+        createPlugins({
+          ...ON,
+          experimentalSplitTranslations: { by: 'module', naming: 'token' },
+        })
+      ).toThrow(
+        'cannot be named by token because a file then holds the messages of modules from many chunks, so its URL does not follow from the URL of a chunk. Set experimentalSplitTranslations.naming to map, or leave it out.'
+      );
     });
 
     it.each([
-      [undefined, undefined, undefined, undefined, 8192, undefined],
-      [0, '4096', 'a.json', 'b.json', 0, 'a.json'],
-      [undefined, '2048', undefined, 'b.json', 2048, 'b.json'],
-      [undefined, '', undefined, '', 8192, undefined],
+      [undefined, undefined, 8192, undefined],
+      [0, 'a.json', 0, 'a.json'],
+      [2048, undefined, 2048, undefined],
+      ['4096' as never, '', 4096, undefined],
+      ['' as never, 'b.json', 8192, 'b.json'],
     ])(
-      'takes the request cost %s, then GT_CHUNK_TRANSLATIONS_REQUEST_COST=%s, and the previous manifest %s, then GT_CHUNK_TRANSLATIONS_PREVIOUS=%s',
-      (cost, costEnv, file, fileEnv, requestCost, previous) => {
-        vi.stubEnv('GT_CHUNK_TRANSLATIONS_REQUEST_COST', costEnv as never);
-        vi.stubEnv('GT_CHUNK_TRANSLATIONS_PREVIOUS', fileEnv as never);
+      'takes the request cost %s and the previous manifest %s',
+      (cost, file, requestCost, previous) => {
         const options = { requestCost: cost, previous: file };
         expect(getRegionSplit('module', options)).toEqual({
           requestCost,
@@ -3698,7 +3722,9 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       (requestCost) => {
         expect(() =>
           getRegionSplit('module', { requestCost, previous: undefined })
-        ).toThrow('which is not a number of bytes');
+        ).toThrow(
+          `The request cost of chunk translations is set to "${requestCost}", which is not a number of bytes. Set experimentalSplitTranslations.requestCost to zero or more bytes, or leave it out for 8192.`
+        );
       }
     );
 
@@ -4152,7 +4178,10 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
     it('writes at an import the name the page imports the chunk by, which the map of a locale holds, when a plugin rewrites the import map once the map is written', async () => {
       const P = IMPORTED_CHUNKS_PLACEHOLDER;
       const created = createPlugins(
-        { ...SPLIT, experimentalChunkTranslationsRequestCost: 0 },
+        {
+          ...SPLIT,
+          experimentalSplitTranslations: { by: 'module', requestCost: 0 },
+        },
         'vite',
         { 'translations/fr.json': JSON.stringify(CATALOG) }
       );
@@ -4549,7 +4578,7 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       const created = createPlugins(
         {
           ...SPLIT,
-          experimentalChunkTranslationsRequestCost: 0,
+          experimentalSplitTranslations: { by: 'module', requestCost: 0 },
           logLevel: 'debug',
         },
         'vite',

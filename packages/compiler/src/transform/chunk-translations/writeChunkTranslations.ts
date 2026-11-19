@@ -178,7 +178,7 @@ export const UNSTARTED_APP_WARNING = createDiagnosticMessage({
   source: '@generaltranslation/compiler',
   severity: 'Warning',
   whatHappened:
-    'experimentalChunkTranslations did not find the initializeGTSPA that starts the app',
+    'experimentalSplitTranslations did not find the initializeGTSPA that starts the app',
   why: "no module the build compiled imports it by name, as import { initializeGTSPA } from 'gt-react': a namespace import, a re-export or an import through another module is not read",
   reassurance:
     "initializeGTSPA then still calls the app's loadTranslations, so a page loads its locale's whole catalog as well as the files of its chunks",
@@ -208,7 +208,7 @@ export const createUncoveredChunkMessagesError = (
   createDiagnosticMessage({
     source: '@generaltranslation/compiler',
     severity: 'Error',
-    whatHappened: `experimentalChunkTranslations would leave ${uncovered.length} messages without their translations`,
+    whatHappened: `experimentalSplitTranslations would leave ${uncovered.length} messages without their translations`,
     why: 'the files the build lists for a load do not hold every message of the chunks that load runs',
     fix: 'Turn the option off and report this to General Translation: the build assigned its files wrongly',
     details: nameSome(
@@ -223,7 +223,7 @@ export const createUnreadImportsError = (imports: UngatedImports[]) =>
     source: '@generaltranslation/compiler',
     severity: 'Error',
     whatHappened:
-      'experimentalChunkTranslations could not tell which chunk a dynamic import loads',
+      'experimentalSplitTranslations could not tell which chunk a dynamic import loads',
     why: 'the bundler printed the import in a form the build does not read, so its chunk would run before its translations and render their source text',
     fix: 'Turn the option off and report this to General Translation with the import named below',
     details: nameSome(

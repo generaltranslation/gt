@@ -1,7 +1,7 @@
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { ChunkImportMapOptions } from './chunkImportMap';
-import type { GTConfig } from '../../config';
+import type { GTConfig, SplitTranslationsOptions } from '../../config';
 import { DEFAULT_REQUEST_COST } from './assignTranslationsByRegion';
 import {
   MINIFY_HASHES_WITH_TAGGED_IDS_ERROR,
@@ -10,11 +10,11 @@ import {
 } from './hashMinification';
 
 /**
- * Environment variable read when the `experimentalChunkTranslations` option
+ * Environment variable read when the `experimentalSplitTranslations` option
  * is not set, so a build script can turn it on without changing the bundler
  * config.
  */
-export const CHUNK_TRANSLATIONS_ENV_VAR = 'GT_CHUNK_TRANSLATIONS';
+export const CHUNK_TRANSLATIONS_ENV_VAR = 'GT_SPLIT_TRANSLATIONS';
 
 /** The entry compiled code loads translations with. */
 export const CHUNK_TRANSLATIONS_SOURCE = 'gt-react/chunk-translations';
@@ -118,10 +118,10 @@ export type RegionSplit = {
 };
 
 /**
- * Environment variable read when the `experimentalChunkTranslationsSplit`
+ * Environment variable read when `by` of the `experimentalSplitTranslations`
  * option is not set.
  */
-export const CHUNK_TRANSLATIONS_SPLIT_ENV_VAR = 'GT_CHUNK_TRANSLATIONS_SPLIT';
+export const CHUNK_TRANSLATIONS_SPLIT_ENV_VAR = 'GT_SPLIT_TRANSLATIONS_BY';
 
 /**
  * What decides which messages share a file: the chunk their call sites are
@@ -136,8 +136,8 @@ export type ChunkTranslationsSplit = (typeof chunkTranslationsSplits)[number];
 export const defaultChunkTranslationsSplit: ChunkTranslationsSplit = 'chunk';
 
 /**
- * The split of this build: the `experimentalChunkTranslationsSplit` option,
- * else the `GT_CHUNK_TRANSLATIONS_SPLIT` environment variable.
+ * The split of this build: `by` of the `experimentalSplitTranslations`
+ * option, else the `GT_SPLIT_TRANSLATIONS_BY` environment variable.
  */
 export function getChunkTranslationsSplit(
   option: ChunkTranslationsSplit | undefined
@@ -151,39 +151,22 @@ export function getChunkTranslationsSplit(
       source: '@generaltranslation/compiler',
       severity: 'Error',
       whatHappened: `The split of chunk translations is set to "${raw}", which is not one of ${chunkTranslationsSplits.join(', ')}`,
-      fix: `Set experimentalChunkTranslationsSplit or ${CHUNK_TRANSLATIONS_SPLIT_ENV_VAR} to one of them`,
+      fix: `Set experimentalSplitTranslations.by or ${CHUNK_TRANSLATIONS_SPLIT_ENV_VAR} to one of them`,
     })
   );
 }
 
 /**
- * Environment variable read when the
- * `experimentalChunkTranslationsRequestCost` option is not set.
- */
-export const CHUNK_TRANSLATIONS_REQUEST_COST_ENV_VAR =
-  'GT_CHUNK_TRANSLATIONS_REQUEST_COST';
-
-/**
- * Environment variable read when the `experimentalChunkTranslationsPrevious`
- * option is not set.
- */
-export const CHUNK_TRANSLATIONS_PREVIOUS_ENV_VAR =
-  'GT_CHUNK_TRANSLATIONS_PREVIOUS';
-
-/**
- * What a build that splits by module is given: the
- * `experimentalChunkTranslationsRequestCost` and
- * `experimentalChunkTranslationsPrevious` options, else the
- * `GT_CHUNK_TRANSLATIONS_REQUEST_COST` and `GT_CHUNK_TRANSLATIONS_PREVIOUS`
- * environment variables. Undefined for a build that splits by chunk.
+ * What a build that splits by module is given: `requestCost` and `previous`
+ * of the `experimentalSplitTranslations` option. Undefined for a build that
+ * splits by chunk.
  */
 export function getRegionSplit(
   split: ChunkTranslationsSplit,
   options: { requestCost: number | undefined; previous: string | undefined }
 ): RegionSplit | undefined {
   if (split !== 'module') return undefined;
-  const raw =
-    options.requestCost ?? process.env[CHUNK_TRANSLATIONS_REQUEST_COST_ENV_VAR];
+  const raw: unknown = options.requestCost;
   const requestCost =
     raw === undefined || raw === '' ? DEFAULT_REQUEST_COST : Number(raw);
   if (!Number.isFinite(requestCost) || requestCost < 0) {
@@ -192,20 +175,13 @@ export function getRegionSplit(
         source: '@generaltranslation/compiler',
         severity: 'Error',
         whatHappened: `The request cost of chunk translations is set to "${raw}", which is not a number of bytes`,
-        fix: `Set experimentalChunkTranslationsRequestCost or ${CHUNK_TRANSLATIONS_REQUEST_COST_ENV_VAR} to zero or more bytes, or leave it out for ${DEFAULT_REQUEST_COST}`,
+        fix: `Set experimentalSplitTranslations.requestCost to zero or more bytes, or leave it out for ${DEFAULT_REQUEST_COST}`,
       })
     );
   }
-  const previous =
-    options.previous ?? process.env[CHUNK_TRANSLATIONS_PREVIOUS_ENV_VAR];
+  const { previous } = options;
   return { requestCost, previous: previous === '' ? undefined : previous };
 }
-
-/**
- * Environment variable read when the `experimentalChunkTranslationsNaming`
- * option is not set.
- */
-export const CHUNK_TRANSLATIONS_NAMING_ENV_VAR = 'GT_CHUNK_TRANSLATIONS_NAMING';
 
 /**
  * How the files of chunks are named, which decides what a page can request
@@ -221,8 +197,8 @@ export type ChunkTranslationsNaming = (typeof chunkTranslationsNamings)[number];
 export const defaultChunkTranslationsNaming: ChunkTranslationsNaming = 'token';
 
 /**
- * The naming of this build: the `experimentalChunkTranslationsNaming`
- * option, else the `GT_CHUNK_TRANSLATIONS_NAMING` environment variable.
+ * The naming of this build: `naming` of the `experimentalSplitTranslations`
+ * option.
  *
  * A build that splits by module has `map` naming and no other. Its files
  * hold the messages of modules from many chunks, so the URL of a file cannot
@@ -234,7 +210,7 @@ export function getChunkTranslationsNaming(
   option: ChunkTranslationsNaming | undefined,
   split: ChunkTranslationsSplit = defaultChunkTranslationsSplit
 ): ChunkTranslationsNaming {
-  const raw = option ?? process.env[CHUNK_TRANSLATIONS_NAMING_ENV_VAR];
+  const raw: string | undefined = option;
   if (raw === undefined || raw === '') {
     return split === 'module' ? 'map' : defaultChunkTranslationsNaming;
   }
@@ -247,7 +223,7 @@ export function getChunkTranslationsNaming(
         whatHappened:
           'Chunk translations that are split by module cannot be named by token',
         why: 'a file then holds the messages of modules from many chunks, so its URL does not follow from the URL of a chunk',
-        fix: `Set experimentalChunkTranslationsNaming or ${CHUNK_TRANSLATIONS_NAMING_ENV_VAR} to map, or leave it out`,
+        fix: 'Set experimentalSplitTranslations.naming to map, or leave it out',
       })
     );
   }
@@ -257,7 +233,7 @@ export function getChunkTranslationsNaming(
       source: '@generaltranslation/compiler',
       severity: 'Error',
       whatHappened: `The naming of chunk translations is set to "${raw}", which is not one of ${chunkTranslationsNamings.join(', ')}`,
-      fix: `Set experimentalChunkTranslationsNaming or ${CHUNK_TRANSLATIONS_NAMING_ENV_VAR} to one of them`,
+      fix: 'Set experimentalSplitTranslations.naming to one of them',
     })
   );
 }
@@ -328,32 +304,35 @@ const createChunkTranslationsError = (why: string, fix: string) =>
     source: '@generaltranslation/compiler',
     severity: 'Error',
     whatHappened:
-      'experimentalChunkTranslations cannot write translations per chunk',
+      'experimentalSplitTranslations cannot write translations per chunk',
     why,
     fix,
   });
 
 /**
  * Whether this build writes translations per chunk: the
- * `experimentalChunkTranslations` option, else the `GT_CHUNK_TRANSLATIONS`
- * environment variable.
+ * `experimentalSplitTranslations` option when it is set, which is on unless
+ * its `enabled` is false, else the `GT_SPLIT_TRANSLATIONS` environment
+ * variable.
  */
-export function getChunkTranslations(option: boolean | undefined): boolean {
-  return option ?? readBooleanEnv(CHUNK_TRANSLATIONS_ENV_VAR) ?? false;
+export function getChunkTranslations(
+  option: SplitTranslationsOptions | undefined
+): boolean {
+  if (option) return option.enabled ?? true;
+  return readBooleanEnv(CHUNK_TRANSLATIONS_ENV_VAR) ?? false;
 }
 
 /**
- * Environment variable read when the
- * `experimentalChunkTranslationsMinifyHashes` option is not set.
+ * Environment variable read when `minifyHashes` of the
+ * `experimentalSplitTranslations` option is not set.
  */
-export const CHUNK_TRANSLATIONS_MINIFY_HASHES_ENV_VAR =
-  'GT_CHUNK_TRANSLATIONS_MINIFY_HASHES';
+export const CHUNK_TRANSLATIONS_MINIFY_HASHES_ENV_VAR = 'GT_MINIFY_HASHES';
 
 /**
  * Whether this build minifies the hashes its call sites pass (see
- * hashMinification.ts): the `experimentalChunkTranslationsMinifyHashes`
- * option, else the `GT_CHUNK_TRANSLATIONS_MINIFY_HASHES` environment
- * variable.
+ * hashMinification.ts): `minifyHashes` of the
+ * `experimentalSplitTranslations` option, else the `GT_MINIFY_HASHES`
+ * environment variable.
  */
 export function getMinifyHashes(option: boolean | undefined): boolean {
   return (

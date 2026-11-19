@@ -30,7 +30,6 @@ import {
 } from './createRegionGraph';
 import {
   CHUNK_TRANSLATIONS_MANIFEST,
-  CHUNK_TRANSLATIONS_PREVIOUS_ENV_VAR,
   type ChunkTranslations,
   type RegionSplit,
 } from './resolveChunkTranslations';
@@ -92,7 +91,8 @@ export type RegionAssignmentRecord = {
 /**
  * The manifest of a build that splits by module: what a server that writes
  * its own HTML or preload links reads, and what the next build is given as
- * `experimentalChunkTranslationsPrevious` to keep its files where it can.
+ * `previous` of `experimentalSplitTranslations` to keep its files where it
+ * can.
  */
 export type RegionTranslationsManifest = {
   split: 'module';
@@ -149,7 +149,7 @@ export const createUncoveredMessagesError = (uncovered: UncoveredMessage[]) =>
     severity: 'Error',
     whatHappened: `Chunk translations split by module would leave ${uncovered.length} messages without their translation when the code that reads them runs`,
     why: 'the files listed for a dynamic import do not hold every message its modules read, which is a bug in the split and not in the app',
-    fix: 'Set experimentalChunkTranslationsSplit to chunk, and report this with the details below',
+    fix: 'Set experimentalSplitTranslations.by to chunk, and report this with the details below',
     details: uncovered
       .slice(0, MAX_NAMED_MESSAGES)
       .map(
@@ -175,7 +175,7 @@ export const createMissingPreviousWarning = (file: string) =>
     whatHappened: `Found no previous chunk translations at ${file}`,
     reassurance:
       'The build assigns its translation files from nothing, as a first build does',
-    fix: `Point experimentalChunkTranslationsPrevious or ${CHUNK_TRANSLATIONS_PREVIOUS_ENV_VAR} at the gt-chunk-translations.json of the build before this one`,
+    fix: 'Point experimentalSplitTranslations.previous at the gt-chunk-translations.json of the build before this one',
   });
 
 const createInvalidPreviousError = (file: string, details?: string) =>
@@ -184,7 +184,7 @@ const createInvalidPreviousError = (file: string, details?: string) =>
     severity: 'Error',
     whatHappened: `Could not read the previous chunk translations at ${file}`,
     why: 'it is not the gt-chunk-translations.json of a build that splits by module',
-    fix: `Point experimentalChunkTranslationsPrevious or ${CHUNK_TRANSLATIONS_PREVIOUS_ENV_VAR} at that file of the build before this one, or leave it out`,
+    fix: 'Point experimentalSplitTranslations.previous at that file of the build before this one, or leave it out',
     ...(details !== undefined && { details }),
   });
 

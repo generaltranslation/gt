@@ -59,7 +59,7 @@ export const createUnreadImportMapError = (fileName: string) =>
   createDiagnosticMessage({
     source: '@generaltranslation/compiler',
     severity: 'Error',
-    whatHappened: `experimentalChunkTranslations could not read the chunk import map ${fileName}`,
+    whatHappened: `experimentalSplitTranslations could not read the chunk import map ${fileName}`,
     why: 'it is not an import map as the bundler writes one, so the build cannot tell which chunk a dynamic import loads',
     fix: "Turn off the bundler's chunk import map, or this option, and report this to General Translation",
   });
