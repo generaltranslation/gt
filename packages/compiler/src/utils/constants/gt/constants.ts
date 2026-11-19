@@ -1,3 +1,5 @@
+import type { VariableType } from '@generaltranslation/format';
+
 /**
  * Different gt components
  */
@@ -69,9 +71,9 @@ export enum TRANSLATION_OPTION_KEYS {
 }
 
 /**
- * Maps GT Component Types to their minified names
+ * The variable components, each with the type its variable is stored as
  */
-export const MINIFY_CANONICAL_NAME_MAP = {
+export const VARIABLE_COMPONENT_TYPES = {
   [GT_COMPONENT_TYPES.Var]: 'v',
   [GT_COMPONENT_TYPES.GtInternalVar]: 'v',
   [GT_COMPONENT_TYPES.Num]: 'n',
@@ -82,7 +84,6 @@ export const MINIFY_CANONICAL_NAME_MAP = {
   [GT_COMPONENT_TYPES.GtInternalDateTime]: 'd',
   [GT_COMPONENT_TYPES.RelativeTime]: 'rt',
   [GT_COMPONENT_TYPES.N]: '#',
-  [GT_COMPONENT_TYPES.Derive]: 's',
-  [GT_COMPONENT_TYPES.Branch]: 'b',
-  [GT_COMPONENT_TYPES.Plural]: 'p',
-} as const;
+} as const satisfies Partial<Record<GT_COMPONENT_TYPES, VariableType>>;
+
+export type VariableComponent = keyof typeof VARIABLE_COMPONENT_TYPES;

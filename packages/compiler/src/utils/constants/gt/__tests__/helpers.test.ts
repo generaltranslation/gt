@@ -4,7 +4,7 @@ import {
   isVariableComponent,
   isDeriveComponent,
 } from '../helpers';
-import { GT_COMPONENT_TYPES, MINIFY_CANONICAL_NAME_MAP } from '../constants';
+import { GT_COMPONENT_TYPES, VARIABLE_COMPONENT_TYPES } from '../constants';
 
 const VARIABLE_COMPONENTS = [
   'Var',
@@ -57,6 +57,6 @@ describe('GT component helpers', () => {
     [GT_COMPONENT_TYPES.RelativeTime, 'rt'],
     [GT_COMPONENT_TYPES.N, '#'],
   ] as const)('%s minifies to %s', (component, minified) => {
-    expect(MINIFY_CANONICAL_NAME_MAP[component]).toBe(minified);
+    expect(VARIABLE_COMPONENT_TYPES[component]).toBe(minified);
   });
 });

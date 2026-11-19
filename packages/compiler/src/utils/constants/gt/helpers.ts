@@ -6,7 +6,8 @@ import {
   GT_ALL_FUNCTIONS,
   GT_COMPONENT_TYPES,
   GT_IMPORT_SOURCES,
-  MINIFY_CANONICAL_NAME_MAP,
+  VARIABLE_COMPONENT_TYPES,
+  type VariableComponent,
 } from './constants';
 import {
   HTML_CONTENT_PROPS,
@@ -64,21 +65,8 @@ export function isTranslationComponent(
 /**
  * Check if a component name matches known gt-next variable components
  */
-export function isVariableComponent(name: string): name is GT_COMPONENT_TYPES {
-  return (
-    [
-      GT_COMPONENT_TYPES.Var,
-      GT_COMPONENT_TYPES.Num,
-      GT_COMPONENT_TYPES.Currency,
-      GT_COMPONENT_TYPES.DateTime,
-      GT_COMPONENT_TYPES.RelativeTime,
-      GT_COMPONENT_TYPES.N,
-      GT_COMPONENT_TYPES.GtInternalVar,
-      GT_COMPONENT_TYPES.GtInternalNum,
-      GT_COMPONENT_TYPES.GtInternalCurrency,
-      GT_COMPONENT_TYPES.GtInternalDateTime,
-    ] as string[]
-  ).includes(name);
+export function isVariableComponent(name: string): name is VariableComponent {
+  return Object.prototype.hasOwnProperty.call(VARIABLE_COMPONENT_TYPES, name);
 }
 
 /**
@@ -120,16 +108,5 @@ export function isHtmlContentProp(
 ): name is keyof HtmlContentPropValuesRecord {
   return Object.values(HTML_CONTENT_PROPS).includes(
     name as keyof HtmlContentPropValuesRecord
-  );
-}
-
-/**
- * Minify the canonical name
- */
-export function minifyCanonicalName(canonicalName: GT_COMPONENT_TYPES): string {
-  return (
-    MINIFY_CANONICAL_NAME_MAP[
-      canonicalName as keyof typeof MINIFY_CANONICAL_NAME_MAP
-    ] || canonicalName
   );
 }
