@@ -3,14 +3,19 @@ import {
   isPluralCategoryKey,
   PLURAL_CATEGORIES,
 } from '../settings/syntax';
-import { getPluralCategories } from './pluralCategories';
+import {
+  getPluralCategories,
+  getPluralCategoryCounts,
+} from './pluralCategories';
 
 export type CheckTranslationOptions = {
   /**
    * The translation's locale. With it, each plural and selectordinal needs a
    * branch for every category the locale has, like `few` and `many` in
    * Russian. Categories it does not have, like `one` in Japanese, may be
-   * left out, together with the variables and styles only they use.
+   * left out, together with the variables and styles only they use. A count
+   * the source shows in `other` is shown in each category the locale picks
+   * for more than one number, like Russian `one`, which is also 21.
    */
   locale?: string;
 };
@@ -18,8 +23,7 @@ export type CheckTranslationOptions = {
 /**
  * A placeholder as the translation rules read it, whether from an ICU
  * string or a message tree. Text is left out: a translation's is its own.
- * So is whether it writes `#`; a `count` is a `#` it did write, read only
- * for the tag around it.
+ * A `count` is a `#` it did write.
  */
 export type CheckedPlaceholder =
   | { name: string; kind: 'argument' }
@@ -362,7 +366,12 @@ function branchKeyProblems(
 type Readers = Map<string, string>;
 
 /** A select or plural variable, and the branch keys a reader can have for it. */
-type BranchChoice = { variable: string; name: string; keys: string[] };
+type BranchChoice = {
+  variable: string;
+  name: string;
+  kind: BranchingPlaceholder['kind'];
+  keys: string[];
+};
 
 // shortcut: a message with more combinations of branches than this is not checked for placement; raise it if a real message needs more.
 const MAX_READERS = 1024;
@@ -383,7 +392,8 @@ const isBranching = (
  *
  * A select's keys are the same in both, so it is checked for the readers of
  * each combination of select branches. A language has its own plural
- * categories, so what those readers see whatever the number is compared.
+ * categories, so what those readers see whatever the number is compared,
+ * and then where each plural shows its count.
  */
 function placementProblems(
   source: CheckedPlaceholder[],
@@ -423,8 +433,105 @@ function placementProblems(
       );
     }
   }
-  return [...problems.values()];
+  return [
+    ...problems.values(),
+    ...countProblems(
+      source,
+      translation,
+      selects,
+      sourceNumbers,
+      numbers,
+      plurals
+    ),
+  ];
 }
+
+/**
+ * A count the source shows in its `other` branch, which most numbers take in
+ * any language, is shown in each category branch the translation's locale
+ * picks for more than one number: Russian `one` is also 21, so
+ * `one {Один файл}` reads "one file" for 21 files. A category picked for one
+ * number only, like German `one`, may say that number in words. Which
+ * source branch a number takes is not compared, since the source's locale
+ * is not known.
+ */
+function countProblems(
+  source: CheckedPlaceholder[],
+  translation: CheckedPlaceholder[],
+  selects: BranchChoice[],
+  sourceNumbers: BranchChoice[],
+  numbers: BranchChoice[],
+  plurals: PluralLocale | undefined
+): string[] {
+  if (!plurals) return [];
+  const problems: string[] = [];
+  for (const { variable, name, kind, keys } of numbers) {
+    // A plural the source lacks, by name, kind and offset, is reported as missing.
+    if (
+      kind === 'select' ||
+      !sourceNumbers.some((choice) => choice.variable === variable)
+    ) {
+      continue;
+    }
+    for (const key of keys) {
+      if (key[0] === '=') continue;
+      const picked = getPluralCategoryCounts(
+        plurals.locale,
+        ruleType(kind),
+        key
+      );
+      if (!picked || picked.counts.length < 2) continue;
+      const lost = combinations(selects).some(
+        (selected) =>
+          seenWith(
+            source,
+            selected,
+            sourceNumbers,
+            variable,
+            FALLBACK_BRANCH_KEY
+          ).some((seen) => showsCount(seen, name)) &&
+          // A reader the plural is not shown to at all is reported where it is placed.
+          seenWith(translation, selected, numbers, variable, key).some(
+            (seen) =>
+              seen.some(
+                (placeholder) => variableKey(placeholder) === variable
+              ) && !showsCount(seen, name)
+          )
+      );
+      if (!lost) continue;
+      problems.push(
+        `"${name}" is not shown in the ${kind === 'plural' ? 'plural' : 'ordinal'} branch ${key}, which ${plurals.locale} uses for ${picked.counts.join(', ')}${picked.more ? ', …' : ''}, as it is in the source`
+      );
+    }
+  }
+  return problems;
+}
+
+/** What each reader of these select branches sees, with `variable` on branch `key` and every other plural on any. */
+function seenWith(
+  placeholders: CheckedPlaceholder[],
+  selected: Readers,
+  numbers: BranchChoice[],
+  variable: string,
+  key: string
+): CheckedPlaceholder[][] {
+  const pinned = numbers.map((choice) =>
+    choice.variable === variable ? { ...choice, keys: [key] } : choice
+  );
+  return combinations(pinned).map((picked) =>
+    seenBy(placeholders, new Map([...selected, ...picked]))
+  );
+}
+
+/** Whether a reader sees the count of a plural on `name`: its `#`, or the variable printed. */
+const showsCount = (seen: CheckedPlaceholder[], name: string): boolean =>
+  seen.some(
+    (placeholder) =>
+      placeholder.name === name &&
+      (placeholder.kind === 'count' ||
+        placeholder.kind === 'argument' ||
+        placeholder.kind === 'number')
+  );
 
 /**
  * The selects of a message, or its plurals, with the keys of their branches.
@@ -446,6 +553,7 @@ function branchChoices(
     choices.push({
       variable,
       name: placeholder.name,
+      kind: placeholder.kind,
       keys: [...keys].filter(
         (key) => !has || !isPluralCategoryKey(key) || has.has(key)
       ),
@@ -485,23 +593,34 @@ function shownWhateverTheNumber(
   return always ?? new Map();
 }
 
-/**
- * The variables one reader sees: each select and plural shows the branch
- * picked for them, or `other` where it has no such branch, as ICU picks it.
- */
+/** The variables one reader sees, by `variableKey` with their names. */
 function shownTo(
   placeholders: CheckedPlaceholder[],
   readers: Readers
 ): Map<string, string> {
   const shown = new Map<string, string>();
+  for (const placeholder of seenBy(placeholders, readers)) {
+    if (placeholder.kind === 'count') continue;
+    shown.set(variableKey(placeholder), placeholder.name);
+  }
+  return shown;
+}
+
+/**
+ * The placeholders one reader sees: each select and plural shows the branch
+ * picked for them, or `other` where it has no such branch, as ICU picks it.
+ */
+function seenBy(
+  placeholders: CheckedPlaceholder[],
+  readers: Readers
+): CheckedPlaceholder[] {
+  const seen: CheckedPlaceholder[] = [];
   const visit = (placeholder: CheckedPlaceholder): void => {
-    if (placeholder.kind === 'count') return;
-    const variable = variableKey(placeholder);
-    shown.set(variable, placeholder.name);
+    seen.push(placeholder);
     if (placeholder.kind === 'tag') {
       placeholder.children.forEach(visit);
     } else if (isBranching(placeholder)) {
-      const picked = readers.get(variable);
+      const picked = readers.get(variableKey(placeholder));
       // shortcut: a number with an exact branch elsewhere takes `other` here, not its category's branch; pick by Intl.PluralRules if that ever misjudges a real message.
       const branch =
         placeholder.branches.find(([key]) => key === picked) ??
@@ -510,7 +629,7 @@ function shownTo(
     }
   };
   placeholders.forEach(visit);
-  return shown;
+  return seen;
 }
 
 /**

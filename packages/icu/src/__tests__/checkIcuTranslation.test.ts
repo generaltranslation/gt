@@ -11,6 +11,7 @@ const mismatch = (...problems: string[]) =>
 const FILES = '{n, plural, one {# file} other {# files}}';
 const GENDER = '{g, select, male {He} female {She} other {They}}';
 const ITEMS = '{n, plural, one {# item} other {# items}}';
+const ONE_FILE = '{n, plural, one {One file} other {# files}}';
 const IN_FOLDER =
   '{n, plural, one {# file in {folder}} other {# files in {folder}}}';
 const NO_OTHER = 'A plural, select or selectordinal needs an other branch.';
@@ -135,6 +136,86 @@ const CASES: [
     '{n, plural, =0 {Aucun fichier} one {# fichier} many {# de fichiers} other {# fichiers}}',
     'fr',
     undefined,
+  ],
+  [
+    'a count spelled out in a category Russian also picks for 21',
+    ONE_FILE,
+    '{n, plural, one {Один файл} few {# файла} many {# файлов} other {# файла}}',
+    'ru',
+    mismatch(
+      '"n" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
+  ],
+  [
+    'the count in every category Russian picks for several numbers',
+    ONE_FILE,
+    '{n, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}',
+    'ru',
+    undefined,
+  ],
+  [
+    'a count spelled out in a category French picks for 0 and 1',
+    ONE_FILE,
+    '{n, plural, one {Un fichier} many {# de fichiers} other {# fichiers}}',
+    'fr',
+    mismatch(
+      '"n" is not shown in the plural branch one, which fr uses for 0, 1, 0.5, 1.5, as it is in the source'
+    ),
+  ],
+  [
+    'a count spelled out in a category German picks only for 1',
+    ONE_FILE,
+    '{n, plural, one {Eine Datei} other {# Dateien}}',
+    'de',
+    undefined,
+  ],
+  [
+    'a count spelled out in an exact branch',
+    '{n, plural, =1 {One file} other {# files}}',
+    '{n, plural, =1 {Один файл} one {# файл} few {# файла} many {# файлов} other {# файла}}',
+    'ru',
+    undefined,
+  ],
+  [
+    'a source that never shows the count',
+    '{n, plural, one {A file} other {Some files}}',
+    '{n, plural, one {Один файл} few {Несколько файлов} many {Много файлов} other {Часть файла}}',
+    'ru',
+    undefined,
+  ],
+  [
+    'a count the source shows as an argument',
+    '{n, plural, one {One file} other {{n} files}}',
+    '{n, plural, one {Один файл} few {{n} файла} many {{n} файлов} other {{n} файла}}',
+    'ru',
+    mismatch(
+      '"n" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count spelled out only for the readers the source spells it out for',
+    '{g, select, male {{n, plural, one {One file} other {# files}}} other {Files}}',
+    '{g, select, male {{n, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}} other {{n, plural, one {Файл} few {Файлы} many {Файлы} other {Файлы}}}}',
+    'ru',
+    undefined,
+  ],
+  [
+    'a count spelled out for the readers the source shows it to',
+    '{g, select, male {{n, plural, one {One file} other {# files}}} other {Files}}',
+    '{g, select, male {{n, plural, one {Один файл} few {# файла} many {# файлов} other {# файла}}} other {Файлы}}',
+    'ru',
+    mismatch(
+      '"n" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
+  ],
+  [
+    'an ordinal spelled out in a category English also picks for 21',
+    '{n, selectordinal, one {first} other {#th}}',
+    '{n, selectordinal, one {first} two {#nd} few {#rd} other {#th}}',
+    'en',
+    mismatch(
+      '"n" is not shown in the ordinal branch one, which en uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
   ],
   [
     'kept select keys',

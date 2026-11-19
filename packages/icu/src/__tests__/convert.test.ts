@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   checkTranslation,
   getPluralCategories,
+  getPluralCategoryCounts,
   icuToMessage,
   isExactKey,
   messageToIcu,
@@ -1163,6 +1164,31 @@ describe('getPluralCategories', () => {
 
   it('answers nothing for a locale Intl has no plural rules for', () => {
     expect(getPluralCategories('tlh', 'cardinal')).toBeUndefined();
+  });
+});
+
+describe('getPluralCategoryCounts', () => {
+  it.each([
+    ['ru', 'cardinal', 'one', [1, 21, 31, 41], true],
+    ['ru', 'cardinal', 'other', [0.5, 1.5, 2.5, 3.5], true],
+    ['fr', 'cardinal', 'one', [0, 1, 0.5, 1.5], false],
+    ['fr', 'cardinal', 'many', [1e6, 2e6, 3e6, 4e6], true],
+    ['de', 'cardinal', 'one', [1], false],
+    ['ar', 'cardinal', 'zero', [0], false],
+    ['en', 'ordinal', 'two', [2, 22, 32, 42], true],
+    ['ja', 'cardinal', 'one', [], false],
+  ] as const)(
+    'lists the counts %s %s %s is picked for',
+    (locale, type, category, counts, more) => {
+      expect(getPluralCategoryCounts(locale, type, category)).toEqual({
+        counts,
+        more,
+      });
+    }
+  );
+
+  it('answers nothing for a locale Intl has no plural rules for', () => {
+    expect(getPluralCategoryCounts('tlh', 'cardinal', 'one')).toBeUndefined();
   });
 });
 

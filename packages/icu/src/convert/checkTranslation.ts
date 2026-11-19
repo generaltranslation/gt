@@ -52,6 +52,10 @@ import {
  *   checkTranslation(source, icuToMessage('{n, plural, one {# файл} other {# файлов}}'), { locale: 'ru' });
  *   // '… "n" is missing the plural branches few, many, which ru needs.'
  *
+ * and each category the locale picks for more than one number shows a count
+ * the source shows in `other`: Russian `one` is also 21, so `Один файл` there
+ * reads wrong.
+ *
  * For ICU strings from any library, use `checkIcuTranslation`, which applies
  * the same rules.
  */
