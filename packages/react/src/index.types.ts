@@ -27,6 +27,7 @@ export {
   DateTime,
   RelativeTime,
   Var,
+  N,
   Num,
 } from '@generaltranslation/react-core/components';
 
@@ -83,12 +84,14 @@ export type {
   CurrencyProps,
   DateTimeProps,
   JsxTranslationOptions,
+  NProps,
   NumProps,
   PluralProps,
   PreparedT,
   RelativeTimeProps,
   ResolvedCurrencyProps,
   ResolvedDateTimeProps,
+  ResolvedNProps,
   ResolvedNumProps,
   ResolvedPluralProps,
   ResolvedRelativeTimeProps,

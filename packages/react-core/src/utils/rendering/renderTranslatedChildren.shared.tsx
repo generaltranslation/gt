@@ -7,6 +7,7 @@ import {
   VariableProps,
 } from '../types';
 import {
+  COUNT_VARIABLE_TYPE,
   getVariableProps,
   isVariableElementProps,
 } from '../variables/_getVariableProps';
@@ -16,6 +17,7 @@ import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import {
   getBranch,
   getPluralBranch,
+  isCount,
   selectBranchKey,
   selectPluralKey,
 } from '../plurals/getPluralBranch';
@@ -25,6 +27,9 @@ import {
 } from '@generaltranslation/format';
 import { getGTTag } from './getGTTag';
 import type { RenderVariable } from '../types';
+
+const isCountVariable = (child: unknown): boolean =>
+  isVariable(child) && child.v === COUNT_VARIABLE_TYPE;
 
 // Shared implementation: the variable renderer is dependency-injected by a
 // factory so this module statically imports no variable components.
@@ -36,6 +41,8 @@ type RenderTranslatedChildrenArgs = {
   target: TranslatedChildren;
   locales: string[];
   enableI18n: boolean;
+  /** The `n` of the nearest `<Plural>`, which a count variable shows. */
+  count?: number | bigint;
 };
 
 function createRenderTranslatedChildren({
@@ -50,11 +57,13 @@ function createRenderTranslatedChildren({
     targetElement,
     locales = [defaultDefaultLocale],
     enableI18n,
+    count,
   }: {
     sourceElement: TaggedElement;
     targetElement: TranslatedElement;
     locales: string[];
     enableI18n: boolean;
+    count?: number | bigint;
   }): React.ReactNode {
     // Get props and generaltranslation
     const { props: sourceProps } = sourceElement;
@@ -93,6 +102,8 @@ function createRenderTranslatedChildren({
         target,
         locales,
         enableI18n,
+        // An `n` that is no number is reported where the branch is picked.
+        count: isCount(n) ? n : undefined,
       });
     }
 
@@ -110,6 +121,7 @@ function createRenderTranslatedChildren({
         target,
         locales,
         enableI18n,
+        count,
       });
     }
 
@@ -122,6 +134,7 @@ function createRenderTranslatedChildren({
           target: targetElement.c,
           locales,
           enableI18n,
+          count,
         }) as TaggedChildren,
       });
     }
@@ -137,6 +150,7 @@ function createRenderTranslatedChildren({
           target: targetElement.c,
           locales,
           enableI18n,
+          count,
         }) as TaggedChildren,
       });
     }
@@ -154,7 +168,21 @@ function createRenderTranslatedChildren({
     target,
     locales = [defaultDefaultLocale],
     enableI18n,
+    count,
   }: RenderTranslatedChildrenArgs): ReactNode {
+    // As `#` is in ICU: the source branch a translated branch pairs with may
+    // have no count of its own, so it comes from the plural. With no plural
+    // in this `<T>`, a count is the source variable of its id, like any other.
+    const renderCount = (value: number | bigint) =>
+      renderVariable({
+        variableType: 'n',
+        variableValue: value,
+        variableOptions: {},
+        locales,
+        enableI18n,
+        injectionType: 'manual',
+      });
+
     // Most straightforward case, return a valid React node
     if ((target === null || typeof target === 'undefined') && source)
       return renderDefaultChildren({
@@ -163,6 +191,9 @@ function createRenderTranslatedChildren({
         enableI18n,
       });
     if (typeof target === 'string') return target;
+    if (isCountVariable(target) && count !== undefined) {
+      return renderCount(count);
+    }
 
     // Convert source to an array in case target has multiple children where source only has one
     if (Array.isArray(target) && !Array.isArray(source) && source)
@@ -229,6 +260,14 @@ function createRenderTranslatedChildren({
             </React.Fragment>
           );
 
+        if (isCountVariable(targetChild) && count !== undefined) {
+          return (
+            <React.Fragment key={`var_${index}`}>
+              {renderCount(count)}
+            </React.Fragment>
+          );
+        }
+
         // Render variable
         if (isVariable(targetChild)) {
           return (
@@ -258,6 +297,7 @@ function createRenderTranslatedChildren({
               targetElement: targetChild,
               locales,
               enableI18n,
+              count,
             })}
           </React.Fragment>
         );
@@ -277,6 +317,7 @@ function createRenderTranslatedChildren({
             targetElement: target as TranslatedElement,
             locales,
             enableI18n,
+            count,
           });
         }
 

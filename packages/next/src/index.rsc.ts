@@ -22,6 +22,7 @@ initializeGTServer();
 export { Currency } from './variables/Currency';
 export { DateTime } from './variables/DateTime';
 export { GTProvider } from './provider/GTProvider';
+export { N } from './variables/N';
 export { Num } from './variables/Num';
 export { Plural } from './branches/Plural';
 export { RelativeTime } from './variables/RelativeTime';

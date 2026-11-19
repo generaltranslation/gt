@@ -10,7 +10,9 @@ export const minifyVariableTypeMap = {
   DateTime: 'd',
   RelativeTime: 'rt',
   Currency: 'c',
-} as const;
+  // An <N> imported from GT: see COUNT_NODE_TYPE.
+  '#': '#',
+} as const satisfies Record<string, VariableType>;
 
 /**
  * Minify the variable type from the name of the variable component (from gt-next and gt-react)
@@ -20,5 +22,5 @@ export const minifyVariableTypeMap = {
 export const minifyVariableType = (
   variableType: keyof typeof minifyVariableTypeMap
 ): VariableType => {
-  return minifyVariableTypeMap[variableType] as VariableType;
+  return minifyVariableTypeMap[variableType];
 };

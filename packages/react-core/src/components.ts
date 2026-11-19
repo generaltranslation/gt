@@ -7,6 +7,7 @@ export { Derive, GtInternalDerive } from './components/derivation/Derive';
 export { GtInternalTranslateJsx, T } from './components/translation/T';
 export { Currency, GtInternalCurrency } from './components/variables/Currency';
 export { DateTime, GtInternalDateTime } from './components/variables/DateTime';
+export { N } from './components/variables/N';
 export { GtInternalNum, Num } from './components/variables/Num';
 export {
   GtInternalRelativeTime,

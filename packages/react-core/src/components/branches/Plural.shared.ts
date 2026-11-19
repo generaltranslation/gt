@@ -2,7 +2,8 @@ import {
   getPluralBranchKey,
   isAcceptedPluralForm,
 } from 'generaltranslation/internal';
-import { getPluralBranch } from '../../utils/plurals/getPluralBranch';
+import { getPluralBranch, isCount } from '../../utils/plurals/getPluralBranch';
+import { fillCount } from '../../utils/plurals/fillCount';
 import type { ReactNode } from 'react';
 import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
@@ -43,7 +44,9 @@ function renderPlural({
       .map(([prop, branch]) => [getPluralBranchKey(prop), branch]),
     ['other', children],
   ]);
-  return getPluralBranch(n, locales, branches);
+  const branch: ReactNode = getPluralBranch(n, locales, branches);
+  // An `n` that is no number is reported where the branch is picked.
+  return isCount(n) ? fillCount(branch, n) : branch;
 }
 
 export { renderPlural };

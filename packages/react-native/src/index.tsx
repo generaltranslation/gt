@@ -4,6 +4,7 @@ export {
   Currency,
   DateTime,
   Derive,
+  N,
   Num,
   Plural,
   RelativeTime,

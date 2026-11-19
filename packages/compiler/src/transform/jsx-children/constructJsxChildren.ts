@@ -5,7 +5,6 @@ import {
   JsxChildren,
   JsxElement,
   Variable,
-  VariableType as GTVariableType,
 } from '@generaltranslation/format';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
@@ -25,10 +24,13 @@ import {
   isDeriveComponent,
   isGTComponent,
   isVariableComponent,
-  minifyCanonicalName,
 } from '../../utils/constants/gt/helpers';
 import { validateStringLiteralPropertyFromArg } from './validation/validateStringLiteralPropertyFromArg';
-import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
+import {
+  GT_COMPONENT_TYPES,
+  VARIABLE_COMPONENT_TYPES,
+  type VariableComponent,
+} from '../../utils/constants/gt/constants';
 import { getBranchComponentParameters } from './utils/getBranchComponentParameters';
 import { validateNameFieldForVarComponent } from './validation/validateNameFieldForVarComponent';
 import { validateUnaryExpression } from './validation/validateUnaryExpression';
@@ -588,7 +590,7 @@ function constructGTProp(
  * Construct Variable
  */
 function constructVariable(
-  canonicalName: GT_COMPONENT_TYPES,
+  canonicalName: VariableComponent,
   args: (t.ArgumentPlaceholder | t.SpreadElement | t.Expression)[],
   id: IdObject
 ): { errors: string[]; value?: Variable } {
@@ -622,7 +624,7 @@ function constructVariable(
   const value: Variable = {
     i: id.get(),
     ...(name ? { k: name } : {}),
-    v: minifyCanonicalName(canonicalName) as GTVariableType,
+    v: VARIABLE_COMPONENT_TYPES[canonicalName],
   };
 
   return { errors, value };

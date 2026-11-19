@@ -10,7 +10,7 @@ function pick<T>(branches: Record<string, T>, key: string): T | undefined {
   return Object.hasOwn(branches, key) ? branches[key] : undefined;
 }
 
-const isCount = (n: unknown): n is number | bigint =>
+export const isCount = (n: unknown): n is number | bigint =>
   typeof n === 'number' || typeof n === 'bigint';
 
 /**
@@ -99,6 +99,15 @@ export function getBranch<T>(
   return selected;
 }
 
+/** Reports an `<N>` that no `<Plural>` gave a count. */
+export function reportMissingCount(): void {
+  report({
+    whatHappened: '<N> has no count to show',
+    fix: 'Put it in the children or a branch of a <Plural> whose n is a number. A <Plural> cannot see an <N> that another component renders',
+    rendered: 'Nothing was rendered',
+  });
+}
+
 function report({
   whatHappened,
   fix,
@@ -108,7 +117,7 @@ function report({
   whatHappened: string;
   fix: string;
   rendered: string;
-  details: string;
+  details?: string;
 }): void {
   const development = getRuntimeEnvironment() === 'development';
   const diagnostic = createDiagnosticMessage({

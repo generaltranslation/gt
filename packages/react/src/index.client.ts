@@ -27,6 +27,7 @@ export {
   DateTime,
   RelativeTime,
   Var,
+  N,
   Num,
 } from '@generaltranslation/react-core/components';
 

@@ -14,7 +14,12 @@ import {
   GtInternalRelativeTime,
   RelativeTime,
 } from '../../../components/variables/RelativeTime';
+import { N } from '../../../components/variables/N';
+import { RscN } from '../../../components/variables/N.rsc';
 import { Var } from '../../../components/variables/Var';
+import { renderPlural } from '../../../components/branches/Plural.shared';
+import { Num } from '../../../components/variables/Num';
+import { fillCount } from '../../plurals/fillCount';
 import type { GTTag, TaggedElement } from '../../types';
 
 function gtTag(node: unknown): GTTag {
@@ -37,6 +42,261 @@ function renderText(node: ReactNode): string {
   }
   return '';
 }
+
+describe('<N>, the count of its <Plural>', () => {
+  const files = (n: number | bigint) => (
+    <Plural n={n} one='One file'>
+      {[
+        <b key='count'>
+          <N />
+        </b>,
+        ' files',
+      ]}
+    </Plural>
+  );
+  const render = (n: number, target?: unknown) => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'ru'] });
+    const source = addGTIdentifier(files(n));
+    return renderText(
+      target
+        ? renderTranslatedChildren({
+            source,
+            target: target as never,
+            locales: ['ru'],
+            enableI18n: true,
+          })
+        : renderDefaultChildren({
+            children: source,
+            defaultLocale: 'en',
+            enableI18n: true,
+          })
+    );
+  };
+
+  it('is stored as a count variable, without the count', () => {
+    expect(writeChildrenAsObjects(addGTIdentifier(files(1234)))).toEqual({
+      t: 'Plural',
+      i: 1,
+      d: {
+        b: {
+          one: 'One file',
+          other: [{ t: 'b', i: 2, c: { i: 3, v: '#' } }, ' files'],
+        },
+        t: 'p',
+      },
+    });
+  });
+
+  it('renders the count in the source', () => {
+    expect(render(1)).toBe('One file');
+    expect(render(1234)).toBe('1,234 files');
+  });
+
+  it('renders the count where a translation puts it', () => {
+    // Russian picks "one" for 21 too, so it shows the count there.
+    const count = { i: 3, v: '#' };
+    const target = {
+      t: 'Plural',
+      i: 1,
+      d: {
+        b: {
+          one: [count, ' файл'],
+          other: [{ t: 'b', i: 2, c: count }, ' файла'],
+        },
+        t: 'p',
+      },
+    };
+
+    expect(render(21, target)).toBe('21 файл');
+    expect(render(22, target)).toBe('22 файла');
+  });
+
+  it('renders the count in a named branch of a <Branch>', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en'] });
+    const source = addGTIdentifier(
+      <Plural n={5}>
+        <Branch branch='photo' photo={[<N key='count' />, ' photos']}>
+          {[<N key='count' />, ' files']}
+        </Branch>
+      </Plural>
+    );
+
+    expect(
+      renderText(
+        renderDefaultChildren({
+          children: source,
+          defaultLocale: 'en',
+          enableI18n: true,
+        })
+      )
+    ).toBe('5 photos');
+  });
+
+  describe('that no <Plural> gave a count', () => {
+    const lone = () => addGTIdentifier(['Total: ', <N key='count' />]);
+    function Count(props: object) {
+      return <RscN {...props} _locale='en' _enableI18n />;
+    }
+
+    it('logs and renders nothing in production', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      initializeI18nConfig({ defaultLocale: 'en', locales: ['en'] });
+
+      expect(
+        renderText(
+          renderDefaultChildren({
+            children: lone(),
+            defaultLocale: 'en',
+            enableI18n: true,
+          })
+        )
+      ).toBe('Total: ');
+      expect(renderText(<Count />)).toBe('');
+      expect(error).toHaveBeenCalledTimes(2);
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining('<N> has no count to show')
+      );
+      error.mockRestore();
+    });
+
+    it('throws in development, inside and outside <T>', () => {
+      vi.stubEnv('NODE_ENV', 'development');
+      try {
+        expect(lone).toThrow('<N> has no count to show');
+        expect(() => renderText(<Count />)).toThrow('<N> has no count to show');
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+  });
+
+  // Every plural branch a <T> tags goes through fillCount, so a branch with no
+  // <N> must come back as the same object: tagging then sees what it always did.
+  it.each<[string, ReactNode]>([
+    ['text', 'files'],
+    ['NaN', NaN],
+    ['empty and falsy children', [NaN, ' items', null, false, 0, '']],
+    ['nested arrays', [['a', <b key='b'>b</b>], [<i key='i'>i</i>]]],
+    [
+      'a fragment',
+      <>
+        <b>a</b> b
+      </>,
+    ],
+    ['a function child', <div>{(() => 'x') as unknown as ReactNode}</div>],
+    [
+      'a <Branch> with a NaN prop',
+      <Branch branch={NaN as unknown as string} {...{ photo: <b>p</b> }}>
+        x
+      </Branch>,
+    ],
+    [
+      'a nested <Plural> with an <N>',
+      <Plural n={2} one='x'>
+        <N />
+      </Plural>,
+    ],
+    [
+      'a deep tree',
+      <section>
+        <ul>
+          <li>
+            <a href='/x'>
+              <Num>{3}</Num> <b>x</b>
+            </a>
+          </li>
+        </ul>
+      </section>,
+    ],
+  ])(
+    'leaves a branch with no <N> of its own untouched: %s',
+    (_name, branch) => {
+      expect(fillCount(branch, 5)).toBe(branch);
+    }
+  );
+
+  it('takes the id a <Num> in its place would', () => {
+    const tagged = (count: ReactNode) =>
+      writeChildrenAsObjects(
+        addGTIdentifier(
+          <Plural n={5} one={[<i key='i'>one</i>, count]}>
+            {[<b key='b'>{count}</b>, ' of ', <i key='i'>them</i>]}
+          </Plural>
+        )
+      );
+
+    expect(
+      JSON.parse(JSON.stringify(tagged(<N />)).replaceAll('"#"', '"n"'))
+    ).toEqual(tagged(<Num>{5}</Num>));
+  });
+
+  // A server component has no context, so its <Plural> hands the count over.
+  describe('in a <Plural> outside <T>', () => {
+    const conditions = { _locale: 'en', _enableI18n: true };
+    function Count(props: object) {
+      return <RscN {...props} {...conditions} />;
+    }
+    Count._gtt = 'variable-count';
+    function Nested(props: { n: number; children: ReactNode }) {
+      return renderPlural({ ...props, ...conditions });
+    }
+    Nested._gtt = 'plural';
+    const bare = (children: ReactNode) =>
+      renderPlural({ ...conditions, n: 5, children });
+
+    it('renders the count, and a nested <Plural> its own', () => {
+      initializeI18nConfig({ defaultLocale: 'en', locales: ['en'] });
+      expect(
+        renderText(
+          bare([
+            <b key='count'>
+              <Count />
+            </b>,
+            ' files, ',
+            <Nested key='nested' n={7}>
+              <Count />
+            </Nested>,
+          ])
+        )
+      ).toBe('5 files, 7');
+    });
+
+    it('renders the count in a named branch of a <Branch>', () => {
+      initializeI18nConfig({ defaultLocale: 'en', locales: ['en'] });
+      expect(
+        renderText(
+          bare(
+            <Branch branch='photo' photo={[<Count key='count' />, ' photos']}>
+              files
+            </Branch>
+          )
+        )
+      ).toBe('5 photos');
+    });
+
+    it('renders the count in the translation of a <T> inside it', () => {
+      initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'ru'] });
+      // What a <T> in the branch gets as its children: it has no plural.
+      const source = addGTIdentifier(bare([<Count key='count' />, ' files']));
+
+      expect(
+        renderText(
+          renderTranslatedChildren({
+            source,
+            target: [{ i: 1, v: '#' }, ' файлов'],
+            locales: ['ru'],
+            enableI18n: true,
+          })
+        )
+      ).toBe('5 файлов');
+    });
+
+    it('returns a branch with no <N> as it is', () => {
+      const branch = [<b key='b'>Many</b>, ' files'];
+      expect(bare(branch)).toBe(branch);
+    });
+  });
+});
 
 // https://github.com/generaltranslation/gt/issues/2077
 describe('addGTIdentifier with <RelativeTime>', () => {
