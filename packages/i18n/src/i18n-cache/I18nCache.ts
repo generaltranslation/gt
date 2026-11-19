@@ -162,6 +162,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
 
     // Setup locale-keyed caches
     const ttl = this.config.cacheExpiryTime;
+    // Development retries failed loads so newly generated translations appear on the next request.
+    const cacheFailedLoads = getRuntimeEnvironment() !== 'development';
     this.translations = new ResourceCache<
       Locale,
       TranslationsCache<TranslationValue>
@@ -169,11 +171,17 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       ttl,
       load: async (locale) =>
         this.createTranslationsCache(locale, await loadTranslations(locale)),
+      ...(cacheFailedLoads && {
+        fallback: (locale: Locale) => this.createTranslationsCache(locale, {}),
+      }),
     });
     this.dictionaries = new ResourceCache<Locale, DictionaryCache>({
       ttl,
       load: async (locale) =>
         this.createDictionaryCache(locale, await loadDictionary(locale)),
+      ...(cacheFailedLoads && {
+        fallback: (locale: Locale) => this.createDictionaryCache(locale, {}),
+      }),
     });
 
     // The default locale's source dictionary is provided synchronously and

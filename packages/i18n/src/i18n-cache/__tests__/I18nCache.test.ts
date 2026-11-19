@@ -1380,36 +1380,51 @@ describe('I18nCache', () => {
       expect(errorSpy).not.toHaveBeenCalled();
     });
 
-    it('production: a failing translations loader is logged and swallowed', async () => {
+    it('production: a failed load is logged once, then cached as empty until the TTL expires', async () => {
+      const loadTranslations = vi
+        .fn()
+        .mockRejectedValue(new Error('Load failed'));
+      const loadDictionary = vi
+        .fn()
+        .mockRejectedValue(new Error('Dictionary failed'));
       const cache = createCache({
-        loadTranslations: vi.fn().mockRejectedValue(new Error('Load failed')),
+        loadTranslations,
+        loadDictionary,
+        dictionary: { greeting: 'Hello' },
       });
 
       await expect(cache.loadTranslations('fr')).resolves.toEqual({});
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Load failed')
-      );
+      await expect(cache.loadDictionary('fr')).resolves.toEqual({});
+      expect(callsContaining(errorSpy, 'Load failed')).toHaveLength(1);
+      expect(callsContaining(errorSpy, 'Dictionary failed')).toHaveLength(1);
 
-      // The fallback path also swallows the loader failure
       errorSpy.mockClear();
-      await expect(
-        cache.lookupTranslationWithFallback('fr', message, lookupOptions)
-      ).resolves.toBeUndefined();
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Load failed')
-      );
+      await expect(cache.loadTranslations('fr')).resolves.toEqual({});
+      await expect(cache.loadDictionary('fr')).resolves.toEqual({});
+      expect(
+        cache.lookupTranslation('fr', message, lookupOptions)
+      ).toBeUndefined();
+      expect(errorSpy).not.toHaveBeenCalled();
+      expect(loadTranslations).toHaveBeenCalledTimes(1);
+      expect(loadDictionary).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(DEFAULT_TTL + 1);
+      await cache.loadTranslations('fr');
+      expect(loadTranslations).toHaveBeenCalledTimes(2);
     });
 
-    it('development: a failing translations loader rejects', async () => {
+    it('development: a failing translations loader rejects and retries on each call', async () => {
       vi.stubEnv('NODE_ENV', 'development');
-      const cache = createCache({
-        loadTranslations: vi.fn().mockRejectedValue(new Error('Load failed')),
-      });
+      const loadTranslations = vi
+        .fn()
+        .mockRejectedValue(new Error('Load failed'));
+      const cache = createCache({ loadTranslations });
 
       await expect(cache.loadTranslations('fr')).rejects.toThrow('Load failed');
       await expect(
         cache.lookupTranslationWithFallback('fr', message, lookupOptions)
       ).rejects.toThrow('Load failed');
+      expect(loadTranslations).toHaveBeenCalledTimes(2);
     });
 
     it.each(['production', 'development'])(
