@@ -101,12 +101,13 @@ describe('logging prompts', () => {
 
   // Drives the real Clack prompt through injected streams.
   async function withRealClack(
-    prompt: 'text' | 'autocomplete' | 'autocompleteMultiselect'
+    prompt: 'text' | 'autocomplete' | 'autocompleteMultiselect',
+    size?: { columns: number; rows: number }
   ) {
     const actual =
       await vi.importActual<typeof import('@clack/prompts')>('@clack/prompts');
     const input = new PassThrough();
-    const output = new PassThrough();
+    const output = Object.assign(new PassThrough(), size);
     let rendered = '';
     output.on('data', (chunk) => (rendered += chunk));
     clack[prompt].mockImplementationOnce((options: never) =>
@@ -235,6 +236,69 @@ describe('logging prompts', () => {
     await expect(locales).resolves.toEqual(['es', 'zh-Hans-CN']);
   });
 
+  describe.each([
+    { columns: 100, rows: 30 },
+    { columns: 60, rows: 24 },
+  ])('in a $columns x $rows terminal', (size) => {
+    const stdoutSize = Object.getOwnPropertyDescriptors(process.stdout);
+    beforeEach(() => {
+      // Clack wraps each frame to process.stdout, whatever the output stream.
+      Object.defineProperty(process.stdout, 'columns', {
+        configurable: true,
+        value: size.columns,
+      });
+      Object.defineProperty(process.stdout, 'rows', {
+        configurable: true,
+        value: size.rows,
+      });
+    });
+    afterEach(() => {
+      for (const key of ['columns', 'rows'] as const) {
+        if (stdoutSize[key]) {
+          Object.defineProperty(process.stdout, key, stdoutSize[key]);
+        } else {
+          delete (process.stdout as { [key: string]: unknown })[key];
+        }
+      }
+    });
+
+    it.each(['autocomplete', 'autocompleteMultiselect'] as const)(
+      'redraws the %s locale prompt in place while searching',
+      async (kind) => {
+        const { type, rendered } = await withRealClack(kind, size);
+        const { promptLocale, promptLocaleList } =
+          await import('../logging.js');
+        const answer =
+          kind === 'autocomplete'
+            ? promptLocale({
+                message: 'What is the default locale for your project?',
+              })
+            : promptLocaleList({
+                message:
+                  'Which languages would you like to translate your project into?',
+              });
+
+        for (const keys of ['', 'e', 's', '\x7f', '\x7f', 'fr', '\x15unidos']) {
+          await type(keys);
+          const { scrollback, screen } = replayTerminal(rendered(), size);
+          // A frame taller than the terminal scrolls, and Clack then redraws
+          // below stale copies of earlier frames.
+          expect(scrollback).toEqual([]);
+          expect(
+            screen.filter((line) => line.includes('Search:'))
+          ).toHaveLength(1);
+          expect(screen.length).toBeLessThanOrEqual(size.rows);
+        }
+
+        await type('\t');
+        await type('\r');
+        await expect(answer).resolves.toEqual(
+          kind === 'autocomplete' ? 'es-US' : ['es-US']
+        );
+      }
+    );
+  });
+
   it('accepts the suggested text default when Enter is pressed', async () => {
     const { type } = await withRealClack('text');
     const { promptText } = logging;
@@ -271,3 +335,58 @@ describe('logging prompts', () => {
     );
   });
 });
+
+/**
+ * Replays prompt output on a terminal of the given size, handling the cursor
+ * and erase sequences Clack writes. Like a real terminal, the cursor cannot
+ * move above the top row and writing past the bottom row scrolls lines away.
+ */
+function replayTerminal(
+  output: string,
+  { columns, rows }: { columns: number; rows: number }
+) {
+  const lines: string[][] = [[]];
+  let top = 0;
+  let y = 0;
+  let x = 0;
+  const lineFeed = () => {
+    y++;
+    x = 0;
+    lines[y] ??= [];
+    if (y - top >= rows) top = y - rows + 1;
+  };
+  // eslint-disable-next-line no-control-regex
+  const tokens = output.match(/\u001b\[[?0-9;]*[A-Za-z]|\r?\n|\r|[^]/gu) ?? [];
+  for (const token of tokens) {
+    // eslint-disable-next-line no-control-regex
+    const csi = /^\u001b\[([?0-9;]*)([A-Za-z])$/.exec(token);
+    if (csi) {
+      const count = Number(csi[1]) || 1;
+      if (csi[2] === 'A') y = Math.max(top, y - count);
+      if (csi[2] === 'B') {
+        y = Math.min(top + rows - 1, y + count);
+        for (let i = 0; i <= y; i++) lines[i] ??= [];
+      }
+      if (csi[2] === 'C') x += count;
+      if (csi[2] === 'D') x = Math.max(0, x - count);
+      if (csi[2] === 'G') x = 0;
+      if (csi[2] === 'K') lines[y] = [];
+      if (csi[2] === 'J') {
+        lines[y] = lines[y].slice(0, x);
+        lines.length = y + 1;
+      }
+    } else if (token === '\n' || token === '\r\n') {
+      lineFeed();
+    } else if (token === '\r') {
+      x = 0;
+    } else {
+      if (x >= columns) lineFeed();
+      lines[y][x++] = token;
+    }
+  }
+  const text = lines.map((line) => Array.from(line, (c) => c ?? ' ').join(''));
+  while (text.length > top + 1 && text[text.length - 1].trim() === '') {
+    text.pop();
+  }
+  return { scrollback: text.slice(0, top), screen: text.slice(top) };
+}
