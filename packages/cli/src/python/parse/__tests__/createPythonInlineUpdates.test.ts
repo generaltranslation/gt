@@ -80,6 +80,26 @@ describe('createPythonInlineUpdates', () => {
     expect(result.updates[0].metadata.filePaths).toEqual(['/app/routes.py']);
   });
 
+  it('hashes messages as the 16 hex characters the Python runtime looks up', async () => {
+    mockMatchFiles.mockReturnValue(['/app/routes.py']);
+    mockReadFile.mockResolvedValue('code' as unknown);
+    mockExtract.mockReturnValue({
+      results: [
+        {
+          dataFormat: 'ICU',
+          source: 'Hello world',
+          metadata: { filePaths: ['/app/routes.py'] },
+        },
+      ],
+      errors: [],
+      warnings: [],
+    });
+
+    const result = await createPythonInlineUpdates(undefined);
+
+    expect(result.updates[0].metadata.hash).toBe('05a87bce151d258b');
+  });
+
   it('propagates errors and warnings from extractor', async () => {
     mockMatchFiles.mockReturnValue(['/app/routes.py']);
     mockReadFile.mockResolvedValue('code' as unknown);

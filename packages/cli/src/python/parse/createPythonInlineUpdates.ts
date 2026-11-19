@@ -8,10 +8,16 @@ import {
   linkDeriveUpdates,
 } from '../../extraction/postProcess.js';
 import { matchFiles } from '../../fs/matchFiles.js';
+import { hashStringSync } from '../../utils/hash.js';
 import {
   DEFAULT_PYTHON_SRC_PATTERNS,
   DEFAULT_PYTHON_SRC_EXCLUDES,
 } from '../../config/generateSettings.js';
+
+// gt-python's runtime still looks messages up by 16-hex-character hashes.
+function hashPythonMessage(string: string): string {
+  return hashStringSync(string).slice(0, 16);
+}
 
 export async function createPythonInlineUpdates(
   filePatterns: string[] | undefined
@@ -45,7 +51,7 @@ export async function createPythonInlineUpdates(
   }
 
   // Post processing steps
-  await calculateHashes(updates);
+  await calculateHashes(updates, hashPythonMessage);
   dedupeUpdates(updates);
   linkDeriveUpdates(updates);
 

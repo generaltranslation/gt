@@ -5,23 +5,29 @@ import type { SourceCode } from '../react/jsx/utils/extractSourceCode.js';
 /**
  * Calculate hashes for all updates in parallel
  */
-export async function calculateHashes(updates: Updates): Promise<void> {
+export async function calculateHashes(
+  updates: Updates,
+  hashFunction?: (string: string) => string
+): Promise<void> {
   await Promise.all(
     updates.map(async (update) => {
-      const hash = hashSource({
-        source: update.source,
-        ...(update.metadata.context && { context: update.metadata.context }),
-        ...(update.metadata.maxChars != null && {
-          maxChars: update.metadata.maxChars,
-        }),
-        // Only the explicit prop is hash-changing. Config-level review
-        // defaults materialize into GTJSON metadata without touching hashes,
-        // because the runtime computes lookup hashes from props alone.
-        ...(update.metadata.requiresReview === true && {
-          requiresReview: true,
-        }),
-        dataFormat: update.dataFormat,
-      });
+      const hash = hashSource(
+        {
+          source: update.source,
+          ...(update.metadata.context && { context: update.metadata.context }),
+          ...(update.metadata.maxChars != null && {
+            maxChars: update.metadata.maxChars,
+          }),
+          // Only the explicit prop is hash-changing. Config-level review
+          // defaults materialize into GTJSON metadata without touching hashes,
+          // because the runtime computes lookup hashes from props alone.
+          ...(update.metadata.requiresReview === true && {
+            requiresReview: true,
+          }),
+          dataFormat: update.dataFormat,
+        },
+        hashFunction
+      );
       update.metadata.hash = hash;
     })
   );
