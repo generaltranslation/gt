@@ -745,7 +745,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             code,
             id,
             chunkTranslations.naming,
-            regions !== undefined
+            regions !== undefined,
+            chunkTranslations.minifiedIds !== undefined
           ) ?? null) as never;
         },
       },

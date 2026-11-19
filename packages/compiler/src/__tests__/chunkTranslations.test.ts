@@ -2994,6 +2994,71 @@ export const ready = initializeGTSPA({});`,
       ).toMatchObject({ minifiedIds: { hashes: new Map() } });
     });
 
+    it.each([
+      [
+        'by chunk, named by token',
+        {},
+        ['loadChunk', 'loadMinifiedChunk'],
+        ['initializeChunkTranslations', 'initializeMinifiedChunkTranslations'],
+      ],
+      [
+        'by chunk, named by map',
+        { experimentalChunkTranslationsNaming: 'map' },
+        ['loadMappedChunk', 'loadMinifiedMappedChunk'],
+        [
+          'initializeMappedChunkTranslations',
+          'initializeMinifiedMappedChunkTranslations',
+        ],
+      ],
+      [
+        'by module',
+        { experimentalChunkTranslationsSplit: 'module' },
+        ['loadRegionChunk', 'loadMinifiedRegionChunk'],
+        [
+          'initializeRegionChunkTranslations',
+          'initializeMinifiedRegionChunkTranslations',
+        ],
+      ],
+    ] as const)(
+      'imports the entry by names that only a gt-react that reads its files exports, split %s',
+      async (_split, split, load, initialize) => {
+        const imported = async (options: GTUnpluginOptions) => {
+          const created = createPlugins(options);
+          const wrap = created.plugins[1].transform as (
+            this: unknown,
+            code: string,
+            id: string
+          ) => Promise<{ code: string } | null>;
+          const wrapped = await wrap.call(
+            {},
+            `import('./a.js');`,
+            path.join(created.cwd, 'a.js')
+          );
+          const compiled = await transform(MODULE, options, created);
+          return [wrapped?.code, compiled].map(
+            (code) => / (\w+) as __gt_chunk_\w+ /.exec(code ?? '')?.[1]
+          );
+        };
+        expect(await imported({ ...MINIFIED, ...split })).toEqual([
+          load[1],
+          initialize[1],
+        ]);
+        // A build without hash minification imports what it did
+        expect(await imported({ ...ON, ...split })).toEqual([
+          load[0],
+          initialize[0],
+        ]);
+        const entry = (await import('gt-react/chunk-translations')) as Record<
+          string,
+          unknown
+        >;
+        for (const [name, minified] of [load, initialize]) {
+          expect(entry[minified], minified).toBeTypeOf('function');
+          expect(entry[minified], minified).toBe(entry[name]);
+        }
+      }
+    );
+
     it("gives a message the name of the list of its chunk's messages, then its place in it", () => {
       expect(getListName([SAVE_TEXT, HELLO])).toBe('2bFNA3qJ');
       expect(minifyHashes([SAVE_TEXT, HELLO])).toEqual(
@@ -3198,12 +3263,16 @@ export const Written = () => jsx(T, { _hash: '0123456789abcdef', children: 'Writ
         });
         const on = (await transform(SOURCE, options, created))!;
         // Only the hash of a call site that reads a chunk's file changes,
-        // and not where the second msg passes the hash of a t template
+        // and not where the second msg passes the hash of a t template,
+        // and the name the entry is imported by
         expect(on).toBe(
           split.reduce(
             (code, hash) =>
               code.replace(`"${hash}"`, `"${createIdPlaceholder(hash)}"`),
-            off
+            off.replace(
+              'initializeChunkTranslations',
+              'initializeMinifiedChunkTranslations'
+            )
           )
         );
         const ids = minifyHashes(split);

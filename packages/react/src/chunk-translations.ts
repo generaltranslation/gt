@@ -43,18 +43,33 @@
  *
  * Nothing here runs when a module loads, and all state is on one global
  * object, which the startup script creates before any module runs.
+ *
+ * A build with the compiler's hash minification imports what it loads and
+ * starts with by a second name, `loadMinifiedChunk()` for `loadChunk()` and
+ * so on: a gt-react that does not read the files of such a build has no such
+ * export, so the bundler fails on it.
  */
 export type { ChunkTranslationsState } from './chunk-translations/state';
-export { loadChunk } from './chunk-translations/gate';
+export {
+  loadChunk,
+  loadChunk as loadMinifiedChunk,
+} from './chunk-translations/gate';
 export { loadChunkTranslations } from './chunk-translations/token';
-export { initializeChunkTranslations } from './chunk-translations/initialize';
+export {
+  initializeChunkTranslations,
+  initializeChunkTranslations as initializeMinifiedChunkTranslations,
+} from './chunk-translations/initialize';
 export {
   initializeMappedChunkTranslations,
+  initializeMappedChunkTranslations as initializeMinifiedMappedChunkTranslations,
   loadMappedChunk,
+  loadMappedChunk as loadMinifiedMappedChunk,
   loadMappedChunkTranslations,
 } from './chunk-translations/map';
 export {
   initializeRegionChunkTranslations,
+  initializeRegionChunkTranslations as initializeMinifiedRegionChunkTranslations,
   loadRegionChunk,
+  loadRegionChunk as loadMinifiedRegionChunk,
   loadRegionChunkTranslations,
 } from './chunk-translations/region';

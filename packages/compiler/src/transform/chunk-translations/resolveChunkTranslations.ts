@@ -265,21 +265,35 @@ export function getChunkTranslationsNaming(
 /**
  * The name the entry exports what compiled code imports by: a build with
  * maps loads the files of an import with another function, and so does a
- * build that splits by module.
+ * build that splits by module. A build with hash minification imports each
+ * by a name that only a gt-react that reads its files exports, so the
+ * bundler fails on one that does not.
  */
 export function getEntryExport(
   kind: ChunkTranslationsImport,
   naming: ChunkTranslationsNaming,
-  splitsByModule = false
+  splitsByModule = false,
+  minifiesHashes = false
 ): string {
-  return (
+  const name =
     (splitsByModule
       ? REGION_EXPORTS[kind]
       : naming === 'map'
         ? MAPPED_EXPORTS[kind]
-        : undefined) ?? CHUNK_TRANSLATIONS_IMPORTS[kind].name
-  );
+        : undefined) ?? CHUNK_TRANSLATIONS_IMPORTS[kind].name;
+  return minifiesHashes ? MINIFIED_EXPORTS[name] : name;
 }
+
+const MINIFIED_EXPORTS: Record<string, string> = {
+  loadChunk: 'loadMinifiedChunk',
+  initializeChunkTranslations: 'initializeMinifiedChunkTranslations',
+  loadMappedChunk: 'loadMinifiedMappedChunk',
+  initializeMappedChunkTranslations:
+    'initializeMinifiedMappedChunkTranslations',
+  loadRegionChunk: 'loadMinifiedRegionChunk',
+  initializeRegionChunkTranslations:
+    'initializeMinifiedRegionChunkTranslations',
+};
 
 const REGION_EXPORTS: Partial<Record<ChunkTranslationsImport, string>> = {
   load: 'loadRegionChunk',
