@@ -51,8 +51,21 @@ export interface PluginConfig
    * templates from `gt-react` by chunk; the translations of other
    * messages, such as `msg` and dictionaries, stay in one file per
    * locale that the page loads when the app starts, and the build says how
-   * many those are. Defaults to the `GT_CHUNK_TRANSLATIONS` environment
-   * variable (`true` or `false`).
+   * many those are.
+   *
+   * The JSON files are assets named by what they hold, as the chunks are:
+   * deploy them with the chunks they sit next to and keep them as long. A
+   * page that stays open while the app is deployed again asks for files by
+   * the names its own build gave them. On a host that drops the files of
+   * earlier builds it then reads `gt-current.json`, which every build
+   * writes under that one name, to find a file under its current name, so
+   * serve that file as `index.html` is served, not cached for good. A host
+   * that caches the assets directory for good and ignores the query the page
+   * adds serves a stale copy: the page then finds no current name, and the
+   * messages of the missing file render the source text, with a warning.
+   *
+   * Defaults to the `GT_CHUNK_TRANSLATIONS` environment variable (`true` or
+   * `false`).
    */
   experimentalChunkTranslations?: boolean;
   /**

@@ -116,23 +116,23 @@ const STREAM_DELAY_MS = 250;
  * second after a pause: up to the end of the startup script, then the rest.
  */
 function serve(directory) {
+  // The builds served before, with which of their paths the host still has
+  const earlier = [];
   const server = createServer((request, response) => {
     const { pathname } = new URL(request.url, 'http://localhost');
     const streamed = pathname.startsWith(`/${STREAMED}`);
-    const file = join(
-      directory,
-      normalize(
-        pathname === '/'
-          ? '/index.html'
-          : streamed
-            ? pathname.replace(STREAMED, '')
-            : pathname
-      )
+    const name = normalize(
+      pathname === '/'
+        ? '/index.html'
+        : streamed
+          ? pathname.replace(STREAMED, '')
+          : pathname
     );
-    if (
-      !file.startsWith(directory) ||
-      !statSync(file, { throwIfNoEntry: false })?.isFile()
-    ) {
+    const file = [[directory, () => true], ...earlier]
+      .filter(([, keeps]) => keeps(pathname))
+      .map(([served]) => join(served, name))
+      .find((path) => statSync(path, { throwIfNoEntry: false })?.isFile());
+    if (!file || !join(directory, name).startsWith(directory)) {
       response.writeHead(404).end('Not found');
       return;
     }
@@ -152,6 +152,15 @@ function serve(directory) {
     server.listen(0, '127.0.0.1', () =>
       resolve({
         url: `http://127.0.0.1:${server.address().port}`,
+        /**
+         * Serves another build at the same address. A host has the files of
+         * that build only, unless `keeps` says which paths of the builds
+         * before it still has.
+         */
+        deploy(next, keeps) {
+          if (keeps) earlier.unshift([directory, keeps]);
+          directory = next;
+        },
         close: () => server.close(),
       })
     )
@@ -388,6 +397,25 @@ async function open(url, locale, prepare) {
       await page.waitForSelector(`[data-route="${route}"]`);
     },
   };
+}
+
+/**
+ * The heading of the Orders route after the page is loaded again, and in a
+ * new tab of the same browser: what a visitor sees once the open page is
+ * gone, with whatever the first page left in the browser.
+ */
+async function reopenOrders(page, url) {
+  const read = async (opened) => {
+    await opened.waitForSelector('[data-route]');
+    await opened.click('[data-nav="orders"]');
+    await opened.waitForSelector('[data-route="orders"]');
+    return opened.locator('[data-test="heading"]').textContent();
+  };
+  await page.reload();
+  const reloaded = await read(page);
+  const tab = await page.context().newPage();
+  await tab.goto(`${url}/`);
+  return [reloaded, await read(tab)];
 }
 
 /** Every element of a route, the shell included, against what `locale` renders. */
@@ -1469,15 +1497,11 @@ async function checkVariant(name, variant) {
           : catalog
       );
     }
-    const changed = compare(
-      base,
-      read(
-        build(`module-${name}-changed`, variant, {
-          ...previous,
-          CHECK_TRANSLATIONS: translations,
-        }).outDir
-      )
-    );
+    const deployed = build(`module-${name}-changed`, variant, {
+      ...previous,
+      CHECK_TRANSLATIONS: translations,
+    }).outDir;
+    const changed = compare(base, read(deployed));
     const expected = [
       built.fileOf('Recent orders', 'fr').replace(/\.[0-9a-f]{8}\.json$/, ''),
       '/assets/gt-map.fr',
@@ -1491,12 +1515,131 @@ async function checkVariant(name, variant) {
       changed.renamed.join(', ')
     );
     check(
-      'a changed translation rewrites only the page and the manifest, and changes no JavaScript',
+      'a changed translation rewrites only the page, the manifest and the file of current names, and changes no JavaScript',
       changed.rewritten.sort().join() ===
-        'assets/gt-chunk-translations.json,index.html',
+        'assets/gt-chunk-translations.json,assets/gt-current.json,index.html',
       changed.rewritten.join(', ')
     );
     stability.changed = changed.renamed.length;
+
+    // ----- A page that stays open while the app is deployed again ----- //
+    // The page is of the first build, and the host then serves the one with
+    // the changed translation. On a host that drops the files of earlier
+    // builds the file of that message is gone under the name the page has:
+    // the page reads the names of the build that is served now, and the
+    // lists of its map, and asks for what they list for the route. On a
+    // host that keeps them the page goes on with the build it is of. Where
+    // the entry's files hold the message, the page has it already and asks
+    // for nothing.
+    const next = readBuild(deployed);
+    const before = built.fileOf(ROUTES.orders.heading, 'fr');
+    const now = next.fileOf(ROUTES.orders.heading, 'fr');
+    const current = `/${manifest.current}`;
+    const held = built.entryFiles('fr').includes(before);
+    const visit = async (keeps) => {
+      const deploys = await serve(on.outDir);
+      const app = await open(deploys.url, 'fr');
+      await app.goto();
+      await app.page.waitForLoadState('networkidle');
+      deploys.deploy(deployed, keeps);
+      const start = app.requests.length;
+      await app.navigate('orders');
+      const asked = app.requests.slice(start).map(({ path }) => path);
+      const wrong = [];
+      for (const [element, source] of Object.entries({
+        ...SHELL,
+        ...ROUTES.orders,
+      })) {
+        const expected =
+          element === 'heading' && !keeps && !held
+            ? 'RECENT ORDERS, AGAIN'
+            : translate('fr', pick(source, 0));
+        const actual = await app.text(element);
+        if (actual !== expected)
+          wrong.push(`${element}: "${actual}" != "${expected}"`);
+      }
+      return {
+        app,
+        url: deploys.url,
+        asked,
+        wrong: wrong.join('; '),
+        close: () => Promise.all([app.close(), deploys.close()]),
+      };
+    };
+    const once = (asked, path) =>
+      asked.filter((other) => other === path).length === 1;
+    check(
+      'an open page: the build writes the hash in the name of each map under a name every build has',
+      manifest.current === 'assets/gt-current.json' &&
+        next.manifest.current === manifest.current &&
+        now !== before
+    );
+    {
+      const title =
+        'an open page, after a deploy that changed a translation, on a host that drops earlier files';
+      const { app, url, asked, wrong, close } = await visit();
+      check(
+        `${title}: every text of the route is translated, the changed one as the build that is served has it unless the page held it`,
+        !wrong,
+        wrong
+      );
+      check(
+        `${title}: asks for the file that is gone once, then for the current names, the map they name and what it lists for the route`,
+        held
+          ? !asked.some((path) => isTranslations({ path }))
+          : once(asked, before) &&
+              once(asked, current) &&
+              once(asked, next.mapOf('fr')) &&
+              once(asked, now) &&
+              asked.indexOf(before) < asked.indexOf(current) &&
+              asked.indexOf(current) < asked.indexOf(next.mapOf('fr')) &&
+              asked.indexOf(next.mapOf('fr')) < asked.indexOf(now),
+        `${held ? 'the entry holds the message; ' : ''}${asked.filter((path) => path.endsWith('.json')).join(', ')}`
+      );
+      await checkNoSource(title, app, 'fr', [
+        ROUTES.orders.heading,
+        ROUTES.orders.lines,
+      ]);
+      const reopened = await reopenOrders(app.page, url);
+      check(
+        `${title}: the page loaded again, and a new tab, show the text of the build that is served`,
+        reopened.join() === 'RECENT ORDERS, AGAIN,RECENT ORDERS, AGAIN',
+        reopened.join(' | ')
+      );
+      await close();
+    }
+    {
+      const title =
+        'an open page, after the same deploy, on a host that keeps earlier files';
+      const { app, url, asked, wrong, close } = await visit(() => true);
+      check(
+        `${title}: every text of the route is translated as the page's own build has it`,
+        !wrong,
+        wrong
+      );
+      check(
+        `${title}: asks for the files of its own build, finds each, and reads no names`,
+        asked
+          .filter((path) => isTranslations({ path }))
+          .every((path) =>
+            statSync(join(on.outDir, path), { throwIfNoEntry: false })
+          ) &&
+          (held || asked.includes(before)) &&
+          !asked.includes(current),
+        asked.filter((path) => path.endsWith('.json')).join(', ')
+      );
+      await checkNoSource(title, app, 'fr', [
+        ROUTES.orders.heading,
+        ROUTES.orders.lines,
+      ]);
+      const reopened = await reopenOrders(app.page, url);
+      check(
+        `${title}: the page loaded again, and a new tab, show the text of the build that is served`,
+        reopened.join() === 'RECENT ORDERS, AGAIN,RECENT ORDERS, AGAIN',
+        reopened.join(' | ')
+      );
+      await close();
+    }
   }
   {
     // One statement added to a module every route imports: the bundler

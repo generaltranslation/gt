@@ -26,15 +26,38 @@ export function loadChunk<T>(
   deps?: string[],
   url?: string
 ): Promise<T> {
-  return gateChunk(requestFile, requestEntry, start, chunk, preload, deps, url);
+  return gateChunk(
+    requestFile,
+    listFiles,
+    requestEntry,
+    start,
+    chunk,
+    preload,
+    deps,
+    url
+  );
+}
+
+/** The files the import of a chunk needs, as the page's own lists have them. */
+export function listFiles(
+  state: ChunkTranslationsState,
+  chunk: string
+): string[] | undefined {
+  return listImportedFiles(state.i, chunk);
 }
 
 /**
  * @param request Requests one of the import's files.
+ * @param list The files the import of a chunk needs, undefined when no list knows the chunk.
  * @param requestLists Requests the file that says which files an import needs.
  */
-export function gateChunk<T>(
-  request: typeof requestFile,
+export function gateChunk<T, F>(
+  request: (
+    state: ChunkTranslationsState,
+    locale: string,
+    file: F
+  ) => Promise<boolean>,
+  list: (state: ChunkTranslationsState, chunk: string) => F[] | undefined,
   requestLists: typeof requestEntry,
   start: () => Promise<T>,
   named: string | 0,
@@ -49,7 +72,7 @@ export function gateChunk<T>(
   if (!chunk || locale === undefined) return run(start);
   const state = getState();
   const requestFiles = () => {
-    const files = listImportedFiles(state.i, chunk);
+    const files = list(state, chunk);
     // The build names a chunk only when its import needs files, so the lists
     // know it. A chunk read from the bundler's list may need none, and is
     // then in no list.
@@ -81,7 +104,7 @@ export function gateChunk<T>(
 }
 
 /** Undefined when the lists do not know the chunk. */
-function listImportedFiles(
+export function listImportedFiles(
   imported: ImportedFiles | undefined,
   chunk: string
 ): string[] | undefined {

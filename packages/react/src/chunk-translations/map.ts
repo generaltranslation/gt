@@ -13,7 +13,8 @@ import {
   request,
   warnMissingLocale,
 } from './request';
-import { gateChunk } from './gate';
+import { isSameAssignment, readCurrentMap, readCurrentNames } from './recovery';
+import { gateChunk, listFiles } from './gate';
 import { initializeChunkTranslations } from './initialize';
 
 /**
@@ -47,6 +48,7 @@ export function loadMappedChunk<T>(
 ): Promise<T> {
   return gateChunk(
     requestMappedFile,
+    listFiles,
     requestMap,
     start,
     chunk,
@@ -68,10 +70,14 @@ export function loadMappedChunkTranslations(
   ).then(() => addArrived(state));
 }
 
+/**
+ * @param isRetry Whether the file is asked for in place of one the host did not have, by the name it has in the build that is served now.
+ */
 function requestMappedFile(
   state: ChunkTranslationsState,
   locale: string,
-  file: string
+  file: string,
+  isRetry?: boolean
 ): Promise<boolean> {
   const listed = state.i;
   if (!listed) {
@@ -79,19 +85,45 @@ function requestMappedFile(
       loaded && state.i ? requestMappedFile(state, locale, file) : false
     );
   }
-  const hash = listed.h?.[listed.k.indexOf(file)];
+  const own = listed.h?.[listed.k.indexOf(file)];
+  const getCurrent = () =>
+    state.j ? state.j.h?.[state.j.k.indexOf(file)] : own;
+  // A file the page has asked for keeps the name its own build gave it. One
+  // it has yet to ask for takes its name in the build that is served now
+  const hash =
+    isRetry || !own || !state.r?.[`${locale} ${own}`] ? getCurrent() : own;
   // The map lists the files that exist
   if (!hash || state.f === undefined) return Promise.resolve(true);
   // Named by what it holds alone, so chunks whose files hold the same share it
   const key = `${locale} ${hash}`;
   const requested = state.g?.[key];
   if (requested) state.g![key] = undefined;
+  const retry = () => {
+    const current = getCurrent();
+    return current && current !== hash
+      ? requestMappedFile(state, locale, file, true).then((arrived) => {
+          // What failed in the file's place is asked for again by the next
+          // import, as a file that failed is
+          if (!arrived) state.r![key] = undefined;
+          return arrived;
+        })
+      : undefined;
+  };
   return request(
     state,
     key,
     getFileUrl(state, state.f, locale, hash),
     requested,
-    (translations: Translations) => register(state, locale, translations)
+    (translations: Translations) => register(state, locale, translations),
+    isRetry
+      ? undefined
+      : () =>
+          retry() ||
+          readCurrentNames(state, locale, (name, current) =>
+            isSameAssignment(state, current)
+              ? readCurrentMap(state, locale, state.k, state.v?.[locale], name)
+              : undefined
+          ).then(retry)
   );
 }
 
