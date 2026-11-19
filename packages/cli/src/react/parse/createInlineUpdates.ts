@@ -3,7 +3,6 @@ import { Updates } from 'generaltranslation';
 
 import { parse } from '@babel/parser';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
-import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { logger } from '../../console/logger.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
@@ -69,38 +68,18 @@ export async function createInlineUpdates(
     }
 
     // First pass: collect imports and process translation functions
-    const { importAliases, inlineTranslationPaths, translationComponentPaths } =
-      getPathsAndAliases(ast, pkgs);
+    const { importAliases, translationComponentPaths } = getPathsAndAliases(
+      ast,
+      pkgs
+    );
 
     const stringParsingConfig: ParsingConfig = {
-      parsingOptions,
       file,
-      ignoreInlineMetadata: false,
-      ignoreDynamicContent: false,
-      ignoreInvalidIcu: false,
-      ignoreInlineListContent: false,
       includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
-      ignoreTaggedTemplates: false,
-      ignoreGlobalTaggedTemplates: false,
       skippedMessagesAreErrors: validate,
-      // User configurable, otherwise default to AUTO
-      autoderiveMethod: autoderive.strings ? 'AUTO' : 'DISABLED',
     };
 
-    // Process translation functions asynchronously
-    for (const {
-      localName: name,
-      originalName,
-      path,
-    } of inlineTranslationPaths) {
-      parseStrings(name, originalName, path, stringParsingConfig, {
-        updates,
-        errors,
-        warnings,
-      });
-    }
-
-    // Unstable tagged-template messages, extracted as message trees
+    // Tagged-template messages, extracted as message trees
     await extractMessageTrees(ast, pkgs, stringParsingConfig, {
       updates,
       errors,

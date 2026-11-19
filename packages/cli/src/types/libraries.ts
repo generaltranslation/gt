@@ -1,5 +1,3 @@
-import { isUnstableGTImportSource } from 'generaltranslation/internal';
-
 /**
  * A list of all the libraries names supported by the CLI
  */
@@ -34,18 +32,12 @@ export const GT_LIBRARIES = [
 ] as const;
 export type GTLibrary = (typeof GT_LIBRARIES)[number];
 
-/**
- * Whether an import source belongs to one of `pkgs` for the legacy
- * extractors (prefix match, so subpaths count), excluding unstable sources.
- */
-export function isLegacyGTImportSource(
+/** Whether an import source is one of `pkgs` or a subpath of one. */
+export function isGTImportSource(
   source: string,
   pkgs: readonly GTLibrary[]
 ): boolean {
-  return (
-    !isUnstableGTImportSource(source) &&
-    pkgs.some((pkg) => source.startsWith(pkg))
-  );
+  return pkgs.some((pkg) => source === pkg || source.startsWith(`${pkg}/`));
 }
 
 /**

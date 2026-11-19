@@ -1,61 +1,19 @@
-import { ParsingConfigOptions } from '../../../../types/parsing.js';
 import { Updates } from 'generaltranslation';
 
 /**
  * Immutable configuration options for string parsing.
  */
 export type ParsingConfig = {
-  parsingOptions: ParsingConfigOptions;
   file: string;
-  /**
-   * If true, ignores fields like $context, $id, etc. when extracting metadata from a string entry
-   */
-  ignoreInlineMetadata: boolean;
-  /**
-   * If true, dynamic content will not be treated as errors
-   */
-  ignoreDynamicContent: boolean;
-  /**
-   * If true, invalid ICU strings will not be treated as errors
-   */
-  ignoreInvalidIcu: boolean;
-  /**
-   * If true, will ignore registration of list content
-   * eg msg(['hello', 'world', 'foo', 'bar']) will not be registered
-   */
-  ignoreInlineListContent: boolean;
   /**
    * If true, include surrounding source code lines as context for translations
    */
   includeSourceCodeContext?: boolean;
   /**
-   * If true, ignore tagged template expressions (e.g., t`hello ${name}`)
-   */
-  ignoreTaggedTemplates: boolean;
-  /**
-   * If true, ignore global tagged template expressions (t`hello` without import)
-   */
-  ignoreGlobalTaggedTemplates: boolean;
-  /**
    * If true, a tagged-template message that cannot be extracted is an error
    * instead of a warning, as in `gt validate`
    */
   skippedMessagesAreErrors?: boolean;
-  /**
-   * Skip requirement for a derive() invocation to trigger derivation
-   * - ENABLED: Always autoderive
-   * - DISABLED: Never autoderive
-   * - AUTO: Only autoderive for the t() function
-   */
-  autoderiveMethod: 'ENABLED' | 'DISABLED' | 'AUTO';
-};
-
-/**
- * Mutable state for tracking parsing progress.
- */
-export type ParsingState = {
-  visited: Set<string>;
-  importMap: Map<string, string>;
 };
 
 /**

@@ -2,7 +2,7 @@ import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { templateToMessage } from '@generaltranslation/icu/internal';
 import { warnNonLiteralMsgCallSync } from '../../../../../console/index.js';
-import { extractStringEntryMetadata } from '../processTranslationCall/extractStringEntryMetadata.js';
+import { extractStringEntryMetadata } from './extractStringEntryMetadata.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { formatLocation } from './diagnostics.js';
 
@@ -36,11 +36,7 @@ export function processMsgCall(
   output.updates.push({
     dataFormat: 'MESSAGE_TREE',
     source: templateToMessage([text], []).tree,
-    metadata: extractStringEntryMetadata({
-      output,
-      config,
-      nodeLoc: call.node.loc,
-    }),
+    metadata: extractStringEntryMetadata({ config, nodeLoc: call.node.loc }),
   });
   return true;
 }

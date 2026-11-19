@@ -1,8 +1,14 @@
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
-import { isUnstableGTImportSource } from 'generaltranslation/internal';
-import { warnUnfollowedUnstableImportSync } from '../../../../../console/index.js';
-import type { GTLibrary } from '../../../../../types/libraries.js';
+import {
+  isGTMessageHelperName,
+  isGTMessageImportSource,
+} from 'generaltranslation/internal';
+import { warnUnfollowedMessageImportSync } from '../../../../../console/index.js';
+import {
+  isGTImportSource,
+  type GTLibrary,
+} from '../../../../../types/libraries.js';
 import {
   INLINE_TRANSLATION_HOOK,
   INLINE_TRANSLATION_HOOK_ASYNC,
@@ -19,7 +25,7 @@ import { getImportedName } from './imports.js';
 const traverse = traverseModule.default || traverseModule;
 
 /**
- * Extracts tagged-template messages written with the unstable `t`, `msg`,
+ * Extracts tagged-template messages written with the `t`, `msg`,
  * `useGT()`, and `getGT()` APIs as message tree updates
  * (`dataFormat: 'MESSAGE_TREE'`).
  *
@@ -37,8 +43,7 @@ export async function extractMessageTrees(
   output: ParsingOutput
 ): Promise<void> {
   const isExtractedSource = (source: string) =>
-    isUnstableGTImportSource(source) &&
-    pkgs.some((pkg) => source.startsWith(`${pkg}/`));
+    isGTMessageImportSource(source) && isGTImportSource(source, pkgs);
   // Only messages from an imported tag read types, so only those files load
   // TypeScript.
   if (
@@ -51,14 +56,10 @@ export async function extractMessageTrees(
   }
   const warnUnfollowed = (source: string, node: t.Node) =>
     output.warnings.add(
-      warnUnfollowedUnstableImportSync(
-        config.file,
-        source,
-        formatLocation(node)
-      )
+      warnUnfollowedMessageImportSync(config.file, source, formatLocation(node))
     );
   traverse(ast, {
-    // require('gt-react/unstable') and import('gt-react/unstable')
+    // require('gt-react') and import('gt-react')
     CallExpression(path) {
       const { callee, arguments: args } = path.node;
       const isLoader =
@@ -68,22 +69,40 @@ export async function extractMessageTrees(
       const [source] = args;
       if (!isLoader || !t.isStringLiteral(source)) return;
       if (!isExtractedSource(source.value)) return;
+      // const { T } = require('gt-react') takes no message helper.
+      const { parent } = path;
+      if (
+        t.isVariableDeclarator(parent) &&
+        t.isObjectPattern(parent.id) &&
+        parent.id.properties.every(
+          (property) =>
+            t.isObjectProperty(property) &&
+            !property.computed &&
+            t.isIdentifier(property.key) &&
+            !isGTMessageHelperName(property.key.name)
+        )
+      ) {
+        return;
+      }
       warnUnfollowed(source.value, path.node);
     },
-    // export { t } from 'gt-react/unstable' and export * from 'gt-react/unstable'
+    // export { t } from 'gt-react' and export * from 'gt-react'
     'ExportNamedDeclaration|ExportAllDeclaration'(path) {
       const node = path.node as
         | t.ExportNamedDeclaration
         | t.ExportAllDeclaration;
       if (!node.source || !isExtractedSource(node.source.value)) return;
-      const typeOnly =
+      // export { T } from 'gt-react' re-exports no message helper.
+      const noHelper =
         node.exportKind === 'type' ||
         (t.isExportNamedDeclaration(node) &&
           node.specifiers.every(
             (specifier) =>
-              t.isExportSpecifier(specifier) && specifier.exportKind === 'type'
+              t.isExportSpecifier(specifier) &&
+              (specifier.exportKind === 'type' ||
+                !isGTMessageHelperName(specifier.local.name))
           ));
-      if (!typeOnly) warnUnfollowed(node.source.value, node);
+      if (!noHelper) warnUnfollowed(node.source.value, node);
     },
     ImportDeclaration(path) {
       const source = path.node.source.value;
