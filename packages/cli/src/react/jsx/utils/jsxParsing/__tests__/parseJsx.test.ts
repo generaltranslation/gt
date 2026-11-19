@@ -654,6 +654,63 @@ describe('GT IDs of Branch/Plural children, which are the other branch', () => {
   });
 });
 
+describe('<N>, the count of its <Plural>', () => {
+  // The same source as the runtime writes, in react-core's addGTIdentifier test.
+  it('is a count variable', () => {
+    const result = extractUserT(
+      page('<T><Plural n={2} one="One file"><b><N /></b> files</Plural></T>')
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      {
+        t: 'Plural',
+        i: 1,
+        d: {
+          b: {
+            one: 'One file',
+            other: [{ t: 'b', i: 2, c: { i: 3, v: '#' } }, ' files'],
+          },
+          t: 'p',
+        },
+      },
+    ]);
+  });
+
+  // A component of the author's own called N is an element: in a named
+  // branch, and next to a GT <N> imported under another name.
+  it.each([false, true])(
+    'is not a component called N that GT did not export, auto injection %s',
+    (enableAutoJsxInjection) => {
+      const result = extractUserT(
+        [
+          'import { T, Plural, N as Count } from "gt-next";',
+          'const N = ({ children }) => children;',
+          'export default function Page() {',
+          '  return <T><Plural n={1} one={<N>One</N>}><Count /> files</Plural></T>;',
+          '}',
+        ].join('\n'),
+        { enableAutoJsxInjection }
+      );
+
+      expect(result.errors).toEqual([]);
+      expect(sources(result)).toEqual([
+        {
+          t: 'Plural',
+          i: 1,
+          d: {
+            b: {
+              one: { t: 'N', i: 2, c: 'One' },
+              other: [{ i: 2, v: '#' }, ' files'],
+            },
+            t: 'p',
+          },
+        },
+      ]);
+    }
+  );
+});
+
 describe('Branch/Plural props that are never rendered', () => {
   it.each([
     [

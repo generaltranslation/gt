@@ -16,6 +16,8 @@ pub enum VariableType {
   Currency, // Currency
   #[serde(rename = "rt")]
   RelativeTime, // Relative Time
+  #[serde(rename = "#")]
+  Count, // The count of the nearest plural
   #[serde(rename = "s")]
   Static, // Static
 }

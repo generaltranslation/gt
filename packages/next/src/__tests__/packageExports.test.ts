@@ -251,6 +251,7 @@ describe('gt-next package exports', () => {
     'GtInternalTranslateJsx',
     'GtInternalVar',
     'LocaleSelector',
+    'N',
     'Num',
     'Plural',
     'RegionSelector',

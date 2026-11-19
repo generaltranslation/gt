@@ -6,6 +6,8 @@ import {
   TransformationPrefix,
   VariableTransformationSuffix,
 } from 'generaltranslation/internal';
+import { fillCount } from '../plurals/fillCount';
+import { reportMissingCount } from '../plurals/getPluralBranch';
 import {
   GTTag,
   TaggedChild,
@@ -69,6 +71,10 @@ export function addGTIdentifier(
         result.variableType =
           (transformationParts?.[1] as VariableTransformationSuffix) ||
           'variable';
+        // A plural fills its branches before they are tagged.
+        if (result.variableType === 'count' && props.children == null) {
+          reportMissingCount();
+        }
       }
       if (transformationParts[0] === 'plural') {
         const pluralBranches = Object.entries(props).reduce(
@@ -76,13 +82,19 @@ export function addGTIdentifier(
             if (isAcceptedPluralForm(branchName)) {
               (acc as Record<string, TaggedChildren>)[
                 getPluralBranchKey(branchName)
-              ] = addGTIdentifier(branch as ReactNode, index);
+              ] = addGTIdentifier(
+                fillCount(branch as ReactNode, props.n),
+                index
+              );
             }
             return acc;
           },
           {} as Record<string, TaggedChildren>
         );
-        addFallbackBranch(pluralBranches, props.children);
+        addFallbackBranch(
+          pluralBranches,
+          fillCount(props.children as ReactNode, props.n)
+        );
         if (Object.keys(pluralBranches).length)
           result.branches = pluralBranches;
       }

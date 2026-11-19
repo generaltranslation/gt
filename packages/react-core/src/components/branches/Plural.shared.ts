@@ -3,6 +3,7 @@ import {
   isAcceptedPluralForm,
 } from 'generaltranslation/internal';
 import { getPluralBranch } from '../../utils/plurals/getPluralBranch';
+import { fillCount } from '../../utils/plurals/fillCount';
 import type { ReactNode } from 'react';
 import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
@@ -43,7 +44,7 @@ function renderPlural({
       .map(([prop, branch]) => [getPluralBranchKey(prop), branch]),
     ['other', children],
   ]);
-  return getPluralBranch(n, locales, branches);
+  return fillCount(getPluralBranch(n, locales, branches), n);
 }
 
 export { renderPlural };

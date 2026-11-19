@@ -28,6 +28,7 @@ export {
   GtInternalVar,
   T,
   LocaleSelector,
+  N,
   Num,
   Plural,
   RegionSelector,
