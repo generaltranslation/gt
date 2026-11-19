@@ -12,6 +12,7 @@
     "check:short-ids": "CHECK_SHORT_IDS=true pnpm run check",
     "check:install": "playwright-core install chromium-headless-shell",
     "check:import-map": "CHECK_IMPORT_MAP=true pnpm run check",
+    "check:import-map:rewritten": "CHECK_IMPORT_MAP=rewritten pnpm run check",
     "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
     "typecheck": "tsc --noEmit"
   },

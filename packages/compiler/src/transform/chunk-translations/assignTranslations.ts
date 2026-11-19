@@ -38,11 +38,11 @@ export type TranslationAssignment = {
    */
   imports: Map<string, string[]>;
   /**
-   * The chunk import map of the build, when it has one: the lists a page is
-   * sent then know an imported chunk by its names there too (see
-   * renderImportedFiles).
+   * In a build with a chunk import map, the names its dynamic imports are
+   * written with (see findImportedNames): the lists a page is sent then know
+   * an imported chunk by those names too (see renderImportedFiles).
    */
-  importMap?: ChunkImportMap;
+  importedNames?: ChunkImportMap;
 };
 
 /**
@@ -397,18 +397,19 @@ export type ImportedFiles = {
 };
 
 /**
- * `imports` with each chunk also under every name the chunk import map has
- * for it. gt-react finds an import's files by what the importing chunk's
- * code says of the imported one, which with an import map is its name: the
- * code of a chunk cannot hold the file of another, or it would change with
- * that chunk's content while the name of its own file stays.
+ * `imports` with each chunk also under every one of `names` that is its.
+ * gt-react finds an import's files by what the build wrote at the import,
+ * which with an import map is a name of the imported chunk: the code of a
+ * chunk cannot hold the file of another, or it would change with that
+ * chunk's content while the name of its own file stays.
+ * @param names The names the build writes at its imports, see findImportedNames.
  */
 export function addChunkNames<Keys>(
   imports: ReadonlyMap<string, Keys>,
-  importMap: ChunkImportMap | undefined
+  names: ChunkImportMap | undefined
 ): Map<string, Keys> {
   const named = new Map(imports);
-  for (const [name, file] of importMap ?? []) {
+  for (const [name, file] of names ?? []) {
     const keys = imports.get(file);
     if (keys !== undefined && !named.has(name)) named.set(name, keys);
   }
@@ -420,15 +421,17 @@ export function addChunkNames<Keys>(
  * in no list, which is how gt-react finds nothing to request for it.
  *
  * With a chunk import map, a chunk is listed under its file, as a page
- * preloads it, and under its names, as a page imports it: see addChunkNames.
+ * preloads it, and under the names written at its imports, as a page
+ * imports it: see addChunkNames. It is listed under no other name the
+ * import map has for it, which nothing looks up.
  */
 export function renderImportedFiles(
   imports: ReadonlyMap<string, readonly string[]>,
-  importMap?: ChunkImportMap
+  names?: ChunkImportMap
 ): ImportedFiles | undefined {
   const uses = new Map<string, number>();
   const needs: [string, readonly string[]][] = [];
-  for (const [target, keys] of addChunkNames(imports, importMap)) {
+  for (const [target, keys] of addChunkNames(imports, names)) {
     if (!keys.length) continue;
     const own = getChunkKey(target);
     needs.push([own, keys]);
@@ -543,9 +546,20 @@ const WRAPPED_IMPORT = new RegExp(
   'g'
 );
 
+// A specifier that is a path from the importing module
+const RELATIVE_SPECIFIER = /^\.\.?\//;
+
 /**
  * What a dynamic import in a chunk of `directory` names, and the file of the
  * chunk it loads: the same without an import map.
+ *
+ * The name follows from the specifier alone, as the page resolves it: a
+ * relative one from the importing chunk, any other as it is written. So it
+ * is the same whatever the import map holds when this runs, and something
+ * the import map of the page resolves. The import map only says which file
+ * the name means, and a plugin that has chunks import each other by a name
+ * of its own may hold that name under the directory of the chunks until its
+ * last hook: the file is found under either.
  */
 function resolveImportedChunk(
   directory: string,
@@ -553,10 +567,8 @@ function resolveImportedChunk(
   importMap: ChunkImportMap | undefined
 ): { name: string; file: string } {
   const joined = path.posix.join(directory, specifier);
-  // A specifier that is not a path is a name as it is written
-  const name =
-    importMap?.has(specifier) && !importMap.has(joined) ? specifier : joined;
-  return { name, file: importMap?.get(name) ?? name };
+  const name = RELATIVE_SPECIFIER.test(specifier) ? joined : specifier;
+  return { name, file: importMap?.get(name) ?? importMap?.get(joined) ?? name };
 }
 
 /**
@@ -581,6 +593,53 @@ export function findImportedChunks(
   ];
 }
 
+/**
+ * The names that the wrapped dynamic imports of a build's chunks are written
+ * with, and the file of the chunk each names: what replaceImportedChunks
+ * resolves an import to through the chunk import map, found here as the
+ * lists are written, so that the lists hold a chunk under those names. An
+ * import that names its chunk by the chunk's file is not in it. Undefined
+ * without an import map.
+ */
+export function findImportedNames(
+  chunks: Iterable<{ fileName: string; code: string }>,
+  importMap: ChunkImportMap | undefined
+): ChunkImportMap | undefined {
+  if (!importMap) return undefined;
+  const names = new Map<string, string>();
+  for (const { fileName, code } of chunks) {
+    if (!code.includes(IMPORTED_CHUNKS_PLACEHOLDER)) continue;
+    const directory = path.posix.dirname(fileName);
+    for (const match of code.matchAll(WRAPPED_IMPORT)) {
+      const { name, file } = resolveImportedChunk(
+        directory,
+        match[3],
+        importMap
+      );
+      if (name !== file) names.set(name, file);
+    }
+  }
+  return names;
+}
+
+/**
+ * The name to write at an import that resolves to `name` and loads `file`:
+ * one the lists hold the chunk under. That is `name` itself unless a plugin
+ * rewrote the import's specifier after the lists were written: then a name
+ * the lists have for the chunk, or its file, which they always have.
+ */
+function getListedName(
+  name: string,
+  file: string,
+  names: ChunkImportMap | undefined
+): string {
+  if (name === file || !names || names.get(name) === file) return name;
+  for (const [other, target] of names) {
+    if (target === file) return other;
+  }
+  return file;
+}
+
 const PLACEHOLDER = new RegExp(
   `(["'\`])${IMPORTED_CHUNKS_PLACEHOLDER}\\1`,
   'g'
@@ -600,7 +659,10 @@ const PRELOADED_CHUNKS = /\bm\.f\s*=\s*(\[[^\]]*\])/;
  * Runs after Vite has written its lists. The import is read from the code
  * itself, where it names the chunk the bundler wrote. In a build with a
  * chunk import map the code and Vite's lists hold the chunk's name there,
- * and so does what replaces the placeholder: see addChunkNames.
+ * and so does what replaces the placeholder: see addChunkNames. The name is
+ * resolved through the import map the lists were written with and is one of
+ * `names`, so the lists hold it whatever a plugin has done to the bundle's
+ * import map since.
  *
  * A wrapped import the code shows no chunk for gets 0 and runs without
  * waiting. Where the bundler put the imported module into a chunk the page
@@ -609,12 +671,14 @@ const PRELOADED_CHUNKS = /\bm\.f\s*=\s*(\[[^\]]*\])/;
  * read. See findUngatedImports.
  *
  * @param needsFiles Whether the import of a chunk needs any file.
- * @param importMap The chunk import map of the build, when it has one.
+ * @param importMap The chunk import map of the build as it was when the lists were written, when it has one.
+ * @param names The names the lists hold chunks under, see findImportedNames.
  */
 export function replaceImportedChunks(
   chunk: { fileName: string; code: string },
   needsFiles: (target: string) => boolean,
-  importMap?: ChunkImportMap
+  importMap?: ChunkImportMap,
+  names: ChunkImportMap | undefined = importMap
 ): { code: string; unread: number } {
   if (!chunk.code.includes(IMPORTED_CHUNKS_PLACEHOLDER)) {
     return { code: chunk.code, unread: 0 };
@@ -637,11 +701,9 @@ export function replaceImportedChunks(
       after = '',
       first?: string
     ) => {
-      const { name, file } = resolveImportedChunk(
-        directory,
-        specifier,
-        importMap
-      );
+      const resolved = resolveImportedChunk(directory, specifier, importMap);
+      const { file } = resolved;
+      const name = getListedName(resolved.name, file, names);
       const listed = first !== undefined && preloaded[Number(first)] === name;
       return `${before}${listed || !needsFiles(file) ? '0' : JSON.stringify(name)}${after}`;
     }
