@@ -145,7 +145,10 @@ export interface PluginConfig
    * to little. An id still follows from content alone: the same id names
    * the same message in every build. A chunk's ids change only when the set
    * of its own messages does, and a message that several chunks read has an
-   * id in each.
+   * id in each. The build writes the ids into every chunk that holds one of
+   * those call sites after the bundler has rendered it, so source maps are
+   * not kept accurate yet for those chunks either: lines stay, and the
+   * columns after an id on its line shift.
    *
    * The hash of a message stays what it is everywhere else: in the
    * translation files at `files.gt.output`, in the unsplit file, and at
