@@ -3,14 +3,19 @@ import {
   isPluralCategoryKey,
   PLURAL_CATEGORIES,
 } from '../settings/syntax';
-import { getPluralCategories } from './pluralCategories';
+import {
+  getPluralCategories,
+  getPluralCategoryCounts,
+} from './pluralCategories';
 
 export type CheckTranslationOptions = {
   /**
    * The translation's locale. With it, each plural and selectordinal needs a
    * branch for every category the locale has, like `few` and `many` in
    * Russian. Categories it does not have, like `one` in Japanese, may be
-   * left out, together with the variables and styles only they use.
+   * left out, together with the variables and styles only they use. A count
+   * the source shows in `other` is shown in each category the locale picks
+   * for more than one number, like Russian `one`, which is also 21.
    */
   locale?: string;
 };
@@ -18,8 +23,7 @@ export type CheckTranslationOptions = {
 /**
  * A placeholder as the translation rules read it, whether from an ICU
  * string or a message tree. Text is left out: a translation's is its own.
- * So is whether it writes `#`; a `count` is a `#` it did write, read only
- * for the tag around it.
+ * A `count` is a `#` it did write.
  */
 export type CheckedPlaceholder =
   | { name: string; kind: 'argument' }
@@ -362,7 +366,15 @@ function branchKeyProblems(
 type Readers = Map<string, string>;
 
 /** A select or plural variable, and the branch keys a reader can have for it. */
-type BranchChoice = { variable: string; name: string; keys: string[] };
+type BranchChoice = {
+  variable: string;
+  placeholder: BranchingPlaceholder;
+  keys: string[];
+  /** Whether it is a plural written more than once, with different exact branches. */
+  uneven: boolean;
+  /** Whether it is a plural with its variable in a branch other than as its count: by name, or in another plural of it. */
+  holdsVariable: boolean;
+};
 
 // shortcut: a message with more combinations of branches than this is not checked for placement; raise it if a real message needs more.
 const MAX_READERS = 1024;
@@ -383,7 +395,8 @@ const isBranching = (
  *
  * A select's keys are the same in both, so it is checked for the readers of
  * each combination of select branches. A language has its own plural
- * categories, so what those readers see whatever the number is compared.
+ * categories, so what those readers see whatever the number is compared,
+ * and then where each plural shows its count.
  */
 function placementProblems(
   source: CheckedPlaceholder[],
@@ -413,7 +426,10 @@ function placementProblems(
       if (shown.has(key) || !translationFacts.variables.has(key)) continue;
       if (problems.has(key)) continue;
       const when = selects
-        .map(({ variable, name }) => `${name} is ${selected.get(variable)}`)
+        .map(
+          ({ variable, placeholder }) =>
+            `${placeholder.name} is ${selected.get(variable)}`
+        )
         .join(' and ');
       problems.set(
         key,
@@ -423,7 +439,165 @@ function placementProblems(
       );
     }
   }
-  return [...problems.values()];
+  return [
+    ...problems.values(),
+    ...countProblems(
+      source,
+      translation,
+      selects,
+      sourceNumbers,
+      numbers,
+      plurals
+    ),
+  ];
+}
+
+/**
+ * A count the source shows in its `other` branch, which most numbers take in
+ * any language, is shown in each category branch the translation's locale
+ * picks for more than one number: Russian `one` is also 21, so
+ * `one {Один файл}` reads "one file" for 21 files. A category picked for one
+ * number only, like German `one`, may say that number in words. Which source
+ * category a number takes is not compared, since the source's locale is not
+ * known; exact branches are, since one is the same number in both messages.
+ */
+function countProblems(
+  source: CheckedPlaceholder[],
+  translation: CheckedPlaceholder[],
+  selects: BranchChoice[],
+  sourceNumbers: BranchChoice[],
+  numbers: BranchChoice[],
+  plurals: PluralLocale | undefined
+): string[] {
+  if (!plurals) return [];
+  const problems: string[] = [];
+  for (const { variable, placeholder, keys } of numbers) {
+    // A plural the source lacks, by name, kind and offset, is reported as missing.
+    if (
+      placeholder.kind === 'select' ||
+      !sourceNumbers.some((choice) => choice.variable === variable)
+    ) {
+      continue;
+    }
+    // shortcut: a plural with no offset is not checked beside another plural of its variable that holds the variable in a branch: the two read one number, and that branch can show the count, but a reader has a branch of each on its own. Read both by number if a real message needs it.
+    if (
+      !placeholder.offset &&
+      [...sourceNumbers, ...numbers].some(
+        (choice) =>
+          choice.variable !== variable &&
+          choice.placeholder.name === placeholder.name &&
+          choice.holdsVariable
+      )
+    ) {
+      continue;
+    }
+    // An exact branch of another plural is one number in both messages, whichever of them writes it.
+    const others = combinations(
+      sourceNumbers
+        .filter((choice) => choice.variable !== variable)
+        .map((choice) => {
+          const uses = [
+            choice,
+            ...numbers.filter((other) => other.variable === choice.variable),
+          ];
+          return {
+            ...choice,
+            keys: [
+              // shortcut: the exact branches of a plural whose uses differ in them are not read: a reader has one branch of each plural, where such a number takes its category at a use with no exact branch. Pick the branch at each use if a real message needs it.
+              ...(uses.some((use) => use.uneven)
+                ? []
+                : new Set(
+                    uses
+                      .flatMap((use) => use.keys)
+                      .filter((key) => key[0] === '=')
+                  )),
+              ANY_CATEGORY,
+            ],
+          };
+        })
+    );
+    for (const key of keys) {
+      if (key[0] === '=') continue;
+      const picked = getPluralCategoryCounts(
+        plurals.locale,
+        ruleType(placeholder.kind),
+        key
+      );
+      if (!picked || picked.counts.length < 2) continue;
+      const lost = combinations(selects).some((selected) =>
+        others.some((other) => {
+          const required = seenAt(
+            source,
+            selected,
+            sourceNumbers,
+            other,
+            variable,
+            FALLBACK_BRANCH_KEY
+          );
+          return (
+            required.length > 0 &&
+            required.every((seen) => showsCount(seen, placeholder)) &&
+            seenAt(translation, selected, numbers, other, variable, key).some(
+              (seen) => !showsCount(seen, placeholder)
+            )
+          );
+        })
+      );
+      if (!lost) continue;
+      problems.push(
+        `"${placeholder.name}" is not shown in the ${placeholder.kind === 'plural' ? 'plural' : 'ordinal'} branch ${key}, which ${plurals.locale} uses for ${picked.counts.join(', ')}${picked.more ? ', …' : ''}, as it is in the source`
+      );
+    }
+  }
+  return problems;
+}
+
+/** A reader's branch of a plural other than the one checked: any category, where it is not an exact branch of either message. */
+const ANY_CATEGORY = '';
+
+/**
+ * What each reader who reaches the plural `variable` on branch `key` sees,
+ * for these select branches and these branches of the other plurals. A
+ * reader the plural is not shown to at all is reported where it is placed.
+ */
+function seenAt(
+  placeholders: CheckedPlaceholder[],
+  selected: Readers,
+  numbers: BranchChoice[],
+  others: Readers,
+  variable: string,
+  key: string
+): CheckedPlaceholder[][] {
+  const pinned = numbers.map((choice) => {
+    if (choice.variable === variable) return { ...choice, keys: [key] };
+    const other = others.get(choice.variable);
+    if (other === undefined) return choice;
+    // A number with no exact branch of its own here takes one of the categories.
+    const keys = choice.keys.includes(other)
+      ? [other]
+      : choice.keys.filter((branch) => branch[0] !== '=');
+    return { ...choice, keys };
+  });
+  return combinations(pinned)
+    .map((picked) => seenBy(placeholders, new Map([...selected, ...picked])))
+    .filter((seen) =>
+      seen.some((placeholder) => variableKey(placeholder) === variable)
+    );
+}
+
+/** Whether a reader sees a plural's count: its own `#`, or the variable printed where there is no offset. */
+function showsCount(
+  seen: CheckedPlaceholder[],
+  { name, kind, offset }: PluralPlaceholder
+): boolean {
+  const count = variableKey({ name, kind: 'count', of: kind, offset });
+  return seen.some((placeholder) =>
+    placeholder.kind === 'count'
+      ? variableKey(placeholder) === count
+      : offset === 0 &&
+        placeholder.name === name &&
+        (placeholder.kind === 'argument' || placeholder.kind === 'number')
+  );
 }
 
 /**
@@ -445,14 +619,41 @@ function branchChoices(
         : plurals?.categories(ruleType(placeholder.kind));
     choices.push({
       variable,
-      name: placeholder.name,
+      placeholder,
       keys: [...keys].filter(
         (key) => !has || !isPluralCategoryKey(key) || has.has(key)
+      ),
+      uneven: facts.pluralPlaceholders.some(
+        (plural) =>
+          variableKey(plural) === variable &&
+          exactKeys(plural) !== exactKeys(placeholder)
+      ),
+      holdsVariable: facts.pluralPlaceholders.some(
+        (plural) =>
+          variableKey(plural) === variable &&
+          plural.branches.some(([, branch]) => holds(branch, plural.name))
       ),
     });
   }
   return choices;
 }
+
+/** Whether a variable of this name stands among these placeholders, other than as a plural's count. */
+const holds = (placeholders: CheckedPlaceholder[], name: string): boolean =>
+  placeholders.some((placeholder) =>
+    placeholder.kind === 'tag'
+      ? holds(placeholder.children, name)
+      : (placeholder.kind !== 'count' && placeholder.name === name) ||
+        (isBranching(placeholder) &&
+          placeholder.branches.some(([, branch]) => holds(branch, name)))
+  );
+
+const exactKeys = ({ branches }: BranchingPlaceholder): string =>
+  branches
+    .map(([key]) => key)
+    .filter((key) => key[0] === '=')
+    .sort()
+    .join();
 
 /** Every way to pick one key for each choice. */
 function combinations(choices: BranchChoice[]): Readers[] {
@@ -485,23 +686,34 @@ function shownWhateverTheNumber(
   return always ?? new Map();
 }
 
-/**
- * The variables one reader sees: each select and plural shows the branch
- * picked for them, or `other` where it has no such branch, as ICU picks it.
- */
+/** The variables one reader sees, by `variableKey` with their names. */
 function shownTo(
   placeholders: CheckedPlaceholder[],
   readers: Readers
 ): Map<string, string> {
   const shown = new Map<string, string>();
+  for (const placeholder of seenBy(placeholders, readers)) {
+    if (placeholder.kind === 'count') continue;
+    shown.set(variableKey(placeholder), placeholder.name);
+  }
+  return shown;
+}
+
+/**
+ * The placeholders one reader sees: each select and plural shows the branch
+ * picked for them, or `other` where it has no such branch, as ICU picks it.
+ */
+function seenBy(
+  placeholders: CheckedPlaceholder[],
+  readers: Readers
+): CheckedPlaceholder[] {
+  const seen: CheckedPlaceholder[] = [];
   const visit = (placeholder: CheckedPlaceholder): void => {
-    if (placeholder.kind === 'count') return;
-    const variable = variableKey(placeholder);
-    shown.set(variable, placeholder.name);
+    seen.push(placeholder);
     if (placeholder.kind === 'tag') {
       placeholder.children.forEach(visit);
     } else if (isBranching(placeholder)) {
-      const picked = readers.get(variable);
+      const picked = readers.get(variableKey(placeholder));
       // shortcut: a number with an exact branch elsewhere takes `other` here, not its category's branch; pick by Intl.PluralRules if that ever misjudges a real message.
       const branch =
         placeholder.branches.find(([key]) => key === picked) ??
@@ -510,7 +722,7 @@ function shownTo(
     }
   };
   placeholders.forEach(visit);
-  return shown;
+  return seen;
 }
 
 /**

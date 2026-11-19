@@ -11,6 +11,10 @@ const mismatch = (...problems: string[]) =>
 const FILES = '{n, plural, one {# file} other {# files}}';
 const GENDER = '{g, select, male {He} female {She} other {They}}';
 const ITEMS = '{n, plural, one {# item} other {# items}}';
+const ONE_FILE = '{n, plural, one {One file} other {# files}}';
+const SOME_FILES = '{n, plural, one {One file} other {Some files}}';
+const ATTENDEES =
+  '{n, plural, one {# attendee} other {# attendees}}: you {n, plural, offset:1 one {and one other} other {and # others}}';
 const IN_FOLDER =
   '{n, plural, one {# file in {folder}} other {# files in {folder}}}';
 const NO_OTHER = 'A plural, select or selectordinal needs an other branch.';
@@ -135,6 +139,192 @@ const CASES: [
     '{n, plural, =0 {Aucun fichier} one {# fichier} many {# de fichiers} other {# fichiers}}',
     'fr',
     undefined,
+  ],
+  [
+    'a count spelled out in a category Russian also picks for 21',
+    ONE_FILE,
+    '{n, plural, one {Один файл} few {# файла} many {# файлов} other {# файла}}',
+    'ru',
+    mismatch(
+      '"n" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
+  ],
+  [
+    'the count in every category Russian picks for several numbers',
+    ONE_FILE,
+    '{n, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}',
+    'ru',
+    undefined,
+  ],
+  [
+    'a count spelled out in a category French picks for 0 and 1',
+    ONE_FILE,
+    '{n, plural, one {Un fichier} many {# de fichiers} other {# fichiers}}',
+    'fr',
+    mismatch(
+      '"n" is not shown in the plural branch one, which fr uses for 0, 1, 0.5, 1.5, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count spelled out in a category German picks only for 1',
+    ONE_FILE,
+    '{n, plural, one {Eine Datei} other {# Dateien}}',
+    'de',
+    undefined,
+  ],
+  [
+    'a count spelled out in an exact branch',
+    '{n, plural, =1 {One file} other {# files}}',
+    '{n, plural, =1 {Один файл} one {# файл} few {# файла} many {# файлов} other {# файла}}',
+    'ru',
+    undefined,
+  ],
+  [
+    'a source that never shows the count',
+    '{n, plural, one {A file} other {Some files}}',
+    '{n, plural, one {Один файл} few {Несколько файлов} many {Много файлов} other {Часть файла}}',
+    'ru',
+    undefined,
+  ],
+  [
+    'a count the source shows as an argument',
+    '{n, plural, one {One file} other {{n} files}}',
+    '{n, plural, one {Один файл} few {{n} файла} many {{n} файлов} other {{n} файла}}',
+    'ru',
+    mismatch(
+      '"n" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count spelled out only for the readers the source spells it out for',
+    '{g, select, male {{n, plural, one {One file} other {# files}}} other {Files}}',
+    '{g, select, male {{n, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}} other {{n, plural, one {Файл} few {Файлы} many {Файлы} other {Файлы}}}}',
+    'ru',
+    undefined,
+  ],
+  [
+    'a count spelled out for the readers the source shows it to',
+    '{g, select, male {{n, plural, one {One file} other {# files}}} other {Files}}',
+    '{g, select, male {{n, plural, one {Один файл} few {# файла} many {# файлов} other {# файла}}} other {Файлы}}',
+    'ru',
+    mismatch(
+      '"n" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count an enclosing exact branch hides in both',
+    '{m, plural, =0 {{n, plural, one {A file} other {Some files}}} one {{n, plural, one {A file} other {# files}}} other {{n, plural, one {A file} other {# files}}}}',
+    '{m, plural, =0 {{n, plural, one {A file} other {Some files}}} one {{n, plural, one {A file} other {# files}}} other {{n, plural, one {A file} other {# files}}}}',
+    'en',
+    undefined,
+  ],
+  [
+    'a count hidden under an enclosing category the source shows it in',
+    '{m, plural, =0 {{n, plural, one {A file} other {Some files}}} one {{n, plural, one {A file} other {# files}}} other {{n, plural, one {A file} other {# files}}}}',
+    '{m, plural, =0 {{n, plural, one {Eine Datei} other {Einige Dateien}}} one {{n, plural, one {Eine Datei} other {# Dateien}}} other {{n, plural, one {Eine Datei} other {Dateien}}}}',
+    'de',
+    mismatch(
+      '"n" is not shown in the plural branch other, which de uses for 0, 2, 3, 4, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count hidden under an enclosing exact branch the translation adds',
+    `{m, plural, one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    `{m, plural, =0 {${SOME_FILES}} one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    'en',
+    mismatch(
+      '"n" is not shown in the plural branch other, which en uses for 0, 2, 3, 4, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count kept under an enclosing exact branch the translation adds',
+    `{m, plural, one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    `{m, plural, =0 {${ONE_FILE}} one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    'en',
+    undefined,
+  ],
+  [
+    'a count an added exact branch hides where the source may hide it',
+    `{m, plural, one {${ONE_FILE}} other {${SOME_FILES}}}`,
+    `{m, plural, =0 {${SOME_FILES}} one {${ONE_FILE}} other {${SOME_FILES}}}`,
+    'en',
+    undefined,
+  ],
+  [
+    'a count kept by one of two uses of a plural with different exact branches',
+    `{m, plural, one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    `{m, plural, =1 {${SOME_FILES}} one {${ONE_FILE}} other {${ONE_FILE}}} {m, plural, one {${ONE_FILE}} other {${SOME_FILES}}}`,
+    'en',
+    undefined,
+  ],
+  [
+    'a count hidden in an enclosing category that some number takes beside its exact branch',
+    `{m, plural, one {${ONE_FILE}} other {${ONE_FILE}}}`,
+    // 1 takes `=1`, but -1 and 1.0001 take `one`.
+    `{m, plural, =1 {${ONE_FILE}} one {${SOME_FILES}} other {${ONE_FILE}}}`,
+    'en',
+    mismatch(
+      '"n" is not shown in the plural branch other, which en uses for 0, 2, 3, 4, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count spelled out beside a plural that prints it by name in one branch',
+    '{n, plural, one {# файл} few {# файла} many {# файлов} other {# файла}} {m, plural, one {} few {} many {} other {{n}}}',
+    '{n, plural, one {Один файл} few {# файла} many {# файлов} other {# файла}} {m, plural, one {} few {} many {} other {{n}}}',
+    'ru',
+    mismatch(
+      '"n" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count shown by either the ordinal or the cardinal of one variable',
+    '{n, selectordinal, few {} other {#}} {n, plural, one {{n}} few {{n}} many {{n}} other {}}',
+    '{n, selectordinal, few {} other {#}} {n, plural, one {{n}} few {{n}} many {{n}} other {}}',
+    'uk',
+    undefined,
+  ],
+  [
+    'a count dropped beside a plural with different exact branches at each use',
+    `${ONE_FILE} {m, plural, =0 {No folders} one {One folder} other {# folders}} {m, plural, one {in one folder} other {in # folders}}`,
+    `${SOME_FILES} {m, plural, =0 {No folders} one {One folder} other {# folders}} {m, plural, one {in one folder} other {in # folders}}`,
+    'en',
+    mismatch(
+      '"n" is not shown in the plural branch other, which en uses for 0, 2, 3, 4, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count dropped beside a plural of its variable that does not print it',
+    ATTENDEES,
+    '{n, plural, one {# attendee} other {Some attendees}}: you {n, plural, offset:1 one {and one other} other {and # others}}',
+    'en',
+    mismatch(
+      '"n" is not shown in the plural branch other, which en uses for 0, 2, 3, 4, …, as it is in the source'
+    ),
+  ],
+  [
+    'a count of another offset in place of the count',
+    ATTENDEES,
+    '{n, plural, one {# Teilnehmer} other {# Teilnehmer}}: du {n, plural, offset:1 one {und eine weitere Person} other {und eine weitere Person}}',
+    'de',
+    mismatch(
+      '"n" is not shown in the plural branch other, which de uses for 0, 2, 3, 4, …, as it is in the source'
+    ),
+  ],
+  [
+    'the count of each offset kept',
+    ATTENDEES,
+    '{n, plural, one {# Teilnehmer} other {# Teilnehmer}}: du {n, plural, offset:1 one {und eine weitere Person} other {und # weitere}}',
+    'de',
+    undefined,
+  ],
+  [
+    'an ordinal spelled out in a category English also picks for 21',
+    '{n, selectordinal, one {first} other {#th}}',
+    '{n, selectordinal, one {first} two {#nd} few {#rd} other {#th}}',
+    'en',
+    mismatch(
+      '"n" is not shown in the ordinal branch one, which en uses for 1, 21, 31, 41, …, as it is in the source'
+    ),
   ],
   [
     'kept select keys',

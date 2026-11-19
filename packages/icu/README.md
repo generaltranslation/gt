@@ -12,8 +12,9 @@ no locale-data polyfills are shipped.
   a message, `messageToIcu()` prints a message as an ICU string,
   `messageTreeToIcu()` prints its tree alone, and `checkTranslation()` and
   `checkIcuTranslation()` check a translation against its source.
-  `getPluralCategories()` and `isExactKey()` are the two plural rules those
-  checks apply, for a format that keeps plural branches another way.
+  `getPluralCategories()`, `getPluralCategoryCounts()` and `isExactKey()` are
+  the plural rules those checks apply, for a format that keeps plural
+  branches another way.
 - `@generaltranslation/icu/parser`: the ICU string parser. `parse()`,
   `formatIcu()`, `printAST()` and the syntax-tree types.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
@@ -119,6 +120,23 @@ It returns `undefined` when the translation matches. A category the locale
 does not have, like `one` in Japanese, may be left out or kept; a branch that
 is no category at all, like `lots`, is a problem.
 
+A category is not a word for one or many: Russian `one` is also 21, 31 and 41. So a count the source shows in `other` is shown in each category the
+locale picks for more than one number, while one picked for a single number,
+like German `one`, may say it in words:
+
+```ts
+import { checkIcuTranslation } from '@generaltranslation/icu/convert';
+
+checkIcuTranslation(
+  '{count, plural, one {One file} other {# files}}',
+  '{count, plural, one {Один файл} few {# файла} many {# файлов} other {# файла}}',
+  { locale: 'ru' }
+);
+// 'The translation does not match its source: "count" is not shown in the
+//  plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the
+//  source.'
+```
+
 Word order is the translation's, so a variable may repeat, and may move into
 every branch of a select or plural or out of them. A reader who sees a
 variable in the source must still see it: moved into one branch only, it is
@@ -141,17 +159,21 @@ checkTranslation(
 ```
 
 A format that keeps plural branches another way, such as stored JSX, applies
-the same two rules through `getPluralCategories()` and `isExactKey()`:
+the same rules through `getPluralCategories()`, `getPluralCategoryCounts()`
+and `isExactKey()`:
 
 ```ts
 import {
   getPluralCategories,
+  getPluralCategoryCounts,
   isExactKey,
 } from '@generaltranslation/icu/convert';
 
 getPluralCategories('ru', 'cardinal'); // ['one', 'few', 'many', 'other']
 getPluralCategories('fr', 'ordinal'); // ['one', 'other']
 getPluralCategories('tlh', 'cardinal'); // undefined: Intl has no rules for it
+getPluralCategoryCounts('ru', 'cardinal', 'one'); // { counts: [1, 21, 31, 41], more: true }
+getPluralCategoryCounts('de', 'cardinal', 'one'); // { counts: [1], more: false }
 isExactKey('=1'); // true
 isExactKey('=01'); // false
 ```
