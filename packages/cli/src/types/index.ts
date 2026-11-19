@@ -259,6 +259,7 @@ export type Settings = {
   projectId?: string;
   defaultLocale: string;
   locales: string[];
+  dictionary?: string; // path to the source dictionary file (gt.config.json `dictionary` key)
   customMapping?: CustomMapping;
   files: {
     resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale
