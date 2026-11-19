@@ -1474,6 +1474,96 @@ export const { a } = await import(\`./a.js\`);`,
       expect(console.warn).not.toHaveBeenCalled();
     });
 
+    // A plugin of the app has chunks import each other by a bare name, which
+    // it gives the import map before the build writes its lists, or under
+    // the assets directory first and bare only once the lists are written
+    const BARE = { 'r:Orders-name.js': '/assets/Orders.js' };
+    const UNDER_ASSETS = { '/assets/r:Orders-name.js': '/assets/Orders.js' };
+    const VITE = { '/assets/Orders-name.js': '/assets/Orders.js' };
+
+    it.each([
+      [
+        'that has the name before the lists are written',
+        { ...BARE, ...VITE },
+        { ...BARE, ...VITE },
+      ],
+      [
+        'that a plugin rewrites once the lists are written',
+        { ...UNDER_ASSETS, ...VITE },
+        { ...BARE, ...VITE },
+      ],
+      [
+        'that a plugin empties once the lists are written',
+        { ...BARE, ...VITE },
+        {},
+      ],
+    ])(
+      'writes at an import the name the page imports the chunk by, which its lists hold, with an import map %s',
+      async (_name, atLists, atNames) => {
+        // The specifier, whatever the import map holds and when
+        const written = 'r:Orders-name.js';
+        const { bundle, emitted, name } = await build(
+          `e(()=>import("r:Orders-name.js"),"${P}")`,
+          ['assets/Orders.js'],
+          JSON.stringify({ imports: atLists })
+        );
+        (bundle as Record<string, object>)['importmap.json'] = {
+          type: 'asset',
+          source: JSON.stringify({ imports: atNames }),
+        };
+        name();
+        expect(bundle['assets/index.js'].code).toBe(
+          `e(()=>import("r:Orders-name.js"),${JSON.stringify(written)})`
+        );
+        // The chunk's file and what the import is written with, and not the
+        // name Vite has for the chunk, which nothing looks up
+        expect(JSON.parse(emitted['assets/index.fr']).i.k).toEqual([
+          'assets/Orders',
+          written.replace(/\.js$/, ''),
+        ]);
+        expect(console.warn).not.toHaveBeenCalled();
+      }
+    );
+
+    it('writes a name its lists know the chunk by at an import a plugin rewrote once the lists are written, to another name the import map had', async () => {
+      const { bundle, emitted, name } = await build(
+        `e(()=>import("./Orders-name.js"),"${P}")`,
+        ['assets/Orders.js'],
+        JSON.stringify({ imports: { ...UNDER_ASSETS, ...VITE } })
+      );
+      bundle['assets/index.js'].code =
+        `e(()=>import("r:Orders-name.js"),"${P}")`;
+      name();
+      expect(bundle['assets/index.js'].code).toBe(
+        `e(()=>import("r:Orders-name.js"),"assets/Orders-name.js")`
+      );
+      expect(JSON.parse(emitted['assets/index.fr']).i.k).toEqual([
+        'assets/Orders',
+        'assets/Orders-name',
+      ]);
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('warns of an import a plugin rewrote once the lists are written, to a name the import map did not have', async () => {
+      const { bundle, name } = await build(
+        `e(()=>import("./Orders-name.js"),"${P}")`,
+        ['assets/Orders.js'],
+        IMPORT_MAP
+      );
+      bundle['assets/index.js'].code =
+        `e(()=>import("r:Orders-name.js"),"${P}")`;
+      name();
+      // gt-react reads the chunk from the bundler's list, when it has one
+      expect(bundle['assets/index.js'].code).toBe(
+        `e(()=>import("r:Orders-name.js"),0)`
+      );
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /Nothing waits for the translations of assets\/Orders\.js/
+        )
+      );
+    });
+
     it('says by which name the code imports a chunk that an import it did not wrap loads', async () => {
       const { name } = await build(
         `import("./Orders-name.js")`,
@@ -3449,14 +3539,14 @@ export const print = () => t\`Print\`;`,
       ).toThrow('A translations file and a chunk would share the key');
     });
 
-    it('lists an imported chunk under its names in the chunk import map too, which cannot share a key with a file either', () => {
+    it('lists an imported chunk under the names its imports are written with too, which cannot share a key with a file either', () => {
       const render = (name: string) =>
         renderRegionTranslations(
           {
             files: new Map([['aa', ['title']]]),
             entries: new Map(),
             imports: new Map([['assets/Home-file.js', ['aa']]]),
-            importMap: new Map([[name, 'assets/Home-file.js']]),
+            importedNames: new Map([[name, 'assets/Home-file.js']]),
           },
           { defaultLocale: 'en', locales: ['fr'] },
           { fr: FR },
@@ -3658,18 +3748,27 @@ export const print = () => t\`Print\`;`,
       });
     });
 
-    it("reads the build's chunk import map from the bundle", () => {
+    it("reads the build's chunk import map from the bundle once, lists a chunk under the name an import is written with and under no other, and returns both", () => {
       createPlugins(ON, 'vite', {
         'translations/fr.json': JSON.stringify(CATALOG),
       });
       const emitted: Record<string, string> = {};
-      writeRegionTranslations(
+      const index = BUNDLE['assets/index.js'];
+      const written = writeRegionTranslations(
         {
           ...BUNDLE,
+          'assets/index.js': {
+            ...index,
+            code: `${index.code};e(()=>import("./Home-name.js"),"${IMPORTED_CHUNKS_PLACEHOLDER}")`,
+          },
           'importmap.json': {
             type: 'asset',
             source: JSON.stringify({
-              imports: { '/assets/Home-name.js': '/assets/Home.js' },
+              imports: {
+                '/assets/Home-name.js': '/assets/Home.js',
+                // A name no import is written with
+                '/assets/Home-other.js': '/assets/Home.js',
+              },
             }),
           } as unknown as (typeof BUNDLE)[string],
         },
@@ -3700,6 +3799,100 @@ export const print = () => t\`Print\`;`,
       expect(manifest.imports['assets/Home.js']).toEqual(needed);
       expect(readImportedFiles(lists, 'assets/Home.js')).toEqual(needed);
       expect(readImportedFiles(lists, 'assets/Home-name.js')).toEqual(needed);
+      expect(lists.k).not.toContain('assets/Home-other');
+      expect(written.importMap).toEqual(
+        new Map([
+          ['assets/Home-name.js', 'assets/Home.js'],
+          ['assets/Home-other.js', 'assets/Home.js'],
+        ])
+      );
+      expect(written.importedNames).toEqual(
+        new Map([['assets/Home-name.js', 'assets/Home.js']])
+      );
+    });
+
+    it('writes at an import the name the page imports the chunk by, which the map of a locale holds, when a plugin rewrites the import map once the map is written', async () => {
+      const P = IMPORTED_CHUNKS_PLACEHOLDER;
+      const created = createPlugins(
+        { ...SPLIT, experimentalChunkTranslationsRequestCost: 0 },
+        'vite',
+        { 'translations/fr.json': JSON.stringify(CATALOG) }
+      );
+      const [first, second] = created.plugins as unknown as {
+        vite: {
+          configResolved: (config: object) => void;
+          options: (options: object) => null;
+          generateBundle: unknown;
+        };
+      }[];
+      first.vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
+      second.vite.options({ experimental: { chunkImportMap: true } });
+      // The hashes the build knows are those of the modules it compiled
+      await transform(MODULE, SPLIT, created);
+      // A plugin of the app has chunks import each other by a bare name: the
+      // import map has it under the assets directory as the map of a locale
+      // is written, and bare by the time the imports are named
+      const importMap = (imports: Record<string, string>) => ({
+        type: 'asset',
+        source: JSON.stringify({ imports }),
+      });
+      const bundle: Record<string, object> = {
+        'assets/index.js': chunk(
+          'assets/index.js',
+          {
+            '/main.js': `${callSite(SAVE)};e(()=>import("r:Home-name.js"),"${P}")`,
+          },
+          { isEntry: true, dynamicImports: ['assets/Home.js'] }
+        ),
+        'assets/Home.js': chunk('assets/Home.js', {
+          '/home.js': callSite(HELLO),
+        }),
+        'importmap.json': importMap({
+          '/assets/r:Home-name.js': '/assets/Home.js',
+          '/assets/Home-name.js': '/assets/Home.js',
+        }),
+      };
+      const emitted: Record<string, string> = {};
+      (
+        first.vite.generateBundle as (
+          this: object,
+          options: object,
+          bundle: object
+        ) => void
+      ).call(
+        {
+          emitFile: (file: { fileName: string; source: string }) =>
+            (emitted[file.fileName] = file.source),
+          getModuleInfo: getModuleInfo({
+            '/main.js': { dynamic: ['/home.js'] },
+          }),
+        },
+        {},
+        bundle
+      );
+      bundle['importmap.json'] = importMap({
+        'r:Home-name.js': '/assets/Home.js',
+        '/assets/Home-name.js': '/assets/Home.js',
+      });
+      (
+        second.vite.generateBundle as {
+          handler: (options: object, bundle: object) => void;
+        }
+      ).handler({}, bundle);
+      expect((bundle['assets/index.js'] as { code: string }).code).toContain(
+        'e(()=>import("r:Home-name.js"),"r:Home-name.js")'
+      );
+      const manifest = JSON.parse(
+        emitted['assets/gt-chunk-translations.json']
+      ) as RegionTranslationsManifest;
+      const lists = JSON.parse(emitted[manifest.maps.fr]).i;
+      expect(readImportedFiles(lists, 'r:Home-name.js')).toEqual(
+        manifest.imports['assets/Home.js']
+      );
+      expect(manifest.imports['assets/Home.js']).toHaveLength(1);
+      expect(console.warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('Nothing waits for the translations')
+      );
     });
 
     describe('an import of a module in the chunk of the module that imports it, which the bundler writes without an import()', () => {

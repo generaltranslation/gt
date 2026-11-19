@@ -28,8 +28,14 @@ const SHORT_ID_LENGTH = SHORT_IDS === 'true' ? 8 : Number(SHORT_IDS);
 const ON = join(root, '.check', NAMING === 'token' ? 'on' : NAMING);
 const OFF = join(root, '.check', 'off');
 // CHECK_IMPORT_MAP=true makes every build with Vite's chunk import map
-// (`build.chunkImportMap`), by which chunks import each other
-const IMPORT_MAP = process.env.CHECK_IMPORT_MAP === 'true';
+// (`build.chunkImportMap`), by which chunks import each other.
+// CHECK_IMPORT_MAP=rewritten makes them with a plugin of the app too, which
+// has chunks import each other by a name of its own and rewrites that import
+// map for it, in part after the build has read it: every run also checks one
+// such build, see "An import map another plugin rewrites".
+const REWRITTEN_IMPORT_MAP = process.env.CHECK_IMPORT_MAP === 'rewritten';
+const IMPORT_MAP =
+  REWRITTEN_IMPORT_MAP || process.env.CHECK_IMPORT_MAP === 'true';
 // gt-react's default; the app waits this long for a file that never arrives
 const TIMEOUT_MS = 10_000;
 // How long a check holds a translations file back
@@ -702,8 +708,9 @@ if (IMPORT_MAP) {
     readFileSync(join(ON, 'importmap.json'), 'utf8')
   );
   const page = readFileSync(join(ON, 'index.html'), 'utf8');
-  const [name, file] = Object.entries(imports).find(([, file]) =>
-    file.startsWith('/assets/Home-')
+  const [name, file] = Object.entries(imports).find(
+    ([name, file]) =>
+      name.startsWith('/assets/') && file.startsWith('/assets/Home-')
   );
   const importer = readFileSync(join(ON, 'assets', chunk('App')), 'utf8');
   check(
@@ -711,7 +718,9 @@ if (IMPORT_MAP) {
     page.includes('<script type="importmap">') &&
       !assets(ON).includes(name.split('/').pop()) &&
       assets(ON).includes(file.split('/').pop()) &&
-      importer.includes(`./${name.split('/').pop()}`) &&
+      importer.includes(
+        `${REWRITTEN_IMPORT_MAP ? 'r:' : './'}${name.split('/').pop()}`
+      ) &&
       !importer.includes(file.split('/').pop()),
     `${name} is ${file}`
   );
@@ -1394,7 +1403,8 @@ if (manifest.maps) {
     .filter((file) => file.endsWith('.js'))
     .map((file) => readFileSync(join(outDir, 'assets', file), 'utf8'))
     .join('\n')
-    .match(/import\((["'`])\.\/Orders-[\w-]+\.js\1\)\.then\(/g);
+    // By the bare name too, which a rewritten import map has for the chunk
+    .match(/import\((["'`])(?:\.\/|r:)Orders-[\w-]+\.js\1\)\.then\(/g);
   check(
     'modules run in order: the bundler writes the import of the route with what starts its module after it',
     imports?.length === 1,
@@ -1486,6 +1496,94 @@ if (!IMPORT_MAP) {
   );
   await app.close();
   relative.close();
+}
+
+// ===== An import map another plugin rewrites ===== //
+// A plugin of the app has chunks import each other by a bare name, and gives
+// the bundler's import map that name only after the build has listed which
+// files each import needs (scripts/rewriteImportMap.mjs). What the build
+// then writes at an import must be a name those lists know the chunk by, or
+// a lazily loaded chunk renders its source text.
+{
+  const outDir = REWRITTEN_IMPORT_MAP
+    ? ON
+    : join(root, '.check', `${NAMING}-rewritten`);
+  if (!REWRITTEN_IMPORT_MAP) {
+    build(outDir, true, ...Array(5), { CHECK_IMPORT_MAP: 'rewritten' });
+  }
+  const { imports } = JSON.parse(
+    readFileSync(join(outDir, 'importmap.json'), 'utf8')
+  );
+  const code = assets(outDir)
+    .filter((file) => file.endsWith('.js'))
+    .map((file) => readFileSync(join(outDir, 'assets', file), 'utf8'))
+    .join('\n');
+  // import(`r:Orders-<hash>.js`),"<what gt-react finds its files by>",<Vite's
+  // preload call>,<the chunks Vite lists for the import>
+  const named = [
+    ...code.matchAll(
+      /import\(\s*(["'`])(r:[^"'`]+)\1\s*\)\s*,\s*"([^"]+)"\s*,\s*[\w$.]+\s*,\s*(\[\]|__vite__mapDeps)/g
+    ),
+  ].map(([, , specifier, name, preloads]) => ({
+    specifier,
+    name,
+    isPreloaded: preloads !== '[]',
+  }));
+  const lists = assets(outDir)
+    .filter((file) => /\.fr\.[0-9a-f]{8,}\.json$/.test(file))
+    .map((file) => readFileSync(join(outDir, 'assets', file), 'utf8'))
+    .join('\n');
+  const isListed = (name) =>
+    lists.includes(JSON.stringify(name.replace(/\.js$/, '')));
+  const unlisted = named.filter(({ name }) => !isListed(name));
+  check(
+    'a rewritten import map: chunks import each other by a bare name the import map resolves, and the build lists the files of an import under what it wrote at the import',
+    named.length > 0 &&
+      named.every(({ specifier }) => specifier in imports) &&
+      !unlisted.length,
+    unlisted.length
+      ? unlisted.map(({ name }) => name).join(', ')
+      : `${named.length} imports`
+  );
+  // Vite's own names for the chunks, which no import of this build is written with
+  const unused = Object.keys(imports)
+    .filter((name) => name.startsWith('/assets/'))
+    .map((name) => name.slice(1))
+    .filter(isListed);
+  check(
+    'a rewritten import map: the build lists a chunk under no name that nothing is written with',
+    !unused.length,
+    unused.join(', ')
+  );
+  check(
+    'a rewritten import map: each import is written with the name the page imports the chunk by, and is one whose chunks Vite lists',
+    named.every(({ isPreloaded }) => isPreloaded) &&
+      named.every(({ specifier, name }) => name === specifier),
+    named
+      .filter(({ specifier, name }) => name !== specifier)
+      .map(({ specifier, name }) => `${specifier} as ${name}`)
+      .join(', ')
+  );
+  const rewritten = await serve(outDir);
+  for (const locale of ['fr', 'de']) {
+    const name = `a rewritten import map, ${locale}`;
+    // The page starts on a route whose chunk is loaded lazily
+    const app = await open(rewritten.url, locale);
+    await app.goto('#orders');
+    await checkRoute(app, locale, 'orders', 0, name);
+    await app.navigate('reports');
+    await checkRoute(app, locale, 'reports', 0, name);
+    await app.navigate('settings');
+    await checkRoute(app, locale, 'settings', 0, name);
+    await checkNoSource(name, app, locale, {
+      ...SHELL,
+      ...ROUTES.orders,
+      ...ROUTES.reports,
+      ...ROUTES.settings,
+    });
+    await app.close();
+  }
+  rewritten.close();
 }
 
 // ===== What a change to JavaScript alone renames ===== //

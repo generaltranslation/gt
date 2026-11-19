@@ -11,6 +11,7 @@ import {
   assignTranslationsByChunk,
   findChunkHashes,
   findImportedChunks,
+  findImportedNames,
   findUncoveredChunkMessages,
   getChunkKey,
   renderImportedFiles,
@@ -20,7 +21,7 @@ import {
   type UncoveredChunkMessage,
   type UngatedImports,
 } from './assignTranslations';
-import { readChunkImportMap } from './chunkImportMap';
+import { readChunkImportMap, type ChunkImportMap } from './chunkImportMap';
 import {
   CHUNK_TRANSLATIONS_MANIFEST,
   type ChunkTranslations,
@@ -363,7 +364,7 @@ export function renderChunkTranslations(
 
   const imported = renderImportedFiles(
     assignment.imports,
-    assignment.importMap
+    assignment.importedNames
   );
   const tokens: Record<string, string> = {};
   for (const locale of locales) {
@@ -593,6 +594,14 @@ export function writeChunkTranslations(
   isLoadedWith: (chunk: string, other: string) => boolean;
   /** The translation files at `files.gt.output` that are modules of the build */
   bundledCatalogs: string[];
+  /**
+   * The chunk import map as the bundle held it when the lists were written.
+   * What the build later writes at an import is resolved through this map
+   * and no later one, which another plugin may have rewritten.
+   */
+  importMap: ChunkImportMap | undefined;
+  /** The names the lists hold the imported chunks under, see findImportedNames */
+  importedNames: ChunkImportMap | undefined;
 } {
   const chunks = Object.values(bundle).filter(
     (
@@ -620,11 +629,15 @@ export function writeChunkTranslations(
       };
     }
   );
-  const assignment = { ...assignTranslationsByChunk(assigned), importMap };
+  const importedNames = findImportedNames(chunks, importMap);
+  const assignment = {
+    ...assignTranslationsByChunk(assigned),
+    importedNames,
+  };
   const uncovered = findUncoveredChunkMessages(
     assigned,
     assignment,
-    renderImportedFiles(assignment.imports, importMap)
+    renderImportedFiles(assignment.imports, importedNames)
   );
   if (uncovered.length) {
     throw new Error(createUncoveredChunkMessagesError(uncovered));
@@ -664,5 +677,7 @@ export function writeChunkTranslations(
     ),
     isLoadedWith,
     bundledCatalogs: findBundledCatalogs(chunks, gtFiles, build),
+    importMap,
+    importedNames,
   };
 }

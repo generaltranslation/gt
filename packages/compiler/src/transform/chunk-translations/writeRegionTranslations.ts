@@ -9,6 +9,7 @@ import { readChunkImportMap, type ChunkImportMap } from './chunkImportMap';
 import type { TranslationsTable } from './loadTranslationFiles';
 import {
   addChunkNames,
+  findImportedNames,
   getChunkKey,
   renderImportedFiles,
   type ImportedFiles,
@@ -267,8 +268,8 @@ export function renderRegionTranslations(
     files: ReadonlyMap<string, readonly string[]>;
     entries: ReadonlyMap<string, readonly string[]>;
     imports: ReadonlyMap<string, readonly string[]>;
-    /** The chunk import map of the build, when it has one */
-    importMap?: ChunkImportMap;
+    /** In a build with a chunk import map, the names its imports are written with */
+    importedNames?: ChunkImportMap;
   },
   build: Pick<ChunkTranslations, 'defaultLocale' | 'locales' | 'shortIdLength'>,
   table: TranslationsTable,
@@ -319,10 +320,10 @@ export function renderRegionTranslations(
     manifest
   );
   const fileKeys = new Set([...assignment.files.keys()].map(getKey));
-  // The lists know a chunk by its file and by its names in the import map
+  // The lists know a chunk by its file and by the names its imports are written with
   const listed = addChunkNames(
     new Map(Object.entries(manifest.imports)),
-    assignment.importMap
+    assignment.importedNames
   );
   for (const chunk of listed.keys()) {
     if (fileKeys.has(getChunkKey(chunk))) {
@@ -515,6 +516,14 @@ export function writeRegionTranslations(
   /** Whether `regions.previous` names a file that is not there */
   missingPrevious: boolean;
   stats: RegionAssignment['stats'] & { files: number };
+  /**
+   * The chunk import map as the bundle held it when the lists were written.
+   * What the build later writes at an import is resolved through this map
+   * and no later one, which another plugin may have rewritten.
+   */
+  importMap: ChunkImportMap | undefined;
+  /** The names the lists hold the imported chunks under, see findImportedNames */
+  importedNames: ChunkImportMap | undefined;
 } {
   const chunks = Object.values(bundle).filter(
     (file): file is RegionBundleFile & RegionChunk =>
@@ -523,6 +532,7 @@ export function writeRegionTranslations(
       file.modules !== undefined
   );
   const importMap = readChunkImportMap(bundle, build.importMap);
+  const importedNames = findImportedNames(chunks, importMap);
   const table = loadChunkTranslationsTable(gtFiles, build);
   const previous =
     build.regions.previous === undefined
@@ -582,7 +592,7 @@ export function writeRegionTranslations(
         )
       ),
       imports: imports.byChunk,
-      importMap,
+      importedNames,
     },
     build,
     table,
@@ -603,5 +613,7 @@ export function writeRegionTranslations(
     bundledCatalogs: findBundledCatalogs(chunks, gtFiles, build),
     missingPrevious: build.regions.previous !== undefined && !previous,
     stats: { ...assignment.stats, files: assignment.files.size },
+    importMap,
+    importedNames,
   };
 }

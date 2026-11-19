@@ -22,7 +22,7 @@ import { initializeState } from './state/utils/initializeState';
 import {
   describeChunks,
   getChunkImportMapOptions,
-  readChunkImportMap,
+  type ChunkImportMap,
 } from './transform/chunk-translations/chunkImportMap';
 import {
   CHUNK_TRANSLATIONS_SOURCE,
@@ -486,6 +486,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     let imported = new Set<string>();
     // Whether loading the first chunk loads the second
     let isLoadedWith: (chunk: string, other: string) => boolean = () => false;
+    // The chunk import map the last build wrote its lists with, and the
+    // names those lists hold the imported chunks under
+    let importMap: ChunkImportMap | undefined;
+    let importedNames: ChunkImportMap | undefined;
     // Where the build's files are served from and its assets go: Vite's `base` and `build.assetsDir`
     let base = '';
     let assetsDir = '';
@@ -573,6 +577,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       startupScripts = written.startupScripts;
       imported = written.imported;
       isLoadedWith = written.isLoadedWith;
+      importMap = written.importMap;
+      importedNames = written.importedNames;
       if (!shouldWarn(options.logLevel)) return;
       if (written.missingLocales.length) {
         console.warn(createMissingTranslationsWarning(written.missingLocales));
@@ -633,10 +639,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       ): void {
         if (!isProduction()) return;
         const needsFiles = (target: string) => imported.has(target);
-        const importMap = readChunkImportMap(
-          bundle,
-          chunkTranslations.importMap
-        );
+        // The import map is not read from the bundle again: a plugin may
+        // have rewritten it since the lists were written, and what is
+        // written at an import must be a name the lists know its chunk by
         const describeChunk = describeChunks(importMap);
         // An import that loads translations and that nothing gates: one the
         // build could not read is its failure, one it never wrapped is not
@@ -652,7 +657,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             needsFiles,
             isLoadedWith
           );
-          const replaced = replaceImportedChunks(source, needsFiles, importMap);
+          const replaced = replaceImportedChunks(
+            source,
+            needsFiles,
+            importMap,
+            importedNames
+          );
           if (replaced.code !== chunk.code) chunk.code = replaced.code;
           if (ungated) {
             (replaced.unread ? unread : unwrapped).push({
