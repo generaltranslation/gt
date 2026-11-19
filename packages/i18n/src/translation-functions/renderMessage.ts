@@ -9,8 +9,7 @@ import {
 } from 'generaltranslation/id';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { formatCutoff } from 'generaltranslation/internal';
-import { getI18nCache } from '../i18n-cache/singleton-operations';
-import type { I18nConfig } from '../i18n-config/I18nConfig';
+import { isI18nCacheInitialized } from '../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import logger from '../logs/logger';
@@ -123,18 +122,6 @@ export function isPrecomputedMessage(
   return (value as PrecomputedMessage).$_tree !== undefined;
 }
 
-// The config with which the I18nCache was last seen set up.
-let configWithCache: I18nConfig | undefined;
-
-function hasCache(config: I18nConfig): boolean {
-  if (configWithCache !== config) {
-    // Throws for a cache that was never set up, as its lookup does.
-    getI18nCache();
-    configWithCache = config;
-  }
-  return true;
-}
-
 /**
  * Renders a precomputed message like renderMessage renders its template:
  * the same lookup, validation, formatting, fallback and cutoff.
@@ -155,7 +142,8 @@ export function renderPrecomputedMessage(
   let translation: MessageTree | undefined;
   // Disabled skips every lookup, including custom ones with default-locale entries.
   if (enabled) {
-    if (readsCache && locale === defaultLocale && hasCache(config)) {
+    // A cache that was never set up goes to its lookup, which throws.
+    if (readsCache && locale === defaultLocale && isI18nCacheInitialized()) {
       // The I18nCache gives a message in the default locale back as its own
       // entry, so there is nothing to look up.
       translation = tree;
