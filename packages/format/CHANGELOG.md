@@ -1,5 +1,11 @@
 # @generaltranslation/format
 
+## 0.1.11
+
+### Patch Changes
+
+- [#2907](https://github.com/generaltranslation/gt/pull/2907) [`622199e`](https://github.com/generaltranslation/gt/commit/622199edeb5376a4667ef544f44dba1a7096ae0b) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Fix `formatListToParts` choosing a different connector than `formatList` for string and number items. A Spanish list now reads "Fernando e Isabel" and "7 u 8" instead of "Fernando y Isabel" and "7 o 8", and a Hebrew list attaches "ו" to a Hebrew word without a hyphen.
+
 ## 0.1.10
 
 ### Patch Changes

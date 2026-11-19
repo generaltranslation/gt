@@ -1,5 +1,13 @@
 # @generaltranslation/compiler
 
+## 1.3.70
+
+### Patch Changes
+
+- Updated dependencies [[`622199e`](https://github.com/generaltranslation/gt/commit/622199edeb5376a4667ef544f44dba1a7096ae0b)]:
+  - @generaltranslation/format@0.1.11
+  - generaltranslation@9.5.13
+
 ## 1.3.69
 
 ### Patch Changes

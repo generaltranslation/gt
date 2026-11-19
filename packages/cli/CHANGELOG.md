@@ -1,5 +1,16 @@
 # gtx-cli
 
+## 2.28.4
+
+### Patch Changes
+
+- Updated dependencies [[`622199e`](https://github.com/generaltranslation/gt/commit/622199edeb5376a4667ef544f44dba1a7096ae0b)]:
+  - @generaltranslation/format@0.1.11
+  - generaltranslation@9.5.13
+  - @generaltranslation/vue-extractor@0.1.27
+  - @generaltranslation/python-extractor@0.2.68
+  - @generaltranslation/supported-locales@2.1.49
+
 ## 2.28.3
 
 ### Patch Changes
