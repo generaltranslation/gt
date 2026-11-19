@@ -2,9 +2,9 @@
 // static files and checks the build with them in headless Chromium:
 //   node scripts/check.mjs [token|map]
 // The argument is how the build names its files
-// (experimentalChunkTranslationsNaming); it defaults to `token`.
+// (naming of experimentalSplitTranslations); it defaults to `token`.
 // CHECK_MINIFY_HASHES=true builds with hash minification
-// (experimentalChunkTranslationsMinifyHashes), and checks the ids and the
+// (minifyHashes of experimentalSplitTranslations), and checks the ids and the
 // files it writes too.
 // Prints one line per check and exits with 1 when any fails.
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -96,12 +96,12 @@ function buildEnv(outDir, chunkTranslations, env) {
   return {
     ...process.env,
     NODE_ENV: 'production',
-    GT_CHUNK_TRANSLATIONS: String(chunkTranslations),
-    GT_CHUNK_TRANSLATIONS_NAMING: NAMING,
+    GT_SPLIT_TRANSLATIONS: String(chunkTranslations),
+    // vite.config.ts passes the naming as a key of the option, which turns
+    // the feature on by being there
+    CHECK_NAMING: chunkTranslations ? NAMING : '',
     // Only a build with chunk translations can minify its hashes
-    GT_CHUNK_TRANSLATIONS_MINIFY_HASHES: String(
-      chunkTranslations && MINIFY_HASHES
-    ),
+    GT_MINIFY_HASHES: String(chunkTranslations && MINIFY_HASHES),
     CHECK_OUT_DIR: outDir,
     ...env,
   };
@@ -1007,10 +1007,10 @@ if (MINIFY_HASHES) {
 
   {
     const output = failBuild(`${NAMING}-minify-hashes-alone`, false, {
-      GT_CHUNK_TRANSLATIONS_MINIFY_HASHES: 'true',
+      GT_MINIFY_HASHES: 'true',
     });
     const failed = output?.includes(
-      'experimentalChunkTranslationsMinifyHashes is set in a build without experimentalChunkTranslations'
+      'experimentalSplitTranslations.minifyHashes is set in a build without experimentalSplitTranslations'
     );
     check(
       'hash minification: a build without chunk translations fails',

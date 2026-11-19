@@ -46,7 +46,7 @@ a proxy-free app plus locale routing with both default-prefix settings; see each
 app's README for details.
 
 `vite-chunk-translations` checks the compiler's experimental
-`experimentalChunkTranslations` option with its own scripts, which build the
+`experimentalSplitTranslations` option with its own scripts, which build the
 app with and without the option and drive the builds in headless Chromium:
 split by chunk in each naming (`scripts/check.mjs`), and split by module
 (`scripts/check-module.mjs`) in builds that run a module when it is first
@@ -58,7 +58,7 @@ pnpm --filter gt-test-vite-chunk-translations check
 ```
 
 `check:minify-hashes` runs the same checks on builds with hash minification
-(`experimentalChunkTranslationsMinifyHashes`), and checks the ids and the
+(`minifyHashes` of `experimentalSplitTranslations`), and checks the ids and the
 translation files the build wrote.
 
 Run the browser automation for every browser-capable development app, or select
