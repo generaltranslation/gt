@@ -6,7 +6,6 @@ export {
 export { createMessages, getMessages } from './translation-functions/messages';
 export {
   createTx,
-  tx,
   type TX,
   type TxConditions,
 } from './translation-functions/tx';

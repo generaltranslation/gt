@@ -1,6 +1,8 @@
 // Type-level tests, checked by `tsc --noEmit` (not run by vitest).
 import { msg, n, part, plural, select, t } from '../../index';
-import { dyn, tx } from '../../internal';
+import { dyn, type TX } from '../../internal';
+
+declare const tx: TX;
 
 declare const greeting: string;
 declare const name: string;

@@ -1,4 +1,3 @@
-import { getWritableConditionStore } from '../condition-store/singleton-operations';
 import { getI18nCache } from '../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { buildMessage } from './buildMessage';
@@ -66,12 +65,3 @@ export function createTx(
           render(first, strings, nested);
   return tx as TX;
 }
-
-/** Global TX reading the current locale from the condition store. */
-export const tx: TX = /* @__PURE__ */ createTx(() => {
-  const conditionStore = getWritableConditionStore();
-  return {
-    locale: conditionStore.getLocale(),
-    enableI18n: conditionStore.getEnableI18n(),
-  };
-});

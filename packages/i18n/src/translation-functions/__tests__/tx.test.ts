@@ -8,11 +8,14 @@ import {
   it,
   vi,
 } from 'vitest';
-import { setWritableConditionStore } from '../../condition-store/singleton-operations';
+import {
+  getWritableConditionStore,
+  setWritableConditionStore,
+} from '../../condition-store/singleton-operations';
 import { I18nCache } from '../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
-import { createTx, dyn, tx } from '../../internal';
+import { createTx, dyn } from '../../internal';
 import { n, part, plural } from '../placeholders';
 
 const translateMany = vi.fn();
@@ -22,6 +25,14 @@ vi.mock(
 );
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
+
+const tx = createTx(() => {
+  const conditionStore = getWritableConditionStore();
+  return {
+    locale: conditionStore.getLocale(),
+    enableI18n: conditionStore.getEnableI18n(),
+  };
+});
 
 const saveHash = hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' });
 const greetingTree = ['Hello, ', ['name'], '!'];
