@@ -1,11 +1,11 @@
 # General Translation
 
-The words the libraries in this repo use for what gets translated and how it is rendered. A new name in code uses the term for the form it takes. The string API keeps the names it has, such as `message` for an ICU string and `variables` for values.
+The words the libraries in this repo use for what gets translated and how it is rendered. A new name in code uses the term for the form it takes. The string API, which remains for dictionaries, gt-svelte and gt-vue, keeps the names it has, such as `message` for an ICU string and `variables` for values.
 
 ## Language
 
 **Message**:
-A sentence to translate, with its variables and how each one is formatted. It is held as a message tree and its formats, and can also be written as an ICU string or a tagged template.
+A sentence to translate, with its variables and how each one is formatted. It is held as a message tree and its formats, and is written as a tagged template or, in the string API, as an ICU string.
 
 **Message tree**:
 The sentence of a message as data: its text, where each variable goes, its branches and tags, and the message options of each formatted variable. It is the part that is translated and hashed.
@@ -32,9 +32,6 @@ A named placeholder in a message.
 **Values**:
 The data that fills a message's variables for one render.
 _Avoid_: variables (for the data)
-
-**Registered message**:
-A message written as a string that the build has collected, with its metadata, so its translation can be fetched ahead of rendering.
 
 **Content**:
 What is stored for one translatable entry, in one data format. A message tree is content; so is an ICU string or JSX.

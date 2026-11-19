@@ -7,5 +7,3 @@ Rename the `message` field of translation lookups to `content`, to match `GLOSSA
 
 - `gt-i18n/internal`: the variant of `TranslateListenerLookup` that carries the source is `{ locale, content, options }`; the `{ locale, hash }` variant is unchanged. The entries passed to a lookup's `prefetchEntries` are `{ content, options }`.
 - `@generaltranslation/react-core`: `TranslateLookup` is `{ locale, content, options }`.
-
-`RegisteredMessage.message` is unchanged: it is a string message.
