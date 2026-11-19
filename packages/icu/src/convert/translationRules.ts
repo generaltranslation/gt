@@ -17,7 +17,7 @@ export type CheckTranslationOptions = {
    * the source shows in `other` is shown in each category the locale picks
    * for more than one number, like Russian `one`, which is also 21; a
    * branch only one number takes, like German `one` or `=0`, may say its
-   * number in words, whether the source writes `#` or `{n}`.
+   * number in words, whether the source writes `#` or the variable by name.
    */
   locale?: string;
 };
@@ -550,7 +550,7 @@ function takesOneNumber(
   return picked !== undefined && picked.counts.length < 2;
 }
 
-/** The plural's own variable printed, `{n}` or `{n, number}`, which says its count as `#` does. */
+/** The plural's own variable printed by name, as an argument or a number, which says its count as `#` does. */
 function countSpellings(name: string): CheckedPlaceholder[] {
   return [
     { name, kind: 'argument' },

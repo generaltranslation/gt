@@ -123,7 +123,8 @@ is no category at all, like `lots`, is a problem.
 A category is not a word for one or many: Russian `one` is also 21, 31 and 41. So a count the source shows in `other` is shown in each category the
 locale picks for more than one number. A branch only one number takes, like
 German `one` or an exact `=0`, may say its number in words, as ICU's own
-`=1` examples do, whether the source writes the count as `#` or `{n}`:
+`=1` examples do, whether the source writes the count as `#` or by name, as
+`{count}`:
 
 ```ts
 import { checkIcuTranslation } from '@generaltranslation/icu/convert';
