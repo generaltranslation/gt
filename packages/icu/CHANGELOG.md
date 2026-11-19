@@ -1,5 +1,67 @@
 # @generaltranslation/icu
 
+## 1.0.0-samsara.8
+
+### Major Changes
+
+- 48db495: The hour of a `::j` skeleton is `Intl`'s to pick when a message is formatted, the same way for an ICU string and for a message tree. Nothing reads a locale when a message is parsed.
+  - **`parse()` no longer takes a `locale` option.** It rewrote `j` to the locale's hour symbol; `j` now stays in the skeleton. Remove the option.
+  - **Where `j` meets another hour symbol in a skeleton, the last one decides the clock,** as in ICU: `::hj` is the locale's hour and `::jh` a 12-hour one. `formatIcu` let `j` win and `formatMessageTree` the other symbol.
+  - **`formatIcu` no longer reads a region override,** like `en-u-rg-gbzzzz`, for `::j`: `Intl` does not read it, and `formatMessageTree` never did. Name the hour cycle with `-u-hc-`, as in `en-u-hc-h23`, which `Intl` reads.
+  - **`::jjjjj` throws in every locale.** `formatIcu` formatted it where the locale has a 24-hour clock.
+
+### Minor Changes
+
+- 48db495: `formatMessageTree` and `formatIcu` give their locales to `Intl` as they are, and no longer resolve them first.
+  - A locale that is not a language tag throws `Intl`'s `RangeError` when the message formats a number, a date or a plural with it. A message of text, variables and selects alone no longer throws for one.
+  - An empty list formats in the host's locale, as it does for `Intl`, instead of throwing.
+
+  Formatting a catalog that is mostly plain text is about 30% faster, and `formatMessageTree` bundles 150 bytes smaller after gzip.
+
+- 984147d: `checkTranslation` and `checkIcuTranslation` now check that a plural shows its count wherever the translation's locale needs it. A plural category is not a word for one or many: Russian `one` is also 21, 31 and 41, so `{count, plural, one {Один файл} …}` read "one file" for 21 files and was accepted. With a `locale`, a count the source shows in its `other` branch must be shown, as that plural's own `#` (or the variable, where it has no offset), in each category branch the locale picks for more than one number, as in `"count" is not shown in the plural branch one, which ru uses for 1, 21, 31, 41, …, as it is in the source`. A category picked for one number only, like German `one`, may still say that number in words, and exact `=N` branches are free. Where an enclosing plural's exact branch, like `=0`, hides the count in the source, it may stay hidden there in the translation.
+
+  `getPluralCategoryCounts(locale, type, category)` is exported from `@generaltranslation/icu/convert`, next to `getPluralCategories`: the first counts a locale picks a category for, and whether it picks it for more, as in `{ counts: [1, 21, 31, 41], more: true }` for Russian `one`. A prompt that describes plural categories can use the same answer as the check.
+
+  **Breaking:** a translation that spelled out the count in a category picked for more than one number was accepted and is now a problem.
+
+- 63851ee: `@generaltranslation/icu/convert` exports the two plural rules its checks already apply, so a format that keeps plural branches another way, such as stored JSX, can use the same ones:
+  - `getPluralCategories(locale, type)` lists the categories a locale uses, `'cardinal'` or `'ordinal'`, in CLDR's order: `['one', 'few', 'many', 'other']` for Russian plurals and `['one', 'other']` for French ordinals. It answers `undefined` for a locale `Intl` has no plural rules for, where `Intl` would answer for the host's language.
+  - `isExactKey(key)` says whether a branch key is an exact number as the parser writes it: `=1`, and not `=01` or `=1.5`.
+
+  They are on the `convert` entry, with the checks, so the main entry that formats messages at runtime is unchanged. `checkTranslation` and `checkIcuTranslation` read a locale's categories through `getPluralCategories`; what they report is unchanged.
+
+### Patch Changes
+
+- 7b5075a: `formatIcu` returns a message without ICU syntax as its text without parsing it. Formatting a catalog that is mostly plain text is about three times faster.
+- 2eec421: `@generaltranslation/icu/internal` exports `PLURAL_CATEGORIES`, CLDR's plural categories, for the CLI's tagged-template extraction.
+- 550e8ca: `templateToMessage` returns a template without holes as its text without building it.
+- 5cb51b4: **Breaking:** `<Plural>` and `<Branch>` now choose a branch the way `plural()` and `select()` do, in React, Vue and Svelte.
+  - **ICU plural selection.** `<Plural>` picks an exact branch first, then the locale's plural category for `n`, then its children. `zero`, `one` and `two` are plural categories, no longer the numbers 0, 1 and 2: in English `zero` never matches, and in Japanese neither does `one`. For an exact number write `_0`, `_1` and so on, the JSX spelling of ICU's `=0`: `<Plural n={count} _0="No items" one="1 item">Many items</Plural>`. Stored content and translations use the ICU key, `=0`.
+  - **No aliases.** The `singular`, `plural` and `dual` branches are removed: write `one`, the children and `two`. `PluralType` from `generaltranslation` no longer includes them.
+  - **The children are the fallback, and `other` is not a prop.** The children of a `<Plural>` or a `<Branch>` are what `other` is in `plural()` and `select()`: the content for a value with no branch of its own. In Vue that is the default slot. `<Plural other="...">` no longer works, and `<Branch other="...">`, which used to match only the value `"other"`, no longer does: write the content as the children. `gt`, the compiler and the Vue and Svelte extractors report an `other` prop, slot or snippet as an error. Stored content and translations hold the children under the ICU key `other`, with the other branches. `gt` and the compiler also warn about a `<Plural>` prop that looks like an exact number but is not one, such as `_01` or `_1e3`.
+  - **Stricter props.** `<Plural>` requires children, takes `n` as a `number` or a `bigint`, and no longer has a `locales` prop, so in Vue a `locales` attribute is a branch like any other. `<Branch>` requires children unless its branches cover every value of `branch`, as in `<Branch branch={isAdmin} true="Admin" false="Member" />`. `_locale` and `_enableI18n` are no longer in the prop types of `<Plural>` and `<Branch>`. `gt-react` exports the `BranchProps` type beside `PluralProps`.
+  - **The translation picks the branch.** In a translated locale, the branch is chosen among the translation's branches, and the source branch of the same name fills in its variables and elements; when the source has no branch of that name, its children do. A source `_0` branch no longer renders untranslated in a locale whose translation has no `=0` branch. A translation with no branch for the value renders the source: that element in React and Vue, the whole `<T>` in Svelte.
+  - **Errors.** In React, an `n` that is not a number or a bigint, and a value with no branch and no children, throw in development. In production they log an error; a non-numeric `n` renders the children, and a missing branch renders nothing. Children that are empty, such as `{null}`, are a fallback that renders nothing. A `bigint` too large to have a plural category throws a `RangeError` unless an exact branch matches it, as in `plural()`. In Svelte, a branch passed as `undefined` counts as absent, as in React.
+  - **Synchronous `<Branch>` in gt-next.** In a Server Component, gt-next's `<Branch>` is now gt-react's component and no longer an async wrapper around it: choosing a branch never needed the request's locale.
+
+  A `<T>` with a `<Plural>` or a `<Branch>` has new source content, so its hash changes and it is translated again: the children are stored as the `other` branch, and the elements and unnamed variables after them are numbered from the component, not from its children. `gt`, the compiler, the gt-next SWC plugin and the Vue and Svelte extractors all read the new props, so update them together with the runtime packages.
+
+  The `static-jsx` lint rule's fix writes `{x && "Active"}` as `<Branch branch={!!x} true="Active">{null}</Branch>`, since a `false` value needs a fallback, and a `null` alternative of a ternary the same way. A string that JSX text would not read back as written, such as `"&amp;"` or `"a < b"`, is written in braces.
+
+- b078069: The variable components `<Num>`, `<Currency>`, `<DateTime>` and `<RelativeTime>` take the same values and format the same way as `number()`, `date()` and `time()` in a `` t`…` `` message. In gt-vue and gt-svelte the value is the `value` prop where gt-react takes children.
+  - `<Currency>` requires `currency`; it no longer defaults to `USD`: `<Currency>{price}</Currency>` → `<Currency currency="USD">{price}</Currency>`.
+  - `<Num>` and `<Currency>` take a `number` or a `bigint`, not a string: `<Num>1000</Num>` → `<Num>{1000}</Num>`, `<Num>{text}</Num>` → `<Num>{Number(text)}</Num>`. gt-vue no longer renders text that is not a number as it is.
+  - `<DateTime>` takes a `Date` or a timestamp, not a string: in gt-vue, `<DateTime value="2024-01-01" />` → `<DateTime :value="new Date('2024-01-01')" />`.
+  - `<DateTime>` without a style or a date or time field in `options` formats in the medium date style, like `date(value)`: `Mar 14, 2024`, not `3/14/2024`. For the old output, pass `options={{ year: 'numeric', month: 'numeric', day: 'numeric' }}`.
+  - `<DateTime>` keeps the direction marks of the formatted date, which it removed. The Arabic `14‏/3‏/2024` holds two right-to-left marks that keep its parts in order inside left-to-right text.
+  - `<RelativeTime>` takes the date as children, like `<DateTime>`, and no longer has the `date` prop: `<RelativeTime date={date} />` → `<RelativeTime>{date}</RelativeTime>`. A count still takes `value` and `unit`.
+  - The `currency` prop of `<Currency>` wins over `options.currency`.
+  - The `locales` prop is removed from `<Num>`, `<Currency>`, `<DateTime>`, `<RelativeTime>` and gt-react's `<Plural>`. They format in the current locale, then the default locale. To format in another locale, call a formatter: `<Num locales={['de']}>{n}</Num>` → `{formatNum(n, { locales: ['de'] })}` with `formatNum` from `generaltranslation`, wrapped in `<Var>` inside a `<T>`.
+  - `useFormatLocales()` takes no argument and returns the current locale, then the default locale: `useFormatLocales(['de'])` → `useFormatLocales()`. `getFormatLocales()` from `@generaltranslation/react-core/pure` no longer takes `localesProp`.
+  - The prop types `NumProps`, `CurrencyProps`, `DateTimeProps` and `RelativeTimeProps`, and the props of `<Var>`, no longer have the internal `_locale` and `_enableI18n`; the `Resolved…Props` types still do.
+
+  `formatNum()` and `formatCurrency()` from `generaltranslation` and `@generaltranslation/format` accept a `bigint`, and `formatDateTime()` accepts a timestamp, as do the `GTIntl` methods.
+
 ## 0.2.0-samsara.7
 
 ### Patch Changes

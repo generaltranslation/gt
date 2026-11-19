@@ -1,5 +1,22 @@
 # gt-payload
 
+## 1.0.0-samsara.11
+
+### Patch Changes
+
+- Updated dependencies [2c3f4f6]
+- Updated dependencies [3b0eeea]
+- Updated dependencies [2c3f4f6]
+- Updated dependencies [2c3f4f6]
+- Updated dependencies [cdee423]
+- Updated dependencies [c30676f]
+- Updated dependencies [5cb51b4]
+- Updated dependencies [c0f8d3d]
+- Updated dependencies [b078069]
+  - @generaltranslation/api@0.7.0-samsara.3
+  - generaltranslation@10.0.0-samsara.10
+  - @generaltranslation/format@1.0.0-samsara.10
+
 ## 1.0.0-samsara.10
 
 ### Major Changes

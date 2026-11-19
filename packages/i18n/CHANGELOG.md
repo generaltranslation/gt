@@ -1,5 +1,50 @@
 # gt-i18n
 
+## 2.0.0-samsara.10
+
+### Major Changes
+
+- cdee423: A message tree formats in the locale of the translation alone: the default locale is no longer tried behind it when `Intl` has no data for that locale.
+
+  A translation of text alone renders for any locale, since it reaches no formatter. A locale that `Intl` rejects, like `fr_FR`, used to render the source for it with a warning; it still does for a translation that formats a number, a date or a plural.
+
+### Minor Changes
+
+- 99a2528: Tidy the `<T>` props and the `/unstable` type exports:
+  - `<T>` no longer declares or reads the internal props `_locale`, `_enableI18n`, and `_renderPreparedT`; it always renders in the locale from context. The RSC `T` and `Tx` from `@generaltranslation/react-core/components-rsc` still take them, and gt-next passes them there.
+  - `gt-i18n/unstable` and the framework `/unstable` entries export the type of a `` part`...` `` value as `Part` instead of `Fragment`, which collided with React's `Fragment`.
+
+- 28a2e47: Add an experimental global `m` to `/unstable` entries, the `useMessages()` counterpart of `t`: ``m(msg`Hello, ${{ name }}!`)`` renders a message from `msg()` with the current locale, without calling a hook. `gt-i18n/unstable` exports an `m` bound to the condition store. `@generaltranslation/react-core/unstable` and `gt-react/unstable` export an `m` that, like `t`, works only in client-rendered (SPA) apps, including at module level. In server-rendered apps, it throws in development and logs an error and renders the source in production; use `useMessages()` or `getMessages()` instead. Server components and `gt-react-native/unstable` do not export it, for the same reasons as `t`.
+
+### Patch Changes
+
+- 5e95a50: `initializeGT()` takes effect when it runs again. gt-i18n kept the first configuration and translation cache it was given, so after a Vite dev server restart the server kept calling the `loadTranslations` of the closed module runner, and every non-default locale failed with `Vite module runner has been closed` until the process restarted.
+
+  A second `initializeGT()` in `gt-svelte`, `gt-react`, `gt-react-native` or `gt-node` now replaces the configuration and the translation cache, and cached translations load again through the new loader. Call it once per module, not once per request. `gt-next` initializes itself on import and keeps its first initialization, as before.
+
+  gt-i18n no longer logs when a second instance is set, and no longer reads the `_GENERALTRANSLATION_LOG_LEVEL` environment variable, which only gated that log.
+
+- 550e8ca: The `t` from `/unstable` builds the message tree of a call site once. While every value in the template is a plain value or a named variable, later renders reuse the tree and only bind the values. Without a compiler, the tree's hash is also computed once per call site instead of on every render.
+- 550e8ca: The `t` from `/unstable` returns a message or translation without placeholders as it is, without calling the formatter, once formatting has accepted the locale. A translated tree from the catalog is validated the first time it renders instead of on every render.
+- 7d49a34: The function returned by `useGT()` and `getGT()` is now named `t` throughout GT: `const t = useGT()`. Messages that named it `gt` say `t` instead: the `static-string` lint rule, the CLI's extraction warnings and the setup instructions it writes for AI agents, gt-i18n's tagged-template errors, and the Vue extractor's dynamic-content error. Nothing changes at runtime, and existing code that names it `gt` keeps working.
+- Updated dependencies [2c3f4f6]
+- Updated dependencies [2c3f4f6]
+- Updated dependencies [cdee423]
+- Updated dependencies [c30676f]
+- Updated dependencies [7b5075a]
+- Updated dependencies [2eec421]
+- Updated dependencies [48db495]
+- Updated dependencies [48db495]
+- Updated dependencies [984147d]
+- Updated dependencies [63851ee]
+- Updated dependencies [550e8ca]
+- Updated dependencies [5cb51b4]
+- Updated dependencies [c0f8d3d]
+- Updated dependencies [b078069]
+  - generaltranslation@10.0.0-samsara.10
+  - @generaltranslation/format@1.0.0-samsara.10
+  - @generaltranslation/icu@1.0.0-samsara.8
+
 ## 2.0.0-samsara.9
 
 ### Major Changes
