@@ -17,7 +17,7 @@ import type { Settings, SupportedFrameworks } from '../types/index.js';
 import { createClients, requireProject } from '../utils/api.js';
 import { setCredentials } from '../utils/credentials.js';
 import { envFiles } from '../utils/loadEnv.js';
-import { createUserAuthError } from '../auth/errors.js';
+import { createUserAuthError } from '@generaltranslation/auth';
 import { loginInteractively } from '../auth/interactiveLogin.js';
 import { OnboardingError, type OnboardingSession } from './onboarding.js';
 import type { ManualAction } from './buildTools/index.js';

@@ -3,9 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../oauth.js', () => ({ hasLogin: vi.fn() }));
+vi.mock('@generaltranslation/auth', () => ({ hasLogin: vi.fn() }));
 
-import { hasLogin } from '../oauth.js';
+import { hasLogin } from '@generaltranslation/auth';
+import { onAuthWarning } from '../warning.js';
 import { resolveCliApiKey } from '../cliApiKey.js';
 import { loadEnv } from '../../utils/loadEnv.js';
 
@@ -38,7 +39,10 @@ describe('resolveCliApiKey', () => {
     await expect(
       resolveCliApiKey(process.env.GT_API_KEY, baseUrl)
     ).resolves.toBeUndefined();
-    expect(hasLogin).toHaveBeenCalledWith({ baseUrl });
+    expect(hasLogin).toHaveBeenCalledWith({
+      baseUrl,
+      onWarning: onAuthWarning,
+    });
   });
 
   it('uses a GT_API_KEY from .env.local without a login', async () => {

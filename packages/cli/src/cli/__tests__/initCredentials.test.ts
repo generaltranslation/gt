@@ -16,7 +16,8 @@ vi.mock('generaltranslation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('generaltranslation')>()),
   GeneralTranslation: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
-vi.mock('../../auth/oauth.js', () => ({
+vi.mock('@generaltranslation/auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@generaltranslation/auth')>()),
   createUserTokenProvider: vi.fn(() => ({})),
   hasLogin: vi.fn(),
   login: vi.fn(),
@@ -66,8 +67,7 @@ vi.mock('../../console/logger.js', () => ({
   },
 }));
 
-import { UserAuthError } from '../../auth/errors.js';
-import { hasLogin, login } from '../../auth/oauth.js';
+import { hasLogin, login, UserAuthError } from '@generaltranslation/auth';
 import { logger } from '../../console/logger.js';
 import {
   logErrorAndExit,

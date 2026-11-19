@@ -305,7 +305,7 @@ jobs:
         id: gt_cli_changed
         shell: bash
         run: |
-          if git diff --name-only "$CHANGE_BASE"...HEAD | grep -qE "^packages/(cli|python-extractor|vue-extractor|paraglide-js)/"; then
+          if git diff --name-only "$CHANGE_BASE"...HEAD | grep -qE "^packages/(cli|auth|python-extractor|vue-extractor|paraglide-js)/"; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"

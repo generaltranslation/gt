@@ -10,8 +10,10 @@ import {
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { logger } from '../console/logger.js';
 import { UserAuthError } from './errors.js';
+
+/** Receives a complete `gt Warning:` diagnostic; `console.warn` when omitted. */
+export type WarningHandler = (message: string) => void;
 
 export type OAuthTokens = {
   accessToken: string;
@@ -80,7 +82,9 @@ export function getCredentialsPath(): string {
   );
 }
 
-async function readCredentialsFile(): Promise<StoredCredentials> {
+async function readCredentialsFile(
+  onWarning: WarningHandler = console.warn
+): Promise<StoredCredentials> {
   const credentialsPath = getCredentialsPath();
   let contents: string;
   try {
@@ -98,7 +102,7 @@ async function readCredentialsFile(): Promise<StoredCredentials> {
   } catch {
     const backupPath = `${credentialsPath}.corrupt-${Date.now()}`;
     await rename(credentialsPath, backupPath);
-    logger.warn(
+    onWarning(
       createDiagnosticMessage({
         source: 'gt',
         severity: 'Warning',
@@ -139,9 +143,10 @@ async function writeCredentialsFile(
 
 async function setServerTokens(
   authBaseUrl: string,
-  tokens: OAuthTokens | undefined
+  tokens: OAuthTokens | undefined,
+  onWarning?: WarningHandler
 ): Promise<void> {
-  const credentials = await readCredentialsFile();
+  const credentials = await readCredentialsFile(onWarning);
   if (tokens) credentials.servers[authBaseUrl] = tokens;
   else delete credentials.servers[authBaseUrl];
   if (Object.keys(credentials.servers).length === 0) {
@@ -152,17 +157,22 @@ async function setServerTokens(
 }
 
 export async function readOAuthTokens(
-  authBaseUrl: string
+  authBaseUrl: string,
+  onWarning?: WarningHandler
 ): Promise<OAuthTokens | undefined> {
-  const value = (await readCredentialsFile()).servers[authBaseUrl];
+  const value = (await readCredentialsFile(onWarning)).servers[authBaseUrl];
   return value === undefined ? undefined : parseStoredTokens(value);
 }
 export async function writeOAuthTokens(
   tokens: OAuthTokens,
-  authBaseUrl: string
+  authBaseUrl: string,
+  onWarning?: WarningHandler
 ): Promise<void> {
-  await setServerTokens(authBaseUrl, tokens);
+  await setServerTokens(authBaseUrl, tokens, onWarning);
 }
-export async function deleteOAuthTokens(authBaseUrl: string): Promise<void> {
-  await setServerTokens(authBaseUrl, undefined);
+export async function deleteOAuthTokens(
+  authBaseUrl: string,
+  onWarning?: WarningHandler
+): Promise<void> {
+  await setServerTokens(authBaseUrl, undefined, onWarning);
 }

@@ -13,7 +13,8 @@ vi.mock('generaltranslation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('generaltranslation')>()),
   GeneralTranslation: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
-vi.mock('../../auth/oauth.js', () => ({
+vi.mock('@generaltranslation/auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@generaltranslation/auth')>()),
   createUserTokenProvider: vi.fn(() => ({})),
   hasLogin: vi.fn(async () => false),
   login: vi.fn(),

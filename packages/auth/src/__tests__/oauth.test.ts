@@ -13,7 +13,6 @@ import type { AddressInfo, Socket } from 'node:net';
 import * as os from 'node:os';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import chalk from 'chalk';
 import open from 'open';
 import {
   afterEach,
@@ -24,7 +23,6 @@ import {
   it,
   vi,
 } from 'vitest';
-import { logger } from '../../console/logger.js';
 import {
   deleteOAuthTokens,
   getCredentialsPath,
@@ -32,7 +30,6 @@ import {
   writeOAuthTokens,
   type OAuthTokens,
 } from '../credentialStore.js';
-import { loginInteractively } from '../interactiveLogin.js';
 import {
   ACCOUNT_LOOKUP_TIMEOUT_MS,
   createUserTokenProvider,
@@ -165,7 +162,7 @@ async function callback(
   const response = await networkFetch(redirect);
   return response.text();
 }
-function browserLogin(options: LoginOptions = {}) {
+function browserLogin(options: Partial<LoginOptions> = {}) {
   return login({
     authBaseUrl,
     baseUrl: apiBaseUrl,
@@ -299,8 +296,7 @@ describe('OAuth credential storage', () => {
       other: tokens,
     });
     const fetcher = provider();
-    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-    await logout({ authBaseUrl, fetch: fetcher });
+    await logout({ authBaseUrl, fetch: fetcher, onWarning: () => undefined });
     expect(fetcher).not.toHaveBeenCalled();
     expect(
       JSON.parse(await readFile(getCredentialsPath(), 'utf8')).servers
@@ -311,10 +307,13 @@ describe('OAuth credential storage', () => {
     JSON.stringify({ version: 1, tokens: {} }),
     JSON.stringify({ version: 2, servers: [] }),
   ])('backs up malformed envelopes and can replace them', async (contents) => {
-    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const onWarning = vi.fn();
     await writeOAuthTokens(tokens, authBaseUrl);
     await writeFile(getCredentialsPath(), contents);
-    await browserLogin();
+    await browserLogin({ onWarning });
+    expect(onWarning).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('have been reset')
+    );
     const [backup] = (await readdir(path.dirname(getCredentialsPath()))).filter(
       (name) => name.includes('.corrupt-')
     );
@@ -530,23 +529,19 @@ describe('discovery and browser authorization', () => {
     },
     10_000
   );
-  it('requests a token for the configured API, letting GT_API_URL override it', async () => {
+  it('requests a token for the given API', async () => {
     const resources: (string | null)[] = [];
-    const record = async (url: string) => {
-      resources.push(new URL(url).searchParams.get('resource'));
-      await callback(url);
-    };
     await browserLogin({
-      baseUrl: 'https://other.example/',
-      openBrowser: record,
+      baseUrl: 'https://other.example',
+      openBrowser: async (url: string) => {
+        resources.push(new URL(url).searchParams.get('resource'));
+        await callback(url);
+      },
     });
-    vi.stubEnv('GT_API_URL', apiBaseUrl);
-    await browserLogin({
-      baseUrl: 'https://other.example/',
-      openBrowser: record,
-    });
-    expect(resources).toEqual(['https://other.example/', apiResource]);
-    expect((await readOAuthTokens(authBaseUrl))?.resource).toBe(apiResource);
+    expect(resources).toEqual(['https://other.example/']);
+    expect((await readOAuthTokens(authBaseUrl))?.resource).toBe(
+      'https://other.example/'
+    );
   });
   it.each(['state', 'code', 'iss'])(
     'rejects missing and duplicate %s before exchange',
@@ -783,7 +778,7 @@ function deviceResponse(): Record<string, unknown> {
     expires_in: 900,
   };
 }
-function deviceLogin(options: LoginOptions = {}) {
+function deviceLogin(options: Partial<LoginOptions> = {}) {
   return login({
     authBaseUrl,
     baseUrl: apiBaseUrl,
@@ -797,7 +792,7 @@ function deviceLogin(options: LoginOptions = {}) {
 const POLL = { interval: 2 };
 async function startDevice(
   fetcher: ReturnType<typeof provider>,
-  options: LoginOptions = {}
+  options: Partial<LoginOptions> = {}
 ) {
   const onDeviceCode = vi.fn();
   const pending = deviceLogin({ fetch: fetcher, onDeviceCode, ...options });
@@ -858,13 +853,12 @@ describe('requested scope contract', () => {
 
 describe('library-managed device authorization', () => {
   it.each(['SSH_CONNECTION', 'SSH_CLIENT', 'SSH_TTY'])(
-    'interactive login prints device instructions without a listener or browser when %s is set',
+    'shows the device code without a listener or browser when %s is set',
     async (variable) => {
       vi.stubEnv(variable, 'ssh-session');
       vi.stubEnv('GT_AUTH_URL', authBaseUrl);
-      vi.stubEnv('GT_API_URL', apiBaseUrl);
       vi.stubGlobal('fetch', provider());
-      const message = vi.spyOn(logger, 'message').mockImplementation(() => {});
+      const onDeviceCode = vi.fn();
       const loopback = await import('../loopback.js');
       const startLoopback = vi
         .spyOn(loopback, 'startLoopbackServer')
@@ -874,13 +868,15 @@ describe('library-managed device authorization', () => {
         .mockReset()
         .mockRejectedValue(new Error('Unexpected browser launch'));
       vi.useFakeTimers();
-      const pending = loginInteractively(undefined);
+      const pending = login({ baseUrl: apiBaseUrl, onDeviceCode });
       pending.catch(() => undefined);
-      await vi.waitFor(() => expect(message).toHaveBeenCalled(), POLL);
+      await vi.waitFor(() => expect(onDeviceCode).toHaveBeenCalled(), POLL);
       await vi.advanceTimersByTimeAsync(5000);
       await pending;
-      expect(message).toHaveBeenCalledExactlyOnceWith(
-        `Visit:\n\n${chalk.cyan(String(deviceResponse().verification_uri_complete))}\n\nWaiting for authentication...`
+      expect(onDeviceCode).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          verificationUriComplete: deviceResponse().verification_uri_complete,
+        })
       );
       expect(await readOAuthTokens(authBaseUrl)).toMatchObject({
         subject: 'user-1',
@@ -1275,7 +1271,7 @@ describe('OAuth session operations', () => {
         token_type_hint: 'refresh_token',
       }
     );
-    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     for (const badFetch of [
       vi.fn<typeof fetch>().mockRejectedValue(new Error('offline')),
       vi

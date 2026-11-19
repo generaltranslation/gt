@@ -1,4 +1,4 @@
-import { UserAuthError } from '../auth/errors.js';
+import { UserAuthError } from '@generaltranslation/auth';
 import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
 import {
   branchResolutionError,

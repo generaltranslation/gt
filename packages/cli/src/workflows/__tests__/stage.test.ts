@@ -75,7 +75,7 @@ vi.mock('../utils/filterFilesForEnqueue.js', () => ({
 
 import { collectFonts } from '../../formats/files/collectFonts.js';
 import { logger } from '../../console/logger.js';
-import { loginRequiredError } from '../../auth/errors.js';
+import { loginRequiredError } from '@generaltranslation/auth';
 import { filterFilesForEnqueue } from '../utils/filterFilesForEnqueue.js';
 import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 

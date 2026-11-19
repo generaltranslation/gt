@@ -6,7 +6,8 @@ import { generateSettings } from '../generateSettings';
 import { resolveFiles } from '../../fs/config/parseFilesConfig';
 import { logger } from '../../console/logger.js';
 import { resolveConfig } from '../resolveConfig.js';
-import { createUserTokenProvider } from '../../auth/oauth.js';
+import { createUserTokenProvider } from '@generaltranslation/auth';
+import { onAuthWarning } from '../../auth/warning.js';
 import { logErrorAndExit } from '../../console/logging.js';
 
 // Mock resolveFiles
@@ -56,7 +57,7 @@ vi.mock('../../utils/api.js', () => ({
   configureCustomMapping: vi.fn(),
 }));
 
-vi.mock('../../auth/oauth.js', () => ({
+vi.mock('@generaltranslation/auth', () => ({
   createUserTokenProvider: vi.fn(() => ({
     getAccessToken: vi.fn(),
     refreshAccessToken: vi.fn(),
@@ -343,6 +344,7 @@ describe('generateSettings - composite patterns', () => {
       expect(settings.baseUrl).toBe('https://staging.example');
       expect(vi.mocked(createUserTokenProvider)).toHaveBeenLastCalledWith({
         baseUrl: 'https://staging.example',
+        onWarning: onAuthWarning,
       });
     } finally {
       vi.unstubAllEnvs();

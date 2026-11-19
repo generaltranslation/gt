@@ -280,7 +280,7 @@ async function appendGitignoreRule(cwd: string): Promise<void> {
   );
 }
 
-// Same-directory temporary file and rename, as in auth/credentialStore.ts:
+// Same-directory temporary file and rename, as in the @generaltranslation/auth credential store:
 // a failed write never truncates the existing file.
 async function writeEnvFileAtomically(
   target: string,
