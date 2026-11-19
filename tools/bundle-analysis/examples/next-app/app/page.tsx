@@ -1,4 +1,4 @@
-import { Currency, DateTime, Num, T, Var } from 'gt-next';
+import { Currency, DateTime, n, Num, part, plural, T, Var } from 'gt-next';
 import { getGT } from 'gt-next/server';
 import { LampDrawing } from '../components/lamp-drawing';
 import { OrderPanel } from '../components/order-panel';
@@ -22,9 +22,9 @@ export default async function Home() {
   const t = await getGT();
 
   const regions = [
-    { name: t('United States and Canada'), days: 4, cost: 12, from: 'RTM' },
-    { name: t('European Union and UK'), days: 2, cost: 9, from: 'RTM' },
-    { name: t('China and Singapore'), days: 3, cost: 9, from: 'SZX' },
+    { name: t`United States and Canada`, days: 4, cost: 12, from: 'RTM' },
+    { name: t`European Union and UK`, days: 2, cost: 9, from: 'RTM' },
+    { name: t`China and Singapore`, days: 3, cost: 9, from: 'SZX' },
   ];
 
   return (
@@ -61,10 +61,10 @@ export default async function Home() {
             </div>
             <div className='actions'>
               <a className='gt-button' href='#order'>
-                {t('Configure Your Lamp')}
+                {t`Configure Your Lamp`}
               </a>
               <a className='gt-button outline' href='#specs'>
-                {t('Read The Specs')}
+                {t`Read The Specs`}
               </a>
             </div>
           </div>
@@ -156,10 +156,13 @@ export default async function Home() {
               <li key={region.name} className='region'>
                 <span className='region-name'>{region.name}</span>
                 <span className='gt-label'>
-                  {t(
-                    '{days, plural, one {# business day} other {# business days}}',
-                    { days: region.days }
-                  )}
+                  {t`${plural(
+                    { days: region.days },
+                    {
+                      one: part`${n} business day`,
+                      other: part`${n} business days`,
+                    }
+                  )}`}
                 </span>
                 <span className='region-cost'>
                   <Currency currency='USD'>{region.cost}</Currency>
