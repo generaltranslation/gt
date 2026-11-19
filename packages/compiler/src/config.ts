@@ -43,7 +43,10 @@ export interface PluginConfig
    * the files of the chunks it loads together with them. That script is
    * inline: under a Content Security Policy that allows no inline script it
    * needs a nonce, which Vite's `html.cspNonce` puts on it, and where the
-   * policy blocks it, messages render the source text. Splits `<T>` and `t`
+   * policy blocks it, messages render the source text. Source maps are not
+   * kept accurate yet for the chunks the build rewrites after the bundler has
+   * rendered them: those that hold a dynamic import or the call that starts
+   * the app. Splits `<T>` and `t`
    * templates from `gt-react` by chunk; the translations of other
    * messages, such as `msg` and dictionaries, stay in one file per
    * locale that the page loads when the app starts, and the build says how
