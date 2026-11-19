@@ -32,7 +32,7 @@ const PROBED_COUNTS: readonly number[] = [
   ...Array.from({ length: 1001 }, (_, count) => count + 0.5),
 ];
 
-// By the locale Intl resolves, so input cannot grow it past CLDR's locales.
+// By the locale Intl resolves and its own categories, so input cannot grow it past CLDR's.
 const categoryCounts = new Map<string, PluralCategoryCounts>();
 
 /**
@@ -49,7 +49,10 @@ export function getPluralCategoryCounts(
 ): PluralCategoryCounts | undefined {
   if (!Intl.PluralRules.supportedLocalesOf(locale).length) return undefined;
   const rules = new Intl.PluralRules(locale, { type });
-  const key = JSON.stringify([rules.resolvedOptions().locale, type, category]);
+  const { locale: resolved, pluralCategories } = rules.resolvedOptions();
+  const used: readonly string[] = pluralCategories;
+  if (!used.includes(category)) return { counts: [], more: false };
+  const key = JSON.stringify([resolved, type, category]);
   const known = categoryCounts.get(key);
   if (known) return known;
   const counts: number[] = [];
