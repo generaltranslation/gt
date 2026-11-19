@@ -65,8 +65,10 @@ import {
   getMessageShape,
   minifyChunk,
   minifyHashes,
+  pickMinifiedTranslations,
   readMinifiedIds,
   type MinifiedIds,
+  type MinifiedTranslations,
 } from '../transform/chunk-translations/hashMinification';
 import {
   getPageBase,
@@ -145,6 +147,22 @@ async function transform(
 }
 
 /**
+ * A file of a build with hash minification as a page reads it: an entry
+ * for each id, as gt-react's `register()` makes them.
+ */
+function unpack([held, lists]: MinifiedTranslations): Record<string, unknown> {
+  const entries: Record<string, unknown> = {};
+  for (const [name, runs] of Object.entries(lists)) {
+    for (let run = 0; run < runs.length; run += 3) {
+      for (let next = 0; next < runs[run + 2]; next++) {
+        entries[`${name}.${runs[run] + next}`] = held[runs[run + 1] + next];
+      }
+    }
+  }
+  return entries;
+}
+
+/**
  * What the translation files a build emitted for `fr` hold, each by what a
  * call site passes: the files of chunks and of entries, and the unsplit file.
  */
@@ -158,7 +176,8 @@ function readTranslationFiles(
     )
     .map(([, source]) => {
       const content = JSON.parse(source);
-      return content.t ?? content;
+      const held = content.t ?? content;
+      return Array.isArray(held) ? unpack(held as MinifiedTranslations) : held;
     });
 }
 
@@ -3204,11 +3223,9 @@ export const Written = () => jsx(T, { _hash: '0123456789abcdef', children: 'Writ
           `_hash: "${spread}"`,
           "_hash: '0123456789abcdef'",
         ]);
-        expect(JSON.parse(emitted['assets/index.fr'])).toEqual({
-          t: Object.fromEntries(
-            split.map((hash) => [ids.get(hash), `fr ${hash}`])
-          ),
-        });
+        expect(unpack(JSON.parse(emitted['assets/index.fr']).t)).toEqual(
+          Object.fromEntries(split.map((hash) => [ids.get(hash), `fr ${hash}`]))
+        );
         // A message a t template and a msg share is in both files
         expect(JSON.parse(emitted['assets/gt-unsplit.fr'])).toEqual(
           Object.fromEntries(
@@ -3288,14 +3305,14 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       });
       // The compiled call sites read the entry's file by their ids
       const ids = minifyHashes(Object.keys(translations));
-      expect(JSON.parse(emitted['assets/index.fr'])).toEqual({
-        t: Object.fromEntries(
+      expect(unpack(JSON.parse(emitted['assets/index.fr']).t)).toEqual(
+        Object.fromEntries(
           Object.entries(translations).map(([hash, translation]) => [
             ids.get(hash),
             translation,
           ])
-        ),
-      });
+        )
+      );
       // And the ones hashed at runtime read the unsplit file by hash: every
       // compiled message with their text, whatever its options and the
       // names of its values, and not the message none of them can build
@@ -3331,6 +3348,109 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       );
     });
 
+    describe('a translations file', () => {
+      // t({ context: 'button' })`Save`, which is translated as t`Save` is
+      const SAVE_BUTTON = '3638c6269a914b05';
+      const GREETING = ['Bonjour, ', ['name'], ' !'];
+      const CATALOG = {
+        [SAVE_BUTTON]: 'Enregistrer',
+        [PRINT_TEXT]: 'Imprimer',
+        [SAVE_TEXT]: 'Enregistrer',
+        [HELLO]: GREETING,
+      };
+      /** The ids of two chunks: one reads all four messages, one two of them. */
+      const minify = () => {
+        const minified = minifiedIds();
+        minifyChunk(Object.keys(CATALOG).map(site).join(';'), minified);
+        minifyChunk(`${site(SAVE_TEXT)};${site(HELLO)}`, minified);
+        return minified;
+      };
+
+      it('holds each translation once, and for the list of each chunk the runs of places that read it', () => {
+        const minified = minify();
+        expect([...minified.hashes]).toEqual([
+          ['pymb1UPk.0', SAVE_BUTTON],
+          ['pymb1UPk.1', PRINT_TEXT],
+          ['pymb1UPk.2', SAVE_TEXT],
+          ['pymb1UPk.3', HELLO],
+          ['2bFNA3qJ.0', SAVE_TEXT],
+          ['2bFNA3qJ.1', HELLO],
+        ]);
+        const ids = [...minified.hashes.keys()];
+        // A run is a place in the list, the place of its translation in the
+        // file, and how many follow on from both: it ends where either stops
+        expect(pickMinifiedTranslations(CATALOG, ids, minified)).toEqual([
+          ['Enregistrer', GREETING, 'Imprimer'],
+          { '2bFNA3qJ': [0, 0, 2], pymb1UPk: [0, 0, 1, 1, 2, 1, 2, 0, 2] },
+        ]);
+        expect(
+          unpack(pickMinifiedTranslations(CATALOG, ids, minified))
+        ).toEqual({
+          'pymb1UPk.0': 'Enregistrer',
+          'pymb1UPk.1': 'Imprimer',
+          'pymb1UPk.2': 'Enregistrer',
+          'pymb1UPk.3': GREETING,
+          '2bFNA3qJ.0': 'Enregistrer',
+          '2bFNA3qJ.1': GREETING,
+        });
+      });
+
+      it('leaves out a message the locale does not translate, an id of no message and an id it is not given', () => {
+        const minified = minify();
+        expect(
+          pickMinifiedTranslations(
+            { ...CATALOG, [PRINT_TEXT]: null, [SAVE_TEXT]: undefined },
+            [
+              'pymb1UPk.3',
+              'pymb1UPk.0',
+              'pymb1UPk.1',
+              'pymb1UPk.2',
+              'Zz9_none.0',
+            ],
+            minified
+          )
+        ).toEqual([
+          ['Enregistrer', GREETING],
+          { pymb1UPk: [0, 0, 1, 3, 1, 1] },
+        ]);
+        expect(pickMinifiedTranslations(CATALOG, [], minified)).toEqual([
+          [],
+          {},
+        ]);
+      });
+
+      it('never holds the same translation twice, and reads back as one entry per id', () => {
+        // 40 messages of 7 translations in 3 chunks that share half of them
+        const hashes = Array.from({ length: 40 }, (_, place) =>
+          (place * 2654435761).toString(16).padStart(16, '0').slice(-16)
+        );
+        const catalog = Object.fromEntries(
+          hashes.map((hash, place) => [hash, [`Texte ${place % 7}`]])
+        );
+        const minified = minifiedIds();
+        const chunks = [hashes.slice(0, 25), hashes.slice(10, 40), hashes];
+        for (const chunk of chunks) {
+          minifyChunk(chunk.map(site).join(';'), minified);
+        }
+        const [held, lists] = pickMinifiedTranslations(
+          catalog,
+          [...minified.hashes.keys()],
+          minified
+        );
+        expect(
+          held.map((translation) => JSON.stringify(translation)).sort()
+        ).toEqual(
+          Array.from({ length: 7 }, (_, place) => `["Texte ${place}"]`)
+        );
+        expect(Object.keys(lists)).toHaveLength(3);
+        expect(unpack([held, lists])).toEqual(
+          Object.fromEntries(
+            [...minified.hashes].map(([id, hash]) => [id, catalog[hash]])
+          )
+        );
+      });
+    });
+
     it("gives a message that two chunks read an id in each, and each chunk's file the ids of its own call sites", async () => {
       const created = createPlugins(MINIFIED, 'vite', {
         'translations/fr.json': JSON.stringify({
@@ -3346,17 +3466,17 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
         },
         'assets/Home.js': { code: `${site(HELLO)};${site(SAVE_TEXT)}` },
       });
-      const home = minifyHashes([HELLO, SAVE_TEXT]);
-      expect(JSON.parse(emitted['assets/index.fr']).t).toEqual({
-        [minifyHashes([SAVE_TEXT]).get(SAVE_TEXT)!]: 'Enregistrer',
-      });
-      // The entry's file holds the message under another id, so the
-      // route's file does not leave it out
+      expect(JSON.parse(emitted['assets/index.fr']).t).toEqual([
+        ['Enregistrer'],
+        { [getListName([SAVE_TEXT])]: [0, 0, 1] },
+      ]);
+      // The entry's file holds the message for another id, so the route's
+      // file does not leave it out
       expect(emitted['assets/Home.fr']).toBe(
-        JSON.stringify({
-          [home.get(SAVE_TEXT)!]: 'Enregistrer',
-          [home.get(HELLO)!]: 'Bonjour',
-        })
+        JSON.stringify([
+          ['Enregistrer', 'Bonjour'],
+          { [getListName([SAVE_TEXT, HELLO])]: [0, 0, 2] },
+        ])
       );
     });
 
@@ -4226,16 +4346,19 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
             .map(([id]) => id);
         expect(idsOf(HASH.picker)).toHaveLength(2);
         for (const [key, { fr }] of Object.entries(plain.manifest.files)) {
-          expect(
-            JSON.parse(minified.emitted[minified.manifest.files[key].fr])
-          ).toEqual(
+          const hashed: Record<string, unknown> = JSON.parse(plain.emitted[fr]);
+          const file: MinifiedTranslations = JSON.parse(
+            minified.emitted[minified.manifest.files[key].fr]
+          );
+          expect(unpack(file)).toEqual(
             Object.fromEntries(
-              Object.entries(JSON.parse(plain.emitted[fr])).flatMap(
-                ([hash, translation]) =>
-                  idsOf(hash).map((id) => [id, translation])
+              Object.entries(hashed).flatMap(([hash, translation]) =>
+                idsOf(hash).map((id) => [id, translation])
               )
             )
           );
+          // Once each, also the date picker's, which two chunks read
+          expect(file[0]).toEqual(Object.values(hashed));
         }
         expect(() =>
           write({

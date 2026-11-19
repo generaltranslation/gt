@@ -32,6 +32,9 @@ import type { TranslationsTable } from './loadTranslationFiles';
  * call site the runtime hashes, and inside this build, which reads ids back
  * into hashes before it assigns messages to files.
  *
+ * A file of such a build holds no id written out, and each of its
+ * translations once, however many ids read it (see MinifiedTranslations).
+ *
  * A hash is read here as a string and nothing more: its length and its
  * characters are never looked at. What tells an id from a hash, whatever a
  * hash is made of, is the separator before the number, which is no
@@ -53,6 +56,21 @@ export const MINIFIED_ID_SEPARATOR = '.';
 
 /** The ids of a build with hash minification: the hash of each id a chunk was given. */
 export type MinifiedIds = { hashes: Map<string, string> };
+
+/**
+ * What a translations file of a build with hash minification holds, in
+ * place of one entry per id: its translations, each once, and for the list
+ * of each chunk that reads some of them, runs of three numbers. A run is a
+ * place in the list, the place of its translation in the file, and how many
+ * places follow on from both: `[12, 0, 2]` under `kR3_x0Qa` gives
+ * `kR3_x0Qa.12` the file's first translation and `kR3_x0Qa.13` its second.
+ * gt-react's `register()` reads a file back into an entry per id, each of
+ * which holds the one translation.
+ */
+export type MinifiedTranslations = [
+  translations: unknown[],
+  lists: Record<string, number[]>,
+];
 
 /** How such a build reads the ids back out of code, once its chunks are rendered. */
 export type MinifiedIdReader = {
@@ -307,17 +325,69 @@ export function findChunkIds(code: string, ids: MinifiedIdReader): string[] {
   return sortIds([...found]);
 }
 
+/** The name of the list an id is of, and its place in that list. */
+function readId(id: string): [name: string, place: number] {
+  const end = id.lastIndexOf(MINIFIED_ID_SEPARATOR);
+  return [id.slice(0, end), Number(id.slice(end + 1))];
+}
+
 /** Ids by their list, then by their number, as a file holds them. */
 export function sortIds(ids: string[]): string[] {
-  const read = (id: string): [string, number] => {
-    const end = id.lastIndexOf(MINIFIED_ID_SEPARATOR);
-    return [id.slice(0, end), Number(id.slice(end + 1))];
-  };
   return ids.sort((a, b) => {
-    const [first, place] = read(a);
-    const [second, otherPlace] = read(b);
+    const [first, place] = readId(a);
+    const [second, otherPlace] = readId(b);
     return first === second ? place - otherPlace : first < second ? -1 : 1;
   });
+}
+
+/**
+ * The translations of `ids` that `locale` has, as a file of a build with
+ * hash minification holds them: a translation is in the file once, also
+ * when several ids read it, as those of a message that several chunks read
+ * do, and two messages with one translation.
+ */
+export function pickMinifiedTranslations(
+  translations: Record<string, unknown>,
+  ids: readonly string[],
+  minified: MinifiedIds
+): MinifiedTranslations {
+  const held: unknown[] = [];
+  const places = new Map<string, number>();
+  const lists: Record<string, number[]> = {};
+  for (const id of sortIds([...ids])) {
+    const hash = minified.hashes.get(id);
+    if (
+      hash === undefined ||
+      !Object.prototype.hasOwnProperty.call(translations, hash) ||
+      translations[hash] == null
+    ) {
+      continue;
+    }
+    const source = JSON.stringify(translations[hash]);
+    let place = places.get(source);
+    if (place === undefined) {
+      place = held.push(translations[hash]) - 1;
+      places.set(source, place);
+    }
+    const [name, number] = readId(id);
+    const runs = (lists[name] ??= []);
+    const last = runs.length - 3;
+    if (
+      last >= 0 &&
+      runs[last] + runs[last + 2] === number &&
+      runs[last + 1] + runs[last + 2] === place
+    ) {
+      runs[last + 2]++;
+    } else {
+      runs.push(number, place, 1);
+    }
+  }
+  return [held, lists];
+}
+
+/** Whether a file of either shape, as it is written, holds no translation. */
+export function isEmptyTranslations(source: string): boolean {
+  return source === '{}' || source === '[[],{}]';
 }
 
 /**

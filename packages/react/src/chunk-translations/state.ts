@@ -7,13 +7,27 @@ import type { Content } from '@generaltranslation/format';
 export type Translations = Record<string, Content>;
 
 /**
+ * What a file holds in a build with the compiler's hash minification, in
+ * place of an entry per id: its translations, each once, and for the list
+ * of each chunk that reads some of them, runs of three numbers. A run is a
+ * place in the list, the place of its translation in the file, and how many
+ * places follow on from both. An id is the name of its list, a `.`, and its
+ * place in the list: `[12, 0, 2]` under `kR3_x0Qa` gives `kR3_x0Qa.12` the
+ * file's first translation and `kR3_x0Qa.13` its second.
+ */
+export type MinifiedTranslations = [
+  translations: Content[],
+  lists: Record<string, number[]>,
+];
+
+/**
  * The entry's file for a locale. A locale's map, in a build that names each
  * file by its own hash, is the same without translations: there the entry's
  * file holds only those, and the map what names a chunk.
  */
 export type EntryFile = {
   /** The translations of the entry chunk and its static imports, by hash */
-  t?: Translations;
+  t?: Translations | MinifiedTranslations;
   /** The files each dynamic import needs */
   i?: ImportedFiles;
 };

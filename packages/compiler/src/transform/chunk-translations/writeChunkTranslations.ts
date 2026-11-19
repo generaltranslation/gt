@@ -28,9 +28,9 @@ import {
 } from './resolveChunkTranslations';
 import {
   findChunkIds,
+  isEmptyTranslations,
+  pickMinifiedTranslations,
   readMinifiedIds,
-  sortIds,
-  type MinifiedIds,
 } from './hashMinification';
 import { renderStartupScript } from './startupScript';
 import {
@@ -265,24 +265,18 @@ function getContentHash(source: string): string {
 /**
  * The translations of `hashes` that `locale` has, in their order, keyed as
  * the call sites pass them.
- *
- * In a build with hash minification, `hashes` are the ids themselves, since
- * a message has one in each chunk that reads it, and `minified` says which
- * message each is. They are then in the order of their lists and numbers.
  */
 export function pickTranslations(
   translations: Record<string, unknown>,
-  hashes: string[],
-  minified?: MinifiedIds
+  hashes: string[]
 ): Record<string, unknown> {
   const picked: Record<string, unknown> = {};
-  for (const key of minified ? sortIds([...hashes]) : hashes) {
-    const hash = minified ? (minified.hashes.get(key) ?? key) : key;
+  for (const hash of hashes) {
     if (
       Object.prototype.hasOwnProperty.call(translations, hash) &&
       translations[hash] != null
     ) {
-      picked[key] = translations[hash];
+      picked[hash] = translations[hash];
     }
   }
   return picked;
@@ -373,16 +367,18 @@ export function renderChunkTranslations(
     assignment.imports,
     assignment.importedNames
   );
+  // With hash minification the assignment is of ids, of which a message has
+  // one in each chunk that reads it, and a file holds each translation once
+  const { minifiedIds } = build;
+  const pick = (translations: Record<string, unknown>, keys: string[]) =>
+    minifiedIds
+      ? pickMinifiedTranslations(translations, keys, minifiedIds)
+      : pickTranslations(translations, keys);
   const tokens: Record<string, string> = {};
   for (const locale of locales) {
     const sources = [...assignment.files].map(
       ([key, hashes]) =>
-        [
-          key,
-          JSON.stringify(
-            pickTranslations(table[locale], hashes, build.minifiedIds)
-          ),
-        ] as const
+        [key, JSON.stringify(pick(table[locale], hashes))] as const
     );
     // The map holds the files each import needs; without one, the entry's file does
     const entrySources = [...assignment.entries].map(
@@ -390,7 +386,7 @@ export function renderChunkTranslations(
         [
           entry,
           JSON.stringify({
-            t: pickTranslations(table[locale], hashes, build.minifiedIds),
+            t: pick(table[locale], hashes),
             ...(imported && !maps && { i: imported }),
           }),
         ] as const
@@ -399,7 +395,7 @@ export function renderChunkTranslations(
       const hashes: Record<string, string> = {};
       for (const [key, source] of sources) {
         // A chunk's file is written when it holds something
-        if (source === '{}') continue;
+        if (isEmptyTranslations(source)) continue;
         hashes[key] = getContentHash(source);
         (manifest.files[key] ??= {})[locale] = write(
           getFileName(maps.files, locale, hashes[key]),

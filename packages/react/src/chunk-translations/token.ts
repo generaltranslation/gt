@@ -1,4 +1,8 @@
-import type { ChunkTranslationsState, Translations } from './state';
+import type {
+  ChunkTranslationsState,
+  MinifiedTranslations,
+  Translations,
+} from './state';
 import { getState, getTranslatedLocale } from './state';
 import {
   addArrived,
@@ -57,7 +61,8 @@ export function requestFile(
     key,
     getFileUrl(state, file, locale, token),
     requested,
-    (translations: Translations) => register(state, locale, translations),
+    (translations: Translations | MinifiedTranslations) =>
+      register(state, locale, translations),
     isRetry
       ? undefined
       : () =>

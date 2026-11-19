@@ -36,6 +36,8 @@ import {
 } from './resolveChunkTranslations';
 import {
   findPassedIds,
+  isEmptyTranslations,
+  pickMinifiedTranslations,
   readMinifiedIds,
   readPlaceholders,
 } from './hashMinification';
@@ -344,17 +346,17 @@ export function renderRegionTranslations(
   for (const locale of locales) {
     const hashes: Record<string, string> = (fileHashes[locale] = {});
     for (const [id, messages] of assignment.files) {
-      // A message is in one file, under the id of each chunk that reads it
+      // A message is in one file, once, for the id of each chunk that reads it
       const source = JSON.stringify(
-        pickTranslations(
-          table[locale],
-          passedIds
-            ? [...messages].flatMap((hash) => passedIds.get(hash) ?? [])
-            : [...messages],
-          passedIds && build.minifiedIds
-        )
+        passedIds && build.minifiedIds
+          ? pickMinifiedTranslations(
+              table[locale],
+              [...messages].flatMap((hash) => passedIds.get(hash) ?? []),
+              build.minifiedIds
+            )
+          : pickTranslations(table[locale], [...messages])
       );
-      if (source === '{}') continue;
+      if (isEmptyTranslations(source)) continue;
       const key = getKey(id);
       hashes[key] = getFileHash(source);
       const fileName = getFileName(key, locale, hashes[key]);
