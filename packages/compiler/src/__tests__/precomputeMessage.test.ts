@@ -395,13 +395,18 @@ describe('the installed runtime', () => {
         path.join(dir, 'package.json'),
         JSON.stringify({
           name,
-          exports: {
-            '.': './dist/index.cjs',
-            './internal': './dist/internal.cjs',
-          },
+          // As published, react-core has subpath entries only
+          exports:
+            name === '@generaltranslation/react-core'
+              ? { './pure': './dist/pure.cjs' }
+              : {
+                  '.': './dist/index.cjs',
+                  './internal': './dist/internal.cjs',
+                },
         })
       );
       fs.writeFileSync(path.join(dir, 'dist/index.cjs'), '');
+      fs.writeFileSync(path.join(dir, 'dist/pure.cjs'), '');
       fs.writeFileSync(path.join(dir, 'dist/internal.cjs'), entry);
     };
     for (const [name, runtime] of Object.entries(packages)) {
@@ -425,6 +430,11 @@ describe('the installed runtime', () => {
     [
       'an older runtime next to a newer one',
       { 'gt-next': 'new', 'gt-react': 'old' },
+      false,
+    ],
+    [
+      'an older runtime behind a package with no root entry',
+      { 'gt-react': 'new', '@generaltranslation/react-core': 'old' },
       false,
     ],
     ['gt-i18n alone', { 'gt-i18n': 'new' }, true],

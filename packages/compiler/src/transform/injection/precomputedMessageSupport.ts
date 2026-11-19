@@ -3,15 +3,16 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
-// The packages an app imports `t`, `useGT()` or `getGT()` from
-const RUNTIME_PACKAGES = [
+// The packages an app imports `t`, `useGT()` or `getGT()` from, each by an
+// entry it has: @generaltranslation/react-core has no root entry
+const RUNTIME_ENTRIES = [
   'gt-i18n',
   'gt-react',
   'gt-next',
   'gt-tanstack-start',
   'gt-react-native',
   'gt-node',
-  '@generaltranslation/react-core',
+  '@generaltranslation/react-core/pure',
 ];
 
 // The module of the runtime that reads a precomputed message, and the export
@@ -53,12 +54,12 @@ export function findPrecomputedMessageSupport(
 ): boolean | undefined {
   const fromRoot = createRequire(path.join(root, 'package.json'));
   let found: boolean | undefined;
-  for (const name of RUNTIME_PACKAGES) {
+  for (const entry of RUNTIME_ENTRIES) {
     let file: string;
     try {
       // gt-i18n is a dependency of the others, so it resolves from them
       const from =
-        name === 'gt-i18n' ? fromRoot : createRequire(fromRoot.resolve(name));
+        entry === 'gt-i18n' ? fromRoot : createRequire(fromRoot.resolve(entry));
       file = from.resolve(RUNTIME_MODULE);
     } catch {
       // Not installed, or not resolvable from here
