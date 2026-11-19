@@ -5,4 +5,4 @@
 'gt-svelte': patch
 ---
 
-A translation can make a `<Plural>` or `<Branch>` branch from the source's `other` branch instead of its own, and lists such branches in `d.o`. English `one` only covers 1, so `one="One file"` has no count, but Russian uses `one` for 21 and 31 too and its translation needs it. A listed branch renders with the elements and variables of the source's `other` branch; before, the count rendered as nothing.
+A translation can show the count of a `<Plural>` in any of its branches, as `#` does in ICU: a variable `{ "v": "#" }` renders the plural's `n`, formatted as a number. English `one` only covers 1, so `one="One file"` has no count, but Russian uses `one` for 21 and 31 too and its translation needs it. Before, a translated branch could only use the variables of the source branch of the same name.

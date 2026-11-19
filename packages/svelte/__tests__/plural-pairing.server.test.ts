@@ -69,31 +69,38 @@ describe('plural forms a translation leaves out', () => {
     ).toBe('<p><b>Items</b></p>');
   });
 
-  it('render a form the translation made from the source other form with it', () => {
-    // French counts 0 as "one", so its form is made from "other", which
-    // shows the count. The source "one" form has a size under the same id.
+  it('render a count the source form does not show', () => {
+    // French counts 0 as "one", so its form shows the count, which the
+    // source "one" form leaves out. That form has a size under another id.
     const sized = analyze('PluralCount.svelte');
     const plural = sized.source as JsxElement;
-    const { other } = plural.d!.b as Record<string, Content>;
-    const render = (fromOther?: string[]) =>
+    const branches = plural.d!.b as Record<string, Content>;
+    const count = { i: 3, v: '#' };
+    const render = (n: number, forms: Record<string, unknown>) =>
       html({
         component: PluralCount,
-        props: { count: 0, size: 100 },
+        props: { count: n, size: 100 },
         locale: 'fr',
         translations: {
           [sized.hash]: {
             ...plural,
-            d: {
-              ...plural.d,
-              b: { one: other, other },
-              ...(fromOther && { o: fromOther }),
-            },
+            d: { ...plural.d, b: { ...branches, ...forms } },
           } as Content,
         },
       });
 
-    expect(render(['one'])).toBe('<p><b>0</b> files</p>');
-    expect(render()).toBe('<p>100 files</p>');
+    expect(render(0, { one: [count, ' fichier'] })).toBe('<p>0 fichier</p>');
+    expect(
+      render(0, {
+        one: {
+          ...(branches.one as JsxElement),
+          c: [count, ' fichier, ', { i: 3, v: 'n' }, ' Mo'],
+        },
+      })
+    ).toBe('<p>0 fichier, 100 Mo</p>');
+    expect(
+      render(5, { other: [{ t: 'b', i: 2, c: count }, ' fichiers'] })
+    ).toBe('<p><b>5</b> fichiers</p>');
   });
 });
 

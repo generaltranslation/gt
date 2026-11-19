@@ -648,21 +648,25 @@ describe('Branch and Plural attributes', () => {
     ).toBe('<b>элементов</b>');
   });
 
-  describe('a branch the translation made from the source other branch', () => {
+  describe('a count in a translated branch', () => {
     // Russian picks "one" for 21 too, so its branch shows the count, which
     // the English "one" branch leaves out.
-    const count = { i: 2, v: 'n' } as const;
+    const count = { i: 2, v: '#' } as const;
     const render = async (
-      source: JsxChildren,
       branches: Record<string, JsxChildren>,
-      fromOther: string[] | undefined,
-      slots: Record<string, () => VNodeChild>,
-      one?: string
+      one: JsxChildren,
+      props: Record<string, unknown>,
+      slots: Record<string, () => VNodeChild>
     ) => {
+      const source: JsxChildren = {
+        t: 'Plural',
+        i: 1,
+        d: { b: branches, t: 'p' },
+      };
       const target: JsxChildren = {
         t: 'Plural',
         i: 1,
-        d: { b: branches, t: 'p', ...(fromOther && { o: fromOther }) },
+        d: { b: { one }, t: 'p' },
       };
       const plugin = createGT({
         loadTranslations: async () => ({ [jsxHash(source)]: target }),
@@ -670,79 +674,72 @@ describe('Branch and Plural attributes', () => {
       await plugin.setLocale('ru');
       const Root = defineComponent({
         setup: () => () =>
-          h(T, null, () => h(Plural, { n: 21, ...(one && { one }) }, slots)),
+          h(T, null, () => h(Plural, { n: 21, ...props }, slots)),
       });
       return stripFragmentMarkers(
         await renderToString(createSSRApp(Root).use(plugin))
       );
     };
-    const files = () => [h(Num, { value: 21 }), ' files'];
 
-    it('renders with the variables of the source other branch', async () => {
+    it('is the n of the plural, which the source branch need not show', async () => {
+      const branches = { one: 'One file', other: 'Files' };
+      const props = { one: 'One file' };
+      const slots = { default: () => 'Files' };
+
+      expect(await render(branches, [count, ' файл'], props, slots)).toBe(
+        '21 файл'
+      );
+      expect(await render(branches, count, props, slots)).toBe('21');
+    });
+
+    it('is not the variable of the same id in the source branch', async () => {
+      expect(
+        await render(
+          { one: [{ i: 2, v: 'n' }, ' MB file'], other: 'Files' },
+          [count, ' файл, ', { i: 2, v: 'n' }, ' МБ'],
+          {},
+          {
+            one: () => [h(Num, { value: 100 }), ' MB file'],
+            default: () => 'Files',
+          }
+        )
+      ).toBe('21 файл, 100 МБ');
+    });
+
+    it('reaches into elements and a <Branch>, and stops at a nested <Plural>', async () => {
+      const other = { default: () => 'Files' };
+      expect(
+        await render(
+          { one: { t: 'b', i: 2, c: 'One file' }, other: 'Files' },
+          { t: 'b', i: 2, c: [count, ' файл'] },
+          {},
+          { one: () => h('b', 'One file'), ...other }
+        )
+      ).toBe('<b>21 файл</b>');
+
       expect(
         await render(
           {
-            t: 'Plural',
-            i: 1,
-            d: { b: { one: 'One file', other: [count, ' files'] }, t: 'p' },
+            one: { t: 'Branch', i: 2, d: { b: { a: 'file' }, t: 'b' } },
+            other: 'Files',
           },
-          { one: [count, ' файл'], other: [count, ' файла'] },
-          ['one'],
-          { default: files },
-          'One file'
+          { t: 'Branch', i: 2, d: { b: { a: [count, ' файл'] }, t: 'b' } },
+          {},
+          { one: () => h(Branch, { branch: 'a', a: 'file' }), ...other }
         )
       ).toBe('21 файл');
-    });
 
-    it('does not take a variable of the same id from its own source branch', async () => {
-      const source: JsxChildren = {
-        t: 'Plural',
-        i: 1,
-        d: {
-          b: { one: [count, ' MB file'], other: [count, ' files'] },
-          t: 'p',
-        },
-      };
-      const branches = { one: [count, ' файл'], other: [count, ' файла'] };
-      const slots = {
-        one: () => [h(Num, { value: 100 }), ' MB file'],
-        default: files,
-      };
-
-      expect(await render(source, branches, ['one'], slots)).toBe('21 файл');
-      expect(await render(source, branches, undefined, slots)).toBe('100 файл');
-    });
-
-    it('renders a nested branch with the one in the source other branch', async () => {
       expect(
         await render(
           {
-            t: 'Plural',
-            i: 1,
-            d: {
-              b: {
-                one: 'One file',
-                other: {
-                  t: 'Branch',
-                  i: 2,
-                  d: { b: { a: [{ i: 3, v: 'n' }, ' files'] }, t: 'b' },
-                },
-              },
-              t: 'p',
-            },
+            one: { t: 'Plural', i: 2, d: { b: { other: 'files' }, t: 'p' } },
+            other: 'Files',
           },
-          {
-            one: {
-              t: 'Branch',
-              i: 2,
-              d: { b: { a: [{ i: 3, v: 'n' }, ' файл'] }, t: 'b' },
-            },
-          },
-          ['one'],
-          { default: () => h(Branch, { branch: 'a' }, { a: files }) },
-          'One file'
+          { t: 'Plural', i: 2, d: { b: { many: [count, ' файлов'] }, t: 'p' } },
+          {},
+          { one: () => h(Plural, { n: 5 }, () => 'files'), ...other }
         )
-      ).toBe('21 файл');
+      ).toBe('5 файлов');
     });
   });
 

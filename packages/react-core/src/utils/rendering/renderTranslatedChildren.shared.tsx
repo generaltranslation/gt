@@ -26,12 +26,8 @@ import {
 import { getGTTag } from './getGTTag';
 import type { RenderVariable } from '../types';
 
-// Ids restart in every branch, so only the translation knows which source
-// branch a branch of its own was made from.
-function getSourceKey(target: TranslatedElement, key: string): string {
-  const fromOther = target.d?.o;
-  return Array.isArray(fromOther) && fromOther.includes(key) ? 'other' : key;
-}
+const isCount = (child: unknown): boolean =>
+  isVariable(child) && child.v === '#';
 
 // Shared implementation: the variable renderer is dependency-injected by a
 // factory so this module statically imports no variable components.
@@ -43,6 +39,8 @@ type RenderTranslatedChildrenArgs = {
   target: TranslatedChildren;
   locales: string[];
   enableI18n: boolean;
+  /** The `n` of the nearest `<Plural>`, which a count variable shows. */
+  count?: unknown;
 };
 
 function createRenderTranslatedChildren({
@@ -57,11 +55,13 @@ function createRenderTranslatedChildren({
     targetElement,
     locales = [defaultDefaultLocale],
     enableI18n,
+    count,
   }: {
     sourceElement: TaggedElement;
     targetElement: TranslatedElement;
     locales: string[];
     enableI18n: boolean;
+    count?: unknown;
   }): React.ReactNode {
     // Get props and generaltranslation
     const { props: sourceProps } = sourceElement;
@@ -83,9 +83,8 @@ function createRenderTranslatedChildren({
       });
     }
 
-    // The translation chooses a branch and names the source branch it pairs
-    // with; when it has none for the value, the source chooses its own, which
-    // then renders untranslated.
+    // The translation chooses a branch; when it has none for the value, the
+    // source chooses its own, which then renders untranslated.
     if (transformation === 'plural') {
       const n = sourceElement.props.n;
       const targetBranches = targetElement.d?.b || {};
@@ -96,11 +95,12 @@ function createRenderTranslatedChildren({
           n,
           locales,
           sourceGT.branches || {},
-          target === undefined ? undefined : getSourceKey(targetElement, key)
+          target === undefined ? undefined : key
         ),
         target,
         locales,
         enableI18n,
+        count: n,
       });
     }
 
@@ -113,11 +113,12 @@ function createRenderTranslatedChildren({
         source: getBranch(
           branch,
           sourceGT.branches || {},
-          target === undefined ? undefined : getSourceKey(targetElement, key)
+          target === undefined ? undefined : key
         ),
         target,
         locales,
         enableI18n,
+        count,
       });
     }
 
@@ -130,6 +131,7 @@ function createRenderTranslatedChildren({
           target: targetElement.c,
           locales,
           enableI18n,
+          count,
         }) as TaggedChildren,
       });
     }
@@ -145,6 +147,7 @@ function createRenderTranslatedChildren({
           target: targetElement.c,
           locales,
           enableI18n,
+          count,
         }) as TaggedChildren,
       });
     }
@@ -162,7 +165,23 @@ function createRenderTranslatedChildren({
     target,
     locales = [defaultDefaultLocale],
     enableI18n,
+    count,
   }: RenderTranslatedChildrenArgs): ReactNode {
+    // As `#` is in ICU: the source branch a translated branch pairs with may
+    // have no count of its own, so it comes from the plural.
+    const renderCount = () =>
+      renderVariable({
+        variableType: 'n',
+        variableValue:
+          typeof count === 'number' || typeof count === 'bigint'
+            ? count
+            : undefined,
+        variableOptions: {},
+        locales,
+        enableI18n,
+        injectionType: 'manual',
+      });
+
     // Most straightforward case, return a valid React node
     if ((target === null || typeof target === 'undefined') && source)
       return renderDefaultChildren({
@@ -171,6 +190,7 @@ function createRenderTranslatedChildren({
         enableI18n,
       });
     if (typeof target === 'string') return target;
+    if (isCount(target)) return renderCount();
 
     // Convert source to an array in case target has multiple children where source only has one
     if (Array.isArray(target) && !Array.isArray(source) && source)
@@ -237,6 +257,14 @@ function createRenderTranslatedChildren({
             </React.Fragment>
           );
 
+        if (isCount(targetChild)) {
+          return (
+            <React.Fragment key={`var_${index}`}>
+              {renderCount()}
+            </React.Fragment>
+          );
+        }
+
         // Render variable
         if (isVariable(targetChild)) {
           return (
@@ -266,6 +294,7 @@ function createRenderTranslatedChildren({
               targetElement: targetChild,
               locales,
               enableI18n,
+              count,
             })}
           </React.Fragment>
         );
@@ -285,6 +314,7 @@ function createRenderTranslatedChildren({
             targetElement: target as TranslatedElement,
             locales,
             enableI18n,
+            count,
           });
         }
 

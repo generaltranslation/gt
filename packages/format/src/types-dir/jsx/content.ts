@@ -28,9 +28,6 @@ export type GTProp = {
   // Branches. `other` is the fallback; a plural's exact number N is `=N`.
   b?: Record<string, JsxChildren>;
   t?: 'p' | 'b'; // Branch Transformation
-  // In a translation: the branches made from the source's `other` branch
-  // instead of their own. They render with its elements and variables.
-  o?: string[];
 } & HtmlContentPropKeysRecord;
 
 export type JsxElement = {

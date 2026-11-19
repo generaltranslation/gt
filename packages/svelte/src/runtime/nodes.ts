@@ -23,6 +23,9 @@ export type BranchSnippet = Snippet<[Snippet<[unknown]>]>;
 export type RenderItem =
   | { kind: 'text'; key: string; text: string }
   | { kind: 'variable'; key: string; snippet: VariableSnippet }
+  // As `#` is in ICU: the count of the nearest plural, which the source
+  // branch a translated branch pairs with may not have.
+  | { kind: 'count'; key: string }
   | {
       kind: 'element';
       key: string;
@@ -71,6 +74,10 @@ export function toRenderItems(
       items.push({ kind: 'text', key: `s${index}`, text: node });
       return;
     }
+    if (isCount(node)) {
+      items.push({ kind: 'count', key: `n${index}` });
+      return;
+    }
     if (isVariable(node)) {
       const resolved = resolve(VARIABLE_PREFIX, node.i, scopes, context);
       if (resolved) {
@@ -115,11 +122,11 @@ export function selectBranch(
   item: Extract<RenderItem, { kind: 'branch' }>,
   value: unknown,
   context: RenderContext
-): { nodes: JsxChildren | undefined; scopes: string[] } {
+): { nodes: JsxChildren | undefined; scopes: string[]; plural: boolean } {
   const { node, scopes, scopedId } = item;
   const info = context.meta.b?.[scopedId];
   const targetBranches = getBranches(node) ?? {};
-  const none = { nodes: undefined, scopes };
+  const none = { nodes: undefined, scopes, plural: info?.t === 'p' };
   if (!info) return none;
 
   const branches = Object.keys(targetBranches);
@@ -130,12 +137,13 @@ export function selectBranch(
   if (targetBranch === undefined) return none;
   const ownerScope = scopedId.slice(0, scopedId.length - String(node.i).length);
   return {
+    plural: none.plural,
     nodes: targetBranches[targetBranch],
     scopes: getBranchScopes(
       ownerScope,
       node,
       info.b,
-      getPairedSourceBranch(info.b, targetBranch, node),
+      getPairedSourceBranch(info.b, targetBranch),
       scopes
     ),
   };
@@ -152,7 +160,7 @@ export function validateTarget(
   context: RenderContext
 ): boolean {
   for (const node of toArray(nodes)) {
-    if (typeof node === 'string') continue;
+    if (typeof node === 'string' || isCount(node)) continue;
     if (isVariable(node)) {
       if (!resolve(VARIABLE_PREFIX, node.i, scopes, context)) return false;
       continue;
@@ -178,7 +186,7 @@ export function validateTarget(
           resolved.scope,
           node,
           info.b,
-          getPairedSourceBranch(info.b, name, node),
+          getPairedSourceBranch(info.b, name),
           scopes
         );
         if (!validateTarget(branch, branchScopes, context)) return false;
@@ -208,18 +216,13 @@ function getBranches(
 
 /**
  * Returns the source branch a translated branch pairs with: the same-named
- * one, or `other` when the source has no branch of that name or the
- * translation made the branch from `other`.
+ * one, or `other` when the source has no branch of that name.
  */
 function getPairedSourceBranch(
   sourceBranches: string[],
-  name: string,
-  node: JsxElement
+  name: string
 ): string | undefined {
-  const fromOther = node.d?.o;
-  const own =
-    Array.isArray(fromOther) && fromOther.includes(name) ? [] : [name];
-  return [...own, 'other'].find((branch) => sourceBranches.includes(branch));
+  return [name, 'other'].find((branch) => sourceBranches.includes(branch));
 }
 
 /**
@@ -289,6 +292,10 @@ function toArray(nodes: JsxChildren | undefined): JsxChild[] {
   return (Array.isArray(nodes) ? nodes : [nodes]).filter(
     (node): node is JsxChild => node != null && typeof node !== 'boolean'
   );
+}
+
+function isCount(node: JsxChild): boolean {
+  return isVariable(node) && node.v === '#';
 }
 
 function isElement(node: JsxChild): node is JsxElement {

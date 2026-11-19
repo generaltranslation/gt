@@ -34,6 +34,7 @@ import {
   type VNodeChild,
 } from 'vue';
 import { getFormatLocales, isBranchAttribute } from '../components/utils';
+import { Num } from '../components/variables';
 import type { GTState } from '../types';
 
 const variableTypes = {
@@ -1011,7 +1012,9 @@ function renderNodes(
   state: GTState,
   identityRender: TranslationIdentityRender,
   sourceCardinality: SourceCardinality = getSourceCardinality(source),
-  sourceScalarTruthy?: boolean
+  sourceScalarTruthy?: boolean,
+  /** The `n` of the nearest `<Plural>`, which a count variable shows. */
+  count?: unknown
 ): VNodeChild {
   if (target == null || typeof target === 'boolean') {
     // A partial translated tree falls back within the active locale. A wholly
@@ -1019,6 +1022,15 @@ function renderNodes(
     return renderDefaultNodes(source, state, identityRender, state.getLocale());
   }
   if (typeof target === 'string') return target;
+  // As `#` is in ICU: the source branch a translated branch pairs with may
+  // have no count of its own, so it comes from the plural.
+  const renderCount = () =>
+    h(Num, {
+      _locale: state.getLocale(),
+      value:
+        typeof count === 'number' || typeof count === 'bigint' ? count : null,
+    });
+  if (isCount(target)) return renderCount();
   const targetIsArray = Array.isArray(target);
   if (!targetIsArray && sourceCardinality === 'array') {
     // A scalar element/variable target cannot reconcile against React's array
@@ -1068,6 +1080,7 @@ function renderNodes(
 
   return targets.map((targetNode) => {
     if (typeof targetNode === 'string') return targetNode;
+    if (isCount(targetNode)) return renderCount();
     if (isVariable(targetNode)) {
       const variable = variables.get(targetNode.i);
       return variable
@@ -1094,7 +1107,7 @@ function renderNodes(
     return sourceNode
       ? keySourceResult(
           sourceNode,
-          renderElement(sourceNode, targetNode, state, identityRender),
+          renderElement(sourceNode, targetNode, state, identityRender, count),
           occurrences,
           identityRender
         )
@@ -1153,7 +1166,8 @@ function renderElement(
   source: SourceElement,
   target: JsxElement,
   state: GTState,
-  identityRender: TranslationIdentityRender
+  identityRender: TranslationIdentityRender,
+  count?: unknown
 ): VNodeChild {
   if (
     source.transformation === 'branch' ||
@@ -1166,16 +1180,13 @@ function renderElement(
         : getPluralKey(source.vnode.props?.n, Object.keys(branches), state);
     const targetBranch = selectKey(targetBranches);
     // The translation picks the branch. The source pairs with it by key, or
-    // with `other` when it has no branch of that name or the translation made
-    // the branch from `other`. A translation with no branch for the value
-    // leaves the choice to the source.
-    const fromOther = target.d?.o;
+    // with `other` when it has no branch of that name. A translation with no
+    // branch for the value leaves the choice to the source.
     const selectedSource = getSelectedSourceBranch(
       source,
       !Object.hasOwn(targetBranches, targetBranch)
         ? selectKey(source.branches)
-        : Object.hasOwn(source.branches, targetBranch) &&
-            !(Array.isArray(fromOther) && fromOther.includes(targetBranch))
+        : Object.hasOwn(source.branches, targetBranch)
           ? targetBranch
           : 'other'
     );
@@ -1185,7 +1196,8 @@ function renderElement(
       state,
       identityRender,
       selectedSource.cardinality,
-      selectedSource.scalarTruthy
+      selectedSource.scalarTruthy,
+      source.transformation === 'plural' ? source.vnode.props?.n : count
     );
   }
   if (source.transformation === 'fragment') {
@@ -1195,7 +1207,8 @@ function renderElement(
       state,
       identityRender,
       source.childrenCardinality,
-      source.childrenTruthy
+      source.childrenTruthy,
+      count
     );
   }
   // React applies translated children and content props together only when
@@ -1208,7 +1221,15 @@ function renderElement(
 
   return cloneWithChildren(
     source.vnode,
-    renderNodes(source.children, target.c, state, identityRender),
+    renderNodes(
+      source.children,
+      target.c,
+      state,
+      identityRender,
+      undefined,
+      undefined,
+      count
+    ),
     getTranslatedProps(target)
   );
 }
@@ -1484,6 +1505,10 @@ function cloneWithProps(
   extraProps: Record<string, unknown>
 ): VNode {
   return cloneVNode(vnode, extraProps);
+}
+
+function isCount(value: unknown): boolean {
+  return isVariable(value) && value.v === '#';
 }
 
 function isVariable(value: unknown): value is Variable {
