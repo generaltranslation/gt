@@ -19,6 +19,7 @@ export {
   RscDateTime as DateTime,
   RscGtInternalDateTime as GtInternalDateTime,
 } from './components/variables/DateTime.rsc';
+export { RscN as N } from './components/variables/N.rsc';
 export {
   RscGtInternalNum as GtInternalNum,
   RscNum as Num,
@@ -63,6 +64,7 @@ export type {
   DateTimeProps,
   ResolvedDateTimeProps,
 } from './components/variables/DateTime.shared';
+export type { NProps, ResolvedNProps } from './components/variables/N.shared';
 export type {
   NumProps,
   ResolvedNumProps,

@@ -23,6 +23,7 @@ import {
   GtInternalTranslateJsx as _GtInternalTranslateJsx,
   GtInternalVar as _GtInternalVar,
   RelativeTime as _RelativeTime,
+  N as _N,
   Num as _Num,
   Var as _Var,
   Branch as _Branch,
@@ -184,6 +185,25 @@ export const RelativeTime: typeof _RelativeTime = () => {
 };
 /** @internal _gtt - The GT transformation for the component. */
 RelativeTime._gtt = 'variable-relativetime';
+
+/**
+ * The `<N>` component renders the count of the `<Plural>` it is in, formatted as a number, as `#` does in ICU.
+ * A translation can show it in any branch of that plural.
+ *
+ * @example
+ * ```jsx
+ * <Plural n={count} one="One file">
+ *    <N /> files
+ * </Plural>
+ * ```
+ *
+ * @returns {React.JSX.Element} The formatted count.
+ */
+export const N: typeof _N = () => {
+  throw new Error(typesFileError);
+};
+/** @internal _gtt - The GT transformation for the component. */
+N._gtt = 'variable-count';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.

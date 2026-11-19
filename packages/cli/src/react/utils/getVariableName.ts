@@ -10,6 +10,8 @@ export const minifyVariableTypeMap = {
   DateTime: 'd',
   RelativeTime: 'rt',
   Currency: 'c',
+  // An <N> imported from GT: see COUNT_NODE_TYPE.
+  '#': '#',
 } as const;
 
 /**

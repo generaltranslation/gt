@@ -37,7 +37,7 @@ export function isUserTranslationComponent(
   return resolveFirstArgGTName(firstArgPath) === GT_COMPONENT_TYPES.T;
 }
 
-/** Check if first arg is user-written Var, Num, Currency, DateTime, or RelativeTime */
+/** Check if first arg is user-written Var, Num, Currency, DateTime, RelativeTime, or N */
 export function isUserVariableComponent(
   firstArgPath: NodePath<t.Expression>
 ): boolean {
@@ -48,6 +48,7 @@ export function isUserVariableComponent(
     GT_COMPONENT_TYPES.Currency,
     GT_COMPONENT_TYPES.DateTime,
     GT_COMPONENT_TYPES.RelativeTime,
+    GT_COMPONENT_TYPES.N,
   ].includes((name ?? '') as GT_COMPONENT_TYPES);
 }
 

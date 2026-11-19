@@ -97,6 +97,7 @@ const rootExportNames = [
   'GtInternalTranslateJsx',
   'GtInternalVar',
   'LocaleSelector',
+  'N',
   'Num',
   'Plural',
   'RelativeTime',

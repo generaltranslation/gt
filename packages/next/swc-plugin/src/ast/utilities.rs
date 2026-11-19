@@ -51,6 +51,7 @@ pub fn get_variable_type(component_name: &str) -> VariableType {
     "Currency" => VariableType::Currency,
     "DateTime" => VariableType::Date,
     "RelativeTime" => VariableType::RelativeTime,
+    "N" => VariableType::Count,
     "Derive" => VariableType::Static,
     _ => VariableType::Variable,
   }
@@ -350,6 +351,12 @@ mod tests {
     #[test]
     fn identifies_relative_time_variable() {
       assert_eq!(get_variable_type("RelativeTime"), VariableType::RelativeTime);
+    }
+
+    #[test]
+    fn identifies_count_variable() {
+      assert_eq!(get_variable_type("N"), VariableType::Count);
+      assert_eq!(serde_json::to_string(&VariableType::Count).unwrap(), "\"#\"");
     }
 
     #[test]

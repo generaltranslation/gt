@@ -28,8 +28,10 @@ import {
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
+  COUNT_NODE_TYPE,
   DATA_ATTR_PREFIX,
   DERIVE_COMPONENT,
+  N_COMPONENT,
   TRANSLATION_COMPONENT,
   INTERNAL_TRANSLATION_COMPONENT,
   VARIABLE_COMPONENTS,
@@ -517,7 +519,10 @@ function buildJSXTree({
         nodeType: 'element',
         // if componentType is undefined, use typeName
         // Basically, if componentType is not a GT component, use typeName such as <div>
-        type: componentType ?? typeName ?? '',
+        type:
+          componentType === N_COMPONENT
+            ? COUNT_NODE_TYPE
+            : (componentType ?? typeName ?? ''),
         props,
       };
     }
@@ -835,10 +840,12 @@ function parseJSXElement({
     // existing behavior where importAliases may be incomplete.
     const gtVariableNames = config.enableAutoJsxInjection
       ? new Set(
-          Object.values(config.importAliases).filter(
-            (name) =>
-              VARIABLE_COMPONENTS.includes(name) && name !== DERIVE_COMPONENT
-          )
+          Object.values(config.importAliases)
+            .filter(
+              (name) =>
+                VARIABLE_COMPONENTS.includes(name) && name !== DERIVE_COMPONENT
+            )
+            .map((name) => (name === N_COMPONENT ? COUNT_NODE_TYPE : name))
         )
       : undefined;
     const minifiedTree = addGTIdentifierToSyntaxTree(

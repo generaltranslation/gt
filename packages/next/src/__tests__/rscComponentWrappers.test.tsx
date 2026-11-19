@@ -9,6 +9,7 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     Derive: vi.fn(),
     GtInternalVar: vi.fn(),
     LocaleSelector: vi.fn(),
+    N: vi.fn(),
     Num: vi.fn(),
     Plural: vi.fn(),
     RelativeTime: vi.fn(),
@@ -61,6 +62,7 @@ describe('rsc component wrappers', () => {
       () => import('../variables/DateTime'),
       mockComponents.DateTime,
     ],
+    ['N', () => import('../variables/N'), mockComponents.N],
     ['Num', () => import('../variables/Num'), mockComponents.Num],
     ['Plural', () => import('../branches/Plural'), mockComponents.Plural],
     [
@@ -108,6 +110,7 @@ describe('rsc component wrappers', () => {
     expect(module.Var).toBeTypeOf('function');
     expect(module.GtInternalVar).toBeTypeOf('function');
     expect(module.GtInternalVar._gtt).toBe('variable-variable-automatic');
+    expect(module.N).toBeTypeOf('function');
     expect(module.Num).toBeTypeOf('function');
     expect(module.Currency).toBeTypeOf('function');
     expect(module.DateTime).toBeTypeOf('function');

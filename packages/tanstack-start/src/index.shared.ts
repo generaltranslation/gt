@@ -8,6 +8,7 @@ export {
   DateTime,
   RelativeTime,
   Var,
+  N,
   Num,
   // Imported by the compiler's auto JSX injection
   GtInternalTranslateJsx,

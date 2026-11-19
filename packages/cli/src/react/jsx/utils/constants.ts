@@ -16,6 +16,10 @@ export const DATETIME_COMPONENT = 'DateTime';
 export const RELATIVE_TIME_COMPONENT = 'RelativeTime';
 export const CURRENCY_COMPONENT = 'Currency';
 export const NUM_COMPONENT = 'Num';
+export const N_COMPONENT = 'N';
+// How a syntax tree names an <N> imported from GT. No JSX tag can be `#`, so a
+// component of the author's own called N is never taken for it.
+export const COUNT_NODE_TYPE = '#';
 export const PLURAL_COMPONENT = 'Plural';
 
 // GT translation functions
@@ -28,6 +32,7 @@ export const GT_TRANSLATION_FUNCS = [
   RELATIVE_TIME_COMPONENT,
   CURRENCY_COMPONENT,
   NUM_COMPONENT,
+  N_COMPONENT,
   BRANCH_COMPONENT,
   INTERNAL_TRANSLATION_COMPONENT,
   INTERNAL_VAR_COMPONENT,
@@ -43,6 +48,7 @@ export const VARIABLE_COMPONENTS = [
   RELATIVE_TIME_COMPONENT,
   CURRENCY_COMPONENT,
   NUM_COMPONENT,
+  N_COMPONENT,
   DERIVE_COMPONENT,
   INTERNAL_VAR_COMPONENT,
 ];

@@ -52,6 +52,7 @@ export {
   GtInternalTranslateJsx,
   GtInternalVar,
   LocaleSelector,
+  N,
   Num,
   Plural,
   RegionSelector,
