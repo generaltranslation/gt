@@ -40,7 +40,10 @@ export interface PluginConfig
    * default locale loads none; the locale's whole catalog is not loaded, so
    * `loadTranslations` is not called. The entry chunk's file is requested by
    * a script the build adds to `index.html`, and each dynamic import requests
-   * the files of the chunks it loads together with them. Splits `<T>` and `t`
+   * the files of the chunks it loads together with them. That script is
+   * inline: under a Content Security Policy that allows no inline script it
+   * needs a nonce, which Vite's `html.cspNonce` puts on it, and where the
+   * policy blocks it, messages render the source text. Splits `<T>` and `t`
    * templates from `gt-react` by chunk; the translations of other
    * messages, such as `msg` and dictionaries, stay in one file per
    * locale that the page loads when the app starts, and the build says how
