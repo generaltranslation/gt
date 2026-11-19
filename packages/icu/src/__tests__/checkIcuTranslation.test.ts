@@ -284,6 +284,15 @@ const CASES: [
     undefined,
   ],
   [
+    'a count dropped beside a plural with different exact branches at each use',
+    `${ONE_FILE} {m, plural, =0 {No folders} one {One folder} other {# folders}} {m, plural, one {in one folder} other {in # folders}}`,
+    `${SOME_FILES} {m, plural, =0 {No folders} one {One folder} other {# folders}} {m, plural, one {in one folder} other {in # folders}}`,
+    'en',
+    mismatch(
+      '"n" is not shown in the plural branch other, which en uses for 0, 2, 3, 4, …, as it is in the source'
+    ),
+  ],
+  [
     'a count of another offset in place of the count',
     ATTENDEES,
     '{n, plural, one {# Teilnehmer} other {# Teilnehmer}}: du {n, plural, offset:1 one {und eine weitere Person} other {und eine weitere Person}}',

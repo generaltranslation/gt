@@ -477,15 +477,14 @@ function countProblems(
     ) {
       continue;
     }
-    const beside = [...sourceNumbers, ...numbers].filter(
-      (choice) => choice.variable !== variable
-    );
-    // shortcut: beside a plural whose uses differ in their exact branches, a count is not checked: a reader has one branch of each plural, where such a number takes its category at a use with no exact branch. Pick the branch at each use if a real message needs it.
-    if (beside.some((choice) => choice.uneven)) continue;
     // shortcut: a plural with no offset is not checked beside another plural of its variable: the two read one number, and the other can print it by name, but a reader has a branch of each on its own. Read both by number if a real message needs it.
     if (
       !placeholder.offset &&
-      beside.some((choice) => choice.placeholder.name === placeholder.name)
+      [...sourceNumbers, ...numbers].some(
+        (choice) =>
+          choice.variable !== variable &&
+          choice.placeholder.name === placeholder.name
+      )
     ) {
       continue;
     }
@@ -493,20 +492,26 @@ function countProblems(
     const others = combinations(
       sourceNumbers
         .filter((choice) => choice.variable !== variable)
-        .map((choice) => ({
-          ...choice,
-          keys: [
-            ...new Set(
-              [
-                ...choice.keys,
-                ...numbers
-                  .filter((other) => other.variable === choice.variable)
-                  .flatMap((other) => other.keys),
-              ].filter((key) => key[0] === '=')
-            ),
-            ANY_CATEGORY,
-          ],
-        }))
+        .map((choice) => {
+          const uses = [
+            choice,
+            ...numbers.filter((other) => other.variable === choice.variable),
+          ];
+          return {
+            ...choice,
+            keys: [
+              // shortcut: the exact branches of a plural whose uses differ in them are not read: a reader has one branch of each plural, where such a number takes its category at a use with no exact branch. Pick the branch at each use if a real message needs it.
+              ...(uses.some((use) => use.uneven)
+                ? []
+                : new Set(
+                    uses
+                      .flatMap((use) => use.keys)
+                      .filter((key) => key[0] === '=')
+                  )),
+              ANY_CATEGORY,
+            ],
+          };
+        })
     );
     for (const key of keys) {
       if (key[0] === '=') continue;
