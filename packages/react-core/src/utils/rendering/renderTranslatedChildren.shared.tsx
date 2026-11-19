@@ -41,7 +41,7 @@ type RenderTranslatedChildrenArgs = {
   locales: string[];
   enableI18n: boolean;
   /** The `n` of the nearest `<Plural>`, which a count variable shows. */
-  count?: unknown;
+  count?: number | bigint;
 };
 
 function createRenderTranslatedChildren({
@@ -62,7 +62,7 @@ function createRenderTranslatedChildren({
     targetElement: TranslatedElement;
     locales: string[];
     enableI18n: boolean;
-    count?: unknown;
+    count?: number | bigint;
   }): React.ReactNode {
     // Get props and generaltranslation
     const { props: sourceProps } = sourceElement;
@@ -101,7 +101,8 @@ function createRenderTranslatedChildren({
         target,
         locales,
         enableI18n,
-        count: n,
+        // An `n` that is no number is reported where the branch is picked.
+        count: isCount(n) ? n : undefined,
       });
     }
 
@@ -189,7 +190,9 @@ function createRenderTranslatedChildren({
         enableI18n,
       });
     if (typeof target === 'string') return target;
-    if (isCountVariable(target) && isCount(count)) return renderCount(count);
+    if (isCountVariable(target) && count !== undefined) {
+      return renderCount(count);
+    }
 
     // Convert source to an array in case target has multiple children where source only has one
     if (Array.isArray(target) && !Array.isArray(source) && source)
@@ -256,7 +259,7 @@ function createRenderTranslatedChildren({
             </React.Fragment>
           );
 
-        if (isCountVariable(targetChild) && isCount(count)) {
+        if (isCountVariable(targetChild) && count !== undefined) {
           return (
             <React.Fragment key={`var_${index}`}>
               {renderCount(count)}
