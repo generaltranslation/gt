@@ -10,14 +10,15 @@ export const getLocale = runtime.getLocale;
 export const getEnableI18n = runtime.getEnableI18n;
 
 /**
- * Return a string translation function for the current locale. Use it in
- * loaders, `head` data and server functions; in components, use `useGT()`.
+ * Return a tagged-template GT for the current locale once its translations
+ * load. Use it in loaders, `head` data and server functions; in components,
+ * use `useGT()`.
  */
 export const getGT = runtime.getGT;
 
 /**
- * Return a registered-message translation function for the current locale.
- * Use it in loaders, `head` data and server functions; in components, use
- * `useMessages()`.
+ * Return an m, which renders messages from msg(), for the current locale once
+ * its translations load. Use it in loaders, `head` data and server functions;
+ * in components, use `useMessages()`.
  */
 export const getMessages = runtime.getMessages;

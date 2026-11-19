@@ -89,6 +89,48 @@ function node(args: string[]): void {
   execFileSync(process.execPath, args, { cwd: packageRoot, stdio: 'pipe' });
 }
 
+const rootExportNames = [
+  'Branch',
+  'Currency',
+  'DateTime',
+  'Derive',
+  'GtInternalTranslateJsx',
+  'GtInternalVar',
+  'LocaleSelector',
+  'Num',
+  'Plural',
+  'RelativeTime',
+  'T',
+  'Var',
+  'date',
+  'derive',
+  'getEnableI18n',
+  'getGT',
+  'getLocale',
+  'getMessages',
+  'mFallback',
+  'msg',
+  'n',
+  'number',
+  'part',
+  'plural',
+  'select',
+  'selectordinal',
+  'setupRouterGTIntegration',
+  'time',
+  'useCustomMapping',
+  'useDefaultLocale',
+  'useEnableI18n',
+  'useFormatLocales',
+  'useGT',
+  'useLocale',
+  'useLocaleSelector',
+  'useLocales',
+  'useMessages',
+  'useSetEnableI18n',
+  'useSetLocale',
+];
+
 // Each test blocks on child processes, so concurrent tests only queue and every
 // timeout would also count the time spent waiting for the others.
 describe.sequential('gt-tanstack-start package exports', () => {
@@ -123,8 +165,6 @@ describe.sequential('gt-tanstack-start package exports', () => {
       'compat.server.mjs',
       'index.client.mjs',
       'index.server.mjs',
-      'unstable.client.mjs',
-      'unstable.server.mjs',
     ]);
   });
 
@@ -134,8 +174,6 @@ describe.sequential('gt-tanstack-start package exports', () => {
       'index.server.d.mts',
       'compat.client.d.mts',
       'compat.server.d.mts',
-      'unstable.client.d.mts',
-      'unstable.server.d.mts',
     ]) {
       const declaration = readFileSync(join(packageRoot, 'dist', file), 'utf8');
 
@@ -182,7 +220,7 @@ describe.sequential('gt-tanstack-start package exports', () => {
     }
   );
 
-  it.each(['index.client.mjs', 'compat.client.mjs', 'unstable.client.mjs'])(
+  it.each(['index.client.mjs', 'compat.client.mjs'])(
     'keeps Node.js builtins out of the browser entrypoint %s',
     (file) => {
       // Browser bundlers cannot resolve Node.js builtins.
@@ -199,33 +237,31 @@ describe.sequential('gt-tanstack-start package exports', () => {
     }
   );
 
+  it.each(['index.client.mjs', 'index.server.mjs'])(
+    'does not import React 19-only use from %s',
+    (file) => {
+      // The peer range includes React 18, whose ESM build has no `use` export,
+      // so importing it fails at module link time.
+      const reactImports = getNamedReactImports(readDistFile(file));
+
+      expect(reactImports.length).toBeGreaterThan(0);
+      expect(reactImports).not.toContain('use');
+    }
+  );
+
   it.each([
-    ['index.client.mjs', true],
-    ['index.server.mjs', true],
-    // Re-exports gt-react/unstable, so it may not import React directly.
-    ['unstable.client.mjs', false],
-  ])('does not import React 19-only use from %s', (file, importsReact) => {
-    // The peer range includes React 18, whose ESM build has no `use` export,
-    // so importing it fails at module link time.
-    const reactImports = getNamedReactImports(readDistFile(file));
-
-    if (importsReact) expect(reactImports.length).toBeGreaterThan(0);
-    expect(reactImports).not.toContain('use');
-  });
-
-  it('mirrors the root conditions for gt-tanstack-start/unstable', () => {
-    const { exports } = JSON.parse(
-      readFileSync(join(packageRoot, 'package.json'), 'utf8')
-    ) as { exports: Record<string, unknown> };
-
-    expect(exports['./unstable']).toEqual(
-      JSON.parse(
-        JSON.stringify(exports['.']).replaceAll('/index.', '/unstable.')
+    'index.client.mjs',
+    'index.server.mjs',
+    'internal/initializeGT.server.mjs',
+  ])('keeps dictionary and ICU string modules out of %s', (file) => {
+    expect(
+      getImportSpecifiers(readDistFile(file)).filter((specifier) =>
+        /\/compat$|^gt-i18n\/internal\/string$/.test(specifier)
       )
-    );
+    ).toEqual([]);
   });
 
-  it('loads the tagged getGT and getMessages from both unstable entrypoints', () => {
+  it('exports the same names from both entrypoints', () => {
     for (const conditions of [[], ['--conditions=browser']]) {
       node([
         ...conditions,
@@ -233,17 +269,10 @@ describe.sequential('gt-tanstack-start package exports', () => {
         '-e',
         `
           import assert from 'node:assert/strict';
-          import * as unstable from 'gt-tanstack-start/unstable';
+          import * as start from 'gt-tanstack-start';
 
-          assert.equal(typeof unstable.getGT, 'function');
-          assert.equal(typeof unstable.plural, 'function');
-          assert.equal(typeof unstable.time, 'function');
-          assert.equal(typeof unstable.useGT, 'function');
-          assert.equal(typeof unstable.getMessages, 'function');
-          assert.equal(typeof unstable.useMessages, 'function');
-          assert.equal(typeof unstable.msg, 'function');
-          // TanStack Start renders on the server, and t is SPA only.
-          assert.equal(unstable.t, undefined);
+          // TanStack Start renders on the server, so no SPA-only t or m.
+          assert.deepEqual(Object.keys(start).sort(), ${JSON.stringify(rootExportNames)});
         `,
       ]);
     }

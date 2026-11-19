@@ -28,5 +28,22 @@ export {
   useMessages,
 } from '@generaltranslation/react-core/hooks';
 // ===== Functions ===== //
-export { msg, decodeMsg, decodeOptions, mFallback, gtFallback } from 'gt-i18n';
-export { derive, declareVar, decodeVars } from 'generaltranslation';
+export {
+  msg,
+  mFallback,
+  derive,
+  plural,
+  selectordinal,
+  select,
+  number,
+  date,
+  time,
+  part,
+  n,
+  type GT,
+  type GTOptions,
+  type M,
+  type Msg,
+  type Part,
+  type Placeholder,
+} from 'gt-i18n';

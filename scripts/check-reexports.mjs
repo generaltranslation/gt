@@ -50,10 +50,6 @@ export const entryExceptions = [
     reason: 'Shared body of the index.client and index.server entries.',
   },
   {
-    path: 'packages/tanstack-start/src/unstable.shared.ts',
-    reason: 'Shared body of the unstable.client and unstable.server entries.',
-  },
-  {
     path: 'packages/next/src/utils/client-boundary.tsx',
     reason:
       "'use client' shim so server entries can render gt-react client components.",
