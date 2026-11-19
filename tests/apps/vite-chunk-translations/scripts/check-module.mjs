@@ -26,6 +26,16 @@ import { chromium } from 'playwright-core';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = join(root, '.check');
+// CHECK_SHORT_IDS (`true` or a number of characters) builds with
+// experimentalChunkTranslationsShortIds: the files are then keyed by the
+// short ids of their messages, and the manifest still lists hashes
+const SHORT_IDS = process.env.CHECK_SHORT_IDS ?? '';
+const SHORT_ID_LENGTH = SHORT_IDS === 'true' ? 8 : Number(SHORT_IDS);
+/** The key of a message in the files of the split. */
+const keyOf = (hash) =>
+  SHORT_IDS
+    ? Buffer.from(hash, 'hex').toString('base64url').slice(0, SHORT_ID_LENGTH)
+    : hash;
 // gt-react's default; the app waits this long for a file that never arrives
 const TIMEOUT_MS = 10_000;
 // How long a check holds a translations file back
@@ -81,6 +91,7 @@ function build(name, { lazy, shared, requestCost }, env = {}) {
         GT_CHUNK_TRANSLATIONS_SPLIT: 'module',
         GT_CHUNK_TRANSLATIONS_NAMING: '',
         GT_CHUNK_TRANSLATIONS_PREVIOUS: '',
+        GT_CHUNK_TRANSLATIONS_SHORT_IDS: SHORT_IDS,
         GT_CHUNK_TRANSLATIONS_REQUEST_COST:
           requestCost === undefined ? '' : String(requestCost),
         CHECK_GT_LOG: 'debug',
@@ -798,6 +809,7 @@ async function checkVariant(name, variant) {
   prefix = `[${name}] `;
   const off = build(`module-${name}-off`, variant, {
     GT_CHUNK_TRANSLATIONS: 'false',
+    GT_CHUNK_TRANSLATIONS_SHORT_IDS: '',
   });
   const on = build(`module-${name}`, variant);
   const built = readBuild(on.outDir);
@@ -879,8 +891,11 @@ async function checkVariant(name, variant) {
       `${locale}: no message is in two files, and every assigned message is in one`,
       [...counts.values()].every((count) => count === 1) &&
         counts.size === assigned.length &&
-        assigned.every((hash) => counts.has(hash)) &&
-        !unsplit.some((hash) => counts.has(hash)),
+        assigned.every((hash) => counts.has(keyOf(hash))) &&
+        (!SHORT_IDS ||
+          [...counts.keys()].every((key) => key.length === SHORT_ID_LENGTH)) &&
+        unsplit.every((hash) => /^[0-9a-f]{16}$/.test(hash)) &&
+        !unsplit.some((hash) => counts.has(keyOf(hash))),
       `${counts.size} messages in ${Object.keys(manifest.files).length} files, ${unsplit.length} unsplit`
     );
   }

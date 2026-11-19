@@ -133,6 +133,23 @@ export interface PluginConfig
    */
   experimentalChunkTranslationsPrevious?: string;
   /**
+   * Experimental, with `experimentalChunkTranslations`: the call sites the
+   * build splits by chunk, `<T>` and `t` templates from `gt-react`,
+   * pass a short id in place of their hash of 16 characters, and the files
+   * of chunks are keyed by it, which makes both smaller. `true` is 8
+   * characters, 48 bits of the hash; a number from 1 to 10 is that many
+   * characters. The build fails when two messages of the app or of its
+   * translation files would share an id, and names them. The hash of a
+   * message stays what it is everywhere else: in the translation files at
+   * `files.gt.output`, in the unsplit file, and at every call site that
+   * reads from it. A call site whose hash is computed when it runs finds a
+   * message that a compiled call site also reads only where the build could
+   * tell which message that is; it warns of the modules where it could not.
+   * Cannot be used with `_tagIds`. Defaults to the
+   * `GT_CHUNK_TRANSLATIONS_SHORT_IDS` environment variable.
+   */
+  experimentalChunkTranslationsShortIds?: boolean | number;
+  /**
    * Replaces each static `t` template with a call
    * that passes its message, built at compile time and written at the call,
    * so the call site builds no message tree when it renders. An older

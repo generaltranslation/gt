@@ -33,6 +33,7 @@ import {
   type ChunkTranslations,
   type RegionSplit,
 } from './resolveChunkTranslations';
+import { createShortIds } from './shortIds';
 import { renderStartupScript } from './startupScript';
 import {
   getUnsplitTranslations,
@@ -269,7 +270,7 @@ export function renderRegionTranslations(
     /** The chunk import map of the build, when it has one */
     importMap?: ChunkImportMap;
   },
-  build: Pick<ChunkTranslations, 'defaultLocale' | 'locales'>,
+  build: Pick<ChunkTranslations, 'defaultLocale' | 'locales' | 'shortIdLength'>,
   table: TranslationsTable,
   {
     base,
@@ -336,7 +337,7 @@ export function renderRegionTranslations(
     const hashes: Record<string, string> = (fileHashes[locale] = {});
     for (const [id, messages] of assignment.files) {
       const source = JSON.stringify(
-        pickTranslations(table[locale], [...messages])
+        pickTranslations(table[locale], [...messages], build.shortIdLength)
       );
       if (source === '{}') continue;
       const key = getKey(id);
@@ -530,6 +531,9 @@ export function writeRegionTranslations(
 
   const { graph } = createRegionGraph(chunks, getModuleInfo, build.hashes, {
     isLazy,
+    ...(build.shortIdLength !== undefined && {
+      shortIds: createShortIds(build.shortIdLength, build, table),
+    }),
   });
   const sizes = getMessageSizes(table, build.hashes);
   const sampled = build.locales.find((locale) => table[locale]);

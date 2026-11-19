@@ -3,8 +3,10 @@
 //   node scripts/check.mjs [token|map]
 // The argument is how the build names its files
 // (experimentalChunkTranslationsNaming); it defaults to `token`.
+// CHECK_SHORT_IDS (`true` or a number of characters) builds with
+// experimentalChunkTranslationsShortIds, and checks the ids too.
 // Prints one line per check and exits with 1 when any fails.
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   createReadStream,
   mkdirSync,
@@ -21,6 +23,8 @@ import { chromium } from 'playwright-core';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const NAMING = process.argv[2] ?? 'token';
+const SHORT_IDS = process.env.CHECK_SHORT_IDS ?? '';
+const SHORT_ID_LENGTH = SHORT_IDS === 'true' ? 8 : Number(SHORT_IDS);
 const ON = join(root, '.check', NAMING === 'token' ? 'on' : NAMING);
 const OFF = join(root, '.check', 'off');
 // CHECK_IMPORT_MAP=true makes every build with Vite's chunk import map
@@ -44,8 +48,9 @@ const SOURCE_LOADS = 9;
  * `translations` is the directory the build and the app's own loader read
  * the translation files from, when not the app's, `entry` the page to build,
  * when not index.html, `base` Vite's, when not `/`, `revision` a change to
- * the JavaScript of a module every route imports, and `lazy` whether a
- * module runs when it is first imported (Rolldown's strictExecutionOrder).
+ * the JavaScript of a module every route imports, `lazy` whether a module
+ * runs when it is first imported (Rolldown's strictExecutionOrder), and `env`
+ * anything else the build reads.
  */
 function build(
   outDir,
@@ -54,26 +59,51 @@ function build(
   entry,
   base,
   revision,
-  lazy
+  lazy,
+  env
 ) {
   const start = Date.now();
   execFileSync('pnpm', ['exec', 'vite', 'build', '--logLevel', 'error'], {
     cwd: root,
     stdio: 'inherit',
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      GT_CHUNK_TRANSLATIONS: String(chunkTranslations),
-      GT_CHUNK_TRANSLATIONS_NAMING: NAMING,
-      CHECK_OUT_DIR: outDir,
+    env: buildEnv(outDir, chunkTranslations, {
       ...(translations && { CHECK_TRANSLATIONS: translations }),
       ...(entry && { CHECK_ENTRY: entry }),
       ...(base && { CHECK_BASE: base }),
       ...(revision && { CHECK_REVISION: revision }),
       ...(lazy && { CHECK_LAZY: 'true' }),
-    },
+      ...env,
+    }),
   });
   return Date.now() - start;
+}
+
+/** What a build of the app reads from its environment. */
+function buildEnv(outDir, chunkTranslations, env) {
+  return {
+    ...process.env,
+    NODE_ENV: 'production',
+    GT_CHUNK_TRANSLATIONS: String(chunkTranslations),
+    GT_CHUNK_TRANSLATIONS_NAMING: NAMING,
+    // Only a build with chunk translations can have short ids
+    GT_CHUNK_TRANSLATIONS_SHORT_IDS: chunkTranslations ? SHORT_IDS : '',
+    CHECK_OUT_DIR: outDir,
+    ...env,
+  };
+}
+
+/** A build that must fail: what it printed, or undefined when it did not fail. */
+function failBuild(name, chunkTranslations, env) {
+  const result = spawnSync(
+    'pnpm',
+    ['exec', 'vite', 'build', '--logLevel', 'error'],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      env: buildEnv(join(root, '.check', name), chunkTranslations, env),
+    }
+  );
+  return result.status === 0 ? undefined : `${result.stdout}${result.stderr}`;
 }
 
 const TYPES = {
@@ -722,6 +752,182 @@ check(
       Object.values(JSON.parse(unsplit)).sort().join() ===
         'MAINTENANCE STARTS TONIGHT'
   );
+}
+
+// ----- Short ids ----- //
+// With CHECK_SHORT_IDS, a call site the build splits passes the start of its
+// hash in another alphabet, and the file of its chunk is keyed by that. What
+// reads the unsplit file keeps its hash.
+if (SHORT_IDS) {
+  const shortId = (hash) =>
+    Buffer.from(hash, 'hex').toString('base64url').slice(0, SHORT_ID_LENGTH);
+  const isHash = (id) => /^[0-9a-f]{16}$/.test(id);
+  const isShortId = (id) =>
+    new RegExp(`^[A-Za-z0-9_-]{${SHORT_ID_LENGTH}}$`).test(id);
+  const frCatalog = JSON.parse(catalog);
+  const idsOf = (directory) =>
+    assets(directory)
+      .filter((file) => file.endsWith('.js'))
+      .flatMap((file) => [
+        ...readFileSync(join(directory, 'assets', file), 'utf8').matchAll(
+          /[{,]\$?_hash:(["'`])([^"'`]*)\1/g
+        ),
+      ])
+      .map((match) => match[2]);
+  const unsplitOf = (directory, built) =>
+    JSON.parse(readFileSync(join(directory, built.unsplit.fr), 'utf8'));
+  /** The fr translations in the files of chunks and entries, by their key. */
+  const splitOf = (directory, built) =>
+    Object.assign(
+      {},
+      ...[
+        ...Object.values(built.entries).map(
+          ({ translations }) => translations.fr
+        ),
+        ...Object.values(built.files).map((files) => files.fr),
+      ]
+        .filter(Boolean)
+        .map((file) => {
+          const content = JSON.parse(
+            readFileSync(join(directory, file), 'utf8')
+          );
+          return content.t ?? content;
+        })
+    );
+
+  const ids = idsOf(ON);
+  const unsplit = unsplitOf(ON, manifest);
+  const split = splitOf(ON, manifest);
+  const splitHashes = Object.keys(frCatalog).filter(
+    (hash) => shortId(hash) in split
+  );
+  check(
+    `short ids: call sites pass ids of ${SHORT_ID_LENGTH} characters, and a hash only for what the unsplit file holds`,
+    ids.filter(isShortId).length > 30 &&
+      ids.every((id) => isShortId(id) || isHash(id)) &&
+      ids.filter(isHash).every((hash) => hash in unsplit),
+    `${ids.filter(isShortId).length} short ids, ${ids.filter(isHash).length} hashes`
+  );
+  check(
+    'short ids: the files of chunks are keyed by the short ids of their messages, the unsplit file by hashes',
+    Object.keys(split).every(isShortId) &&
+      splitHashes.length === Object.keys(split).length &&
+      splitHashes.every(
+        (hash) =>
+          JSON.stringify(split[shortId(hash)]) ===
+          JSON.stringify(frCatalog[hash])
+      ) &&
+      Object.keys(unsplit).every(
+        (hash) => isHash(hash) && frCatalog[hash] === unsplit[hash]
+      ),
+    `${Object.keys(split).length} short ids, ${Object.keys(unsplit).length} hashes`
+  );
+  check(
+    'short ids: every id a call site passes is in a file',
+    ids.filter(isShortId).every((id) => id in split)
+  );
+
+  // One message read through a t template, whose chunk's file holds it under
+  // its short id, and through a msg, which reads the unsplit file by hash.
+  // And three read through a t template and through a t that hashes them
+  // when it runs, which reads by hash too: with no options, with the options
+  // of the compiled call site, and with a value named as that one names it.
+  {
+    const outDir = join(root, '.check', `${NAMING}-shared-message`);
+    build(outDir, true, ...Array(5), { CHECK_SHARED_MESSAGE: 'true' });
+    const built = JSON.parse(
+      readFileSync(join(outDir, 'assets', 'gt-chunk-translations.json'), 'utf8')
+    );
+    const [hash] = Object.entries(frCatalog).find(
+      ([, translation]) => translation === 'MAINTENANCE STARTS TONIGHT'
+    );
+    check(
+      'short ids: a message read through t and through msg is in the file of a chunk under its short id and in the unsplit file under its hash',
+      splitOf(outDir, built)[shortId(hash)] === 'MAINTENANCE STARTS TONIGHT' &&
+        unsplitOf(outDir, built)[hash] === 'MAINTENANCE STARTS TONIGHT'
+    );
+    const hashedAtRuntime = [
+      '"ACCOUNT SETTINGS"',
+      '"SAVE"',
+      '["HELLO, ",["name"],"!"]',
+    ];
+    check(
+      'short ids: messages read through a compiled t and through a t hashed at runtime are in both files too',
+      hashedAtRuntime.every((translation) => {
+        const [found] = Object.entries(frCatalog).find(
+          ([, value]) => JSON.stringify(value) === translation
+        );
+        return (
+          JSON.stringify(splitOf(outDir, built)[shortId(found)]) ===
+            translation &&
+          JSON.stringify(unsplitOf(outDir, built)[found]) === translation
+        );
+      })
+    );
+    const shared = await serve(outDir);
+    for (const locale of ['en', 'fr', 'de']) {
+      const app = await open(shared.url, locale);
+      await app.goto();
+      await app.navigate('settings');
+      const expected = translate(locale, 'Maintenance starts tonight');
+      const read = [
+        await app.text('msg'),
+        await app.page.evaluate(() => window.__notice()),
+      ];
+      check(
+        `short ids, ${locale}: a message read through t and through msg renders the same translation`,
+        read.every((text) => text === expected),
+        read.join(' / ')
+      );
+      const hashed = await app.page.evaluate(() => [
+        window.__settings({}),
+        window.__save({ context: 'a button label' }),
+        window.__hello({ name: 'Ada' }),
+      ]);
+      check(
+        `short ids, ${locale}: messages read through a compiled t and through a t hashed at runtime render their translation there too`,
+        [await app.text('heading'), ...hashed].join(' / ') ===
+          ['Account settings', 'Account settings', 'Save', 'Hello, Ada!']
+            .map((text) => translate(locale, text))
+            .join(' / '),
+        hashed.join(' / ')
+      );
+      await app.close();
+    }
+    shared.close();
+  }
+
+  // Two messages that would share an id fail the build, which names them
+  {
+    const output = failBuild(`${NAMING}-collision`, true, {
+      GT_CHUNK_TRANSLATIONS_SHORT_IDS: '1',
+    });
+    const pair = /([0-9a-f]{16}) and ([0-9a-f]{16}) share "([\w-])"/.exec(
+      output ?? ''
+    );
+    check(
+      'short ids: a build in which two messages share an id fails and names both',
+      output?.includes('the same id of 1 character ') &&
+        pair !== null &&
+        pair[1] !== pair[2] &&
+        Buffer.from(pair[1], 'hex').toString('base64url')[0] === pair[3] &&
+        Buffer.from(pair[2], 'hex').toString('base64url')[0] === pair[3],
+      pair?.[0] ?? output?.slice(0, 200) ?? 'the build did not fail'
+    );
+  }
+  {
+    const output = failBuild(`${NAMING}-short-ids-alone`, false, {
+      GT_CHUNK_TRANSLATIONS_SHORT_IDS: SHORT_IDS,
+    });
+    const failed = output?.includes(
+      'experimentalChunkTranslationsShortIds is set in a build without experimentalChunkTranslations'
+    );
+    check(
+      'short ids: a build without chunk translations fails',
+      failed,
+      failed ? '' : (output?.slice(0, 200) ?? 'the build did not fail')
+    );
+  }
 }
 
 // ----- Text, requests and flashes ----- //

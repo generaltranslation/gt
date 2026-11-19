@@ -58,6 +58,13 @@ import {
   type RegionTranslationsManifest,
 } from '../transform/chunk-translations/writeRegionTranslations';
 import {
+  createShortId,
+  createShortIds,
+  findShortIdCollisions,
+  getMessageShape,
+  getShortIdLength,
+} from '../transform/chunk-translations/shortIds';
+import {
   getPageBase,
   renderStartupScript,
 } from '../transform/chunk-translations/startupScript';
@@ -2734,6 +2741,475 @@ export const ready = initializeGTSPA({});`,
     });
   });
 
+  describe('short ids', () => {
+    const SHORT: GTUnpluginOptions = {
+      ...ON,
+      experimentalChunkTranslationsShortIds: true,
+    };
+    // t`Save` and t`Print`, whose hashes start with the same 6 bits
+    const SAVE_TEXT = 'ab72d114d0d156a9';
+    const PRINT_TEXT = 'aae8cb2668d0cb74';
+
+    it.each([
+      [undefined, undefined, undefined],
+      [undefined, '', undefined],
+      [undefined, 'false', undefined],
+      [undefined, 'true', 8],
+      [undefined, '7', 7],
+      [true, 'false', 8],
+      [false, 'true', undefined],
+      [10, '7', 10],
+      [1, undefined, 1],
+    ] as const)(
+      'are chosen by the option %s, then GT_CHUNK_TRANSLATIONS_SHORT_IDS=%s: %s characters',
+      (option, env, expected) => {
+        vi.stubEnv('GT_CHUNK_TRANSLATIONS_SHORT_IDS', env as never);
+        expect(getShortIdLength(option)).toBe(expected);
+      }
+    );
+
+    it.each([
+      [0, undefined],
+      [11, undefined],
+      [7.5, undefined],
+      [undefined, 'yes'],
+      [undefined, '0'],
+      [undefined, '11'],
+      [undefined, '8.5'],
+    ])('reject the length %s and the variable %s', (option, env) => {
+      vi.stubEnv('GT_CHUNK_TRANSLATIONS_SHORT_IDS', env as never);
+      expect(() => getShortIdLength(option)).toThrow(
+        'which is not true, false or a number of characters from 1 to 10'
+      );
+    });
+
+    it('fail a production build without chunk translations, and leave a dev build alone', () => {
+      const { plugins } = createPlugins({
+        gtConfig: GT_CONFIG,
+        experimentalChunkTranslationsShortIds: true,
+      });
+      expect(plugins).toHaveLength(1);
+      const buildStart = plugins[0].buildStart as () => void;
+      expect(buildStart).toThrow(
+        'experimentalChunkTranslationsShortIds is set in a build without experimentalChunkTranslations'
+      );
+      vi.stubEnv('NODE_ENV', 'development');
+      expect(buildStart).not.toThrow();
+    });
+
+    it('fail a build that writes the id of a <T> into its output', () => {
+      const build = { framework: 'vite', compileTimeHash: true };
+      const tagged = { ...GT_CONFIG, _tagIds: true };
+      const resolved = resolveChunkTranslations(tagged, {
+        ...build,
+        shortIdLength: 8,
+      });
+      expect('error' in resolved && resolved.error).toContain(
+        'experimentalChunkTranslationsShortIds cannot be used with _tagIds'
+      );
+      expect(resolveChunkTranslations(tagged, build)).not.toHaveProperty(
+        'error'
+      );
+      expect(
+        resolveChunkTranslations(GT_CONFIG, { ...build, shortIdLength: 7 })
+      ).toMatchObject({ shortIdLength: 7 });
+    });
+
+    it.each([
+      [SAVE_TEXT, 8, 'q3LRFNDR'],
+      [SAVE_TEXT, 7, 'q3LRFND'],
+      [SAVE_TEXT, 10, 'q3LRFNDRVq'],
+      [HELLO, 8, 't4XrnVr1'],
+      // The two characters base64url has and base64 does not
+      ['fbff000000000000', 2, '-_'],
+    ])(
+      'are the start of the hash %s in %i characters: %s',
+      (hash, length, id) => {
+        expect(createShortId(hash, length)).toBe(id);
+      }
+    );
+
+    it.each([
+      ['share their first characters', [SAVE_TEXT, PRINT_TEXT], 1, 'q'],
+      [
+        'differ only after the bits an id holds',
+        ['0000000000000001', '0000000000000002'],
+        10,
+        'AAAAAAAAAA',
+      ],
+      [
+        'are a hash and a key of the catalogs that is its short id',
+        [SAVE_TEXT, 'q3LRFNDR'],
+        8,
+        'q3LRFNDR',
+      ],
+    ])('collide for two messages that %s', (_name, keys, length, id) => {
+      expect(findShortIdCollisions(keys, length)).toEqual({
+        collisions: [{ id, keys }],
+        reserved: [],
+      });
+    });
+
+    it('do not collide for hashes that differ within the bits an id holds, or for keys that are no hashes', () => {
+      expect(
+        findShortIdCollisions(
+          [SAVE_TEXT, PRINT_TEXT, HELLO, 'greeting', 'q4'],
+          2
+        )
+      ).toEqual({ collisions: [], reserved: [] });
+    });
+
+    it('fail the build for two messages that share an id, and name both and what to do', () => {
+      const build = {
+        hashes: new Set([SAVE_TEXT]),
+        unsplit: new Set<string>(),
+      };
+      const table = { fr: { [PRINT_TEXT]: 'Imprimer' }, de: {} };
+      expect(() => createShortIds(1, build, table)).toThrow(
+        `experimentalChunkTranslationsShortIds gives two messages the same id of 1 character because their hashes start with the same bits, and a page would render the translation of one for the other. Set experimentalChunkTranslationsShortIds or GT_CHUNK_TRANSLATIONS_SHORT_IDS to more characters, up to 10, or turn the option off. Details: ${PRINT_TEXT} and ${SAVE_TEXT} share "q".`
+      );
+      expect(createShortIds(2, build, table).hashes).toEqual(
+        new Map([['q3', SAVE_TEXT]])
+      );
+      expect(() =>
+        createShortIds(
+          10,
+          { hashes: new Set(['0000000000000001']), unsplit: new Set() },
+          { fr: { '0000000000000002': 'Deux' } }
+        )
+      ).toThrow('Turn experimentalChunkTranslationsShortIds off.');
+    });
+
+    it('fail the build for an id that names a property of every object', () => {
+      // The hash whose first 48 bits are `toString` in base64url
+      const hash = 'b684adae29e00000';
+      const build = { hashes: new Set([hash]), unsplit: new Set<string>() };
+      expect(() => createShortIds(8, build, {})).toThrow(
+        `Details: ${hash} is "toString".`
+      );
+      expect(createShortIds(7, build, {}).hashes).toEqual(
+        new Map([['toStrin', hash]])
+      );
+    });
+
+    it('are read out of a chunk in place of the hashes, in any quotes', () => {
+      const hashes = new Set([SAVE_TEXT, HELLO]);
+      const shortIds = createShortIds(8, { hashes, unsplit: new Set() }, {});
+      expect(
+        findChunkHashes(
+          't({$_hash:`t4XrnVr1`,$_tree:[`Hello, `,[`name`],`!`]},{name:e});e(T,{children:"Save",_hash:\'q3LRFNDR\'})',
+          hashes,
+          shortIds
+        )
+      ).toEqual([SAVE_TEXT, HELLO]);
+      expect(
+        findChunkHashes(
+          [
+            // A call site that reads the unsplit file by its hash
+            `msg({$_hash:"${SAVE_TEXT}"})\`Save\``,
+            // An id that is not a call site option, of another length, or of no message
+            'var ids={save:"q3LRFNDR"}',
+            't({$_hash:"q3LRFND"})',
+            't({$_hash:"q3LRFNDRV"})',
+            't({$_hash:"AAAAAAAA"})',
+          ].join(';'),
+          hashes,
+          shortIds
+        )
+      ).toEqual([]);
+    });
+
+    const SOURCE = `import { jsx } from 'react/jsx-runtime';
+import { initializeGTSPA, T, msg, t } from 'gt-react';
+export const ready = initializeGTSPA({});
+export const save = () => t\`Save\`;
+export const hello = (name) => t\`Hello, \${{ name }}!\`;
+export const label = () => t({ context: 'button' })\`Save\`;
+export const notice = msg\`Maintenance tonight\`;
+export const again = msg\`Save\`;
+export const Shared = () => jsx(T, { children: 'Shared by every route' });
+export const Spread = (props) => jsx(T, { ...props, children: 'Spread over' });
+export const Written = () => jsx(T, { _hash: '0123456789abcdef', children: 'Written by hand' });`;
+
+    it.each([
+      ['calls with a precomputed message', true],
+      ['tagged templates', false],
+    ])(
+      'are passed by the call sites the build splits, written as %s, and key the files of chunks',
+      async (_name, precomputeMessages) => {
+        const off = (await transform(SOURCE, { ...ON, precomputeMessages }))!;
+        // The t templates and the <T> without a hash of its own
+        const split = [
+          SAVE_TEXT,
+          HELLO,
+          '3638c6269a914b05',
+          '0a9725453707110e',
+        ];
+        // What reads the unsplit file: the first msg, and the <T> whose
+        // props could carry another hash
+        const notice = 'd186602f8b37cd9e';
+        const spread = '8a745136bd12b483';
+
+        const options = { ...SHORT, precomputeMessages };
+        const translations = Object.fromEntries(
+          [...split, notice, spread, '0123456789abcdef', PRINT_TEXT].map(
+            (hash) => [hash, `fr ${hash}`]
+          )
+        );
+        const created = createPlugins(options, 'vite', {
+          'translations/fr.json': JSON.stringify(translations),
+        });
+        const on = (await transform(SOURCE, options, created))!;
+        // Only the hash of a call site that reads a chunk's file changes,
+        // and not where the second msg passes the hash of a t template
+        expect(on).toBe(
+          split.reduce(
+            (code, hash) =>
+              code.replace(`"${hash}"`, `"${createShortId(hash, 8)}"`),
+            off
+          )
+        );
+        expect(on.match(/_hash: ["'][\w-]+["']/g)).toEqual([
+          '_hash: "q3LRFNDR"',
+          '_hash: "t4XrnVr1"',
+          '_hash: "NjjGJpqR"',
+          `_hash: "${notice}"`,
+          `_hash: "${SAVE_TEXT}"`,
+          '_hash: "CpclRTcH"',
+          `_hash: "${spread}"`,
+          "_hash: '0123456789abcdef'",
+        ]);
+
+        const vite = created.plugins[0].vite as {
+          configResolved: (config: object) => void;
+          renderChunk: (code: string) => string | null;
+          generateBundle: (
+            this: object,
+            options: object,
+            bundle: object
+          ) => void;
+        };
+        vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
+        const emitted: Record<string, string> = {};
+        vite.generateBundle.call(
+          {
+            emitFile: (file: { fileName: string; source: string }) =>
+              (emitted[file.fileName.replace(/\.[0-9a-f]{8}\.json$/, '')] =
+                file.source),
+          },
+          {},
+          {
+            'assets/index.js': {
+              type: 'chunk',
+              fileName: 'assets/index.js',
+              code: vite.renderChunk(on),
+              imports: [],
+              dynamicImports: [],
+              isEntry: true,
+              moduleIds: [path.join(created.cwd, 'App.jsx')],
+            },
+          }
+        );
+        expect(JSON.parse(emitted['assets/index.fr'])).toEqual({
+          t: Object.fromEntries(
+            split.map((hash) => [createShortId(hash, 8), `fr ${hash}`])
+          ),
+        });
+        // A message a t template and a msg share is in both files
+        expect(JSON.parse(emitted['assets/gt-unsplit.fr'])).toEqual(
+          Object.fromEntries(
+            [notice, spread, '0123456789abcdef', PRINT_TEXT, SAVE_TEXT].map(
+              (hash) => [hash, `fr ${hash}`]
+            )
+          )
+        );
+      }
+    );
+
+    it('are passed by a template that stays tagged in a build that precomputes messages', async () => {
+      // One name for two values: the call could not pass both
+      const source = `import { t } from 'gt-react';
+export const save = () => t\`Save\`;
+export const pair = (a, b) => t\`\${{ name: a }} and \${{ name: b }}\`;`;
+      const off = (await transform(source, {
+        ...ON,
+        precomputeMessages: true,
+      }))!;
+      expect(off).toContain(`t({ $_hash: "${SAVE_TEXT}", $_tree: "Save" })`);
+      const [, hash] = /t\(\{ \$_hash: "([0-9a-f]{16})" \}\)`/.exec(off)!;
+      expect(
+        await transform(source, { ...SHORT, precomputeMessages: true })
+      ).toBe(
+        off.replace(SAVE_TEXT, 'q3LRFNDR').replace(hash, createShortId(hash, 8))
+      );
+    });
+
+    it('are not written in a dev build, which runtime translation reads hashes from', async () => {
+      vi.stubEnv('NODE_ENV', 'development');
+      const compiled = (await transform(SOURCE, SHORT))!;
+      expect(compiled.match(/_hash: "[\w-]+"/g)).toEqual([
+        `_hash: "${SAVE_TEXT}"`,
+        `_hash: "${HELLO}"`,
+        '_hash: "3638c6269a914b05"',
+        '_hash: "d186602f8b37cd9e"',
+        `_hash: "${SAVE_TEXT}"`,
+        '_hash: "0a9725453707110e"',
+        '_hash: "8a745136bd12b483"',
+      ]);
+    });
+
+    it('keep every compiled message that a template hashed at runtime can read in the unsplit file, and name the modules that say nothing of it', async () => {
+      // t`Total: ${1 + 1}`, whose value is a primitive wherever it is written
+      const TOTAL = '52008f74e891635c';
+      // t({ context: 'button' })`Save`
+      const SAVE_BUTTON = '3638c6269a914b05';
+      const split = {
+        [SAVE_TEXT]: 'Enregistrer',
+        [SAVE_BUTTON]: 'Sauvegarder',
+        [HELLO]: ['Bonjour, ', ['name'], ' !'],
+        [TOTAL]: ['Total : ', ['_gt_1']],
+      };
+      const translations = { ...split, [PRINT_TEXT]: 'Imprimer' };
+      const created = createPlugins(SHORT, 'vite', {
+        'translations/fr.json': JSON.stringify(translations),
+      });
+      const compiled = (await transform(
+        `import { derive, t } from 'gt-react';
+export const helloTo = (who) => t\`Hello, \${who}!\`;
+export const save = () => t\`Save\`;
+export const saveButton = () => t({ context: 'button' })\`Save\`;
+export const hello = (name) => t\`Hello, \${{ name }}!\`;
+export const print = () => t\`Print\`;
+export const total = () => t\`Total: \${1 + 1}\`;
+export const saveWith = (options) => t(options)\`Save\`;
+export const totalOf = (count) => t\`Total: \${count}\`;
+export const totalBy = (count) => t\`Total: \${format(count)}\`;
+export const derived = () => t\`Hello, \${derive(getName())}\`;`,
+        SHORT,
+        created
+      ))!;
+      // Left to the runtime, which hashes what the options and the values
+      // turn out to be: a value can be a primitive or a { name: value }
+      expect(compiled).toContain('t`Hello, ${who}!`');
+      expect(compiled).toContain('t(options)`Save`');
+      expect(compiled).toContain('t`Total: ${count}`');
+      expect(compiled).toContain('t`Total: ${format(count)}`');
+      const vite = created.plugins[0].vite as {
+        configResolved: (config: object) => void;
+        generateBundle: (this: object, options: object, bundle: object) => void;
+      };
+      vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
+      const emitted: Record<string, string> = {};
+      vite.generateBundle.call(
+        {
+          emitFile: (file: { fileName: string; source: string }) =>
+            (emitted[file.fileName.replace(/\.[0-9a-f]{8}\.json$/, '')] =
+              file.source),
+        },
+        {},
+        {
+          'assets/index.js': {
+            type: 'chunk',
+            fileName: 'assets/index.js',
+            code: compiled,
+            imports: [],
+            dynamicImports: [],
+            isEntry: true,
+          },
+        }
+      );
+      // The compiled call sites read the entry's file by short id
+      expect(JSON.parse(emitted['assets/index.fr'])).toEqual({
+        t: Object.fromEntries(
+          Object.entries(translations).map(([hash, translation]) => [
+            createShortId(hash, 8),
+            translation,
+          ])
+        ),
+      });
+      // And the ones hashed at runtime read the unsplit file by hash: every
+      // compiled message with their text, whatever its options and the
+      // names of its values, and not the message none of them can build
+      expect(JSON.parse(emitted['assets/gt-unsplit.fr'])).toEqual(split);
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'experimentalChunkTranslationsShortIds cannot tell which messages a module reads by a hash computed when the app runs'
+        )
+      );
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Details: App.jsx.')
+      );
+    });
+
+    it('give trees that differ only in the names of their values one shape', () => {
+      const plural = (name: string) =>
+        JSON.parse(
+          JSON.stringify([
+            'You have ',
+            [name, 'plural', { one: [0, ' file of ', [name]], other: 'files' }],
+            ['when', 'date', 'short'],
+          ])
+        );
+      expect(getMessageShape(plural('count'))).toBe(
+        getMessageShape(plural('_gt_1'))
+      );
+      expect(getMessageShape(plural('count'))).toBe(
+        '["You have ",["","plural",{"one":[0," file of ",[""]],"other":"files"}],["","date","short"]]'
+      );
+      expect(getMessageShape('Save')).toBe('"Save"');
+      expect(getMessageShape(['Save ', ['name']])).not.toBe(
+        getMessageShape(['Save ', ['name', 'number']])
+      );
+    });
+
+    it.each(chunkTranslationsNamings)(
+      'fail the build named by %s in which two messages share an id',
+      async (naming) => {
+        const options = {
+          ...ON,
+          experimentalChunkTranslationsNaming: naming,
+          experimentalChunkTranslationsShortIds: 1,
+        };
+        const created = createPlugins(options, 'vite', {
+          'translations/fr.json': '{}',
+        });
+        const compiled = await transform(
+          `import { t } from 'gt-react';
+export const save = () => t\`Save\`;
+export const print = () => t\`Print\`;`,
+          options,
+          created
+        );
+        expect(compiled).toContain('$_hash: "q"');
+        const vite = created.plugins[0].vite as {
+          generateBundle: (
+            this: object,
+            options: object,
+            bundle: object
+          ) => void;
+        };
+        const emitFile = vi.fn();
+        expect(() =>
+          vite.generateBundle.call(
+            { emitFile },
+            {},
+            {
+              'assets/index.js': {
+                type: 'chunk',
+                fileName: 'assets/index.js',
+                code: compiled,
+                imports: [],
+                dynamicImports: [],
+                isEntry: true,
+              },
+            }
+          )
+        ).toThrow(`${PRINT_TEXT} and ${SAVE_TEXT} share "q"`);
+        expect(emitFile).not.toHaveBeenCalled();
+      }
+    );
+  });
+
   describe('split by module', () => {
     const SPLIT: GTUnpluginOptions = {
       ...ON,
@@ -3110,6 +3586,7 @@ export const ready = initializeGTSPA({});`,
       cwd = createPlugins(ON, 'vite', {
         'translations/fr.json': JSON.stringify(CATALOG),
       }).cwd,
+      shortIdLength,
     }: {
       isLazy?: boolean;
       requestCost?: number;
@@ -3117,6 +3594,7 @@ export const ready = initializeGTSPA({});`,
       graph?: typeof GRAPH;
       bundle?: typeof BUNDLE;
       cwd?: string;
+      shortIdLength?: number;
     } = {}) {
       const emitted: Record<string, string> = {};
       const written = writeRegionTranslations(
@@ -3128,6 +3606,7 @@ export const ready = initializeGTSPA({});`,
           unsplit: new Set(),
           naming: 'map',
           regions: { requestCost, previous },
+          ...(shortIdLength !== undefined && { shortIdLength }),
         },
         {
           gtFiles: GT_FILES.gt,
@@ -3350,6 +3829,55 @@ export const ready = initializeGTSPA({});`,
         );
         expect(messagesOf('assets/Billing.js')).toContain('BILLING');
       });
+    });
+
+    it('reads short ids out of each module, and keys the same files by them', () => {
+      const shorten = (code: string) =>
+        Object.values(HASH).reduce(
+          (text, hash) => text.replaceAll(hash, createShortId(hash, 8)),
+          code
+        );
+      const bundle = Object.fromEntries(
+        Object.entries(BUNDLE).map(([fileName, file]) => [
+          fileName,
+          {
+            ...file,
+            code: shorten(file.code),
+            modules: Object.fromEntries(
+              Object.entries(file.modules).map(([id, { code }]) => [
+                id,
+                { code: shorten(code) },
+              ])
+            ),
+          },
+        ])
+      );
+      const hashed = write();
+      const short = write({ bundle, shortIdLength: 8 });
+      expect(short.manifest.assignment).toEqual(hashed.manifest.assignment);
+      expect(short.manifest.imports).toEqual(hashed.manifest.imports);
+      for (const [key, { fr }] of Object.entries(hashed.manifest.files)) {
+        expect(JSON.parse(short.emitted[short.manifest.files[key].fr])).toEqual(
+          Object.fromEntries(
+            Object.entries(JSON.parse(hashed.emitted[fr])).map(
+              ([hash, translation]) => [createShortId(hash, 8), translation]
+            )
+          )
+        );
+      }
+      // A chunk whose call sites pass hashes holds nothing such a build splits
+      expect(Object.keys(write({ shortIdLength: 8 }).manifest.files)).toEqual(
+        []
+      );
+      const { cwd } = createPlugins(ON, 'vite', {
+        'translations/fr.json': JSON.stringify({
+          ...CATALOG,
+          '1100000000000000': 'Autre',
+        }),
+      });
+      expect(() => write({ bundle, shortIdLength: 1, cwd })).toThrow(
+        `${HASH.title} and 1100000000000000 share "E"`
+      );
     });
 
     it('gives a route what every module of its chunks reads when a chunk runs all of its modules, and counts those messages', () => {

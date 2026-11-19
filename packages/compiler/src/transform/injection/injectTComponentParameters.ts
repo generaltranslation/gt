@@ -8,6 +8,8 @@ import { createErrorLocation } from '../../utils/errors';
 import {
   keepUnsplit,
   recordChunkHash,
+  recordRuntimeReader,
+  recordWrittenHash,
 } from '../chunk-translations/chunkTranslationsModule';
 
 /**
@@ -30,6 +32,7 @@ export function injectTComponentParameters(
   // children) — the runtime computes the hash per resolved variant, and an
   // injected empty hash would break the lookup
   if (!translationJsx.hash) {
+    recordRuntimeReader(undefined, state);
     return;
   }
 
@@ -49,9 +52,9 @@ export function injectTComponentParameters(
     return;
   }
 
-  if (state.settings.chunkTranslations) {
-    recordTHash(callExpr.arguments[1], translationJsx.hash, state);
-  }
+  const hash = state.settings.chunkTranslations
+    ? recordTHash(callExpr.arguments[1], translationJsx.hash, state)
+    : translationJsx.hash;
 
   // If already has hash set then skip
   if (getObjectPropertyFromObjectExpression(callExpr.arguments[1], '_hash')) {
@@ -60,24 +63,25 @@ export function injectTComponentParameters(
 
   // Inject the parameters into the call expression
   callExpr.arguments[1].properties.push(
-    t.objectProperty(
-      t.identifier('_hash'),
-      t.stringLiteral(translationJsx.hash)
-    )
+    t.objectProperty(t.identifier('_hash'), t.stringLiteral(hash))
   );
 }
 
 /**
  * Records the hash the runtime looks a <T> up by ($_hash, then _hash, then
  * the computed hash) for a build with chunk translations. A spread or computed
- * key could carry another, so then the translation stays unsplit.
+ * key could carry another, so then the translation stays unsplit. Returns
+ * what the compiler writes as the `_hash` of a <T> without one: the computed
+ * hash, or its short id when the build splits it with short ids.
  */
 function recordTHash(
   props: t.ObjectExpression,
   computedHash: string,
   state: TransformState
-): void {
-  if (getObjectPropertyFromObjectExpression(props, '$_hash')) return;
+): string {
+  if (getObjectPropertyFromObjectExpression(props, '$_hash')) {
+    return computedHash;
+  }
   if (
     props.properties.some(
       (prop) =>
@@ -86,21 +90,19 @@ function recordTHash(
     )
   ) {
     keepUnsplit(computedHash, state);
-    return;
+    return computedHash;
   }
   const hashProps = props.properties.filter((prop) =>
     objectPropertyMatchesName(prop, '_hash')
   );
-  if (hashProps.length === 0) {
-    recordChunkHash(computedHash, state);
-    return;
-  }
+  if (hashProps.length === 0) return recordChunkHash(computedHash, state);
   const [hashProp] = hashProps;
   if (
     hashProps.length === 1 &&
     t.isObjectProperty(hashProp) &&
     t.isStringLiteral(hashProp.value)
   ) {
-    recordChunkHash(hashProp.value.value, state);
+    recordWrittenHash(hashProp.value.value, state);
   }
+  return computedHash;
 }

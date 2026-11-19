@@ -1,6 +1,7 @@
 import path from 'node:path';
 import type { ChunkImportMap } from './chunkImportMap';
 import { IMPORTED_CHUNKS_PLACEHOLDER } from './resolveChunkTranslations';
+import type { ShortIds } from './shortIds';
 
 /** A chunk the bundler wrote, with the messages its final code can render. */
 export type AssignedChunk = {
@@ -71,14 +72,20 @@ export function getChunkKey(fileName: string): string {
  * The message hashes in a chunk's final code, sorted. A call site that was
  * tree-shaken or minified away took its hash with it, so only messages that
  * can render are found.
+ *
+ * In a build with short ids the call sites it splits pass those, so only
+ * they are read, each back into its hash. A call site that still passes a
+ * hash there reads the unsplit file.
  */
 export function findChunkHashes(
   code: string,
-  hashes: ReadonlySet<string>
+  hashes: ReadonlySet<string>,
+  shortIds?: ShortIds
 ): string[] {
   const found = new Set<string>();
-  for (const match of code.matchAll(HASH_ARGUMENT)) {
-    if (hashes.has(match[2])) found.add(match[2]);
+  for (const match of code.matchAll(shortIds?.argument ?? HASH_ARGUMENT)) {
+    const hash = shortIds ? shortIds.hashes.get(match[2]) : match[2];
+    if (hash !== undefined && hashes.has(hash)) found.add(hash);
   }
   return [...found].sort();
 }

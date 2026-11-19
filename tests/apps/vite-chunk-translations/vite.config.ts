@@ -41,9 +41,31 @@ const addImport: Plugin = {
   },
 };
 
+/**
+ * For scripts/check.mjs, with CHECK_SHARED_MESSAGE: the Settings route also
+ * reads the message of the app's `msg` through a `t` template, and three
+ * messages of compiled `t` templates through templates that hash them when
+ * they run: with options and with a value the compiler cannot read. Each
+ * message is then read by a compiled call site and by its hash.
+ */
+const addSharedMessage: Plugin = {
+  name: 'check:add-shared-message',
+  enforce: 'pre',
+  transform(code, id) {
+    return id.endsWith('/src/routes/Settings.tsx')
+      ? `${code}
+window.__notice = () => t\`Maintenance starts tonight\`;
+window.__settings = (options) => t(options)\`Account settings\`;
+window.__save = (options) => t(options)\`Save\`;
+window.__hello = (who) => t\`Hello, \${who}!\`;`
+      : null;
+  },
+};
+
 export default defineConfig({
   plugins: [
     process.env.CHECK_ADD_IMPORT === 'true' && addImport,
+    process.env.CHECK_SHARED_MESSAGE === 'true' && addSharedMessage,
     gtCompiler({
       _debugHashManifest: messagesFile !== undefined,
       files: { gt: { output: `${translations}/[locale].json` } },

@@ -64,6 +64,11 @@ import {
   type RegionModuleInfo,
 } from './transform/chunk-translations/createRegionGraph';
 import {
+  createRuntimeHashesWarning,
+  getShortIdLength,
+  SHORT_IDS_WITHOUT_CHUNK_TRANSLATIONS_ERROR,
+} from './transform/chunk-translations/shortIds';
+import {
   createUnsplitTranslationsMessage,
   getUnsplitTranslations,
   replaceUnsplitLoader,
@@ -251,6 +256,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
         : undefined;
+    const shortIdLength = getShortIdLength(
+      options.experimentalChunkTranslationsShortIds
+    );
     const resolveChunkTranslationsOptions = () => {
       const split = getChunkTranslationsSplit(
         options.experimentalChunkTranslationsSplit
@@ -266,13 +274,16 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           requestCost: options.experimentalChunkTranslationsRequestCost,
           previous: options.experimentalChunkTranslationsPrevious,
         }),
+        shortIdLength,
       });
     };
     const chunkTranslationsResolution = getChunkTranslations(
       options.experimentalChunkTranslations
     )
       ? resolveChunkTranslationsOptions()
-      : undefined;
+      : shortIdLength !== undefined
+        ? { error: SHORT_IDS_WITHOUT_CHUNK_TRANSLATIONS_ERROR }
+        : undefined;
     const chunkTranslations =
       chunkTranslationsResolution && !('error' in chunkTranslationsResolution)
         ? chunkTranslationsResolution
@@ -573,6 +584,16 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       }
       if (written.unsplit.length) {
         console.warn(createUnsplitTranslationsMessage(written.unsplit));
+      }
+      const unknownReaders = chunkTranslations!.runtimeReaders?.unknown;
+      if (unknownReaders?.size) {
+        console.warn(
+          createRuntimeHashesWarning(
+            [...unknownReaders]
+              .map((file) => path.relative(process.cwd(), file))
+              .sort()
+          )
+        );
       }
     }
     // Chunks are rendered once every module is compiled, so every call site is known
