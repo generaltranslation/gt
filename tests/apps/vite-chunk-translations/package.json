@@ -1,0 +1,30 @@
+{
+  "name": "gt-test-vite-chunk-translations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5176 --strictPort",
+    "build": "vite build",
+    "translate": "node scripts/pseudo-translate.mjs",
+    "check": "node scripts/check.mjs && node scripts/check.mjs map",
+    "check:install": "playwright-core install chromium-headless-shell",
+    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "gt-react": "workspace:*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@generaltranslation/compiler": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.2",
+    "playwright-core": "^1.64.1",
+    "typescript": "^5",
+    "vite": "^8.0.16"
+  }
+}

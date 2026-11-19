@@ -180,6 +180,16 @@
         "types": "./dist/vite.d.mts",
         "default": "./dist/vite.mjs"
       }
+    },
+    "./chunk-translations": {
+      "require": {
+        "types": "./dist/chunk-translations.d.cts",
+        "default": "./dist/chunk-translations.cjs"
+      },
+      "import": {
+        "types": "./dist/chunk-translations.d.mts",
+        "default": "./dist/chunk-translations.mjs"
+      }
     }
   },
   "keywords": [

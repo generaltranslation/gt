@@ -35,16 +35,20 @@ function nonStatic(): never {
  * skips hashing: t`...` -> t({ $_hash })`...` and
  * t({ context })`...` -> t({ context, $_hash })`...`, for an imported `t`
  * or `msg` and for the result of `const t = useGT()` / `const t = await getGT()`.
+ * `onHash` is called with the hash of each rewritten template, and whether it
+ * is a `msg`, which `m()` renders away from its call site.
  * Returns whether the template was rewritten.
  */
 export function injectTaggedTemplateHash(
-  path: NodePath<t.TaggedTemplateExpression>
+  path: NodePath<t.TaggedTemplateExpression>,
+  onHash?: (hash: string, isMsg: boolean) => void
 ): boolean {
   const { tag, quasi } = path.node;
   const callee = t.isCallExpression(tag) ? tag.callee : tag;
-  if (!t.isIdentifier(callee) || !isMessageTag(callee.name, path.scope)) {
-    return false;
-  }
+  const kind = t.isIdentifier(callee)
+    ? getMessageTagKind(callee.name, path.scope)
+    : undefined;
+  if (!kind) return false;
   let hash: string;
   try {
     const metadata = t.isCallExpression(tag)
@@ -70,29 +74,34 @@ export function injectTaggedTemplateHash(
   } else {
     path.node.tag = t.callExpression(tag, [t.objectExpression([hashProperty])]);
   }
+  onHash?.(hash, kind === 'msg');
   return true;
 }
 
 /**
- * `t` or `msg` imported from a GT message source, or
- * `const t = [await] useGT/getGT()`.
+ * `gt` for `t` imported from a GT message source or
+ * `const t = [await] useGT/getGT()`, and `msg` for an imported `msg`.
  */
-function isMessageTag(name: string, scope: Scope): boolean {
+function getMessageTagKind(
+  name: string,
+  scope: Scope
+): 'gt' | 'msg' | undefined {
   const helper = getHelperName(name, scope);
-  if (helper === 't' || helper === 'msg') return true;
+  if (helper === 't') return 'gt';
+  if (helper === 'msg') return 'msg';
   const binding = scope.getBinding(name);
   if (
     !binding?.constant ||
     !binding.path.isVariableDeclarator() ||
     !t.isIdentifier(binding.path.node.id)
   ) {
-    return false;
+    return;
   }
   let init = binding.path.node.init;
   if (t.isAwaitExpression(init)) init = init.argument;
-  if (!t.isCallExpression(init) || !t.isIdentifier(init.callee)) return false;
+  if (!t.isCallExpression(init) || !t.isIdentifier(init.callee)) return;
   const hook = getHelperName(init.callee.name, binding.path.scope);
-  return hook === 'useGT' || hook === 'getGT';
+  return hook === 'useGT' || hook === 'getGT' ? 'gt' : undefined;
 }
 
 /** Original name of a helper imported from a GT message source. */

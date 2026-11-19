@@ -19,6 +19,8 @@ const runtimeArtifactNames = [
   'compat.client.mjs',
   'compat.server.cjs',
   'compat.server.mjs',
+  'chunk-translations.cjs',
+  'chunk-translations.mjs',
 ].sort();
 const builtArtifacts = runtimeArtifactNames.map((artifact) =>
   join(packageRoot, 'dist', artifact)
@@ -48,9 +50,14 @@ function isAllowedExternalizedSubpath(
 ): boolean {
   // Entries keep shared React context and singletons external.
   return (
-    /^(?:index|compat)\./.test(file) &&
-    (specifier.startsWith('@generaltranslation/react-core/') ||
-      specifier.startsWith('gt-i18n/'))
+    (/^(?:index|compat)\./.test(file) &&
+      (specifier.startsWith('@generaltranslation/react-core/') ||
+        specifier.startsWith('gt-i18n/'))) ||
+    // chunk-translations shares gt-react's stores, and bundles nothing the
+    // app's bundle already holds for gt-i18n
+    (file.startsWith('chunk-translations.') &&
+      (specifier.startsWith('@generaltranslation/react-core/') ||
+        specifier === 'generaltranslation/diagnostics'))
   );
 }
 

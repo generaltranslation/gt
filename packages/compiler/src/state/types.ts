@@ -4,6 +4,7 @@ import { PluginSettings } from '../config';
 import { Logger } from './Logger';
 import { ErrorTracker } from './ErrorTracker';
 import { ScopeTracker } from './ScopeTracker';
+import type { ChunkTranslationsFile } from '../transform/chunk-translations/chunkTranslationsModule';
 /**
  * Plugin state for processing files
  * Matches the Rust TransformVisitor structure
@@ -21,6 +22,8 @@ export interface TransformState {
     runtimeTranslateCount: number;
     taggedTemplateHashInjectionsCount: number;
   };
+  /** What this file imports to read chunk translations; set when it can import it. */
+  chunkTranslations?: ChunkTranslationsFile;
   /** Debug: shared manifest map for hash → jsxChildren mapping (accumulated across files) */
   debugManifest?: Map<string, unknown>;
 }

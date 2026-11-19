@@ -44,6 +44,7 @@
     "@generaltranslation/format": "workspace:*",
     "@generaltranslation/icu": "workspace:*",
     "generaltranslation": "workspace:*",
+    "gt-i18n": "workspace:*",
     "unplugin": "^2.3.10"
   },
   "devDependencies": {
@@ -51,6 +52,7 @@
     "@types/babel__generator": "^7.6.0",
     "@types/babel__traverse": "^7.20.0",
     "@types/node": "catalog:",
+    "gt-react": "workspace:*",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

@@ -1,7 +1,7 @@
 import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 
-function objectPropertyMatchesName(
+export function objectPropertyMatchesName(
   property: t.ObjectExpression['properties'][0],
   name: string
 ): boolean {
