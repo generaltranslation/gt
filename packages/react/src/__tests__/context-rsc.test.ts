@@ -75,4 +75,14 @@ describe('gt-react react-server surface', () => {
     expect(mod.LocaleSelector).toBeTypeOf('function');
     expect(mod.parseLocale).toBeTypeOf('function');
   });
+
+  it.each(['useLocaleSelector', 'useRegionSelector'] as const)(
+    'exports %s, which only fails when a server component calls it',
+    async (name) => {
+      const mod = await import('../index.rsc');
+      expect(() => mod[name]()).toThrow(
+        `${name}() cannot be called in a server component`
+      );
+    }
+  );
 });
