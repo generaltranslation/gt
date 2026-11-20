@@ -59,7 +59,9 @@ export type SplitTranslationsOptions = {
    * list, of all its messages. With `by: 'module'` it has a list for each
    * set of its messages that the same loads fetch, so a translations file
    * is rewritten when one of its own messages changes and not when another
-   * message of a chunk that reads it does. The ids of a list change only
+   * message of a chunk that reads it does. For that, a call site that only
+   * the minifier removes still fetches its message's translation there
+   * while another chunk reads the message. The ids of a list change only
    * when the set of its messages does. The build writes the ids into every
    * chunk that holds one of those call sites after the bundler has rendered
    * it, and the chunk's source map follows them.
