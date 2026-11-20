@@ -76,11 +76,12 @@ describe('getFormatLocales', () => {
   beforeEach(resetGTGlobals);
   afterEach(resetGTGlobals);
 
-  it('uses the locale alone when translation is required', () => {
+  it('puts the default locale behind the locale when translation is required', () => {
     setup({ locale: 'en' });
 
     expect(getFormatLocales({ locale: 'fr', enableI18n: true })).toEqual([
       'fr',
+      'en',
     ]);
   });
 

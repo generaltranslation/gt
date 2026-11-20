@@ -17,6 +17,8 @@ import type { RenderVariable } from '../types';
 type RenderDefaultChildrenArgs = {
   children: TaggedChildren;
   defaultLocale: string;
+  /** The locales a plural picks its branch in, when not `defaultLocale` alone. */
+  locales?: string[];
   enableI18n: boolean;
 };
 
@@ -30,6 +32,7 @@ function createRenderDefaultChildren({
   return function renderDefaultChildren({
     children,
     defaultLocale = defaultDefaultLocale,
+    locales = [defaultLocale],
     enableI18n,
   }: RenderDefaultChildrenArgs): React.ReactNode {
     const handleSingleChildElement = (child: TaggedElement): ReactNode => {
@@ -54,7 +57,7 @@ function createRenderDefaultChildren({
         return handleChildren(
           getPluralBranch(
             child.props.n,
-            [defaultLocale],
+            locales,
             generaltranslation.branches || {}
           )
         );
