@@ -429,6 +429,11 @@ describe('--dry-run', () => {
       ['Dry run: No files were sent to General Translation.', collectedFiles],
     ],
     [
+      'stage',
+      {},
+      ['Dry run: No files were sent to General Translation.', collectedFiles],
+    ],
+    [
       'setup',
       {},
       [
@@ -466,6 +471,24 @@ describe('--dry-run', () => {
 
       expect(withCredentials).toEqual(expectedReport);
       expect(withoutCredentials).toEqual(expectedReport);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(readProject()).toEqual(before);
+    }
+  );
+
+  it.each(['translate', 'stage', 'setup'])(
+    'gt %s leaves shared static assets and their references in place',
+    async (command) => {
+      writeProject({
+        files: { md: { include: ['docs/[locale]/*.md'] } },
+        sharedStaticAssets: { include: 'docs/en/*.png', outDir: 'public' },
+      });
+      writeProjectFile('docs/en/guide.md', '![Diagram](./diagram.png)\n');
+      writeProjectFile('docs/en/diagram.png', 'image');
+      const before = readProject();
+
+      await dryRun(command);
+
       expect(fetchMock).not.toHaveBeenCalled();
       expect(readProject()).toEqual(before);
     }
