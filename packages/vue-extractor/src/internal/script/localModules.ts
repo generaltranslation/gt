@@ -32,6 +32,7 @@ const GT_EXPORT_NAMES = [
   'T',
   'Var',
   'Num',
+  'N',
   'DateTime',
   'Currency',
   'Plural',

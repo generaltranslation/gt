@@ -20,6 +20,7 @@
   } from 'generaltranslation/internal';
   import type { PluralType } from 'generaltranslation';
   import type { Snippet } from 'svelte';
+  import { setPluralCount, toPluralCount } from '../runtime/count';
   import { useContentLocale } from '../runtime/source';
 
   let {
@@ -33,6 +34,8 @@
   } & Partial<
     Record<Exclude<PluralType, 'other'> | `_${number}`, string | Snippet>
   > = $props();
+
+  setPluralCount(() => toPluralCount(n));
 
   const contentLocale = useContentLocale();
   const selected = $derived.by(() => {

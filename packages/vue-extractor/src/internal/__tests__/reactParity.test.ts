@@ -312,6 +312,32 @@ describe('React-authoritative rich-content extraction contract', () => {
       ),
     },
     {
+      // The same source and hash as gt-react, its compiler and its CLI.
+      name: 'the count of a plural',
+      expectedHash: '754c50698a0e7d3a',
+      expectedSource: {
+        t: 'Plural',
+        i: 1,
+        d: {
+          b: {
+            one: 'One file',
+            other: [{ t: 'b', i: 2, c: { i: 3, v: '#' } }, ' files'],
+          },
+          t: 'p',
+        },
+      },
+      sfc: templateFixture(
+        '<T><Plural :n="count" one="One file"><b><N /></b> files</Plural></T>',
+        'const count = getCount();',
+        'N, Plural, T'
+      ),
+      jsx: jsxFixture(
+        '<T><Plural n={count} one="One file"><b><N /></b> files</Plural></T>',
+        'const count = getCount();',
+        'N, Plural, T'
+      ),
+    },
+    {
       name: 'Branch alternatives and fallback content',
       expectedHash: 'a634a53ae6f90df6',
       expectedSource: {

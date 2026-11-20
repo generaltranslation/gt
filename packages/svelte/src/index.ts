@@ -2,6 +2,7 @@ export { default as T } from './components/T.svelte';
 export { default as GTProvider } from './components/GTProvider.svelte';
 export { default as Var } from './components/Var.svelte';
 export { default as Num } from './components/Num.svelte';
+export { default as N } from './components/N.svelte';
 export { default as Currency } from './components/Currency.svelte';
 export { default as DateTime } from './components/DateTime.svelte';
 export { default as RelativeTime } from './components/RelativeTime.svelte';

@@ -6,6 +6,7 @@ export const COMPONENT_IMPORTS = new Set<GTComponentName>([
   'T',
   'Var',
   'Num',
+  'N',
   'DateTime',
   'Currency',
   'Plural',

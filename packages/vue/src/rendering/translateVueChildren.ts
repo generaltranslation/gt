@@ -33,10 +33,17 @@ import {
   type VNode,
   type VNodeChild,
 } from 'vue';
-import { getFormatLocales, isBranchAttribute } from '../components/utils';
+import { PluralCountScope } from '../components/branches';
+import {
+  getFormatLocales,
+  isBranchAttribute,
+  toPluralCount,
+} from '../components/utils';
+import { N } from '../components/variables';
 import type { GTState } from '../types';
 
 const variableTypes = {
+  count: '#',
   currency: 'c',
   datetime: 'd',
   number: 'n',
@@ -1032,6 +1039,10 @@ function renderNodes(
     return renderDefaultNodes(source, state, identityRender, state.getLocale());
   }
   if (typeof target === 'string') return target;
+  // As `#` is in ICU: the source branch a translated branch pairs with may
+  // have no count of its own, so it is the count of the plural around it.
+  const renderCount = () => h(N, { _locale: state.getLocale() });
+  if (isCount(target)) return renderCount();
   const targetIsArray = Array.isArray(target);
   if (!targetIsArray && sourceCardinality === 'array') {
     // A scalar element/variable target cannot reconcile against React's array
@@ -1081,6 +1092,7 @@ function renderNodes(
 
   return targets.map((targetNode) => {
     if (typeof targetNode === 'string') return targetNode;
+    if (isCount(targetNode)) return renderCount();
     if (isVariable(targetNode)) {
       const variable = variables.get(targetNode.i);
       return variable
@@ -1189,14 +1201,18 @@ function renderElement(
           ? targetBranch
           : 'other'
     );
-    return renderNodes(
-      selectedSource.nodes,
-      targetBranches[targetBranch],
-      state,
-      identityRender,
-      selectedSource.cardinality,
-      selectedSource.scalarTruthy
-    );
+    const renderBranch = () =>
+      renderNodes(
+        selectedSource.nodes,
+        targetBranches[targetBranch],
+        state,
+        identityRender,
+        selectedSource.cardinality,
+        selectedSource.scalarTruthy
+      );
+    return source.transformation === 'plural'
+      ? withPluralCount(source.vnode.props?.n, renderBranch)
+      : renderBranch();
   }
   if (source.transformation === 'fragment') {
     return renderNodes(
@@ -1342,11 +1358,13 @@ function renderDefaultNode(
   if (node.transformation === 'plural') {
     const n = node.vnode.props?.n;
     const branch = getPluralKey(n, Object.keys(node.branches), state, locale);
-    return renderDefaultNodes(
-      getSelectedSourceBranch(node, branch).nodes,
-      state,
-      identityRender,
-      locale
+    return withPluralCount(n, () =>
+      renderDefaultNodes(
+        getSelectedSourceBranch(node, branch).nodes,
+        state,
+        identityRender,
+        locale
+      )
     );
   }
   if (!hasContentNodes(node.children) && !node.replaceDefaultSlot) {
@@ -1494,6 +1512,21 @@ function cloneWithProps(
   extraProps: Record<string, unknown>
 ): VNode {
   return cloneVNode(vnode, extraProps);
+}
+
+function isCount(value: unknown): boolean {
+  return isVariable(value) && value.v === '#';
+}
+
+/** Renders a plural's branch where every `<N>` in it finds the plural's count. */
+function withPluralCount(n: unknown, render: () => VNodeChild): VNode {
+  // Rendered now: the keys of a branch rendered later would already be swept.
+  const branch = render();
+  return h(
+    PluralCountScope,
+    { n: toPluralCount(n) },
+    { default: () => branch }
+  );
 }
 
 function isVariable(value: unknown): value is Variable {

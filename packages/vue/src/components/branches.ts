@@ -3,7 +3,7 @@ import {
   getPluralForm,
   isAcceptedPluralForm,
 } from 'generaltranslation/internal';
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent, provide, type PropType } from 'vue';
 import { useGTState } from '../runtime/state';
 import {
   asFragmentRoot,
@@ -11,6 +11,8 @@ import {
   getBranchNames,
   getFormatLocales,
   isBranchAttribute,
+  pluralCountKey,
+  toPluralCount,
   withGTMetadata,
 } from './utils';
 
@@ -42,6 +44,7 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
     },
     setup(props, { attrs, slots }) {
       const state = useGTState();
+      provide(pluralCountKey, () => toPluralCount(props.n));
       return () => {
         const branches = getBranchNames(attrs, slots).filter(
           isAcceptedPluralForm
@@ -70,6 +73,22 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
   }),
   'plural'
 );
+
+/**
+ * Gives the `<N>` below it the count of a plural that `<T>` renders without
+ * mounting its `<Plural>`.
+ *
+ * @internal
+ */
+export const PluralCountScope = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  name: 'GtPluralCountScope',
+  props: { n: [Number, BigInt] as PropType<number | bigint> },
+  setup(props, { slots }) {
+    provide(pluralCountKey, () => props.n);
+    return () => slots.default?.();
+  },
+});
 
 /**
  * Selects an arbitrary named slot or attribute from `branch`. A value with no
