@@ -669,12 +669,35 @@ describe("JSX compiled against a runtime other than React's", () => {
     import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
     export const el = _jsxDEV("p", { children: ["Signed in as ", name] }, void 0, true);
   `;
+  const NAMESPACE_CODE = `
+    import { jsx as _jsx } from "react/jsx-runtime";
+    import * as GT from 'gt-react';
+    export const el = _jsx(GT.T, { children: "Saved" });
+  `;
+  // Hashed the same whatever the JSX is compiled against
+  const STRINGS_ONLY_CODE = `
+    import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+    import { useGT, msg } from 'gt-react';
+    const LABEL = msg('Orders');
+    export function App({ name }) {
+      const t = useGT();
+      return _jsxs("main", { children: [
+        _jsx("h1", { children: t\`Welcome back\` }),
+        _jsx("p", { title: t('Signed in'), children: name })
+      ] });
+    }
+  `;
 
   it.each<[name: string, options: GTUnpluginOptions, code: string]>([
     [
       'a file that imports a General Translation component',
       {},
       PRODUCTION_CODE,
+    ],
+    [
+      'a file that imports a General Translation package as a namespace',
+      {},
+      NAMESPACE_CODE,
     ],
     [
       'any file of a build with automatic <T>',
@@ -716,6 +739,12 @@ describe("JSX compiled against a runtime other than React's", () => {
       {},
       compiledAgainst(SOURCE, DEVELOPMENT_CODE),
       false,
+    ],
+    [
+      'a file that uses only the strings of General Translation',
+      { precomputeMessages: false },
+      compiledAgainst(SOURCE, STRINGS_ONLY_CODE),
+      true,
     ],
     [
       'a build whose log level is error',

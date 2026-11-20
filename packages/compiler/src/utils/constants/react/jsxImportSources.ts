@@ -1,15 +1,19 @@
 import * as t from '@babel/types';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { PluginSettings } from '../../../config';
-import { isGTImportSource } from '../gt/helpers';
+import { isGTComponent, isGTImportSource } from '../gt/helpers';
 import { isReactFunction, isReactImportSource } from './helpers';
 
 const JSX_RUNTIME = /\/jsx-(?:dev-)?runtime$/;
 
+const importedName = ({ imported }: t.ImportSpecifier): string =>
+  t.isIdentifier(imported) ? imported.name : imported.value;
+
 /**
  * The JSX import sources a file is compiled against that the compiler does
  * not read, when it would have had work in the file: with automatic `<T>` on,
- * or when the file imports from a General Translation package.
+ * or when the file imports a General Translation component. A namespace or
+ * default import counts, as it can hold one.
  */
 export function findUnreadJsxImportSources(
   program: t.Program,
@@ -18,7 +22,15 @@ export function findUnreadJsxImportSources(
   const imports = program.body.filter((node) => t.isImportDeclaration(node));
   if (
     !settings.enableAutoJsxInjection &&
-    !imports.some((node) => isGTImportSource(node.source.value))
+    !imports.some(
+      (node) =>
+        isGTImportSource(node.source.value) &&
+        node.specifiers.some(
+          (specifier) =>
+            !t.isImportSpecifier(specifier) ||
+            isGTComponent(importedName(specifier))
+        )
+    )
   ) {
     return [];
   }
@@ -30,11 +42,7 @@ export function findUnreadJsxImportSources(
       specifiers.some(
         (specifier) =>
           t.isImportSpecifier(specifier) &&
-          isReactFunction(
-            t.isIdentifier(specifier.imported)
-              ? specifier.imported.name
-              : specifier.imported.value
-          )
+          isReactFunction(importedName(specifier))
       )
     ) {
       unread.add(source.value.replace(JSX_RUNTIME, ''));
