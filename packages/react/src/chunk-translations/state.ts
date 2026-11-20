@@ -144,6 +144,11 @@ export type ChunkTranslationsState = {
    * could stand in for the file are read, and once they do
    */
   z?: Record<string, boolean | undefined>;
+  /**
+   * How many files have arrived within the timeout of their own request,
+   * and how many had when the file was requested whose wait last ran out
+   */
+  s?: [inTime: number, late?: number];
 };
 
 export type InitializeConfig = { loadTranslations?: unknown };

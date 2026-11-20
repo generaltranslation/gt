@@ -1,5 +1,5 @@
 import type { ChunkTranslationsState, EntryFile } from './state';
-import { addArrived, fetchJson, getFileUrl, getTimeout } from './request';
+import { addArrived, fetchJson, getFileUrl } from './request';
 
 /** The file of current names, see the compiler's `renderCurrentNames()`. */
 type CurrentNames = { v?: Record<string, unknown>; c?: unknown };
@@ -84,12 +84,12 @@ export function readCurrentNames(
 }
 
 /**
- * `loading`, or false once the timeout of a file requested at `start` has
- * passed. What arrives after that is still added.
+ * `loading`, or false once `end` has passed, when the wait for the file it
+ * stands in for is over. What arrives after that is still added.
  */
 export function within(
   state: ChunkTranslationsState,
-  start: number,
+  end: number,
   loading: Promise<boolean>
 ): Promise<boolean> {
   return new Promise((resolve) => {
@@ -99,7 +99,7 @@ export function within(
         // Also when one of several files failed: the others arrived
         void loading.then(() => addArrived(state));
       },
-      Math.max(0, start + getTimeout(state) - Date.now())
+      Math.max(0, end - Date.now())
     );
     void loading.then((arrived) => {
       clearTimeout(timer);

@@ -35,7 +35,10 @@
  * locale's map, which lists them. See `loadRegionChunk()`.
  *
  * A file that fails to load, or takes longer than the timeout, is reported
- * with a warning and its messages render their source.
+ * with a warning and its messages render their source. Once the wait for a
+ * file has run out, no import waits for a file until one has arrived in
+ * time, so on a host that is slow, imports that start one another cost a
+ * page one wait: see `getWait()`.
  *
  * A page that stays open while the app is deployed again asks for files by
  * the names its own build gave them, which a host may no longer have. See

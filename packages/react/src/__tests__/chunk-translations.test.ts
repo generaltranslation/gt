@@ -152,6 +152,26 @@ const plainImport =
   (load: Load = loadChunk) =>
     load(evaluate(steps), ORDERS_CHUNK);
 
+/** A file that takes `ms` to arrive, on fake timers. */
+const slow = (file: unknown, ms: number) => () =>
+  new Promise<Response>((resolve) =>
+    setTimeout(() => resolve(new Response(JSON.stringify(file))), ms)
+  );
+
+/**
+ * Imports nested in each other, as a route under lazy layouts: each starts
+ * when the one around it runs, and says so in `steps`.
+ */
+const nestedImports = (load: Load, chunks: string[], steps: string[]) =>
+  chunks.reduceRight<() => Promise<unknown>>(
+    (inner, chunk) => () =>
+      load(() => {
+        steps.push(chunk);
+        return inner();
+      }, chunk),
+    () => Promise.resolve()
+  )();
+
 describe('gt-react/chunk-translations', () => {
   let warn: ReturnType<typeof vi.spyOn>;
 
@@ -509,6 +529,129 @@ describe('gt-react/chunk-translations', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(await again).toEqual({ evaluated: 'Orders' });
     expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  describe('on a host that is slow', () => {
+    const LAYOUT_CHUNK = 'assets/Layout-d4.js';
+    const PANEL_CHUNK = 'assets/Panel-e5.js';
+    const HELP_CHUNK = 'assets/Help-f6.js';
+    const LAYOUT_FILE = '/assets/Layout-d4.fr.22222222.json';
+    const PANEL_FILE = '/assets/Panel-e5.fr.22222222.json';
+    const HELP_FILE = '/assets/Help-f6.fr.22222222.json';
+    const ENTRY = {
+      t: { [SAVE]: 'Enregistrer' },
+      i: {
+        k: [
+          'assets/Layout-d4',
+          'assets/Orders-b2',
+          'assets/Panel-e5',
+          'assets/Help-f6',
+        ],
+        c: [[1], [1], [1], [1]],
+      },
+    };
+    const NESTED = [LAYOUT_CHUNK, ORDERS_CHUNK, PANEL_CHUNK];
+
+    it('waits once for the files of imports nested in each other, still requests them, and waits for none while none arrives in time', async () => {
+      const fetched = serve({
+        '/assets/index-a1.fr.11111111.json': ENTRY,
+        [LAYOUT_FILE]: slow({}, 3000),
+        [ORDERS_FILE]: slow(FILES[ORDERS_FILE], 3000),
+        [PANEL_FILE]: slow({}, 3000),
+        [HELP_FILE]: slow({}, 3000),
+      });
+      writeState({ w: 2000 });
+      await start();
+      vi.useFakeTimers();
+      const steps: string[] = [];
+
+      const loading = nestedImports(loadChunk, NESTED, steps);
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(steps).toEqual([]);
+      // One wait after the first request, where each import waited its own;
+      // a file that is not waited for takes one turn of the timers
+      await vi.advanceTimersByTimeAsync(1 + NESTED.length);
+      expect(steps).toEqual(NESTED);
+      await loading;
+      expect(orders()).toBe('Orders');
+      expect(fetched.mock.calls.flat().slice(1)).toEqual([
+        LAYOUT_FILE,
+        ORDERS_FILE,
+        PANEL_FILE,
+      ]);
+      expect(warn.mock.calls.map(([warning]) => warning)).toEqual([
+        expect.stringContaining(`${LAYOUT_FILE} did not load within 2000 ms`),
+        expect.stringContaining(`${ORDERS_FILE} are not waited for`),
+        expect.stringContaining(`${PANEL_FILE} are not waited for`),
+      ]);
+
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(orders()).toBe('Commandes');
+
+      // Long after: every file was late, so the host is taken to be slow still
+      await vi.advanceTimersByTimeAsync(60_000);
+      void nestedImports(loadChunk, [HELP_CHUNK], steps);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(steps).toEqual([...NESTED, HELP_CHUNK]);
+    });
+
+    it('waits again once a file has arrived in time', async () => {
+      serve({
+        '/assets/index-a1.fr.11111111.json': ENTRY,
+        [LAYOUT_FILE]: slow({}, 30_000),
+        [ORDERS_FILE]: slow(FILES[ORDERS_FILE], 100),
+        [PANEL_FILE]: slow({}, 1500),
+      });
+      writeState({ w: 2000 });
+      await start();
+      vi.useFakeTimers();
+      const steps: string[] = [];
+      void nestedImports(loadChunk, [LAYOUT_CHUNK], steps);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(steps).toEqual([LAYOUT_CHUNK]);
+
+      // Not waited for, though it is fast: no file has arrived in time yet
+      const unwaited = plainImport(steps)();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(steps).toEqual([LAYOUT_CHUNK, 'import']);
+      expect(await unwaited).toEqual({ evaluated: 'Orders' });
+      await vi.advanceTimersByTimeAsync(100);
+      expect(orders()).toBe('Commandes');
+
+      void nestedImports(loadChunk, [PANEL_CHUNK], steps);
+      await vi.advanceTimersByTimeAsync(1499);
+      expect(steps).toEqual([LAYOUT_CHUNK, 'import']);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(steps).toEqual([LAYOUT_CHUNK, 'import', PANEL_CHUNK]);
+      expect(warn).toHaveBeenCalledTimes(2);
+    });
+
+    it('still waits for the next import when one file is late and another of the same import arrived in time', async () => {
+      serve({
+        '/assets/index-a1.fr.11111111.json': {
+          ...ENTRY,
+          // The import of the first chunk also needs the file of the second
+          i: { ...ENTRY.i, c: [[1, 1, 1], [1], [1], [1]] },
+        },
+        [LAYOUT_FILE]: slow({}, 30_000),
+        [ORDERS_FILE]: slow(FILES[ORDERS_FILE], 100),
+        [PANEL_FILE]: slow({}, 1500),
+      });
+      writeState({ w: 2000 });
+      await start();
+      vi.useFakeTimers();
+      const steps: string[] = [];
+      void nestedImports(loadChunk, [LAYOUT_CHUNK, PANEL_CHUNK], steps);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(steps).toEqual([LAYOUT_CHUNK]);
+      expect(orders()).toBe('Commandes');
+
+      await vi.advanceTimersByTimeAsync(1499);
+      expect(steps).toEqual([LAYOUT_CHUNK]);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(steps).toEqual([LAYOUT_CHUNK, PANEL_CHUNK]);
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
   });
 
   it.each([
@@ -1389,6 +1532,41 @@ describe('gt-react/chunk-translations', () => {
       route.respond();
       expect(await loading).toEqual({ evaluated: 'Commandes' });
       expect(steps).toEqual([PRELOAD, 'import']);
+    });
+
+    it('waits once for the files of imports nested in each other', async () => {
+      const lists = {
+        k: [...LISTED.k.slice(0, 4), 'assets/Layout-d4', 'assets/Orders-b2'],
+        c: [0, 0, 0, 0, [0, 1, 1], [0, 3, 1]],
+        h: LISTED.h,
+      };
+      const fetched = serve({
+        ...SPLIT,
+        [MAP]: { i: lists },
+        [SHARED]: slow(SPLIT[SHARED], 3000),
+        [ROUTE]: slow(SPLIT[ROUTE], 3000),
+      });
+      writeSplitState({ w: 2000 });
+      await startSplit();
+      await tick();
+      vi.useFakeTimers();
+      const steps: string[] = [];
+
+      const loading = nestedImports(
+        loadRegionChunk,
+        ['assets/Layout-d4.js', ORDERS_CHUNK],
+        steps
+      );
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(steps).toEqual([]);
+      await vi.advanceTimersByTimeAsync(3);
+      expect(steps).toEqual(['assets/Layout-d4.js', ORDERS_CHUNK]);
+      await loading;
+      expect(fetched.mock.calls.flat()).toContain(ROUTE);
+
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(orders()).toBe('Commandes');
+      expect(title()).toBe('Aperçu');
     });
 
     it("waits for the entry's files too when an import starts before they have arrived", async () => {
