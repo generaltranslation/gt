@@ -20,6 +20,10 @@
     "./preprocess": {
       "types": "./dist/preprocess.d.ts",
       "default": "./dist/preprocess.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "default": "./dist/vite.js"
     }
   },
   "scripts": {
@@ -45,7 +49,13 @@
   },
   "homepage": "https://generaltranslation.com/",
   "peerDependencies": {
-    "svelte": "^5.0.0"
+    "svelte": "^5.0.0",
+    "vite": ">=6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
   },
   "keywords": [
     "svelte",

@@ -1,6 +1,7 @@
 import { getContext, setContext } from 'svelte';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { getI18nCache, getI18nConfig } from 'gt-i18n/internal';
+import { getI18nCache, getI18nConfig, hashContent } from 'gt-i18n/internal';
+import type { LookupOptions } from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format';
 import { resolveLocale } from './config';
 import { hasCachedTranslations, rememberAddedTranslations } from './hydration';
@@ -18,10 +19,18 @@ export class GTState {
   readonly #readonly: boolean;
   /** Counts locale changes, so a slow load cannot override a later one. */
   #request = 0;
+  /**
+   * The translations given to or loaded by this provider, by locale, which
+   * outlive their shared cache entries' expiry.
+   */
+  readonly #translations = new Map<string, Record<string, Content>>();
+  /** The provider above this one, whose translations lookups fall back to. */
+  readonly #parent: GTState | undefined;
 
-  constructor(locale: string, readonly = false) {
+  constructor(locale: string, readonly = false, parent?: GTState) {
     this.locale = locale;
     this.#readonly = readonly;
+    this.#parent = parent;
   }
 
   /** Marks cached translations as changed so lookups run again. */
@@ -47,8 +56,10 @@ export class GTState {
     }
     const resolvedLocale = resolveLocale(locale);
     const request = ++this.#request;
-    await getI18nCache().loadTranslations(resolvedLocale);
-    if (request === this.#request) this.showLocale(resolvedLocale);
+    const translations = await getI18nCache().loadTranslations(resolvedLocale);
+    if (request !== this.#request) return;
+    this.#translations.set(resolvedLocale, translations);
+    this.showLocale(resolvedLocale);
   }
 
   /**
@@ -62,11 +73,13 @@ export class GTState {
   }
 
   /**
-   * Adds preloaded translations to the shared cache. Translations it already
-   * holds, such as `loadTranslations()` results rendered on the server, are
-   * skipped: copying a large catalog on every request is slow.
+   * Keeps preloaded translations for this provider's lookups and adds them to
+   * the shared cache. Translations the cache already holds, such as
+   * `loadTranslations()` results rendered on the server, are not added again:
+   * copying a large catalog on every request is slow.
    */
   hydrate(locale: string, translations: Record<string, Content>): void {
+    this.#translations.set(locale, translations);
     if (hasCachedTranslations(locale, translations)) return;
     // Snapshot in case the translations are reactive state: the cache
     // clones them, and proxies cannot be cloned. Svelte's Snapshot type cannot
@@ -78,10 +91,53 @@ export class GTState {
     });
     rememberAddedTranslations(locale, translations);
   }
+
+  /**
+   * Looks up a translation in this provider's translations, then in the
+   * cache. A server render reads only the `<GTProvider>` translations, which
+   * the browser also receives, so runtime translations the shared cache got
+   * since cannot make the two differ.
+   */
+  lookupTranslation(
+    locale: string,
+    content: Content,
+    options: LookupOptions
+  ): Content | undefined {
+    if (this.#hasTranslations()) {
+      const translation = this.#lookupGiven(
+        locale,
+        hashContent(content, options)
+      );
+      if (translation !== undefined || typeof window === 'undefined') {
+        return translation;
+      }
+    }
+    return getI18nCache().lookupTranslation(locale, content, options);
+  }
+
+  #hasTranslations(): boolean {
+    return (
+      this.#translations.size > 0 ||
+      (this.#parent ? this.#parent.#hasTranslations() : false)
+    );
+  }
+
+  /** Reads this provider's translations, then those of the providers above it. */
+  #lookupGiven(locale: string, hash: string): Content | undefined {
+    return (
+      this.#translations.get(locale)?.[hash] ??
+      (this.#parent ? this.#parent.#lookupGiven(locale, hash) : undefined)
+    );
+  }
 }
 
 export function setGTState(state: GTState): void {
   setContext(GT_CONTEXT, state);
+}
+
+/** Returns the state of the `<GTProvider>` above the current component, if any. */
+export function getParentGTState(): GTState | undefined {
+  return getContext<GTState | undefined>(GT_CONTEXT);
 }
 
 /**
@@ -89,6 +145,7 @@ export function setGTState(state: GTState): void {
  * renders in the default locale.
  */
 export function getGTState(): GTState {
-  const state = getContext<GTState | undefined>(GT_CONTEXT);
-  return state ?? new GTState(getI18nConfig().getDefaultLocale(), true);
+  return (
+    getParentGTState() ?? new GTState(getI18nConfig().getDefaultLocale(), true)
+  );
 }
