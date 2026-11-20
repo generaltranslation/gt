@@ -22,8 +22,6 @@ function readFiles(directory, prefix, files = new Map()) {
   return files;
 }
 
-let loads = 0;
-
 /**
  * Starts a server for the build in `directory`. `deploy()` replaces its files
  * and its server with those of another build, as a host that keeps no file
@@ -34,9 +32,12 @@ export async function serve(directory, base = '/') {
   let handler;
   const deploy = async (build) => {
     files = readFiles(join(build, 'client'), base);
-    // The query makes Node load the server of each build
-    const entry = pathToFileURL(join(build, 'server', 'server.js')).href;
-    handler = (await import(`${entry}?${loads++}`)).default;
+    // Each build is its own directory, so Node loads each one's server. No
+    // query on the URL: server chunks import ../server.js back, and would
+    // then load a second copy of it.
+    handler = (
+      await import(pathToFileURL(join(build, 'server', 'server.js')).href)
+    ).default;
   };
   await deploy(directory);
   const server = createServer(async (request, response) => {
