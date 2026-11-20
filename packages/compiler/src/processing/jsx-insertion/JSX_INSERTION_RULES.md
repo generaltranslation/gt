@@ -31,6 +31,18 @@ This document is the single source of truth for the insertion rules. Both the co
 <main><section><p><_T>Deep text</_T></p></section></main>
 ```
 
+How the text is written in the source does not matter: JSX text, a string in braces (`{'text'}`) and a static template literal in braces compile to the same child. What the text says does not matter either: punctuation is non-whitespace content, so a separator such as `{' · '}` claims its element like any other text.
+
+```jsx
+// A string in braces is text — _T at div
+<div>{'Hello'}</div>
+<div><_T>{'Hello'}</_T></div>
+
+// The only text of <div> is a separator — _T at div, <a> is part of the unit
+<div><a>Back</a>{' · '}{name}</div>
+<div><_T><a>Back</a>{' · '}<_Var>{name}</_Var></_T></div>
+```
+
 ## Rule 2: When a parent has direct text, it claims the entire subtree
 
 If a parent element has text as a direct child, \_T wraps at that level. Nested child elements become part of the same translation unit — they do NOT get their own \_T.
