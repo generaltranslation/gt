@@ -15,7 +15,9 @@ export function ServerGTProvider({
 }: SharedGTProviderProps) {
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {
-    i18nStoreRef.current = new I18nStore();
+    i18nStoreRef.current = new I18nStore({
+      readsOnlyTranslationsSnapshot: true,
+    });
   }
 
   return (
