@@ -1,4 +1,7 @@
-import { getReactI18nCache } from '@generaltranslation/react-core/pure';
+import {
+  getI18nStore,
+  getReactI18nCache,
+} from '@generaltranslation/react-core/pure';
 import type {
   ChunkTranslationsState,
   EntryFile,
@@ -85,12 +88,23 @@ export function register(
  * each call copies the locale's whole table. A load of the locale that is
  * still running would replace what is added before it resolves, so until it
  * has, they wait for it to take them.
+ *
+ * What waited for the files has not rendered, so no one is told of them.
+ * Mounted messages look their translations up again only for files whose
+ * messages may be on screen: one that is late, and any file once the page
+ * reads files of another build than its own.
+ *
+ * @param isLate Whether what waited for the files has stopped waiting.
  */
-export function addArrived(state: ChunkTranslationsState): void {
+export function addArrived(
+  state: ChunkTranslationsState,
+  isLate?: boolean
+): void {
   if (!state.y || !state.t) return;
   const arrived = state.t;
   state.t = undefined;
-  getReactI18nCache().updateTranslations(arrived);
+  if (isLate || state.s) getI18nStore().updateRenderedTranslations(arrived);
+  else getReactI18nCache().updateTranslations(arrived);
 }
 
 /** What has arrived for a locale, which its load takes. */
@@ -150,7 +164,7 @@ export function request<F extends object>(
         clearTimeout(timer);
         read(file as F);
         // A late file is read when it arrives, as nothing waits for it
-        if (late) addArrived(state);
+        if (late) addArrived(state, true);
         requests[key] = Promise.resolve(true);
         resolve(true);
       },
@@ -168,11 +182,13 @@ export function request<F extends object>(
           return;
         }
         void recovered.then((arrived) => {
+          // What stands in for the file is of another build
+          if (arrived !== undefined) state.s = true;
           if (arrived === undefined) {
             missing[url] = true;
             if (!late) fail(details);
           } else if (late) {
-            if (arrived) addArrived(state);
+            if (arrived) addArrived(state, true);
           } else {
             clearTimeout(timer);
             resolve(arrived);
