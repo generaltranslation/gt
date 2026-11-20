@@ -762,7 +762,7 @@ export class BaseCLI {
     });
 
     // Preprocess shared static assets if configured (move + rewrite sources)
-    await processSharedStaticAssets(settings);
+    if (!initOptions.dryRun) await processSharedStaticAssets(settings);
 
     await handleSetupProject(initOptions, settings, this.library);
     displayTranslateSummary();
@@ -776,14 +776,16 @@ export class BaseCLI {
     });
 
     // Preprocess shared static assets if configured (move + rewrite sources)
-    await processSharedStaticAssets(settings);
+    if (!initOptions.dryRun) await processSharedStaticAssets(settings);
 
     if (!settings.stageTranslations) {
       // Update settings.stageTranslations to true
       settings.stageTranslations = true;
-      await updateConfig(settings.config, {
-        stageTranslations: true,
-      });
+      if (!initOptions.dryRun) {
+        await updateConfig(settings.config, {
+          stageTranslations: true,
+        });
+      }
     }
     await handleStage(initOptions, settings, this.library, true);
     displayTranslateSummary();
@@ -822,7 +824,7 @@ export class BaseCLI {
     });
 
     // Preprocess shared static assets if configured (move + rewrite sources)
-    await processSharedStaticAssets(settings);
+    if (!initOptions.dryRun) await processSharedStaticAssets(settings);
 
     if (!settings.stageTranslations) {
       // Lottie translations finish asynchronously server-side (layout
