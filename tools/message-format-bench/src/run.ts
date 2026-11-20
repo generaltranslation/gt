@@ -401,7 +401,7 @@ const b = (x: { min: number; gzip: number; brotli: number }) =>
 const differ = (mix: string) =>
   JSON.stringify(stat.check[mix].messagesThatDiffer.intlayer ?? {});
 const NOTES: Record<string, string> = {
-  icu: 'Parses the string on every call: gt keeps no parsed-message cache, so a re-render parses again.',
+  icu: 'Returns a message of plain text (no {, apostrophe or <) without parsing it. Parses any other message on every call: gt keeps no parsed-message cache, so a re-render parses again.',
   'icu-fjs': `Parses once per key; the IntlMessageFormat object is cached per key. With react-intl's formatter cache (@formatjs/intl createFormatters) the bundle is ${b(rt['icu-fjs / fjs-ast + react-intl formatter cache'])}.`,
   'fjs-ast': `runtimeBytes is with @formatjs/icu-messageformat-parser aliased to its no-parser.js. Without that alias the parser stays in the bundle: ${b(rt['fjs-ast (parser not aliased away)'])}.`,
   lingui:
@@ -423,6 +423,8 @@ const grid = {
     machine: `${os.cpus()[0]!.model}, ${os.cpus().length} cores, ${Math.round(os.totalmem() / 2 ** 30)} GB`,
     // The machine is not isolated: this is what else it was doing.
     loadAverageAtStart: +loadAverage.toFixed(1),
+    // The 15-minute average when the last round ended.
+    loadAverageAtEnd: +os.loadavg()[2]!.toFixed(1),
     os: `${os.type()} ${os.release()} ${os.arch()}${process.platform === 'darwin' ? ` (macOS ${execFileSync('sw_vers', ['-productVersion'], { encoding: 'utf8' }).trim()})` : ''}`,
     node: `${process.version} (V8 ${process.versions.v8}, ICU ${process.versions.icu})`,
     browser: `Chromium ${browserVersion} (headless, Playwright ${stat.versions['playwright-core']})`,

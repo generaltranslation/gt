@@ -184,7 +184,8 @@ Close other programs first. The machine that produced the committed results was 
 
 ```
 meta       date, machine, os, node, browser, cpuThrottle, gtCommit, versions, seed,
-           processesPerCell, controlSpreadPct, controlSpread, loadAverageAtStart, notes
+           processesPerCell, controlSpreadPct, controlSpread, loadAverageAtStart,
+           loadAverageAtEnd, notes
 formats    id, label, runtime, parserAtRuntime, localeInvariant, variantOf, runtimeBytes, note
 mixes      id, label, shares, meanValueBytes
 sizes      the 19 catalog sizes, 10 to 10,000
@@ -237,15 +238,15 @@ Synthetic and seeded (`SEED` in `src/corpus.ts`). One abstract model of each mes
 
 Each is set up the way its own framework sets it up (`src/runtimes/`).
 
-| format               | set-up                                                                                                                                                                                        |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `icu`                | `formatIcu(string, 'en', values, { timeZone })` on every call. gt keeps no parsed-message cache; `Intl` objects are cached inside the library.                                                |
-| `icu-fjs`, `fjs-ast` | One `createFormatters(createIntlCache())` of `@formatjs/intl` for all messages and one `IntlMessageFormat` per key, as react-intl does.                                                       |
-| `lingui`             | `setupI18n({ locale, messages })`, then `i18n._(key, values)`, with `NODE_ENV=production`, where no message compiler is registered.                                                           |
-| `minify`             | `format(message, 'en', values, { formatters, formats, timeZone })` with use-intl's formatter cache and next-intl's named-style table. The build checks it against use-intl's wrapper.         |
-| `tree`               | `formatMessageTree(tree, 'en', values, { formats: {}, timeZone })`.                                                                                                                           |
-| `paraglide`          | `paraglideVitePlugin` with its defaults. The page calls each compiled function with the values and no locale option, so the function asks the runtime for the locale.                         |
-| `intlayer`           | `getDictionary(dictionary, 'en')` once, then the ICU resolver for each message: the two calls that `formatMessage` of `@intlayer/react-intl` makes. The build checks it against that adapter. |
+| format               | set-up                                                                                                                                                                                                                                                                                                                           |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `icu`                | `formatIcu(string, 'en', values, { timeZone })` on every call. It returns plain text without parsing it and parses any other message each time: gt keeps no parsed-message cache. `Intl` objects are cached inside the library. gt's own message API ships the tree; `formatIcu` is what `formatMessage` uses for an ICU string. |
+| `icu-fjs`, `fjs-ast` | One `createFormatters(createIntlCache())` of `@formatjs/intl` for all messages and one `IntlMessageFormat` per key, as react-intl does.                                                                                                                                                                                          |
+| `lingui`             | `setupI18n({ locale, messages })`, then `i18n._(key, values)`, with `NODE_ENV=production`, where no message compiler is registered.                                                                                                                                                                                              |
+| `minify`             | `format(message, 'en', values, { formatters, formats, timeZone })` with use-intl's formatter cache and next-intl's named-style table. The build checks it against use-intl's wrapper.                                                                                                                                            |
+| `tree`               | `formatMessageTree(tree, 'en', values, { formats: {}, timeZone })`, the formatter alone. An app reaches it through gt-i18n, which looks the message up by its hash and resolves the locale first; that is not measured.                                                                                                          |
+| `paraglide`          | `paraglideVitePlugin` with its defaults. The page calls each compiled function with the values and no locale option, so the function asks the runtime for the locale.                                                                                                                                                            |
+| `intlayer`           | `getDictionary(dictionary, 'en')` once, then the ICU resolver for each message: the two calls that `formatMessage` of `@intlayer/react-intl` makes. The build checks it against that adapter.                                                                                                                                    |
 
 Three notes on the bundles:
 
@@ -269,12 +270,12 @@ Three notes on the bundles:
 ## What favours or hurts a format
 
 - **Favours `icu-fjs` and `fjs-ast`.** react-intl does not keep a `Map` by key: its `getMessageFormat` is memoized on `JSON.stringify` of its arguments, so it serializes the message (the whole AST, for `fjs-ast`) on every call. The `Map` here skips that.
-- **Hurts `icu` on a re-render.** No parsed-message cache, as shipped. An app that memoizes the rendered string above the formatter would not see this.
+- **Hurts `icu` on a re-render.** No parsed-message cache, as shipped: a message with a variable is parsed again each time. An app that memoizes the rendered string above the formatter would not see this.
 - **Favours `minify`.** The named-style table is built once here; next-intl's wrapper rebuilds it on each call. `icu-minify` has no plural `offset`, and the corpus has none.
 - **Favours `tree`.** The corpus has no formatting context (a currency, a time zone) and no number skeleton, so `formats` is empty and not stored. With such messages gt's catalog holds `formats` beside the tree, which is not counted here. The tree's kinds are words (`"plural"`) where `icu-minify` uses digits, which costs raw bytes and little after gzip.
 - **Hurts `lingui` in `app`.** Its compiler wraps plain text in a one-element array.
 - **Favours every precompiled format in the server scenario.** Importing the library is not timed there. In the browser it is `evalRuntime`.
-- **Keys dominate the compressed catalog.** Differences between catalog formats are measured on the whole catalog, so they look smaller than on the values alone (`valuesGzip`).
+- **Keys dominate the compressed catalog.** Differences between catalog formats are measured on the whole catalog, so they look smaller than on the values alone (`valuesGzip`). The keys here are 16 hex characters, which is what gt's compiler writes by default. Its experimental `experimentalSplitTranslations: { minifyHashes: true }` replaces them with small numbers; that is not measured.
 - **Favours the catalog formats over Paraglide.** See "Not like-for-like": the whole catalog in one bundle, and compilation counted on the main thread.
 
 ## What not to read into it
