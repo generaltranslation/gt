@@ -3,7 +3,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spinner as clackSpinner } from '@clack/prompts';
 import type { ProgressResult, SpinnerResult } from '@clack/prompts';
-import { GlobeBanner } from '../banner.js';
+import { GlobeBanner, signalForegroundJob } from '../banner.js';
 import { getGlobeFrames } from '../frames.js';
 import { paintFrame } from '../paint.js';
 
@@ -55,6 +55,27 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe('signalForegroundJob', () => {
+  it.each([
+    [
+      'its own group when it is the foreground job',
+      { group: 1, foreground: 1 },
+      0,
+    ],
+    [
+      'itself when another group has the terminal',
+      { group: 5, foreground: 9 },
+      process.pid,
+    ],
+    ['itself when the groups are unknown', undefined, process.pid],
+  ])('signals %s', (_case, groups, target) => {
+    const kill = vi.fn();
+    signalForegroundJob('SIGINT', groups, kill);
+    // Never a negated group ID: kill(-1) would signal every process.
+    expect(kill.mock.calls).toEqual([[target, 'SIGINT']]);
+  });
 });
 
 describe('GlobeBanner', () => {
@@ -288,6 +309,7 @@ describe('GlobeBanner', () => {
     ['emoji', '⌚'],
     ['half-width kana with a voiced mark', 'ｶﾞ'],
     ['keycap emoji', '1️⃣'],
+    ['Thai with a spacing vowel', 'กำ'],
   ])('keeps wide %s status text on one line', (_kind, char) => {
     const terminal = new FakeTerminal();
     terminal.columns = 30;

@@ -74,16 +74,21 @@ function atTime(time: number, fn: () => void): void {
   }
 }
 
-// Terminal columns a grapheme takes. string-width measures whole graphemes
-// (an emoji or keycap sequence is one glyph), but counts a half-width kana's
-// voiced or semi-voiced mark as part of the kana, while terminals draw the
-// mark in a cell of its own.
-const HALF_WIDTH_SOUND_MARKS = new Set(['\uff9e', '\uff9f']);
+// Terminal columns a grapheme takes. string-width measures whole graphemes,
+// which is right for emoji and keycap sequences (one glyph), but it counts
+// some spacing characters inside a grapheme as zero, such as a half-width
+// kana's voiced mark or Thai's spacing vowel SARA AM, which terminals draw in
+// a cell of their own. So outside emoji, every code point that isn't a
+// non-spacing mark, enclosing mark or format character counts too.
+const NON_SPACING = /[\p{Mn}\p{Me}\p{Cf}]/u;
 function columnsOf(grapheme: string): number {
-  const marks = [...grapheme]
-    .slice(1)
-    .filter((char) => HALF_WIDTH_SOUND_MARKS.has(char)).length;
-  return stringWidth(grapheme) + marks;
+  const whole = stringWidth(grapheme);
+  if (/\p{Extended_Pictographic}/u.test(grapheme)) return whole;
+  let spacing = 0;
+  for (const char of grapheme) {
+    if (!NON_SPACING.test(char)) spacing += stringWidth(char);
+  }
+  return Math.max(whole, spacing);
 }
 
 // Shortens text to fit `room` terminal columns, ending in … if cut.
@@ -97,6 +102,29 @@ function fitColumns(text: string, room: number): string {
     fitted += segment;
   }
   return fitted;
+}
+
+/**
+ * Sends `signal` the way the terminal would for a key: to the whole
+ * foreground job when this process is in it, so a launcher running the CLI
+ * (pnpm exec, the binary's wrapper) stops, resumes or exits with it, and to
+ * this process alone otherwise. Target 0 means this process's own group; a
+ * group ID is never negated, because kill(-1) signals every process the
+ * caller may signal.
+ */
+export function signalForegroundJob(
+  signal: NodeJS.Signals,
+  groups = readProcessGroups(),
+  kill: (pid: number, signal: NodeJS.Signals) => void = (pid, sig) =>
+    void process.kill(pid, sig)
+): void {
+  const inForegroundJob =
+    groups !== undefined && groups.group === groups.foreground;
+  try {
+    kill(inForegroundJob ? 0 : process.pid, signal);
+  } catch {
+    kill(process.pid, signal);
+  }
 }
 
 /**
@@ -589,12 +617,7 @@ export class GlobeBanner {
     // this CLI (pnpm exec, the binary's wrapper) stops or exits with it.
     // The key then does what it usually does (Ctrl+C exits, Ctrl+Z
     // suspends, Ctrl+\ quits), and other handlers still get it.
-    const job = readProcessGroups()?.foreground;
-    try {
-      process.kill(job ? -job : process.pid, signal);
-    } catch {
-      process.kill(process.pid, signal);
-    }
+    signalForegroundJob(signal);
   };
 
   // An uncaught error lands the globe before its trace prints.
