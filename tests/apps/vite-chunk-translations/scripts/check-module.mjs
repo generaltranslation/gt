@@ -2059,9 +2059,11 @@ if (!selected.length) {
 // late.html, built with Terser, which alone knows that a call in the Shell
 // never runs. The lists of ids are made from the code the bundler renders,
 // where the Shell still reads the two messages of that call, and the files
-// are assigned once no chunk of the Shell does. Both go by what the rendered
-// code reads: otherwise the list of those two messages is in two files, and
-// a change to one message renames the file of another.
+// are assigned once no chunk of the Shell does. The chunk of the shared
+// modules loads with the Shell, so it lists what the Shell fetches in one
+// list. Both go by what the rendered code reads: otherwise that list is in
+// the files of two routes, and a change to one message renames the file of
+// another.
 if ((!selected.length || selected.includes('late')) && MINIFY_HASHES) {
   prefix = '[late] ';
   const variant = { lazy: true, shared: true, requestCost: 0 };
@@ -2091,6 +2093,7 @@ if ((!selected.length || selected.includes('late')) && MINIFY_HASHES) {
     );
   }
   const TEXTS = {
+    frame: 'Late frame',
     first: 'First late message',
     second: 'Second late message',
     third: 'Third late message',
@@ -2142,6 +2145,7 @@ if ((!selected.length || selected.includes('late')) && MINIFY_HASHES) {
       !before.shell.includes('__CHECK_DEBUG__') &&
       before.fileOf(TEXTS.first) !== undefined &&
       before.fileOf(TEXTS.first) === before.fileOf(TEXTS.second) &&
+      before.fileOf(TEXTS.first) === before.fileOf(TEXTS.frame) &&
       before.fileOf(TEXTS.third) !== before.fileOf(TEXTS.first),
     Object.values(TEXTS)
       .map((text) => `${text}: ${before.fileOf(text)}`)

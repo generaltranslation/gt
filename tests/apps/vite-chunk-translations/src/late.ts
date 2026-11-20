@@ -7,8 +7,8 @@ import gtConfig from '../gt.config.json';
 // each message of its two routes in an element of its own.
 await initializeGTSPA({ ...gtConfig, loadTranslations });
 
-const { openFirst, openSecond } = await import('./late/Shell');
-for (const open of [openFirst, openSecond]) {
+const shell = await import('./late/Shell');
+for (const open of [() => shell, shell.openFirst, shell.openSecond]) {
   const { messages } = await open();
   for (const [name, text] of Object.entries(messages())) {
     const element = document.createElement('p');
