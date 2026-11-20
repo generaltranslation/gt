@@ -652,6 +652,35 @@ describe('gt-react/chunk-translations', () => {
       expect(steps).toEqual([LAYOUT_CHUNK, PANEL_CHUNK]);
       expect(warn).toHaveBeenCalledTimes(1);
     });
+
+    it("runs an import once the wait for the entry's file has run out, and requests its files when that arrives", async () => {
+      const fetched = serve({
+        ...FILES,
+        '/assets/index-a1.fr.11111111.json': slow(
+          FILES['/assets/index-a1.fr.11111111.json'],
+          3000
+        ),
+      });
+      writeState({ w: 2000 });
+      vi.useFakeTimers();
+      const starting = start();
+      await vi.advanceTimersByTimeAsync(2000);
+      await starting;
+
+      const loading = plainImport([])();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(await loading).toEqual({ evaluated: 'Orders' });
+      expect(fetched).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(fetched.mock.calls.flat()).toEqual([
+        '/assets/index-a1.fr.11111111.json',
+        ORDERS_FILE,
+      ]);
+      expect(save()).toBe('Enregistrer');
+      expect(orders()).toBe('Commandes');
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
   });
 
   it.each([
@@ -1427,6 +1456,44 @@ describe('gt-react/chunk-translations', () => {
       expect(orders()).toBe('Du lien');
     });
 
+    it.each([
+      [
+        'an import',
+        () => preloadedImport([])(loadMappedChunk),
+        { evaluated: 'Orders' },
+      ],
+      [
+        'the files of a chunk the app preloads itself',
+        () => loadMappedChunkTranslations(['assets/Orders-b2']),
+        undefined,
+      ],
+    ])(
+      'does not wait for the map again once its wait has run out, and requests the files it lists when it arrives: %s',
+      async (_name, load, loaded) => {
+        const fetched = serve({ ...MAPPED, [MAP]: slow(LISTED, 3000) });
+        writeMapped({ w: 2000 });
+        vi.useFakeTimers();
+        await startMapped();
+        let ran = false;
+        const loading = load()!.then((result) => {
+          ran = true;
+          return result;
+        });
+        await vi.advanceTimersByTimeAsync(1999);
+        expect(ran).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(await loading).toEqual(loaded);
+        expect(fetched.mock.calls.flat().sort()).toEqual(
+          [ENTRY_FILE, MAP].sort()
+        );
+
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(fetched.mock.calls.flat()).toContain(MAPPED_ORDERS_FILE);
+        expect(orders()).toBe('Commandes');
+        expect(warn).toHaveBeenCalledTimes(1);
+      }
+    );
+
     it('renders the source of what the map would have found and warns when the map is missing', async () => {
       const files = { ...MAPPED };
       delete files[MAP];
@@ -1533,6 +1600,45 @@ describe('gt-react/chunk-translations', () => {
       expect(await loading).toEqual({ evaluated: 'Commandes' });
       expect(steps).toEqual([PRELOAD, 'import']);
     });
+
+    it.each([
+      [
+        'an import',
+        () => preloadedImport([])(loadRegionChunk),
+        { evaluated: 'Orders' },
+      ],
+      [
+        'the files of a chunk the app preloads itself',
+        () => loadRegionChunkTranslations(['assets/gt-bb', 'assets/gt-cc']),
+        undefined,
+      ],
+    ])(
+      'does not wait for the map again once its wait has run out, and requests the files it lists when it arrives: %s',
+      async (_name, load, loaded) => {
+        const fetched = serve({ ...SPLIT, [MAP]: slow(SPLIT[MAP], 3000) });
+        writeSplitState({ w: 2000 });
+        vi.useFakeTimers();
+        await startSplit();
+        let ran = false;
+        const loading = load()!.then((result) => {
+          ran = true;
+          return result;
+        });
+        await vi.advanceTimersByTimeAsync(1999);
+        expect(ran).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(await loading).toEqual(loaded);
+        expect(fetched.mock.calls.flat().sort()).toEqual([MAP, SHELL].sort());
+
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(fetched.mock.calls.flat().sort()).toEqual(
+          [MAP, ROUTE, SHARED, SHELL].sort()
+        );
+        expect(orders()).toBe('Commandes');
+        expect(title()).toBe('Aperçu');
+        expect(warn).toHaveBeenCalledTimes(1);
+      }
+    );
 
     it('waits once for the files of imports nested in each other', async () => {
       const lists = {

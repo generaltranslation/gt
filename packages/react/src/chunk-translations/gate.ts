@@ -5,7 +5,7 @@ import type {
 } from './state';
 import { getState, getTranslatedLocale } from './state';
 import { createUnlistedChunkWarning } from './warnings';
-import { addArrived, requestEntry } from './request';
+import { addArrived, requestEntry, requestOnceListed } from './request';
 import { requestFile } from './token';
 
 /**
@@ -84,10 +84,15 @@ export function gateChunk<T, F>(
       (files || []).map((file) => request(state, locale, file))
     );
   };
-  // Which files the import needs is known once the file that lists them has arrived
+  // Which files the import needs is known once the file that lists them has
+  // arrived. The import does not wait for one that is late
   const files = state.i
     ? requestFiles()
-    : requestLists(state, locale).then(requestFiles);
+    : requestLists(state, locale).then(() => {
+        if (state.i) return requestFiles();
+        requestOnceListed(state, chunk, requestFiles);
+        return [];
+      });
   // The entry's file holds the messages the import's files leave out
   const translations =
     requestLists === requestEntry
