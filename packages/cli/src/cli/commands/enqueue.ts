@@ -43,7 +43,7 @@ export async function handleEnqueue(
   );
 
   // Point at dashboard review setup when uploading review-gated content
-  await warnManualReviewSetup(settings, files);
+  await warnManualReviewSetup(settings, files, options.dryRun);
 
   // Dry run
   if (options.dryRun) {
