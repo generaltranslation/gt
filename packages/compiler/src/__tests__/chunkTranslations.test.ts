@@ -47,6 +47,7 @@ import {
 } from '../transform/chunk-translations/chunkSourceMap';
 import { wrapDynamicImports } from '../transform/chunk-translations/chunkTranslationsModule';
 import {
+  createRegionGraph,
   getPairKey,
   getPairModule,
 } from '../transform/chunk-translations/createRegionGraph';
@@ -79,6 +80,7 @@ import {
   minifyHashes,
   pickMinifiedTranslations,
   readMinifiedIds,
+  readPlaceholders,
   type MinifiedIds,
   type MinifiedTranslations,
 } from '../transform/chunk-translations/hashMinification';
@@ -5068,20 +5070,31 @@ globalThis.save = () => t\`Save\`;`,
             ([, id]) => [build.minifiedIds.hashes.get(id)!, id]
           )
         );
-      /** The pair of a message in a chunk: by the first of the chunk's modules that read it. */
+      /** The pair of each message a chunk reads, as the build names them. */
+      const pairsOf = new WeakMap<Rendered, Map<string, Map<string, string>>>();
       const pairOf = (build: Rendered, hash: string, fileName: string) => {
-        const { modules } = build.bundle[fileName];
-        const written = [...build.minifiedIds.placeholders]
-          .filter(([, named]) => named === hash)
-          .map(([placeholder]) => placeholder);
-        const [first] = Object.keys(modules)
-          .sort()
-          .filter((id) =>
-            written.some((placeholder) =>
-              modules[id].code.includes(placeholder)
-            )
-          );
-        return getPairKey(hash, getPairModule(first, process.cwd()));
+        let byChunk = pairsOf.get(build);
+        if (!byChunk) {
+          const chunks = Object.values(build.bundle);
+          byChunk = createRegionGraph(
+            chunks,
+            getModuleInfo(GRAPH),
+            new Set(Object.values(HASH)),
+            {
+              isLazy: true,
+              ids: readMinifiedIds(
+                build.minifiedIds,
+                { unsplit: new Set() },
+                {},
+                chunks
+              ),
+              moduleIds: readPlaceholders(build.minifiedIds),
+              pairs: { root: process.cwd() },
+            }
+          ).pairs!.byChunk;
+          pairsOf.set(build, byChunk);
+        }
+        return byChunk.get(fileName)!.get(hash)!;
       };
 
       it('reads ids out of each chunk and placeholders out of each module, and gives each chunk its ids in the files of its own loads', () => {
@@ -6400,76 +6413,347 @@ globalThis.save = () => t\`Save\`;`,
 
         it.each([
           [
-            'a module of the project',
+            'a module of the project, by its path from the root',
             '/home/ci/app/src/Route.jsx',
             '/home/ci/app',
+            'src/Route.jsx',
           ],
           [
-            'the project in another directory',
+            'the same from another directory',
             '/Users/dev/work/app/src/Route.jsx',
             '/Users/dev/work/app/',
+            'src/Route.jsx',
           ],
           [
             'a path written as Windows writes it',
             'C:\\work\\app\\src\\Route.jsx',
             'C:\\work\\app',
+            'src/Route.jsx',
           ],
           [
-            'a module a plugin made of the file',
+            'a dependency inside the project, with the directory of its version',
+            '/app/node_modules/.store/ui-kit@2.1.0/node_modules/ui-kit/dist/index.js',
+            '/app',
+            'node_modules/.store/ui-kit@2.1.0/node_modules/ui-kit/dist/index.js',
+          ],
+          [
+            'a sibling package of a workspace, from where it meets the root',
+            '/home/ci/repo/packages/ui/Button.js',
+            '/home/ci/repo/apps/web',
+            'packages/ui/Button.js',
+          ],
+          [
+            'a dependency the workspace holds',
+            '/home/ci/repo/node_modules/.store/ui-kit@2.1.0/node_modules/ui-kit/index.js',
+            '/home/ci/repo/apps/web',
+            'node_modules/.store/ui-kit@2.1.0/node_modules/ui-kit/index.js',
+          ],
+          [
+            'a dependency in a store elsewhere, from the directory of its version',
+            '/Users/dev/Library/store/v10/links/ui-kit/2.1.0/0a1b/node_modules/ui-kit/dist/index.js',
+            '/Users/dev/code/app',
+            '2.1.0/0a1b/node_modules/ui-kit/dist/index.js',
+          ],
+          [
+            'the same on another machine',
+            '/home/ci/.cache/store/v10/links/ui-kit/2.1.0/0a1b/node_modules/ui-kit/dist/index.js',
+            '/home/ci/app',
+            '2.1.0/0a1b/node_modules/ui-kit/dist/index.js',
+          ],
+          [
+            'a dependency in an archive named with its version',
+            '/opt/cache/ui-kit-npm-2.1.0-0a1b.zip/node_modules/ui-kit/index.js',
+            '/home/ci/app',
+            'ui-kit-npm-2.1.0-0a1b.zip/node_modules/ui-kit/index.js',
+          ],
+          [
+            'a dependency in a store that names no version',
+            '/opt/store/node_modules/ui-kit/index.js',
+            '/home/ci/app',
+            'node_modules/ui-kit/index.js',
+          ],
+          [
+            'a file outside the project and outside every package',
+            '/opt/lib/helpers.js',
+            '/home/ci/app',
+            'opt/lib/helpers.js',
+          ],
+          [
+            'a module a plugin made of a file, as another module than the file',
             '\0/home/ci/app/src/Route.jsx',
             '/home/ci/app',
+            '\0src/Route.jsx',
           ],
-        ])('names the module of a pair the same for %s', (_name, id, root) => {
-          const named = getPairModule('/app/src/Route.jsx', '/app');
-          expect(named).toMatch(/^[0-9a-f]{8}$/);
+          [
+            'a module with a query, as another module than the file',
+            '/home/ci/app/src/Route.jsx?worker&v=/2',
+            '/home/ci/app',
+            'src/Route.jsx?worker&v=/2',
+          ],
+          [
+            'a module that is no file, as it is',
+            '\0virtual:routes',
+            '/home/ci/app',
+            '\0virtual:routes',
+          ],
+        ])('calls %s', (_name, id, root, named) => {
           expect(getPairModule(id, root)).toBe(named);
-          expect(getPairKey(HASH.title, named)).toBe(`${HASH.title}${named}`);
         });
 
-        it('names a module outside the project by where it is from there, a module of a package by the package wherever it is stored, and other modules otherwise', () => {
-          // A sibling package of a workspace, from two checkouts
-          expect(
-            getPairModule(
-              '/home/ci/repo/packages/ui/Button.js',
-              '/home/ci/repo/apps/web'
-            )
-          ).toBe(
-            getPairModule(
-              '/Users/dev/code/repo/packages/ui/Button.js',
-              '/Users/dev/code/repo/apps/web'
-            )
-          );
-          // A package in the project, in a store inside it and in one outside it
-          const packaged = getPairModule(
-            '/app/node_modules/ui-kit/dist/index.js',
-            '/app'
-          );
-          expect(
-            getPairModule(
-              '/app/node_modules/.store/ui-kit@2.1.0/node_modules/ui-kit/dist/index.js',
-              '/app'
-            )
-          ).toBe(packaged);
-          expect(
-            getPairModule(
-              '/Users/dev/Library/store/v10/links/ui-kit/2.1.0/0a1b/node_modules/ui-kit/dist/index.js',
-              '/Users/dev/code/app'
-            )
-          ).toBe(packaged);
-          // A module that is no file, by its id
-          expect(getPairModule('\0virtual:routes', '/app')).toBe(
-            getPairModule('\0virtual:routes', '/home/ci/app')
-          );
+        it('names a pair by its hash and the start of a digest of what its module is called, and another copy of it otherwise', () => {
+          const pair = getPairKey(HASH.title, 'src/Route.jsx');
+          expect(pair).toMatch(new RegExp(`^${HASH.title}[0-9a-f]{8}$`));
+          expect(getPairKey(HASH.title, 'src/Route.jsx')).toBe(pair);
           expect(
             new Set([
-              packaged,
-              getPairModule('/app/src/Route.jsx', '/app'),
-              getPairModule('/app/src/Other.jsx', '/app'),
-              getPairModule('/app/node_modules/ui-kit/dist/other.js', '/app'),
-              getPairModule('\0virtual:routes', '/app'),
+              pair,
+              getPairKey(HASH.title, 'src/Route.jsx', 1),
+              getPairKey(HASH.title, 'src/Route.jsx', 2),
+              getPairKey(HASH.title, '\0src/Route.jsx'),
+              getPairKey(HASH.title, 'src/Route.jsx?worker'),
+              getPairKey(HASH.home, 'src/Route.jsx'),
             ]).size
-          ).toBe(5);
+          ).toBe(6);
         });
+
+        describe.each([
+          ['a file and the module a plugin made of it', '/m.js', '\0/m.js'],
+          [
+            'copies of a package in two stores, which a pair calls alike',
+            '/opt/store-a/node_modules/kit/m.js',
+            '/opt/store-b/node_modules/kit/m.js',
+          ],
+        ])('two chunks whose modules are %s', (_name, FILE, MADE) => {
+          const read = (...names: (keyof typeof HASH)[]) => site(...names);
+          // Texts long enough, and unlike enough, that no file is worth
+          // merging into another
+          const long = Object.fromEntries(
+            Object.keys(CATALOG).map((hash) => [
+              hash,
+              Array.from({ length: 40 }, (_, at) =>
+                getListName([hash, String(at)])
+              ).join(' '),
+            ])
+          );
+          const inLong = () =>
+            createPlugins(ON, 'vite', {
+              'translations/fr.json': JSON.stringify(long),
+            }).cwd;
+
+          it.each([true, false])(
+            'keeps every list in one file when the minifier removes a call from one of them (a module runs when it is first imported: %s)',
+            (isLazy) => {
+              const bundle = Object.fromEntries(
+                [
+                  chunk(
+                    'assets/index.js',
+                    { '/main.js': '' },
+                    {
+                      isEntry: true,
+                      dynamicImports: ['assets/a.js', 'assets/b.js'],
+                    }
+                  ),
+                  // The minifier removes the first call of this chunk
+                  chunk(
+                    'assets/a.js',
+                    { [FILE]: read('picker', 'invoice') },
+                    { code: read('invoice') }
+                  ),
+                  chunk('assets/b.js', { [MADE]: read('picker', 'invoice') }),
+                ].map((file) => [file.fileName, file])
+              );
+              const graph: typeof GRAPH = {
+                '/main.js': { dynamic: [FILE, MADE] },
+              };
+              const cwd = inLong();
+              const build = renderBundle(bundle, true, graph, isLazy);
+              const written = filesOf(build, graph, { isLazy, cwd });
+              const kept = [...idsIn(build, 'assets/b.js').values()];
+              expect(kept).toHaveLength(2);
+              // The chunk that kept both calls reads both from one file,
+              // which a page that imports it holds
+              const holding = kept.map((id) =>
+                Object.keys(written.manifest.files).filter(
+                  (key) => id in written.read([key])
+                )
+              );
+              expect(holding[0]).toHaveLength(1);
+              expect(holding[1]).toContain(holding[0][0]);
+              expect(written.manifest.imports['assets/b.js']).toContain(
+                holding[0][0]
+              );
+              // The other chunk lists the same messages, so its own file
+              // holds the id it kept, and nothing of the call it lost
+              expect(holding[1]).toHaveLength(2);
+              const [other] = holding[1].filter((key) => key !== holding[0][0]);
+              expect(Object.keys(written.read([other]))).toEqual([kept[1]]);
+              const [left] = idsIn(build, 'assets/a.js').values();
+              expect(
+                written.read(written.manifest.imports['assets/a.js'])[left]
+              ).toBe(long[HASH.invoice]);
+              // Each chunk has its own pair of the message both still read,
+              // the same whichever chunk the bundler lists first
+              const pairs = (rendered: Rendered) =>
+                ['assets/a.js', 'assets/b.js'].map((fileName) =>
+                  pairOf(rendered, HASH.invoice, fileName)
+                );
+              expect(new Set(pairs(build)).size).toBe(2);
+              expect(
+                pairs(
+                  renderBundle(
+                    Object.fromEntries(Object.entries(bundle).reverse()),
+                    true,
+                    graph,
+                    isLazy
+                  )
+                )
+              ).toEqual(pairs(build));
+            }
+          );
+
+          it('leaves the file every page starts with as it is when only the lazy one reads another message', () => {
+            // The entry is the first, and the minifier removes its first call
+            const app = (...lazy: (keyof typeof HASH)[]) =>
+              Object.fromEntries(
+                [
+                  chunk(
+                    'assets/index.js',
+                    { [FILE]: read('picker', 'invoice') },
+                    {
+                      isEntry: true,
+                      dynamicImports: ['assets/lazy.js'],
+                      code: read('invoice'),
+                    }
+                  ),
+                  chunk('assets/lazy.js', { [MADE]: read(...lazy) }),
+                ].map((file) => [file.fileName, file])
+              );
+            const graph: typeof GRAPH = { [FILE]: { dynamic: [MADE] } };
+            const cwd = inLong();
+            const startup = (
+              bundle: ReturnType<typeof app>,
+              previous?: string
+            ) => {
+              const written = filesOf(
+                renderBundle(bundle, true, graph),
+                graph,
+                {
+                  previous,
+                  cwd,
+                }
+              );
+              const [key] = written.manifest.entries['assets/index.js'].files;
+              return {
+                name: written.manifest.files[key].fr,
+                source: written.emitted[written.manifest.files[key].fr],
+                keep: written.keep,
+              };
+            };
+            const before = startup(app('picker', 'invoice'));
+            const after = startup(app('panel', 'invoice'), before.keep());
+            expect(JSON.parse(before.source)[0]).toEqual([long[HASH.invoice]]);
+            expect(after.source).toBe(before.source);
+            expect(after.name).toBe(before.name);
+          });
+        });
+
+        it('gives two chunks their own pairs of a message when the digests of what their modules are called start alike', () => {
+          const { cwd } = createPlugins(ON, 'vite', {
+            'translations/fr.json': JSON.stringify(CATALOG),
+          });
+          // The digests of these two paths start with the same 8 characters
+          const [one, two] = ['src/m39592.js', 'src/m64811.js'].map((file) =>
+            path.join(cwd, file)
+          );
+          expect(getPairKey(HASH.picker, 'src/m39592.js')).toBe(
+            getPairKey(HASH.picker, 'src/m64811.js')
+          );
+          const bundle = Object.fromEntries(
+            [
+              chunk(
+                'assets/index.js',
+                { '/main.js': '' },
+                {
+                  isEntry: true,
+                  dynamicImports: ['assets/a.js', 'assets/b.js'],
+                }
+              ),
+              chunk('assets/a.js', { [one]: site('picker', 'invoice') }),
+              chunk('assets/b.js', { [two]: site('picker', 'panel') }),
+            ].map((file) => [file.fileName, file])
+          );
+          const graph: typeof GRAPH = { '/main.js': { dynamic: [one, two] } };
+          const build = renderBundle(bundle, true, graph);
+          expect(pairOf(build, HASH.picker, 'assets/a.js')).toBe(
+            getPairKey(HASH.picker, 'src/m39592.js')
+          );
+          expect(pairOf(build, HASH.picker, 'assets/b.js')).toBe(
+            getPairKey(HASH.picker, 'src/m64811.js', 1)
+          );
+          expectEveryIdToResolve(
+            build,
+            filesOf(build, graph, { cwd }),
+            graph,
+            true,
+            'digests',
+            {
+              isInline: () => false,
+              fileOfImport: (target) =>
+                target === one ? 'assets/a.js' : 'assets/b.js',
+            }
+          );
+        });
+
+        it.each([true, false])(
+          'shares a pair only between chunks that hold the same modules, which a call the minifier removes from one of them leaves whole (a module runs when it is first imported: %s)',
+          (isLazy) => {
+            // Two chunks of the same two modules, as a bundler that copies
+            // what two entries reach makes them
+            const modules = {
+              '/picker.js': site('picker', 'invoice'),
+              '/panel.js': site('invoice', 'panel'),
+            };
+            const bundle = Object.fromEntries(
+              [
+                chunk(
+                  'assets/index.js',
+                  { '/main.js': '' },
+                  {
+                    isEntry: true,
+                    dynamicImports: ['assets/a.js', 'assets/b.js'],
+                  }
+                ),
+                chunk('assets/a.js', modules, { facadeModuleId: '/picker.js' }),
+                // The minifier removes the calls of one message here
+                chunk('assets/b.js', modules, {
+                  facadeModuleId: '/panel.js',
+                  code: site('picker', 'panel'),
+                }),
+              ].map((file) => [file.fileName, file])
+            );
+            const graph: typeof GRAPH = {
+              '/main.js': { dynamic: ['/picker.js', '/panel.js'] },
+            };
+            const build = renderBundle(bundle, true, graph, isLazy);
+            for (const name of ['picker', 'panel'] as const) {
+              expect(pairOf(build, HASH[name], 'assets/a.js')).toBe(
+                pairOf(build, HASH[name], 'assets/b.js')
+              );
+            }
+            expectEveryIdToResolve(
+              build,
+              filesOf(build, graph, { isLazy }),
+              graph,
+              isLazy,
+              'the same modules',
+              {
+                isInline: () => false,
+                fileOfImport: (target) =>
+                  target === '/picker.js' ? 'assets/a.js' : 'assets/b.js',
+              }
+            );
+          }
+        );
 
         it('keeps the pairs of a shared chunk, and so their file, when the chunk gains a module that sorts before the ones it had', () => {
           const shared = (...more: string[]) => ({
@@ -6498,7 +6782,7 @@ globalThis.save = () => t\`Save\`;`,
         });
 
         it.each([true, false])(
-          'reads two chunks that hold one module as one for the messages that module reads first, and gives every page its call sites (a module runs when it is first imported: %s)',
+          'gives each of two chunks that hold one module its own pair of what the module reads, and every page its call sites (a module runs when it is first imported: %s)',
           (isLazy) => {
             // Both shared chunks hold the date picker, which each route reaches
             const bundle = {
@@ -6539,19 +6823,31 @@ globalThis.save = () => t\`Save\`;`,
             };
             const build = renderBundle(bundle, true, graph, isLazy);
             const written = filesOf(build, graph, { isLazy });
-            // One pair for the date picker of both chunks, and one each for
-            // the message that another module of each reads
+            // A pair of the date picker for each chunk, the first of which is
+            // named as in a build where one chunk holds the module
             expect(pairOf(build, HASH.picker, 'assets/a.js')).toBe(
-              pairOf(build, HASH.picker, 'assets/b.js')
+              getPairKey(
+                HASH.picker,
+                getPairModule('/picker.js', process.cwd())
+              )
             );
-            expect(pairOf(build, HASH.admin, 'assets/a.js')).not.toBe(
-              pairOf(build, HASH.admin, 'assets/b.js')
+            expect(pairOf(build, HASH.picker, 'assets/b.js')).toBe(
+              getPairKey(
+                HASH.picker,
+                getPairModule('/picker.js', process.cwd()),
+                1
+              )
             );
             expect(
               Object.values(written.manifest.assignment.files)
                 .flat()
                 .filter((pair) => pair.startsWith(HASH.picker))
-            ).toHaveLength(1);
+                .sort()
+            ).toEqual(
+              ['assets/a.js', 'assets/b.js']
+                .map((fileName) => pairOf(build, HASH.picker, fileName))
+                .sort()
+            );
             expectEveryIdToResolve(
               build,
               written,
