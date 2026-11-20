@@ -535,6 +535,71 @@ describe('gt-react/chunk-translations', () => {
     expect(warn.mock.calls[0][0]).toContain(warning);
   });
 
+  describe('in a build with hash minification', () => {
+    // A call site passes the name of the list of its chunk's messages, a
+    // dot, and the place of its message in that list. A file holds each of
+    // its translations once, and for each list the runs that read them: a
+    // place in the list, the place of the translation, and how many follow
+    const GREETING = ['Bonjour, ', ['name'], ' !'];
+    const MINIFIED: Files = {
+      '/assets/index-a1.fr.11111111.json': {
+        t: [
+          ['Enregistrer', GREETING],
+          { Xk3_9aQz: [0, 0, 2], b0Ye4_Hs: [4, 1, 1] },
+        ],
+        i: IMPORTED,
+      },
+      // Two runs of one list, the second after a place the file does not
+      // hold, and a message that two chunks read
+      [ORDERS_FILE]: [
+        ['Commandes', GREETING, 'Annuler'],
+        { p7Lm2QdE: [0, 0, 1, 2, 1, 2], b0Ye4_Hs: [7, 1, 1] },
+      ],
+    };
+    /** What the translations cache holds for an id, as it holds it. */
+    const held = (id: string) =>
+      getReactI18nCache().lookupTranslation(
+        'fr',
+        'Source' as never,
+        {
+          $_hash: id,
+        } as never
+      );
+
+    it('reads a file into an entry for each id, and nothing for a place no run holds', async () => {
+      serve(MINIFIED);
+      writeState();
+      await start();
+
+      expect(t({ $_hash: 'Xk3_9aQz.0' } as never)`Save`).toBe('Enregistrer');
+      expect(held('Xk3_9aQz.1')).toEqual(GREETING);
+      expect(held('b0Ye4_Hs.4')).toEqual(GREETING);
+      // A place after a run, a list of another file, and a list of no file
+      expect(t({ $_hash: 'Xk3_9aQz.2' } as never)`Cancel`).toBe('Cancel');
+      expect(held('b0Ye4_Hs.7')).toBeUndefined();
+      expect(held('p7Lm2QdE.0')).toBeUndefined();
+      expect(held('Zz9_none.0')).toBeUndefined();
+
+      await loadChunk(() => Promise.resolve(), ORDERS_CHUNK);
+      expect(
+        ['p7Lm2QdE.0', 'p7Lm2QdE.1', 'p7Lm2QdE.2', 'p7Lm2QdE.3'].map(held)
+      ).toEqual(['Commandes', undefined, GREETING, 'Annuler']);
+      expect(held('b0Ye4_Hs.7')).toEqual(GREETING);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('gives every id of a translation the one value its file holds', async () => {
+      serve(MINIFIED);
+      writeState();
+      await start();
+      // What had arrived when the locale was loaded
+      expect(held('Xk3_9aQz.1')).toBe(held('b0Ye4_Hs.4'));
+      // And what arrives later
+      await loadChunk(() => Promise.resolve(), ORDERS_CHUNK);
+      expect(held('p7Lm2QdE.2')).toBe(held('b0Ye4_Hs.7'));
+    });
+  });
+
   describe('on a page that stayed open while the app was deployed again', () => {
     // The file of each build whose name is the same in every build: what
     // names the locale's files now, and how the build assigned its messages
@@ -1491,6 +1556,37 @@ describe('gt-react/chunk-translations', () => {
         fetched.mockClear();
         await preloadedImport([])(loadRegionChunk);
         expect(fetched).not.toHaveBeenCalled();
+      });
+
+      it('with hash minification, takes from a file of that build what its own chunks still read, and no other message for a chunk the deploy changed', async () => {
+        // The Orders chunk is as it was, so its id is. The chunk that reads
+        // the title gained a message, which makes its messages another list
+        // in the build that is served now: the title's place in the page's
+        // list is the new message's place there
+        const ordersId = 'Xk3_9aQz.0';
+        const pageTitle = t({ $_hash: 'mT7cR-1v.0' } as never);
+        const fetched = await startOpen({
+          ...DEPLOYED,
+          [NEXT_SHARED]: [
+            ['Commandes, encore', 'Nouveau', 'Aperçu, encore'],
+            { Xk3_9aQz: [0, 0, 1], b0Ye4_Hs: [0, 1, 2] },
+          ],
+        });
+
+        await loadRegionChunk(
+          () => Promise.resolve(),
+          0,
+          (start) => start(),
+          [ORDERS_CHUNK]
+        );
+        expect(urls(fetched)).toContain(NEXT_SHARED);
+        expect(t({ $_hash: ordersId } as never)`Orders`).toBe(
+          'Commandes, encore'
+        );
+        // A miss, which renders the source: not the message that has the
+        // same place in the list of that build
+        expect(pageTitle`Overview`).toBe('Overview');
+        expect(t({ $_hash: 'b0Ye4_Hs.0' } as never)`New`).toBe('Nouveau');
       });
 
       it('takes a file of that build for another file than the one the page has by the same key', async () => {

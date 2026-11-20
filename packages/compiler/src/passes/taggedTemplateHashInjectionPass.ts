@@ -32,7 +32,7 @@ export function taggedTemplateHashInjectionPass(
         return hash;
       }
     : undefined;
-  // A build with short ids keeps what a template hashed at runtime can read
+  // A build with hash minification keeps what a template hashed at runtime can read
   const onRuntimeTree = state.settings.chunkTranslations?.runtimeReaders
     ? (tree: MessageTree | undefined) => recordRuntimeReader(tree, state)
     : undefined;

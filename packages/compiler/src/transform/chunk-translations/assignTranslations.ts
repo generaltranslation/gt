@@ -1,12 +1,15 @@
 import path from 'node:path';
 import type { ChunkImportMap } from './chunkImportMap';
 import { IMPORTED_CHUNKS_PLACEHOLDER } from './resolveChunkTranslations';
-import type { ShortIds } from './shortIds';
+import type { MinifiedIdReader } from './hashMinification';
 
 /** A chunk the bundler wrote, with the messages its final code can render. */
 export type AssignedChunk = {
   fileName: string;
-  /** The hashes of the messages left in its code, see findChunkHashes */
+  /**
+   * The hashes of the messages left in its code, see findChunkHashes. In a
+   * build with hash minification, the ids left in its code, see findChunkIds.
+   */
   hashes: string[];
   /** The files of the chunks it imports statically */
   imports: string[];
@@ -73,18 +76,18 @@ export function getChunkKey(fileName: string): string {
  * tree-shaken or minified away took its hash with it, so only messages that
  * can render are found.
  *
- * In a build with short ids the call sites it splits pass those, so only
- * they are read, each back into its hash. A call site that still passes a
- * hash there reads the unsplit file.
+ * In a build with hash minification the call sites it splits pass ids, so
+ * only they are read, each back into its hash. A call site that still
+ * passes a hash there reads the unsplit file.
  */
 export function findChunkHashes(
   code: string,
   hashes: ReadonlySet<string>,
-  shortIds?: ShortIds
+  ids?: MinifiedIdReader
 ): string[] {
   const found = new Set<string>();
-  for (const match of code.matchAll(shortIds?.argument ?? HASH_ARGUMENT)) {
-    const hash = shortIds ? shortIds.hashes.get(match[2]) : match[2];
+  for (const match of code.matchAll(ids?.argument ?? HASH_ARGUMENT)) {
+    const hash = ids ? ids.hashes.get(match[2]) : match[2];
     if (hash !== undefined && hashes.has(hash)) found.add(hash);
   }
   return [...found].sort();

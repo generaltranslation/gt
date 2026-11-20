@@ -1,6 +1,7 @@
 import type {
   ChunkTranslationsState,
   InitializeConfig,
+  MinifiedTranslations,
   PreloadChunk,
   Translations,
 } from './state';
@@ -165,7 +166,7 @@ function requestRegionFile(
   const url = getFileUrl(state, f, locale, hash);
   const requested = state.g?.[key];
   if (requested) state.g![key] = undefined;
-  const read = (translations: Translations) =>
+  const read = (translations: Translations | MinifiedTranslations) =>
     register(state, locale, translations);
   if (c === undefined || isRetry) {
     return request(state, key, url, requested, read);

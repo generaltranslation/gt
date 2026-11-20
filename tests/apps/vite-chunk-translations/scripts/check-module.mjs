@@ -23,19 +23,15 @@ import { dirname, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { chromium } from 'playwright-core';
+import { entriesOf, heldBy, isMinifiedId } from './minifiedTranslations.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = join(root, '.check');
-// CHECK_SHORT_IDS (`true` or a number of characters) builds with
-// experimentalChunkTranslationsShortIds: the files are then keyed by the
-// short ids of their messages, and the manifest still lists hashes
-const SHORT_IDS = process.env.CHECK_SHORT_IDS ?? '';
-const SHORT_ID_LENGTH = SHORT_IDS === 'true' ? 8 : Number(SHORT_IDS);
-/** The key of a message in the files of the split. */
-const keyOf = (hash) =>
-  SHORT_IDS
-    ? Buffer.from(hash, 'hex').toString('base64url').slice(0, SHORT_ID_LENGTH)
-    : hash;
+// CHECK_MINIFY_HASHES=true builds with hash minification
+// (experimentalChunkTranslationsMinifyHashes): a message then has an id in
+// each chunk that reads it, a file holds each translation once for all of
+// them, and the manifest still lists hashes
+const MINIFY_HASHES = process.env.CHECK_MINIFY_HASHES === 'true';
 // gt-react's default; the app waits this long for a file that never arrives
 const TIMEOUT_MS = 10_000;
 // How long a check holds a translations file back
@@ -102,7 +98,7 @@ function build(name, { lazy, shared, requestCost }, env = {}) {
         GT_CHUNK_TRANSLATIONS_SPLIT: 'module',
         GT_CHUNK_TRANSLATIONS_NAMING: '',
         GT_CHUNK_TRANSLATIONS_PREVIOUS: '',
-        GT_CHUNK_TRANSLATIONS_SHORT_IDS: SHORT_IDS,
+        GT_CHUNK_TRANSLATIONS_MINIFY_HASHES: String(MINIFY_HASHES),
         GT_CHUNK_TRANSLATIONS_REQUEST_COST:
           requestCost === undefined ? '' : String(requestCost),
         CHECK_GT_LOG: 'debug',
@@ -620,7 +616,11 @@ function readBuild(outDir) {
       `/${manifest.unsplit[locale]}`,
     ],
     /** What a file of translations holds. */
-    contentOf: (path) => JSON.parse(readFileSync(join(outDir, path), 'utf8')),
+    contentOf: (path) =>
+      entriesOf(JSON.parse(readFileSync(join(outDir, path), 'utf8'))),
+    /** The translations a file writes out. */
+    heldBy: (path) =>
+      heldBy(JSON.parse(readFileSync(join(outDir, path), 'utf8'))),
   };
 }
 
@@ -843,7 +843,7 @@ async function checkVariant(name, variant) {
   prefix = `[${name}] `;
   const off = build(`module-${name}-off`, variant, {
     GT_CHUNK_TRANSLATIONS: 'false',
-    GT_CHUNK_TRANSLATIONS_SHORT_IDS: '',
+    GT_CHUNK_TRANSLATIONS_MINIFY_HASHES: '',
   });
   const on = build(`module-${name}`, variant);
   const built = readBuild(on.outDir);
@@ -921,15 +921,42 @@ async function checkVariant(name, variant) {
     }
     const unsplit = Object.keys(built.contentOf(built.unsplitOf(locale)));
     const assigned = Object.values(manifest.assignment.files).flat();
+    if (MINIFY_HASHES) {
+      // A file holds each of its messages once, for the id of every chunk
+      // that reads it, so by what it holds and not by a key
+      const misplaced = Object.entries(manifest.assignment.files).filter(
+        ([id, hashes]) => {
+          const held = built
+            .heldBy(`/${manifest.files[`assets/gt-${id}`][locale]}`)
+            .map((translation) => JSON.stringify(translation));
+          const expected = hashes.map((hash) =>
+            JSON.stringify(CATALOG[locale][hash])
+          );
+          return (
+            held.length !== new Set(held).size ||
+            !expected.every((translation) => held.includes(translation)) ||
+            !held.every((translation) => expected.includes(translation))
+          );
+        }
+      );
+      check(
+        `${locale}: no id is in two files, and every file holds exactly its messages, each once`,
+        [...counts.values()].every((count) => count === 1) &&
+          counts.size >= assigned.length &&
+          misplaced.length === 0 &&
+          [...counts.keys()].every(isMinifiedId) &&
+          unsplit.every((hash) => /^[0-9a-f]{16}$/.test(hash)),
+        `${counts.size} ids of ${assigned.length} messages in ${Object.keys(manifest.files).length} files, ${unsplit.length} unsplit`
+      );
+      continue;
+    }
     check(
       `${locale}: no message is in two files, and every assigned message is in one`,
       [...counts.values()].every((count) => count === 1) &&
         counts.size === assigned.length &&
-        assigned.every((hash) => counts.has(keyOf(hash))) &&
-        (!SHORT_IDS ||
-          [...counts.keys()].every((key) => key.length === SHORT_ID_LENGTH)) &&
+        assigned.every((hash) => counts.has(hash)) &&
         unsplit.every((hash) => /^[0-9a-f]{16}$/.test(hash)) &&
-        !unsplit.some((hash) => counts.has(keyOf(hash))),
+        !unsplit.some((hash) => counts.has(hash)),
       `${counts.size} messages in ${Object.keys(manifest.files).length} files, ${unsplit.length} unsplit`
     );
   }

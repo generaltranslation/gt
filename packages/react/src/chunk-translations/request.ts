@@ -1,5 +1,10 @@
 import { getReactI18nCache } from '@generaltranslation/react-core/pure';
-import type { ChunkTranslationsState, EntryFile, Translations } from './state';
+import type {
+  ChunkTranslationsState,
+  EntryFile,
+  MinifiedTranslations,
+  Translations,
+} from './state';
 import {
   createFailedWarning,
   createMissingLocaleWarning,
@@ -49,12 +54,30 @@ export function getFileUrl(
   return `${state.b || ''}${file}.${locale}.${hash}.json`;
 }
 
+/**
+ * Keeps what a file holds until the translations cache takes it. A file of
+ * a build with hash minification is read into an entry per id, each of
+ * which holds the file's one copy of its translation.
+ */
 export function register(
   state: ChunkTranslationsState,
   locale: string,
-  translations: Translations | undefined
+  translations: Translations | MinifiedTranslations | undefined
 ): void {
-  Object.assign(((state.t ||= {})[locale] ||= {}), translations);
+  const arrived = ((state.t ||= {})[locale] ||= {});
+  if (!Array.isArray(translations)) {
+    Object.assign(arrived, translations);
+    return;
+  }
+  const [held, lists] = translations;
+  for (const name in lists) {
+    const runs = lists[name];
+    for (let run = 0; run < runs.length; run += 3) {
+      for (let next = 0; next < runs[run + 2]; next++) {
+        arrived[`${name}.${runs[run] + next}`] = held[runs[run + 1] + next];
+      }
+    }
+  }
 }
 
 /**

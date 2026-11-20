@@ -9,7 +9,7 @@
     "translate": "node scripts/pseudo-translate.mjs",
     "check": "node scripts/check.mjs && node scripts/check.mjs map && node scripts/check-module.mjs",
     "check:templates": "CHECK_PRECOMPUTE=false pnpm run check",
-    "check:short-ids": "CHECK_SHORT_IDS=true pnpm run check",
+    "check:minify-hashes": "CHECK_MINIFY_HASHES=true pnpm run check",
     "check:install": "playwright-core install chromium-headless-shell",
     "check:import-map": "CHECK_IMPORT_MAP=true pnpm run check",
     "check:import-map:prefixed": "CHECK_IMPORT_MAP=prefixed pnpm run check",

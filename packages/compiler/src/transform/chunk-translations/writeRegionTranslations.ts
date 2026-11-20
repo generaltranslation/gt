@@ -34,7 +34,13 @@ import {
   type ChunkTranslations,
   type RegionSplit,
 } from './resolveChunkTranslations';
-import { createShortIds } from './shortIds';
+import {
+  findPassedIds,
+  isEmptyTranslations,
+  pickMinifiedTranslations,
+  readMinifiedIds,
+  readPlaceholders,
+} from './hashMinification';
 import { renderStartupScript } from './startupScript';
 import {
   getUnsplitTranslations,
@@ -271,13 +277,14 @@ export function renderRegionTranslations(
     /** In a build with a chunk import map, the names its imports are written with */
     importedNames?: ChunkImportMap;
   },
-  build: Pick<ChunkTranslations, 'defaultLocale' | 'locales' | 'shortIdLength'>,
+  build: Pick<ChunkTranslations, 'defaultLocale' | 'locales' | 'minifiedIds'>,
   table: TranslationsTable,
   {
     base,
     assetsDir,
     samples,
     unsplit,
+    passedIds,
   }: {
     /** The URL the build's files are served from */
     base: string;
@@ -286,6 +293,8 @@ export function renderRegionTranslations(
     samples: [number, number][];
     /** The translations of each locale that has an unsplit file, see getUnsplitTranslations */
     unsplit: Record<string, Record<string, unknown>>;
+    /** In a build with hash minification: every id its chunks pass for each message, see findPassedIds */
+    passedIds?: ReadonlyMap<string, readonly string[]>;
   }
 ): {
   files: { fileName: string; source: string }[];
@@ -337,10 +346,17 @@ export function renderRegionTranslations(
   for (const locale of locales) {
     const hashes: Record<string, string> = (fileHashes[locale] = {});
     for (const [id, messages] of assignment.files) {
+      // A message is in one file, once, for the id of each chunk that reads it
       const source = JSON.stringify(
-        pickTranslations(table[locale], [...messages], build.shortIdLength)
+        passedIds && build.minifiedIds
+          ? pickMinifiedTranslations(
+              table[locale],
+              [...messages].flatMap((hash) => passedIds.get(hash) ?? []),
+              build.minifiedIds
+            )
+          : pickTranslations(table[locale], [...messages])
       );
-      if (source === '{}') continue;
+      if (isEmptyTranslations(source)) continue;
       const key = getKey(id);
       hashes[key] = getFileHash(source);
       const fileName = getFileName(key, locale, hashes[key]);
@@ -539,11 +555,12 @@ export function writeRegionTranslations(
       ? undefined
       : readPreviousAssignment(build.regions.previous);
 
+  const ids =
+    build.minifiedIds &&
+    readMinifiedIds(build.minifiedIds, build, table, chunks);
   const { graph } = createRegionGraph(chunks, getModuleInfo, build.hashes, {
     isLazy,
-    ...(build.shortIdLength !== undefined && {
-      shortIds: createShortIds(build.shortIdLength, build, table),
-    }),
+    ...(ids && { ids, moduleIds: readPlaceholders(build.hashes) }),
   });
   const sizes = getMessageSizes(table, build.hashes);
   const sampled = build.locales.find((locale) => table[locale]);
@@ -596,7 +613,13 @@ export function writeRegionTranslations(
     },
     build,
     table,
-    { base, assetsDir, samples, unsplit: getUnsplitTranslations(table, build) }
+    {
+      base,
+      assetsDir,
+      samples,
+      unsplit: getUnsplitTranslations(table, build),
+      ...(ids && { passedIds: findPassedIds(chunks, ids) }),
+    }
   );
   for (const file of files) emitFile({ type: 'asset', ...file });
   emitFile({

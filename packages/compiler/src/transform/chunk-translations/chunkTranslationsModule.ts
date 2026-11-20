@@ -16,7 +16,7 @@ import {
   type ChunkTranslationsImport,
 } from './resolveChunkTranslations';
 import type { MessageTree } from '@generaltranslation/icu';
-import { createShortId, getMessageShape, isComputedHash } from './shortIds';
+import { createIdPlaceholder, getMessageShape } from './hashMinification';
 
 /** What a file imports from the entry; set on files that can import it. */
 export type ChunkTranslationsFile = { imports: Set<ChunkTranslationsImport> };
@@ -26,6 +26,9 @@ const INITIALIZE_SPA = 'initializeGTSPA';
 // The option an app gives it the loader of its catalogs in
 const LOAD_TRANSLATIONS = 'loadTranslations';
 const INITIALIZE_SPA_LOCAL = `${CHUNK_TRANSLATIONS_LOCAL_PREFIX}initialize_spa`;
+
+// The hashes the compiler computes, which the build finds again in its chunks
+const COMPUTED_HASH = /^[0-9a-f]{16}$/;
 
 // A CommonJS module cannot take the import of the entry
 const COMMONJS_REFERENCE = /\b(?:require|module|exports)\b/;
@@ -42,11 +45,12 @@ export function canImportChunkTranslations(
  * Records the hash a call site looks up: a hash the compiler computed is read
  * from the file of the chunk the call site ends up in, any other from the
  * unsplit file. Returns what the compiler writes at that call site: the
- * hash, or in a build with short ids the short id of a computed hash.
+ * hash, or in a build with hash minification the placeholder of the id that
+ * a computed hash gets once its chunk is rendered.
  *
- * `tree` is the message of a `t` template. A build with short ids also keeps
- * it in the unsplit file under its hash when a call site that hashes its
- * message at runtime can read it (see recordRuntimeReader).
+ * `tree` is the message of a `t` template. A build with hash minification
+ * also keeps it in the unsplit file under its hash when a call site that
+ * hashes its message at runtime can read it (see recordRuntimeReader).
  */
 export function recordChunkHash(
   hash: string,
@@ -55,12 +59,12 @@ export function recordChunkHash(
 ): string {
   const build = state.settings.chunkTranslations;
   if (!build) return hash;
-  if (!isComputedHash(hash)) {
+  if (!COMPUTED_HASH.test(hash)) {
     build.unsplit.add(hash);
     return hash;
   }
   build.hashes.add(hash);
-  if (build.shortIdLength === undefined) return hash;
+  if (!build.minifiedIds) return hash;
   const readers = build.runtimeReaders;
   if (readers && tree !== undefined) {
     const shape = getMessageShape(tree);
@@ -69,16 +73,16 @@ export function recordChunkHash(
     else readers.compiled.set(shape, new Set([hash]));
     if (readers.shapes.has(shape)) build.unsplit.add(hash);
   }
-  return createShortId(hash, build.shortIdLength);
+  return createIdPlaceholder(hash);
 }
 
 /**
  * Records a hash that a call site passes as its author wrote it. A build
- * with short ids finds only the ids it wrote in its chunks, so there the
- * translation stays in the unsplit file.
+ * with hash minification finds only the ids it wrote in its chunks, so
+ * there the translation stays in the unsplit file.
  */
 export function recordWrittenHash(hash: string, state: TransformState): void {
-  if (state.settings.chunkTranslations?.shortIdLength === undefined) {
+  if (!state.settings.chunkTranslations?.minifiedIds) {
     recordChunkHash(hash, state);
   } else {
     keepUnsplit(hash, state);
@@ -95,9 +99,9 @@ export function keepUnsplit(hash: string, state: TransformState): void {
 
 /**
  * Records a call site that hashes its message when it runs, in a build with
- * short ids. Such a call site reads by hash, so every compiled message it
- * can read stays in the unsplit file under its hash, next to its short id in
- * a chunk's file: those of the shape of `tree`, which is the tree the call
+ * hash minification. Such a call site reads by hash, so every compiled
+ * message it can read stays in the unsplit file under its hash, next to its
+ * id in a chunk's file: those of the shape of `tree`, which is the tree the call
  * site builds when its values are primitives or `{ name: value }` objects,
  * whatever its options are. Without a tree, the build names the file among
  * those it cannot say that of.
@@ -188,7 +192,8 @@ export function finishChunkTranslationsFile(
     createEntryImport(
       file.imports,
       state.settings.chunkTranslations?.naming,
-      state.settings.chunkTranslations?.regions !== undefined
+      state.settings.chunkTranslations?.regions !== undefined,
+      state.settings.chunkTranslations?.minifiedIds !== undefined
     )
   );
   return true;
@@ -239,13 +244,16 @@ function getImportedName(specifier: t.ImportSpecifier): string {
 function createEntryImport(
   imports: Iterable<ChunkTranslationsImport>,
   naming: ChunkTranslationsNaming = defaultChunkTranslationsNaming,
-  splitsByModule = false
+  splitsByModule = false,
+  minifiesHashes = false
 ): t.ImportDeclaration {
   return t.importDeclaration(
     [...imports].map((kind) =>
       t.importSpecifier(
         t.identifier(CHUNK_TRANSLATIONS_IMPORTS[kind].local),
-        t.identifier(getEntryExport(kind, naming, splitsByModule))
+        t.identifier(
+          getEntryExport(kind, naming, splitsByModule, minifiesHashes)
+        )
       )
     ),
     t.stringLiteral(CHUNK_TRANSLATIONS_SOURCE)
@@ -263,7 +271,8 @@ export function wrapDynamicImports(
   code: string,
   id: string,
   naming: ChunkTranslationsNaming = defaultChunkTranslationsNaming,
-  splitsByModule = false
+  splitsByModule = false,
+  minifiesHashes = false
 ): { code: string; map: unknown } | undefined {
   const { local } = CHUNK_TRANSLATIONS_IMPORTS.load;
   if (!code.includes('import(') || code.includes(local)) return undefined;
@@ -305,7 +314,9 @@ export function wrapDynamicImports(
     },
   });
   if (!wrapped) return undefined;
-  ast.program.body.unshift(createEntryImport(['load'], naming, splitsByModule));
+  ast.program.body.unshift(
+    createEntryImport(['load'], naming, splitsByModule, minifiesHashes)
+  );
   const output = generate(
     ast,
     { retainLines: true, sourceMaps: true, sourceFileName: id },

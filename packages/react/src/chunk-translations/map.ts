@@ -2,6 +2,7 @@ import type {
   ChunkTranslationsState,
   EntryFile,
   InitializeConfig,
+  MinifiedTranslations,
   PreloadChunk,
   Translations,
 } from './state';
@@ -114,7 +115,8 @@ function requestMappedFile(
     key,
     getFileUrl(state, state.f, locale, hash),
     requested,
-    (translations: Translations) => register(state, locale, translations),
+    (translations: Translations | MinifiedTranslations) =>
+      register(state, locale, translations),
     isRetry
       ? undefined
       : () =>

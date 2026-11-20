@@ -1,6 +1,6 @@
 import { gzipSync } from 'node:zlib';
 import { findChunkHashes } from './assignTranslations';
-import type { ShortIds } from './shortIds';
+import type { MinifiedIdReader } from './hashMinification';
 import type { RegionGraph, RegionModule } from './assignTranslationsByRegion';
 
 /** A chunk of the bundle, as Rollup, Rolldown and Vite pass it to `generateBundle`. */
@@ -87,17 +87,20 @@ export function createRegionGraph(
     isLazy: boolean;
     /** The hashes of the call sites each module runs when it is initialised */
     initialHashes?: ReadonlyMap<string, readonly string[]>;
-    /** Set in a build whose call sites pass short ids */
-    shortIds?: ShortIds;
+    /** Set in a build with hash minification, whose call sites pass ids */
+    ids?: MinifiedIdReader;
+    /**
+     * Set in such a build too: the code of a module holds placeholders, and
+     * not the ids of its chunk's final code
+     */
+    moduleIds?: MinifiedIdReader;
   }
 ): { graph: RegionGraph; unattributed: number } {
   const moduleHashes = new Map<string, Set<string>>();
   const chunksOfModule = new Map<string, RegionChunk[]>();
   let unattributed = 0;
   for (const chunk of chunks) {
-    const surviving = new Set(
-      findChunkHashes(chunk.code, hashes, options.shortIds)
-    );
+    const surviving = new Set(findChunkHashes(chunk.code, hashes, options.ids));
     const found = new Set<string>();
     const ids = Object.keys(chunk.modules);
     for (const id of ids) {
@@ -108,7 +111,11 @@ export function createRegionGraph(
       else chunksOfModule.set(id, [chunk]);
       const { code } = chunk.modules[id];
       if (!code) continue;
-      for (const hash of findChunkHashes(code, surviving, options.shortIds)) {
+      for (const hash of findChunkHashes(
+        code,
+        surviving,
+        options.moduleIds ?? options.ids
+      )) {
         held.add(hash);
         found.add(hash);
       }

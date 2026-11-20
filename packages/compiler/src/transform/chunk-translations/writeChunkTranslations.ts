@@ -26,7 +26,12 @@ import {
   CHUNK_TRANSLATIONS_MANIFEST,
   type ChunkTranslations,
 } from './resolveChunkTranslations';
-import { createShortId, createShortIds } from './shortIds';
+import {
+  findChunkIds,
+  isEmptyTranslations,
+  pickMinifiedTranslations,
+  readMinifiedIds,
+} from './hashMinification';
 import { renderStartupScript } from './startupScript';
 import {
   getUnsplitTranslations,
@@ -259,13 +264,11 @@ function getContentHash(source: string): string {
 
 /**
  * The translations of `hashes` that `locale` has, in their order, keyed as
- * the call sites pass them: by hash, or by the short id of `shortIdLength`
- * characters.
+ * the call sites pass them.
  */
 export function pickTranslations(
   translations: Record<string, unknown>,
-  hashes: string[],
-  shortIdLength?: number
+  hashes: string[]
 ): Record<string, unknown> {
   const picked: Record<string, unknown> = {};
   for (const hash of hashes) {
@@ -273,9 +276,7 @@ export function pickTranslations(
       Object.prototype.hasOwnProperty.call(translations, hash) &&
       translations[hash] != null
     ) {
-      picked[
-        shortIdLength === undefined ? hash : createShortId(hash, shortIdLength)
-      ] = translations[hash];
+      picked[hash] = translations[hash];
     }
   }
   return picked;
@@ -316,7 +317,7 @@ export function pickTranslations(
  */
 export function renderChunkTranslations(
   assignment: TranslationAssignment,
-  build: Pick<ChunkTranslations, 'defaultLocale' | 'locales' | 'shortIdLength'>,
+  build: Pick<ChunkTranslations, 'defaultLocale' | 'locales' | 'minifiedIds'>,
   table: TranslationsTable,
   base: string,
   unsplit?: {
@@ -366,16 +367,18 @@ export function renderChunkTranslations(
     assignment.imports,
     assignment.importedNames
   );
+  // With hash minification the assignment is of ids, of which a message has
+  // one in each chunk that reads it, and a file holds each translation once
+  const { minifiedIds } = build;
+  const pick = (translations: Record<string, unknown>, keys: string[]) =>
+    minifiedIds
+      ? pickMinifiedTranslations(translations, keys, minifiedIds)
+      : pickTranslations(translations, keys);
   const tokens: Record<string, string> = {};
   for (const locale of locales) {
     const sources = [...assignment.files].map(
       ([key, hashes]) =>
-        [
-          key,
-          JSON.stringify(
-            pickTranslations(table[locale], hashes, build.shortIdLength)
-          ),
-        ] as const
+        [key, JSON.stringify(pick(table[locale], hashes))] as const
     );
     // The map holds the files each import needs; without one, the entry's file does
     const entrySources = [...assignment.entries].map(
@@ -383,7 +386,7 @@ export function renderChunkTranslations(
         [
           entry,
           JSON.stringify({
-            t: pickTranslations(table[locale], hashes, build.shortIdLength),
+            t: pick(table[locale], hashes),
             ...(imported && !maps && { i: imported }),
           }),
         ] as const
@@ -392,7 +395,7 @@ export function renderChunkTranslations(
       const hashes: Record<string, string> = {};
       for (const [key, source] of sources) {
         // A chunk's file is written when it holds something
-        if (source === '{}') continue;
+        if (isEmptyTranslations(source)) continue;
         hashes[key] = getContentHash(source);
         (manifest.files[key] ??= {})[locale] = write(
           getFileName(maps.files, locale, hashes[key]),
@@ -611,10 +614,9 @@ export function writeChunkTranslations(
   );
   const importMap = readChunkImportMap(bundle, build.importMap);
   const table = loadChunkTranslationsTable(gtFiles, build);
-  const shortIds =
-    build.shortIdLength === undefined
-      ? undefined
-      : createShortIds(build.shortIdLength, build, table);
+  const ids =
+    build.minifiedIds &&
+    readMinifiedIds(build.minifiedIds, build, table, chunks);
   const assigned: AssignedChunk[] = chunks.map(
     ({ fileName, code, imports, dynamicImports, isEntry }) => {
       const loaded = findImportedChunks({ fileName, code }, importMap).filter(
@@ -622,7 +624,11 @@ export function writeChunkTranslations(
       );
       return {
         fileName,
-        hashes: findChunkHashes(code, build.hashes, shortIds),
+        // With hash minification a message has an id in each chunk that
+        // reads it, so there the ids are what is assigned to files
+        hashes: ids
+          ? findChunkIds(code, ids)
+          : findChunkHashes(code, build.hashes),
         imports,
         dynamicImports: [...new Set([...dynamicImports, ...loaded])],
         isEntry,
