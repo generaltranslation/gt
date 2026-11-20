@@ -236,6 +236,7 @@ export type UploadOptions = {
   apiKey?: string;
   projectId?: string;
   defaultLocale?: string;
+  dryRun?: boolean;
 };
 
 export type GitSetupOptions = {

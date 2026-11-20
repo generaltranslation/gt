@@ -8,7 +8,12 @@ import { runEnqueueWorkflow } from '../../workflows/enqueue.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { noFilesError } from '../../console/index.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
-import { exitSync, logErrorAndExit } from '../../console/logging.js';
+import {
+  exitSync,
+  logCollectedFiles,
+  logErrorAndExit,
+} from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { warnManualReviewSetup } from '../../translation/reviewSetupWarning.js';
 
 /**
@@ -31,7 +36,7 @@ export async function handleEnqueue(
   }
 
   // Collect the data for all files we need to enqueue
-  const { files, inlineLibrary } = await collectFiles(
+  const { files, reactComponents, inlineLibrary } = await collectFiles(
     options,
     settings,
     library
@@ -39,6 +44,13 @@ export async function handleEnqueue(
 
   // Point at dashboard review setup when uploading review-gated content
   await warnManualReviewSetup(settings, files);
+
+  // Dry run
+  if (options.dryRun) {
+    logger.success(`Dry run: No translations were enqueued.`);
+    logCollectedFiles(files, reactComponents, inlineLibrary);
+    return [];
+  }
 
   return runEnqueueWorkflow({ files, options, settings, inlineLibrary });
 }
