@@ -85,8 +85,9 @@ export function dedupeUpdates(updates: Updates): void {
     }
   }
 
-  const mergedUpdates = [...mergedByHash.values(), ...noHashUpdates];
-  updates.splice(0, updates.length, ...mergedUpdates);
+  updates.length = 0;
+  for (const update of mergedByHash.values()) updates.push(update);
+  for (const update of noHashUpdates) updates.push(update);
 }
 
 /**
