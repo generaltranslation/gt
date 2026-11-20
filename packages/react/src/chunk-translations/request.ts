@@ -54,7 +54,10 @@ export function readLists(
   state.il = undefined;
   const waits = (state.wt ||= [0]);
   waits[2] = true;
-  for (const key in unlisted) void unlisted[key]();
+  for (const key in unlisted) {
+    // What stands in for a file that is gone is in time, and added here
+    void unlisted[key]().then(() => addArrived(state));
+  }
   waits[2] = false;
 }
 
@@ -179,7 +182,11 @@ export function request<F extends object>(
     const inTime = waits[0];
     // Late from the start for what has run already
     let late = !!waits[2];
-    const report = () => console.warn(createTimeoutWarning(url, timeout));
+    let reported = false;
+    const report = () => {
+      reported = true;
+      console.warn(createTimeoutWarning(url, timeout));
+    };
     let timer = setTimeout(() => {
       late = true;
       if (wait) {
@@ -198,7 +205,7 @@ export function request<F extends object>(
       requests[key] = undefined;
       resolve(false);
     };
-    (requested || fetchJson(url)).then(
+    const reading = (requested || fetchJson(url)).then(
       (file) => {
         if (!file || typeof file !== 'object') {
           fail('The file is not a JSON object');
@@ -232,17 +239,19 @@ export function request<F extends object>(
         void recovered.then((arrived) => {
           if (arrived === undefined) {
             missing[url] = true;
-            if (!late) fail(details);
-          } else if (late) {
-            clearTimeout(timer);
-            if (arrived) addArrived(state);
+            // A file is reported once, as late or as failed
+            if (!reported) fail(details);
           } else {
             clearTimeout(timer);
+            // Nothing waits for what stands in for a late file
+            if (late && arrived) addArrived(state);
             resolve(arrived);
           }
         });
       }
     );
+    // Whatever reading it throws, the request settles
+    void reading.catch((error: unknown) => fail(String(error)));
   }));
 }
 

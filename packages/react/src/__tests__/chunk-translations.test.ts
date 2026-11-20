@@ -13,6 +13,7 @@ import {
   type ChunkTranslationsState,
 } from '../chunk-translations';
 import { resolveChunkUrl } from '../chunk-translations/gate';
+import { request } from '../chunk-translations/request';
 import { getReactI18nCache, t } from '@generaltranslation/react-core/pure';
 import { T } from '@generaltranslation/react-core/components';
 import { useGT, useMessages } from '@generaltranslation/react-core/hooks';
@@ -645,6 +646,114 @@ describe('gt-react/chunk-translations', () => {
 
     expect(orders()).toBe('Commandes');
     expect(messages.renders()).toBe(1);
+  });
+
+  describe('the request of a file', () => {
+    const FILE = '/assets/Orders-b2.fr.22222222.json';
+    const after =
+      <V>(value: V) =>
+      () =>
+        new Promise<V>((resolve) => setTimeout(() => resolve(value), 3000));
+    const missing = () =>
+      Promise.resolve(new Response('Not found', { status: 404 }));
+    // What the page's state says of its waits when the file is requested
+    const WAITS: [string, ChunkTranslationsState['wt']][] = [
+      ['that is waited for', undefined],
+      ['that is not waited for', [0, 0]],
+      ['of an import that has run', [0, undefined, true]],
+    ];
+    // What the page is warned of when the file is not there in time
+    const LATE = 'did not load within 2000 ms';
+    const FAILED = 'Could not load the translations';
+    type Outcome = [
+      name: string,
+      file: Files[string],
+      warning: string | undefined,
+      recover?: () => Promise<boolean | undefined>,
+      read?: () => void,
+    ];
+    const OUTCOMES: Outcome[] = [
+      ['a file that arrives at once', {}, undefined],
+      ['a file that arrives after the timeout', slow({}, 3000), LATE],
+      ['a response that never ends', () => new Promise(() => {}), LATE],
+      [
+        'a host that fails',
+        () => Promise.resolve(new Response('Busy', { status: 503 })),
+        FAILED,
+      ],
+      [
+        'a missing file that nothing stands in for',
+        missing,
+        FAILED,
+        () => Promise.resolve(undefined),
+      ],
+      [
+        'a missing file that nothing stands in for, known after the timeout',
+        missing,
+        LATE,
+        after(undefined),
+      ],
+      [
+        'a missing file that another stands in for',
+        missing,
+        undefined,
+        () => Promise.resolve(true),
+      ],
+      [
+        'a missing file that another stands in for after the timeout',
+        missing,
+        LATE,
+        after(true),
+      ],
+      [
+        'a file whose reading throws',
+        {},
+        FAILED,
+        undefined,
+        () => {
+          throw new TypeError('Not what a build writes');
+        },
+      ],
+    ];
+
+    it.each(
+      WAITS.flatMap(([waited, wt]) =>
+        OUTCOMES.map(
+          ([name, file, warning, recover, read]) =>
+            [waited, name, file, warning, recover, read, wt] as const
+        )
+      )
+    )(
+      '%s settles with %s',
+      async (_waited, _name, file, warning, recover, read, wt) => {
+        serve({ [FILE]: file });
+        vi.useFakeTimers();
+        const state: ChunkTranslationsState = { w: 2000, wt: wt && [...wt] };
+        let settled: boolean | undefined;
+        void request(
+          state,
+          'file',
+          FILE,
+          undefined,
+          read ?? (() => {}),
+          recover
+        ).then((arrived) => (settled = arrived));
+
+        // No later than its timeout, whatever becomes of it afterwards
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(settled).toBe(warning === undefined);
+        // Nor does the next import wait for it for good
+        await vi.advanceTimersByTimeAsync(3000);
+        const kept = state.r!.file;
+        expect(
+          kept && (await Promise.race([kept, Promise.resolve('pending')]))
+        ).not.toBe('pending');
+        // And it is reported once, as late or as failed
+        expect(warn.mock.calls.map(([reported]) => reported)).toEqual(
+          warning === undefined ? [] : [expect.stringContaining(warning)]
+        );
+      }
+    );
   });
 
   describe('on a host that is slow', () => {
@@ -1330,6 +1439,30 @@ describe('gt-react/chunk-translations', () => {
         [file('c0000000')]: {},
         [file('d0000000')]: {},
       };
+
+      it('settles the request of a missing file that an import asked for after it ran, so the next import of the chunk runs', async () => {
+        const fetched = serve({ ...DEPLOYED_MAP, [MAP]: slow(OWN, 3000) });
+        writeOpen({ f: 'assets/gt', k: 'assets/gt-map', w: 2000 });
+        vi.useFakeTimers();
+        await initializeMappedChunkTranslations(initializeGTSPA, CONFIG);
+        const first = preloadedImport([])(loadMappedChunk);
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(await first).toEqual({ evaluated: 'Orders' });
+        const messages = mount(ORDERS, 'Orders');
+
+        // The map arrives, the files it names are gone, and the names and
+        // the map of the build that is served now are there at once
+        await act(() => vi.advanceTimersByTimeAsync(1000));
+        expect(urls(fetched)).toContain(file('a1111111'));
+        expect(messages.text()).toBe(
+          'Commandes, encore | Commandes, encore | Commandes, encore'
+        );
+
+        let ran = false;
+        void preloadedImport([])(loadMappedChunk).then(() => (ran = true));
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(ran).toBe(true);
+      });
 
       it('reads the map of the build that is served now, and requests each missing file by its name there', async () => {
         const fetched = await startOpen(DEPLOYED_MAP);
@@ -2074,6 +2207,28 @@ describe('gt-react/chunk-translations', () => {
       const state = () =>
         (globalThis as { __GT_CHUNK_TRANSLATIONS__?: ChunkTranslationsState })
           .__GT_CHUNK_TRANSLATIONS__!;
+
+      it('requests what stands in for a missing file that an import asked for after it ran, and the next import of the chunk runs', async () => {
+        const fetched = serve({ ...DEPLOYED, [MAP]: slow(SPLIT[MAP], 3000) });
+        writeSplitState({ n: 'assets/gt-current', w: 2000 });
+        vi.useFakeTimers();
+        await startSplit();
+        const first = preloadedImport([])(loadRegionChunk);
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(await first).toEqual({ evaluated: 'Orders' });
+        const messages = mount(ORDERS, 'Orders');
+
+        await act(() => vi.advanceTimersByTimeAsync(1000));
+        expect(urls(fetched)).toContain(NEXT_SHARED);
+        expect(messages.text()).toBe(
+          'Commandes, encore | Commandes, encore | Commandes, encore'
+        );
+
+        let ran = false;
+        void preloadedImport([])(loadRegionChunk).then(() => (ran = true));
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(ran).toBe(true);
+      });
 
       it('reads the lists of the build that is served now when a file is missing, and requests what they list for the chunk', async () => {
         const fetched = await startOpen(DEPLOYED);
