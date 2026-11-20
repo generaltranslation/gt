@@ -6,6 +6,7 @@ import { createOrUpdateBrowserConditionStore } from '../createBrowserConditionSt
 import { stubDocumentCookie } from './stubDocumentCookie';
 
 const cookieValues = new Map<string, string>();
+let cookie: ReturnType<typeof stubDocumentCookie>;
 
 function configure() {
   return initializeI18nConfig({
@@ -31,7 +32,7 @@ beforeEach(async () => {
   await Promise.resolve();
   Reflect.deleteProperty(globalThis, '__generaltranslation');
   cookieValues.clear();
-  stubDocumentCookie(cookieValues);
+  cookie = stubDocumentCookie(cookieValues);
   vi.stubGlobal('navigator', { languages: [] });
 });
 
@@ -127,6 +128,33 @@ describe('BrowserConditionStore', () => {
     custom = 'fr';
     expect(withGetter.getLocale()).toBe('fr');
     expect(conditionStore.getLocale()).toBe('en');
+  });
+
+  it('resolves the locale and the enable flag once per task', async () => {
+    const config = configure();
+    const conditionStore = new BrowserConditionStore({ locale: 'fr' });
+    const cookieNames = [
+      vi.spyOn(config, 'getLocaleCookieName'),
+      vi.spyOn(config, 'getEnableI18nCookieName'),
+    ];
+    cookie.reads = 0;
+
+    for (let call = 0; call < 100; call++) {
+      expect(conditionStore.getEnableI18n()).toBe(true);
+      expect(conditionStore.getLocale()).toBe('fr');
+    }
+    expect(cookie.reads).toBe(1);
+    for (const cookieName of cookieNames) {
+      expect(cookieName).toHaveBeenCalledTimes(1);
+    }
+
+    // The next task reads the cookies again and finds them as they were.
+    await Promise.resolve();
+    expect(conditionStore.getLocale()).toBe('fr');
+    expect(cookie.reads).toBe(2);
+    for (const cookieName of cookieNames) {
+      expect(cookieName).toHaveBeenCalledTimes(1);
+    }
   });
 
   it.each([

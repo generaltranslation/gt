@@ -5,7 +5,7 @@ import {
   WritableConditionStoreInterface,
   type WritableConditionStoreParams,
 } from 'gt-i18n/internal';
-import { getCookieValue, setCookieValue } from './cookies';
+import { getCookieValue, getTaskCookies, setCookieValue } from './cookies';
 import {
   getTaskNavigatorLocales,
   readBrowserLocale,
@@ -90,9 +90,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   getEnableI18n = (): boolean => {
     // App Router does not resolve this preference on the server yet, so retain
     // its existing client behavior rather than accepting the server's true.
-    const cookieEnableI18n = getCookieValue({
-      cookieName: getI18nConfig().getEnableI18nCookieName(),
-    });
+    const cookieEnableI18n = getTaskConditions().enableI18n;
     if (cookieEnableI18n === undefined) {
       return this.customGetEnableI18n?.() ?? true;
     }
@@ -156,41 +154,52 @@ let lastMatch:
   | { config: unknown; candidates: string; locale: string }
   | undefined;
 
-// The cookie and the navigator are read once per task, so most calls find
-// both as they were and have nothing to match.
+// Every message reads its conditions. The cookies and the navigator are read
+// once per task, so most calls find both as they were and resolve nothing.
 let lastRead:
   | {
       config: unknown;
-      cookie: string | undefined;
+      cookies: unknown;
       languages: readonly string[];
       locale: string;
+      enableI18n: string | undefined;
     }
   | undefined;
 
-function getBrowserLocale(getLocale?: GetLocale): string {
+function getTaskConditions(): NonNullable<typeof lastRead> {
   const i18nConfig = getI18nConfig();
-  const cookieName = i18nConfig.getLocaleCookieName();
-  // A custom reader may answer differently on every call.
-  if (getLocale) {
-    const candidates = readBrowserLocale(cookieName);
-    candidates.push(getLocale());
-    return matchLocale(i18nConfig, candidates);
-  }
-  const cookie = getCookieValue({ cookieName });
+  const cookies = getTaskCookies();
   const languages = getTaskNavigatorLocales();
   if (
     lastRead?.config !== i18nConfig ||
-    lastRead.cookie !== cookie ||
+    lastRead.cookies !== cookies ||
     lastRead.languages !== languages
   ) {
     lastRead = {
       config: i18nConfig,
-      cookie,
+      cookies,
       languages,
-      locale: matchLocale(i18nConfig, readBrowserLocale(cookieName)),
+      locale: matchLocale(
+        i18nConfig,
+        readBrowserLocale(i18nConfig.getLocaleCookieName())
+      ),
+      enableI18n: getCookieValue({
+        cookieName: i18nConfig.getEnableI18nCookieName(),
+      }),
     };
   }
-  return lastRead.locale;
+  return lastRead;
+}
+
+function getBrowserLocale(getLocale?: GetLocale): string {
+  // A custom reader may answer differently on every call.
+  if (getLocale) {
+    const i18nConfig = getI18nConfig();
+    const candidates = readBrowserLocale(i18nConfig.getLocaleCookieName());
+    candidates.push(getLocale());
+    return matchLocale(i18nConfig, candidates);
+  }
+  return getTaskConditions().locale;
 }
 
 function matchLocale(

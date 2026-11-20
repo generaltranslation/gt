@@ -42,6 +42,16 @@ describe('getCookieValue', () => {
     expect(reads).toBe(2);
   });
 
+  it('reads every cookie of a task from one read of document.cookie', () => {
+    jar.locale = 'fr';
+    jar.region = 'CA';
+
+    expect(getCookieValue({ cookieName: 'locale' })).toBe('fr');
+    expect(getCookieValue({ cookieName: 'region' })).toBe('CA');
+    expect(getCookieValue({ cookieName: 'missing' })).toBeUndefined();
+    expect(reads).toBe(1);
+  });
+
   it('reads a cookie again in the next task without queueMicrotask', async () => {
     // Old browsers have none, and fake timers replace it.
     vi.stubGlobal('queueMicrotask', undefined);
