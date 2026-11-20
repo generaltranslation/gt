@@ -558,9 +558,10 @@ export function writeRegionTranslations(
   const ids =
     build.minifiedIds &&
     readMinifiedIds(build.minifiedIds, build, table, chunks);
+  const moduleIds = build.minifiedIds && readPlaceholders(build.minifiedIds);
   const { graph } = createRegionGraph(chunks, getModuleInfo, build.hashes, {
     isLazy,
-    ...(ids && { ids, moduleIds: readPlaceholders(build.hashes) }),
+    ...(ids && { ids, moduleIds }),
   });
   const sizes = getMessageSizes(table, build.hashes);
   const sampled = build.locales.find((locale) => table[locale]);
