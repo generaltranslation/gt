@@ -22,52 +22,69 @@ export type RegionChunk = {
 // How many characters of a pair name the module that reads its message
 const PAIR_MODULE_LENGTH = 8;
 
-const NODE_MODULES = '/node_modules/';
+// A directory that a package manager names with the version of a package
+const VERSION = /\d+\.\d+\.\d+/;
 
 /**
- * What names, in a pair, the module that reads the message, see
- * createRegionGraph: the start of a digest of the module's id, written so
- * that it does not depend on where the build runs or on where its
- * dependencies are stored.
+ * What a pair calls the module that reads its message, see createRegionGraph:
+ * the module's id without what depends on where the build runs or on where
+ * its dependencies are stored, and with everything else.
  *
- * - A module of a package is named from the last `node_modules/` of its id:
- *   the package and the path inside it, whichever store holds the package.
- * - Any other module is named by its path below the last directory it has in
- *   common with `root`, the directory the build's modules are in: the path
- *   from `root` for a module inside it, and for one outside it that path
- *   without the steps that lead out.
- * - An id that is no path, as a virtual module's, is named as it is.
+ * - A module inside `root`, the directory the build's modules are in, is
+ *   called by its path from there, so a dependency inside it keeps the
+ *   directory its package manager made for its version.
+ * - A module outside `root` is called by its path below the last directory
+ *   it has in common with `root`, as a sibling package of a workspace is.
+ *   When directories that are no part of the project lead to a
+ *   `node_modules` there, as to a store elsewhere on the machine, they are
+ *   left out, but for one of the two before `node_modules` that is named
+ *   with a version.
+ * - The null character a plugin puts before the id of a module it made, and
+ *   a query, stay: such a module is another module than the file it is
+ *   made of. Backslashes are read as slashes.
+ * - An id that is no path is called as it is.
  *
- * Two modules can get one name: two versions of a package, or two digests
- * that start alike. What reads the same message from both is then one pair,
- * see createRegionGraph.
+ * Two modules can still be called alike: copies of a package in two stores,
+ * for one. No two chunks share a pair for that, see createRegionGraph.
  */
 export function getPairModule(id: string, root: string): string {
-  // A plugin's module of a file starts with a null character
-  const written = (id.startsWith('\0') ? id.slice(1) : id).replace(/\\/g, '/');
-  const packaged = written.lastIndexOf(NODE_MODULES);
-  let named = written.slice(packaged + NODE_MODULES.length);
-  if (packaged === -1) {
-    const from = root.replace(/\\/g, '/').replace(/\/$/, '').split('/');
-    const to = written.split('/');
-    let shared = 0;
-    while (
-      shared < from.length &&
-      shared < to.length - 1 &&
-      from[shared] === to[shared]
-    ) {
-      shared++;
-    }
-    named = to.slice(shared).join('/');
+  const made = id.startsWith('\0') ? '\0' : '';
+  const written = id.slice(made.length).replace(/\\/g, '/');
+  const query = written.search(/[?#]/);
+  const file = query === -1 ? written : written.slice(0, query);
+  const from = root.replace(/\\/g, '/').replace(/\/$/, '').split('/');
+  const to = file.split('/');
+  let shared = 0;
+  while (
+    shared < from.length &&
+    shared < to.length - 1 &&
+    from[shared] === to[shared]
+  ) {
+    shared++;
   }
-  return createHash('sha256')
-    .update(named)
-    .digest('hex')
-    .slice(0, PAIR_MODULE_LENGTH);
+  let named = to.slice(shared);
+  const packaged = named.indexOf('node_modules');
+  if (shared < from.length && packaged > 0) {
+    let start = packaged;
+    for (let at = packaged - 1; at >= 0 && at >= packaged - 2; at--) {
+      if (VERSION.test(named[at])) start = at;
+    }
+    named = named.slice(start);
+  }
+  return `${made}${named.join('/')}${written.slice(file.length)}`;
 }
 
-/** A message and a chunk that reads it, see createRegionGraph: the hash, then what getPairModule names the first module of the chunk that reads it. */
-export const getPairKey = (hash: string, module: string) => `${hash}${module}`;
+/**
+ * A message and a chunk that reads it, see createRegionGraph: the hash, then
+ * the start of a digest of what getPairModule calls the first module of the
+ * chunk that reads it. `copy` tells apart the chunks that would otherwise
+ * share a pair.
+ */
+export const getPairKey = (hash: string, module: string, copy = 0) =>
+  `${hash}${createHash('sha256')
+    .update(copy ? `${module}\n${copy}` : module)
+    .digest('hex')
+    .slice(0, PAIR_MODULE_LENGTH)}`;
 
 /** What `this.getModuleInfo(id)` returns of a module. */
 export type RegionModuleInfo = {
@@ -138,14 +155,21 @@ export function initialisesModulesLazily(
  * for another chunk has its own copy fetched by its own loads, and the file
  * of the earlier load holds nothing for it.
  *
- * A pair is named by its hash and by the first, in the order of their ids,
- * of the chunk's modules that read the message, see getPairKey. So it keeps
- * its name, and with `previous` its file, while that module reads the
- * message there, whatever else the chunk comes to hold. A bundler puts a
- * module in one chunk, and then no two chunks share a pair. Where it does
- * not, the chunks that hold the module share the pairs of what it reads
- * first: one pair for all of them, which every load that reaches the module
- * fetches, and whose file holds the ids of each chunk.
+ * A pair is one chunk's: what demands it follows from the modules of that
+ * chunk alone, so a call site that the minifier removes from one chunk
+ * moves no message of another. It is named by its hash and by the first, in
+ * the order of their ids, of the chunk's modules that read the message, see
+ * getPairKey:
+ *
+ * - It keeps its name, and with `previous` its file, while that module
+ *   reads the message there, whatever else the chunk comes to hold, and
+ *   wherever the build runs.
+ * - Chunks that would get one name for a message each get their own: when a
+ *   module is in several chunks, when two modules are called alike, and
+ *   when two digests start alike. The first keeps the name and the others
+ *   are numbered, in the order of the ids of their modules and then of all
+ *   the modules each chunk holds, so it does not depend on the order of the
+ *   chunks. Only chunks that hold the same modules share a pair.
  */
 export function createRegionGraph(
   chunks: readonly RegionChunk[],
@@ -185,6 +209,12 @@ export function createRegionGraph(
   };
   const moduleHashes = new Map<string, Set<string>>();
   const chunksOfModule = new Map<string, RegionChunk[]>();
+  // With `pairs`: what each module of a chunk reads, and its first reader
+  const readers: {
+    chunk: RegionChunk;
+    read: [id: string, hash: string][];
+    first: Map<string, string>;
+  }[] = [];
   let unattributed = 0;
   for (const chunk of chunks) {
     const surviving = new Set(findChunkHashes(chunk.code, hashes, options.ids));
@@ -222,15 +252,70 @@ export function createRegionGraph(
       const reader = first.get(hash);
       if (reader === undefined || id < reader) first.set(hash, id);
     }
-    const ofChunk = new Map<string, string>();
-    for (const [hash, id] of first) {
-      const pair = getPairKey(hash, getPairModule(id, options.pairs!.root));
-      ofChunk.set(hash, pair);
-      pairs.hashes.set(pair, hash);
+    readers.push({ chunk, read, first });
+  }
+
+  if (pairs) {
+    // The chunks that would name a pair alike, by that name
+    type Claim = { chunk: RegionChunk; module: string };
+    const claims = new Map<
+      string,
+      { hash: string; named: string; claimed: Claim[] }
+    >();
+    for (const { chunk, first } of readers) {
+      for (const [hash, module] of first) {
+        const named = getPairModule(module, options.pairs!.root);
+        const claim = claims.get(`${hash}\n${named}`);
+        if (claim) claim.claimed.push({ chunk, module });
+        else {
+          claims.set(`${hash}\n${named}`, {
+            hash,
+            named,
+            claimed: [{ chunk, module }],
+          });
+        }
+      }
     }
-    pairs.byChunk.set(chunk.fileName, ofChunk);
-    for (const [id, hash] of read)
-      moduleHashes.get(id)!.add(ofChunk.get(hash)!);
+    const signatures = new Map<RegionChunk, string>();
+    const getSignature = (chunk: RegionChunk) => {
+      let signature = signatures.get(chunk);
+      if (signature === undefined) {
+        signature = Object.keys(chunk.modules).sort().join('\n');
+        signatures.set(chunk, signature);
+      }
+      return signature;
+    };
+    for (const key of [...claims.keys()].sort()) {
+      const { hash, named, claimed } = claims.get(key)!;
+      const owners = new Map<string, RegionChunk[]>();
+      if (claimed.length === 1) owners.set('', [claimed[0].chunk]);
+      else {
+        for (const { chunk, module } of claimed) {
+          const owner = `${module}\n\n${getSignature(chunk)}`;
+          const holding = owners.get(owner);
+          if (holding) holding.push(chunk);
+          else owners.set(owner, [chunk]);
+        }
+      }
+      let copy = 0;
+      for (const owner of [...owners.keys()].sort()) {
+        let pair = getPairKey(hash, named, copy++);
+        while (pairs.hashes.has(pair)) pair = getPairKey(hash, named, copy++);
+        pairs.hashes.set(pair, hash);
+        for (const chunk of owners.get(owner)!) {
+          let ofChunk = pairs.byChunk.get(chunk.fileName);
+          if (!ofChunk)
+            pairs.byChunk.set(chunk.fileName, (ofChunk = new Map()));
+          ofChunk.set(hash, pair);
+        }
+      }
+    }
+    for (const { chunk, read } of readers) {
+      const ofChunk = pairs.byChunk.get(chunk.fileName);
+      for (const [id, hash] of read) {
+        moduleHashes.get(id)!.add(ofChunk!.get(hash)!);
+      }
+    }
   }
 
   // The module each chunk that holds none of its own is made for: an import
