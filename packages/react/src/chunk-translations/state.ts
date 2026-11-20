@@ -144,6 +144,13 @@ export type ChunkTranslationsState = {
    * could stand in for the file are read, and once they do
    */
   z?: Record<string, boolean | undefined>;
+  /**
+   * Whether what has arrived may hold a translation of a message that is on
+   * screen: 1 once a file is read after its wait ran out, until it is added,
+   * and 2 for good once the page takes the names of the build that is served
+   * now, before it asks for a file by them
+   */
+  s?: 1 | 2;
 };
 
 export type InitializeConfig = { loadTranslations?: unknown };

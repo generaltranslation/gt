@@ -45,7 +45,7 @@ describe('useSubscribeToTrackedLookups', () => {
     process.env.NODE_ENV = 'development';
     const listener = vi.fn();
     const unsubscribe = vi.fn();
-    let onEvent: ((lookup: { key: string }) => void) | undefined;
+    let onEvent: ((lookup?: { key: string }) => void) | undefined;
     const subscribeToEvents = vi.fn((callback) => {
       onEvent = callback;
       return unsubscribe;
@@ -69,6 +69,8 @@ describe('useSubscribeToTrackedLookups', () => {
     expect(subscribeToEvents).toHaveBeenCalledTimes(1);
 
     onEvent?.({ key: 'other-key' });
+    // An event for every lookup, which the resolver's own subscription takes
+    onEvent?.();
     expect(listener).not.toHaveBeenCalled();
 
     onEvent?.({ key: 'matching-key' });
