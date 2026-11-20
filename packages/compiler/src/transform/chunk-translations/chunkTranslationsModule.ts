@@ -58,7 +58,10 @@ export function recordChunkHash(
   tree?: MessageTree
 ): string {
   const build = state.settings.chunkTranslations;
-  if (!build) return hash;
+  if (!build) {
+    state.settings.serverHashes?.add(hash);
+    return hash;
+  }
   if (!COMPUTED_HASH.test(hash)) {
     build.unsplit.add(hash);
     return hash;
@@ -95,6 +98,7 @@ export function recordWrittenHash(hash: string, state: TransformState): void {
  */
 export function keepUnsplit(hash: string, state: TransformState): void {
   state.settings.chunkTranslations?.unsplit.add(hash);
+  state.settings.serverHashes?.add(hash);
 }
 
 /**
@@ -193,7 +197,8 @@ export function finishChunkTranslationsFile(
       file.imports,
       state.settings.chunkTranslations?.naming,
       state.settings.chunkTranslations?.regions !== undefined,
-      state.settings.chunkTranslations?.minifiedIds !== undefined
+      state.settings.chunkTranslations?.minifiedIds !== undefined,
+      state.settings.chunkTranslations?.source
     )
   );
   return true;
@@ -245,7 +250,8 @@ function createEntryImport(
   imports: Iterable<ChunkTranslationsImport>,
   naming: ChunkTranslationsNaming = defaultChunkTranslationsNaming,
   splitsByModule = false,
-  minifiesHashes = false
+  minifiesHashes = false,
+  source = CHUNK_TRANSLATIONS_SOURCE
 ): t.ImportDeclaration {
   return t.importDeclaration(
     [...imports].map((kind) =>
@@ -256,7 +262,7 @@ function createEntryImport(
         )
       )
     ),
-    t.stringLiteral(CHUNK_TRANSLATIONS_SOURCE)
+    t.stringLiteral(source)
   );
 }
 
@@ -272,7 +278,8 @@ export function wrapDynamicImports(
   id: string,
   naming: ChunkTranslationsNaming = defaultChunkTranslationsNaming,
   splitsByModule = false,
-  minifiesHashes = false
+  minifiesHashes = false,
+  source = CHUNK_TRANSLATIONS_SOURCE
 ): { code: string; map: unknown } | undefined {
   const { local } = CHUNK_TRANSLATIONS_IMPORTS.load;
   if (!code.includes('import(') || code.includes(local)) return undefined;
@@ -315,7 +322,7 @@ export function wrapDynamicImports(
   });
   if (!wrapped) return undefined;
   ast.program.body.unshift(
-    createEntryImport(['load'], naming, splitsByModule, minifiesHashes)
+    createEntryImport(['load'], naming, splitsByModule, minifiesHashes, source)
   );
   const output = generate(
     ast,

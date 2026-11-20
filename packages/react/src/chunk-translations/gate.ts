@@ -71,6 +71,8 @@ export function gateChunk<T, F>(
   const locale = chunk ? getTranslatedLocale() : undefined;
   if (!chunk || locale === undefined) return run(start);
   const state = getState();
+  // The server sent the translations of this chunk's import with the page
+  if (state.s && state.s[chunk]) return run(start);
   const requestFiles = () => {
     const files = list(state, chunk);
     // The build names a chunk only when its import needs files, so the lists

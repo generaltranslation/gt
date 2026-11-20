@@ -151,6 +151,8 @@ export function createConfigModule(
   }: ConfigModuleOptions
 ): {
   code: string;
+  /** The module without a translation loader, and so without the catalogs. */
+  codeWithoutLoader: string;
   compatCode: string;
   localeRouting: boolean;
   omittedApiKeys: boolean;
@@ -170,6 +172,10 @@ export function createConfigModule(
   const lines = [
     `export const config = ${JSON.stringify({ ...publicConfig, ...definedRuntimeOptions })};`,
   ];
+  const codeWithoutLoader = [
+    ...lines,
+    'export const loadTranslations = undefined;',
+  ].join('\n');
   const compatCode = createCompatConfigModuleCode(root, cwd, {
     dictionary,
     loadDictionaryPath,
@@ -219,6 +225,7 @@ export function createConfigModule(
 
   return {
     code: lines.join('\n'),
+    codeWithoutLoader,
     compatCode,
     localeRouting: config.localeRouting === true,
     omittedApiKeys: apiKey !== undefined || devApiKey !== undefined,

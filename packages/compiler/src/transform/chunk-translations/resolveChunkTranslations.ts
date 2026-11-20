@@ -16,7 +16,7 @@ import {
  */
 export const CHUNK_TRANSLATIONS_ENV_VAR = 'GT_SPLIT_TRANSLATIONS';
 
-/** The entry compiled code loads translations with. */
+/** The entry compiled code loads translations with, unless a framework integration names its own. */
 export const CHUNK_TRANSLATIONS_SOURCE = 'gt-react/chunk-translations';
 
 /** The object the startup script and gt-react's entry share; `getState()` there. */
@@ -66,6 +66,8 @@ const ENV_FALSE_VALUES = new Set(['false', '0']);
 
 /** What a build that writes translations per chunk shares between its hooks. */
 export type ChunkTranslations = {
+  /** The entry compiled code imports the loader of the files from */
+  source: string;
   defaultLocale: string;
   /** The locales that get files: every configured locale but the default one */
   locales: string[];
@@ -76,6 +78,13 @@ export type ChunkTranslations = {
    * with the files it writes, across its modules
    */
   starts: number;
+  /**
+   * Every hash a call site passes in a build for a server, as the `ssr`
+   * environment of a server-rendered app, which reads whole catalogs. One
+   * that no call site of the client build passes is a message of the server
+   * alone (see getServerOnlyHashes).
+   */
+  serverHashes: Set<string>;
   /**
    * The hashes of call sites the build saw and could not make read from the
    * files, such as `msg` templates. Their translations stay in the unsplit
@@ -351,9 +360,11 @@ export function resolveChunkTranslations(
     naming = defaultChunkTranslationsNaming,
     regions,
     minifyHashes = false,
+    source = CHUNK_TRANSLATIONS_SOURCE,
   }: {
     framework: string;
     compileTimeHash: boolean;
+    source?: string;
     naming?: ChunkTranslationsNaming;
     regions?: RegionSplit;
     minifyHashes?: boolean;
@@ -409,9 +420,11 @@ export function resolveChunkTranslations(
     return { error: MINIFY_HASHES_WITH_TAGGED_IDS_ERROR };
   }
   return {
+    source,
     defaultLocale,
     locales,
     hashes: new Set(),
+    serverHashes: new Set(),
     starts: 0,
     unsplit: new Set(),
     naming,

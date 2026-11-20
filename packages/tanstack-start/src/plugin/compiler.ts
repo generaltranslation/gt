@@ -10,12 +10,22 @@ import type { GTTanstackStartCompilerOptions } from './types';
 
 const NODE_MODULES_PATTERN = /[\\/]node_modules[\\/]/;
 
-type CompilerVitePlugin = (options: Record<string, unknown>) => Plugin;
+// A build that splits translations is two plugins
+type CompilerVitePlugin = (
+  options: Record<string, unknown>
+) => Plugin | Plugin[];
 
+/** What the compiler says of a build that splits translations. */
+export type SplitTranslationsBuild = { getServerOnlyHashes: () => string[] };
+
+/**
+ * @param onSplitTranslations Called once when the build splits translations.
+ */
 export function createCompilerPlugin(
   { type = 'none', ...compilerSettings }: GTTanstackStartCompilerOptions = {},
-  configFile: string
-): { compilerPlugin: Plugin | undefined; warnings: string[] } {
+  configFile: string,
+  onSplitTranslations: (build: SplitTranslationsBuild) => void
+): { compilerPlugin: Plugin[] | undefined; warnings: string[] } {
   const warnings: string[] = [];
   const enabled = type === 'babel';
   const gtConfig = fs.existsSync(configFile)
@@ -48,13 +58,24 @@ export function createCompilerPlugin(
     Object.entries(compilerSettings).filter(([, value]) => value !== undefined)
   );
 
+  // `firstVisit` is this package's key, not the compiler's
+  const { experimentalSplitTranslations: split, ...rest } = definedSettings as {
+    experimentalSplitTranslations?: { firstVisit?: unknown };
+  };
+  const { firstVisit: _firstVisit, ...compilerSplit } = split ?? {};
   const plugin = gtCompiler({
-    ...definedSettings,
+    ...rest,
+    ...(split && { experimentalSplitTranslations: compilerSplit }),
     ...(gtConfig ? { gtConfig } : {}),
     autoJsxImportSource: 'gt-tanstack-start',
+    _splitTranslationsLoader: 'gt-tanstack-start/chunk-translations',
+    _onSplitTranslations: onSplitTranslations,
   });
 
-  return { compilerPlugin: adaptCompilerPlugin(plugin), warnings };
+  return {
+    compilerPlugin: [plugin].flat().map(adaptCompilerPlugin),
+    warnings,
+  };
 }
 
 /**
@@ -80,18 +101,23 @@ function adaptCompilerPlugin(plugin: Plugin): Plugin {
   };
 }
 
+// The queries of the virtual modules TanStack Router and Start move app code into
+const COMPILED_QUERIES = ['tsr-split', 'tsr-shared', 'tss-serverfn-split'];
+
 /**
  * TanStack Router code-splitting moves route components into virtual modules
  * such as `index.tsx?tsr-split=component`, and code shared by several split
- * groups into `index.tsx?tsr-shared=1`. The compiler only accepts ids that end
- * in a source extension, so it gets the file path for those modules. Other
- * query ids (?raw, ?url, ...) stay unchanged and are skipped by the compiler.
+ * groups into `index.tsx?tsr-shared=1`. TanStack Start moves the handler of a
+ * server function, with what only it uses, into `index.tsx?tss-serverfn-split`.
+ * The compiler only accepts ids that end in a source extension, so it gets
+ * the file path for those modules. Other query ids (?raw, ?url, ...) stay
+ * unchanged and are skipped by the compiler.
  */
 function getCompilerId(id: string): string {
   const queryStart = id.indexOf('?');
   if (queryStart === -1) return id;
   const query = new URLSearchParams(id.slice(queryStart + 1));
-  return query.has('tsr-split') || query.has('tsr-shared')
+  return COMPILED_QUERIES.some((name) => query.has(name))
     ? id.slice(0, queryStart)
     : id;
 }

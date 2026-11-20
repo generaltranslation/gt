@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  _addArrived,
+  _getChunkTranslationsState,
+  _register,
   initializeChunkTranslations,
   initializeMappedChunkTranslations,
   initializeRegionChunkTranslations,
@@ -307,6 +310,22 @@ describe('gt-react/chunk-translations', () => {
     expect(await plainImport(steps)()).toEqual({ evaluated: 'Commandes' });
     expect(orders()).toBe('Commandes');
     expect(save()).toBe('Enregistrer');
+  });
+
+  it('runs the import of a chunk whose translations a server sent with the page, and requests no file for it', async () => {
+    const fetched = serve();
+    // As gt-tanstack-start starts a page the server rendered
+    writeState({ s: { [ORDERS_CHUNK]: 1 } });
+    await start();
+    const state = _getChunkTranslationsState();
+    _register(state, 'fr', { [ORDERS]: 'Commandes' });
+    _addArrived(state);
+    fetched.mockClear();
+    const steps: string[] = [];
+
+    expect(await preloadedImport(steps)()).toEqual({ evaluated: 'Commandes' });
+    expect(steps).toEqual([PRELOAD, 'import']);
+    expect(fetched).not.toHaveBeenCalled();
   });
 
   it('requests each file and preloads each chunk once, however often it is imported', async () => {

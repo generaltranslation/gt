@@ -12,7 +12,7 @@ const deps = {
     /^vite$/,
     /^@generaltranslation\/compiler$/,
     // Kept as bare imports so the Vite plugin can replace them.
-    /^gt-tanstack-start\/internal\/(?:_config|_compat-config|localeRouting)$/,
+    /^gt-tanstack-start\/internal\/(?:_config|_compat-config|localeRouting|splitTranslations|_split-table)$/,
     // Kept as a bare import so the server entries share one copy of its state.
     /^gt-tanstack-start\/internal\/initializeGT\.server$/,
     /^@generaltranslation\/react-core$/,
@@ -29,15 +29,23 @@ const deps = {
 const entries: Record<string, string> = {
   'index.client': 'src/index.client.ts',
   'index.server': 'src/index.server.ts',
+  'index.rsc': 'src/index.rsc.ts',
   'compat.client': 'src/compat.client.ts',
   'compat.server': 'src/compat.server.ts',
   'plugin/vite': 'src/plugin/vite.ts',
+  'chunk-translations': 'src/chunk-translations.ts',
   'internal/initializeGT.server': 'src/setup/initializeGT.server.ts',
   'internal/_config': 'src/internal/_config.ts',
   'internal/_compat-config': 'src/internal/_compat-config.ts',
   'internal/localeRouting': 'src/internal/localeRouting.ts',
   'internal/localeRouting.enabled': 'src/internal/localeRouting.enabled.ts',
   'internal/localeRouting.disabled': 'src/internal/localeRouting.disabled.ts',
+  'internal/splitTranslations': 'src/internal/splitTranslations.ts',
+  'internal/splitTranslations.server':
+    'src/internal/splitTranslations.server.ts',
+  'internal/splitTranslations.client':
+    'src/internal/splitTranslations.client.ts',
+  'internal/_split-table': 'src/internal/_split-table.ts',
 };
 
 export default defineConfig(

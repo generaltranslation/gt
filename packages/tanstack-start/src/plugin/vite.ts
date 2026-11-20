@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { gtReact } from 'gt-react/vite';
 import type { Logger, Plugin } from 'vite';
-import { createCompilerPlugin } from './compiler';
+import { createCompilerPlugin, type SplitTranslationsBuild } from './compiler';
 import {
   COMPAT_CONFIG_MODULE_ID,
   CONFIG_MODULE_ID,
@@ -15,6 +15,12 @@ import {
   createConfigChangedWarning,
   duplicateCompilerWarning,
 } from './diagnostics';
+import {
+  createSplitPlugin,
+  isServerEnvironment,
+  isSplitEnabled,
+  type SplitFirstVisit,
+} from './splitTranslations';
 import type { GTTanstackStartPluginOptions } from './types';
 
 export type {
@@ -35,6 +41,7 @@ const configModules = ((
       string,
       {
         code: string;
+        codeWithoutLoader: string;
         compatCode: string;
         localeRouting: boolean;
         options: string;
@@ -68,10 +75,21 @@ export function gtTanstackStart(
     ...configModuleOptions
   }: GTTanstackStartPluginOptions = options;
   const configFile = path.resolve(cwd, config ?? 'gt.config.json');
+  let splitBuild: SplitTranslationsBuild | undefined;
   const { compilerPlugin, warnings } = createCompilerPlugin(
     experimentalCompilerOptions,
-    configFile
+    configFile,
+    (build) => {
+      splitBuild = build;
+    }
   );
+  const splitOption =
+    experimentalCompilerOptions?.experimentalSplitTranslations;
+  const splitsTranslations =
+    compilerPlugin !== undefined && isSplitEnabled(splitOption);
+  const firstVisit = (splitOption?.firstVisit ??
+    process.env.GT_SPLIT_FIRST_VISIT ??
+    'inline') as SplitFirstVisit;
   const moduleOptions = JSON.stringify(configModuleOptions);
   let root = cwd;
   let logger: Logger | undefined;
@@ -90,8 +108,13 @@ export function gtTanstackStart(
       }
       return cached;
     }
-    const { code, compatCode, localeRouting, omittedApiKeys } =
-      createConfigModule(root, cwd, configFile, configModuleOptions);
+    const {
+      code,
+      codeWithoutLoader,
+      compatCode,
+      localeRouting,
+      omittedApiKeys,
+    } = createConfigModule(root, cwd, configFile, configModuleOptions);
     if (omittedApiKeys) {
       logger?.warnOnce(
         createApiKeysOmittedWarning(path.relative(cwd, configFile))
@@ -99,6 +122,7 @@ export function gtTanstackStart(
     }
     const configModule = {
       code,
+      codeWithoutLoader,
       compatCode,
       localeRouting,
       options: moduleOptions,
@@ -117,8 +141,9 @@ export function gtTanstackStart(
       for (const warning of warnings) config.logger.warnOnce(warning);
       if (
         compilerPlugin &&
-        config.plugins.filter((plugin) => plugin.name === compilerPlugin.name)
-          .length > 1
+        config.plugins.filter(
+          (plugin) => plugin.name === compilerPlugin[0].name
+        ).length > 1
       ) {
         config.logger.warnOnce(duplicateCompilerWarning);
       }
@@ -151,7 +176,14 @@ export function gtTanstackStart(
       }
     },
     load(id) {
-      if (id === RESOLVED_CONFIG_MODULE_ID) return getConfigModule().code;
+      if (id === RESOLVED_CONFIG_MODULE_ID) {
+        const { code, codeWithoutLoader } = getConfigModule();
+        // The browser of a build that splits translations never loads a
+        // locale's whole catalog, so its bundle holds no catalog
+        return splitsTranslations && !isServe && !isServerEnvironment(this)
+          ? codeWithoutLoader
+          : code;
+      }
       if (id === RESOLVED_COMPAT_CONFIG_MODULE_ID) {
         return getConfigModule().compatCode;
       }
@@ -159,5 +191,13 @@ export function gtTanstackStart(
   };
 
   const plugins = [configPlugin, gtReact()];
-  return compilerPlugin ? [...plugins, compilerPlugin] : plugins;
+  if (splitsTranslations) {
+    plugins.push(
+      createSplitPlugin(
+        firstVisit,
+        () => splitBuild?.getServerOnlyHashes() ?? []
+      )
+    );
+  }
+  return compilerPlugin ? [...plugins, ...compilerPlugin] : plugins;
 }
