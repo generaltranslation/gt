@@ -494,9 +494,19 @@ function getLocalName(
 }
 
 function hasTranslatableText(children: t.Node[]): boolean {
-  return children.some(
-    (child) => t.isJSXText(child) && child.value.trim().length > 0
-  );
+  return children.some((child) => {
+    if (t.isJSXText(child)) return child.value.trim().length > 0;
+    if (!t.isJSXExpressionContainer(child)) return false;
+    const { expression } = child;
+    if (t.isStringLiteral(expression)) {
+      return expression.value.trim().length > 0;
+    }
+    return (
+      t.isTemplateLiteral(expression) &&
+      expression.expressions.length === 0 &&
+      (expression.quasis[0]?.value.cooked ?? '').trim().length > 0
+    );
+  });
 }
 
 function hasOpaqueGTChild(

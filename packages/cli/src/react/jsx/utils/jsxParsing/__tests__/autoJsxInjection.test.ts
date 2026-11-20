@@ -73,6 +73,16 @@ describe('injection pass', () => {
     ['unicode and emoji text', '<div>こんにちは 🌍</div>', 1, 0],
     ['spread props next to text', '<div {...props}>Hello World</div>', 1, 0],
 
+    // Text in braces makes an element translatable like JSX text does
+    ['a string literal child', "<div>{'Hello'}</div>", 1, 0],
+    ['a static template literal child', '<div>{`Hello`}</div>', 1, 0],
+    [
+      'a punctuation string between expressions',
+      "<div>{left}{' · '}{right}</div>",
+      1,
+      2,
+    ],
+
     // Nothing translatable
     ['a self-closing element', '<div />', 0, 0],
     ['an empty element', '<div></div>', 0, 0],
@@ -81,6 +91,12 @@ describe('injection pass', () => {
     [
       'expressions separated by whitespace',
       '<div>{firstName} {lastName}</div>',
+      0,
+      0,
+    ],
+    [
+      'expressions separated by a whitespace string',
+      "<div>{firstName}{' '}{lastName}</div>",
       0,
       0,
     ],
@@ -443,6 +459,27 @@ describe('injection and extraction', () => {
       'text with a nested element as one update',
       page('<div>Hello <b>World</b> today</div>'),
       [['Hello ', { t: 'b', i: 1, c: 'World' }, ' today']],
+    ],
+    [
+      'a punctuation string between expressions',
+      page("<p>{left}{' · '}{right}</p>"),
+      [[variable(1), ' · ', variable(2)]],
+    ],
+    [
+      'a punctuation string and an element with text as one update',
+      page("<>{'. '}<a href={href}>Edit the settings</a></>"),
+      [['. ', { t: 'a', i: 1, c: 'Edit the settings' }]],
+    ],
+    [
+      'elements around a punctuation string as one update',
+      page("<li><b>Item {position}</b>{' — '}<span>{message}</span></li>"),
+      [
+        [
+          { t: 'b', i: 1, c: ['Item ', variable(2)] },
+          ' — ',
+          { t: 'span', i: 3, c: variable(4) },
+        ],
+      ],
     ],
     [
       'sibling elements separately',
