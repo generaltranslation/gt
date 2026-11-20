@@ -123,4 +123,55 @@ describe('@generaltranslation/format package exports', () => {
       { cwd: packageRoot, stdio: 'pipe' }
     );
   });
+
+  // A process takes the host's locale from its environment when it starts,
+  // which Windows does not read.
+  it.skipIf(process.platform === 'win32')(
+    'formats a locale Intl has no data for the same under every host locale',
+    () => {
+      const script = `
+        import { GTIntl } from '@generaltranslation/format';
+
+        const intl = new GTIntl(
+          { defaultLocale: 'en', timeZone: 'UTC', localeMatcher: 'best fit' },
+          { locale: 'qaa' }
+        );
+        const categories = { zero: 'zero', one: 'one', two: 'two', few: 'few', many: 'many', other: 'other' };
+        console.log(JSON.stringify({
+          host: new Intl.NumberFormat().resolvedOptions().locale,
+          number: intl.formatNum(1234.5),
+          date: intl.formatDateTime(new Date(Date.UTC(2026, 0, 15)), { dateStyle: 'long' }),
+          plurals: [0, 1, 2, 5, 21].map((n) =>
+            intl.formatMessageTree([['n', 'plural', categories]], { values: { n }, formats: {} })
+          ),
+        }));
+      `;
+      const results = ['de_DE', 'ar_EG', 'ru_RU'].map((host) =>
+        JSON.parse(
+          execFileSync(
+            process.execPath,
+            ['--input-type=module', '-e', script],
+            {
+              cwd: packageRoot,
+              encoding: 'utf8',
+              env: { ...process.env, LC_ALL: `${host}.UTF-8` },
+            }
+          )
+        )
+      );
+
+      expect(results.map(({ host }) => host)).toEqual([
+        'de-DE',
+        'ar-EG',
+        'ru-RU',
+      ]);
+      for (const { number, date, plurals } of results) {
+        expect({ number, date, plurals }).toEqual({
+          number: '1,234.5',
+          date: 'January 15, 2026',
+          plurals: ['other', 'one', 'other', 'other', 'other'],
+        });
+      }
+    }
+  );
 });
