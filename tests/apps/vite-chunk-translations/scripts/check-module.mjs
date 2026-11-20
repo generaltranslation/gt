@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { chromium } from 'playwright-core';
 import { entriesOf, heldBy, isMinifiedId } from './minifiedTranslations.mjs';
+import { checkSlowHost } from './slowHost.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = join(root, '.check');
@@ -1426,6 +1427,21 @@ async function checkVariant(name, variant) {
       );
       await app.close();
     }
+  }
+  // In the builds whose imports need files the entry does not hold
+  if (variant.requestCost === 0) {
+    await checkSlowHost({
+      open,
+      check,
+      url,
+      prompt: [
+        built.mapOf('fr'),
+        built.unsplitOf('fr'),
+        ...built.entryFiles('fr'),
+      ],
+      isTranslationsFile: (path) => isTranslations({ path }),
+      timeout: TIMEOUT_MS,
+    });
   }
   served.close();
   servedOff.close();

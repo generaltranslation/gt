@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { chromium } from 'playwright-core';
 import { entriesOf, heldBy, isMinifiedId } from './minifiedTranslations.mjs';
+import { checkSlowHost } from './slowHost.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const NAMING = process.argv[2] ?? 'token';
@@ -1436,6 +1437,19 @@ if (manifest.maps) {
     MAP_FAILED
   );
 }
+
+await checkSlowHost({
+  open,
+  check,
+  url: on.url,
+  prompt: [
+    entryOf('fr'),
+    `/${manifest.unsplit.fr}`,
+    ...(manifest.maps ? [mapOf('fr')] : []),
+  ],
+  isTranslationsFile,
+  timeout: TIMEOUT_MS,
+});
 
 // A build whose modules run when they are first imported and not when
 // their chunk loads (Rolldown's strictExecutionOrder), of start.html, which
