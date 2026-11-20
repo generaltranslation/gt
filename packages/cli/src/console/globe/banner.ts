@@ -22,7 +22,6 @@ type Write = NodeJS.WriteStream['write'];
 type Held =
   | { stream: NodeJS.WriteStream; args: Parameters<Write> }
   | { run: () => void };
-type SpinnerIndicator = 'dots' | 'timer';
 
 export type GlobeBannerOptions = {
   /** Where the globe draws. */
@@ -31,12 +30,20 @@ export type GlobeBannerOptions = {
   hold?: NodeJS.WriteStream[];
 };
 
-// Clack's spinner timer format.
-function formatElapsed(startedAt: number): string {
-  const seconds = (performance.now() - startedAt) / 1000;
-  const minutes = Math.floor(seconds / 60);
-  const rest = Math.floor(seconds % 60);
-  return minutes > 0 ? `[${minutes}m ${rest}s]` : `[${rest}s]`;
+// Runs `fn` with performance.now() reading `time`. Clack's spinner reads it
+// once in start() and again in stop() to time itself, so pinning those
+// calls lets a spinner replayed or handed off at landing report the time it
+// really ran, both live and in its final line.
+function atTime(time: number, fn: () => void): void {
+  const ownNow = Object.hasOwn(performance, 'now');
+  const now = performance.now;
+  performance.now = () => time;
+  try {
+    fn();
+  } finally {
+    if (ownNow) performance.now = now;
+    else Reflect.deleteProperty(performance, 'now');
+  }
 }
 
 // Shortens text to fit `room` terminal columns, ending in … if cut.
@@ -87,6 +94,11 @@ export class GlobeBanner {
     return this.animating;
   }
 
+  /** Whether writes to `stream` are being held for after landing. */
+  holds(stream: NodeJS.WriteStream): boolean {
+    return this.animating && this.writes.has(stream);
+  }
+
   /** Plays the banner once per process; returns false if it already ran. */
   start(options: GlobeBannerOptions): boolean {
     if (this.started) return false;
@@ -99,6 +111,9 @@ export class GlobeBanner {
     this.frames = getGlobeFrames();
     this.landed = new Promise((resolve) => (this.resolveLanded = resolve));
     for (const stream of new Set(this.options.hold)) {
+      // A redirected stream can't draw over the globe, and holding it would
+      // replay its writes during exit, too late for a pipe to drain.
+      if (!stream.isTTY) continue;
       const write = stream.write;
       this.writes.set(stream, write);
       stream.write = ((...args: Parameters<Write>) => {
@@ -165,86 +180,81 @@ export class GlobeBanner {
    * A spinner whose messages show on the banner's status line while the
    * globe animates, and that becomes a real spinner once it lands.
    */
-  spinner(
-    create: (indicator?: SpinnerIndicator) => SpinnerResult,
-    indicator: SpinnerIndicator = 'timer'
-  ): SpinnerResult {
+  spinner(create: () => SpinnerResult): SpinnerResult {
     let real: SpinnerResult | undefined;
     let running = false;
     let message = '';
     let startedAt = 0;
-    // Prints a stopped spinner's final line, with the time it really ran.
-    const replayFinal = (msg: string, code?: number) => {
-      const done = create('dots');
-      done.start(message);
-      done.stop(
-        indicator === 'timer' ? `${msg} ${formatElapsed(startedAt)}` : msg,
-        code
-      );
+    // Prints a spinner's final line as clack would have, timed from when it
+    // really started to when it stopped (or to now, when the process ends).
+    const printFinal = (
+      run: { message: string; startedAt: number; stoppedAt?: number },
+      msg: string,
+      code?: number
+    ) => {
+      const done = create();
+      atTime(run.startedAt, () => done.start(run.message));
+      if (run.stoppedAt === undefined) done.stop(msg, code);
+      else atTime(run.stoppedAt, () => done.stop(msg, code));
     };
-    // Clack's timer restarts when a spinner starts, so a spinner handed off
-    // at landing runs as dots and appends the time it has really run.
-    let handedOff = false;
-    const withElapsed = (msg: string) =>
-      handedOff && indicator === 'timer'
-        ? `${msg} ${formatElapsed(startedAt)}`
-        : msg;
     // The real spinner, started with the current message if one is running.
     const becomeReal = () => {
       if (!real) {
-        handedOff = running;
-        real = handedOff && indicator === 'timer' ? create('dots') : create();
-        if (running) real.start(message);
+        const spinner = create();
+        real = spinner;
+        if (running) atTime(startedAt, () => spinner.start(message));
       }
       return real;
+    };
+    // The status line is shared; only this spinner's own text is cleared.
+    let shown = '';
+    const show = (msg: string) => {
+      shown = msg;
+      this.status = msg;
     };
     return {
       start: (msg = '') => {
         message = msg;
         startedAt = performance.now();
+        running = true;
         if (!this.animating) {
-          running = true;
           (real ??= create()).start(msg);
           return;
         }
-        running = true;
-        this.status = msg;
+        show(msg);
         this.afterLanding.push((exitCode) => {
           if (!running) return;
           if (exitCode === undefined) return void becomeReal();
           // The process is ending: print the line clack's spinner prints
           // when a process exits under it.
           running = false;
-          const text = exitCode > 1 ? 'Something went wrong' : 'Canceled';
-          replayFinal(text, exitCode);
+          printFinal(
+            { message, startedAt },
+            exitCode > 1 ? 'Something went wrong' : 'Canceled',
+            exitCode
+          );
         });
       },
       message: (msg = '') => {
         message = msg;
-        if (this.animating) this.status = msg;
-        else if (real) real.message(msg);
+        if (this.animating) {
+          if (running) show(msg);
+        } else if (real) real.message(msg);
         else if (running) becomeReal();
       },
       stop: (msg = '', code?: number) => {
         if (!this.animating) {
-          if (real || running) becomeReal().stop(withElapsed(msg), code);
+          if (real || running) becomeReal().stop(msg, code);
           running = false;
           return;
         }
         if (!running) return;
         running = false;
-        this.status = '';
-        // Prints the spinner's final line, in order, once the globe lands.
-        const final =
-          indicator === 'timer' ? `${msg} ${formatElapsed(startedAt)}` : msg;
-        const started = message;
-        this.held.push({
-          run: () => {
-            const done = create('dots');
-            done.start(started);
-            done.stop(final, code);
-          },
-        });
+        if (this.status === shown) this.status = '';
+        // Prints the spinner's final line, in order, once the globe lands,
+        // timed by when this run started and stopped.
+        const run = { message, startedAt, stoppedAt: performance.now() };
+        this.held.push({ run: () => printFinal(run, msg, code) });
       },
       get isCancelled() {
         return real?.isCancelled ?? false;
@@ -255,36 +265,55 @@ export class GlobeBanner {
   /**
    * A progress bar that starts once the globe has landed, so it takes over
    * the terminal only after the banner has handed it back. Calls made before
-   * then are replayed on it.
+   * then are replayed on it; a bar that finishes before then prints its
+   * final line in order with the rest of the held output.
    */
   progress(create: () => ProgressResult): ProgressResult {
     let real: ProgressResult | undefined;
-    const pending: Array<(bar: ProgressResult) => void> = [];
-    let active = false;
+    let pending: Array<(bar: ProgressResult) => void> = [];
+    let running = false;
+    // Replays the calls so far on a new real bar.
+    const replay = (calls: Array<(bar: ProgressResult) => void>) => {
+      const bar = create();
+      for (const fn of calls) fn(bar);
+      return bar;
+    };
     const call = (fn: (bar: ProgressResult) => void) => {
+      if (!real && !this.animating) real = replay(pending.splice(0));
       if (real) fn(real);
       else pending.push(fn);
     };
     this.afterLanding.push((exitCode) => {
-      if (exitCode !== undefined && !active) return;
-      real = create();
-      for (const fn of pending) fn(real);
+      if (!running) return;
+      real = replay(pending.splice(0));
       // The process is ending under a running bar: stop it as clack would.
-      if (exitCode !== undefined && active) {
+      if (exitCode !== undefined) {
         real.stop(exitCode > 1 ? 'Something went wrong' : 'Canceled', exitCode);
       }
     });
     this.requestLanding();
     return {
       start: (msg) => {
-        active = true;
+        running = true;
         call((bar) => bar.start(msg));
       },
       advance: (step, msg) => call((bar) => bar.advance(step, msg)),
       message: (msg) => call((bar) => bar.message(msg)),
       stop: (msg, code) => {
-        active = false;
-        call((bar) => bar.stop(msg, code));
+        if (real || !this.animating) {
+          running = false;
+          return call((bar) => bar.stop(msg, code));
+        }
+        if (!running) return;
+        running = false;
+        // Finished before the landing: its whole run goes in order with the
+        // rest of the held output.
+        const calls = [
+          ...pending,
+          (bar: ProgressResult) => bar.stop(msg, code),
+        ];
+        pending = [];
+        this.held.push({ run: () => void replay(calls) });
       },
       get isCancelled() {
         return real?.isCancelled ?? false;

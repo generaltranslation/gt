@@ -271,8 +271,15 @@ class Logger {
   // While the banner animates, progress lines wait under the globe, shown
   // one at a time on its status line; warnings and errors land it instead.
   private progress(message: string, print: () => void): void {
-    if (globeBanner.isAnimating()) globeBanner.note(message, print);
+    if (this.underBanner()) globeBanner.note(message, print);
     else print();
+  }
+
+  // Whether the animated banner holds the stream console output goes to.
+  private underBanner(): boolean {
+    return globeBanner.holds(
+      this.consoleOutput === 'stderr' ? process.stderr : process.stdout
+    );
   }
 
   getLogFormat(): LogFormat {
@@ -403,12 +410,9 @@ class Logger {
       return new MockSpinner(this);
     }
     if (this.logFormat === 'default') {
-      const create = (style: 'dots' | 'timer' = indicator) =>
-        spinner({ indicator: style, ...this.clackOutput });
+      const create = () => spinner({ indicator, ...this.clackOutput });
       // While the banner animates, spinner messages show under the globe.
-      return globeBanner.isAnimating()
-        ? globeBanner.spinner(create, indicator)
-        : create();
+      return this.underBanner() ? globeBanner.spinner(create) : create();
     } else {
       return new MockSpinner(this);
     }
@@ -422,9 +426,7 @@ class Logger {
     if (this.logFormat === 'default') {
       const create = () => progress({ max: total, ...this.clackOutput });
       // A progress bar takes over the terminal, so it starts after landing.
-      return globeBanner.isAnimating()
-        ? globeBanner.progress(create)
-        : create();
+      return this.underBanner() ? globeBanner.progress(create) : create();
     } else {
       return new MockProgress(total, this);
     }

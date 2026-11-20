@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { stripVTControlCharacters } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { spinner as clackSpinner } from '@clack/prompts';
 import type { ProgressResult, SpinnerResult } from '@clack/prompts';
 import { GlobeBanner } from '../banner.js';
 import { getGlobeFrames } from '../frames.js';
@@ -26,6 +27,17 @@ function setup() {
 }
 
 const plain = (text: string) => stripVTControlCharacters(text);
+
+// A stand-in clack spinner that records each call with the clock reading it
+// would time from.
+function recordingSpinner(calls: string[]) {
+  return (): SpinnerResult => ({
+    start: (msg) => void calls.push(`start ${msg} @${performance.now()}`),
+    message: (msg) => void calls.push(`message ${msg}`),
+    stop: (msg) => void calls.push(`stop ${msg} @${performance.now()}`),
+    isCancelled: false,
+  });
+}
 const { rest, columns } = getGlobeFrames();
 const restingLogo = paintFrame(rest, columns, false).join('\n');
 
@@ -70,15 +82,11 @@ describe('GlobeBanner', () => {
   it('keeps looping while only spinner messages arrive', async () => {
     const { banner, terminal } = setup();
     const calls: string[] = [];
-    const create = (style?: string): SpinnerResult => ({
-      start: (msg) => void calls.push(`${style} start ${msg}`),
-      message: (msg) => void calls.push(`${style} message ${msg}`),
-      stop: (msg) => void calls.push(`${style} stop ${msg}`),
-      isCancelled: false,
-    });
-    const spinner = banner.spinner(create, 'timer');
+    const spinner = banner.spinner(recordingSpinner(calls));
+    const startedAt = performance.now();
     spinner.start('Fetching project');
     await vi.advanceTimersByTimeAsync(4000);
+    const stoppedAt = performance.now();
     spinner.stop('Fetched project');
     await vi.advanceTimersByTimeAsync(4000);
 
@@ -89,10 +97,10 @@ describe('GlobeBanner', () => {
     const landed = banner.settle();
     await vi.advanceTimersByTimeAsync(4000);
     await landed;
-    // Replayed with the time it really ran, in clack's timer format.
+    // Replayed with the clock it really started and stopped at.
     expect(calls).toEqual([
-      'dots start Fetching project',
-      'dots stop Fetched project [4s]',
+      `start Fetching project @${startedAt}`,
+      `stop Fetched project @${stoppedAt}`,
     ]);
   });
 
@@ -127,30 +135,78 @@ describe('GlobeBanner', () => {
     intervals.mockRestore();
   });
 
-  it('keeps the full running time of a timer spinner across the landing', async () => {
+  it('keeps the spinner clock running across the landing', async () => {
     const { banner } = setup();
     const calls: string[] = [];
-    const spinner = banner.spinner(
-      (style?: string): SpinnerResult => ({
-        start: (msg) => void calls.push(`${style} start ${msg}`),
-        message: () => {},
-        stop: (msg) => void calls.push(`${style} stop ${msg}`),
-        isCancelled: false,
-      }),
-      'timer'
-    );
+    const spinner = banner.spinner(recordingSpinner(calls));
+    const startedAt = performance.now();
     spinner.start('Installing');
     await vi.advanceTimersByTimeAsync(2000);
     const landed = banner.settle();
     await vi.advanceTimersByTimeAsync(2000);
     await landed;
-    await vi.advanceTimersByTimeAsync(3000);
-    spinner.stop('Installed');
 
-    expect(calls).toEqual([
-      'dots start Installing',
-      expect.stringMatching(/^dots stop Installed \[[67]s\]$/),
-    ]);
+    // The real spinner takes over still timing from the original start, so
+    // its live clock and final total both cover the time under the globe.
+    expect(calls).toEqual([`start Installing @${startedAt}`]);
+    expect(performance.now()).toBeGreaterThan(startedAt + 3000);
+  });
+
+  it('times a real clack spinner that stops before the landing by when it ran', async () => {
+    const { banner, stream, terminal } = setup();
+    const spinner = banner.spinner(() =>
+      clackSpinner({ indicator: 'timer', output: stream })
+    );
+    spinner.start('Fetching');
+    await vi.advanceTimersByTimeAsync(1200);
+    spinner.stop('Fetched');
+    // The globe lands well after the spinner has stopped.
+    await vi.advanceTimersByTimeAsync(3500);
+    const landed = banner.settle();
+    await vi.advanceTimersByTimeAsync(3000);
+    await landed;
+
+    expect(plain(terminal.output)).toContain('Fetched [1s]');
+  });
+
+  it('times a real clack spinner across the landing by its whole run', async () => {
+    const { banner, stream, terminal } = setup();
+    const spinner = banner.spinner(() =>
+      clackSpinner({ indicator: 'timer', output: stream })
+    );
+    spinner.start('Fetching');
+    await vi.advanceTimersByTimeAsync(2000);
+    const landed = banner.settle();
+    await vi.advanceTimersByTimeAsync(3000);
+    await landed;
+    await vi.advanceTimersByTimeAsync(1500);
+    spinner.stop('Fetched');
+
+    // 2s under the globe, up to 3s landing, then 1.5s as a real spinner.
+    expect(plain(terminal.output)).toMatch(/Fetched \[6s\]/);
+  });
+
+  it('keeps the status line for the spinner that is still running', async () => {
+    const { banner, terminal } = setup();
+    const quiet = (): SpinnerResult => ({
+      start: () => {},
+      message: () => {},
+      stop: () => {},
+      isCancelled: false,
+    });
+    const first = banner.spinner(quiet);
+    const second = banner.spinner(quiet);
+    first.start('Uploading files');
+    second.start('Watching for changes');
+    first.stop('Uploaded files');
+    first.message('Late message');
+    const before = terminal.output.length;
+    await vi.advanceTimersByTimeAsync(200);
+
+    const redrawn = plain(terminal.output.slice(before));
+    expect(redrawn).toContain('Watching for changes');
+    expect(redrawn).not.toContain('Late message');
+    terminal.emit('resize');
   });
 
   it('starts a progress bar only after the banner hands back the terminal', async () => {
@@ -181,6 +237,45 @@ describe('GlobeBanner', () => {
       'advance 1',
       'stop Downloaded',
     ]);
+  });
+
+  it('prints a progress bar that finishes before landing in order', async () => {
+    const { banner, stream, terminal } = setup();
+    const bar = banner.progress(
+      (): ProgressResult => ({
+        start: (msg) => void stream.write(`bar: ${msg}\n`),
+        advance: () => {},
+        message: () => {},
+        stop: (msg) => void stream.write(`bar done: ${msg}\n`),
+        isCancelled: false,
+      })
+    );
+    bar.start('Downloading');
+    bar.stop('No files to download');
+    stream.write('Done!\n');
+    await vi.advanceTimersByTimeAsync(3000);
+
+    const shown = plain(terminal.output);
+    expect(banner.isAnimating()).toBe(false);
+    expect(shown.indexOf('bar done: No files to download')).toBeGreaterThan(-1);
+    expect(shown.indexOf('bar done: No files to download')).toBeLessThan(
+      shown.indexOf('Done!')
+    );
+  });
+
+  it('lets a redirected stream write straight through', () => {
+    const terminal = new FakeTerminal();
+    const tty = terminal as unknown as NodeJS.WriteStream;
+    const piped = new FakeTerminal();
+    piped.isTTY = false;
+    const pipedStream = piped as unknown as NodeJS.WriteStream;
+    const banner = new GlobeBanner();
+    banner.start({ stream: tty, hold: [tty, pipedStream] });
+    pipedStream.write('warning: to a log file\n');
+
+    expect(piped.output).toBe('warning: to a log file\n');
+    expect(banner.isAnimating()).toBe(true);
+    terminal.emit('resize');
   });
 
   it.each([
