@@ -3845,10 +3845,11 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
     });
 
     it('moves the positions of a map with what was replaced in its code', () => {
-      const code = 'one("X"); two("X");\nthree(); four("X"); five();';
+      const code =
+        'one("X"); two("X");\nthree(); four("X"); five(); six(BB); seven();';
       const tracked = trackReplacements(code);
-      const replaced = tracked.replace(code, /"X"|three\(\); /g, (match) =>
-        match === '"X"' ? '0' : 'three(\n);\n'
+      const replaced = tracked.replace(code, /"X"|three\(\); |BB/g, (match) =>
+        match === '"X"' ? '0' : match === 'BB' ? '' : 'three(\n);\n'
       );
       // Every character maps to itself
       const before = new MagicString(code).generateMap({
@@ -3859,12 +3860,17 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
         ...before,
         mappings: moveMappings(before.mappings, code, tracked.replacements!),
       };
-      for (const token of ['one', 'two', 'three', 'four', 'five']) {
+      for (const token of ['one', 'two', 'three', 'four', 'five', 'seven']) {
         expect(trace(moved, replaced, token), token).toEqual({
           source: 'chunk.js',
           ...locate(code, token),
         });
       }
+      // What follows something deleted keeps its own position, not that of what was deleted
+      expect(trace(moved, replaced, '); seven')).toEqual({
+        source: 'chunk.js',
+        ...locate(code, '); seven'),
+      });
       // A position inside what was replaced is where the replacement starts
       expect(trace(moved, replaced, '0); two')).toEqual({
         source: 'chunk.js',

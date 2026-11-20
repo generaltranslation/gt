@@ -131,7 +131,7 @@ function getLineStarts(code: string): number[] {
  * The mappings of a source map of `code` as those of the code after
  * `replacements`: every position keeps what it maps to and moves with its
  * code, and a position inside what was replaced moves to where the
- * replacement starts.
+ * replacement starts, unless code that was not replaced is there now.
  */
 export function moveMappings(
   mappings: string,
@@ -159,16 +159,17 @@ export function moveMappings(
         if (end > at) break;
         grown += content.length - (end - start);
       }
-      const inside = replacements[next];
-      const movedTo =
-        inside && inside.start < at ? inside.start + grown : at + grown;
+      const around = replacements[next];
+      const isReplaced = around !== undefined && around.start < at;
+      const movedTo = isReplaced ? around.start + grown : at + grown;
       while (movedLineStarts[line + 1] <= movedTo) line++;
       const column = movedTo - movedLineStarts[line];
-      const last = moved[line][moved[line].length - 1];
-      if (last?.[0] === column) continue;
       const movedSegment = [...segment] as typeof segment;
       movedSegment[0] = column;
-      moved[line].push(movedSegment);
+      const last = moved[line].length - 1;
+      if (moved[line][last]?.[0] !== column) moved[line].push(movedSegment);
+      // What follows something deleted is at the column where that started
+      else if (!isReplaced) moved[line][last] = movedSegment;
     }
   });
   // Lines without a mapping at the end of the code are not written
