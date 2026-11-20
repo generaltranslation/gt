@@ -156,6 +156,11 @@ export type ChunkTranslationsState = {
    * and how many had when the file was requested whose wait last ran out
    */
   wt?: [inTime: number, late?: number];
+  /**
+   * What requests the files of what ran before the lists of `i` arrived,
+   * once they do: by the chunk of an import, or by the keys of the files
+   */
+  il?: Record<string, () => Promise<unknown>>;
 };
 
 export type InitializeConfig = { loadTranslations?: unknown };

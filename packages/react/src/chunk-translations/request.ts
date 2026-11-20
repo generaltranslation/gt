@@ -5,6 +5,7 @@ import {
 import type {
   ChunkTranslationsState,
   EntryFile,
+  ImportedFiles,
   MinifiedTranslations,
   Translations,
 } from './state';
@@ -35,9 +36,39 @@ export function requestEntry(
     (file: EntryFile) => {
       register(state, locale, file.t);
       // Elsewhere when the build has maps
-      if (file.i) state.i = file.i;
+      if (file.i) readLists(state, file.i);
     }
   );
+}
+
+/**
+ * Keeps the lists of the files each import needs, and requests the files of
+ * the imports that ran without them.
+ */
+export function readLists(
+  state: ChunkTranslationsState,
+  lists: ImportedFiles | undefined
+): void {
+  state.i = lists;
+  const unlisted = state.il;
+  if (!lists || !unlisted) return;
+  state.il = undefined;
+  for (const key in unlisted) {
+    void unlisted[key]().then(() => addArrived(state));
+  }
+}
+
+/**
+ * Requests files once the lists that name them have arrived, for what ran
+ * when they were late or failed. Nothing waits for these files.
+ * @param key What is asked for: once, however often it ran without the lists.
+ */
+export function requestOnceListed(
+  state: ChunkTranslationsState,
+  key: string,
+  requestFiles: () => Promise<unknown>
+): void {
+  (state.il ||= {})[key] = requestFiles;
 }
 
 export function warnMissingLocale(
