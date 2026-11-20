@@ -83,6 +83,18 @@ describe('injection pass', () => {
       2,
     ],
 
+    // A children prop that holds text is the element's text
+    ['a string children prop', '<p children="Hello" />', 1, 0],
+    ['a punctuation children prop', '<Label children="," />', 1, 0],
+    ['a string children prop in braces', "<p children={'Hello'} />", 1, 0],
+    ['a static template children prop', '<p children={`Hello`} />', 1, 0],
+    [
+      'a children prop above nested children that are only a line break',
+      '<p children="Hello">\n</p>',
+      1,
+      0,
+    ],
+
     // An element in braces is the same child as the element
     [
       'an element in braces next to text',
@@ -120,6 +132,9 @@ describe('injection pass', () => {
       0,
       0,
     ],
+    ['an empty children prop', '<p children="" />', 0, 0],
+    ['a whitespace children prop', '<p children="   " />', 0, 0],
+    ['an expression children prop', '<p children={label} />', 0, 0],
     ['boolean literals only', '<div>{true} {false}</div>', 0, 0],
     ['a numeric literal only', '<div>{42}</div>', 0, 0],
     [
@@ -453,6 +468,11 @@ describe('injection and extraction', () => {
       page('<T><>Hello There</></T>'),
       [{ t: 'C1', i: 1, c: 'Hello There' }],
     ],
+    [
+      'a user T with a string children prop in braces',
+      page("<T children={'Hello World'} />"),
+      ['Hello World'],
+    ],
     ['a file without GT imports', page('<h1>Welcome</h1>'), ['Welcome']],
     [
       'a file that imports T without using it',
@@ -525,6 +545,46 @@ describe('injection and extraction', () => {
       'a Branch in braces with the expression next to it',
       page('<div>{name}{<Branch branch="x">fallback</Branch>}</div>'),
       [[variable(1), { t: 'Branch', i: 2, d: fallback }]],
+    ],
+    [
+      'a string children prop as written',
+      page('<Label children="  Fish &amp; chips  " />'),
+      ['  Fish & chips  '],
+    ],
+    [
+      'a string children prop in braces inside an update',
+      page("<p>Lead <b children={'bold words'} /></p>"),
+      [['Lead ', { t: 'b', i: 1, c: 'bold words' }]],
+    ],
+    [
+      'an escaped newline in a children prop in braces inside an update',
+      page("<p>Lead <b children={'first\\nsecond'} /></p>"),
+      [['Lead ', { t: 'b', i: 1, c: 'first\nsecond' }]],
+    ],
+    [
+      'a multiline template in a children prop inside an update',
+      page('<p>Lead <b children={`first\n    second`} /></p>'),
+      [['Lead ', { t: 'b', i: 1, c: 'first\n    second' }]],
+    ],
+    [
+      'spaces and a tab in a children prop in braces inside an update',
+      page("<p>Lead <b children={'  spaced\\tapart  '} /></p>"),
+      [['Lead ', { t: 'b', i: 1, c: '  spaced\tapart  ' }]],
+    ],
+    [
+      'a user T with an escaped newline in its children prop',
+      page("<T children={'first\\nsecond'} />"),
+      ['first\nsecond'],
+    ],
+    [
+      'a user T with a multiline template as its children prop',
+      page('<T children={`first\n    second`} />'),
+      ['first\n    second'],
+    ],
+    [
+      'nested children instead of a children prop',
+      page('<p children="Prop words">Nested words</p>'),
+      ['Nested words'],
     ],
     [
       'sibling elements separately',
