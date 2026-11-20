@@ -2,7 +2,11 @@ import {
   fileEncodingSkipReason,
   noDefaultLocaleError,
 } from '../../console/index.js';
-import { exitSync, logErrorAndExit } from '../../console/logging.js';
+import {
+  exitSync,
+  logCollectedFiles,
+  logErrorAndExit,
+} from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { readFileContent } from '../../fs/fileContent.js';
@@ -123,6 +127,14 @@ export async function upload(
   if (!settings.defaultLocale) {
     return logErrorAndExit(noDefaultLocaleError);
   }
+
+  // Dry run
+  if (settings.dryRun) {
+    logger.success(`Dry run: No files were uploaded to General Translation.`);
+    logCollectedFiles(allFiles);
+    return;
+  }
+
   if (!hasValidCredentials(settings) || !hasValidServiceLocales(settings))
     return exitSync(1);
 

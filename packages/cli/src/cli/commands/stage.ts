@@ -48,7 +48,7 @@ export async function handleStage(
   } = await collectFiles(options, settings, library);
 
   // Point at dashboard review setup when uploading review-gated content
-  await warnManualReviewSetup(settings, allFiles);
+  await warnManualReviewSetup(settings, allFiles, options.dryRun);
 
   // Dry run
   if (options.dryRun) {
