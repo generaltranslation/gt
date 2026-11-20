@@ -61,6 +61,14 @@ If a parent element has text as a direct child, \_T wraps at that level. Nested 
 <div><_T>Welcome, <span><em>friend</em></span>!</_T></div>
 ```
 
+An element or fragment written in braces compiles to the same child as the element itself, so it is treated the same way everywhere: it is part of its parent's unit, expressions inside it get \_Var, and a Branch, Plural or Derive in braces triggers \_T at the parent (Rules 8 and 9).
+
+```jsx
+// <b> in braces is the same child as <b> — _T at div, <b> is part of the unit
+<div>Hello {<b>World</b>}</div>
+<div><_T>Hello {<b>World</b>}</_T></div>
+```
+
 ## Rule 3: Sibling elements without a common text parent get independent \_T
 
 When a parent has no direct text, each child subtree is processed independently.
