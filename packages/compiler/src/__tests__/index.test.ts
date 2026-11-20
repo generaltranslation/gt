@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping';
+import generate from '@babel/generator';
+import * as parser from '@babel/parser';
 import type {
   TransformResult,
   UnpluginBuildContext,
@@ -290,6 +293,188 @@ describe('pass gating by plugin options', () => {
       expect(outputs[0]).not.toContain(text);
     }
   });
+});
+
+describe('source map of the transform', () => {
+  // A <T>, a t template and a plain call on one line: the compiler writes a
+  // hash into each of the first two, which moves the third
+  const CODE = [
+    "import { jsx } from 'react/jsx-runtime';",
+    "import { T, useGT } from 'gt-react';",
+    'export function App() {',
+    '  const t = useGT();',
+    '  return [jsx(T, { children: "Hello" }), t`Save`, report(1)];',
+    '}',
+  ].join('\n');
+
+  /** Where the first `token` of a text is, as a source map counts it. */
+  function locate(text: string, token: string) {
+    const lines = text.split('\n');
+    const index = lines.findIndex((line) => line.includes(token));
+    return { line: index + 1, column: lines[index].indexOf(token) };
+  }
+
+  type Framework = 'vite' | 'rollup' | 'esbuild' | 'webpack' | 'rspack';
+
+  /**
+   * Transforms `code` as the bundler would call the plugin: `native` is what
+   * unplugin's getNativeBuildContext() returns there, and `viteConfig` the
+   * config Vite resolved.
+   */
+  async function transformFor(
+    framework: Framework,
+    {
+      code = CODE,
+      native,
+      viteConfig,
+    }: { code?: string; native?: object; viteConfig?: object } = {}
+  ) {
+    const cwd = createProject();
+    const file = path.join(cwd, 'App.tsx');
+    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const plugin = gtUnplugin.raw({ precomputeMessages: false }, {
+        framework,
+      } as Parameters<typeof gtUnplugin.raw>[1]);
+      if (typeof plugin.transform !== 'function') {
+        throw new Error('Expected transform hook to be a function');
+      }
+      const { configResolved } = plugin.vite ?? {};
+      if (viteConfig && typeof configResolved === 'function') {
+        await configResolved.call({} as never, viteConfig as never);
+      }
+      const result: TransformResult = await plugin.transform.call(
+        { ...testContext, getNativeBuildContext: () => native as never },
+        code,
+        file
+      );
+      if (!result || typeof result === 'string') {
+        throw new Error('Expected the transform to return code and a map');
+      }
+      expect(result.code).toContain('t({ $_hash: "');
+      expect(result.code).toContain(', _hash: "');
+      return { ...result, file };
+    } finally {
+      cwdSpy.mockRestore();
+      warnSpy.mockRestore();
+    }
+  }
+
+  it.each(['jsx(T', 't(', 'report', 'App'])(
+    'maps %s back to its line and column',
+    async (token) => {
+      const { code, map, file } = await transformFor('rollup');
+      const written = locate(code, token);
+      const original = locate(CODE, token === 't(' ? 't`' : token);
+      // The rewrites of this line move what follows them
+      if (token === 'report') {
+        expect(written.column).toBeGreaterThan(original.column);
+      }
+      expect(
+        originalPositionFor(new TraceMap(map as string), written)
+      ).toMatchObject({ source: file, ...original });
+    }
+  );
+
+  it.each<
+    [
+      name: string,
+      framework: Framework,
+      context: { native?: object; viteConfig?: object },
+      mapped: boolean,
+    ]
+  >([
+    [
+      'a Vite build with source maps',
+      'vite',
+      { viteConfig: { command: 'build', build: { sourcemap: 'hidden' } } },
+      true,
+    ],
+    [
+      'a Vite dev server',
+      'vite',
+      { viteConfig: { command: 'serve', build: { sourcemap: false } } },
+      true,
+    ],
+    [
+      'a Vite build without source maps',
+      'vite',
+      { viteConfig: { command: 'build', build: { sourcemap: false } } },
+      false,
+    ],
+    [
+      'an esbuild build with source maps',
+      'esbuild',
+      {
+        native: {
+          framework: 'esbuild',
+          build: { initialOptions: { sourcemap: true } },
+        },
+      },
+      true,
+    ],
+    [
+      'an esbuild build without source maps',
+      'esbuild',
+      { native: { framework: 'esbuild', build: { initialOptions: {} } } },
+      false,
+    ],
+    // unplugin could only drop the map, or put it in place of an earlier loader's
+    [
+      'a webpack loader that received no map',
+      'webpack',
+      { native: { framework: 'webpack' } },
+      false,
+    ],
+    [
+      'an Rspack loader that received no map',
+      'rspack',
+      { native: { framework: 'rspack' } },
+      false,
+    ],
+  ])('writes a map only where one is read: %s', async (...row) => {
+    const [, framework, context, mapped] = row;
+    const { code, map, file } = await transformFor(framework, context);
+    if (!mapped) {
+      expect(map).toBeNull();
+      return;
+    }
+    expect(
+      originalPositionFor(new TraceMap(map as string), locate(code, 'report'))
+    ).toMatchObject({ source: file, ...locate(CODE, 'report') });
+  });
+
+  it.each(['webpack', 'rspack'] as const)(
+    'traces its map through the map a %s loader received',
+    async (framework) => {
+      // What an earlier loader made of a source with other lines and columns
+      const source = CODE.replace('export', '\n\nexport').replace(
+        'report',
+        '    report'
+      );
+      const earlier = generate(
+        parser.parse(source, { sourceType: 'module' }),
+        { sourceMaps: true, sourceFileName: '/app/src/App.tsx' },
+        source
+      );
+      expect(locate(earlier.code, 'report')).not.toEqual(
+        locate(source, 'report')
+      );
+      const { code, map } = await transformFor(framework, {
+        code: earlier.code,
+        native: { framework, inputSourceMap: earlier.map },
+      });
+      const traced = new TraceMap(map as string);
+      expect(originalPositionFor(traced, locate(code, 'report'))).toMatchObject(
+        {
+          source: '/app/src/App.tsx',
+          ...locate(source, 'report'),
+        }
+      );
+      expect(traced.sourcesContent).toEqual([source]);
+    }
+  );
 });
 
 describe('bundler adapters', () => {
