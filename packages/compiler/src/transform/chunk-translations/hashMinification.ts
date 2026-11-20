@@ -12,21 +12,21 @@ import type { TranslationsTable } from './loadTranslationFiles';
  * an id in place of the hash at both sides, and the runtime looks one up
  * under the other as it does a hash.
  *
- * An id is what names the list of its chunk's messages, then the place of
- * its message in that list, as `kR3_x0Qa.12`. The list is the hashes of the
- * messages in the chunk's code, in the order of the hashes, and its name is
- * a digest of exactly that. So an id still follows from content alone, as a
- * hash does: the same id names the same message in every build, no build
- * needs a table from another, and a page can read a file of any build. What
- * it costs a page is one digest per chunk, which every call site of the
- * chunk repeats, and a small number.
+ * An id is what names a list of its chunk's messages, then the place of its
+ * message in that list, as `kR3_x0Qa.12`. A list is the hashes of messages
+ * in the chunk's code, in the order of the hashes, and its name is a digest
+ * of exactly that. So an id still follows from content alone, as a hash
+ * does: the same id names the same message in every build, no build needs a
+ * table from another, and a page can read a file of any build. What it costs
+ * a page is one digest per list, which every call site of the list repeats,
+ * and a small number.
  *
  * A chunk's messages are known once the bundler has put its modules
  * together, so a module is compiled with a placeholder at each call site,
  * and the chunk's hashes are minified when it is rendered, before the
- * bundler minifies and names it. Its ids change when the set of its own
- * messages does, and with nothing else: not with the order of its modules
- * or of its code.
+ * bundler minifies and names it. The ids of a list change when the set of
+ * its messages does, and with nothing else: not with the order of the
+ * chunk's modules or of its code.
  *
  * A bundler that limits the size of a chunk measures its modules before it
  * renders them, so it measures placeholders. A placeholder is therefore
@@ -38,7 +38,17 @@ import type { TranslationsTable } from './loadTranslationFiles';
  * minified, and a build fails when its output still holds one, or a call
  * site there still passes a string of the exact form of one.
  *
- * A message that two chunks read has an id in each. The hash itself stays
+ * A build that splits by chunk lists all of a chunk's messages together,
+ * since one file holds them. A build that splits by module puts a chunk's
+ * messages in the files of the loads that reach their call sites in that
+ * chunk (see `pairs` of createRegionGraph), so there a chunk has a list for
+ * each set of its messages that the same loads fetch (see listScopes.ts): a
+ * file then names only lists that are wholly in it, of chunks that load
+ * with it, and is rewritten when one of those lists changes and with
+ * nothing else a chunk reads.
+ *
+ * A message that two chunks read has an id in each, unless both list it
+ * with the same messages, which is one list. The hash itself stays
  * what it is everywhere else: in the catalogs, in the unsplit file, at every
  * call site the runtime hashes, and inside this build, which reads ids back
  * into hashes before it assigns messages to files.
@@ -203,7 +213,7 @@ export const createSharedListNameError = (
     source: '@generaltranslation/compiler',
     severity: 'Error',
     whatHappened: `Hash minification gives two messages the id "${id}"`,
-    why: 'the lists of messages of two chunks have the same digest, and a page would render the translation of one message for the other',
+    why: 'two lists of messages have the same digest, and a page would render the translation of one message for the other',
     fix: 'Turn experimentalSplitTranslations.minifyHashes off',
     details: `${hashes[0]} and ${hashes[1]}`,
   });
@@ -299,6 +309,10 @@ export function minifyHashes(hashes: Iterable<string>): Map<string, string> {
  * starts as one does stays as it is. Undefined when the chunk holds no
  * placeholder.
  *
+ * The chunk's messages are one list, or with `getScope` one list for each
+ * scope it returns: messages are listed together when their scopes are the
+ * same value.
+ *
  * Throws when an id already names another message: two different lists
  * share a digest, which chance does once in 2^48 pairs of them.
  *
@@ -307,15 +321,24 @@ export function minifyHashes(hashes: Iterable<string>): Map<string, string> {
 export function minifyChunk(
   code: string,
   minified: MinifiedIds,
-  replace: ReplaceInChunk = replaceInChunk
+  replace: ReplaceInChunk = replaceInChunk,
+  getScope?: (hash: string) => unknown
 ): string | undefined {
   if (!code.includes(MINIFIED_ID_PLACEHOLDER)) return undefined;
   const { placeholders } = minified;
-  const ids = minifyHashes(
-    (code.match(PLACEHOLDER) ?? []).flatMap(
-      (written) => placeholders.get(written) ?? []
-    )
-  );
+  const scopes = new Map<unknown, string[]>();
+  for (const written of code.match(PLACEHOLDER) ?? []) {
+    const hash = placeholders.get(written);
+    if (hash === undefined) continue;
+    const scope = getScope?.(hash);
+    const listed = scopes.get(scope);
+    if (listed) listed.push(hash);
+    else scopes.set(scope, [hash]);
+  }
+  const ids = new Map<string, string>();
+  for (const listed of scopes.values()) {
+    for (const [hash, id] of minifyHashes(listed)) ids.set(hash, id);
+  }
   if (!ids.size) return undefined;
   for (const [hash, id] of ids) {
     const named = minified.hashes.get(id);
