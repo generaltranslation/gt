@@ -48,7 +48,11 @@ function definePlural(name: string, type: Intl.PluralRuleType) {
             ...branches.map(getPluralBranchKey),
             ...(slots.default ? ['other'] : []),
           ],
-          getFormatLocales(state.getLocale(), state.resolveFormattingLocale),
+          getFormatLocales(
+            state.getLocale(),
+            state.defaultLocale,
+            state.resolveFormattingLocale
+          ),
           type
         );
         const branch = branches.find(

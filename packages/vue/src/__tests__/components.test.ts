@@ -658,6 +658,26 @@ describe('Select and Plural attributes', () => {
     expect(html).not.toContain('English other');
   });
 
+  // Zero is "one" in French and "other" in English, so a host with either
+  // locale fails a row if the form is left to the host's rules.
+  it.each([
+    ['fr', 'One'],
+    ['en', 'Other'],
+  ])(
+    'uses the plural rules of the default locale %s for a locale Intl has no data for',
+    async (defaultLocale, expected) => {
+      const plugin = createGT({ defaultLocale });
+      await plugin.setLocale('qaa');
+      const html = await renderTemplate(
+        '<Plural :n="0"><template #one>One</template><template #default>Other</template></Plural>',
+        () => ({}),
+        plugin
+      );
+
+      expect(stripFragmentMarkers(html)).toBe(expected);
+    }
+  );
+
   it('pairs the branch a translation picks with the source other branch', async () => {
     const source: JsxChildren = {
       t: 'Plural',
@@ -1020,8 +1040,9 @@ describe('gt-vue formatting components', () => {
     }
   );
 
-  it('uses the active locale', () => {
-    expect(getFormatLocales('fr')).toEqual(['fr']);
+  it('puts the default locale behind the active locale', () => {
+    expect(getFormatLocales('fr', 'en')).toEqual(['fr', 'en']);
+    expect(getFormatLocales('en', 'en')).toEqual(['en']);
   });
 
   it('ignores fallthrough attributes without warning for unwrapped values', async () => {
