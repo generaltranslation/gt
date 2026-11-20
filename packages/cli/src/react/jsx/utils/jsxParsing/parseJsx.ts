@@ -458,7 +458,13 @@ function buildJSXTree({
                 staticAnalysis.isStatic &&
                 staticAnalysis.value !== undefined
               ) {
-                attrValue = staticAnalysis.value;
+                attrValue =
+                  attrName === 'children'
+                    ? {
+                        nodeType: 'expression' as const,
+                        result: staticAnalysis.value,
+                      }
+                    : staticAnalysis.value;
               }
               // Otherwise attrValue stays null and won't be included
             }

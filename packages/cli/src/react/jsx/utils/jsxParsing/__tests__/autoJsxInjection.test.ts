@@ -557,6 +557,31 @@ describe('injection and extraction', () => {
       [['Lead ', { t: 'b', i: 1, c: 'bold words' }]],
     ],
     [
+      'an escaped newline in a children prop in braces inside an update',
+      page("<p>Lead <b children={'first\\nsecond'} /></p>"),
+      [['Lead ', { t: 'b', i: 1, c: 'first\nsecond' }]],
+    ],
+    [
+      'a multiline template in a children prop inside an update',
+      page('<p>Lead <b children={`first\n    second`} /></p>'),
+      [['Lead ', { t: 'b', i: 1, c: 'first\n    second' }]],
+    ],
+    [
+      'spaces and a tab in a children prop in braces inside an update',
+      page("<p>Lead <b children={'  spaced\\tapart  '} /></p>"),
+      [['Lead ', { t: 'b', i: 1, c: '  spaced\tapart  ' }]],
+    ],
+    [
+      'a user T with an escaped newline in its children prop',
+      page("<T children={'first\\nsecond'} />"),
+      ['first\nsecond'],
+    ],
+    [
+      'a user T with a multiline template as its children prop',
+      page('<T children={`first\n    second`} />'),
+      ['first\n    second'],
+    ],
+    [
       'nested children instead of a children prop',
       page('<p children="Prop words">Nested words</p>'),
       ['Nested words'],
