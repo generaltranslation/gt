@@ -287,6 +287,7 @@ describe('GlobeBanner', () => {
     ['CJK', '漢'],
     ['emoji', '⌚'],
     ['half-width kana with a voiced mark', 'ｶﾞ'],
+    ['keycap emoji', '1️⃣'],
   ])('keeps wide %s status text on one line', (_kind, char) => {
     const terminal = new FakeTerminal();
     terminal.columns = 30;

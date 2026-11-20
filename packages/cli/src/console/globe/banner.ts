@@ -4,6 +4,7 @@ import type { ProgressResult, SpinnerResult } from '@clack/prompts';
 import stringWidth from 'string-width';
 import { getGlobeFrames } from './frames.js';
 import type { GlobeFrame, GlobeFrameSet } from './frames.js';
+import { readProcessGroups } from './motion.js';
 import { paintFrame } from './paint.js';
 
 const FRAME_MS = 1000 / 30;
@@ -73,14 +74,16 @@ function atTime(time: number, fn: () => void): void {
   }
 }
 
-// Terminal columns a grapheme takes. Terminals give each spacing code point
-// in it its own width (a half-width kana and its voiced mark take two), but
-// draw an emoji sequence as one glyph.
+// Terminal columns a grapheme takes. string-width measures whole graphemes
+// (an emoji or keycap sequence is one glyph), but counts a half-width kana's
+// voiced or semi-voiced mark as part of the kana, while terminals draw the
+// mark in a cell of its own.
+const HALF_WIDTH_SOUND_MARKS = new Set(['\uff9e', '\uff9f']);
 function columnsOf(grapheme: string): number {
-  if (/\p{Extended_Pictographic}/u.test(grapheme)) return stringWidth(grapheme);
-  let width = 0;
-  for (const char of grapheme) width += stringWidth(char);
-  return width;
+  const marks = [...grapheme]
+    .slice(1)
+    .filter((char) => HALF_WIDTH_SOUND_MARKS.has(char)).length;
+  return stringWidth(grapheme) + marks;
 }
 
 // Shortens text to fit `room` terminal columns, ending in … if cut.
@@ -172,8 +175,10 @@ export class GlobeBanner {
     this.routeConsole();
     process.on('exit', this.onExit);
     process.on('uncaughtExceptionMonitor', this.onCrash);
+    // First, so other listeners (even once listeners) are still registered
+    // when it runs and can be counted.
     if (process.versions.bun)
-      process.on('unhandledRejection', this.onRejection);
+      process.prependListener('unhandledRejection', this.onRejection);
     for (const signal of TERMINATING_SIGNALS) process.on(signal, this.onSignal);
     this.options.stream.on('resize', this.onResize);
     this.muteInput();
@@ -579,10 +584,17 @@ export class GlobeBanner {
     // Suspending comes back later, so the command carries on as landed;
     // the others end it.
     this.land(signal === 'SIGTSTP' ? undefined : 1);
-    // Raw input means the terminal sent no signal, so raise it ourselves:
-    // other handlers get it, and without any, the key does what it usually
-    // does (Ctrl+C exits, Ctrl+Z suspends, Ctrl+\ quits).
-    process.kill(process.pid, signal);
+    // Raw input means the terminal sent no signal, so raise it as the
+    // terminal would: on its whole foreground job, so a launcher running
+    // this CLI (pnpm exec, the binary's wrapper) stops or exits with it.
+    // The key then does what it usually does (Ctrl+C exits, Ctrl+Z
+    // suspends, Ctrl+\ quits), and other handlers still get it.
+    const job = readProcessGroups()?.foreground;
+    try {
+      process.kill(job ? -job : process.pid, signal);
+    } catch {
+      process.kill(process.pid, signal);
+    }
   };
 
   // An uncaught error lands the globe before its trace prints.
@@ -595,7 +607,10 @@ export class GlobeBanner {
   // land first, then hand the same rejection back, unhandled: the runtime
   // reports it as usual, with its original stack and exit code. Rethrowing
   // here would report this handler as where it failed.
+  // Only stands in when no other listener handles the rejection; otherwise
+  // that listener decides what happens, and the globe lands on its output.
   private readonly onRejection = (reason: unknown) => {
+    if (process.listenerCount('unhandledRejection') > 1) return;
     this.onCrash();
     process.off('unhandledRejection', this.onRejection);
     void Promise.reject(reason);

@@ -94,6 +94,38 @@ export function systemReducesMotion(
 }
 
 /**
+ * This process's group and the terminal's foreground group, where they can
+ * be read cheaply (Linux /proc, ps elsewhere); undefined on Windows, which
+ * has no job control, or when unknown.
+ */
+export function readProcessGroups(
+  platform: NodeJS.Platform = process.platform
+): { group: number; foreground: number } | undefined {
+  if (platform === 'win32') return undefined;
+  try {
+    let fields: string[];
+    if (platform === 'linux') {
+      // Fields after the command name: state ppid pgrp session tty tpgid ...
+      const stat = readFileSync('/proc/self/stat', 'utf8');
+      const rest = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+      fields = [rest[2], rest[5]];
+    } else {
+      const result = spawnSync(
+        'ps',
+        ['-o', 'pgid=,tpgid=', '-p', String(process.pid)],
+        { encoding: 'utf8', timeout: OS_CHECK_TIMEOUT_MS }
+      );
+      if (result.status !== 0) return undefined;
+      fields = result.stdout.trim().split(/\s+/);
+    }
+    const [group, foreground] = fields.map(Number);
+    return group > 0 && foreground > 0 ? { group, foreground } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Whether this process is the terminal's foreground job. A background job
  * (`gt … &`) must not animate: switching the terminal to raw mode stops it
  * with SIGTTOU, and it would draw over whatever the user is typing.
@@ -101,29 +133,9 @@ export function systemReducesMotion(
 export function isForegroundProcess(
   platform: NodeJS.Platform = process.platform
 ): boolean {
-  if (platform === 'win32') return true;
-  try {
-    let groups: string[];
-    if (platform === 'linux') {
-      // Fields after the command name: state ppid pgrp session tty tpgid ...
-      const stat = readFileSync('/proc/self/stat', 'utf8');
-      const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
-      groups = [fields[2], fields[5]];
-    } else {
-      const result = spawnSync(
-        'ps',
-        ['-o', 'pgid=,tpgid=', '-p', String(process.pid)],
-        { encoding: 'utf8', timeout: OS_CHECK_TIMEOUT_MS }
-      );
-      if (result.status !== 0) return true;
-      groups = result.stdout.trim().split(/\s+/);
-    }
-    const [group, foreground] = groups.map(Number);
-    return !(group > 0 && foreground > 0 && group !== foreground);
-  } catch {
-    // Unknown means assume the usual case, a foreground command.
-    return true;
-  }
+  const groups = readProcessGroups(platform);
+  // Unknown means assume the usual case, a foreground command.
+  return !groups || groups.group === groups.foreground;
 }
 
 export type DecideBannerOptions = {
