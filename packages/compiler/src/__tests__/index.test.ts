@@ -653,7 +653,7 @@ describe("JSX compiled against a runtime other than React's", () => {
   const compiledAgainst = (source: string, code: string) =>
     code.replaceAll('react/jsx-', `${source}/jsx-`);
   const warningOf = (source: string, file: string) =>
-    `@generaltranslation/compiler Warning: The compiler skipped the JSX in ${file} because it is compiled against "${source}", and the compiler reads only JSX compiled against React's runtime; this is said once per build, for the first file compiled against that source. The build continues, and the JSX of such files gets no automatic <T>, no build-time hash and no usage checks. Compile the app's JSX against React's runtime, so that its files import react/jsx-runtime and react/jsx-dev-runtime, for example by resolving those two modules to the other runtime in the bundler.`;
+    `@generaltranslation/compiler Warning: The compiler skipped the JSX in ${file} because it is compiled against "${source}", and the compiler reads only JSX compiled against React's runtime; this is said once per build, for the first file compiled against that source. The build continues, and the JSX of such files gets no automatic <T>, no build-time hash and no usage checks. Compile the app's JSX against React's runtime, so that its files import react/jsx-runtime and react/jsx-dev-runtime. To keep the other runtime, resolve those two modules to it for the app's own files only, not for the runtime's own imports of them.`;
 
   const PRODUCTION_CODE = `
     import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
