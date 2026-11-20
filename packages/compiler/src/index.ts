@@ -75,6 +75,7 @@ import {
 } from './transform/chunk-translations/unsplitTranslations';
 import { getPageBase } from './transform/chunk-translations/startupScript';
 import { Logger } from './state/Logger';
+import { mayImportReadSource } from './utils/mayImportReadSource';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import {
   createPrecomputedMessageSupport,
@@ -352,6 +353,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         );
       },
       transform(code: string, id: string) {
+        if (!mayImportReadSource(code)) return null;
+
         // Initialize processing state
         const state = initializeState(resolvedOptions, id, chunkTranslations);
         if (debugManifest) state.debugManifest = debugManifest;

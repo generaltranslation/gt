@@ -292,6 +292,35 @@ describe('pass gating by plugin options', () => {
   });
 });
 
+describe('modules without an import the transform reads', () => {
+  // Only a module that is parsed can fail to parse
+  it.each([
+    ['skips a module that imports nothing it reads', `'./math'`, 0],
+    ['parses a module that imports a GT entry', `'gt-react'`, 1],
+    ['parses a module whose source an escape spells', `'gt-re\\u0061ct'`, 1],
+  ])('%s', async (_name, source, parseErrors) => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { outputs } = await runPlugin(
+        undefined,
+        `import { T } from ${source};\nexport const = T;`
+      );
+      expect(outputs).toEqual([null]);
+      expect(errorSpy).toHaveBeenCalledTimes(parseErrors);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('injects the hash of a <T> imported from a source an escape spells', async () => {
+    const { outputs } = await runPlugin(
+      undefined,
+      T_COMPONENT_CODE.replace(`'gt-react'`, `'gt-re\\u0061ct'`)
+    );
+    expect(outputs[0]).toContain('_hash: "');
+  });
+});
+
 describe('bundler adapters', () => {
   it('exposes a factory for every supported bundler, including rspack', () => {
     for (const adapter of [webpack, vite, rollup, rspack, esbuild]) {
