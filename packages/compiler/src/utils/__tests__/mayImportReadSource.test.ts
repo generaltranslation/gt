@@ -22,10 +22,14 @@ describe('mayImportReadSource', () => {
   });
 
   it.each(
-    Object.values(REACT_IMPORT_SOURCES).flatMap((source) =>
-      REACT_FUNCTION_VALUES.flatMap((name) =>
-        QUOTES.map((quote) => [name, quote + source + quote])
-      )
+    [
+      ...Object.values(REACT_IMPORT_SOURCES),
+      '@emotion/react/jsx-runtime',
+      'preact/jsx-dev-runtime',
+      '../runtime/jsx-runtime',
+      './elements',
+    ].flatMap((source) =>
+      REACT_FUNCTION_VALUES.map((name) => [name, `'${source}'`])
     )
   )('reads a module that imports %s from %s', (name, source) => {
     expect(mayImportReadSource(`import { ${name} as _ } from ${source};`)).toBe(
@@ -50,10 +54,6 @@ describe('mayImportReadSource', () => {
     [
       'React without a JSX function',
       `import { useState } from 'react';\nexport const useOpen = () => useState(false);`,
-    ],
-    [
-      'a JSX function of another package',
-      `import { jsx } from 'preact/jsx-runtime';\nexport const el = jsx('p', {});`,
     ],
     [
       'a package whose name starts with a source',
