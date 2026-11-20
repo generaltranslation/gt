@@ -13,6 +13,7 @@ import {
 import type { Logger as PinoLogger } from 'pino';
 import type { SpinnerResult, ProgressResult } from '@clack/prompts';
 import type { Writable } from 'node:stream';
+import { globeBanner } from './globe/banner.js';
 
 export type LogFormat = 'default' | 'json' | 'agent';
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -267,6 +268,18 @@ class Logger {
     return this.quiet;
   }
 
+  // While the banner animates, progress lines wait under the globe, shown
+  // one at a time on its status line; warnings and errors land it instead.
+  private progress(message: string, print: () => void): void {
+    if (globeBanner.isAnimating()) globeBanner.note(message, print);
+    else print();
+  }
+
+  /** The stream that console output in the default format goes to. */
+  getConsoleStream(): NodeJS.WriteStream {
+    return this.consoleOutput === 'stderr' ? process.stderr : process.stdout;
+  }
+
   getLogFormat(): LogFormat {
     return this.logFormat;
   }
@@ -305,7 +318,7 @@ class Logger {
   info(message: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        clackLog.info(message, this.clackOutput);
+        this.progress(message, () => clackLog.info(message, this.clackOutput));
       } else {
         this.pinoLogger?.info(message);
       }
@@ -350,7 +363,9 @@ class Logger {
   success(message: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        clackLog.success(message, this.clackOutput);
+        this.progress(message, () =>
+          clackLog.success(message, this.clackOutput)
+        );
       } else {
         this.pinoLogger?.info(message); // Map to info for non-default formats
       }
@@ -361,7 +376,7 @@ class Logger {
   step(message: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        clackLog.step(message, this.clackOutput);
+        this.progress(message, () => clackLog.step(message, this.clackOutput));
       } else {
         this.pinoLogger?.info(message); // Map to info for non-default formats
       }
@@ -372,9 +387,11 @@ class Logger {
   message(message: string, symbol?: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        clackLog.message(
-          message,
-          symbol ? { symbol, ...this.clackOutput } : this.clackOutput
+        this.progress(message, () =>
+          clackLog.message(
+            message,
+            symbol ? { symbol, ...this.clackOutput } : this.clackOutput
+          )
         );
       } else {
         this.pinoLogger?.info(message); // Map to info for non-default formats
@@ -391,7 +408,9 @@ class Logger {
       return new MockSpinner(this);
     }
     if (this.logFormat === 'default') {
-      return spinner({ indicator, ...this.clackOutput });
+      const create = () => spinner({ indicator, ...this.clackOutput });
+      // While the banner animates, spinner messages show under the globe.
+      return globeBanner.isAnimating() ? globeBanner.spinner(create) : create();
     } else {
       return new MockSpinner(this);
     }

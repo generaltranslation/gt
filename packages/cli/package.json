@@ -35,7 +35,8 @@
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
     "bin:restore": "node scripts/restore-package-json.js",
     "bin:prep": "node scripts/prepare-binary-release.js",
-    "typecheck": "pnpm run generate-version && tsc --noEmit"
+    "typecheck": "pnpm run generate-version && tsc --noEmit",
+    "generate-globe-frames": "node scripts/globe/generate-frames.mjs"
   },
   "exports": {
     ".": {

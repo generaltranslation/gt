@@ -25,6 +25,7 @@ vi.mock('../../utils/installPackage.js', () => ({ installPackage: vi.fn() }));
 vi.mock('../../console/logging.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../console/logging.js')>()),
   displayHeader: vi.fn(),
+  setBannerAnimation: vi.fn(),
 }));
 vi.mock('../../console/logger.js', () => ({
   logger: {
