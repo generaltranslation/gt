@@ -1,0 +1,30 @@
+{
+  "name": "gt-test-tanstack-start-split-translations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 5177 --strictPort",
+    "build": "vite build",
+    "translate": "node scripts/pseudo-translate.mjs",
+    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-start": "catalog:",
+    "gt-tanstack-start": "workspace:*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.2",
+    "generaltranslation": "workspace:*",
+    "playwright-core": "^1.64.1",
+    "typescript": "^5",
+    "vite": "^8.0.16"
+  }
+}
