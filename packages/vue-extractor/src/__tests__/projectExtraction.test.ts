@@ -8,6 +8,7 @@ import {
   mergeVueProjectExtraction,
 } from '../project.js';
 import type { VueProjectExtractionResult } from '../types.js';
+import { deduplicateProjectUpdates } from '../internal/project/extractFromVueProject.js';
 import {
   createTestProject,
   linkInstalledVue,
@@ -364,6 +365,34 @@ const t = useGT();
     expect(
       output.updates[0]?.metadata.sourceCode?.['src/second.ts']
     ).toHaveLength(1);
+  });
+
+  it('deduplicates more updates than one call takes as arguments, in order', () => {
+    const count = 200_000;
+    const updates = Array.from(
+      { length: count },
+      (_, index): VueProjectExtractionResult => ({
+        dataFormat: 'STRING',
+        source: `message ${index}`,
+        metadata: { hash: `h${index}`, filePaths: ['src/first.ts'] },
+      })
+    );
+    updates.splice(1, 0, {
+      dataFormat: 'STRING',
+      source: 'message 0',
+      metadata: { hash: 'h0', filePaths: ['src/second.ts'] },
+    });
+
+    deduplicateProjectUpdates(updates);
+
+    expect(updates).toHaveLength(count);
+    expect(
+      updates.findIndex((entry, index) => entry.metadata.hash !== `h${index}`)
+    ).toBe(-1);
+    expect(updates[0]?.metadata.filePaths).toEqual([
+      'src/first.ts',
+      'src/second.ts',
+    ]);
   });
 
   it('isolates React-family and unrelated useGT sources in a mixed project', async () => {
