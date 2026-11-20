@@ -1,5 +1,20 @@
 # gt-svelte
 
+## 0.1.0-samsara.12
+
+### Patch Changes
+
+- Updated dependencies [622199e]
+- Updated dependencies [fcc6f14]
+- Updated dependencies [3bedb87]
+- Updated dependencies [7d841de]
+- Updated dependencies [c8e2b0b]
+- Updated dependencies [e70da5f]
+  - @generaltranslation/format@1.0.0-samsara.11
+  - gt-i18n@2.0.0-samsara.11
+  - generaltranslation@10.0.0-samsara.11
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.12
+
 ## 0.1.0-samsara.11
 
 ### Minor Changes

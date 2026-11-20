@@ -1,5 +1,11 @@
 # @generaltranslation/icu
 
+## 1.0.0-samsara.9
+
+### Patch Changes
+
+- 7d841de: `getPluralCategories()` returns `Intl.LDMLPluralRule[]` instead of `string[]`, so a caller that names a category gets it checked. The categories and their order are the same.
+
 ## 1.0.0-samsara.8
 
 ### Major Changes
