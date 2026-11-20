@@ -26,6 +26,7 @@ describe('decideBanner', () => {
         env?: NodeJS.ProcessEnv;
         animationFlag?: boolean;
         reducesMotion?: boolean;
+        inForeground?: boolean;
       },
       ReturnType<typeof decideBanner>,
     ]
@@ -109,6 +110,11 @@ describe('decideBanner', () => {
       },
     ],
     [
+      'stays still for a background job',
+      { inForeground: false },
+      { mode: 'static', motion: false, reason: 'running in the background' },
+    ],
+    [
       'stays still when the system reduces motion',
       { reducesMotion: true },
       {
@@ -124,6 +130,7 @@ describe('decideBanner', () => {
         animationFlag: input.animationFlag,
         env: { XDG_CONFIG_HOME: configHome, ...input.env },
         reducesMotion: () => input.reducesMotion ?? false,
+        inForeground: () => input.inForeground ?? true,
       })
     ).toEqual(expected);
   });

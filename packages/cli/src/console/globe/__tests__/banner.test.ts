@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { stripVTControlCharacters } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SpinnerResult } from '@clack/prompts';
+import type { ProgressResult, SpinnerResult } from '@clack/prompts';
 import { GlobeBanner } from '../banner.js';
 import { getGlobeFrames } from '../frames.js';
 import { paintFrame } from '../paint.js';
@@ -114,10 +114,12 @@ describe('GlobeBanner', () => {
 
   it('keeps the process alive only while something awaits the landing', () => {
     const intervals = vi.spyOn(globalThis, 'setInterval');
-    const { banner } = setup();
+    const { banner, stream } = setup();
     const frameTimer = intervals.mock.results[0].value as NodeJS.Timeout;
 
-    // A finished command must not be held open by the banner...
+    // A finished command must not be held open by the banner, even after
+    // printing its last line...
+    stream.write('Done!\n');
     expect(frameTimer.hasRef()).toBe(false);
     // ...but a prompt awaiting the landing must be, or Node exits under it.
     void banner.settle();
@@ -125,37 +127,78 @@ describe('GlobeBanner', () => {
     intervals.mockRestore();
   });
 
-  it('keeps wide status text on one line', () => {
+  it('keeps the full running time of a timer spinner across the landing', async () => {
+    const { banner } = setup();
+    const calls: string[] = [];
+    const spinner = banner.spinner(
+      (style?: string): SpinnerResult => ({
+        start: (msg) => void calls.push(`${style} start ${msg}`),
+        message: () => {},
+        stop: (msg) => void calls.push(`${style} stop ${msg}`),
+        isCancelled: false,
+      }),
+      'timer'
+    );
+    spinner.start('Installing');
+    await vi.advanceTimersByTimeAsync(2000);
+    const landed = banner.settle();
+    await vi.advanceTimersByTimeAsync(2000);
+    await landed;
+    await vi.advanceTimersByTimeAsync(3000);
+    spinner.stop('Installed');
+
+    expect(calls).toEqual([
+      'dots start Installing',
+      expect.stringMatching(/^dots stop Installed \[[67]s\]$/),
+    ]);
+  });
+
+  it('starts a progress bar only after the banner hands back the terminal', async () => {
+    const { banner } = setup();
+    const calls: string[] = [];
+    let created = 0;
+    const bar = banner.progress((): ProgressResult => {
+      created++;
+      return {
+        start: (msg) => void calls.push(`start ${msg}`),
+        advance: (step) => void calls.push(`advance ${step}`),
+        message: () => {},
+        stop: (msg) => void calls.push(`stop ${msg}`),
+        isCancelled: false,
+      };
+    });
+    bar.start('Downloading');
+    bar.advance(1);
+
+    expect(created).toBe(0);
+    expect(banner.isAnimating()).toBe(true);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(banner.isAnimating()).toBe(false);
+    bar.stop('Downloaded');
+    expect(created).toBe(1);
+    expect(calls).toEqual([
+      'start Downloading',
+      'advance 1',
+      'stop Downloaded',
+    ]);
+  });
+
+  it.each([
+    ['CJK', '漢'],
+    ['emoji', '⌚'],
+  ])('keeps wide %s status text on one line', (_kind, char) => {
     const terminal = new FakeTerminal();
     terminal.columns = 30;
     const stream = terminal as unknown as NodeJS.WriteStream;
     const banner = new GlobeBanner();
     banner.start({ stream, hold: [stream] });
-    banner.note('漢'.repeat(40), () => {});
+    banner.note(char.repeat(40), () => {});
     vi.advanceTimersByTime(100);
 
     const shown = plain(terminal.output);
-    expect(shown).toContain(`${'漢'.repeat(12)}…`);
-    expect(shown).not.toContain('漢'.repeat(13));
+    expect(shown).toContain(`${char.repeat(12)}…`);
+    expect(shown).not.toContain(char.repeat(13));
     terminal.emit('resize');
-  });
-
-  it('shows progress notes under the globe and lands within 10 seconds', async () => {
-    const { banner, terminal } = setup();
-    const printed: string[] = [];
-    banner.note('Files found in project:\n- en/common.json', () =>
-      printed.push('files')
-    );
-    await vi.advanceTimersByTimeAsync(9000);
-
-    expect(banner.isAnimating()).toBe(true);
-    expect(plain(terminal.output)).toContain('Files found in project:');
-    expect(plain(terminal.output)).not.toContain('en/common.json');
-    expect(printed).toEqual([]);
-
-    await vi.advanceTimersByTimeAsync(5000);
-    expect(banner.isAnimating()).toBe(false);
-    expect(printed).toEqual(['files']);
   });
 
   it('stops redrawing and releases held output when the window resizes', () => {

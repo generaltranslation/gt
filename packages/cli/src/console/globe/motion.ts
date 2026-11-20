@@ -93,12 +93,46 @@ export function systemReducesMotion(
   return false;
 }
 
+/**
+ * Whether this process is the terminal's foreground job. A background job
+ * (`gt … &`) must not animate: switching the terminal to raw mode stops it
+ * with SIGTTOU, and it would draw over whatever the user is typing.
+ */
+export function isForegroundProcess(
+  platform: NodeJS.Platform = process.platform
+): boolean {
+  if (platform === 'win32') return true;
+  try {
+    let groups: string[];
+    if (platform === 'linux') {
+      // Fields after the command name: state ppid pgrp session tty tpgid ...
+      const stat = readFileSync('/proc/self/stat', 'utf8');
+      const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+      groups = [fields[2], fields[5]];
+    } else {
+      const result = spawnSync(
+        'ps',
+        ['-o', 'pgid=,tpgid=', '-p', String(process.pid)],
+        { encoding: 'utf8', timeout: OS_CHECK_TIMEOUT_MS }
+      );
+      if (result.status !== 0) return true;
+      groups = result.stdout.trim().split(/\s+/);
+    }
+    const [group, foreground] = groups.map(Number);
+    return !(group > 0 && foreground > 0 && group !== foreground);
+  } catch {
+    // Unknown means assume the usual case, a foreground command.
+    return true;
+  }
+}
+
 export type DecideBannerOptions = {
   stream: BannerStream;
   /** False when the command ran with --no-animation. */
   animationFlag?: boolean;
   env?: NodeJS.ProcessEnv;
   reducesMotion?: () => boolean;
+  inForeground?: () => boolean;
 };
 
 /**
@@ -112,6 +146,7 @@ export function decideBanner({
   animationFlag = true,
   env = process.env,
   reducesMotion = systemReducesMotion,
+  inForeground = isForegroundProcess,
 }: DecideBannerOptions): BannerDecision {
   const interactive = stream.isTTY === true;
   const motionOff = ((): string | null => {
@@ -147,7 +182,14 @@ export function decideBanner({
       reason: `window is ${MIN_ANIMATED_ROWS} rows or fewer`,
     };
   }
-  // Checked last: it spawns a process, and only matters when we'd animate.
+  // Checked last: these may spawn a process, and only matter when we'd animate.
+  if (!inForeground()) {
+    return {
+      mode: 'static',
+      motion: false,
+      reason: 'running in the background',
+    };
+  }
   if (reducesMotion()) {
     return {
       mode: 'static',

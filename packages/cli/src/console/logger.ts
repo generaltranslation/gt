@@ -420,7 +420,11 @@ class Logger {
       return new MockProgress(total, this);
     }
     if (this.logFormat === 'default') {
-      return progress({ max: total, ...this.clackOutput });
+      const create = () => progress({ max: total, ...this.clackOutput });
+      // A progress bar takes over the terminal, so it starts after landing.
+      return globeBanner.isAnimating()
+        ? globeBanner.progress(create)
+        : create();
     } else {
       return new MockProgress(total, this);
     }

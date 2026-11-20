@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { stripVTControlCharacters } from 'node:util';
-import type { SpinnerResult } from '@clack/prompts';
+import type { ProgressResult, SpinnerResult } from '@clack/prompts';
+import stringWidth from 'string-width';
 import { getGlobeFrames } from './frames.js';
 import type { GlobeFrame, GlobeFrameSet } from './frames.js';
 import { paintFrame } from './paint.js';
@@ -38,32 +39,15 @@ function formatElapsed(startedAt: number): string {
   return minutes > 0 ? `[${minutes}m ${rest}s]` : `[${rest}s]`;
 }
 
-// Terminal columns a code point takes: wide CJK and emoji take two.
-function columnsOf(codePoint: number): number {
-  if (codePoint >= 0x300 && codePoint <= 0x36f) return 0;
-  const wide =
-    codePoint >= 0x1100 &&
-    (codePoint <= 0x115f ||
-      (codePoint >= 0x2e80 && codePoint <= 0xa4cf && codePoint !== 0x303f) ||
-      (codePoint >= 0xac00 && codePoint <= 0xd7a3) ||
-      (codePoint >= 0xf900 && codePoint <= 0xfaff) ||
-      (codePoint >= 0xfe30 && codePoint <= 0xfe6f) ||
-      (codePoint >= 0xff00 && codePoint <= 0xff60) ||
-      (codePoint >= 0xffe0 && codePoint <= 0xffe6) ||
-      (codePoint >= 0x1f300 && codePoint <= 0x1faff) ||
-      (codePoint >= 0x20000 && codePoint <= 0x3fffd));
-  return wide ? 2 : 1;
-}
-
 // Shortens text to fit `room` terminal columns, ending in … if cut.
 function fitColumns(text: string, room: number): string {
   let used = 0;
   let fitted = '';
-  for (const char of text) {
-    const width = columnsOf(char.codePointAt(0)!);
+  for (const { segment } of new Intl.Segmenter().segment(text)) {
+    const width = stringWidth(segment);
     if (used + width > room - 1) return `${fitted}…`;
     used += width;
-    fitted += char;
+    fitted += segment;
   }
   return fitted;
 }
@@ -119,7 +103,7 @@ export class GlobeBanner {
       this.writes.set(stream, write);
       stream.write = ((...args: Parameters<Write>) => {
         this.held.push({ stream, args });
-        if (this.deferring === 0) void this.settle();
+        if (this.deferring === 0) this.requestLanding();
         return true;
       }) as Write;
     }
@@ -132,7 +116,7 @@ export class GlobeBanner {
     this.drawFrame(this.frames.intro[0]);
     this.position = 1;
     this.timer = setInterval(() => this.advance(), FRAME_MS);
-    this.cap = setTimeout(() => void this.settle(), MAX_ANIMATION_MS);
+    this.cap = setTimeout(() => this.requestLanding(), MAX_ANIMATION_MS);
     // While nothing waits on it, the banner never keeps a finished command
     // alive; exit lands it.
     this.timer.unref();
@@ -159,12 +143,20 @@ export class GlobeBanner {
     }
   }
 
+  /**
+   * Starts the fast-forward to rest without waiting for it. A command that
+   * finishes meanwhile exits at once, and exit lands the globe.
+   */
+  requestLanding(): void {
+    if (this.animating) this.settling = true;
+  }
+
   /** Fast-forwards the globe to rest; resolves once held output has printed. */
   settle(): Promise<void> {
     if (!this.animating) return Promise.resolve();
-    this.settling = true;
-    // Something may be awaiting the landing (a prompt), so the frame timer
-    // must keep the process alive until it lands.
+    this.requestLanding();
+    // The caller waits on the landing (a prompt), so the frame timer must
+    // keep the process alive until it lands.
     this.timer?.ref();
     return this.landed;
   }
@@ -190,10 +182,18 @@ export class GlobeBanner {
         code
       );
     };
+    // Clack's timer restarts when a spinner starts, so a spinner handed off
+    // at landing runs as dots and appends the time it has really run.
+    let handedOff = false;
+    const withElapsed = (msg: string) =>
+      handedOff && indicator === 'timer'
+        ? `${msg} ${formatElapsed(startedAt)}`
+        : msg;
     // The real spinner, started with the current message if one is running.
     const becomeReal = () => {
       if (!real) {
-        real = create();
+        handedOff = running;
+        real = handedOff && indicator === 'timer' ? create('dots') : create();
         if (running) real.start(message);
       }
       return real;
@@ -227,7 +227,7 @@ export class GlobeBanner {
       },
       stop: (msg = '', code?: number) => {
         if (!this.animating) {
-          if (real || running) becomeReal().stop(msg, code);
+          if (real || running) becomeReal().stop(withElapsed(msg), code);
           running = false;
           return;
         }
@@ -245,6 +245,46 @@ export class GlobeBanner {
             done.stop(final, code);
           },
         });
+      },
+      get isCancelled() {
+        return real?.isCancelled ?? false;
+      },
+    };
+  }
+
+  /**
+   * A progress bar that starts once the globe has landed, so it takes over
+   * the terminal only after the banner has handed it back. Calls made before
+   * then are replayed on it.
+   */
+  progress(create: () => ProgressResult): ProgressResult {
+    let real: ProgressResult | undefined;
+    const pending: Array<(bar: ProgressResult) => void> = [];
+    let active = false;
+    const call = (fn: (bar: ProgressResult) => void) => {
+      if (real) fn(real);
+      else pending.push(fn);
+    };
+    this.afterLanding.push((exitCode) => {
+      if (exitCode !== undefined && !active) return;
+      real = create();
+      for (const fn of pending) fn(real);
+      // The process is ending under a running bar: stop it as clack would.
+      if (exitCode !== undefined && active) {
+        real.stop(exitCode > 1 ? 'Something went wrong' : 'Canceled', exitCode);
+      }
+    });
+    this.requestLanding();
+    return {
+      start: (msg) => {
+        active = true;
+        call((bar) => bar.start(msg));
+      },
+      advance: (step, msg) => call((bar) => bar.advance(step, msg)),
+      message: (msg) => call((bar) => bar.message(msg)),
+      stop: (msg, code) => {
+        active = false;
+        call((bar) => bar.stop(msg, code));
       },
       get isCancelled() {
         return real?.isCancelled ?? false;
@@ -360,7 +400,9 @@ export class GlobeBanner {
   // Ctrl+C still interrupts.
   private muteInput(): void {
     const input = process.stdin;
-    if (!input.isTTY) return;
+    // On Windows, raw mode turns off Ctrl+C and is not reliably switched
+    // back, so console input is left as it is there.
+    if (!input.isTTY || process.platform === 'win32') return;
     input.setRawMode(true);
     input.on('data', this.onKey);
     input.resume();
@@ -374,8 +416,7 @@ export class GlobeBanner {
     this.inputMuted = false;
     const input = process.stdin;
     input.off('data', this.onKey);
-    // As clack does, Windows keeps raw mode rather than toggle it back.
-    if (process.platform !== 'win32') input.setRawMode(false);
+    input.setRawMode(false);
     input.pause();
     input.ref();
   }
