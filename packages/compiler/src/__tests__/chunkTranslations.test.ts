@@ -80,6 +80,7 @@ import {
   replaceUnsplitLoader,
 } from '../transform/chunk-translations/unsplitTranslations';
 import {
+  createIsLoadedWith,
   getAssignmentHash,
   renderChunkTranslations,
 } from '../transform/chunk-translations/writeChunkTranslations';
@@ -822,6 +823,45 @@ export const { a } = await import(\`./a.js\`);`,
           () => false
         )
       ).toBeUndefined();
+    });
+
+    it('walks the static imports a chunk loads once, however many chunks it is asked about', () => {
+      let walked = 0;
+      const chunk = (fileName: string, imports: string[]) => ({
+        fileName,
+        get imports() {
+          walked++;
+          return imports;
+        },
+      });
+      const isLoadedWith = createIsLoadedWith([
+        chunk('assets/facade.js', ['assets/Home.js', 'assets/shared.js']),
+        chunk('assets/Home.js', ['assets/shared.js', 'assets/facade.js']),
+        chunk('assets/shared.js', ['assets/vendor.js']),
+        chunk('assets/Other.js', ['assets/facade.js']),
+      ]);
+      const loads = (gate: string) =>
+        [
+          'assets/facade.js',
+          'assets/Home.js',
+          'assets/shared.js',
+          'assets/vendor.js',
+          'assets/Other.js',
+        ].filter((other) => isLoadedWith(gate, other));
+      // Itself, what it imports, and a file that is not a chunk of the build
+      expect(loads('assets/facade.js')).toEqual([
+        'assets/facade.js',
+        'assets/Home.js',
+        'assets/shared.js',
+        'assets/vendor.js',
+      ]);
+      expect(walked).toBe(3);
+      expect(loads('assets/shared.js')).toEqual([
+        'assets/shared.js',
+        'assets/vendor.js',
+      ]);
+      expect(loads('assets/missing.js')).toEqual([]);
+      expect(walked).toBe(4);
     });
 
     describe('with a chunk import map', () => {
