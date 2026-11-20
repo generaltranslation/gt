@@ -58,6 +58,14 @@ function RootComponent() {
         >
           {t`Streamed later`}
         </Link>
+        <Link
+          to='/dictionary'
+          data-link='/dictionary'
+          data-m
+          data-src='From the dictionary'
+        >
+          {t`From the dictionary`}
+        </Link>
       </nav>
       <LocaleSelector />
       <Outlet />

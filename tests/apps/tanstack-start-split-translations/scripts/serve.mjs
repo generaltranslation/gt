@@ -30,13 +30,17 @@ function readFiles(directory, prefix, files = new Map()) {
  * `pages` says what answers a request for a page: `'server'` the build's
  * server, `'prerendered'` the page's prerendered HTML when the build wrote
  * one, and `'shell'` the prerendered shell of an app built with `spa`, as a
- * static host that rewrites every path to it.
+ * static host that rewrites every path to it. With `assets: false` the
+ * server has none of the build's files, which another origin then serves.
  */
-export async function serve(directory, { base = '/', pages = 'server' } = {}) {
+export async function serve(
+  directory,
+  { base = '/', pages = 'server', assets = true } = {}
+) {
   let files;
   let handler;
   const deploy = async (build) => {
-    files = readFiles(join(build, 'client'), base);
+    files = assets ? readFiles(join(build, 'client'), base) : new Map();
     // Each build is its own directory, so Node loads each one's server. No
     // query on the URL: server chunks import ../server.js back, and would
     // then load a second copy of it.
@@ -83,6 +87,28 @@ export async function serve(directory, { base = '/', pages = 'server' } = {}) {
   return {
     origin: `http://127.0.0.1:${server.address().port}`,
     deploy,
+    close: () => new Promise((resolve) => server.close(resolve)),
+  };
+}
+
+/**
+ * Starts a server for the files of the build in `directory` alone, which
+ * pages of another origin may request, as a CDN.
+ */
+export async function serveAssets(directory) {
+  const files = readFiles(join(directory, 'client'), '/');
+  const server = createServer((request, response) => {
+    const { pathname } = new URL(request.url, 'http://cdn');
+    const file = files.get(pathname);
+    response.writeHead(file ? 200 : 404, {
+      'access-control-allow-origin': '*',
+      'content-type': TYPES[extname(pathname)] ?? 'text/plain',
+    });
+    response.end(file);
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  return {
+    origin: `http://127.0.0.1:${server.address().port}`,
     close: () => new Promise((resolve) => server.close(resolve)),
   };
 }

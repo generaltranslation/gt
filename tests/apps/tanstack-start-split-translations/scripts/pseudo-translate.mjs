@@ -43,6 +43,11 @@ for (const text of ['Written on the server']) {
   trees[hashSource({ source: text, dataFormat: 'MESSAGE_TREE' })] ??= text;
 }
 
+// The entries of src/dictionary.ts, which gt-i18n looks up as ICU strings
+for (const text of ['Hello from the dictionary', 'Looked up by its key']) {
+  trees[hashSource({ source: text, dataFormat: 'ICU' })] ??= text;
+}
+
 /** The children of a `<T>` with their text in another case. */
 function translateJsx(children, change) {
   if (typeof children === 'string') return change(children);

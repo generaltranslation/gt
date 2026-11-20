@@ -15,7 +15,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
-import { serve } from './serve.mjs';
+import { serve, serveAssets } from './serve.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const only = process.argv.slice(2);
@@ -99,14 +99,17 @@ const expected = (source, locale) =>
 const browser = await chromium.launch();
 
 /**
- * Opens a page for a visitor whose cookie asks for `locale`. `renders` is the
- * locale the pages are expected in, when not that one.
+ * Opens a page for a visitor whose cookie asks for `locale`, or who has no
+ * cookie when it is undefined. `renders` is the locale the pages are
+ * expected in, when not that one.
  */
 async function open(origin, locale, renders = locale) {
   const context = await browser.newContext({ locale: 'en-US' });
-  await context.addCookies([
-    { name: 'generaltranslation.locale', value: locale, url: origin },
-  ]);
+  if (locale !== undefined) {
+    await context.addCookies([
+      { name: 'generaltranslation.locale', value: locale, url: origin },
+    ]);
+  }
   // Before any script of the page: what every message ever shows
   await context.addInitScript(() => {
     window.__shown = [];
@@ -346,6 +349,152 @@ for (const [name, env] of Object.entries({ off: SPLITS.off, on: SPLIT })) {
   );
   for (const locale of ['fr', 'en']) {
     await walk(title, server.origin, locale, 'en');
+  }
+  await server.close();
+}
+
+// ===== App setups ===== //
+
+// Locale routing: the locale is the first segment of the path, and the
+// routes and links of the app stay free of it.
+for (const [name, env] of Object.entries({ off: SPLITS.off, on: SPLIT })) {
+  const title = `locale routing, split ${name}`;
+  if (!selected(title)) continue;
+  const routing = { ...env, CHECK_CONFIG: 'gt.config.locale-routing.json' };
+  const server = await serve(build(title, routing));
+  for (const [path, locale] of [
+    ['/fr/reports', 'fr'],
+    ['/reports', 'en'],
+  ]) {
+    // No cookie: the path alone says the locale
+    const visitor = await open(server.origin, undefined, locale);
+    await visitor.visit('/reports', path);
+    await checkMessages(`${title}: first visit of ${path}`, visitor);
+    await visitor.navigate('/settings');
+    const prefix = locale === 'en' ? '' : `/${locale}`;
+    check(
+      `${title}: a navigation from ${path} stays in the locale's paths`,
+      new URL(visitor.page.url()).pathname === `${prefix}/settings`,
+      visitor.page.url()
+    );
+    await checkMessages(`${title}: ${path} to /settings`, visitor);
+    await visitor.navigate('/reports');
+    await checkMessages(`${title}: /settings back to ${path}`, visitor);
+    // Switching locale navigates to the other locale's path
+    await visitor.page.locator('select').first().selectOption('de');
+    await visitor.page.waitForURL(`${server.origin}/de/reports`);
+    visitor.setLocale('de');
+    await visitor.page.evaluate(() => window.__shown.splice(0));
+    await visitor.settle('/reports');
+    await checkMessages(`${title}: ${path} switched to /de/reports`, visitor);
+    await visitor.navigate('/client-only');
+    await checkMessages(`${title}: a navigation in de`, visitor);
+    check(
+      `${title}: no console error from ${path} on`,
+      visitor.problems.length === 0,
+      visitor.problems.slice(0, 3)
+    );
+    await visitor.close();
+  }
+  await server.close();
+
+  // Prerendered with locale routing, a translated locale has pages of its own
+  const prerendered = await serve(
+    build(`${title}, prerendered`, { ...routing, CHECK_PRERENDER: 'true' }),
+    { pages: 'prerendered' }
+  );
+  const visitor = await open(prerendered.origin, undefined, 'fr');
+  const response = await visitor.page.goto(`${prerendered.origin}/fr/reports`);
+  check(
+    `${title}: /fr/reports is a prerendered page in fr`,
+    (await response.text()).includes('OPEN THE WEEKLY REPORT') &&
+      existsSync(
+        join(
+          root,
+          '.check',
+          `${title}, prerendered`.replace(/[^a-z0-9]+/gi, '-'),
+          'client/fr/reports/index.html'
+        )
+      )
+  );
+  await visitor.settle('/reports');
+  await checkMessages(`${title}: the prerendered /fr/reports`, visitor);
+  await visitor.navigate('/settings');
+  await checkMessages(`${title}: a navigation out of it`, visitor);
+  check(
+    `${title}: no console error on the prerendered page`,
+    visitor.problems.length === 0,
+    visitor.problems.slice(0, 3)
+  );
+  await visitor.close();
+  await prerendered.close();
+}
+
+// A base other than `/`: the app, its chunks and its translation files are
+// all under it.
+for (const [name, env] of Object.entries({ off: SPLITS.off, on: SPLIT })) {
+  const title = `base, split ${name}`;
+  if (!selected(title)) continue;
+  const server = await serve(build(title, { ...env, CHECK_BASE: '/app/' }), {
+    base: '/app/',
+  });
+  for (const locale of ['fr', 'en']) {
+    await walk(title, `${server.origin}/app`, locale);
+  }
+  await server.close();
+}
+
+// Assets on another origin: src/server.ts rewrites the URLs of the chunks
+// with `transformAssets`, and the app's own origin has none of them.
+for (const [name, env] of Object.entries({ off: SPLITS.off, on: SPLIT })) {
+  const title = `cdn, split ${name}`;
+  if (!selected(title)) continue;
+  const directory = build(title, env);
+  const cdn = await serveAssets(directory);
+  // Read by src/server.ts when the build's server is loaded
+  process.env.CHECK_CDN = cdn.origin;
+  const server = await serve(directory, { assets: false });
+  for (const locale of ['fr', 'en']) await walk(title, server.origin, locale);
+  await server.close();
+  await cdn.close();
+  delete process.env.CHECK_CDN;
+}
+
+// The dictionary (key-based) API of gt-tanstack-start/compat. Its entries
+// are no call site the build can place, so they are in the unsplit file.
+for (const [name, env] of Object.entries({ off: SPLITS.off, on: SPLIT })) {
+  const title = `dictionary, split ${name}`;
+  if (!selected(title)) continue;
+  const server = await serve(
+    build(title, { ...env, VITE_CHECK_COMPAT: 'true' })
+  );
+  for (const locale of ['fr', 'en']) {
+    const visitor = await open(server.origin, locale);
+    await visitor.page.goto(`${server.origin}/dictionary`);
+    await visitor.page.waitForSelector('[data-page="dictionary"]');
+    await visitor.page.waitForLoadState('networkidle');
+    await checkMessages(
+      `${title}, ${locale}: first visit of /dictionary`,
+      visitor
+    );
+    await visitor.navigate('/reports');
+    await checkMessages(
+      `${title}, ${locale}: /dictionary to /reports`,
+      visitor
+    );
+    await visitor.page.click('[data-link="/dictionary"]');
+    await visitor.page.waitForSelector('[data-page="dictionary"]');
+    await visitor.page.waitForLoadState('networkidle');
+    await checkMessages(
+      `${title}, ${locale}: /reports to /dictionary`,
+      visitor
+    );
+    check(
+      `${title}, ${locale}: no console error`,
+      visitor.problems.length === 0,
+      visitor.problems.slice(0, 3)
+    );
+    await visitor.close();
   }
   await server.close();
 }

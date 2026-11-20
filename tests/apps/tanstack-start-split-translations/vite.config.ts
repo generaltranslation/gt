@@ -20,6 +20,9 @@ export default defineConfig({
       // CHECK_PRERENDER: every route is also written as a static page
       ...(process.env.CHECK_PRERENDER === 'true' && {
         prerender: { enabled: true, crawlLinks: true },
+        // With locale routing, a page of a translated locale too: no link
+        // of the source locale's pages leads to it
+        ...(process.env.CHECK_CONFIG && { pages: [{ path: '/fr/reports' }] }),
       }),
     }),
     react(),

@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientOnlyRouteImport } from './routes/client-only'
 import { Route as DataOnlyRouteImport } from './routes/data-only'
 import { Route as DeferredRouteImport } from './routes/deferred'
+import { Route as DictionaryRouteImport } from './routes/dictionary'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SettingsRouteImport } from './routes/settings'
 
@@ -36,6 +37,11 @@ const DeferredRoute = DeferredRouteImport.update({
   path: '/deferred',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DictionaryRoute = DictionaryRouteImport.update({
+  id: '/dictionary',
+  path: '/dictionary',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/client-only': typeof ClientOnlyRoute
   '/data-only': typeof DataOnlyRoute
   '/deferred': typeof DeferredRoute
+  '/dictionary': typeof DictionaryRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/client-only': typeof ClientOnlyRoute
   '/data-only': typeof DataOnlyRoute
   '/deferred': typeof DeferredRoute
+  '/dictionary': typeof DictionaryRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
 }
@@ -69,22 +77,36 @@ export interface FileRoutesById {
   '/client-only': typeof ClientOnlyRoute
   '/data-only': typeof DataOnlyRoute
   '/deferred': typeof DeferredRoute
+  '/dictionary': typeof DictionaryRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/client-only' | '/data-only' | '/deferred' | '/reports' | '/settings'
+    | '/'
+    | '/client-only'
+    | '/data-only'
+    | '/deferred'
+    | '/dictionary'
+    | '/reports'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/client-only' | '/data-only' | '/deferred' | '/reports' | '/settings'
+    | '/'
+    | '/client-only'
+    | '/data-only'
+    | '/deferred'
+    | '/dictionary'
+    | '/reports'
+    | '/settings'
   id:
     | '__root__'
     | '/'
     | '/client-only'
     | '/data-only'
     | '/deferred'
+    | '/dictionary'
     | '/reports'
     | '/settings'
   fileRoutesById: FileRoutesById
@@ -94,6 +116,7 @@ export interface RootRouteChildren {
   ClientOnlyRoute: typeof ClientOnlyRoute
   DataOnlyRoute: typeof DataOnlyRoute
   DeferredRoute: typeof DeferredRoute
+  DictionaryRoute: typeof DictionaryRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
 }
@@ -128,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeferredRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dictionary': {
+      id: '/dictionary'
+      path: '/dictionary'
+      fullPath: '/dictionary'
+      preLoaderRoute: typeof DictionaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports': {
       id: '/reports'
       path: '/reports'
@@ -150,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientOnlyRoute: ClientOnlyRoute,
   DataOnlyRoute: DataOnlyRoute,
   DeferredRoute: DeferredRoute,
+  DictionaryRoute: DictionaryRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
 }
