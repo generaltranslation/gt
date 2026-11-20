@@ -554,7 +554,11 @@ describe('gt-react/chunk-translations', () => {
 
   it('renders mounted messages again when a file arrives after its timeout', async () => {
     const file = hold(FILES[ORDERS_FILE]);
-    serve({ ...FILES, [ORDERS_FILE]: file.response });
+    serve({
+      ...FILES,
+      [ORDERS_FILE]: file.response,
+      '/assets/Reports-d4.fr.22222222.json': { [SAVE]: 'Sauvegarder' },
+    });
     writeState({ w: 2000 });
     await start();
     const messages = mount(ORDERS, 'Orders');
@@ -570,6 +574,46 @@ describe('gt-react/chunk-translations', () => {
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(messages.text()).toBe('Commandes | Commandes | Commandes');
+
+    // The next file that arrives in time is added as any such file is
+    const renders = messages.renders();
+    await act(() => loadChunkTranslations(['assets/Reports-d4']));
+    expect(save()).toBe('Sauvegarder');
+    expect(messages.renders()).toBe(renders);
+  });
+
+  it('renders mounted messages again for a late file that another caller adds, as one read before the cache has loaded the locale', async () => {
+    const ENTRY = '/assets/index-a1.fr.11111111.json';
+    const entry = hold(FILES[ENTRY]);
+    serve({ [ENTRY]: entry.response });
+    writeState({ w: 2000 });
+    vi.useFakeTimers();
+    // The cache's load waits, as it does for the file of unsplit messages
+    let load!: () => void;
+    const loading = new Promise<void>((resolve) => (load = resolve));
+    type Load = { loadTranslations: (locale: string) => Promise<object> };
+    const starting = initializeChunkTranslations(
+      (config) =>
+        initializeGTSPA({
+          ...config,
+          loadTranslations: (locale: string) =>
+            loading.then(() => (config as Load).loadTranslations(locale)),
+        }),
+      CONFIG
+    );
+    const messages = mount(SAVE, 'Save');
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(warn.mock.calls[0][0]).toContain('did not load within 2000 ms');
+
+    entry.respond();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(messages.text()).toBe('Save | Save | Save');
+
+    await act(async () => {
+      load();
+      await starting;
+    });
+    expect(messages.text()).toBe('Enregistrer | Enregistrer | Enregistrer');
   });
 
   it('does not render mounted messages again for a file that arrives in time', async () => {
@@ -764,6 +808,61 @@ describe('gt-react/chunk-translations', () => {
       files['/assets/Reports-d4.fr.99999999.json'] = { [SAVE]: 'Sauvegarder' };
       await act(() => loadChunkTranslations(['assets/Reports-d4']));
       expect(messages.text()).toBe('Sauvegarder | Sauvegarder | Sauvegarder');
+    });
+
+    it('renders a mounted message again when a second import waits for the same request of the file of that build, and adds it first', async () => {
+      // The second import starts as that request does, and so is the first
+      // to hear of its file
+      let respond!: () => void;
+      const responded = new Promise<void>((resolve) => (respond = resolve));
+      let second: Promise<void> | undefined;
+      serve({
+        ...DEPLOYED,
+        [NEXT_ORDERS_FILE]: () => {
+          queueMicrotask(() => {
+            second = loadChunkTranslations(['assets/Orders-b2']);
+          });
+          return responded.then(
+            () =>
+              new Response(JSON.stringify({ [SAVE]: 'Enregistrer, encore' }))
+          );
+        },
+      });
+      writeOpen();
+      await start();
+      const messages = mount(SAVE, 'Save');
+
+      const first = loadChunkTranslations(['assets/Orders-b2']);
+      while (!second) await tick();
+      await act(async () => {
+        respond();
+        await Promise.all([first, second]);
+      });
+
+      expect(save()).toBe('Enregistrer, encore');
+      expect(messages.text()).toBe(
+        'Enregistrer, encore | Enregistrer, encore | Enregistrer, encore'
+      );
+    });
+
+    it('renders a mounted message again for a file of that build that arrives before the one asked for in place of the missing file', async () => {
+      const next = hold({ [ORDERS]: 'Commandes, encore' });
+      const fetched = serve({
+        ...DEPLOYED,
+        [NEXT_ORDERS_FILE]: next.response,
+        '/assets/Reports-d4.fr.99999999.json': { [SAVE]: 'Sauvegarder' },
+      });
+      writeOpen();
+      await start();
+      const messages = mount(SAVE, 'Save');
+
+      const first = loadChunkTranslations(['assets/Orders-b2']);
+      while (!urls(fetched).includes(NEXT_ORDERS_FILE)) await tick();
+      await act(() => loadChunkTranslations(['assets/Reports-d4']));
+      expect(messages.text()).toBe('Sauvegarder | Sauvegarder | Sauvegarder');
+
+      next.respond();
+      await first;
     });
 
     it('takes a page in place of the file, as a host answers that has a page for every path, for a missing file', async () => {
@@ -1012,9 +1111,12 @@ describe('gt-react/chunk-translations', () => {
 
       it('reads the map of the build that is served now, and requests each missing file by its name there', async () => {
         const fetched = await startOpen(DEPLOYED_MAP);
+        const messages = mount(SAVE, 'Save');
 
-        expect(await preloadedImport([])(loadMappedChunk)).toEqual({
-          evaluated: 'Commandes, encore',
+        await act(async () => {
+          expect(await preloadedImport([])(loadMappedChunk)).toEqual({
+            evaluated: 'Commandes, encore',
+          });
         });
         expect(urls(fetched)).toEqual([
           file('a0000000'),
@@ -1024,6 +1126,10 @@ describe('gt-react/chunk-translations', () => {
           file('a1111111'),
           file('b1111111'),
         ]);
+        // What is on screen shows the translation that build has of it
+        expect(messages.text()).toBe(
+          'Enregistrer, encore | Enregistrer, encore | Enregistrer, encore'
+        );
         expect(warn).not.toHaveBeenCalled();
         // The lists and the names the page's own build gave are untouched
         expect(state().i).toEqual(OWN.i);

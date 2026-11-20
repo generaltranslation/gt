@@ -145,10 +145,12 @@ export type ChunkTranslationsState = {
    */
   z?: Record<string, boolean | undefined>;
   /**
-   * Whether the page reads files of the build that is served now in place
-   * of its own, which can hold another translation of a message on screen
+   * Whether what has arrived may hold a translation of a message that is on
+   * screen: 1 once a file is read after its wait ran out, until it is added,
+   * and 2 for good once the page takes the names of the build that is served
+   * now, before it asks for a file by them
    */
-  s?: boolean;
+  s?: 1 | 2;
 };
 
 export type InitializeConfig = { loadTranslations?: unknown };
