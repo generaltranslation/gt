@@ -69,27 +69,50 @@ describe('plural forms a translation leaves out', () => {
   });
 });
 
-describe('a <Plural> outside <T>', () => {
-  it('selects its form in the active locale alone', () => {
-    delete (globalThis as { __generaltranslation?: unknown })
-      .__generaltranslation;
-    initializeGT({
-      defaultLocale: 'fr',
-      locales: ['fr', 'co'],
-      loadTranslations: async () => ({}),
+// Zero is "one" in French and "other" in English, so a host with either
+// locale fails a row if the form is left to the host's rules.
+describe.each([
+  ['fr', 'one'],
+  ['en', 'other'],
+])(
+  'a locale Intl has no data for, with the default locale %s',
+  (defaultLocale, form) => {
+    beforeEach(() => {
+      delete (globalThis as { __generaltranslation?: unknown })
+        .__generaltranslation;
+      initializeGT({
+        defaultLocale,
+        locales: [defaultLocale, 'qaa'],
+        loadTranslations: async () => ({}),
+      });
     });
-    // Intl has no plural rules for Corsican, so it selects in the host's
-    // locale. Zero is "one" in French, the default locale, which is not
-    // tried.
-    const form = new Intl.PluralRules('co').select(0);
-    expect(
-      html({
-        component: BarePlural,
-        props: { n: 0 },
-        locale: 'co',
-        // Without translations the provider renders the default locale.
-        translations: {},
-      })
-    ).toBe(form === 'one' ? 'one item' : 'many items');
-  });
-});
+
+    it('selects the form of a <Plural> outside <T> in the default locale', () => {
+      expect(
+        html({
+          component: BarePlural,
+          props: { n: 0 },
+          locale: 'qaa',
+          translations: {},
+        })
+      ).toBe(form === 'one' ? 'one item' : 'many items');
+    });
+
+    it('selects the form of a translated <Plural> in the default locale', () => {
+      const exact = analyze('ExactPluralBranch.svelte');
+      const plural = exact.source as JsxElement;
+      const translation = {
+        ...plural,
+        d: { ...plural.d, b: { one: 'one', other: 'other' } },
+      } as Content;
+      expect(
+        html({
+          component: ExactPluralBranch,
+          props: { n: 0 },
+          locale: 'qaa',
+          translations: { [exact.hash]: translation },
+        })
+      ).toBe(`<p>${form}</p>`);
+    });
+  }
+);
