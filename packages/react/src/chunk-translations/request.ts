@@ -53,9 +53,10 @@ export function readLists(
   const unlisted = state.il;
   if (!lists || !unlisted) return;
   state.il = undefined;
-  for (const key in unlisted) {
-    void unlisted[key]().then(() => addArrived(state));
-  }
+  const waits = (state.wt ||= [0]);
+  waits[2] = true;
+  for (const key in unlisted) void unlisted[key]();
+  waits[2] = false;
 }
 
 /**
@@ -176,7 +177,8 @@ export function request<F extends object>(
     const start = Date.now();
     const waits = (state.wt ||= [0]);
     const inTime = waits[0];
-    let late = false;
+    // Late from the start for what has run already
+    let late = !!waits[2];
     const timer = setTimeout(() => {
       late = true;
       if (timeout) waits[1] = inTime;
@@ -260,9 +262,10 @@ export function getTimeout(state: ChunkTranslationsState): number {
  * at all once the wait for a file has run out, until a file has arrived
  * within the timeout of its own request since that late file was requested.
  * A host that answers no file in time so costs a page one wait, and not one
- * more for each import that the code of another import starts.
+ * more for each import that the code of another import starts. Nor is a
+ * file waited for that `readLists()` requests, for an import that has run.
  */
 export function getWait(state: ChunkTranslationsState): number {
-  const [inTime, late] = state.wt || [0];
-  return late === undefined || inTime > late ? getTimeout(state) : 0;
+  const [inTime, late, ran] = state.wt || [0];
+  return !ran && (late === undefined || inTime > late) ? getTimeout(state) : 0;
 }
