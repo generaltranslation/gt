@@ -36,7 +36,7 @@ import type { TranslationsTable } from './loadTranslationFiles';
  * nothing by its form, and the build tells its placeholders from the
  * strings of the app by keeping each one it writes: only those are
  * minified, and a build fails when its output still holds one, or a call
- * site there still passes a string of that form.
+ * site there still passes a string of the exact form of one.
  *
  * A message that two chunks read has an id in each. The hash itself stays
  * what it is everywhere else: in the catalogs, in the unsplit file, at every
@@ -218,6 +218,16 @@ export const createTakenIdError = (ids: string[]) =>
     details: nameSome(ids),
   });
 
+export const createUnknownPlaceholdersError = (found: string[]) =>
+  createDiagnosticMessage({
+    source: '@generaltranslation/compiler',
+    severity: 'Error',
+    whatHappened: `Hash minification found ${found.length === 1 ? 'a string at a call site that has' : `${found.length} strings at call sites that have`} the form of a placeholder and that this build did not write`,
+    why: 'a module that another instance of the plugin compiled leaves such a string at its call sites, which would render the source text',
+    fix: 'Compile every module of the build with one instance of the plugin. If a string is data of the app, pass it under another key than _hash or $_hash, or turn experimentalSplitTranslations.minifyHashes off',
+    details: nameSome(found),
+  });
+
 export const createUnminifiedChunksError = (files: string[]) =>
   createDiagnosticMessage({
     source: '@generaltranslation/compiler',
@@ -227,6 +237,16 @@ export const createUnminifiedChunksError = (files: string[]) =>
     fix: 'Turn experimentalSplitTranslations.minifyHashes off',
     details: nameSome(files),
   });
+
+/** The placeholder of a hash that is as long as the hash, see createIdPlaceholder. */
+function writeSameLength(hash: string): string {
+  const written = HEXADECIMAL_HASH.test(hash)
+    ? Buffer.from(hash, 'hex')
+        .toString('base64url')
+        .padEnd(hash.length - 1, MINIFIED_ID_PLACEHOLDER)
+    : hash.slice(1);
+  return `${MINIFIED_ID_PLACEHOLDER}${written}`;
+}
 
 /**
  * What the compiler writes at a call site whose chunk is rendered later,
@@ -243,12 +263,7 @@ export function createIdPlaceholder(
   minified: MinifiedIds
 ): string {
   const { placeholders } = minified;
-  const written = HEXADECIMAL_HASH.test(hash)
-    ? Buffer.from(hash, 'hex')
-        .toString('base64url')
-        .padEnd(hash.length - 1, MINIFIED_ID_PLACEHOLDER)
-    : hash.slice(1);
-  const sameLength = `${MINIFIED_ID_PLACEHOLDER}${written}`;
+  const sameLength = writeSameLength(hash);
   const placeholder =
     (placeholders.get(sameLength) ?? hash) === hash
       ? sameLength
@@ -316,16 +331,13 @@ export function minifyChunk(
 }
 
 /**
- * Whether a chunk's final code still holds a placeholder: one the build
- * wrote, wherever it is, also joined to the string next to it by a
- * minifier, or at a call site a string that starts as one does and is no
- * hash its author wrote there, as of a module this build did not compile.
+ * Whether a chunk's final code still holds a placeholder the build wrote,
+ * wherever it is: also one that a minifier joined to the string next to it.
  */
 function holdsPlaceholder(
   code: string,
   placeholders: ReadonlyMap<string, string>,
-  lengths: readonly number[],
-  written: ReadonlySet<string>
+  lengths: readonly number[]
 ): boolean {
   for (
     let start = code.indexOf(MINIFIED_ID_PLACEHOLDER);
@@ -340,17 +352,50 @@ function holdsPlaceholder(
       return true;
     }
   }
-  for (const match of code.matchAll(PLACEHOLDER_ARGUMENT)) {
-    if (!written.has(match[2])) return true;
-  }
   return false;
+}
+
+/**
+ * Whether a string is exactly what the compiler writes for some hash in
+ * hexadecimal, as long as the string is: data of an app that only starts
+ * as a placeholder does is not.
+ */
+function hasPlaceholderForm(text: string): boolean {
+  const [packed] = text
+    .slice(MINIFIED_ID_PLACEHOLDER.length)
+    .split(MINIFIED_ID_PLACEHOLDER);
+  const hash = Buffer.from(packed, 'base64url').toString('hex');
+  return hash.length === text.length && writeSameLength(hash) === text;
+}
+
+/**
+ * The placeholders at the call sites of a chunk's final code that the build
+ * did not write, as another instance of the plugin leaves them: strings of
+ * the exact form of a placeholder, of a length this build writes, that are
+ * no hash an author wrote there.
+ */
+function findUnknownPlaceholders(
+  code: string,
+  lengths: readonly number[],
+  written: ReadonlySet<string>
+): string[] {
+  const passed = [...code.matchAll(PLACEHOLDER_ARGUMENT)].map(
+    (match) => match[2]
+  );
+  return [...new Set(passed)].filter(
+    (text) =>
+      lengths.includes(text.length) &&
+      !written.has(text) &&
+      hasPlaceholderForm(text)
+  );
 }
 
 /**
  * How a build with hash minification reads its chunks, once all of them are
  * rendered. Throws when an id is also a key of the translations that names
  * something else, so that no page ever renders one message's translation
- * for another, and when a chunk still holds a placeholder.
+ * for another, and when a chunk still holds a placeholder: one the build
+ * wrote, or at a call site one that it did not.
  */
 export function readMinifiedIds(
   minified: MinifiedIds,
@@ -363,11 +408,19 @@ export function readMinifiedIds(
   ];
   const unminified = chunks
     .filter(({ code }) =>
-      holdsPlaceholder(code, minified.placeholders, lengths, build.unsplit)
+      holdsPlaceholder(code, minified.placeholders, lengths)
     )
     .map(({ fileName }) => fileName);
   if (unminified.length) {
     throw new Error(createUnminifiedChunksError(unminified.sort()));
+  }
+  const unknown = chunks.flatMap(({ fileName, code }) =>
+    findUnknownPlaceholders(code, lengths, build.unsplit).map(
+      (text) => `"${text}" in ${fileName}`
+    )
+  );
+  if (unknown.length) {
+    throw new Error(createUnknownPlaceholdersError(unknown.sort()));
   }
   const taken = [...minified.hashes.keys()].filter(
     (id) =>
