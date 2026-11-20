@@ -24,8 +24,6 @@ import {
 import {
   createRegionGraph,
   getMessageSizes,
-  getPairChunk,
-  getPairKey,
   sampleCompressedSizes,
   type RegionChunk,
   type RegionModuleInfo,
@@ -83,7 +81,7 @@ export type RegionAssignmentRecord = {
   /**
    * The hashes in each file, by the file's id. In a build with hash
    * minification, a pair for each chunk that reads a message there: the
-   * hash, then what names the chunk, see getPairKey.
+   * hash, then what names the module that reads it, see getPairKey.
    */
   files: Record<string, string[]>;
   /**
@@ -524,6 +522,7 @@ export function writeRegionTranslations(
     emitFile,
     getModuleInfo,
     isLazy,
+    root,
   }: {
     gtFiles: GTOutputFileConfig;
     /** The URL the build's files are served from */
@@ -538,6 +537,8 @@ export function writeRegionTranslations(
     getModuleInfo: (id: string) => RegionModuleInfo | null;
     /** Whether a module runs only when it is first imported, see initialisesModulesLazily */
     isLazy: boolean;
+    /** The directory the build's modules are in, see getPairModule */
+    root: string;
   }
 ): {
   startupScripts: Map<string, (base: string) => string>;
@@ -582,12 +583,15 @@ export function writeRegionTranslations(
     chunks,
     getModuleInfo,
     build.hashes,
-    { isLazy, ...(ids && { ids, moduleIds, pairs: true }) }
+    { isLazy, ...(ids && { ids, moduleIds, pairs: { root } }) }
   );
   const hashSizes = getMessageSizes(table, build.hashes);
   const sizes = pairs
     ? new Map(
-        [...pairs].map(([pair, hash]) => [pair, hashSizes.get(hash) ?? 0])
+        [...pairs.hashes].map(([pair, hash]) => [
+          pair,
+          hashSizes.get(hash) ?? 0,
+        ])
       )
     : hashSizes;
   const sampled = build.locales.find((locale) => table[locale]);
@@ -607,9 +611,6 @@ export function writeRegionTranslations(
     previous: previous?.files,
   });
 
-  const chunkNames = new Map(
-    chunks.map((chunk) => [chunk, getPairChunk(chunk)])
-  );
   const imports = listImportedRegions(chunks, assignment.demands);
   const uncovered = findUncoveredMessages(graph, {
     entries: assignment.entries,
@@ -623,7 +624,7 @@ export function writeRegionTranslations(
       createUncoveredMessagesError(
         uncovered.map((message) => ({
           ...message,
-          hash: pairs?.get(message.hash) ?? message.hash,
+          hash: pairs?.hashes.get(message.hash) ?? message.hash,
         }))
       )
     );
@@ -657,8 +658,10 @@ export function writeRegionTranslations(
       samples,
       unsplit: getUnsplitTranslations(table, build),
       ...(ids && {
-        passedIds: findPassedIds(chunks, ids, (hash, chunk) =>
-          getPairKey(hash, chunkNames.get(chunk)!)
+        passedIds: findPassedIds(
+          chunks,
+          ids,
+          (hash, chunk) => pairs?.byChunk.get(chunk.fileName)?.get(hash) ?? hash
         ),
       }),
     }

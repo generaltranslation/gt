@@ -518,6 +518,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     // Where the build's files are served from and its assets go: Vite's `base` and `build.assetsDir`
     let base = '';
     let assetsDir = '';
+    // The directory the build's modules are in: Vite's `root`
+    let root: string | undefined;
     // What the bundler's `options` and `outputOptions` hooks received, which
     // say when a module runs; `generateBundle` gets options that do not
     let inputOptions: Parameters<typeof initialisesModulesLazily>[1] = {};
@@ -550,6 +552,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           emitFile: (file) => context.emitFile(file as never),
           getModuleInfo: (id) => context.getModuleInfo(id),
           isLazy: initialisesModulesLazily(outputOptions, inputOptions),
+          root: root ?? process.cwd(),
         }
       );
       if (shouldWarn(options.logLevel)) {
@@ -665,7 +668,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             getModuleInfo,
             chunkTranslations!.hashes,
             minifiedIds,
-            initialisesModulesLazily(outputOptions, inputOptions)
+            {
+              isLazy: initialisesModulesLazily(outputOptions, inputOptions),
+              root: root ?? process.cwd(),
+            }
           );
           listScopes.set(chunks, scopes);
         }
@@ -766,11 +772,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           configResolved(
             config: ViteSourceMapConfig & {
               base: string;
+              root?: string;
               build: { assetsDir: string };
             }
           ) {
             keepViteConfig(config);
             base = config.base;
+            root = config.root;
             assetsDir = config.build.assetsDir;
           },
           ...keepOptions,

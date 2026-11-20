@@ -1,8 +1,6 @@
 import { listRegions } from './assignTranslationsByRegion';
 import {
   createRegionGraph,
-  getPairChunk,
-  getPairKey,
   type RegionChunk,
   type RegionModuleInfo,
 } from './createRegionGraph';
@@ -23,7 +21,14 @@ export type RenderedRegionChunk = Omit<RegionChunk, 'code'>;
  * entry's file too. So a chunk has a list for each set of its messages that
  * the same loads fetch (a region of assignTranslationsByRegion, of pairs):
  * every list is wholly in one file, and a file is rewritten only when one
- * of its own messages comes, goes or is translated anew.
+ * of its own messages comes, goes or is translated anew. Regions merge into
+ * files afterwards, so a file can hold several lists of one chunk.
+ *
+ * What this costs: a chunk's lists, and so its ids and the name the bundler
+ * gives it, follow from the loads of the whole app and not from the chunk
+ * alone. When another load comes to fetch some of the messages of a list,
+ * as a new route does that imports one module of a shared chunk, or stops,
+ * the chunk is listed anew although it reads what it read.
  *
  * The regions are read from the code of the modules as the bundler rendered
  * them, before any chunk is minified. A call site that the minifier then
@@ -39,10 +44,10 @@ export function findListScopes(
   getModuleInfo: (id: string) => RegionModuleInfo | null,
   hashes: ReadonlySet<string>,
   minified: MinifiedIds,
-  isLazy: boolean
+  { isLazy, root }: { isLazy: boolean; root: string }
 ): (fileName: string) => (hash: string) => number | undefined {
   const placeholders = readPlaceholders(minified);
-  const { graph } = createRegionGraph(
+  const { graph, pairs } = createRegionGraph(
     Object.values(chunks).map((chunk) => ({
       fileName: chunk.fileName,
       code: Object.values(chunk.modules)
@@ -56,16 +61,17 @@ export function findListScopes(
     })),
     getModuleInfo,
     hashes,
-    { isLazy, ids: placeholders, moduleIds: placeholders, pairs: true }
+    { isLazy, ids: placeholders, moduleIds: placeholders, pairs: { root } }
   );
   const regionOf = new Map<string, number>();
   listRegions(graph).forEach((region, index) => {
     for (const pair of region.hashes) regionOf.set(pair, index);
   });
   return (fileName) => {
-    const chunk = chunks[fileName];
-    const named = chunk && getPairChunk(chunk);
-    return (hash) =>
-      named === undefined ? undefined : regionOf.get(getPairKey(hash, named));
+    const ofChunk = pairs?.byChunk.get(fileName);
+    return (hash) => {
+      const pair = ofChunk?.get(hash);
+      return pair === undefined ? undefined : regionOf.get(pair);
+    };
   };
 }
