@@ -265,6 +265,7 @@ function processElementChildren({
       processChild(childPath, ctx);
     }
   } else {
+    wrapChildrenAttributeInT(path, tLocalName, processedNodes);
     // No text, no opaque, not inside T: just recurse into child elements
     const childPaths = path.get('children');
     for (const childPath of childPaths) {
@@ -582,6 +583,46 @@ function wrapChildrenInT(
   const tWrapper = createTWrapper(children, tName);
   processedNodes.add(tWrapper);
   elementPath.node.children = [tWrapper];
+}
+
+/** `<p children="text" />` compiles to the same call as `<p>text</p>`, so the text claims its element. */
+function wrapChildrenAttributeInT(
+  elementPath: NodePath<t.JSXElement>,
+  tName: string,
+  processedNodes: WeakSet<t.Node>
+): void {
+  if (hasNestedChildren(elementPath.node.children)) return;
+  const attribute = elementPath.node.openingElement.attributes.find(
+    (attr): attr is t.JSXAttribute =>
+      t.isJSXAttribute(attr) &&
+      t.isJSXIdentifier(attr.name, { name: 'children' })
+  );
+  const text = t.isStringLiteral(attribute?.value)
+    ? t.jsxExpressionContainer(t.stringLiteral(attribute.value.value))
+    : attribute?.value;
+  if (
+    !attribute ||
+    !t.isJSXExpressionContainer(text) ||
+    !hasTranslatableText([text])
+  ) {
+    return;
+  }
+  const tWrapper = createTWrapper([text], tName);
+  processedNodes.add(tWrapper);
+  attribute.value = t.jsxExpressionContainer(tWrapper);
+}
+
+/** Whether the JSX transform emits children for the element, which replace a `children` attribute. */
+function hasNestedChildren(children: t.Node[]): boolean {
+  return children.some((child) => {
+    if (t.isJSXText(child)) {
+      return !(child.value.includes('\n') && /^[ \t\r\n]*$/.test(child.value));
+    }
+    return !(
+      t.isJSXExpressionContainer(child) &&
+      t.isJSXEmptyExpression(child.expression)
+    );
+  });
 }
 
 function wrapFragmentChildrenInT(

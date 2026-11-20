@@ -448,8 +448,8 @@ function buildJSXTree({
                 output,
               });
             }
-            // For HTML content props, only accept static string expressions
-            else if (isHtmlContentProp) {
+            // For HTML content props and children, only accept static string expressions
+            else if (isHtmlContentProp || attrName === 'children') {
               const staticAnalysis = isStaticExpression(
                 attr.value.expression,
                 true
