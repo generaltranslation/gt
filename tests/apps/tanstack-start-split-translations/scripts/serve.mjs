@@ -104,9 +104,11 @@ async function run({
       pages === 'shell'
         ? `${base}_shell.html`
         : `${url.pathname.replace(/\/$/, '')}/index.html`;
+    // A static page answers a navigation; a server function still runs
+    const isNavigation = request.headers.accept?.includes('text/html');
     const name = files.has(url.pathname)
       ? url.pathname
-      : handler && pages !== 'server' && files.has(page)
+      : handler && pages !== 'server' && isNavigation && files.has(page)
         ? page
         : undefined;
     if (name !== undefined || !handler) {

@@ -11,7 +11,7 @@
 // installed before any script of the page records each element that ever
 // shows anything else, which is how a flash of source text is caught.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
@@ -273,6 +273,29 @@ for (const [name, env] of Object.entries(SPLITS)) {
     first
   );
 
+  if (splits) {
+    // A message only the server uses is in no file the browser can load,
+    // and one the browser also reads by its hash stays in the unsplit file
+    const directory = join(build(title, env), 'client', 'assets');
+    const files = readdirSync(directory).map((name) =>
+      readFileSync(join(directory, name), 'utf8')
+    );
+    const unsplit = readdirSync(directory).filter((name) =>
+      name.startsWith('gt-unsplit.fr.')
+    );
+    check(
+      `${title}: no file of the client build holds the message of the server function`,
+      !files.some((file) => /written on the server/i.test(file))
+    );
+    check(
+      `${title}: the unsplit file keeps the message that a msg() shares with it`,
+      unsplit.length === 1 &&
+        readFileSync(join(directory, unsplit[0]), 'utf8').includes(
+          'WAITING FOR REVIEW'
+        )
+    );
+  }
+
   // Preloading on intent requests a route's translations with its chunks
   await visitor.page.hover('[data-link="/settings"]');
   await visitor.page.waitForLoadState('networkidle');
@@ -316,6 +339,37 @@ for (const [name, env] of Object.entries(SPLITS)) {
   );
   await visitor.close();
   await server.close();
+}
+
+// ===== Loaders ===== //
+
+// A loader that translates with getGT() is in the entry chunk by default, so
+// every page carries the loader messages of every route. With the router's
+// own code splitting of loaders they are in a file of their route.
+{
+  const title = 'loaders split by the router';
+  if (selected(title)) {
+    const split = SPLITS['chunk, minified ids'];
+    const inEntry = (directory) => {
+      const assets = join(directory, 'client', 'assets');
+      const manifest = JSON.parse(
+        readFileSync(join(assets, 'gt-chunk-translations.json'), 'utf8')
+      );
+      const [entry] = Object.values(manifest.entries);
+      return readFileSync(
+        join(directory, 'client', entry.translations.fr),
+        'utf8'
+      ).includes('REPORTS OVERVIEW');
+    };
+    const directory = build(title, { ...split, CHECK_SPLIT_LOADERS: 'true' });
+    check(
+      `${title}: the title a loader translates is in the entry's file by default, and not with it`,
+      inEntry(build('split chunk, minified ids', split)) && !inEntry(directory)
+    );
+    const server = await serve(directory);
+    for (const locale of ['fr', 'en']) await walk(title, server.origin, locale);
+    await server.close();
+  }
 }
 
 // ===== Rendering modes ===== //

@@ -15,6 +15,20 @@ export default defineConfig({
   build: { outDir: process.env.CHECK_OUT_DIR ?? 'dist' },
   plugins: [
     tanstackStart({
+      // CHECK_SPLIT_LOADERS: the router also moves each route's loader out of
+      // the entry chunk, where every page would carry its messages
+      ...(process.env.CHECK_SPLIT_LOADERS === 'true' && {
+        router: {
+          codeSplittingOptions: {
+            defaultBehavior: [
+              ['loader'],
+              ['component'],
+              ['errorComponent'],
+              ['notFoundComponent'],
+            ],
+          },
+        },
+      }),
       // CHECK_SPA: the app is a prerendered shell that every visitor gets
       ...(process.env.CHECK_SPA === 'true' && { spa: { enabled: true } }),
       // CHECK_PRERENDER: every route is also written as a static page

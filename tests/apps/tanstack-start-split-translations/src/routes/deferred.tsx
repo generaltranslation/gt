@@ -3,11 +3,17 @@ import { Await, createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
 import { T, getGT, useGT } from 'gt-tanstack-start';
 
-// Runs on the server only, so its message is no message of the browser
+// Runs on the server only. Its first message is no message of the browser,
+// so no file the browser loads holds it. Its second is also a msg() of
+// src/components/statuses.ts, which the browser reads from the unsplit file.
 const getServerNote = createServerFn().handler(async () => {
   const t = await getGT();
   await new Promise((resolve) => setTimeout(resolve, 200));
-  return { text: t`Written on the server`, source: 'Written on the server' };
+  return {
+    text: t`Written on the server`,
+    source: 'Written on the server',
+    status: t`Waiting for review`,
+  };
 });
 
 export const Route = createFileRoute('/deferred')({
@@ -16,12 +22,19 @@ export const Route = createFileRoute('/deferred')({
   component: Deferred,
 });
 
-function Note({ note }: { note: { text: string; source: string } }) {
+function Note({
+  note,
+}: {
+  note: { text: string; source: string; status: string };
+}) {
   const t = useGT();
   return (
     <div data-deferred>
       <p data-m data-src={note.source}>
         {note.text}
+      </p>
+      <p data-m data-src='Waiting for review'>
+        {note.status}
       </p>
       <p
         data-m
