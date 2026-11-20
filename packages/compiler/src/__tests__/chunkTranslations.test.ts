@@ -78,6 +78,7 @@ import {
   type MinifiedTranslations,
 } from '../transform/chunk-translations/hashMinification';
 import { findListScopes } from '../transform/chunk-translations/listScopes';
+import { createRandom } from '../transform/chunk-translations/__tests__/syntheticApp';
 import {
   getPageBase,
   renderStartupScript,
@@ -5026,7 +5027,8 @@ globalThis.save = () => t\`Save\`;`,
       function renderBundle(
         hashed: typeof BUNDLE,
         isScoped = false,
-        graph = GRAPH
+        graph = GRAPH,
+        isLazy = true
       ) {
         const minifiedIds: MinifiedIds = {
           hashes: new Map(),
@@ -5052,7 +5054,7 @@ globalThis.save = () => t\`Save\`;`,
               getModuleInfo(graph),
               new Set(Object.values(HASH)),
               minifiedIds,
-              true
+              isLazy
             )
           : undefined;
         const bundle = Object.fromEntries(
@@ -5171,12 +5173,14 @@ globalThis.save = () => t\`Save\`;`,
           );
         const filesOf = (
           build: ReturnType<typeof renderBundle>,
-          graph = GRAPH
+          graph = GRAPH,
+          options: { previous?: string; isLazy?: boolean; cwd?: string } = {}
         ) => {
-          const { emitted, manifest } = write({
+          const { emitted, manifest, cwd } = write({
             bundle: build.bundle,
             minifiedIds: build.minifiedIds,
             graph,
+            ...options,
           });
           const fileOf = (hash: string) => {
             const [id] =
@@ -5185,10 +5189,22 @@ globalThis.save = () => t\`Save\`;`,
               ) ?? [];
             return manifest.files[`assets/gt-${id}`]?.fr;
           };
-          return { emitted, manifest, fileOf };
+          /** The lists each file names, and the manifest as a file, for the build after this one. */
+          const lists = Object.values(manifest.files).map(({ fr }) =>
+            Object.keys((JSON.parse(emitted[fr]) as MinifiedTranslations)[1])
+          );
+          const writeManifest = () => {
+            const file = path.join(cwd, 'previous.json');
+            fs.writeFileSync(
+              file,
+              emitted['assets/gt-chunk-translations.json']
+            );
+            return file;
+          };
+          return { emitted, manifest, fileOf, lists, writeManifest, cwd };
         };
 
-        it('lists together what the same loads fetch, and alone what an entry fetches in a chunk that loads later', () => {
+        it('lists together what the same loads fetch, in a chunk that loads with one of them, and alone in a chunk that loads later', () => {
           const { scopes, minifiedIds } = withShared(['invoice']);
           const shared = scopes!('assets/shared.js');
           // Home fetches the date picker, Billing the invoice table, Admin the panel
@@ -5323,23 +5339,21 @@ globalThis.save = () => t\`Save\`;`,
           const build = renderBundle(
             {
               ...BUNDLE,
+              // The Shell's chunk imports the shared chunk, which loads with it
               'assets/Shell.js': chunk(
                 'assets/Shell.js',
                 { '/shell.js': site('picker', 'invoice') },
-                { code: 'export{}' }
+                { code: 'export{}', imports: ['assets/shared.js'] }
               ),
             },
             true,
             graph
           );
-          const { emitted, manifest, fileOf } = filesOf(build, graph);
+          const { fileOf, lists } = filesOf(build, graph);
           // The Shell fetched both when the shared chunk listed them
           // together, and still does: one file, which holds the whole list
           expect(fileOf(HASH.picker)).toBe(fileOf(HASH.invoice));
           expect(fileOf(HASH.panel)).not.toBe(fileOf(HASH.picker));
-          const lists = Object.values(manifest.files).map(({ fr }) =>
-            Object.keys((JSON.parse(emitted[fr]) as MinifiedTranslations)[1])
-          );
           expect(lists.flat()).toHaveLength(new Set(lists.flat()).size);
           expect(lists.flat()).toContain(
             getListName([HASH.picker, HASH.invoice].sort())
@@ -5353,6 +5367,308 @@ globalThis.save = () => t\`Save\`;`,
             )?.[0];
           expect(plainFileOf(HASH.picker)).toBe(plainFileOf(HASH.home));
           expect(plainFileOf(HASH.invoice)).toBe(plainFileOf(HASH.billing));
+        });
+
+        describe('in an app whose routes load after a layout that loads lazily', () => {
+          // The entry reads two labels and opens the Layout, which reads two
+          // more and opens the Home and the Billing route
+          const LAYOUT_GRAPH: typeof GRAPH = {
+            '/main.js': { dynamic: ['/layout.js'] },
+            '/layout.js': { dynamic: ['/home.js', '/billing.js'] },
+          };
+          type Names = readonly (keyof typeof HASH)[];
+          const withLayout = (home: Names, billing: Names, isScoped = true) =>
+            renderBundle(
+              Object.fromEntries(
+                [
+                  chunk(
+                    'assets/index.js',
+                    { '/main.js': site('title', 'panel') },
+                    { isEntry: true }
+                  ),
+                  chunk('assets/Layout.js', {
+                    '/layout.js': site('picker', 'invoice'),
+                  }),
+                  chunk('assets/Home.js', { '/home.js': site(...home) }),
+                  chunk('assets/Billing.js', {
+                    '/billing.js': site(...billing),
+                  }),
+                ].map((file) => [file.fileName, file])
+              ),
+              isScoped,
+              LAYOUT_GRAPH
+            );
+          /** The messages whose file a deploy renames, of those both builds hold. */
+          const renamedBy = (
+            before: ReturnType<typeof withLayout>,
+            after: ReturnType<typeof withLayout>
+          ) => {
+            const first = filesOf(before, LAYOUT_GRAPH);
+            const second = filesOf(after, LAYOUT_GRAPH, {
+              previous: first.writeManifest(),
+              cwd: first.cwd,
+            });
+            return Object.entries(HASH)
+              .filter(
+                ([, hash]) =>
+                  first.fileOf(hash) !== undefined &&
+                  second.fileOf(hash) !== undefined &&
+                  first.fileOf(hash) !== second.fileOf(hash)
+              )
+              .map(([name]) => name);
+          };
+
+          it.each([
+            [
+              'a route reads a label of its layout that another route reads',
+              [
+                ['home', 'picker'],
+                ['billing', 'invoice'],
+              ],
+              [
+                ['home', 'picker', 'invoice'],
+                ['billing', 'invoice'],
+              ],
+              [],
+              ['picker', 'invoice'],
+            ],
+            [
+              'a route reads a label of the entry that another route reads',
+              [['home', 'title'], ['billing']],
+              [
+                ['home', 'title'],
+                ['billing', 'title'],
+              ],
+              [],
+              ['title', 'panel'],
+            ],
+            // What the rule leaves: the one-message list of a label is new to
+            // its file when the first chunk that loads later reads the label.
+            // The Layout's two labels are in the entry's file here.
+            [
+              'the first route reads a label of the entry',
+              [['home'], ['billing']],
+              [['home', 'title'], ['billing']],
+              ['title', 'picker', 'invoice', 'panel'],
+              ['title', 'panel'],
+            ],
+          ] as [string, Names[], Names[], Names, Names][])(
+            'renames the files of %s as the lists in them change: of no message, where the label had a list of its own',
+            (_name, before, after, renamed, renamedPerChunk) => {
+              expect(
+                renamedBy(
+                  withLayout(before[0], before[1]),
+                  withLayout(after[0], after[1])
+                )
+              ).toEqual(renamed);
+              // With one list per chunk, the file of the label always is,
+              // with the files of whatever else the changed chunk reads
+              expect(
+                renamedBy(
+                  withLayout(before[0], before[1], false),
+                  withLayout(after[0], after[1], false)
+                )
+              ).toEqual(expect.arrayContaining([...renamedPerChunk]));
+            }
+          );
+        });
+
+        describe('over module graphs made at random', () => {
+          const SEEDS = Array.from({ length: 40 }, (_, seed) => seed + 1);
+          /**
+           * A module graph over the messages of HASH, as the chunks a bundler
+           * makes for it: one for each set of loads that reach a module
+           * through static imports. With `drop`, the final code of a chunk
+           * lacks that share of its call sites, as after a minifier that
+           * removes what the bundler rendered.
+           */
+          function randomBundle(seed: number, drop = 0) {
+            const random = createRandom(seed);
+            const ids = Array.from(
+              { length: 9 },
+              (_, index) => `/m${index}.js`
+            );
+            const graph: Required<(typeof GRAPH)[string]>[] = ids.map(
+              (_id, index) => {
+                const imports: string[] = [];
+                const dynamic: string[] = [];
+                for (const next of ids.slice(index + 1)) {
+                  const draw = random();
+                  if (draw < 0.15) imports.push(next);
+                  else if (draw < 0.35) dynamic.push(next);
+                }
+                return { imports, dynamic };
+              }
+            );
+            const reads = ids.map(() => NAMES.filter(() => random() < 0.3));
+            // The loads, and the modules each reaches statically
+            const loads = new Set([ids[0]]);
+            const reached = new Map<string, string[]>();
+            for (const load of loads) {
+              const seen = new Set([load]);
+              for (const id of seen) {
+                reached.set(id, [...(reached.get(id) ?? []), load]);
+                const module = graph[ids.indexOf(id)];
+                for (const next of module.imports) seen.add(next);
+                for (const next of module.dynamic) loads.add(next);
+              }
+            }
+            const fileOf = new Map<string, string>();
+            const files = new Map<string, string[]>();
+            for (const [id, by] of reached) {
+              const file = `assets/c${ids.indexOf(by[0])}-${by.length}-${by.map((load) => ids.indexOf(load)).join('')}.js`;
+              fileOf.set(id, file);
+              files.set(file, [...(files.get(file) ?? []), id]);
+            }
+            const dropped = createRandom(seed + 1000);
+            const bundle = Object.fromEntries(
+              [...files].map(([fileName, held]) => {
+                const linked = (kind: 'imports' | 'dynamic') => [
+                  ...new Set(
+                    held.flatMap((id) =>
+                      graph[ids.indexOf(id)][kind].map(
+                        (next) => fileOf.get(next)!
+                      )
+                    )
+                  ),
+                ];
+                const sites = held.flatMap((id) =>
+                  reads[ids.indexOf(id)].map((name) => site(name))
+                );
+                return [
+                  fileName,
+                  chunk(
+                    fileName,
+                    Object.fromEntries(
+                      held.map((id) => [id, site(...reads[ids.indexOf(id)])])
+                    ),
+                    {
+                      isEntry: held.includes(ids[0]),
+                      facadeModuleId: held.find((id) => loads.has(id)) ?? null,
+                      imports: linked('imports').filter(
+                        (file) => file !== fileName
+                      ),
+                      dynamicImports: linked('dynamic').filter(
+                        (file) => file !== fileName
+                      ),
+                      ...(drop > 0 && {
+                        code: sites.filter(() => dropped() >= drop).join(';'),
+                      }),
+                    }
+                  ),
+                ];
+              })
+            );
+            return {
+              bundle,
+              graph: Object.fromEntries(
+                ids.map((id, index) => [id, graph[index]])
+              ) as typeof GRAPH,
+            };
+          }
+          /** Fails unless each id reads its own message and each list is in one file. */
+          function expectWholeLists(
+            build: ReturnType<typeof renderBundle>,
+            written: ReturnType<typeof filesOf>,
+            name: string
+          ) {
+            const held = new Set<string>();
+            for (const { fr } of Object.values(written.manifest.files)) {
+              const entries = unpack(JSON.parse(written.emitted[fr]));
+              for (const [id, translation] of Object.entries(entries)) {
+                held.add(id);
+                expect(translation, `${name}: ${id}`).toBe(
+                  CATALOG[build.minifiedIds.hashes.get(id)!]
+                );
+              }
+            }
+            for (const file of Object.values(build.bundle)) {
+              for (const [, id] of file.code.matchAll(/\$_hash:"([^"]+)"/g)) {
+                expect(held.has(id), `${name}: ${id} of ${file.fileName}`).toBe(
+                  true
+                );
+              }
+            }
+            const names = written.lists.flat();
+            expect(names, name).toHaveLength(new Set(names).size);
+          }
+
+          it.each([
+            ['runs a module when it is first imported', true],
+            ['runs every module of a chunk as it loads', false],
+          ])(
+            'gives each id its own message and keeps each list in one file, in a build that %s, also after a deploy and with call sites the minifier removed',
+            (_name, isLazy) => {
+              const { cwd } = createPlugins(ON, 'vite', {
+                'translations/fr.json': JSON.stringify(CATALOG),
+              });
+              for (const seed of SEEDS) {
+                const first = randomBundle(seed);
+                const build = renderBundle(
+                  first.bundle,
+                  true,
+                  first.graph,
+                  isLazy
+                );
+                const written = filesOf(build, first.graph, { isLazy, cwd });
+                expectWholeLists(build, written, `seed ${seed}`);
+                // The next deploy: another graph, given this build's manifest
+                const next = randomBundle(seed + 500, seed % 2 ? 0.25 : 0);
+                const deployed = renderBundle(
+                  next.bundle,
+                  true,
+                  next.graph,
+                  isLazy
+                );
+                expectWholeLists(
+                  deployed,
+                  filesOf(deployed, next.graph, {
+                    isLazy,
+                    cwd,
+                    previous: written.writeManifest(),
+                  }),
+                  `seed ${seed} after a deploy`
+                );
+              }
+            }
+          );
+
+          it('lists alike whatever the order of the chunks, of their modules and of their imports', () => {
+            const { cwd } = createPlugins(ON, 'vite', {
+              'translations/fr.json': JSON.stringify(CATALOG),
+            });
+            const reversed = <Value>(record: Record<string, Value>) =>
+              Object.fromEntries(Object.entries(record).reverse());
+            for (const seed of SEEDS) {
+              const { bundle, graph } = randomBundle(seed);
+              const other = reversed(
+                Object.fromEntries(
+                  Object.entries(bundle).map(([fileName, file]) => [
+                    fileName,
+                    {
+                      ...file,
+                      modules: reversed(file.modules),
+                      imports: [...file.imports].reverse(),
+                      dynamicImports: [...file.dynamicImports].reverse(),
+                    },
+                  ])
+                )
+              );
+              for (const isLazy of [true, false]) {
+                const [one, two] = [bundle, other].map((rendered) => {
+                  const build = renderBundle(rendered, true, graph, isLazy);
+                  const { emitted } = filesOf(build, graph, { isLazy, cwd });
+                  return {
+                    ids: new Map([...build.minifiedIds.hashes].sort()),
+                    files: Object.keys(emitted)
+                      .filter((file) => /\.fr\.\w+\.json$/.test(file))
+                      .sort(),
+                  };
+                });
+                expect(two, `seed ${seed}`).toEqual(one);
+              }
+            }
+          });
         });
 
         it('gives a page of one build, in the files of the next, the message of its own id or nothing, and every message of a list the deploy left alone', () => {
