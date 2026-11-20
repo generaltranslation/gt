@@ -2,7 +2,7 @@
 // it emits map back to:
 //   node scripts/check-source-maps.mjs
 // Prints one line per check and exits with 1 when any fails.
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,13 +21,12 @@ function check(name, passed, detail = '') {
 /** Builds the app with source maps into a directory of .check and returns what the build printed. */
 function build(name, env) {
   const outDir = join(root, '.check', 'source-maps', name);
-  const log = execFileSync(
+  const { status, stdout, stderr } = spawnSync(
     'pnpm',
     ['exec', 'vite', 'build', '--logLevel', 'warn', '--sourcemap'],
     {
       cwd: root,
       encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
         NODE_ENV: 'production',
@@ -36,6 +35,9 @@ function build(name, env) {
       },
     }
   );
+  // A bundler warns on the standard error
+  const log = `${stdout}${stderr}`;
+  if (status !== 0) throw new Error(`The build ${name} failed:\n${log}`);
   return { outDir, log };
 }
 
