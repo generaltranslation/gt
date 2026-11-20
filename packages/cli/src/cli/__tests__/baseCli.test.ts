@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { stripVTControlCharacters } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit } from '../../console/logging.js';
@@ -317,6 +318,166 @@ describe('workspace root setup guard', () => {
       expect(
         fs.readFileSync(path.join(workspaceRoot, 'package.json'), 'utf8')
       ).toBe(packageJsonContents);
+    }
+  );
+});
+
+describe('--dry-run', () => {
+  const originalCwd = process.cwd();
+  const source = 'messages/en/common.json';
+  const downloadReport = [
+    'Dry run: No translations were downloaded from General Translation.',
+    'Translations that would be requested:\n' +
+      `- ${source} (es) → messages/es/common.json\n` +
+      `- ${source} (fr) → messages/fr/common.json`,
+  ];
+  const collectedFiles = `Files found in project:\n- ${source}`;
+  let projectRoot: string;
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  function writeProjectFile(relativePath: string, content: string) {
+    const filePath = path.join(projectRoot, relativePath);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, content);
+  }
+
+  function writeProject(config: Record<string, unknown> = {}) {
+    writeProjectFile('package.json', json({ name: 'example-app' }));
+    writeProjectFile(source, json({ greeting: 'Hello' }));
+    writeProjectFile(
+      'gt.config.json',
+      json({
+        defaultLocale: 'en',
+        locales: ['es', 'fr'],
+        files: { json: { include: ['messages/[locale]/*.json'] } },
+        ...config,
+      })
+    );
+    if (config.stageTranslations) {
+      writeProjectFile(
+        'gt-lock.json',
+        json({
+          version: 2,
+          branchId: 'branch-id',
+          entries: [
+            {
+              fileId: 'file-id',
+              versionId: 'version-id',
+              fileName: source,
+              staged: true,
+              translations: {},
+            },
+          ],
+        })
+      );
+    }
+  }
+
+  function readProject(directory = projectRoot): Record<string, string> {
+    return Object.fromEntries(
+      fs
+        .readdirSync(directory, { recursive: true, withFileTypes: true })
+        .filter((entry) => entry.isFile())
+        .map((entry) => path.join(entry.parentPath, entry.name))
+        .map((filePath) => [
+          path.relative(projectRoot, filePath),
+          fs.readFileSync(filePath, 'utf8'),
+        ])
+    );
+  }
+
+  /** Runs the command and returns what it reported. */
+  async function dryRun(command: string, ...args: string[]) {
+    const report: string[] = [];
+    const record = (message: string) => {
+      const text = stripVTControlCharacters(message);
+      if (!text.startsWith('Project ID:')) report.push(text);
+    };
+    vi.spyOn(logger, 'success').mockImplementation(record);
+    vi.spyOn(logger, 'message').mockImplementation(record);
+    const program = new Command().exitOverride();
+    new BaseCLI(program, 'base').init();
+    await program.parseAsync([command, '--dry-run', ...args], { from: 'user' });
+    return report;
+  }
+
+  beforeEach(() => {
+    projectRoot = fs.realpathSync(
+      fs.mkdtempSync(path.join(tmpdir(), 'gt-dry-run-'))
+    );
+    process.chdir(projectRoot);
+    vi.stubEnv('GT_PROJECT_ID', '');
+    vi.stubEnv('GT_API_KEY', '');
+    fetchMock = vi.fn(() => Promise.reject(new Error('fetch was called')));
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    process.chdir(originalCwd);
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+  });
+
+  it.each([
+    ['translate', { stageTranslations: true }, downloadReport],
+    ['download', { stageTranslations: true }, downloadReport],
+    ['download', {}, downloadReport],
+    [
+      'translate',
+      {},
+      ['Dry run: No files were sent to General Translation.', collectedFiles],
+    ],
+    [
+      'setup',
+      {},
+      [
+        'Dry run: No files were uploaded to General Translation.',
+        collectedFiles,
+      ],
+    ],
+  ])(
+    'gt %s with %j reports without a request or a write',
+    async (command, config, expectedReport) => {
+      writeProject(config);
+      const before = readProject();
+
+      const withCredentials = await dryRun(
+        command,
+        '--project-id',
+        'project-id',
+        '--api-key',
+        'gtx-api-key'
+      );
+      const withoutCredentials = await dryRun(command);
+
+      expect(withCredentials).toEqual(expectedReport);
+      expect(withoutCredentials).toEqual(expectedReport);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(readProject()).toEqual(before);
+    }
+  );
+
+  it.each([
+    ['translate', {}],
+    ['translate', { stageTranslations: true }],
+    ['download', {}],
+  ])(
+    'gt %s with %j does not mirror shared static assets to locales',
+    async (command, config) => {
+      writeProject({
+        ...config,
+        files: { md: { include: ['docs/[locale]/*.md'] } },
+        sharedStaticAssets: { include: 'docs/en/*.png', mirrorToLocales: true },
+      });
+      writeProjectFile('docs/en/guide.md', '![Diagram](./diagram.png)\n');
+      writeProjectFile('docs/en/diagram.png', 'image');
+      const before = readProject();
+
+      await dryRun(command);
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(readProject()).toEqual(before);
     }
   );
 });
