@@ -2882,6 +2882,9 @@ importers:
       '@generaltranslation/compiler':
         specifier: workspace:*
         version: link:../../../packages/compiler
+      '@jridgewell/trace-mapping':
+        specifier: ^0.3.31
+        version: 0.3.31
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
