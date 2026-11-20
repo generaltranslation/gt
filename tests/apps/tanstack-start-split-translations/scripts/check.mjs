@@ -11,7 +11,13 @@
 // installed before any script of the page records each element that ever
 // shows anything else, which is how a flash of source text is caught.
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
@@ -337,6 +343,83 @@ for (const [name, env] of Object.entries(SPLITS)) {
     visitor.problems.length === 0,
     visitor.problems.slice(0, 3)
   );
+  await visitor.close();
+  await server.close();
+}
+
+// ===== A deploy while a page is open ===== //
+
+/**
+ * Writes the app's translations into .check/deployed, with one of them
+ * changed when `changed`, and returns a config that reads them from there.
+ * Two builds with that config differ in a translation alone: the config, and
+ * so the JavaScript that holds it, is the same. The changed message is of
+ * the home page, which the check below does not visit.
+ */
+function writeTranslations(changed) {
+  const directory = join(root, '.check', 'deployed');
+  mkdirSync(join(directory, '_gt'), { recursive: true });
+  for (const locale of ['fr', 'de']) {
+    const translations = readFileSync(
+      join(root, 'src', '_gt', `${locale}.json`),
+      'utf8'
+    );
+    writeFileSync(
+      join(directory, '_gt', `${locale}.json`),
+      changed ? translations.replace(/welcome back/i, '$& again') : translations
+    );
+  }
+  const config = JSON.parse(readFileSync(join(root, 'gt.config.json'), 'utf8'));
+  config.files.gt.output = '.check/deployed/_gt/[locale].json';
+  writeFileSync(join(directory, 'gt.config.json'), JSON.stringify(config));
+  return '.check/deployed/gt.config.json';
+}
+
+// The host keeps no file of the build before: a page that was open through
+// the deploy asks for translation files by names the host no longer has.
+for (const name of ['chunk, minified ids', 'module, minified ids']) {
+  const title = `deploy, split ${name}`;
+  if (!selected(title)) continue;
+  const before = build(`${title}, before`, {
+    ...SPLITS[name],
+    CHECK_CONFIG: writeTranslations(false),
+  });
+  const after = build(`${title}, after`, {
+    ...SPLITS[name],
+    CHECK_CONFIG: writeTranslations(true),
+  });
+  const names = (directory, extension) =>
+    readdirSync(join(directory, 'client', 'assets'))
+      .filter((file) => file.endsWith(extension))
+      .sort()
+      .join();
+  check(
+    `${title}: a changed translation renames translation files and no chunk`,
+    names(before, '.json') !== names(after, '.json') &&
+      names(before, '.js') === names(after, '.js')
+  );
+  const server = await serve(before);
+  const visitor = await open(server.origin, 'fr');
+  await visitor.visit('/reports');
+  await checkMessages(`${title}: /reports before the deploy`, visitor);
+  await server.deploy(after);
+  visitor.takeTranslationRequests();
+  await visitor.navigate('/settings');
+  await checkMessages(`${title}: /settings after the deploy`, visitor);
+  const requested = visitor.takeTranslationRequests();
+  check(
+    `${title}: every file the navigation needed arrived, by its old name or its new one`,
+    requested.some((request) => request.startsWith('200 ')),
+    requested
+  );
+  await visitor.navigate('/client-only');
+  await checkMessages(
+    `${title}: a second navigation after the deploy`,
+    visitor
+  );
+  // A file that is gone is a failed request in the console, and nothing else is
+  const others = visitor.problems.filter((problem) => !problem.includes('404'));
+  check(`${title}: no other console error`, others.length === 0, others);
   await visitor.close();
   await server.close();
 }
