@@ -275,11 +275,6 @@ class Logger {
     else print();
   }
 
-  /** The stream that console output in the default format goes to. */
-  getConsoleStream(): NodeJS.WriteStream {
-    return this.consoleOutput === 'stderr' ? process.stderr : process.stdout;
-  }
-
   getLogFormat(): LogFormat {
     return this.logFormat;
   }
@@ -408,9 +403,12 @@ class Logger {
       return new MockSpinner(this);
     }
     if (this.logFormat === 'default') {
-      const create = () => spinner({ indicator, ...this.clackOutput });
+      const create = (style: 'dots' | 'timer' = indicator) =>
+        spinner({ indicator: style, ...this.clackOutput });
       // While the banner animates, spinner messages show under the globe.
-      return globeBanner.isAnimating() ? globeBanner.spinner(create) : create();
+      return globeBanner.isAnimating()
+        ? globeBanner.spinner(create, indicator)
+        : create();
     } else {
       return new MockSpinner(this);
     }

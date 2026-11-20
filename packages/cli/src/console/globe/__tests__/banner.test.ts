@@ -30,7 +30,15 @@ const { rest, columns } = getGlobeFrames();
 const restingLogo = paintFrame(rest, columns, false).join('\n');
 
 beforeEach(() => {
-  vi.useFakeTimers();
+  vi.useFakeTimers({
+    toFake: [
+      'setTimeout',
+      'clearTimeout',
+      'setInterval',
+      'clearInterval',
+      'performance',
+    ],
+  });
 });
 
 afterEach(() => {
@@ -62,13 +70,13 @@ describe('GlobeBanner', () => {
   it('keeps looping while only spinner messages arrive', async () => {
     const { banner, terminal } = setup();
     const calls: string[] = [];
-    const create = (): SpinnerResult => ({
-      start: (msg) => void calls.push(`start ${msg}`),
-      message: (msg) => void calls.push(`message ${msg}`),
-      stop: (msg) => void calls.push(`stop ${msg}`),
+    const create = (style?: string): SpinnerResult => ({
+      start: (msg) => void calls.push(`${style} start ${msg}`),
+      message: (msg) => void calls.push(`${style} message ${msg}`),
+      stop: (msg) => void calls.push(`${style} stop ${msg}`),
       isCancelled: false,
     });
-    const spinner = banner.spinner(create);
+    const spinner = banner.spinner(create, 'timer');
     spinner.start('Fetching project');
     await vi.advanceTimersByTimeAsync(4000);
     spinner.stop('Fetched project');
@@ -81,7 +89,55 @@ describe('GlobeBanner', () => {
     const landed = banner.settle();
     await vi.advanceTimersByTimeAsync(4000);
     await landed;
-    expect(calls).toEqual(['start Fetching project', 'stop Fetched project']);
+    // Replayed with the time it really ran, in clack's timer format.
+    expect(calls).toEqual([
+      'dots start Fetching project',
+      'dots stop Fetched project [4s]',
+    ]);
+  });
+
+  it('prints nothing for a spinner stopped before it started', async () => {
+    const { banner } = setup();
+    const calls: string[] = [];
+    const spinner = banner.spinner(() => ({
+      start: (msg) => void calls.push(`start ${msg}`),
+      message: () => {},
+      stop: (msg) => void calls.push(`stop ${msg}`),
+      isCancelled: false,
+    }));
+    spinner.stop('Never ran');
+    const landed = banner.settle();
+    await vi.advanceTimersByTimeAsync(4000);
+    await landed;
+    expect(calls).toEqual([]);
+  });
+
+  it('keeps the process alive only while something awaits the landing', () => {
+    const intervals = vi.spyOn(globalThis, 'setInterval');
+    const { banner } = setup();
+    const frameTimer = intervals.mock.results[0].value as NodeJS.Timeout;
+
+    // A finished command must not be held open by the banner...
+    expect(frameTimer.hasRef()).toBe(false);
+    // ...but a prompt awaiting the landing must be, or Node exits under it.
+    void banner.settle();
+    expect(frameTimer.hasRef()).toBe(true);
+    intervals.mockRestore();
+  });
+
+  it('keeps wide status text on one line', () => {
+    const terminal = new FakeTerminal();
+    terminal.columns = 30;
+    const stream = terminal as unknown as NodeJS.WriteStream;
+    const banner = new GlobeBanner();
+    banner.start({ stream, hold: [stream] });
+    banner.note('漢'.repeat(40), () => {});
+    vi.advanceTimersByTime(100);
+
+    const shown = plain(terminal.output);
+    expect(shown).toContain(`${'漢'.repeat(12)}…`);
+    expect(shown).not.toContain('漢'.repeat(13));
+    terminal.emit('resize');
   });
 
   it('shows progress notes under the globe and lands within 10 seconds', async () => {

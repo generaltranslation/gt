@@ -102,8 +102,10 @@ export function displayHeader(introString?: string) {
 // The animation's landing frame, for terminals that don't animate.
 function displayStaticGlobe() {
   const { rest, columns } = getGlobeFrames();
+  // chalk does not read NO_COLOR, so honor it here.
+  const color = chalk.level > 0 && !process.env.NO_COLOR;
   // eslint-disable-next-line no-console
-  console.log(`\n${paintFrame(rest, columns, chalk.level > 0).join('\n')}`);
+  console.log(`\n${paintFrame(rest, columns, color).join('\n')}`);
 }
 
 function displayInitializingText() {

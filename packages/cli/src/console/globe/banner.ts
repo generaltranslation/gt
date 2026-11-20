@@ -14,11 +14,14 @@ const MAX_ANIMATION_MS = 10_000;
 const STATUS_FRAMES = ['◒', '◐', '◓', '◑'];
 const HIDE_CURSOR = '\x1b[?25l';
 const SHOW_CURSOR = '\x1b[?25h';
+const CTRL_C = 0x03;
+const TERMINATING_SIGNALS: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGHUP'];
 
 type Write = NodeJS.WriteStream['write'];
 type Held =
   | { stream: NodeJS.WriteStream; args: Parameters<Write> }
   | { run: () => void };
+type SpinnerIndicator = 'dots' | 'timer';
 
 export type GlobeBannerOptions = {
   /** Where the globe draws. */
@@ -26,6 +29,44 @@ export type GlobeBannerOptions = {
   /** Streams whose writes are held while the globe animates. */
   hold?: NodeJS.WriteStream[];
 };
+
+// Clack's spinner timer format.
+function formatElapsed(startedAt: number): string {
+  const seconds = (performance.now() - startedAt) / 1000;
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.floor(seconds % 60);
+  return minutes > 0 ? `[${minutes}m ${rest}s]` : `[${rest}s]`;
+}
+
+// Terminal columns a code point takes: wide CJK and emoji take two.
+function columnsOf(codePoint: number): number {
+  if (codePoint >= 0x300 && codePoint <= 0x36f) return 0;
+  const wide =
+    codePoint >= 0x1100 &&
+    (codePoint <= 0x115f ||
+      (codePoint >= 0x2e80 && codePoint <= 0xa4cf && codePoint !== 0x303f) ||
+      (codePoint >= 0xac00 && codePoint <= 0xd7a3) ||
+      (codePoint >= 0xf900 && codePoint <= 0xfaff) ||
+      (codePoint >= 0xfe30 && codePoint <= 0xfe6f) ||
+      (codePoint >= 0xff00 && codePoint <= 0xff60) ||
+      (codePoint >= 0xffe0 && codePoint <= 0xffe6) ||
+      (codePoint >= 0x1f300 && codePoint <= 0x1faff) ||
+      (codePoint >= 0x20000 && codePoint <= 0x3fffd));
+  return wide ? 2 : 1;
+}
+
+// Shortens text to fit `room` terminal columns, ending in … if cut.
+function fitColumns(text: string, room: number): string {
+  let used = 0;
+  let fitted = '';
+  for (const char of text) {
+    const width = columnsOf(char.codePointAt(0)!);
+    if (used + width > room - 1) return `${fitted}…`;
+    used += width;
+    fitted += char;
+  }
+  return fitted;
+}
 
 /**
  * The animated banner. It owns the terminal while it animates: the intro
@@ -54,7 +95,9 @@ export class GlobeBanner {
   private landed: Promise<void> = Promise.resolve();
   private resolveLanded = () => {};
   private readonly painted = new Map<GlobeFrame, string[]>();
-  private afterLanding: Array<() => void> = [];
+  // Run on landing; given the exit code when the process is ending.
+  private afterLanding: Array<(exitCode?: number) => void> = [];
+  private inputMuted = false;
 
   isAnimating(): boolean {
     return this.animating;
@@ -81,15 +124,17 @@ export class GlobeBanner {
       }) as Write;
     }
     process.on('exit', this.onExit);
-    process.on('SIGINT', this.onInterrupt);
+    for (const signal of TERMINATING_SIGNALS) process.on(signal, this.onSignal);
     this.options.stream.on('resize', this.onResize);
+    this.muteInput();
     // A blank line above the globe, as the static banner has.
     this.raw(`\n${HIDE_CURSOR}`);
     this.drawFrame(this.frames.intro[0]);
     this.position = 1;
     this.timer = setInterval(() => this.advance(), FRAME_MS);
     this.cap = setTimeout(() => void this.settle(), MAX_ANIMATION_MS);
-    // The banner never keeps a finished command alive; exit lands it.
+    // While nothing waits on it, the banner never keeps a finished command
+    // alive; exit lands it.
     this.timer.unref();
     this.cap.unref();
     return true;
@@ -118,6 +163,9 @@ export class GlobeBanner {
   settle(): Promise<void> {
     if (!this.animating) return Promise.resolve();
     this.settling = true;
+    // Something may be awaiting the landing (a prompt), so the frame timer
+    // must keep the process alive until it lands.
+    this.timer?.ref();
     return this.landed;
   }
 
@@ -125,10 +173,23 @@ export class GlobeBanner {
    * A spinner whose messages show on the banner's status line while the
    * globe animates, and that becomes a real spinner once it lands.
    */
-  spinner(create: () => SpinnerResult): SpinnerResult {
+  spinner(
+    create: (indicator?: SpinnerIndicator) => SpinnerResult,
+    indicator: SpinnerIndicator = 'timer'
+  ): SpinnerResult {
     let real: SpinnerResult | undefined;
     let running = false;
     let message = '';
+    let startedAt = 0;
+    // Prints a stopped spinner's final line, with the time it really ran.
+    const replayFinal = (msg: string, code?: number) => {
+      const done = create('dots');
+      done.start(message);
+      done.stop(
+        indicator === 'timer' ? `${msg} ${formatElapsed(startedAt)}` : msg,
+        code
+      );
+    };
     // The real spinner, started with the current message if one is running.
     const becomeReal = () => {
       if (!real) {
@@ -140,6 +201,7 @@ export class GlobeBanner {
     return {
       start: (msg = '') => {
         message = msg;
+        startedAt = performance.now();
         if (!this.animating) {
           running = true;
           (real ??= create()).start(msg);
@@ -147,8 +209,14 @@ export class GlobeBanner {
         }
         running = true;
         this.status = msg;
-        this.afterLanding.push(() => {
-          if (running) becomeReal();
+        this.afterLanding.push((exitCode) => {
+          if (!running) return;
+          if (exitCode === undefined) return void becomeReal();
+          // The process is ending: print the line clack's spinner prints
+          // when a process exits under it.
+          running = false;
+          const text = exitCode > 1 ? 'Something went wrong' : 'Canceled';
+          replayFinal(text, exitCode);
         });
       },
       message: (msg = '') => {
@@ -163,15 +231,18 @@ export class GlobeBanner {
           running = false;
           return;
         }
+        if (!running) return;
         running = false;
         this.status = '';
         // Prints the spinner's final line, in order, once the globe lands.
+        const final =
+          indicator === 'timer' ? `${msg} ${formatElapsed(startedAt)}` : msg;
         const started = message;
         this.held.push({
           run: () => {
-            const done = create();
+            const done = create('dots');
             done.start(started);
-            done.stop(msg, code);
+            done.stop(final, code);
           },
         });
       },
@@ -220,14 +291,19 @@ export class GlobeBanner {
   }
 
   private statusLine(): string {
-    const text = stripVTControlCharacters(this.status).split('\n')[0].trim();
+    const text = [...stripVTControlCharacters(this.status).split('\n')[0]]
+      .map((char) => {
+        const code = char.codePointAt(0)!;
+        return code < 0x20 || code === 0x7f ? ' ' : char;
+      })
+      .join('')
+      .trim();
     if (!text) return '';
     const spin =
       STATUS_FRAMES[Math.floor(this.tick / 4) % STATUS_FRAMES.length];
     // One line only: a wrapped status line would break the in-place redraw.
     const room = Math.max(10, (this.options!.stream.columns ?? 80) - 4);
-    const shown = text.length > room ? `${text.slice(0, room - 1)}…` : text;
-    return `${chalk.magenta(spin)}  ${shown}`;
+    return `${chalk.magenta(spin)}  ${fitColumns(text, room)}`;
   }
 
   // Redraws the globe and the status line in place.
@@ -238,23 +314,28 @@ export class GlobeBanner {
     this.drawn = true;
   }
 
-  private land(): void {
+  private land(exitCode?: number): void {
     this.status = '';
     this.drawFrame(this.frames!.rest);
     // Step back onto the now-empty status line so output continues there.
     this.raw(`\x1b[1A${SHOW_CURSOR}`);
-    this.release();
+    this.release(exitCode);
   }
 
-  // Stops animating, restores the streams, and prints the held output.
-  private release(): void {
+  // Stops animating, restores the streams, and prints the held output. With
+  // an exit code the process is ending, so running spinners print their
+  // final line instead of restarting.
+  private release(exitCode?: number): void {
     if (!this.animating) return;
     this.animating = false;
     clearInterval(this.timer);
     clearTimeout(this.cap);
     process.off('exit', this.onExit);
-    process.off('SIGINT', this.onInterrupt);
+    for (const signal of TERMINATING_SIGNALS) {
+      process.off(signal, this.onSignal);
+    }
     this.options!.stream.off('resize', this.onResize);
+    this.unmuteInput();
     for (const [stream, write] of this.writes) stream.write = write;
     this.writes.clear();
     const held = this.held;
@@ -265,7 +346,7 @@ export class GlobeBanner {
     }
     const afterLanding = this.afterLanding;
     this.afterLanding = [];
-    for (const fn of afterLanding) fn();
+    for (const fn of afterLanding) fn(exitCode);
     this.resolveLanded();
   }
 
@@ -274,20 +355,53 @@ export class GlobeBanner {
     (this.writes.get(stream) ?? stream.write).call(stream, text);
   }
 
+  // Keystrokes would echo into the globe and break the in-place redraw, so
+  // input is read raw and dropped while it animates, as clack's spinner does.
+  // Ctrl+C still interrupts.
+  private muteInput(): void {
+    const input = process.stdin;
+    if (!input.isTTY) return;
+    input.setRawMode(true);
+    input.on('data', this.onKey);
+    input.resume();
+    // Reading input must not keep a finished command alive.
+    input.unref();
+    this.inputMuted = true;
+  }
+
+  private unmuteInput(): void {
+    if (!this.inputMuted) return;
+    this.inputMuted = false;
+    const input = process.stdin;
+    input.off('data', this.onKey);
+    // As clack does, Windows keeps raw mode rather than toggle it back.
+    if (process.platform !== 'win32') input.setRawMode(false);
+    input.pause();
+    input.ref();
+  }
+
+  private readonly onKey = (data: Buffer) => {
+    if (!data.includes(CTRL_C) || !this.animating) return;
+    this.land(1);
+    // Raw input means the terminal sent no signal, so raise it ourselves:
+    // other handlers get it, and without any, Ctrl+C exits as usual.
+    process.kill(process.pid, 'SIGINT');
+  };
+
   // A command that exits mid-animation lands at once, so nothing is lost.
-  private readonly onExit = () => {
-    if (this.animating) this.land();
+  private readonly onExit = (code: number) => {
+    if (this.animating) this.land(code);
   };
 
-  private readonly onInterrupt = () => {
+  private readonly onSignal = (signal: NodeJS.Signals) => {
     if (!this.animating) return;
-    this.land();
-    // Ours was the only handler, so keep Ctrl+C's default: exit.
-    if (process.listenerCount('SIGINT') === 0)
-      process.kill(process.pid, 'SIGINT');
+    this.land(1);
+    // Ours was the only handler, so keep the signal's default: exit.
+    if (process.listenerCount(signal) === 0) process.kill(process.pid, signal);
   };
 
-  // A resize can rewrap the block, so redrawing in place is no longer safe.
+  // A resize can rewrap the block, so redrawing in place is no longer safe:
+  // stop where it is and let held output follow below.
   private readonly onResize = () => {
     if (!this.animating) return;
     this.raw(`\n${SHOW_CURSOR}`);
