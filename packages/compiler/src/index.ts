@@ -70,6 +70,7 @@ import {
 } from './transform/chunk-translations/hashMinification';
 import {
   createUnsplitTranslationsMessage,
+  getServerOnlyHashes,
   getUnsplitTranslations,
   replaceUnsplitLoader,
 } from './transform/chunk-translations/unsplitTranslations';
@@ -365,11 +366,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
       transform(code: string, id: string) {
         // Initialize processing state
+        const isServer = isServerBuild(this);
         const state = initializeState(
           resolvedOptions,
           id,
-          isServerBuild(this) ? undefined : chunkTranslations
+          isServer ? undefined : chunkTranslations
         );
+        if (isServer && isProduction()) {
+          state.settings.serverHashes = chunkTranslations?.serverHashes;
+        }
         if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
@@ -484,6 +489,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
     };
     if (!chunkTranslations || !gtFiles) return plugin;
+    options._onSplitTranslations?.({
+      getServerOnlyHashes: () => getServerOnlyHashes(chunkTranslations),
+    });
 
     // What writes the startup script of each entry chunk the last build wrote, by its file
     let startupScripts = new Map<string, (base: string) => string>();

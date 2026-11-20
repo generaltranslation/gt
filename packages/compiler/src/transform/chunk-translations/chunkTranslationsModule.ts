@@ -58,7 +58,10 @@ export function recordChunkHash(
   tree?: MessageTree
 ): string {
   const build = state.settings.chunkTranslations;
-  if (!build) return hash;
+  if (!build) {
+    state.settings.serverHashes?.add(hash);
+    return hash;
+  }
   if (!COMPUTED_HASH.test(hash)) {
     build.unsplit.add(hash);
     return hash;
@@ -95,6 +98,7 @@ export function recordWrittenHash(hash: string, state: TransformState): void {
  */
 export function keepUnsplit(hash: string, state: TransformState): void {
   state.settings.chunkTranslations?.unsplit.add(hash);
+  state.settings.serverHashes?.add(hash);
 }
 
 /**

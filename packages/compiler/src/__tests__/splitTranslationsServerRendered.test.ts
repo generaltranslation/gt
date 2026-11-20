@@ -9,6 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import type { UnpluginContextMeta } from 'unplugin';
+import { hashSource } from 'generaltranslation/id';
 import gtUnplugin from '../index';
 import type { GTUnpluginOptions } from '../index';
 import { IMPORTED_CHUNKS_PLACEHOLDER } from '../transform/chunk-translations/resolveChunkTranslations';
@@ -71,6 +72,8 @@ function createBuild(options: GTUnpluginOptions = OPTIONS) {
     compile,
     wrap,
     transform: (context: object) => run(compile.transform, context, MODULE),
+    transformCode: (context: object, code: string) =>
+      run(compile.transform, context, code),
     wrapImports: (context: object) => run(wrap.transform, context, MODULE),
   };
 }
@@ -126,6 +129,40 @@ describe('experimentalSplitTranslations in a server-rendered app', () => {
     );
     expect(emitFile).not.toHaveBeenCalled();
     expect(bundle['server.js'].code).toBe(code);
+  });
+
+  it('tells which messages only the server uses, once the builds for it have compiled their modules', async () => {
+    let getServerOnlyHashes = (): string[] => [];
+    const build = createBuild({
+      ...OPTIONS,
+      _onSplitTranslations: (split) => {
+        ({ getServerOnlyHashes } = split);
+      },
+    });
+    const compile = (context: object, code: string) =>
+      build.transformCode(
+        context,
+        `import { getGT, msg } from 'gt-tanstack-start';\n${code}`
+      );
+    // The client reads Save from a chunk's file and Draft from the unsplit one
+    await build.transform(CLIENT);
+    await compile(CLIENT, 'export const draft = msg`Draft`;');
+    expect(getServerOnlyHashes()).toEqual([]);
+    await compile(
+      SERVER,
+      `import { jsx } from 'react/jsx-runtime';
+import { T } from 'gt-tanstack-start';
+export async function handler() {
+  const t = await getGT();
+  return [t\`Save\`, t\`Draft\`, t\`Delete\`, jsx(T, { children: 'Archive' })];
+}`
+    );
+    expect(getServerOnlyHashes()).toEqual(
+      [
+        hashSource({ source: 'Delete', dataFormat: 'MESSAGE_TREE' }),
+        hashSource({ source: 'Archive', dataFormat: 'JSX' }),
+      ].sort()
+    );
   });
 
   /**

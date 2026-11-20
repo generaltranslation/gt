@@ -178,6 +178,18 @@ export interface PluginConfig
    */
   _splitTranslationsLoader?: string;
   /**
+   * Called once with the build that splits translations, when there is one,
+   * for a framework integration that also builds a server.
+   */
+  _onSplitTranslations?: (build: {
+    /**
+     * The hashes of the messages only server code uses, known once every
+     * build for a server has compiled its modules: the client's unsplit
+     * file need not hold their translations.
+     */
+    getServerOnlyHashes: () => string[];
+  }) => void;
+  /**
    * Replaces each static `t` template with a call
    * that passes its message, built at compile time and written at the call,
    * so the call site builds no message tree when it renders. An older
@@ -208,6 +220,8 @@ export interface PluginSettings {
   devHotReload: { jsx: boolean };
   /** Set when a build writes translations per chunk, which the build then splits */
   chunkTranslations?: ChunkTranslations;
+  /** Set in a build for a server of such an app: where it records its hashes */
+  serverHashes?: Set<string>;
   /** Replace static t templates with calls that read a precomputed message */
   precomputeMessages: boolean;
 }

@@ -24,14 +24,16 @@ export function taggedTemplateHashInjectionPass(
   findPrecompute?: () => boolean
 ): TraverseOptions {
   // A build with chunk translations splits t templates by chunk; m() renders
-  // a msg away from its call site, so its translation stays unsplit
-  const onHash = state.settings.chunkTranslations
-    ? (hash: string, isMsg: boolean, tree: MessageTree) => {
-        if (!isMsg) return recordChunkHash(hash, state, tree);
-        keepUnsplit(hash, state);
-        return hash;
-      }
-    : undefined;
+  // a msg away from its call site, so its translation stays unsplit. A
+  // build for a server of such an app only records the hash.
+  const onHash =
+    state.settings.chunkTranslations || state.settings.serverHashes
+      ? (hash: string, isMsg: boolean, tree: MessageTree) => {
+          if (!isMsg) return recordChunkHash(hash, state, tree);
+          keepUnsplit(hash, state);
+          return hash;
+        }
+      : undefined;
   // A build with hash minification keeps what a template hashed at runtime can read
   const onRuntimeTree = state.settings.chunkTranslations?.runtimeReaders
     ? (tree: MessageTree | undefined) => recordRuntimeReader(tree, state)

@@ -52,9 +52,10 @@ export function injectTComponentParameters(
     return;
   }
 
-  const hash = state.settings.chunkTranslations
-    ? recordTHash(callExpr.arguments[1], translationJsx.hash, state)
-    : translationJsx.hash;
+  const hash =
+    state.settings.chunkTranslations || state.settings.serverHashes
+      ? recordTHash(callExpr.arguments[1], translationJsx.hash, state)
+      : translationJsx.hash;
 
   // If already has hash set then skip
   if (getObjectPropertyFromObjectExpression(callExpr.arguments[1], '_hash')) {

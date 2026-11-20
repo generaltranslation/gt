@@ -79,6 +79,13 @@ export type ChunkTranslations = {
    */
   starts: number;
   /**
+   * Every hash a call site passes in a build for a server, as the `ssr`
+   * environment of a server-rendered app, which reads whole catalogs. One
+   * that no call site of the client build passes is a message of the server
+   * alone (see getServerOnlyHashes).
+   */
+  serverHashes: Set<string>;
+  /**
    * The hashes of call sites the build saw and could not make read from the
    * files, such as `msg` templates. Their translations stay in the unsplit
    * file, also when another call site reads the same hash from a chunk's.
@@ -417,6 +424,7 @@ export function resolveChunkTranslations(
     defaultLocale,
     locales,
     hashes: new Set(),
+    serverHashes: new Set(),
     starts: 0,
     unsplit: new Set(),
     naming,

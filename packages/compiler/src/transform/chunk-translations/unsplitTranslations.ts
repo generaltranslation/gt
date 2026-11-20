@@ -62,6 +62,26 @@ export function getUnsplitTranslations(
 }
 
 /**
+ * The hashes of the messages that only code of a server uses: every hash a
+ * call site of a build for a server passes and no call site of the client
+ * build does. The unsplit file holds what no chunk's file does, so that a
+ * call site the build cannot read still finds its translation, and without
+ * this it would hold every message of the server's code too.
+ *
+ * A message that both sides use is passed by a call site of the client
+ * build, and stays. A call site of the client that hashes its message when
+ * it runs is not known to pass anything: a message it shares with server
+ * code alone is taken out with the rest.
+ */
+export function getServerOnlyHashes(
+  build: Pick<ChunkTranslations, 'hashes' | 'unsplit' | 'serverHashes'>
+): string[] {
+  return [...build.serverHashes]
+    .filter((hash) => !build.hashes.has(hash) && !build.unsplit.has(hash))
+    .sort();
+}
+
+/**
  * The `loadTranslations` of a build with unsplit files: resolves to the
  * locale's file, or to no translations when the locale has no file, the file
  * fails, or it takes longer than the timeout, each of the last two with a

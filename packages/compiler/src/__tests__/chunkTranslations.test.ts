@@ -277,6 +277,7 @@ describe('experimentalSplitTranslations', () => {
         defaultLocale: 'en',
         locales: ['fr', 'de'],
         hashes: new Set(),
+        serverHashes: new Set(),
         starts: 0,
         unsplit: new Set(),
         naming: 'token',
