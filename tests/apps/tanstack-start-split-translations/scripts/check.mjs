@@ -15,7 +15,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
-import { serve, serveAssets } from './serve.mjs';
+import { serve } from './serve.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const only = process.argv.slice(2);
@@ -450,14 +450,15 @@ for (const [name, env] of Object.entries({ off: SPLITS.off, on: SPLIT })) {
   const title = `cdn, split ${name}`;
   if (!selected(title)) continue;
   const directory = build(title, env);
-  const cdn = await serveAssets(directory);
-  // Read by src/server.ts when the build's server is loaded
-  process.env.CHECK_CDN = cdn.origin;
-  const server = await serve(directory, { assets: false });
+  const cdn = await serve(directory, { assets: 'only' });
+  const server = await serve(directory, {
+    assets: false,
+    // Read by src/server.ts when the build's server starts
+    env: { CHECK_CDN: cdn.origin },
+  });
   for (const locale of ['fr', 'en']) await walk(title, server.origin, locale);
   await server.close();
   await cdn.close();
-  delete process.env.CHECK_CDN;
 }
 
 // The dictionary (key-based) API of gt-tanstack-start/compat. Its entries
