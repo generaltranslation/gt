@@ -1,6 +1,7 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { isReactFunction, isReactImportSource } from '../react/helpers';
+import { isReactFunction } from '../react/helpers';
+import { isJsxImportSource } from '../react/jsxImportSources';
 
 /**
  * Given an identifier node, determine if it is a React Jsx function
@@ -9,10 +10,11 @@ import { isReactFunction, isReactImportSource } from '../react/helpers';
  * TODO: handle default imports and namespace imports
  */
 export function isReactJsxFunction(
-  path: NodePath<t.Identifier | t.MemberExpression>
+  path: NodePath<t.Identifier | t.MemberExpression>,
+  jsxImportSources: readonly string[]
 ): boolean {
   if (path.isIdentifier()) {
-    return isReactJsxFunctionImportSpecifier(path);
+    return isReactJsxFunctionImportSpecifier(path, jsxImportSources);
   } else if (path.isMemberExpression()) {
     return isReactJsxFunctionMemberExpression(path);
   }
@@ -26,7 +28,8 @@ export function isReactJsxFunction(
  * import { jsxDEV, jsx, jsxs } from 'react'
  */
 function isReactJsxFunctionImportSpecifier(
-  identifierPath: NodePath<t.Identifier>
+  identifierPath: NodePath<t.Identifier>,
+  jsxImportSources: readonly string[]
 ): boolean {
   // Check that binding is being imported
   // import { jsxDEV, jsx, jsxs } from '...'
@@ -50,7 +53,7 @@ function isReactJsxFunctionImportSpecifier(
     return false;
   }
   const importSource = parentPath.node.source.value;
-  if (!isReactImportSource(importSource)) {
+  if (!isJsxImportSource(importSource, jsxImportSources)) {
     return false;
   }
 

@@ -95,6 +95,7 @@ import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
   createUnreadJsxImportSourceWarning,
   findUnreadJsxImportSources,
+  validateJsxImportSources,
 } from './utils/constants/react/jsxImportSources';
 import {
   importsMessageSource,
@@ -265,6 +266,7 @@ function resolveGTConfig(options: GTUnpluginOptions): GTConfigLoadResult {
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}, meta) => {
+    validateJsxImportSources(options.jsxImportSources);
     const gtConfigLoadResult = resolveGTConfig(options);
     const loadedGTConfig =
       gtConfigLoadResult.status === 'loaded'

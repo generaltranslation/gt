@@ -1,9 +1,10 @@
 import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { isGTImportSource } from '../../utils/constants/gt/helpers';
-import { isReactImportSource } from '../../utils/constants/react/helpers';
+import { isJsxImportSource } from '../../utils/constants/react/jsxImportSources';
 import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
 import { REACT_FUNTIONS } from '../../utils/constants/react/constants';
+import type { PluginSettings } from '../../config';
 
 /**
  * Info about the jsx callee names used in the file.
@@ -15,6 +16,8 @@ export interface JsxCalleeInfo {
   singleCallee: string | null;
   /** Local name for multi-child calls (jsxs or _jsxs or _jsxDEV) */
   multiCallee: string | null;
+  /** Module that multiCallee is imported from */
+  multiCalleeSource: string | null;
 }
 
 /**
@@ -25,7 +28,10 @@ export interface JsxCalleeInfo {
 export function processImportDeclaration(
   onGtImportFound: () => void,
   calleeInfo: JsxCalleeInfo,
-  autoJsxImportSource: string
+  {
+    autoJsxImportSource,
+    jsxImportSources,
+  }: Pick<PluginSettings, 'autoJsxImportSource' | 'jsxImportSources'>
 ): VisitNode<t.Node, t.ImportDeclaration> {
   const targetName = GT_COMPONENT_TYPES.GtInternalTranslateJsx;
 
@@ -47,7 +53,7 @@ export function processImportDeclaration(
     }
 
     // Collect React jsx callee names
-    if (isReactImportSource(source)) {
+    if (isJsxImportSource(source, jsxImportSources)) {
       for (const specifier of path.node.specifiers) {
         if (!t.isImportSpecifier(specifier)) continue;
         const imported = specifier.imported;
@@ -60,10 +66,12 @@ export function processImportDeclaration(
           // Dev mode: jsxDEV handles both single and multi children
           calleeInfo.singleCallee = localName;
           calleeInfo.multiCallee = localName;
+          calleeInfo.multiCalleeSource = source;
         } else if (originalName === REACT_FUNTIONS.jsx) {
           calleeInfo.singleCallee = localName;
         } else if (originalName === REACT_FUNTIONS.jsxs) {
           calleeInfo.multiCallee = localName;
+          calleeInfo.multiCalleeSource = source;
         }
       }
     }

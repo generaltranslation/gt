@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   disableBuildChecks: false,
   enableAutoJsxInjection: false,
   autoJsxImportSource: GT_IMPORT_SOURCES.GT_REACT,
+  jsxImportSources: [],
   autoderive: { jsx: false },
   _debugHashManifest: false,
   devHotReload: { jsx: false },
@@ -61,6 +62,8 @@ export function initializeState(
     // An explicit undefined in the options must not erase the default.
     autoJsxImportSource:
       options.autoJsxImportSource ?? DEFAULT_SETTINGS.autoJsxImportSource,
+    jsxImportSources:
+      options.jsxImportSources ?? DEFAULT_SETTINGS.jsxImportSources,
     // Dev builds keep loading translations at runtime
     chunkTranslations:
       process.env.NODE_ENV === 'production' ? chunkTranslations : undefined,

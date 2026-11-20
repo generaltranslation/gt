@@ -653,7 +653,7 @@ describe("JSX compiled against a runtime other than React's", () => {
   const compiledAgainst = (source: string, code: string) =>
     code.replaceAll('react/jsx-', `${source}/jsx-`);
   const warningOf = (source: string, file: string) =>
-    `@generaltranslation/compiler Warning: The compiler skipped the JSX in ${file} because it is compiled against "${source}", and the compiler reads only JSX compiled against React's runtime; this is said once per build, for the first file compiled against that source. The build continues, and the JSX of such files gets no automatic <T>, no build-time hash and no usage checks. Compile the app's JSX against React's runtime, so that its files import react/jsx-runtime and react/jsx-dev-runtime. To keep the other runtime, resolve those two modules to it for the app's own files only, not for the runtime's own imports of them.`;
+    `@generaltranslation/compiler Warning: The compiler skipped the JSX in ${file} because it is compiled against "${source}", and the compiler reads only JSX compiled against React's runtime or against a source in its jsxImportSources option; this is said once per build, for the first file compiled against that source. The build continues, and the JSX of such files gets no automatic <T>, no build-time hash and no usage checks. If "${source}" creates elements as React's JSX runtime does, add it to the compiler's options: jsxImportSources: ["${source}"], or compile the app's JSX against React's runtime, so that its files import react/jsx-runtime and react/jsx-dev-runtime, and to keep the other runtime resolve those two modules to it for the app's own files only, not for the runtime's own imports of them.`;
 
   const PRODUCTION_CODE = `
     import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
@@ -769,6 +769,124 @@ describe("JSX compiled against a runtime other than React's", () => {
     );
     expect(outputs[0] !== null).toBe(transformed);
     expect(warnings).toEqual([]);
+  });
+});
+
+/** The compiler reads the runtimes of the sources in its jsxImportSources option. */
+describe('jsxImportSources', () => {
+  const SOURCE = '@emotion/react';
+  const compiledAgainst = (source: string, code: string) =>
+    code.replaceAll('react/jsx-', `${source}/jsx-`);
+
+  const PRODUCTION_CODE = `
+    import { Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+    import { T } from 'gt-react';
+    export function App({ name }) {
+      return _jsxs("main", { children: [
+        _jsx("h1", { children: "Welcome back" }),
+        _jsxs("p", { children: ["Signed in as ", name] }),
+        _jsx(T, { children: _jsxs(_Fragment, { children: ["Saved ", _jsx("b", { children: "now" })] }) })
+      ] });
+    }
+  `;
+  const DEVELOPMENT_CODE = `
+    import { Fragment as _Fragment, jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
+    import { T } from 'gt-react';
+    export function App({ name }) {
+      return _jsxDEV("main", { children: [
+        _jsxDEV("h1", { children: "Welcome back" }, void 0, false),
+        _jsxDEV("p", { children: ["Signed in as ", name] }, void 0, true),
+        _jsxDEV(T, { children: _jsxDEV(_Fragment, { children: ["Saved ", _jsxDEV("b", { children: "now" }, void 0, false)] }, void 0, true) }, void 0, false)
+      ] }, void 0, true);
+    }
+  `;
+  // The compiler imports the jsx its inserted calls need
+  const ONLY_JSXS_CODE = `
+    import { jsxs as _jsxs } from "react/jsx-runtime";
+    export const el = _jsxs("p", { children: ["Signed in as ", name] });
+  `;
+
+  it.each<[name: string, code: string, inserted: number]>([
+    ['production runtime', PRODUCTION_CODE, 2],
+    ['development runtime', DEVELOPMENT_CODE, 2],
+    ['production runtime that imports only jsxs', ONLY_JSXS_CODE, 1],
+  ])(
+    'transforms a file compiled against the %s of a configured source as one compiled against React',
+    async (_name, code, inserted) => {
+      const options: GTUnpluginOptions = {
+        ...PROJECT_SETTINGS,
+        enableAutoJsxInjection: true,
+        jsxImportSources: [SOURCE],
+      };
+      const react = await runPlugin(options, code);
+      const configured = await runPlugin(
+        options,
+        compiledAgainst(SOURCE, code)
+      );
+      expect(
+        react.outputs[0]?.match(/\(GtInternalTranslateJsx,/g)
+      ).toHaveLength(inserted);
+      expect(react.outputs[0]?.match(/_hash: "/g)).toHaveLength(
+        code.includes('(T,') ? inserted + 1 : inserted
+      );
+      expect(configured.outputs[0]).toBe(
+        compiledAgainst(SOURCE, react.outputs[0]!)
+      );
+      expect(configured.outputs[0]).not.toContain('"react/');
+      expect(configured.warnings).toEqual([]);
+    }
+  );
+
+  it.each<
+    [
+      name: string,
+      options: GTUnpluginOptions,
+      code: string,
+      transformed: boolean,
+    ]
+  >([
+    [
+      'a configured source without a warning',
+      { jsxImportSources: [SOURCE] },
+      compiledAgainst(SOURCE, DEVELOPMENT_CODE),
+      true,
+    ],
+    [
+      'no call with the arguments of createElement, imported from the source itself',
+      { enableAutoJsxInjection: true, jsxImportSources: [SOURCE] },
+      `
+        import { jsx } from '${SOURCE}';
+        import { T } from 'gt-react';
+        export const el = jsx(T, null, jsx("p", null, "Saved"));
+      `,
+      false,
+    ],
+  ])('reads %s', async (_name, options, code, transformed) => {
+    const { outputs, warnings } = await runPlugin(
+      { ...PROJECT_SETTINGS, ...options },
+      code
+    );
+    expect(outputs[0] !== null).toBe(transformed);
+    expect(warnings).toEqual([]);
+  });
+
+  it.each<[name: string, value: unknown, described: string]>([
+    ['a string', SOURCE, `"${SOURCE}"`],
+    [
+      'a list that holds a value that is not a string',
+      [SOURCE, 1],
+      `["${SOURCE}",1]`,
+    ],
+    ['a list that holds an empty string', [''], '[""]'],
+  ])('rejects %s as jsxImportSources', (_name, value, described) => {
+    expect(() =>
+      gtUnplugin.raw(
+        { ...PROJECT_SETTINGS, jsxImportSources: value as string[] },
+        { framework: 'vite' }
+      )
+    ).toThrow(
+      `@generaltranslation/compiler Error: jsxImportSources is set to ${described}, which is not a list of import sources. Set it to a list of the import sources your JSX is compiled against, such as jsxImportSources: ["${SOURCE}"].`
+    );
   });
 });
 
