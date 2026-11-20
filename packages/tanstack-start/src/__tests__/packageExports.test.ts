@@ -166,6 +166,7 @@ describe.sequential('gt-tanstack-start package exports', () => {
       'compat.client.mjs',
       'compat.server.mjs',
       'index.client.mjs',
+      'index.rsc.mjs',
       'index.server.mjs',
     ]);
   });
