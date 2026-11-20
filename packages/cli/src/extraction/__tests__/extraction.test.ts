@@ -100,6 +100,30 @@ describe('dedupeUpdates', () => {
       ])
     );
   });
+
+  it('dedupes more updates than one call takes as arguments, in order', () => {
+    const count = 200_000;
+    const updates: Updates = Array.from({ length: count }, (_, index) =>
+      update(`message ${index}`, { hash: `h${index}`, filePaths: ['pathA'] })
+    );
+    updates.splice(
+      1,
+      0,
+      update('no-hash'),
+      update('message 0', { hash: 'h0', filePaths: ['pathB'] })
+    );
+
+    dedupeUpdates(updates);
+
+    expect(updates).toHaveLength(count + 1);
+    expect(
+      updates.findIndex((entry, index) => entry.metadata.hash !== `h${index}`)
+    ).toBe(count);
+    expect(updates[0]).toEqual(
+      update('message 0', { hash: 'h0', filePaths: ['pathA', 'pathB'] })
+    );
+    expect(updates[count]).toEqual(update('no-hash'));
+  });
 });
 
 describe('linkDeriveUpdates', () => {
