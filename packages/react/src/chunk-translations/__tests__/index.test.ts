@@ -695,14 +695,16 @@ describe('gt-react/chunk-translations', () => {
         ORDERS_FILE,
         PANEL_FILE,
       ]);
-      expect(warn.mock.calls.map(([warning]) => warning)).toEqual([
-        expect.stringContaining(`${LAYOUT_FILE} did not load within 2000 ms`),
-        expect.stringContaining(`${ORDERS_FILE} are not waited for`),
-        expect.stringContaining(`${PANEL_FILE} are not waited for`),
-      ]);
+      expect(warn).toHaveBeenCalledTimes(1);
 
+      // What is not waited for is reported when it is late too
       await vi.advanceTimersByTimeAsync(3000);
       expect(orders()).toBe('Commandes');
+      expect(warn.mock.calls.map(([warning]) => warning)).toEqual(
+        [LAYOUT_FILE, ORDERS_FILE, PANEL_FILE].map((file) =>
+          expect.stringContaining(`${file} did not load within 2000 ms`)
+        )
+      );
 
       // Long after: every file was late, so the host is taken to be slow still
       await vi.advanceTimersByTimeAsync(60_000);
@@ -739,7 +741,7 @@ describe('gt-react/chunk-translations', () => {
       expect(steps).toEqual([LAYOUT_CHUNK, 'import']);
       await vi.advanceTimersByTimeAsync(1);
       expect(steps).toEqual([LAYOUT_CHUNK, 'import', PANEL_CHUNK]);
-      expect(warn).toHaveBeenCalledTimes(2);
+      expect(warn).toHaveBeenCalledTimes(1);
     });
 
     it('still waits for the next import when one file is late and another of the same import arrived in time', async () => {
@@ -1744,14 +1746,9 @@ describe('gt-react/chunk-translations', () => {
         expect(fetched.mock.calls.flat()).toContain(MAPPED_ORDERS_FILE);
         // The entry's file arrived in time, so files are waited for: but not
         // this one, which what has run already reads late
-        await vi.advanceTimersByTimeAsync(1);
-        expect(orders()).toBe('Orders');
-        expect(warn).toHaveBeenCalledTimes(2);
-        expect(warn.mock.calls[1][0]).toContain(
-          `${MAPPED_ORDERS_FILE} are not waited for`
-        );
         await vi.advanceTimersByTimeAsync(100);
         expect(orders()).toBe('Commandes');
+        expect(warn).toHaveBeenCalledTimes(1);
       }
     );
 

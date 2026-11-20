@@ -13,7 +13,6 @@ import {
   createFailedWarning,
   createMissingLocaleWarning,
   createTimeoutWarning,
-  createUnwaitedWarning,
 } from './warnings';
 
 export function requestEntry(
@@ -173,23 +172,26 @@ export function request<F extends object>(
 ): Promise<boolean> {
   const requests = (state.r ||= {});
   return (requests[key] ||= new Promise((resolve) => {
-    const timeout = getWait(state);
+    const timeout = getTimeout(state);
+    const wait = getWait(state);
     const start = Date.now();
     const waits = (state.wt ||= [0]);
     const inTime = waits[0];
     // Late from the start for what has run already
     let late = !!waits[2];
-    const timer = setTimeout(() => {
+    const report = () => console.warn(createTimeoutWarning(url, timeout));
+    let timer = setTimeout(() => {
       late = true;
-      if (timeout) waits[1] = inTime;
-      console.warn(
-        timeout
-          ? createTimeoutWarning(url, timeout)
-          : createUnwaitedWarning(url)
-      );
+      if (wait) {
+        waits[1] = inTime;
+        report();
+      } else {
+        // Not waited for, and reported when it takes as long as a late file
+        timer = setTimeout(report, timeout);
+      }
       requests[key] = Promise.resolve(false);
       resolve(false);
-    }, timeout);
+    }, wait);
     const fail = (details: string) => {
       clearTimeout(timer);
       console.warn(createFailedWarning(url, details));
@@ -203,7 +205,7 @@ export function request<F extends object>(
           return;
         }
         clearTimeout(timer);
-        if (Date.now() - start < getTimeout(state)) waits[0]++;
+        if (Date.now() - start < timeout) waits[0]++;
         read(file as F);
         // A late file is read when it arrives, as nothing waits for it, and
         // what rendered without it is told
@@ -232,6 +234,7 @@ export function request<F extends object>(
             missing[url] = true;
             if (!late) fail(details);
           } else if (late) {
+            clearTimeout(timer);
             if (arrived) addArrived(state);
           } else {
             clearTimeout(timer);
