@@ -23,6 +23,7 @@ import { dirname, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { chromium } from 'playwright-core';
+import { checkArrival, holdBack } from './lateTranslations.mjs';
 import { entriesOf, heldBy, isMinifiedId } from './minifiedTranslations.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -324,6 +325,9 @@ const ELEMENTS = {
   'heading orders': [message('Recent orders')],
   'heading reports': [message('Quarterly reports')],
   orders: [message('1 order is waiting', ' order is waiting')],
+  'jsx orders': [
+    message('Orders ship within two days.', 'Orders ship within '),
+  ],
 };
 
 /** What scripts/pseudo-translate.mjs made of a source text; the name is a value. */
@@ -1426,6 +1430,48 @@ async function checkVariant(name, variant) {
       );
       await app.close();
     }
+  }
+
+  // ----- A file that arrives after its messages rendered ----- //
+  // See scripts/lateTranslations.mjs. The file of a route's heading holds
+  // whatever else the build put with it, the entry's messages included where
+  // it is one of the entry's files: the frame, above the application root,
+  // and the footer, which the root's module read as it was evaluated, keep
+  // what they rendered without it.
+  {
+    const name = 'the file of a route, arriving after its timeout';
+    const file = built.fileOf('Recent orders', 'fr');
+    const held = holdBack(file);
+    const app = await open(url, 'fr', held.prepare);
+    await app.goto();
+    await app.navigate('orders');
+    const rendered = (lost, kept) =>
+      Object.fromEntries(
+        [
+          'frame',
+          'title',
+          'footer',
+          'hook',
+          'heading orders',
+          'orders',
+          'jsx orders',
+          'badge',
+          'glossary',
+        ].map((element) => [
+          element.split(' ')[0],
+          render(built, 'fr', element, kept.includes(element) ? [file] : lost),
+        ])
+      );
+    await checkArrival(
+      check,
+      name,
+      app,
+      held.release,
+      file,
+      rendered([file], []),
+      rendered([], ['frame', 'footer'])
+    );
+    await app.close();
   }
   served.close();
   servedOff.close();
