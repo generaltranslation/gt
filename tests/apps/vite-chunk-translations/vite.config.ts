@@ -85,9 +85,28 @@ window.__hello = (who) => t\`Hello, \${who}!\`;`
   },
 };
 
+/**
+ * For scripts/check-module.mjs. CHECK_LATE_REMOVAL builds with Terser, which
+ * alone is told that `__CHECK_DEBUG__` is false: it removes a call site of
+ * late.html that the code the bundler rendered still holds, which the
+ * bundler's own minifier has nothing left to do for. With CHECK_LATE_CHANGE,
+ * the second message of that page is no longer read.
+ */
+const lateRemoval = process.env.CHECK_LATE_REMOVAL === 'true';
+const lateChange: Plugin = {
+  name: 'check:late-change',
+  enforce: 'pre',
+  transform(code, id) {
+    return id.endsWith('/src/shared/late/second.ts')
+      ? code.replace('t`Second late message`', "'Second late message'")
+      : null;
+  },
+};
+
 export default defineConfig({
   plugins: [
     process.env.CHECK_ADD_IMPORT === 'true' && addImport,
+    process.env.CHECK_LATE_CHANGE === 'true' && lateChange,
     process.env.CHECK_SHARED_MESSAGE === 'true' && addSharedMessage,
     gtCompiler({
       _debugHashManifest: messagesFile !== undefined,
@@ -125,6 +144,10 @@ export default defineConfig({
   build: {
     outDir: process.env.CHECK_OUT_DIR ?? 'dist',
     chunkImportMap: importMap,
+    ...(lateRemoval && {
+      minify: 'terser' as const,
+      terserOptions: { compress: { global_defs: { __CHECK_DEBUG__: false } } },
+    }),
     // CHECK_MODULE_PRELOAD=false: Vite preloads no chunk of a dynamic import
     ...(process.env.CHECK_MODULE_PRELOAD === 'false' && {
       modulePreload: false,
