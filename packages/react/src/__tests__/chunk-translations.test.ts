@@ -769,6 +769,55 @@ describe('gt-react/chunk-translations', () => {
       expect(warn).toHaveBeenCalledTimes(1);
     });
 
+    it('shows the source after one wait, and renders mounted messages again when the files of the nested imports arrive', async () => {
+      serve({
+        '/assets/index-a1.fr.11111111.json': ENTRY,
+        [LAYOUT_FILE]: slow({}, 3000),
+        [ORDERS_FILE]: slow(FILES[ORDERS_FILE], 3000),
+        [PANEL_FILE]: slow({}, 3000),
+      });
+      writeState({ w: 2000 });
+      await start();
+      const messages = mount(ORDERS, 'Orders');
+      vi.useFakeTimers();
+      const steps: string[] = [];
+
+      const loading = nestedImports(loadChunk, NESTED, steps);
+      await vi.advanceTimersByTimeAsync(2000 + NESTED.length);
+      expect(steps).toEqual(NESTED);
+      await loading;
+      expect(messages.text()).toBe('Orders | Orders | Orders');
+
+      // The file of the second import, which nothing waited for
+      await act(() => vi.advanceTimersByTimeAsync(3000));
+      expect(messages.text()).toBe('Commandes | Commandes | Commandes');
+    });
+
+    it("renders mounted messages again when the files arrive of an import that ran before the entry's file did", async () => {
+      serve({
+        ...FILES,
+        '/assets/index-a1.fr.11111111.json': slow(
+          FILES['/assets/index-a1.fr.11111111.json'],
+          3000
+        ),
+      });
+      writeState({ w: 2000 });
+      vi.useFakeTimers();
+      const starting = start();
+      await vi.advanceTimersByTimeAsync(2000);
+      await starting;
+      const messages = mount(ORDERS, 'Orders');
+      const loading = plainImport([])();
+      await vi.advanceTimersByTimeAsync(1);
+      await loading;
+      expect(messages.text()).toBe('Orders | Orders | Orders');
+
+      // The entry's file arrives, and with it the import's file is requested
+      // and read, though it is there at once
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(messages.text()).toBe('Commandes | Commandes | Commandes');
+    });
+
     it("runs an import once the wait for the entry's file has run out, and requests its files when that arrives", async () => {
       const fetched = serve({
         ...FILES,
@@ -2393,6 +2442,48 @@ describe('gt-react/chunk-translations', () => {
           expect(await reports()).toEqual({ evaluated: 'Overview' });
           await new Promise((resolve) => setTimeout(resolve, 100));
           expect(title()).toBe('Aperçu, encore');
+        });
+
+        it('renders mounted messages again when the files in place of a missing one arrive, for an import that did not wait for it', async () => {
+          // The Orders file never arrives, so the page waits for no file.
+          // Reports then runs at once: its file is gone, and the file in its
+          // place is requested once the lists are read. By then a file has
+          // arrived in time, so that file is waited for, by nothing
+          const files = built();
+          Object.assign(files, {
+            [ROUTE]: slow({}, 30_000),
+            [CURRENT]: slow({ v: { fr: '99999999' } }, 500),
+            '/assets/gt-ee.fr.34343434.json': slow(
+              { [TITLE]: 'Aperçu, encore' },
+              300
+            ),
+            '/assets/gt-ff.fr.78787878.json': slow({}, 100),
+          });
+          const fetched = await startOpen(files);
+          state().w = 2000;
+          const messages = mount(TITLE, 'Overview');
+          vi.useFakeTimers();
+          void preloadedImport([])(loadRegionChunk);
+          await vi.advanceTimersByTimeAsync(2000);
+
+          const loading = reports();
+          await vi.advanceTimersByTimeAsync(2);
+          expect(await loading).toEqual({ evaluated: 'Overview' });
+          state().e!.fr!['assets/gt-ff'] = '78787878';
+          void loadRegionChunkTranslations(['assets/gt-ff']);
+          await vi.advanceTimersByTimeAsync(498);
+          expect(urls(fetched)).toContain('/assets/gt-ee.fr.34343434.json');
+          expect(messages.text()).toBe('Overview | Overview | Overview');
+
+          await act(() => vi.advanceTimersByTimeAsync(300));
+          expect(messages.text()).toBe(
+            'Aperçu, encore | Aperçu, encore | Aperçu, encore'
+          );
+          expect(
+            warn.mock.calls.filter(([warning]) =>
+              String(warning).includes('gt-ee.fr.34343434.json')
+            )
+          ).toEqual([]);
         });
 
         it('asks for the files in place of a missing one when the lists arrive after its timeout', async () => {
