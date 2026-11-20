@@ -18,16 +18,26 @@ export type RenderedRegionChunk = Omit<RegionChunk, 'code'>;
  * list, and with it every file the chunk reads a message from: the file
  * every page loads first holds a message of most chunks, so most deploys
  * rewrite it. So a chunk's messages are listed by the loads that fetch
- * them, which is what decides the file a message is in: a list then changes
- * only with the messages of its own file.
+ * them, which is what decides the file a message is in.
  *
- * - Messages of a chunk are listed together when the same loads fetch them
- *   (a region of assignTranslationsByRegion).
- * - A message that an entry fetches is listed alone in a chunk that does
- *   not load with an entry. Every such chunk reads a few of the labels a
- *   whole app repeats, and a list of them would be renamed, in the file
- *   every page loads first, whenever the chunk reads one more. A list of one
- *   message is the same in every chunk that reads it.
+ * A chunk lists a message with the others that the same loads fetch (a
+ * region of assignTranslationsByRegion) when the chunk loads with one of
+ * those loads: when an import of that load's module loads the chunk, with
+ * the chunks it imports statically. In any chunk that loads later, the
+ * message is listed alone.
+ *
+ * - A list of a chunk that loads with the load that fetches its messages
+ *   changes when one of those messages comes or goes, which rewrites their
+ *   file anyway.
+ * - A chunk that loads later reads a few of the labels of what loaded before
+ *   it: of the entry, whose file every page loads first, of a layout, of the
+ *   route that opens it. A list of those would be renamed, in that file,
+ *   whenever the chunk reads one label more. A list of one message is the
+ *   same in every chunk that reads the message, so the file names it once.
+ *
+ * So a file is rewritten when the lists that name its messages change: when
+ * one of its messages comes, goes or is translated anew, and when the first
+ * chunk that loads later reads one of them, or the last one no longer does.
  *
  * The regions are read from the code of the modules as the bundler rendered
  * them, before any chunk is minified, and the files are assigned from the
@@ -59,32 +69,49 @@ export function findListScopes(
     hashes,
     { isLazy, ids: placeholders, moduleIds: placeholders }
   );
-  const entries = new Set(graph.entries);
+  const regions = listRegions(graph);
   const regionOf = new Map<string, number>();
-  const fetchedByEntries = new Set<string>();
-  listRegions(graph).forEach((region, index) => {
-    const isOfEntries = region.loads.every((load) => entries.has(load));
-    for (const hash of region.hashes) {
-      regionOf.set(hash, index);
-      if (isOfEntries) fetchedByEntries.add(hash);
-    }
+  regions.forEach((region, index) => {
+    for (const hash of region.hashes) regionOf.set(hash, index);
   });
 
-  const loadedWithEntries = new Set(
-    Object.values(chunks).flatMap((chunk) =>
-      chunk.isEntry ? [chunk.fileName] : []
-    )
-  );
-  for (const file of loadedWithEntries) {
-    for (const imported of chunks[file]?.imports ?? []) {
-      loadedWithEntries.add(imported);
+  // The chunks an import of each module loads: those that hold the module or
+  // are made for it, and every chunk they import statically
+  const chunksOfModule = new Map<string, string[]>();
+  for (const chunk of Object.values(chunks)) {
+    const modules = new Set(Object.keys(chunk.modules));
+    if (chunk.facadeModuleId) modules.add(chunk.facadeModuleId);
+    for (const id of modules) {
+      const holding = chunksOfModule.get(id);
+      if (holding) holding.push(chunk.fileName);
+      else chunksOfModule.set(id, [chunk.fileName]);
     }
   }
+  const loadedWith = new Map<string, Set<string>>();
+  const getLoadedWith = (load: string): Set<string> => {
+    let files = loadedWith.get(load);
+    if (!files) {
+      files = new Set(chunksOfModule.get(load));
+      for (const file of files) {
+        for (const imported of chunks[file]?.imports ?? []) files.add(imported);
+      }
+      loadedWith.set(load, files);
+    }
+    return files;
+  };
   return (fileName) => {
-    const loadsWithEntries = loadedWithEntries.has(fileName);
-    return (hash) =>
-      !loadsWithEntries && fetchedByEntries.has(hash)
-        ? hash
-        : regionOf.get(hash);
+    const listsTogether = new Map<number, boolean>();
+    return (hash) => {
+      const region = regionOf.get(hash);
+      if (region === undefined) return undefined;
+      let together = listsTogether.get(region);
+      if (together === undefined) {
+        together = regions[region].loads.some((load) =>
+          getLoadedWith(load).has(fileName)
+        );
+        listsTogether.set(region, together);
+      }
+      return together ? region : hash;
+    };
   };
 }

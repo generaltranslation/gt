@@ -41,9 +41,10 @@ import type { TranslationsTable } from './loadTranslationFiles';
  * A build that splits by chunk lists all of a chunk's messages together,
  * since one file holds them. A build that splits by module puts them in the
  * files of the loads that fetch them, so there a chunk has a list for each
- * set of its messages that the same loads fetch (see listScopes.ts): a file
- * then names lists of its own messages alone, and is rewritten when one of
- * those changes and not when another message of a chunk that reads it does.
+ * set of its messages that the same loads fetch, and a list of one message
+ * for each message it reads from a file that loaded before it (see
+ * listScopes.ts): a file then names lists of its own messages alone, and no
+ * other message of a chunk that reads it renames it.
  *
  * A message that two chunks read has an id in each, unless both list it
  * with the same messages, which is one list. The hash itself stays
