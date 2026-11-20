@@ -140,6 +140,17 @@ function isDependency(id: string): boolean {
   return /[\\/]node_modules[\\/]/.test(id);
 }
 
+/**
+ * Whether a hook runs in a Vite environment built for a server, which renders
+ * from whole catalogs: its call sites keep their hashes and it gets no files.
+ */
+function isServerBuild(context: unknown): boolean {
+  return (
+    (context as { environment?: { config?: { consumer?: string } } } | null)
+      ?.environment?.config?.consumer === 'server'
+  );
+}
+
 function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
   return logLevel !== 'silent' && logLevel !== 'error';
 }
@@ -353,7 +364,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
       transform(code: string, id: string) {
         // Initialize processing state
-        const state = initializeState(resolvedOptions, id, chunkTranslations);
+        const state = initializeState(
+          resolvedOptions,
+          id,
+          isServerBuild(this) ? undefined : chunkTranslations
+        );
         if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
@@ -554,7 +569,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       _outputOptions: unknown,
       bundle: Record<string, { type: string }>
     ): void {
-      if (!isProduction()) return;
+      if (!isProduction() || isServerBuild(this)) return;
       const written = regions
         ? writeRegions(this, bundle)
         : writeChunkTranslations(bundle, chunkTranslations!, {
@@ -572,7 +587,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       if (written.missingLocales.length) {
         console.warn(createMissingTranslationsWarning(written.missingLocales));
       }
-      if (!chunkTranslations!.starts) {
+      if (options._serverRendered) {
+        // The framework's integration starts the app, not initializeGTSPA
+      } else if (!chunkTranslations!.starts) {
         console.warn(UNSTARTED_APP_WARNING);
       } else if (written.bundledCatalogs.length) {
         console.warn(createBundledCatalogsWarning(written.bundledCatalogs));
@@ -592,8 +609,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       }
     }
     // Chunks are rendered once every module is compiled, so every call site is known
-    function renderChunk(code: string): string | null {
-      if (!isProduction()) return null;
+    function renderChunk(this: unknown, code: string): string | null {
+      if (!isProduction() || isServerBuild(this)) return null;
       // Before the chunk is named, so its name follows from its ids
       const minified = chunkTranslations!.minifiedIds
         ? (minifyChunk(code, chunkTranslations!.minifiedIds) ?? code)
@@ -619,6 +636,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const nameImportedChunks = {
       order: 'post',
       handler(
+        this: unknown,
         _outputOptions: unknown,
         bundle: Record<
           string,
@@ -630,7 +648,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
         >
       ): void {
-        if (!isProduction()) return;
+        if (!isProduction() || isServerBuild(this)) return;
         const needsFiles = (target: string) => imported.has(target);
         // The import map is not read from the bundle again: a plugin may
         // have rewritten it since the lists were written, and what is
@@ -718,7 +736,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           return !isDependency(id);
         },
         async transform(code: string, id: string) {
-          if (!isProduction() || !code.includes('import(')) return null;
+          if (
+            !isProduction() ||
+            isServerBuild(this) ||
+            !code.includes('import(')
+          ) {
+            return null;
+          }
           // A module that cannot reach gt-react keeps its imports as they are
           const { resolve } = this as unknown as {
             resolve?: (source: string, importer: string) => Promise<unknown>;

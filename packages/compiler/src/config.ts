@@ -170,6 +170,11 @@ export interface PluginConfig
    */
   experimentalSplitTranslations?: SplitTranslationsOptions;
   /**
+   * Set by a framework integration whose runtime starts the app with the
+   * files the build writes, in place of `initializeGTSPA`.
+   */
+  _serverRendered?: boolean;
+  /**
    * Replaces each static `t` template with a call
    * that passes its message, built at compile time and written at the call,
    * so the call site builds no message tree when it renders. An older
