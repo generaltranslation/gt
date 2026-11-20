@@ -207,18 +207,17 @@ export class UploadSourcesStep {
     );
 
     // Merge files that were already uploaded into the result
-    result.push(
-      ...filesToSkipUpload.map((f) => ({
-        fileId: f.fileId,
-        versionId: f.versionId,
-        branchId: f.branchId ?? currentBranchId,
-        fileName: f.fileName,
-        fileFormat: f.fileFormat,
-        transformFormat: f.transformFormat,
-        dataFormat: f.dataFormat,
-        locale: f.locale,
-      }))
-    );
+    const skippedFiles = filesToSkipUpload.map((f) => ({
+      fileId: f.fileId,
+      versionId: f.versionId,
+      branchId: f.branchId ?? currentBranchId,
+      fileName: f.fileName,
+      fileFormat: f.fileFormat,
+      transformFormat: f.transformFormat,
+      dataFormat: f.dataFormat,
+      locale: f.locale,
+    }));
+    for (const file of skippedFiles) result.push(file);
 
     const moveMsg = moves.length > 0 ? ` (${moves.length} moved)` : '';
     this.spinner.stop(chalk.green(`Files uploaded successfully${moveMsg}`));
