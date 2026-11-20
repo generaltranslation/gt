@@ -1,5 +1,25 @@
 # @generaltranslation/format
 
+## 1.0.0-samsara.11
+
+### Patch Changes
+
+- 622199e: Fix `formatListToParts` choosing a different connector than `formatList` for string and number items. A Spanish list now reads "Fernando e Isabel" and "7 u 8" instead of "Fernando y Isabel" and "7 o 8", and a Hebrew list attaches "ו" to a Hebrew word without a hyphen.
+- 7d841de: `<N />` is the count of the `<Plural>` it is in, formatted as a number, as `#` is in ICU.
+
+  ```tsx
+  <Plural n={count} one='One file'>
+    <N /> files
+  </Plural>
+  ```
+
+  Use it instead of `<Num>{count}</Num>` for the count. A translation can then show the count in any branch: English `one` only covers 1, so "One file" has none, but Russian uses `one` for 21 and 31 too and renders "21 файл". `<N />` takes no props. With no `<Plural>` to give it a count, it is an error in development and renders nothing in production.
+
+  It is stored as a variable of the new type `#`, which the runtime fills from the plural's `n` wherever a translation puts it.
+
+- Updated dependencies [7d841de]
+  - @generaltranslation/icu@1.0.0-samsara.9
+
 ## 1.0.0-samsara.10
 
 ### Major Changes

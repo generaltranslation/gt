@@ -1,5 +1,15 @@
 # @generaltranslation/vue-extractor
 
+## 1.0.0-samsara.4
+
+### Patch Changes
+
+- Updated dependencies [622199e]
+- Updated dependencies [7d841de]
+- Updated dependencies [c8e2b0b]
+  - @generaltranslation/format@1.0.0-samsara.11
+  - generaltranslation@10.0.0-samsara.11
+
 ## 1.0.0-samsara.3
 
 ### Major Changes
