@@ -364,7 +364,12 @@ export function renderRegionTranslations(
         passedIds && build.minifiedIds
           ? pickMinifiedTranslations(
               table[locale],
-              [...messages].flatMap((hash) => passedIds.get(hash) ?? []),
+              // Chunks that list the same messages pass the same ids
+              [
+                ...new Set(
+                  [...messages].flatMap((hash) => passedIds.get(hash) ?? [])
+                ),
+              ],
               build.minifiedIds
             )
           : pickTranslations(table[locale], [...messages])
