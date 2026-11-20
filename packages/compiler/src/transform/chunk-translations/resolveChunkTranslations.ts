@@ -166,15 +166,13 @@ export function getRegionSplit(
   options: { requestCost: number | undefined; previous: string | undefined }
 ): RegionSplit | undefined {
   if (split !== 'module') return undefined;
-  const raw: unknown = options.requestCost;
-  const requestCost =
-    raw === undefined || raw === '' ? DEFAULT_REQUEST_COST : Number(raw);
+  const requestCost = options.requestCost ?? DEFAULT_REQUEST_COST;
   if (!Number.isFinite(requestCost) || requestCost < 0) {
     throw new Error(
       createDiagnosticMessage({
         source: '@generaltranslation/compiler',
         severity: 'Error',
-        whatHappened: `The request cost of chunk translations is set to "${raw}", which is not a number of bytes`,
+        whatHappened: `The request cost of chunk translations is set to "${requestCost}", which is not a number of bytes`,
         fix: `Set experimentalSplitTranslations.requestCost to zero or more bytes, or leave it out for ${DEFAULT_REQUEST_COST}`,
       })
     );
@@ -210,11 +208,10 @@ export function getChunkTranslationsNaming(
   option: ChunkTranslationsNaming | undefined,
   split: ChunkTranslationsSplit = defaultChunkTranslationsSplit
 ): ChunkTranslationsNaming {
-  const raw: string | undefined = option;
-  if (raw === undefined || raw === '') {
+  if (option === undefined) {
     return split === 'module' ? 'map' : defaultChunkTranslationsNaming;
   }
-  const naming = chunkTranslationsNamings.find((known) => known === raw);
+  const naming = chunkTranslationsNamings.find((known) => known === option);
   if (naming === 'token' && split === 'module') {
     throw new Error(
       createDiagnosticMessage({
@@ -232,7 +229,7 @@ export function getChunkTranslationsNaming(
     createDiagnosticMessage({
       source: '@generaltranslation/compiler',
       severity: 'Error',
-      whatHappened: `The naming of chunk translations is set to "${raw}", which is not one of ${chunkTranslationsNamings.join(', ')}`,
+      whatHappened: `The naming of chunk translations is set to "${option}", which is not one of ${chunkTranslationsNamings.join(', ')}`,
       fix: 'Set experimentalSplitTranslations.naming to one of them',
     })
   );

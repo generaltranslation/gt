@@ -1796,18 +1796,20 @@ export const { a } = await import(\`./a.js\`);`,
 
     it.each([
       [undefined, 'token'],
-      ['' as never, 'token'],
       ['token', 'token'],
       ['map', 'map'],
     ] as const)('is chosen by the option %s: %s', (option, expected) => {
       expect(getChunkTranslationsNaming(option)).toBe(expected);
     });
 
-    it('rejects a naming it does not have', () => {
-      expect(() => getChunkTranslationsNaming('hash' as never)).toThrow(
-        'The naming of chunk translations is set to "hash", which is not one of token, map. Set experimentalSplitTranslations.naming to one of them.'
-      );
-    });
+    it.each(['hash', ''])(
+      'rejects the naming %j, which it does not have',
+      (naming) => {
+        expect(() => getChunkTranslationsNaming(naming as never)).toThrow(
+          `The naming of chunk translations is set to "${naming}", which is not one of token, map. Set experimentalSplitTranslations.naming to one of them.`
+        );
+      }
+    );
 
     it('compiles the app to read the maps, and nothing else differently', async () => {
       const MAPPED = {
@@ -3758,8 +3760,9 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       [undefined, undefined, 8192, undefined],
       [0, 'a.json', 0, 'a.json'],
       [2048, undefined, 2048, undefined],
-      ['4096' as never, '', 4096, undefined],
-      ['' as never, 'b.json', 8192, 'b.json'],
+      [4096, '', 4096, undefined],
+      // Not a number, as an untyped config can write: the cost left out
+      [null as never, 'b.json', 8192, 'b.json'],
     ])(
       'takes the request cost %s and the previous manifest %s',
       (cost, file, requestCost, previous) => {
@@ -3772,8 +3775,8 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       }
     );
 
-    it.each([-1, Number.NaN, 'much' as never])(
-      'rejects the request cost %s',
+    it.each([-1, Number.NaN, 'much' as never, '4096' as never, '' as never])(
+      'rejects the request cost %j',
       (requestCost) => {
         expect(() =>
           getRegionSplit('module', { requestCost, previous: undefined })
