@@ -598,6 +598,28 @@ describe('gt-react/chunk-translations', () => {
       await loadChunk(() => Promise.resolve(), ORDERS_CHUNK);
       expect(held('p7Lm2QdE.2')).toBe(held('b0Ye4_Hs.7'));
     });
+
+    it('keeps an id that two files hold, which both give the same translation', async () => {
+      // Two chunks that list the same messages have one list, and in a
+      // build that splits by module each has it in a file of its own
+      serve({
+        ...MINIFIED,
+        [ORDERS_FILE]: [
+          ['Commandes', 'Enregistrer'],
+          { p7Lm2QdE: [0, 0, 1], Xk3_9aQz: [0, 1, 1] },
+        ],
+      });
+      writeState();
+      await start();
+      expect(held('Xk3_9aQz.0')).toBe('Enregistrer');
+
+      await loadChunk(() => Promise.resolve(), ORDERS_CHUNK);
+      expect(held('Xk3_9aQz.0')).toBe('Enregistrer');
+      // What the second file does not hold of the list is as it was
+      expect(held('Xk3_9aQz.1')).toEqual(GREETING);
+      expect(held('p7Lm2QdE.0')).toBe('Commandes');
+      expect(warn).not.toHaveBeenCalled();
+    });
   });
 
   describe('on a page that stayed open while the app was deployed again', () => {
