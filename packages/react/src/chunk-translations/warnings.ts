@@ -14,7 +14,7 @@ export function createUnwaitedWarning(url: string): string {
     source: 'gt-react',
     severity: 'Warning',
     whatHappened: `The translations in ${url} are not waited for`,
-    why: 'the page has waited for a file that was late, and none has loaded in time since',
+    why: 'the page has waited for a late file already, or has run the import that needs them',
     reassurance: 'Their messages render the source text until they arrive',
   });
 }

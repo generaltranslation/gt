@@ -1670,7 +1670,11 @@ describe('gt-react/chunk-translations', () => {
     ])(
       'does not wait for the map again once its wait has run out, and requests the files it lists when it arrives: %s',
       async (_name, load, loaded) => {
-        const fetched = serve({ ...MAPPED, [MAP]: slow(LISTED, 3000) });
+        const fetched = serve({
+          ...MAPPED,
+          [MAP]: slow(LISTED, 3000),
+          [MAPPED_ORDERS_FILE]: slow(MAPPED[MAPPED_ORDERS_FILE], 100),
+        });
         writeMapped({ w: 2000 });
         vi.useFakeTimers();
         await startMapped();
@@ -1689,8 +1693,16 @@ describe('gt-react/chunk-translations', () => {
 
         await vi.advanceTimersByTimeAsync(1000);
         expect(fetched.mock.calls.flat()).toContain(MAPPED_ORDERS_FILE);
+        // The entry's file arrived in time, so files are waited for: but not
+        // this one, which what has run already reads late
+        await vi.advanceTimersByTimeAsync(1);
+        expect(orders()).toBe('Orders');
+        expect(warn).toHaveBeenCalledTimes(2);
+        expect(warn.mock.calls[1][0]).toContain(
+          `${MAPPED_ORDERS_FILE} are not waited for`
+        );
+        await vi.advanceTimersByTimeAsync(100);
         expect(orders()).toBe('Commandes');
-        expect(warn).toHaveBeenCalledTimes(1);
       }
     );
 
