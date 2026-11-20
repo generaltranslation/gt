@@ -70,7 +70,10 @@ export function requestFile(
           // The token of the build that is served now names every file the
           // page has yet to ask for
           readCurrentNames(state, locale, (name, current) => {
-            if (isSameAssignment(state, current)) tokens[locale] = name;
+            if (isSameAssignment(state, current) && tokens[locale] !== name) {
+              tokens[locale] = name;
+              state.s = 2;
+            }
           }).then(retry)
   );
 }

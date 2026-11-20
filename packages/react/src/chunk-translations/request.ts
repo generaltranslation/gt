@@ -89,21 +89,18 @@ export function register(
  * still running would replace what is added before it resolves, so until it
  * has, they wait for it to take them.
  *
- * What waited for the files has not rendered, so no one is told of them.
- * Mounted messages look their translations up again only for files whose
- * messages may be on screen: one that is late, and any file once the page
- * reads files of another build than its own.
- *
- * @param isLate Whether what waited for the files has stopped waiting.
+ * What they hold decides who is told, not which caller adds them: mounted
+ * messages look their translations up again when some of it may be on
+ * screen, see `s`. What waited for a file in time has not rendered, so no
+ * one is told of it.
  */
-export function addArrived(
-  state: ChunkTranslationsState,
-  isLate?: boolean
-): void {
+export function addArrived(state: ChunkTranslationsState): void {
   if (!state.y || !state.t) return;
   const arrived = state.t;
   state.t = undefined;
-  if (isLate || state.s) getI18nStore().updateRenderedTranslations(arrived);
+  const rendered = state.s;
+  if (rendered === 1) state.s = undefined;
+  if (rendered) getI18nStore().updateRenderedTranslations(arrived);
   else getReactI18nCache().updateTranslations(arrived);
 }
 
@@ -163,8 +160,12 @@ export function request<F extends object>(
         }
         clearTimeout(timer);
         read(file as F);
-        // A late file is read when it arrives, as nothing waits for it
-        if (late) addArrived(state, true);
+        // A late file is read when it arrives, as nothing waits for it, and
+        // what rendered without it is told
+        if (late) {
+          if (state.t) state.s ||= 1;
+          addArrived(state);
+        }
         requests[key] = Promise.resolve(true);
         resolve(true);
       },
@@ -182,13 +183,11 @@ export function request<F extends object>(
           return;
         }
         void recovered.then((arrived) => {
-          // What stands in for the file is of another build
-          if (arrived !== undefined) state.s = true;
           if (arrived === undefined) {
             missing[url] = true;
             if (!late) fail(details);
           } else if (late) {
-            if (arrived) addArrived(state, true);
+            if (arrived) addArrived(state);
           } else {
             clearTimeout(timer);
             resolve(arrived);

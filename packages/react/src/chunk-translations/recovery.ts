@@ -36,6 +36,7 @@ export function readCurrentMap(
   return fetchJson(getFileUrl(state, key, locale, name)).then((map) => {
     state.j = (map as EntryFile | null)?.i;
     state.a = name;
+    state.s = 2;
   });
 }
 
@@ -97,7 +98,7 @@ export function within(
       () => {
         resolve(false);
         // Also when one of several files failed: the others arrived
-        void loading.then(() => addArrived(state, true));
+        void loading.then(() => addArrived(state));
       },
       Math.max(0, start + getTimeout(state) - Date.now())
     );
