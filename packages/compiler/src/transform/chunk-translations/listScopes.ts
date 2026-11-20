@@ -30,10 +30,10 @@ export type RenderedRegionChunk = Omit<RegionChunk, 'code'>;
  *   message is the same in every chunk that reads it.
  *
  * The regions are read from the code of the modules as the bundler rendered
- * them, before any chunk is minified. A call site that the minifier removes
- * afterwards can leave a message listed apart from those it ends up in a
- * file with, which costs a name and breaks nothing: a file holds a message
- * for every id that reads it, whatever the lists are.
+ * them, before any chunk is minified, and the files are assigned from the
+ * same code afterwards: a call site that the minifier removes still fetches
+ * its message there while another chunk reads it (see createRegionGraph), so
+ * the messages of a list stay in one file.
  */
 export function findListScopes(
   chunks: Record<string, RenderedRegionChunk>,

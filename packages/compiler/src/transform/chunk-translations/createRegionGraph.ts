@@ -66,6 +66,14 @@ export function initialisesModulesLazily(
  *   tree-shaking or the minifier removed counts for nothing. A hash that is
  *   in a chunk's code and in none of its modules' is given to all of them;
  *   `unattributed` counts those.
+ * - With `moduleIds`, in a build with hash minification, a module's
+ *   messages are the hashes in its rendered code that are in the final code
+ *   of any chunk. The lists of ids of such a build are made from the
+ *   rendered code, before a chunk is minified (see listScopes.ts), and a
+ *   list is whole in one file only while the loads that fetched its messages
+ *   then still do. So a call site that the minifier removed still counts
+ *   where another chunk reads its message, and a load can fetch a
+ *   translation that its own code no longer reads.
  * - The entries are the modules the entry chunks are made for.
  * - A dynamic import of a module in the chunk of the module that imports it
  *   is one of that module's `imports`, unless that chunk imports another
@@ -91,7 +99,8 @@ export function createRegionGraph(
     ids?: MinifiedIdReader;
     /**
      * Set in such a build too: the code of a module holds placeholders, and
-     * not the ids of its chunk's final code
+     * not the ids of its chunk's final code. A module then also reads what
+     * only the final code of another chunk still holds.
      */
     moduleIds?: MinifiedIdReader;
   }
@@ -99,8 +108,14 @@ export function createRegionGraph(
   const moduleHashes = new Map<string, Set<string>>();
   const chunksOfModule = new Map<string, RegionChunk[]>();
   let unattributed = 0;
-  for (const chunk of chunks) {
-    const surviving = new Set(findChunkHashes(chunk.code, hashes, options.ids));
+  const survivingIn = chunks.map(
+    (chunk) => new Set(findChunkHashes(chunk.code, hashes, options.ids))
+  );
+  const survivingAnywhere =
+    options.moduleIds &&
+    new Set(survivingIn.flatMap((surviving) => [...surviving]));
+  for (const [index, chunk] of chunks.entries()) {
+    const surviving = survivingIn[index];
     const found = new Set<string>();
     const ids = Object.keys(chunk.modules);
     for (const id of ids) {
@@ -113,7 +128,7 @@ export function createRegionGraph(
       if (!code) continue;
       for (const hash of findChunkHashes(
         code,
-        surviving,
+        survivingAnywhere ?? surviving,
         options.moduleIds ?? options.ids
       )) {
         held.add(hash);
