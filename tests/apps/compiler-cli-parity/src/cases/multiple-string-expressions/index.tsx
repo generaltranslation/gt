@@ -1,3 +1,3 @@
 export default function MultipleStringExpressions() {
-  return <div>{"Hello"} {"World"}</div>;
+  return <div>{"Several"} {"strings"}</div>;
 }

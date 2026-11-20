@@ -1,3 +1,3 @@
 export default function TemplateLiteralStatic() {
-  return <div>{`Hello World`}</div>;
+  return <div>{`Static template`}</div>;
 }
