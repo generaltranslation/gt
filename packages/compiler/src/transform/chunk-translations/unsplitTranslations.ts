@@ -1,4 +1,5 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { replaceInChunk, type ReplaceInChunk } from './chunkSourceMap';
 import type { TranslationsTable } from './loadTranslationFiles';
 import {
   CHUNK_TRANSLATIONS_GLOBAL,
@@ -157,13 +158,16 @@ const LAST_ARGUMENT = new RegExp(
  * `initializeGTSPA` is given a `loadTranslations` that adds the unsplit file
  * to what gt-react's loader returns.
  * Undefined when the chunk holds no placeholder.
+ *
+ * @param replace What replaces the call, see trackReplacements.
  */
 export function replaceUnsplitLoader(
   code: string,
-  hasUnsplit: boolean
+  hasUnsplit: boolean,
+  replace: ReplaceInChunk = replaceInChunk
 ): string | undefined {
   if (!code.includes(UNSPLIT_LOADER_PLACEHOLDER)) return undefined;
-  if (!hasUnsplit) return code.replace(LAST_ARGUMENT, '');
+  if (!hasUnsplit) return replace(code, LAST_ARGUMENT, () => '');
   const data = [
     CHUNK_TRANSLATIONS_GLOBAL,
     TIMEOUT_MS,
@@ -171,7 +175,8 @@ export function replaceUnsplitLoader(
     FAILED_WARNING,
   ].map((value) => JSON.stringify(value));
   const loader = `(locale) => (${loadUnsplitTranslations.toString()})(${['locale', ...data].join(', ')})`;
-  const replaced = code.replace(
+  const replaced = replace(
+    code,
     START_CALL,
     (_match, initialize: string, initializeSpa: string, config: string) =>
       `${initialize}((config) => ${initializeSpa}({ ...config, loadTranslations: (locale) => (${loader})(locale).then((unsplit) => config.loadTranslations(locale).then((loaded) => ({ ...unsplit, ...loaded }))) }), ${config})`

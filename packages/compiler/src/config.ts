@@ -58,9 +58,8 @@ export type SplitTranslationsOptions = {
    * the same message in every build. A chunk's ids change only when the set
    * of its own messages does, and a message that several chunks read has an
    * id in each. The build writes the ids into every chunk that holds one of
-   * those call sites after the bundler has rendered it, so source maps are
-   * not kept accurate yet for those chunks either: lines stay, and the
-   * columns after an id on its line shift.
+   * those call sites after the bundler has rendered it, and the chunk's
+   * source map follows them.
    *
    * The hash of a message stays what it is everywhere else: in the
    * translation files at `files.gt.output`, in the unsplit file, and at
@@ -140,10 +139,10 @@ export interface PluginConfig
    * the files of the chunks it loads together with them. That script is
    * inline: under a Content Security Policy that allows no inline script it
    * needs a nonce, which Vite's `html.cspNonce` puts on it, and where the
-   * policy blocks it, messages render the source text. Source maps are not
-   * kept accurate yet for the chunks the build rewrites after the bundler has
-   * rendered them: those that hold a dynamic import or the call that starts
-   * the app. Splits `<T>` and `t`
+   * policy blocks it, messages render the source text. The build rewrites
+   * chunks after the bundler has rendered them, those that hold a dynamic
+   * import or the call that starts the app, and their source maps follow
+   * what it rewrites. Splits `<T>` and `t`
    * templates from `gt-react` by chunk; the translations of other
    * messages, such as `msg` and dictionaries, stay in one file per
    * locale that the page loads when the app starts, and the build says how

@@ -16,9 +16,11 @@ import {
   onTestFinished,
   vi,
 } from 'vitest';
+import MagicString from 'magic-string';
 import type { UnpluginContextMeta, UnpluginOptions } from 'unplugin';
 import gtUnplugin from '../index';
 import type { GTUnpluginOptions } from '../index';
+import { locate, trace } from './sourcePositions';
 import {
   assignTranslationsByChunk,
   findChunkHashes,
@@ -38,6 +40,11 @@ import {
   getChunkImportMapOptions,
   readChunkImportMap,
 } from '../transform/chunk-translations/chunkImportMap';
+import {
+  generateReplacementsMap,
+  moveMappings,
+  trackReplacements,
+} from '../transform/chunk-translations/chunkSourceMap';
 import { wrapDynamicImports } from '../transform/chunk-translations/chunkTranslationsModule';
 import {
   CHUNK_TRANSLATIONS_IMPORTS,
@@ -3713,6 +3720,253 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       expect(assign([HELLO, PRINT_TEXT])).not.toBe(assign([HELLO]));
       expect(assign([PRINT_TEXT])).not.toBe(assign([HELLO]));
     });
+  });
+
+  describe('the source maps of the chunks a build rewrites', () => {
+    const MINIFIED: GTUnpluginOptions = {
+      ...ON,
+      experimentalSplitTranslations: { minifyHashes: true },
+    };
+    const P = IMPORTED_CHUNKS_PLACEHOLDER;
+    // t`Save` and t`Print`
+    const SAVE_TEXT = 'ab72d114d0d156a9';
+    const PRINT_TEXT = 'aae8cb2668d0cb74';
+    // A chunk as a bundler renders it, with each rewrite of the build before
+    // other code on its line: two call sites, a dynamic import that Vite
+    // preloads, and the call that starts the app
+    const RENDERED = [
+      `const labels = [t({$_hash:"${createIdPlaceholder(SAVE_TEXT)}"})\`Save\`, t({$_hash:"${createIdPlaceholder(PRINT_TEXT)}"})\`Print\`]; report(labels);`,
+      `const Home = load(() => __vitePreload(() => import("./Home.js"), __VITE_PRELOAD__), "${P}"); mount(Home);`,
+      `initialize(initializeGTSPA, config, "${UNSPLIT_LOADER_PLACEHOLDER}"); start();`,
+    ].join('\n');
+    type Rendered = string | { code: string; map: unknown } | null;
+    type Vite = {
+      configResolved: (config: object) => void;
+      renderChunk: (code: string, chunk?: object, options?: object) => Rendered;
+    };
+
+    it.each([
+      ['with unsplit translations', true],
+      ['without unsplit translations', false],
+    ])(
+      'returns the map of what renderChunk replaced, %s',
+      async (_name, unsplit) => {
+        const created = createPlugins(MINIFIED, 'vite', {
+          'translations/fr.json': JSON.stringify({
+            [SAVE_TEXT]: 'Enregistrer',
+          }),
+        });
+        // A msg is rendered away from its chunk, so its translation is unsplit
+        await transform(
+          `import { ${unsplit ? 'msg' : 't'} } from 'gt-react';\nexport const saved = ${unsplit ? 'msg' : 't'}\`Save\`;`,
+          MINIFIED,
+          created
+        );
+        const vite = created.plugins[0].vite as Vite;
+        vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
+        const chunk = { fileName: 'assets/index.js' };
+
+        const code = vite.renderChunk(RENDERED, chunk, { sourcemap: false });
+        expect(code).toContain(
+          unsplit ? 'loadTranslations: (locale) =>' : 'initializeGTSPA, config)'
+        );
+        expect(code).toContain(`import("./Home.js"), "${P}", __vitePreload,`);
+        expect(code).not.toContain(createIdPlaceholder(''));
+
+        const mapped = vite.renderChunk(RENDERED, chunk, { sourcemap: true });
+        expect(mapped).toEqual({ code, map: expect.anything() });
+        const { map } = mapped as { map: unknown };
+        for (const token of ['report', 'mount', 'start', 'Print']) {
+          expect(trace(map, code as string, token), token).toEqual({
+            source: 'assets/index.js',
+            ...locate(RENDERED, token),
+          });
+        }
+      }
+    );
+
+    it('follows rewrites that replace in what the one before returned', () => {
+      const code = 'one(A); two(B);\nthree(A); four(C); five();';
+      const tracked = trackReplacements(code);
+      const first = tracked.replace(code, /A/g, () => 'longer');
+      const second = tracked.replace(first, /\((B|C)\)/g, (_match, name) =>
+        name === 'B' ? '()' : '(\n)'
+      );
+      expect(second).toBe(
+        'one(longer); two();\nthree(longer); four(\n); five();'
+      );
+      // Only what differs: not the brackets of the second rewrite
+      expect(tracked.replacements).toEqual([
+        { start: 4, end: 5, content: 'longer' },
+        { start: 12, end: 13, content: '' },
+        { start: 22, end: 23, content: 'longer' },
+        { start: 31, end: 32, content: '\n' },
+      ]);
+      const map = generateReplacementsMap(
+        code,
+        'chunk.js',
+        tracked.replacements!
+      );
+      for (const token of ['two', 'three', 'four', 'five']) {
+        expect(trace(map, second, token), token).toEqual({
+          source: 'chunk.js',
+          ...locate(code, token),
+        });
+      }
+    });
+
+    it.each<[name: string, run: (code: string) => unknown]>([
+      [
+        'nothing was replaced',
+        (code) => trackReplacements(code).replace(code, /Z/g, () => 'z'),
+      ],
+      [
+        'a rewrite replaced in what an earlier one wrote',
+        (code) => {
+          const tracked = trackReplacements(code);
+          const first = tracked.replace(code, /A/g, () => 'longer');
+          tracked.replace(first, /\(long/g, () => '(');
+          return tracked.replacements;
+        },
+      ],
+      [
+        'a rewrite replaced in other code than the last one returned',
+        (code) => {
+          const tracked = trackReplacements(code);
+          tracked.replace(code, /A/g, () => 'longer');
+          tracked.replace(code, /B/g, () => 'b');
+          return tracked.replacements;
+        },
+      ],
+    ])('has no replacements to map when %s', (name, run) => {
+      const code = 'one(A); two(B);';
+      const result = run(code);
+      expect(result).toBe(name === 'nothing was replaced' ? code : undefined);
+    });
+
+    it('moves the positions of a map with what was replaced in its code', () => {
+      const code = 'one("X"); two("X");\nthree(); four("X"); five();';
+      const tracked = trackReplacements(code);
+      const replaced = tracked.replace(code, /"X"|three\(\); /g, (match) =>
+        match === '"X"' ? '0' : 'three(\n);\n'
+      );
+      // Every character maps to itself
+      const before = new MagicString(code).generateMap({
+        hires: true,
+        source: 'chunk.js',
+      });
+      const moved = {
+        ...before,
+        mappings: moveMappings(before.mappings, code, tracked.replacements!),
+      };
+      for (const token of ['one', 'two', 'three', 'four', 'five']) {
+        expect(trace(moved, replaced, token), token).toEqual({
+          source: 'chunk.js',
+          ...locate(code, token),
+        });
+      }
+      // A position inside what was replaced is where the replacement starts
+      expect(trace(moved, replaced, '0); two')).toEqual({
+        source: 'chunk.js',
+        ...locate(code, '"X"); two'),
+      });
+      expect(moved.mappings.split(';')).toHaveLength(4);
+    });
+
+    it.each(['a map file', 'an inline map'])(
+      'moves the map of a chunk whose imports generateBundle names, in %s',
+      async (kept) => {
+        const created = createPlugins(ON, 'vite', {
+          'translations/fr.json': JSON.stringify({
+            [SAVE_TEXT]: 'Enregistrer',
+          }),
+        });
+        await transform(
+          `import { t } from 'gt-react';\nexport const save = () => t\`Save\`;`,
+          ON,
+          created
+        );
+        const [first, second] = created.plugins as unknown as {
+          vite: {
+            configResolved: (config: object) => void;
+            generateBundle: unknown;
+          };
+        }[];
+        first.vite.configResolved({
+          base: '/',
+          build: { assetsDir: 'assets' },
+        });
+        // Minified: the chunk is one line, so what follows an import moves
+        const code = `e(()=>import("./Orders.js"),"${P}");mount();e(()=>import("./versions.js"),"${P}");start()`;
+        // Every character maps to itself
+        const map = new MagicString(code).generateMap({
+          hires: true,
+          source: 'src/App.tsx',
+        });
+        const inline = kept === 'an inline map';
+        const comment =
+          '\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,';
+        const index = {
+          type: 'chunk',
+          fileName: 'assets/index.js',
+          code: inline ? `${code}${comment}${btoa(map.toString())}` : code,
+          map,
+          sourcemapFileName: inline ? null : 'assets/index.js.map',
+          imports: [],
+          dynamicImports: ['assets/Orders.js', 'assets/versions.js'],
+          isEntry: true,
+        };
+        const mapFile = {
+          type: 'asset',
+          fileName: 'assets/index.js.map',
+          source: map.toString(),
+        };
+        const bundle = {
+          'assets/index.js': index,
+          ...(!inline && { 'assets/index.js.map': mapFile }),
+          'assets/Orders.js': {
+            type: 'chunk',
+            fileName: 'assets/Orders.js',
+            code: `t({$_hash:"${SAVE_TEXT}"})\`Save\``,
+            imports: [],
+            dynamicImports: [],
+          },
+          'assets/versions.js': {
+            type: 'chunk',
+            fileName: 'assets/versions.js',
+            code: 'export const version = 1',
+            imports: [],
+            dynamicImports: [],
+          },
+        };
+        (
+          first.vite.generateBundle as (
+            this: object,
+            options: object,
+            bundle: object
+          ) => void
+        ).call({ emitFile: () => undefined }, {}, bundle);
+        (
+          second.vite.generateBundle as {
+            handler: (options: object, bundle: object) => void;
+          }
+        ).handler({}, bundle);
+
+        const named = `e(()=>import("./Orders.js"),"assets/Orders.js");mount();e(()=>import("./versions.js"),0);start()`;
+        expect(index.code.split('\n')[0]).toBe(named);
+        for (const token of ['mount', 'start', './versions.js', 'Orders']) {
+          expect(trace(index.map, named, token), token).toEqual({
+            source: 'src/App.tsx',
+            ...locate(code, token),
+          });
+        }
+        const written = inline
+          ? atob(index.code.slice(named.length + comment.length))
+          : mapFile.source;
+        expect(JSON.parse(written)).toEqual(JSON.parse(index.map.toString()));
+        expect(JSON.parse(written).mappings).toBe(index.map.mappings);
+      }
+    );
   });
 
   describe('split by module', () => {
