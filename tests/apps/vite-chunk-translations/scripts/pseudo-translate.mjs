@@ -25,7 +25,7 @@ execFileSync('pnpm', ['exec', 'vite', 'build', '--logLevel', 'warn'], {
   env: {
     ...process.env,
     NODE_ENV: 'production',
-    GT_CHUNK_TRANSLATIONS: 'true',
+    GT_SPLIT_TRANSLATIONS: 'true',
     CHECK_OUT_DIR: join(root, '.check', 'collect'),
     CHECK_MESSAGES: treesPath,
   },

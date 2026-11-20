@@ -48,12 +48,7 @@ export function initializeState(
   const {
     autoderive: _a,
     devHotReload: _b,
-    experimentalChunkTranslations: _g,
-    experimentalChunkTranslationsNaming: _h,
-    experimentalChunkTranslationsSplit: _i,
-    experimentalChunkTranslationsRequestCost: _j,
-    experimentalChunkTranslationsPrevious: _k,
-    experimentalChunkTranslationsMinifyHashes: _l,
+    experimentalSplitTranslations: _g,
     ...restOptions
   } = options;
 

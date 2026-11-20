@@ -66,7 +66,6 @@ import {
 } from './transform/chunk-translations/createRegionGraph';
 import {
   createRuntimeHashesWarning,
-  MINIFY_HASHES_WITHOUT_CHUNK_TRANSLATIONS_ERROR,
   minifyChunk,
 } from './transform/chunk-translations/hashMinification';
 import {
@@ -257,34 +256,23 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
         : undefined;
-    const minifyHashes = getMinifyHashes(
-      options.experimentalChunkTranslationsMinifyHashes
-    );
+    const splitTranslations = options.experimentalSplitTranslations;
     const resolveChunkTranslationsOptions = () => {
-      const split = getChunkTranslationsSplit(
-        options.experimentalChunkTranslationsSplit
-      );
+      const split = getChunkTranslationsSplit(splitTranslations?.by);
       return resolveChunkTranslations(loadedGTConfig, {
         framework: meta.framework,
         compileTimeHash: options.compileTimeHash !== false,
-        naming: getChunkTranslationsNaming(
-          options.experimentalChunkTranslationsNaming,
-          split
-        ),
+        naming: getChunkTranslationsNaming(splitTranslations?.naming, split),
         regions: getRegionSplit(split, {
-          requestCost: options.experimentalChunkTranslationsRequestCost,
-          previous: options.experimentalChunkTranslationsPrevious,
+          requestCost: splitTranslations?.requestCost,
+          previous: splitTranslations?.previous,
         }),
-        minifyHashes,
+        minifyHashes: getMinifyHashes(splitTranslations?.minifyHashes),
       });
     };
-    const chunkTranslationsResolution = getChunkTranslations(
-      options.experimentalChunkTranslations
-    )
+    const chunkTranslationsResolution = getChunkTranslations(splitTranslations)
       ? resolveChunkTranslationsOptions()
-      : minifyHashes
-        ? { error: MINIFY_HASHES_WITHOUT_CHUNK_TRANSLATIONS_ERROR }
-        : undefined;
+      : undefined;
     const chunkTranslations =
       chunkTranslationsResolution && !('error' in chunkTranslationsResolution)
         ? chunkTranslationsResolution

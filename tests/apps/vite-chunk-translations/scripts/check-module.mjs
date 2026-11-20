@@ -1,5 +1,5 @@
 // Checks chunk translations that are split by module
-// (experimentalChunkTranslationsSplit: 'module'), as scripts/check.mjs checks
+// (experimentalSplitTranslations with by: 'module'), as scripts/check.mjs checks
 // the split by chunk: builds the app, serves each build as static files and
 // drives it in headless Chromium.
 //   node scripts/check-module.mjs [variant ...]
@@ -28,7 +28,7 @@ import { entriesOf, heldBy, isMinifiedId } from './minifiedTranslations.mjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = join(root, '.check');
 // CHECK_MINIFY_HASHES=true builds with hash minification
-// (experimentalChunkTranslationsMinifyHashes): a message then has an id in
+// (minifyHashes of experimentalSplitTranslations): a message then has an id in
 // each chunk that reads it, a file holds each translation once for all of
 // them, and the manifest still lists hashes
 const MINIFY_HASHES = process.env.CHECK_MINIFY_HASHES === 'true';
@@ -94,12 +94,13 @@ function build(name, { lazy, shared, requestCost }, env = {}) {
       env: {
         ...process.env,
         NODE_ENV: 'production',
-        GT_CHUNK_TRANSLATIONS: 'true',
-        GT_CHUNK_TRANSLATIONS_SPLIT: 'module',
-        GT_CHUNK_TRANSLATIONS_NAMING: '',
-        GT_CHUNK_TRANSLATIONS_PREVIOUS: '',
-        GT_CHUNK_TRANSLATIONS_MINIFY_HASHES: String(MINIFY_HASHES),
-        GT_CHUNK_TRANSLATIONS_REQUEST_COST:
+        GT_SPLIT_TRANSLATIONS: 'true',
+        GT_SPLIT_TRANSLATIONS_BY: 'module',
+        GT_MINIFY_HASHES: String(MINIFY_HASHES),
+        // vite.config.ts passes these as keys of the option
+        CHECK_NAMING: '',
+        CHECK_PREVIOUS: '',
+        CHECK_REQUEST_COST:
           requestCost === undefined ? '' : String(requestCost),
         CHECK_GT_LOG: 'debug',
         CHECK_LAZY: String(lazy),
@@ -842,8 +843,9 @@ const report = [];
 async function checkVariant(name, variant) {
   prefix = `[${name}] `;
   const off = build(`module-${name}-off`, variant, {
-    GT_CHUNK_TRANSLATIONS: 'false',
-    GT_CHUNK_TRANSLATIONS_MINIFY_HASHES: '',
+    GT_SPLIT_TRANSLATIONS: 'false',
+    GT_MINIFY_HASHES: '',
+    CHECK_REQUEST_COST: '',
   });
   const on = build(`module-${name}`, variant);
   const built = readBuild(on.outDir);
@@ -1683,8 +1685,8 @@ async function checkVariant(name, variant) {
   if (variant.shared) {
     byChunk = await downloadOfHome(
       build(`chunk-${name}`, variant, {
-        GT_CHUNK_TRANSLATIONS_SPLIT: 'chunk',
-        GT_CHUNK_TRANSLATIONS_NAMING: 'map',
+        GT_SPLIT_TRANSLATIONS_BY: 'chunk',
+        CHECK_NAMING: 'map',
       }).outDir
     );
     check(
@@ -1703,11 +1705,7 @@ async function checkVariant(name, variant) {
 
   // ----- What changes between two builds ----- //
   const previous = {
-    GT_CHUNK_TRANSLATIONS_PREVIOUS: join(
-      on.outDir,
-      'assets',
-      'gt-chunk-translations.json'
-    ),
+    CHECK_PREVIOUS: join(on.outDir, 'assets', 'gt-chunk-translations.json'),
   };
   const base = read(on.outDir);
   const translationFiles = (files) =>

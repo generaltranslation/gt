@@ -134,7 +134,7 @@ export const UNSPLIT_LOADER_ERROR = createDiagnosticMessage({
   source: '@generaltranslation/compiler',
   severity: 'Error',
   whatHappened:
-    'experimentalChunkTranslations could not write the loader of the unsplit translations',
+    'experimentalSplitTranslations could not write the loader of the unsplit translations',
   why: 'the bundler printed the call that starts the app in a form the build does not read',
   fix: 'Turn the option off, or write every message as <T> or a t template from gt-react so no translation is left unsplit',
 });

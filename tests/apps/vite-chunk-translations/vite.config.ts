@@ -5,10 +5,24 @@ import { defineConfig, type Plugin } from 'vite';
 import { collectMessages } from './scripts/collectMessages.mjs';
 import { prefixedImportMap } from './scripts/prefixedImportMap.mjs';
 
-// GT_CHUNK_TRANSLATIONS=true turns the feature on; scripts/check.mjs builds
+// GT_SPLIT_TRANSLATIONS=true turns the feature on; scripts/check.mjs builds
 // the app both ways. CHECK_MESSAGES is set by scripts/pseudo-translate.mjs,
 // which reads the app's messages from a build.
 const messagesFile = process.env.CHECK_MESSAGES;
+
+// The keys of experimentalSplitTranslations that have no environment
+// variable: the scripts set CHECK_NAMING, CHECK_REQUEST_COST and
+// CHECK_PREVIOUS. The compiler reads the other keys from
+// GT_SPLIT_TRANSLATIONS, GT_SPLIT_TRANSLATIONS_BY and GT_MINIFY_HASHES.
+const splitTranslations = {
+  ...(process.env.CHECK_NAMING && {
+    naming: process.env.CHECK_NAMING as 'token' | 'map',
+  }),
+  ...(process.env.CHECK_REQUEST_COST && {
+    requestCost: Number(process.env.CHECK_REQUEST_COST),
+  }),
+  ...(process.env.CHECK_PREVIOUS && { previous: process.env.CHECK_PREVIOUS }),
+};
 
 // Where the translation files are: the compiler reads them there, and so
 // does the app's own loadTranslations. scripts/check.mjs builds the app once
@@ -78,6 +92,9 @@ export default defineConfig({
     gtCompiler({
       _debugHashManifest: messagesFile !== undefined,
       files: { gt: { output: `${translations}/[locale].json` } },
+      ...(Object.keys(splitTranslations).length > 0 && {
+        experimentalSplitTranslations: splitTranslations,
+      }),
       // CHECK_GT_LOG=debug prints what the build did with the translations
       ...(process.env.CHECK_GT_LOG === 'debug' && { logLevel: 'debug' }),
       // CHECK_PRECOMPUTE=false keeps the tagged templates of t, which the

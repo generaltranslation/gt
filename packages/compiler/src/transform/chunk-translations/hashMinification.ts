@@ -152,23 +152,13 @@ const nameSome = (names: string[]) => [
   ...(names.length > MAX_NAMED ? [`and ${names.length - MAX_NAMED} more`] : []),
 ];
 
-export const MINIFY_HASHES_WITHOUT_CHUNK_TRANSLATIONS_ERROR =
-  createDiagnosticMessage({
-    source: '@generaltranslation/compiler',
-    severity: 'Error',
-    whatHappened:
-      'experimentalChunkTranslationsMinifyHashes is set in a build without experimentalChunkTranslations',
-    why: 'hash minification replaces the key of a message in the translation files that only such a build writes',
-    fix: 'Turn experimentalChunkTranslations on, or turn experimentalChunkTranslationsMinifyHashes off',
-  });
-
 export const MINIFY_HASHES_WITH_TAGGED_IDS_ERROR = createDiagnosticMessage({
   source: '@generaltranslation/compiler',
   severity: 'Error',
   whatHappened:
-    'experimentalChunkTranslationsMinifyHashes cannot be used with _tagIds',
+    'experimentalSplitTranslations.minifyHashes cannot be used with _tagIds',
   why: 'a <T> then writes what its call site passes into data-_gt-hash, where tools read the hash of the message',
-  fix: 'Remove _tagIds from gt.config.json, or turn experimentalChunkTranslationsMinifyHashes off',
+  fix: 'Remove _tagIds from gt.config.json, or turn experimentalSplitTranslations.minifyHashes off',
 });
 
 export const createRuntimeHashesWarning = (files: string[]) =>
@@ -179,7 +169,7 @@ export const createRuntimeHashesWarning = (files: string[]) =>
     why: 'a call site there builds its message from derive() or from parts that are not written at the call',
     reassurance:
       'Such a call site finds its translation in the unsplit file, unless a <T> or t template that the build compiled reads the same message, which then renders its source text there',
-    fix: 'Write the message the same way at each call site, or turn experimentalChunkTranslationsMinifyHashes off',
+    fix: 'Write the message the same way at each call site, or turn experimentalSplitTranslations.minifyHashes off',
     details: nameSome(files),
   });
 
@@ -192,7 +182,7 @@ export const createSharedListNameError = (
     severity: 'Error',
     whatHappened: `Hash minification gives two messages the id "${id}"`,
     why: 'the lists of messages of two chunks have the same digest, and a page would render the translation of one message for the other',
-    fix: 'Turn experimentalChunkTranslationsMinifyHashes off',
+    fix: 'Turn experimentalSplitTranslations.minifyHashes off',
     details: `${hashes[0]} and ${hashes[1]}`,
   });
 
@@ -202,7 +192,7 @@ export const createTakenIdError = (ids: string[]) =>
     severity: 'Error',
     whatHappened: `Hash minification gives ${ids.length === 1 ? 'a message an id' : `${ids.length} messages ids`} that the translations already hold`,
     why: 'a key of the translation files, or an id written by hand, is the same string, and a page would render one message for the other',
-    fix: 'Turn experimentalChunkTranslationsMinifyHashes off',
+    fix: 'Turn experimentalSplitTranslations.minifyHashes off',
     details: nameSome(ids),
   });
 
@@ -212,7 +202,7 @@ export const createUnminifiedChunksError = (files: string[]) =>
     severity: 'Error',
     whatHappened: `Hash minification did not reach the call sites of ${files.length === 1 ? 'a chunk' : `${files.length} chunks`}`,
     why: 'the bundler wrote them without rendering them through this plugin, so their call sites still hold a placeholder and would render the source text',
-    fix: 'Turn experimentalChunkTranslationsMinifyHashes off',
+    fix: 'Turn experimentalSplitTranslations.minifyHashes off',
     details: nameSome(files),
   });
 

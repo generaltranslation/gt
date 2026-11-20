@@ -18,6 +18,102 @@ export type LogLevel = NonNullable<GTCompilerOptions['logLevel']>;
 /** A complete or partial gt.config.json accepted by compiler integrations. */
 export type GTConfig = Partial<SharedGTConfig>;
 
+/** The keys of the `experimentalSplitTranslations` option. */
+export type SplitTranslationsOptions = {
+  /**
+   * Whether the build splits translations. Defaults to the
+   * `GT_SPLIT_TRANSLATIONS` environment variable (`true` or `false`), else
+   * to true.
+   */
+  enabled?: boolean;
+  /**
+   * What decides which messages share a translations file.
+   *
+   * - `'chunk'` (the default): the chunk their call sites are in. A page
+   *   loads the translations of every chunk it loads, whole.
+   * - `'module'`: the modules each entry and each dynamic import can reach
+   *   through static imports. A page loads the translations of the modules it
+   *   reaches and not of the others the bundler packed into the same chunks,
+   *   in files that hold what the same imports need, merged while a request
+   *   saved is worth the bytes it adds (see `requestCost`). Such a build
+   *   names its files by `'map'`, and each locale's map says which files an
+   *   import needs. It gains the most when a module runs when it is first
+   *   imported (Rolldown's `output.strictExecutionOrder`); when every module
+   *   of a chunk runs as the chunk loads, a page also loads what those
+   *   modules could read then, and the build says so.
+   *
+   * Defaults to the `GT_SPLIT_TRANSLATIONS_BY` environment variable.
+   */
+  by?: ChunkTranslationsSplit;
+  /**
+   * Hash minification. A hash is random and does not compress, and it is
+   * most of what a message costs a page beyond its text. With this on, the
+   * call sites the build splits by chunk or by module pass an id in place of
+   * their hash, and the translation files of chunks are keyed by it, which
+   * makes both smaller. An id is 8 characters that name the list of its
+   * chunk's messages, a digest of their hashes in the order of the hashes,
+   * then a `.` and the place of its message in that list, as `kR3_x0Qa.12`.
+   * Every call site of a chunk repeats those characters, so they compress
+   * to little. An id still follows from content alone: the same id names
+   * the same message in every build. A chunk's ids change only when the set
+   * of its own messages does, and a message that several chunks read has an
+   * id in each. The build writes the ids into every chunk that holds one of
+   * those call sites after the bundler has rendered it, so source maps are
+   * not kept accurate yet for those chunks either: lines stay, and the
+   * columns after an id on its line shift.
+   *
+   * The hash of a message stays what it is everywhere else: in the
+   * translation files at `files.gt.output`, in the unsplit file, and at
+   * every call site that reads from it. A call site whose hash is computed
+   * when it runs finds a message that a compiled call site also reads only
+   * where the build could tell which message that is; it warns of the
+   * modules where it could not. The build fails when two lists of messages
+   * would share a name, when an id is already a key of the translation
+   * files, and when a chunk reaches the output with its hashes not
+   * minified. Cannot be used with `_tagIds`. Defaults to the
+   * `GT_MINIFY_HASHES` environment variable.
+   */
+  minifyHashes?: boolean;
+  /**
+   * How the translation files of chunks are named.
+   *
+   * - `'token'` (the default): by one token per locale, which the page holds.
+   *   A file's URL follows from its chunk's, so the page requests the files
+   *   of the chunks it preloads without waiting for anything. Any change to a
+   *   locale's translations renames all of that locale's files, and so does
+   *   any change to JavaScript that renames a chunk, as a bundler names a
+   *   chunk by its content and by the chunks it imports.
+   * - `'map'`: each by the locale and the hash of its own content alone, with
+   *   one small map per locale that the page requests first, which says
+   *   which file is each chunk's. A changed translation renames only the
+   *   files it is in and the map, a change to JavaScript alone only the map,
+   *   and the files of chunks wait for the map. The naming for an app that
+   *   deploys often.
+   */
+  naming?: ChunkTranslationsNaming;
+  /**
+   * With `by: 'module'`: what one more request for a translations file is
+   * worth, in bytes of a compressed download. Two files are merged while
+   * that saves a page more than the bytes it then downloads without needing
+   * them.
+   *
+   * A lower cost is not a better split. At zero nothing is merged that
+   * costs a page a byte, so an app has many small files: a page makes many
+   * more requests, and every translated page downloads a larger map, which
+   * names them all. Lower it only after measuring what pages then load.
+   *
+   * Defaults to 8192.
+   */
+  requestCost?: number;
+  /**
+   * With `by: 'module'`: the path of the `gt-chunk-translations.json` that
+   * the build before this one wrote. Messages then stay in the file they
+   * were in where that still fits, so a change to the app renames few
+   * translation files.
+   */
+  previous?: string;
+};
+
 /**
  * Plugin configuration options (from babel config). The parsing flags override
  * the same flags in gt.config.json.
@@ -64,104 +160,15 @@ export interface PluginConfig
    * adds serves a stale copy: the page then finds no current name, and the
    * messages of the missing file render the source text, with a warning.
    *
-   * Defaults to the `GT_CHUNK_TRANSLATIONS` environment variable (`true` or
-   * `false`).
+   * A key set here overrides its environment variable, which is read only
+   * for a key that is left out: `GT_SPLIT_TRANSLATIONS` for `enabled`,
+   * `GT_SPLIT_TRANSLATIONS_BY` for `by` and `GT_MINIFY_HASHES` for
+   * `minifyHashes`. The other keys have no environment variable. An empty
+   * variable is not set. With neither `enabled` nor `GT_SPLIT_TRANSLATIONS`
+   * set, the split is on when the option is set and off when it is not.
+   * While the split is off, the other keys and their variables are not read.
    */
-  experimentalChunkTranslations?: boolean;
-  /**
-   * Experimental, with `experimentalChunkTranslations`: how the translation
-   * files of chunks are named.
-   *
-   * - `'token'` (the default): by one token per locale, which the page holds.
-   *   A file's URL follows from its chunk's, so the page requests the files
-   *   of the chunks it preloads without waiting for anything. Any change to a
-   *   locale's translations renames all of that locale's files, and so does
-   *   any change to JavaScript that renames a chunk, as a bundler names a
-   *   chunk by its content and by the chunks it imports.
-   * - `'map'`: each by the locale and the hash of its own content alone, with
-   *   one small map per locale that the page requests first, which says
-   *   which file is each chunk's. A changed translation renames only the
-   *   files it is in and the map, a change to JavaScript alone only the map,
-   *   and the files of chunks wait for the map. The naming for an app that
-   *   deploys often.
-   *
-   * Defaults to the `GT_CHUNK_TRANSLATIONS_NAMING` environment variable.
-   */
-  experimentalChunkTranslationsNaming?: ChunkTranslationsNaming;
-  /**
-   * Experimental, with `experimentalChunkTranslations`: what decides which
-   * messages share a translations file.
-   *
-   * - `'chunk'` (the default): the chunk their call sites are in. A page
-   *   loads the translations of every chunk it loads, whole.
-   * - `'module'`: the modules each entry and each dynamic import can reach
-   *   through static imports. A page loads the translations of the modules it
-   *   reaches and not of the others the bundler packed into the same chunks,
-   *   in files that hold what the same imports need, merged while a request
-   *   saved is worth the bytes it adds (see
-   *   `experimentalChunkTranslationsRequestCost`). Such a build names its
-   *   files by `'map'`, and each locale's map says which files an import
-   *   needs. It gains the most when a module runs when it is first imported
-   *   (Rolldown's `output.strictExecutionOrder`); when every module of a
-   *   chunk runs as the chunk loads, a page also loads what those modules
-   *   could read then, and the build says so.
-   *
-   * Defaults to the `GT_CHUNK_TRANSLATIONS_SPLIT` environment variable.
-   */
-  experimentalChunkTranslationsSplit?: ChunkTranslationsSplit;
-  /**
-   * Experimental, with `experimentalChunkTranslationsSplit: 'module'`: what
-   * one more request for a translations file is worth, in bytes of a
-   * compressed download. Two files are merged while that saves a page more
-   * than the bytes it then downloads without needing them.
-   *
-   * A lower cost is not a better split. At zero nothing is merged that
-   * costs a page a byte, so an app has many small files: a page makes many
-   * more requests, and every translated page downloads a larger map, which
-   * names them all. Lower it only after measuring what pages then load.
-   *
-   * Defaults to the `GT_CHUNK_TRANSLATIONS_REQUEST_COST` environment
-   * variable, else to 8192.
-   */
-  experimentalChunkTranslationsRequestCost?: number;
-  /**
-   * Experimental, with `experimentalChunkTranslationsSplit: 'module'`: the
-   * path of the `gt-chunk-translations.json` that the build before this one
-   * wrote. Messages then stay in the file they were in where that still
-   * fits, so a change to the app renames few translation files. Defaults to
-   * the `GT_CHUNK_TRANSLATIONS_PREVIOUS` environment variable.
-   */
-  experimentalChunkTranslationsPrevious?: string;
-  /**
-   * Experimental, for builds with `experimentalChunkTranslations`: hash
-   * minification. A hash is random and does not compress, and it is most of
-   * what a message costs a page beyond its text. With this on, the call
-   * sites the build splits by chunk or by module pass an id in place of
-   * their hash, and the translation files of chunks are keyed by it, which
-   * makes both smaller. An id is 8 characters that name the list of its
-   * chunk's messages, a digest of their hashes in the order of the hashes,
-   * then a `.` and the place of its message in that list, as `kR3_x0Qa.12`.
-   * Every call site of a chunk repeats those characters, so they compress
-   * to little. An id still follows from content alone: the same id names
-   * the same message in every build. A chunk's ids change only when the set
-   * of its own messages does, and a message that several chunks read has an
-   * id in each. The build writes the ids into every chunk that holds one of
-   * those call sites after the bundler has rendered it, so source maps are
-   * not kept accurate yet for those chunks either: lines stay, and the
-   * columns after an id on its line shift.
-   *
-   * The hash of a message stays what it is everywhere else: in the
-   * translation files at `files.gt.output`, in the unsplit file, and at
-   * every call site that reads from it. A call site whose hash is computed
-   * when it runs finds a message that a compiled call site also reads only
-   * where the build could tell which message that is; it warns of the
-   * modules where it could not. The build fails when two lists of messages
-   * would share a name, when an id is already a key of the translation
-   * files, and when a chunk reaches the output with its hashes not
-   * minified. Cannot be used with `_tagIds`. Defaults to the
-   * `GT_CHUNK_TRANSLATIONS_MINIFY_HASHES` environment variable.
-   */
-  experimentalChunkTranslationsMinifyHashes?: boolean;
+  experimentalSplitTranslations?: SplitTranslationsOptions;
   /**
    * Replaces each static `t` template with a call
    * that passes its message, built at compile time and written at the call,
