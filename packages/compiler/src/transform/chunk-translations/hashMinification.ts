@@ -522,20 +522,22 @@ export function isEmptyTranslations(source: string): boolean {
 /**
  * Every id the final code of a build's chunks passes for each message, by
  * its hash: a file that holds a message of several chunks holds it under
- * the id of each.
+ * the id of each. With `getKey`, by what that returns for the message in
+ * each chunk, so that a chunk's ids are told from another's.
  */
-export function findPassedIds(
-  chunks: readonly { code: string }[],
-  ids: MinifiedIdReader
+export function findPassedIds<Chunk extends { code: string }>(
+  chunks: readonly Chunk[],
+  ids: MinifiedIdReader,
+  getKey: (hash: string, chunk: Chunk) => string = (hash) => hash
 ): Map<string, string[]> {
   const passed = new Map<string, Set<string>>();
-  for (const { code } of chunks) {
-    for (const id of findChunkIds(code, ids)) {
-      const hash = ids.hashes.get(id)!;
-      const held = passed.get(hash);
+  for (const chunk of chunks) {
+    for (const id of findChunkIds(chunk.code, ids)) {
+      const key = getKey(ids.hashes.get(id)!, chunk);
+      const held = passed.get(key);
       if (held) held.add(id);
-      else passed.set(hash, new Set([id]));
+      else passed.set(key, new Set([id]));
     }
   }
-  return new Map([...passed].map(([hash, held]) => [hash, sortIds([...held])]));
+  return new Map([...passed].map(([key, held]) => [key, sortIds([...held])]));
 }

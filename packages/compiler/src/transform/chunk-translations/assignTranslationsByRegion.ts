@@ -3,7 +3,12 @@ import { mergeRegions } from './mergeRegions';
 /** A source module of the build. */
 export type RegionModule = {
   id: string;
-  /** The hashes of the messages its call sites hold in the final output */
+  /**
+   * The hashes of the messages its call sites hold in the final output. A
+   * graph of pairs (see createRegionGraph) holds a pair in place of each
+   * hash, and what is said here of a hash or of a message is then said of
+   * a pair.
+   */
   hashes: readonly string[];
   /** The ids of the modules it imports statically */
   imports: readonly string[];

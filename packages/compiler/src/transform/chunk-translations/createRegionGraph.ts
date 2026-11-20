@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { findChunkHashes } from './assignTranslations';
 import type { MinifiedIdReader } from './hashMinification';
@@ -17,6 +19,40 @@ export type RegionChunk = {
   /** The rendered code of each of its modules, before the chunk is minified */
   modules: Record<string, { code: string | null }>;
 };
+
+// How many characters of a pair name its chunk
+const PAIR_CHUNK_LENGTH = 8;
+
+/**
+ * What names a chunk in a pair, see createRegionGraph: the start of a digest
+ * of the module the chunk is made for, when it holds that module, or of the
+ * first of its modules, by the module's path from the working directory.
+ *
+ * - The bundler puts a module in one chunk, so no two chunks share a name,
+ *   whatever the bundler calls them.
+ * - The name is the same in the next build while the chunk still holds that
+ *   module, so a pair keeps the file `previous` says it was in.
+ * - Chunks that did share a name would be read as one, whose messages are
+ *   then in the files of each: every id still finds its translation.
+ */
+export function getPairChunk(chunk: {
+  facadeModuleId: string | null;
+  modules: Record<string, unknown>;
+}): string {
+  const { facadeModuleId, modules } = chunk;
+  const [first = ''] = Object.keys(modules).sort();
+  const module =
+    facadeModuleId !== null && facadeModuleId in modules
+      ? facadeModuleId
+      : first;
+  return createHash('sha256')
+    .update(path.relative(process.cwd(), module).split(path.sep).join('/'))
+    .digest('hex')
+    .slice(0, PAIR_CHUNK_LENGTH);
+}
+
+/** A message and a chunk that reads it, see createRegionGraph: the hash, then what getPairChunk names the chunk. */
+export const getPairKey = (hash: string, chunk: string) => `${hash}${chunk}`;
 
 /** What `this.getModuleInfo(id)` returns of a module. */
 export type RegionModuleInfo = {
@@ -78,6 +114,14 @@ export function initialisesModulesLazily(
  * its module and of every chunk those import statically, and each module its
  * `initialHashes`: those `initialHashes` names for it, or all of its
  * messages when nothing says which of its call sites run that early.
+ *
+ * With `pairs`, the graph holds a message once for each chunk that reads it:
+ * a module's `hashes` are pairs of a message and the module's chunk, see
+ * getPairKey, and `pairs` returns the hash of each. A load then demands a
+ * pair when it reaches a module of that chunk that reads the message, so a
+ * chunk that reads what an earlier load holds for another chunk has its own
+ * copy fetched by its own loads, and the file of the earlier load holds
+ * nothing for it.
  */
 export function createRegionGraph(
   chunks: readonly RegionChunk[],
@@ -94,8 +138,16 @@ export function createRegionGraph(
      * not the ids of its chunk's final code
      */
     moduleIds?: MinifiedIdReader;
+    /** Whether a message counts once for each chunk that reads it */
+    pairs?: boolean;
   }
-): { graph: RegionGraph; unattributed: number } {
+): {
+  graph: RegionGraph;
+  unattributed: number;
+  /** With `pairs`: the hash of the message of each pair */
+  pairs?: Map<string, string>;
+} {
+  const pairs = options.pairs ? new Map<string, string>() : undefined;
   const moduleHashes = new Map<string, Set<string>>();
   const chunksOfModule = new Map<string, RegionChunk[]>();
   let unattributed = 0;
@@ -103,6 +155,13 @@ export function createRegionGraph(
     const surviving = new Set(findChunkHashes(chunk.code, hashes, options.ids));
     const found = new Set<string>();
     const ids = Object.keys(chunk.modules);
+    const named = pairs && getPairChunk(chunk);
+    const getKey = (hash: string) => {
+      if (named === undefined) return hash;
+      const pair = getPairKey(hash, named);
+      pairs!.set(pair, hash);
+      return pair;
+    };
     for (const id of ids) {
       let held = moduleHashes.get(id);
       if (!held) moduleHashes.set(id, (held = new Set()));
@@ -116,14 +175,14 @@ export function createRegionGraph(
         surviving,
         options.moduleIds ?? options.ids
       )) {
-        held.add(hash);
+        held.add(getKey(hash));
         found.add(hash);
       }
     }
     for (const hash of surviving) {
       if (found.has(hash)) continue;
       unattributed++;
-      for (const id of ids) moduleHashes.get(id)!.add(hash);
+      for (const id of ids) moduleHashes.get(id)!.add(getKey(hash));
     }
   }
 
@@ -163,17 +222,21 @@ export function createRegionGraph(
       else dynamicImports.push(next);
     }
     const held = [...(moduleHashes.get(id) ?? [])].sort();
+    const initial =
+      pairs && options.initialHashes && new Set(options.initialHashes.get(id));
     modules.push({
       id,
       hashes: held,
       imports: [...imports],
       dynamicImports,
       ...(!options.isLazy && {
-        initialHashes: options.initialHashes
-          ? (options.initialHashes.get(id) ?? []).filter((hash) =>
-              moduleHashes.get(id)?.has(hash)
-            )
-          : held,
+        initialHashes: initial
+          ? held.filter((pair) => initial.has(pairs!.get(pair)!))
+          : options.initialHashes
+            ? (options.initialHashes.get(id) ?? []).filter((hash) =>
+                moduleHashes.get(id)?.has(hash)
+              )
+            : held,
       }),
     });
     for (const next of dynamicImports) dynamicTargets.add(next);
@@ -192,7 +255,9 @@ export function createRegionGraph(
       )
     ),
   ];
-  if (options.isLazy) return { graph: { modules, entries }, unattributed };
+  if (options.isLazy) {
+    return { graph: { modules, entries }, unattributed, pairs };
+  }
 
   // What runs with a chunk: its modules that run a call site when they are
   // initialised, and those of the chunks it imports statically
@@ -230,7 +295,7 @@ export function createRegionGraph(
         : [...new Set(holding.flatMap(getEvaluated))]
     );
   }
-  return { graph: { modules, entries, evaluated }, unattributed };
+  return { graph: { modules, entries, evaluated }, unattributed, pairs };
 }
 
 // Files of 1 to 1,024 messages
