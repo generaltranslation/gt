@@ -77,6 +77,7 @@ import {
   type MinifiedIds,
   type MinifiedTranslations,
 } from '../transform/chunk-translations/hashMinification';
+import { findListScopes } from '../transform/chunk-translations/listScopes';
 import {
   getPageBase,
   renderStartupScript,
@@ -3234,6 +3235,45 @@ export const ready = initializeGTSPA({});`,
       }
     );
 
+    it('gives a chunk a list for each scope of its messages, whose ids follow from that list alone', () => {
+      const getScope = (hash: string) => (hash === HELLO ? HELLO : 1);
+      const own = minifyHashes([SAVE_TEXT, PRINT_TEXT]);
+      const [alone] = idsOf([HELLO]);
+      const minified = minifiedIds();
+      const at = (hash: string) => site(hash, minified);
+      expect(
+        minifyChunk(
+          `${at(SAVE_TEXT)};${at(HELLO)};${at(PRINT_TEXT)};${at(HELLO)}`,
+          minified,
+          undefined,
+          getScope
+        )
+      ).toBe(
+        `t({$_hash:"${own.get(SAVE_TEXT)}"});t({$_hash:"${alone}"});t({$_hash:"${own.get(PRINT_TEXT)}"});t({$_hash:"${alone}"})`
+      );
+      expect(new Map(minified.hashes)).toEqual(
+        new Map([
+          [own.get(PRINT_TEXT), PRINT_TEXT],
+          [own.get(SAVE_TEXT), SAVE_TEXT],
+          [alone, HELLO],
+        ])
+      );
+      // A list is as it was when another list of its chunk gains or loses a
+      // message, and the same in another chunk that lists the same messages
+      expect(
+        minifyChunk(
+          `${at(SAVE_TEXT)};${at(PRINT_TEXT)}`,
+          minified,
+          undefined,
+          getScope
+        )
+      ).toBe(
+        `t({$_hash:"${own.get(SAVE_TEXT)}"});t({$_hash:"${own.get(PRINT_TEXT)}"})`
+      );
+      expect(minifyChunk(at(HELLO), minified)).toBe(`t({$_hash:"${alone}"})`);
+      expect(minified.hashes.size).toBe(3);
+    });
+
     it('gives a chunk the same ids in every build that leaves its messages alone, and two chunks with the same messages the same ids', () => {
       const minified = minifiedIds();
       const home = `${site(SAVE_TEXT, minified)};${site(HELLO, minified)}`;
@@ -3269,7 +3309,7 @@ export const ready = initializeGTSPA({});`,
           minified
         )
       ).toThrow(
-        `Hash minification gives two messages the id "2bFNA3qJ.0" because the lists of messages of two chunks have the same digest, and a page would render the translation of one message for the other. Turn experimentalSplitTranslations.minifyHashes off. Details: ${PRINT_TEXT} and ${SAVE_TEXT}.`
+        `Hash minification gives two messages the id "2bFNA3qJ.0" because two lists of messages have the same digest, and a page would render the translation of one message for the other. Turn experimentalSplitTranslations.minifyHashes off. Details: ${PRINT_TEXT} and ${SAVE_TEXT}.`
       );
     });
 
@@ -4969,27 +5009,30 @@ globalThis.save = () => t\`Save\`;`,
        * code, placeholders in the code of each module.
        */
       function render(...billing: (keyof typeof HASH)[]) {
-        const hashed = {
+        return renderBundle({
           ...BUNDLE,
           'assets/Billing.js': chunk(
             'assets/Billing.js',
             { '/billing.js': site(...billing) },
             { imports: ['assets/shared.js'] }
           ),
-        };
+        });
+      }
+      /**
+       * A bundle as the bundler renders it with hash minification. With
+       * `isScoped`, a chunk's messages are listed by the loads that fetch
+       * them, as the plugin lists them in a build that splits by module.
+       */
+      function renderBundle(hashed: typeof BUNDLE, isScoped = false) {
         const minifiedIds: MinifiedIds = {
           hashes: new Map(),
           placeholders: new Map(),
         };
-        const bundle = Object.fromEntries(
+        const rendered = Object.fromEntries(
           Object.entries(hashed).map(([fileName, file]) => [
             fileName,
             {
               ...file,
-              code: minifyChunk(
-                placeholders(file.code, minifiedIds),
-                minifiedIds
-              )!,
               modules: Object.fromEntries(
                 Object.entries(file.modules).map(([id, { code }]) => [
                   id,
@@ -4999,7 +5042,30 @@ globalThis.save = () => t\`Save\`;`,
             },
           ])
         );
-        return { hashed, bundle, minifiedIds };
+        const scopes = isScoped
+          ? findListScopes(
+              rendered,
+              getModuleInfo(GRAPH),
+              new Set(Object.values(HASH)),
+              minifiedIds,
+              true
+            )
+          : undefined;
+        const bundle = Object.fromEntries(
+          Object.entries(rendered).map(([fileName, file]) => [
+            fileName,
+            {
+              ...file,
+              code: minifyChunk(
+                placeholders(file.code, minifiedIds),
+                minifiedIds,
+                undefined,
+                scopes?.(fileName)
+              )!,
+            },
+          ])
+        );
+        return { hashed, bundle, minifiedIds, scopes };
       }
 
       it('reads ids out of each chunk and placeholders out of each module, and keys the same files by every id of their messages', () => {
@@ -5071,6 +5137,203 @@ globalThis.save = () => t\`Save\`;`,
         expect(
           [...changed].every((id) => page.minifiedIds.hashes.has(id))
         ).toBe(true);
+      });
+
+      describe('with a list for each set of messages of a chunk that the same loads fetch', () => {
+        // The shared chunk as it is, and with a message more in the invoice
+        // table, which only Billing imports. No chunk reads `admin` before.
+        const withShared = (invoice: (keyof typeof HASH)[], isScoped = true) =>
+          renderBundle(
+            {
+              ...BUNDLE,
+              'assets/Admin.js': chunk(
+                'assets/Admin.js',
+                { '/admin.js': site('title') },
+                { imports: ['assets/shared.js'] }
+              ),
+              'assets/shared.js': chunk(
+                'assets/shared.js',
+                {
+                  '/picker.js': site('picker'),
+                  '/invoice.js': site(...invoice),
+                  '/panel.js': site('panel'),
+                },
+                { facadeModuleId: null }
+              ),
+            },
+            isScoped
+          );
+        const filesOf = (build: ReturnType<typeof renderBundle>) => {
+          const { emitted, manifest } = write({
+            bundle: build.bundle,
+            minifiedIds: build.minifiedIds,
+          });
+          const fileOf = (hash: string) => {
+            const [id] =
+              Object.entries(manifest.assignment.files).find(([, held]) =>
+                held.includes(hash)
+              ) ?? [];
+            return manifest.files[`assets/gt-${id}`]?.fr;
+          };
+          return { emitted, manifest, fileOf };
+        };
+
+        it('lists together what the same loads fetch, and alone what an entry fetches in a chunk that loads later', () => {
+          const { scopes, minifiedIds } = withShared(['invoice']);
+          const shared = scopes!('assets/shared.js');
+          // Home fetches the date picker, Billing the invoice table, Admin the panel
+          expect(
+            new Set([HASH.picker, HASH.invoice, HASH.panel].map(shared)).size
+          ).toBe(3);
+          expect(scopes!('assets/Home.js')(HASH.home)).toBe(
+            shared(HASH.picker)
+          );
+          // The title is the entry's: Admin, which loads later, lists it
+          // alone, and the entry chunk with what else the entry fetches
+          expect(scopes!('assets/Admin.js')(HASH.title)).toBe(HASH.title);
+          expect(scopes!('assets/index.js')(HASH.title)).not.toBe(HASH.title);
+          expect(shared('0000000000000000')).toBeUndefined();
+          // One list of the title for both chunks that read it
+          expect(
+            [...minifiedIds.hashes].filter(([, hash]) => hash === HASH.title)
+          ).toEqual([[`${getListName([HASH.title])}.0`, HASH.title]]);
+        });
+
+        it('keys the same files as a build with hashes, each by every id of its messages', () => {
+          const build = withShared(['invoice']);
+          const plain = write({ bundle: build.hashed });
+          const { manifest, emitted } = filesOf(build);
+          expect(manifest.assignment).toEqual(plain.manifest.assignment);
+          expect(manifest.imports).toEqual(plain.manifest.imports);
+          for (const [key, { fr }] of Object.entries(plain.manifest.files)) {
+            expect(
+              Object.values(
+                unpack(JSON.parse(emitted[manifest.files[key].fr]))
+              ).sort()
+            ).toEqual(Object.values(JSON.parse(plain.emitted[fr])).sort());
+          }
+        });
+
+        it('rewrites only the file a new message is in when a chunk gains one, which renames every file the chunk reads from with one list per chunk', () => {
+          const renamed = (isScoped: boolean) => {
+            const before = filesOf(withShared(['invoice'], isScoped));
+            const after = filesOf(withShared(['invoice', 'admin'], isScoped));
+            return [HASH.picker, HASH.invoice, HASH.panel, HASH.title].map(
+              (hash) => before.fileOf(hash) !== after.fileOf(hash)
+            );
+          };
+          expect(renamed(false)).toEqual([true, true, true, false]);
+          expect(renamed(true)).toEqual([false, true, false, false]);
+        });
+
+        it.each([
+          ['by module', { by: 'module' as const }, 2],
+          ['by chunk', { by: 'chunk' as const }, 1],
+        ])(
+          'is what the plugin renders a chunk with in a build that splits %s, from the chunks the bundler says it renders',
+          async (_name, split, lists) => {
+            const options = {
+              ...ON,
+              experimentalSplitTranslations: { ...split, minifyHashes: true },
+            };
+            const created = createPlugins(options, 'vite', {
+              'translations/fr.json': '{}',
+            });
+            const compile = (source: string) =>
+              transform(
+                `import { t } from 'gt-react';\n${source}`,
+                options,
+                created
+              ) as Promise<string>;
+            // The route reads a message of its own and one the entry fetches
+            const rendered = {
+              'assets/index.js': chunk(
+                'assets/index.js',
+                {
+                  '/main.js': await compile(
+                    'export const save = () => t`Save`;'
+                  ),
+                },
+                { isEntry: true, dynamicImports: ['assets/Home.js'] }
+              ),
+              'assets/Home.js': chunk('assets/Home.js', {
+                '/home.js': await compile(
+                  'export const save = () => t`Save`;\nexport const print = () => t`Print`;'
+                ),
+              }),
+            };
+            const { renderChunk } = created.plugins[0].vite as unknown as {
+              renderChunk: (
+                this: object,
+                code: string,
+                chunk: object,
+                options: object,
+                meta: object
+              ) => string;
+            };
+            const context = {
+              getModuleInfo: getModuleInfo({
+                '/main.js': { dynamic: ['/home.js'] },
+              }),
+            };
+            const home = rendered['assets/Home.js'];
+            const names = (code: string) =>
+              new Set(
+                [...code.matchAll(/\$_hash: "([\w-]{8})\.\d+"/g)].map(
+                  (match) => match[1]
+                )
+              );
+            expect(
+              names(
+                renderChunk.call(
+                  context,
+                  home.code,
+                  home,
+                  {},
+                  { chunks: rendered }
+                )
+              ).size
+            ).toBe(lists);
+            // A bundler that says nothing of the other chunks gets one list
+            expect(
+              names(renderChunk.call(context, home.code, home, {}, {})).size
+            ).toBe(1);
+          }
+        );
+
+        it('gives a page of one build, in the files of the next, the message of its own id or nothing, and every message of a list the deploy left alone', () => {
+          const page = withShared(['invoice']);
+          const deployed = withShared(['invoice', 'admin']);
+          const files = readTranslationFiles(filesOf(deployed).emitted);
+          const [invoiceId] = minifyHashes([HASH.invoice]).values();
+          expect(page.minifiedIds.hashes.get(invoiceId)).toBe(HASH.invoice);
+          expect(readAsPage(page.minifiedIds.hashes, files)).toEqual(
+            new Map(
+              [...page.minifiedIds.hashes].map(([id, hash]) => [
+                id,
+                id === invoiceId ? undefined : CATALOG[hash],
+              ])
+            )
+          );
+          // And the other way round, after a rollback
+          const [first, second] = minifyHashes([
+            HASH.invoice,
+            HASH.admin,
+          ]).values();
+          expect(
+            readAsPage(
+              deployed.minifiedIds.hashes,
+              readTranslationFiles(filesOf(page).emitted)
+            )
+          ).toEqual(
+            new Map(
+              [...deployed.minifiedIds.hashes].map(([id, hash]) => [
+                id,
+                id === first || id === second ? undefined : CATALOG[hash],
+              ])
+            )
+          );
+        });
       });
     });
 
