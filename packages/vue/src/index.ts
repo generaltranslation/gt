@@ -4,6 +4,7 @@ export { Currency, DateTime, Num, Var } from './components/variables';
 export { useLocale, useSetLocale } from './composables/locale';
 export { useGT, useMessages } from './composables/strings';
 export { msg } from './messages/msg';
+export { initializeGT } from './runtime/config';
 export { initializeGTSPA, t } from './runtime/spa';
 export { createGT } from './runtime/state';
 export type {
@@ -11,6 +12,7 @@ export type {
   GTFunction,
   GTPlugin,
   GTStringOptions,
+  InitializeGTOptions,
   InitializeGTSPAOptions,
   LoadTranslations,
   MessagesFunction,

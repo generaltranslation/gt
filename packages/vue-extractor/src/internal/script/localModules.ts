@@ -46,6 +46,7 @@ const GT_EXPORT_NAMES = [
 const GT_RUNTIME_EXPORT_NAMES = [
   ...GT_EXPORT_NAMES,
   'createGT',
+  'initializeGT',
   'initializeGTSPA',
   'useLocale',
   'useSetLocale',

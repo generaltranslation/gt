@@ -7,7 +7,6 @@ import {
   Num,
   Plural,
   T,
-  createGT,
   initializeGTSPA,
   t,
   useGT,
@@ -16,8 +15,10 @@ import {
 import { resetGTSPAForTests } from '../runtime/spa';
 import type { TranslationCatalog } from '../types';
 import {
+  createTestGT,
   installCookieDocument,
   renderWithPlugin,
+  resetI18nSingletons,
   stripFragmentMarkers,
   type TestCookieDocument,
 } from './testUtils';
@@ -25,7 +26,9 @@ import {
 describe('gt-vue SPA runtime', () => {
   afterEach(() => {
     resetGTSPAForTests();
+    resetI18nSingletons();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
@@ -487,23 +490,25 @@ describe('gt-vue SPA runtime', () => {
     expect(loadTranslations).toHaveBeenCalledOnce();
   });
 
-  it('clears failed initialization so a later call can retry', async () => {
+  it('clears failed initialization in development so a later call can retry', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
     installBrowser('generaltranslation.locale=fr');
     const error = new Error('catalog failed');
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
 
-    await expect(
-      initializeGTSPA({ loadTranslations: async () => Promise.reject(error) })
-    ).rejects.toBe(error);
+    const loadTranslations = vi
+      .fn<() => Promise<TranslationCatalog>>()
+      .mockRejectedValueOnce(error)
+      .mockResolvedValue({});
+
+    await expect(initializeGTSPA({ loadTranslations })).rejects.toBe(error);
     expect(() => t('Unavailable')).toThrow(
       't() ran before the GT Vue SPA runtime finished initializing'
     );
 
-    const plugin = await initializeGTSPA({
-      loadTranslations: async () => ({}),
-    });
+    const plugin = await initializeGTSPA({ loadTranslations });
 
     expect(plugin.getLocale()).toBe('fr');
     expect(consoleError).toHaveBeenCalledOnce();
@@ -558,7 +563,7 @@ describe('gt-vue SPA runtime', () => {
   it('leaves ordinary createGT locale changes reactive and reload-free', async () => {
     const browser = installBrowser();
     const loadTranslations = vi.fn(async () => ({}));
-    const plugin = createGT({ loadTranslations });
+    const plugin = createTestGT({ loadTranslations });
 
     await plugin.setLocale('fr');
 

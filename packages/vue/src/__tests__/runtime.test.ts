@@ -40,6 +40,7 @@ import {
 } from '../index';
 import type { TranslationCatalog } from '../index';
 import {
+  createTestGT,
   findElement,
   jsxHash,
   mount,
@@ -108,7 +109,7 @@ describe('gt-vue runtime', () => {
         { t: 'Stateful', i: 3, c: 'B' },
       ],
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         [jsxHash(source)]: {
           t: 'C1',
@@ -171,7 +172,7 @@ describe('gt-vue runtime', () => {
         return () => h('span', slots.default?.());
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         stableFragmentRoot: {
           t: 'StableFragmentChild',
@@ -244,7 +245,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('renders empty authored Fragments safely in source and translated SSR', async () => {
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         [jsxHash({ t: 'C1', i: 1 })]: { t: 'C1', i: 1 },
       }),
@@ -289,7 +290,7 @@ describe('gt-vue runtime', () => {
           }
         : {}
     );
-    const plugin = createGT({ loadTranslations });
+    const plugin = createTestGT({ loadTranslations });
     const Root = defineComponent({
       setup() {
         const t = useGT();
@@ -345,7 +346,7 @@ describe('gt-vue runtime', () => {
     });
     const state = {
       defaultLocale: 'en',
-      getCatalog: vi.fn(() => {
+      lookupTranslation: vi.fn(() => {
         throw new Error('default-locale catalog was read');
       }),
       getLocale: () => 'en',
@@ -355,7 +356,7 @@ describe('gt-vue runtime', () => {
     expect(Array.isArray(rendered) && rendered[0]).toMatchObject({
       type: 'span',
     });
-    expect(state.getCatalog).not.toHaveBeenCalled();
+    expect(state.lookupTranslation).not.toHaveBeenCalled();
   });
 
   it('keeps msg and useMessages context-only and never interpolates', async () => {
@@ -364,7 +365,7 @@ describe('gt-vue runtime', () => {
     const messages: string[] = msg(['First', 'Second'] as const, {
       $context: 'list',
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         [stringHash('Literal {name}: 你好', 'example')]:
           'Littéral {name} : 你好',
@@ -395,7 +396,7 @@ describe('gt-vue runtime', () => {
 
   it('falls back to source text when a STRING hash resolves to rich data', async () => {
     const source = 'Hello';
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         [hashStringMessage(source)]: {
           c: 'Wrong catalog shape',
@@ -430,7 +431,7 @@ describe('gt-vue runtime', () => {
       d: { ti: 'Salutation' },
       c: ['Bonjour, ', { i: 2, v: 'v' }, ' !'],
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ [jsxHash(source, 'hero')]: target }),
     });
     await plugin.setLocale('fr');
@@ -465,7 +466,7 @@ describe('gt-vue runtime', () => {
 
   it('prefers the documented context prop over the internal $context alias', async () => {
     const source: JsxChildren = { t: 'p', i: 1, c: 'Hello' };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         [jsxHash(source, 'friendly')]: { t: 'p', i: 1, c: 'Friendly' },
         [jsxHash(source, 'formal')]: { t: 'p', i: 1, c: 'Formal' },
@@ -511,7 +512,7 @@ describe('gt-vue runtime', () => {
           );
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         link: {
           t: 'TestLink',
@@ -569,7 +570,7 @@ describe('gt-vue runtime', () => {
       name: 'CompiledLink',
       render: compileSfcTemplate('<a><slot /></a>'),
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         compiledSlot: {
           t: 'CompiledLink',
@@ -604,7 +605,7 @@ describe('gt-vue runtime', () => {
         return () => h('article', slots.default?.({ label: 'Runtime label' }));
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         scoped: {
           i: 1,
@@ -647,7 +648,7 @@ describe('gt-vue runtime', () => {
         return () => h('div', slots.default?.());
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         opaqueSlots: [
           { t: 'DirectOwner', i: 1, c: 'Translated direct child' },
@@ -712,7 +713,7 @@ describe('gt-vue runtime', () => {
         return () => slots.one?.({ label: 'Runtime label' });
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         scopedBranch: {
           i: 1,
@@ -740,7 +741,7 @@ describe('gt-vue runtime', () => {
         return () => h('p', 'Component-owned copy');
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         implementation: {
           t: 'ImplementationCopy',
@@ -768,7 +769,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('preserves opaque Static VNodes in source and translated locales', async () => {
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         staticVNode: { t: 'Static', i: 1, c: 'Ignored target' },
       }),
@@ -798,7 +799,7 @@ describe('gt-vue runtime', () => {
       { t: 'a', i: 1, c: 'Premier' },
       { t: 'a', i: 1, c: 'Encore' },
     ];
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ repeated: target }),
     });
     await plugin.setLocale('fr');
@@ -840,7 +841,7 @@ describe('gt-vue runtime', () => {
           ]);
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async (locale) => ({
         identity:
           locale === 'fr'
@@ -904,7 +905,7 @@ describe('gt-vue runtime', () => {
         return () => h('span', slots.default?.());
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async (locale) =>
         locale === 'fr'
           ? {
@@ -955,7 +956,7 @@ describe('gt-vue runtime', () => {
     const identityCache = createTranslationIdentityCache();
     const state = {
       defaultLocale: 'en',
-      getCatalog: () => ({}),
+      lookupTranslation: () => undefined,
       getLocale: () => 'en',
     } as unknown as Parameters<typeof translateVueChildren>[1];
     const Child = defineComponent({
@@ -986,7 +987,7 @@ describe('gt-vue runtime', () => {
     const identityCache = createTranslationIdentityCache();
     const state = {
       defaultLocale: 'en',
-      getCatalog: () => ({}),
+      lookupTranslation: () => undefined,
       getLocale: () => 'en',
     } as unknown as Parameters<typeof translateVueChildren>[1];
     const Stable = defineComponent({
@@ -1021,7 +1022,8 @@ describe('gt-vue runtime', () => {
     let target: JsxChildren = 'Unused';
     const state = {
       defaultLocale: 'en',
-      getCatalog: () => ({ broken: target }),
+      lookupTranslation: ({ $_hash }: { $_hash: string }) =>
+        $_hash === 'broken' ? target : undefined,
       getLocale: () => locale,
     } as unknown as Parameters<typeof translateVueChildren>[1];
     const Stable = defineComponent({
@@ -1079,7 +1081,8 @@ describe('gt-vue runtime', () => {
     ];
     const state = {
       defaultLocale: 'en',
-      getCatalog: () => ({ repeated: target }),
+      lookupTranslation: ({ $_hash }: { $_hash: string }) =>
+        $_hash === 'repeated' ? target : undefined,
       getLocale: () => 'fr',
     } as unknown as Parameters<typeof translateVueChildren>[1];
 
@@ -1112,7 +1115,7 @@ describe('gt-vue runtime', () => {
         return () => h('span', `${props.label}:${instance}|`);
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         explicitKeys: [
           { t: 'Stateful', i: 3 },
@@ -1159,7 +1162,7 @@ describe('gt-vue runtime', () => {
         return () => h('span', `${props.label}:${initialLabel}:${instance}|`);
       },
     });
-    const plugin = createGT();
+    const plugin = createTestGT();
     const Root = defineComponent({
       setup() {
         return () =>
@@ -1197,7 +1200,7 @@ describe('gt-vue runtime', () => {
         return () => h('span', `${props.label}:${initialLabel}:${instance}|`);
       },
     });
-    const plugin = createGT();
+    const plugin = createTestGT();
     const Root = defineComponent({
       setup() {
         return () =>
@@ -1232,7 +1235,7 @@ describe('gt-vue runtime', () => {
         return () => h('span', `${instance}|`);
       },
     });
-    const plugin = createGT();
+    const plugin = createTestGT();
     const Root = defineComponent({
       setup() {
         return () =>
@@ -1269,7 +1272,7 @@ describe('gt-vue runtime', () => {
         return () => h('span', `${instance}|`);
       },
     });
-    const plugin = createGT();
+    const plugin = createTestGT();
     const Root = defineComponent({
       setup() {
         return () =>
@@ -1306,7 +1309,7 @@ describe('gt-vue runtime', () => {
         return () => h('span', `${props.label}:${initialLabel}:${instance}|`);
       },
     });
-    const plugin = createGT();
+    const plugin = createTestGT();
     const Root = defineComponent({
       setup() {
         return () =>
@@ -1344,7 +1347,7 @@ describe('gt-vue runtime', () => {
         return () => h('span', `${props.label}:${initialLabel}:${instance}|`);
       },
     });
-    const plugin = createGT();
+    const plugin = createTestGT();
     const Root = defineComponent({
       setup() {
         return () =>
@@ -1383,7 +1386,7 @@ describe('gt-vue runtime', () => {
 
   it('rebuilds Suspense content instead of retaining stale normalized children', async () => {
     const fallbackCalls = vi.fn();
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         suspense: {
           t: 'Suspense',
@@ -1429,7 +1432,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('renders Vue-compiled text-only Suspense source content in SSR', async () => {
-    const plugin = createGT({ loadTranslations: async () => ({}) });
+    const plugin = createTestGT({ loadTranslations: async () => ({}) });
     const Root = defineComponent({
       components: { T },
       render: compileSfcTemplate('<T><Suspense>Hello world</Suspense></T>'),
@@ -1454,7 +1457,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('renders translated text-only Suspense content in SSR', async () => {
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         textSuspense: {
           t: 'Suspense',
@@ -1483,7 +1486,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('updates Vue-compiled text-only Suspense content on the client', async () => {
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         textSuspense: {
           t: 'Suspense',
@@ -1527,7 +1530,7 @@ describe('gt-vue runtime', () => {
         { t: 'span', i: 3, c: 'B' },
       ],
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         [jsxHash(source)]: {
           t: 'Suspense',
@@ -1568,7 +1571,7 @@ describe('gt-vue runtime', () => {
   it('rebuilds nested Suspense roots without rerunning fallback slots', async () => {
     const outerFallback = vi.fn(() => h('b', 'Outer fallback'));
     const innerFallback = vi.fn(() => h('i', 'Inner fallback'));
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         nestedSuspense: {
           t: 'Suspense',
@@ -1634,7 +1637,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('renders repeated translated Suspense roots through a Fragment', async () => {
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         repeatedSuspense: {
           t: 'Suspense',
@@ -1685,7 +1688,7 @@ describe('gt-vue runtime', () => {
         return () => h('span', `${props.title}:${instance}|`);
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         statefulSuspense: {
           t: 'Suspense',
@@ -1744,7 +1747,7 @@ describe('gt-vue runtime', () => {
         return () => h('i', 'READY');
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         asyncSuspense: {
           t: 'Suspense',
@@ -1805,7 +1808,7 @@ describe('gt-vue runtime', () => {
         t: 'p',
       },
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       defaultLocale: 'en',
       loadTranslations: async () => ({ pluralLocale: target }),
     });
@@ -1854,7 +1857,7 @@ describe('gt-vue runtime', () => {
       },
       { t: 'p', i: 3, c: 'Paragraphe traduit.' },
     ];
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async (locale) =>
         locale === 'fr' ? { [jsxHash(source)]: target } : {},
     });
@@ -1886,7 +1889,7 @@ describe('gt-vue runtime', () => {
 
   it('preserves React-compatible text boundaries around comments', async () => {
     const source = ['Hello', ' world'];
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         [jsxHash(source)]: 'Bonjour le monde',
       }),
@@ -1921,7 +1924,7 @@ describe('gt-vue runtime', () => {
       i: 1,
       c: { t: 'strong', i: 2, c: 'translated' },
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
     });
     await plugin.setLocale('fr');
@@ -1962,7 +1965,9 @@ describe('gt-vue runtime', () => {
     });
     Root.__scopeId = 'data-v-parent';
 
-    expect(stripFragmentMarkers(await renderWithPlugin(Root, createGT()))).toBe(
+    expect(
+      stripFragmentMarkers(await renderWithPlugin(Root, createTestGT()))
+    ).toBe(
       '<section data-v-parent><span data-v-parent>source</span></section>'
     );
   });
@@ -1976,7 +1981,7 @@ describe('gt-vue runtime', () => {
           h('section', [slots.default?.(), slots.label?.({ text: 'ARG' })]);
       },
     });
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         retainedSlotOwner: {
           t: 'Card',
@@ -2063,7 +2068,7 @@ describe('gt-vue runtime', () => {
         },
       },
     ];
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
     });
     await plugin.setLocale('fr');
@@ -2126,7 +2131,7 @@ describe('gt-vue runtime', () => {
       i: 1,
       d: { b: { formal: 'Bonjour', other: 'Repli' }, t: 'b' },
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
     });
     await plugin.setLocale('fr');
@@ -2158,7 +2163,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('formats required values and renders standalone branch components', async () => {
-    const plugin = createGT();
+    const plugin = createTestGT();
     const Root = defineComponent({
       setup() {
         return () =>
@@ -2190,7 +2195,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('emits stable SSR boundaries for every scalar GT component root', async () => {
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({ translated: 'target' }),
     });
     await plugin.setLocale('fr');
@@ -2238,7 +2243,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('falls back safely for inherited object-property branch names', async () => {
-    const plugin = createGT();
+    const plugin = createTestGT();
     const Root = defineComponent({
       setup() {
         return () =>
@@ -2273,7 +2278,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('preserves Vue directives while replacing rich children', async () => {
-    const plugin = createGT();
+    const plugin = createTestGT();
     const Root = defineComponent({
       setup() {
         return () =>
@@ -2290,7 +2295,7 @@ describe('gt-vue runtime', () => {
   });
 
   it('retains source content props on childless elements like React', async () => {
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         image: { t: 'img', i: 1, d: { alt: 'Portrait traduit' } },
       }),
@@ -2339,7 +2344,7 @@ describe('gt-vue runtime', () => {
         new Intl.DateTimeFormat(locale, dateOptions).format(date),
       ].join('|');
 
-    const missingPlugin = createGT({
+    const missingPlugin = createTestGT({
       defaultLocale: 'en-US',
       loadTranslations: async () => ({}),
     });
@@ -2372,7 +2377,7 @@ describe('gt-vue runtime', () => {
       stripFragmentMarkers(await renderWithPlugin(MissingRoot, missingPlugin))
     ).toBe(`other|${expected('en-US')}`);
 
-    const translatedPlugin = createGT({
+    const translatedPlugin = createTestGT({
       defaultLocale: 'en-US',
       loadTranslations: async () => ({
         formatters: [
@@ -2456,7 +2461,7 @@ describe('gt-vue runtime', () => {
         d: { b: { one: 'un', other: 'autres' }, t: 'p' },
       },
     }));
-    const french = createGT({
+    const french = createTestGT({
       customMapping: {
         pirate: { code: 'fr-FR' },
         source: { code: 'en-US' },
@@ -2496,7 +2501,7 @@ describe('gt-vue runtime', () => {
     expect(loadTranslations).toHaveBeenCalledOnce();
     expect(loadTranslations).toHaveBeenCalledWith('pirate');
 
-    const german = createGT({
+    const german = createTestGT({
       customMapping: { pirate: { code: 'de-DE' } },
       locale: 'pirate',
     });
@@ -2514,7 +2519,7 @@ describe('gt-vue runtime', () => {
   it('requires explicit preloading for an asynchronous SSR locale', async () => {
     const source = 'Hello';
     let resolveCatalog!: (catalog: TranslationCatalog) => void;
-    const plugin = createGT({
+    const plugin = createTestGT({
       locale: 'fr',
       loadTranslations: () =>
         new Promise((resolve) => {
@@ -2538,27 +2543,24 @@ describe('gt-vue runtime', () => {
     expect(await renderWithPlugin(Root, plugin)).toContain('Bonjour');
   });
 
-  it('keeps locale and catalog state isolated during interleaved SSR requests', async () => {
+  it('keeps locale state isolated during interleaved SSR requests', async () => {
     const source = 'Hello';
     const richSource: JsxChildren = { t: 'span', i: 1, c: 'World' };
     const pending = new Map<string, (catalog: TranslationCatalog) => void>();
-    const french = createGT({
+    const french = createTestGT({
       loadTranslations: (locale) =>
-        new Promise((resolve) => pending.set(`fr:${locale}`, resolve)),
+        new Promise((resolve) => pending.set(locale, resolve)),
     });
-    const chinese = createGT({
-      loadTranslations: (locale) =>
-        new Promise((resolve) => pending.set(`zh:${locale}`, resolve)),
-    });
+    const chinese = createGT();
     const frenchReady = french.setLocale('fr');
     const chineseReady = chinese.setLocale('zh');
     await vi.waitFor(() => expect(pending.size).toBe(2), { interval: 1 });
-    pending.get('zh:zh')?.({
+    pending.get('zh')?.({
       [jsxHash(richSource)]: { t: 'span', i: 1, c: '世界' },
       [stringHash(source)]: '你好',
     });
     await chineseReady;
-    pending.get('fr:fr')?.({
+    pending.get('fr')?.({
       [jsxHash(richSource)]: { t: 'span', i: 1, c: 'Monde' },
       [stringHash(source)]: 'Bonjour',
     });
@@ -2589,7 +2591,7 @@ describe('gt-vue runtime', () => {
 
   it('applies only the latest concurrent locale request', async () => {
     const resolvers = new Map<string, (catalog: TranslationCatalog) => void>();
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: (locale) =>
         new Promise((resolve) => resolvers.set(locale, resolve)),
     });

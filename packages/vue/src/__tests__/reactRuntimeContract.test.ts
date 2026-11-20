@@ -26,18 +26,14 @@ import {
 } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import {
-  Branch,
-  Currency,
-  DateTime,
-  Num,
-  Plural,
-  T,
-  Var,
-  createGT,
-} from '../index';
+import { Branch, Currency, DateTime, Num, Plural, T, Var } from '../index';
 import { serializeVueChildren } from '../rendering/translateVueChildren';
-import { jsxHash, renderWithPlugin, stripFragmentMarkers } from './testUtils';
+import {
+  createTestGT,
+  jsxHash,
+  renderWithPlugin,
+  stripFragmentMarkers,
+} from './testUtils';
 import { compileSfcTemplate } from './compileSfcTemplate';
 
 // Each suite configures React in its own beforeAll: the suites below need
@@ -350,7 +346,7 @@ describe('React-authoritative rich-content runtime contract', () => {
       i: 1,
       c: 'Accéder à la documentation',
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       locale: 'fr',
       loadTranslations: async () => ({ [reactHash]: target }),
     });
@@ -550,11 +546,11 @@ describe('React-authoritative rich runtime shape', () => {
       },
     });
 
-    expect(stripFragmentMarkers(await renderWithPlugin(Root, createGT()))).toBe(
-      '<span>One</span><span>One</span><span>Two</span>'
-    );
+    expect(
+      stripFragmentMarkers(await renderWithPlugin(Root, createTestGT()))
+    ).toBe('<span>One</span><span>One</span><span>Two</span>');
 
-    const translated = createGT({
+    const translated = createTestGT({
       loadTranslations: async () => ({
         bdb7cc7686d0e468: ['Translated empty'],
         db8f4cf2c0cbdeea: [{ t: 'span', i: 1, c: 'Un' }],
@@ -612,7 +608,7 @@ describe('React-authoritative rich runtime shape', () => {
 
   it('looks up scalar boolean and null T slots by their React hashes', async () => {
     const sources = [true, false, null] as const;
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () =>
         Object.fromEntries(
           sources.map((source, index) => [
@@ -635,7 +631,7 @@ describe('React-authoritative rich runtime shape', () => {
   });
 
   it('looks up missing and explicit-empty T slots with distinct hashes', async () => {
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         '309dc626c8db3d4c': 'Missing slot',
         bdb7cc7686d0e468: 'Empty array',
@@ -675,7 +671,7 @@ describe('React-authoritative rich runtime shape', () => {
       '0fe162f7e63e2abe'
     );
 
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         '05fe82bcca221d7f': 'Scalar',
         '18d8d88a83f23215': 'Array',
@@ -701,7 +697,7 @@ describe('React-authoritative rich runtime shape', () => {
   });
 
   it('preserves programmatic non-slot array cardinality', async () => {
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         '05fe82bcca221d7f': 'Scalar',
         '18d8d88a83f23215': 'Array',
@@ -852,7 +848,7 @@ describe('React-authoritative rich runtime shape', () => {
       getReactLookupHash(documentedSource, { requiresReview: false })
     ).toBe(getReactLookupHash(documentedSource));
 
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         [aliasHash]: 'Alias runtime target',
         [documentedHash]: 'Documented runtime target',
@@ -914,7 +910,7 @@ describe('React-authoritative rich runtime shape', () => {
       $maxChars: 16,
       $requiresReview: true,
     };
-    const plugin = createGT({
+    const plugin = createTestGT({
       loadTranslations: async () => ({
         [getReactLookupHash(aliasSource, aliasParams)]: 'Alias SFC target',
         [getReactLookupHash(bareCamelReviewSource, {
@@ -998,7 +994,7 @@ async function renderOrdinaryTarget(
   target: JsxChildren,
   sourceChild = 'Source child'
 ): Promise<string> {
-  const plugin = createGT({
+  const plugin = createTestGT({
     loadTranslations: async () => ({ truthiness: target }),
   });
   await plugin.setLocale('fr');
@@ -1222,7 +1218,7 @@ describe('React-canonical rich catalog interoperability', () => {
       );
       expect(jsxHash(serialized)).toBe(fixture.hash);
 
-      const gt = createGT({
+      const gt = createTestGT({
         locale: 'fr',
         loadTranslations: async () => ({ [fixture.hash]: testCase.target }),
       });
