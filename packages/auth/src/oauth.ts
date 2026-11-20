@@ -9,6 +9,7 @@ import {
 import {
   deleteOAuthTokens,
   readOAuthTokens,
+  withCredentialsLock,
   writeOAuthTokens,
 } from './credentialStore.js';
 import type { OAuthTokens } from './credentialStore.js';
@@ -445,36 +446,58 @@ export async function login(options: LoginOptions = {}): Promise<void> {
 }
 
 const pendingRefreshes = new Map<string, Promise<OAuthTokens>>();
-function refreshTokens(options: AuthOptions): Promise<OAuthTokens> {
+/** `staleAccessToken` is the access token the caller found unusable. */
+function refreshTokens(
+  options: AuthOptions,
+  staleAccessToken: string
+): Promise<OAuthTokens> {
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
   const pending = pendingRefreshes.get(authBaseUrl);
   if (pending) return pending;
-  const refresh = exchangeRefreshToken({ ...options, authBaseUrl }).finally(
-    () => pendingRefreshes.delete(authBaseUrl)
-  );
+  const refresh = exchangeRefreshToken(
+    { ...options, authBaseUrl },
+    staleAccessToken
+  ).finally(() => pendingRefreshes.delete(authBaseUrl));
   pendingRefreshes.set(authBaseUrl, refresh);
   return refresh;
 }
 
-async function exchangeRefreshToken(
-  options: AuthOptions & { authBaseUrl: string }
+/**
+ * One process at a time. The server replaces the refresh token on each use,
+ * and signs the account out of every session when a replaced one is sent
+ * again, which a second process holding the same stored login would do.
+ */
+function exchangeRefreshToken(
+  options: AuthOptions & { authBaseUrl: string },
+  staleAccessToken: string
 ): Promise<OAuthTokens> {
-  const current = await readOAuthTokens(options.authBaseUrl, options.onWarning);
-  if (!current?.refreshToken) throw loginRequiredError();
-  const result = await (async () =>
-    oidc.refreshTokenGrant(
-      await configuration(options),
-      current.refreshToken
-    ))().catch((error: unknown) => {
-    throw oauthError(error, 'Could not refresh your login');
+  return withCredentialsLock(async () => {
+    const current = await readOAuthTokens(
+      options.authBaseUrl,
+      options.onWarning
+    );
+    if (!current?.refreshToken) throw loginRequiredError();
+    // Another process refreshed this login while this one waited.
+    if (
+      current.accessToken !== staleAccessToken &&
+      current.expiresAt > Date.now() + TOKEN_REFRESH_BUFFER_MS
+    )
+      return current;
+    const result = await (async () =>
+      oidc.refreshTokenGrant(
+        await configuration(options),
+        current.refreshToken
+      ))().catch((error: unknown) => {
+      throw oauthError(error, 'Could not refresh your login');
+    });
+    // The grant reuses the bound resource, so the refreshed token keeps its audience.
+    const tokens = {
+      ...parseTokens(result, current),
+      resource: current.resource,
+    };
+    await writeOAuthTokens(tokens, options.authBaseUrl, options.onWarning);
+    return tokens;
   });
-  // The grant reuses the bound resource, so the refreshed token keeps its audience.
-  const tokens = {
-    ...parseTokens(result, current),
-    resource: current.resource,
-  };
-  await writeOAuthTokens(tokens, options.authBaseUrl, options.onWarning);
-  return tokens;
 }
 
 async function validTokens(
@@ -486,7 +509,7 @@ async function validTokens(
   );
   if (!tokens || tokens.expiresAt > Date.now() + TOKEN_REFRESH_BUFFER_MS)
     return tokens;
-  return refreshTokens(options);
+  return refreshTokens(options, tokens.accessToken);
 }
 
 /**
@@ -532,11 +555,11 @@ export function createUserTokenProvider(
       const tokens = await storedTokens();
       if (tokens.expiresAt > Date.now() + TOKEN_REFRESH_BUFFER_MS)
         return tokens.accessToken;
-      return (await refreshTokens(options)).accessToken;
+      return (await refreshTokens(options, tokens.accessToken)).accessToken;
     },
     refreshAccessToken: async () => {
-      await storedTokens();
-      return (await refreshTokens(options)).accessToken;
+      const tokens = await storedTokens();
+      return (await refreshTokens(options, tokens.accessToken)).accessToken;
     },
   };
 }

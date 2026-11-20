@@ -8,6 +8,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import * as fs from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import type { AddressInfo, Socket } from 'node:net';
 import * as os from 'node:os';
@@ -1314,6 +1315,38 @@ describe('OAuth session operations', () => {
       expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
     }
     expect(warn).toHaveBeenCalledTimes(2);
+  });
+  it('waits for another process to finish refreshing and uses the login it stored', async () => {
+    await writeOAuthTokens({ ...tokens, expiresAt: 0 }, authBaseUrl);
+    const lockPath = `${getCredentialsPath()}.lock`;
+    // Held by a live process, as while that process exchanges the token.
+    await writeFile(lockPath, String(process.pid));
+    const fetcher = provider();
+    const pending = session({ fetch: fetcher }).getAccessToken();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(fetcher).not.toHaveBeenCalled();
+    const refreshed = {
+      ...tokens,
+      accessToken: 'access-from-other-process',
+      refreshToken: 'refresh-rotated',
+    };
+    await writeOAuthTokens(refreshed, authBaseUrl);
+    await rm(lockPath);
+    expect(await pending).toBe('access-from-other-process');
+    // The rotated refresh token was never sent a second time.
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(await readOAuthTokens(authBaseUrl)).toEqual(refreshed);
+    await expect(stat(lockPath)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+  it('takes over the refresh lock of a process that exited without releasing it', async () => {
+    await writeOAuthTokens({ ...tokens, expiresAt: 0 }, authBaseUrl);
+    const lockPath = `${getCredentialsPath()}.lock`;
+    const exited = spawnSync(process.execPath, ['-e', '']);
+    await writeFile(lockPath, String(exited.pid));
+    expect(await session({ fetch: provider() }).getAccessToken()).toBe(
+      'access-2'
+    );
+    await expect(stat(lockPath)).rejects.toMatchObject({ code: 'ENOENT' });
   });
   it('uses refreshed identity for userinfo and rejects mismatched subjects', async () => {
     await writeOAuthTokens({ ...tokens, expiresAt: 0 }, authBaseUrl);
