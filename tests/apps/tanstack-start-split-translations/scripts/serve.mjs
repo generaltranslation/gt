@@ -70,6 +70,8 @@ export async function serve(directory, options = {}) {
       child.kill();
     });
   await start(directory);
+  // A check that stops on an error leaves no server behind
+  process.once('exit', () => child.kill());
   return {
     origin: `http://127.0.0.1:${port}`,
     deploy: async (build) => {
