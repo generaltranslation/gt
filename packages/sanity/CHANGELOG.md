@@ -1,5 +1,16 @@
 # gt-sanity
 
+## 5.0.0-samsara.4
+
+### Patch Changes
+
+- ea9a12e: From `main` (gt-sanity 4.0.36): the Translate dialog on a document has a **Retranslate** button that translates the selected locales again from scratch, even when the document has not changed (#2899). Retranslating no longer risks importing the translation it replaces when a retry follows a failed retranslation, or when one starts before the dialog has finished loading (#2901).
+- Updated dependencies [622199e]
+- Updated dependencies [7d841de]
+- Updated dependencies [c8e2b0b]
+  - @generaltranslation/format@1.0.0-samsara.11
+  - generaltranslation@10.0.0-samsara.11
+
 ## 5.0.0-samsara.3
 
 ### Patch Changes

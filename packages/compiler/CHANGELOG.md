@@ -1,5 +1,137 @@
 # @generaltranslation/compiler
 
+## 2.0.0-samsara.10
+
+### Major Changes
+
+- c8e2b0b: **Breaking:** the tagged-template API is now the message API of the main entries, and the string functions it replaces are removed. `t`, `msg`, `tx`, and the functions that `useGT()`, `getGT()`, `useMessages()` and `getMessages()` return no longer take an ICU string. `<T>` and the other components, the dictionary API under `/compat`, gt-svelte and gt-vue are unchanged.
+
+  ```diff
+    const t = useGT(); // or await getGT(), or the t that gt-react exports
+  - t('Hello, {name}!', { name });
+  + t`Hello, ${{ name }}!`;
+  - t('Save', { $context: 'button', $maxChars: 10 });
+  + t({ context: 'button', maxChars: 10 })`Save`;
+  - t('{count, plural, one {# item} other {# items}}', { count });
+  + t`${plural({ count }, { one: part`${n} item`, other: part`${n} items` })}`;
+
+  - const greeting = msg('Hello, {name}!', { name });
+  + const greeting = msg`Hello, ${{ name }}!`;
+    m(greeting); // m from useMessages() or getMessages()
+
+  - await tx('Hello, {name}!', { name, $context: 'greeting' });
+  + await tx({ context: 'greeting' })`Hello, ${{ name }}!`;
+  - await tx(userText);
+  + await tx`${dyn(userText)}`;
+  ```
+
+  A tagged template is stored as a message tree, not as an ICU string, and its hash is not the hash of the string it replaces, so every migrated message is translated again. That includes `msg('Save')`, which reads the same as before. Run `gt translate` after migrating.
+
+  **The functions that keep their name**, on `gt-i18n`, `gt-react`, `gt-react-native`, `gt-next`, `gt-next/server`, `gt-tanstack-start` and `gt-node`, wherever each was exported:
+  - `t` and the function from `useGT()` or `getGT()`: `t('Hello, {name}!', { name })` → `` t`Hello, ${{ name }}!` ``. Template text is literal, so `{`, `#` and `'` need no escaping.
+  - Options: `$context`, `$maxChars` and `$requiresReview` → `t({ context, maxChars, requiresReview })` before the template. `$id`, `$format`, `$locale` and `$_hash` have no replacement.
+  - ICU `plural`, `selectordinal` and `select` arguments → `plural()`, `selectordinal()` and `select()`, with `` part`...` `` for a branch that holds values and `n` for the count. ICU number, date and time arguments → `number()`, `date()` and `time()`. The main entries now export these helpers.
+  - `useGT(messages)`, `useMessages(messages)` and `getGT(messages)` → `useGT()`, `useMessages()` and `getGT()`: they take no argument.
+  - `msg('Hello, {name}!', { name })` → `` msg`Hello, ${{ name }}!` ``, and `msg('Save', { $context: 'button' })` → `` msg({ context: 'button' })`Save` ``. `msg('Save')` still works. `msg(['Save', 'Cancel'])` → one `msg()` call for each message.
+  - `m(message, options)` from `useMessages()` or `getMessages()`, and `mFallback(message, options)` → `m(message, values)` and `mFallback(message, values)`: the second argument holds values only, and a string is rendered as literal text.
+  - `tx('Hello', { $context })` from `gt-next/server` or `gt-node` → `` await tx({ context })`Hello` ``. `tx(text)` for text known only at runtime → `` tx`${dyn(text)}` ``, with `dyn` from the same entry. `tx` has no `$locale` option: it translates into the request locale in gt-next, and into the `withGT()` locale in gt-node.
+  - `derive` is the tagged-template helper, as in `` t`Welcome ${derive(status)}!` ``: its argument is typed as a string literal or a union of them, and it returns a placeholder, not its argument. It is the only `derive`: `generaltranslation` no longer exports one.
+  - `<T context={derive(getFormality())}>` works with it: `<T>` and `<Tx>` read the placeholder as their context, and the CLI extracts one entry for each value, which it finds by following the argument through the code (a call to a function that returns string literals, a `const`, or a conditional of them). TypeScript also checks the argument against `derive`'s type, so a function annotated `: string` needs a narrower return type.
+  - `derive()` must be the whole context. `<T context={'tone: ' + derive(getFormality())}>`, a template literal around `derive()`, and `derive()` in one branch of a conditional → `<T context={derive(getTone())}>`, with `getTone()` returning the full text, as in ``return `tone: ${getFormality()}` as const``. The CLI and the compiler report the old forms as errors.
+  - `t` and the new `m` from `gt-react` are still exported only under the `browser` condition, for client-rendered (SPA) apps. `gt-next`, `gt-tanstack-start`, `gt-react-native` and `gt-node` export neither.
+
+  **Removed and moved exports:**
+  - `decodeMsg` and `decodeOptions` from `gt-i18n`, `gt-react`, `gt-react-native`, `gt-next`, `gt-tanstack-start` and `gt-node`, and `gtFallback` from all of them but `gt-node`: no replacement. `msg('Save')` returns its text, and any other message from `msg` is a plain object that `m()` or `mFallback()` renders.
+  - `declareVar` and `decodeVars` from the same entries and from `generaltranslation`: no replacement. A value in a tagged template is `${value}` or `${{ name }}`, and a `derive()` context has no values: every context is a string the CLI can read.
+  - `derive` from `generaltranslation` → `derive` from `gt-i18n`, `gt-react`, `gt-react-native`, `gt-next`, `gt-tanstack-start` or `gt-node`, in a tagged template or as a `<T>` context.
+  - The type `StringFormat` from `gt-next` → import it from `generaltranslation`.
+  - Types `GTTranslationOptions` and `RuntimeTranslationOptions` from `gt-i18n`, `gt-react`, `gt-react-native`, `gt-next` and `gt-node` → `GTOptions`. Types `GTFunctionType` and `MFunctionType` from `gt-i18n` and `gt-node` → `GT` and `M`.
+  - `gt-i18n` also drops the types `TemplateSyncResolutionFunction`, `SyncResolutionFunction`, `SyncResolutionFunctionWithFallback`, `RegisteredMessage` and `LookupOptionsFor`, with no replacement. `TranslationVariables` and `JsxTranslationOptions` → import them from `gt-i18n/internal`.
+  - The string `msg`, `decodeOptions` and the types `GTFunctionType`, `MFunctionType`, `GTTranslationOptions`, `EncodedTranslationOptions` and `RegisterableMessages` leave the `gt-i18n` root for `gt-i18n/internal/string`, which still serves gt-svelte, gt-vue and the dictionary API.
+  - `gt-i18n/internal`: `getGT()`, `getMessages()` and `tx` are the tagged ones, so `getGT()` → `getGT({ locale, enableI18n })`, and the same for `getMessages`. `getGTInternal`, `getMessagesInternal`, `txInternal`, `GtInternalRuntimeTranslateString` and `extractVariables` are removed. `interpolateMessage` → import it from `gt-i18n/internal/string`.
+  - `gt-react` no longer exports `GtInternalRuntimeTranslateString`, which the compiler no longer injects.
+  - `@generaltranslation/react-core`: `t` from `/pure`, and `useGT` and `useMessages` from `/hooks`, are the tagged ones. `/pure` adds `m`.
+  - `generaltranslation/internal` no longer exports `extractVars` and `condenseVars`.
+
+  **`gt` (CLI):** `gt translate`, `gt validate` and the other commands that read source extract `t`, `msg` and the functions from `useGT()` and `getGT()` as message trees when they are imported by name from a main entry. They no longer extract a string call such as `t('Hello')` or `msg('Hello, {name}!', { name })`, nor a `t` that is not imported, such as a global. A string call left in the code gets a warning that names it as one. `msg('Save')` is still extracted, as a message tree. In a `<T>` context, the CLI no longer reads `declareVar()`, and it reports a `derive()` it cannot resolve as an error: it used to upload the source text of the expression as the context. The CLI now warns when a main entry is loaded through `require()`, `import()`, a namespace import or a re-export that could carry one of these functions, since it follows only named imports. It no longer warns about `useGT()` in an async function or `getGT()` in a synchronous one. In a gt-svelte project, string calls in JavaScript and TypeScript modules are now extracted by the same rules as in `.svelte` files: an alias of `t` such as `const translate = t`, a `t` passed to a function in another file, and a literal `m('...')` call are no longer followed.
+
+  **`@generaltranslation/compiler`:**
+  - The `enableMacroTransform` and `stringTranslationMacro` options are removed, with no replacement: the compiler no longer rewrites `` t`...` `` into a string call, and no longer adds an import for a `t` that has none. Import `t` from `gt-react`.
+  - It no longer hashes string calls, passes the collected messages to `useGT()` and `getGT()`, or translates strings in dev hot reload. With `compileTimeHash`, it injects `$_hash` into the tagged templates of `t`, `msg`, `useGT()` and `getGT()` imported from a main entry.
+  - `autoderive` and `devHotReload` apply to JSX only: `autoderive` is a boolean and `devHotReload` is `{ jsx: true }`, in the plugin options and in `gt.config.json` (below).
+  - The `context` of a `<T>` is a string literal or one `derive()` call with one argument. The argument no longer has to be a call: `derive(tone)` and `derive(formal ? 'formal' : 'casual')` are accepted.
+  - gt-next's SWC plugin (`experimentalCompilerOptions.type: 'swc'`) handles `<T>` only. It leaves tagged templates as they are, and the runtime hashes them.
+
+  **`gt.config.json`:** `files.gt.parsingFlags.autoderive` takes `true` or `false`, and `files.gt.parsingFlags.devHotReload` takes `{ "jsx": true }` or `{ "jsx": false }`. The forms that only configured string messages are removed, and a config that uses one is invalid: the CLI and gt-next stop with a message such as `files.gt.parsingFlags.devHotReload.strings: Invalid key`, and the compiler warns and builds without the file.
+  - `"autoderive": { "jsx": true }` or `{ "jsx": true, "strings": true }` → `"autoderive": true`. `{ "strings": true }` alone → remove the flag.
+  - `"devHotReload": { "jsx": true, "strings": true }` → `"devHotReload": { "jsx": true }`.
+  - `"devHotReload": true` or `{ "strings": true }` → remove the flag. It only translated new string messages during development, which tagged templates now do at runtime without it.
+  - `resolveAutoderive` from `generaltranslation/config-schema` is removed: read `parsingFlags.autoderive`, a boolean.
+
+  **`@generaltranslation/react-core-linter`:** `static-string` now checks only `msg()`, whose argument must be a single string literal, as in `msg('Save')`. It no longer checks the string passed to the function from `useGT()` or `getGT()`, no longer validates ICU syntax, and has no autofix.
+
+  **If you used a `samsara` prerelease,** the experimental `/unstable` entries are removed. Everything they exported is on the main entry:
+  - `gt-i18n/unstable` → `gt-i18n`, and `gt-i18n/unstable/internal` → `gt-i18n/internal`, without its `tx`: build one with `createTx`.
+  - `gt-react/unstable` → `gt-react`. `t` and `m` are exported only under the `browser` condition; `gt-react/unstable` also exported them to Node and worker builds.
+  - `gt-react-native/unstable` → `gt-react-native`.
+  - `gt-next/unstable` → `gt-next`, and `gt-next/unstable/server` → `gt-next/server`.
+  - `gt-tanstack-start/unstable` → `gt-tanstack-start`.
+  - `gt-node/unstable` → `gt-node`.
+  - `@generaltranslation/react-core/unstable` → `t` and `m` from `@generaltranslation/react-core/pure`, and `useGT` and `useMessages` from `@generaltranslation/react-core/hooks`.
+  - `generaltranslation/internal`: `isUnstableGTImportSource` → `isGTMessageImportSource`, `isUnstableGTHelperName` → `isGTMessageHelperName`, `UNSTABLE_GT_HELPER_NAMES` → `GT_MESSAGE_HELPER_NAMES`, and the type `UnstableGTHelperName` → `GTMessageHelperName`.
+  - The lint rule `@generaltranslation/react-core-linter/unstable-static-branch` → `@generaltranslation/react-core-linter/static-branch`.
+
+### Minor Changes
+
+- 030bfd3: Add hash minification to builds with the experimental `experimentalSplitTranslations` option: `minifyHashes: true` in the option, or the `GT_MINIFY_HASHES` environment variable. A message's hash is random, so it does not compress, and it is most of what a message costs a page beyond its text. With hash minification on, the call sites such a build splits by chunk or by module, `<T>` and `t` templates from `gt-react`, pass an id in place of their hash, and the translation files of chunks hold no key at all: each file lists its translations once, with the ids that read each, which makes the JavaScript and those files smaller.
+
+  An id is 8 characters that name the list of its chunk's messages, a `.`, and the place of its message in that list: `kR3_x0Qa.12`. The name is a digest of the hashes of the chunk's messages, in the order of the hashes, so an id still follows from content alone: the same id names the same message in every build, no build needs a table from another, and a page can read the translation files of any build. Every call site of a chunk repeats the name, so it compresses to little, and what is left of an id is a small number. A chunk's ids change only when the set of its own messages does, which changes the chunk anyway. A message that several chunks read has an id in each, and its translation is still in a file once: a file is `[translations, lists]`, where `lists` gives, for the list of each chunk, runs of a place in the list, the place of its translation in the file, and how many follow on from both. `gt-react/chunk-translations` reads such a file into an entry per id, so this needs a `gt-react` that does: compiled code imports that entry by names only such a `gt-react` exports, and the build fails on a missing export with one that does not.
+
+  The hash of a message does not change anywhere else: the translation files at `files.gt.output`, the unsplit file, `msg` and every call site whose hash is computed at runtime keep it, and a message that a `t` template and a `msg` share is found under both. A `t` template whose hash is computed when it runs, because its options or a value are not written at the call, reads by hash as well: the build keeps every compiled message with the same text and structure in the unsplit file under its hash too, whatever its options and the names of its values. It warns of the modules whose call sites it cannot say that of, as with `derive()`; there, a message that a compiled call site also reads renders its source text. The build fails when two different lists of messages would share a name, when an id is already a key of the translation files, and when a chunk reaches the output with a call site that was not given its id. It also fails with `_tagIds`, which writes what a `<T>` passes into the page for tools that read it as the hash. In a build with the split off, `minifyHashes` and `GT_MINIFY_HASHES` are not read. Off by default, and a build without hash minification is unchanged.
+
+- 42e739c: Add `by: 'module'` (or `GT_SPLIT_TRANSLATIONS_BY=module`) to the experimental `experimentalSplitTranslations` option. Translations are then split by the modules each entry and dynamic import can reach through static imports, not by chunk, so a page no longer downloads the translations of every module that the bundler packed into a chunk it loads. Messages that the same imports need share a file, and files are merged while one request less is worth more than the bytes a page then downloads without needing them: `requestCost` in the option sets what a request is worth in bytes, 8192 by default. No message is in two files. Such a build names each file by the hash of its own content (`naming: 'map'`, and it fails with `'token'`), and each locale's map lists the files every dynamic import needs, so no JavaScript grows with them and a page in the default locale downloads none of it. The build checks that every entry and import holds each message its modules can read, and fails if one would not.
+
+  The split gains the most when a module runs when it is first imported, which is Rolldown's `output.strictExecutionOrder: true`. In a build that runs every module of a chunk as the chunk loads, a page also gets what those modules could read then, and the build prints how many messages that adds.
+
+  `previous` in the option takes the path of the `gt-chunk-translations.json` that the build before wrote: messages then stay in the file they were in where that still fits, so a change to the app renames few translation files. The default split, by chunk, is unchanged.
+
+- 9da4e35: Add the experimental `experimentalSplitTranslations` option (or the `GT_SPLIT_TRANSLATIONS` environment variable) for production builds of single-page apps on `gt-react` with Vite. The option is an object, and setting it turns the feature on: `experimentalSplitTranslations: {}`. `GT_SPLIT_TRANSLATIONS` (`true` or `false`) turns it on without the option and off with it, and `enabled` in the option overrides the variable. A key set in the option overrides its environment variable. One build then serves every locale without loading a locale's whole catalog: the build reads the translation files at `files.gt.output` and writes the translations of each JavaScript chunk into a JSON file per locale next to the chunk, named after the chunk with the locale and a token that changes whenever that locale's files do, so the files can be cached as immutable and no JavaScript file changes when a translation does. The entry chunk and its static imports share one file per locale, which a script added to `index.html` requests while the page is parsed, together with the files of the chunks the page preloads with `modulepreload` links; each dynamic import requests the files of the chunks it loads while they download and runs them once the files have arrived, so a module that reads a translation as it is evaluated gets it. Which files an import needs is in the entry's file, not in the JavaScript, so an import costs a page no more than without the option. A page in the default locale requests none. `<T>` and `t` templates from `gt-react` are split by chunk. The app's `loadTranslations` is not called in such a build, which takes it out of the options `initializeGTSPA` is called with, so the catalogs it imports are not chunks of the build and no JavaScript file names them: the translations of messages that are not split, such as `msg` and dictionaries, go into one more file per locale, which the page requests with the entry's file and gt-react reads as its catalog, and the build reports how many they are. The build also writes `gt-chunk-translations.json` into its assets directory, which lists the file of each chunk and locale and holds the startup script for apps that write their own HTML. The startup script is inline: under a Content Security Policy that allows no inline script it needs a nonce, which Vite's `html.cspNonce` puts on it, and where the policy blocks it, messages render the source text. Source maps are not kept accurate yet for the chunks the build rewrites after the bundler has rendered them: those that hold a dynamic import or the call that starts the app.
+
+  `naming: 'map'` in the option names each file by the locale and the hash of its own content alone instead (`gt.<locale>.<hash>.json`), with one small map per locale that the page requests first, which says which file is each chunk's and which files each dynamic import needs. A changed translation then renames only the file it is in and the locale's map, a change to JavaScript alone renames only the map, and the files of chunks are requested once the map has arrived. With the default naming a file is named after its chunk, so a change to JavaScript that renames chunks renames their translation files too: `map` is the naming for an app that deploys often.
+
+- fcc6f14: Build the message of each static `t` template at compile time. The template becomes a call that passes its message, with its hash, message tree and literal options, so the call site builds no tree when it renders. The message is written at the call and nothing is declared at module scope, so a call that runs before its module's body has run, as through an import cycle, works as the template did: `` t`Hello, ${{ name }}!` `` compiles to `t({ $_hash, $_tree: ['Hello, ', ['name'], '!'] }, { name })`, and `` t`Save` `` to `t({ $_hash, $_tree: 'Save' })`. This covers `t`, `useGT()` and `getGT()` templates with named or plain values and static `plural`, `selectordinal`, `select`, `part`, `n`, `number`, `date` and `time` helpers. `msg` templates, `derive()` and other non-static templates keep the tagged template, as before. Hashes do not change.
+
+  These calls need runtime packages (`gt-react`, `gt-next`, `gt-i18n` and the other GT runtime packages) that read them. A file's templates are precomputed when the compiler finds the GT runtime that file resolves and it reads these calls. Next to an older runtime, and where it finds no runtime, it keeps the tagged templates and says so once per build; the new `precomputeMessages` plugin option sets it either way. A build is precomputed when its chunks hold `$_tree:`.
+
+  A build with `experimentalSplitTranslations` splits the translations of these calls by chunk, or by module with `by: 'module'`, as it splits those of tagged templates.
+
+- 7d841de: `<N />` is the count of the `<Plural>` it is in, formatted as a number, as `#` is in ICU.
+
+  ```tsx
+  <Plural n={count} one='One file'>
+    <N /> files
+  </Plural>
+  ```
+
+  Use it instead of `<Num>{count}</Num>` for the count. A translation can then show the count in any branch: English `one` only covers 1, so "One file" has none, but Russian uses `one` for 21 and 31 too and renders "21 файл". `<N />` takes no props. With no `<Plural>` to give it a count, it is an error in development and renders nothing in production.
+
+  It is stored as a variable of the new type `#`, which the runtime fills from the plural's `n` wherever a translation puts it.
+
+### Patch Changes
+
+- 8065d02: A build with the experimental `experimentalSplitTranslations` option also writes `gt-current.json` into its assets directory, under that one name in every build: what the names of each locale's translation files follow from, and, for the split by chunk, how the build assigned messages to files. A page that stayed open while the app was deployed again reads it when a translation file it asks for is gone, which happens on a host that drops the files of earlier builds. Translation files are assets named by what they hold: deploy them with the chunks they sit next to and keep them as long, and serve `gt-current.json` as `index.html` is served, not cached for good.
+- Updated dependencies [622199e]
+- Updated dependencies [fcc6f14]
+- Updated dependencies [3bedb87]
+- Updated dependencies [7d841de]
+- Updated dependencies [7d841de]
+- Updated dependencies [c8e2b0b]
+- Updated dependencies [e70da5f]
+  - @generaltranslation/format@1.0.0-samsara.11
+  - gt-i18n@2.0.0-samsara.11
+  - @generaltranslation/icu@1.0.0-samsara.9
+  - generaltranslation@10.0.0-samsara.11
+
 ## 2.0.0-samsara.9
 
 ### Major Changes
