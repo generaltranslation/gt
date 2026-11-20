@@ -470,12 +470,53 @@ describe('source map of the transform', () => {
 
   // esbuild reads the map a file names, and once the transform returns one,
   // only that: unplugin appends it to the file as another comment
-  it.each([
-    ['inline', (map: string) => `data:application/json;base64,${btoa(map)}`],
-    ['in a file', () => 'maps/compiled.js.map'],
+  it.each<
+    [
+      name: string,
+      input: { sources: string[]; sourceRoot?: string; inline?: boolean },
+      source: string,
+    ]
+  >([
+    // An inline map is in the file, so its sources are relative to the file
+    ['inline', { sources: ['../src/App.tsx'], inline: true }, '../src/App.tsx'],
+    ['in a file', { sources: ['../../src/App.tsx'] }, '../src/App.tsx'],
+    [
+      'in a file, under a root that is a path',
+      { sources: ['App.tsx'], sourceRoot: '../../src' },
+      '../src/App.tsx',
+    ],
+    [
+      'in a file, under a root that is a URL',
+      { sources: ['App.tsx'], sourceRoot: 'https://example.com/src/' },
+      'https://example.com/src/App.tsx',
+    ],
+    [
+      'inline, under a root that is a URL',
+      {
+        sources: ['App.tsx'],
+        sourceRoot: 'https://example.com/src/',
+        inline: true,
+      },
+      'https://example.com/src/App.tsx',
+    ],
+    [
+      'in a file, under a root with a scheme of a bundler',
+      { sources: ['App.tsx'], sourceRoot: 'webpack:///src/' },
+      'webpack:///src/App.tsx',
+    ],
+    [
+      'inline, under a root with a scheme of a bundler',
+      { sources: ['App.tsx'], sourceRoot: 'webpack:///src/', inline: true },
+      'webpack:///src/App.tsx',
+    ],
+    [
+      'inline, with a source that is a URL',
+      { sources: ['webpack://app/src/App.tsx'], inline: true },
+      'webpack://app/src/App.tsx',
+    ],
   ])(
     'traces its map through the map an esbuild input names %s',
-    async (_name, getUrl) => {
+    async (_name, { inline, ...input }, expected) => {
       const cwd = createProject();
       const source = CODE.replace('export', '\n\nexport').replace(
         'report',
@@ -483,14 +524,15 @@ describe('source map of the transform', () => {
       );
       const earlier = generate(
         parser.parse(source, { sourceType: 'module' }),
-        { sourceMaps: true, sourceFileName: '../../src/App.tsx' },
+        { sourceMaps: true, sourceFileName: 'App.tsx' },
         source
       );
       fs.mkdirSync(path.join(cwd, 'lib/maps'), { recursive: true });
-      const map = JSON.stringify(earlier.map);
+      const map = JSON.stringify({ ...earlier.map, ...input });
       fs.writeFileSync(path.join(cwd, 'lib/maps/compiled.js.map'), map);
-      // An inline map is in the file, so its sources are relative to the file
-      const url = getUrl(map.replace('../../src', '../src'));
+      const url = inline
+        ? `data:application/json;base64,${btoa(map)}`
+        : 'maps/compiled.js.map';
       fs.writeFileSync(
         path.join(cwd, 'lib/compiled.js'),
         `${earlier.code}\n//# sourceMappingURL=${url}\n`
@@ -513,7 +555,7 @@ describe('source map of the transform', () => {
         const [bundled, code] = outputFiles.map((file) => file.text);
         expect(code).toContain('t({ $_hash: "');
         expect(trace(bundled, code, 'report')).toEqual({
-          source: '../src/App.tsx',
+          source: expected,
           ...locate(source, 'report'),
         });
         expect(JSON.parse(bundled).sourcesContent).toEqual([source]);

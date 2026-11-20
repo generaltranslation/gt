@@ -25,8 +25,8 @@ const URL_SCHEME = /^[a-z][a-z\d+.-]+:/i;
 
 /**
  * The source map a file names in its last `sourceMappingURL` comment, inline
- * or in a file next to it, with its sources as absolute paths. Undefined
- * when the file names none that can be read.
+ * or in a file next to it, with the sources that are paths as absolute
+ * paths. Undefined when the file names none that can be read.
  */
 function readSourceMapOf(code: string, id: string): object | undefined {
   if (!code.includes('sourceMappingURL=')) return undefined;
@@ -60,11 +60,13 @@ function readSourceMapOf(code: string, id: string): object | undefined {
       'sourceRoot' in map && typeof map.sourceRoot === 'string'
         ? map.sourceRoot
         : '';
+    // Whoever reads the map joins a root that is a URL to its sources
+    if (URL_SCHEME.test(root)) return map;
     return {
       ...map,
       sourceRoot: undefined,
       sources: map.sources.map((source: unknown) =>
-        typeof source !== 'string' || URL_SCHEME.test(root + source)
+        typeof source !== 'string' || URL_SCHEME.test(source)
           ? source
           : path
               .resolve(path.dirname(mapFile), root, source)
