@@ -186,28 +186,33 @@ describe('GlobeBanner', () => {
     expect(plain(terminal.output)).toMatch(/Fetched \[6s\]/);
   });
 
-  it('keeps the status line for the spinner that is still running', async () => {
-    const { banner, terminal } = setup();
-    const quiet = (): SpinnerResult => ({
-      start: () => {},
-      message: () => {},
-      stop: () => {},
-      isCancelled: false,
-    });
-    const first = banner.spinner(quiet);
-    const second = banner.spinner(quiet);
-    first.start('Uploading files');
-    second.start('Watching for changes');
-    first.stop('Uploaded files');
-    first.message('Late message');
-    const before = terminal.output.length;
-    await vi.advanceTimersByTimeAsync(200);
+  it.each([
+    ['the same label', ['Fetching', 'Fetching'], 0, 'Fetching'],
+    ['different labels', ['Uploading files', 'Watching'], 1, 'Uploading files'],
+  ])(
+    'keeps the status line for a spinner still running, with %s',
+    async (_case, [firstLabel, secondLabel], stopIndex, expected) => {
+      const { banner, terminal } = setup();
+      const quiet = (): SpinnerResult => ({
+        start: () => {},
+        message: () => {},
+        stop: () => {},
+        isCancelled: false,
+      });
+      const spinners = [banner.spinner(quiet), banner.spinner(quiet)];
+      spinners[0].start(firstLabel);
+      spinners[1].start(secondLabel);
+      spinners[stopIndex].stop('Done');
+      spinners[stopIndex].message('Late message');
+      const before = terminal.output.length;
+      await vi.advanceTimersByTimeAsync(200);
 
-    const redrawn = plain(terminal.output.slice(before));
-    expect(redrawn).toContain('Watching for changes');
-    expect(redrawn).not.toContain('Late message');
-    terminal.emit('resize');
-  });
+      const redrawn = plain(terminal.output.slice(before));
+      expect(redrawn).toContain(expected);
+      expect(redrawn).not.toContain('Late message');
+      terminal.emit('resize');
+    }
+  );
 
   it('starts a progress bar only after the banner hands back the terminal', async () => {
     const { banner } = setup();

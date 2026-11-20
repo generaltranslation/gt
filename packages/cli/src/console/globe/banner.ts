@@ -76,6 +76,10 @@ export class GlobeBanner {
   private held: Held[] = [];
   private deferring = 0;
   private status = '';
+  // Whoever set the status line (a running spinner, or none for a note),
+  // and the running spinners' latest messages, most recent last.
+  private statusOwner?: object;
+  private spinnerStatuses: Array<{ owner: object; text: string }> = [];
   private phase: 'intro' | 'rest' | 'loop' = 'intro';
   private position = 0;
   private settling = false;
@@ -146,6 +150,29 @@ export class GlobeBanner {
   note(text: string, print: () => void): void {
     this.held.push({ run: print });
     this.status = text;
+    this.statusOwner = undefined;
+  }
+
+  // A running spinner's message takes the status line.
+  private showSpinner(owner: object, text: string): void {
+    this.spinnerStatuses = this.spinnerStatuses.filter(
+      (s) => s.owner !== owner
+    );
+    this.spinnerStatuses.push({ owner, text });
+    this.status = text;
+    this.statusOwner = owner;
+  }
+
+  // A stopped spinner gives the status line back to the most recent one
+  // still running, if it held it.
+  private clearSpinner(owner: object): void {
+    this.spinnerStatuses = this.spinnerStatuses.filter(
+      (s) => s.owner !== owner
+    );
+    if (this.statusOwner !== owner) return;
+    const latest = this.spinnerStatuses.at(-1);
+    this.status = latest?.text ?? '';
+    this.statusOwner = latest?.owner;
   }
 
   /** Runs `fn` with its output held for after landing, without landing. */
@@ -206,12 +233,9 @@ export class GlobeBanner {
       }
       return real;
     };
-    // The status line is shared; only this spinner's own text is cleared.
-    let shown = '';
-    const show = (msg: string) => {
-      shown = msg;
-      this.status = msg;
-    };
+    // Identifies this spinner on the shared status line.
+    const owner = {};
+    const show = (msg: string) => this.showSpinner(owner, msg);
     return {
       start: (msg = '') => {
         message = msg;
@@ -250,7 +274,7 @@ export class GlobeBanner {
         }
         if (!running) return;
         running = false;
-        if (this.status === shown) this.status = '';
+        this.clearSpinner(owner);
         // Prints the spinner's final line, in order, once the globe lands,
         // timed by when this run started and stopped.
         const run = { message, startedAt, stoppedAt: performance.now() };
