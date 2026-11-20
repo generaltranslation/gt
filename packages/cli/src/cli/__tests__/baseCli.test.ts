@@ -436,6 +436,19 @@ describe('--dry-run', () => {
         collectedFiles,
       ],
     ],
+    [
+      'enqueue',
+      {},
+      ['Dry run: No translations were enqueued.', collectedFiles],
+    ],
+    [
+      'upload',
+      {},
+      [
+        'Dry run: No files were uploaded to General Translation.',
+        collectedFiles,
+      ],
+    ],
   ])(
     'gt %s with %j reports without a request or a write',
     async (command, config, expectedReport) => {
