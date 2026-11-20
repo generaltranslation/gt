@@ -26,8 +26,13 @@ function readFiles(directory, prefix, files = new Map()) {
  * Starts a server for the build in `directory`. `deploy()` replaces its files
  * and its server with those of another build, as a host that keeps no file
  * of the build before does. `base` is Vite's, when not `/`.
+ *
+ * `pages` says what answers a request for a page: `'server'` the build's
+ * server, `'prerendered'` the page's prerendered HTML when the build wrote
+ * one, and `'shell'` the prerendered shell of an app built with `spa`, as a
+ * static host that rewrites every path to it.
  */
-export async function serve(directory, base = '/') {
+export async function serve(directory, { base = '/', pages = 'server' } = {}) {
   let files;
   let handler;
   const deploy = async (build) => {
@@ -42,12 +47,20 @@ export async function serve(directory, base = '/') {
   await deploy(directory);
   const server = createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host}`);
-    const file = files.get(url.pathname);
-    if (file) {
+    const page =
+      pages === 'shell'
+        ? `${base}_shell.html`
+        : `${url.pathname.replace(/\/$/, '')}/index.html`;
+    const name = files.has(url.pathname)
+      ? url.pathname
+      : pages !== 'server' && files.has(page)
+        ? page
+        : undefined;
+    if (name !== undefined) {
       response.writeHead(200, {
-        'content-type': TYPES[extname(url.pathname)] ?? 'text/plain',
+        'content-type': TYPES[extname(name)] ?? 'text/plain',
       });
-      response.end(file);
+      response.end(files.get(name));
       return;
     }
     const headers = new Headers();

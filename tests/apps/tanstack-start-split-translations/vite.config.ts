@@ -14,7 +14,14 @@ export default defineConfig({
   base: process.env.CHECK_BASE,
   build: { outDir: process.env.CHECK_OUT_DIR ?? 'dist' },
   plugins: [
-    tanstackStart(),
+    tanstackStart({
+      // CHECK_SPA: the app is a prerendered shell that every visitor gets
+      ...(process.env.CHECK_SPA === 'true' && { spa: { enabled: true } }),
+      // CHECK_PRERENDER: every route is also written as a static page
+      ...(process.env.CHECK_PRERENDER === 'true' && {
+        prerender: { enabled: true, crawlLinks: true },
+      }),
+    }),
     react(),
     gtTanstackStart({
       // scripts/check.mjs builds the app once more from changed translations
@@ -22,6 +29,14 @@ export default defineConfig({
       experimentalCompilerOptions: {
         type: 'babel',
         ...(messagesFile !== undefined && { _debugHashManifest: true }),
+        // CHECK_REQUEST_COST: requestCost of the split by module, which has
+        // no environment variable. At its default an app this small is one
+        // file.
+        ...(process.env.CHECK_REQUEST_COST && {
+          experimentalSplitTranslations: {
+            requestCost: Number(process.env.CHECK_REQUEST_COST),
+          },
+        }),
       },
     }),
     messagesFile !== undefined && collectMessages(messagesFile),

@@ -7,6 +7,8 @@
     "dev": "vite dev --port 5177 --strictPort",
     "build": "vite build",
     "translate": "node scripts/pseudo-translate.mjs",
+    "check": "node scripts/check.mjs",
+    "check:install": "playwright-core install chromium-headless-shell",
     "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
     "typecheck": "tsc --noEmit"
   },
