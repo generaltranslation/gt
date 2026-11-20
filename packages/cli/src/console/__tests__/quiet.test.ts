@@ -174,33 +174,38 @@ describe('quiet flag: clack chatter gating (default format)', () => {
 });
 
 describe('quiet flag: displayHeader banner gating (default format)', () => {
-  it('prints the ASCII banner when not quiet but nothing when quiet', async () => {
+  it('prints the banner when not quiet but nothing when quiet', async () => {
     const { logger } = await import('../logger.js');
     const { displayHeader } = await import('../logging.js');
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const writeSpy = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
+    const printed = () => writeSpy.mock.calls.map(([chunk]) => String(chunk));
 
     displayHeader('Doing a thing...');
-    expect(logSpy).toHaveBeenCalled();
+    expect(printed().join('')).toContain('General Translation, Inc.');
 
-    logSpy.mockClear();
+    writeSpy.mockClear();
     logger.setQuiet(true);
     displayHeader('Doing a thing...');
-    expect(logSpy).not.toHaveBeenCalled();
+    expect(printed()).toEqual([]);
 
-    logSpy.mockRestore();
+    writeSpy.mockRestore();
   });
 
   it('still writes the [START] file-log marker under quiet', async () => {
     vi.stubEnv('GT_LOG_FILE', '/tmp/gt-quiet-marker-test.log');
     const { logger } = await import('../logger.js');
     const { displayHeader } = await import('../logging.js');
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const writeSpy = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
 
     logger.setQuiet(true);
     displayHeader('Doing a thing...');
 
     // Console stays silent: no banner, no clack intro.
-    expect(logSpy).not.toHaveBeenCalled();
+    expect(writeSpy).not.toHaveBeenCalled();
     expect(clack.intro).not.toHaveBeenCalled();
     // But the file log still gets its [START] marker, so [END] from
     // endCommand never appears unpaired.
@@ -209,7 +214,7 @@ describe('quiet flag: displayHeader banner gating (default format)', () => {
     );
     expect(fileInfoCalls).toContain('[START] Doing a thing...');
 
-    logSpy.mockRestore();
+    writeSpy.mockRestore();
   });
 });
 

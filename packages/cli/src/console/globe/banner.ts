@@ -15,7 +15,12 @@ const MAX_ANIMATION_MS = 10_000;
 const STATUS_FRAMES = ['◒', '◐', '◓', '◑'];
 const HIDE_CURSOR = '\x1b[?25l';
 const SHOW_CURSOR = '\x1b[?25h';
-const CTRL_C = 0x03;
+// Keys that raw input turns into plain bytes, and the signals they stand for.
+const SIGNAL_KEYS = new Map<number, NodeJS.Signals>([
+  [0x03, 'SIGINT'],
+  [0x1a, 'SIGTSTP'],
+  [0x1c, 'SIGQUIT'],
+]);
 const TERMINATING_SIGNALS: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGHUP'];
 // A frame that takes longer than this to write means the terminal can't
 // keep up (a slow SSH link); the globe lands rather than slow the command.
@@ -47,15 +52,35 @@ export type GlobeBannerOptions = {
 // calls lets a spinner replayed or handed off at landing report the time it
 // really ran, both live and in its final line.
 function atTime(time: number, fn: () => void): void {
-  const ownNow = Object.hasOwn(performance, 'now');
-  const now = performance.now;
-  performance.now = () => time;
+  // Node 18's performance.now is read-only, so it can't be assigned; a
+  // temporary own property overrides it, and the original is put back after.
+  const own = Object.getOwnPropertyDescriptor(performance, 'now');
+  try {
+    Object.defineProperty(performance, 'now', {
+      value: () => time,
+      configurable: true,
+      writable: true,
+    });
+  } catch {
+    // Without a clock to pin, the spinner times from now instead.
+    return fn();
+  }
   try {
     fn();
   } finally {
-    if (ownNow) performance.now = now;
+    if (own) Object.defineProperty(performance, 'now', own);
     else Reflect.deleteProperty(performance, 'now');
   }
+}
+
+// Terminal columns a grapheme takes. Terminals give each spacing code point
+// in it its own width (a half-width kana and its voiced mark take two), but
+// draw an emoji sequence as one glyph.
+function columnsOf(grapheme: string): number {
+  if (/\p{Extended_Pictographic}/u.test(grapheme)) return stringWidth(grapheme);
+  let width = 0;
+  for (const char of grapheme) width += stringWidth(char);
+  return width;
 }
 
 // Shortens text to fit `room` terminal columns, ending in … if cut.
@@ -63,7 +88,7 @@ function fitColumns(text: string, room: number): string {
   let used = 0;
   let fitted = '';
   for (const { segment } of new Intl.Segmenter().segment(text)) {
-    const width = stringWidth(segment);
+    const width = columnsOf(segment);
     if (used + width > room - 1) return `${fitted}…`;
     used += width;
     fitted += segment;
@@ -147,6 +172,8 @@ export class GlobeBanner {
     this.routeConsole();
     process.on('exit', this.onExit);
     process.on('uncaughtExceptionMonitor', this.onCrash);
+    if (process.versions.bun)
+      process.on('unhandledRejection', this.onRejection);
     for (const signal of TERMINATING_SIGNALS) process.on(signal, this.onSignal);
     this.options.stream.on('resize', this.onResize);
     this.muteInput();
@@ -275,7 +302,7 @@ export class GlobeBanner {
           printFinal(
             { message, startedAt },
             this.exitMessage(exitCode),
-            exitCode
+            this.exitStopCode(exitCode)
           );
         });
       },
@@ -332,7 +359,7 @@ export class GlobeBanner {
       real = replay(pending.splice(0));
       // The process is ending under a running bar: stop it as clack would.
       if (exitCode !== undefined) {
-        real.stop(this.exitMessage(exitCode), exitCode);
+        real.stop(this.exitMessage(exitCode), this.exitStopCode(exitCode));
       }
     });
     this.requestLanding();
@@ -430,11 +457,13 @@ export class GlobeBanner {
       )
       .join('\n');
     const before = performance.now();
-    this.raw(`${up}${body}\n`);
+    const accepted = this.raw(`${up}${body}\n`);
     const took = performance.now() - before;
     this.lastLines = lines;
     this.drawn = true;
-    if (took > SLOW_WRITE_MS) {
+    // Too slow to write, or not accepted (an asynchronous terminal, as on
+    // Windows, that is already behind).
+    if (took > SLOW_WRITE_MS || !accepted) {
       // Land at once: fast-forwarding would mean writing more frames.
       this.phase = 'rest';
       this.settling = true;
@@ -446,9 +475,17 @@ export class GlobeBanner {
     return this.crashed || exitCode > 1 ? 'Something went wrong' : 'Canceled';
   }
 
+  // The stop code clack's spinner uses when the process ends under it: the
+  // exit code, except that a crash shows as an error.
+  private exitStopCode(exitCode: number): number {
+    return this.crashed ? 2 : exitCode;
+  }
+
   // Bun's console writes to the terminal without going through
-  // process.stdout.write, so route it through the held writes as Node does.
+  // process.stdout.write, so on Bun it's routed through the held writes.
+  // Node's console already uses them.
   private routeConsole(): void {
+    if (!process.versions.bun) return;
     for (const name of CONSOLE_METHODS) {
       const toErr = name === 'warn' || name === 'error' || name === 'trace';
       const stream = toErr ? process.stderr : process.stdout;
@@ -482,6 +519,7 @@ export class GlobeBanner {
     clearTimeout(this.cap);
     process.off('exit', this.onExit);
     process.off('uncaughtExceptionMonitor', this.onCrash);
+    process.off('unhandledRejection', this.onRejection);
     for (const signal of TERMINATING_SIGNALS) {
       process.off(signal, this.onSignal);
     }
@@ -503,9 +541,9 @@ export class GlobeBanner {
     this.resolveLanded();
   }
 
-  private raw(text: string): void {
+  private raw(text: string): boolean {
     const stream = this.options!.stream;
-    (this.writes.get(stream) ?? stream.write).call(stream, text);
+    return (this.writes.get(stream) ?? stream.write).call(stream, text);
   }
 
   // Keystrokes would echo into the globe and break the in-place redraw, so
@@ -535,17 +573,29 @@ export class GlobeBanner {
   }
 
   private readonly onKey = (data: Buffer) => {
-    if (!data.includes(CTRL_C) || !this.animating) return;
-    this.land(1);
+    if (!this.animating) return;
+    const signal = [...data].map((byte) => SIGNAL_KEYS.get(byte)).find(Boolean);
+    if (!signal) return;
+    // Suspending comes back later, so the command carries on as landed;
+    // the others end it.
+    this.land(signal === 'SIGTSTP' ? undefined : 1);
     // Raw input means the terminal sent no signal, so raise it ourselves:
-    // other handlers get it, and without any, Ctrl+C exits as usual.
-    process.kill(process.pid, 'SIGINT');
+    // other handlers get it, and without any, the key does what it usually
+    // does (Ctrl+C exits, Ctrl+Z suspends, Ctrl+\ quits).
+    process.kill(process.pid, signal);
   };
 
   // An uncaught error lands the globe before its trace prints.
   private readonly onCrash = () => {
     this.crashed = true;
     if (this.animating) this.land(1);
+  };
+
+  // Bun reports an unhandled rejection without uncaughtExceptionMonitor, so
+  // land first, then rethrow it for the runtime's usual crash and exit code.
+  private readonly onRejection = (reason: unknown) => {
+    this.onCrash();
+    throw reason;
   };
 
   // A command that exits mid-animation lands at once, so nothing is lost.

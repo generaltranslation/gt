@@ -104,17 +104,15 @@ function displayStaticGlobe() {
   const { rest, columns } = getGlobeFrames();
   // chalk does not read NO_COLOR, so honor it here.
   const color = chalk.level > 0 && !process.env.NO_COLOR;
-  // eslint-disable-next-line no-console
-  console.log(`\n${paintFrame(rest, columns, color).join('\n')}`);
+  process.stdout.write(`\n${paintFrame(rest, columns, color).join('\n')}\n`);
 }
 
 function displayInitializingText() {
   const version = getCLIVersion();
-  // eslint-disable-next-line no-console
-  console.log(
+  process.stdout.write(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}
-${chalk.dim(`CLI Version: ${version}\n`)}`
+${chalk.dim(`CLI Version: ${version}\n`)}\n`
   );
 }
 

@@ -286,6 +286,7 @@ describe('GlobeBanner', () => {
   it.each([
     ['CJK', '漢'],
     ['emoji', '⌚'],
+    ['half-width kana with a voiced mark', 'ｶﾞ'],
   ])('keeps wide %s status text on one line', (_kind, char) => {
     const terminal = new FakeTerminal();
     terminal.columns = 30;
@@ -328,6 +329,47 @@ describe('GlobeBanner', () => {
     expect(banner.isAnimating()).toBe(false);
     expect(plain(terminal.output)).toContain('held line');
     expect(calls.at(-1)).toMatch(/^stop Something went wrong @/);
+  });
+
+  it('hands off a spinner where performance.now is read-only, as on Node 18', async () => {
+    const original = Object.getOwnPropertyDescriptor(performance, 'now');
+    const now = performance.now.bind(performance);
+    Object.defineProperty(performance, 'now', {
+      value: () => now(),
+      writable: false,
+      configurable: true,
+    });
+    try {
+      const { banner } = setup();
+      const calls: string[] = [];
+      const spinner = banner.spinner(recordingSpinner(calls));
+      const startedAt = performance.now();
+      spinner.start('Installing');
+      await vi.advanceTimersByTimeAsync(1000);
+      const landed = banner.settle();
+      await vi.advanceTimersByTimeAsync(3000);
+      await landed;
+
+      expect(calls).toEqual([`start Installing @${startedAt}`]);
+    } finally {
+      if (original) Object.defineProperty(performance, 'now', original);
+      else Reflect.deleteProperty(performance, 'now');
+    }
+  });
+
+  it('lands when an asynchronous terminal stops accepting writes', async () => {
+    const terminal = new FakeTerminal();
+    // Backpressure: the terminal queues writes rather than taking long.
+    terminal.write = (chunk) => {
+      terminal.output += String(chunk);
+      return false;
+    };
+    const stream = terminal as unknown as NodeJS.WriteStream;
+    const banner = new GlobeBanner();
+    banner.start({ stream, hold: [stream] });
+    await vi.advanceTimersByTimeAsync(200);
+
+    expect(banner.isAnimating()).toBe(false);
   });
 
   it('stops redrawing and releases held output when the window resizes', () => {
