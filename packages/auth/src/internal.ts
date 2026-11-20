@@ -1,2 +1,2 @@
-export { writeOAuthTokens } from './credentialStore.js';
-export { loginRequiredError } from './errors.js';
+export { writeOAuthTokens } from './internal/credentialStore.js';
+export { loginRequiredError } from './internal/errors.js';

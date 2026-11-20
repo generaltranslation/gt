@@ -4,12 +4,12 @@ export {
   login,
   logout,
   whoAmI,
-} from './oauth.js';
+} from './internal/oauth.js';
 export type {
   AuthOptions,
   DeviceCode,
   LoginOptions,
   UserInfo,
-} from './oauth.js';
-export { UserAuthError } from './errors.js';
-export type { UserAuthErrorCode } from './errors.js';
+} from './internal/oauth.js';
+export { UserAuthError } from './internal/errors.js';
+export type { UserAuthErrorCode } from './internal/errors.js';
