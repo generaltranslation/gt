@@ -1227,7 +1227,7 @@ function getPluralKey(
   return getPluralForm(
     n,
     branches,
-    getFormatLocales(locale, state.resolveFormattingLocale)
+    getFormatLocales(locale, state.defaultLocale, state.resolveFormattingLocale)
   );
 }
 

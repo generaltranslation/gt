@@ -176,6 +176,7 @@ function getVariableFormatLocales(
 ): string[] {
   return getFormatLocales(
     props._locale ?? state.getLocale(),
+    state.defaultLocale,
     state.resolveFormattingLocale
   );
 }

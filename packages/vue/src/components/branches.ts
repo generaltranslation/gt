@@ -53,7 +53,11 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
             ...branches.map(getPluralBranchKey),
             ...(slots.default ? ['other'] : []),
           ],
-          getFormatLocales(state.getLocale(), state.resolveFormattingLocale)
+          getFormatLocales(
+            state.getLocale(),
+            state.defaultLocale,
+            state.resolveFormattingLocale
+          )
         );
         const branch = branches.find(
           (name) => getPluralBranchKey(name) === form

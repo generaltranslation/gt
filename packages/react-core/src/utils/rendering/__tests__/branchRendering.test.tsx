@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import {
   renderDefaultChildren,
+  renderPreparedT,
   renderTranslatedChildren,
 } from '../renderPipeline.rsc';
 import { renderPlural } from '../../../components/branches/Plural.shared';
@@ -174,6 +175,55 @@ describe('plural rendering', () => {
       props: { children: 'элементов' },
     });
   });
+
+  // The host has at most one of these as its own locale, so the others fail
+  // if the plural is left to the host's rules.
+  it.each(['ar', 'pl', 'ja'])(
+    'picks the branch of a locale Intl has no data for by the rules of the default locale %s',
+    (defaultLocale) => {
+      const categories = {
+        zero: 'zero',
+        one: 'one',
+        two: 'two',
+        few: 'few',
+        many: 'many',
+        other: 'other',
+      };
+      const counts = [0, 1, 2, 5, 21];
+      const render = (
+        source: (n: number) => TaggedElement,
+        branches: Record<string, string>
+      ) =>
+        counts.map((n) =>
+          renderPreparedT({
+            taggedSourceChildren: source(n),
+            targetJsxChildren: { d: { b: branches } },
+            locale: 'qaa',
+            defaultLocale,
+            enableI18n: true,
+            shouldTranslate: true,
+          })
+        );
+      const expected = counts.map((n) =>
+        new Intl.PluralRules(defaultLocale).select(n)
+      );
+
+      expect(
+        render((n) => createPluralElement(n, { other: 'source' }), categories)
+      ).toEqual(expected);
+      // The translation has no branch, so the source picks, as does the
+      // plural in the branch it picks.
+      expect(
+        render(
+          (n) =>
+            createPluralElement(n, {
+              other: createPluralElement(n, categories),
+            }),
+          {}
+        )
+      ).toEqual(expected);
+    }
+  );
 
   describe('a count in a translated branch', () => {
     // Russian picks "one" for 21 too, so its branch shows the count, which

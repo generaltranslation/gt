@@ -39,15 +39,21 @@ export function withGTMetadata<Props = {}>(
 
 /**
  * The locales a variable formats in and a plural is selected in: the active
- * locale.
+ * locale, then the default locale, which `Intl` formats in when it has no
+ * data for the first.
  *
  * @internal
  */
 export function getFormatLocales(
   locale: string,
+  defaultLocale: string,
   resolveLocale: (locale: string) => string = identityLocale
 ): string[] {
-  return [resolveLocale(locale)];
+  const resolvedLocale = resolveLocale(locale);
+  const resolvedDefaultLocale = resolveLocale(defaultLocale);
+  return resolvedLocale === resolvedDefaultLocale
+    ? [resolvedLocale]
+    : [resolvedLocale, resolvedDefaultLocale];
 }
 
 function identityLocale(locale: string): string {
