@@ -1489,18 +1489,32 @@ if (manifest.maps) {
   );
   await app.close();
 }
-await checkSlowHost({
-  open,
-  check,
-  url: on.url,
-  prompt: [
-    entryOf('fr'),
-    `/${manifest.unsplit.fr}`,
-    ...(manifest.maps ? [mapOf('fr')] : []),
-  ],
-  isTranslationsFile,
-  timeout: TIMEOUT_MS,
-});
+{
+  // What the files of the root's chunk and of the route's hold, and a
+  // component renders
+  const { title, tagline, hook } = SHELL;
+  const { heading, orders, jsx } = ROUTES.orders;
+  const sources = { title, tagline, hook, heading, orders: orders[0], jsx };
+  await checkSlowHost({
+    open,
+    check,
+    url: on.url,
+    prompt: [
+      entryOf('fr'),
+      `/${manifest.unsplit.fr}`,
+      ...(manifest.maps ? [mapOf('fr')] : []),
+    ],
+    isTranslationsFile,
+    timeout: TIMEOUT_MS,
+    sources,
+    expected: Object.fromEntries(
+      Object.entries(sources).map(([element, source]) => [
+        element,
+        translate('fr', source),
+      ])
+    ),
+  });
+}
 
 // A build whose modules run when they are first imported and not when
 // their chunk loads (Rolldown's strictExecutionOrder), of start.html, which

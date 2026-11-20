@@ -1477,17 +1477,36 @@ async function checkVariant(name, variant) {
 
   // In the builds whose imports need files the entry does not hold
   if (variant.requestCost === 0) {
+    const prompt = [
+      built.mapOf('fr'),
+      built.unsplitOf('fr'),
+      ...built.entryFiles('fr'),
+    ];
+    const late = built.everyFile('fr').filter((file) => !prompt.includes(file));
+    const rendered = (lost) =>
+      Object.fromEntries(
+        [
+          'title',
+          'hook',
+          'heading orders',
+          'orders',
+          'jsx orders',
+          'badge',
+          'glossary',
+        ].map((element) => [
+          element.split(' ')[0],
+          render(built, 'fr', element, lost),
+        ])
+      );
     await checkSlowHost({
       open,
       check,
       url,
-      prompt: [
-        built.mapOf('fr'),
-        built.unsplitOf('fr'),
-        ...built.entryFiles('fr'),
-      ],
+      prompt,
       isTranslationsFile: (path) => isTranslations({ path }),
       timeout: TIMEOUT_MS,
+      sources: rendered(late),
+      expected: rendered([]),
     });
   }
   served.close();
