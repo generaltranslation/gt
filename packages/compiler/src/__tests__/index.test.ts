@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping';
 import generate from '@babel/generator';
 import * as parser from '@babel/parser';
+import { build } from 'esbuild';
 import type {
   TransformResult,
   UnpluginBuildContext,
@@ -19,6 +19,7 @@ import gtUnplugin, {
   webpack,
 } from '../index';
 import type { GTUnpluginOptions } from '../index';
+import { locate, trace } from './sourcePositions';
 
 // These tests drive the real unplugin transform, because config loading and
 // the gating between passes live in index.ts.
@@ -307,13 +308,6 @@ describe('source map of the transform', () => {
     '}',
   ].join('\n');
 
-  /** Where the first `token` of a text is, as a source map counts it. */
-  function locate(text: string, token: string) {
-    const lines = text.split('\n');
-    const index = lines.findIndex((line) => line.includes(token));
-    return { line: index + 1, column: lines[index].indexOf(token) };
-  }
-
   type Framework = 'vite' | 'rollup' | 'esbuild' | 'webpack' | 'rspack';
 
   /**
@@ -371,9 +365,7 @@ describe('source map of the transform', () => {
       if (token === 'report') {
         expect(written.column).toBeGreaterThan(original.column);
       }
-      expect(
-        originalPositionFor(new TraceMap(map as string), written)
-      ).toMatchObject({ source: file, ...original });
+      expect(trace(map, code, token)).toEqual({ source: file, ...original });
     }
   );
 
@@ -440,9 +432,10 @@ describe('source map of the transform', () => {
       expect(map).toBeNull();
       return;
     }
-    expect(
-      originalPositionFor(new TraceMap(map as string), locate(code, 'report'))
-    ).toMatchObject({ source: file, ...locate(CODE, 'report') });
+    expect(trace(map, code, 'report')).toEqual({
+      source: file,
+      ...locate(CODE, 'report'),
+    });
   });
 
   it.each(['webpack', 'rspack'] as const)(
@@ -465,14 +458,69 @@ describe('source map of the transform', () => {
         code: earlier.code,
         native: { framework, inputSourceMap: earlier.map },
       });
-      const traced = new TraceMap(map as string);
-      expect(originalPositionFor(traced, locate(code, 'report'))).toMatchObject(
-        {
-          source: '/app/src/App.tsx',
-          ...locate(source, 'report'),
-        }
+      expect(trace(map, code, 'report')).toEqual({
+        source: '/app/src/App.tsx',
+        ...locate(source, 'report'),
+      });
+      expect((map as { sourcesContent: string[] }).sourcesContent).toEqual([
+        source,
+      ]);
+    }
+  );
+
+  // esbuild reads the map a file names, and once the transform returns one,
+  // only that: unplugin appends it to the file as another comment
+  it.each([
+    ['inline', (map: string) => `data:application/json;base64,${btoa(map)}`],
+    ['in a file', () => 'maps/compiled.js.map'],
+  ])(
+    'traces its map through the map an esbuild input names %s',
+    async (_name, getUrl) => {
+      const cwd = createProject();
+      const source = CODE.replace('export', '\n\nexport').replace(
+        'report',
+        '    report'
       );
-      expect(traced.sourcesContent).toEqual([source]);
+      const earlier = generate(
+        parser.parse(source, { sourceType: 'module' }),
+        { sourceMaps: true, sourceFileName: '../../src/App.tsx' },
+        source
+      );
+      fs.mkdirSync(path.join(cwd, 'lib/maps'), { recursive: true });
+      const map = JSON.stringify(earlier.map);
+      fs.writeFileSync(path.join(cwd, 'lib/maps/compiled.js.map'), map);
+      // An inline map is in the file, so its sources are relative to the file
+      const url = getUrl(map.replace('../../src', '../src'));
+      fs.writeFileSync(
+        path.join(cwd, 'lib/compiled.js'),
+        `${earlier.code}\n//# sourceMappingURL=${url}\n`
+      );
+      const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const { outputFiles } = await build({
+          absWorkingDir: cwd,
+          entryPoints: ['lib/compiled.js'],
+          outdir: 'dist',
+          bundle: true,
+          format: 'esm',
+          sourcemap: 'external',
+          write: false,
+          external: ['gt-react', 'react/jsx-runtime'],
+          plugins: [esbuild({ precomputeMessages: false })],
+          logLevel: 'silent',
+        });
+        const [bundled, code] = outputFiles.map((file) => file.text);
+        expect(code).toContain('t({ $_hash: "');
+        expect(trace(bundled, code, 'report')).toEqual({
+          source: '../src/App.tsx',
+          ...locate(source, 'report'),
+        });
+        expect(JSON.parse(bundled).sourcesContent).toEqual([source]);
+      } finally {
+        cwdSpy.mockRestore();
+        warnSpy.mockRestore();
+      }
     }
   );
 });

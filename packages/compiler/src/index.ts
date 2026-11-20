@@ -447,7 +447,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           const sourceMap = getSourceMapRequest(
             meta.framework,
             this,
-            viteConfig
+            viteConfig,
+            code,
+            id
           );
           const output = generate(
             ast,
