@@ -31,6 +31,18 @@ This document is the single source of truth for the insertion rules. Both the co
 <main><section><p><_T>Deep text</_T></p></section></main>
 ```
 
+How the text is written in the source does not matter: JSX text, a string in braces (`{'text'}`) and a static template literal in braces compile to the same child. What the text says does not matter either: punctuation is non-whitespace content, so a separator such as `{' · '}` claims its element like any other text.
+
+```jsx
+// A string in braces is text — _T at div
+<div>{'Hello'}</div>
+<div><_T>{'Hello'}</_T></div>
+
+// The only text of <div> is a separator — _T at div, <a> is part of the unit
+<div><a>Back</a>{' · '}{name}</div>
+<div><_T><a>Back</a>{' · '}<_Var>{name}</_Var></_T></div>
+```
+
 ## Rule 2: When a parent has direct text, it claims the entire subtree
 
 If a parent element has text as a direct child, \_T wraps at that level. Nested child elements become part of the same translation unit — they do NOT get their own \_T.
@@ -47,6 +59,14 @@ If a parent element has text as a direct child, \_T wraps at that level. Nested 
 // <div> has "Welcome, " — _T at div, <span> inside is part of the unit
 <div>Welcome, <span><em>friend</em></span>!</div>
 <div><_T>Welcome, <span><em>friend</em></span>!</_T></div>
+```
+
+An element or fragment written in braces compiles to the same child as the element itself, so it is treated the same way everywhere: it is part of its parent's unit, expressions inside it get \_Var, and a Branch, Plural or Derive in braces triggers \_T at the parent (Rules 8 and 9).
+
+```jsx
+// <b> in braces is the same child as <b> — _T at div, <b> is part of the unit
+<div>Hello {<b>World</b>}</div>
+<div><_T>Hello {<b>World</b>}</_T></div>
 ```
 
 ## Rule 3: Sibling elements without a common text parent get independent \_T

@@ -73,6 +73,36 @@ describe('injection pass', () => {
     ['unicode and emoji text', '<div>こんにちは 🌍</div>', 1, 0],
     ['spread props next to text', '<div {...props}>Hello World</div>', 1, 0],
 
+    // Text in braces makes an element translatable like JSX text does
+    ['a string literal child', "<div>{'Hello'}</div>", 1, 0],
+    ['a static template literal child', '<div>{`Hello`}</div>', 1, 0],
+    [
+      'a punctuation string between expressions',
+      "<div>{left}{' · '}{right}</div>",
+      1,
+      2,
+    ],
+
+    // An element in braces is the same child as the element
+    [
+      'an element in braces next to text',
+      '<div>Lead {<b>Bold words</b>}</div>',
+      1,
+      0,
+    ],
+    [
+      'an expression inside an element in braces',
+      '<div>Lead {<b>{name}</b>}</div>',
+      1,
+      1,
+    ],
+    [
+      'a Plural in braces next to an expression',
+      '<div>{name}{<Plural n={count} one="item">items</Plural>}</div>',
+      1,
+      1,
+    ],
+
     // Nothing translatable
     ['a self-closing element', '<div />', 0, 0],
     ['an empty element', '<div></div>', 0, 0],
@@ -81,6 +111,12 @@ describe('injection pass', () => {
     [
       'expressions separated by whitespace',
       '<div>{firstName} {lastName}</div>',
+      0,
+      0,
+    ],
+    [
+      'expressions separated by a whitespace string',
+      "<div>{firstName}{' '}{lastName}</div>",
       0,
       0,
     ],
@@ -443,6 +479,52 @@ describe('injection and extraction', () => {
       'text with a nested element as one update',
       page('<div>Hello <b>World</b> today</div>'),
       [['Hello ', { t: 'b', i: 1, c: 'World' }, ' today']],
+    ],
+    [
+      'a punctuation string between expressions',
+      page("<p>{left}{' · '}{right}</p>"),
+      [[variable(1), ' · ', variable(2)]],
+    ],
+    [
+      'a punctuation string and an element with text as one update',
+      page("<>{'. '}<a href={href}>Edit the settings</a></>"),
+      [['. ', { t: 'a', i: 1, c: 'Edit the settings' }]],
+    ],
+    [
+      'elements around a punctuation string as one update',
+      page("<li><b>Item {position}</b>{' — '}<span>{message}</span></li>"),
+      [
+        [
+          { t: 'b', i: 1, c: ['Item ', variable(2)] },
+          ' — ',
+          { t: 'span', i: 3, c: variable(4) },
+        ],
+      ],
+    ],
+    [
+      'an element in braces as part of the update of its parent',
+      page('<div>Lead {<b>Bold words</b>}</div>'),
+      [['Lead ', { t: 'b', i: 1, c: 'Bold words' }]],
+    ],
+    [
+      'a fragment in braces as part of the update of its parent',
+      page('<div>Alpha {<>frag <b>bold</b></>}</div>'),
+      [
+        [
+          'Alpha ',
+          { t: 'C1', i: 1, c: ['frag ', { t: 'b', i: 2, c: 'bold' }] },
+        ],
+      ],
+    ],
+    [
+      'a string and an element, both in braces, as one update',
+      page("<div>{' · '}{<b>Bold words</b>}</div>"),
+      [[' · ', { t: 'b', i: 1, c: 'Bold words' }]],
+    ],
+    [
+      'a Branch in braces with the expression next to it',
+      page('<div>{name}{<Branch branch="x">fallback</Branch>}</div>'),
+      [[variable(1), { t: 'Branch', i: 2, d: fallback }]],
     ],
     [
       'sibling elements separately',

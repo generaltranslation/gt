@@ -328,13 +328,13 @@ function processFragmentChildren({
 }
 
 function processChild(childPath: NodePath, ctx: InsertionContext): void {
-  if (childPath.isJSXElement() && !ctx.processedNodes.has(childPath.node)) {
-    processJsxElement({ path: childPath, ...ctx });
-  } else if (
-    childPath.isJSXFragment() &&
-    !ctx.processedNodes.has(childPath.node)
-  ) {
-    processJsxFragment({ path: childPath, ...ctx });
+  const jsxPath = childPath.isJSXExpressionContainer()
+    ? childPath.get('expression')
+    : childPath;
+  if (jsxPath.isJSXElement() && !ctx.processedNodes.has(jsxPath.node)) {
+    processJsxElement({ path: jsxPath, ...ctx });
+  } else if (jsxPath.isJSXFragment() && !ctx.processedNodes.has(jsxPath.node)) {
+    processJsxFragment({ path: jsxPath, ...ctx });
   } else if (
     childPath.isJSXExpressionContainer() &&
     ctx.insideAutoT &&
@@ -494,9 +494,19 @@ function getLocalName(
 }
 
 function hasTranslatableText(children: t.Node[]): boolean {
-  return children.some(
-    (child) => t.isJSXText(child) && child.value.trim().length > 0
-  );
+  return children.some((child) => {
+    if (t.isJSXText(child)) return child.value.trim().length > 0;
+    if (!t.isJSXExpressionContainer(child)) return false;
+    const { expression } = child;
+    if (t.isStringLiteral(expression)) {
+      return expression.value.trim().length > 0;
+    }
+    return (
+      t.isTemplateLiteral(expression) &&
+      expression.expressions.length === 0 &&
+      (expression.quasis[0]?.value.cooked ?? '').trim().length > 0
+    );
+  });
 }
 
 function hasOpaqueGTChild(
@@ -504,8 +514,11 @@ function hasOpaqueGTChild(
   importAliases: Record<string, string>
 ): boolean {
   return children.some((child) => {
-    if (!t.isJSXElement(child)) return false;
-    const typeName = getElementTypeName(child);
+    const element = t.isJSXExpressionContainer(child)
+      ? child.expression
+      : child;
+    if (!t.isJSXElement(element)) return false;
+    const typeName = getElementTypeName(element);
     if (!typeName) return false;
     const canonical = importAliases[typeName];
     return (
