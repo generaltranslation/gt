@@ -83,6 +83,26 @@ describe('injection pass', () => {
       2,
     ],
 
+    // An element in braces is the same child as the element
+    [
+      'an element in braces next to text',
+      '<div>Lead {<b>Bold words</b>}</div>',
+      1,
+      0,
+    ],
+    [
+      'an expression inside an element in braces',
+      '<div>Lead {<b>{name}</b>}</div>',
+      1,
+      1,
+    ],
+    [
+      'a Plural in braces next to an expression',
+      '<div>{name}{<Plural n={count} one="item">items</Plural>}</div>',
+      1,
+      1,
+    ],
+
     // Nothing translatable
     ['a self-closing element', '<div />', 0, 0],
     ['an empty element', '<div></div>', 0, 0],
@@ -480,6 +500,21 @@ describe('injection and extraction', () => {
           { t: 'span', i: 3, c: variable(4) },
         ],
       ],
+    ],
+    [
+      'an element in braces as part of the update of its parent',
+      page('<div>Lead {<b>Bold words</b>}</div>'),
+      [['Lead ', { t: 'b', i: 1, c: 'Bold words' }]],
+    ],
+    [
+      'a string and an element, both in braces, as one update',
+      page("<div>{' · '}{<b>Bold words</b>}</div>"),
+      [[' · ', { t: 'b', i: 1, c: 'Bold words' }]],
+    ],
+    [
+      'a Branch in braces with the expression next to it',
+      page('<div>{name}{<Branch branch="x">fallback</Branch>}</div>'),
+      [[variable(1), { t: 'Branch', i: 2, d: fallback }]],
     ],
     [
       'sibling elements separately',

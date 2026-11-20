@@ -328,13 +328,13 @@ function processFragmentChildren({
 }
 
 function processChild(childPath: NodePath, ctx: InsertionContext): void {
-  if (childPath.isJSXElement() && !ctx.processedNodes.has(childPath.node)) {
-    processJsxElement({ path: childPath, ...ctx });
-  } else if (
-    childPath.isJSXFragment() &&
-    !ctx.processedNodes.has(childPath.node)
-  ) {
-    processJsxFragment({ path: childPath, ...ctx });
+  const jsxPath = childPath.isJSXExpressionContainer()
+    ? childPath.get('expression')
+    : childPath;
+  if (jsxPath.isJSXElement() && !ctx.processedNodes.has(jsxPath.node)) {
+    processJsxElement({ path: jsxPath, ...ctx });
+  } else if (jsxPath.isJSXFragment() && !ctx.processedNodes.has(jsxPath.node)) {
+    processJsxFragment({ path: jsxPath, ...ctx });
   } else if (
     childPath.isJSXExpressionContainer() &&
     ctx.insideAutoT &&
@@ -514,8 +514,11 @@ function hasOpaqueGTChild(
   importAliases: Record<string, string>
 ): boolean {
   return children.some((child) => {
-    if (!t.isJSXElement(child)) return false;
-    const typeName = getElementTypeName(child);
+    const element = t.isJSXExpressionContainer(child)
+      ? child.expression
+      : child;
+    if (!t.isJSXElement(element)) return false;
+    const typeName = getElementTypeName(element);
     if (!typeName) return false;
     const canonical = importAliases[typeName];
     return (
