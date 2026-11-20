@@ -5532,6 +5532,55 @@ globalThis.save = () => t\`Save\`;`,
           }
         );
 
+        it('gives each of two chunks that different loads reach its own copy of a message both read, so a change to one renames no file of the other', async () => {
+          // Both routes read a label that the shell does not, and neither
+          // route loads after the other
+          const withExport = (...more: string[]) =>
+            withModule(
+              withModule(APP, 'assets/Settings.js', '/settings.js', [
+                'Save',
+                'Delete account',
+                'Export',
+                ...more,
+              ]),
+              'assets/Reports.js',
+              '/reports.js',
+              ['Save', 'Totals', 'Export']
+            );
+          const before = await build(withExport());
+          const routes = ['assets/Settings.js', 'assets/Reports.js'];
+          const exported = before.sites.filter(({ text }) => text === 'Export');
+          expect(exported.map(({ fileName }) => fileName)).toEqual(routes);
+          // Each reads it from a file of its own load, which the other does not hold
+          exported.forEach(({ id, fileName }, index) => {
+            const own = before.read(before.manifest.imports[fileName]);
+            const other = before.read(
+              before.manifest.imports[routes[1 - index]]
+            );
+            expect(own[id]).toBe('EXPORT');
+            expect(other[id]).toBeUndefined();
+          });
+          expect(
+            Object.keys(before.manifest.files).filter((key) =>
+              Object.values(before.read([key])).includes('EXPORT')
+            )
+          ).toHaveLength(2);
+
+          const app = withExport('Rename');
+          const after = await build(app, APP_GRAPH, before.keep());
+          for (const keys of [
+            before.manifest.imports['assets/Reports.js'],
+            before.startup,
+          ]) {
+            expect(namesOf(after, keys)).toEqual(namesOf(before, keys));
+          }
+          expect(after.manifest.imports['assets/Reports.js']).toEqual(
+            before.manifest.imports['assets/Reports.js']
+          );
+          expectEveryLoadToRead(after, app, APP_GRAPH);
+          expectWholeLists(after);
+        });
+
         it('names in a file only lists that are wholly in it', async () => {
           const built = await build(APP);
           // The shared chunk has a list in the shell's file and one in the routes'
