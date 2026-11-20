@@ -19,6 +19,12 @@ export default mergeConfig(
         'gt-tanstack-start/internal/localeRouting': fileURLToPath(
           new URL('./src/internal/localeRouting.ts', import.meta.url)
         ),
+        'gt-tanstack-start/internal/splitTranslations': fileURLToPath(
+          new URL('./src/internal/splitTranslations.ts', import.meta.url)
+        ),
+        'gt-tanstack-start/internal/_split-table': fileURLToPath(
+          new URL('./src/internal/_split-table.ts', import.meta.url)
+        ),
       },
     },
   })

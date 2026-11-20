@@ -92,7 +92,8 @@ export const hydrateSplit: typeof Disabled.hydrateSplit = async (
   if (!state.i) {
     // Safari has no requestIdleCallback
     const idle =
-      window.requestIdleCallback ?? ((run: () => void) => setTimeout(run, 1));
+      globalThis.requestIdleCallback ??
+      ((run: () => void) => setTimeout(run, 1));
     idle(() => void requestEntry(state, locale));
   }
 };
