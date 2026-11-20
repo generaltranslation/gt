@@ -9,7 +9,7 @@ export type ViteSourceMapConfig = {
   command: string;
   build: {
     sourcemap: boolean | string;
-    /** Vite 7 and earlier write a map for an output that asks for one here */
+    /** Vite writes a map for an output that asks for one here (`rolldownOptions` in Vite 8, which the resolved config also gives under this name) */
     rollupOptions?: { output?: ViteOutputOptions | ViteOutputOptions[] };
   };
 };
