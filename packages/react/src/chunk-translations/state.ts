@@ -151,6 +151,11 @@ export type ChunkTranslationsState = {
    * now, before it asks for a file by them
    */
   s?: 1 | 2;
+  /**
+   * How many files have arrived within the timeout of their own request,
+   * and how many had when the file was requested whose wait last ran out
+   */
+  wt?: [inTime: number, late?: number];
 };
 
 export type InitializeConfig = { loadTranslations?: unknown };

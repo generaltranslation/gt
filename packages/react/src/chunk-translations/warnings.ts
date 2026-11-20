@@ -9,6 +9,16 @@ export function createTimeoutWarning(url: string, timeout: number): string {
   });
 }
 
+export function createUnwaitedWarning(url: string): string {
+  return createDiagnosticMessage({
+    source: 'gt-react',
+    severity: 'Warning',
+    whatHappened: `The translations in ${url} are not waited for`,
+    why: 'the page has waited for a file that was late, and none has loaded in time since',
+    reassurance: 'Their messages render the source text until they arrive',
+  });
+}
+
 export function createFailedWarning(url: string, details: string): string {
   return createDiagnosticMessage({
     source: 'gt-react',
