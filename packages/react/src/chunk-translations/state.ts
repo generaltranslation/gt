@@ -151,6 +151,17 @@ export type ChunkTranslationsState = {
    * now, before it asks for a file by them
    */
   s?: 1 | 2;
+  /**
+   * How many files have arrived within the timeout of their own request,
+   * how many had when the file was requested whose wait last ran out, and
+   * whether what requests files now has run already
+   */
+  wt?: [inTime: number, late?: number, ran?: boolean];
+  /**
+   * What requests the files of what ran before the lists of `i` arrived,
+   * once they do: by the chunk of an import, or by the keys of the files
+   */
+  il?: Record<string, () => Promise<unknown>>;
 };
 
 export type InitializeConfig = { loadTranslations?: unknown };
