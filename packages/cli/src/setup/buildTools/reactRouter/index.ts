@@ -17,7 +17,7 @@ import {
   getLoaderUpdateActions,
 } from '../shared/loader.js';
 import { readSourceFile } from '../shared/source.js';
-import { configureGTReactPlugin } from '../shared/viteConfig.js';
+import { configureGTVitePlugin } from '../shared/viteConfig.js';
 import { configureRoot, getRootFix, getStorageAction } from './root.js';
 import {
   DOCS_URL,
@@ -101,12 +101,13 @@ export const reactRouterSetup: BuildToolSetup = {
     return { steps, manualActions };
   },
   checkCredentialsPlugin: (appDirectory) =>
-    configureGTReactPlugin(appDirectory, true),
+    configureGTVitePlugin(appDirectory, Libraries.GT_REACT, true),
   async apply(ctx) {
     const { appDirectory, configFilepath, translationsDir } = ctx;
     const root = await inspectReactRouter(appDirectory);
-    const { steps, manualActions } = await configureGTReactPlugin(
+    const { steps, manualActions } = await configureGTVitePlugin(
       appDirectory,
+      Libraries.GT_REACT,
       false
     );
 
