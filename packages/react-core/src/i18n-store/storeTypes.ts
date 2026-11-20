@@ -5,7 +5,8 @@ import type { Content } from '@generaltranslation/format';
 
 export type Unsubscribe = () => void;
 export type StoreListener = () => void;
-export type TranslateEventListener = (lookup: TranslateLookup) => void;
+/** Called without a lookup when every lookup may have another translation. */
+export type TranslateEventListener = (lookup?: TranslateLookup) => void;
 
 // ----- Lookups ----- //
 
