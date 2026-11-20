@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -322,8 +323,32 @@ describe('workspace root setup guard', () => {
   );
 });
 
+function createTranslationProgram(): Command {
+  const program = new Command().exitOverride();
+  new BaseCLI(program, 'base').init();
+  return program;
+}
+
+function commandsAccepting(
+  flag: string,
+  command: Command,
+  parents: string[] = []
+): string[][] {
+  return command.commands.flatMap((child) => {
+    const names = [...parents, child.name()];
+    return [
+      ...(child.options.some((option) => option.long === flag) ? [names] : []),
+      ...commandsAccepting(flag, child, names),
+    ];
+  });
+}
+
 describe('--dry-run', () => {
   const originalCwd = process.cwd();
+  const dryRunCommands = commandsAccepting(
+    '--dry-run',
+    createTranslationProgram()
+  );
   const source = 'messages/en/common.json';
   const downloadReport = [
     'Dry run: No translations were downloaded from General Translation.',
@@ -387,7 +412,7 @@ describe('--dry-run', () => {
   }
 
   /** Runs the command and returns what it reported. */
-  async function dryRun(command: string, ...args: string[]) {
+  async function dryRun(command: string | string[], ...args: string[]) {
     const report: string[] = [];
     const record = (message: string) => {
       const text = stripVTControlCharacters(message);
@@ -395,9 +420,10 @@ describe('--dry-run', () => {
     };
     vi.spyOn(logger, 'success').mockImplementation(record);
     vi.spyOn(logger, 'message').mockImplementation(record);
-    const program = new Command().exitOverride();
-    new BaseCLI(program, 'base').init();
-    await program.parseAsync([command, '--dry-run', ...args], { from: 'user' });
+    await createTranslationProgram().parseAsync(
+      [command, '--dry-run', ...args].flat(),
+      { from: 'user' }
+    );
     return report;
   }
 
@@ -475,6 +501,40 @@ describe('--dry-run', () => {
       expect(withoutCredentials).toEqual(expectedReport);
       expect(fetchMock).not.toHaveBeenCalled();
       expect(readProject()).toEqual(before);
+    }
+  );
+
+  it('is accepted by these commands', () => {
+    expect(dryRunCommands.map((names) => names.join(' '))).toEqual([
+      'upload',
+      'git setup',
+      'setup',
+      'stage',
+      'translate',
+      'download',
+      'enqueue',
+    ]);
+  });
+
+  it.each(dryRunCommands.map((names) => [names.join(' '), names] as const))(
+    'gt %s makes no request and changes no project file',
+    async (_name, names) => {
+      vi.stubEnv('GT_PROJECT_ID', 'project-id');
+      vi.stubEnv('GT_API_KEY', 'gtx-api-key');
+      vi.spyOn(logger, 'warn').mockImplementation(() => {});
+      if (names[0] === 'git') {
+        execFileSync('git', ['init'], { cwd: projectRoot, stdio: 'ignore' });
+      }
+
+      for (const stageTranslations of [false, true]) {
+        writeProject({ requiresReview: true, stageTranslations });
+        const before = readProject();
+
+        await dryRun([...names]);
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(readProject()).toEqual(before);
+      }
     }
   );
 
