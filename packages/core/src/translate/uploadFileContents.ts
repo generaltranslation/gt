@@ -1,5 +1,8 @@
 import {
+  createBatches,
   createFileUploads,
+  jsonByteLength,
+  MAX_REQUEST_BODY_BYTES,
   putFileUpload,
   type Client,
   type FileFormat,
@@ -7,35 +10,84 @@ import {
 } from '@generaltranslation/api';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import {
-  decodeBytes,
-  decodedByteLength,
-  encodeFileContent,
-} from '../utils/base64';
+import { decodeBytes, encodeFileContent } from '../utils/base64';
 import type { apiVersionHeaders } from '../client/apiClient';
 import { unwrapApiResult } from './utils/unwrapApiResult';
 
-// The API rejects inline `content` over 4MB and request bodies over 100 MiB,
-// which counts inline `formatMetadata` too.
-const MAX_INLINE_FILE_BYTES = 4_000_000;
-const MAX_INLINE_REQUEST_LENGTH = 90 * 1024 * 1024;
+// Room for a file's reference to its bytes and one to its `formatMetadata`, which is more than the keys of inline content take.
+const FILE_REFERENCE_BYTES = 200;
 // Bounds the bytes in flight.
 const PARALLEL_FILE_UPLOADS = 4;
+// The API reads at most 150MB of uploads per request; this is what a byte of them takes of the body limit, so one size bounds both.
+const UPLOAD_BYTE_SHARE = MAX_REQUEST_BODY_BYTES / 150_000_000;
 
 type FormatMetadataSent = NonNullable<
   UploadSourceFilesData['body']['data'][number]['source']['formatMetadata']
 >;
+
+type FileContent = {
+  content: string;
+  fileFormat: FileFormat;
+  formatMetadata?: Extract<FormatMetadataSent, { content: object }>['content'];
+};
 
 type UploadedFileContent = (
   | { content: string }
   | { upload: { sha256: string } }
 ) & { formatMetadata?: FormatMetadataSent };
 
+function encodeFile({ content, fileFormat, formatMetadata }: FileContent) {
+  const encoded = encodeFileContent(content, fileFormat);
+  const metadata =
+    formatMetadata && new TextEncoder().encode(JSON.stringify(formatMetadata));
+  return {
+    encoded,
+    metadata,
+    // Measured as JSON, which escapes the line breaks base64 may carry, unless already too long to go inline.
+    length:
+      (encoded.length > MAX_REQUEST_BODY_BYTES
+        ? encoded.length
+        : jsonByteLength(encoded)) + (metadata?.byteLength ?? 0),
+  };
+}
+
 /**
- * Each file's request content and `formatMetadata`: inline while the file and
- * the request stay under the API's limits, otherwise references to their
- * bytes, PUT through `createFileUploads` unless the project already stores
- * them.
+ * What `files` take of a request: their content and `formatMetadata`, or for
+ * a file that no request holds inline, the references and its share of the
+ * uploads a request may name.
+ */
+export function fileContentBytes(files: readonly FileContent[]): number {
+  return files.reduce((bytes, file) => {
+    const { length } = encodeFile(file);
+    return (
+      bytes +
+      FILE_REFERENCE_BYTES +
+      (length > MAX_REQUEST_BODY_BYTES ? length * UPLOAD_BYTE_SHARE : length)
+    );
+  }, 0);
+}
+
+/** `files` in parts whose uploads one request may name along with those of `shared`, which goes with every part. */
+export function splitByUploads<File extends FileContent>(
+  shared: FileContent,
+  files: readonly File[]
+): File[][] {
+  const uploadShare = (file: FileContent) =>
+    encodeFile(file).length * UPLOAD_BYTE_SHARE;
+  const parts = createBatches(
+    files,
+    Infinity,
+    MAX_REQUEST_BODY_BYTES - uploadShare(shared),
+    uploadShare
+  );
+  return parts.length > 0 ? parts : [[...files]];
+}
+
+/**
+ * Each file's request content and `formatMetadata`: inline while the request
+ * body, `bodyBytes` before any of them, stays within the API's limit,
+ * otherwise references to their bytes, PUT through `createFileUploads` unless
+ * the project already stores them.
  */
 export async function uploadFileContents(
   request: {
@@ -43,16 +95,11 @@ export async function uploadFileContents(
     headers: ReturnType<typeof apiVersionHeaders>;
     path: { projectId: string };
   },
-  files: readonly {
-    content: string;
-    fileFormat: FileFormat;
-    formatMetadata?: Extract<
-      FormatMetadataSent,
-      { content: object }
-    >['content'];
-  }[]
+  files: readonly FileContent[],
+  bodyBytes: number
 ): Promise<UploadedFileContent[]> {
-  let inlineLength = 0;
+  let inlineBytes =
+    MAX_REQUEST_BODY_BYTES - bodyBytes - files.length * FILE_REFERENCE_BYTES;
   const uploads = new Map<
     string,
     { fileFormat: FileFormat; bytes: Uint8Array<ArrayBuffer> }
@@ -62,33 +109,24 @@ export async function uploadFileContents(
     uploads.set(hash, { fileFormat, bytes });
     return { sha256: hash };
   };
-  const contents = files.map(
-    ({ content, fileFormat, formatMetadata }): UploadedFileContent => {
-      const encoded = encodeFileContent(content, fileFormat);
-      const metadata =
-        formatMetadata &&
-        new TextEncoder().encode(JSON.stringify(formatMetadata));
-      const length = encoded.length + (metadata?.byteLength ?? 0);
-      if (
-        decodedByteLength(encoded) <= MAX_INLINE_FILE_BYTES &&
-        inlineLength + length <= MAX_INLINE_REQUEST_LENGTH
-      ) {
-        inlineLength += length;
-        return {
-          content: encoded,
-          ...(formatMetadata && {
-            formatMetadata: { content: formatMetadata },
-          }),
-        };
-      }
+  const contents = files.map((file): UploadedFileContent => {
+    const { encoded, metadata, length } = encodeFile(file);
+    if (length <= inlineBytes) {
+      inlineBytes -= length;
       return {
-        upload: stage(decodeBytes(encoded), fileFormat),
-        ...(metadata && {
-          formatMetadata: { upload: stage(metadata, 'JSON') },
+        content: encoded,
+        ...(file.formatMetadata && {
+          formatMetadata: { content: file.formatMetadata },
         }),
       };
     }
-  );
+    return {
+      upload: stage(decodeBytes(encoded), file.fileFormat),
+      ...(metadata && {
+        formatMetadata: { upload: stage(metadata, 'JSON') },
+      }),
+    };
+  });
 
   // Each group's URLs are requested right before its PUTs, so none expires
   // while earlier groups upload.

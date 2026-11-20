@@ -1233,6 +1233,50 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     expect(results.map(({ id }) => id)).toEqual(ids);
   });
 
+  it.each(['upsertAssets', 'overwriteTranslations'] as const)(
+    'splits %s into requests within the body limit',
+    async (operation) => {
+      vi.mocked(upsertAssets).mockResolvedValue(result(succeeded([])));
+      vi.mocked(overwriteTranslations).mockResolvedValue(result(succeeded([])));
+      const large = 'x'.repeat(1_500_000);
+
+      if (operation === 'upsertAssets') {
+        await account()
+          .org('org-id')
+          .upsertAssets(
+            ['a', 'b', 'c'].map((fileName) => ({
+              assetType: 'FONT' as const,
+              content: large,
+              fileName,
+            }))
+          );
+      } else {
+        await configuredProject().overwriteTranslations(
+          ['a', 'b', 'c'].map((fileId) => ({
+            fileId,
+            versionId: 'v',
+            branchId: 'b',
+            locale: 'es',
+            diff: '',
+            localContent: large,
+          }))
+        );
+      }
+
+      const bodies = vi
+        .mocked(
+          operation === 'upsertAssets' ? upsertAssets : overwriteTranslations
+        )
+        .mock.calls.map(([options]) => options.body);
+      expect(
+        bodies.map((body) => Object.values(body as object)[0].length)
+      ).toEqual([2, 1]);
+      for (const body of bodies) {
+        expect(JSON.stringify(body).length).toBeLessThanOrEqual(4_000_000);
+      }
+    }
+  );
+
   it('rejects an update list that repeats a target before sending any request', async () => {
     const files = Array.from({ length: 101 }, (_, i) => ({
       fileId: `id-${i}`,
@@ -1585,28 +1629,157 @@ describe.sequential('GeneralTranslation project and organization operations', ()
       expect(translations[1]).not.toHaveProperty('content');
     });
 
-    it('uploads files once inline content would push a request past the body limit', async () => {
+    const bodyBytes = (mock: unknown) =>
+      vi
+        .mocked(mock as (options: { body: unknown }) => unknown)
+        .mock.calls.map(
+          ([{ body }]) =>
+            new TextEncoder().encode(JSON.stringify(body)).byteLength
+        );
+
+    it('splits source files into requests that hold their content inline', async () => {
       const files = Array.from({ length: 30 }, (_, index) =>
-        source(`${index}`.padEnd(3_900_000, 'x'))
+        source(`${index}`.padEnd(300_000, 'x'))
       );
 
       await configuredProject().uploadSourceFiles(
         files.map((file) => ({ source: file }))
       );
 
-      const sent = bodyOf(uploadSourceFiles).data as {
-        source: { content?: string };
-      }[];
-      const inline = sent.filter(({ source: file }) => 'content' in file);
-      const inlineLength = inline.reduce(
-        (sum, { source: file }) => sum + file.content!.length,
-        0
+      const sizes = bodyBytes(uploadSourceFiles);
+      expect(sizes.length).toBeGreaterThan(1);
+      expect(Math.max(...sizes)).toBeLessThanOrEqual(4_000_000);
+      expect(createFileUploads).not.toHaveBeenCalled();
+      expect(
+        sizes.flatMap((_, call) =>
+          (
+            bodyOf(uploadSourceFiles, call).data as {
+              source: { content: string };
+            }[]
+          ).map(({ source: file }) => file.content)
+        )
+      ).toEqual(files.map(({ content }) => btoa(content)));
+    });
+
+    it('keeps a request within the limit when base64 content has line breaks', async () => {
+      const wrapped = btoa('x'.repeat(2_900_000)).replace(/.{76}/g, '$&\r\n');
+
+      await configuredProject().uploadSourceFiles([
+        {
+          source: {
+            ...source(wrapped),
+            fileName: 'animation.lottie',
+            fileFormat: 'LOTTIE' as const,
+          },
+        },
+      ]);
+
+      expect(Math.max(...bodyBytes(uploadSourceFiles))).toBeLessThanOrEqual(
+        4_000_000
       );
+    });
+
+    it('splits source files into requests that name at most 150MB of uploads', async () => {
+      const files = Array.from({ length: 40 }, (_, index) => ({
+        source: { ...source(large), fileName: `${index}.json` },
+      }));
+
+      await configuredProject().uploadSourceFiles(files);
+
+      const uploadedBytes = bodyBytes(uploadSourceFiles).map(
+        (_, call) =>
+          (bodyOf(uploadSourceFiles, call).data as { source: object }[]).filter(
+            ({ source: file }) => 'upload' in file
+          ).length * utf8ToBytes(large).byteLength
+      );
+      expect(uploadedBytes.reduce((sum, bytes) => sum + bytes)).toBe(
+        40 * utf8ToBytes(large).byteLength
+      );
+      expect(Math.max(...uploadedBytes)).toBeLessThanOrEqual(150_000_000);
+    });
+
+    it("splits one source's translations into requests that name at most 150MB of uploads", async () => {
+      await configuredProject().uploadTranslations([
+        {
+          source: source('{}'),
+          translations: Array.from({ length: 40 }, (_, index) => ({
+            ...source(large),
+            fileName: `${index}.json`,
+            locale: 'es',
+          })),
+        },
+      ]);
+
+      const requests = bodyBytes(uploadTranslations).map(
+        (_, call) =>
+          bodyOf(uploadTranslations, call).data as {
+            translations: { fileName: string }[];
+          }[]
+      );
+      expect(requests.map((data) => data.length)).toEqual(
+        requests.map(() => 1)
+      );
+      expect(
+        requests.flatMap(([{ translations }]) =>
+          translations.map(({ fileName }) => fileName)
+        )
+      ).toEqual(Array.from({ length: 40 }, (_, index) => `${index}.json`));
+      const uploadedBytes = requests.map(
+        ([{ translations }]) =>
+          translations.filter((file) => 'upload' in file).length *
+          utf8ToBytes(large).byteLength
+      );
+      expect(Math.max(...uploadedBytes)).toBeLessThanOrEqual(150_000_000);
+      expect(Math.max(...bodyBytes(uploadTranslations))).toBeLessThanOrEqual(
+        4_000_000
+      );
+    });
+
+    it('splits translations in many locales into requests that hold their content inline', async () => {
+      const named = (content: string, name: string) => ({
+        ...source(content),
+        fileName: `${name.padEnd(200, 'x')}.json`,
+      });
+
+      await configuredProject().uploadTranslations(
+        Array.from({ length: 100 }, (_, file) => ({
+          source: named('{"greeting":"Hello"}', `en/${file}`),
+          translations: Array.from({ length: 125 }, (_, locale) => ({
+            ...named('{"greeting":"Hola"}', `${locale}/${file}`),
+            locale: 'es',
+          })),
+        }))
+      );
+
+      const sizes = bodyBytes(uploadTranslations);
+      expect(Math.max(...sizes)).toBeLessThanOrEqual(4_000_000);
+      expect(createFileUploads).not.toHaveBeenCalled();
+      expect(
+        sizes.flatMap((_, call) => bodyOf(uploadTranslations, call).data)
+      ).toHaveLength(100);
+    });
+
+    it('uploads the content a source and its translations cannot hold inline in one request', async () => {
+      await configuredProject().uploadTranslations([
+        {
+          source: source('{}'),
+          translations: Array.from({ length: 15 }, (_, index) => ({
+            ...source(`${index}`.padEnd(300_000, 'x')),
+            locale: 'es',
+          })),
+        },
+      ]);
+
+      const [{ translations }] = bodyOf(uploadTranslations).data as {
+        translations: { content?: string }[];
+      }[];
+      const inline = translations.filter((file) => 'content' in file);
       expect(inline.length).toBeGreaterThan(0);
-      expect(inline.length).toBeLessThan(files.length);
-      expect(inlineLength).toBeLessThanOrEqual(90 * 1024 * 1024);
-      expect(vi.mocked(putFileUpload)).toHaveBeenCalledTimes(
-        files.length - inline.length
+      expect(inline.length).toBeLessThan(translations.length);
+      expect(bodyBytes(uploadTranslations)).toEqual([expect.any(Number)]);
+      expect(bodyBytes(uploadTranslations)[0]).toBeLessThanOrEqual(4_000_000);
+      expect(putFileUpload).toHaveBeenCalledTimes(
+        translations.length - inline.length
       );
     });
   });

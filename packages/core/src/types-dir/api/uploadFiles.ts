@@ -4,7 +4,7 @@ import type {
 } from '@generaltranslation/api';
 
 type WithContent<File> = Omit<File, 'content' | 'upload'> & {
-  /** Text, or base64 for binary formats; files over 4MB are uploaded through `createFileUploads`. */
+  /** Text, or base64 for binary formats; content too large for one request, 4MB, is uploaded through `createFileUploads`. */
   content: string;
 };
 

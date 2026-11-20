@@ -6,6 +6,7 @@ import {
   type ErrorCode,
   type ErrorResponse,
   type ApiVersion,
+  type BatchOptions,
   type BatchWriteSummary,
 } from '@generaltranslation/api';
 import {
@@ -105,8 +106,9 @@ function batchFailure(reason: unknown): BatchFailure {
 
 /**
  * @internal
- * Sends `items` in batches of at most `batchSize`, concurrently unless
- * `parallel` is false; summaries add up and results keep request order. The
+ * Sends `items` in batches of at most `batchSize` that fit a request body,
+ * measured by `byteLength`, concurrently unless `parallel` is false; summaries
+ * add up and results keep request order. The
  * API saves the batches that succeed, so when only some batches fail, each
  * item of a failed batch is reported through `failed(item, failure)`; the
  * error is thrown only when every batch fails.
@@ -116,7 +118,7 @@ export async function writeInBatches<Item, Result>(
   batchSize: number,
   write: (batch: Item[]) => Promise<BatchResults<Result>>,
   failed: (item: Item, failure: BatchFailure) => FailedBatchResult<Result>[],
-  { parallel }: { parallel?: boolean } = {}
+  options: Pick<BatchOptions<Item>, 'byteLength' | 'parallel'> = {}
 ): Promise<BatchResults<Result | FailedBatchResult<Result>>> {
   const settled = await processBatches(
     items,
@@ -126,7 +128,7 @@ export async function writeInBatches<Item, Result>(
         (reason: unknown) => ({ batch, reason })
       ),
     ],
-    { batchSize, parallel }
+    { batchSize, ...options }
   );
   const rejected = settled.flatMap((outcome) =>
     'reason' in outcome ? [outcome] : []

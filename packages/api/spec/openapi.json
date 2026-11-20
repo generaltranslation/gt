@@ -12142,7 +12142,7 @@
                                         }
                                       },
                                       "required": ["sha256"],
-                                      "description": "A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB."
+                                      "description": "A file already PUT to the URL from Create file uploads, in place of `content`; required when the request body would be over 4MB."
                                     }
                                   },
                                   "required": ["upload"]
@@ -12194,8 +12194,7 @@
                                 "type": "string"
                               },
                               "versionId": {
-                                "type": "string",
-                                "description": "Version ID; empty when the item failed before its version could be derived."
+                                "type": "string"
                               },
                               "fileName": {
                                 "type": "string"
@@ -12231,8 +12230,7 @@
                                 "type": "string"
                               },
                               "versionId": {
-                                "type": "string",
-                                "description": "Version ID; empty when the item failed before its version could be derived."
+                                "type": "string"
                               },
                               "fileName": {
                                 "type": "string"
@@ -13412,7 +13410,7 @@
                                         }
                                       },
                                       "required": ["sha256"],
-                                      "description": "A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB."
+                                      "description": "A file already PUT to the URL from Create file uploads, in place of `content`; required when the request body would be over 4MB."
                                     }
                                   },
                                   "required": ["upload"]
@@ -13482,7 +13480,7 @@
                                           }
                                         },
                                         "required": ["sha256"],
-                                        "description": "A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB."
+                                        "description": "A file already PUT to the URL from Create file uploads, in place of `content`; required when the request body would be over 4MB."
                                       }
                                     },
                                     "required": ["upload"]
@@ -13531,8 +13529,7 @@
                                 "type": "string"
                               },
                               "versionId": {
-                                "type": "string",
-                                "description": "Version ID; empty when the item failed before its version could be derived."
+                                "type": "string"
                               },
                               "fileName": {
                                 "type": "string"
@@ -13572,8 +13569,7 @@
                                 "type": "string"
                               },
                               "versionId": {
-                                "type": "string",
-                                "description": "Version ID; empty when the item failed before its version could be derived."
+                                "type": "string"
                               },
                               "fileName": {
                                 "type": "string"
@@ -14089,7 +14085,7 @@
       "post": {
         "operationId": "createFileUploads",
         "summary": "Create file uploads",
-        "description": "Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.",
+        "description": "Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) for Upload source files or translations; use one when that request would be over 4MB. Requires `project:files:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -34701,7 +34697,7 @@
         },
         "responses": {
           "200": {
-            "description": "One result per asset, in request order, even when every asset fails. `file_too_large`: an oversized asset. `invalid_request`: a font whose family cannot be determined. Retrying a failed asset is safe.",
+            "description": "One result per asset, in request order, even when every asset fails. `invalid_request`: a font whose family cannot be determined. Retrying a failed asset is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -34756,11 +34752,7 @@
                               },
                               "code": {
                                 "type": "string",
-                                "enum": [
-                                  "file_too_large",
-                                  "invalid_request",
-                                  "internal_error"
-                                ],
+                                "enum": ["invalid_request", "internal_error"],
                                 "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                               }
                             },
@@ -34778,14 +34770,14 @@
             }
           },
           "400": {
-            "description": "The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from a font within the size limit. No asset is written.",
+            "description": "The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from the font. No asset is written.",
             "content": {
               "application/json": {
                 "examples": {
                   "invalid_request": {
                     "summary": "invalid_request",
                     "value": {
-                      "error": "The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from a font within the size limit. No asset is written.",
+                      "error": "The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from the font. No asset is written.",
                       "code": "invalid_request"
                     }
                   },

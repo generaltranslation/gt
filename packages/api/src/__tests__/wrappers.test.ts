@@ -1335,6 +1335,43 @@ describe('batch helpers', () => {
     expect(result).toEqual(items);
   });
 
+  it('closes a batch before its JSON passes maxBytes, and gives an item over it a batch of its own', () => {
+    const items = ['aa', 'bb', 'c'.repeat(20), 'dd', 'ee', 'ff'];
+
+    const batches = createBatches(items, DEFAULT_BATCH_SIZE, 12);
+
+    expect(batches).toEqual([
+      ['aa', 'bb'],
+      ['c'.repeat(20)],
+      ['dd', 'ee'],
+      ['ff'],
+    ]);
+    for (const batch of [batches[0], batches[2], batches[3]]) {
+      expect(JSON.stringify(batch).length).toBeLessThanOrEqual(12);
+    }
+  });
+
+  it('keeps each batch within the request body limit unless maxBytes says otherwise', async () => {
+    const items = Array.from({ length: 3 }, () => 'x'.repeat(1_500_000));
+    const sizes = (options?: { maxBytes: number }) =>
+      processBatches(items, async (batch) => [batch.length], options);
+
+    expect(await sizes()).toEqual([2, 1]);
+    expect(await sizes({ maxBytes: Infinity })).toEqual([3]);
+  });
+
+  it('measures an item with byteLength in place of its JSON', () => {
+    const items = ['aa', 'bb', 'cc'];
+
+    expect(createBatches(items, DEFAULT_BATCH_SIZE, 12)).toEqual([
+      ['aa', 'bb'],
+      ['cc'],
+    ]);
+    expect(createBatches(items, DEFAULT_BATCH_SIZE, 12, () => 1)).toEqual([
+      items,
+    ]);
+  });
+
   it('runs batches sequentially when parallel is false', async () => {
     const items = Array.from({ length: 5 }, (_, index) => index);
     let inFlight = 0;
