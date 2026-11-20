@@ -104,6 +104,14 @@ export type ChunkTranslationsState = {
   /** Milliseconds to wait for a file */
   w?: number;
   /**
+   * The chunks whose import needs no file, because a server sent their
+   * translations with the page
+   */
+  s?: Record<string, 1 | undefined>;
+  /** The key of the unsplit file, and the hash in its name by locale */
+  u?: string;
+  o?: Record<string, string>;
+  /**
    * The translations that have arrived and are not in the translations cache
    * yet, by locale and hash
    */

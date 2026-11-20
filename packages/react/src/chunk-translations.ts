@@ -73,3 +73,14 @@ export {
   loadRegionChunk as loadMinifiedRegionChunk,
   loadRegionChunkTranslations,
 } from './chunk-translations/region';
+
+// What a server-rendered integration starts a page with in place of
+// `initializeChunkTranslations()`: gt-tanstack-start's `internal/splitTranslations.client`.
+export { getState as _getChunkTranslationsState } from './chunk-translations/state';
+export {
+  addArrived as _addArrived,
+  register as _register,
+  requestEntry as _requestEntry,
+  takeArrived as _takeArrived,
+  fetchJson as _fetchJson,
+} from './chunk-translations/request';
