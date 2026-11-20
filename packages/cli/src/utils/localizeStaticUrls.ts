@@ -260,10 +260,10 @@ export default async function localizeStaticUrls(
 
     // Collect all .md and .mdx files from sourceFiles
     if (sourceFiles.md) {
-      defaultLocaleFiles.push(...sourceFiles.md);
+      for (const file of sourceFiles.md) defaultLocaleFiles.push(file);
     }
     if (sourceFiles.mdx) {
-      defaultLocaleFiles.push(...sourceFiles.mdx);
+      for (const file of sourceFiles.mdx) defaultLocaleFiles.push(file);
     }
 
     if (defaultLocaleFiles.length > 0) {

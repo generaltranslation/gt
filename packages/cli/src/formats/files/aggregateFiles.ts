@@ -228,7 +228,9 @@ export async function aggregateFiles(
         }
         return true;
       });
-    files.push(...jsonFiles.filter((file) => file !== null));
+    for (const file of jsonFiles) {
+      if (file !== null) files.push(file);
+    }
   }
 
   // Process YAML files
@@ -315,7 +317,9 @@ export async function aggregateFiles(
         }
         return true;
       });
-    files.push(...yamlFiles.filter((file) => file !== null));
+    for (const file of yamlFiles) {
+      if (file !== null) files.push(file);
+    }
   }
 
   // Process Twilio Content JSON files
@@ -362,7 +366,9 @@ export async function aggregateFiles(
         }
         return true;
       });
-    files.push(...twilioContentJsonFiles.filter((file) => file !== null));
+    for (const file of twilioContentJsonFiles) {
+      if (file !== null) files.push(file);
+    }
   }
 
   // Process Lottie files (binary zip bundles). Content is read as raw bytes and
@@ -404,7 +410,7 @@ export async function aggregateFiles(
     if (expressionOffenders.length > 0) {
       logErrorAndExit(lottieExpressionsError(expressionOffenders));
     }
-    files.push(...lottieFiles);
+    for (const file of lottieFiles) files.push(file);
   }
 
   // These formats are uploaded verbatim. Their backslash escapes, format
@@ -454,7 +460,9 @@ export async function aggregateFiles(
         }
         return true;
       });
-    files.push(...verbatimFiles.filter((file) => file !== null));
+    for (const file of verbatimFiles) {
+      if (file !== null) files.push(file);
+    }
   }
 
   // Process Apple .xcstrings catalogs. One catalog holds every locale; only the
@@ -522,7 +530,7 @@ export async function aggregateFiles(
         )
       );
     }
-    files.push(...xcstringsFiles);
+    for (const file of xcstringsFiles) files.push(file);
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
@@ -589,7 +597,9 @@ export async function aggregateFiles(
           }
           return true;
         });
-      files.push(...parsed.filter((file) => file !== null));
+      for (const file of parsed) {
+        if (file !== null) files.push(file);
+      }
     }
   }
 

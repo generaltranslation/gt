@@ -280,7 +280,7 @@ export function expandGlobPatterns(
       ignore: expandedExcludePatterns,
     });
 
-    resolvedPaths.push(...matches);
+    for (const match of matches) resolvedPaths.push(match);
 
     // For each match, create a version with [locale] in the correct positions
     matches.forEach((match) => {
