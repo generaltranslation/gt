@@ -161,6 +161,20 @@
         "default": "./dist/internal/localeRouting.disabled.mjs"
       },
       "default": "./dist/internal/localeRouting.disabled.mjs"
+    },
+    "./internal/splitTranslations": {
+      "import": {
+        "types": "./dist/internal/splitTranslations.d.mts",
+        "default": "./dist/internal/splitTranslations.mjs"
+      },
+      "default": "./dist/internal/splitTranslations.mjs"
+    },
+    "./internal/_split-table": {
+      "import": {
+        "types": "./dist/internal/_split-table.d.mts",
+        "default": "./dist/internal/_split-table.mjs"
+      },
+      "default": "./dist/internal/_split-table.mjs"
     }
   },
   "keywords": [

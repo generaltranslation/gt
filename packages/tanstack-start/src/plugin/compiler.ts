@@ -10,12 +10,15 @@ import type { GTTanstackStartCompilerOptions } from './types';
 
 const NODE_MODULES_PATTERN = /[\\/]node_modules[\\/]/;
 
-type CompilerVitePlugin = (options: Record<string, unknown>) => Plugin;
+// A build that splits translations is two plugins
+type CompilerVitePlugin = (
+  options: Record<string, unknown>
+) => Plugin | Plugin[];
 
 export function createCompilerPlugin(
   { type = 'none', ...compilerSettings }: GTTanstackStartCompilerOptions = {},
   configFile: string
-): { compilerPlugin: Plugin | undefined; warnings: string[] } {
+): { compilerPlugin: Plugin[] | undefined; warnings: string[] } {
   const warnings: string[] = [];
   const enabled = type === 'babel';
   const gtConfig = fs.existsSync(configFile)
@@ -48,13 +51,23 @@ export function createCompilerPlugin(
     Object.entries(compilerSettings).filter(([, value]) => value !== undefined)
   );
 
+  // `firstVisit` is this package's key, not the compiler's
+  const { experimentalSplitTranslations: split, ...rest } = definedSettings as {
+    experimentalSplitTranslations?: { firstVisit?: unknown };
+  };
+  const { firstVisit: _firstVisit, ...compilerSplit } = split ?? {};
   const plugin = gtCompiler({
-    ...definedSettings,
+    ...rest,
+    ...(split && { experimentalSplitTranslations: compilerSplit }),
     ...(gtConfig ? { gtConfig } : {}),
     autoJsxImportSource: 'gt-tanstack-start',
+    _serverRendered: true,
   });
 
-  return { compilerPlugin: adaptCompilerPlugin(plugin), warnings };
+  return {
+    compilerPlugin: [plugin].flat().map(adaptCompilerPlugin),
+    warnings,
+  };
 }
 
 /**

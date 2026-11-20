@@ -8,6 +8,21 @@ export type GTTanstackStartCompilerOptions = GTCompilerOptions & {
    * @default 'none'
    */
   type?: 'babel' | 'none';
+  /**
+   * The compiler's `experimentalSplitTranslations`, with one more key. `firstVisit` says how
+   * the translations of a server-rendered page reach it: `'inline'` (the
+   * default) in the page's dehydrated state, `'files'` as the files a client
+   * navigation loads, which the server asks the browser to preload.
+   */
+  experimentalSplitTranslations?: {
+    enabled?: boolean;
+    by?: 'chunk' | 'module';
+    minifyHashes?: boolean;
+    naming?: 'token' | 'map';
+    requestCost?: number;
+    previous?: string;
+    firstVisit?: 'inline' | 'files';
+  };
 };
 
 /**
