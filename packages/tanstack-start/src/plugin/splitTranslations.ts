@@ -2,6 +2,7 @@
 // translations of the client build only. This plugin hands what that build wrote to the server build, which
 // TanStack Start runs after it with the same plugin instances, and points the
 // runtime at its split-aware modules.
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin } from 'vite';
@@ -13,6 +14,15 @@ const RESOLVED_SPLIT_TABLE_MODULE_ID = '\0gt-tanstack-start:split-table';
 const SPLIT_CONTENTS_MODULE_ID = '\0gt-tanstack-start:split-contents:';
 // The compiler's CHUNK_TRANSLATIONS_MANIFEST
 const MANIFEST = 'gt-chunk-translations.json';
+// What the table and the content of each locale's files are in the server's
+// modules until every module of the server build is compiled
+const TABLE_PLACEHOLDER = '__GT_SPLIT_TABLE__';
+const CONTENTS_PLACEHOLDER = '__GT_SPLIT_CONTENTS__:';
+const TABLE_STRING = new RegExp(`(["'\`])${TABLE_PLACEHOLDER}\\1`, 'g');
+const CONTENTS_STRING = new RegExp(
+  `(["'\`])${CONTENTS_PLACEHOLDER}([A-Za-z0-9_-]+)\\1`,
+  'g'
+);
 
 const ENV_TRUE_VALUES = new Set(['true', '1']);
 
@@ -148,10 +158,59 @@ export function createSplitTable(
   return { table, contents };
 }
 
-export function createSplitPlugin(firstVisit: SplitFirstVisit): Plugin {
+/**
+ * Takes the translations of `hashes` out of the unsplit file of each locale
+ * in the client build at `outDir`, and names each changed file by what it
+ * now holds. The compiler puts every translation that no chunk's file holds
+ * into those files, which every page loads, and that includes the messages
+ * only the server's code uses.
+ */
+export function dropUnsplitTranslations(
+  outDir: string,
+  assetsDir: string,
+  hashes: readonly string[]
+): void {
+  const manifestFile = path.join(outDir, assetsDir, MANIFEST);
+  const manifest = JSON.parse(
+    fs.readFileSync(manifestFile, 'utf8')
+  ) as Manifest;
+  if (!hashes.length || !manifest.unsplit) return;
+  for (const [locale, fileName] of Object.entries(manifest.unsplit)) {
+    const file = path.join(outDir, fileName);
+    const translations = JSON.parse(fs.readFileSync(file, 'utf8')) as Record<
+      string,
+      unknown
+    >;
+    const kept = Object.fromEntries(
+      Object.entries(translations).filter(([hash]) => !hashes.includes(hash))
+    );
+    const count = Object.keys(kept).length;
+    if (count === Object.keys(translations).length) continue;
+    fs.rmSync(file);
+    delete manifest.unsplit[locale];
+    if (!count) continue;
+    // As the compiler's getFileHash() and getFileName() name it
+    const source = JSON.stringify(kept);
+    const hash = createHash('sha256').update(source).digest('hex').slice(0, 8);
+    const key = readKey(fileName, locale);
+    manifest.unsplit[locale] = `${key}.${locale}.${hash}.json`;
+    fs.writeFileSync(path.join(outDir, manifest.unsplit[locale]), source);
+  }
+  if (!Object.keys(manifest.unsplit).length) delete manifest.unsplit;
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2));
+}
+
+/**
+ * @param getServerOnlyHashes The hashes of the messages only server code uses, known once the server build has compiled its modules.
+ */
+export function createSplitPlugin(
+  firstVisit: SplitFirstVisit,
+  getServerOnlyHashes: () => string[]
+): Plugin {
   let isBuild = false;
   let base = '/';
   let assetsDir = 'assets';
+  let clientDir: string | undefined;
   let written: ReturnType<typeof createSplitTable> | undefined;
   const isActive = () => isBuild && process.env.NODE_ENV === 'production';
   return {
@@ -184,7 +243,7 @@ export function createSplitPlugin(firstVisit: SplitFirstVisit): Plugin {
       if (id === RESOLVED_SPLIT_TABLE_MODULE_ID && written) {
         const locales = Object.keys(written.contents);
         return [
-          `export const table = ${JSON.stringify(written.table)};`,
+          `export const table = ${JSON.stringify(TABLE_PLACEHOLDER)};`,
           `export const loadContents = {${locales
             .map(
               (locale) =>
@@ -194,20 +253,43 @@ export function createSplitPlugin(firstVisit: SplitFirstVisit): Plugin {
         ].join('\n');
       }
       if (id.startsWith(SPLIT_CONTENTS_MODULE_ID) && written) {
-        const files =
-          written.contents[id.slice(SPLIT_CONTENTS_MODULE_ID.length)];
-        return `export default {${Object.entries(files ?? {})
-          .map(
-            ([name, source]) =>
-              `${JSON.stringify(name)}: JSON.parse(${JSON.stringify(source)})`
-          )
-          .join(',\n')}};`;
+        const locale = id.slice(SPLIT_CONTENTS_MODULE_ID.length);
+        return `export default ${JSON.stringify(CONTENTS_PLACEHOLDER + locale)};`;
+      }
+    },
+    // Every module of the server build is compiled by now, so which messages
+    // only the server uses is known: the client's unsplit files lose them,
+    // and the server's modules get the table of the files as they then are.
+    generateBundle(_options, bundle) {
+      if (!isActive() || !isServerEnvironment(this) || !clientDir) return;
+      dropUnsplitTranslations(clientDir, assetsDir, getServerOnlyHashes());
+      const { table, contents } = createSplitTable(
+        clientDir,
+        assetsDir,
+        base,
+        firstVisit
+      );
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type !== 'chunk') continue;
+        chunk.code = chunk.code
+          .replace(TABLE_STRING, () => JSON.stringify(table))
+          .replace(
+            CONTENTS_STRING,
+            (_match, _quote, locale: string) =>
+              `{${Object.entries(contents[locale] ?? {})
+                .map(
+                  ([name, source]) =>
+                    `${JSON.stringify(name)}: JSON.parse(${JSON.stringify(source)})`
+                )
+                .join(',\n')}}`
+          );
       }
     },
     // The client build is written before the server build starts
     writeBundle(options) {
       if (!isActive() || isServerEnvironment(this) || !options.dir) return;
       if (!fs.existsSync(path.join(options.dir, assetsDir, MANIFEST))) return;
+      clientDir = options.dir;
       written = createSplitTable(options.dir, assetsDir, base, firstVisit);
     },
   };

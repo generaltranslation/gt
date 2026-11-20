@@ -15,9 +15,16 @@ type CompilerVitePlugin = (
   options: Record<string, unknown>
 ) => Plugin | Plugin[];
 
+/** What the compiler says of a build that splits translations. */
+export type SplitTranslationsBuild = { getServerOnlyHashes: () => string[] };
+
+/**
+ * @param onSplitTranslations Called once when the build splits translations.
+ */
 export function createCompilerPlugin(
   { type = 'none', ...compilerSettings }: GTTanstackStartCompilerOptions = {},
-  configFile: string
+  configFile: string,
+  onSplitTranslations: (build: SplitTranslationsBuild) => void
 ): { compilerPlugin: Plugin[] | undefined; warnings: string[] } {
   const warnings: string[] = [];
   const enabled = type === 'babel';
@@ -62,6 +69,7 @@ export function createCompilerPlugin(
     ...(gtConfig ? { gtConfig } : {}),
     autoJsxImportSource: 'gt-tanstack-start',
     _splitTranslationsLoader: 'gt-tanstack-start/chunk-translations',
+    _onSplitTranslations: onSplitTranslations,
   });
 
   return {

@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { gtReact } from 'gt-react/vite';
 import type { Logger, Plugin } from 'vite';
-import { createCompilerPlugin } from './compiler';
+import { createCompilerPlugin, type SplitTranslationsBuild } from './compiler';
 import {
   COMPAT_CONFIG_MODULE_ID,
   CONFIG_MODULE_ID,
@@ -75,9 +75,13 @@ export function gtTanstackStart(
     ...configModuleOptions
   }: GTTanstackStartPluginOptions = options;
   const configFile = path.resolve(cwd, config ?? 'gt.config.json');
+  let splitBuild: SplitTranslationsBuild | undefined;
   const { compilerPlugin, warnings } = createCompilerPlugin(
     experimentalCompilerOptions,
-    configFile
+    configFile,
+    (build) => {
+      splitBuild = build;
+    }
   );
   const splitOption =
     experimentalCompilerOptions?.experimentalSplitTranslations;
@@ -187,6 +191,13 @@ export function gtTanstackStart(
   };
 
   const plugins = [configPlugin, gtReact()];
-  if (splitsTranslations) plugins.push(createSplitPlugin(firstVisit));
+  if (splitsTranslations) {
+    plugins.push(
+      createSplitPlugin(
+        firstVisit,
+        () => splitBuild?.getServerOnlyHashes() ?? []
+      )
+    );
+  }
   return compilerPlugin ? [...plugins, ...compilerPlugin] : plugins;
 }
