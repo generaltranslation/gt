@@ -331,10 +331,11 @@ impl<'a> JsxTraversal<'a> {
             Box::new(SanitizedChild::Fragment(Box::new(children))),
           );
         }
+        // As in the runtime, an element with no branch stores no transformation.
         if !branches.is_empty() {
           sanitized_element.b = Some(branches);
+          sanitized_element.t = component_info.transformation;
         }
-        sanitized_element.t = component_info.transformation;
       } else {
         // Handle other GT components (T, etc.) with GT data
         let gt_prop = SanitizedGtProp {
@@ -1313,6 +1314,53 @@ mod tests {
       );
       // hashSource({ source: { t: 'Ordinal', i: 1, d: { b: { '=1': 'Winner', one: '1st', other: 'nth' }, t: 'o' } }, dataFormat: 'JSX' })
       assert_eq!(hash, "d154cccb78f09539");
+    }
+
+    #[test]
+    fn a_lone_empty_fallback_stores_no_branch_data() {
+      // <T>Before <Plural n={2}>{null}</Plural> after</T>, and {false} and {''}
+      let empties = || {
+        [
+          Lit::Null(Null { span: DUMMY_SP }),
+          Lit::Bool(Bool { span: DUMMY_SP, value: false }),
+          Lit::Str(Str { span: DUMMY_SP, value: Atom::new("").into(), raw: None }),
+        ]
+      };
+      for (component, selector) in [("Branch", "branch"), ("Plural", "n"), ("Ordinal", "n")] {
+        for empty in empties() {
+          let mut visitor = create_test_visitor();
+          visitor.import_tracker.scope_tracker.track_variable(
+            Atom::new(component),
+            Atom::new(component),
+            true,
+          );
+          let mut traversal = JsxTraversal::new(&visitor);
+          let fallback = JSXElementChild::JSXExprContainer(JSXExprContainer {
+            span: DUMMY_SP,
+            expr: JSXExpr::Expr(Box::new(Expr::Lit(empty.clone()))),
+          });
+          let mut branching = create_jsx_element_with_children(component, vec![fallback]);
+          branching.opening.attrs = vec![create_number_attr(selector, 2.0)];
+          let element = create_jsx_element_with_children(
+            "T",
+            vec![
+              create_jsx_text_child("Before "),
+              JSXElementChild::JSXElement(Box::new(branching)),
+              create_jsx_text_child(" after"),
+            ],
+          );
+
+          let (hash, json_string) = traversal.calculate_element_hash(&element);
+
+          assert_eq!(
+            json_string,
+            r#"{"dataFormat":"JSX","source":["Before ",{}," after"]}"#,
+            "{component} {empty:?}"
+          );
+          // The hash react-core's addGTIdentifier test pins for the same content
+          assert_eq!(hash, "b5a6ee4eef4e3071", "{component} {empty:?}");
+        }
+      }
     }
 
     #[test]
