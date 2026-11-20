@@ -8,25 +8,42 @@ import type * as Disabled from './splitTranslations';
 import type { SplitPayload, SplitRouter, SplitTable } from '../split/types';
 
 /**
- * The client chunks of the matched routes, by their path from the build's
- * base, or undefined when the router does not say.
+ * The client chunks a router's manifest names for the matched routes, by
+ * their path from the build's base, and the URL they are served from: the
+ * build's base, or what the app rewrote it to (TanStack Start's
+ * `transformAssets`, as for a CDN). Undefined when the router does not say.
  */
-function getMatchedChunks(
+function findChunks(
   router: SplitRouter,
-  base: string
-): string[] | undefined {
+  built: SplitTable
+): { chunks: string[]; base: string } | undefined {
   const matches = router.state?.matches;
   const routes = router.ssr?.manifest?.routes;
   if (!matches || !routes) return undefined;
+  const known = new Set([built.entryChunk, ...Object.keys(built.imports)]);
   const chunks = new Set<string>();
+  let base: string | undefined;
   for (const { routeId } of matches) {
     for (const link of routes[routeId]?.preloads ?? []) {
-      const href = typeof link === 'string' ? link : link.href;
-      // A chunk the app serves from elsewhere is not one the table knows
-      if (href.startsWith(base)) chunks.add(href.slice(base.length));
+      const [href] = (typeof link === 'string' ? link : link.href).split(
+        /[?#]/
+      );
+      if (href.startsWith(built.base)) {
+        chunks.add(href.slice(built.base.length));
+        continue;
+      }
+      // The longest end of the URL that is a chunk of the build
+      const segments = href.split('/');
+      for (let start = 1; start < segments.length; start++) {
+        const chunk = segments.slice(start).join('/');
+        if (!known.has(chunk)) continue;
+        chunks.add(chunk);
+        base ??= href.slice(0, href.length - chunk.length);
+        break;
+      }
     }
   }
-  return [...chunks];
+  return { chunks: [...chunks], base: base ?? built.base };
 }
 
 export const getSplitPayload: typeof Disabled.getSplitPayload = async (
@@ -37,8 +54,10 @@ export const getSplitPayload: typeof Disabled.getSplitPayload = async (
   const state = built?.states[locale];
   if (!built || !state) return undefined;
   // Without the router's manifest, the page gets every file
-  const chunks =
-    getMatchedChunks(router, built.base) ?? Object.keys(built.imports);
+  const { chunks, base } = findChunks(router, built) ?? {
+    chunks: Object.keys(built.imports),
+    base: built.base,
+  };
   const imported = chunks.filter((chunk) => built.imports[chunk]);
   const keys = [
     ...new Set([
@@ -48,7 +67,7 @@ export const getSplitPayload: typeof Disabled.getSplitPayload = async (
   ].filter((key) => built.files[key]?.[locale]);
   const payload: SplitPayload = {
     m: built.split,
-    s: state,
+    s: { ...state, b: base },
     c: imported,
     k: keys,
   };
@@ -58,7 +77,7 @@ export const getSplitPayload: typeof Disabled.getSplitPayload = async (
       built.unsplit[locale],
       ...keys.map((key) => built.files[key][locale]),
     ].filter((name) => name !== undefined);
-    return { ...payload, p: names.map((name) => built.base + name) };
+    return { ...payload, p: names.map((name) => base + name) };
   }
   const contents = (await loadContents![locale]()).default;
   return {
@@ -80,8 +99,22 @@ export const getSplitPayload: typeof Disabled.getSplitPayload = async (
  * browser needs to load any locale's files itself, as a client-rendered app
  * does.
  */
-export const getSplitShellPayload: typeof Disabled.getSplitShellPayload = () =>
-  table && { m: table.split, a: table.states };
+export const getSplitShellPayload: typeof Disabled.getSplitShellPayload = (
+  router
+) => {
+  const built: SplitTable | undefined = table;
+  if (!built) return undefined;
+  const base = findChunks(router, built)?.base ?? built.base;
+  return {
+    m: built.split,
+    a: Object.fromEntries(
+      Object.entries(built.states).map(([locale, state]) => [
+        locale,
+        { ...state, b: base },
+      ])
+    ),
+  };
+};
 
 /**
  * Called while the server renders: React writes a preload link for each file

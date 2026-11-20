@@ -83,7 +83,7 @@ export function integrateRouter<State extends GTRouterState>(
       // locale. The client hydrates it with that state, then renders the
       // visitor's own, whose files it loads itself.
       if (router.isShell?.()) {
-        const shellSplit = getSplitShellPayload();
+        const shellSplit = getSplitShellPayload(router);
         return {
           ...dehydrated,
           gt: {

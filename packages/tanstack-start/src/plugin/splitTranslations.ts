@@ -78,7 +78,9 @@ export function createSplitTable(
   const manifest = JSON.parse(
     read(path.posix.join(assetsDir, MANIFEST))
   ) as Manifest;
-  const [entry] = Object.values(manifest.entries);
+  const [[entryChunk, entry] = ['', undefined]] = Object.entries(
+    manifest.entries
+  );
   const current = manifest.current
     ? (JSON.parse(read(manifest.current)) as { c?: string })
     : undefined;
@@ -90,6 +92,7 @@ export function createSplitTable(
     imports: manifest.imports,
     files: manifest.files,
     entry: (manifest.split ? manifest.maps : entry?.translations) ?? {},
+    entryChunk,
     entryKeys: entry?.files ?? [],
     unsplit: manifest.unsplit ?? {},
   };

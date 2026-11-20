@@ -24,6 +24,8 @@ export type SplitTable = {
   files: Record<string, Record<string, string>>;
   /** The file the page reads first, by locale: the entry's, or the locale's map */
   entry: Record<string, string>;
+  /** The file of the entry chunk */
+  entryChunk: string;
   /** In a build that splits by module: the keys of the files the entry holds */
   entryKeys: string[];
   /** The unsplit file, by locale */
