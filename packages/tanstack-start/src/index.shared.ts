@@ -35,7 +35,7 @@ export {
   mFallback,
   derive,
   plural,
-  selectordinal,
+  ordinal,
   select,
   number,
   date,

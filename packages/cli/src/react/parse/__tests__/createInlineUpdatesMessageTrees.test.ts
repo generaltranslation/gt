@@ -15,7 +15,7 @@ import wireFormatCases from '../../../../../../test-fixtures/message-tree-wire-f
 vi.mock('../../../fs/matchFiles.js', () => ({ matchFiles: vi.fn() }));
 
 const MESSAGE_HELPERS =
-  'msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
+  'msg, useGT, getGT, plural, ordinal, select, number, date, time, part, derive, n';
 
 // The fixtures' free variables, typed as in fixtureParity.test.ts: the CLI
 // skips an undeclared value, since TypeScript types it any.
@@ -952,10 +952,10 @@ describe('createInlineUpdates: tagged templates', () => {
     ]);
   });
 
-  describe('plural and selectordinal branch keys', () => {
+  describe('plural and ordinal branch keys', () => {
     it.each([
       ['plural', 'onee'],
-      ['selectordinal', 'first'],
+      ['ordinal', 'first'],
     ])(
       'skips a %s with the branch %s, which is not a plural category',
       async (helper, key) => {
@@ -975,7 +975,7 @@ describe('createInlineUpdates: tagged templates', () => {
       }
     );
 
-    it.each(['plural', 'selectordinal'])(
+    it.each(['plural', 'ordinal'])(
       'accepts =0 and the six categories in %s',
       async (helper) => {
         const result = await extract(`

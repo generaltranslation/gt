@@ -8,7 +8,7 @@ export {
   part,
   plural,
   select,
-  selectordinal,
+  ordinal,
   time,
   m,
   t,

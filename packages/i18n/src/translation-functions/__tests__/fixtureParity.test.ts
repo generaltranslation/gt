@@ -10,7 +10,7 @@ import {
   part,
   plural,
   select,
-  selectordinal,
+  ordinal,
   time,
 } from '../placeholders';
 import type { MessageTreeMetadata } from '../renderMessage';
@@ -97,8 +97,8 @@ const cases: Record<string, (t: GT) => string> = {
     )}`,
   'plural-exact-key-order': (t) =>
     t`${plural({ count }, { '=2': 'A pair', '=10': 'Ten items', other: part`${n} items` })}`,
-  selectordinal: (t) =>
-    t`You finished ${selectordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`,
+  ordinal: (t) =>
+    t`You finished ${ordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`,
   'number-intl-options': (t) =>
     t`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`,
   'number-currency-dynamic': (t) =>

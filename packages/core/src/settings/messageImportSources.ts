@@ -29,7 +29,7 @@ export const GT_MESSAGE_HELPER_NAMES = [
   'useGT',
   'getGT',
   'plural',
-  'selectordinal',
+  'ordinal',
   'select',
   'number',
   'date',

@@ -109,7 +109,7 @@ export {
   part,
   plural,
   select,
-  selectordinal,
+  ordinal,
   time,
 } from 'gt-i18n';
 export { isLocaleSupported } from './request/localeValidation';

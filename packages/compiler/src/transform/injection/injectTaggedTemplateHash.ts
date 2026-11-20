@@ -279,7 +279,7 @@ function getHole(
   const args = expression.arguments;
   switch (helper) {
     case 'plural':
-    case 'selectordinal':
+    case 'ordinal':
     case 'select': {
       const [variable, branchesArg] = args;
       if (args.length !== 2 || !t.isObjectExpression(branchesArg)) nonStatic();
@@ -292,7 +292,9 @@ function getHole(
           bindings
         );
       }
-      return { kind: helper, name: binding.name, value: binding, branches };
+      // ordinal() builds the tree node named after ICU's keyword.
+      const kind = helper === 'ordinal' ? 'selectordinal' : helper;
+      return { kind, name: binding.name, value: binding, branches };
     }
     case 'number':
     case 'date':

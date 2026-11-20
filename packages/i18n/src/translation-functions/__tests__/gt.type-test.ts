@@ -8,7 +8,7 @@ import {
   part,
   plural,
   select,
-  selectordinal,
+  ordinal,
   t,
   time,
   type GT,
@@ -66,7 +66,7 @@ export function validUsage(): string[] {
     gt({ locale: 'fr' })`Save`,
     gt`You have ${plural({ count }, { one: part`${n} item`, other: part`${n} items` })}.`,
     gt`${plural({ count }, { '=0': 'None', one: part`${n} from ${{ who }}`, other: part`${n} from ${who}` })}`,
-    gt`${selectordinal({ count }, { one: part`${n}st`, other: part`${n}th` })}`,
+    gt`${ordinal({ count }, { one: part`${n}st`, other: part`${n}th` })}`,
     gt`${select({ role }, { admin: 'Admin', member: 'Member' })}`,
     gt`${select({ role }, { admin: 'Admin', other: 'Someone' })}`,
     gt`${select({ who }, { other: 'Someone' })}`,
@@ -82,7 +82,7 @@ export function validUsage(): string[] {
     gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`,
     gt`Due ${date({ due }, { style: 'medium' })}`,
     gt`${plural(count, { one: 'One file', other: part`${n} files` })}`,
-    gt`${selectordinal(count, { one: part`${n}st`, other: part`${n}th` })}`,
+    gt`${ordinal(count, { one: part`${n}st`, other: part`${n}th` })}`,
     gt`${select(role, { admin: 'Admin', member: 'Member' })}`,
     gt`${select(who, { admin: 'Admin', other: 'Someone' })}`,
     gt`Total: ${number(price, { style: 'currency', currency: 'USD' })}`,
@@ -168,7 +168,7 @@ export function mistakes(): unknown[] {
     gt`${plural({ count }, { '=0x10': 'Sixteen', other: 'Many' })}`,
 
     // @ts-expect-error binary exact plural key
-    gt`${selectordinal({ count }, { '=0b1': 'First', other: 'Later' })}`,
+    gt`${ordinal({ count }, { '=0b1': 'First', other: 'Later' })}`,
 
     // @ts-expect-error =-0, which never matches a count
     gt`${plural({ count }, { '=-0': 'Zero', other: 'Many' })}`,

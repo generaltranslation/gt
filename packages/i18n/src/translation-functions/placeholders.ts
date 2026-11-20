@@ -84,7 +84,7 @@ export type Placeholder =
   | Part;
 
 /**
- * The count of the nearest `plural()` or `selectordinal()`, formatted for the
+ * The count of the nearest `plural()` or `ordinal()`, formatted for the
  * locale like ICU `#`: `` plural({ count }, { other: part`${n} items` }) ``.
  * A symbol, so a plain template literal cannot use it by mistake.
  * A local variable named `n` hides it and silently becomes an ordinary value,
@@ -115,7 +115,7 @@ type DynHole = DynPlaceholder | Part<boolean, true> | ChoicePlaceholder<true>;
 type CheckHole<H, AllowsPluralCount extends boolean> = H extends PluralCountHole
   ? AllowsPluralCount extends true
     ? H
-    : 'n, the plural count, only works inside a plural or selectordinal branch'
+    : 'n, the plural count, only works inside a plural or ordinal branch'
   : H extends Placeholder | DynPlaceholder | HoleValue
     ? H
     : H extends Date
@@ -327,7 +327,11 @@ export function plural<
   return choice('plural', value, branches as Record<string, Branch>);
 }
 
-export function selectordinal<
+/**
+ * `plural()` for ordinals such as 1st, 2nd and 3rd: it picks among the
+ * locale's ordinal categories, as ICU's `selectordinal` does.
+ */
+export function ordinal<
   const O extends Record<string, number | bigint>,
   const B extends PluralBranches,
 >(

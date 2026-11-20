@@ -86,7 +86,7 @@ function holeVariants(
     const args = expression.get('arguments');
     switch (helper) {
       case 'plural':
-      case 'selectordinal':
+      case 'ordinal':
       case 'select':
         return branchHoleVariants(helper, expression, context);
       case 'number':
@@ -150,15 +150,17 @@ function getHoleVariable(
 }
 
 function branchHoleVariants(
-  kind: BranchingKind,
+  helper: 'plural' | 'ordinal' | 'select',
   call: NodePath<t.CallExpression>,
   context: TreeContext
 ): TemplateHole[] {
+  // ordinal() builds the tree node named after ICU's keyword.
+  const kind: BranchingKind = helper === 'ordinal' ? 'selectordinal' : helper;
   const args = call.get('arguments');
   const [variable, branchesArg] = args;
   if (args.length !== 2 || !branchesArg.isObjectExpression()) {
     throw new NonStaticMessageError(
-      `the ${kind}() branches are not an object literal`,
+      `the ${helper}() branches are not an object literal`,
       branchesArg?.node ?? call.node
     );
   }
@@ -171,7 +173,7 @@ function branchHoleVariants(
     // The tree builder checks an exact =N key.
     if (kind !== 'select' && key[0] !== '=' && !PLURAL_CATEGORIES.has(key)) {
       throw new NonStaticMessageError(
-        `${kind}() has the branch ${key}, which is not a plural category`,
+        `${helper}() has the branch ${key}, which is not a plural category`,
         property.node,
         undefined,
         `Use ${[...PLURAL_CATEGORIES].join(', ')}, or an exact number like =0`
