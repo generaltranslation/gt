@@ -399,7 +399,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             state.chunkTranslations = { imports: new Set() };
           }
 
-          if (shouldWarn(options.logLevel)) {
+          if (shouldWarn(options.logLevel) && !isDependency(id)) {
             for (const source of findUnreadJsxImportSources(
               ast.program,
               state.settings

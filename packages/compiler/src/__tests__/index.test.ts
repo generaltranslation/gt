@@ -718,6 +718,16 @@ describe("JSX compiled against a runtime other than React's", () => {
     }
   );
 
+  it('does not warn of a dependency, which the app cannot compile again, and warns of an app file after it', async () => {
+    const cwd = createProject();
+    const { warnings } = await runPlugin(
+      { ...PROJECT_SETTINGS, enableAutoJsxInjection: true },
+      compiledAgainst(SOURCE, DEVELOPMENT_CODE),
+      { cwd, files: ['node_modules/some-library/Button.js', 'App.tsx'] }
+    );
+    expect(warnings).toEqual([warningOf(SOURCE, path.join(cwd, 'App.tsx'))]);
+  });
+
   it.each<
     [
       name: string,
