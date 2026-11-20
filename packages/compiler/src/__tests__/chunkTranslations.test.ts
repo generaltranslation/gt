@@ -47,8 +47,8 @@ import {
 } from '../transform/chunk-translations/chunkSourceMap';
 import { wrapDynamicImports } from '../transform/chunk-translations/chunkTranslationsModule';
 import {
-  getPairChunk,
   getPairKey,
+  getPairModule,
 } from '../transform/chunk-translations/createRegionGraph';
 import { createRandom } from '../transform/chunk-translations/__tests__/syntheticApp';
 import {
@@ -4640,6 +4640,7 @@ globalThis.save = () => t\`Save\`;`,
           emitFile: ({ fileName, source }) => (emitted[fileName] = source),
           getModuleInfo: getModuleInfo(graph),
           isLazy,
+          root: process.cwd(),
         }
       );
       const manifest = JSON.parse(
@@ -5019,7 +5020,7 @@ globalThis.save = () => t\`Save\`;`,
               getModuleInfo(graph),
               new Set(Object.values(HASH)),
               minifiedIds,
-              isLazy
+              { isLazy, root: process.cwd() }
             )
           : undefined;
         const bundle = Object.fromEntries(
@@ -5067,8 +5068,21 @@ globalThis.save = () => t\`Save\`;`,
             ([, id]) => [build.minifiedIds.hashes.get(id)!, id]
           )
         );
-      const pairOf = (build: Rendered, hash: string, fileName: string) =>
-        getPairKey(hash, getPairChunk(build.bundle[fileName]));
+      /** The pair of a message in a chunk: by the first of the chunk's modules that read it. */
+      const pairOf = (build: Rendered, hash: string, fileName: string) => {
+        const { modules } = build.bundle[fileName];
+        const written = [...build.minifiedIds.placeholders]
+          .filter(([, named]) => named === hash)
+          .map(([placeholder]) => placeholder);
+        const [first] = Object.keys(modules)
+          .sort()
+          .filter((id) =>
+            written.some((placeholder) =>
+              modules[id].code.includes(placeholder)
+            )
+          );
+        return getPairKey(hash, getPairModule(first, process.cwd()));
+      };
 
       it('reads ids out of each chunk and placeholders out of each module, and gives each chunk its ids in the files of its own loads', () => {
         // Billing also reads the date picker, which the shared chunk reads for Home
@@ -5687,17 +5701,33 @@ globalThis.save = () => t\`Save\`;`,
           return { emitted, manifest, fileOfPair, keep, read };
         };
 
+        /** What a test knows of how a bundler wrote the imports of an app. */
+        type Imports = {
+          /** Whether a dynamic import in a chunk is written without an `import()` */
+          isInline: (fileName: string, target: string) => boolean;
+          /** The chunk an `import()` of a module loads */
+          fileOfImport: (target: string) => string | undefined;
+        };
+
         /**
          * Fails unless every list of a chunk is in one file, which holds
-         * each of its ids with the id's own message, and every load reads
-         * each call site it runs from the files it holds by then.
+         * each of its ids with the id's own message, no file gives an id
+         * another message, and every page reads each call site it runs from
+         * the files it holds by then: it starts at each entry and follows
+         * every chain of dynamic imports, in every order.
          */
         function expectEveryIdToResolve(
           build: Rendered,
           written: ReturnType<typeof filesOf>,
           graph: typeof GRAPH,
           isLazy: boolean,
-          name: string
+          name: string,
+          imports: Imports = {
+            isInline: () => false,
+            fileOfImport: (target) =>
+              Object.values(build.bundle).find((file) => target in file.modules)
+                ?.fileName,
+          }
         ) {
           const { bundle, minifiedIds } = build;
           for (const fileName of Object.keys(bundle)) {
@@ -5716,72 +5746,148 @@ globalThis.save = () => t\`Save\`;`,
               expect(keys.size, `${name}: ${list} of ${fileName}`).toBe(1);
             }
           }
-          const chunkOf = (module: string) =>
-            Object.values(bundle).find((file) => module in file.modules);
-          // What a load runs: the modules it reaches, and in a build that
-          // runs a chunk's modules as it loads, those of every chunk it loads
-          const runBy = (load: string) => {
-            const reached = new Set([load]);
-            for (const id of reached) {
-              for (const next of graph[id]?.imports ?? []) reached.add(next);
-            }
-            const run = new Set(reached);
-            if (!isLazy) {
-              const loaded = new Set(
-                [...reached].flatMap((id) => chunkOf(id)?.fileName ?? [])
+          const fileCache = new Map<string, Record<string, unknown>>();
+          const readKey = (key: string) => {
+            let read = fileCache.get(key);
+            if (!read) fileCache.set(key, (read = written.read([key])));
+            return read;
+          };
+          for (const key of Object.keys(written.manifest.files)) {
+            for (const [id, text] of Object.entries(readKey(key))) {
+              expect(text, `${name}: ${id} in ${key}`).toBe(
+                CATALOG[minifiedIds.hashes.get(id)!]
               );
-              for (const file of loaded) {
-                for (const next of bundle[file]?.imports ?? [])
-                  loaded.add(next);
-                for (const id of Object.keys(bundle[file]?.modules ?? {})) {
-                  run.add(id);
+            }
+          }
+
+          // The ids of a module's call sites that its chunk's final code kept
+          const sitesOf = new Map<string, [id: string, hash: string][]>();
+          const getSites = (copy: string) => {
+            let sites = sitesOf.get(copy);
+            if (!sites) {
+              const [fileName, module] = copy.split('|');
+              const ids = idsIn(build, fileName);
+              const code = bundle[fileName].modules[module]?.code ?? '';
+              sites = [...minifiedIds.placeholders].flatMap(
+                ([placeholder, hash]): [string, string][] =>
+                  code.includes(placeholder) && ids.has(hash)
+                    ? [[ids.get(hash)!, hash]]
+                    : []
+              );
+              sitesOf.set(copy, sites);
+            }
+            return sites;
+          };
+          type Page = {
+            loaded: Set<string>;
+            /** The copies of modules that have run, as `<chunk>|<module>` */
+            run: Set<string>;
+            held: Set<string>;
+          };
+          const loadChunk = (page: Page, fileName: string) => {
+            const pending = [fileName];
+            for (let next = pending.pop(); next; next = pending.pop()) {
+              if (page.loaded.has(next) || !bundle[next]) continue;
+              page.loaded.add(next);
+              pending.push(...bundle[next].imports);
+              if (isLazy) continue;
+              for (const id of Object.keys(bundle[next].modules)) {
+                page.run.add(`${next}|${id}`);
+              }
+            }
+          };
+          // The copy of a module that an import in a chunk runs
+          const findCopy = (page: Page, from: string, id: string) =>
+            bundle[from] && id in bundle[from].modules
+              ? from
+              : [...page.loaded].find(
+                  (fileName) => id in bundle[fileName].modules
+                );
+          const runModule = (page: Page, from: string, id: string) => {
+            const pending: [string, string][] = [[from, id]];
+            for (let next = pending.pop(); next; next = pending.pop()) {
+              const fileName = findCopy(page, next[0], next[1]);
+              if (!fileName) continue;
+              const copy = `${fileName}|${next[1]}`;
+              if (page.run.has(copy) && isLazy) continue;
+              page.run.add(copy);
+              for (const imported of graph[next[1]]?.imports ?? []) {
+                const other = findCopy(page, fileName, imported);
+                if (!page.run.has(`${other}|${imported}`)) {
+                  pending.push([fileName, imported]);
                 }
               }
             }
-            return { reached, run };
           };
-          const [entry] = Object.values(bundle).filter((file) => file.isEntry);
-          const pending = [
-            {
-              module: entry.facadeModuleId as string,
-              keys: written.manifest.entries[entry.fileName].files,
-            },
-          ];
+          /** Runs what is written without `import()` until nothing more runs. */
+          const settle = (page: Page) => {
+            for (let changed = true; changed; ) {
+              changed = false;
+              for (const copy of [...page.run]) {
+                const [fileName, id] = copy.split('|');
+                for (const target of graph[id]?.dynamic ?? []) {
+                  if (!imports.isInline(fileName, target)) continue;
+                  if (page.run.has(`${fileName}|${target}`)) continue;
+                  runModule(page, fileName, target);
+                  changed = true;
+                }
+              }
+            }
+          };
           const seen = new Set<string>();
-          for (let load = pending.pop(); load; load = pending.pop()) {
-            if (seen.has(load.module)) continue;
-            seen.add(load.module);
-            const cache = written.read(load.keys);
-            const { reached, run } = runBy(load.module);
-            for (const module of run) {
-              const file = chunkOf(module);
-              if (!file) continue;
-              const ids = idsIn(build, file.fileName);
-              for (const [placeholder, hash] of minifiedIds.placeholders) {
-                if (!file.modules[module].code?.includes(placeholder)) continue;
-                const id = ids.get(hash);
-                // A call site the minifier removed reads nothing
-                if (id === undefined) continue;
-                expect(
-                  cache[id],
-                  `${name}: ${id} in ${module}, loaded by ${load.module}`
-                ).toBe(CATALOG[hash]);
+          const unread: string[] = [];
+          const visit = (page: Page, trail: string, depth: number) => {
+            settle(page);
+            const state = `${[...page.run].sort().join()}#${[...page.held].sort().join()}`;
+            if (seen.has(state) || seen.size > 2000) return;
+            seen.add(state);
+            for (const copy of page.run) {
+              for (const [id, hash] of getSites(copy)) {
+                if (
+                  ![...page.held].some(
+                    (key) => readKey(key)[id] === CATALOG[hash]
+                  )
+                ) {
+                  unread.push(`${id} in ${copy} after ${trail}`);
+                }
               }
             }
-            for (const id of reached) {
-              for (const next of graph[id]?.dynamic ?? []) {
-                const target = chunkOf(next);
-                pending.push({
-                  module: next,
-                  keys: [
-                    ...load.keys,
-                    ...((target && written.manifest.imports[target.fileName]) ??
-                      []),
-                  ],
-                });
+            if (depth > 6) return;
+            for (const copy of page.run) {
+              const [fileName, id] = copy.split('|');
+              for (const target of graph[id]?.dynamic ?? []) {
+                if (imports.isInline(fileName, target)) continue;
+                const imported = imports.fileOfImport(target);
+                if (!imported || !bundle[imported]) continue;
+                const next: Page = {
+                  loaded: new Set(page.loaded),
+                  run: new Set(page.run),
+                  held: new Set([
+                    ...page.held,
+                    ...(written.manifest.imports[imported] ?? []),
+                  ]),
+                };
+                loadChunk(next, imported);
+                runModule(next, imported, target);
+                visit(next, `${trail} > ${target}`, depth + 1);
               }
             }
+          };
+          let entries = 0;
+          for (const file of Object.values(bundle)) {
+            if (!file.isEntry) continue;
+            entries++;
+            const page: Page = {
+              loaded: new Set(),
+              run: new Set(),
+              held: new Set(written.manifest.entries[file.fileName].files),
+            };
+            loadChunk(page, file.fileName);
+            runModule(page, file.fileName, file.facadeModuleId as string);
+            visit(page, file.facadeModuleId as string, 0);
           }
+          expect(entries, name).toBeGreaterThan(0);
+          expect(unread.slice(0, 3), name).toEqual([]);
         }
 
         it('lists a chunk’s messages by the loads that fetch them for it, and one that an earlier load holds for another chunk with its own', () => {
@@ -5872,107 +5978,207 @@ globalThis.save = () => t\`Save\`;`,
         describe('over module graphs made at random', () => {
           const SEEDS = Array.from({ length: 40 }, (_, seed) => seed + 1);
           /**
-           * A module graph over the messages of HASH, as the chunks a bundler
-           * makes for it: one for each set of loads that reach a module
-           * through static imports, and two shared chunks that hold modules
-           * of several such sets, as a bundler that groups small chunks
-           * makes them. With `drop`, the final code of a chunk
-           * lacks that share of its call sites, as after a minifier that
-           * removes what the bundler rendered.
+           * How the chunks are made for a module graph:
+           * - `plain`: one chunk for each set of loads that reach a module
+           *   through static imports;
+           * - `grouped`: the same, with two shared chunks that hold modules
+           *   of several such sets, load points among them, as a bundler
+           *   that groups small chunks makes them;
+           * - `made for`: grouped, and a chunk of its own for some modules
+           *   an `import()` names, which holds none and imports the chunk
+           *   that does;
+           * - `copied`: each load point has a chunk that holds every module
+           *   it reaches, so a module is in several chunks.
            */
-          function randomBundle(seed: number, drop = 0) {
+          const SHAPES = ['plain', 'grouped', 'made for', 'copied'] as const;
+          /**
+           * A module graph over the messages of HASH and its chunks. The
+           * graph has static import cycles, dynamic imports back to a module
+           * that is loaded already, and for one seed in four two entries. A
+           * dynamic import of a module in the importing module's own chunk
+           * is written without an `import()`. With `drop`, the final code of
+           * a chunk lacks that share of its call sites, as after a minifier
+           * that removes what the bundler rendered.
+           */
+          function randomBundle(
+            seed: number,
+            shape: (typeof SHAPES)[number] = 'grouped',
+            drop = 0
+          ) {
             const random = createRandom(seed);
-            const ids = Array.from(
-              { length: 9 },
-              (_, index) => `/m${index}.js`
-            );
-            const graph: Required<(typeof GRAPH)[string]>[] = ids.map(
-              (_id, index) => {
-                const imports: string[] = [];
-                const dynamic: string[] = [];
-                for (const next of ids.slice(index + 1)) {
-                  const draw = random();
-                  if (draw < 0.15) imports.push(next);
-                  else if (draw < 0.35) dynamic.push(next);
+            const count = 5 + Math.floor(random() * 5);
+            const ids = Array.from({ length: count }, (_, at) => `/m${at}.js`);
+            const at = (id: string) => ids.indexOf(id);
+            const imports = ids.map(() => [] as string[]);
+            const dynamic = ids.map(() => [] as string[]);
+            ids.forEach((_id, index) => {
+              ids.forEach((next, other) => {
+                if (other === index) return;
+                const draw = random();
+                if (other > index) {
+                  if (draw < 0.18) imports[index].push(next);
+                  else if (draw < 0.38) dynamic[index].push(next);
+                } else if (other > 1) {
+                  if (draw < 0.03) imports[index].push(next);
+                  else if (draw < 0.08) dynamic[index].push(next);
                 }
-                return { imports, dynamic };
-              }
+              });
+            });
+            const reads = ids.map(
+              () => NAMES.filter(() => random() < 0.3) as (keyof typeof HASH)[]
             );
-            const reads = ids.map(() => NAMES.filter(() => random() < 0.3));
-            // The loads, and the modules each reaches statically
-            const loads = new Set([ids[0]]);
-            const reached = new Map<string, string[]>();
-            for (const load of loads) {
-              const seen = new Set([load]);
+            const entries = [ids[0], ...(random() < 0.25 ? [ids[1]] : [])];
+            const closure = (start: string) => {
+              const seen = new Set([start]);
               for (const id of seen) {
-                reached.set(id, [...(reached.get(id) ?? []), load]);
-                const module = graph[ids.indexOf(id)];
-                for (const next of module.imports) seen.add(next);
-                for (const next of module.dynamic) loads.add(next);
+                for (const next of imports[at(id)]) seen.add(next);
+              }
+              return seen;
+            };
+            // The modules a bundler keeps, and the loads that reach each
+            const included = new Set(entries);
+            for (const id of included) {
+              for (const next of [...imports[at(id)], ...dynamic[at(id)]]) {
+                included.add(next);
               }
             }
-            const fileOf = new Map<string, string>();
-            const files = new Map<string, string[]>();
-            const grouped = createRandom(seed + 2000);
-            for (const [id, by] of reached) {
-              const file =
-                !loads.has(id) && grouped() < 0.5
-                  ? `assets/shared-${ids.indexOf(id) % 2}.js`
-                  : `assets/c${ids.indexOf(by[0])}-${by.length}-${by.map((load) => ids.indexOf(load)).join('')}.js`;
-              fileOf.set(id, file);
-              files.set(file, [...(files.get(file) ?? []), id]);
-            }
-            const dropped = createRandom(seed + 1000);
-            const bundle = Object.fromEntries(
-              [...files].map(([fileName, held]) => {
-                const linked = (kind: 'imports' | 'dynamic') => [
-                  ...new Set(
-                    held.flatMap((id) =>
-                      graph[ids.indexOf(id)][kind].map(
-                        (next) => fileOf.get(next)!
-                      )
-                    )
-                  ),
-                ];
-                const sites = held.flatMap((id) =>
-                  reads[ids.indexOf(id)].map((name) =>
-                    site(name as keyof typeof HASH)
-                  )
-                );
-                return [
-                  fileName,
-                  chunk(
-                    fileName,
-                    Object.fromEntries(
-                      held.map((id) => [
-                        id,
-                        site(
-                          ...(reads[ids.indexOf(id)] as (keyof typeof HASH)[])
-                        ),
-                      ])
-                    ),
-                    {
-                      isEntry: held.includes(ids[0]),
-                      facadeModuleId: held.find((id) => loads.has(id)) ?? null,
-                      imports: linked('imports').filter(
-                        (file) => file !== fileName
-                      ),
-                      dynamicImports: linked('dynamic').filter(
-                        (file) => file !== fileName
-                      ),
-                      ...(drop > 0 && {
-                        code: sites.filter(() => dropped() >= drop).join(';'),
-                      }),
-                    }
-                  ),
-                ];
-              })
+            const targets = new Set(
+              [...included].flatMap((id) => dynamic[at(id)])
             );
+            const loads = [...new Set([...entries, ...targets])];
+            const reach = new Map<string, string[]>();
+            for (const load of loads) {
+              for (const id of closure(load)) {
+                reach.set(id, [...(reach.get(id) ?? []), load]);
+              }
+            }
+
+            const holding = new Map<string, string[]>();
+            const held = new Map<string, string[]>();
+            const put = (id: string, file: string) => {
+              holding.set(id, [...(holding.get(id) ?? []), file]);
+              held.set(file, [...(held.get(file) ?? []), id]);
+            };
+            const grouped = createRandom(seed + 7000);
+            const isGrouped = shape === 'grouped' || shape === 'made for';
+            if (shape === 'copied') {
+              for (const load of loads) {
+                for (const id of closure(load))
+                  put(id, `assets/c${at(load)}.js`);
+              }
+            } else {
+              for (const id of included) {
+                const isShared =
+                  isGrouped &&
+                  !entries.includes(id) &&
+                  grouped() < (loads.includes(id) ? 0.35 : 0.5);
+                put(
+                  id,
+                  isShared
+                    ? `assets/shared-${at(id) % 2}.js`
+                    : `assets/c-${reach.get(id)!.map(at).join('_')}.js`
+                );
+              }
+            }
+            // The module each chunk is made for: none, for some shared chunks
+            const madeFor = new Map<string, string | null>();
+            for (const [file, modules] of held) {
+              const own = modules.filter((id) => loads.includes(id));
+              const entry = own.find((id) => entries.includes(id));
+              madeFor.set(
+                file,
+                shape === 'copied'
+                  ? `/m${/c(\d+)\.js/.exec(file)![1]}.js`
+                  : (entry ??
+                      (own.length &&
+                      !(file.includes('shared') && grouped() < 0.4)
+                        ? own[Math.floor(grouped() * own.length)]
+                        : null))
+              );
+            }
+            // A chunk made for a module that another chunk holds
+            const facades = new Map<string, string>();
+            if (shape === 'made for') {
+              for (const id of targets) {
+                const [file] = holding.get(id) ?? [];
+                if (!file || madeFor.get(file) === id || entries.includes(id)) {
+                  continue;
+                }
+                if (grouped() < 0.5)
+                  facades.set(id, `assets/made-${at(id)}.js`);
+              }
+            }
+            const isInline = (file: string, target: string) =>
+              !!held.get(file)?.includes(target) && !facades.has(target);
+            const fileOfImport = (target: string) =>
+              facades.get(target) ??
+              (shape === 'copied'
+                ? `assets/c${at(target)}.js`
+                : holding.get(target)?.[0]);
+
+            const dropped = createRandom(seed + 1000);
+            const files = [...held].map(([fileName, modules]) => {
+              const staticFiles = new Set<string>();
+              const dynamicFiles = new Set<string>();
+              for (const id of modules) {
+                for (const next of imports[at(id)]) {
+                  if (!included.has(next) || modules.includes(next)) continue;
+                  staticFiles.add(holding.get(next)![0]);
+                }
+                for (const next of dynamic[at(id)]) {
+                  if (!isInline(fileName, next)) {
+                    dynamicFiles.add(fileOfImport(next)!);
+                  }
+                }
+              }
+              const sites = modules.flatMap((id) =>
+                reads[at(id)].map((read) => site(read))
+              );
+              return chunk(
+                fileName,
+                Object.fromEntries(
+                  modules.map((id) => [id, site(...reads[at(id)])])
+                ),
+                {
+                  isEntry: entries.includes(madeFor.get(fileName) ?? ''),
+                  facadeModuleId: madeFor.get(fileName) ?? null,
+                  imports: [...staticFiles],
+                  dynamicImports: [...dynamicFiles],
+                  ...(drop > 0 && {
+                    code: sites.filter(() => dropped() >= drop).join(';'),
+                  }),
+                }
+              );
+            });
+            for (const [id, fileName] of facades) {
+              files.push(
+                chunk(
+                  fileName,
+                  {},
+                  { facadeModuleId: id, imports: [holding.get(id)![0]] }
+                )
+              );
+            }
+            // A chunk that no import loads is not written
+            const used = new Set(files.flatMap((file) => file.dynamicImports));
             return {
-              bundle,
+              bundle: Object.fromEntries(
+                files
+                  .filter(
+                    (file) =>
+                      shape !== 'copied' ||
+                      file.isEntry ||
+                      used.has(file.fileName)
+                  )
+                  .map((file) => [file.fileName, file])
+              ),
               graph: Object.fromEntries(
-                ids.map((id, index) => [id, graph[index]])
+                ids.map((id) => [
+                  id,
+                  { imports: imports[at(id)], dynamic: dynamic[at(id)] },
+                ])
               ) as typeof GRAPH,
+              imports: { isInline, fileOfImport },
             };
           }
 
@@ -5980,93 +6186,127 @@ globalThis.save = () => t\`Save\`;`,
             ['runs a module when it is first imported', true],
             ['runs every module of a chunk as it loads', false],
           ])(
-            'gives every load each call site it runs, and keeps each list in one file, in a build that %s, also after a deploy and with call sites the minifier removed',
+            'gives every page each call site it runs, and keeps each list in one file, in a build that %s, also after a deploy and with call sites the minifier removed',
             (_name, isLazy) => {
               const { cwd } = createPlugins(ON, 'vite', {
                 'translations/fr.json': JSON.stringify(CATALOG),
               });
-              for (const seed of SEEDS) {
-                const first = randomBundle(seed);
-                const build = renderBundle(
-                  first.bundle,
-                  true,
-                  first.graph,
-                  isLazy
-                );
-                const written = filesOf(build, first.graph, { isLazy, cwd });
-                expectEveryIdToResolve(
-                  build,
-                  written,
-                  first.graph,
-                  isLazy,
-                  `seed ${seed}`
-                );
-                // The next deploy: another graph, given this build's manifest
-                const next = randomBundle(seed + 500, seed % 2 ? 0.25 : 0);
-                const deployed = renderBundle(
-                  next.bundle,
-                  true,
-                  next.graph,
-                  isLazy
-                );
-                expectEveryIdToResolve(
-                  deployed,
-                  filesOf(deployed, next.graph, {
+              for (const shape of SHAPES) {
+                for (const seed of SEEDS) {
+                  const first = randomBundle(seed, shape);
+                  const build = renderBundle(
+                    first.bundle,
+                    true,
+                    first.graph,
+                    isLazy
+                  );
+                  const written = filesOf(build, first.graph, { isLazy, cwd });
+                  expectEveryIdToResolve(
+                    build,
+                    written,
+                    first.graph,
                     isLazy,
-                    cwd,
-                    previous: written.keep(),
-                  }),
-                  next.graph,
-                  isLazy,
-                  `seed ${seed} after a deploy`
-                );
+                    `${shape}, seed ${seed}`,
+                    first.imports
+                  );
+                  // The next deploy: another graph, given this build's manifest
+                  const next = randomBundle(
+                    seed + 500,
+                    shape,
+                    seed % 2 ? 0.3 : 0
+                  );
+                  const deployed = renderBundle(
+                    next.bundle,
+                    true,
+                    next.graph,
+                    isLazy
+                  );
+                  expectEveryIdToResolve(
+                    deployed,
+                    filesOf(deployed, next.graph, {
+                      isLazy,
+                      cwd,
+                      previous: written.keep(),
+                    }),
+                    next.graph,
+                    isLazy,
+                    `${shape}, seed ${seed} after a deploy`,
+                    next.imports
+                  );
+                }
               }
             }
           );
 
-          it('keeps every file where it was in a build that is given its own manifest, and lists alike whatever the order of the chunks, of their modules and of their imports', () => {
+          it('keeps every file where it was in a build that is given its own manifest, writes the same files from another directory, and lists alike whatever the order of the chunks, of their modules and of their imports', () => {
             const { cwd } = createPlugins(ON, 'vite', {
               'translations/fr.json': JSON.stringify(CATALOG),
             });
+            const elsewhere = path.join(cwd, 'packages', 'app');
+            fs.mkdirSync(path.join(elsewhere, 'translations'), {
+              recursive: true,
+            });
+            fs.writeFileSync(
+              path.join(elsewhere, 'translations/fr.json'),
+              JSON.stringify(CATALOG)
+            );
             const reversed = <Value>(record: Record<string, Value>) =>
               Object.fromEntries(Object.entries(record).reverse());
             const namesOf = (emitted: Record<string, string>) =>
               Object.keys(emitted)
                 .filter((file) => /\.fr\.\w+\.json$/.test(file))
                 .sort();
-            for (const seed of SEEDS) {
-              const { bundle, graph } = randomBundle(seed);
-              const other = reversed(
-                Object.fromEntries(
-                  Object.entries(bundle).map(([fileName, file]) => [
-                    fileName,
-                    {
-                      ...file,
-                      modules: reversed(file.modules),
-                      imports: [...file.imports].reverse(),
-                      dynamicImports: [...file.dynamicImports].reverse(),
-                    },
-                  ])
-                )
-              );
-              for (const isLazy of [true, false]) {
-                const [one, two] = [bundle, other].map((rendered) => {
-                  const build = renderBundle(rendered, true, graph, isLazy);
-                  const written = filesOf(build, graph, { isLazy, cwd });
-                  return {
-                    ids: new Map([...build.minifiedIds.hashes].sort()),
-                    files: namesOf(written.emitted),
-                    again: namesOf(
-                      filesOf(build, graph, {
-                        isLazy,
-                        cwd,
-                        previous: written.keep(),
-                      }).emitted
-                    ),
-                  };
-                });
-                expect(two, `seed ${seed}`).toEqual(one);
-                expect(one.again, `seed ${seed}`).toEqual(one.files);
+            for (const shape of SHAPES) {
+              for (const seed of SEEDS.slice(0, 20)) {
+                const { bundle, graph } = randomBundle(seed, shape);
+                const other = reversed(
+                  Object.fromEntries(
+                    Object.entries(bundle).map(([fileName, file]) => [
+                      fileName,
+                      {
+                        ...file,
+                        modules: reversed(file.modules),
+                        imports: [...file.imports].reverse(),
+                        dynamicImports: [...file.dynamicImports].reverse(),
+                      },
+                    ])
+                  )
+                );
+                for (const isLazy of [true, false]) {
+                  const [one, two] = [bundle, other].map((rendered) => {
+                    const build = renderBundle(rendered, true, graph, isLazy);
+                    const written = filesOf(build, graph, { isLazy, cwd });
+                    return {
+                      ids: new Map([...build.minifiedIds.hashes].sort()),
+                      files: namesOf(written.emitted),
+                      assignment: written.manifest.assignment,
+                      again: namesOf(
+                        filesOf(build, graph, {
+                          isLazy,
+                          cwd,
+                          previous: written.keep(),
+                        }).emitted
+                      ),
+                    };
+                  });
+                  expect(two, `${shape}, seed ${seed}`).toEqual(one);
+                  expect(one.again, `${shape}, seed ${seed}`).toEqual(
+                    one.files
+                  );
+                  // The same build, run from another directory
+                  vi.spyOn(process, 'cwd').mockReturnValue(elsewhere);
+                  const moved = filesOf(
+                    renderBundle(bundle, true, graph, isLazy),
+                    graph,
+                    { isLazy, cwd: elsewhere }
+                  );
+                  vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+                  expect(
+                    namesOf(moved.emitted),
+                    `${shape}, seed ${seed}`
+                  ).toEqual(one.files);
+                  expect(moved.manifest.assignment).toEqual(one.assignment);
+                }
               }
             }
           });
@@ -6158,45 +6398,291 @@ globalThis.save = () => t\`Save\`;`,
           }
         );
 
-        it('names a chunk in a pair by the module it is made for or by its first module, from the working directory, whatever the bundler calls it', () => {
-          const cwd = process.cwd();
-          const at = (...segments: string[]) => path.join(cwd, ...segments);
-          const route = {
-            facadeModuleId: at('src', 'Route.jsx'),
-            modules: { [at('src', 'Route.jsx')]: {}, [at('src', 'a.js')]: {} },
-          };
-          const named = getPairChunk(route);
+        it.each([
+          [
+            'a module of the project',
+            '/home/ci/app/src/Route.jsx',
+            '/home/ci/app',
+          ],
+          [
+            'the project in another directory',
+            '/Users/dev/work/app/src/Route.jsx',
+            '/Users/dev/work/app/',
+          ],
+          [
+            'a path written as Windows writes it',
+            'C:\\work\\app\\src\\Route.jsx',
+            'C:\\work\\app',
+          ],
+          [
+            'a module a plugin made of the file',
+            '\0/home/ci/app/src/Route.jsx',
+            '/home/ci/app',
+          ],
+        ])('names the module of a pair the same for %s', (_name, id, root) => {
+          const named = getPairModule('/app/src/Route.jsx', '/app');
           expect(named).toMatch(/^[0-9a-f]{8}$/);
+          expect(getPairModule(id, root)).toBe(named);
           expect(getPairKey(HASH.title, named)).toBe(`${HASH.title}${named}`);
-          // The same chunk after it gained a module, under another name
+        });
+
+        it('names a module outside the project by where it is from there, a module of a package by the package wherever it is stored, and other modules otherwise', () => {
+          // A sibling package of a workspace, from two checkouts
           expect(
-            getPairChunk({
-              ...route,
-              modules: { [at('lib', 'early.js')]: {}, ...route.modules },
-            })
-          ).toBe(named);
-          // A chunk made for no module of its own, by its first module
-          const shared = {
-            facadeModuleId: null,
-            modules: { [at('src', 'b.js')]: {}, [at('src', 'a.js')]: {} },
-          };
-          expect(getPairChunk(shared)).toBe(
-            getPairChunk({
-              facadeModuleId: at('src', 'Route.jsx'),
-              modules: { [at('src', 'a.js')]: {} },
-            })
+            getPairModule(
+              '/home/ci/repo/packages/ui/Button.js',
+              '/home/ci/repo/apps/web'
+            )
+          ).toBe(
+            getPairModule(
+              '/Users/dev/code/repo/packages/ui/Button.js',
+              '/Users/dev/code/repo/apps/web'
+            )
           );
-          expect(getPairChunk(shared)).not.toBe(named);
-          // And the same wherever the project is
-          vi.spyOn(process, 'cwd').mockReturnValue(path.join(cwd, 'elsewhere'));
+          // A package in the project, in a store inside it and in one outside it
+          const packaged = getPairModule(
+            '/app/node_modules/ui-kit/dist/index.js',
+            '/app'
+          );
           expect(
-            getPairChunk({
-              facadeModuleId: path.join(cwd, 'elsewhere', 'src', 'Route.jsx'),
-              modules: {
-                [path.join(cwd, 'elsewhere', 'src', 'Route.jsx')]: {},
+            getPairModule(
+              '/app/node_modules/.store/ui-kit@2.1.0/node_modules/ui-kit/dist/index.js',
+              '/app'
+            )
+          ).toBe(packaged);
+          expect(
+            getPairModule(
+              '/Users/dev/Library/store/v10/links/ui-kit/2.1.0/0a1b/node_modules/ui-kit/dist/index.js',
+              '/Users/dev/code/app'
+            )
+          ).toBe(packaged);
+          // A module that is no file, by its id
+          expect(getPairModule('\0virtual:routes', '/app')).toBe(
+            getPairModule('\0virtual:routes', '/home/ci/app')
+          );
+          expect(
+            new Set([
+              packaged,
+              getPairModule('/app/src/Route.jsx', '/app'),
+              getPairModule('/app/src/Other.jsx', '/app'),
+              getPairModule('/app/node_modules/ui-kit/dist/other.js', '/app'),
+              getPairModule('\0virtual:routes', '/app'),
+            ]).size
+          ).toBe(5);
+        });
+
+        it('keeps the pairs of a shared chunk, and so their file, when the chunk gains a module that sorts before the ones it had', () => {
+          const shared = (...more: string[]) => ({
+            ...BUNDLE,
+            'assets/shared.js': chunk(
+              'assets/shared.js',
+              {
+                ...Object.fromEntries(more.map((id) => [id, ''])),
+                '/picker.js': site('picker'),
+                '/invoice.js': site('invoice'),
+                '/panel.js': site('panel'),
               },
-            })
-          ).toBe(named);
+              { facadeModuleId: null }
+            ),
+          });
+          const before = filesOf(renderBundle(shared(), true));
+          const after = filesOf(
+            renderBundle(shared('/a-first.js'), true),
+            GRAPH,
+            {
+              previous: before.keep(),
+            }
+          );
+          expect(after.manifest.assignment).toEqual(before.manifest.assignment);
+          expect(after.manifest.files).toEqual(before.manifest.files);
+        });
+
+        it.each([true, false])(
+          'reads two chunks that hold one module as one for the messages that module reads first, and gives every page its call sites (a module runs when it is first imported: %s)',
+          (isLazy) => {
+            // Both shared chunks hold the date picker, which each route reaches
+            const bundle = {
+              ...BUNDLE,
+              'assets/Home.js': chunk(
+                'assets/Home.js',
+                { '/home.js': site('home') },
+                { imports: ['assets/a.js'] }
+              ),
+              'assets/Billing.js': chunk(
+                'assets/Billing.js',
+                { '/billing.js': site('billing') },
+                { imports: ['assets/b.js'] }
+              ),
+              'assets/a.js': chunk(
+                'assets/a.js',
+                {
+                  '/picker.js': site('picker'),
+                  '/invoice.js': site('invoice', 'admin'),
+                },
+                { facadeModuleId: null }
+              ),
+              'assets/b.js': chunk(
+                'assets/b.js',
+                {
+                  '/picker.js': site('picker'),
+                  '/panel.js': site('panel', 'admin'),
+                },
+                { facadeModuleId: null }
+              ),
+            };
+            delete (bundle as Partial<typeof bundle>)['assets/shared.js'];
+            delete (bundle as Partial<typeof bundle>)['assets/Admin.js'];
+            const graph: typeof GRAPH = {
+              '/main.js': { dynamic: ['/home.js', '/billing.js'] },
+              '/home.js': { imports: ['/picker.js', '/invoice.js'] },
+              '/billing.js': { imports: ['/picker.js', '/panel.js'] },
+            };
+            const build = renderBundle(bundle, true, graph, isLazy);
+            const written = filesOf(build, graph, { isLazy });
+            // One pair for the date picker of both chunks, and one each for
+            // the message that another module of each reads
+            expect(pairOf(build, HASH.picker, 'assets/a.js')).toBe(
+              pairOf(build, HASH.picker, 'assets/b.js')
+            );
+            expect(pairOf(build, HASH.admin, 'assets/a.js')).not.toBe(
+              pairOf(build, HASH.admin, 'assets/b.js')
+            );
+            expect(
+              Object.values(written.manifest.assignment.files)
+                .flat()
+                .filter((pair) => pair.startsWith(HASH.picker))
+            ).toHaveLength(1);
+            expectEveryIdToResolve(
+              build,
+              written,
+              graph,
+              isLazy,
+              'one module in two chunks',
+              {
+                isInline: () => false,
+                fileOfImport: (target) =>
+                  target === '/home.js'
+                    ? 'assets/Home.js'
+                    : 'assets/Billing.js',
+              }
+            );
+          }
+        );
+
+        it('writes the runs of a list once in a file, when two chunks that load together list the same messages', () => {
+          // Two chunks the entry imports read the same messages
+          const read = [
+            'picker',
+            'invoice',
+            'panel',
+            'home',
+            'billing',
+            'admin',
+          ] as const;
+          const bundle = Object.fromEntries(
+            [
+              chunk(
+                'assets/index.js',
+                { '/main.js': '' },
+                { isEntry: true, imports: ['assets/a.js', 'assets/b.js'] }
+              ),
+              chunk(
+                'assets/a.js',
+                { '/a.js': site(...read) },
+                { facadeModuleId: null }
+              ),
+              chunk(
+                'assets/b.js',
+                { '/b.js': site(...read) },
+                { facadeModuleId: null }
+              ),
+            ].map((file) => [file.fileName, file])
+          );
+          const graph: typeof GRAPH = {
+            '/main.js': { imports: ['/a.js', '/b.js'] },
+          };
+          const build = renderBundle(bundle, true, graph);
+          const { emitted, manifest } = filesOf(build, graph);
+          expect(Object.values(manifest.assignment.files).flat()).toHaveLength(
+            12
+          );
+          const [key] = manifest.entries['assets/index.js'].files;
+          const [held, lists]: MinifiedTranslations = JSON.parse(
+            emitted[manifest.files[key].fr]
+          );
+          expect(held).toHaveLength(6);
+          expect(lists).toEqual({
+            [getListName(read.map((name) => HASH[name]).sort())]: [0, 0, 6],
+          });
+        });
+
+        it('lists a shared chunk’s messages anew when another load comes to fetch some of them, although the chunk reads what it read', () => {
+          // Two routes reach both modules of the shared chunk
+          const app = (...routes: string[]) => ({
+            bundle: Object.fromEntries(
+              [
+                chunk(
+                  'assets/index.js',
+                  { '/main.js': site('title') },
+                  {
+                    isEntry: true,
+                    dynamicImports: routes.map((name) => `assets/${name}.js`),
+                  }
+                ),
+                ...routes.map((name) =>
+                  chunk(
+                    `assets/${name}.js`,
+                    { [`/${name}.js`]: '' },
+                    { imports: ['assets/shared.js'] }
+                  )
+                ),
+                chunk(
+                  'assets/shared.js',
+                  {
+                    '/picker.js': site('picker', 'home'),
+                    '/invoice.js': site('invoice', 'billing'),
+                  },
+                  { facadeModuleId: null }
+                ),
+              ].map((file) => [file.fileName, file])
+            ),
+            graph: {
+              '/main.js': { dynamic: routes.map((name) => `/${name}.js`) },
+              '/one.js': { imports: ['/picker.js', '/invoice.js'] },
+              '/two.js': { imports: ['/picker.js', '/invoice.js'] },
+              // The third route reaches the date picker alone
+              '/three.js': { imports: ['/picker.js'] },
+            } as typeof GRAPH,
+          });
+          const names = (
+            { bundle, graph }: ReturnType<typeof app>,
+            isScoped = true
+          ) => {
+            const build = renderBundle(bundle, isScoped, graph);
+            return [
+              ...new Set(
+                [...idsIn(build, 'assets/shared.js').values()].map(
+                  (id) => id.split('.')[0]
+                )
+              ),
+            ];
+          };
+          const before = names(app('one', 'two'));
+          const after = names(app('one', 'two', 'three'));
+          expect(before).toEqual([
+            getListName(
+              [HASH.picker, HASH.home, HASH.invoice, HASH.billing].sort()
+            ),
+          ]);
+          // What the third route fetches is another group of the chunk's messages
+          expect(after.sort()).toEqual(
+            [
+              getListName([HASH.picker, HASH.home].sort()),
+              getListName([HASH.invoice, HASH.billing].sort()),
+            ].sort()
+          );
+          // With one list for the chunk it is as it was
+          expect(names(app('one', 'two', 'three'), false)).toEqual(before);
         });
       });
     });
@@ -6403,6 +6889,7 @@ globalThis.save = () => t\`Save\`;`,
             emitFile: () => undefined,
             getModuleInfo: getModuleInfo(GRAPH),
             isLazy: true,
+            root: process.cwd(),
           }
         )
       ).toThrow(
