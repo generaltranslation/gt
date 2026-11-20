@@ -33,6 +33,28 @@ export function RegionSelector() {
   return failClientComponent('RegionSelector');
 }
 
+// ===== Error for client hooks ===== //
+// Exported so that a package whose entry re-exports them, as gt-tanstack-start's
+// does, still links where the react-server condition applies.
+function failClientHook(hookName: string): never {
+  throw new Error(
+    createDiagnosticMessage({
+      source: 'gt-react',
+      severity: 'Error',
+      whatHappened: `${hookName}() cannot be called in a server component`,
+      why: 'it reads and changes state that only a client component has',
+      fix: "Call it in a client component, a module that starts with 'use client'",
+    })
+  );
+}
+
+export function useLocaleSelector(): never {
+  return failClientHook('useLocaleSelector');
+}
+export function useRegionSelector(): never {
+  return failClientHook('useRegionSelector');
+}
+
 // ===== Components ===== //
 export {
   Branch,
