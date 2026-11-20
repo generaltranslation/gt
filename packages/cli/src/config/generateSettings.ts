@@ -14,7 +14,8 @@ import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
 import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';
-import { createUserTokenProvider } from '../auth/oauth.js';
+import { createUserTokenProvider } from '@generaltranslation/auth';
+import { onAuthWarning } from '../auth/warning.js';
 import { resolveCliApiKey } from '../auth/cliApiKey.js';
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
@@ -218,6 +219,7 @@ export async function generateSettings(
   };
   mergedOptions.userTokenProvider = createUserTokenProvider({
     baseUrl: mergedOptions.baseUrl,
+    onWarning: onAuthWarning,
   });
 
   // Add dashboardUrl if not provided

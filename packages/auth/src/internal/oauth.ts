@@ -2,12 +2,14 @@ import open from 'open';
 import * as oidc from 'openid-client';
 import type { UserTokenProvider } from '@generaltranslation/api';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { defaultDashboardUrl } from 'generaltranslation/internal';
-import { resolveApiBaseUrl } from '../utils/apiBaseUrl.js';
-import { logger } from '../console/logger.js';
+import {
+  defaultBaseUrl,
+  defaultDashboardUrl,
+} from 'generaltranslation/internal';
 import {
   deleteOAuthTokens,
   readOAuthTokens,
+  withCredentialsLock,
   writeOAuthTokens,
 } from './credentialStore.js';
 import type { OAuthTokens } from './credentialStore.js';
@@ -29,14 +31,18 @@ export type DeviceCode = {
   verificationUriComplete?: string;
 };
 export type UserInfo = { email?: string; name?: string; sub: string };
-type OAuthRequestOptions = { authBaseUrl?: string; fetch?: typeof fetch };
-export type UserTokenProviderOptions = OAuthRequestOptions & {
-  /** API the requests go to; must match the resource the login was issued for. */
-  baseUrl: string;
+export type AuthOptions = {
+  /** Authorization server; GT_AUTH_URL, then the General Translation dashboard, when omitted. */
+  authBaseUrl?: string;
+  fetch?: typeof fetch;
+  /** Receives a complete `gt Warning:` diagnostic; `console.warn` when omitted. */
+  onWarning?: (message: string) => void;
 };
-export type LoginOptions = OAuthRequestOptions & {
-  /** API the token is issued for; GT_API_URL overrides it, and the public API is the default. */
+type ApiOptions = AuthOptions & {
+  /** API the login is for; GT_API_URL, then the public General Translation API, when omitted. */
   baseUrl?: string;
+};
+export type LoginOptions = ApiOptions & {
   noBrowser?: boolean;
   onDeviceCode?: (deviceCode: DeviceCode) => void;
   signal?: AbortSignal;
@@ -130,7 +136,7 @@ async function configuration(
   {
     authBaseUrl = getAuthBaseUrl(),
     fetch: fetchImplementation = globalThis.fetch,
-  }: OAuthRequestOptions,
+  }: AuthOptions,
   signal?: AbortSignal
 ): Promise<oidc.Configuration> {
   const issuer = new URL(authBaseUrl);
@@ -212,17 +218,11 @@ function getAuthBaseUrl(): string {
 }
 
 /** Resource indicators are the API origin serialized as a URL href (trailing slash). */
-function toApiResource(baseUrl: string): string {
-  return new URL(baseUrl).href;
+function toApiResource(baseUrl?: string): string {
+  return new URL(baseUrl ?? (process.env.GT_API_URL || defaultBaseUrl)).href;
 }
 
-function loginResource(options: LoginOptions): string {
-  return toApiResource(resolveApiBaseUrl(options.baseUrl));
-}
-
-async function loginWithDeviceCode(
-  options: LoginOptions
-): Promise<OAuthTokens> {
+async function loginWithDeviceCode(options: LoginOptions): Promise<void> {
   if (options.noBrowser && !options.onDeviceCode) {
     throw oauthFailure(
       'Device login needs a way to display the verification code',
@@ -230,7 +230,7 @@ async function loginWithDeviceCode(
     );
   }
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
-  const resource = loginResource(options);
+  const resource = toApiResource(options.baseUrl);
   const lifetime = new AbortController();
   const signal = options.signal
     ? AbortSignal.any([options.signal, lifetime.signal])
@@ -286,9 +286,11 @@ async function loginWithDeviceCode(
   } finally {
     clearTimeout(timer);
   }
-  const tokens = { ...parseTokens(result), resource };
-  await writeOAuthTokens(tokens, authBaseUrl);
-  return tokens;
+  await writeOAuthTokens(
+    { ...parseTokens(result), resource },
+    authBaseUrl,
+    options.onWarning
+  );
 }
 
 /** How long the callback page waits to learn the account's name. */
@@ -333,7 +335,7 @@ async function lookupAccountName(
 }
 
 /** Browser S256/loopback, or device login for SSH, --no-browser and bind failure. */
-export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
+export async function login(options: LoginOptions = {}): Promise<void> {
   if (
     options.noBrowser ||
     process.env.SSH_CONNECTION ||
@@ -343,7 +345,7 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
     return loginWithDeviceCode({ ...options, noBrowser: true });
   }
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
-  const resource = loginResource(options);
+  const resource = toApiResource(options.baseUrl);
   // Fired only by the account lookup's budget, after the exchange; nothing
   // else is in flight on this configuration then.
   const cancelLookup = new AbortController();
@@ -374,6 +376,9 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
     // The errors the page shows as a denial: the exchange read a validated
     // access_denied response, so the page and the terminal agree.
     const denials = new WeakSet<object>();
+    // Set once the login is being stored. From then on the stored login is
+    // the outcome, and an abort no longer reports a cancellation.
+    let storing = false;
     const callback = loopback.waitForCallback(
       async (callbackUrl) => {
         const result = await oidc
@@ -414,8 +419,9 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
         // login cancelled by now stores nothing, so the login it would have
         // replaced stays as it was.
         if (options.signal?.aborted) throw cancelledFailure();
-        await writeOAuthTokens(tokens, authBaseUrl);
-        return { tokens, account };
+        storing = true;
+        await writeOAuthTokens(tokens, authBaseUrl, options.onWarning);
+        return { account };
       },
       options.timeoutMs,
       {
@@ -430,71 +436,114 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
     void (options.openBrowser ?? open)(authorizationUrl.href).catch(
       () => undefined
     );
-    return (await callback).tokens;
+    // No request is in flight while the user is in the browser, so the
+    // caller's abort has to end the wait itself.
+    const aborted = new Promise<never>((_, reject) => {
+      const cancel = () => {
+        if (!storing) reject(cancelledFailure());
+      };
+      if (options.signal?.aborted) cancel();
+      else options.signal?.addEventListener('abort', cancel, { once: true });
+    });
+    await Promise.race([callback, aborted]);
   } finally {
     loopback.close();
   }
 }
 
 const pendingRefreshes = new Map<string, Promise<OAuthTokens>>();
-function refreshTokens(options: OAuthRequestOptions): Promise<OAuthTokens> {
+/** `staleAccessToken` is the access token the caller found unusable. */
+function refreshTokens(
+  options: AuthOptions,
+  staleAccessToken: string
+): Promise<OAuthTokens> {
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
   const pending = pendingRefreshes.get(authBaseUrl);
   if (pending) return pending;
-  const refresh = exchangeRefreshToken({ ...options, authBaseUrl }).finally(
-    () => pendingRefreshes.delete(authBaseUrl)
-  );
+  const refresh = exchangeRefreshToken(
+    { ...options, authBaseUrl },
+    staleAccessToken
+  ).finally(() => pendingRefreshes.delete(authBaseUrl));
   pendingRefreshes.set(authBaseUrl, refresh);
   return refresh;
 }
 
-async function exchangeRefreshToken(
-  options: OAuthRequestOptions & { authBaseUrl: string }
+/**
+ * One process at a time. The server replaces the refresh token on each use,
+ * and signs the account out of every session when a replaced one is sent
+ * again, which a second process holding the same stored login would do.
+ */
+function exchangeRefreshToken(
+  options: AuthOptions & { authBaseUrl: string },
+  staleAccessToken: string
 ): Promise<OAuthTokens> {
-  const current = await readOAuthTokens(options.authBaseUrl);
-  if (!current?.refreshToken) throw loginRequiredError();
-  const result = await (async () =>
-    oidc.refreshTokenGrant(
-      await configuration(options),
-      current.refreshToken
-    ))().catch((error: unknown) => {
-    throw oauthError(error, 'Could not refresh your login');
+  return withCredentialsLock(async () => {
+    const current = await readOAuthTokens(
+      options.authBaseUrl,
+      options.onWarning
+    );
+    if (!current?.refreshToken) throw loginRequiredError();
+    // Another process refreshed this login while this one waited.
+    if (
+      current.accessToken !== staleAccessToken &&
+      current.expiresAt > Date.now() + TOKEN_REFRESH_BUFFER_MS
+    )
+      return current;
+    const result = await (async () =>
+      oidc.refreshTokenGrant(
+        await configuration(options),
+        current.refreshToken
+      ))().catch((error: unknown) => {
+      throw oauthError(error, 'Could not refresh your login');
+    });
+    // The grant reuses the bound resource, so the refreshed token keeps its audience.
+    const tokens = {
+      ...parseTokens(result, current),
+      resource: current.resource,
+    };
+    await writeOAuthTokens(tokens, options.authBaseUrl, options.onWarning);
+    return tokens;
   });
-  // The grant reuses the bound resource, so the refreshed token keeps its audience.
-  const tokens = {
-    ...parseTokens(result, current),
-    resource: current.resource,
-  };
-  await writeOAuthTokens(tokens, options.authBaseUrl);
-  return tokens;
 }
 
 async function validTokens(
-  options: OAuthRequestOptions
+  options: AuthOptions
 ): Promise<OAuthTokens | undefined> {
-  const tokens = await readOAuthTokens(options.authBaseUrl ?? getAuthBaseUrl());
+  const tokens = await readOAuthTokens(
+    options.authBaseUrl ?? getAuthBaseUrl(),
+    options.onWarning
+  );
   if (!tokens || tokens.expiresAt > Date.now() + TOKEN_REFRESH_BUFFER_MS)
     return tokens;
-  return refreshTokens(options);
+  return refreshTokens(options, tokens.accessToken);
 }
 
-/** Whether a stored login exists for this API; does not refresh or contact the server. */
-export async function hasLogin(
-  options: UserTokenProviderOptions
-): Promise<boolean> {
-  const tokens = await readOAuthTokens(options.authBaseUrl ?? getAuthBaseUrl());
+/**
+ * Whether a usable stored login exists for this API; does not refresh or
+ * contact the server. An obsolete stored login is not one.
+ */
+export async function hasLogin(options: ApiOptions = {}): Promise<boolean> {
+  const tokens = await readOAuthTokens(
+    options.authBaseUrl ?? getAuthBaseUrl(),
+    options.onWarning
+  ).catch((error: unknown) => {
+    if (error instanceof UserAuthError && error.code === 'obsolete_credentials')
+      return undefined;
+    throw error;
+  });
   return tokens?.resource === toApiResource(options.baseUrl);
 }
 
 /** Construction is deliberately free of auth/storage/discovery I/O. */
 export function createUserTokenProvider(
-  options: UserTokenProviderOptions
+  options: ApiOptions = {}
 ): UserTokenProvider {
   // Check the audience before any refresh so a stale mismatched login is
   // never rotated on behalf of the wrong API.
   const storedTokens = async (): Promise<OAuthTokens> => {
     const tokens = await readOAuthTokens(
-      options.authBaseUrl ?? getAuthBaseUrl()
+      options.authBaseUrl ?? getAuthBaseUrl(),
+      options.onWarning
     );
     if (!tokens) throw loginRequiredError();
     const resource = toApiResource(options.baseUrl);
@@ -512,19 +561,19 @@ export function createUserTokenProvider(
       const tokens = await storedTokens();
       if (tokens.expiresAt > Date.now() + TOKEN_REFRESH_BUFFER_MS)
         return tokens.accessToken;
-      return (await refreshTokens(options)).accessToken;
+      return (await refreshTokens(options, tokens.accessToken)).accessToken;
     },
     refreshAccessToken: async () => {
-      await storedTokens();
-      return (await refreshTokens(options)).accessToken;
+      const tokens = await storedTokens();
+      return (await refreshTokens(options, tokens.accessToken)).accessToken;
     },
   };
 }
 
-export async function logout(options: OAuthRequestOptions = {}): Promise<void> {
+export async function logout(options: AuthOptions = {}): Promise<void> {
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
   try {
-    const tokens = await readOAuthTokens(authBaseUrl);
+    const tokens = await readOAuthTokens(authBaseUrl, options.onWarning);
     if (tokens?.refreshToken)
       await oidc.tokenRevocation(
         await configuration(options),
@@ -532,7 +581,7 @@ export async function logout(options: OAuthRequestOptions = {}): Promise<void> {
         { token_type_hint: 'refresh_token' }
       );
   } catch {
-    logger.warn(
+    (options.onWarning ?? console.warn)(
       createDiagnosticMessage({
         source: 'gt',
         severity: 'Warning',
@@ -542,13 +591,11 @@ export async function logout(options: OAuthRequestOptions = {}): Promise<void> {
       })
     );
   } finally {
-    await deleteOAuthTokens(authBaseUrl);
+    await deleteOAuthTokens(authBaseUrl, options.onWarning);
   }
 }
 
-export async function whoAmI(
-  options: OAuthRequestOptions = {}
-): Promise<UserInfo> {
+export async function whoAmI(options: AuthOptions = {}): Promise<UserInfo> {
   const tokens = await validTokens(options);
   if (!tokens) throw loginRequiredError();
   try {

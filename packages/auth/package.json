@@ -1,0 +1,57 @@
+{
+  "name": "@generaltranslation/auth",
+  "version": "0.0.0",
+  "description": "General Translation account login for command-line tools",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "sideEffects": false,
+  "author": "General Translation, Inc.",
+  "license": "MIT",
+  "scripts": {
+    "transpile": "tsdown",
+    "build": "pnpm run transpile",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "import": "./dist/internal.js"
+    }
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "keywords": [
+    "oauth",
+    "login",
+    "cli",
+    "translation",
+    "i18n"
+  ],
+  "dependencies": {
+    "@generaltranslation/api": "workspace:*",
+    "generaltranslation": "workspace:*",
+    "open": "^10.1.1",
+    "openid-client": "6.8.8"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

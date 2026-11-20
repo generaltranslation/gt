@@ -10,8 +10,9 @@ import {
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { logger } from '../console/logger.js';
 import { UserAuthError } from './errors.js';
+
+type WarningHandler = (message: string) => void;
 
 export type OAuthTokens = {
   accessToken: string;
@@ -80,7 +81,9 @@ export function getCredentialsPath(): string {
   );
 }
 
-async function readCredentialsFile(): Promise<StoredCredentials> {
+async function readCredentialsFile(
+  onWarning: WarningHandler = console.warn
+): Promise<StoredCredentials> {
   const credentialsPath = getCredentialsPath();
   let contents: string;
   try {
@@ -98,7 +101,7 @@ async function readCredentialsFile(): Promise<StoredCredentials> {
   } catch {
     const backupPath = `${credentialsPath}.corrupt-${Date.now()}`;
     await rename(credentialsPath, backupPath);
-    logger.warn(
+    onWarning(
       createDiagnosticMessage({
         source: 'gt',
         severity: 'Warning',
@@ -137,11 +140,61 @@ async function writeCredentialsFile(
   }
 }
 
+const LOCK_POLL_MS = 50;
+// Above the three requests a refresh can make at the client library's
+// 30-second timeout each; a holder still alive after it is treated as hung.
+const LOCK_WAIT_MS = 120_000;
+
+/** Whether the process that wrote the lock has exited without removing it. */
+async function lockHolderIsGone(lockPath: string): Promise<boolean> {
+  const pid = Number(await readFile(lockPath, 'utf8').catch(() => ''));
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return false;
+  } catch (error) {
+    return isRecord(error) && error.code === 'ESRCH';
+  }
+}
+
+/**
+ * Runs `work` while no other process does. For work that reads the stored
+ * login, spends it and writes its replacement, which two processes at once
+ * would each do with the same login.
+ */
+export async function withCredentialsLock<T>(
+  work: () => Promise<T>
+): Promise<T> {
+  const lockPath = `${getCredentialsPath()}.lock`;
+  await mkdir(path.dirname(lockPath), { recursive: true, mode: 0o700 });
+  const deadline = Date.now() + LOCK_WAIT_MS;
+  for (;;) {
+    try {
+      await writeFile(lockPath, String(process.pid), {
+        flag: 'wx',
+        mode: 0o600,
+      });
+      break;
+    } catch (error) {
+      if (!isRecord(error) || error.code !== 'EEXIST') throw error;
+    }
+    if (Date.now() > deadline || (await lockHolderIsGone(lockPath)))
+      await rm(lockPath, { force: true });
+    else await new Promise((resolve) => setTimeout(resolve, LOCK_POLL_MS));
+  }
+  try {
+    return await work();
+  } finally {
+    await rm(lockPath, { force: true });
+  }
+}
+
 async function setServerTokens(
   authBaseUrl: string,
-  tokens: OAuthTokens | undefined
+  tokens: OAuthTokens | undefined,
+  onWarning?: WarningHandler
 ): Promise<void> {
-  const credentials = await readCredentialsFile();
+  const credentials = await readCredentialsFile(onWarning);
   if (tokens) credentials.servers[authBaseUrl] = tokens;
   else delete credentials.servers[authBaseUrl];
   if (Object.keys(credentials.servers).length === 0) {
@@ -152,17 +205,22 @@ async function setServerTokens(
 }
 
 export async function readOAuthTokens(
-  authBaseUrl: string
+  authBaseUrl: string,
+  onWarning?: WarningHandler
 ): Promise<OAuthTokens | undefined> {
-  const value = (await readCredentialsFile()).servers[authBaseUrl];
+  const value = (await readCredentialsFile(onWarning)).servers[authBaseUrl];
   return value === undefined ? undefined : parseStoredTokens(value);
 }
 export async function writeOAuthTokens(
   tokens: OAuthTokens,
-  authBaseUrl: string
+  authBaseUrl: string,
+  onWarning?: WarningHandler
 ): Promise<void> {
-  await setServerTokens(authBaseUrl, tokens);
+  await setServerTokens(authBaseUrl, tokens, onWarning);
 }
-export async function deleteOAuthTokens(authBaseUrl: string): Promise<void> {
-  await setServerTokens(authBaseUrl, undefined);
+export async function deleteOAuthTokens(
+  authBaseUrl: string,
+  onWarning?: WarningHandler
+): Promise<void> {
+  await setServerTokens(authBaseUrl, undefined, onWarning);
 }

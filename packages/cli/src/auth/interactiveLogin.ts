@@ -1,6 +1,8 @@
 import chalk from 'chalk';
+import { login, type DeviceCode } from '@generaltranslation/auth';
 import { logger } from '../console/logger.js';
-import { login, type DeviceCode } from './oauth.js';
+import { resolveApiBaseUrl } from '../utils/apiBaseUrl.js';
+import { onAuthWarning } from './warning.js';
 
 export async function loginInteractively(
   baseUrl: string | undefined,
@@ -8,8 +10,9 @@ export async function loginInteractively(
   onDeviceCode?: (deviceCode: DeviceCode) => void
 ): Promise<void> {
   await login({
-    baseUrl,
+    baseUrl: resolveApiBaseUrl(baseUrl),
     noBrowser: !useBrowser,
+    onWarning: onAuthWarning,
     onDeviceCode: (deviceCode) => {
       const { userCode, verificationUri, verificationUriComplete } = deviceCode;
       onDeviceCode?.(deviceCode);

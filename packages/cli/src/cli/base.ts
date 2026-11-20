@@ -139,8 +139,14 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { hasLogin, logout, whoAmI } from '../auth/oauth.js';
-import { createUserAuthError, UserAuthError } from '../auth/errors.js';
+import {
+  hasLogin,
+  logout,
+  UserAuthError,
+  whoAmI,
+} from '@generaltranslation/auth';
+import { createUserAuthError } from '../auth/errors.js';
+import { onAuthWarning } from '../auth/warning.js';
 import { loginInteractively } from '../auth/interactiveLogin.js';
 import { resolveConfig } from '../config/resolveConfig.js';
 import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
@@ -936,7 +942,7 @@ export class BaseCLI {
       .description('Sign out of your General Translation account')
       .action(async () => {
         try {
-          await logout();
+          await logout({ onWarning: onAuthWarning });
           logger.endCommand('Signed out successfully.');
         } catch (error) {
           logErrorAndExit(createUserAuthError('Sign out failed', error));
@@ -948,7 +954,7 @@ export class BaseCLI {
       .description('Show the signed-in General Translation account')
       .action(async () => {
         try {
-          const user = await whoAmI();
+          const user = await whoAmI({ onWarning: onAuthWarning });
           logger.message(user.email ?? user.name ?? user.sub);
         } catch (error) {
           logErrorAndExit(
@@ -1486,13 +1492,9 @@ See https://www.npmjs.com/package/gt-vue`);
     // obsolete stored login counts as signed out, so signing in replaces it.
     const canAuthenticate = async () =>
       Boolean(settings.apiKey) ||
-      (await hasLogin({ baseUrl: settings.baseUrl }).catch((error) => {
-        if (
-          error instanceof UserAuthError &&
-          error.code === 'obsolete_credentials'
-        )
-          return false;
-        throw error;
+      (await hasLogin({
+        baseUrl: settings.baseUrl,
+        onWarning: onAuthWarning,
       }));
     const provision =
       !credentialsSet &&

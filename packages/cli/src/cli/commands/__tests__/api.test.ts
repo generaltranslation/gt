@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { writeOAuthTokens } from '../../../auth/credentialStore.js';
+import { writeOAuthTokens } from '@generaltranslation/auth/internal';
 import { handleApiCommand } from '../api.js';
 
 const temporaryDirectories: string[] = [];

@@ -24,7 +24,8 @@ vi.mock('generaltranslation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('generaltranslation')>()),
   GeneralTranslation: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
-vi.mock('../../auth/oauth.js', () => ({
+vi.mock('@generaltranslation/auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@generaltranslation/auth')>()),
   login: vi.fn(),
   logout: vi.fn(),
   whoAmI: vi.fn(),
@@ -77,8 +78,7 @@ vi.mock('../../console/displayTranslateSummary.js', () => ({
 }));
 
 import { GeneralTranslation } from 'generaltranslation';
-import { UserAuthError } from '../../auth/errors.js';
-import { login } from '../../auth/oauth.js';
+import { login, UserAuthError } from '@generaltranslation/auth';
 import { generateSettings } from '../../config/generateSettings.js';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { displayTranslateSummary } from '../../console/displayTranslateSummary.js';
@@ -457,7 +457,7 @@ describe('login device prompt', () => {
   it.each([true, false])(
     'prints the prefilled URL when browser=%s',
     async (browser) => {
-      vi.mocked(login).mockImplementation(async (options = {}) => {
+      vi.mocked(login).mockImplementation(async (options) => {
         options.onDeviceCode?.({
           userCode: 'ABCD-EFGH',
           verificationUri,
@@ -490,7 +490,7 @@ describe('login device prompt', () => {
   );
 
   it('falls back to the plain URL and code when no prefilled URL is supplied', async () => {
-    vi.mocked(login).mockImplementation(async (options = {}) => {
+    vi.mocked(login).mockImplementation(async (options) => {
       options.onDeviceCode?.({ userCode: 'ABCD-EFGH', verificationUri });
     });
     await createProgram().parseAsync(['login', '--no-browser'], {
@@ -524,6 +524,21 @@ describe('login device prompt', () => {
       expect(resolveConfig).not.toHaveBeenCalled();
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('signs in to GT_API_URL over the configured base URL', async () => {
+    vi.stubEnv('GT_API_URL', 'https://staging.example');
+    vi.mocked(resolveConfig).mockReturnValueOnce({
+      config: { baseUrl: 'https://api.example' },
+    } as never);
+    try {
+      await createProgram().parseAsync(['login'], { from: 'user' });
+      expect(login).toHaveBeenCalledWith(
+        expect.objectContaining({ baseUrl: 'https://staging.example' })
+      );
+    } finally {
+      vi.unstubAllEnvs();
     }
   });
 });

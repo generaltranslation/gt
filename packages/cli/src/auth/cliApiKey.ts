@@ -1,5 +1,6 @@
+import { hasLogin } from '@generaltranslation/auth';
 import { getEnvFileApiKey } from '../utils/loadEnv.js';
-import { hasLogin } from './oauth.js';
+import { onAuthWarning } from './warning.js';
 
 /**
  * The API key the CLI sends. A GT_API_KEY from an env file is the app's
@@ -14,6 +15,8 @@ export async function resolveCliApiKey(
   baseUrl: string
 ): Promise<string | undefined> {
   if (!apiKey || apiKey !== getEnvFileApiKey()) return apiKey;
-  const signedIn = await hasLogin({ baseUrl }).catch(() => false);
+  const signedIn = await hasLogin({ baseUrl, onWarning: onAuthWarning }).catch(
+    () => false
+  );
   return signedIn ? undefined : apiKey;
 }

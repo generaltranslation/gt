@@ -11,7 +11,8 @@ import {
 } from 'generaltranslation/diagnostics';
 import { credentialEnvNames } from 'generaltranslation/internal';
 import { resolveApiBaseUrl } from '../../utils/apiBaseUrl.js';
-import { createUserTokenProvider } from '../../auth/oauth.js';
+import { createUserTokenProvider } from '@generaltranslation/auth';
+import { onAuthWarning } from '../../auth/warning.js';
 import { resolveCliApiKey } from '../../auth/cliApiKey.js';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { exitSync } from '../../console/logging.js';
@@ -382,7 +383,10 @@ export async function handleApiCommand(
     apiKey:
       options.apiKey ??
       (await resolveCliApiKey(process.env[credentialEnvNames.apiKey], baseUrl)),
-    userTokenProvider: createUserTokenProvider({ baseUrl }),
+    userTokenProvider: createUserTokenProvider({
+      baseUrl,
+      onWarning: onAuthWarning,
+    }),
     baseUrl,
     fetch: dependencies.fetch,
     retryPolicy: 'none',
