@@ -3,20 +3,9 @@ import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { defaultResetLocaleCookieName } from 'gt-i18n/internal/cookies';
 import { BrowserConditionStore } from '../BrowserConditionStore';
 import { createOrUpdateBrowserConditionStore } from '../createBrowserConditionStore';
+import { stubDocumentCookie } from './stubDocumentCookie';
 
-const cookieValues = vi.hoisted(() => new Map<string, string>());
-
-vi.mock('../cookies', () => ({
-  getCookieValue: ({ cookieName }: { cookieName: string }) =>
-    cookieValues.get(cookieName),
-  setCookieValue: ({
-    cookieName,
-    value,
-  }: {
-    cookieName: string;
-    value: string;
-  }) => cookieValues.set(cookieName, value),
-}));
+const cookieValues = new Map<string, string>();
 
 function configure() {
   return initializeI18nConfig({
@@ -37,14 +26,18 @@ function configureAliases() {
   });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  // Ends the task of the previous test.
+  await Promise.resolve();
   Reflect.deleteProperty(globalThis, '__generaltranslation');
   cookieValues.clear();
+  stubDocumentCookie(cookieValues);
   vi.stubGlobal('navigator', { languages: [] });
 });
 
 afterEach(() => {
   Reflect.deleteProperty(globalThis, '__generaltranslation');
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -112,7 +105,7 @@ describe('BrowserConditionStore', () => {
     expect(conditionStore.getLocale()).toBe('fr');
   });
 
-  it('follows the cookie and a custom reader within a task', () => {
+  it('follows the cookie from one task to the next, and a custom reader within a task', async () => {
     const cookieName = configure().getLocaleCookieName();
     let custom = 'es';
     const conditionStore = new BrowserConditionStore({ locale: 'en' });
@@ -123,15 +116,61 @@ describe('BrowserConditionStore', () => {
 
     expect(conditionStore.getLocale()).toBe('en');
     cookieValues.set(cookieName, 'fr');
+    await Promise.resolve();
     expect(conditionStore.getLocale()).toBe('fr');
     expect(withGetter.getLocale()).toBe('fr');
 
     cookieValues.delete(cookieName);
+    await Promise.resolve();
     expect(conditionStore.getLocale()).toBe('en');
     expect(withGetter.getLocale()).toBe('es');
     custom = 'fr';
     expect(withGetter.getLocale()).toBe('fr');
     expect(conditionStore.getLocale()).toBe('en');
+  });
+
+  it.each([
+    { name: 'real timers', fakeTimers: false },
+    // Fake timers hold queueMicrotask and timers, not a promise.
+    { name: 'fake timers', fakeTimers: true },
+  ])(
+    'sees a cookie that other code writes in the next task, with $name',
+    async ({ fakeTimers }) => {
+      if (fakeTimers) {
+        vi.useFakeTimers({
+          toFake: ['queueMicrotask', 'setTimeout', 'setImmediate'],
+        });
+      }
+      const config = configure();
+      const conditionStore = new BrowserConditionStore({ locale: 'en' });
+      expect(conditionStore.getLocale()).toBe('en');
+      expect(conditionStore.getEnableI18n()).toBe(true);
+
+      document.cookie = `${config.getLocaleCookieName()}=fr;path=/`;
+      document.cookie = `${config.getEnableI18nCookieName()}=false;path=/`;
+      expect(conditionStore.getLocale()).toBe('en');
+      expect(conditionStore.getEnableI18n()).toBe(true);
+
+      await Promise.resolve();
+      expect(conditionStore.getLocale()).toBe('fr');
+      expect(conditionStore.getEnableI18n()).toBe(false);
+    }
+  );
+
+  it('sees a cookie it writes in the same task', () => {
+    configure();
+    const conditionStore = new BrowserConditionStore({ locale: 'en' });
+    expect(conditionStore.getLocale()).toBe('en');
+    expect(conditionStore.getEnableI18n()).toBe(true);
+    expect(conditionStore.getRegion()).toBeUndefined();
+
+    conditionStore.updateLocale('fr');
+    conditionStore.updateEnableI18n(false);
+    conditionStore.updateRegion('CA');
+
+    expect(conditionStore.getLocale()).toBe('fr');
+    expect(conditionStore.getEnableI18n()).toBe(false);
+    expect(conditionStore.getRegion()).toBe('CA');
   });
 
   it('follows the navigator from one task to the next', async () => {
