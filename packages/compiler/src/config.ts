@@ -55,11 +55,14 @@ export type SplitTranslationsOptions = {
    * then a `.` and the place of its message in that list, as `kR3_x0Qa.12`.
    * Every call site of a chunk repeats those characters, so they compress
    * to little. An id still follows from content alone: the same id names
-   * the same message in every build. A chunk's ids change only when the set
-   * of its own messages does, and a message that several chunks read has an
-   * id in each. The build writes the ids into every chunk that holds one of
-   * those call sites after the bundler has rendered it, and the chunk's
-   * source map follows them.
+   * the same message in every build. With `by: 'chunk'` a chunk has one
+   * list, of all its messages. With `by: 'module'` it has a list for each
+   * set of its messages that the same loads fetch, so a translations file
+   * is rewritten when one of its own messages changes and not when another
+   * message of a chunk that reads it does. The ids of a list change only
+   * when the set of its messages does. The build writes the ids into every
+   * chunk that holds one of those call sites after the bundler has rendered
+   * it, and the chunk's source map follows them.
    *
    * The hash of a message stays what it is everywhere else: in the
    * translation files at `files.gt.output`, in the unsplit file, and at
