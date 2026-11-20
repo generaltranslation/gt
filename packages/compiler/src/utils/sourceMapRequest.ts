@@ -2,11 +2,26 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { UnpluginBuildContext, UnpluginContextMeta } from 'unplugin';
 
+type ViteOutputOptions = { sourcemap?: boolean | string };
+
 /** What a resolved Vite config says of source maps. */
 export type ViteSourceMapConfig = {
   command: string;
-  build: { sourcemap: boolean | string };
+  build: {
+    sourcemap: boolean | string;
+    /** Vite 7 and earlier write a map for an output that asks for one here */
+    rollupOptions?: { output?: ViteOutputOptions | ViteOutputOptions[] };
+  };
 };
+
+function writesSourceMap({ command, build }: ViteSourceMapConfig): boolean {
+  // A dev server always reads the map
+  if (command !== 'build' || build.sourcemap) return true;
+  const output = build.rollupOptions?.output ?? [];
+  return (Array.isArray(output) ? output : [output]).some(
+    ({ sourcemap }) => sourcemap
+  );
+}
 
 type TransformContext = Pick<UnpluginBuildContext, 'getNativeBuildContext'> & {
   /** Vite 6 and later: the environment a module is transformed for */
@@ -93,10 +108,7 @@ export function getSourceMapRequest(
 ): SourceMapRequest | undefined {
   if (framework === 'vite') {
     const config = context.environment?.config ?? viteConfig;
-    // A dev server always reads the map
-    return config?.command === 'build' && !config.build.sourcemap
-      ? undefined
-      : {};
+    return config && !writesSourceMap(config) ? undefined : {};
   }
   const native = context.getNativeBuildContext?.();
   if (native?.framework === 'esbuild') {

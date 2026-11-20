@@ -395,6 +395,49 @@ describe('source map of the transform', () => {
       { viteConfig: { command: 'build', build: { sourcemap: false } } },
       false,
     ],
+    // Vite 7 and earlier
+    [
+      'a Vite build whose output asks for source maps',
+      'vite',
+      {
+        viteConfig: {
+          command: 'build',
+          build: {
+            sourcemap: false,
+            rollupOptions: { output: { sourcemap: true } },
+          },
+        },
+      },
+      true,
+    ],
+    [
+      'a Vite build with an output of several that asks for source maps',
+      'vite',
+      {
+        viteConfig: {
+          command: 'build',
+          build: {
+            sourcemap: false,
+            rollupOptions: { output: [{}, { sourcemap: 'hidden' }] },
+          },
+        },
+      },
+      true,
+    ],
+    [
+      'a Vite build whose outputs ask for no source map',
+      'vite',
+      {
+        viteConfig: {
+          command: 'build',
+          build: {
+            sourcemap: false,
+            rollupOptions: { output: [{}, { sourcemap: false }] },
+          },
+        },
+      },
+      false,
+    ],
     [
       'an esbuild build with source maps',
       'esbuild',
