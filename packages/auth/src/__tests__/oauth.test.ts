@@ -709,6 +709,30 @@ describe('discovery and browser authorization', () => {
     expect(Date.now() - started).toBeLessThan(5000);
     expect(await readOAuthTokens(authBaseUrl)).toEqual(tokens);
   });
+  it('reports the login it stored when the caller aborts while it is being written', async () => {
+    await writeOAuthTokens(tokens, authBaseUrl);
+    const actual =
+      await vi.importActual<typeof import('node:fs/promises')>(
+        'node:fs/promises'
+      );
+    const controller = new AbortController();
+    vi.spyOn(fs, 'rename').mockImplementationOnce(async (from, to) => {
+      controller.abort();
+      // Lets the abort's listeners run before the write finishes.
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return actual.rename(from, to);
+    });
+    let page!: Promise<string>;
+    await browserLogin({
+      signal: controller.signal,
+      openBrowser: (url) => {
+        page = callback(url);
+        return page;
+      },
+    });
+    expect((await readOAuthTokens(authBaseUrl))?.accessToken).toBe('access-2');
+    expect(await page).toContain('Signed in to the gt CLI');
+  });
   it('closes the listener when publishing fails', async () => {
     let redirect = '';
     await expect(

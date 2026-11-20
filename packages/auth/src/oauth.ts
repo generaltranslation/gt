@@ -376,6 +376,9 @@ export async function login(options: LoginOptions = {}): Promise<void> {
     // The errors the page shows as a denial: the exchange read a validated
     // access_denied response, so the page and the terminal agree.
     const denials = new WeakSet<object>();
+    // Set once the login is being stored. From then on the stored login is
+    // the outcome, and an abort no longer reports a cancellation.
+    let storing = false;
     const callback = loopback.waitForCallback(
       async (callbackUrl) => {
         const result = await oidc
@@ -416,6 +419,7 @@ export async function login(options: LoginOptions = {}): Promise<void> {
         // login cancelled by now stores nothing, so the login it would have
         // replaced stays as it was.
         if (options.signal?.aborted) throw cancelledFailure();
+        storing = true;
         await writeOAuthTokens(tokens, authBaseUrl, options.onWarning);
         return { account };
       },
@@ -435,7 +439,9 @@ export async function login(options: LoginOptions = {}): Promise<void> {
     // No request is in flight while the user is in the browser, so the
     // caller's abort has to end the wait itself.
     const aborted = new Promise<never>((_, reject) => {
-      const cancel = () => reject(cancelledFailure());
+      const cancel = () => {
+        if (!storing) reject(cancelledFailure());
+      };
       if (options.signal?.aborted) cancel();
       else options.signal?.addEventListener('abort', cancel, { once: true });
     });
