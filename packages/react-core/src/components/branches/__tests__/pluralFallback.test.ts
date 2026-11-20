@@ -127,6 +127,34 @@ describe('plural branch selection', () => {
     ).toThrow('<Ordinal> needs a number or a bigint for n');
   });
 
+  // The host has at most one of these as its own locale, so the others fail
+  // if the plural is left to the host's rules.
+  it.each(['ar', 'pl', 'ja'])(
+    'a locale Intl has no data for picks by the rules of the default locale %s',
+    (defaultLocale) => {
+      resetGTGlobals();
+      initializeI18nConfig({ defaultLocale, locales: [defaultLocale, 'qaa'] });
+      const counts = [0, 1, 2, 5, 21];
+      expect(
+        counts.map((n) =>
+          renderPlural({
+            n,
+            _locale: 'qaa',
+            _enableI18n: true,
+            zero: 'zero',
+            one: 'one',
+            two: 'two',
+            few: 'few',
+            many: 'many',
+            children: 'other',
+          })
+        )
+      ).toEqual(
+        counts.map((n) => new Intl.PluralRules(defaultLocale).select(n))
+      );
+    }
+  );
+
   it('reads zero as a plural category, which English does not have', () => {
     expect(
       renderPlural({
