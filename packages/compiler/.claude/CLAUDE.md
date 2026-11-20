@@ -77,6 +77,7 @@ Test suites in `src/passes/__tests__/`:
 ## Important Invariants
 
 - The JSX insertion pass operates on **compiled JSX** (after Vite/SWC transforms `<div>` into `jsx("div", ...)`), not raw JSX syntax.
+- Compiled JSX is read only when its calls are imported from React's runtime (`isReactImportSource`). A file compiled against another JSX import source is skipped, and the build warns once per source (`findUnreadJsxImportSources`).
 - Each `{expression}` maps to exactly one `_Var` — never grouped or combined.
 - The CLI extraction tool must simulate the same insertion to compute matching hashes.
 - Processing functions have a 1-to-1 relationship with their Babel visitor counterparts.
