@@ -10,6 +10,7 @@ import { createFailedWarning } from './warnings';
 import {
   addArrived,
   getFileUrl,
+  getWait,
   register,
   request,
   requestEntry,
@@ -171,7 +172,7 @@ function requestRegionFile(
   if (c === undefined || isRetry) {
     return request(state, key, url, requested, read);
   }
-  const start = Date.now();
+  const end = Date.now() + getWait(state);
   const missing = (state.z ||= {});
   const requestInPlace = (): boolean | Promise<boolean> => {
     const files = listRegionFiles(state, c);
@@ -211,7 +212,7 @@ function requestRegionFile(
       ? arrived
       : within(
           state,
-          start,
+          end,
           // The lists can outlast the timeout of the file
           (state.x || Promise.resolve()).then(() =>
             missing[url] === false ? requestInPlace() : false

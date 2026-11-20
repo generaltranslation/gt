@@ -12,6 +12,7 @@ import {
   createFailedWarning,
   createMissingLocaleWarning,
   createTimeoutWarning,
+  createUnwaitedWarning,
 } from './warnings';
 
 export function requestEntry(
@@ -120,6 +121,8 @@ export function takeArrived(
  * - A file that fails is requested again by the next import that needs it.
  * - A file that is late is not waited for again: what needs it renders the
  *   source until it arrives, and it is still read when it does.
+ * - Once the wait for a file has run out, no file is waited for until one
+ *   has arrived in time, see `getWait()`.
  * - A file the host does not have is one it answers 404 or 410 for, or
  *   answers with something that is not JSON, as a host does that serves a
  *   page for every path it has no file for. Only then is `recover` called,
@@ -138,11 +141,19 @@ export function request<F extends object>(
 ): Promise<boolean> {
   const requests = (state.r ||= {});
   return (requests[key] ||= new Promise((resolve) => {
-    const timeout = getTimeout(state);
+    const timeout = getWait(state);
+    const start = Date.now();
+    const waits = (state.wt ||= [0]);
+    const inTime = waits[0];
     let late = false;
     const timer = setTimeout(() => {
       late = true;
-      console.warn(createTimeoutWarning(url, timeout));
+      if (timeout) waits[1] = inTime;
+      console.warn(
+        timeout
+          ? createTimeoutWarning(url, timeout)
+          : createUnwaitedWarning(url)
+      );
       requests[key] = Promise.resolve(false);
       resolve(false);
     }, timeout);
@@ -159,6 +170,7 @@ export function request<F extends object>(
           return;
         }
         clearTimeout(timer);
+        if (Date.now() - start < getTimeout(state)) waits[0]++;
         read(file as F);
         // A late file is read when it arrives, as nothing waits for it, and
         // what rendered without it is told
@@ -210,4 +222,16 @@ export function fetchJson(
 
 export function getTimeout(state: ChunkTranslationsState): number {
   return state.w ?? 10_000;
+}
+
+/**
+ * How long a file that is requested now is waited for: the timeout, and not
+ * at all once the wait for a file has run out, until a file has arrived
+ * within the timeout of its own request since that late file was requested.
+ * A host that answers no file in time so costs a page one wait, and not one
+ * more for each import that the code of another import starts.
+ */
+export function getWait(state: ChunkTranslationsState): number {
+  const [inTime, late] = state.wt || [0];
+  return late === undefined || inTime > late ? getTimeout(state) : 0;
 }
