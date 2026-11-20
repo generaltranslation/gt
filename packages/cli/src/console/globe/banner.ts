@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { stripVTControlCharacters } from 'node:util';
+import { format, stripVTControlCharacters } from 'node:util';
 import type { ProgressResult, SpinnerResult } from '@clack/prompts';
 import stringWidth from 'string-width';
 import { getGlobeFrames } from './frames.js';
@@ -17,6 +17,18 @@ const HIDE_CURSOR = '\x1b[?25l';
 const SHOW_CURSOR = '\x1b[?25h';
 const CTRL_C = 0x03;
 const TERMINATING_SIGNALS: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGHUP'];
+// A frame that takes longer than this to write means the terminal can't
+// keep up (a slow SSH link); the globe lands rather than slow the command.
+const SLOW_WRITE_MS = FRAME_MS / 2;
+const CONSOLE_METHODS = [
+  'log',
+  'info',
+  'debug',
+  'warn',
+  'error',
+  'trace',
+] as const;
+type ConsoleMethod = (typeof CONSOLE_METHODS)[number];
 
 type Write = NodeJS.WriteStream['write'];
 type Held =
@@ -93,6 +105,12 @@ export class GlobeBanner {
   // Run on landing; given the exit code when the process is ending.
   private afterLanding: Array<(exitCode?: number) => void> = [];
   private inputMuted = false;
+  private crashed = false;
+  private lastLines: string[] = [];
+  private readonly consoleMethods = new Map<
+    ConsoleMethod,
+    Console[ConsoleMethod]
+  >();
 
   isAnimating(): boolean {
     return this.animating;
@@ -126,7 +144,9 @@ export class GlobeBanner {
         return true;
       }) as Write;
     }
+    this.routeConsole();
     process.on('exit', this.onExit);
+    process.on('uncaughtExceptionMonitor', this.onCrash);
     for (const signal of TERMINATING_SIGNALS) process.on(signal, this.onSignal);
     this.options.stream.on('resize', this.onResize);
     this.muteInput();
@@ -254,7 +274,7 @@ export class GlobeBanner {
           running = false;
           printFinal(
             { message, startedAt },
-            exitCode > 1 ? 'Something went wrong' : 'Canceled',
+            this.exitMessage(exitCode),
             exitCode
           );
         });
@@ -312,7 +332,7 @@ export class GlobeBanner {
       real = replay(pending.splice(0));
       // The process is ending under a running bar: stop it as clack would.
       if (exitCode !== undefined) {
-        real.stop(exitCode > 1 ? 'Something went wrong' : 'Canceled', exitCode);
+        real.stop(this.exitMessage(exitCode), exitCode);
       }
     });
     this.requestLanding();
@@ -403,8 +423,45 @@ export class GlobeBanner {
   private drawFrame(frame: GlobeFrame): void {
     const lines = [...this.paint(frame), this.statusLine()];
     const up = this.drawn ? `\x1b[${lines.length}A` : '';
-    this.raw(`${up}${lines.map((line) => `\r${line}\x1b[K`).join('\n')}\n`);
+    // Unchanged lines are stepped over rather than written again.
+    const body = lines
+      .map((line, i) =>
+        this.drawn && line === this.lastLines[i] ? '' : `\r${line}\x1b[K`
+      )
+      .join('\n');
+    const before = performance.now();
+    this.raw(`${up}${body}\n`);
+    const took = performance.now() - before;
+    this.lastLines = lines;
     this.drawn = true;
+    if (took > SLOW_WRITE_MS) {
+      // Land at once: fast-forwarding would mean writing more frames.
+      this.phase = 'rest';
+      this.settling = true;
+    }
+  }
+
+  // The line clack's spinner prints when the process ends under it.
+  private exitMessage(exitCode: number): string {
+    return this.crashed || exitCode > 1 ? 'Something went wrong' : 'Canceled';
+  }
+
+  // Bun's console writes to the terminal without going through
+  // process.stdout.write, so route it through the held writes as Node does.
+  private routeConsole(): void {
+    for (const name of CONSOLE_METHODS) {
+      const toErr = name === 'warn' || name === 'error' || name === 'trace';
+      const stream = toErr ? process.stderr : process.stdout;
+      if (!this.writes.has(stream)) continue;
+      this.consoleMethods.set(name, console[name]);
+      console[name] = (...args: unknown[]) => {
+        const text =
+          name === 'trace'
+            ? `Trace: ${format(...args)}\n${new Error().stack?.split('\n').slice(2).join('\n') ?? ''}`
+            : format(...args);
+        stream.write(`${text}\n`);
+      };
+    }
   }
 
   private land(exitCode?: number): void {
@@ -424,12 +481,15 @@ export class GlobeBanner {
     clearInterval(this.timer);
     clearTimeout(this.cap);
     process.off('exit', this.onExit);
+    process.off('uncaughtExceptionMonitor', this.onCrash);
     for (const signal of TERMINATING_SIGNALS) {
       process.off(signal, this.onSignal);
     }
     this.options!.stream.off('resize', this.onResize);
     this.unmuteInput();
     for (const [stream, write] of this.writes) stream.write = write;
+    for (const [name, method] of this.consoleMethods) console[name] = method;
+    this.consoleMethods.clear();
     this.writes.clear();
     const held = this.held;
     this.held = [];
@@ -480,6 +540,12 @@ export class GlobeBanner {
     // Raw input means the terminal sent no signal, so raise it ourselves:
     // other handlers get it, and without any, Ctrl+C exits as usual.
     process.kill(process.pid, 'SIGINT');
+  };
+
+  // An uncaught error lands the globe before its trace prints.
+  private readonly onCrash = () => {
+    this.crashed = true;
+    if (this.animating) this.land(1);
   };
 
   // A command that exits mid-animation lands at once, so nothing is lost.

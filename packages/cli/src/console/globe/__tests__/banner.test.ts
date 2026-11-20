@@ -301,6 +301,35 @@ describe('GlobeBanner', () => {
     terminal.emit('resize');
   });
 
+  it('lands rather than slow the command when the terminal cannot keep up', async () => {
+    const { banner } = setup();
+    // Every frame write takes 20ms, more than half a frame.
+    let clock = performance.now();
+    const now = vi
+      .spyOn(performance, 'now')
+      .mockImplementation(() => (clock += 20));
+    await vi.advanceTimersByTimeAsync(200);
+    now.mockRestore();
+
+    expect(banner.isAnimating()).toBe(false);
+  });
+
+  it('lands before an uncaught error prints and labels running spinners', () => {
+    const { banner, stream, terminal } = setup();
+    const calls: string[] = [];
+    banner.spinner(recordingSpinner(calls)).start('Uploading');
+    stream.write('held line\n');
+    process.emit(
+      'uncaughtExceptionMonitor',
+      new Error('boom'),
+      'uncaughtException'
+    );
+
+    expect(banner.isAnimating()).toBe(false);
+    expect(plain(terminal.output)).toContain('held line');
+    expect(calls.at(-1)).toMatch(/^stop Something went wrong @/);
+  });
+
   it('stops redrawing and releases held output when the window resizes', () => {
     const { banner, stream, terminal } = setup();
     stream.write('held\n');
