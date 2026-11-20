@@ -81,7 +81,9 @@ function atTime(time: number, fn: () => void): void {
 // a cell of their own. So outside emoji, every code point that isn't a
 // non-spacing mark, enclosing mark or format character counts too.
 const NON_SPACING = /[\p{Mn}\p{Me}\p{Cf}]/u;
-function columnsOf(grapheme: string): number {
+function columnsOf(text: string): number {
+  // Composed form, so decomposed Hangul jamo measure as their syllable.
+  const grapheme = text.normalize('NFC');
   const whole = stringWidth(grapheme);
   if (/\p{Extended_Pictographic}/u.test(grapheme)) return whole;
   let spacing = 0;
@@ -114,7 +116,7 @@ function fitColumns(text: string, room: number): string {
  */
 export function signalForegroundJob(
   signal: NodeJS.Signals,
-  groups = readProcessGroups(),
+  groups: ReturnType<typeof readProcessGroups>,
   kill: (pid: number, signal: NodeJS.Signals) => void = (pid, sig) =>
     void process.kill(pid, sig)
 ): void {
@@ -617,7 +619,7 @@ export class GlobeBanner {
     // this CLI (pnpm exec, the binary's wrapper) stops or exits with it.
     // The key then does what it usually does (Ctrl+C exits, Ctrl+Z
     // suspends, Ctrl+\ quits), and other handlers still get it.
-    signalForegroundJob(signal);
+    signalForegroundJob(signal, readProcessGroups());
   };
 
   // An uncaught error lands the globe before its trace prints.

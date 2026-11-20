@@ -310,6 +310,7 @@ describe('GlobeBanner', () => {
     ['half-width kana with a voiced mark', 'ｶﾞ'],
     ['keycap emoji', '1️⃣'],
     ['Thai with a spacing vowel', 'กำ'],
+    ['decomposed Hangul', '한'.normalize('NFD')],
   ])('keeps wide %s status text on one line', (_kind, char) => {
     const terminal = new FakeTerminal();
     terminal.columns = 30;
