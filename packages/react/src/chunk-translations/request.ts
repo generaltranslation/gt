@@ -201,7 +201,9 @@ export function request<F extends object>(
     }, wait);
     const fail = (details: string) => {
       clearTimeout(timer);
-      console.warn(createFailedWarning(url, details));
+      // A file is reported once, as late or as failed
+      if (!reported) console.warn(createFailedWarning(url, details));
+      reported = true;
       requests[key] = undefined;
       resolve(false);
     };
@@ -239,7 +241,7 @@ export function request<F extends object>(
         void recovered.then((arrived) => {
           if (arrived === undefined) {
             missing[url] = true;
-            // A file is reported once, as late or as failed
+            // Late already, and so not asked for again
             if (!reported) fail(details);
           } else {
             clearTimeout(timer);

@@ -665,67 +665,82 @@ describe('gt-react/chunk-translations', () => {
     // What the page is warned of when the file is not there in time
     const LATE = 'did not load within 2000 ms';
     const FAILED = 'Could not load the translations';
+    const busy = () => new Response('Busy', { status: 503 });
+    const unreadable = () => {
+      throw new TypeError('Not what a build writes');
+    };
+    /** `again` is whether the next import asks for the file again. */
     type Outcome = [
       name: string,
       file: Files[string],
       warning: string | undefined,
+      again: boolean,
       recover?: () => Promise<boolean | undefined>,
       read?: () => void,
     ];
     const OUTCOMES: Outcome[] = [
-      ['a file that arrives at once', {}, undefined],
-      ['a file that arrives after the timeout', slow({}, 3000), LATE],
-      ['a response that never ends', () => new Promise(() => {}), LATE],
+      ['a file that arrives at once', {}, undefined, false],
+      ['a file that arrives after the timeout', slow({}, 3000), LATE, false],
+      ['a response that never ends', () => new Promise(() => {}), LATE, false],
+      ['a host that fails', () => Promise.resolve(busy()), FAILED, true],
       [
-        'a host that fails',
-        () => Promise.resolve(new Response('Busy', { status: 503 })),
-        FAILED,
+        'a host that fails after the timeout',
+        () =>
+          new Promise<Response>((resolve) =>
+            setTimeout(() => resolve(busy()), 3000)
+          ),
+        LATE,
+        true,
       ],
       [
         'a missing file that nothing stands in for',
         missing,
         FAILED,
+        true,
         () => Promise.resolve(undefined),
       ],
       [
         'a missing file that nothing stands in for, known after the timeout',
         missing,
         LATE,
+        false,
         after(undefined),
       ],
       [
         'a missing file that another stands in for',
         missing,
         undefined,
+        false,
         () => Promise.resolve(true),
       ],
       [
         'a missing file that another stands in for after the timeout',
         missing,
         LATE,
+        false,
         after(true),
       ],
+      ['a file whose reading throws', {}, FAILED, true, undefined, unreadable],
       [
-        'a file whose reading throws',
-        {},
-        FAILED,
+        'a file that arrives after the timeout, whose reading throws',
+        slow({}, 3000),
+        LATE,
+        true,
         undefined,
-        () => {
-          throw new TypeError('Not what a build writes');
-        },
+        unreadable,
       ],
     ];
 
     it.each(
       WAITS.flatMap(([waited, wt]) =>
         OUTCOMES.map(
-          ([name, file, warning, recover, read]) =>
-            [waited, name, file, warning, recover, read, wt] as const
+          ([name, file, warning, again, recover, read]) =>
+            [waited, name, file, warning, again, recover, read, wt] as const
         )
       )
     )(
       '%s settles with %s',
-      async (_waited, _name, file, warning, recover, read, wt) => {
+      async (_waited, _name, file, warning, again, recover, read, wt) => {
         serve({ [FILE]: file });
         vi.useFakeTimers();
         const state: ChunkTranslationsState = { w: 2000, wt: wt && [...wt] };
@@ -742,9 +757,11 @@ describe('gt-react/chunk-translations', () => {
         // No later than its timeout, whatever becomes of it afterwards
         await vi.advanceTimersByTimeAsync(2000);
         expect(settled).toBe(warning === undefined);
-        // Nor does the next import wait for it for good
+        // Nor does the next import wait for it for good: it asks again for
+        // a file that failed
         await vi.advanceTimersByTimeAsync(3000);
         const kept = state.r!.file;
+        expect(kept === undefined).toBe(again);
         expect(
           kept && (await Promise.race([kept, Promise.resolve('pending')]))
         ).not.toBe('pending');
