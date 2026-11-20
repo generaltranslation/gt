@@ -166,6 +166,7 @@ export interface PluginConfig
    * `minifyHashes`. The other keys have no environment variable. An empty
    * variable is not set. With neither `enabled` nor `GT_SPLIT_TRANSLATIONS`
    * set, the split is on when the option is set and off when it is not.
+   * While the split is off, the other keys and their variables are not read.
    */
   experimentalSplitTranslations?: SplitTranslationsOptions;
   /**

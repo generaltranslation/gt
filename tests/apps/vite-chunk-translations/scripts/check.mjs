@@ -7,7 +7,7 @@
 // (minifyHashes of experimentalSplitTranslations), and checks the ids and the
 // files it writes too.
 // Prints one line per check and exits with 1 when any fails.
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import {
   createReadStream,
   mkdirSync,
@@ -104,20 +104,6 @@ function buildEnv(outDir, chunkTranslations, env) {
     CHECK_OUT_DIR: outDir,
     ...env,
   };
-}
-
-/** A build that must fail: what it printed, or undefined when it did not fail. */
-function failBuild(name, chunkTranslations, env) {
-  const result = spawnSync(
-    'pnpm',
-    ['exec', 'vite', 'build', '--logLevel', 'error'],
-    {
-      cwd: root,
-      encoding: 'utf8',
-      env: buildEnv(join(root, '.check', name), chunkTranslations, env),
-    }
-  );
-  return result.status === 0 ? undefined : `${result.stdout}${result.stderr}`;
 }
 
 const TYPES = {
@@ -1002,20 +988,6 @@ if (MINIFY_HASHES) {
       await app.close();
     }
     shared.close();
-  }
-
-  {
-    const output = failBuild(`${NAMING}-minify-hashes-alone`, false, {
-      GT_MINIFY_HASHES: 'true',
-    });
-    const failed = output?.includes(
-      'experimentalSplitTranslations.minifyHashes is set in a build without experimentalSplitTranslations'
-    );
-    check(
-      'hash minification: a build without chunk translations fails',
-      failed,
-      failed ? '' : (output?.slice(0, 200) ?? 'the build did not fail')
-    );
   }
 }
 

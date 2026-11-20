@@ -66,7 +66,6 @@ import {
 } from './transform/chunk-translations/createRegionGraph';
 import {
   createRuntimeHashesWarning,
-  MINIFY_HASHES_WITHOUT_CHUNK_TRANSLATIONS_ERROR,
   minifyChunk,
 } from './transform/chunk-translations/hashMinification';
 import {
@@ -258,7 +257,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         ? gtConfigLoadResult.gtConfig
         : undefined;
     const splitTranslations = options.experimentalSplitTranslations;
-    const minifyHashes = getMinifyHashes(splitTranslations?.minifyHashes);
     const resolveChunkTranslationsOptions = () => {
       const split = getChunkTranslationsSplit(splitTranslations?.by);
       return resolveChunkTranslations(loadedGTConfig, {
@@ -269,14 +267,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           requestCost: splitTranslations?.requestCost,
           previous: splitTranslations?.previous,
         }),
-        minifyHashes,
+        minifyHashes: getMinifyHashes(splitTranslations?.minifyHashes),
       });
     };
     const chunkTranslationsResolution = getChunkTranslations(splitTranslations)
       ? resolveChunkTranslationsOptions()
-      : minifyHashes
-        ? { error: MINIFY_HASHES_WITHOUT_CHUNK_TRANSLATIONS_ERROR }
-        : undefined;
+      : undefined;
     const chunkTranslations =
       chunkTranslationsResolution && !('error' in chunkTranslationsResolution)
         ? chunkTranslationsResolution

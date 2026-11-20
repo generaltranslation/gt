@@ -3005,23 +3005,43 @@ export const ready = initializeGTSPA({});`,
     });
 
     it.each([
-      ['the option', { enabled: false, minifyHashes: true }, undefined],
-      ['GT_MINIFY_HASHES', undefined, 'true'],
+      ['enabled: false', { enabled: false, minifyHashes: true }, {}],
+      [
+        'GT_SPLIT_TRANSLATIONS=false',
+        { minifyHashes: true },
+        { GT_SPLIT_TRANSLATIONS: 'false' },
+      ],
+      [
+        'no option, with GT_MINIFY_HASHES=true',
+        undefined,
+        { GT_MINIFY_HASHES: 'true' },
+      ],
+      [
+        'enabled: false, with a GT_MINIFY_HASHES that is not a boolean',
+        { enabled: false },
+        { GT_MINIFY_HASHES: '8' },
+      ],
     ])(
-      'fails a production build without chunk translations that sets it by %s, and leaves a dev build alone',
-      (_, experimentalSplitTranslations, env) => {
-        vi.stubEnv('GT_MINIFY_HASHES', env as never);
-        const { plugins } = createPlugins({
-          gtConfig: GT_CONFIG,
+      'is ignored, and its variable is not read, in a build with the split off by %s',
+      async (_, experimentalSplitTranslations, env) => {
+        const off = { gtConfig: GT_CONFIG, precomputeMessages: false };
+        const compiled = await transform(MODULE, off);
+        for (const [name, value] of Object.entries(env)) {
+          vi.stubEnv(name, value);
+        }
+        const created = createPlugins({
+          ...off,
           experimentalSplitTranslations,
         });
-        expect(plugins).toHaveLength(1);
-        const buildStart = plugins[0].buildStart as () => void;
-        expect(buildStart).toThrow(
-          'experimentalSplitTranslations.minifyHashes is set in a build without experimentalSplitTranslations because hash minification replaces the key of a message in the translation files that only such a build writes. Turn experimentalSplitTranslations on, or turn experimentalSplitTranslations.minifyHashes off.'
-        );
-        vi.stubEnv('NODE_ENV', 'development');
-        expect(buildStart).not.toThrow();
+        expect(created.plugins).toHaveLength(1);
+        expect(created.plugins[0].buildStart as () => void).not.toThrow();
+        expect(
+          await transform(
+            MODULE,
+            { ...off, experimentalSplitTranslations },
+            created
+          )
+        ).toBe(compiled);
       }
     );
 

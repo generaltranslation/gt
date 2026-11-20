@@ -152,16 +152,6 @@ const nameSome = (names: string[]) => [
   ...(names.length > MAX_NAMED ? [`and ${names.length - MAX_NAMED} more`] : []),
 ];
 
-export const MINIFY_HASHES_WITHOUT_CHUNK_TRANSLATIONS_ERROR =
-  createDiagnosticMessage({
-    source: '@generaltranslation/compiler',
-    severity: 'Error',
-    whatHappened:
-      'experimentalSplitTranslations.minifyHashes is set in a build without experimentalSplitTranslations',
-    why: 'hash minification replaces the key of a message in the translation files that only such a build writes',
-    fix: 'Turn experimentalSplitTranslations on, or turn experimentalSplitTranslations.minifyHashes off',
-  });
-
 export const MINIFY_HASHES_WITH_TAGGED_IDS_ERROR = createDiagnosticMessage({
   source: '@generaltranslation/compiler',
   severity: 'Error',
