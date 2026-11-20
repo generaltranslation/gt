@@ -1,5 +1,4 @@
 import * as fs from 'node:fs';
-import * as path from 'node:path';
 import {
   readLockfile,
   EntryMap,
@@ -7,16 +6,14 @@ import {
 } from '../fs/config/downloadedVersions.js';
 import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
-import { getGitUnifiedDiff } from '../utils/gitDiff.js';
 import { requireProject, resolveCanonicalLocale } from '../utils/api.js';
-import { FileReference, isBinaryFileFormat } from 'generaltranslation';
-import type {
-  FileFormat,
-  OverwriteTranslationsData,
-} from '@generaltranslation/api';
+import {
+  FileReference,
+  isBinaryFileFormat,
+  type TranslationOverwrite,
+} from 'generaltranslation';
+import type { FileFormat } from '@generaltranslation/api';
 import { readFileContent } from '../fs/fileContent.js';
-import os from 'node:os';
-import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
 import { extractJson } from '../formats/json/extractJson.js';
 import {
@@ -161,9 +158,7 @@ const parseJson = (content: string): unknown => {
   }
 };
 
-type UserEditDiff = OverwriteTranslationsData['body']['diffs'][number] & {
-  fileName: string;
-};
+type UserEditDiff = TranslationOverwrite & { fileName: string };
 
 type UserEditDiffResults = {
   saved: UserEditDiff[];
@@ -227,9 +222,6 @@ export async function collectAndSendUserEditDiffs(
   );
 
   const { entryMap } = readLockfile(settings);
-
-  const tempDir = path.join(os.tmpdir(), randomUUID());
-  if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
   // Build candidates for diff and batch-fetch server contents
   type DiffCandidate = {
@@ -371,11 +363,11 @@ export async function collectAndSendUserEditDiffs(
         if (local === undefined) continue;
         const localBytes = contentBytes(local, c.fileFormat);
 
-        // Nothing was edited, so there is no diff to compute or report.
+        // Nothing was edited, so there is nothing to submit.
         if (localBytes.equals(serverBytes)) continue;
 
-        // A unified diff and localContent are both UTF-8 text, and every text
-        // format's content is UTF-8 by the time it reaches here. Only a binary
+        // The submitted content is UTF-8 text, and every text format's
+        // content is UTF-8 by the time it reaches here. Only a binary
         // format's bytes — a Lottie zip — have no text form at all. Say so:
         // the edit is real and will be lost on the next download.
         if (isBinaryFileFormat(c.fileFormat)) {
@@ -387,115 +379,90 @@ export async function collectAndSendUserEditDiffs(
           continue;
         }
 
-        const safeName = Buffer.from(
-          `${c.branchId}:${c.fileId}:${c.versionId}:${c.locale}`
-        )
-          .toString('base64')
-          .replace(/=+$/g, '');
-        const tempServerFile = path.join(tempDir, `${safeName}.server`);
-        await fs.promises.writeFile(tempServerFile, serverBytes);
+        const rawLocalContent = localBytes.toString('utf8');
 
-        // git diff reads bytes, so both sides are written from the content
-        // they represent rather than diffing the file as it sits on disk.
-        const tempLocalFile = path.join(tempDir, `${safeName}.local`);
-        await fs.promises.writeFile(tempLocalFile, localBytes);
-
-        const diff = await getGitUnifiedDiff(tempServerFile, tempLocalFile);
-        for (const tempFile of [tempServerFile, tempLocalFile]) {
-          try {
-            await fs.promises.unlink(tempFile);
-          } catch {
-            // Ignore cleanup errors for temporary comparison files.
-          }
-        }
-
-        if (diff && diff.trim().length > 0) {
-          const rawLocalContent = localBytes.toString('utf8');
-
-          // For JSON files with jsonSchema config, extract to composite format
-          let localContent = rawLocalContent;
-          if (
-            c.fileName.endsWith('.json') &&
-            settings.options?.jsonSchema &&
-            c.locale !== settings.defaultLocale
-          ) {
-            const resolvedLocal = resolveLocalRefs(
-              rawLocalContent,
-              c.outputPath,
-              settings
-            );
-            const extractedContent = extractJson(
+        // For JSON files with jsonSchema config, extract to composite format
+        let localContent = rawLocalContent;
+        if (
+          c.fileName.endsWith('.json') &&
+          settings.options?.jsonSchema &&
+          c.locale !== settings.defaultLocale
+        ) {
+          const resolvedLocal = resolveLocalRefs(
+            rawLocalContent,
+            c.outputPath,
+            settings
+          );
+          const extractedContent = extractJson(
+            resolvedLocal.content,
+            c.fileName,
+            settings.options,
+            c.locale,
+            settings.defaultLocale
+          );
+          if (extractedContent) {
+            const extracted = parseJson(extractedContent);
+            // The submitted content replaces the stored translation, so
+            // values missing from it would be erased.
+            const unreadableRefs = unreadableRefsForLocale(
+              resolvedLocal.unreadableRefs,
               resolvedLocal.content,
               c.fileName,
-              settings.options,
               c.locale,
-              settings.defaultLocale
+              settings
             );
-            if (extractedContent) {
-              const extracted = parseJson(extractedContent);
-              // The submitted content replaces the stored translation, so
-              // values missing from it would be erased.
-              const unreadableRefs = unreadableRefsForLocale(
-                resolvedLocal.unreadableRefs,
-                resolvedLocal.content,
-                c.fileName,
-                c.locale,
-                settings
-              );
-              const reason =
-                unreadableRefs.length > 0
-                  ? `these $ref files could not be read: ${unreadableRefs.map((ref) => ref.refPath).join(', ')}`
-                  : !hasLeafValue(extracted)
-                    ? 'no translated values for that locale could be read from the file'
-                    : undefined;
-              if (reason) {
-                const relativePath = getRelative(c.outputPath);
-                logger.warn(
-                  unsavedJsonEditsWarning(relativePath, c.locale, reason)
-                );
-                recordWarning('skipped_file', relativePath, reason);
-                continue;
-              }
-              if (isDeepStrictEqual(extracted, parseJson(serverContent))) {
-                continue;
-              }
-              localContent = extractedContent;
-            }
-          } else if (
-            (c.fileName.endsWith('.yaml') || c.fileName.endsWith('.yml')) &&
-            settings.options?.yamlSchema &&
-            c.locale !== settings.defaultLocale
-          ) {
-            const extractedContent = extractYaml(
-              rawLocalContent,
-              c.fileName,
-              settings.options
-            );
-            if (extractedContent) {
-              localContent = extractedContent;
-            }
-          }
-
-          // The API rejects empty content, so an emptied file cannot be saved
-          if (localContent.length === 0) {
-            const relativePath = getRelative(c.outputPath);
             const reason =
-              'Edited file is empty, so its changes cannot be submitted';
-            logger.warn(`Skipping local edits to ${relativePath}: ${reason}`);
-            recordWarning('skipped_file', relativePath, reason);
-            continue;
+              unreadableRefs.length > 0
+                ? `these $ref files could not be read: ${unreadableRefs.map((ref) => ref.refPath).join(', ')}`
+                : !hasLeafValue(extracted)
+                  ? 'no translated values for that locale could be read from the file'
+                  : undefined;
+            if (reason) {
+              const relativePath = getRelative(c.outputPath);
+              logger.warn(
+                unsavedJsonEditsWarning(relativePath, c.locale, reason)
+              );
+              recordWarning('skipped_file', relativePath, reason);
+              continue;
+            }
+            if (isDeepStrictEqual(extracted, parseJson(serverContent))) {
+              continue;
+            }
+            localContent = extractedContent;
           }
-
-          collectedDiffs.push({
-            fileName: c.fileName,
-            locale: c.locale,
-            diff,
-            branchId: c.branchId,
-            versionId: c.versionId,
-            fileId: c.fileId,
-            localContent,
-          } satisfies UserEditDiff);
+        } else if (
+          (c.fileName.endsWith('.yaml') || c.fileName.endsWith('.yml')) &&
+          settings.options?.yamlSchema &&
+          c.locale !== settings.defaultLocale
+        ) {
+          const extractedContent = extractYaml(
+            rawLocalContent,
+            c.fileName,
+            settings.options
+          );
+          if (extractedContent) {
+            localContent = extractedContent;
+          }
         }
+
+        // The API rejects empty content, so an emptied file cannot be saved
+        if (localContent.length === 0) {
+          const relativePath = getRelative(c.outputPath);
+          const reason =
+            'Edited file is empty, so its changes cannot be submitted';
+          logger.warn(`Skipping local edits to ${relativePath}: ${reason}`);
+          recordWarning('skipped_file', relativePath, reason);
+          continue;
+        }
+
+        collectedDiffs.push({
+          fileName: c.fileName,
+          locale: c.locale,
+          branchId: c.branchId,
+          versionId: c.versionId,
+          fileId: c.fileId,
+          content: localContent,
+        } satisfies UserEditDiff);
       } catch {
         // Ignore failures for this file
       }

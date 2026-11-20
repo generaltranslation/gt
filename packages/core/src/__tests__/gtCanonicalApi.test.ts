@@ -184,9 +184,7 @@ describe.sequential('GeneralTranslation canonical API methods', () => {
     await expect(gt.translateFiles([ids])).resolves.toEqual({ jobs: [job] });
     await expect(gt.setTag('release', { files: [ids] })).resolves.toEqual(tag);
     await expect(
-      gt.overwriteTranslations([
-        { ...ids, locale: 'es', diff: '@@', localContent: '{}' },
-      ])
+      gt.overwriteTranslations([{ ...ids, locale: 'es', content: '{}' }])
     ).resolves.toEqual(
       routes['POST /v2/projects/p/files/translations/overwrite']
     );

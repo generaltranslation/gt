@@ -89,7 +89,9 @@ export {
   type FileToUpload,
 } from './types-dir/api/file';
 export type {
+  AssetUpload,
   FileUpload,
+  TranslationOverwrite,
   TranslationSourceUpload,
   TranslationUpload,
 } from './types-dir/api/uploadFiles';

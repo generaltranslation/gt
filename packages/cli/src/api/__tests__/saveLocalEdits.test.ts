@@ -7,7 +7,6 @@ import { createMockSettings } from '../__mocks__/settings.js';
 import { logger } from '../../console/logger.js';
 import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
-import { getGitUnifiedDiff } from '../../utils/gitDiff.js';
 import { hashStringSync } from '../../utils/hash.js';
 import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 
@@ -26,7 +25,6 @@ vi.mock('../../console/logger.js', () => ({
   logger: { warn: vi.fn(), createSpinner: () => mockSpinner },
 }));
 
-vi.mock('../../utils/gitDiff.js', () => ({ getGitUnifiedDiff: vi.fn() }));
 vi.mock('../../formats/files/aggregateFiles.js', () => ({
   aggregateFiles: vi.fn(),
 }));
@@ -130,7 +128,6 @@ describe('saveLocalEdits', () => {
         data: 'server content',
       })),
     });
-    vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
     vi.mocked(api.overwriteTranslations).mockResolvedValue({
       summary: { total: 2, succeeded: 1, failed: 1 },
       results: [
@@ -231,7 +228,6 @@ describe('saveLocalEdits', () => {
         },
       ],
     });
-    vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
     vi.mocked(api.overwriteTranslations).mockResolvedValue({
       summary: { total: 1, succeeded: 1, failed: 0 },
       results: [{ ...selector, status: 'succeeded' }],
@@ -312,7 +308,6 @@ describe('saveLocalEdits', () => {
           data: 'server content',
         })),
       });
-      vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
       vi.mocked(api.overwriteTranslations).mockResolvedValue({
         summary: { total: 2, succeeded: 1, failed: 1 },
         results: [

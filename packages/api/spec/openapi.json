@@ -8738,44 +8738,66 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "diffs": {
+                  "translations": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "locale": {
-                          "type": "string",
-                          "minLength": 1,
-                          "examples": ["es"]
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "locale": {
+                              "type": "string",
+                              "minLength": 1,
+                              "examples": ["es"]
+                            },
+                            "branchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileId": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": ["locale", "versionId", "fileId"]
                         },
-                        "diff": {
-                          "type": "string"
-                        },
-                        "branchId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "versionId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "fileId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "localContent": {
-                          "type": "string",
-                          "minLength": 1,
-                          "examples": ["{\"greeting\":\"Hola\"}"],
-                          "description": "The full translated file content."
+                        {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "content": {
+                                  "type": "string",
+                                  "examples": ["eyJncmVldGluZyI6IkhvbGEifQ=="],
+                                  "description": "Base64-encoded translation content."
+                                }
+                              },
+                              "required": ["content"]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "upload": {
+                                  "type": "object",
+                                  "properties": {
+                                    "sha256": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{64}$",
+                                      "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
+                                    }
+                                  },
+                                  "required": ["sha256"],
+                                  "description": "A file already PUT to the URL from Create file uploads, in place of `content`; required when the request body would be over 4MB."
+                                }
+                              },
+                              "required": ["upload"]
+                            }
+                          ]
                         }
-                      },
-                      "required": [
-                        "locale",
-                        "diff",
-                        "versionId",
-                        "fileId",
-                        "localContent"
                       ]
                     },
                     "minItems": 1,
@@ -8783,14 +8805,14 @@
                     "description": "1–100 translations; each branch, file, version and locale may appear once."
                   }
                 },
-                "required": ["diffs"]
+                "required": ["translations"]
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Overwrite result for each translation, in request order, even when every translation fails; a translation fails when its source file or translation does not exist, the content does not apply to its format, or the save fails. Retrying with the same content is safe.",
+            "description": "Overwrite result for each translation, in request order, even when every translation fails; a translation fails when its source file or translation does not exist, its content is empty or not base64, its upload is missing or too large (`file_too_large`), the content does not apply to its format, or the save fails. Retrying with the same content is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8861,6 +8883,7 @@
                                   "source_file_not_found",
                                   "not_found",
                                   "invalid_request",
+                                  "file_too_large",
                                   "internal_error"
                                 ],
                                 "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
@@ -8888,14 +8911,14 @@
             }
           },
           "400": {
-            "description": "The request is malformed or failed validation.",
+            "description": "The request is malformed or failed validation, or its uploads are together too large to read (`file_too_large`). Nothing is saved.",
             "content": {
               "application/json": {
                 "examples": {
                   "invalid_request": {
                     "summary": "invalid_request",
                     "value": {
-                      "error": "The request is malformed or failed validation.",
+                      "error": "The request is malformed or failed validation, or its uploads are together too large to read (`file_too_large`). Nothing is saved.",
                       "code": "invalid_request"
                     }
                   },
@@ -8918,6 +8941,13 @@
                     "value": {
                       "error": "A dashboard-actor token must send the user's IP address header.",
                       "code": "user_ip_missing"
+                    }
+                  },
+                  "file_too_large": {
+                    "summary": "file_too_large",
+                    "value": {
+                      "error": "A file exceeds the size limit for this operation.",
+                      "code": "file_too_large"
                     }
                   },
                   "api_version_too_old": {
@@ -8943,6 +8973,7 @@
                             "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
+                            "file_too_large",
                             "api_version_too_old"
                           ]
                         }
@@ -14085,7 +14116,7 @@
       "post": {
         "operationId": "createFileUploads",
         "summary": "Create file uploads",
-        "description": "Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) for Upload source files or translations; use one when that request would be over 4MB. Requires `project:files:write`.",
+        "description": "Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) that a later request names by `upload`; use one when that request would be over 4MB. Requires `project:files:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -14128,7 +14159,14 @@
                       "type": "object",
                       "properties": {
                         "fileFormat": {
-                          "$ref": "#/components/schemas/FileFormat"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/FileFormat"
+                            },
+                            {
+                              "description": "Needed only for PNG, JPEG and MP4, which may be larger than other files."
+                            }
+                          ]
                         },
                         "size": {
                           "type": "integer",
@@ -14142,7 +14180,7 @@
                           "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
                         }
                       },
-                      "required": ["fileFormat", "size", "sha256"]
+                      "required": ["size", "sha256"]
                     },
                     "minItems": 1,
                     "maxItems": 100,
@@ -14175,7 +14213,7 @@
                           "status": {
                             "type": "string",
                             "enum": ["exists", "upload_required"],
-                            "description": "`exists` when the project already stores these bytes, so the PUT is skipped; `upload_required` otherwise."
+                            "description": "`exists` when these bytes are already stored, so the PUT is skipped; `upload_required` otherwise."
                           },
                           "upload": {
                             "type": "object",
@@ -14200,7 +14238,7 @@
                               }
                             },
                             "required": ["url", "headers", "expiresAt"],
-                            "description": "Present when `status` is `upload_required`. Register the file through Upload source files or Upload translations within 24 hours; later, the upload may be deleted."
+                            "description": "Present when `status` is `upload_required`. Name the file by `upload` in a later request within 24 hours; later, the upload may be deleted."
                           }
                         },
                         "required": ["sha256", "status"]
@@ -34652,41 +34690,73 @@
                   "assets": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "assetType": {
-                          "type": "string",
-                          "enum": ["FONT"]
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "assetType": {
+                              "type": "string",
+                              "enum": ["FONT"]
+                            },
+                            "fileName": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 255,
+                              "pattern": "\\.([tT][tT][fF]|[oO][tT][fF])$",
+                              "examples": ["Inter-Regular.ttf"]
+                            },
+                            "family": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 255,
+                              "description": "Family that Lottie files reference the font by. When set, `family` and `style` alone set the font's identity. When absent, the family, weight and italic style come from the font's own tables, then its file name, and `style` is ignored."
+                            },
+                            "style": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100,
+                              "description": "Weight and italic style, such as `Bold Italic` or `350`. Read only with `family`; a `family` without `style` is regular weight (400), not italic."
+                            }
+                          },
+                          "required": ["assetType", "fileName"]
                         },
-                        "content": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "fileName": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255,
-                          "pattern": "\\.([tT][tT][fF]|[oO][tT][fF])$",
-                          "examples": ["Inter-Regular.ttf"]
-                        },
-                        "family": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255,
-                          "description": "Family that Lottie files reference the font by. When set, `family` and `style` alone set the font's identity. When absent, the family, weight and italic style come from the font's own tables, then its file name, and `style` is ignored."
-                        },
-                        "style": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 100,
-                          "description": "Weight and italic style, such as `Bold Italic` or `350`. Read only with `family`; a `family` without `style` is regular weight (400), not italic."
+                        {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "content": {
+                                  "type": "string",
+                                  "description": "Base64-encoded asset file."
+                                }
+                              },
+                              "required": ["content"]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "upload": {
+                                  "type": "object",
+                                  "properties": {
+                                    "sha256": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{64}$",
+                                      "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
+                                    }
+                                  },
+                                  "required": ["sha256"],
+                                  "description": "A file already PUT to the URL from Create asset uploads, in place of `content`; required when the request body would be over 4MB."
+                                }
+                              },
+                              "required": ["upload"]
+                            }
+                          ]
                         }
-                      },
-                      "required": ["assetType", "content", "fileName"]
+                      ]
                     },
                     "minItems": 1,
                     "maxItems": 10,
-                    "description": "OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font's identity is its family, weight and italic style: an asset with a stored identity replaces it for the whole organization, and two assets with the same identity reject the request."
+                    "description": "OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font's identity is its family, weight and italic style: an asset with a stored identity replaces it for the whole organization, and two assets with the same identity reject the request. Assets sent by `upload` total at most 150MB per request."
                   }
                 },
                 "required": ["assets"],
@@ -34697,7 +34767,7 @@
         },
         "responses": {
           "200": {
-            "description": "One result per asset, in request order, even when every asset fails. `invalid_request`: a font whose family cannot be determined. Retrying a failed asset is safe.",
+            "description": "One result per asset, in request order, even when every asset fails. `invalid_request`: a font whose family cannot be determined, whose content is empty or not base64, or whose upload is missing. Retrying a failed asset is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -34752,7 +34822,11 @@
                               },
                               "code": {
                                 "type": "string",
-                                "enum": ["invalid_request", "internal_error"],
+                                "enum": [
+                                  "invalid_request",
+                                  "file_too_large",
+                                  "internal_error"
+                                ],
                                 "description": "Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize."
                               }
                             },
@@ -34770,14 +34844,513 @@
             }
           },
           "400": {
-            "description": "The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from the font. No asset is written.",
+            "description": "The request is malformed or failed validation, two assets have the same identity, taken from `family` and `style` or read from the font, or its uploaded fonts are together too large to read (`file_too_large`). No asset is written.",
             "content": {
               "application/json": {
                 "examples": {
                   "invalid_request": {
                     "summary": "invalid_request",
                     "value": {
-                      "error": "The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from the font. No asset is written.",
+                      "error": "The request is malformed or failed validation, two assets have the same identity, taken from `family` and `style` or read from the font, or its uploaded fonts are together too large to read (`file_too_large`). No asset is written.",
+                      "code": "invalid_request"
+                    }
+                  },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
+                  "api_version_unsupported": {
+                    "summary": "api_version_unsupported",
+                    "value": {
+                      "error": "The gt-api-version header does not name a known API version.",
+                      "code": "api_version_unsupported"
+                    }
+                  },
+                  "user_ip_missing": {
+                    "summary": "user_ip_missing",
+                    "value": {
+                      "error": "A dashboard-actor token must send the user's IP address header.",
+                      "code": "user_ip_missing"
+                    }
+                  },
+                  "file_too_large": {
+                    "summary": "file_too_large",
+                    "value": {
+                      "error": "A file exceeds the size limit for this operation.",
+                      "code": "file_too_large"
+                    }
+                  },
+                  "api_version_too_old": {
+                    "summary": "api_version_too_old",
+                    "value": {
+                      "error": "This route requires a newer gt-api-version. The error names the first version that serves it.",
+                      "code": "api_version_too_old"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "invalid_request",
+                            "invalid_content_encoding",
+                            "api_version_unsupported",
+                            "user_ip_missing",
+                            "file_too_large",
+                            "api_version_too_old"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is missing or invalid.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unauthenticated": {
+                    "summary": "unauthenticated",
+                    "value": {
+                      "error": "Authentication is missing or invalid.",
+                      "code": "unauthenticated"
+                    }
+                  },
+                  "api_key_invalid": {
+                    "summary": "api_key_invalid",
+                    "value": {
+                      "error": "The API key is not recognized. It may be mistyped, revoked, or rotated.",
+                      "code": "api_key_invalid"
+                    }
+                  },
+                  "token_invalid": {
+                    "summary": "token_invalid",
+                    "value": {
+                      "error": "The access token is invalid or expired. Sign in again.",
+                      "code": "token_invalid"
+                    }
+                  },
+                  "super_user_grant_revoked": {
+                    "summary": "super_user_grant_revoked",
+                    "value": {
+                      "error": "The super-user access grant behind this token is no longer active.",
+                      "code": "super_user_grant_revoked"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unauthenticated",
+                            "api_key_invalid",
+                            "token_invalid",
+                            "super_user_grant_revoked"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is authenticated but not allowed to perform this operation or access the requested resource.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "scope_missing": {
+                    "summary": "scope_missing",
+                    "value": {
+                      "error": "The user token lacks an OAuth scope this operation requires. The error names the scope.",
+                      "code": "scope_missing"
+                    }
+                  },
+                  "ip_not_allowed": {
+                    "summary": "ip_not_allowed",
+                    "value": {
+                      "error": "The caller's IP address is blocked by the credential's access policy.",
+                      "code": "ip_not_allowed"
+                    }
+                  },
+                  "permission_missing": {
+                    "summary": "permission_missing",
+                    "value": {
+                      "error": "The credential lacks a permission this operation requires. The error names the permission.",
+                      "code": "permission_missing"
+                    }
+                  },
+                  "target_inaccessible": {
+                    "summary": "target_inaccessible",
+                    "value": {
+                      "error": "The target project or organization does not exist, or the credential cannot access it.",
+                      "code": "target_inaccessible"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "scope_missing",
+                            "ip_not_allowed",
+                            "permission_missing",
+                            "target_inaccessible"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request, or the data it would return, exceeds a size or item limit.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "payload_too_large": {
+                    "summary": "payload_too_large",
+                    "value": {
+                      "error": "The request, or the data it would return, exceeds a size or item limit.",
+                      "code": "payload_too_large"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unsupported_media_type": {
+                    "summary": "unsupported_media_type",
+                    "value": {
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
+                      "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. The rate limit was exceeded.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "rate_limited": {
+                    "summary": "rate_limited",
+                    "value": {
+                      "error": "Too many requests. The rate limit was exceeded.",
+                      "code": "rate_limited"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["rate_limited"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected server error occurred.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "internal_error": {
+                    "summary": "internal_error",
+                    "value": {
+                      "error": "An unexpected server error occurred.",
+                      "code": "internal_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["internal_error"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Organizations"]
+      }
+    },
+    "/v2/orgs/{orgId}/assets/uploads": {
+      "post": {
+        "operationId": "createAssetUploads",
+        "summary": "Create asset uploads",
+        "description": "Get presigned URLs to PUT 1–10 fonts (up to 20MB each) for Upsert Organization assets; use one when that request would be over 4MB. Requires `org:assets:write`.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "Organization ID."
+            },
+            "required": true,
+            "description": "Organization ID.",
+            "name": "orgId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ApiVersion"
+            },
+            "required": true,
+            "description": "API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$",
+                          "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
+                        },
+                        "size": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 20000000,
+                          "description": "File size in bytes, at most 20000000."
+                        }
+                      },
+                      "required": ["sha256", "size"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "description": "1–10 files; each sha256 may appear once."
+                  }
+                },
+                "required": ["files"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload target for each file, in request order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$",
+                            "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["exists", "upload_required"],
+                            "description": "`exists` when these bytes are already stored, so the PUT is skipped; `upload_required` otherwise."
+                          },
+                          "upload": {
+                            "type": "object",
+                            "properties": {
+                              "url": {
+                                "type": "string",
+                                "description": "Presigned URL to PUT the file bytes to."
+                              },
+                              "headers": {
+                                "type": "object",
+                                "properties": {
+                                  "x-amz-checksum-sha256": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["x-amz-checksum-sha256"],
+                                "description": "Headers the PUT must send exactly as given."
+                              },
+                              "expiresAt": {
+                                "type": "string",
+                                "description": "The PUT must start before this ISO 8601 time."
+                              }
+                            },
+                            "required": ["url", "headers", "expiresAt"],
+                            "description": "Present when `status` is `upload_required`. Name the file by `upload` in a later request within 24 hours; later, the upload may be deleted."
+                          }
+                        },
+                        "required": ["sha256", "status"]
+                      },
+                      "description": "One result per file, in order."
+                    }
+                  },
+                  "required": ["files"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed or failed validation, including a repeated sha256 or a size over the limit. No URL is issued.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "invalid_request": {
+                    "summary": "invalid_request",
+                    "value": {
+                      "error": "The request is malformed or failed validation, including a repeated sha256 or a size over the limit. No URL is issued.",
                       "code": "invalid_request"
                     }
                   },

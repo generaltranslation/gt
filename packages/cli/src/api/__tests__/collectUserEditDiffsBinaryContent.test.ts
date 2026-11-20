@@ -10,8 +10,6 @@ import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 import type { FileReference } from 'generaltranslation';
 import type { DownloadedVersionsV1 } from '../../fs/config/downloadedVersions.js';
 
-// Runs the real `git diff --no-index` rather than mocking it: the defect here is
-// what gets written to the comparison file, which a mocked differ cannot see.
 const api = vi.hoisted(() => ({
   queryFiles: vi.fn(),
   queryFilesContent: vi.fn(),
@@ -172,7 +170,7 @@ describe('collectAndSendUserEditDiffs - formats whose bytes are not UTF-8', () =
     expect(results).toEqual({ saved: [], failed: [] });
   });
 
-  it('diffs an edited .strings translation against the decoded server text', async () => {
+  it('submits an edited .strings translation as its decoded text', async () => {
     const settings = buildSettings();
     seedLockFile();
     writeTranslation(
@@ -185,9 +183,7 @@ describe('collectAndSendUserEditDiffs - formats whose bytes are not UTF-8', () =
     expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
     const [diffs] = vi.mocked(api.overwriteTranslations).mock.calls[0];
     expect(diffs).toHaveLength(1);
-    expect(diffs[0].diff).toContain('-"welcome" = "¡Bienvenido!";');
-    expect(diffs[0].diff).toContain('+"welcome" = "¡Hola!";');
-    expect(diffs[0].localContent).toContain('"welcome" = "¡Hola!";');
+    expect(diffs[0].content).toContain('"welcome" = "¡Hola!";');
   });
 
   it('submits the edit when the recorded server baseline is empty', async () => {
@@ -202,8 +198,7 @@ describe('collectAndSendUserEditDiffs - formats whose bytes are not UTF-8', () =
 
     expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
     const [diffs] = vi.mocked(api.overwriteTranslations).mock.calls[0];
-    expect(diffs[0].diff).toContain('+"welcome" = "¡Bienvenido!";');
-    expect(diffs[0].localContent).toBe(TRANSLATION);
+    expect(diffs[0].content).toBe(TRANSLATION);
   });
 
   it('skips silently when the batch download returned no copy of the file', async () => {
@@ -256,10 +251,8 @@ describe('collectAndSendUserEditDiffs - formats whose bytes are not UTF-8', () =
     // faithful text form and travels upstream like any other.
     expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
     const [diffs] = vi.mocked(api.overwriteTranslations).mock.calls[0];
-    expect(diffs[0].diff).toContain('-"welcome" = "¡Bienvenido!";');
-    expect(diffs[0].diff).toContain('+"welcome" = "¡Hola!";');
-    expect(diffs[0].diff).not.toContain('�');
-    expect(diffs[0].localContent).toContain('"welcome" = "¡Hola!";');
+    expect(diffs[0].content).not.toContain('�');
+    expect(diffs[0].content).toContain('"welcome" = "¡Hola!";');
     expect(warn).not.toHaveBeenCalled();
   });
 
