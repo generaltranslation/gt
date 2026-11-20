@@ -478,6 +478,30 @@ describe('--dry-run', () => {
     }
   );
 
+  it.each(['stage', 'enqueue'])(
+    'gt %s warns about review-gated content without asking for the project',
+    async (command) => {
+      writeProject({ requiresReview: true });
+      const warnings: string[] = [];
+      vi.spyOn(logger, 'warn').mockImplementation((message) => {
+        warnings.push(stripVTControlCharacters(message).replace(/\n/g, ' '));
+      });
+
+      await dryRun(
+        command,
+        '--project-id',
+        'project-id',
+        '--api-key',
+        'gtx-api-key'
+      );
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(warnings).toEqual([
+        'Some of your content requires review (requiresReview), but new translations are approved automatically unless auto-approval is turned off for this project. To review translations before they are used, disable "Auto approve translations" in your project settings: https://dash.generaltranslation.com/project/project-id/settings',
+      ]);
+    }
+  );
+
   it.each(['translate', 'stage', 'setup'])(
     'gt %s leaves shared static assets and their references in place',
     async (command) => {
