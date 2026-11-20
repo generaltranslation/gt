@@ -592,10 +592,13 @@ export class GlobeBanner {
   };
 
   // Bun reports an unhandled rejection without uncaughtExceptionMonitor, so
-  // land first, then rethrow it for the runtime's usual crash and exit code.
+  // land first, then hand the same rejection back, unhandled: the runtime
+  // reports it as usual, with its original stack and exit code. Rethrowing
+  // here would report this handler as where it failed.
   private readonly onRejection = (reason: unknown) => {
     this.onCrash();
-    throw reason;
+    process.off('unhandledRejection', this.onRejection);
+    void Promise.reject(reason);
   };
 
   // A command that exits mid-animation lands at once, so nothing is lost.
