@@ -171,9 +171,12 @@ export interface PluginConfig
   experimentalSplitTranslations?: SplitTranslationsOptions;
   /**
    * Set by a framework integration whose runtime starts the app with the
-   * files the build writes, in place of `initializeGTSPA`.
+   * files the build writes, in place of `initializeGTSPA`: the entry of the
+   * framework's package that compiled code imports the loader of those files
+   * from, which every module of the app resolves. The build then fails on a
+   * dynamic import that loads translated chunks and that it could not wrap.
    */
-  _serverRendered?: boolean;
+  _splitTranslationsLoader?: string;
   /**
    * Replaces each static `t` template with a call
    * that passes its message, built at compile time and written at the call,

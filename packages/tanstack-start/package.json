@@ -120,6 +120,13 @@
       },
       "default": "./dist/plugin/vite.mjs"
     },
+    "./chunk-translations": {
+      "import": {
+        "types": "./dist/chunk-translations.d.mts",
+        "default": "./dist/chunk-translations.mjs"
+      },
+      "default": "./dist/chunk-translations.mjs"
+    },
     "./internal/initializeGT.server": {
       "import": {
         "types": "./dist/internal/initializeGT.server.d.mts",

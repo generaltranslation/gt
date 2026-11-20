@@ -249,6 +249,31 @@ export const createUngatedImportsWarning = (imports: UngatedImports[]) =>
     ),
   });
 
+export const createUngatedImportsError = (
+  imports: UngatedImports[],
+  source: string
+) =>
+  createDiagnosticMessage({
+    source: '@generaltranslation/compiler',
+    severity: 'Error',
+    whatHappened: `experimentalSplitTranslations cannot load the translations of ${nameSome(imports.flatMap(({ targets }) => targets))}`,
+    why: `a dynamic import the build could not wrap loads them, so their messages would render the source text: one in a module that cannot resolve ${source}, with a computed path, in a dependency, or in a CommonJS module`,
+    fix: `Add ${getPackageName(source)} to the dependencies of the package that holds the import, or import those chunks with import() of a literal path from a module of the app`,
+    details: nameSome(
+      imports.map(
+        ({ chunk, targets }) => `${chunk} imports ${targets.join(', ')}`
+      )
+    ),
+  });
+
+// `@scope/name/entry` and `name/entry` to the package's name
+function getPackageName(source: string): string {
+  return source
+    .split('/')
+    .slice(0, source.startsWith('@') ? 2 : 1)
+    .join('/');
+}
+
 export function getFileHash(source: string): string {
   return getDigest(source).slice(0, FILE_HASH_LENGTH);
 }

@@ -61,7 +61,7 @@ export function createCompilerPlugin(
     ...(split && { experimentalSplitTranslations: compilerSplit }),
     ...(gtConfig ? { gtConfig } : {}),
     autoJsxImportSource: 'gt-tanstack-start',
-    _serverRendered: true,
+    _splitTranslationsLoader: 'gt-tanstack-start/chunk-translations',
   });
 
   return {

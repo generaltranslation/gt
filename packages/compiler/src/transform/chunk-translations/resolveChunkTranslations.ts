@@ -16,7 +16,7 @@ import {
  */
 export const CHUNK_TRANSLATIONS_ENV_VAR = 'GT_SPLIT_TRANSLATIONS';
 
-/** The entry compiled code loads translations with. */
+/** The entry compiled code loads translations with, unless a framework integration names its own. */
 export const CHUNK_TRANSLATIONS_SOURCE = 'gt-react/chunk-translations';
 
 /** The object the startup script and gt-react's entry share; `getState()` there. */
@@ -66,6 +66,8 @@ const ENV_FALSE_VALUES = new Set(['false', '0']);
 
 /** What a build that writes translations per chunk shares between its hooks. */
 export type ChunkTranslations = {
+  /** The entry compiled code imports the loader of the files from */
+  source: string;
   defaultLocale: string;
   /** The locales that get files: every configured locale but the default one */
   locales: string[];
@@ -351,9 +353,11 @@ export function resolveChunkTranslations(
     naming = defaultChunkTranslationsNaming,
     regions,
     minifyHashes = false,
+    source = CHUNK_TRANSLATIONS_SOURCE,
   }: {
     framework: string;
     compileTimeHash: boolean;
+    source?: string;
     naming?: ChunkTranslationsNaming;
     regions?: RegionSplit;
     minifyHashes?: boolean;
@@ -409,6 +413,7 @@ export function resolveChunkTranslations(
     return { error: MINIFY_HASHES_WITH_TAGGED_IDS_ERROR };
   }
   return {
+    source,
     defaultLocale,
     locales,
     hashes: new Set(),

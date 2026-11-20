@@ -32,6 +32,7 @@ const entries: Record<string, string> = {
   'compat.client': 'src/compat.client.ts',
   'compat.server': 'src/compat.server.ts',
   'plugin/vite': 'src/plugin/vite.ts',
+  'chunk-translations': 'src/chunk-translations.ts',
   'internal/initializeGT.server': 'src/setup/initializeGT.server.ts',
   'internal/_config': 'src/internal/_config.ts',
   'internal/_compat-config': 'src/internal/_compat-config.ts',

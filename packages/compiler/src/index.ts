@@ -25,7 +25,6 @@ import {
   type ChunkImportMap,
 } from './transform/chunk-translations/chunkImportMap';
 import {
-  CHUNK_TRANSLATIONS_SOURCE,
   UNSPLIT_LOADER_PLACEHOLDER,
   getChunkTranslations,
   getMinifyHashes,
@@ -43,6 +42,7 @@ import {
   UNSTARTED_APP_WARNING,
   createBundledCatalogsWarning,
   createMissingTranslationsWarning,
+  createUngatedImportsError,
   createUngatedImportsWarning,
   createUnreadImportsError,
   loadChunkTranslationsTable,
@@ -279,6 +279,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           previous: splitTranslations?.previous,
         }),
         minifyHashes: getMinifyHashes(splitTranslations?.minifyHashes),
+        source: options._splitTranslationsLoader,
       });
     };
     const chunkTranslationsResolution = getChunkTranslations(splitTranslations)
@@ -587,7 +588,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       if (written.missingLocales.length) {
         console.warn(createMissingTranslationsWarning(written.missingLocales));
       }
-      if (options._serverRendered) {
+      if (options._splitTranslationsLoader !== undefined) {
         // The framework's integration starts the app, not initializeGTSPA
       } else if (!chunkTranslations!.starts) {
         console.warn(UNSTARTED_APP_WARNING);
@@ -683,7 +684,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
         }
         if (unread.length) throw new Error(createUnreadImportsError(unread));
-        if (unwrapped.length && shouldWarn(options.logLevel)) {
+        if (!unwrapped.length) return;
+        // Every module of a framework's app resolves the loader, so there an
+        // unwrapped import is a page that renders source text
+        if (options._splitTranslationsLoader !== undefined) {
+          throw new Error(
+            createUngatedImportsError(unwrapped, chunkTranslations.source)
+          );
+        }
+        if (shouldWarn(options.logLevel)) {
           console.warn(createUngatedImportsWarning(unwrapped));
         }
       },
@@ -749,7 +758,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           };
           if (
             resolve &&
-            !(await resolve.call(this, CHUNK_TRANSLATIONS_SOURCE, id))
+            !(await resolve.call(this, chunkTranslations.source, id))
           ) {
             return null;
           }
@@ -758,7 +767,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             id,
             chunkTranslations.naming,
             regions !== undefined,
-            chunkTranslations.minifiedIds !== undefined
+            chunkTranslations.minifiedIds !== undefined,
+            chunkTranslations.source
           ) ?? null) as never;
         },
       },

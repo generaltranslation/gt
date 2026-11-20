@@ -273,6 +273,7 @@ describe('experimentalSplitTranslations', () => {
           BUILD
         )
       ).toEqual({
+        source: 'gt-react/chunk-translations',
         defaultLocale: 'en',
         locales: ['fr', 'de'],
         hashes: new Set(),
