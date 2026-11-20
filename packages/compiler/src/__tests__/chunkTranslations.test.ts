@@ -47,6 +47,11 @@ import {
 } from '../transform/chunk-translations/chunkSourceMap';
 import { wrapDynamicImports } from '../transform/chunk-translations/chunkTranslationsModule';
 import {
+  getPairChunk,
+  getPairKey,
+} from '../transform/chunk-translations/createRegionGraph';
+import { createRandom } from '../transform/chunk-translations/__tests__/syntheticApp';
+import {
   CHUNK_TRANSLATIONS_IMPORTS,
   chunkTranslationsNamings,
   getChunkTranslations,
@@ -77,6 +82,7 @@ import {
   type MinifiedIds,
   type MinifiedTranslations,
 } from '../transform/chunk-translations/hashMinification';
+import { findListScopes } from '../transform/chunk-translations/listScopes';
 import {
   getPageBase,
   renderStartupScript,
@@ -3269,7 +3275,7 @@ export const ready = initializeGTSPA({});`,
           minified
         )
       ).toThrow(
-        `Hash minification gives two messages the id "2bFNA3qJ.0" because the lists of messages of two chunks have the same digest, and a page would render the translation of one message for the other. Turn experimentalSplitTranslations.minifyHashes off. Details: ${PRINT_TEXT} and ${SAVE_TEXT}.`
+        `Hash minification gives two messages the id "2bFNA3qJ.0" because two lists of messages have the same digest, and a page would render the translation of one message for the other. Turn experimentalSplitTranslations.minifyHashes off. Details: ${PRINT_TEXT} and ${SAVE_TEXT}.`
       );
     });
 
@@ -4969,27 +4975,35 @@ globalThis.save = () => t\`Save\`;`,
        * code, placeholders in the code of each module.
        */
       function render(...billing: (keyof typeof HASH)[]) {
-        const hashed = {
+        return renderBundle({
           ...BUNDLE,
           'assets/Billing.js': chunk(
             'assets/Billing.js',
             { '/billing.js': site(...billing) },
             { imports: ['assets/shared.js'] }
           ),
-        };
+        });
+      }
+      /**
+       * A bundle as the bundler renders it with hash minification. With
+       * `isScoped`, a chunk has a list for each file its messages are in, as
+       * the plugin lists them when the bundler says what else it renders.
+       */
+      function renderBundle(
+        hashed: typeof BUNDLE,
+        isScoped = false,
+        graph = GRAPH,
+        isLazy = true
+      ) {
         const minifiedIds: MinifiedIds = {
           hashes: new Map(),
           placeholders: new Map(),
         };
-        const bundle = Object.fromEntries(
+        const rendered = Object.fromEntries(
           Object.entries(hashed).map(([fileName, file]) => [
             fileName,
             {
               ...file,
-              code: minifyChunk(
-                placeholders(file.code, minifiedIds),
-                minifiedIds
-              )!,
               modules: Object.fromEntries(
                 Object.entries(file.modules).map(([id, { code }]) => [
                   id,
@@ -4999,37 +5013,115 @@ globalThis.save = () => t\`Save\`;`,
             },
           ])
         );
-        return { hashed, bundle, minifiedIds };
+        const scopes = isScoped
+          ? findListScopes(
+              rendered,
+              getModuleInfo(graph),
+              new Set(Object.values(HASH)),
+              minifiedIds,
+              isLazy
+            )
+          : undefined;
+        const bundle = Object.fromEntries(
+          Object.entries(rendered).map(([fileName, file]) => {
+            // The chunk is minified as the bundler rendered it, with every
+            // call site of its modules. A chunk without one is as it was.
+            const all = Object.values(hashed[fileName].modules)
+              .map(({ code }) => code)
+              .join(';');
+            const minified =
+              minifyChunk(
+                placeholders(all, minifiedIds),
+                minifiedIds,
+                undefined,
+                scopes?.(fileName)
+              ) ?? all;
+            if (file.code === all)
+              return [fileName, { ...file, code: minified }];
+            // Its final code is what a minifier left of that
+            const ids = new Map(
+              [...minified.matchAll(/\$_hash:"([^"]+)"/g)].map(([, id]) => [
+                minifiedIds.hashes.get(id)!,
+                id,
+              ])
+            );
+            return [
+              fileName,
+              {
+                ...file,
+                code: [...ids].reduce(
+                  (code, [hash, id]) => code.replaceAll(hash, id),
+                  file.code
+                ),
+              },
+            ];
+          })
+        ) as typeof rendered;
+        return { hashed, bundle, minifiedIds, scopes };
       }
+      type Rendered = ReturnType<typeof renderBundle>;
+      /** The ids a chunk's final code passes, by the hash of each. */
+      const idsIn = (build: Rendered, fileName: string) =>
+        new Map(
+          [...build.bundle[fileName].code.matchAll(/\$_hash:"([^"]+)"/g)].map(
+            ([, id]) => [build.minifiedIds.hashes.get(id)!, id]
+          )
+        );
+      const pairOf = (build: Rendered, hash: string, fileName: string) =>
+        getPairKey(hash, getPairChunk(build.bundle[fileName]));
 
-      it('reads ids out of each chunk and placeholders out of each module, and keys the same files by every id of their messages', () => {
-        // Billing also reads the date picker, which then has an id in two chunks
-        const { hashed, bundle, minifiedIds } = render('billing', 'picker');
-        const plain = write({ bundle: hashed });
+      it('reads ids out of each chunk and placeholders out of each module, and gives each chunk its ids in the files of its own loads', () => {
+        // Billing also reads the date picker, which the shared chunk reads for Home
+        const build = render('billing', 'picker');
+        const { hashed, bundle, minifiedIds } = build;
         const minified = write({ bundle, minifiedIds });
-        // The manifest still lists hashes, as a later build reads them from it
-        expect(minified.manifest.assignment).toEqual(plain.manifest.assignment);
-        expect(minified.manifest.imports).toEqual(plain.manifest.imports);
-        const idsOf = (hash: string) =>
-          [...minifiedIds.hashes]
-            .filter(([, named]) => named === hash)
-            .map(([id]) => id);
-        expect(idsOf(HASH.picker)).toHaveLength(2);
-        for (const [key, { fr }] of Object.entries(plain.manifest.files)) {
-          const hashed: Record<string, unknown> = JSON.parse(plain.emitted[fr]);
-          const file: MinifiedTranslations = JSON.parse(
-            minified.emitted[minified.manifest.files[key].fr]
-          );
-          expect(unpack(file)).toEqual(
-            Object.fromEntries(
-              Object.entries(hashed).flatMap(([hash, translation]) =>
-                idsOf(hash).map((id) => [id, translation])
+        // The manifest lists a message once for each chunk that reads it,
+        // as a later build reads them from it
+        expect(
+          Object.values(minified.manifest.assignment.files).flat().sort()
+        ).toEqual(
+          Object.keys(bundle)
+            .flatMap((fileName) =>
+              [...idsIn(build, fileName).keys()].map((hash) =>
+                pairOf(build, hash, fileName)
               )
             )
+            .sort()
+        );
+        expect(
+          Object.values(minified.manifest.assignment.files).flat()
+        ).toHaveLength(8);
+        const read = (fileName: string) =>
+          minified.manifest.imports[fileName].map(
+            (key) =>
+              JSON.parse(
+                minified.emitted[minified.manifest.files[key].fr]
+              ) as MinifiedTranslations
           );
-          // Once each, also the date picker's, which two chunks read
-          expect(file[0]).toEqual(Object.values(hashed));
-        }
+        const idOf = (fileName: string, name: keyof typeof HASH) =>
+          idsIn(build, fileName).get(HASH[name])!;
+        // Home reads the date picker by the shared chunk's id, Billing by its own
+        expect(
+          Object.assign({}, ...read('assets/Home.js').map(unpack))
+        ).toEqual({
+          [idOf('assets/Home.js', 'home')]: 'HOME',
+          [idOf('assets/shared.js', 'picker')]: 'PICKER',
+        });
+        expect(
+          Object.assign({}, ...read('assets/Billing.js').map(unpack))
+        ).toEqual({
+          [idOf('assets/Billing.js', 'billing')]: 'BILLING',
+          [idOf('assets/Billing.js', 'picker')]: 'PICKER',
+          [idOf('assets/shared.js', 'invoice')]: 'INVOICE',
+        });
+        expect(idOf('assets/Billing.js', 'picker')).not.toBe(
+          idOf('assets/shared.js', 'picker')
+        );
+        // A file of a build with hashes holds a message once, for every chunk
+        const plain = write({ bundle: hashed });
+        expect(
+          Object.values(plain.manifest.assignment.files).flat().sort()
+        ).toEqual(Object.values(HASH));
         expect(() =>
           write({
             bundle: {
@@ -5071,6 +5163,992 @@ globalThis.save = () => t\`Save\`;`,
         expect(
           [...changed].every((id) => page.minifiedIds.hashes.has(id))
         ).toBe(true);
+      });
+
+      describe('a chunk whose translations are in the files it loads with', () => {
+        type App = Record<
+          string,
+          {
+            /** The texts of the `t` templates of each module, by its id */
+            modules: Record<string, string[]>;
+            isEntry?: boolean;
+            imports?: string[];
+            dynamicImports?: string[];
+            facadeModuleId?: string | null;
+            name?: string;
+          }
+        >;
+        // The shell reads two labels and a button of the shared chunk. Two
+        // routes read one of the shell's labels and a date picker of the
+        // shared chunk, which neither the shell nor the third route reaches.
+        const DATES = [
+          'Pick a date',
+          'Pick the first day of the range',
+          'Pick the last day of the range',
+        ];
+        const APP: App = {
+          'assets/index.js': {
+            isEntry: true,
+            modules: { '/main.js': ['Welcome', 'Save'] },
+            imports: ['assets/ui.js'],
+            dynamicImports: [
+              'assets/Settings.js',
+              'assets/Reports.js',
+              'assets/Billing.js',
+            ],
+          },
+          'assets/Settings.js': {
+            modules: { '/settings.js': ['Save', 'Delete account'] },
+            imports: ['assets/ui.js'],
+          },
+          'assets/Reports.js': {
+            modules: { '/reports.js': ['Save', 'Totals'] },
+            imports: ['assets/ui.js'],
+          },
+          'assets/Billing.js': { modules: { '/billing.js': ['Invoices'] } },
+          'assets/ui.js': {
+            facadeModuleId: null,
+            modules: {
+              '/button.js': ['OK'],
+              // Enough text that the routes' file is worth its request
+              '/date-picker.js': DATES,
+            },
+          },
+        };
+        const APP_GRAPH: typeof GRAPH = {
+          '/main.js': {
+            imports: ['/button.js'],
+            dynamic: ['/settings.js', '/reports.js', '/billing.js'],
+          },
+          '/settings.js': { imports: ['/date-picker.js'] },
+          '/reports.js': { imports: ['/date-picker.js'] },
+        };
+        const withModule = (
+          app: App,
+          file: string,
+          id: string,
+          texts: string[]
+        ) => ({
+          ...app,
+          [file]: {
+            ...app[file],
+            modules: { ...app[file].modules, [id]: texts },
+          },
+        });
+        const source = (texts: string[]) =>
+          `import { t } from 'gt-react';\n${texts
+            .map(
+              (text, index) => `export const m${index} = () => t\`${text}\`;`
+            )
+            .join('\n')}`;
+        const ID = /\$_hash: "([\w-]{8}\.\d+)"/g;
+
+        /**
+         * A build by the plugin's own hooks: each module is compiled, each
+         * chunk is rendered with what the bundler says of the others, and
+         * the files are written.
+         */
+        async function build(
+          app: App,
+          graph: typeof GRAPH = APP_GRAPH,
+          previous?: string
+        ) {
+          const texts = [
+            ...new Set(
+              Object.values(app).flatMap(({ modules }) =>
+                Object.values(modules).flat()
+              )
+            ),
+          ];
+          // The hash of each text, from a build that leaves hashes as they are
+          const hashed = (await transform(source(texts)))!;
+          const hashes = [...hashed.matchAll(/\$_hash: "([0-9a-f]+)"/g)].map(
+            (match) => match[1]
+          );
+          expect(hashes).toHaveLength(texts.length);
+          const options: GTUnpluginOptions = {
+            ...ON,
+            experimentalSplitTranslations: {
+              by: 'module',
+              minifyHashes: true,
+              requestCost: 0,
+              ...(previous !== undefined && { previous }),
+            },
+          };
+          const created = createPlugins(options, 'vite', {
+            'translations/fr.json': JSON.stringify(
+              Object.fromEntries(
+                texts.map((text, index) => [hashes[index], text.toUpperCase()])
+              )
+            ),
+          });
+          const vite = created.plugins[0].vite as unknown as {
+            configResolved: (config: object) => void;
+            options: (options: object) => null;
+            outputOptions: (options: object) => null;
+            renderChunk: (
+              this: object,
+              code: string,
+              chunk: object,
+              options: object,
+              meta: object
+            ) => string | null;
+            generateBundle: (
+              this: object,
+              options: object,
+              bundle: object
+            ) => void;
+          };
+          vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
+          vite.options({});
+          vite.outputOptions({ strictExecutionOrder: true });
+          const rendered: Record<string, ReturnType<typeof chunk>> = {};
+          for (const [fileName, { modules, ...rest }] of Object.entries(app)) {
+            const compiled: Record<string, string> = {};
+            for (const [id, held] of Object.entries(modules)) {
+              compiled[id] = (await transform(source(held), options, created))!;
+            }
+            rendered[fileName] = chunk(fileName, compiled, rest);
+          }
+          const context = {
+            getModuleInfo: getModuleInfo(graph),
+            emitFile: (file: { fileName: string; source: string }) =>
+              (emitted[file.fileName] = file.source),
+          };
+          const emitted: Record<string, string> = {};
+          const bundle = Object.fromEntries(
+            Object.entries(rendered).map(([fileName, file]) => [
+              fileName,
+              {
+                ...file,
+                code:
+                  vite.renderChunk.call(
+                    context,
+                    file.code,
+                    file,
+                    {},
+                    { chunks: rendered }
+                  ) ?? file.code,
+              },
+            ])
+          );
+          vite.generateBundle.call(context, {}, bundle);
+          const manifest = JSON.parse(
+            emitted['assets/gt-chunk-translations.json']
+          ) as RegionTranslationsManifest;
+          /** What each call site passes, in the order of the chunk's modules and of their templates. */
+          const sites = Object.entries(app).flatMap(
+            ([fileName, { modules }]) => {
+              const ids = [...bundle[fileName].code.matchAll(ID)].map(
+                (match) => match[1]
+              );
+              const held = Object.entries(modules).flatMap(([module, held]) =>
+                held.map((text) => ({ fileName, module, text }))
+              );
+              expect(ids).toHaveLength(held.length);
+              return held.map((site, index) => ({ ...site, id: ids[index] }));
+            }
+          );
+          const nameOf = (key: string) => manifest.files[key]?.fr;
+          /** What a page that holds the files of `keys` reads for each id. */
+          const read = (keys: string[]): Record<string, unknown> =>
+            Object.assign(
+              {},
+              ...keys.flatMap((key) =>
+                nameOf(key) ? [unpack(JSON.parse(emitted[nameOf(key)]))] : []
+              )
+            );
+          const startup = manifest.entries['assets/index.js'].files;
+          return {
+            emitted,
+            manifest,
+            sites,
+            nameOf,
+            read,
+            startup,
+            path: path.join(created.cwd, 'previous.json'),
+            keep() {
+              fs.writeFileSync(
+                path.join(created.cwd, 'previous.json'),
+                emitted['assets/gt-chunk-translations.json']
+              );
+              return path.join(created.cwd, 'previous.json');
+            },
+          };
+        }
+        type Build = Awaited<ReturnType<typeof build>>;
+
+        /** The lists a file holds, by name: the places it has a translation for. */
+        const listsOf = (built: Build, key: string) => {
+          const [, lists] = JSON.parse(
+            built.emitted[built.nameOf(key)]
+          ) as MinifiedTranslations;
+          return new Map(
+            Object.entries(lists).map(([name, runs]) => {
+              const places: number[] = [];
+              for (let run = 0; run < runs.length; run += 3) {
+                for (let next = 0; next < runs[run + 2]; next++) {
+                  places.push(runs[run] + next);
+                }
+              }
+              return [name, places.sort((a, b) => a - b)];
+            })
+          );
+        };
+
+        /**
+         * Replays the loads of an app: a page holds the files of its entry,
+         * then of each import on its way, and every call site of a module
+         * a load reaches must find its own translation there.
+         */
+        function expectEveryLoadToRead(
+          built: Build,
+          app: App,
+          graph: typeof GRAPH
+        ) {
+          const chunkOf = (module: string) =>
+            Object.keys(app).find((file) => module in app[file].modules)!;
+          const reach = (start: string) => {
+            const reached = new Set([start]);
+            for (const id of reached) {
+              for (const next of graph[id]?.imports ?? []) reached.add(next);
+            }
+            return reached;
+          };
+          const [entry] = Object.keys(app).filter((file) => app[file].isEntry);
+          const pending: { module: string; keys: string[] }[] = [
+            {
+              module: Object.keys(app[entry].modules)[0],
+              keys: built.manifest.entries[entry].files,
+            },
+          ];
+          const seen = new Set<string>();
+          let checked = 0;
+          for (let load = pending.pop(); load; load = pending.pop()) {
+            if (seen.has(load.module)) continue;
+            seen.add(load.module);
+            const cache = built.read(load.keys);
+            const reached = reach(load.module);
+            for (const site of built.sites) {
+              if (!reached.has(site.module)) continue;
+              expect(
+                cache[site.id],
+                `${site.text} in ${site.module}, loaded by ${load.module}`
+              ).toBe(site.text.toUpperCase());
+              checked++;
+            }
+            for (const id of reached) {
+              for (const next of graph[id]?.dynamic ?? []) {
+                pending.push({
+                  module: next,
+                  keys: [
+                    ...load.keys,
+                    ...(built.manifest.imports[chunkOf(next)] ?? []),
+                  ],
+                });
+              }
+            }
+          }
+          return checked;
+        }
+
+        /** Every list a file names is wholly in it: the file has each place of the list. */
+        function expectWholeLists(built: Build) {
+          const lengths = new Map<string, number>();
+          for (const { id } of built.sites) {
+            const [name, place] = id.split('.');
+            lengths.set(
+              name,
+              Math.max(lengths.get(name) ?? 0, Number(place) + 1)
+            );
+          }
+          let lists = 0;
+          for (const key of Object.keys(built.manifest.files)) {
+            for (const [name, places] of listsOf(built, key)) {
+              expect(places, `${name} in ${key}`).toEqual(
+                Array.from({ length: lengths.get(name)! }, (_, place) => place)
+              );
+              lists++;
+            }
+          }
+          return lists;
+        }
+
+        const namesOf = (built: Build, keys: string[]) =>
+          keys.map((key) => built.nameOf(key));
+
+        it('gives a chunk that reads a message of an earlier load its own copy, in a file of its own load', async () => {
+          const built = await build(APP);
+          // The shell's file names no list of a route
+          const startup = built.read(built.startup);
+          const ofRoutes = built.sites.filter(
+            ({ fileName }) =>
+              fileName === 'assets/Settings.js' ||
+              fileName === 'assets/Reports.js'
+          );
+          expect(ofRoutes).toHaveLength(4);
+          for (const { id } of ofRoutes) expect(startup[id]).toBeUndefined();
+          // And each route's file holds the label it shares with the shell
+          const settings = built.read(
+            built.manifest.imports['assets/Settings.js']
+          );
+          const save = built.sites.find(
+            ({ fileName, text }) =>
+              fileName === 'assets/Settings.js' && text === 'Save'
+          )!;
+          expect(settings[save.id]).toBe('SAVE');
+          expect(expectEveryLoadToRead(built, APP, APP_GRAPH)).toBe(14);
+        });
+
+        it.each([
+          [
+            'a chunk that loads lazily',
+            'assets/Settings.js',
+            '/settings.js',
+            ['Save', 'Delete account', 'Export data'],
+          ],
+          [
+            'a module of a shared chunk that the routes reach',
+            'assets/ui.js',
+            '/date-picker.js',
+            [...DATES, 'Pick a time'],
+          ],
+        ])(
+          'leaves the files every page starts with as they are when a deploy adds a message to %s',
+          async (_name, file, module, texts) => {
+            const before = await build(APP);
+            const app = withModule(APP, file, module, texts);
+            const after = await build(app, APP_GRAPH, before.keep());
+            expect(after.startup).toEqual(before.startup);
+            expect(namesOf(after, after.startup)).toEqual(
+              namesOf(before, before.startup)
+            );
+            // The file of what changed is another file
+            const changed = after.manifest.imports['assets/Settings.js'];
+            expect(namesOf(after, changed)).not.toEqual(
+              namesOf(before, before.manifest.imports['assets/Settings.js'])
+            );
+            expectEveryLoadToRead(after, app, APP_GRAPH);
+          }
+        );
+
+        it('names in a file only lists that are wholly in it', async () => {
+          const built = await build(APP);
+          // The shared chunk has a list in the shell's file and one in the routes'
+          const names = (file: string) =>
+            new Set(
+              built.sites
+                .filter(({ fileName }) => fileName === file)
+                .map(({ id }) => id.split('.')[0])
+            );
+          expect(names('assets/ui.js').size).toBe(2);
+          expect(names('assets/Settings.js').size).toBe(1);
+          expect(expectWholeLists(built)).toBeGreaterThanOrEqual(5);
+        });
+
+        it('keeps the ids of two chunks that the bundler gave one name', async () => {
+          const app = Object.fromEntries(
+            Object.entries(APP).map(([file, held]) => [
+              file,
+              { ...held, name: 'index' },
+            ])
+          );
+          const built = await build(app);
+          expect(expectEveryLoadToRead(built, app, APP_GRAPH)).toBe(14);
+          expectWholeLists(built);
+        });
+
+        it('holds an id in two files, with one translation, when two chunks list the same messages', async () => {
+          // Each route reads the shell's label and two of its own, the same in both
+          const labels = [
+            'Save',
+            'Discard every change you made here',
+            'Go back to where you were before',
+          ];
+          const app = withModule(
+            withModule(APP, 'assets/Settings.js', '/settings.js', labels),
+            'assets/Reports.js',
+            '/reports.js',
+            labels
+          );
+          const built = await build(app);
+          const of = (file: string) =>
+            built.sites
+              .filter(({ fileName }) => fileName === file)
+              .map(({ id }) => id);
+          expect(of('assets/Settings.js')).toEqual(of('assets/Reports.js'));
+          const [save] = of('assets/Settings.js');
+          const holding = Object.keys(built.manifest.files).filter(
+            (key) => save in built.read([key])
+          );
+          // One file for each route, and the shell's holds its own list alone
+          expect(holding).toEqual(
+            [
+              ...built.manifest.imports['assets/Settings.js'],
+              ...built.manifest.imports['assets/Reports.js'],
+            ]
+              .filter((key) => save in built.read([key]))
+              .sort()
+          );
+          expect(holding).toHaveLength(2);
+          for (const key of holding) {
+            expect(built.read([key])[save]).toBe('SAVE');
+          }
+          expect(built.startup.some((key) => holding.includes(key))).toBe(
+            false
+          );
+          expectEveryLoadToRead(built, app, APP_GRAPH);
+          expectWholeLists(built);
+        });
+
+        /** The files of a rendered bundle, and its manifest as a file for the build after it. */
+        const filesOf = (
+          build: Rendered,
+          graph = GRAPH,
+          options: { previous?: string; isLazy?: boolean; cwd?: string } = {}
+        ) => {
+          const { emitted, manifest, cwd } = write({
+            ...options,
+            graph,
+            bundle: build.bundle,
+            minifiedIds: build.minifiedIds,
+          });
+          const fileOfPair = new Map(
+            Object.entries(manifest.assignment.files).flatMap(([id, pairs]) =>
+              pairs.map((pair) => [pair, `assets/gt-${id}`] as const)
+            )
+          );
+          const keep = () => {
+            const file = path.join(cwd, 'previous.json');
+            fs.writeFileSync(
+              file,
+              emitted['assets/gt-chunk-translations.json']
+            );
+            return file;
+          };
+          const read = (keys: string[]): Record<string, unknown> =>
+            Object.assign(
+              {},
+              ...keys.flatMap((key) =>
+                manifest.files[key]
+                  ? [unpack(JSON.parse(emitted[manifest.files[key].fr]))]
+                  : []
+              )
+            );
+          return { emitted, manifest, fileOfPair, keep, read };
+        };
+
+        /**
+         * Fails unless every list of a chunk is in one file, which holds
+         * each of its ids with the id's own message, and every load reads
+         * each call site it runs from the files it holds by then.
+         */
+        function expectEveryIdToResolve(
+          build: Rendered,
+          written: ReturnType<typeof filesOf>,
+          graph: typeof GRAPH,
+          isLazy: boolean,
+          name: string
+        ) {
+          const { bundle, minifiedIds } = build;
+          for (const fileName of Object.keys(bundle)) {
+            const files = new Map<string, Set<string>>();
+            for (const [hash, id] of idsIn(build, fileName)) {
+              const key = written.fileOfPair.get(
+                pairOf(build, hash, fileName)
+              )!;
+              expect(written.read([key])[id], `${name}: ${id}`).toBe(
+                CATALOG[hash]
+              );
+              const [list] = id.split('.');
+              files.set(list, (files.get(list) ?? new Set()).add(key));
+            }
+            for (const [list, keys] of files) {
+              expect(keys.size, `${name}: ${list} of ${fileName}`).toBe(1);
+            }
+          }
+          const chunkOf = (module: string) =>
+            Object.values(bundle).find((file) => module in file.modules);
+          // What a load runs: the modules it reaches, and in a build that
+          // runs a chunk's modules as it loads, those of every chunk it loads
+          const runBy = (load: string) => {
+            const reached = new Set([load]);
+            for (const id of reached) {
+              for (const next of graph[id]?.imports ?? []) reached.add(next);
+            }
+            const run = new Set(reached);
+            if (!isLazy) {
+              const loaded = new Set(
+                [...reached].flatMap((id) => chunkOf(id)?.fileName ?? [])
+              );
+              for (const file of loaded) {
+                for (const next of bundle[file]?.imports ?? [])
+                  loaded.add(next);
+                for (const id of Object.keys(bundle[file]?.modules ?? {})) {
+                  run.add(id);
+                }
+              }
+            }
+            return { reached, run };
+          };
+          const [entry] = Object.values(bundle).filter((file) => file.isEntry);
+          const pending = [
+            {
+              module: entry.facadeModuleId as string,
+              keys: written.manifest.entries[entry.fileName].files,
+            },
+          ];
+          const seen = new Set<string>();
+          for (let load = pending.pop(); load; load = pending.pop()) {
+            if (seen.has(load.module)) continue;
+            seen.add(load.module);
+            const cache = written.read(load.keys);
+            const { reached, run } = runBy(load.module);
+            for (const module of run) {
+              const file = chunkOf(module);
+              if (!file) continue;
+              const ids = idsIn(build, file.fileName);
+              for (const [placeholder, hash] of minifiedIds.placeholders) {
+                if (!file.modules[module].code?.includes(placeholder)) continue;
+                const id = ids.get(hash);
+                // A call site the minifier removed reads nothing
+                if (id === undefined) continue;
+                expect(
+                  cache[id],
+                  `${name}: ${id} in ${module}, loaded by ${load.module}`
+                ).toBe(CATALOG[hash]);
+              }
+            }
+            for (const id of reached) {
+              for (const next of graph[id]?.dynamic ?? []) {
+                const target = chunkOf(next);
+                pending.push({
+                  module: next,
+                  keys: [
+                    ...load.keys,
+                    ...((target && written.manifest.imports[target.fileName]) ??
+                      []),
+                  ],
+                });
+              }
+            }
+          }
+        }
+
+        it('lists a chunk’s messages by the loads that fetch them for it, and one that an earlier load holds for another chunk with its own', () => {
+          // Admin also reads the title, which the entry reads
+          const build = renderBundle(
+            {
+              ...BUNDLE,
+              'assets/Admin.js': chunk(
+                'assets/Admin.js',
+                { '/admin.js': site('admin', 'title') },
+                { imports: ['assets/shared.js'] }
+              ),
+            },
+            true
+          );
+          const shared = build.scopes!('assets/shared.js');
+          // Home fetches the date picker, Billing the invoice table, Admin the panel
+          expect(
+            new Set([HASH.picker, HASH.invoice, HASH.panel].map(shared)).size
+          ).toBe(3);
+          expect(build.scopes!('assets/Home.js')(HASH.home)).toBe(
+            shared(HASH.picker)
+          );
+          const admin = build.scopes!('assets/Admin.js');
+          expect(admin(HASH.title)).toBe(admin(HASH.admin));
+          expect(admin(HASH.title)).toBe(shared(HASH.panel));
+          expect(admin(HASH.title)).not.toBe(
+            build.scopes!('assets/index.js')(HASH.title)
+          );
+          // A chunk has no list for a message it does not read
+          expect(shared(HASH.title)).toBeUndefined();
+          expect(build.scopes!('assets/none.js')(HASH.title)).toBeUndefined();
+          expect(idsIn(build, 'assets/Admin.js')).toEqual(
+            new Map(
+              [...minifyHashes([HASH.admin, HASH.title])].map(([hash, id]) => [
+                hash,
+                id,
+              ])
+            )
+          );
+          expectEveryIdToResolve(build, filesOf(build), GRAPH, true, 'admin');
+        });
+
+        it('keeps every list in one file when the minifier removes a call site after the lists were made', () => {
+          // A Shell opens Home and Billing, and reads the date picker and the
+          // invoice table in a call that only the minifier removes: the code
+          // the bundler rendered holds it, the Shell's final code does not
+          const graph: typeof GRAPH = {
+            ...GRAPH,
+            '/main.js': { dynamic: ['/shell.js', '/admin.js'] },
+            '/shell.js': { dynamic: ['/home.js', '/billing.js'] },
+          };
+          const build = renderBundle(
+            {
+              ...BUNDLE,
+              'assets/Shell.js': chunk(
+                'assets/Shell.js',
+                { '/shell.js': site('picker', 'invoice') },
+                { code: 'export{}' }
+              ),
+              // And the shared chunk loses one of two call sites of a list
+              'assets/Billing.js': chunk(
+                'assets/Billing.js',
+                { '/billing.js': site('billing', 'title', 'admin') },
+                {
+                  imports: ['assets/shared.js'],
+                  code: site('billing', 'admin'),
+                }
+              ),
+            },
+            true,
+            graph
+          );
+          const written = filesOf(build, graph);
+          expect(idsIn(build, 'assets/Shell.js').size).toBe(0);
+          // The list was made of three messages, and two are left of it
+          expect(
+            [...idsIn(build, 'assets/Billing.js').values()].sort()
+          ).toEqual(
+            [...minifyHashes([HASH.billing, HASH.title, HASH.admin])]
+              .filter(([hash]) => hash !== HASH.title)
+              .map(([, id]) => id)
+              .sort()
+          );
+          expectEveryIdToResolve(build, written, graph, true, 'late');
+        });
+
+        describe('over module graphs made at random', () => {
+          const SEEDS = Array.from({ length: 40 }, (_, seed) => seed + 1);
+          /**
+           * A module graph over the messages of HASH, as the chunks a bundler
+           * makes for it: one for each set of loads that reach a module
+           * through static imports, and two shared chunks that hold modules
+           * of several such sets, as a bundler that groups small chunks
+           * makes them. With `drop`, the final code of a chunk
+           * lacks that share of its call sites, as after a minifier that
+           * removes what the bundler rendered.
+           */
+          function randomBundle(seed: number, drop = 0) {
+            const random = createRandom(seed);
+            const ids = Array.from(
+              { length: 9 },
+              (_, index) => `/m${index}.js`
+            );
+            const graph: Required<(typeof GRAPH)[string]>[] = ids.map(
+              (_id, index) => {
+                const imports: string[] = [];
+                const dynamic: string[] = [];
+                for (const next of ids.slice(index + 1)) {
+                  const draw = random();
+                  if (draw < 0.15) imports.push(next);
+                  else if (draw < 0.35) dynamic.push(next);
+                }
+                return { imports, dynamic };
+              }
+            );
+            const reads = ids.map(() => NAMES.filter(() => random() < 0.3));
+            // The loads, and the modules each reaches statically
+            const loads = new Set([ids[0]]);
+            const reached = new Map<string, string[]>();
+            for (const load of loads) {
+              const seen = new Set([load]);
+              for (const id of seen) {
+                reached.set(id, [...(reached.get(id) ?? []), load]);
+                const module = graph[ids.indexOf(id)];
+                for (const next of module.imports) seen.add(next);
+                for (const next of module.dynamic) loads.add(next);
+              }
+            }
+            const fileOf = new Map<string, string>();
+            const files = new Map<string, string[]>();
+            const grouped = createRandom(seed + 2000);
+            for (const [id, by] of reached) {
+              const file =
+                !loads.has(id) && grouped() < 0.5
+                  ? `assets/shared-${ids.indexOf(id) % 2}.js`
+                  : `assets/c${ids.indexOf(by[0])}-${by.length}-${by.map((load) => ids.indexOf(load)).join('')}.js`;
+              fileOf.set(id, file);
+              files.set(file, [...(files.get(file) ?? []), id]);
+            }
+            const dropped = createRandom(seed + 1000);
+            const bundle = Object.fromEntries(
+              [...files].map(([fileName, held]) => {
+                const linked = (kind: 'imports' | 'dynamic') => [
+                  ...new Set(
+                    held.flatMap((id) =>
+                      graph[ids.indexOf(id)][kind].map(
+                        (next) => fileOf.get(next)!
+                      )
+                    )
+                  ),
+                ];
+                const sites = held.flatMap((id) =>
+                  reads[ids.indexOf(id)].map((name) =>
+                    site(name as keyof typeof HASH)
+                  )
+                );
+                return [
+                  fileName,
+                  chunk(
+                    fileName,
+                    Object.fromEntries(
+                      held.map((id) => [
+                        id,
+                        site(
+                          ...(reads[ids.indexOf(id)] as (keyof typeof HASH)[])
+                        ),
+                      ])
+                    ),
+                    {
+                      isEntry: held.includes(ids[0]),
+                      facadeModuleId: held.find((id) => loads.has(id)) ?? null,
+                      imports: linked('imports').filter(
+                        (file) => file !== fileName
+                      ),
+                      dynamicImports: linked('dynamic').filter(
+                        (file) => file !== fileName
+                      ),
+                      ...(drop > 0 && {
+                        code: sites.filter(() => dropped() >= drop).join(';'),
+                      }),
+                    }
+                  ),
+                ];
+              })
+            );
+            return {
+              bundle,
+              graph: Object.fromEntries(
+                ids.map((id, index) => [id, graph[index]])
+              ) as typeof GRAPH,
+            };
+          }
+
+          it.each([
+            ['runs a module when it is first imported', true],
+            ['runs every module of a chunk as it loads', false],
+          ])(
+            'gives every load each call site it runs, and keeps each list in one file, in a build that %s, also after a deploy and with call sites the minifier removed',
+            (_name, isLazy) => {
+              const { cwd } = createPlugins(ON, 'vite', {
+                'translations/fr.json': JSON.stringify(CATALOG),
+              });
+              for (const seed of SEEDS) {
+                const first = randomBundle(seed);
+                const build = renderBundle(
+                  first.bundle,
+                  true,
+                  first.graph,
+                  isLazy
+                );
+                const written = filesOf(build, first.graph, { isLazy, cwd });
+                expectEveryIdToResolve(
+                  build,
+                  written,
+                  first.graph,
+                  isLazy,
+                  `seed ${seed}`
+                );
+                // The next deploy: another graph, given this build's manifest
+                const next = randomBundle(seed + 500, seed % 2 ? 0.25 : 0);
+                const deployed = renderBundle(
+                  next.bundle,
+                  true,
+                  next.graph,
+                  isLazy
+                );
+                expectEveryIdToResolve(
+                  deployed,
+                  filesOf(deployed, next.graph, {
+                    isLazy,
+                    cwd,
+                    previous: written.keep(),
+                  }),
+                  next.graph,
+                  isLazy,
+                  `seed ${seed} after a deploy`
+                );
+              }
+            }
+          );
+
+          it('keeps every file where it was in a build that is given its own manifest, and lists alike whatever the order of the chunks, of their modules and of their imports', () => {
+            const { cwd } = createPlugins(ON, 'vite', {
+              'translations/fr.json': JSON.stringify(CATALOG),
+            });
+            const reversed = <Value>(record: Record<string, Value>) =>
+              Object.fromEntries(Object.entries(record).reverse());
+            const namesOf = (emitted: Record<string, string>) =>
+              Object.keys(emitted)
+                .filter((file) => /\.fr\.\w+\.json$/.test(file))
+                .sort();
+            for (const seed of SEEDS) {
+              const { bundle, graph } = randomBundle(seed);
+              const other = reversed(
+                Object.fromEntries(
+                  Object.entries(bundle).map(([fileName, file]) => [
+                    fileName,
+                    {
+                      ...file,
+                      modules: reversed(file.modules),
+                      imports: [...file.imports].reverse(),
+                      dynamicImports: [...file.dynamicImports].reverse(),
+                    },
+                  ])
+                )
+              );
+              for (const isLazy of [true, false]) {
+                const [one, two] = [bundle, other].map((rendered) => {
+                  const build = renderBundle(rendered, true, graph, isLazy);
+                  const written = filesOf(build, graph, { isLazy, cwd });
+                  return {
+                    ids: new Map([...build.minifiedIds.hashes].sort()),
+                    files: namesOf(written.emitted),
+                    again: namesOf(
+                      filesOf(build, graph, {
+                        isLazy,
+                        cwd,
+                        previous: written.keep(),
+                      }).emitted
+                    ),
+                  };
+                });
+                expect(two, `seed ${seed}`).toEqual(one);
+                expect(one.again, `seed ${seed}`).toEqual(one.files);
+              }
+            }
+          });
+        });
+
+        it.each([
+          ['by module', { by: 'module' as const }, 2],
+          ['by chunk', { by: 'chunk' as const }, 1],
+        ])(
+          'is how the plugin renders a chunk in a build that splits %s, from the chunks the bundler says it renders',
+          async (_name, split, lists) => {
+            const options = {
+              ...ON,
+              experimentalSplitTranslations: { ...split, minifyHashes: true },
+            };
+            const created = createPlugins(options, 'vite', {
+              'translations/fr.json': '{}',
+            });
+            const compile = (source: string) =>
+              transform(
+                `import { t } from 'gt-react';\n${source}`,
+                options,
+                created
+              ) as Promise<string>;
+            // A shared chunk holds what the entry reaches and what a route does
+            const rendered = {
+              'assets/index.js': chunk(
+                'assets/index.js',
+                { '/main.js': '' },
+                {
+                  isEntry: true,
+                  imports: ['assets/ui.js'],
+                  dynamicImports: ['assets/Home.js'],
+                }
+              ),
+              'assets/Home.js': chunk(
+                'assets/Home.js',
+                { '/home.js': '' },
+                { imports: ['assets/ui.js'] }
+              ),
+              'assets/ui.js': chunk(
+                'assets/ui.js',
+                {
+                  '/button.js': await compile(
+                    'export const save = () => t`Save`;'
+                  ),
+                  '/picker.js': await compile(
+                    'export const print = () => t`Print`;'
+                  ),
+                },
+                { facadeModuleId: null }
+              ),
+            };
+            const { renderChunk, outputOptions } = created.plugins[0]
+              .vite as unknown as {
+              outputOptions?: (options: object) => null;
+              renderChunk: (
+                this: object,
+                code: string,
+                chunk: object,
+                options: object,
+                meta: object
+              ) => string;
+            };
+            // A module runs when it is first imported
+            outputOptions?.({ strictExecutionOrder: true });
+            const context = {
+              getModuleInfo: getModuleInfo({
+                '/main.js': { imports: ['/button.js'], dynamic: ['/home.js'] },
+                '/home.js': { imports: ['/picker.js'] },
+              }),
+            };
+            const ui = rendered['assets/ui.js'];
+            const names = (code: string) =>
+              new Set(
+                [...code.matchAll(/\$_hash: "([\w-]{8})\.\d+"/g)].map(
+                  (match) => match[1]
+                )
+              );
+            expect(
+              names(
+                renderChunk.call(context, ui.code, ui, {}, { chunks: rendered })
+              ).size
+            ).toBe(lists);
+            // A bundler that says nothing of the other chunks gets one list
+            expect(
+              names(renderChunk.call(context, ui.code, ui, {}, {})).size
+            ).toBe(1);
+          }
+        );
+
+        it('names a chunk in a pair by the module it is made for or by its first module, from the working directory, whatever the bundler calls it', () => {
+          const cwd = process.cwd();
+          const at = (...segments: string[]) => path.join(cwd, ...segments);
+          const route = {
+            facadeModuleId: at('src', 'Route.jsx'),
+            modules: { [at('src', 'Route.jsx')]: {}, [at('src', 'a.js')]: {} },
+          };
+          const named = getPairChunk(route);
+          expect(named).toMatch(/^[0-9a-f]{8}$/);
+          expect(getPairKey(HASH.title, named)).toBe(`${HASH.title}${named}`);
+          // The same chunk after it gained a module, under another name
+          expect(
+            getPairChunk({
+              ...route,
+              modules: { [at('lib', 'early.js')]: {}, ...route.modules },
+            })
+          ).toBe(named);
+          // A chunk made for no module of its own, by its first module
+          const shared = {
+            facadeModuleId: null,
+            modules: { [at('src', 'b.js')]: {}, [at('src', 'a.js')]: {} },
+          };
+          expect(getPairChunk(shared)).toBe(
+            getPairChunk({
+              facadeModuleId: at('src', 'Route.jsx'),
+              modules: { [at('src', 'a.js')]: {} },
+            })
+          );
+          expect(getPairChunk(shared)).not.toBe(named);
+          // And the same wherever the project is
+          vi.spyOn(process, 'cwd').mockReturnValue(path.join(cwd, 'elsewhere'));
+          expect(
+            getPairChunk({
+              facadeModuleId: path.join(cwd, 'elsewhere', 'src', 'Route.jsx'),
+              modules: {
+                [path.join(cwd, 'elsewhere', 'src', 'Route.jsx')]: {},
+              },
+            })
+          ).toBe(named);
+        });
       });
     });
 
