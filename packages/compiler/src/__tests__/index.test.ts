@@ -292,6 +292,19 @@ describe('pass gating by plugin options', () => {
   });
 });
 
+describe('bundler adapters', () => {
+  it('exposes a factory for every supported bundler, including rspack', () => {
+    for (const adapter of [webpack, vite, rollup, rspack, esbuild]) {
+      expect(typeof adapter).toBe('function');
+    }
+  });
+
+  it('builds a raw rspack plugin that exposes a transform hook', () => {
+    const plugin = gtUnplugin.raw(PROJECT_SETTINGS, { framework: 'rspack' });
+    expect(typeof plugin.transform).toBe('function');
+  });
+});
+
 describe('modules without an import the transform reads', () => {
   // Only a module that is parsed can fail to parse
   it.each([
@@ -318,18 +331,5 @@ describe('modules without an import the transform reads', () => {
       T_COMPONENT_CODE.replace(`'gt-react'`, `'gt-re\\u0061ct'`)
     );
     expect(outputs[0]).toContain('_hash: "');
-  });
-});
-
-describe('bundler adapters', () => {
-  it('exposes a factory for every supported bundler, including rspack', () => {
-    for (const adapter of [webpack, vite, rollup, rspack, esbuild]) {
-      expect(typeof adapter).toBe('function');
-    }
-  });
-
-  it('builds a raw rspack plugin that exposes a transform hook', () => {
-    const plugin = gtUnplugin.raw(PROJECT_SETTINGS, { framework: 'rspack' });
-    expect(typeof plugin.transform).toBe('function');
   });
 });

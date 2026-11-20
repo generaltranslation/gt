@@ -75,7 +75,6 @@ import {
 } from './transform/chunk-translations/unsplitTranslations';
 import { getPageBase } from './transform/chunk-translations/startupScript';
 import { Logger } from './state/Logger';
-import { mayImportReadSource } from './utils/mayImportReadSource';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import {
   createPrecomputedMessageSupport,
@@ -87,6 +86,7 @@ import {
   importsMessageSource,
   taggedTemplateHashInjectionPass,
 } from './passes/taggedTemplateHashInjectionPass';
+import { mayImportReadSource } from './utils/mayImportReadSource';
 
 /**
  * Architecture:
