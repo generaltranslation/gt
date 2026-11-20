@@ -445,6 +445,18 @@ The pass only operates on JSX children, not on string-valued props/attributes. P
 <img alt="Company logo" />  // unchanged
 ```
 
+The one exception is `children`. `<p children="Hello" />` compiles to the same call as `<p>Hello</p>`, so a `children` prop is the element's children in every rule above: text in it claims the element, and inside a \_T region it is part of the unit.
+
+```jsx
+// A children prop with text — _T inside the prop
+<p children="Hello" />
+<p children={<_T>Hello</_T>} />
+
+// Empty or whitespace only — unchanged
+<p children="   " />
+<p children="   " />  // unchanged
+```
+
 ---
 
 ## Import injection
