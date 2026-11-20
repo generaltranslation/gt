@@ -8,6 +8,7 @@ describe('addGTIdentifierToSyntaxTree', () => {
       const tree: MultipliedTreeNode = {
         nodeType: 'element',
         type: 'Branch',
+        branching: 'Branch',
         props: {
           children: 'fallback',
           branch: 'status',
@@ -38,6 +39,7 @@ describe('addGTIdentifierToSyntaxTree', () => {
       const tree: MultipliedTreeNode = {
         nodeType: 'element',
         type: 'Branch',
+        branching: 'Branch',
         props: {
           children: 'fallback',
           branch: 'status',
@@ -60,6 +62,7 @@ describe('addGTIdentifierToSyntaxTree', () => {
     const tree: MultipliedTreeNode = {
       nodeType: 'element',
       type: 'Branch',
+      branching: 'Branch',
       props: { branch: 'status', other: 'Prop' },
     } as unknown;
 

@@ -795,6 +795,40 @@ describe('<Ordinal>', () => {
   });
 });
 
+describe('a component of the author named like a branching component', () => {
+  const module = (imports: string, jsx: string) =>
+    `${imports}\nexport default function Page() { return <T>${jsx}</T>; }`;
+
+  it.each(['Ordinal', 'Plural', 'Branch'])(
+    'keeps their own <%s> an ordinary element',
+    (name) => {
+      const result = extractUserT(
+        module(
+          `import { T } from "gt-next";\nimport { ${name} } from "./ui";`,
+          `<${name} one="1st">Ranking</${name}>`
+        )
+      );
+
+      expect(result.errors).toEqual([]);
+      expect(sources(result)).toEqual([{ t: name, i: 1, c: 'Ranking' }]);
+    }
+  );
+
+  it('reads an aliased GT import as the component it is', () => {
+    const result = extractUserT(
+      module(
+        'import { T, Ordinal as Place } from "gt-next";',
+        '<Place n={2} one="1st">nth</Place>'
+      )
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      { t: 'Ordinal', i: 1, d: { b: { one: '1st', other: 'nth' }, t: 'o' } },
+    ]);
+  });
+});
+
 describe('a spread attribute on Branch/Plural', () => {
   it.each([
     ['Plural', '<Plural n={count} {...forms} />'],

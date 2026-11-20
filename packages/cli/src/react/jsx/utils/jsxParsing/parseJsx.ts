@@ -27,6 +27,7 @@ import {
 } from '../../../../console/index.js';
 import {
   isAcceptedPluralForm,
+  isBranchComponentName,
   isPluralComponentName,
 } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
@@ -569,6 +570,9 @@ function buildJSXTree({
       // if componentType is undefined, use typeName
       // Basically, if componentType is not a GT component, use typeName such as <div>
       type: componentType ?? typeName,
+      ...(isBranchComponentName(componentType) && {
+        branching: componentType,
+      }),
       props,
     };
   }

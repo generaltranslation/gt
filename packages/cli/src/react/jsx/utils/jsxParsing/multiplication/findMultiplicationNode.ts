@@ -74,8 +74,8 @@ export function findMultiplicationNode(
 
       // For Plural/Branch, also search translatable content props
       // Mirrors the prop filtering in handleChildrenWhitespace.ts and autoInsertion.ts
-      const elementIsPlural = isPluralComponentName(curr.type);
-      const elementIsBranch = curr.type === BRANCH_COMPONENT;
+      const elementIsPlural = isPluralComponentName(curr.branching);
+      const elementIsBranch = curr.branching === BRANCH_COMPONENT;
       if (elementIsPlural || elementIsBranch) {
         for (const [propKey, propValue] of Object.entries(curr.props)) {
           if (propKey === 'children') continue;

@@ -1,3 +1,5 @@
+import type { BranchComponentName } from 'generaltranslation/internal';
+
 // ===== Tree Construction ===== //
 type MultiplicationNode = {
   nodeType: 'multiplication';
@@ -13,6 +15,11 @@ type ExpressionNode = {
 type ElementNode = {
   nodeType: 'element';
   type: string;
+  /**
+   * The GT branching component this element is. A component of the author's
+   * own with the same name has none.
+   */
+  branching?: BranchComponentName;
   props?: {
     children?: JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[];
     [key: string]: unknown;
@@ -68,6 +75,7 @@ type WhitespaceMultiplicationNode = {
 type WhitespaceJsxTree = {
   nodeType?: 'element';
   type: string;
+  branching?: BranchComponentName;
   props?: {
     children?: (WhitespaceJsxTreeResult | WhitespaceMultiplicationNode)[];
     // Other attributess
@@ -119,6 +127,7 @@ export { isWhitespaceJsxTree, isWhitespaceMultiplicationNode };
 type MultipliedTree = {
   nodeType?: 'element';
   type: string;
+  branching?: BranchComponentName;
   props?: {
     children?: MultipliedTreeNode;
   };
