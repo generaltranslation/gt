@@ -78,7 +78,9 @@ export type RegionOptions = {
  * - A file's key is not a chunk's. A file holds the messages of modules from
  *   many chunks, and a load point holds several files.
  * - `entries` lists file keys, not hashes. An entry's messages are in
- *   `files` like every other, so that no message is in two files.
+ *   `files` like every other, so that no message of the graph is in two
+ *   files. In a graph of pairs that is a pair: the message itself is then
+ *   in a file for each chunk that reads it.
  *
  * The build writes `demands` as the list of each import (see
  * writeRegionTranslations): gt-react skips the files a page holds, so one
@@ -92,7 +94,10 @@ export type RegionAssignment = {
    * entry's module. They hold everything the entry demands.
    */
   entries: Map<string, string[]>;
-  /** The hashes in each file, by its key. Every hash is in exactly one. */
+  /**
+   * The hashes in each file, by its key, or the pairs of a graph of pairs.
+   * Each is in exactly one file.
+   */
   files: Map<string, string[]>;
   /**
    * The keys of the files a dynamic import of a module loads, by the module,

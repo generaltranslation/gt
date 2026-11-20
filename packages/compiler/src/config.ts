@@ -64,10 +64,16 @@ export type SplitTranslationsOptions = {
    * With `by: 'module'`, a chunk's translations are then in the files of
    * the entries and dynamic imports that reach its own call sites: a chunk
    * that reads a message an earlier load holds for another chunk gets its
-   * own copy, and has one list for each file its messages are in. A file
-   * names only lists that are wholly in it, so it is rewritten when one of
-   * its own messages comes, goes or is translated anew, and not when a
-   * chunk that loads later changes.
+   * own copy, and has one list for each group of its messages that the same
+   * entries and dynamic imports fetch. A file names only lists that are
+   * wholly in it, so it is rewritten when one of its own messages comes,
+   * goes or is translated anew, and not when a chunk that loads later
+   * changes. Which messages a list holds then follows from the imports of
+   * the whole app: when another entry or dynamic import comes to fetch some
+   * of a list's messages, as a new route does that imports one module of a
+   * shared chunk, that chunk gets other ids and another file name although
+   * its own code is the same, and without a chunk import map so does every
+   * chunk that imports it.
    *
    * The hash of a message stays what it is everywhere else: in the
    * translation files at `files.gt.output`, in the unsplit file, and at
