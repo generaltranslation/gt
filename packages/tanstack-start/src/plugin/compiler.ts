@@ -93,18 +93,23 @@ function adaptCompilerPlugin(plugin: Plugin): Plugin {
   };
 }
 
+// The queries of the virtual modules TanStack Router and Start move app code into
+const COMPILED_QUERIES = ['tsr-split', 'tsr-shared', 'tss-serverfn-split'];
+
 /**
  * TanStack Router code-splitting moves route components into virtual modules
  * such as `index.tsx?tsr-split=component`, and code shared by several split
- * groups into `index.tsx?tsr-shared=1`. The compiler only accepts ids that end
- * in a source extension, so it gets the file path for those modules. Other
- * query ids (?raw, ?url, ...) stay unchanged and are skipped by the compiler.
+ * groups into `index.tsx?tsr-shared=1`. TanStack Start moves the handler of a
+ * server function, with what only it uses, into `index.tsx?tss-serverfn-split`.
+ * The compiler only accepts ids that end in a source extension, so it gets
+ * the file path for those modules. Other query ids (?raw, ?url, ...) stay
+ * unchanged and are skipped by the compiler.
  */
 function getCompilerId(id: string): string {
   const queryStart = id.indexOf('?');
   if (queryStart === -1) return id;
   const query = new URLSearchParams(id.slice(queryStart + 1));
-  return query.has('tsr-split') || query.has('tsr-shared')
+  return COMPILED_QUERIES.some((name) => query.has(name))
     ? id.slice(0, queryStart)
     : id;
 }

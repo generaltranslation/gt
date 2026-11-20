@@ -164,8 +164,8 @@ describe('gtTanstackStart', () => {
     expect(output).toContain('_hash: "');
   });
 
-  it.each(['tsr-split=component', 'tsr-shared=1'])(
-    'injects _hash into TanStack Router code-split route modules (?%s)',
+  it.each(['tsr-split=component', 'tsr-shared=1', 'tss-serverfn-split'])(
+    'injects _hash into the modules TanStack Router and Start split from a route (?%s)',
     async (query) => {
       const { plugins, root } = createPlugins(BABEL);
       const compiler = findPlugin(plugins, COMPILER_PLUGIN_NAME)!;
