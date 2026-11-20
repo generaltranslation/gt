@@ -950,6 +950,24 @@ async function checkVariant(name, variant) {
           unsplit.every((hash) => /^[0-9a-f]{16}$/.test(hash)),
         `${counts.size} ids of ${assigned.length} messages in ${Object.keys(manifest.files).length} files, ${unsplit.length} unsplit`
       );
+      // A chunk lists its messages by the loads that fetch them, which is
+      // what puts them in a file: a file is then renamed by a change to one
+      // of its own messages, and by no other message of a chunk that reads it
+      const filesOfList = new Map();
+      for (const files of Object.values(manifest.files)) {
+        const names = Object.keys(built.contentOf(`/${files[locale]}`)).map(
+          (id) => id.slice(0, id.lastIndexOf('.'))
+        );
+        for (const name of new Set(names)) {
+          filesOfList.set(name, (filesOfList.get(name) ?? 0) + 1);
+        }
+      }
+      const spread = [...filesOfList].filter(([, files]) => files > 1);
+      check(
+        `${locale}: no list of ids is in two files`,
+        filesOfList.size > 0 && spread.length === 0,
+        `${filesOfList.size} lists in ${Object.keys(manifest.files).length} files${spread.length ? `, in several: ${spread.map(([name]) => name).join(', ')}` : ''}`
+      );
       continue;
     }
     check(
