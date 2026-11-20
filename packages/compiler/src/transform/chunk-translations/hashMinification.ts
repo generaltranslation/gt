@@ -30,8 +30,9 @@ import type { TranslationsTable } from './loadTranslationFiles';
  *
  * A bundler that limits the size of a chunk measures its modules before it
  * renders them, so it measures placeholders. A placeholder is therefore
- * about as long as the id it becomes: one character and the 64 bits of the
- * hash, 12 characters where an id is 10 to 14. So short a string says
+ * exactly as long as its hash, which is what the call site holds in a build
+ * without hash minification: the bundler measures the same code either way,
+ * and hash minification moves no chunk boundary. So short a string says
  * nothing by its form, and the build tells its placeholders from the
  * strings of the app by keeping each one it writes: only those are
  * minified, and a build fails when its output still holds one, or a call
@@ -53,8 +54,9 @@ import type { TranslationsTable } from './loadTranslationFiles';
  */
 
 /**
- * What a placeholder starts with: a character no hash and no id has, so a
- * placeholder is neither, also where a hash is written in base64url.
+ * What a placeholder starts with, and is filled up with: a character no
+ * hash and no id has, so a placeholder is neither, also where a hash is
+ * written in base64url.
  */
 export const MINIFIED_ID_PLACEHOLDER = '~';
 
@@ -228,19 +230,30 @@ export const createUnminifiedChunksError = (files: string[]) =>
 
 /**
  * What the compiler writes at a call site whose chunk is rendered later,
- * which `minified` keeps with its hash. A hash in hexadecimal is written
- * in base64url, and any other as it is: nothing reads a placeholder back
- * into its hash but `minified`, and the hashes of a build are of one format.
+ * which `minified` keeps with its hash: a string as long as the hash,
+ * whatever that length is. A hash in hexadecimal is written out in
+ * base64url, which leaves room for the first character, and filled up to
+ * its length, so no two share a placeholder. Any other hash gives up its
+ * first character, and one that differs from an earlier hash in that
+ * character alone gets a placeholder of its own, two characters longer.
+ * Nothing reads a placeholder back into its hash but `minified`.
  */
 export function createIdPlaceholder(
   hash: string,
   minified: MinifiedIds
 ): string {
+  const { placeholders } = minified;
   const written = HEXADECIMAL_HASH.test(hash)
-    ? Buffer.from(hash, 'hex').toString('base64url')
-    : hash;
-  const placeholder = `${MINIFIED_ID_PLACEHOLDER}${written}`;
-  minified.placeholders.set(placeholder, hash);
+    ? Buffer.from(hash, 'hex')
+        .toString('base64url')
+        .padEnd(hash.length - 1, MINIFIED_ID_PLACEHOLDER)
+    : hash.slice(1);
+  const sameLength = `${MINIFIED_ID_PLACEHOLDER}${written}`;
+  const placeholder =
+    (placeholders.get(sameLength) ?? hash) === hash
+      ? sameLength
+      : `${MINIFIED_ID_PLACEHOLDER}${MINIFIED_ID_PLACEHOLDER}${hash}`;
+  placeholders.set(placeholder, hash);
   return placeholder;
 }
 

@@ -3165,15 +3165,26 @@ export const ready = initializeGTSPA({});`,
     });
 
     it.each([
-      ['16 hexadecimal characters', [SAVE_TEXT, HELLO], '2bFNA3qJ'],
-      ['11 base64url characters', ['q3LRFNDRVqk', 't4XrnVr1AZE'], 'Rze57V1q'],
+      [
+        '16 hexadecimal characters',
+        [SAVE_TEXT, HELLO],
+        '2bFNA3qJ',
+        '~q3LRFNDRVqk~~~~',
+      ],
+      [
+        '11 base64url characters',
+        ['q3LRFNDRVqk', 't4XrnVr1AZE'],
+        'Rze57V1q',
+        '~3LRFNDRVqk',
+      ],
     ])(
       'minifies the hashes of a chunk in the order of the hashes, whatever a hash is made of: %s',
-      (_format, [first, second], name) => {
+      (_format, [first, second], name, placeholder) => {
         const minified = minifiedIds();
-        // What the bundler measures a call site by is as long as the id of
-        // a chunk of a hundred messages, and no hash or id of either format
-        expect(createIdPlaceholder(first, minified)).toBe('~q3LRFNDRVqk');
+        // A bundler measures a call site by its placeholder, which is as
+        // long as the hash a build without hash minification writes there
+        expect(createIdPlaceholder(first, minified)).toBe(placeholder);
+        expect(placeholder).toHaveLength(first.length);
         const code = [
           `e(T,{children:"Hello",_hash:'${createIdPlaceholder(second, minified)}'})`,
           `t({$_hash:"${createIdPlaceholder(first, minified)}",$_tree:"Save"})`,
@@ -3280,6 +3291,30 @@ export const ready = initializeGTSPA({});`,
       expect(
         readMinifiedIds(minified, { unsplit: new Set() }, {}, chunks).hashes
       ).toBe(minified.hashes);
+    });
+
+    it('gives two hashes that one placeholder of their length would stand for a placeholder each', () => {
+      const minified = minifiedIds();
+      // No shorter way to write these is known, and they differ where the
+      // placeholder of the first leaves a character out
+      const hashes = ['q3LRFNDRVqk', 'r3LRFNDRVqk'];
+      const written = hashes.map((hash) => createIdPlaceholder(hash, minified));
+      expect(written).toEqual(['~3LRFNDRVqk', '~~r3LRFNDRVqk']);
+      // The same again wherever the hashes are written next
+      expect(
+        [...hashes].reverse().map((hash) => createIdPlaceholder(hash, minified))
+      ).toEqual([...written].reverse());
+      const [name] = idsOf(hashes)[0].split('.');
+      expect(
+        minifyChunk(
+          written.map((text) => `t({$_hash:"${text}"})`).join(';'),
+          minified
+        )
+      ).toBe(`t({$_hash:"${name}.0"});t({$_hash:"${name}.1"})`);
+      expect([...minified.hashes]).toEqual([
+        [`${name}.0`, hashes[0]],
+        [`${name}.1`, hashes[1]],
+      ]);
     });
 
     // Strings of an app that start as a placeholder does, and a comment
