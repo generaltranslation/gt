@@ -68,7 +68,7 @@ export function integrateRouter<State extends GTRouterState>(
     // links it builds see it.
     hydrate: async (dehydrated: GTDehydratedRouterData<State>) => {
       if (dehydrated?.gt?.shell) {
-        const { shell: _shell, ...state } = dehydrated.gt;
+        const { shell: _shell, split, ...state } = dehydrated.gt;
         // The condition store keeps the visitor's locale. Their state loads
         // before hydration, so the provider never commits the shell's locale
         // to the locale cookie. A load failure is thrown from Wrap.
@@ -78,6 +78,10 @@ export function integrateRouter<State extends GTRouterState>(
         // server does.
         if (rewrite) {
           replaceWithLocaleURL(router, getReadonlyConditionStore().getLocale());
+        }
+        // The files of the visitor's locale, before their state is read
+        if (split) {
+          await hydrateSplit(split, getReadonlyConditionStore().getLocale());
         }
         await gt.load().catch(() => undefined);
       } else if (dehydrated?.gt) {

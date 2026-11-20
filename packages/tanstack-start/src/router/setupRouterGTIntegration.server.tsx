@@ -6,6 +6,7 @@ import {
 } from 'gt-tanstack-start/internal/initializeGT.server';
 import {
   getSplitPayload,
+  getSplitShellPayload,
   preloadSplitFiles,
 } from 'gt-tanstack-start/internal/splitTranslations';
 import type { SplitPayload } from '../split/types';
@@ -78,16 +79,24 @@ export function integrateRouter<State extends GTRouterState>(
       const dehydrated =
         (await originalDehydrate?.()) as GTDehydratedRouterData<State>;
       const loaded = await gt.load();
-      split = router.isShell?.()
-        ? undefined
-        : await getSplitPayload(loaded.locale, router);
-      const state = split ? { ...loaded, translations: {}, split } : loaded;
       // A prerendered SPA shell is served to every visitor in the build-time
       // locale. The client hydrates it with that state, then renders the
-      // visitor's own.
+      // visitor's own, whose files it loads itself.
+      if (router.isShell?.()) {
+        const shellSplit = getSplitShellPayload();
+        return {
+          ...dehydrated,
+          gt: {
+            ...loaded,
+            shell: true,
+            ...(shellSplit && { split: shellSplit }),
+          },
+        };
+      }
+      split = await getSplitPayload(loaded.locale, router);
       return {
         ...dehydrated,
-        gt: router.isShell?.() ? { ...state, shell: true } : state,
+        gt: split ? { ...loaded, translations: {}, split } : loaded,
       };
     },
     Wrap: gt.Wrap,

@@ -76,6 +76,14 @@ export const getSplitPayload: typeof Disabled.getSplitPayload = async (
 };
 
 /**
+ * A prerendered shell is one page for every visitor, so it gets what the
+ * browser needs to load any locale's files itself, as a client-rendered app
+ * does.
+ */
+export const getSplitShellPayload: typeof Disabled.getSplitShellPayload = () =>
+  table && { m: table.split, a: table.states };
+
+/**
  * Called while the server renders: React writes a preload link for each file
  * into the document's head, so the browser requests them with the page's
  * chunks, and the page's own requests for them are answered by those.

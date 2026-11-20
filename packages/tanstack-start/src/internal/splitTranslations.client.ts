@@ -22,6 +22,9 @@ type Registered = Parameters<typeof register>[2];
 export const getSplitPayload: typeof Disabled.getSplitPayload = async () =>
   undefined;
 
+export const getSplitShellPayload: typeof Disabled.getSplitShellPayload = () =>
+  undefined;
+
 export const preloadSplitFiles: typeof Disabled.preloadSplitFiles = () =>
   undefined;
 
@@ -41,7 +44,12 @@ export const hydrateSplit: typeof Disabled.hydrateSplit = async (
   payload,
   locale
 ) => {
-  const state = Object.assign(getState(), payload.s);
+  // A prerendered shell names every locale's files; the source locale has none
+  const start = payload.s ?? payload.a?.[locale];
+  if (!start) return;
+  const state = Object.assign(getState(), start);
+  const { c: chunks = [], k: keys = Object.keys(start.e?.[locale] ?? {}) } =
+    payload;
   if (payload.t) {
     // The server sent the files' content with the page
     const { e, u, f } = payload.t;
@@ -57,10 +65,10 @@ export const hydrateSplit: typeof Disabled.hydrateSplit = async (
       register(state, locale, f[key] as Registered);
       requests[`${locale} ${key}`] = Promise.resolve(true);
     }
-    state.s = Object.fromEntries(payload.c.map((chunk) => [chunk, 1]));
+    state.s = Object.fromEntries(chunks.map((chunk) => [chunk, 1]));
   } else {
-    // The server asked the browser to preload the files; these requests are
-    // answered by those
+    // The browser loads the files: those the server asked it to preload, or
+    // for a prerendered shell, the entry's
     const unsplit = state.u && state.o?.[locale];
     await Promise.all([
       requestEntry(state, locale),
@@ -73,8 +81,8 @@ export const hydrateSplit: typeof Disabled.hydrateSplit = async (
             )
         ),
       payload.m === 'module'
-        ? loadRegionChunkTranslations(payload.k)
-        : loadChunkTranslations(payload.k),
+        ? loadRegionChunkTranslations(keys)
+        : loadChunkTranslations(keys),
     ]);
   }
   state.y = true;

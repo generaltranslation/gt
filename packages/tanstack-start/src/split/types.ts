@@ -33,15 +33,22 @@ export type SplitTable = {
 /** The content of each file of a locale, by the file's name. */
 export type SplitContents = Record<string, unknown>;
 
-/** What the server sends with a page, in the router's dehydrated state. */
+/**
+ * What the server sends with a page, in the router's dehydrated state: `s`,
+ * `c` and `k` with a page it rendered for a request, or `a` with a
+ * prerendered shell, which every visitor gets whatever their locale.
+ */
 export type SplitPayload = {
   /** The split of the build */
   m: SplitTable['split'];
-  s: SplitStartState;
+  /** The start state of the request's locale */
+  s?: SplitStartState;
+  /** The start state of each locale that has files */
+  a?: Record<string, SplitStartState>;
   /** The chunks of the matched routes, whose imports need the files in `k` */
-  c: string[];
+  c?: string[];
   /** The keys of the files the page needs before it hydrates, beyond the entry's file */
-  k: string[];
+  k?: string[];
   /** `inline`: the content of the entry's file, of the unsplit file, and of each file in `k` */
   t?: { e?: unknown; u?: unknown; f: Record<string, unknown> };
   /** `files`: the URLs the server asked the browser to preload */

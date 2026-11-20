@@ -8,6 +8,9 @@ export const getSplitPayload: (
   router: SplitRouter
 ) => Promise<SplitPayload | undefined> = async () => undefined;
 
+export const getSplitShellPayload: () => SplitPayload | undefined = () =>
+  undefined;
+
 export const preloadSplitFiles: (payload: SplitPayload) => void = () =>
   undefined;
 
