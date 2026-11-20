@@ -97,7 +97,7 @@ export function within(
       () => {
         resolve(false);
         // Also when one of several files failed: the others arrived
-        void loading.then(() => addArrived(state));
+        void loading.then(() => addArrived(state, true));
       },
       Math.max(0, start + getTimeout(state) - Date.now())
     );

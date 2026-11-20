@@ -35,7 +35,10 @@
  * locale's map, which lists them. See `loadRegionChunk()`.
  *
  * A file that fails to load, or takes longer than the timeout, is reported
- * with a warning and its messages render their source.
+ * with a warning and its messages render their source. A late file is still
+ * read when it arrives: mounted `<T>` components and the functions of
+ * `useGT()` and `useMessages()` then render its translations, and a string
+ * the exported `t` returned stays as it is.
  *
  * A page that stays open while the app is deployed again asks for files by
  * the names its own build gave them, which a host may no longer have. See

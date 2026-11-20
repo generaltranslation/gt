@@ -144,6 +144,11 @@ export type ChunkTranslationsState = {
    * could stand in for the file are read, and once they do
    */
   z?: Record<string, boolean | undefined>;
+  /**
+   * Whether the page reads files of the build that is served now in place
+   * of its own, which can hold another translation of a message on screen
+   */
+  s?: boolean;
 };
 
 export type InitializeConfig = { loadTranslations?: unknown };

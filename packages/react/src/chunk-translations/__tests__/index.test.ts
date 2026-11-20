@@ -14,6 +14,11 @@ import {
 } from '..';
 import { resolveChunkUrl } from '../gate';
 import { getReactI18nCache, t } from '@generaltranslation/react-core/pure';
+import { T } from '@generaltranslation/react-core/components';
+import { useGT, useMessages } from '@generaltranslation/react-core/hooks';
+import { msg } from 'gt-i18n';
+import { act, createElement } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import { initializeGTSPA } from '../../setup/initializeGTSPA';
 
 // What the compiler writes is tested where it is written:
@@ -152,6 +157,41 @@ const plainImport =
   (load: Load = loadChunk) =>
     load(evaluate(steps), ORDERS_CHUNK);
 
+const mounted: Root[] = [];
+
+/**
+ * Renders the message of `hash` as components that stay on screen do: a
+ * `<T>`, and the functions of `useGT()` and `useMessages()`. Counts the
+ * renders of the component that calls the hooks.
+ */
+function mount(hash: string, source: string) {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const options = { $_hash: hash } as never;
+  const template = Object.assign([source], { raw: [source] });
+  // With an option, so it keeps the hash: a plain text is hashed when read
+  const message = msg({ $_hash: hash, context: 'a label' } as never)(template);
+  let renders = 0;
+  function Messages() {
+    const t = useGT();
+    const m = useMessages();
+    renders++;
+    return createElement(
+      'p',
+      null,
+      createElement(T, { _hash: hash } as never, source),
+      ' | ',
+      t(options)(template),
+      ' | ',
+      m(message)
+    );
+  }
+  const element = document.createElement('div');
+  const root = createRoot(element);
+  mounted.push(root);
+  act(() => root.render(createElement(Messages)));
+  return { text: () => element.textContent, renders: () => renders };
+}
+
 describe('gt-react/chunk-translations', () => {
   let warn: ReturnType<typeof vi.spyOn>;
 
@@ -160,6 +200,7 @@ describe('gt-react/chunk-translations', () => {
     setLocale('fr');
   });
   afterEach(() => {
+    for (const root of mounted.splice(0)) act(() => root.unmount());
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -511,6 +552,38 @@ describe('gt-react/chunk-translations', () => {
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
+  it('renders mounted messages again when a file arrives after its timeout', async () => {
+    const file = hold(FILES[ORDERS_FILE]);
+    serve({ ...FILES, [ORDERS_FILE]: file.response });
+    writeState({ w: 2000 });
+    await start();
+    const messages = mount(ORDERS, 'Orders');
+    vi.useFakeTimers();
+
+    const loading = plainImport([])();
+    await vi.advanceTimersByTimeAsync(2000);
+    await loading;
+    expect(messages.text()).toBe('Orders | Orders | Orders');
+
+    await act(async () => {
+      file.respond();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(messages.text()).toBe('Commandes | Commandes | Commandes');
+  });
+
+  it('does not render mounted messages again for a file that arrives in time', async () => {
+    serve();
+    writeState();
+    await start();
+    const messages = mount(SAVE, 'Save');
+
+    await act(() => plainImport([])());
+
+    expect(orders()).toBe('Commandes');
+    expect(messages.renders()).toBe(1);
+  });
+
   it.each([
     [
       'a page without the startup script',
@@ -669,6 +742,28 @@ describe('gt-react/chunk-translations', () => {
       );
       expect(orders()).toBe('Commandes, encore');
       expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('renders a mounted message again when a file of the build that is served now holds another translation of it', async () => {
+      const files: Files = {
+        ...DEPLOYED,
+        [NEXT_ORDERS_FILE]: { [SAVE]: 'Enregistrer, encore' },
+      };
+      serve(files);
+      writeOpen();
+      await start();
+      const messages = mount(SAVE, 'Save');
+      expect(messages.text()).toBe('Enregistrer | Enregistrer | Enregistrer');
+
+      await act(() => plainImport([])());
+      expect(messages.text()).toBe(
+        'Enregistrer, encore | Enregistrer, encore | Enregistrer, encore'
+      );
+
+      // So does a file the page asks for by its name in that build
+      files['/assets/Reports-d4.fr.99999999.json'] = { [SAVE]: 'Sauvegarder' };
+      await act(() => loadChunkTranslations(['assets/Reports-d4']));
+      expect(messages.text()).toBe('Sauvegarder | Sauvegarder | Sauvegarder');
     });
 
     it('takes a page in place of the file, as a host answers that has a page for every path, for a missing file', async () => {
@@ -1601,6 +1696,7 @@ describe('gt-react/chunk-translations', () => {
         const fetched = await startOpen(files);
         await preloadedImport([])(loadRegionChunk);
         expect(title()).toBe('Aperçu');
+        const messages = mount(TITLE, 'Overview');
 
         Object.assign(files, {
           [CURRENT]: DEPLOYED[CURRENT],
@@ -1614,7 +1710,9 @@ describe('gt-react/chunk-translations', () => {
           [NEXT_SHARED]: DEPLOYED[NEXT_SHARED],
         });
         fetched.mockClear();
-        await loadRegionChunk(() => Promise.resolve(), 'assets/Reports-d4.js');
+        await act(() =>
+          loadRegionChunk(() => Promise.resolve(), 'assets/Reports-d4.js')
+        );
         expect(urls(fetched)).toEqual([
           '/assets/gt-ee.fr.12121212.json',
           CURRENT,
@@ -1622,6 +1720,10 @@ describe('gt-react/chunk-translations', () => {
           NEXT_SHARED,
         ]);
         expect(title()).toBe('Aperçu, encore');
+        // What is on screen follows
+        expect(messages.text()).toBe(
+          'Aperçu, encore | Aperçu, encore | Aperçu, encore'
+        );
         expect(warn).not.toHaveBeenCalled();
       });
 
