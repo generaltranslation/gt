@@ -321,7 +321,7 @@ export function getChunkTranslations(
   return (
     option?.enabled ??
     readBooleanEnv(CHUNK_TRANSLATIONS_ENV_VAR) ??
-    option !== undefined
+    Boolean(option)
   );
 }
 

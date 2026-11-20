@@ -239,6 +239,10 @@ describe('experimentalSplitTranslations', () => {
       [{ enabled: false }, 'false', false],
       [{ enabled: false }, undefined, false],
       [{ enabled: false }, '', false],
+      // Not an object, as an untyped config can write: the option left out
+      [false as never, undefined, false],
+      [null as never, undefined, false],
+      [false as never, 'true', true],
     ] as const)(
       'is %j with GT_SPLIT_TRANSLATIONS=%j: %s',
       (option, env, expected) => {
