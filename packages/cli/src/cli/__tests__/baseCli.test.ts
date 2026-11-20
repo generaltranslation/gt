@@ -408,6 +408,8 @@ describe('--dry-run', () => {
     process.chdir(projectRoot);
     vi.stubEnv('GT_PROJECT_ID', '');
     vi.stubEnv('GT_API_KEY', '');
+    // Keeps the stored login of whoever runs the suite out of it.
+    vi.stubEnv('XDG_STATE_HOME', projectRoot);
     fetchMock = vi.fn(() => Promise.reject(new Error('fetch was called')));
     vi.stubGlobal('fetch', fetchMock);
   });
