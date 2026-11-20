@@ -41,6 +41,8 @@ const entries: Record<string, string> = {
   'internal/splitTranslations': 'src/internal/splitTranslations.ts',
   'internal/splitTranslations.server':
     'src/internal/splitTranslations.server.ts',
+  'internal/splitTranslations.client':
+    'src/internal/splitTranslations.client.ts',
   'internal/_split-table': 'src/internal/_split-table.ts',
 };
 

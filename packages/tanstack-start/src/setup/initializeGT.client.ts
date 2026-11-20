@@ -13,6 +13,7 @@ import {
   createLocaleReload,
   getPathLocale,
 } from 'gt-tanstack-start/internal/localeRouting';
+import { splitLoadTranslations } from 'gt-tanstack-start/internal/splitTranslations';
 import { determineLocaleClient } from '../functions/determineLocaleClient';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
@@ -61,6 +62,8 @@ export function ensureInitialized(): void {
   if (clientSetup.isInitialized() || !pluginConfig) return;
   initialize({
     ...pluginConfig,
-    loadTranslations: pluginLoadTranslations,
+    // A build that splits translations loads no whole catalog
+    loadTranslations: (splitLoadTranslations ??
+      pluginLoadTranslations) as InitializeGTParams['loadTranslations'],
   });
 }

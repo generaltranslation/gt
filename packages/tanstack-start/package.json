@@ -176,6 +176,13 @@
       },
       "default": "./dist/internal/splitTranslations.server.mjs"
     },
+    "./internal/splitTranslations.client": {
+      "import": {
+        "types": "./dist/internal/splitTranslations.client.d.mts",
+        "default": "./dist/internal/splitTranslations.client.mjs"
+      },
+      "default": "./dist/internal/splitTranslations.client.mjs"
+    },
     "./internal/_split-table": {
       "import": {
         "types": "./dist/internal/_split-table.d.mts",

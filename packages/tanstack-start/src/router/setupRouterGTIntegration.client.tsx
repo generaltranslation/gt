@@ -5,6 +5,7 @@ import {
   getRouterLocaleRewrite,
   replaceWithLocaleURL,
 } from 'gt-tanstack-start/internal/localeRouting';
+import { hydrateSplit } from 'gt-tanstack-start/internal/splitTranslations';
 import { ensureInitialized } from '../setup/initializeGT.client';
 import { createGTRouterWrap, readGTRouterState } from './createGTRouterWrap';
 import {
@@ -80,9 +81,13 @@ export function integrateRouter<State extends GTRouterState>(
         }
         await gt.load().catch(() => undefined);
       } else if (dehydrated?.gt) {
-        const { locale, region, enableI18n } = dehydrated.gt;
-        gt.resolve(dehydrated.gt);
+        const { split, ...state } = dehydrated.gt;
+        const { locale, region, enableI18n } = state;
+        // (TypeScript types a generic's rest as an Omit it cannot relate to State.)
+        gt.resolve(state as State);
         createOrUpdateBrowserConditionStore({ locale, region, enableI18n });
+        // The translations of what the page hydrates, before it does
+        if (split) await hydrateSplit(split, locale);
       }
       await originalHydrate?.(dehydrated);
     },
