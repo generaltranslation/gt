@@ -312,8 +312,9 @@ describe('source map of the transform', () => {
 
   /**
    * Transforms `code` as the bundler would call the plugin: `native` is what
-   * unplugin's getNativeBuildContext() returns there, and `viteConfig` the
-   * config Vite resolved.
+   * unplugin's getNativeBuildContext() returns there, `viteConfig` the config
+   * Vite resolved, and `environment` what Vite 6 and later give the
+   * transform as `this.environment`.
    */
   async function transformFor(
     framework: Framework,
@@ -321,7 +322,13 @@ describe('source map of the transform', () => {
       code = CODE,
       native,
       viteConfig,
-    }: { code?: string; native?: object; viteConfig?: object } = {}
+      environment,
+    }: {
+      code?: string;
+      native?: object;
+      viteConfig?: object;
+      environment?: object;
+    } = {}
   ) {
     const cwd = createProject();
     const file = path.join(cwd, 'App.tsx');
@@ -339,7 +346,11 @@ describe('source map of the transform', () => {
         await configResolved.call({} as never, viteConfig as never);
       }
       const result: TransformResult = await plugin.transform.call(
-        { ...testContext, getNativeBuildContext: () => native as never },
+        {
+          ...testContext,
+          getNativeBuildContext: () => native as never,
+          ...(environment && { environment }),
+        },
         code,
         file
       );
@@ -373,7 +384,7 @@ describe('source map of the transform', () => {
     [
       name: string,
       framework: Framework,
-      context: { native?: object; viteConfig?: object },
+      context: { native?: object; viteConfig?: object; environment?: object },
       mapped: boolean,
     ]
   >([
@@ -395,7 +406,30 @@ describe('source map of the transform', () => {
       { viteConfig: { command: 'build', build: { sourcemap: false } } },
       false,
     ],
-    // Vite 7 and earlier
+    // Vite 6 and later: the environments of a build can differ
+    [
+      'a Vite build whose environment asks for source maps',
+      'vite',
+      {
+        viteConfig: { command: 'build', build: { sourcemap: false } },
+        environment: {
+          config: { command: 'build', build: { sourcemap: true } },
+        },
+      },
+      true,
+    ],
+    [
+      'a Vite build whose environment asks for no source map',
+      'vite',
+      {
+        viteConfig: { command: 'build', build: { sourcemap: true } },
+        environment: {
+          config: { command: 'build', build: { sourcemap: false } },
+        },
+      },
+      false,
+    ],
+    // Vite writes a map for an output that asks for one
     [
       'a Vite build whose output asks for source maps',
       'vite',
