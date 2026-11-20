@@ -29,9 +29,15 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = join(root, '.check');
 // CHECK_MINIFY_HASHES=true builds with hash minification
 // (minifyHashes of experimentalSplitTranslations): a message then has an id in
-// each chunk that reads it, a file holds each translation once for all of
-// them, and the manifest still lists hashes
+// each chunk that reads it, in a file of that chunk's own loads, a file
+// holds each translation once for every id that reads it there, and the
+// manifest lists a message once for each chunk: its hash, then 8 characters
+// that name the chunk
 const MINIFY_HASHES = process.env.CHECK_MINIFY_HASHES === 'true';
+const HASH_LENGTH = 16;
+const hashOfKey = (key) => (MINIFY_HASHES ? key.slice(0, HASH_LENGTH) : key);
+// What a call site of such a build passes, in a chunk's code
+const PASSED_ID = /_hash:\s*["'`]([A-Za-z0-9_-]{8}\.\d+)["'`]/g;
 // gt-react's default; the app waits this long for a file that never arrives
 const TIMEOUT_MS = 10_000;
 // How long a check holds a translations file back
@@ -278,18 +284,23 @@ const MODULE_READS = {
   glossary: ['Glossary of terms'],
 };
 const REPORTS_MODULES = ['reports', 'statuses', 'glossary'];
+// An element each of those modules renders, which says whose copy of a
+// message is meant where several chunks read it (see fileOf)
+const MODULE_ELEMENT = { app: 'footer' };
 
 // What an element renders, as the messages in it and the text between them.
 // A message is its source text, or that and a part of it that is written the
 // same in its translation's file, for a message with a plural or a value.
-const message = (text, part = text) => ({ text, part });
+// The frame and the app both read the product's name, from two chunks: each
+// part says which element's module reads it.
+const message = (text, part = text, reader) => ({ text, part, reader });
 const ELEMENTS = {
-  frame: [message('Acme workspace')],
+  frame: [message('Acme workspace', undefined, 'frame')],
   title: [message('Workspace overview')],
   msg: [message('Maintenance starts tonight')],
   hook: [message('Billing moved to a new page')],
   footer: [
-    message('Acme workspace'),
+    message('Acme workspace', undefined, 'footer'),
     ': ',
     message('All systems operational'),
     ' (',
@@ -578,12 +589,58 @@ function readBuild(outDir) {
   const manifest = JSON.parse(
     readFileSync(join(outDir, 'assets', 'gt-chunk-translations.json'), 'utf8')
   );
-  const keyOfHash = new Map();
-  for (const [id, hashes] of Object.entries(manifest.assignment.files)) {
-    for (const hash of hashes) keyOfHash.set(hash, `assets/gt-${id}`);
+  const keysOfHash = new Map();
+  for (const [id, keys] of Object.entries(manifest.assignment.files)) {
+    for (const key of keys) {
+      const held = keysOfHash.get(hashOfKey(key)) ?? [];
+      if (!held.includes(`assets/gt-${id}`)) held.push(`assets/gt-${id}`);
+      keysOfHash.set(hashOfKey(key), held);
+    }
   }
   const chunk = (name) =>
     assets.find((file) => file.startsWith(`${name}-`) && file.endsWith('.js'));
+  const contentOf = (path) =>
+    entriesOf(JSON.parse(readFileSync(join(outDir, path), 'utf8')));
+  /**
+   * The key of the file that holds a message. A message that several chunks
+   * read is in a file of each, in a build with hash minification: `reader`
+   * is then an element that the module that reads it renders, and the file
+   * is the one that holds the id that module's chunk passes.
+   */
+  const keyOf = (text, reader) => {
+    const hash = hashOf(text);
+    const keys = keysOfHash.get(hash) ?? [];
+    if (keys.length < 2) return keys[0];
+    if (!reader) {
+      throw new Error(
+        `"${text}" is in ${keys.length} files: say which element reads it`
+      );
+    }
+    const rendered = new RegExp(`data-test["'\`]?:\\s*["'\`]${reader}["'\`]`);
+    const code = assets
+      .filter((file) => file.endsWith('.js'))
+      .map((file) => readFileSync(join(outDir, 'assets', file), 'utf8'))
+      .filter((source) => rendered.test(source));
+    const ids = new Set(
+      code.flatMap((source) =>
+        [...source.matchAll(PASSED_ID)].map((match) => match[1])
+      )
+    );
+    const [locale] = manifest.locales;
+    const found = keys.filter((key) =>
+      Object.entries(contentOf(`/${manifest.files[key][locale]}`)).some(
+        ([id, translation]) =>
+          ids.has(id) &&
+          JSON.stringify(translation) === JSON.stringify(CATALOG[locale][hash])
+      )
+    );
+    if (found.length !== 1) {
+      throw new Error(
+        `${found.length} files hold "${text}" for the chunk of ${reader}`
+      );
+    }
+    return found[0];
+  };
   const pathsOf = (keys, locale) =>
     keys.flatMap((key) =>
       manifest.files[key]?.[locale] ? [`/${manifest.files[key][locale]}`] : []
@@ -599,14 +656,14 @@ function readBuild(outDir) {
     /** The files the import of a chunk needs. */
     listOf: (name, locale) =>
       pathsOf(manifest.imports[`assets/${chunk(name)}`] ?? [], locale),
-    /** The file that holds a message. */
-    fileOf(text, locale) {
-      const key = keyOfHash.get(hashOf(text));
+    /** The file that holds a message, see keyOf. */
+    fileOf(text, locale, reader) {
+      const key = keyOf(text, reader);
       return key
         ? `/${manifest.files[key][locale]}`
         : `/${manifest.unsplit[locale]}`;
     },
-    keyOf: (text) => keyOfHash.get(hashOf(text)),
+    keyOf,
     entryFiles: (locale) => pathsOf(entry.files, locale),
     mapOf: (locale) => `/${manifest.maps[locale]}`,
     unsplitOf: (locale) => `/${manifest.unsplit[locale]}`,
@@ -617,8 +674,20 @@ function readBuild(outDir) {
       `/${manifest.unsplit[locale]}`,
     ],
     /** What a file of translations holds. */
-    contentOf: (path) =>
-      entriesOf(JSON.parse(readFileSync(join(outDir, path), 'utf8'))),
+    contentOf,
+    /** Every id the code of the build's chunks passes. */
+    passedIds: () =>
+      new Set(
+        assets
+          .filter((file) => file.endsWith('.js'))
+          .flatMap((file) =>
+            [
+              ...readFileSync(join(outDir, 'assets', file), 'utf8').matchAll(
+                PASSED_ID
+              ),
+            ].map((match) => match[1])
+          )
+      ),
     /** The translations a file writes out. */
     heldBy: (path) =>
       heldBy(JSON.parse(readFileSync(join(outDir, path), 'utf8'))),
@@ -631,7 +700,7 @@ const render = (built, locale, element, lost) =>
     .map((part) =>
       typeof part === 'string'
         ? part
-        : lost.includes(built.fileOf(part.part, locale))
+        : lost.includes(built.fileOf(part.part, locale, part.reader))
           ? part.text
           : translate(locale, part.text)
     )
@@ -650,7 +719,9 @@ async function checkEvaluation(name, app, built, locale, modules) {
     if (runs.length !== 1) late.push(`${module} ran ${runs.length} times`);
     const files = [
       ...new Set(
-        MODULE_READS[module].map((text) => built.fileOf(text, locale))
+        MODULE_READS[module].map((text) =>
+          built.fileOf(text, locale, MODULE_ELEMENT[module])
+        )
       ),
     ];
     for (const file of files) {
@@ -924,15 +995,15 @@ async function checkVariant(name, variant) {
     const unsplit = Object.keys(built.contentOf(built.unsplitOf(locale)));
     const assigned = Object.values(manifest.assignment.files).flat();
     if (MINIFY_HASHES) {
-      // A file holds each of its messages once, for the id of every chunk
-      // that reads it, so by what it holds and not by a key
+      // A file holds each of its messages once, for every id that reads it
+      // there, so by what it holds and not by a key
       const misplaced = Object.entries(manifest.assignment.files).filter(
-        ([id, hashes]) => {
+        ([id, keys]) => {
           const held = built
             .heldBy(`/${manifest.files[`assets/gt-${id}`][locale]}`)
             .map((translation) => JSON.stringify(translation));
-          const expected = hashes.map((hash) =>
-            JSON.stringify(CATALOG[locale][hash])
+          const expected = keys.map((key) =>
+            JSON.stringify(CATALOG[locale][hashOfKey(key)])
           );
           return (
             held.length !== new Set(held).size ||
@@ -942,13 +1013,36 @@ async function checkVariant(name, variant) {
         }
       );
       check(
-        `${locale}: no id is in two files, and every file holds exactly its messages, each once`,
-        [...counts.values()].every((count) => count === 1) &&
-          counts.size >= assigned.length &&
+        `${locale}: every file holds exactly the messages of its chunks, each once, and an id for each chunk that reads one`,
+        counts.size >= new Set(assigned.map(hashOfKey)).size &&
+          [...counts.values()].reduce((sum, count) => sum + count, 0) >=
+            assigned.length &&
+          assigned.every((key) => key.length === HASH_LENGTH + 8) &&
           misplaced.length === 0 &&
           [...counts.keys()].every(isMinifiedId) &&
           unsplit.every((hash) => /^[0-9a-f]{16}$/.test(hash)),
-        `${counts.size} ids of ${assigned.length} messages in ${Object.keys(manifest.files).length} files, ${unsplit.length} unsplit`
+        `${counts.size} ids of ${assigned.length} messages of chunks in ${Object.keys(manifest.files).length} files, ${unsplit.length} unsplit`
+      );
+      // A chunk has a list for each file its messages are in, so a file
+      // names only lists that are wholly in it, and is renamed by a change
+      // to one of its own messages and by nothing else a chunk reads
+      const passed = [...built.passedIds()];
+      const nameOf = (id) => id.slice(0, id.lastIndexOf('.'));
+      const split = [];
+      let lists = 0;
+      for (const [key, files] of Object.entries(manifest.files)) {
+        const held = Object.keys(built.contentOf(`/${files[locale]}`));
+        for (const name of new Set(held.map(nameOf))) {
+          lists++;
+          if (passed.some((id) => nameOf(id) === name && !held.includes(id))) {
+            split.push(`${name} in ${key}`);
+          }
+        }
+      }
+      check(
+        `${locale}: a file names only lists of ids that are wholly in it`,
+        lists > 0 && split.length === 0,
+        `${lists} lists in ${Object.keys(manifest.files).length} files${split.length ? `, in part: ${split.join(', ')}` : ''}`
       );
       continue;
     }
