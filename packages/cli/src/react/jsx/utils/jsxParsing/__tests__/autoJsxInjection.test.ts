@@ -507,6 +507,16 @@ describe('injection and extraction', () => {
       [['Lead ', { t: 'b', i: 1, c: 'Bold words' }]],
     ],
     [
+      'a fragment in braces as part of the update of its parent',
+      page('<div>Alpha {<>frag <b>bold</b></>}</div>'),
+      [
+        [
+          'Alpha ',
+          { t: 'C1', i: 1, c: ['frag ', { t: 'b', i: 2, c: 'bold' }] },
+        ],
+      ],
+    ],
+    [
       'a string and an element, both in braces, as one update',
       page("<div>{' · '}{<b>Bold words</b>}</div>"),
       [[' · ', { t: 'b', i: 1, c: 'Bold words' }]],

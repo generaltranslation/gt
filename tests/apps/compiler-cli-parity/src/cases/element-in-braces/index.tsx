@@ -10,6 +10,7 @@ export default function ElementInBraces() {
       <p>{show && <>{' ‣ '}{<em>Shown words</em>}</>}</p>
       <ul>{items.map((item) => <li key={item.id}>Row {<b>listed words</b>}</li>)}</ul>
       <p>Signed in as {<b>{name}</b>}</p>
+      <p>Opening {<>fragment words <b>bolder words</b></>}</p>
     </div>
   );
 }
