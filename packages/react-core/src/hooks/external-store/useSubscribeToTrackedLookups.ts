@@ -8,7 +8,7 @@ import type { StoreListener, Unsubscribe } from '../../i18n-store/storeTypes';
 
 type UseSubscribeToTrackedLookups = <L>(
   trackedKeysRef: RefObject<Set<string> | null>,
-  subscribeToEvents: (onEvent: (lookup: L) => void) => Unsubscribe,
+  subscribeToEvents: (onEvent: (lookup?: L) => void) => Unsubscribe,
   getListenerKey: (lookup: L) => string
 ) => number;
 
@@ -29,7 +29,7 @@ type UseSubscribeToTrackedLookups = <L>(
  */
 function useSubscribeToTrackedLookupsDev<L>(
   trackedKeysRef: RefObject<Set<string> | null>,
-  subscribeToEvents: (onEvent: (lookup: L) => void) => Unsubscribe,
+  subscribeToEvents: (onEvent: (lookup?: L) => void) => Unsubscribe,
   getListenerKey: (lookup: L) => string
 ): number {
   // invalidation counter for triggering updates
@@ -37,7 +37,9 @@ function useSubscribeToTrackedLookupsDev<L>(
   const subscribe = useCallback(
     (listener: StoreListener) => {
       return subscribeToEvents((lookup) => {
-        if (!trackedKeysRef.current!.has(getListenerKey(lookup))) return;
+        if (!lookup || !trackedKeysRef.current!.has(getListenerKey(lookup))) {
+          return;
+        }
         versionRef.current++;
         listener();
       });
