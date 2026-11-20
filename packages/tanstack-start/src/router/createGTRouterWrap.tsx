@@ -77,10 +77,13 @@ export function createGTRouterWrap<State extends GTRouterState>({
   Wrap: OriginalWrap = Fragment,
   Provider,
   loadState,
+  onRender,
 }: {
   Wrap?: ComponentType<{ children: ReactNode }>;
   Provider: GTProvider<State>;
   loadState: () => Promise<State>;
+  /** Called each time the wrap renders with GT state. */
+  onRender?: () => void;
 }) {
   let resolved: State | undefined;
   let shell: State | undefined;
@@ -109,6 +112,7 @@ export function createGTRouterWrap<State extends GTRouterState>({
       if (failure) throw failure.error;
       if (!resolved) throw load();
       const state = resolved;
+      onRender?.();
       return (
         <OriginalWrap>
           {shell ? (

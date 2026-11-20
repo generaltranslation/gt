@@ -39,6 +39,8 @@ const entries: Record<string, string> = {
   'internal/localeRouting.enabled': 'src/internal/localeRouting.enabled.ts',
   'internal/localeRouting.disabled': 'src/internal/localeRouting.disabled.ts',
   'internal/splitTranslations': 'src/internal/splitTranslations.ts',
+  'internal/splitTranslations.server':
+    'src/internal/splitTranslations.server.ts',
   'internal/_split-table': 'src/internal/_split-table.ts',
 };
 

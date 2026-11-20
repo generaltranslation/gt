@@ -5,6 +5,11 @@ import {
   isLocaleRoutingEnabled,
 } from 'gt-tanstack-start/internal/initializeGT.server';
 import {
+  getSplitPayload,
+  preloadSplitFiles,
+} from 'gt-tanstack-start/internal/splitTranslations';
+import type { SplitPayload } from '../split/types';
+import {
   createGTRouterWrap,
   readGTRouterState,
   type GTConditionSource,
@@ -57,10 +62,14 @@ export function integrateRouter<State extends GTRouterState>(
   ensureInitialized();
 
   const { dehydrate: originalDehydrate } = router.options;
+  // What the page gets to hydrate with in a build that splits translations;
+  // the server itself renders from the whole catalog.
+  let split: SplitPayload | undefined;
   const gt = createGTRouterWrap({
     Wrap: router.options.Wrap,
     Provider,
     loadState: () => loadState(getServerConditionStore()),
+    onRender: () => split && preloadSplitFiles(split),
   });
   const options: Partial<GTRouterOptions> = {
     // Start awaits dehydrate() after loaders and before render, so
@@ -68,7 +77,11 @@ export function integrateRouter<State extends GTRouterState>(
     dehydrate: async () => {
       const dehydrated =
         (await originalDehydrate?.()) as GTDehydratedRouterData<State>;
-      const state = await gt.load();
+      const loaded = await gt.load();
+      split = router.isShell?.()
+        ? undefined
+        : await getSplitPayload(loaded.locale, router);
+      const state = split ? { ...loaded, translations: {}, split } : loaded;
       // A prerendered SPA shell is served to every visitor in the build-time
       // locale. The client hydrates it with that state, then renders the
       // visitor's own.

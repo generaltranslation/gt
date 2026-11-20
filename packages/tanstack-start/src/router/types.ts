@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import type { SharedGTProviderProps } from 'gt-react';
+import type { SplitPayload, SplitRouter } from '../split/types';
 
 /** GT state shuttled from the server render to client hydration. */
 export type GTRouterState = Pick<
@@ -15,6 +16,8 @@ export type GTDehydratedRouterData<
       gt?: State & {
         /** Rendered into a prerendered SPA shell served to every visitor. */
         shell?: boolean;
+        /** Set in a build that splits translations. */
+        split?: SplitPayload;
       };
     }
   | undefined;
@@ -42,7 +45,7 @@ export type GTRouterOptions = {
   rewrite?: GTLocationRewrite;
 };
 
-export type GTIntegrableRouter = {
+export type GTIntegrableRouter = SplitRouter & {
   options: GTRouterOptions;
   // Method syntax keeps the parameter bivariant, so the app's fully typed
   // router.update() is accepted.
