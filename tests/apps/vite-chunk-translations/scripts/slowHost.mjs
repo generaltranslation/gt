@@ -82,12 +82,12 @@ export async function checkSlowHost({
     !late,
     late
   );
-  const count = (text) =>
-    app.warnings.filter((warning) => warning.includes(text)).length;
+  const isLate = (warning) => warning.includes('did not load within');
+  const waited = app.warnings.length;
   check(
-    `${name}: warns of the files that are late and of those that are not waited for`,
-    count('did not load within') > 0 && count('are not waited for') > 0,
-    `${count('did not load within')} late, ${count('are not waited for')} not waited for, ${held.length} files`
+    `${name}: warns of the files it waited for`,
+    waited > 0 && app.warnings.every(isLate),
+    app.warnings.join(' | ').slice(0, 200)
   );
   // The files that were not waited for are read when they arrive, and the
   // messages on screen are rendered again
@@ -116,6 +116,11 @@ export async function checkSlowHost({
     `${name}: without a reload, in the elements that were on screen`,
     loads === 0 && kept,
     `${loads} loads`
+  );
+  check(
+    `${name}: warns of the files it did not wait for, which are late too`,
+    app.warnings.length > waited && app.warnings.every(isLate),
+    `${waited} waited for, ${app.warnings.length - waited} not, ${held.length} files`
   );
   await app.close();
 }
