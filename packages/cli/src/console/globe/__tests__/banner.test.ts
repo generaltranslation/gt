@@ -311,13 +311,15 @@ describe('GlobeBanner', () => {
     ['keycap emoji', '1️⃣'],
     ['Thai with a spacing vowel', 'กำ'],
     ['decomposed Hangul', '한'.normalize('NFD')],
-  ])('keeps wide %s status text on one line', (_kind, char) => {
+    ['decomposed Bengali', 'কো'.normalize('NFD')],
+  ])('keeps wide %s status text on one line', (_kind, text) => {
+    const char = text.normalize('NFC');
     const terminal = new FakeTerminal();
     terminal.columns = 30;
     const stream = terminal as unknown as NodeJS.WriteStream;
     const banner = new GlobeBanner();
     banner.start({ stream, hold: [stream] });
-    banner.note(char.repeat(40), () => {});
+    banner.note(text.repeat(40), () => {});
     vi.advanceTimersByTime(100);
 
     const shown = plain(terminal.output);
@@ -394,6 +396,32 @@ describe('GlobeBanner', () => {
     await vi.advanceTimersByTimeAsync(200);
 
     expect(banner.isAnimating()).toBe(false);
+  });
+
+  it('turns autowrap off for each frame and back on in the same write', () => {
+    const terminal = new FakeTerminal();
+    const writes: string[] = [];
+    terminal.write = (chunk) => {
+      writes.push(String(chunk));
+      return true;
+    };
+    const stream = terminal as unknown as NodeJS.WriteStream;
+    const banner = new GlobeBanner();
+    banner.start({ stream, hold: [stream] });
+    vi.advanceTimersByTime(500);
+    banner.requestLanding();
+    vi.advanceTimersByTime(2_000);
+
+    const frames = writes.filter((write) => write.includes('\x1b[?7l'));
+    expect(frames.length).toBeGreaterThan(10);
+    for (const frame of frames) {
+      expect(frame.startsWith('\x1b[?7l')).toBe(true);
+      expect(frame.endsWith('\x1b[?7h')).toBe(true);
+    }
+    expect(banner.isAnimating()).toBe(false);
+    expect(writes.join('').lastIndexOf('\x1b[?7h')).toBeGreaterThan(
+      writes.join('').lastIndexOf('\x1b[?7l')
+    );
   });
 
   it('stops redrawing and releases held output when the window resizes', () => {

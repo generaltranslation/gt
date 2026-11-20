@@ -16,6 +16,10 @@ const MAX_ANIMATION_MS = 10_000;
 const STATUS_FRAMES = ['◒', '◐', '◓', '◑'];
 const HIDE_CURSOR = '\x1b[?25l';
 const SHOW_CURSOR = '\x1b[?25h';
+// Autowrap (DECAWM) is off while a frame is written, so a line the terminal
+// measures wider than we do is clipped instead of wrapping the redraw.
+const NO_WRAP = '\x1b[?7l';
+const WRAP = '\x1b[?7h';
 // Keys that raw input turns into plain bytes, and the signals they stand for.
 const SIGNAL_KEYS = new Map<number, NodeJS.Signals>([
   [0x03, 'SIGINT'],
@@ -472,7 +476,8 @@ export class GlobeBanner {
         return code < 0x20 || code === 0x7f ? ' ' : char;
       })
       .join('')
-      .trim();
+      .trim()
+      .normalize('NFC');
     if (!text) return '';
     const spin =
       STATUS_FRAMES[Math.floor(this.tick / 4) % STATUS_FRAMES.length];
@@ -492,7 +497,7 @@ export class GlobeBanner {
       )
       .join('\n');
     const before = performance.now();
-    const accepted = this.raw(`${up}${body}\n`);
+    const accepted = this.raw(`${NO_WRAP}${up}${body}\n${WRAP}`);
     const took = performance.now() - before;
     this.lastLines = lines;
     this.drawn = true;
@@ -540,7 +545,7 @@ export class GlobeBanner {
     this.status = '';
     this.drawFrame(this.frames!.rest);
     // Step back onto the now-empty status line so output continues there.
-    this.raw(`\x1b[1A${SHOW_CURSOR}`);
+    this.raw(`\x1b[1A${WRAP}${SHOW_CURSOR}`);
     this.release(exitCode);
   }
 
@@ -657,7 +662,7 @@ export class GlobeBanner {
   // stop where it is and let held output follow below.
   private readonly onResize = () => {
     if (!this.animating) return;
-    this.raw(`\n${SHOW_CURSOR}`);
+    this.raw(`\n${WRAP}${SHOW_CURSOR}`);
     this.release();
   };
 }
