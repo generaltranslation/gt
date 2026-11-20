@@ -290,15 +290,14 @@ export function extractImportName(
     // Handle ES6 imports
     if (isGTImportSource(node.source.value, pkgs)) {
       for (const specifier of node.specifiers) {
-        if (
-          specifier.type === 'ImportSpecifier' &&
-          'name' in specifier.imported &&
-          translationFuncs.includes(specifier.imported.name)
-        ) {
-          results.push({
-            local: specifier.local.name,
-            original: specifier.imported.name,
-          });
+        if (specifier.type !== 'ImportSpecifier') continue;
+        // A quoted name, as in `import { 'T' as T }`, is a string literal.
+        const original =
+          'name' in specifier.imported
+            ? specifier.imported.name
+            : specifier.imported.value;
+        if (translationFuncs.includes(original)) {
+          results.push({ local: specifier.local.name, original });
         }
       }
     }

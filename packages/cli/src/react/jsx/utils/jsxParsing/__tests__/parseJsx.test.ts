@@ -7,6 +7,7 @@ import { calculateHashes } from '../../../../../extraction/postProcess.js';
 import deriveContext from '../../../../../../../../test-fixtures/derive-context.json' with { type: 'json' };
 import {
   extractUserT,
+  extractWithAutoInjection,
   mockFiles,
   page,
   parsingOptions,
@@ -814,12 +815,13 @@ describe('a component of the author named like a branching component', () => {
     }
   );
 
-  it('reads an aliased GT import as the component it is', () => {
-    const result = extractUserT(
-      module(
-        'import { T, Ordinal as Place } from "gt-next";',
-        '<Place n={2} one="1st">nth</Place>'
-      )
+  it.each([
+    ['an aliased', 'import { T, Ordinal as Place } from "gt-next";'],
+    ['a quoted', 'import { T, "Ordinal" as Place } from "gt-next";'],
+  ])('reads %s GT import as the component it is', (_name, imports) => {
+    // Through getPathsAndAliases, which collects the imports for gt.
+    const result = extractWithAutoInjection(
+      module(imports, '<Place n={2} one="1st">nth</Place>')
     );
 
     expect(result.errors).toEqual([]);
