@@ -5023,7 +5023,11 @@ globalThis.save = () => t\`Save\`;`,
        * `isScoped`, a chunk's messages are listed by the loads that fetch
        * them, as the plugin lists them in a build that splits by module.
        */
-      function renderBundle(hashed: typeof BUNDLE, isScoped = false) {
+      function renderBundle(
+        hashed: typeof BUNDLE,
+        isScoped = false,
+        graph = GRAPH
+      ) {
         const minifiedIds: MinifiedIds = {
           hashes: new Map(),
           placeholders: new Map(),
@@ -5045,7 +5049,7 @@ globalThis.save = () => t\`Save\`;`,
         const scopes = isScoped
           ? findListScopes(
               rendered,
-              getModuleInfo(GRAPH),
+              getModuleInfo(graph),
               new Set(Object.values(HASH)),
               minifiedIds,
               true
@@ -5056,12 +5060,14 @@ globalThis.save = () => t\`Save\`;`,
             fileName,
             {
               ...file,
-              code: minifyChunk(
-                placeholders(file.code, minifiedIds),
-                minifiedIds,
-                undefined,
-                scopes?.(fileName)
-              )!,
+              // A chunk without a call site is as it was
+              code:
+                minifyChunk(
+                  placeholders(file.code, minifiedIds),
+                  minifiedIds,
+                  undefined,
+                  scopes?.(fileName)
+                ) ?? file.code,
             },
           ])
         );
@@ -5163,10 +5169,14 @@ globalThis.save = () => t\`Save\`;`,
             },
             isScoped
           );
-        const filesOf = (build: ReturnType<typeof renderBundle>) => {
+        const filesOf = (
+          build: ReturnType<typeof renderBundle>,
+          graph = GRAPH
+        ) => {
           const { emitted, manifest } = write({
             bundle: build.bundle,
             minifiedIds: build.minifiedIds,
+            graph,
           });
           const fileOf = (hash: string) => {
             const [id] =
@@ -5300,6 +5310,50 @@ globalThis.save = () => t\`Save\`;`,
             ).toBe(1);
           }
         );
+
+        it('assigns by the code the lists were made from, so a call site the minifier removes leaves no list in two files', () => {
+          // A Shell opens Home and Billing, and reads the date picker and the
+          // invoice table in a call that only the minifier removes: the code
+          // the bundler rendered holds it, the Shell's final code does not
+          const graph: typeof GRAPH = {
+            ...GRAPH,
+            '/main.js': { dynamic: ['/shell.js', '/admin.js'] },
+            '/shell.js': { dynamic: ['/home.js', '/billing.js'] },
+          };
+          const build = renderBundle(
+            {
+              ...BUNDLE,
+              'assets/Shell.js': chunk(
+                'assets/Shell.js',
+                { '/shell.js': site('picker', 'invoice') },
+                { code: 'export{}' }
+              ),
+            },
+            true,
+            graph
+          );
+          const { emitted, manifest, fileOf } = filesOf(build, graph);
+          // The Shell fetched both when the shared chunk listed them
+          // together, and still does: one file, which holds the whole list
+          expect(fileOf(HASH.picker)).toBe(fileOf(HASH.invoice));
+          expect(fileOf(HASH.panel)).not.toBe(fileOf(HASH.picker));
+          const lists = Object.values(manifest.files).map(({ fr }) =>
+            Object.keys((JSON.parse(emitted[fr]) as MinifiedTranslations)[1])
+          );
+          expect(lists.flat()).toHaveLength(new Set(lists.flat()).size);
+          expect(lists.flat()).toContain(
+            getListName([HASH.picker, HASH.invoice].sort())
+          );
+          // Without hash minification nothing lists them, and each is in
+          // the file of the one route whose code still reads it
+          const plain = write({ bundle: build.hashed, graph });
+          const plainFileOf = (hash: string) =>
+            Object.entries(plain.manifest.assignment.files).find(([, held]) =>
+              held.includes(hash)
+            )?.[0];
+          expect(plainFileOf(HASH.picker)).toBe(plainFileOf(HASH.home));
+          expect(plainFileOf(HASH.invoice)).toBe(plainFileOf(HASH.billing));
+        });
 
         it('gives a page of one build, in the files of the next, the message of its own id or nothing, and every message of a list the deploy left alone', () => {
           const page = withShared(['invoice']);
