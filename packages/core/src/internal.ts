@@ -39,6 +39,7 @@ export {
   isGTMessageHelperName,
   isGTMessageImportSource,
   GT_MESSAGE_HELPER_NAMES,
+  GT_MESSAGE_IMPORT_SOURCES,
   type GTMessageHelperName,
 } from './settings/messageImportSources';
 
