@@ -121,7 +121,7 @@ export function followTagArgument(
   if (param === null) return followable;
   const key = getOptionsKey();
   if (key === undefined) return true;
-  const paramKey = `${toPlatformSeparators(found.file)}\0${param.identifier.start}`;
+  const paramKey = `${toPathKey(found.file)}\0${param.identifier.start}`;
   if (importKey) {
     follower.importedParameters.set(`${importKey}\0${index}`, {
       paramKey,
@@ -223,12 +223,19 @@ function findLocalFunction(
 }
 
 /**
- * `file` with the platform's separators: on Windows, scanned paths use / and
- * resolved ones use \. Other spelling, such as `link/..`, is kept because a
- * symlink makes it a different file.
+ * `file` as a cache key: platform separators (on Windows, scanned paths use /
+ * and resolved ones use \), without `.` or empty segments. `..` is kept
+ * because after a symlink it can lead to a different file.
  */
-function toPlatformSeparators(file: string): string {
-  return file.split(nodePath.posix.sep).join(nodePath.sep);
+function toPathKey(file: string): string {
+  return file
+    .split(nodePath.posix.sep)
+    .join(nodePath.sep)
+    .split(nodePath.sep)
+    .filter(
+      (segment, index) => index === 0 || (segment !== '' && segment !== '.')
+    )
+    .join(nodePath.sep);
 }
 
 /** The resolved file and export name of an imported value binding. */
@@ -262,7 +269,7 @@ function getImportKey(
   const name = path.isImportSpecifier()
     ? getImportedName(path.node)
     : 'default';
-  return `${toPlatformSeparators(resolved)}\0${name}`;
+  return `${toPathKey(resolved)}\0${name}`;
 }
 
 /** The function a binding declares, defines as a const, or imports. */

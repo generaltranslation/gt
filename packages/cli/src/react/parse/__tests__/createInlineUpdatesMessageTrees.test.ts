@@ -2304,43 +2304,76 @@ ${
     logged.mockRestore();
   });
 
-  it('keeps a path through a symlink and .. apart from the plain path', async () => {
-    const { result } = await extractProject(Libraries.GT_NEXT, (dir) => {
-      const root = path.join(projectDir, dir);
-      fs.mkdirSync(path.join(root, 'other/deep'), { recursive: true });
-      fs.symlinkSync(
-        path.join(root, 'other/deep'),
-        path.join(root, 'link'),
-        'dir'
-      );
-      return {
+  // Windows normalizes `link/..` before opening the file.
+  it.skipIf(process.platform === 'win32')(
+    'keeps a path through a symlink and .. apart from the plain path',
+    async () => {
+      const { result } = await extractProject(Libraries.GT_NEXT, (dir) => {
+        const root = path.join(projectDir, dir);
+        fs.mkdirSync(path.join(root, 'other/deep'), { recursive: true });
+        fs.symlinkSync(
+          path.join(root, 'other/deep'),
+          path.join(root, 'link'),
+          'dir'
+        );
+        return {
+          'tsconfig.json': JSON.stringify({
+            compilerOptions: {
+              baseUrl: '.',
+              paths: { '@src/*': ['*'] },
+            },
+          }),
+          'nav.ts': nav(
+            nextHost,
+            'export function label(t: GT) {\n  return t`Near`;\n}'
+          ),
+          'other/nav.ts': nav(
+            nextHost,
+            'export function label(t: GT) {\n  return t`Far`;\n}'
+          ),
+          'page.tsx': withTag(
+            nextHost,
+            'near(t);\n  return far(t);',
+            "import { label as far } from '@src/link/../nav';\nimport { label as near } from '@src/nav';"
+          ),
+        };
+      });
+
+      expect(
+        treeUpdates(result)
+          .map((u) => u.source)
+          .sort()
+      ).toEqual(['Far', 'Near']);
+    }
+  );
+
+  it('extracts a helper once when imports spell its path with ./', async () => {
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
         'tsconfig.json': JSON.stringify({
-          compilerOptions: {
-            baseUrl: '.',
-            paths: { '@src/*': ['*'] },
-          },
+          compilerOptions: { baseUrl: '.', paths: { '@src/*': ['*'] } },
         }),
         'nav.ts': nav(
           nextHost,
-          'export function label(t: GT) {\n  return t`Near`;\n}'
-        ),
-        'other/nav.ts': nav(
-          nextHost,
-          'export function label(t: GT) {\n  return t`Far`;\n}'
+          'export function label(t: GT) {\n  return t`Save`;\n}'
         ),
         'page.tsx': withTag(
           nextHost,
-          'near(t);\n  return far(t);',
-          "import { label as far } from '@src/link/../nav';\nimport { label as near } from '@src/nav';"
+          'a(t);\n  return b(t);',
+          "import { label as a } from '@src/nav';\nimport { label as b } from '@src/./nav';"
         ),
-      };
-    });
+      }),
+      ['page.tsx'],
+      { includeSourceCodeContext: true }
+    );
 
+    expect(result.warnings).toEqual([]);
+    const updates = treeUpdates(result);
+    expect(updates.map((u) => u.source)).toEqual(['Save']);
     expect(
-      treeUpdates(result)
-        .map((u) => u.source)
-        .sort()
-    ).toEqual(['Far', 'Near']);
+      Object.values(updates[0].metadata.sourceCode ?? {}).flat()
+    ).toHaveLength(1);
   });
 
   it('does not extract a function that never receives a tag', async () => {
