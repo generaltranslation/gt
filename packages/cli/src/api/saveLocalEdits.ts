@@ -7,21 +7,41 @@ import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { branchResolutionError } from '../console/index.js';
 import type { FileReference } from 'generaltranslation/types';
-import chalk from 'chalk';
 import { runPublishWorkflow } from '../workflows/publish.js';
 import { readLockfile } from '../fs/config/downloadedVersions.js';
 import { TEMPLATE_FILE_ID, TEMPLATE_FILE_NAME } from '../utils/constants.js';
 import { shouldPublishGt } from '../utils/resolvePublish.js';
+import { getWarnings } from '../state/translateWarnings.js';
 
 /**
  * Uploads current source files to obtain file references, then collects and sends
  * diffs for all locales based on last downloaded versions. Does not enqueue translations.
  */
-export async function saveLocalEdits(settings: Settings): Promise<void> {
-  if (!settings.files) return;
+export async function saveLocalEdits(
+  settings: Settings
+): Promise<SaveLocalEditsOutcome> {
+  if (!settings.files) return { saved: false, skipped: 0 };
 
   // Collect current files from config
   const { files, publishMap } = await aggregateFiles(settings);
+  // Nothing to save and no template to include: resolve the branch only once
+  // there is something to read from the lockfile, since resolving it can
+  // create the branch on the remote.
+  if (!files.length && !settings.files.placeholderPaths.gt) {
+    return { saved: false, skipped: 0 };
+  }
+
+  // Resolve the branch before reading anything out of the lockfile: a v1
+  // lockfile keeps every branch it has seen, and without a branch it is read
+  // from whichever one is listed first.
+  const branchStep = new BranchStep(api, settings);
+  const branchResult = await branchStep.run();
+  if (!branchResult) {
+    return logErrorAndExit(branchResolutionError);
+  }
+  const branchId = branchResult.currentBranch.id;
+  const branchSettings: Settings = { ...settings, _branchId: branchId };
+
   const fileRefs = files.map((file) => ({
     fileName: file.fileName,
     fileFormat: file.fileFormat,
@@ -31,7 +51,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
 
   // Include the GT JSON at its last downloaded version
   const gtJsonEntry = settings.files.placeholderPaths.gt
-    ? readLockfile(settings).entryMap.get(TEMPLATE_FILE_ID)
+    ? readLockfile(branchSettings).entryMap.get(TEMPLATE_FILE_ID)
     : undefined;
   if (gtJsonEntry) {
     fileRefs.push({
@@ -45,34 +65,48 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
       publishMap.set(TEMPLATE_FILE_ID, gtPublishValue);
     }
   }
-  if (!fileRefs.length) return;
-
-  // run branch query to get branch id
-  // Run the branch step
-  const branchStep = new BranchStep(api, settings);
-  const branchResult = await branchStep.run();
-  if (!branchResult) {
-    return logErrorAndExit(branchResolutionError);
-  }
+  if (!fileRefs.length) return { saved: false, skipped: 0 };
 
   const uploads = fileRefs.map((file) => ({
     ...file,
-    branchId: branchResult.currentBranch.id,
+    branchId,
   })) satisfies FileReference[];
 
   const spinner = logger.createSpinner('dots');
   spinner.start('Saving local edits...');
 
+  // Only the warnings this collection adds describe locales it could not save;
+  // earlier runs leave their own warnings in the same list.
+  const warningsBefore = getWarnings().length;
   const hadDiffs = await collectAndSendUserEditDiffs(uploads, settings);
-  spinner.stop(chalk.green('Local edits saved successfully'));
+  const skipped = getWarnings().slice(warningsBefore).length;
+  const outcome: SaveLocalEditsOutcome = { saved: hadDiffs, skipped };
+  spinner.stop(saveLocalEditsMessage(outcome));
 
   // Publish files to CDN if diffs were detected and publish config exists
   if (hadDiffs) {
-    await runPublishWorkflow(
-      fileRefs,
-      publishMap,
-      branchResult.currentBranch.id,
-      settings
-    );
+    await runPublishWorkflow(fileRefs, publishMap, branchId, settings);
   }
+
+  return outcome;
 }
+
+export type SaveLocalEditsOutcome = {
+  /** At least one diff was submitted. */
+  saved: boolean;
+  /** Locales the collector could not save, each already warned about. */
+  skipped: number;
+};
+
+/** The one completion message the command footer also uses. */
+export const saveLocalEditsMessage = (
+  outcome: SaveLocalEditsOutcome
+): string => {
+  // The count covers locales the collector skipped, which can include an
+  // untouched file whose baseline only failed to parse. Name the count
+  // instead of claiming the edits themselves were unsaved.
+  const skipped = outcome.skipped > 0 ? ` (skipped: ${outcome.skipped})` : '';
+  return outcome.saved
+    ? `Local edits saved successfully${skipped}`
+    : `No local edits were saved${skipped}`;
+};
