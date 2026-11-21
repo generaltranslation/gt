@@ -149,8 +149,8 @@ export const warnUntrackedMessageTagSync = (
     createDiagnosticMessage({
       whatHappened:
         'Could not follow this use of a translation function (t, msg, useGT, or getGT)',
-      why: 'it is passed, exported, reassigned, or accessed as an object, so the messages it translates cannot be found statically',
-      fix: 'Call it directly (as a tagged template for t), or alias it with const',
+      why: 'it is exported, reassigned, accessed as an object, or passed somewhere that cannot be followed, so the messages it translates cannot be found statically',
+      fix: 'Call it directly (as a tagged template for t), alias it with const, or pass the t from useGT() or getGT() to a plain, non-destructured parameter of a function in your project',
     }),
     location
   );
