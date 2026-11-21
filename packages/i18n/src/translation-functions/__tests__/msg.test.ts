@@ -238,6 +238,18 @@ describe('msg', () => {
     expect(globalM(msg('Save'))).toBe('Save');
   });
 
+  it('mFallback formats in the default locale of the config, or of the library without one', () => {
+    const price = msg`${number({ price: 1234.5 })}`;
+    const cut = msg({ maxChars: 4 })`abcdef`;
+    expect(mFallback(price)).toBe('1,234.5');
+    expect(mFallback(cut)).toBe('abc…');
+    initializeI18nConfig({ defaultLocale: 'de', locales: ['de', 'fr'] });
+    expect(mFallback(price)).toBe('1.234,5');
+    // German cuts like English; Japanese doubles the ellipsis.
+    initializeI18nConfig({ defaultLocale: 'ja', locales: ['ja', 'fr'] });
+    expect(mFallback(cut)).toBe('ab……');
+  });
+
   it('createMessages reads a custom lookupTranslation', () => {
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
     const lookupTranslation = vi.fn(() => 'Enregistrer');
