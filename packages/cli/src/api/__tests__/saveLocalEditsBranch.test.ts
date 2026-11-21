@@ -58,6 +58,8 @@ vi.mock('../../console/logger.js', () => ({
 
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
+import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
+import { BranchStep } from '../../workflows/steps/BranchStep.js';
 
 describe('saveLocalEdits - template lookup uses the resolved branch', () => {
   const originalCwd = process.cwd();
@@ -144,10 +146,38 @@ describe('saveLocalEdits - template lookup uses the resolved branch', () => {
     writeLockFile();
     vi.mocked(collectAndSendUserEditDiffs).mockResolvedValue(false);
 
-    await saveLocalEdits(settings);
+    const saved = await saveLocalEdits(settings);
 
+    expect(saved).toBe(false);
     expect(collectAndSendUserEditDiffs).toHaveBeenCalledTimes(1);
     // Nothing was published without a diff.
     expect(runPublishWorkflow).not.toHaveBeenCalled();
+  });
+
+  it('does not resolve a branch when there is nothing to save', async () => {
+    // No configured files and no files.gt: the run cannot collect anything, so
+    // it must not reach the branch step, which can create the branch remotely.
+    const settings = createMockSettings({
+      configDirectory: tempDir,
+      config: path.join(tempDir, 'gt.config.json'),
+      defaultLocale: 'en',
+      locales: ['en', 'ja'],
+      files: {
+        resolvedPaths: {},
+        placeholderPaths: {},
+        transformPaths: {},
+        gtJson: {},
+      },
+    });
+    vi.mocked(aggregateFiles).mockResolvedValueOnce({
+      files: [],
+      publishMap: new Map<string, boolean>(),
+    });
+
+    const saved = await saveLocalEdits(settings);
+
+    expect(saved).toBe(false);
+    expect(BranchStep).not.toHaveBeenCalled();
+    expect(collectAndSendUserEditDiffs).not.toHaveBeenCalled();
   });
 });

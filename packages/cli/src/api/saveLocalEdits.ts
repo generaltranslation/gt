@@ -17,8 +17,15 @@ import { shouldPublishGt } from '../utils/resolvePublish.js';
  * Uploads current source files to obtain file references, then collects and sends
  * diffs for all locales based on last downloaded versions. Does not enqueue translations.
  */
-export async function saveLocalEdits(settings: Settings): Promise<void> {
-  if (!settings.files) return;
+export async function saveLocalEdits(settings: Settings): Promise<boolean> {
+  if (!settings.files) return false;
+
+  // Collect current files from config
+  const { files, publishMap } = await aggregateFiles(settings);
+  // Nothing to save and no template to include: resolve the branch only once
+  // there is something to read from the lockfile, since resolving it can
+  // create the branch on the remote.
+  if (!files.length && !settings.files.placeholderPaths.gt) return false;
 
   // Resolve the branch before reading anything out of the lockfile: a v1
   // lockfile keeps every branch it has seen, and without a branch it is read
@@ -31,8 +38,6 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   const branchId = branchResult.currentBranch.id;
   const branchSettings: Settings = { ...settings, _branchId: branchId };
 
-  // Collect current files from config
-  const { files, publishMap } = await aggregateFiles(settings);
   const fileRefs = files.map((file) => ({
     fileName: file.fileName,
     fileFormat: file.fileFormat,
@@ -56,7 +61,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
       publishMap.set(TEMPLATE_FILE_ID, gtPublishValue);
     }
   }
-  if (!fileRefs.length) return;
+  if (!fileRefs.length) return false;
 
   const uploads = fileRefs.map((file) => ({
     ...file,
@@ -77,4 +82,6 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   if (hadDiffs) {
     await runPublishWorkflow(fileRefs, publishMap, branchId, settings);
   }
+
+  return hadDiffs;
 }

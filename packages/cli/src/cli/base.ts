@@ -416,8 +416,10 @@ export class BaseCLI {
         });
         if (!hasValidCredentials(settings) || !hasValidServiceLocales(settings))
           return exitSync(1);
-        await saveLocalEdits(settings);
-        logger.endCommand('Saved local edits');
+        const saved = await saveLocalEdits(settings);
+        logger.endCommand(
+          saved === false ? 'No local edits were saved' : 'Saved local edits'
+        );
       });
   }
 
