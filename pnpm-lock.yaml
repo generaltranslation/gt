@@ -2909,6 +2909,9 @@ importers:
       playwright-core:
         specifier: ^1.64.1
         version: 1.64.1
+      terser:
+        specifier: ^5.51.2
+        version: 5.51.2
       typescript:
         specifier: ^5
         version: 5.9.3

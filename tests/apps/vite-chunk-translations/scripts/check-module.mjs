@@ -950,6 +950,24 @@ async function checkVariant(name, variant) {
           unsplit.every((hash) => /^[0-9a-f]{16}$/.test(hash)),
         `${counts.size} ids of ${assigned.length} messages in ${Object.keys(manifest.files).length} files, ${unsplit.length} unsplit`
       );
+      // A chunk lists its messages by the loads that fetch them, which is
+      // what puts them in a file: a file is then renamed by a change to one
+      // of its own messages, and by no other message of a chunk that reads it
+      const filesOfList = new Map();
+      for (const files of Object.values(manifest.files)) {
+        const names = Object.keys(built.contentOf(`/${files[locale]}`)).map(
+          (id) => id.slice(0, id.lastIndexOf('.'))
+        );
+        for (const name of new Set(names)) {
+          filesOfList.set(name, (filesOfList.get(name) ?? 0) + 1);
+        }
+      }
+      const spread = [...filesOfList].filter(([, files]) => files > 1);
+      check(
+        `${locale}: no list of ids is in two files`,
+        filesOfList.size > 0 && spread.length === 0,
+        `${filesOfList.size} lists in ${Object.keys(manifest.files).length} files${spread.length ? `, in several: ${spread.map(([name]) => name).join(', ')}` : ''}`
+      );
       continue;
     }
     check(
@@ -2035,6 +2053,147 @@ if (!selected.length) {
     await app.close();
   }
   served.close();
+}
+
+// ===== A call site the minifier removes ===== //
+// late.html, built with Terser, which alone knows that a call in the Shell
+// never runs. The lists of ids are made from the code the bundler renders,
+// where the Shell still reads the two messages of that call, and the files
+// are assigned once no chunk of the Shell does. The chunk of the shared
+// modules loads with the Shell, so it lists what the Shell fetches in one
+// list. Both go by what the rendered code reads: otherwise that list is in
+// the files of two routes, and a change to one message renames the file of
+// another.
+if ((!selected.length || selected.includes('late')) && MINIFY_HASHES) {
+  prefix = '[late] ';
+  const variant = { lazy: true, shared: true, requestCost: 0 };
+  const late = { CHECK_ENTRY: 'late.html', CHECK_LATE_REMOVAL: 'true' };
+  // The app's catalogs do not hold the messages of this page: a build
+  // without hash minification says what their hashes are
+  const messages = join(CHECK, 'module-late-messages.json');
+  build('module-late-messages', variant, {
+    ...late,
+    GT_MINIFY_HASHES: 'false',
+    CHECK_MESSAGES: messages,
+  });
+  const sources = JSON.parse(readFileSync(messages, 'utf8'));
+  const translations = join(CHECK, 'module-late-translations');
+  mkdirSync(translations, { recursive: true });
+  for (const locale of ['fr', 'de']) {
+    writeFileSync(
+      join(translations, `${locale}.json`),
+      JSON.stringify(
+        Object.fromEntries(
+          Object.entries(sources).map(([hash, text]) => [
+            hash,
+            translate(locale, text),
+          ])
+        )
+      )
+    );
+  }
+  const TEXTS = {
+    frame: 'Late frame',
+    first: 'First late message',
+    second: 'Second late message',
+    third: 'Third late message',
+  };
+  const readLate = (name, env) => {
+    const { outDir } = build(name, variant, {
+      ...late,
+      CHECK_TRANSLATIONS: translations,
+      ...env,
+    });
+    const assets = join(outDir, 'assets');
+    const manifest = JSON.parse(
+      readFileSync(join(assets, 'gt-chunk-translations.json'), 'utf8')
+    );
+    /** The fr file of a message, undefined when no file holds it. */
+    const fileOf = (text) => {
+      const [hash] = Object.entries(sources).find(
+        ([, source]) => source === text
+      );
+      const [id] =
+        Object.entries(manifest.assignment.files).find(([, hashes]) =>
+          hashes.includes(hash)
+        ) ?? [];
+      return manifest.files[`assets/gt-${id}`]?.fr;
+    };
+    // The names of the lists each fr file holds
+    const lists = Object.values(manifest.files).map((files) =>
+      Object.keys(JSON.parse(readFileSync(join(outDir, files.fr), 'utf8'))[1])
+    );
+    const shell = readdirSync(assets).find((file) =>
+      /^Shell-.*\.js$/.test(file)
+    );
+    return {
+      outDir,
+      manifest,
+      fileOf,
+      lists,
+      shell: readFileSync(join(assets, shell), 'utf8'),
+    };
+  };
+  const before = readLate('module-late');
+  const after = readLate('module-late-changed', {
+    CHECK_LATE_CHANGE: 'true',
+    CHECK_PREVIOUS: join(before.outDir, 'assets', 'gt-chunk-translations.json'),
+  });
+  check(
+    'the minifier removed the call of the Shell, and the two messages it read are still in one file',
+    !before.shell.includes('_hash') &&
+      !before.shell.includes('__CHECK_DEBUG__') &&
+      before.fileOf(TEXTS.first) !== undefined &&
+      before.fileOf(TEXTS.first) === before.fileOf(TEXTS.second) &&
+      before.fileOf(TEXTS.first) === before.fileOf(TEXTS.frame) &&
+      before.fileOf(TEXTS.third) !== before.fileOf(TEXTS.first),
+    Object.values(TEXTS)
+      .map((text) => `${text}: ${before.fileOf(text)}`)
+      .join(', ')
+  );
+  const spread = [...new Set(before.lists.flat())].filter(
+    (name) => before.lists.filter((names) => names.includes(name)).length > 1
+  );
+  check(
+    'no list of ids is in two files',
+    before.lists.flat().length > 1 && spread.length === 0,
+    `${new Set(before.lists.flat()).size} lists in ${before.lists.length} files${spread.length ? `, in several: ${spread.join(', ')}` : ''}`
+  );
+  check(
+    'a message that is no longer read renames the file it was in, and not the file of a message the change left alone',
+    after.fileOf(TEXTS.second) === undefined &&
+      after.fileOf(TEXTS.first) !== before.fileOf(TEXTS.first) &&
+      after.fileOf(TEXTS.third) === before.fileOf(TEXTS.third),
+    Object.values(TEXTS)
+      .map((text) => `${text}: ${before.fileOf(text)} -> ${after.fileOf(text)}`)
+      .join(', ')
+  );
+  for (const [name, built, changed] of [
+    ['', before, false],
+    [' after the change', after, true],
+  ]) {
+    const served = await serve(built.outDir);
+    for (const locale of ['en', 'fr', 'de']) {
+      const app = await open(served.url, locale);
+      await app.page.goto(`${served.url}/late.html`);
+      await app.page.waitForSelector('[data-ready]');
+      const wrong = [];
+      for (const [element, text] of Object.entries(TEXTS)) {
+        // The changed build writes the second message out, untranslated
+        const expected =
+          changed && element === 'second' ? text : translate(locale, text);
+        const actual = await app.text(element);
+        if (actual !== expected) wrong.push(`${element}: "${actual}"`);
+      }
+      check(
+        `${locale}: exact text${name}, with no warning and no failed request`,
+        !wrong.length && !app.warnings.length && !app.failures.length,
+        [...wrong, ...app.warnings, ...app.failures].join('; ')
+      );
+      await app.close();
+    }
+    served.close();
+  }
 }
 
 // ===== An import the bundler writes with what starts its module ===== //

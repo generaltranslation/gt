@@ -65,6 +65,10 @@ import {
   type RegionModuleInfo,
 } from './transform/chunk-translations/createRegionGraph';
 import {
+  findListScopes,
+  type RenderedRegionChunk,
+} from './transform/chunk-translations/listScopes';
+import {
   createRuntimeHashesWarning,
   minifyChunk,
 } from './transform/chunk-translations/hashMinification';
@@ -623,11 +627,16 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         );
       }
     }
+    // What lists the messages of each chunk of a render, by the chunks the
+    // bundler passes every renderChunk of it
+    const listScopes = new WeakMap<object, ReturnType<typeof findListScopes>>();
     // Chunks are rendered once every module is compiled, so every call site is known
     function renderChunk(
+      this: { getModuleInfo?: (id: string) => RegionModuleInfo | null } | void,
       code: string,
       chunk?: { fileName: string },
-      rendered?: { sourcemap?: boolean | string }
+      rendered?: { sourcemap?: boolean | string },
+      meta?: { chunks?: Record<string, RenderedRegionChunk> }
     ) {
       if (!isProduction()) return null;
       const tracked =
@@ -643,13 +652,28 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
               ),
             }
           : rewritten;
+      const { minifiedIds } = chunkTranslations!;
+      const getModuleInfo = this?.getModuleInfo?.bind(this);
+      const chunks = meta?.chunks;
+      let getScope: ((hash: string) => unknown) | undefined;
+      // A bundler that does not say what else it renders gets one list per chunk
+      if (minifiedIds && regions && chunk && chunks && getModuleInfo) {
+        let scopes = listScopes.get(chunks);
+        if (!scopes) {
+          scopes = findListScopes(
+            chunks,
+            getModuleInfo,
+            chunkTranslations!.hashes,
+            minifiedIds,
+            initialisesModulesLazily(outputOptions, inputOptions)
+          );
+          listScopes.set(chunks, scopes);
+        }
+        getScope = scopes(chunk.fileName);
+      }
       // Before the chunk is named, so its name follows from its ids
-      const minified = chunkTranslations!.minifiedIds
-        ? (minifyChunk(
-            code,
-            chunkTranslations!.minifiedIds,
-            tracked?.replace
-          ) ?? code)
+      const minified = minifiedIds
+        ? (minifyChunk(code, minifiedIds, tracked?.replace, getScope) ?? code)
         : code;
       const passed = passPreloads(minified, tracked?.replace);
       if (!passed.includes(UNSPLIT_LOADER_PLACEHOLDER)) {

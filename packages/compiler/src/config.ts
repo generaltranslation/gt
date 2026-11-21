@@ -50,16 +50,26 @@ export type SplitTranslationsOptions = {
    * most of what a message costs a page beyond its text. With this on, the
    * call sites the build splits by chunk or by module pass an id in place of
    * their hash, and the translation files of chunks are keyed by it, which
-   * makes both smaller. An id is 8 characters that name the list of its
-   * chunk's messages, a digest of their hashes in the order of the hashes,
-   * then a `.` and the place of its message in that list, as `kR3_x0Qa.12`.
-   * Every call site of a chunk repeats those characters, so they compress
+   * makes both smaller. An id is 8 characters that name a list of messages
+   * of its chunk, a digest of their hashes in the order of the hashes, then
+   * a `.` and the place of its message in that list, as `kR3_x0Qa.12`.
+   * Every call site of a list repeats those characters, so they compress
    * to little. An id still follows from content alone: the same id names
-   * the same message in every build. A chunk's ids change only when the set
-   * of its own messages does, and a message that several chunks read has an
-   * id in each. The build writes the ids into every chunk that holds one of
-   * those call sites after the bundler has rendered it, and the chunk's
-   * source map follows them.
+   * the same message in every build. With `by: 'chunk'` a chunk has one
+   * list, of all its messages. With `by: 'module'` it has a list for each
+   * set of its messages that the same entries and dynamic imports fetch,
+   * when it loads with one of them, and a list of one message for each
+   * message it reads from what loaded before it: an entry, a layout, the
+   * route that opened it. A translations file then names lists of its own
+   * messages alone. It is rewritten when one of its messages comes, goes or
+   * is translated anew, and when the first chunk that loads later reads one
+   * of them or the last one no longer does, and not when another message of
+   * a chunk that reads it changes. For that, a call site that only the
+   * minifier removes still fetches its message's translation there while
+   * another chunk reads the message. The ids of a list change only when
+   * the set of its messages does. The build writes the ids into every chunk
+   * that holds one of those call sites after the bundler has rendered it,
+   * and the chunk's source map follows them.
    *
    * The hash of a message stays what it is everywhere else: in the
    * translation files at `files.gt.output`, in the unsplit file, and at
