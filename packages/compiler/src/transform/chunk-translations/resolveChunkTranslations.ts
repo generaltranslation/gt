@@ -417,7 +417,7 @@ export function resolveChunkTranslations(
     naming,
     ...(regions && { regions }),
     ...(minifyHashes && {
-      minifiedIds: { hashes: new Map() },
+      minifiedIds: { hashes: new Map(), placeholders: new Map() },
       runtimeReaders: {
         compiled: new Map(),
         shapes: new Set(),
