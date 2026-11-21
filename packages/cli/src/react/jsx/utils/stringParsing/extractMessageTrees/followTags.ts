@@ -22,6 +22,8 @@ export type TagContext = {
   output: ParsingOutput;
   isMsg: boolean;
   follower?: HelperFollower;
+  /** The file a configured tag's options are written in, when not `config.file`. */
+  optionsFile?: string;
 };
 
 /** Follows `const t = useGT()` / `const t = await getGT()` to the t binding. */
@@ -40,6 +42,20 @@ export function processHookReference(
   }
   const created = call.parentPath?.isAwaitExpression() ? call.parentPath : call;
   const declarator = created.parentPath;
+  // helper(useGT())
+  if (
+    declarator &&
+    followTagArgument(
+      declarator,
+      created.node,
+      undefined,
+      config.file,
+      config.file,
+      follower
+    )
+  ) {
+    return;
+  }
   // useGT()('Hello')
   if (declarator && warnStringCall(declarator, created.node, config, output)) {
     return;
@@ -80,6 +96,7 @@ export async function processFollowedParameters(
       output,
       isMsg: false,
       follower,
+      optionsFile: next.optionsFile,
     });
   }
 }
@@ -109,12 +126,13 @@ function processTagReference(
   context: TagContext
 ): void {
   const { config, output, isMsg, follower } = context;
+  const optionsFile = context.optionsFile ?? config.file;
   const parent = ref.parentPath;
   // `typeof t` in a type has no runtime use.
   if (parent?.isTSTypeQuery()) return;
   if (parent?.isTaggedTemplateExpression() && parent.node.tag === ref.node) {
     // t`...`
-    processMessage(parent, configuredOptions, config, output);
+    processMessage(parent, configuredOptions, optionsFile, config, output);
     return;
   }
   // t('Hello')
@@ -129,7 +147,7 @@ function processTagReference(
     const outer = parent.parentPath;
     if (outer?.isTaggedTemplateExpression() && outer.node.tag === parent.node) {
       // t({ ...options })`...`
-      processMessage(outer, parent.node.arguments, config, output);
+      processMessage(outer, parent.node.arguments, config.file, config, output);
       return;
     }
     // msg('Save')
@@ -137,7 +155,10 @@ function processTagReference(
     // const save = t({ ...options })
     const alias = getConstAliasBinding(outer, parent.node);
     if (alias) {
-      processTagBinding(alias, parent.node.arguments, context);
+      processTagBinding(alias, parent.node.arguments, {
+        ...context,
+        optionsFile: config.file,
+      });
       return;
     }
     // helper(t({ ...options }))
@@ -148,6 +169,7 @@ function processTagReference(
         outer,
         parent.node,
         parent.node.arguments,
+        config.file,
         config.file,
         follower
       )
@@ -169,6 +191,7 @@ function processTagReference(
       parent,
       ref.node,
       configuredOptions,
+      optionsFile,
       config.file,
       follower
     )

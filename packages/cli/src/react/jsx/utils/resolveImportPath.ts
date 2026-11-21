@@ -146,13 +146,17 @@ export function resolveImportPath(
   } catch {
     // If resolution fails, try to manually replace .js/.jsx with .ts/.tsx for source files
     if (importPath.endsWith('.js')) {
-      const tsPath = importPath.replace(/\.js$/, '.ts');
-      try {
-        result = resolve.sync(tsPath, { basedir, extensions });
-        resolveImportPathCache.set(cacheKey, result);
-        return result;
-      } catch {
-        // Continue to return null
+      for (const sourceExtension of ['.ts', '.tsx']) {
+        try {
+          result = resolve.sync(importPath.replace(/\.js$/, sourceExtension), {
+            basedir,
+            extensions,
+          });
+          resolveImportPathCache.set(cacheKey, result);
+          return result;
+        } catch {
+          // Try the next source extension
+        }
       }
     } else if (importPath.endsWith('.jsx')) {
       const tsxPath = importPath.replace(/\.jsx$/, '.tsx');

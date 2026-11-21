@@ -1186,7 +1186,8 @@ ${
   async function extractProject(
     library: GTLibrary,
     files: (dir: string) => Record<string, string>,
-    entries = ['page.tsx']
+    entries = ['page.tsx'],
+    parsingFlags = {}
   ) {
     const dir = fs.mkdtempSync(path.join(projectDir, 'p-'));
     tempFiles.push(dir);
@@ -1203,7 +1204,7 @@ ${
         library,
         false,
         undefined,
-        {} as never,
+        parsingFlags as never,
         {
           conditionNames: [],
         }
@@ -1534,6 +1535,90 @@ ${
     ]);
   });
 
+  it('extracts a function called with the same options from two components once', async () => {
+    const component = withTag(
+      nextHost,
+      "return [getNavLabels(t({ context: 'menu' })), getNavLabels(t({ context: 'menu' }))];",
+      "import { getNavLabels } from './nav';"
+    );
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'a.tsx': component,
+        'b.tsx': component,
+        'nav.ts': nav(
+          nextHost,
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      }),
+      ['a.tsx', 'b.tsx'],
+      { includeSourceCodeContext: true }
+    );
+
+    expect(result.warnings).toEqual([]);
+    const updates = treeUpdates(result);
+    expect(updates.map((u) => [u.source, u.metadata.context])).toEqual([
+      ['Settings', 'menu'],
+    ]);
+    expect(
+      Object.values(updates[0].metadata.sourceCode ?? {}).flat()
+    ).toHaveLength(1);
+  });
+
+  it.each([
+    ['useGT', 'return getNavLabels(useGT());'],
+    ['getGT', 'return getNavLabels(await getGT());'],
+  ])('follows the result of %s() passed directly', async (hook, body) => {
+    const host = hosts.find(([, h]) => h.hook === hook)![1];
+    const { result } = await extractProject(host.library, () => ({
+      'page.tsx': withTag(host, body, "import { getNavLabels } from './nav';"),
+      'nav.ts': nav(
+        host,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+      ),
+    }));
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Settings']);
+  });
+
+  it('follows a .js import to its .tsx source', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return getNavLabels(t);',
+        "import { getNavLabels } from './nav.js';"
+      ),
+      'nav.tsx': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return <b>{t`Settings`}</b>;\n}'
+      ),
+    }));
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Settings']);
+  });
+
+  it("reports a bad option in the caller's file", async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return getNavLabels(t({ context: ctx }));',
+        "import { getNavLabels } from './nav';\ndeclare const ctx: string;"
+      ),
+      'nav.ts': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+      ),
+    }));
+
+    expect(treeUpdates(result)).toEqual([]);
+    const skipped = [...result.warnings, ...result.errors];
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0]).toMatch(/page\.tsx \(\d+:\d+\)/);
+    expect(skipped[0]).not.toMatch(/nav\.ts/);
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(
@@ -1568,6 +1653,37 @@ ${
     expect(untracked.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
       '6',
       '7',
+    ]);
+  });
+
+  it('warns about a reassigned function and one that reads arguments', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'reassigned(t);',
+          'viaArguments(t);',
+          'arrowReads(t);',
+          'return nestedReads(t);',
+        ].join('\n  '),
+        [
+          'function reassigned(t: GT) {\n  return t`Old`;\n}',
+          'reassigned = (t: GT) => t`New`;',
+          'function viaArguments() {\n  const tr: GT = arguments[0];\n  return tr`Via arguments`;\n}',
+          'function arrowReads() {\n  const read = () => arguments[0];\n  return read()`Arrow`;\n}',
+          'function nestedReads() {\n  return function () {\n    return arguments[0];\n  };\n}',
+        ].join('\n')
+      ),
+    }));
+
+    expect(treeUpdates(result)).toEqual([]);
+    const untracked = result.warnings.filter((w) =>
+      w.includes('Could not follow this use')
+    );
+    expect(untracked.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
+      '21',
+      '22',
+      '23',
     ]);
   });
 

@@ -1,4 +1,5 @@
 import type { NodePath } from '@babel/traverse';
+import { traverseFast } from '@babel/types';
 import type * as t from '@babel/types';
 import { templateToMessage } from '@generaltranslation/icu/internal';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
@@ -11,9 +12,11 @@ import { parseMessageOptions } from './parseMessageOptions.js';
 import { templateVariants } from './templateVariants.js';
 import type { TagOptions, TreeContext } from './types.js';
 
+/** `optionsFile` is where `options` are written, which a helper's caller may own. */
 export function processMessage(
   tagged: NodePath<t.TaggedTemplateExpression>,
   options: TagOptions | undefined,
+  optionsFile: string,
   config: ParsingConfig,
   output: ParsingOutput
 ): void {
@@ -58,7 +61,9 @@ export function processMessage(
   } catch (error) {
     if (!(error instanceof NonStaticMessageError)) throw error;
     const skipped = warnNonStaticMessageTreeSync(
-      config.file,
+      options?.some((option) => containsNode(option, error.node))
+        ? optionsFile
+        : config.file,
       error.message,
       formatLocation(error.node),
       error.details,
@@ -72,4 +77,12 @@ export function processMessage(
       output.errors.push(skipped);
     }
   }
+}
+
+function containsNode(root: t.Node, target: t.Node): boolean {
+  let found = false;
+  traverseFast(root, (node) => {
+    if (node === target) found = true;
+  });
+  return found;
 }

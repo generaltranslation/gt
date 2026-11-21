@@ -17,6 +17,8 @@ const traverse = traverseModule.default || traverseModule;
 export type FollowedParameter = {
   binding: Binding;
   options: TagOptions | undefined;
+  /** The file the options are written in. */
+  optionsFile: string;
   /** The file the function is written in. */
   file: string;
 };
@@ -29,7 +31,7 @@ export type HelperFollower = {
   parsingOptions: ParsingConfigOptions;
   resolvedImports: Map<string, string | null>;
   programs: Map<string, NodePath<t.Program> | null>;
-  followed: Map<Binding, Set<TagOptions | undefined>>;
+  followed: Map<Binding, Set<string>>;
   /** Parameters whose uses are extracted once their file's types load. */
   pending: FollowedParameter[];
 };
@@ -56,6 +58,7 @@ export function followTagArgument(
   call: NodePath,
   arg: t.Node,
   options: TagOptions | undefined,
+  optionsFile: string,
   file: string,
   follower: HelperFollower
 ): boolean {
@@ -76,14 +79,40 @@ export function followTagArgument(
   if (!found) return false;
   const param = getParameter(found.fn, index);
   if (param === undefined) return false;
-  if (param === null) return true;
+  if (param === null) return !readsArguments(found.fn);
   const followedOptions = follower.followed.get(param) ?? new Set();
-  if (!followedOptions.has(options)) {
-    followedOptions.add(options);
+  const key = optionsKey(options);
+  if (!followedOptions.has(key)) {
+    followedOptions.add(key);
     follower.followed.set(param, followedOptions);
-    follower.pending.push({ binding: param, options, file: found.file });
+    follower.pending.push({
+      binding: param,
+      options,
+      optionsFile,
+      file: found.file,
+    });
   }
   return true;
+}
+
+const positionKeys = new Set([
+  'loc',
+  'start',
+  'end',
+  'range',
+  'extra',
+  'leadingComments',
+  'trailingComments',
+  'innerComments',
+]);
+
+/** Equal for options written the same way at different call sites. */
+function optionsKey(options: TagOptions | undefined): string {
+  return options
+    ? JSON.stringify(options, (key, value: unknown) =>
+        positionKeys.has(key) ? undefined : value
+      )
+    : '';
 }
 
 /**
@@ -107,6 +136,24 @@ function getParameter(
   return fn.scope.getOwnBinding(id.name);
 }
 
+/** Whether `fn` reads its own `arguments` object. */
+function readsArguments(fn: NodePath<t.Function>): boolean {
+  if (fn.isArrowFunctionExpression()) return false;
+  let reads = false;
+  fn.get('body').traverse({
+    Function(inner) {
+      if (!inner.isArrowFunctionExpression()) inner.skip();
+    },
+    Identifier(id) {
+      if (id.node.name === 'arguments' && id.isReferencedIdentifier()) {
+        reads = true;
+        id.stop();
+      }
+    },
+  });
+  return reads;
+}
+
 function findLocalFunction(
   scope: Scope,
   name: string,
@@ -126,7 +173,9 @@ function findBindingFunction(
 ): FoundFunction | undefined {
   const path = binding?.path;
   if (!path) return;
-  if (path.isFunctionDeclaration()) return { fn: path, file };
+  if (path.isFunctionDeclaration()) {
+    return binding.constant ? { fn: path, file } : undefined;
+  }
   if (path.isVariableDeclarator() && binding.constant) {
     const init = path.get('init');
     if (init.isArrowFunctionExpression() || init.isFunctionExpression()) {
