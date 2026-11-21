@@ -271,6 +271,18 @@ ruleTester.run('static-jsx: imports', staticJsx, {
       errors: errors(),
     },
     {
+      name: 'a file that has Select and GTSelect gets the next free name',
+      code: component(
+        `import { Select, GTSelect } from './ui';\nimport { T } from 'gt-react';`,
+        '<T>{cond ? "yes" : "no"}</T>'
+      ),
+      output: component(
+        `import { Select, GTSelect } from './ui';\nimport { T, Select as GTSelect2 } from 'gt-react';`,
+        '<T><GTSelect2 value={cond} true="yes">no</GTSelect2></T>'
+      ),
+      errors: errors(),
+    },
+    {
       name: 'aliased Select for a ternary',
       code: t('{cond ? "yes" : "no"}', 'T, Select as B'),
       output: t('<B value={cond} true="yes">no</B>', 'T, Select as B'),
