@@ -51,7 +51,7 @@
   "5eb6d2a3dcdaad22": "Facturation",
   "6032f166f1b33374": "Mensuel",
   "f29fe14e025576f8": "Annuel",
-  "616bb700cf51e977": {
+  "f60b565b968b500a": {
     "t": "p",
     "i": 1,
     "c": {
@@ -63,7 +63,7 @@
           "yearly": " Facturé une fois par an. Deux mois sont offerts. ",
           "other": "Facturé par utilisateur."
         },
-        "t": "b"
+        "t": "s"
       }
     }
   },

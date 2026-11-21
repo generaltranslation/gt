@@ -24,7 +24,7 @@ const statusTranslation = {
   t: 'Select',
   i: 1,
   d: {
-    t: 'b',
+    t: 's',
     b: {
       away: 'Absent',
       online: { t: 'C2', i: 2, c: { t: 'i', i: 3, c: 'En ligne' } },
@@ -136,7 +136,7 @@ describe('malformed branch translations', () => {
       renderFr('away', {
         t: 'Select',
         i: 1,
-        d: { t: 'b', b: { online: 'En ligne' } },
+        d: { t: 's', b: { online: 'En ligne' } },
       })
     ).toBe('Away');
     expect(warn).toHaveBeenCalled();
@@ -155,7 +155,7 @@ describe('nested branches in sibling snippets', () => {
       t: 'Select',
       i: 1,
       d: {
-        t: 'b',
+        t: 's',
         b: {
           male: {
             t: 'C2',
@@ -217,7 +217,7 @@ describe('nested branches in sibling snippets', () => {
           [nestedHash]: {
             t: 'Select',
             i: 1,
-            d: { t: 'b', b: { other: 'Des chats' } },
+            d: { t: 's', b: { other: 'Des chats' } },
           },
         },
       })

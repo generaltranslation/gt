@@ -34,4 +34,4 @@ In English this renders 1st, 2nd, 3rd, 4th, 11th, 21st and so on. Everything els
 
 `gt`, the compiler, the gt-next SWC plugin and the Vue and Svelte extractors read `<Ordinal>` as they read `<Plural>`: an `other` prop, slot or snippet and a spread attribute in translated content are errors. The `static-jsx` lint rule checks its branches as it checks those of `<Plural>`.
 
-Stored content marks an ordinal plural with `t: 'o'` in an element's GT data, beside `'p'` for a plural and `'b'` for a branch, so `GTProp['t']` from `@generaltranslation/format` is now `'p' | 'o' | 'b'`. An `<Ordinal>` hashes differently from a `<Plural>` with the same branches.
+Stored content marks an ordinal plural with `t: 'o'` in an element's GT data, beside `'p'` for a plural and `'s'` for a select, so `GTProp['t']` from `@generaltranslation/format` is now `'s' | 'p' | 'o'`. An `<Ordinal>` hashes differently from a `<Plural>` with the same branches.

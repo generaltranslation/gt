@@ -77,7 +77,7 @@ export type SvelteExtractionError = {
  * - `b`: per scoped element id, the Select/Plural kind and its source branch names.
  */
 export type GTRuntimeMetadata = {
-  b?: Record<string, { t: 'p' | 'o' | 'b'; b: string[] }>;
+  b?: Record<string, { t: 'p' | 'o' | 's'; b: string[] }>;
 };
 
 /** Source lines around a call site, as the CLI uploads them. */

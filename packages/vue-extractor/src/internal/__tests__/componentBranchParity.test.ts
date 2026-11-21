@@ -175,7 +175,7 @@ describe('Select attribute runtime parity', () => {
         d: {
           arl: 'secret',
           b: { formal: 'Hello', other: 'Fallback' },
-          t: 'b',
+          t: 's',
         },
       },
     },
@@ -299,7 +299,7 @@ describe('Select attribute runtime parity', () => {
           arb: 'Labelled',
           ard: 'Described',
           b: { title: 'Title', alt: 'Alt', other: 'Fallback' },
-          t: 'b',
+          t: 's',
         },
       },
     });
@@ -315,7 +315,7 @@ describe('Select attribute runtime parity', () => {
           arb: 'Labelled',
           ard: 'Described',
           b: { title: 'Title', alt: 'Alt', other: 'Fallback' },
-          t: 'b',
+          t: 's',
         },
       },
     ]);
@@ -485,7 +485,7 @@ describe('Select attribute runtime parity', () => {
         dataFormat: 'JSX',
         source: richSources(branchOutput)[0],
       })
-    ).toBe('d82f8a17e0903307');
+    ).toBe('1471854d147bb491');
     expect(
       hashSource({
         dataFormat: 'JSX',
@@ -551,7 +551,7 @@ describe('Select attribute runtime parity', () => {
 
     expect(output.errors).toEqual([]);
     expect(source).toEqual(testCase.source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('dec9c092fa934698');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('7cd2611f7ca7166e');
   });
 
   function branchSource(
@@ -561,7 +561,7 @@ describe('Select attribute runtime parity', () => {
     return {
       t: 'Select',
       i: 1,
-      d: { b: { ...branches, other: 'Fallback' }, t: 'b' },
+      d: { b: { ...branches, other: 'Fallback' }, t: 's' },
     } as unknown as JsxChildren;
   }
 

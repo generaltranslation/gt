@@ -48,7 +48,7 @@ describe('extractFromVueSource', () => {
             casual: [' casual ', { i: 5, v: 'v' }],
             other: [' fallback ', { i: 5, v: 'v' }],
           },
-          t: 'b',
+          t: 's',
         },
       },
       { t: 'b', i: 5, c: 'end' },
@@ -182,7 +182,7 @@ describe('extractFromVueSource', () => {
     const expectedSource: JsxChildren = {
       t: 'Select',
       i: 1,
-      d: { b: { formal: 'Hello', other: 'Fallback' }, t: 'b' },
+      d: { b: { formal: 'Hello', other: 'Fallback' }, t: 's' },
     };
 
     expect(result.errors).toEqual([]);
@@ -209,7 +209,7 @@ describe('extractFromVueSource', () => {
             toString: 'String branch',
             other: ' Fallback ',
           },
-          t: 'b',
+          t: 's',
         },
       },
     });

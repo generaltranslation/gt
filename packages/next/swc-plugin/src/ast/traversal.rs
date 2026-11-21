@@ -473,7 +473,7 @@ impl<'a> JsxTraversal<'a> {
 
       // Determine transformation type
       if self.is_branch_component(tag_name) {
-        info.transformation = Some(String::from("b"));
+        info.transformation = Some(String::from("s"));
         info.branches = self.extract_branch_props(attrs);
       } else if let Some(transformation) = self.plural_transformation(tag_name) {
         info.transformation = Some(String::from(transformation));
@@ -507,7 +507,7 @@ impl<'a> JsxTraversal<'a> {
           info.is_gt_component = true;
           match component {
             "Select" => {
-              info.transformation = Some("b".to_string());
+              info.transformation = Some("s".to_string());
               info.branches = self.extract_branch_props(attrs);
             }
             "Plural" | "Ordinal" => {

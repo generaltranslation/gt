@@ -46,62 +46,62 @@ export const NON_PORTABLE_SEEDS = [
   {
     id: 'complex-cases/deeply-nested-branch-components',
     reason: 'vue-text-coalescing',
-    reactHash: '1f66dd317fd6b872',
+    reactHash: 'e2d2bfa3d3281af2',
     reactWireFingerprint:
-      '8db6bc4da03910fb79f6ea6118a619c7b04f8d9bfde29cd959d541a6afa8980a',
-    vueHash: '8ca9ca2853ea3c20',
+      'd3d880339946116798bb7e9d3ff7edb7fd56aa3041f5a24047477ede3f3e9291',
+    vueHash: 'aabf0b1d4a550db1',
     vueWireFingerprint:
-      'd672ef588efdbfaaeddedb2a9fb296fba2ab93ddfecf8897a851eba350effdbe',
+      'eb1c27e7b3bd0cea1b937619668d4a9280fc6dde7a87acf32e8353e1947914d0',
   },
   {
     id: 'complex-cases/duplicate-branches',
     reason: 'vue-text-coalescing',
-    reactHash: 'be9d0791ffd05a5f',
+    reactHash: 'd16f07aa91ff3ce3',
     reactWireFingerprint:
-      'a21c3b6f2afb66a4af879126d9d53d14216d3a9f2854ba405cf6f9c62cbc401b',
-    vueHash: '3b7b6b9369e9abd8',
+      '266d8f28d4ccf4a16cbe3ce320fdd94f8216fa11cfec8b461c540197863312a9',
+    vueHash: '1e5da9934e4e228d',
     vueWireFingerprint:
-      '65cc033075dfaa6352a2ec7c37acf45b953e5ba40b1fa1a3f1b5c4b8c0089e98',
+      '28e1f5038ef0570e61f357ead1f761db90b8ef7cf58aae6908cd13ca304f3546',
   },
   {
     id: 'complex-cases/five-level-nesting',
     reason: 'unsupported-named-variable',
-    reactHash: 'a26e6d6f63ba42ad',
+    reactHash: 'd95c37b8713a162a',
     reactWireFingerprint:
-      '5099ce4ab7ffdf9f590b07fb08f28bfa414abda9fdf4e00729b65c2a3e395579',
-    vueHash: '30fda7acef687508',
+      '44ddcc31c525a48c1562e706427a1e758ba08b1f701f7a85e4e3eb07c942efd3',
+    vueHash: '22d47431e86965d7',
     vueWireFingerprint:
-      'a86c58be3b2ef298e3c84d24a4c1d013c1c45becc135f2783246ed4010d77b84',
+      '28c410361d98c3245d5df978e9e1fc197fcfe2d344577c9020aa9e6203f98c8b',
   },
   {
     id: 'complex-cases/long-content-string',
     reason: 'vue-text-coalescing',
-    reactHash: '308cd5b0fc68f3aa',
+    reactHash: 'b6f724279e2928ee',
     reactWireFingerprint:
-      'aa346e37b39806334095d0df93afc7df12075804d190a03a0dfecb3c3659d3dc',
-    vueHash: '419e72a66043a4a7',
+      '92d6d8ec04dfcb361b3886e211e2f2f33bacbcddedc47f815f82aedb229dd207',
+    vueHash: '08c78ffe201a7ce7',
     vueWireFingerprint:
-      '0fe3b30a7483af2e54f762c6e1488a04153fc937aaf4c47ef1dcc40d55a8da21',
+      '6045ef7706f5b5b80d4544295db7e8e5e4b0941a9b6fdc01b10d601f23ec2b6e',
   },
   {
     id: 'complex-cases/many-edge-cases',
     reason: 'unsupported-named-variable',
-    reactHash: '6f7b9c00ab5cf556',
+    reactHash: '62e75a0353daf47d',
     reactWireFingerprint:
-      'a4c4d70dc85800d8814c1c1427ed23806bbaa5e5cb6e9dbdaf2ccf200a50a335',
-    vueHash: '22d6ecb35b2b5a0d',
+      '7a4ea1900ebe00c14a8a04a196b0c8303b359bcca0edafb64ba3a4db1e738790',
+    vueHash: '477589c8e27b73eb',
     vueWireFingerprint:
-      'b0a2783b36b3829f982522e12fbd0c48ad3d54dabac54c1ca5d85aa016e7fef2',
+      '19700b6e8ac60debee959413771f4c640b2fc8b0dc821714b0ed8b3b4b260773',
   },
   {
     id: 'complex-cases/mixed-component-types',
     reason: 'vue-text-coalescing',
-    reactHash: 'be9e11225a827584',
+    reactHash: '390c787264b35a73',
     reactWireFingerprint:
-      'e848e85b53673fc3c57ede02e7b47a6f52a84a31fdd984faa969a529555fde7c',
-    vueHash: '67ae38baeb2434ff',
+      'b18c8f9e9dde3175ed7f37ba20154ab47c5da178894a3d8f08c9433816e2ffcc',
+    vueHash: '42f55dc5b21770ef',
     vueWireFingerprint:
-      'd4b7445cb5a6538a27cde55ff2b01129c8012cb1b4a4175b8d6ca3fa7a339fd9',
+      '64e058b6919552a93c0098f72fabe22e2192a1b686243d4c11f9a9c3292893a5',
   },
   {
     id: 'complex-cases/mixed-element-types-in-branches',
@@ -116,12 +116,12 @@ export const NON_PORTABLE_SEEDS = [
   {
     id: 'complex-cases/more-extreme-edge-cases',
     reason: 'unsupported-named-variable',
-    reactHash: 'b8a37b27f20ec0e6',
+    reactHash: '1ea13bd33e3b353e',
     reactWireFingerprint:
-      'ecb772422ae00092ef7cefb8f797d623d2af6eff0a8b8a13b12227c419ec7dd2',
-    vueHash: 'b064ed045fed9a14',
+      'c9f1cf46d1ec20cc4336fbc44ec479233803ffd85d1e8b9ec40a6e0104c7b1ca',
+    vueHash: 'e10cb2cf28acfbc9',
     vueWireFingerprint:
-      '357361caecb47e8cbe82c56faeca823dc73524f53ab5824d34d2cacdfd7f2171',
+      '873fd741a9c8546659eaa06f2ec286049127b9f536698f1afedefc7911d83507',
   },
   {
     id: 'complex-cases/multiple-variable-types-in-branch',
@@ -136,22 +136,22 @@ export const NON_PORTABLE_SEEDS = [
   {
     id: 'complex-cases/whitespace',
     reason: 'vue-display-string-erasure',
-    reactHash: '55dd803133cb5a5c',
+    reactHash: '9adbbb3db2f03ded',
     reactWireFingerprint:
-      '77c88ff24bde18fa069d44db9b8cfa47a845e64a19aded111baf7a6d0df9c735',
-    vueHash: '86b26f4be549877e',
+      '82e8d5de22990a3908e283e3b092f8b1d1a509e7d6d0079467245f70ff38025f',
+    vueHash: '70a4c197fa7e34d0',
     vueWireFingerprint:
-      'd435a45f7e41e06d46825c6f057542bf223db3d00104f4d5c89b1cf6cf9fc6cf',
+      '427be441f971737021c9e06d7653a4c43e8ddd971f268e642790811c3f91c623',
   },
   {
     id: 'complex-cases/whitespace-preservation-complex-structure',
     reason: 'vue-text-coalescing',
-    reactHash: '3ed6a601c3a58888',
+    reactHash: 'c85228176b5e13b1',
     reactWireFingerprint:
-      '44951ae7c0bfd2b3bbd3e1b15dafaea61de3f1effdb35a7b8160a12432aeec57',
-    vueHash: 'df2843de5ec64a69',
+      '2cde8c422b40a4a9aed12347691c11a4f581c8080d2f3674fbaf8292c5784c88',
+    vueHash: '1893612cc8632dba',
     vueWireFingerprint:
-      '78a6516068fb2c2d9233340aede4f49a4a5cfbdf75c9e0764dfe93ef08314dd9',
+      'b7b1190224632e619d3047f27f4f3edbf5b91181191d8ac7e4f88e98f957df58',
   },
   {
     id: 't-component/simple/expressions/null/fragment-null',
@@ -236,22 +236,22 @@ export const NON_PORTABLE_SEEDS = [
   {
     id: 'variable-components/static/branches',
     reason: 'unsupported-derive',
-    reactHash: '151c5ea756354da4',
+    reactHash: '46c75eba89924e88',
     reactWireFingerprint:
-      '4719bbe59e4de1608be3fa4a3a7d8c01ae2f6f198a46fdb8f26c9a005776e51e',
-    vueHash: 'fd88ed0e98e2d8ee',
+      '20ef6672c2e488602d7bca8f62aeb4a0cdbefb26233cc56e9e5818adfa51475f',
+    vueHash: 'd6d6a275f1469411',
     vueWireFingerprint:
-      '4737ba27575cfa2ed3e4ab61c89a9a89ea64c82b19f5cb6c11eeb935f6304110',
+      '56eb7a56eb6c42f60647445deb8fa9de485d91d0970da7e1e4b3a4d67125c20e',
   },
   {
     id: 'variable-components/static/simple',
     reason: 'unsupported-derive',
-    reactHash: '4b9fdc8e2a028557',
+    reactHash: 'c9923cb1cd39ee77',
     reactWireFingerprint:
-      '406adffbcd6784a8701928fc7295fe8b71bfa69a5ca197b496a7effed5afbb18',
-    vueHash: '7bb94d634114a59d',
+      'c882f2e72be7ab745fb7b7004fe0d2a7649ce0493682fffc9c031a73f747f1fb',
+    vueHash: 'abbc40433f7da1ca',
     vueWireFingerprint:
-      '2a2cfd0358e70f63c3c93f9213bb074b86de54302bbed09afede0182510cc1e6',
+      '1415bf885b13d573216dae62417bc3c9b6c75e0166525ff8178459e564637cbd',
   },
   {
     id: 'variable-components/static/ternaries',
@@ -259,9 +259,9 @@ export const NON_PORTABLE_SEEDS = [
     reactHash: 'b504e6005f6d2aad',
     reactWireFingerprint:
       'c5c43e261d8d12668327a0c9605166e8d23d7eee613a7fcdd1a0fff1fa7aa8c7',
-    vueHash: '28da75b7c45137da',
+    vueHash: 'a09e122863356cfa',
     vueWireFingerprint:
-      'bae51dade912d0339dcbcc2512ec7ca96914af1eb7a349db1f726b0504efdc74',
+      'b0a152107f6ceafa97b2484a83985cbe90cbbb3383f10bc6b2a1bab8b1283c24',
   },
   {
     id: 'variable-components/var/simple/name',

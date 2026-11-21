@@ -248,7 +248,7 @@ describe('JSX ids of Select/Plural children, which are the other branch', () => 
           i: 1,
           d: {
             b: { open: 'Open', other: { t: 'span', i: 2, c: 'Closed' } },
-            t: 'b',
+            t: 's',
           },
         },
         { i: 2, v: 'v' },
@@ -267,7 +267,7 @@ describe('JSX ids of Select/Plural children, which are the other branch', () => 
           i: 2,
           d: {
             b: { open: { i: 3, v: 'v' }, other: 'Closed' },
-            t: 'b',
+            t: 's',
           },
         },
       ],

@@ -55,7 +55,7 @@ describe('Vue template extraction', () => {
                 casual: [' Casual ', { i: 11, v: 'v' }],
                 other: [' Fallback ', { i: 11, v: 'v' }],
               },
-              t: 'b',
+              t: 's',
             },
           },
           {
@@ -98,7 +98,7 @@ describe('Vue template extraction', () => {
         i: 1,
         d: {
           b: { casual: 'Second', formal: 'First' },
-          t: 'b',
+          t: 's',
         },
       },
       {
@@ -167,7 +167,7 @@ describe('Vue template extraction', () => {
         {
           t: 'Select',
           i: 1,
-          d: { b: { formal: 'First', casual: 'Second' }, t: 'b' },
+          d: { b: { formal: 'First', casual: 'Second' }, t: 's' },
         },
         {
           t: 'Plural',
@@ -207,7 +207,7 @@ describe('Vue template extraction', () => {
                 { t: 'b', i: 3, c: 'B' },
               ],
             },
-            t: 'b',
+            t: 's',
           },
         },
       ]);
@@ -245,7 +245,7 @@ describe('Vue template extraction', () => {
       {
         t: 'Select',
         i: 1,
-        d: { b: { formal: '1' }, t: 'b' },
+        d: { b: { formal: '1' }, t: 's' },
       },
     ]);
     expect(output.results[0]?.metadata.context).toBe('catalog');
@@ -301,7 +301,7 @@ describe('Vue template extraction', () => {
         {
           t: 'Select',
           i: 1,
-          d: { b: { formal: 'Hello', other: 'Fallback' }, t: 'b' },
+          d: { b: { formal: 'Hello', other: 'Fallback' }, t: 's' },
         },
       ] satisfies JsxChildren[],
     },
@@ -316,7 +316,7 @@ describe('Vue template extraction', () => {
           i: 1,
           d: {
             b: { zero: '0', off: false, empty: null, other: 'Fallback' },
-            t: 'b',
+            t: 's',
           },
         } as unknown as JsxChildren,
       ] satisfies JsxChildren[],
@@ -779,7 +779,7 @@ describe('Vue template audit cases', () => {
               },
               other: ['Fallback ', { i: 2, v: 'v' }],
             },
-            t: 'b',
+            t: 's',
           },
         },
         { t: 'strong', i: 2, c: 'After' },
@@ -808,7 +808,7 @@ describe('Vue template audit cases', () => {
       source: {
         t: 'Select',
         i: 1,
-        d: { b: { formal: 'Slot', other: 'Fallback' }, t: 'b' },
+        d: { b: { formal: 'Slot', other: 'Fallback' }, t: 's' },
       },
     },
     {
@@ -1138,7 +1138,7 @@ describe('Vue template runtime parity', () => {
         i: 1,
         d: {
           b: { casual: 'Second', formal: 'First' },
-          t: 'b',
+          t: 's',
         },
       };
       const plural: JsxChildren = {
@@ -1240,7 +1240,7 @@ describe('consumer Vue template compiler parity', () => {
         i: 1,
         d: {
           b: { formal: 'Formal', casual: 'Casual', other: 'Default' },
-          t: 'b',
+          t: 's',
         },
       },
       {
@@ -1266,7 +1266,7 @@ describe('consumer Vue template compiler parity', () => {
       },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '1ff5d7c491cd1c5e'
+      '1456491ed480f29f'
     );
   });
 

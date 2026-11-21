@@ -447,7 +447,7 @@ describe('injection pass', () => {
 
 describe('injection and extraction', () => {
   const plural = { b: { one: 'item', other: 'items' }, t: 'p' };
-  const fallback = { b: { other: 'fallback' }, t: 'b' };
+  const fallback = { b: { other: 'fallback' }, t: 's' };
 
   // [description, code, sources of the extracted updates]
   it.each<[string, string, unknown[]]>([
@@ -733,7 +733,7 @@ describe('injection and extraction', () => {
               b: { t: 'span', i: 2, c: 'B' },
               other: 'Fallback',
             },
-            t: 'b',
+            t: 's',
           },
         },
       ],
@@ -773,7 +773,7 @@ describe('injection and extraction', () => {
           {
             t: 'Select',
             i: 1,
-            d: { b: { other: ['Fallback with Var ', variable(2)] }, t: 'b' },
+            d: { b: { other: ['Fallback with Var ', variable(2)] }, t: 's' },
           },
         ],
       ],
@@ -803,7 +803,7 @@ describe('injection and extraction', () => {
               Ernest: { t: 'C2', i: 2, c: ['Hello ', variable(3)] },
               other: 'Fallback',
             },
-            t: 'b',
+            t: 's',
           },
         },
       ],
@@ -817,7 +817,7 @@ describe('injection and extraction', () => {
         {
           t: 'Select',
           i: 1,
-          d: { b: { summary: variable(2), other: 'Fallback' }, t: 'b' },
+          d: { b: { summary: variable(2), other: 'Fallback' }, t: 's' },
         },
         'Option A',
         'Option B',
@@ -855,7 +855,7 @@ describe('injection and extraction', () => {
                 draft: { t: 'span', i: 2, c: 'Draft' },
                 other: { t: 'span', i: 2, c: 'Unknown' },
               },
-              t: 'b',
+              t: 's',
             },
           },
           { t: 'span', i: 2, c: ['Last saved ', variable(3)] },

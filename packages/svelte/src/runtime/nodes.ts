@@ -124,7 +124,7 @@ export function selectBranch(
 
   const branches = Object.keys(targetBranches);
   const targetBranch =
-    info.t === 'b'
+    info.t === 's'
       ? pickBranch(value, branches)
       : pickPluralForm(value, branches, context.locales, info.t === 'o');
   if (targetBranch === undefined) return none;

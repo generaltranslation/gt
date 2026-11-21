@@ -14,9 +14,9 @@ describe('hashSource rich wire literals', () => {
       {
         t: 'Select',
         i: 1,
-        d: { t: 'b', b: { active: false, empty: null } },
+        d: { t: 's', b: { active: false, empty: null } },
       },
-      'f385da3e793d958b',
+      '5d88aae9cc9d49f3',
     ],
   ] satisfies ReadonlyArray<readonly [JsxChildren, string]>)(
     'preserves the React hash for %j',

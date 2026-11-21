@@ -25,7 +25,7 @@ export type HtmlContentPropValuesRecord = Partial<
  * branches are stored under.
  */
 export const BRANCH_TRANSFORMATIONS = {
-  Select: 'b',
+  Select: 's',
   Plural: 'p',
   Ordinal: 'o',
 } as const;

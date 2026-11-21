@@ -2035,7 +2035,7 @@ describe('gt-vue runtime', () => {
           casual: ['casual ', { i: 3, v: 'v' }],
           other: ['fallback ', { i: 3, v: 'v' }],
         },
-        t: 'b',
+        t: 's',
       },
     };
     const source: JsxChildren = [pluralSource, ' / ', branchSource];
@@ -2059,7 +2059,7 @@ describe('gt-vue runtime', () => {
             casual: ['salut ', { i: 3, v: 'v' }],
             other: ['repli ', { i: 3, v: 'v' }],
           },
-          t: 'b',
+          t: 's',
         },
       },
     ];
@@ -2119,12 +2119,12 @@ describe('gt-vue runtime', () => {
     const source: JsxChildren = {
       t: 'Select',
       i: 1,
-      d: { b: { formal: 'Hello', other: 'Fallback' }, t: 'b' },
+      d: { b: { formal: 'Hello', other: 'Fallback' }, t: 's' },
     };
     const target: JsxChildren = {
       t: 'Select',
       i: 1,
-      d: { b: { formal: 'Bonjour', other: 'Repli' }, t: 'b' },
+      d: { b: { formal: 'Bonjour', other: 'Repli' }, t: 's' },
     };
     const plugin = createGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),

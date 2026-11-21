@@ -475,10 +475,10 @@ import { LocalT } from '@local/gt';
                 unknown: null,
                 other: 'Fallback',
               },
-              t: 'b',
+              t: 's',
             },
           },
-          metadata: expect.objectContaining({ hash: '875c3ad2a25d6d46' }),
+          metadata: expect.objectContaining({ hash: 'aee30dc33d0a1297' }),
         }),
       ]);
     }

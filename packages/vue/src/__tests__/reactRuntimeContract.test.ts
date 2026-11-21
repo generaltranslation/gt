@@ -1123,7 +1123,7 @@ const catalogCases = {
         t: 'x',
         i: 1,
         d: {
-          t: 'b',
+          t: 's',
           b: {
             casual: [{ i: 3, v: 'v' }, ' dit ', { t: 'x', i: 2, c: 'Salut' }],
             formal: [

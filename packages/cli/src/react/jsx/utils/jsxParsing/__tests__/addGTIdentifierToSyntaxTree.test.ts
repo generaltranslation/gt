@@ -24,7 +24,7 @@ describe('addGTIdentifierToSyntaxTree', () => {
       expect(result).toBeDefined();
       const element = result as unknown;
       expect(element.d).toBeDefined();
-      expect(element.d.t).toBe('b');
+      expect(element.d.t).toBe('s');
       expect(element.d.b).toBeDefined();
 
       // Select props should include 'active' and 'inactive'
@@ -52,7 +52,7 @@ describe('addGTIdentifierToSyntaxTree', () => {
 
       const element = result as unknown;
       expect(element.d).toBeDefined();
-      expect(element.d.t).toBe('b');
+      expect(element.d.t).toBe('s');
       expect(element.d.b).toHaveProperty('active');
       expect(element.d.b).toHaveProperty('inactive');
     });
