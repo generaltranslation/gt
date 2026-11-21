@@ -1,4 +1,5 @@
 import { getPluralBranchKey, getPluralForm } from 'generaltranslation/internal';
+import { getPluralLocales } from './format';
 
 /**
  * The branch of a `<Plural>` or an `<Ordinal>` for `n`, picked as ICU does:
@@ -21,7 +22,7 @@ export function selectPluralBranch(
   const keys = names.map(getPluralBranchKey);
   const key =
     typeof n === 'number' || typeof n === 'bigint'
-      ? getPluralForm(n, [...keys, 'other'], [locale], type)
+      ? getPluralForm(n, [...keys, 'other'], getPluralLocales(locale), type)
       : 'other';
   return key === 'other' ? children : branches[names[keys.indexOf(key)]];
 }
