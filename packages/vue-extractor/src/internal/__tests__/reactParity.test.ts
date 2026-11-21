@@ -313,7 +313,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'Select alternatives and fallback content',
-      expectedHash: 'a634a53ae6f90df6',
+      expectedHash: 'f2a008f840acdb1e',
       expectedSource: {
         t: 'Select',
         i: 1,
@@ -322,7 +322,7 @@ describe('React-authoritative rich-content extraction contract', () => {
             online: { t: 'strong', i: 2, c: 'Online' },
             other: { t: 'span', i: 2, c: 'Unknown' },
           },
-          t: 'b',
+          t: 's',
         },
       },
       sfc: templateFixture(
@@ -363,7 +363,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'custom components inside Select alternatives',
-      expectedHash: '44a0464f3d6adcdd',
+      expectedHash: '75edbc31bfc6ff30',
       expectedSource: {
         t: 'Select',
         i: 1,
@@ -376,7 +376,7 @@ describe('React-authoritative rich-content extraction contract', () => {
             },
             other: { t: 'span', i: 2, c: 'No destination' },
           },
-          t: 'b',
+          t: 's',
         },
       },
       sfc: templateFixture(
@@ -392,7 +392,7 @@ describe('React-authoritative rich-content extraction contract', () => {
     },
     {
       name: 'Select and Var inside a custom component',
-      expectedHash: 'ed95d44c20f4618e',
+      expectedHash: '60487bd98e368b2b',
       expectedSource: {
         t: 'Callout',
         i: 1,
@@ -404,7 +404,7 @@ describe('React-authoritative rich-content extraction contract', () => {
               welcome: ['Welcome, ', { i: 3, v: 'v' }, '!'],
               other: 'Welcome!',
             },
-            t: 'b',
+            t: 's',
           },
         },
       },
@@ -643,7 +643,7 @@ describe('React CLI parity audit', () => {
                 casual: 'Casual',
                 other: 'Select fallback',
               },
-              t: 'b',
+              t: 's',
             },
           },
           { t: 'hr', i: 2 },
@@ -685,7 +685,7 @@ describe('React CLI parity audit', () => {
               control: '\n\t',
               other: 'Fallback',
             },
-            t: 'b',
+            t: 's',
           },
         } as unknown as JsxChildren,
       ]);
@@ -792,7 +792,7 @@ describe('React CLI parity audit', () => {
         {
           t: 'Select',
           i: 1,
-          d: { b: { formal: [], casual: 'Casual' }, t: 'b' },
+          d: { b: { formal: [], casual: 'Casual' }, t: 's' },
         },
       ]);
     });

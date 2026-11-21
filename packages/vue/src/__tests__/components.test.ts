@@ -126,7 +126,7 @@ describe('Select and Plural attributes', () => {
           pending: '',
           unknown: null,
         },
-        t: 'b',
+        t: 's',
       },
     });
   });
@@ -228,7 +228,7 @@ describe('Select and Plural attributes', () => {
       {
         t: 'Select',
         i: 1,
-        d: { b: { formal: 'Named slot', other: 'Fallback' }, t: 'b' },
+        d: { b: { formal: 'Named slot', other: 'Fallback' }, t: 's' },
       },
       {
         t: 'Plural',
@@ -272,7 +272,7 @@ describe('Select and Plural attributes', () => {
         i: 1,
         d: {
           b: { empty: [], false: false, null: null, true: true },
-          t: 'b',
+          t: 's',
         },
       },
       {
@@ -494,7 +494,7 @@ describe('Select and Plural attributes', () => {
       i: 1,
       d: {
         b: { 'data-note': 'Source named slot', other: 'Source fallback' },
-        t: 'b',
+        t: 's',
       },
     };
     const target: JsxChildren = {
@@ -505,7 +505,7 @@ describe('Select and Plural attributes', () => {
           'data-note': 'Translated named slot',
           other: 'Translated fallback',
         },
-        t: 'b',
+        t: 's',
       },
     };
     const plugin = createGT({
@@ -538,7 +538,7 @@ describe('Select and Plural attributes', () => {
           empty: null,
           other: 'Fallback',
         },
-        t: 'b',
+        t: 's',
       },
     };
     const target: JsxChildren = {
@@ -553,7 +553,7 @@ describe('Select and Plural attributes', () => {
           empty: null,
           other: 'Repli',
         },
-        t: 'b',
+        t: 's',
       },
     };
     const plugin = createGT({
@@ -696,12 +696,12 @@ describe('Select and Plural attributes', () => {
     const source: JsxChildren = {
       t: 'Select',
       i: 1,
-      d: { b: { a: 'A', b: 'B', other: 'Other' }, t: 'b' },
+      d: { b: { a: 'A', b: 'B', other: 'Other' }, t: 's' },
     };
     const target: JsxChildren = {
       t: 'Select',
       i: 1,
-      d: { b: { b: 'B traduit' }, t: 'b' },
+      d: { b: { b: 'B traduit' }, t: 's' },
     };
     const plugin = createGT({
       loadTranslations: async () => ({ [jsxHash(source)]: target }),
@@ -782,17 +782,17 @@ describe('Select and Plural attributes', () => {
       {
         t: 'Select',
         i: 1,
-        d: { b: { active: true }, t: 'b' },
+        d: { b: { active: true }, t: 's' },
       },
       {
         t: 'Select',
         i: 2,
-        d: { b: { inactive: false }, t: 'b' },
+        d: { b: { inactive: false }, t: 's' },
       },
       {
         t: 'Select',
         i: 3,
-        d: { b: { unknown: null }, t: 'b' },
+        d: { b: { unknown: null }, t: 's' },
       },
       'after',
     ];
@@ -801,17 +801,17 @@ describe('Select and Plural attributes', () => {
       {
         t: 'Select',
         i: 1,
-        d: { b: { active: false }, t: 'b' },
+        d: { b: { active: false }, t: 's' },
       },
       {
         t: 'Select',
         i: 2,
-        d: { b: { inactive: true }, t: 'b' },
+        d: { b: { inactive: true }, t: 's' },
       },
       {
         t: 'Select',
         i: 3,
-        d: { b: { unknown: null }, t: 'b' },
+        d: { b: { unknown: null }, t: 's' },
       },
       'après',
     ];

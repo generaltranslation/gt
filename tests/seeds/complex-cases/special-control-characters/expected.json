@@ -23,7 +23,7 @@
         "arabic": "مرحبا بالعالم",
         "russian": "Привет мир"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -45,7 +45,7 @@
         "single": "single line",
         "multi": "\n            line 1\n            line 2\n            line 3\n          "
       },
-      "t": "b"
+      "t": "s"
     }
   },
   "   "

@@ -58,7 +58,7 @@ pub struct SanitizedGtProp {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub b: Option<BTreeMap<String, Box<SanitizedChild>>>, // Branches
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub t: Option<String>, // Select Transformation ('p' for plural, 'o' for ordinal plural, 'b' for branch)
+  pub t: Option<String>, // Branch transformation ('p' for plural, 'o' for ordinal plural, 's' for select)
   #[serde(flatten)]
   pub html_props: HtmlContentProps, // HTML content properties
 }
@@ -71,7 +71,7 @@ pub struct SanitizedVariable {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub v: Option<VariableType>, // variable type (for regular variables)
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub t: Option<String>, // transformation type ('b' for branches, 'p' for plurals, 'v' for variables)
+  pub t: Option<String>, // transformation type ('s' for a select, 'p' for plurals, 'v' for variables)
 }
 
 /// Sanitized JSX Child can be text, element, variable, boolean, or null
@@ -607,7 +607,7 @@ mod tests {
       let element = SanitizedElement {
         b: Some(branches),
         c: None,
-        t: Some("b".to_string()),
+        t: Some("s".to_string()),
         d: None,
       };
       let children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(element))));
@@ -687,7 +687,7 @@ mod tests {
       let element = SanitizedElement {
         b: Some(branches),
         c: None,
-        t: Some("b".to_string()),
+        t: Some("s".to_string()),
         d: None,
       };
       let children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(element))));

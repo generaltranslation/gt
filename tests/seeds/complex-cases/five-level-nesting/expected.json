@@ -40,7 +40,7 @@
                               },
                               "option2": "level3 option2"
                             },
-                            "t": "b"
+                            "t": "s"
                           }
                         },
                         "=2": "level2 plurals"
@@ -50,7 +50,7 @@
                   },
                   "option2": "level2 option2"
                 },
-                "t": "b"
+                "t": "s"
               }
             },
             "=2": "level1 plurals"
@@ -60,6 +60,6 @@
       },
       "option2": "level1 option2"
     },
-    "t": "b"
+    "t": "s"
   }
 }

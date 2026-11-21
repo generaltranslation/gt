@@ -26,7 +26,7 @@ const translations = JSON.parse(
       t: 'Select',
       i: 1,
       d: {
-        t: 'b',
+        t: 's',
         b: {
           constructor: { t: 'C2', i: 2, c: 'Constructeur' },
           other: 'Autre',

@@ -14,7 +14,7 @@
 '@generaltranslation/format': patch
 ---
 
-**Breaking:** the `<Branch>` component is now `<Select>`, the name of the `select()` helper, and its `branch` prop is now `value`. It renders and is stored as before, so hashes and translations do not change.
+**Breaking:** the `<Branch>` component is now `<Select>`, the name of the `select()` helper, and its `branch` prop is now `value`. It renders as before.
 
 ```diff
 -import { Branch } from 'gt-react';
@@ -29,3 +29,4 @@
 - The lint rule `no-data-attrs-on-branch` is `no-data-attrs-on-select`.
 - The `static-jsx` fix imports a component as `GT<name>`, as in `Select as GTSelect`, when the file already has something of that name, such as a UI library's `Select`.
 - The compiler inserts `GtInternalSelect` where it inserted `GtInternalBranch`, so the compiler and the runtime packages must be upgraded together.
+- Stored content marks a select with `t: 's'` where it marked a branch with `t: 'b'`, so `GTProp['t']` from `@generaltranslation/format` is `'s' | 'p' | 'o'`. A `<T>` that holds a `<Select>` has a new hash and is translated again.

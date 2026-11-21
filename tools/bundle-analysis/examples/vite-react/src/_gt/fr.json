@@ -63,7 +63,7 @@
       "c": "Choisissez une finition et une quantité."
     }
   ],
-  "d8ae221ac1986012": {
+  "fef28ac2f439a627": {
     "t": "p",
     "i": 1,
     "c": {
@@ -83,7 +83,7 @@
           },
           "other": "Aluminium anodisé."
         },
-        "t": "b"
+        "t": "s"
       }
     }
   },

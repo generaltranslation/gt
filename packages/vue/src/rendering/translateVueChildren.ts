@@ -961,7 +961,7 @@ function serializeNode(
       data.b = Object.fromEntries(branches);
       data.t =
         node.transformation !== 'plural'
-          ? 'b'
+          ? 's'
           : isOrdinal(node.vnode)
             ? 'o'
             : 'p';

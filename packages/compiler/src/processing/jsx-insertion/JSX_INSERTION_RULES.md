@@ -538,7 +538,7 @@ When Select, Plural, or other opaque GT components appear inside Derive's childr
 
 // Produces 2 hash entries:
 //   1. ["Hello ", { t: "Derive", i: 1 }]  (outer _T — contains Derive)
-//   2. { t: "Select", i: 1, d: { b: { other: "fallback" }, t: "b" } }  (inner _T — standalone Select; its children are stored as the `other` branch)
+//   2. { t: "Select", i: 1, d: { b: { other: "fallback" }, t: "s" } }  (inner _T — standalone Select; its children are stored as the `other` branch)
 //
 // At runtime, removeInjectedT strips the inner _T, but the standalone hash
 // entry is still needed for translation resolution.

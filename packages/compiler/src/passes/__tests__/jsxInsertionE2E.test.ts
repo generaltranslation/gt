@@ -111,7 +111,7 @@ describe('JSX insertion -> collection E2E', () => {
             a: { t: 'span', i: 2, c: 'Option A' },
             other: { t: 'C2', i: 2, c: 'Default' },
           },
-          t: 'b',
+          t: 's',
         },
       },
     ],

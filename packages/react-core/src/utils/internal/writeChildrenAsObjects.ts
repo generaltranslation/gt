@@ -14,6 +14,7 @@ import {
   JsxElement,
   Variable,
 } from '@generaltranslation/format';
+import { BRANCH_TRANSFORMATIONS } from '@generaltranslation/format/internal';
 
 /**
  * Gets the tag name of a React element.
@@ -39,9 +40,9 @@ const getTagName = (child: TaggedElement): string => {
 };
 /** What each kind of branching element is stored as. */
 const TRANSFORMATION_CODES = {
-  select: 'b',
-  plural: 'p',
-  ordinal: 'o',
+  select: BRANCH_TRANSFORMATIONS.Select,
+  plural: BRANCH_TRANSFORMATIONS.Plural,
+  ordinal: BRANCH_TRANSFORMATIONS.Ordinal,
 } as const;
 
 const createGTProp = (

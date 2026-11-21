@@ -480,7 +480,7 @@ describe('Vue JSX rich extraction', () => {
           other: true,
           yes: true,
         },
-        t: 'b',
+        t: 's',
       },
       i: 1,
       t: 'Select',
@@ -488,7 +488,7 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual(source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('0401db2633fc35ff');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('a7fa8c3e7492b9fa');
   });
 
   it('omits undefined Select slots while retaining authored empty arrays', async () => {
@@ -514,7 +514,7 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual({
-      d: { b: { empty: [], nested: [] }, t: 'b' },
+      d: { b: { empty: [], nested: [] }, t: 's' },
       i: 1,
       t: 'Select',
     });
@@ -567,7 +567,7 @@ describe('Vue JSX rich extraction', () => {
         'NaN',
         'Infinity',
         {
-          d: { b: { few: 'Infinity', many: 'NaN', other: 'Fallback' }, t: 'b' },
+          d: { b: { few: 'Infinity', many: 'NaN', other: 'Fallback' }, t: 's' },
           i: 1,
           t: 'Select',
         },
@@ -1054,7 +1054,7 @@ describe('Vue JSX rich extraction', () => {
             formal: [{ c: 'Hello', i: 2, t: 'strong' }, ' ', { i: 3, v: 'v' }],
             other: 'Fallback',
           },
-          t: 'b',
+          t: 's',
         },
         i: 1,
         t: 'Select',
@@ -1162,7 +1162,7 @@ describe('Vue JSX rich extraction', () => {
               pending: '',
               unknown: null,
             },
-            t: 'b',
+            t: 's',
           },
           i: 2,
           t: 'Select',
@@ -1185,7 +1185,7 @@ describe('Vue JSX rich extraction', () => {
           dataFormat: 'JSX',
           source: output.results[0]!.source,
         })
-      ).toBe('a100a94c819867a1');
+      ).toBe('47d280cc661fac4f');
     }
   );
 
@@ -1279,7 +1279,7 @@ describe('Vue JSX rich extraction', () => {
       {
         d: {
           b: { casual: 'Casual slot', formal: 'Formal slot' },
-          t: 'b',
+          t: 's',
         },
         i: 1,
         t: 'Select',

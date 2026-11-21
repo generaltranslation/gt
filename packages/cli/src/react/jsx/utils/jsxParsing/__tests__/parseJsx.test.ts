@@ -171,7 +171,7 @@ describe('Derive resolution across files', () => {
             i: 2,
             d: {
               b: { light: 'Light', dark: 'Dark', other: 'Default' },
-              t: 'b',
+              t: 's',
             },
           },
         ],
@@ -626,7 +626,7 @@ describe('GT IDs of Select/Plural children, which are the other branch', () => {
           i: 1,
           d: {
             b: { open: 'Open', other: { t: 'span', i: 2, c: 'Closed' } },
-            t: 'b',
+            t: 's',
           },
         },
         { t: 'span', i: 2, c: ' live' },
@@ -642,7 +642,7 @@ describe('GT IDs of Select/Plural children, which are the other branch', () => {
           i: 2,
           d: {
             b: { open: { t: 'b', i: 3, c: 'Open' }, other: 'Closed' },
-            t: 'b',
+            t: 's',
           },
         },
       ],
@@ -979,7 +979,7 @@ describe('Derive of a variable', () => {
       )
     );
     const rest = [
-      { t: 'Select', i: 2, d: { t: 'b', b: { true: 'Jordan', false: '' } } },
+      { t: 'Select', i: 2, d: { t: 's', b: { true: 'Jordan', false: '' } } },
       ' approved the build for ',
       { i: 3, k: 'release-name', v: 'v' },
     ];

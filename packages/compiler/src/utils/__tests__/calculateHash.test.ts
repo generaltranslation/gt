@@ -32,7 +32,7 @@ describe('calculateHash', () => {
       'Hello world',
       [],
       { t: 'span', c: false },
-      { t: 'Select', d: { t: 'b', b: { active: false } } },
+      { t: 'Select', d: { t: 's', b: { active: false } } },
       [{ t: 'br' }],
       [{ k: 'name' }],
       [{ k: 'name', i: 1 }],

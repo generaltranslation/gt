@@ -85,7 +85,7 @@ describe('gt-vue package layout', () => {
           nestedNull: { t: 'div', c: { t: 'span', c: null } },
           branches: {
             t: 'Select',
-            d: { t: 'b', b: { active: true, inactive: false, empty: null } },
+            d: { t: 's', b: { active: true, inactive: false, empty: null } },
           },
         } satisfies TranslationCatalog;
 

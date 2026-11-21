@@ -18,7 +18,7 @@
         "file": "file.svg",
         "directory": "public"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -214,7 +214,7 @@
                 "c": "Public directory"
               }
             },
-            "t": "b"
+            "t": "s"
           }
         },
         "=2": "Multiple top-level items"
@@ -285,7 +285,7 @@
         "file": "special-chars!@#$%^&*().svg",
         "directory": "unicode-path-ñáéíóú"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -323,7 +323,7 @@
                             "v": "v"
                           }
                         },
-                        "t": "b"
+                        "t": "s"
                       }
                     },
                     "=2": {
@@ -340,7 +340,7 @@
                             "v": "d"
                           }
                         },
-                        "t": "b"
+                        "t": "s"
                       }
                     }
                   },
@@ -349,12 +349,12 @@
               },
               "option2": "Level 2 option 2"
             },
-            "t": "b"
+            "t": "s"
           }
         },
         "option2": "Level 1 option 2"
       },
-      "t": "b"
+      "t": "s"
     }
   }
 ]

@@ -30,7 +30,7 @@ describe('elements with the same id in sibling branches', () => {
     t: 'Select',
     i: 1,
     d: {
-      t: 'b',
+      t: 's',
       b: {
         on: { t: 'C2', i: 2, c: on },
         off: { t: 'C2', i: 2, c: off },
