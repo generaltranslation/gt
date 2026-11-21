@@ -24,6 +24,8 @@ export type UploadableContent<Inline = unknown> = {
   inline: Inline;
   /** What `inline` takes of a request body. */
   inlineBytes: number;
+  /** At most this many bytes are uploaded, known without reading them. */
+  uploadBytes: number;
   /** The bytes to upload, read only for content that goes by reference. */
   bytes: () => Uint8Array<ArrayBuffer>;
   /** Set for a file in a format with its own upload limit. */
@@ -48,6 +50,8 @@ export function base64Content(
       encoded.length > MAX_REQUEST_BODY_BYTES
         ? encoded.length
         : jsonByteLength(encoded),
+    // Line breaks in base64 are not uploaded.
+    uploadBytes: encoded.replace(/\s+/g, '').length * 0.75,
     bytes: () => decodeBytes(encoded),
     fileFormat,
   };
@@ -60,6 +64,7 @@ export function jsonContent<Value extends object>(
   return {
     inline: value,
     inlineBytes: bytes.byteLength,
+    uploadBytes: bytes.byteLength,
     bytes: () => bytes,
     fileFormat: 'JSON',
   };
@@ -79,6 +84,9 @@ type ContentGroup = readonly UploadableContent[];
 const inlineBytesOf = (group: ContentGroup) =>
   group.reduce((bytes, { inlineBytes }) => bytes + inlineBytes, 0);
 
+const uploadShare = (share: number, { uploadBytes }: UploadableContent) =>
+  share + uploadBytes * UPLOAD_BYTE_SHARE;
+
 /** What `groups` take of a request: a group no request holds inline counts as its references and its share of the uploads a request may name. */
 export function contentBytes(groups: readonly ContentGroup[]): number {
   return groups.reduce((bytes, group) => {
@@ -86,7 +94,7 @@ export function contentBytes(groups: readonly ContentGroup[]): number {
     return (
       bytes +
       group.length * REFERENCE_BYTES +
-      (inline > MAX_REQUEST_BODY_BYTES ? inline * UPLOAD_BYTE_SHARE : inline)
+      (inline > MAX_REQUEST_BODY_BYTES ? group.reduce(uploadShare, 0) : inline)
     );
   }, 0);
 }
@@ -97,13 +105,11 @@ export function splitByUploads<Item>(
   items: readonly Item[],
   contentOf: (item: Item) => UploadableContent
 ): Item[][] {
-  const uploadShare = ({ inlineBytes }: UploadableContent) =>
-    inlineBytes * UPLOAD_BYTE_SHARE;
   const parts = createBatches(
     items,
     Infinity,
-    MAX_REQUEST_BODY_BYTES - uploadShare(shared),
-    (item) => uploadShare(contentOf(item))
+    MAX_REQUEST_BODY_BYTES - uploadShare(0, shared),
+    (item) => uploadShare(0, contentOf(item))
   );
   return parts.length > 0 ? parts : [[...items]];
 }

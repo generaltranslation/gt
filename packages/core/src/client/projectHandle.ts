@@ -91,6 +91,8 @@ import {
 import { createDiagnosticMessage } from '../logging/diagnostics';
 import type { GTProjectConfig } from './clientConfig';
 import { GTRuntime } from '../runtime';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import type { MoveMapping } from '../translate/moveFiles';
 import type { PublishFileEntry } from '../translate/publishFiles';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
@@ -1240,14 +1242,31 @@ export class ProjectHandle extends GTRuntime {
     }[],
     options: { timeout?: number } = {}
   ): Promise<BatchWriteResponse<UploadTranslationsResponse>> {
+    // The API refuses a file and locale named twice, which it cannot see once they are in different requests.
+    const targets = new Set<string>();
+    for (const { source, translations } of files) {
+      for (const { locale } of translations) {
+        const target = JSON.stringify([
+          source.branchId || null,
+          // The API gives a file sent without an ID the sha256 of its name.
+          source.fileId || bytesToHex(sha256(utf8ToBytes(source.fileName))),
+          this.resolveServiceLocale(locale),
+        ]);
+        if (targets.has(target)) {
+          throw new ApiError(
+            `Duplicate source file and translation locale: ${source.fileName} (${locale})`,
+            400,
+            ErrorCode.INVALID_REQUEST
+          );
+        }
+        targets.add(target);
+      }
+    }
     const response = await writeInBatches(
       // A source whose translations no request may name together goes with each part of them.
       files.flatMap(({ source, translations }) =>
         splitByUploads(fileContent(source), translations, fileContent).map(
-          (part) => ({
-            source,
-            translations: part,
-          })
+          (part) => ({ source, translations: part })
         )
       ),
       DEFAULT_BATCH_SIZE,
