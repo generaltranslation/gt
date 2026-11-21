@@ -173,6 +173,17 @@ const contentBytes = (content: string, fileFormat: FileFormat): Buffer =>
     ? Buffer.from(content, 'base64')
     : Buffer.from(content, 'utf8');
 
+/**
+ * The branch the files were uploaded under. `readLockfile` needs it to pick the
+ * matching entries out of a v1 lockfile, which keeps every branch it has seen;
+ * without it the file's entries are read from whichever branch is listed first.
+ */
+const lockfileBranchId = (
+  files: FileReference[],
+  settings: Settings
+): string | undefined =>
+  settings._branchId ?? files.find((file) => file.branchId)?.branchId;
+
 const findLatestDownloadedVersion = (
   entryMap: EntryMap,
   fileId: string,
@@ -212,7 +223,12 @@ export async function collectAndSendUserEditDiffs(
     settings.defaultLocale
   );
 
-  const { entryMap } = readLockfile(settings);
+  // readLockfile uses _branchId to select branch-specific entries. Keep it on a
+  // scoped copy so the caller's settings object is not mutated.
+  const branchId = lockfileBranchId(files, settings);
+  const { entryMap } = readLockfile(
+    branchId ? { ...settings, _branchId: branchId } : settings
+  );
 
   const tempDir = path.join(os.tmpdir(), randomUUID());
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
