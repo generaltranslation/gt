@@ -60,21 +60,20 @@ export async function createInlineUpdates(
   for (const file of files) {
     const code = await fs.promises.readFile(file, 'utf8');
     let ast;
+    let pathsAndAliases;
     try {
       ast = parse(code, {
         sourceType: 'module',
         plugins: getSourceParserPlugins(file),
       });
+      // First pass: collect imports and process translation functions. Babel
+      // can parse some files whose scopes it cannot build.
+      pathsAndAliases = getPathsAndAliases(ast, pkgs);
     } catch (error) {
       logger.error(`Error parsing file ${file}: ${error}`);
       continue;
     }
-
-    // First pass: collect imports and process translation functions
-    const { importAliases, translationComponentPaths } = getPathsAndAliases(
-      ast,
-      pkgs
-    );
+    const { importAliases, translationComponentPaths } = pathsAndAliases;
 
     const stringParsingConfig: ParsingConfig = {
       file,

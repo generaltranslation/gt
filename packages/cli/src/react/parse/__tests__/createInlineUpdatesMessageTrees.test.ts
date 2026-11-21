@@ -2285,6 +2285,25 @@ ${
     expect(result.updates.map((u) => u.source)).toContain('Save');
   });
 
+  it('skips a scanned file whose scopes Babel cannot build, and extracts the rest', async () => {
+    const logged = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    const { result } = await extractProject(
+      Libraries.GT_REACT,
+      () => ({
+        'types.ts': 'export interface State {\n  ready: boolean;\n}\n',
+        'state.ts':
+          "import type { State } from './types';\nlet State = <State>{ ready: true };\nexport { State };\n",
+        'label.ts':
+          "import { t } from 'gt-react';\nexport const label = t`Save`;\n",
+      }),
+      ['state.ts', 'label.ts']
+    );
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining('state.ts'));
+    logged.mockRestore();
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(
