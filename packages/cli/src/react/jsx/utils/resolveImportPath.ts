@@ -158,6 +158,17 @@ export function resolveImportPath(
           // Try the next source extension
         }
       }
+    } else if (/\.[cm]js$/.test(importPath)) {
+      try {
+        result = resolve.sync(importPath.replace(/js$/, 'ts'), {
+          basedir,
+          extensions,
+        });
+        resolveImportPathCache.set(cacheKey, result);
+        return result;
+      } catch {
+        // Continue to return null
+      }
     } else if (importPath.endsWith('.jsx')) {
       const tsxPath = importPath.replace(/\.jsx$/, '.tsx');
       try {

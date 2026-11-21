@@ -183,13 +183,14 @@ function processTagReference(
     processTagBinding(alias, configuredOptions, context);
     return;
   }
-  // helper(t)
+  // helper(t), helper(t as GT)
+  const argument = unwrapTypeExpressions(ref);
   if (
     follower &&
-    parent &&
+    argument.parentPath &&
     followTagArgument(
-      parent,
-      ref.node,
+      argument.parentPath,
+      argument.node,
       configuredOptions,
       optionsFile,
       config.file,
@@ -243,4 +244,20 @@ function warnUntrackedTag(
   output.warnings.add(
     warnUntrackedMessageTagSync(config.file, formatLocation(node))
   );
+}
+
+/** The outermost of `node as T`, `node!` and `node satisfies T` around `path`. */
+function unwrapTypeExpressions(path: NodePath): NodePath {
+  let current = path;
+  while (
+    current.parentPath &&
+    (current.parentPath.isTSAsExpression() ||
+      current.parentPath.isTSNonNullExpression() ||
+      current.parentPath.isTSSatisfiesExpression() ||
+      current.parentPath.isTSTypeAssertion()) &&
+    current.parentPath.node.expression === current.node
+  ) {
+    current = current.parentPath;
+  }
+  return current;
 }

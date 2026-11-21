@@ -1619,6 +1619,118 @@ ${
     expect(skipped[0]).not.toMatch(/nav\.ts/);
   });
 
+  it('follows type assertions, a self-calling function expression, an overloaded default export and .mjs imports', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'asserted(t as GT);',
+          'asserted(t!);',
+          'asserted(t satisfies GT);',
+          'self(t, 1);',
+          'overloaded(t);',
+          'return fromMts(t);',
+        ].join('\n  '),
+        [
+          "import overloaded from './overloaded';",
+          "import { fromMts } from './labels.mjs';",
+          'function asserted(t: GT) {\n  return t`Asserted`;\n}',
+          'const self = function inner(t: GT, depth: number): string {\n  return depth ? inner(t, depth - 1) : t`Self`;\n};',
+        ].join('\n')
+      ),
+      'overloaded.ts': nav(
+        nextHost,
+        'export default function label(t: GT): string;\nexport default function label(t: GT, id?: string) {\n  return t`Overloaded`;\n}'
+      ),
+      'labels.mts': nav(
+        nextHost,
+        'export function fromMts(t: GT) {\n  return t`From mts`;\n}'
+      ),
+    }));
+
+    expect(result.warnings).toEqual([]);
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['Asserted', 'From mts', 'Overloaded', 'Self']);
+  });
+
+  it('extracts a helper once when its own file and another file pass it t', async () => {
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'a.tsx': withTag(
+          nextHost,
+          'return getNavLabels(t);',
+          "import { getNavLabels } from './nav';"
+        ),
+        'nav.tsx': withTag(
+          nextHost,
+          'return getNavLabels(t);',
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      }),
+      ['a.tsx', 'nav.tsx'],
+      { includeSourceCodeContext: true }
+    );
+
+    expect(result.warnings).toEqual([]);
+    const updates = treeUpdates(result);
+    expect(updates.map((u) => u.source)).toEqual(['Settings']);
+    expect(
+      Object.values(updates[0].metadata.sourceCode ?? {}).flat()
+    ).toHaveLength(1);
+  });
+
+  it('follows an export through a large barrel', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => {
+      const files: Record<string, string> = {
+        'page.tsx': withTag(
+          nextHost,
+          'return getNavLabels(t);',
+          "import { getNavLabels } from './lib';"
+        ),
+        'lib/nav.ts': nav(
+          nextHost,
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      };
+      const modules = Array.from({ length: 40 }, (_, i) => `m${i}`);
+      for (const name of modules) {
+        files[`lib/${name}.ts`] =
+          `export function ${name}() {\n  return '${name}';\n}\n`;
+      }
+      files['lib/index.ts'] = [...modules, 'nav']
+        .map((name) => `export * from './${name}';`)
+        .join('\n');
+      return files;
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Settings']);
+  });
+
+  it('warns about an import it cannot resolve because tsconfig.json is malformed', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'tsconfig.json': '{ "compilerOptions": { "strict": true, }} oops',
+      'page.tsx': withTag(
+        nextHost,
+        'return getNavLabels(t);',
+        "import { getNavLabels } from './nav';"
+      ),
+      'nav.ts': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+      ),
+    }));
+
+    expect(treeUpdates(result)).toEqual([]);
+    expect(
+      result.warnings.filter((w) => w.includes('Could not follow this use'))
+    ).toHaveLength(1);
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(

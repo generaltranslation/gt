@@ -30,11 +30,20 @@ export type FollowedParameter = {
 export type HelperFollower = {
   parsingOptions: ParsingConfigOptions;
   resolvedImports: Map<string, string | null>;
+  realPaths: Map<string, string>;
+  /** The names each file exports, which decide whether to traverse it. */
+  exportSummaries: Map<string, ExportSummary | null>;
+  /** Recently traversed files, bounded because a traversed file is large. */
   programs: Map<string, NodePath<t.Program> | null>;
-  followed: Map<Binding, Set<string>>;
+  /** Option keys followed per parameter, keyed by file and position. */
+  followed: Map<string, Set<string>>;
   /** Parameters whose uses are extracted once their file's types load. */
   pending: FollowedParameter[];
 };
+
+type ExportSummary = { names: Set<string>; stars: string[] };
+
+const maxCachedPrograms = 8;
 
 export function createHelperFollower(
   parsingOptions: ParsingConfigOptions
@@ -42,6 +51,8 @@ export function createHelperFollower(
   return {
     parsingOptions,
     resolvedImports: new Map(),
+    realPaths: new Map(),
+    exportSummaries: new Map(),
     programs: new Map(),
     followed: new Map(),
     pending: [],
@@ -80,11 +91,12 @@ export function followTagArgument(
   const param = getParameter(found.fn, index);
   if (param === undefined) return false;
   if (param === null) return !readsArguments(found.fn);
-  const followedOptions = follower.followed.get(param) ?? new Set();
+  const paramKey = `${realPath(found.file, follower)}\0${param.identifier.start}`;
+  const followedOptions = follower.followed.get(paramKey) ?? new Set();
   const key = optionsKey(options);
   if (!followedOptions.has(key)) {
     followedOptions.add(key);
-    follower.followed.set(param, followedOptions);
+    follower.followed.set(paramKey, followedOptions);
     follower.pending.push({
       binding: param,
       options,
@@ -93,6 +105,19 @@ export function followTagArgument(
     });
   }
   return true;
+}
+
+function realPath(file: string, follower: HelperFollower): string {
+  let real = follower.realPaths.get(file);
+  if (real === undefined) {
+    try {
+      real = fs.realpathSync(file);
+    } catch {
+      real = file;
+    }
+    follower.realPaths.set(file, real);
+  }
+  return real;
 }
 
 const positionKeys = new Set([
@@ -176,6 +201,8 @@ function findBindingFunction(
   if (path.isFunctionDeclaration()) {
     return binding.constant ? { fn: path, file } : undefined;
   }
+  // The name of a function expression, inside its own body.
+  if (path.isFunctionExpression()) return { fn: path, file };
   if (path.isVariableDeclarator() && binding.constant) {
     const init = path.get('init');
     if (init.isArrowFunctionExpression() || init.isFunctionExpression()) {
@@ -211,16 +238,33 @@ function findExport(
   seen: Set<string>
 ): FoundFunction | undefined {
   if (isGTMessageImportSource(source)) return;
-  const file = resolveImportPath(
-    fromFile,
-    source,
-    follower.parsingOptions,
-    follower.resolvedImports
-  );
+  let file: string | null;
+  try {
+    file = resolveImportPath(
+      fromFile,
+      source,
+      follower.parsingOptions,
+      follower.resolvedImports
+    );
+  } catch {
+    // A malformed tsconfig.json leaves the import unresolved.
+    return;
+  }
   if (!file || file.split(nodePath.sep).includes('node_modules')) return;
   const key = `${file}\0${name}`;
   if (seen.has(key)) return;
   seen.add(key);
+  const summary = loadExportSummary(file, follower);
+  if (!summary) return;
+  if (!summary.names.has(name)) {
+    // export * never re-exports a default.
+    if (name === 'default') return;
+    for (const starSource of summary.stars) {
+      const found = findExport(starSource, name, file, follower, seen);
+      if (found) return found;
+    }
+    return;
+  }
   const program = loadProgram(file, follower);
   if (!program) return;
   const starSources: string[] = [];
@@ -228,6 +272,8 @@ function findExport(
     if (statement.isExportDefaultDeclaration()) {
       if (name !== 'default') continue;
       const declaration = statement.get('declaration');
+      // An overload signature, followed by the implementation.
+      if (declaration.isTSDeclareFunction()) continue;
       if (declaration.isIdentifier()) {
         return findLocalFunction(
           program.scope,
@@ -301,27 +347,90 @@ function findExport(
   }
 }
 
-/** The parsed program of a file the run follows a tag into, read once. */
+function parseFile(file: string): t.File | undefined {
+  try {
+    return parse(fs.readFileSync(file, 'utf8'), {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+  } catch {
+    // A file that cannot be read or parsed has no function to follow.
+  }
+}
+
+/** The value names a file exports and the sources it re-exports with `export *`. */
+function loadExportSummary(
+  file: string,
+  follower: HelperFollower
+): ExportSummary | undefined {
+  if (!follower.exportSummaries.has(file)) {
+    const ast = parseFile(file);
+    let summary: ExportSummary | null = null;
+    if (ast) {
+      summary = { names: new Set(), stars: [] };
+      for (const statement of ast.program.body) {
+        if (t.isExportDefaultDeclaration(statement)) {
+          summary.names.add('default');
+        } else if (t.isExportAllDeclaration(statement)) {
+          if (statement.exportKind !== 'type') {
+            summary.stars.push(statement.source.value);
+          }
+        } else if (
+          t.isExportNamedDeclaration(statement) &&
+          statement.exportKind !== 'type'
+        ) {
+          const { declaration, specifiers } = statement;
+          if (t.isFunctionDeclaration(declaration) && declaration.id) {
+            summary.names.add(declaration.id.name);
+          } else if (t.isVariableDeclaration(declaration)) {
+            for (const declarator of declaration.declarations) {
+              if (t.isIdentifier(declarator.id)) {
+                summary.names.add(declarator.id.name);
+              }
+            }
+          }
+          for (const specifier of specifiers) {
+            if (t.isExportSpecifier(specifier)) {
+              summary.names.add(
+                t.isIdentifier(specifier.exported)
+                  ? specifier.exported.name
+                  : specifier.exported.value
+              );
+            }
+          }
+        }
+      }
+    }
+    follower.exportSummaries.set(file, summary);
+  }
+  return follower.exportSummaries.get(file) ?? undefined;
+}
+
+/** The traversed program of a file that exports a followed function. */
 function loadProgram(
   file: string,
   follower: HelperFollower
 ): NodePath<t.Program> | undefined {
-  if (!follower.programs.has(file)) {
-    let program: NodePath<t.Program> | null = null;
-    try {
-      const ast = parse(fs.readFileSync(file, 'utf8'), {
-        sourceType: 'module',
-        plugins: ['jsx', 'typescript'],
-      });
-      traverse(ast, {
-        Program(path) {
-          program = path;
-        },
-      });
-    } catch {
-      // A file that cannot be read or parsed has no function to follow.
-    }
-    follower.programs.set(file, program);
+  const { programs } = follower;
+  if (programs.has(file)) {
+    const cached = programs.get(file)!;
+    programs.delete(file);
+    programs.set(file, cached);
+    return cached ?? undefined;
   }
-  return follower.programs.get(file) ?? undefined;
+  let program: NodePath<t.Program> | null = null;
+  const ast = parseFile(file);
+  if (ast) {
+    traverse(ast, {
+      Program(path) {
+        program = path;
+        path.stop();
+      },
+    });
+  }
+  programs.set(file, program);
+  if (programs.size > maxCachedPrograms) {
+    programs.delete(programs.keys().next().value!);
+  }
+  return program ?? undefined;
 }
