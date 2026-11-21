@@ -1,5 +1,6 @@
-// Builds the app with source maps and checks where positions in the chunks
-// it emits map back to:
+// Builds the app with source maps, without the split and with each way of
+// splitting, and checks that the bundler reports no broken source map and
+// where positions in the chunks it emits map back to:
 //   node scripts/check-source-maps.mjs
 // Prints one line per check and exits with 1 when any fails.
 import { spawnSync } from 'node:child_process';
@@ -83,6 +84,21 @@ const POSITIONS = [
     file: 'src/routes/Orders.tsx',
     text: 't`Recent orders`',
   },
+  // The split writes the chunks an import loads at the import once the
+  // chunk is minified, which moves the rest of the chunk
+  {
+    name: 'a call after the dynamic imports of its chunk',
+    emitted: /(?<=\.app\?\?=\[\]\)\.)push\(performance\.now\(\)\)/,
+    file: 'src/App.tsx',
+    text: 'push(performance.now())',
+  },
+  // The split rewrites the call that starts the app
+  {
+    name: 'a call after the one that starts the app',
+    emitted: /document\.getElementById\(`root`\)/,
+    file: 'src/main.tsx',
+    text: "document.getElementById('root')",
+  },
 ];
 
 /** Checks each position in the chunk of a build that holds it. */
@@ -127,8 +143,31 @@ function checkPositions(name, outDir) {
   }
 }
 
+// Each way of splitting, without and with hash minification, which writes
+// an id into every call site after the bundler has rendered its chunk
+const SPLITS = [
+  ['split by chunk, named by a token', 'token', { CHECK_NAMING: 'token' }],
+  ['split by chunk, named by a map', 'map', { CHECK_NAMING: 'map' }],
+  ['split by module', 'module', { GT_SPLIT_TRANSLATIONS_BY: 'module' }],
+  [
+    'split by chunk, with a chunk import map',
+    'import-map',
+    { CHECK_NAMING: 'token', CHECK_IMPORT_MAP: 'true' },
+  ],
+];
 const BUILDS = [
   ['without the split', 'off', { GT_SPLIT_TRANSLATIONS: 'false' }],
+  ...SPLITS.flatMap(([name, directory, env]) =>
+    [false, true].map((minified) => [
+      `${name}${minified ? ', with hash minification' : ''}`,
+      `${directory}${minified ? '-minified' : ''}`,
+      {
+        GT_SPLIT_TRANSLATIONS: 'true',
+        GT_MINIFY_HASHES: String(minified),
+        ...env,
+      },
+    ])
+  ),
 ];
 
 for (const [name, directory, env] of BUILDS) {

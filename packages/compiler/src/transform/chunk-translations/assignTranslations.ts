@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { ChunkImportMap } from './chunkImportMap';
+import { replaceInChunk, type ReplaceInChunk } from './chunkSourceMap';
 import { IMPORTED_CHUNKS_PLACEHOLDER } from './resolveChunkTranslations';
 import type { MinifiedIdReader } from './hashMinification';
 
@@ -524,10 +525,16 @@ const PRELOADED_IMPORT = new RegExp(
  * are added at once, so they download while the translations do.
  *
  * An import without that call is left as it is: gt-react preloads its chunk.
+ *
+ * @param replace What replaces the calls, see trackReplacements.
  */
-export function passPreloads(code: string): string {
+export function passPreloads(
+  code: string,
+  replace: ReplaceInChunk = replaceInChunk
+): string {
   if (!code.includes(IMPORTED_CHUNKS_PLACEHOLDER)) return code;
-  return code.replace(
+  return replace(
+    code,
     PRELOADED_IMPORT,
     (
       _match,
@@ -676,12 +683,14 @@ const PRELOADED_CHUNKS = /\bm\.f\s*=\s*(\[[^\]]*\])/;
  * @param needsFiles Whether the import of a chunk needs any file.
  * @param importMap The chunk import map of the build as it was when the lists were written, when it has one.
  * @param names The names the lists hold chunks under, see findImportedNames.
+ * @param replace What replaces the placeholders, see trackReplacements.
  */
 export function replaceImportedChunks(
   chunk: { fileName: string; code: string },
   needsFiles: (target: string) => boolean,
   importMap?: ChunkImportMap,
-  names: ChunkImportMap | undefined = importMap
+  names: ChunkImportMap | undefined = importMap,
+  replace: ReplaceInChunk = replaceInChunk
 ): { code: string; unread: number } {
   if (!chunk.code.includes(IMPORTED_CHUNKS_PLACEHOLDER)) {
     return { code: chunk.code, unread: 0 };
@@ -693,7 +702,8 @@ export function replaceImportedChunks(
   } catch {
     // Not a list of file names: every import names its chunk
   }
-  const read = chunk.code.replace(
+  const read = replace(
+    chunk.code,
     WRAPPED_IMPORT,
     (
       _match,
@@ -712,7 +722,7 @@ export function replaceImportedChunks(
     }
   );
   return {
-    code: read.replace(PLACEHOLDER, '0'),
+    code: replace(read, PLACEHOLDER, () => '0'),
     unread: [...read.matchAll(PLACEHOLDER)].filter(({ index }) =>
       importsChunk(read, index)
     ).length,

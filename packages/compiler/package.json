@@ -43,8 +43,10 @@
     "@babel/types": "^7.23.0",
     "@generaltranslation/format": "workspace:*",
     "@generaltranslation/icu": "workspace:*",
+    "@jridgewell/sourcemap-codec": "^1.5.5",
     "generaltranslation": "workspace:*",
     "gt-i18n": "workspace:*",
+    "magic-string": "^0.30.21",
     "unplugin": "^2.3.11"
   },
   "devDependencies": {

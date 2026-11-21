@@ -1040,12 +1040,18 @@ importers:
       '@generaltranslation/icu':
         specifier: workspace:*
         version: link:../icu
+      '@jridgewell/sourcemap-codec':
+        specifier: ^1.5.5
+        version: 1.6.0
       generaltranslation:
         specifier: workspace:*
         version: link:../core
       gt-i18n:
         specifier: workspace:*
         version: link:../i18n
+      magic-string:
+        specifier: ^0.30.21
+        version: 0.30.21
       unplugin:
         specifier: ^2.3.11
         version: 2.3.11
