@@ -327,4 +327,76 @@ export async function handler() {
 
     expect(updates.map((update) => update.source)).toEqual(['From src']);
   });
+
+  // Each entry of the default deny list: paths it skips, and a path with a
+  // similar name that the scan still reads.
+  it.each([
+    {
+      entry: 'dist',
+      denied: ['dist/server.js', 'services/api/dist/server.js'],
+      similar: 'distance.js',
+    },
+    {
+      entry: 'build',
+      denied: ['build/server.js', 'packages/web/build/app.js'],
+      similar: 'buildings/index.js',
+    },
+    {
+      entry: 'coverage',
+      denied: [
+        'coverage/lcov-report/prettify.js',
+        'packages/api/coverage/lcov-report/sorter.js',
+      ],
+      similar: 'routes/coverage.js',
+    },
+    {
+      entry: 'public',
+      denied: ['public/app.js', 'packages/web/public/sw.js'],
+      similar: 'publications/index.js',
+    },
+    {
+      entry: 'test',
+      denied: ['test/server.js', 'packages/api/test/users.js'],
+      similar: 'testimonials/index.js',
+    },
+    {
+      entry: 'tests',
+      denied: ['tests/server.js', 'packages/api/tests/users.js'],
+      similar: 'contests/index.js',
+    },
+    {
+      entry: '__tests__',
+      denied: ['__tests__/server.js', 'src/routes/__tests__/users.js'],
+      similar: 'src/__shared__/strings.js',
+    },
+    {
+      entry: '*.test.*',
+      denied: ['server.test.js', 'src/routes/users.test.ts'],
+      similar: 'routes/latest.js',
+    },
+    {
+      entry: '*.spec.*',
+      denied: ['server.spec.ts', 'src/routes/users.spec.mjs'],
+      similar: 'routes/specials.js',
+    },
+    {
+      entry: '*.d.{ts,mts,cts}',
+      denied: ['env.d.ts', 'src/types/express.d.mts', 'lib/legacy.d.cts'],
+      similar: 'routes/upload.ts',
+    },
+  ])('skips $entry, but still scans $similar', async ({ denied, similar }) => {
+    for (const file of [...denied, similar]) {
+      writeHandler(file, `From ${file}`);
+    }
+
+    const { updates } = await createInlineUpdates(
+      Libraries.GT_NODE,
+      false,
+      undefined,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+
+    expect(updates.map((update) => update.source)).toEqual([`From ${similar}`]);
+  });
 });
