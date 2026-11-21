@@ -7,7 +7,11 @@ import {
 import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { loadTypeScript } from '../../typeChecker.js';
 import { NonStaticMessageError, formatLocation } from './diagnostics.js';
-import { followTagArgument, type HelperFollower } from './followHelpers.js';
+import {
+  followTagArgument,
+  getMetadataKey,
+  type HelperFollower,
+} from './followHelpers.js';
 import { parseMessageOptions } from './parseMessageOptions.js';
 import { processMessage, reportSkippedMessage } from './processMessage.js';
 import { processMsgCall } from './processMsgCall.js';
@@ -43,17 +47,18 @@ export function processHookReference(
   }
   const created = call.parentPath?.isAwaitExpression() ? call.parentPath : call;
   const declarator = created.parentPath;
-  // helper(useGT())
+  // helper(useGT()), helper(useGT() as GT)
+  const argument = unwrapTypeExpressions(created);
   if (
-    declarator &&
+    argument.parentPath &&
     followTagArgument(
-      declarator,
-      created.node,
+      argument.parentPath,
+      argument.node,
       undefined,
       config.file,
       config.file,
       follower,
-      () => ''
+      () => getMetadataKey({})
     )
   ) {
     return;
@@ -163,13 +168,14 @@ function processTagReference(
       });
       return;
     }
-    // helper(t({ ...options }))
+    // helper(t({ ...options })), helper(t({ ...options })!)
+    const configured = unwrapTypeExpressions(parent);
     if (
       follower &&
-      outer &&
+      configured.parentPath &&
       followTagArgument(
-        outer,
-        parent.node,
+        configured.parentPath,
+        configured.node,
         parent.node.arguments,
         config.file,
         config.file,
@@ -242,10 +248,7 @@ function getOptionsKey(
   { config, output }: TagContext
 ): string | undefined {
   try {
-    const metadata = parseMessageOptions(options, fallback);
-    return JSON.stringify(
-      Object.entries(metadata).sort(([a], [b]) => (a < b ? -1 : 1))
-    );
+    return getMetadataKey(parseMessageOptions(options, fallback));
   } catch (error) {
     if (!(error instanceof NonStaticMessageError)) throw error;
     reportSkippedMessage(error, file, config, output);

@@ -1841,6 +1841,88 @@ ${
     ).toEqual(['Callback', 'Let alias', 'Spread']);
   });
 
+  it('follows type assertions around the hook result and a configured tag', async () => {
+    const getHost = hosts.find(([, h]) => h.hook === 'getGT')![1];
+    const files = (host: Host, body: string) => () => ({
+      'page.tsx': withTag(host, body, "import { label } from './nav';"),
+      'nav.ts': nav(
+        host,
+        'export function label(t: GT) {\n  return t`Save`;\n}'
+      ),
+    });
+    for (const [host, body, context] of [
+      [nextHost, 'return label(useGT() as GT);', undefined],
+      [getHost, 'return label((await getGT()) as GT);', undefined],
+      [nextHost, "return label(t({ context: 'nav' })!);", 'nav'],
+    ] as const) {
+      const { result } = await extractProject(host.library, files(host, body));
+      expect(result.warnings).toEqual([]);
+      expect(
+        treeUpdates(result).map((u) => [u.source, u.metadata.context])
+      ).toEqual([['Save', context]]);
+    }
+  });
+
+  it('keeps inline messages when an imported file cannot be traversed', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return [t`Inline`, label(t)];',
+        "import { label } from './nav';"
+      ),
+      'types.ts': 'export interface State {\n  ready: boolean;\n}\n',
+      'nav.ts':
+        "import type { State } from './types';\nlet State: State = { ready: true };\nexport function label(t: any) {\n  return t`Save`;\n}\n",
+    }));
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Inline']);
+    expect(
+      result.warnings.filter((w) => w.includes('Could not follow this use'))
+    ).toHaveLength(1);
+  });
+
+  it('reads a followed helper file at most twice across many callers', async () => {
+    const helpers = Array.from({ length: 12 }, (_, i) => `h${i}`);
+    const pages = Array.from({ length: 6 }, (_, i) => `page${i}.tsx`);
+    const reads = vi.spyOn(fs, 'readFileSync');
+    try {
+      const { result } = await extractProject(
+        Libraries.GT_NEXT,
+        () => {
+          const files: Record<string, string> = {};
+          for (const page of pages) {
+            files[page] = withTag(
+              nextHost,
+              `return [${helpers.map((h) => `${h}(t)`).join(', ')}];`,
+              helpers.map((h) => `import { ${h} } from './${h}';`).join('\n')
+            );
+          }
+          for (const h of helpers) {
+            files[`${h}.ts`] = nav(
+              nextHost,
+              `export function ${h}(t: GT) {\n  return t\`${h}\`;\n}`
+            );
+          }
+          return files;
+        },
+        pages
+      );
+
+      expect(result.warnings).toEqual([]);
+      expect(treeUpdates(result)).toHaveLength(helpers.length);
+      const helperReads = reads.mock.calls
+        .map(([file]) => path.basename(String(file)))
+        .filter((file) => /^h\d+\.ts$/.test(file));
+      for (const h of helpers) {
+        expect(
+          helperReads.filter((file) => file === `${h}.ts`).length
+        ).toBeLessThanOrEqual(2);
+      }
+    } finally {
+      reads.mockRestore();
+    }
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(

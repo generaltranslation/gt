@@ -5,6 +5,7 @@ import traverseModule from '@babel/traverse';
 import type { Binding, NodePath, Scope } from '@babel/traverse';
 import * as t from '@babel/types';
 import { isGTMessageImportSource } from 'generaltranslation/internal';
+import type { MessageTreeHashMetadata } from 'generaltranslation/id';
 import type { ParsingConfigOptions } from '../../../../../types/parsing.js';
 import { resolveImportPath } from '../../resolveImportPath.js';
 import { getImportedName } from './imports.js';
@@ -37,6 +38,11 @@ export type HelperFollower = {
   programs: Map<string, NodePath<t.Program> | null>;
   /** Option keys followed per parameter, keyed by file and position. */
   followed: Map<string, Set<string>>;
+  /**
+   * The parameter an imported function receives an argument in, by resolved
+   * export and argument position, so a followed one is not traversed again.
+   */
+  importedParameters: Map<string, { paramKey: string; followable: boolean }>;
   /** Parameters whose uses are extracted once their file's types load. */
   pending: FollowedParameter[];
 };
@@ -55,6 +61,7 @@ export function createHelperFollower(
     exportSummaries: new Map(),
     programs: new Map(),
     followed: new Map(),
+    importedParameters: new Map(),
     pending: [],
   };
 }
@@ -65,6 +72,13 @@ type FoundFunction = {
   file: string;
   reassigned?: boolean;
 };
+
+/** Equal for the same metadata, whatever order its options are written in. */
+export function getMetadataKey(metadata: MessageTreeHashMetadata): string {
+  return JSON.stringify(
+    Object.entries(metadata).sort(([a], [b]) => (a < b ? -1 : 1))
+  );
+}
 
 /**
  * Queues the parameter of the function that `call` passes `arg`, a tag, to.
@@ -85,12 +99,18 @@ export function followTagArgument(
   }
   const index = getArgumentIndex(call.node.arguments, arg);
   if (index === undefined) return false;
-  const found = findBindingFunction(
-    call.scope.getBinding(call.node.callee.name),
-    file,
-    follower,
-    new Set()
-  );
+  const binding = call.scope.getBinding(call.node.callee.name);
+  const importKey = getImportKey(binding, file, follower);
+  const imported =
+    importKey && follower.importedParameters.get(`${importKey}\0${index}`);
+  if (imported) {
+    const key = getOptionsKey();
+    if (key === undefined) return true;
+    if (follower.followed.get(imported.paramKey)?.has(key)) {
+      return imported.followable;
+    }
+  }
+  const found = findBindingFunction(binding, file, follower, new Set());
   if (!found) return false;
   const param = getParameter(found.fn, index);
   if (param === undefined) return false;
@@ -100,6 +120,12 @@ export function followTagArgument(
   const key = getOptionsKey();
   if (key === undefined) return true;
   const paramKey = `${realPath(found.file, follower)}\0${param.identifier.start}`;
+  if (importKey) {
+    follower.importedParameters.set(`${importKey}\0${index}`, {
+      paramKey,
+      followable,
+    });
+  }
   const followedOptions = follower.followed.get(paramKey) ?? new Set();
   if (!followedOptions.has(key)) {
     followedOptions.add(key);
@@ -200,6 +226,40 @@ function findLocalFunction(
   seen: Set<string>
 ): FoundFunction | undefined {
   return findBindingFunction(scope.getBinding(name), file, follower, seen);
+}
+
+/** The resolved file and export name of an imported value binding. */
+function getImportKey(
+  binding: Binding | undefined,
+  file: string,
+  follower: HelperFollower
+): string | undefined {
+  const path = binding?.path;
+  if (
+    !path ||
+    !(path.isImportSpecifier() || path.isImportDefaultSpecifier()) ||
+    !path.parentPath.isImportDeclaration()
+  ) {
+    return;
+  }
+  const source = path.parentPath.node.source.value;
+  if (isGTMessageImportSource(source)) return;
+  let resolved: string | null;
+  try {
+    resolved = resolveImportPath(
+      file,
+      source,
+      follower.parsingOptions,
+      follower.resolvedImports
+    );
+  } catch {
+    return;
+  }
+  if (!resolved) return;
+  const name = path.isImportSpecifier()
+    ? getImportedName(path.node)
+    : 'default';
+  return `${realPath(resolved, follower)}\0${name}`;
 }
 
 /** The function a binding declares, defines as a const, or imports. */
@@ -438,12 +498,17 @@ function loadProgram(
   let program: NodePath<t.Program> | null = null;
   const ast = parseFile(file);
   if (ast) {
-    traverse(ast, {
-      Program(path) {
-        program = path;
-        path.stop();
-      },
-    });
+    try {
+      traverse(ast, {
+        Program(path) {
+          program = path;
+          path.stop();
+        },
+      });
+    } catch {
+      // Babel parses some files whose scopes it cannot build.
+      program = null;
+    }
   }
   programs.set(file, program);
   if (programs.size > maxCachedPrograms) {
