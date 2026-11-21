@@ -7,7 +7,7 @@
   "type": "module",
   "sideEffects": false,
   "engines": {
-    "node": ">=20.3.0"
+    "node": ">=20.19.0"
   },
   "author": "General Translation, Inc.",
   "license": "MIT",
