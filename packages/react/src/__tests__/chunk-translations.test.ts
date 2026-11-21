@@ -1893,17 +1893,19 @@ describe('gt-react/chunk-translations', () => {
 
         it('asks for the files in place of a missing one when the lists arrive after its timeout', async () => {
           const files = built();
-          files[CURRENT] = after(90, { v: { fr: '99999999' } });
+          const lists = hold({ v: { fr: '99999999' } });
+          files[CURRENT] = lists.response;
           const fetched = serve(files);
           writeSplitState({ n: 'assets/gt-current', w: 40 });
           await startSplit();
           await tick();
 
+          // The lists, which name the file, are still on their way
           expect(await reports()).toEqual({ evaluated: 'Overview' });
-          // The import did not wait for the lists, which name the file
           expect(urls(fetched)).not.toContain('/assets/gt-ee.fr.34343434.json');
 
-          await new Promise((resolve) => setTimeout(resolve, 150));
+          lists.respond();
+          await tick();
           expect(urls(fetched)).toContain('/assets/gt-ee.fr.34343434.json');
           expect(title()).toBe('Aperçu, encore');
         });
