@@ -29,6 +29,11 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import { GeneralTranslation, type FileUpload } from '../index';
 
+vi.mock('@noble/hashes/sha2.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@noble/hashes/sha2.js')>();
+  return { ...actual, sha256: vi.fn(actual.sha256) };
+});
+
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
   createAssetUploads: vi.fn(),
@@ -1376,6 +1381,14 @@ describe.sequential('GeneralTranslation project and organization operations', ()
   describe('files over the inline limit', () => {
     const large = '{"a":"' + 'x'.repeat(4_000_000) + '"}';
     const hashOf = (text: string) => bytesToHex(sha256(utf8ToBytes(text)));
+    // Hashing 150MB takes longer than a test should, and no split depends on the hash.
+    const skipHashing = () =>
+      vi.mocked(sha256).mockImplementation(((bytes: Uint8Array) => {
+        const hash = new Uint8Array(32);
+        hash.set(bytes.subarray(0, 28));
+        new DataView(hash.buffer).setUint32(28, bytes.length);
+        return hash;
+      }) as typeof sha256);
     const source = (content: string) => ({
       content,
       fileName: 'messages.json',
@@ -1615,7 +1628,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
           ],
         },
         {
-          source: source('{"second":1}'),
+          source: { ...source('{"second":1}'), fileName: 'second.json' },
           translations: [{ ...source('{"second":2}'), locale: 'es' }],
         },
       ]);
@@ -1692,6 +1705,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     });
 
     it('splits source files into requests that name at most 150MB of uploads', async () => {
+      skipHashing();
       const files = Array.from({ length: 40 }, (_, index) => ({
         source: { ...source(large), fileName: `${index}.json` },
       }));
@@ -1710,15 +1724,96 @@ describe.sequential('GeneralTranslation project and organization operations', ()
       expect(Math.max(...uploadedBytes)).toBeLessThanOrEqual(150_000_000);
     });
 
+    const translationsOf = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        ...source(large),
+        fileName: `${index}.json`,
+        locale: `es-${100 + index}`,
+      }));
+
+    it("sends one source's translations in one request while their bytes are within 150MB", async () => {
+      skipHashing();
+      await configuredProject().uploadTranslations([
+        { source: source('{}'), translations: translationsOf(30) },
+      ]);
+
+      expect(bodyBytes(uploadTranslations)).toHaveLength(1);
+    });
+
+    it('refuses a file and locale named twice before sending either, as the API does within one request', async () => {
+      const translations = translationsOf(40);
+      // The project maps `target` to es-ES, so both name one service locale.
+      translations[0].locale = 'es-ES';
+      translations[39].locale = 'target';
+      const identified = {
+        ...source('{}'),
+        fileId: 'file',
+        branchId: 'branch',
+      };
+      const french = (content: string) => [
+        { ...source(content), locale: 'fr' },
+      ];
+
+      await expect(
+        configuredProject().uploadTranslations([
+          { source: source('{}'), translations },
+        ])
+      ).rejects.toMatchObject({ status: 400, code: 'invalid_request' });
+      await expect(
+        configuredProject().uploadTranslations([
+          { source: identified, translations: french('{"a":"un"}') },
+          { source: identified, translations: french('{"a":"une"}') },
+        ])
+      ).rejects.toThrow('Duplicate source file and translation locale');
+      // Without an ID the API takes both entries to be the file of that name.
+      const named = (fileName: string, content: string) => ({
+        source: { ...source('{}'), fileName },
+        translations: french(content),
+      });
+      await expect(
+        configuredProject().uploadTranslations([
+          named('same.json', '{"a":"un"}'),
+          ...Array.from({ length: 99 }, (_, index) =>
+            named(`${index}.json`, '{}')
+          ),
+          named('same.json', '{"a":"une"}'),
+        ])
+      ).rejects.toMatchObject({ status: 400, code: 'invalid_request' });
+      // The ID the API derives for a file sent without one names that same file.
+      const byId = named('other.json', '{"a":"une"}');
+      await expect(
+        configuredProject().uploadTranslations([
+          named('same.json', '{"a":"un"}'),
+          { ...byId, source: { ...byId.source, fileId: hashOf('same.json') } },
+        ])
+      ).rejects.toMatchObject({ status: 400, code: 'invalid_request' });
+      expect(createFileUploads).not.toHaveBeenCalled();
+      expect(uploadTranslations).not.toHaveBeenCalled();
+    });
+
+    it('sizes base64 with line breaks by the bytes it uploads', async () => {
+      skipHashing();
+      const wrapped = btoa(large).replace(/.{76}/g, '$&\r\n');
+
+      await configuredProject().uploadSourceFiles(
+        Array.from({ length: 37 }, (_, index) => ({
+          source: {
+            ...source(wrapped),
+            fileName: `${index}.lottie`,
+            fileFormat: 'LOTTIE' as const,
+          },
+        }))
+      );
+
+      expect(bodyBytes(uploadSourceFiles)).toHaveLength(1);
+    });
+
     it("splits one source's translations into requests that name at most 150MB of uploads", async () => {
+      skipHashing();
       await configuredProject().uploadTranslations([
         {
           source: source('{}'),
-          translations: Array.from({ length: 40 }, (_, index) => ({
-            ...source(large),
-            fileName: `${index}.json`,
-            locale: 'es',
-          })),
+          translations: translationsOf(40),
         },
       ]);
 
@@ -1758,7 +1853,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
           source: named('{"greeting":"Hello"}', `en/${file}`),
           translations: Array.from({ length: 125 }, (_, locale) => ({
             ...named('{"greeting":"Hola"}', `${locale}/${file}`),
-            locale: 'es',
+            locale: `es-x-l${locale}`,
           })),
         }))
       );
@@ -1925,7 +2020,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
           source: source('{}'),
           translations: Array.from({ length: 15 }, (_, index) => ({
             ...source(`${index}`.padEnd(300_000, 'x')),
-            locale: 'es',
+            locale: `es-${100 + index}`,
           })),
         },
       ]);
